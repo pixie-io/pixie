@@ -12,6 +12,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	compilerpb "pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
+	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
@@ -45,6 +46,50 @@ schema {
 			}
 		}
 	}
+}
+`
+const multipleAgentDistributedState = `
+schema: {
+  relation_map: {
+    key: "perf_and_http"
+    value: {
+      columns: {
+        column_name: "_time"
+      }
+    }
+  }
+}
+distributed_state: {
+  carnot_info: {
+    query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+    has_data_store: true
+    processes_data: true
+  }
+  carnot_info: {
+    query_broker_address: "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+    has_data_store: true
+    processes_data: true
+  }
+}
+`
+
+const singleAgentDistributedState = `
+schema: {
+  relation_map: {
+    key: "perf_and_http"
+    value: {
+      columns: {
+        column_name: "_time"
+      }
+    }
+  }
+}
+distributed_state: {
+  carnot_info: {
+    query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+    has_data_store: true
+    processes_data: true
+  }
 }
 `
 
@@ -95,32 +140,98 @@ const badQuery = `
 queryDF = From(table='', select=['_time']).Result(name='out')
 `
 
-const expectedCompilerResult = `
-status{
+const testLogicalPlan = `
+dag: {
+	nodes: {
+		id: 1
+	}
 }
-logical_plan{
+nodes: {
+	id: 1
 	dag: {
 		nodes: {
-			id: 1
 		}
 	}
 	nodes: {
-		id: 1
-		dag: {
-			nodes: {
-			}
-		}
-		nodes: {
-			op: {
-				op_type: MEMORY_SOURCE_OPERATOR
-				mem_source_op: {
-				}
+		op: {
+			op_type: MEMORY_SOURCE_OPERATOR
+			mem_source_op: {
 			}
 		}
 	}
-}`
+}
+`
 
-const failedCompilerResult = `
+const expectedPlannerResult = `
+status: {}
+plan: {
+  qb_address_to_plan: {
+    key: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+    value: {
+      dag: {
+        nodes: {
+          id: 1
+        }
+      }
+      nodes: {
+        id: 1
+        dag: {
+          nodes: {
+            id: 3
+            sorted_children: 0
+          }
+          nodes: {
+            sorted_parents: 3
+          }
+        }
+        nodes: {
+          id: 3
+          op: {
+            op_type: MEMORY_SOURCE_OPERATOR
+            mem_source_op: {
+              name: "table1"
+              column_idxs: 0
+              column_idxs: 1
+              column_idxs: 2
+              column_names: "time_"
+              column_names: "cpu_cycles"
+              column_names: "upid"
+              column_types: TIME64NS
+              column_types: INT64
+              column_types: UINT128
+              tablet: "1"
+            }
+          }
+        }
+        nodes: {
+          op: {
+            op_type: MEMORY_SINK_OPERATOR
+            mem_sink_op: {
+              name: "out"
+              column_types: TIME64NS
+              column_types: INT64
+              column_types: UINT128
+              column_names: "time_"
+              column_names: "cpu_cycles"
+              column_names: "upid"
+            }
+          }
+        }
+      }
+    }
+  }
+  qb_address_to_dag_id: {
+    key: "agent1"
+    value: 0
+  }
+  dag: {
+    nodes: {
+    }
+  }
+}
+`
+
+const failedPlannerResult = `
 status{
 	err_code: INVALID_ARGUMENT
 	context {
@@ -143,7 +254,7 @@ status{
 	}
 }`
 
-const failedCompilerResultFromStatus = `
+const failedPlannerResultFromStatus = `
 status{
 	msg: "failure failure failure"
 	err_code: INVALID_ARGUMENT
@@ -204,15 +315,23 @@ func TestServerExecuteQuery(t *testing.T) {
 	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		expectedMap := make(map[uuid.UUID]*planpb.Plan)
-		compilerResultPB := new(compilerpb.CompilerResult)
+		plannerResultPB := new(distributedpb.LogicalPlannerResult)
 
-		if err := proto.UnmarshalText(expectedCompilerResult, compilerResultPB); err != nil {
+		if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
 			t.Fatal("Cannot Unmarshal protobuf.")
 		}
 
-		for _, agentID := range *agentList {
-			expectedMap[agentID] = compilerResultPB.LogicalPlan
+		plan := plannerResultPB.Plan
+		for carnotID, agentPlan := range plan.QbAddressToPlan {
+			u, err := uuid.FromString(carnotID)
+			if !assert.Nil(t, err) {
+				t.Fatal("Cannot parse uuid")
+			}
+			expectedMap[u] = agentPlan
 		}
+
+		assert.Equal(t, 1, len(expectedMap))
+
 		mc.
 			EXPECT().
 			ExecuteQuery(expectedMap)
@@ -243,19 +362,28 @@ func TestServerExecuteQuery(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	compilerResultPB := new(compilerpb.CompilerResult)
-	if err := proto.UnmarshalText(expectedCompilerResult, compilerResultPB); err != nil {
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	compiler := mock_controllers.NewMockCompiler(ctrl)
-	compiler.EXPECT().
-		Compile(getSchemaPB.Schema, testQuery).
-		Return(compilerResultPB, nil)
+	plannerResultPB := new(distributedpb.LogicalPlannerResult)
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	planner := mock_controllers.NewMockPlanner(ctrl)
+	planner.EXPECT().
+		Plan(plannerStatePB, testQuery).
+		Return(plannerResultPB, nil)
 
-	s, err := newServer(env, mds, nc, createExecutorMock, compiler)
+	s, err := newServer(env, mds, nc, createExecutorMock, planner)
 	results, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
 	})
+
+	if !assert.Nil(t, err) {
+		t.Fatalf(err.Error())
+	}
+
 	assert.Equal(t, 1, len(results.Responses))
 }
 
@@ -301,16 +429,22 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	compilerResultPB := new(compilerpb.CompilerResult)
-	if err := proto.UnmarshalText(expectedCompilerResult, compilerResultPB); err != nil {
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	compiler := mock_controllers.NewMockCompiler(ctrl)
-	compiler.EXPECT().
-		Compile(getSchemaPB.Schema, testQuery).
-		Return(compilerResultPB, nil)
 
-	s, err := NewServer(env, mds, nc, compiler)
+	plannerResultPB := new(distributedpb.LogicalPlannerResult)
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	planner := mock_controllers.NewMockPlanner(ctrl)
+	planner.EXPECT().
+		Plan(plannerStatePB, testQuery).
+		Return(plannerResultPB, nil)
+
+	s, err := NewServer(env, mds, nc, planner)
 
 	results, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
@@ -353,9 +487,9 @@ func TestReceiveAgentQueryResult(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	compiler := mock_controllers.NewMockCompiler(ctrl)
+	planner := mock_controllers.NewMockPlanner(ctrl)
 
-	s, err := NewServer(env, mds, nc, compiler)
+	s, err := NewServer(env, mds, nc, planner)
 	if err != nil {
 		t.Fatal("Creating server failed.")
 	}
@@ -411,9 +545,9 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	compiler := mock_controllers.NewMockCompiler(ctrl)
+	planner := mock_controllers.NewMockPlanner(ctrl)
 
-	s, err := NewServer(env, mds, nc, compiler)
+	s, err := NewServer(env, mds, nc, planner)
 
 	if err != nil {
 		t.Fatal("Creating server failed.")
@@ -464,9 +598,9 @@ func TestGetMultipleAgentInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
-	compiler := mock_controllers.NewMockCompiler(ctrl)
+	planner := mock_controllers.NewMockPlanner(ctrl)
 
-	s, err := NewServer(env, mds, nc, compiler)
+	s, err := NewServer(env, mds, nc, planner)
 
 	if err != nil {
 		t.Fatal("Creating server failed.")
@@ -481,8 +615,8 @@ func TestGetMultipleAgentInfo(t *testing.T) {
 	assert.Equal(t, getAgentsRespPB, resp)
 }
 
-// TestCompilerErrorResult makes sure that compiler error handling is done well.
-func TestCompilerErrorResult(t *testing.T) {
+// TestPlannerErrorResult makes sure that compiler error handling is done well.
+func TestPlannerErrorResult(t *testing.T) {
 	// Start NATS.
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
@@ -529,8 +663,8 @@ func TestCompilerErrorResult(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	badCompilerResultPB := new(compilerpb.CompilerResult)
-	if err := proto.UnmarshalText(failedCompilerResult, badCompilerResultPB); err != nil {
+	badPlannerResultPB := new(distributedpb.LogicalPlannerResult)
+	if err := proto.UnmarshalText(failedPlannerResult, badPlannerResultPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -539,22 +673,145 @@ func TestCompilerErrorResult(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	compiler := mock_controllers.NewMockCompiler(ctrl)
-	compiler.EXPECT().
-		Compile(getSchemaPB.Schema, badQuery).
-		Return(badCompilerResultPB, nil)
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
 
-	s, err := newServer(env, mds, nc, createExecutorMock, compiler)
+	planner := mock_controllers.NewMockPlanner(ctrl)
+	planner.EXPECT().
+		Plan(plannerStatePB, badQuery).
+		Return(badPlannerResultPB, nil)
+
+	s, err := newServer(env, mds, nc, createExecutorMock, planner)
 	result, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
 	})
 
 	agentRespPB := new(querybrokerpb.VizierQueryResponse)
-	if err := proto.UnmarshalText(failedCompilerResult, agentRespPB); err != nil {
+	if err := proto.UnmarshalText(failedPlannerResult, agentRespPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	assert.Equal(t, errors.New(proto.MarshalTextString(compilerErrorGroupPB)), err)
 	assert.Equal(t, agentRespPB, result)
+}
+
+// This test makes sure that the planner can safely drop carnot instances
+// during planning and not cause issues during execution because the engine waits for no reason.
+func TestPlannerExcludesSomeAgents(t *testing.T) {
+	// Start NATS.
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
+
+	// Add both agents to this so that the planner does have the option to receive both.
+	getAgentsPB := new(metadatapb.AgentInfoResponse)
+	if err := proto.UnmarshalText(getMultipleAgentsResponse, getAgentsPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mds.
+		EXPECT().
+		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
+		Return(getAgentsPB, nil)
+
+	getSchemaPB := new(metadatapb.SchemaResponse)
+	if err := proto.UnmarshalText(getSchemaResponse, getSchemaPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mds.
+		EXPECT().
+		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
+		Return(getSchemaPB, nil)
+
+	plannerResultPB := new(distributedpb.LogicalPlannerResult)
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+		mc := mock_controllers.NewMockExecutor(ctrl)
+		expectedMap := make(map[uuid.UUID]*planpb.Plan)
+
+		// This plan should only have one agent, so we should be able to run with it.
+		plan := plannerResultPB.Plan
+		for carnotID, agentPlan := range plan.QbAddressToPlan {
+			u, err := uuid.FromString(carnotID)
+			if err != nil {
+				t.Fatal("Cannot parse uuid")
+			}
+			expectedMap[u] = agentPlan
+		}
+
+		assert.Equal(t, 1, len(expectedMap))
+
+		mc.
+			EXPECT().
+			ExecuteQuery(expectedMap)
+
+		mc.
+			EXPECT().
+			GetQueryID()
+
+		var a []*querybrokerpb.VizierQueryResponse_ResponseByAgent
+
+		agentRespPB := new(querybrokerpb.VizierQueryResponse_ResponseByAgent)
+		if err := proto.UnmarshalText(responseByAgent, agentRespPB); err != nil {
+			t.Fatal("Cannot Unmarshal protobuf.")
+		}
+		a = append(a, agentRespPB)
+
+		mc.
+			EXPECT().
+			WaitForCompletion().
+			Return(a, nil)
+
+		return mc
+	}
+
+	// Set up server.
+	env, err := querybrokerenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	// The state passes in multiple agents.
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(multipleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	if !assert.Equal(t, 2, len(plannerStatePB.DistributedState.CarnotInfo)) {
+		t.FailNow()
+	}
+
+	planner := mock_controllers.NewMockPlanner(ctrl)
+	planner.EXPECT().
+		Plan(plannerStatePB, testQuery).
+		Return(plannerResultPB, nil)
+
+	s, err := newServer(env, mds, nc, createExecutorMock, planner)
+	// _, err = s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+	results, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+		QueryStr: testQuery,
+	})
+
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	assert.Equal(t, 1, len(results.Responses))
 }
 
 func TestErrorInStatusResult(t *testing.T) {
@@ -604,20 +861,30 @@ func TestErrorInStatusResult(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	badCompilerResultPB := new(compilerpb.CompilerResult)
-	if err := proto.UnmarshalText(failedCompilerResultFromStatus, badCompilerResultPB); err != nil {
+	// The state passes in multiple agents.
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	compiler := mock_controllers.NewMockCompiler(ctrl)
-	compiler.EXPECT().
-		Compile(getSchemaPB.Schema, badQuery).
-		Return(badCompilerResultPB, nil)
+	if !assert.Equal(t, 1, len(plannerStatePB.DistributedState.CarnotInfo)) {
+		t.FailNow()
+	}
 
-	s, err := newServer(env, mds, nc, createExecutorMock, compiler)
+	badPlannerResultPB := new(distributedpb.LogicalPlannerResult)
+	if err := proto.UnmarshalText(failedPlannerResultFromStatus, badPlannerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	planner := mock_controllers.NewMockPlanner(ctrl)
+	planner.EXPECT().
+		Plan(plannerStatePB, badQuery).
+		Return(badPlannerResultPB, nil)
+
+	s, err := newServer(env, mds, nc, createExecutorMock, planner)
 	_, err = s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
 	})
 
-	assert.Equal(t, fmt.Errorf("Error occurred without line and column: '%s'", badCompilerResultPB.Status.Msg), err)
+	assert.Equal(t, fmt.Errorf("Error occurred without line and column: '%s'", badPlannerResultPB.Status.Msg), err)
 }

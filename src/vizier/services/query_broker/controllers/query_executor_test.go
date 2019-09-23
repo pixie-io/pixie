@@ -9,7 +9,7 @@ import (
 	"github.com/nats-io/go-nats"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
-	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
+	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -98,14 +98,14 @@ func TestExecuteQuery(t *testing.T) {
 	}
 
 	// Plan 1 is a valid, populated plan
-	compilerResultPB := &compilerpb.CompilerResult{}
-	if err := proto.UnmarshalText(expectedCompilerResult, compilerResultPB); err != nil {
-		t.Fatal("Could not unmarshal protobuf")
+	plannerResultPB := &distributedpb.LogicalPlannerResult{}
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Could not unmarshal protobuf text for planner result.")
 	}
 
-	planPB1 := compilerResultPB.LogicalPlan
+	planPB1 := plannerResultPB.Plan.QbAddressToPlan[agent1ID]
 	// Plan 2 is an empty plan.
-	planPB2 := &planpb.Plan{}
+	planPB2 := plannerResultPB.Plan.QbAddressToPlan[agent2ID]
 
 	planMap := make(map[uuid.UUID]*planpb.Plan)
 	planMap[agentUUIDs[0]] = planPB1

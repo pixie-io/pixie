@@ -5,11 +5,13 @@ go_library(
     srcs = [
         "mock_query_executor.gen.go",
         "plan_mock_gen.go",
+        "planner_mock_gen.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock",
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
+        "//src/carnot/compiler/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
         "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",

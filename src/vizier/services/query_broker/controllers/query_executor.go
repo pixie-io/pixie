@@ -48,7 +48,7 @@ func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan) error {
 	errs := make(chan error)
 	// Broadcast query to all the agents in parallel.
 	var wg sync.WaitGroup
-	wg.Add(len(*e.agentList))
+	wg.Add(len(planMap))
 
 	broadcastToAgent := func(agentID uuid.UUID, logicalPlan *planpb.Plan) {
 		defer wg.Done()
@@ -76,12 +76,7 @@ func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan) error {
 		}
 	}
 
-	for _, agentID := range *e.agentList {
-		logicalPlan, present := planMap[agentID]
-		if !present {
-			return fmt.Errorf("Couldn't find logicalPlan for agent %s", agentID)
-		}
-
+	for agentID, logicalPlan := range planMap {
 		go broadcastToAgent(agentID, logicalPlan)
 	}
 
