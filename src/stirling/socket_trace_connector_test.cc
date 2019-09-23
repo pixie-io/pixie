@@ -171,7 +171,6 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
   // MySQL test inputs
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
-  static constexpr DataTableSchema kMySQLTable = SocketTraceConnector::kMySQLTable;
   static constexpr int kMySQLRespBodyIdx = kMySQLTable.ColIndex("body");
 
   std::string mySQLStmtPrepareReq;
@@ -780,7 +779,7 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
     source_->AcceptDataEvent(std::move(execute_resp_events[i]));
   }
 
-  DataTable data_table(SocketTraceConnector::kMySQLTable);
+  DataTable data_table(kMySQLTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
   for (const auto& column : record_batch) {
@@ -828,7 +827,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
     source_->AcceptDataEvent(std::move(query_resp_events[i]));
   }
 
-  DataTable data_table(SocketTraceConnector::kMySQLTable);
+  DataTable data_table(kMySQLTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);

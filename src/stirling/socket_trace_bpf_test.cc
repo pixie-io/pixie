@@ -364,7 +364,6 @@ Content-Length: 0
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
-  static constexpr DataTableSchema kMySQLTable = SocketTraceConnector::kMySQLTable;
   static constexpr uint32_t kMySQLBodyIdx = kMySQLTable.ColIndex("body");
 
   std::unique_ptr<SourceConnector> source_;

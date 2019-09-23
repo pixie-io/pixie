@@ -54,6 +54,8 @@ using ::google::protobuf::Empty;
 using ::google::protobuf::Message;
 using ::google::protobuf::TextFormat;
 using ::pl::grpc::MethodInputOutput;
+using ::pl::stirling::kHTTPTable;
+using ::pl::stirling::kMySQLTable;
 using ::pl::stirling::grpc::PBTextFormat;
 using ::pl::stirling::grpc::PBWireToText;
 using ::pl::stirling::http2::Frame;

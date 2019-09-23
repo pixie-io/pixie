@@ -36,6 +36,7 @@ using pl::stirling::SystemStatsConnector;
 
 using pl::stirling::DataElement;
 using pl::stirling::kHTTPTable;
+using pl::stirling::kMySQLTable;
 
 using pl::ArrayView;
 
@@ -98,9 +99,8 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   } else if (name == SeqGenConnector::kSeq1Table.name().data()) {
     PrintRecordBatch("SeqGen-1", SeqGenConnector::kSeq1Table.elements(), num_records,
                      *record_batch);
-  } else if (name == SocketTraceConnector::kMySQLTable.name().data()) {
-    PrintRecordBatch("MySQLTrace", SocketTraceConnector::kMySQLTable.elements(), num_records,
-                     *record_batch);
+  } else if (name == kMySQLTable.name().data()) {
+    PrintRecordBatch("MySQLTrace", kMySQLTable.elements(), num_records, *record_batch);
   } else if (name == PIDRuntimeConnector::kTable.name().data()) {
     PrintRecordBatch("PIDStat-BCC", PIDRuntimeConnector::kTable.elements(), num_records,
                      *record_batch);
