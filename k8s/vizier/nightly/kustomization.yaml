@@ -4,4 +4,3 @@ resources:
 - ../base
 patchesStrategicMerge:
 - proxy_service_lb_ip.yaml
-- cloud_config.yaml

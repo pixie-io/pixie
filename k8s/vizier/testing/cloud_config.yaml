@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: pl-cloud-config
-data:
-  PL_CLOUD_ADDR: testing.withpixie.dev:51600

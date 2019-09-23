@@ -4,7 +4,6 @@ commonLabels:
   app: pl-monitoring
 namespace: pl
 resources:
-- cloud_config.yaml
 - agent_daemonset.yaml
 - api_deployment.yaml
 - api_service.yaml

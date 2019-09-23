@@ -42,12 +42,18 @@ func NewCmdDeploy() *cobra.Command {
 			clientset := k8s.GetClientset(kubeConfig)
 			namespace, _ := cmd.Flags().GetString("namespace")
 			credsFile, _ := cmd.Flags().GetString("credentials_file")
+			cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
 
 			optionallyCreateNamespace(clientset, namespace)
 
 			if credsFile != "" {
 				secretName, _ := cmd.Flags().GetString("secret_name")
 				k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsFile)
+			}
+
+			err := createCloudConfig(cloudAddr, namespace)
+			if err != nil {
+				log.WithError(err).Fatal("could not create cloud config")
 			}
 
 			path, _ := cmd.Flags().GetString("extract_yaml")
@@ -117,6 +123,16 @@ func deploy(extractPath string, depsOnly bool) {
 func deployFile(filePath string) error {
 	kcmd := exec.Command("kubectl", "apply", "-f", filePath)
 	return kcmd.Run()
+}
+
+func createCloudConfig(cloudAddr string, namespace string) error {
+	// Attempt to delete an existing pl-cloud-config configmap.
+	delCmd := exec.Command("kubectl", "delete", "configmap", "pl-cloud-config", "-n", namespace)
+	_ = delCmd.Run()
+
+	// Create a new pl-cloud-config configmap.
+	createCmd := exec.Command("kubectl", "create", "configmap", "pl-cloud-config", fmt.Sprintf("--from-literal=PL_CLOUD_ADDR=%s", cloudAddr), "-n", namespace)
+	return createCmd.Run()
 }
 
 func retryDeploy(filePath string) {
