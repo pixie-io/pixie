@@ -4,7 +4,7 @@ import * as React from 'react';
 import { MockedProvider } from 'react-apollo/test-utils';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import {DeployInstructions} from './deploy-instructions';
-import {GET_CLUSTER, Vizier} from './vizier';
+import {CREATE_CLUSTER, GET_CLUSTER, Vizier} from './vizier';
 
 // Mock CodeMirror component because it does not mount properly in Jest.
 jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
@@ -90,6 +90,13 @@ describe('<Vizier/> test', () => {
             name: 'error',
             message: 'org has no clusters',
         },
+      },
+      {
+        request: {
+          query: CREATE_CLUSTER,
+          variables: {},
+        },
+        result: {},
       },
     ];
 

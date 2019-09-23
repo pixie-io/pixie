@@ -20,7 +20,7 @@ import * as codeImage from 'images/icons/query.svg';
 // @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/logo.svg';
 
-const CREATE_CLUSTER = gql`
+export const CREATE_CLUSTER = gql`
   mutation CreateCluster {
     CreateCluster {
       id
@@ -114,7 +114,7 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
                          secondaryHeading={PATH_TO_HEADER_TITLE[this.props.location.pathname]}
                       />
                       <Switch>
-                        <Route path={`/agents`} component={AgentDisplay} />
+                        <Route path={`/vizier/agents`} component={AgentDisplay} />
                         <Route path={`/`} component={QueryManager} />
                       </Switch>
                     </div>
