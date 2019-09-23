@@ -117,6 +117,9 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	// If user does not exist in Auth0, then create a new user.
 	newUser := userInfo.AppMetadata == nil || userInfo.AppMetadata.Clients[s.a.GetClientID()] == nil || userInfo.AppMetadata.Clients[s.a.GetClientID()].PLUserID == ""
 
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
 	// If user exists in Auth0, but not in the profile service, create a new user.
 	if !newUser {
 		pc := s.env.ProfileClient()
