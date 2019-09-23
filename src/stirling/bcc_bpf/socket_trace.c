@@ -792,7 +792,7 @@ int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, struct sockadd
 int syscall__probe_ret_connect(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_connect_impl(ctx, id);
-  active_accept_info_map.delete(&id);
+  active_connect_info_map.delete(&id);
   return 0;
 }
 
