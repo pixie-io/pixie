@@ -154,6 +154,39 @@ std::string PackDataFrame(std::string_view msg, uint8_t flags, uint32_t stream_i
   return res;
 }
 
+std::vector<const Frame*> ExtractPtrs(const std::deque<Frame>& frames) {
+  std::vector<const Frame*> frame_ptrs;
+  for (const Frame& f : frames) {
+    frame_ptrs.push_back(&f);
+  }
+  return frame_ptrs;
+}
+
+TEST(StitchFramesTest, SuccessiveHeadersFrameCausesError) {
+  {
+    std::string input = absl::StrCat(PackEmptyHeadersFrame(0, 1), PackEmptyHeadersFrame(0, 1));
+    std::deque<Frame> frames;
+    ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
+    EXPECT_EQ(ParseState::kSuccess, res.state);
+    EXPECT_THAT(frames, SizeIs(2));
+
+    Inflater inflater;
+    std::vector<GRPCMessage> msgs;
+    EXPECT_EQ(ParseState::kInvalid, StitchFrames(ExtractPtrs(frames), inflater.inflater(), &msgs));
+  }
+  {
+    std::string input = absl::StrCat(PackEmptyHeadersFrame(0, 1), PackDataFrame("abcd", 0, 1));
+    std::deque<Frame> frames;
+    ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
+    EXPECT_EQ(ParseState::kSuccess, res.state);
+    EXPECT_THAT(frames, SizeIs(2));
+
+    Inflater inflater;
+    std::vector<GRPCMessage> msgs;
+    EXPECT_EQ(ParseState::kInvalid, StitchFrames(ExtractPtrs(frames), inflater.inflater(), &msgs));
+  }
+}
+
 TEST(StitchFramesToGRPCMessagesTest, StitchReqsRespsOfDifferentStreams) {
   Inflater inflater;
   std::string input =

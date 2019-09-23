@@ -220,13 +220,15 @@ ParseState CheckGRPCMessage(std::string_view buf) {
   return ParseState::kSuccess;
 }
 
+}  // namespace
+
 /**
  * @brief Given a list of frames for one stream, stitches them together into gRPC request and
  * response messages. Also mark consumed frames, so the caller can destroy them afterwards.
  */
 // TODO(yzhao): Turn this into a class that parse frames one by one.
-void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* inflater,
-                  std::vector<GRPCMessage>* msgs) {
+ParseState StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* inflater,
+                        std::vector<GRPCMessage>* msgs) {
   size_t header_block_size = 0;
   std::vector<const Frame*> header_block_frames;
 
@@ -234,19 +236,14 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
   std::vector<const Frame*> data_block_frames;
 
   GRPCMessage msg;
-  enum class Progress {
-    kUnknown,
-    kInDataBlock,
-    kInHeadersBlock,
-  };
-  Progress progress = Progress::kUnknown;
+  bool is_in_header_block = false;
 
-  auto handle_headers_or_continuation = [&progress, &header_block_size, &header_block_frames, &msg,
-                                         inflater](const Frame* f) {
+  auto handle_headers_or_continuation = [&is_in_header_block, &header_block_size,
+                                         &header_block_frames, &msg, inflater](const Frame* f) {
     header_block_size += f->u8payload.size();
     header_block_frames.push_back(f);
     if (IsEndHeaders(f->frame.hd)) {
-      progress = Progress::kUnknown;
+      is_in_header_block = false;
       u8string u8buf;
       u8buf.reserve(header_block_size);
       for (auto* f : header_block_frames) {
@@ -259,12 +256,18 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
     }
   };
 
-  auto handle_end_stream = [&progress, &data_block_size, &data_block_frames, &msg,
-                            msgs](const Frame* f) {
-    progress = Progress::kUnknown;
-    msg.timestamp_ns = f->timestamp_ns;
+  auto handle_end_stream = [&data_block_size, &data_block_frames, &msg, msgs]() {
+    // HTTP2 spec allows the following frames sequence:
+    // HEADERS frame, no END_HEADERS flag, with END_STREAM flag
+    // 0 or more CONTINUATION frames, no END_HEADERS flag
+    // CONTINUATION frame, with END_HEADERS flag
+    //
+    // Fortunately gRPC only set END_STREAM and END_HEADERS together, and never do the above
+    // sequence.
+    //
+    // TODO(yzhao): Consider handle the above case.
 
-    // Now join the messages scattered in the frames.
+    // Join the messages scattered in the frames.
     msg.message.reserve(data_block_size);
     for (auto* f : data_block_frames) {
       msg.message.append(reinterpret_cast<const char*>(f->u8payload.data()), f->u8payload.size());
@@ -280,13 +283,13 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
     const uint8_t type = f->frame.hd.type;
     switch (type) {
       case NGHTTP2_DATA:
-        LOG_IF(ERROR, progress == Progress::kInHeadersBlock)
-            << "TODO(PL-874): DATA frame must not follow a unended HEADERS frame. "
-               "Investigate and fix.";
-        if (progress == Progress::kUnknown) {
-          // This is the first data frame. We must receive a payload with certain size.
-          progress = Progress::kInDataBlock;
+        if (is_in_header_block) {
+          LOG(WARNING) << "DATA frame must not follow a unended HEADERS frame. "
+                          "Indicates losing track of the frame boundary. Stream ID: "
+                       << f->frame.hd.stream_id;
+          return ParseState::kInvalid;
         }
+        is_in_header_block = false;
         data_block_size += f->u8payload.size();
         data_block_frames.push_back(f);
         // gRPC request EOS (end-of-stream) is indicated by END_STREAM flag on the last DATA frame.
@@ -294,38 +297,46 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
         // END_STREAM is seen.
         if (IsEndStream(f->frame.hd)) {
           msg.type = MessageType::kRequest;
-          handle_end_stream(f);
+          msg.timestamp_ns = f->timestamp_ns;
+          handle_end_stream();
         }
         break;
       case NGHTTP2_HEADERS:
-        LOG_IF(ERROR, progress == Progress::kInHeadersBlock)
-            << "TODO(PL-874): HEADERS frame must not follow another unended HEADERS frame. "
-               "Investigate and fix.";
-        progress = Progress::kInHeadersBlock;
+        if (is_in_header_block) {
+          LOG(WARNING) << "HEADERS frame must not follow another unended HEADERS frame. "
+                          "Indicates losing track of the frame boundary. Stream ID: "
+                       << f->frame.hd.stream_id;
+          return ParseState::kInvalid;
+        }
+        is_in_header_block = true;
         handle_headers_or_continuation(f);
         // gRPC response EOS (end-of-stream) is indicated by END_STREAM flag on the last HEADERS
         // frame. This also indicates this message is a response.
         // No CONTINUATION frame will be used.
         if (IsEndStream(f->frame.hd)) {
           msg.type = MessageType::kResponse;
-          handle_end_stream(f);
+          msg.timestamp_ns = f->timestamp_ns;
+          handle_end_stream();
         }
         break;
       case NGHTTP2_CONTINUATION:
-        LOG_IF(DFATAL, progress != Progress::kInHeadersBlock)
-            << "CONTINUATION frame must follow a HEADERS or CONTINUATION frame.";
+        if (!is_in_header_block) {
+          LOG(WARNING) << "CONTINUATION frame must follow a HEADERS or CONTINUATION frame. "
+                          "Indicates losing track of the frame boundary. Stream ID: "
+                       << f->frame.hd.stream_id;
+          return ParseState::kInvalid;
+        }
         handle_headers_or_continuation(f);
         // No need to handle END_STREAM as CONTINUATION frame does not define END_STREAM flag.
         break;
       default:
         LOG(DFATAL) << "This function does not accept any frame types other than "
-                       "DATA, HEADERS, and CONTINUATION";
+                       "DATA, HEADERS, and CONTINUATION.";
         break;
     }
   }
+  return ParseState::kSuccess;
 }
-
-}  // namespace
 
 ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames, Inflater* inflater,
                                       std::map<uint32_t, GRPCMessage>* stream_msgs) {
@@ -337,7 +348,10 @@ ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames, Inflater*
   }
   for (auto& [stream_id, frame_ptrs] : stream_frames) {
     std::vector<GRPCMessage> msgs;
-    StitchFrames(frame_ptrs, inflater->inflater(), &msgs);
+    ParseState state = StitchFrames(frame_ptrs, inflater->inflater(), &msgs);
+    if (state != ParseState::kSuccess) {
+      return state;
+    }
     if (msgs.empty()) {
       continue;
     }

@@ -117,6 +117,10 @@ struct GRPCMessage {
   }
 };
 
+// Used by StitchFramesToGRPCMessages() put here for testing.
+ParseState StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* inflater,
+                        std::vector<GRPCMessage>* msgs);
+
 /*
  * @brief Stitches frames as either request or response. Also marks the consumed frames.
  * You must then erase the consumed frames afterwards.
