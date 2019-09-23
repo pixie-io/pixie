@@ -237,10 +237,15 @@ func (s *Server) VizierConnected(ctx context.Context, req *cloudpb.RegisterVizie
 	query := `
     UPDATE vizier_cluster_info
     SET (last_heartbeat, address, jwt_signing_key, status)  = (
-    	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), 'HEALTHY')
+    	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), $5)
     WHERE vizier_cluster_id = $1`
 
-	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey)
+	vzStatus := "HEALTHY"
+	if req.Address == "" {
+		vzStatus = "UNHEALTHY"
+	}
+
+	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey, vzStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -258,11 +263,16 @@ func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cloudpb.VizierH
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 	query := `
     UPDATE vizier_cluster_info
-    SET last_heartbeat = NOW(), status = 'HEALTHY'
-    WHERE vizier_cluster_id = $1`
+    SET last_heartbeat = NOW(), status = $1, address= $2
+    WHERE vizier_cluster_id = $3`
+
+	vzStatus := "HEALTHY"
+	if req.Address == "" {
+		vzStatus = "UNHEALTHY"
+	}
 
 	// TODO(zasgar/michelle): handle sequence ID and time.
-	res, err := s.db.Exec(query, vizierID)
+	res, err := s.db.Exec(query, vzStatus, req.Address, vizierID)
 	if err != nil {
 		return &cloudpb.VizierHeartbeatAck{
 			Status:         cloudpb.HB_ERROR,

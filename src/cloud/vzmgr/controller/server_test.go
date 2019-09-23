@@ -208,7 +208,7 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 	// TODO(zasgar): write more tests here.
 }
 
-func TestServer_VizierConnected(t *testing.T) {
+func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	db, teardown := setupTestDB(t)
 	defer teardown()
 	loadTestData(t, db)
@@ -226,10 +226,11 @@ func TestServer_VizierConnected(t *testing.T) {
 	assert.Equal(t, resp.Status, cloudpb.ST_OK)
 
 	// Check to make sure DB insert for JWT signing key is correct.
-	clusterQuery := `SELECT PGP_SYM_DECRYPT(jwt_signing_key::bytea, 'test') as jwt_signing_key from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	clusterQuery := `SELECT PGP_SYM_DECRYPT(jwt_signing_key::bytea, 'test') as jwt_signing_key, status from vizier_cluster_info WHERE vizier_cluster_id=$1`
 
 	var clusterInfo struct {
 		JWTSigningKey string `db:"jwt_signing_key"`
+		Status        string `db:"status"`
 	}
 	clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
 	assert.Nil(t, err)
@@ -237,6 +238,40 @@ func TestServer_VizierConnected(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "the-token", clusterInfo.JWTSigningKey[controller.SaltLength:])
 
+	assert.Equal(t, "UNHEALTHY", clusterInfo.Status)
+	// TODO(zasgar): write more tests here.
+}
+
+func TestServer_VizierConnectedHealthy(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	s := controller.New(db, "test")
+	req := &cloudpb.RegisterVizierRequest{
+		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		JwtKey:   "the-token",
+		Address:  "127.0.0.1",
+	}
+
+	resp, err := s.VizierConnected(context.Background(), req)
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+
+	assert.Equal(t, resp.Status, cloudpb.ST_OK)
+
+	// Check to make sure DB insert for JWT signing key is correct.
+	clusterQuery := `SELECT PGP_SYM_DECRYPT(jwt_signing_key::bytea, 'test') as jwt_signing_key, status from vizier_cluster_info WHERE vizier_cluster_id=$1`
+
+	var clusterInfo struct {
+		JWTSigningKey string `db:"jwt_signing_key"`
+		Status        string `db:"status"`
+	}
+	clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
+	assert.Nil(t, err)
+	err = db.Get(&clusterInfo, clusterQuery, clusterID)
+	assert.Nil(t, err)
+	assert.Equal(t, "HEALTHY", clusterInfo.Status)
 	// TODO(zasgar): write more tests here.
 }
 
@@ -252,6 +287,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			VizierID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 			Time:           100,
 			SequenceNumber: 200,
+			Address:        "127.0.0.1",
 		}
 		resp, err := s.HandleVizierHeartbeat(context.Background(), req)
 		require.Nil(t, err)
@@ -260,6 +296,41 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		assert.Equal(t, resp.SequenceNumber, req.SequenceNumber)
 		assert.True(t, resp.Time >= time.Now().Unix())
 		assert.Equal(t, resp.Status, cloudpb.HB_OK)
+
+		clusterQuery := `SELECT status from vizier_cluster_info WHERE vizier_cluster_id=$1`
+
+		var clusterInfo struct {
+			Status string `db:"status"`
+		}
+		clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
+		assert.Nil(t, err)
+		err = db.Get(&clusterInfo, clusterQuery, clusterID)
+		assert.Equal(t, "HEALTHY", clusterInfo.Status)
+	})
+
+	t.Run("valid Vizier no address", func(t *testing.T) {
+		req := &cloudpb.VizierHeartbeat{
+			VizierID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+			Time:           100,
+			SequenceNumber: 200,
+		}
+		resp, err := s.HandleVizierHeartbeat(context.Background(), req)
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+
+		assert.Equal(t, resp.SequenceNumber, req.SequenceNumber)
+		assert.True(t, resp.Time >= time.Now().Unix())
+		assert.Equal(t, resp.Status, cloudpb.HB_OK)
+
+		clusterQuery := `SELECT status from vizier_cluster_info WHERE vizier_cluster_id=$1`
+
+		var clusterInfo struct {
+			Status string `db:"status"`
+		}
+		clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
+		assert.Nil(t, err)
+		err = db.Get(&clusterInfo, clusterQuery, clusterID)
+		assert.Equal(t, "UNHEALTHY", clusterInfo.Status)
 	})
 
 	t.Run("unknown Vizier", func(t *testing.T) {

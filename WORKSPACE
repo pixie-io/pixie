@@ -802,8 +802,8 @@ go_repository(
 go_repository(
     name = "io_k8s_klog",
     importpath = "k8s.io/klog",
-    sum = "h1:qvP/U6CcZ6qyi/qSHlJKdlAboCzo3mT0DAm0XAarpz4=",
-    version = "v0.3.2",
+    sum = "h1:Pt+yjF5aB1xDSVbau4VsWe+dQNzA0qv1LlXdC2dF6Q8=",
+    version = "v1.0.0",
 )
 
 go_repository(
@@ -816,8 +816,8 @@ go_repository(
 go_repository(
     name = "io_k8s_utils",
     importpath = "k8s.io/utils",
-    sum = "h1:5UOdmwfY+7XsXvo26XeCDu9GhHJPkO1z8Mcz5AHMnOE=",
-    version = "v0.0.0-20190529001817-6999998975a7",
+    sum = "h1:BXSmdH6S3YGLlhC89DZp+sNdYSmwNeDU6Xu5ZpzGOlM=",
+    version = "v0.0.0-20190923111123-69764acb6e8e",
 )
 
 go_repository(
@@ -1395,4 +1395,11 @@ go_repository(
     importpath = "github.com/howeyc/gopass",
     sum = "h1:aY2hhxLhjEAbfXOx2nRJxCXezC6CO2V/yN+OCr1srtk=",
     version = "v0.0.0-20190910152052-7cb4b85ec19c",
+)
+
+go_repository(
+    name = "com_github_go_logr_logr",
+    importpath = "github.com/go-logr/logr",
+    sum = "h1:M1Tv3VzNlEHg6uyACnRdtrploV2P7wZqH8BoQMtz0cg=",
+    version = "v0.1.0",
 )

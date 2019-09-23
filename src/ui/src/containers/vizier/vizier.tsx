@@ -98,7 +98,7 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
                 return `Error! ${error.message}`;
               }
 
-              if (data.cluster.status !== 'VZ_ST_DISCONNECTED') {
+              if (data.cluster.status !== 'VZ_ST_DISCONNECTED' && data.cluster.status !== 'VZ_ST_UNHEALTHY') {
                 return (
                   <div className='vizier'>
                     <SidebarNav

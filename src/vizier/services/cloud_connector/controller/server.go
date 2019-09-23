@@ -99,7 +99,7 @@ func wrapRequest(p *types.Any, topic string) *vzconnpb.CloudConnectRequest {
 func (s *Server) RegisterVizier(stream vzconnpb.VZConnService_CloudConnectClient) error {
 	addr, err := s.vzInfo.GetAddress()
 	if err != nil {
-		return err
+		log.WithError(err).Info("Unable to get vizier proxy address")
 	}
 
 	// Send over a registration request and wait for ACK.
@@ -163,7 +163,7 @@ func (s *Server) doHeartbeats(stream vzconnpb.VZConnService_CloudConnectClient) 
 func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClient) {
 	addr, err := s.vzInfo.GetAddress()
 	if err != nil {
-		log.WithError(err).Fatal("Could not get address")
+		log.WithError(err).Info("Unable to get vizier proxy address")
 	}
 
 	hbMsg := cloudpb.VizierHeartbeat{
