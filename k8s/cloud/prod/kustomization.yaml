@@ -17,6 +17,8 @@ replicas:
 - name: vzmgr-server
   count: 3
 resources:
+- cloud_proxy_backend_config.yaml
+- vzconn_backend_config.yaml
 - ../base
 - cloud_ingress.yaml
 patchesStrategicMerge:
@@ -25,6 +27,7 @@ patchesStrategicMerge:
   - service_config.yaml
   - domain_config.yaml
   - cloud_proxy_service_np.yaml
+  - vzconn_service_be_config.yaml
 patches:
   - path: db_sidecar.yaml
     target:

@@ -1,0 +1,9 @@
+apiVersion: cloud.google.com/v1beta1
+kind: BackendConfig
+metadata:
+  name: vzconn-backend-config
+spec:
+  # This means that our streams will timeout after 1hr.
+  timeoutSec: 3600
+  cdn:
+    enabled: false

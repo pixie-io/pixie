@@ -5,6 +5,7 @@ metadata:
   annotations:
     cloud.google.com/app-protocols: '{"tcp-https":"HTTPS"}'
     cloud.google.com/load-balancer-type: external
+    beta.cloud.google.com/backend-config: '{"ports": {"443":"cloud-proxy-backend-config"}}'
 spec:
   type: NodePort
   ports:
