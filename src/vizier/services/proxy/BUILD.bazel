@@ -8,18 +8,11 @@ container_layer(
     files = ["default.conf"],
 )
 
-container_layer(
-    name = "ui_assets",
-    directory = "/assets",
-    tars = ["//src/ui:bundle.tar.gz"],
-)
-
 container_image(
     name = "proxy_server_prod_image",
     base = "@nginx_base//image",
     layers = [
         ":conf",
-        ":ui_assets",
     ],
     visibility = ["//visibility:public"],
 )
