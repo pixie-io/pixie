@@ -181,7 +181,7 @@ class GRPCTraceGoDisabledThroughFlagTest : public GRPCTraceGoTest {
   }
 };
 
-TEST_F(GRPCTraceGoDisabledThroughFlagTest, NoDataCaptured) {
+TEST_F(GRPCTraceGoDisabledThroughFlagTest, DISABLED_NoDataCaptured) {
   SubProcess c({kClientPath, "-name=PixieLabs", "-once"});
   EXPECT_OK(c.Start());
 
