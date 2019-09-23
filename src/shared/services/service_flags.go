@@ -33,8 +33,7 @@ func SetupCommonFlags() {
 // SetupService configures basic flags and defaults required by all services.
 func SetupService(serviceName string, servicePortBase uint) {
 	commonSetup.Do(setupCommonFlags)
-	pflag.Uint("grpc_port", servicePortBase, fmt.Sprintf("The port to run the %s GRPC server", serviceName))
-	pflag.Uint("http_port", servicePortBase+1, fmt.Sprintf("The port to run the %s HTTP server", serviceName))
+	pflag.Uint("http2_port", servicePortBase, fmt.Sprintf("The port to run the %s HTTP/2 server", serviceName))
 	pflag.String("server_tls_key", "../certs/server.key", "The TLS key to use.")
 	pflag.String("server_tls_cert", "../certs/server.crt", "The TLS certificate to use.")
 }

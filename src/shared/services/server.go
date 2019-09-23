@@ -8,9 +8,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 
@@ -19,6 +23,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
+
+func isGrpcRequest(r *http.Request) bool {
+	return r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc")
+}
+
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "ok")
+}
 
 // PLServer is the services server component used across all Pixie Labs services.
 // It starts both an HTTP and a GRPC server and handles middelware and env injection.
@@ -46,28 +58,14 @@ func (s *PLServer) GRPCServer() *grpc.Server {
 	return s.grpcServer
 }
 
-func (s *PLServer) serveGRPC() {
+func (s *PLServer) serveHTTP2() {
 	s.wg.Add(1)
 	defer s.wg.Done()
-
-	serverAddr := fmt.Sprintf(":%d", viper.GetInt("grpc_port"))
-	log.WithField("addr", serverAddr).Infof("Starting GRPC server")
-	lis, _ := net.Listen("tcp", serverAddr)
-
 	// Register GRPC reflection.
 	reflection.Register(s.grpcServer)
-	if err := s.grpcServer.Serve(lis); err != nil {
-		log.WithError(err).Fatal("Failed to serve GRPC.")
-	}
-	log.Info("GRPC server stopped.")
-}
 
-func (s *PLServer) serveHTTP() {
 	sslEnabled := !viper.GetBool("disable_ssl")
-	s.wg.Add(1)
-	defer s.wg.Done()
 	var tlsConfig *tls.Config
-
 	if sslEnabled {
 		var err error
 		tlsConfig, err = DefaultServerTLSConfig()
@@ -75,40 +73,44 @@ func (s *PLServer) serveHTTP() {
 			log.WithError(err).Fatal("Failed to load default server TLS config")
 		}
 	}
-
-	wrappedHandler := HTTPLoggingMiddleware(s.httpHandler)
-	serverAddr := fmt.Sprintf(":%d", viper.GetInt("http_port"))
-	log.WithField("addr", serverAddr).Print("Starting HTTP server")
+	serverAddr := fmt.Sprintf(":%d", viper.GetInt("http2_port"))
+	// If it's a GRPC request we use the GRPC handler, otherwise forward to the regular HTTP(/2) handler.
+	muxHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isGrpcRequest(r) {
+			s.grpcServer.ServeHTTP(w, r)
+			return
+		}
+		s.httpHandler.ServeHTTP(w, r)
+	})
 	server := &http.Server{
 		Addr:           serverAddr,
-		Handler:        wrappedHandler,
+		Handler:        h2c.NewHandler(muxHandler, &http2.Server{}),
 		TLSConfig:      tlsConfig,
 		ReadTimeout:    1800 * time.Second,
 		WriteTimeout:   1800 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
+
 	lis, err := net.Listen("tcp", serverAddr)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to listen")
+		log.WithError(err).Fatal("Failed to listen (grpc)")
 	}
-	s.httpServer = server
 	if sslEnabled {
 		lis = tls.NewListener(lis, server.TLSConfig)
 	}
 	if err := server.Serve(lis); err != nil {
 		// Check for graceful termination.
 		if err != http.ErrServerClosed {
-			log.WithError(err).Fatal("Failed to run HTTP server")
+			log.WithError(err).Fatal("Failed to run GRPC server")
 		}
 	}
-	log.Info("HTTP server stopped.")
+	log.Info("HTTP/2 server stopped.")
 }
 
 // Start runs the services in go routines. It returns immediately.
 // On error in starting services the program will terminate.
 func (s *PLServer) Start() {
-	go s.serveHTTP()
-	go s.serveGRPC()
+	go s.serveHTTP2()
 }
 
 // Stop will gracefully shutdown underlying GRPC and HTTP servers.

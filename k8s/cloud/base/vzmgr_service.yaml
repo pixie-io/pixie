@@ -8,10 +8,6 @@ spec:
     - port: 51800
       protocol: TCP
       targetPort: 51800
-      name: tcp-grpc
-    - port: 51801
-      protocol: TCP
-      targetPort: 51801
-      name: tcp-rest
+      name: tcp-http2
   selector:
     name: vzmgr-server

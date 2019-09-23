@@ -20,8 +20,6 @@ spec:
         ports:
           - containerPort: 50200
             hostPort: 50200
-          - containerPort: 50201
-            hostPort: 50201
         env:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:

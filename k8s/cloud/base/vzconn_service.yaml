@@ -10,10 +10,6 @@ spec:
     - port: 51600
       protocol: TCP
       targetPort: 51600
-      name: tcp-grpc
-    - port: 51601
-      protocol: TCP
-      targetPort: 51601
-      name: tcp-rest
+      name: tcp-http2
   selector:
     name: vzconn-server

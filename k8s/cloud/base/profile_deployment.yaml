@@ -18,12 +18,11 @@ spec:
         image: gcr.io/pl-dev-infra/cloud/profile_server_image:latest
         ports:
           - containerPort: 51500
-          - containerPort: 51501
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
-            port: 51501
+            port: 51500
         envFrom:
           - configMapRef:
               name: pl-db-config

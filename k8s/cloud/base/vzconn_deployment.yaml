@@ -16,12 +16,11 @@ spec:
         image: gcr.io/pl-dev-infra/cloud/vzconn_server_image:latest
         ports:
           - containerPort: 51600
-          - containerPort: 51601
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
-            port: 51601
+            port: 51600
         envFrom:
           - configMapRef:
               name: pl-db-config

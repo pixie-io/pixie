@@ -18,8 +18,6 @@ spec:
         ports:
           - containerPort: 50800
             hostPort: 50800
-          - containerPort: 50801
-            hostPort: 50801
         envFrom:
           - configMapRef:
               name: pl-cloud-config

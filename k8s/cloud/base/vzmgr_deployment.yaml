@@ -18,12 +18,11 @@ spec:
         image: gcr.io/pl-dev-infra/cloud/vzmgr_server_image:latest
         ports:
           - containerPort: 51800
-          - containerPort: 51801
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
-            port: 51801
+            port: 51800
         envFrom:
           - configMapRef:
               name: pl-db-config

@@ -8,10 +8,6 @@ spec:
     - port: 50300
       protocol: TCP
       targetPort: 50300
-      name: tcp-grpc
-    - port: 50301
-      protocol: TCP
-      targetPort: 50301
-      name: tcp-rest
+      name: tcp-http2
   selector:
     name: site-manager-server

@@ -8,10 +8,6 @@ spec:
     - port: 51200
       protocol: TCP
       targetPort: 51200
-      name: tcp-grpc
-    - port: 51201
-      protocol: TCP
-      targetPort: 51201
-      name: tcp-rest
+      name: tcp-http2
   selector:
     name: api-server

@@ -8,10 +8,6 @@ spec:
     - port: 50200
       protocol: TCP
       targetPort: 50200
-      name: tcp-grpc
-    - port: 50201
-      protocol: TCP
-      targetPort: 50201
-      name: tcp-rest
+      name: tcp-http2
   selector:
     name: vizier-api

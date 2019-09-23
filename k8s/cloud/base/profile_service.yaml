@@ -8,10 +8,6 @@ spec:
     - port: 51500
       protocol: TCP
       targetPort: 51500
-      name: tcp-grpc
-    - port: 51501
-      protocol: TCP
-      targetPort: 51501
-      name: tcp-rest
+      name: tcp-http2
   selector:
     name: profile-server

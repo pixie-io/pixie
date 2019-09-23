@@ -18,12 +18,11 @@ spec:
         image: gcr.io/pl-dev-infra/cloud/site_manager_server_image:latest
         ports:
           - containerPort: 50300
-          - containerPort: 50301
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
-            port: 50301
+            port: 50300
         envFrom:
           - configMapRef:
               name: pl-db-config

@@ -8,10 +8,6 @@ spec:
     - port: 50100
       protocol: TCP
       targetPort: 50100
-      name: tcp-grpc
-    - port: 50101
-      protocol: TCP
-      targetPort: 50101
-      name: tcp-rest
+      name: tcp-http2
   selector:
     name: auth-server

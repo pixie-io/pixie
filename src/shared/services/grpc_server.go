@@ -15,7 +15,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
@@ -50,25 +49,6 @@ func createGRPCAuthFunc(env env.Env) func(context.Context) (context.Context, err
 
 // CreateGRPCServer creates a GRPC server with default middleware for our services.
 func CreateGRPCServer(env env.Env) *grpc.Server {
-	var tlsOpts grpc.ServerOption
-	if !viper.GetBool("disable_ssl") && !viper.GetBool("server_side_tls") {
-		tlsConfig, err := DefaultServerTLSConfig()
-		if err != nil {
-			log.WithError(err).Fatal("Failed to load default server TLS config")
-		}
-		creds := credentials.NewTLS(tlsConfig)
-		tlsOpts = grpc.Creds(creds)
-	} else if !viper.GetBool("disable_ssl") && viper.GetBool("server_side_tls") {
-		tlsCert := viper.GetString("server_tls_cert")
-		tlsKey := viper.GetString("server_tls_key")
-
-		creds, err := credentials.NewServerTLSFromFile(tlsCert, tlsKey)
-		if err != nil {
-			log.WithError(err).Fatal("could not create server-side TLS credentials")
-		}
-		tlsOpts = grpc.Creds(creds)
-	}
-
 	logrusEntry := log.NewEntry(log.StandardLogger())
 	logrusOpts := []grpc_logrus.Option{
 		grpc_logrus.WithDurationField(func(duration time.Duration) (key string, value interface{}) {
@@ -83,9 +63,7 @@ func CreateGRPCServer(env env.Env) *grpc.Server {
 			grpc_logrus.UnaryServerInterceptor(logrusEntry, logrusOpts...),
 			grpc_auth.UnaryServerInterceptor(createGRPCAuthFunc(env)),
 		)}
-	if !viper.GetBool("disable_ssl") {
-		opts = append(opts, tlsOpts)
-	}
+
 	grpcServer := grpc.NewServer(opts...)
 	return grpcServer
 }
