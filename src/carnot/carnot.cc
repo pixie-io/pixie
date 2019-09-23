@@ -246,8 +246,8 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   // Compile time is not set for ExecutePlan.
   int64_t compile_time_ns = 0;
   // Get the output table names from the plan.
-  return CarnotQueryResult(output_tables, rows_processed, bytes_processed, compile_time_ns,
-                           exec_time_ns);
+  return CarnotQueryResult{output_tables, rows_processed, bytes_processed, compile_time_ns,
+                           exec_time_ns};
 }
 
 StatusOr<std::unique_ptr<Carnot>> Carnot::Create(

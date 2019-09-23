@@ -17,14 +17,6 @@ namespace pl {
 namespace carnot {
 
 struct CarnotQueryResult {
-  CarnotQueryResult() = default;
-  explicit CarnotQueryResult(std::vector<table_store::Table*> output_tables, int64_t rows_processed,
-                             int64_t bytes_processed, int64_t compile_time_ns, int64_t exec_time_ns)
-      : output_tables_(std::move(output_tables)),
-        rows_processed(rows_processed),
-        bytes_processed(bytes_processed),
-        compile_time_ns(compile_time_ns),
-        exec_time_ns(exec_time_ns) {}
   size_t NumTables() const { return output_tables_.size(); }
   table_store::Table* GetTable(int64_t i) const { return output_tables_[i]; }
   /**
