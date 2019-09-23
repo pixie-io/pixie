@@ -82,15 +82,16 @@ func (s *PLServer) serveHTTP2() {
 		}
 		s.httpHandler.ServeHTTP(w, r)
 	})
+	wrappedHandler := HTTPLoggingMiddleware(muxHandler)
 	server := &http.Server{
 		Addr:           serverAddr,
-		Handler:        h2c.NewHandler(muxHandler, &http2.Server{}),
+		Handler:        h2c.NewHandler(wrappedHandler, &http2.Server{}),
 		TLSConfig:      tlsConfig,
 		ReadTimeout:    1800 * time.Second,
 		WriteTimeout:   1800 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-
+	log.WithField("addr", serverAddr).Print("Starting HTTP/2 server")
 	lis, err := net.Listen("tcp", serverAddr)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to listen (grpc)")
