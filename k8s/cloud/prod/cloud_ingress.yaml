@@ -10,6 +10,10 @@ spec:
   rules:
   - http:
       paths:
+      - path: /pl.services.VZConnService/*
+        backend:
+          serviceName: vzconn-service
+          servicePort: 51600
       - path: /*
         backend:
           serviceName: cloud-proxy-service
