@@ -3,5 +3,5 @@ kind: Service
 metadata:
   name: vzconn-service
   annotations:
-    cloud.google.com/app-protocols: '{"tcp-grpc":"HTTP2"}'
+    cloud.google.com/app-protocols: '{"tcp-http2":"HTTP2"}'
     beta.cloud.google.com/backend-config: '{"ports": {"51600":"vzconn-backend-config"}}'

@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: vzconn-service
   annotations:
-    cloud.google.com/app-protocols: '{"tcp-grpc":"HTTP2"}'
+    cloud.google.com/app-protocols: '{"tcp-http2":"HTTP2"}'
 spec:
   type: NodePort
   ports:
