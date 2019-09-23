@@ -7,6 +7,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
+#include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/info_class_manager.h"
@@ -21,12 +22,6 @@
  */
 
 namespace pl {
-
-namespace md {
-// Forward declaring AgentMetadataState to remove dependence on metadata headers.
-class AgentMetadataState;
-}  // namespace md
-
 namespace stirling {
 
 class InfoClassManager;

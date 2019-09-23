@@ -13,14 +13,12 @@
 #include <functional>
 
 #include "src/common/base/base.h"
+#include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
-namespace md {
-class AgentMetadataState;
-}
 namespace carnot {
 namespace udf {
 

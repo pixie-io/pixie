@@ -13,6 +13,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnotpb/carnot.pb.h"
 #include "src/common/base/base.h"
+#include "src/shared/metadata/metadata_state.h"
 #include "src/table_store/table/table_store.h"
 
 PL_SUPPRESS_WARNINGS_START()
@@ -23,9 +24,6 @@ PL_SUPPRESS_WARNINGS_START()
 PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
-namespace md {
-class AgentMetadataState;
-}
 namespace carnot {
 namespace exec {
 

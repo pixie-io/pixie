@@ -7,17 +7,12 @@
 #include <utility>
 #include <vector>
 
+#include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
 #include "src/stirling/proto/stirling.pb.h"
 
 namespace pl {
-
-namespace md {
-// Forward declaring AgentMetadataState to remove dependence on metadata headers.
-class AgentMetadataState;
-}  // namespace md
-
 namespace stirling {
 
 using ArrowArrayBuilderUPtrVec = std::vector<std::unique_ptr<arrow::ArrayBuilder>>;
