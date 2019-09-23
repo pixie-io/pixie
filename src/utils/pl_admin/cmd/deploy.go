@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"pixielabs.ai/pixielabs/src/utils/pl_admin/cmd/certs"
 	"pixielabs.ai/pixielabs/src/utils/pl_admin/cmd/k8s"
 )
 
@@ -45,6 +46,9 @@ func NewCmdDeploy() *cobra.Command {
 			cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
 
 			optionallyCreateNamespace(clientset, namespace)
+
+			// Install certs.
+			optionallyInstallCerts(clientset, namespace)
 
 			if credsFile != "" {
 				secretName, _ := cmd.Flags().GetString("secret_name")
@@ -90,6 +94,14 @@ func NewCmdDeploy() *cobra.Command {
 				"jwt-signing-key": fmt.Sprintf("%x", jwtSigningKey),
 			})
 		},
+	}
+}
+
+func optionallyInstallCerts(clientset *kubernetes.Clientset, namespace string) {
+	secret := k8s.GetSecret(clientset, namespace, "service-tls-certs")
+	// Check if secrets already exist. If not, then create them.
+	if secret == nil {
+		certs.DefaultInstallCerts(namespace, clientset)
 	}
 }
 

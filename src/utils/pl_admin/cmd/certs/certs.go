@@ -16,6 +16,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 
 	"pixielabs.ai/pixielabs/src/utils/pl_admin/cmd/k8s"
 )
@@ -126,8 +127,12 @@ func generateCerts(certPath string, caCertPath string, caKeyPath string, bitsize
 	generateCertificate(certPath, "client", ca, caKey, bitsize)
 }
 
-// InstallCerts generates the necessary certs and installs them in kubernetes.
-func InstallCerts(certPath string, caCertPath string, caKeyPath string, namespace string, bitsize int) {
+// DefaultInstallCerts installs certs using the default options.
+func DefaultInstallCerts(namespace string, clientset *kubernetes.Clientset) {
+	installCertsUsingClientset("", "", "", namespace, 4096, clientset)
+}
+
+func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath string, namespace string, bitsize int, clientset *kubernetes.Clientset) {
 	var err error
 
 	deleteCerts := false
@@ -157,10 +162,6 @@ func InstallCerts(certPath string, caCertPath string, caKeyPath string, namespac
 	}
 	clientKey := path.Join(certPath, "client.key")
 	clientCert := path.Join(certPath, "client.crt")
-
-	// Authenticate with k8s cluster.
-	config := k8s.GetConfig()
-	clientset := k8s.GetClientset(config)
 
 	// Delete secrets in k8s.
 	k8s.DeleteSecret(clientset, namespace, "proxy-tls-certs")
@@ -197,4 +198,13 @@ func InstallCerts(certPath string, caCertPath string, caKeyPath string, namespac
 		"server.crt":    serverCert,
 		"server-ca.crt": caCert,
 	})
+}
+
+// InstallCerts generates the necessary certs and installs them in kubernetes.
+func InstallCerts(certPath string, caCertPath string, caKeyPath string, namespace string, bitsize int) {
+	// Authenticate with k8s cluster.
+	config := k8s.GetConfig()
+	clientset := k8s.GetClientset(config)
+
+	installCertsUsingClientset(certPath, caCertPath, caKeyPath, namespace, bitsize, clientset)
 }

@@ -30,6 +30,7 @@ func GetSecret(clientset *kubernetes.Clientset, namespace, name string) *v1.Secr
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		log.WithError(err).Debug("could not get secret")
+		return nil
 	}
 
 	return secret
