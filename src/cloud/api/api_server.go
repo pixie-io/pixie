@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -61,6 +62,9 @@ func main() {
 	// is available for registration. This need to be unauthenticated because we need to check this before
 	// the user registers.
 	mux.Handle("/api/site/check", http.HandlerFunc(csh.HandlerFunc))
+	mux.Handle("/api/authorized", controller.WithAugmentedAuthMiddleware(env, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "OK")
+	})))
 	mux.Handle("/api/graphql",
 		controller.WithAugmentedAuthMiddleware(env,
 			controller.NewGraphQLHandler(env)))
