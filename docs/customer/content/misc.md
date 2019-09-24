@@ -4,4 +4,6 @@ metaTitle: "Misc | Pixie"
 metaDescription: "How to Install ..."
 ---
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+This section details all the supporting information you need to feel safe about using Pixie to monitor your applications.
+
+The content for this section isn't read yet but we're working on it. Coming soon!

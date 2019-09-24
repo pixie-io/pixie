@@ -4,4 +4,4 @@ metaTitle: "Tutorials | Pixie"
 metaDescription: "Pixie is ..."
 ---
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+This section includes guides and tutorials to help you learn how to get the most out of Pixie.

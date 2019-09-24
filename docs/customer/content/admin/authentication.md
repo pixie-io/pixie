@@ -21,7 +21,7 @@ During deployment of Alpha and Beta releases, Admins will be required to self-ce
 
 The self-verification will include the following steps: 
 - Open your browsers' developer tools console.
-- Locate errors related to accessing the a specific URL.
+- Locate errors related to accessing the URL: `<IP>/graphql`.
 - Open the URL in a new tab, which should ask you to validate the certificates.
 - Validate the certificate and close the tab. 
 - The Pixie Console page should then be fully functional. 

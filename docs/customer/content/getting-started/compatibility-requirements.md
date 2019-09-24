@@ -43,10 +43,10 @@ Pixie is designed for Linux environments on Kubernetes clusters.
 ## Requirements
 
 #### Memory Requirements
-|                       | Minimum   | Notes     |
-| :-------------------  | :-------- | :------   |
-| Pixie Edge Module     | 500Mi     | 2GiB      |
-| Pixie Command Module  | 2GiB      | 8GiB+     |
+|                       | Minimum   | Notes            |
+| :-------------------  | :-------- | :--------------- |
+| Pixie Edge Module     | 500Mi     | 2GiB  preferred  |
+| Pixie Command Module  | 2GiB      | 8GiB+ preferred  |
 
 #### CPU Requirements
-We recommend configuring CPU limits for both the Pixie Edge Module and Pixie Command Module to be with 5% of the node's allocated CPU capacity. 
+We recommend configuring CPU limits for both the Pixie Edge Module and Pixie Command Module to be with 5% of the node's allocated CPU capacity.

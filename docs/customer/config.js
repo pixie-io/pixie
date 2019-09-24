@@ -23,6 +23,9 @@ const config = {
              '/admin',
              '/installation',
              '/user-guides',
+             '/user-guides/query-language-overview',
+             '/user-guides/common-queries',
+             '/user-guides/guided-install',
         ],
         links: [
             { text: '', link: ''},
