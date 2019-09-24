@@ -12,6 +12,11 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 )
 
+var emailDomainWhitelist = map[string]bool{
+	"hulu.com":         true,
+	"thousandeyes.com": true,
+}
+
 // CreateSiteHandler creates a new user/org and registers the site.
 func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
 	if r.Method != http.MethodPost {
@@ -45,7 +50,12 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	if len(emailComponents) != 2 {
 		return handler.NewStatusError(http.StatusBadRequest, "failed to parse request")
 	}
-	domainName := emailComponents[1]
+	// If the user is not part of a whitelisted org, we should create an individual org
+	// for them.
+	domainName := params.UserEmail
+	if _, exists := emailDomainWhitelist[emailComponents[1]]; exists {
+		domainName = emailComponents[1]
+	}
 
 	rpcReq := &authpb.CreateUserOrgRequest{
 		AccessToken: params.AccessToken,

@@ -29,14 +29,75 @@ func TestCreateSiteHandler(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@def.com\", \"domainName\": \"def\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"domainName\": \"def\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.CreateUserOrgRequest{
 		AccessToken: "the-token",
-		UserEmail:   "abc@def.com",
-		DomainName:  "def.com",
-		OrgName:     "def.com",
+		UserEmail:   "abc@hulu.com",
+		DomainName:  "hulu.com",
+		OrgName:     "hulu.com",
+	}
+	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
+	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
+	createUserOrgReply := &authpb.CreateUserOrgResponse{
+		Token:     testReplyToken,
+		ExpiresAt: testTokenExpiry,
+		OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
+		UserID:    &uuidpb.UUID{Data: []byte(userID)},
+	}
+	mockAuthClient.EXPECT().CreateUserOrg(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.CreateUserOrgRequest) {
+		assert.Equal(t, "the-token", in.AccessToken)
+	}).Return(createUserOrgReply, nil)
+
+	expectedSiteManagerReq := &sitemanagerpb.RegisterSiteRequest{
+		DomainName: "def",
+		OrgID:      &uuidpb.UUID{Data: []byte(orgID)},
+	}
+	registerSiteResponse := &sitemanagerpb.RegisterSiteResponse{
+		SiteRegistered: true,
+	}
+	mockSiteManagerClient.EXPECT().RegisterSite(gomock.Any(), expectedSiteManagerReq).Return(registerSiteResponse, nil)
+
+	rr := httptest.NewRecorder()
+	h := handler.New(env, controller.CreateSiteHandler)
+	h.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var parsedResponse struct {
+		Token     string
+		ExpiresAt int64
+	}
+	err = json.NewDecoder(rr.Body).Decode(&parsedResponse)
+	assert.Nil(t, err)
+	assert.Equal(t, testReplyToken, parsedResponse.Token)
+	assert.Equal(t, testTokenExpiry, parsedResponse.ExpiresAt)
+
+	// Check the token in the cookie.
+	rawCookies := rr.Header().Get("Set-Cookie")
+	header := http.Header{}
+	header.Add("Cookie", rawCookies)
+	req2 := http.Request{Header: header}
+	sess, err := controller.GetDefaultSession(env, &req2)
+	assert.Equal(t, testReplyToken, sess.Values["_at"])
+}
+
+func TestCreateSiteHandler_IndividualDomain(t *testing.T) {
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+	env, mockAuthClient, mockSiteManagerClient, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+
+	req, err := http.NewRequest("POST", "/api/create-site",
+		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@gmail.com\", \"domainName\": \"def\"}"))
+	assert.Nil(t, err)
+
+	expectedAuthServiceReq := &authpb.CreateUserOrgRequest{
+		AccessToken: "the-token",
+		UserEmail:   "abc@gmail.com",
+		DomainName:  "abc@gmail.com",
+		OrgName:     "abc@gmail.com",
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
@@ -114,14 +175,14 @@ func TestCreateSiteHandler_UserCreationError(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@def.com\", \"domainName\": \"def\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"domainName\": \"def\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.CreateUserOrgRequest{
 		AccessToken: "the-token",
-		UserEmail:   "abc@def.com",
-		DomainName:  "def.com",
-		OrgName:     "def.com",
+		UserEmail:   "abc@hulu.com",
+		DomainName:  "hulu.com",
+		OrgName:     "hulu.com",
 	}
 
 	mockAuthClient.EXPECT().CreateUserOrg(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.CreateUserOrgRequest) {
@@ -143,14 +204,14 @@ func TestCreateSiteHandler_SiteCreationError(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@def.com\", \"domainName\": \"def\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"domainName\": \"def\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.CreateUserOrgRequest{
 		AccessToken: "the-token",
-		UserEmail:   "abc@def.com",
-		DomainName:  "def.com",
-		OrgName:     "def.com",
+		UserEmail:   "abc@hulu.com",
+		DomainName:  "hulu.com",
+		OrgName:     "hulu.com",
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
@@ -185,14 +246,14 @@ func TestCreateSiteHandler_SiteCreationFailed(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@def.com\", \"domainName\": \"def\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"domainName\": \"def\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.CreateUserOrgRequest{
 		AccessToken: "the-token",
-		UserEmail:   "abc@def.com",
-		DomainName:  "def.com",
-		OrgName:     "def.com",
+		UserEmail:   "abc@hulu.com",
+		DomainName:  "hulu.com",
+		OrgName:     "hulu.com",
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()

@@ -127,11 +127,25 @@ func TestServer_CreateUser(t *testing.T) {
 				Username:  "foobar",
 				FirstName: "foo",
 				LastName:  "bar",
-				Email:     "foo@gmail.com",
+				Email:     "foo@blacklist.com",
 			},
 			expectErr:  true,
 			expectCode: codes.InvalidArgument,
 			respID:     nil,
+		},
+		{
+			name:      "allowed email",
+			makesCall: true,
+			userInfo: &profile.CreateUserRequest{
+				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
+				Username:  "foobar",
+				FirstName: "foo",
+				LastName:  "bar",
+				Email:     "foo@gmail.com",
+			},
+			expectErr:  false,
+			expectCode: codes.OK,
+			respID:     utils.ProtoFromUUID(&testUUID),
 		},
 		{
 			name:      "invalid email",
@@ -382,11 +396,32 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 					Username:  "foobar",
 					FirstName: "foo",
 					LastName:  "bar",
-					Email:     "foo@gmail.com",
+					Email:     "foo@blacklist.com",
 				},
 			},
 			expectErr:  true,
 			expectCode: codes.InvalidArgument,
+		},
+		{
+			name:      "allowed email",
+			makesCall: true,
+			req: &profile.CreateOrgAndUserRequest{
+				Org: &profile.CreateOrgAndUserRequest_Org{
+					OrgName:    "hulu",
+					DomainName: "hulu.com",
+				},
+				User: &profile.CreateOrgAndUserRequest_User{
+					Username:  "foobar",
+					FirstName: "foo",
+					LastName:  "bar",
+					Email:     "foo@gmail.com",
+				},
+			},
+			expectErr: false,
+			resp: &profile.CreateOrgAndUserResponse{
+				OrgID:  utils.ProtoFromUUID(&testOrgUUID),
+				UserID: utils.ProtoFromUUID(&testUUID),
+			},
 		},
 	}
 

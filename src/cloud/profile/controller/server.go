@@ -18,8 +18,7 @@ import (
 )
 
 var emailDomainBlacklist = map[string]bool{
-	"gmail.com": true,
-	"yahoo.com": true,
+	"blacklist.com": true,
 }
 
 // Datastore is the interface used to the backing store for profile information.
