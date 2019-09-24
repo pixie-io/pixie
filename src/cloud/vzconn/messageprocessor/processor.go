@@ -186,7 +186,11 @@ func (m *MessageProcessor) Run() error {
 
 // Stop closes the message processor.
 func (m *MessageProcessor) Stop() {
-	close(m.quitCh)
+	log.Info("Stop called")
+	if m.quitCh != nil {
+		close(m.quitCh)
+	}
+	m.quitCh = nil
 }
 
 func (m *MessageProcessor) sendMessage(msg *vzconnpb.CloudConnectResponse, err error) {
