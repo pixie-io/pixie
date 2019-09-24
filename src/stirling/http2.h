@@ -76,12 +76,12 @@ struct Frame {
   // TODO(yzhao): Consider use std::unique_ptr<nghttp2_frame> to avoid copy.
   nghttp2_frame frame;
   u8string u8payload;
-  // TODO(yzhao): This will be landed in D1081. Add this to make build pass. Will land only after
-  // D1081.
   uint64_t timestamp_ns;
 
   // If true, means this frame is processed and can be destroyed.
   mutable bool consumed = false;
+
+  size_t ByteSize() const { return sizeof(Frame) + u8payload.size(); }
 };
 
 // TODO(yzhao): Move ParseState inside http_parse.h to utils/parse_state.h; and then use it as

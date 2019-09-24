@@ -14,6 +14,8 @@
 #include "src/stirling/mysql_parse.h"
 #include "src/stirling/socket_trace.h"
 
+DECLARE_uint32(messages_size_limit_bytes);
+
 namespace pl {
 namespace stirling {
 
@@ -103,7 +105,10 @@ class DataStream {
    *
    * @return true if DataStream is stuck.
    */
-  bool IsStuck() const { return stuck_count_ != 0; }
+  bool IsStuck() const {
+    constexpr int kMaxStuckCount = 3;
+    return stuck_count_ > kMaxStuckCount;
+  }
 
   /**
    * @brief Checks if the DataStream is at end-of-stream (EOS), which means that we
@@ -121,6 +126,35 @@ class DataStream {
       inflater_ = std::make_unique<http2::Inflater>();
     }
     return inflater_.get();
+  }
+
+  /**
+   * @brief Cleanup messages that are parsed from the BPF events, when the condition is right.
+   */
+  template <typename TMessageType>
+  void CleanupMessages() {
+    size_t size = 0;
+    // TODO(yzhao): Consider put the size computation into a member function of DataStream.
+    for (const auto& msg : Messages<TMessageType>()) {
+      size += msg.ByteSize();
+    }
+    if (size > FLAGS_messages_size_limit_bytes) {
+      LOG(WARNING) << absl::Substitute(
+          "Messages are cleared, because their size $0 is larger than the specified limit $1.",
+          size, FLAGS_messages_size_limit_bytes);
+      Messages<TMessageType>().clear();
+    }
+  }
+
+  /**
+   * @brief Cleanup BPF events that are not able to be be processed.
+   */
+  void CleanupEvents() {
+    if (IsStuck()) {
+      // We are assuming that when this stream is stuck, the messages previously parsed are unlikely
+      // to be useful, as they are even older than the events being purged now.
+      Reset();
+    }
   }
 
  private:
@@ -161,7 +195,7 @@ class DataStream {
 
   // Number of consecutive calls to ExtractMessages(), where there are a non-zero number of events,
   // but no parsed messages are produced.
-  int64_t stuck_count_ = 0;
+  int stuck_count_ = 0;
 
   // A copy of the parse state from the last call to ExtractMessages().
   ParseState last_parse_state_ = ParseState::kInvalid;
@@ -460,6 +494,15 @@ class ConnectionTracker {
   template <class TStateType>
   TStateType* state() const {
     return std::get<std::unique_ptr<TStateType>>(state_).get();
+  }
+
+  template <typename TMessageType>
+  void Cleanup() {
+    send_data_.CleanupMessages<TMessageType>();
+    recv_data_.CleanupMessages<TMessageType>();
+
+    send_data_.CleanupEvents();
+    recv_data_.CleanupEvents();
   }
 
  private:

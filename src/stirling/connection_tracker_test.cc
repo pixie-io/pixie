@@ -703,6 +703,89 @@ TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
   EXPECT_THAT(req_resp_pairs, SizeIs(1));
 }
 
+// TODO(yzhao): Add the same test for HTTPMessage.
+TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedupAfterBreakingSizeLimit) {
+  FLAGS_messages_size_limit_bytes = 10000;
+  ConnectionTracker tracker;
+
+  auto frame0 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
+  auto frame1 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+
+  auto frame2 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
+  auto frame3 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+
+  tracker.AddDataEvent(std::move(frame0));
+  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  EXPECT_THAT(tracker.resp_messages<http2::Frame>(), SizeIs(1));
+
+  // Set to 0 so it can expire immediately.
+  FLAGS_messages_size_limit_bytes = 0;
+
+  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  EXPECT_THAT(tracker.resp_messages<http2::Frame>(), IsEmpty());
+
+  FLAGS_messages_size_limit_bytes = 10000;
+  tracker.AddDataEvent(std::move(frame1));
+  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  EXPECT_THAT(tracker.req_messages<http2::Frame>(), SizeIs(1));
+
+  FLAGS_messages_size_limit_bytes = 0;
+  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  // Ditto.
+  EXPECT_THAT(tracker.req_messages<http2::Frame>(), IsEmpty());
+
+  // Add a call to make sure things do not go haywire after resetting stream.
+  tracker.AddDataEvent(std::move(frame2));
+  tracker.AddDataEvent(std::move(frame3));
+  auto req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  // These 2 messages forms a matching req & resp.
+  EXPECT_THAT(req_resp_pairs, SizeIs(1));
+}
+
+TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
+  // Intentionally use non-HTTP data so make it stuck.
+  auto frame0 = InitSendEvent("aaaaaaaaa");
+  auto frame1 = InitSendEvent("aaaaaaaaa");
+  auto frame2 = InitRecvEvent("bbbbbbbbb");
+  auto frame3 = InitRecvEvent("bbbbbbbbb");
+
+  ConnectionTracker tracker;
+  {
+    tracker.AddDataEvent(std::move(frame0));
+    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
+    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
+    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
+
+    // The 4th time, the stuck is detected and data are purged.
+    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    EXPECT_TRUE(tracker.req_data()->Empty<http::HTTPMessage>());
+
+    // Now the stuck count is reset, so the event is kept.
+    tracker.AddDataEvent(std::move(frame1));
+    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
+  }
+  {
+    tracker.AddDataEvent(std::move(frame2));
+    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
+    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
+    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
+
+    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    EXPECT_TRUE(tracker.resp_data()->Empty<http::HTTPMessage>());
+
+    tracker.AddDataEvent(std::move(frame3));
+    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
+  }
+}
+
 TEST(DataStreamTest, CannotSwitchType) {
   DataStream stream;
   stream.ExtractMessages<http::HTTPMessage>(MessageType::kRequest);

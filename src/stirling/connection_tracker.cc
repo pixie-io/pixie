@@ -7,12 +7,20 @@
 
 #include <algorithm>
 #include <chrono>
+#include <numeric>
 #include <vector>
 
 #include "src/common/system/system.h"
 #include "src/stirling/http2.h"
 #include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
+
+// TODO(oazizi/yzhao): We also need the age-based purging, such that if there are a lot of
+// connections slowly accumulating messages, we'll be purge them as well.
+DEFINE_uint32(messages_size_limit_bytes, 1024 * 1024,
+              "The limit of the size of the parsed messages, not the BPF events, "
+              "for each direction, of each connection tracker. "
+              "All cached messages are erased if this limit is breached.");
 
 namespace pl {
 namespace stirling {
@@ -209,6 +217,8 @@ std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessagesIm
   // TODO(oazizi): If we have seen the close event, then can assume the response is lost.
   //               We should push the event out in such cases.
 
+  Cleanup<http::HTTPMessage>();
+
   return trace_records;
 }
 
@@ -266,6 +276,11 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesI
     resp_stream->Reset();
   }
 
+  // TODO(yzhao): Template makes the type parameter not working for gRPC, as gRPC returns different
+  // type than the type parameter. Figure out how to mitigate the conflicts, so this call can be
+  // lifted to ProcessMessages().
+  Cleanup<http2::Frame>();
+
   return trace_records;
 }
 
@@ -285,7 +300,11 @@ std::vector<mysql::Entry> ConnectionTracker::ProcessMessagesImpl() {
   auto& resp_messages = resp_data()->Messages<mysql::Packet>();
 
   auto state_ptr = state<mysql::State>();
-  return mysql::StitchMySQLPackets(&req_messages, &resp_messages, state_ptr);
+  auto result = mysql::StitchMySQLPackets(&req_messages, &resp_messages, state_ptr);
+
+  Cleanup<mysql::Packet>();
+
+  return result;
 }
 
 // TODO(oazizi): Consider providing a reason field with the disable.
@@ -624,6 +643,10 @@ void DataStream::Reset() {
   messages_ = std::monostate();
   offset_ = 0;
   stuck_count_ = 0;
+  // TODO(yzhao): It's likely the case that we'll want to preserve the infalter under the situations
+  // where the HEADERS frames have not been lost. Detecting and responding to them probably will
+  // change the semantic of Reset(), such that it will means different thing for different
+  // protocols.
   inflater_.reset(nullptr);
 }
 

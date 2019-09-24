@@ -370,6 +370,11 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
   return result;
 }
 
+// TODO(oazizi/yzhao): This function should use is_http_{response,request} inside
+// bcc_bpf/socket_trace.c to check if a sequence of bytes are aligned on HTTP message boundary.
+// ATM, they actually do not share the same logic. As a result, BPF events detected as HTTP traffic,
+// can actually fail to find any valid boundary by this function. Unfortunately, BPF has many
+// restrictions that likely make this a difficult or impossible goal.
 template <>
 size_t FindMessageBoundary<http::HTTPMessage>(MessageType type, std::string_view buf,
                                               size_t start_pos) {

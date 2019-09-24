@@ -731,14 +731,10 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
   ASSERT_NE(nullptr, tracker);
 
-  // We should find some raw events in send_data.
-  EXPECT_TRUE(tracker->recv_data().Empty<http::HTTPMessage>());
-  EXPECT_FALSE(tracker->send_data().Empty<http::HTTPMessage>());
-
   sleep(2);
 
   // Connection should be timed out by next TransferData,
-  // which should also cause events to be flushed.
+  // which should also cause events to be flushed, but the connection is still alive.
 
   EXPECT_EQ(1, source_->NumActiveConnections());
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);

@@ -44,6 +44,18 @@ struct HTTPMessage {
   std::string http_resp_message = "-";
 
   std::string http_msg_body = "-";
+
+  // TODO(yzhao): We should enforce that HTTPMessage size does not change after certain point,
+  // so that we can cache this value.
+  size_t ByteSize() const {
+    size_t headers_size = 0;
+    for (const auto& [name, val] : http_headers) {
+      headers_size += name.size();
+      headers_size += val.size();
+    }
+    return sizeof(HTTPMessage) + headers_size + http_req_method.size() + http_req_path.size() +
+           http_resp_message.size() + http_msg_body.size();
+  }
 };
 
 void PreProcessMessage(HTTPMessage* message);

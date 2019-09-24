@@ -113,6 +113,8 @@ struct Packet {
   uint64_t timestamp_ns;
   std::string msg;
   MySQLEventType type = MySQLEventType::kUnknown;
+
+  size_t ByteSize() const { return sizeof(Packet) + msg.size(); }
 };
 
 //-----------------------------------------------------------------------------
