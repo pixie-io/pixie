@@ -55,6 +55,7 @@ buildifier(
 )
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle", "container_image", "container_pull")
+load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
 load("@package_bundle//file:packages.bzl", "packages")
 
 pl_cc_base_packages = [
@@ -98,7 +99,7 @@ container_image(
 )
 
 container_bundle(
-    name = "pl_image_bundle",
+    name = "vizier_images_bundle",
     images = {
         "gcr.io/pl-dev-infra/vizier/agent_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent:agent_image",
         "gcr.io/pl-dev-infra/vizier/cloud_connector_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
@@ -107,4 +108,10 @@ container_bundle(
         "gcr.io/pl-dev-infra/vizier/api_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/api:api_server_image",
         "gcr.io/pl-dev-infra/vizier/proxy_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/proxy:proxy_server_prod_image",
     },
+)
+
+container_push(
+    name = "vizier_images_push",
+    bundle = ":vizier_images_bundle",
+    format = "Docker",
 )
