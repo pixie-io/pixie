@@ -4,7 +4,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "bpf_header.go",
-        "test.h",
     ],
     importpath = "pixielabs.ai/pixielabs/src/stirling/utils/bpf_header",
     visibility = ["//visibility:private"],
