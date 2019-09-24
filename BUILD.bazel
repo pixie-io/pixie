@@ -100,10 +100,11 @@ container_image(
 container_bundle(
     name = "pl_image_bundle",
     images = {
-        "gcr.io/pl-dev-infra/agent_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent:agent_image",
+        "gcr.io/pl-dev-infra/vizier/agent_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent:agent_image",
+        "gcr.io/pl-dev-infra/vizier/cloud_connector_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
         "gcr.io/pl-dev-infra/vizier/metadata_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/metadata:metadata_server_image",
         "gcr.io/pl-dev-infra/vizier/query_broker_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/query_broker:query_broker_server_image",
-        "gcr.io/pl-dev-infra/api_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/api:api_server_image",
-        "gcr.io/pl-dev-infra/proxy_server_prod_image:$(BUNDLE_VERSION)": "//src/vizier/services/proxy:proxy_server_prod_image",
+        "gcr.io/pl-dev-infra/vizier/api_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/api:api_server_image",
+        "gcr.io/pl-dev-infra/vizier/proxy_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/proxy:proxy_server_prod_image",
     },
 )
