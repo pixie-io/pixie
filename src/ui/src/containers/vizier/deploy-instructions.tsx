@@ -52,7 +52,7 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
           <div className='deploy-instructions--footer' style={{width: '100%'}}>
             Need help with deploying your application? Read through the documentation
             <a
-              href={'https://' + DOMAIN_NAME + '/docs/'}> here
+              href={'https://' + DOMAIN_NAME + '/docs/getting-started'}> here
             </a>.
             <br />
             If you have any additional questions, please contact us.
