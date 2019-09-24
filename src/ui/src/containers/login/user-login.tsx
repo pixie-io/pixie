@@ -101,6 +101,13 @@ class Auth0Login extends React.Component<Auth0LoginProps, {}>  {
   componentDidMount() {
     this.domain = QueryString.parse(this.props.location.search).domain_name;
 
+    // Redirect to the correct login endpoint if the path is incorrect.
+    const subdomain = window.location.host.split('.')[0];
+    if (subdomain !== 'id') {
+      window.location.href = window.location.protocol + '//id.' +
+        DOMAIN_NAME + window.location.pathname + '?domain_name=' + subdomain;
+    }
+
     this._lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {
       auth: {
         redirectUrl: window.location.origin + '/' + this.props.redirectPath + '?domain_name=' + this.domain,
