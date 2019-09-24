@@ -7,9 +7,8 @@ spec:
   connectionDraining:
     drainingTimeoutSec: 60
   cdn:
-    # TODO(zasgar): enable this and test out.
-    enabled: false
+    enabled: true
     cachePolicy:
       includeHost: true
       includeProtocol: true
-      includeQueryString: false
+      includeQueryString: true
