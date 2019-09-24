@@ -14,7 +14,6 @@ container_layer(
     tars = ["//src/ui:bundle.tar.gz"],
 )
 
-
 container_layer(
     name = "customer_docs_assets",
     directory = "/customer_docs_assets",

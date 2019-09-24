@@ -64,6 +64,8 @@ func main() {
 	}
 
 	c := controller.New(db, dbKey)
+	sm := controller.NewStatusMonitor(db)
+	defer sm.Stop()
 	vzmgrpb.RegisterVZMgrServiceServer(s.GRPCServer(), c)
 
 	s.Start()
