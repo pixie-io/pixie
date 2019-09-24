@@ -45,6 +45,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
+	// VZConn is the backend for a GCLB and that health checks on "/" instead of the regular health check endpoint.
+	healthz.InstallPathHandler(mux, "/")
 
 	s := services.NewPLServer(env.New(), mux)
 
