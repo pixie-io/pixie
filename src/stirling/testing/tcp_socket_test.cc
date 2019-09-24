@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include <gtest/gtest.h>
 
 #include <string>
@@ -78,6 +79,49 @@ TEST(TCPSocketTest, WriteVandReadV) {
   client_thread.join();
 
   EXPECT_EQ("writevreadv", absl::StrJoin(received_data, ""));
+}
+
+TEST(TCPSocketTest, ServerAddrAndPort) {
+  TCPSocket server;
+  TCPSocket client;
+
+  // Check the server address and port.
+  {
+    // Only a bind is required for port to be assigned,
+    // and for client to be able to successfully connect.
+    server.Bind();
+
+    std::string server_addr;
+    server_addr.resize(INET_ADDRSTRLEN);
+
+    auto server_in_addr = server.addr();
+    inet_ntop(AF_INET, &server_in_addr, server_addr.data(), INET_ADDRSTRLEN);
+    server_addr.erase(server_addr.find('\0'));
+
+    uint16_t server_port = ntohs(server.port());
+
+    EXPECT_GT(server_port, 0);
+    EXPECT_EQ(server_addr, "0.0.0.0");
+  }
+
+  // Check th client address and port.
+  {
+    client.Connect(server);
+    std::string client_addr;
+    client_addr.resize(INET_ADDRSTRLEN);
+
+    auto client_in_addr = client.addr();
+    inet_ntop(AF_INET, &client_in_addr, client_addr.data(), INET_ADDRSTRLEN);
+    client_addr.erase(client_addr.find('\0'));
+
+    uint16_t client_port = ntohs(server.port());
+
+    EXPECT_GT(client_port, 0);
+    EXPECT_EQ(client_addr, "127.0.0.1");
+  }
+
+  client.Close();
+  server.Close();
 }
 
 }  // namespace testing

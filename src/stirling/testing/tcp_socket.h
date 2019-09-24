@@ -23,6 +23,11 @@ class TCPSocket {
   void Connect(const TCPSocket& addr);
   void Close();
 
+  struct in_addr addr() {
+    return addr_.sin_addr;
+  }
+  in_port_t port() { return addr_.sin_port; }
+
   ssize_t Write(std::string_view data) const;
   ssize_t WriteV(const std::vector<std::string_view>& data) const;
   ssize_t Send(std::string_view data) const;
@@ -31,8 +36,6 @@ class TCPSocket {
   ssize_t ReadV(std::string* data) const;
   bool Recv(std::string* data) const;
   ssize_t RecvMsg(std::vector<std::string>* data) const;
-
-  int sockfd() const { return sockfd_; }
 
  private:
   bool closed = false;

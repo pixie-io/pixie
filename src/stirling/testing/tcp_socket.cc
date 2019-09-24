@@ -137,6 +137,11 @@ void TCPSocket::Connect(const TCPSocket& addr) {
   const int retval = connect(sockfd_, reinterpret_cast<const struct sockaddr*>(&addr.addr_),
                              sizeof(struct sockaddr_in));
   CHECK(retval == 0) << "Failed to connect, error message: " << strerror(errno);
+
+  socklen_t addr_len = sizeof(struct sockaddr_in);
+  CHECK(getsockname(sockfd_, reinterpret_cast<struct sockaddr*>(&addr_), &addr_len) == 0)
+      << "Failed to get socket name, error message: " << strerror(errno);
+  CHECK(addr_len == sizeof(struct sockaddr_in)) << "Address size is incorrect";
 }
 
 bool TCPSocket::Read(std::string* data) const {
