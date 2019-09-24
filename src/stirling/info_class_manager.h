@@ -32,9 +32,8 @@ class DataTable;
  *  - There is a 1:1 relationship with the Data Tables.
  *  - Each InfoClassManager points back to its SourceConnector.
  */
-class InfoClassManager {
+class InfoClassManager final : public NotCopyable {
  public:
-  InfoClassManager() = delete;
   /**
    * @brief Construct a new Info Class Manager object
    * SourceConnector constructs InfoClassManager objects with and adds Elements to it
@@ -45,7 +44,6 @@ class InfoClassManager {
    * the publish proto.
    */
   explicit InfoClassManager(const DataTableSchema& schema) : schema_(schema) { id_ = global_id_++; }
-  virtual ~InfoClassManager() = default;
 
   /**
    * @brief Source connector connected to this Info Class.
