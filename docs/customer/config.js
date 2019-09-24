@@ -1,6 +1,6 @@
 const config = {
     gatsby: {
-        pathPrefix: '/',
+        pathPrefix: '/docs',
         siteUrl: 'https://docs.pixielabs.ai',
         gaTrackingId: null,
     },

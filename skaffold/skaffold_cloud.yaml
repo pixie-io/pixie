@@ -37,6 +37,11 @@ build:
     bazel:
       target: //src/cloud/vzmgr:vzmgr_server_image.tar
 
+  - image: gcr.io/pl-dev-infra/customer_docs_prod_image
+    context: .
+    bazel:
+      target: //docs/customer:customer_docs_prod_image.tar
+
   local:
     push: true
 deploy:

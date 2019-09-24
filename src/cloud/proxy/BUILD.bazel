@@ -14,12 +14,20 @@ container_layer(
     tars = ["//src/ui:bundle.tar.gz"],
 )
 
+
+container_layer(
+    name = "customer_docs_assets",
+    directory = "/customer_docs_assets",
+    tars = ["//docs/customer:customer_docs_bundle"],
+)
+
 container_image(
     name = "proxy_prod_server_image",
     base = "@openresty//image",
     layers = [
         ":conf",
         ":ui_assets",
+        ":customer_docs_assets",
     ],
     visibility = ["//visibility:public"],
 )
