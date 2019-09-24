@@ -3,6 +3,8 @@ kind: BackendConfig
 metadata:
   name: cloud-proxy-backend-config
 spec:
+  securityPolicy:
+    name: pixie-cloud-ingress-policy
   timeoutSec: 30
   connectionDraining:
     drainingTimeoutSec: 60

@@ -3,6 +3,8 @@ kind: BackendConfig
 metadata:
   name: vzconn-backend-config
 spec:
+  securityPolicy:
+    name: pixie-cloud-ingress-policy
   # This means that our streams will timeout after 1hr.
   timeoutSec: 3600
   cdn:
