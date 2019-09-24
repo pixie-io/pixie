@@ -62,15 +62,6 @@ class Stirling : public NotCopyable {
 
   /**
    * @brief Create a Stirling object
-   * Factory method to create Stirling with a default registry containing
-   * all sources
-   *
-   * @return std::unique_ptr<Stirling>
-   */
-  static std::unique_ptr<Stirling> Create();
-
-  /**
-   * @brief Create a Stirling object
    * Factory method to create Stirling with a source registry.
    *
    * @param registry

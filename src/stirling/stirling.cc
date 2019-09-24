@@ -74,11 +74,13 @@ stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_pr
 
 class StirlingImpl final : public Stirling {
  public:
-  StirlingImpl() = delete;
+  explicit StirlingImpl(std::unique_ptr<SourceRegistry> registry);
+
   ~StirlingImpl() override;
 
-  static std::unique_ptr<StirlingImpl> Create();
-  static std::unique_ptr<StirlingImpl> Create(std::unique_ptr<SourceRegistry> registry);
+  // TODO(oazizi/yzhao): Consider lift this as an interface method into Stirling, making it
+  // symmetric with Stop().
+  Status Init();
 
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
@@ -94,16 +96,6 @@ class StirlingImpl final : public Stirling {
   void WaitForThreadJoin() override;
 
  private:
-  /**
-   * Private constructor. See Create() on how to make StirlingImpl.
-   */
-  explicit StirlingImpl(std::unique_ptr<SourceRegistry> registry);
-
-  /**
-   * Initializes Stirling, including bring-up of all the SourceConnectors.
-   */
-  Status Init();
-
   /**
    * Create data source connectors from the registered sources.
    */
@@ -140,50 +132,20 @@ class StirlingImpl final : public Stirling {
    */
   std::thread run_thread_;
 
-  /**
-   * Whether thread should be running.
-   */
-  std::atomic<bool> run_enable_;
-
-  /**
-   * Whether Stirling is running.
-   */
+  std::atomic<bool> run_enable_ = false;
   std::atomic<bool> running_ = false;
-
-  /**
-   * Vector of all Source Connectors.
-   */
   std::vector<std::unique_ptr<SourceConnector>> sources_;
-
-  /**
-   * Vector of all Data Tables.
-   */
   std::vector<std::unique_ptr<DataTable>> tables_;
 
-  /**
-   * Vector of all the InfoClassManagers.
-   */
   InfoClassManagerVec info_class_mgrs_;
-
-  /**
-   * Spin lock to lock updates to info_class_mgrs_.
-   *
-   */
   absl::base_internal::SpinLock info_class_mgrs_lock_;
 
-  /**
-   * Pointer the config unit that handles sub/pub with agent.
-   */
   std::unique_ptr<PubSubManager> config_;
 
-  /**
-   * @brief Pointer to data source registry
-   *
-   */
   std::unique_ptr<SourceRegistry> registry_;
 
-  const std::chrono::milliseconds kMinSleepDuration{1};
-  const std::chrono::milliseconds kMaxSleepDuration{1000};
+  static constexpr std::chrono::milliseconds kMinSleepDuration{1};
+  static constexpr std::chrono::milliseconds kMaxSleepDuration{1000};
 
   /**
    * Function to call to push data to the agent.
@@ -198,9 +160,7 @@ class StirlingImpl final : public Stirling {
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
-    : run_enable_(false),
-      config_(std::make_unique<PubSubManager>()),
-      registry_(std::move(registry)) {
+    : config_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {
   LOG(INFO) << "Creating Stirling";
 
   LOG(INFO) << "Stirling: Registered sources: ";
@@ -456,12 +416,7 @@ void StirlingImpl::SleepForDuration(std::chrono::milliseconds sleep_duration) {
   }
 }
 
-std::unique_ptr<StirlingImpl> StirlingImpl::Create() {
-  auto registry = CreateProdSourceRegistry();
-  return Create(std::move(registry));
-}
-
-std::unique_ptr<StirlingImpl> StirlingImpl::Create(std::unique_ptr<SourceRegistry> registry) {
+std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> registry) {
   // Create Stirling object.
   auto stirling = std::unique_ptr<StirlingImpl>(new StirlingImpl(std::move(registry)));
 
@@ -469,12 +424,6 @@ std::unique_ptr<StirlingImpl> StirlingImpl::Create(std::unique_ptr<SourceRegistr
   PL_CHECK_OK(stirling->Init());
 
   return stirling;
-}
-
-std::unique_ptr<Stirling> Stirling::Create() { return StirlingImpl::Create(); }
-
-std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> registry) {
-  return StirlingImpl::Create(std::move(registry));
 }
 
 }  // namespace stirling
