@@ -1,5 +1,6 @@
 import {CodeSnippet} from 'components/code-snippet/code-snippet';
 import {DialogBox} from 'components/dialog-box/dialog-box';
+import {DOMAIN_NAME} from 'containers/constants';
 import * as React from 'react';
 import {Dropdown, DropdownButton} from 'react-bootstrap';
 
@@ -44,11 +45,15 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
               }
             </DropdownButton>
             <CodeSnippet showCopy={true} language='bash'>
-              {'./pixie deploy --cluster_id ' + props.clusterID + ' --use_version d84e3625-dirty'}
+              {'./pixie deploy --cluster_id ' + props.clusterID +
+                ' --use_version v0.1 --credentials_file <creds file path here>'}
             </CodeSnippet>
           </div>
           <div className='deploy-instructions--footer' style={{width: '100%'}}>
-            Need help with deploying your application? Read through the documentation here.
+            Need help with deploying your application? Read through the documentation
+            <a
+              href={'https://' + DOMAIN_NAME + '/docs'}>here
+            </a>.
             <br />
             If you have any additional questions, please contact us.
             <div className='deploy-instructions--contact-info'>
