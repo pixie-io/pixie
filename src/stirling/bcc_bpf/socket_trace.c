@@ -68,6 +68,12 @@ BPF_PERCPU_ARRAY(control_map, u64, kNumProtocols);
 // Key is {tgid, fd}.
 BPF_HASH(conn_info_map, u64, struct conn_info_t);
 
+// Map from user-space file descriptors to open files obtained from open() syscall.
+// Used to filter out file read/writes.
+// Tracks connection from open() -> close().
+// Key is {tgid, fd}.
+BPF_HASH(open_file_map, u64, bool);
+
 // Map from thread to its ongoing accept() syscall's input argument.
 // Tracks accept() call from entry -> exit.
 // Key is {tgid, pid}.
@@ -106,6 +112,26 @@ static __inline uint32_t get_tgid_fd_generation(u64 tgid_fd) {
   u32 init_tgid_fd_generation = 0;
   u32* tgid_fd_generation = proc_conn_map.lookup_or_init(&tgid_fd, &init_tgid_fd_generation);
   return (*tgid_fd_generation)++;
+}
+
+static __inline void set_open_file(u64 id, int fd) {
+  u32 tgid = id >> 32;
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  bool kTrue = 1;
+  open_file_map.insert(&tgid_fd, &kTrue);
+}
+
+static __inline bool is_open_file(u64 id, int fd) {
+  u32 tgid = id >> 32;
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  bool* open_file = open_file_map.lookup(&tgid_fd);
+  return (open_file != NULL);
+}
+
+static __inline void clear_open_file(u64 id, int fd) {
+  u32 tgid = id >> 32;
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  open_file_map.delete(&tgid_fd);
 }
 
 static __inline bool should_trace(const struct traffic_class_t* traffic_class) {
@@ -267,7 +293,7 @@ static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
     conn_info->conn_id.tgid_start_time_ns = get_tgid_start_time();
     conn_info->conn_id.fd = fd;
     // Note that many calls to this function are not for socket descriptors,
-    // so we are acutally "wasting" generations numbers.
+    // so we are actually "wasting" generations numbers.
     // But this is still the most straightforward thing to do, and
     // using one generation number per second should still provide 136 years of coverage.
     conn_info->conn_id.generation = get_tgid_fd_generation(tgid_fd);
@@ -339,13 +365,12 @@ static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
   socket_open_conns.perf_submit(ctx, &conn_info, sizeof(struct conn_info_t));
 }
 
-static __inline void probe_entry_connect_impl(struct pt_regs* ctx, int sockfd,
+static __inline void probe_entry_connect_impl(struct pt_regs* ctx, u64 id, int sockfd,
                                               const struct sockaddr* addr, size_t addrlen) {
   if (sockfd < 0) {
     return;
   }
 
-  u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
@@ -395,9 +420,8 @@ static __inline void probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
 //
 // TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
 // socket() syscall.
-static __inline void probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
-                                             size_t* addrlen) {
-  u64 id = bpf_get_current_pid_tgid();
+static __inline void probe_entry_accept_impl(struct pt_regs* ctx, u64 id, int sockfd,
+                                             struct sockaddr* addr, size_t* addrlen) {
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
@@ -432,13 +456,12 @@ static __inline void probe_ret_accept_impl(struct pt_regs* ctx, u64 id) {
   submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_info->addr));
 }
 
-static __inline void probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count,
-                                            const struct iovec* iov, size_t iovlen) {
+static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd, char* buf,
+                                            size_t count, const struct iovec* iov, size_t iovlen) {
   if (fd < 0) {
     return;
   }
 
-  u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
@@ -647,12 +670,12 @@ static __inline void probe_ret_write_send(struct pt_regs* ctx, u64 id) {
   }
 }
 
-static __inline void probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count,
-                                           const struct iovec* iov, size_t iovlen) {
+static __inline void probe_entry_read_recv(struct pt_regs* ctx, u64 id, int fd, char* buf,
+                                           size_t count, const struct iovec* iov, size_t iovlen) {
   if (fd < 0) {
     return;
   }
-  u64 id = bpf_get_current_pid_tgid();
+
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
@@ -724,11 +747,11 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
   return;
 }
 
-static __inline void probe_entry_close(struct pt_regs* ctx, int fd) {
+static __inline void probe_entry_close(struct pt_regs* ctx, u64 id, int fd) {
   if (fd < 0) {
     return;
   }
-  u64 id = bpf_get_current_pid_tgid();
+
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
@@ -783,9 +806,19 @@ static __inline void probe_ret_close(struct pt_regs* ctx, u64 id) {
  * BPF syscall probe function entry-points
  ***********************************************************/
 
+int syscall__probe_ret_open(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  int ret_fd = PT_REGS_RC(ctx);
+  if (ret_fd > 0) {
+    set_open_file(id, ret_fd);
+  }
+  return 0;
+}
+
 int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                  size_t addrlen) {
-  probe_entry_connect_impl(ctx, sockfd, addr, addrlen);
+  u64 id = bpf_get_current_pid_tgid();
+  probe_entry_connect_impl(ctx, id, sockfd, addr, addrlen);
   return 0;
 }
 
@@ -798,7 +831,8 @@ int syscall__probe_ret_connect(struct pt_regs* ctx) {
 
 int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                 size_t* addrlen) {
-  probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
+  u64 id = bpf_get_current_pid_tgid();
+  probe_entry_accept_impl(ctx, id, sockfd, addr, addrlen);
   return 0;
 }
 
@@ -811,7 +845,8 @@ int syscall__probe_ret_accept(struct pt_regs* ctx) {
 
 int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                  size_t* addrlen) {
-  probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
+  u64 id = bpf_get_current_pid_tgid();
+  probe_entry_accept_impl(ctx, id, sockfd, addr, addrlen);
   return 0;
 }
 
@@ -823,7 +858,13 @@ int syscall__probe_ret_accept4(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  u64 id = bpf_get_current_pid_tgid();
+
+  if (is_open_file(id, fd)) {
+    return 0;
+  }
+
+  probe_entry_write_send(ctx, id, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
   return 0;
 }
 
@@ -835,7 +876,8 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  u64 id = bpf_get_current_pid_tgid();
+  probe_entry_write_send(ctx, id, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
   return 0;
 }
 
@@ -847,7 +889,13 @@ int syscall__probe_ret_send(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  probe_entry_read_recv(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  u64 id = bpf_get_current_pid_tgid();
+
+  if (is_open_file(id, fd)) {
+    return 0;
+  }
+
+  probe_entry_read_recv(ctx, id, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
   return 0;
 }
 
@@ -859,7 +907,8 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  probe_entry_read_recv(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  u64 id = bpf_get_current_pid_tgid();
+  probe_entry_read_recv(ctx, id, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
   return 0;
 }
 
@@ -871,7 +920,8 @@ int syscall__probe_ret_recv(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  u64 id = bpf_get_current_pid_tgid();
+  probe_entry_write_send(ctx, id, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
   return 0;
 }
 
@@ -883,8 +933,11 @@ int syscall__probe_ret_sendto(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_msghdr* msghdr) {
+  u64 id = bpf_get_current_pid_tgid();
+
   if (msghdr != NULL) {
-    probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov, msghdr->msg_iovlen);
+    probe_entry_write_send(ctx, id, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov,
+                           msghdr->msg_iovlen);
   }
   return 0;
 }
@@ -897,8 +950,10 @@ int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr* msghdr) {
+  u64 id = bpf_get_current_pid_tgid();
   if (msghdr != NULL) {
-    probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov, msghdr->msg_iovlen);
+    probe_entry_read_recv(ctx, id, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov,
+                          msghdr->msg_iovlen);
   }
   return 0;
 }
@@ -911,9 +966,17 @@ int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec* iov, int iovlen) {
-  if (iov != NULL && iovlen > 0) {
-    probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
+  if (iov == NULL && iovlen <= 0) {
+    return 0;
   }
+
+  u64 id = bpf_get_current_pid_tgid();
+
+  if (is_open_file(id, fd)) {
+    return 0;
+  }
+
+  probe_entry_write_send(ctx, id, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
   return 0;
 }
 
@@ -925,9 +988,16 @@ int syscall__probe_ret_writev(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, int iovlen) {
-  if (iov != NULL && iovlen > 0) {
-    probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
+  if (iov == NULL && iovlen <= 0) {
+    return 0;
   }
+
+  u64 id = bpf_get_current_pid_tgid();
+  if (is_open_file(id, fd)) {
+    return 0;
+  }
+
+  probe_entry_read_recv(ctx, id, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
   return 0;
 }
 
@@ -939,7 +1009,9 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_close(struct pt_regs* ctx, unsigned int fd) {
-  probe_entry_close(ctx, fd);
+  u64 id = bpf_get_current_pid_tgid();
+  clear_open_file(id, fd);
+  probe_entry_close(ctx, id, fd);
   return 0;
 }
 
