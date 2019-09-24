@@ -6,6 +6,7 @@ import {ApolloClient} from 'apollo-client';
 import { ApolloLink } from 'apollo-link';
 import { setContext } from 'apollo-link-context';
 import {createHttpLink} from 'apollo-link-http';
+import {DOMAIN_NAME} from 'containers/constants';
 import gql from 'graphql-tag';
 import { ApolloProvider } from 'react-apollo';
 
@@ -24,9 +25,25 @@ interface FetchResponse {
   text: any;
 }
 
+const cloudFetch = (uri, options) => {
+  options.headers.withCredentials = true;
+  return fetchPolyfill(uri, options).then((resp) => {
+    if (resp.status === 401) { // Unauthorized. Cookies are not valid, redirect to login.
+      const subdomain = window.location.host.split('.')[0];
+      window.location.href = window.location.protocol + '//id.' +  DOMAIN_NAME + '/login?domain_name=' + subdomain;
+    }
+    const result = {} as FetchResponse;
+    result.ok = true;
+    result.text = () => new Promise((resolve, reject) => {
+      resolve(resp.text());
+    });
+    return result;
+  });
+};
+
 const cloudLink = createHttpLink({
   uri: '/api/graphql',
-  fetch: fetchPolyfill,
+  fetch: cloudFetch,
 });
 
 const cloudAuthLink = setContext((_, { headers }) => {
