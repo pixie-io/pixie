@@ -14,8 +14,8 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
-const heartbeatIntervalS = 30 * time.Second
-const heartbeatWaitS = 5 * time.Second
+const heartbeatIntervalS = 5 * time.Second
+const heartbeatWaitS = 2 * time.Second
 
 // VizierInfo fetches information about Vizier.
 type VizierInfo interface {
