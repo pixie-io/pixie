@@ -65,3 +65,9 @@ pl_cc_test(
     srcs = ["utils_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "inet_utils_test",
+    srcs = ["inet_utils_test.cc"],
+    deps = [":cc_library"],
+)

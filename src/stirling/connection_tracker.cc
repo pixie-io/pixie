@@ -10,6 +10,7 @@
 #include <numeric>
 #include <vector>
 
+#include "src/common/base/inet_utils.h"
 #include "src/common/system/system.h"
 #include "src/stirling/http2.h"
 #include "src/stirling/mysql/mysql.h"
@@ -36,42 +37,6 @@ void ConnectionTracker::InitState<mysql::Packet>() {
 }
 
 //--------------------------------------------------------------
-// Utility Functions
-//--------------------------------------------------------------
-
-// Parses an IP:port pair from conn_info.
-// Returns an error if an unexpected sockaddr family is provided.
-// Currently this function understands IPV4 and IPV6 sockaddr families.
-StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info) {
-  const auto* sa = reinterpret_cast<const struct sockaddr*>(&conn_info.addr);
-
-  char addr[INET6_ADDRSTRLEN] = "";
-  int port;
-
-  switch (sa->sa_family) {
-    case AF_INET: {
-      const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
-      port = ntohs(sa_in->sin_port);
-      if (inet_ntop(AF_INET, &sa_in->sin_addr, addr, INET_ADDRSTRLEN) == nullptr) {
-        return error::InvalidArgument("Could not parse sockaddr (AF_INET)");
-      }
-    } break;
-    case AF_INET6: {
-      const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
-      port = ntohs(sa_in6->sin6_port);
-      if (inet_ntop(AF_INET6, &sa_in6->sin6_addr, addr, INET6_ADDRSTRLEN) == nullptr) {
-        return error::InvalidArgument("Could not parse sockaddr (AF_INET6)");
-      }
-    } break;
-    default:
-      return error::InvalidArgument(
-          absl::StrCat("Ignoring unhandled sockaddr family: ", sa->sa_family));
-  }
-
-  return IPEndpoint{std::string(addr), port};
-}
-
-//--------------------------------------------------------------
 // ConnectionTracker
 //--------------------------------------------------------------
 
@@ -88,12 +53,12 @@ void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   SetPID(conn_info.conn_id);
 
   open_info_.timestamp_ns = conn_info.timestamp_ns;
-  auto ip_endpoint_or = ParseSockAddr(conn_info);
-  if (ip_endpoint_or.ok()) {
-    open_info_.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
-    open_info_.remote_port = ip_endpoint_or.ValueOrDie().port;
-  } else {
+  Status s = ParseSockAddr(*reinterpret_cast<struct sockaddr*>(&conn_info.addr),
+                           &open_info_.remote_addr, &open_info_.remote_port);
+  if (!s.ok()) {
     LOG(WARNING) << "Could not parse IP address.";
+    open_info_.remote_addr = "-'";
+    open_info_.remote_port = 0;
   }
 }
 

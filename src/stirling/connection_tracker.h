@@ -46,12 +46,6 @@ struct ReqRespPair {
   TMessageType resp_message;
 };
 
-struct IPEndpoint {
-  std::string ip;
-  int port;
-};
-StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info);
-
 /**
  * DataStream is an object that contains the captured data of either send or recv traffic
  * on a connection.
