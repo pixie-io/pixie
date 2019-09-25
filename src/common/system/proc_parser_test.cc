@@ -32,7 +32,6 @@ class ProcParserTest : public ::testing::Test {
     EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
     EXPECT_CALL(sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));
-
     EXPECT_CALL(sysconfig, proc_path())
         .WillRepeatedly(Return(GetPathToTestDataFile("testdata/proc")));
     parser_ = std::make_unique<ProcParser>(sysconfig);
@@ -123,6 +122,28 @@ TEST_F(ProcParserTest, read_pid_cmdline) {
 TEST_F(ProcParserTest, read_pid_metadata_null) {
   EXPECT_THAT("/usr/lib/at-spi2-core/at-spi2-registryd --use-gnome-session",
               parser_->GetPIDCmdline(456));
+}
+
+// This test does not work because bazel uses symlinks itself,
+// which then causes ReadProcPIDFDLink to resolve the wrong link.
+TEST_F(ProcParserTest, DISABLED_read_proc_fd_link) {
+  std::string out;
+  Status s;
+
+  s = parser_->ReadProcPIDFDLink(123, 0, &out);
+  EXPECT_OK(s);
+  EXPECT_EQ("/dev/null", out);
+
+  s = parser_->ReadProcPIDFDLink(123, 1, &out);
+  EXPECT_OK(s);
+  EXPECT_EQ("/foobar", out);
+
+  s = parser_->ReadProcPIDFDLink(123, 2, &out);
+  EXPECT_OK(s);
+  EXPECT_EQ("socket:[12345]", out);
+
+  s = parser_->ReadProcPIDFDLink(123, 3, &out);
+  EXPECT_NOT_OK(s);
 }
 
 }  // namespace system

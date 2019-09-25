@@ -12,14 +12,12 @@ namespace pl {
 namespace system {
 
 /*
- * ProcParser is use to parse system proc psuedo filesystem.
- *
- * Note: Methods in here are virtual to make it easy to make.
+ * ProcParser is use to parse system proc pseudo filesystem.
  */
 class ProcParser {
  public:
   ProcParser() = delete;
-  virtual ~ProcParser() = default;
+  ~ProcParser() = default;
 
   /**
    * ProcParser constructor.
@@ -104,21 +102,21 @@ class ProcParser {
    * @param out A valid pointer to the output.
    * @return Status of parsing.
    */
-  virtual Status ParseProcPIDStat(int32_t pid, ProcessStats* out) const;
+  Status ParseProcPIDStat(int32_t pid, ProcessStats* out) const;
 
   /**
    * Specialization of ParseProcPIDStat to just extract the start time.
    * @param pid is the pid for which we want the start time.
    * @return start time in unix time since epoch. A time of 0 implies it failed to read the time.
    */
-  virtual int64_t GetPIDStartTime(int32_t pid) const;
+  int64_t GetPIDStartTime(int32_t pid) const;
 
   /**
    * Gets the command line for a given pid.
    * @param pid is the pid for which we want the command line.
    * @return The command line string. Empty string implies we failed to read the file.
    */
-  virtual std::string GetPIDCmdline(int32_t pid) const;
+  std::string GetPIDCmdline(int32_t pid) const;
 
   /**
    * Parses /proc/<pid>/io files.
@@ -126,7 +124,7 @@ class ProcParser {
    * @param out A valid pointer to an output struct.
    * @return Status of the parsing.
    */
-  virtual Status ParseProcPIDStatIO(int32_t pid, ProcessStats* out) const;
+  Status ParseProcPIDStatIO(int32_t pid, ProcessStats* out) const;
 
   /**
    * Parses /proc/<pid>/net/dev
@@ -134,25 +132,42 @@ class ProcParser {
    * It accumulates the results from all network devices into the output. This
    * will ignore virtual, docker and lo interfaces.
    *
-   * @param pid is the pid for which we want net data..
+   * @param pid is the pid for which we want net data.
    * @param out A valid pointer to an output struct.
    * @return Status of the parsing.
    */
-  virtual Status ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const;
+  Status ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const;
 
   /**
    * Parses /proc/stat
    * @param out a valid pointer to an output struct.
    * @return status of parsing.
    */
-  virtual Status ParseProcStat(SystemStats* out) const;
+  Status ParseProcStat(SystemStats* out) const;
 
   /**
    * Parses /proc/meminfo
    * @param out A valid pointer to the output struct.
    * @return status of parsing
    */
-  virtual Status ParseProcMemInfo(SystemStats* out) const;
+  Status ParseProcMemInfo(SystemStats* out) const;
+
+  /**
+   * Reads and returns the /proc/<pid>/fd/<fd> file descriptor link.
+   *
+   * Some examples of FD links are below:
+   *   socket:[28068]
+   *   anon_inode:inotify
+   *   anon_inode:[eventpoll]
+   *   pipe:[29553]
+   *   /path/to/file
+   *
+   * @param pid is the pid for which we want net data.
+   * @param fd is the fd for which we want net data.
+   * @param out A valid pointer to an output string.
+   * @return Status of the parsing.
+   */
+  Status ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) const;
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
