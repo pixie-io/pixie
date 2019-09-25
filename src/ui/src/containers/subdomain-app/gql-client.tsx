@@ -9,6 +9,7 @@ import {createHttpLink} from 'apollo-link-http';
 import {DOMAIN_NAME} from 'containers/constants';
 import gql from 'graphql-tag';
 import { ApolloProvider } from 'react-apollo';
+import * as RedirectUtils from 'utils/redirect-utils';
 
 const TIMEOUT_MS = 5000; // Timeout after 5 seconds.
 
@@ -30,7 +31,7 @@ const cloudFetch = (uri, options) => {
   return fetchPolyfill(uri, options).then((resp) => {
     if (resp.status === 401) { // Unauthorized. Cookies are not valid, redirect to login.
       const subdomain = window.location.host.split('.')[0];
-      window.location.href = window.location.protocol + '//id.' +  DOMAIN_NAME + '/login?domain_name=' + subdomain;
+      RedirectUtils.redirect('id', '/login', {['domain_name']: subdomain});
     }
     const result = {} as FetchResponse;
     result.ok = true;

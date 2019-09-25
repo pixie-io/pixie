@@ -5,6 +5,7 @@ import gql from 'graphql-tag';
 import * as QueryString from 'query-string';
 import * as React from 'react';
 import { ApolloConsumer } from 'react-apollo';
+import * as RedirectUtils from 'utils/redirect-utils';
 
 // @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/dark-logo.svg';
@@ -35,8 +36,7 @@ function onLoginAuthenticated(authResult) {
       idToken: response.data.Token,
       expiresAt: response.data.ExpiresAt,
     });
-    window.location.href = window.location.protocol + '//' + this.domain + '.' +
-      DOMAIN_NAME + '/vizier/query';
+    RedirectUtils.redirect(this.domain, '/vizier/query', {});
   });
 }
 
@@ -57,8 +57,7 @@ function onCreateAuthenticated(authResult) {
         expiresAt: response.data.ExpiresAt,
       });
     }).then((results) => {
-        window.location.href = window.location.protocol + '//' + this.domain + '.' +
-          DOMAIN_NAME + '/vizier/query';
+        RedirectUtils.redirect(this.domain, '/vizier/query', {});
     }).catch((gqlErr) => {
         return gqlErr;
     });
@@ -104,8 +103,7 @@ class Auth0Login extends React.Component<Auth0LoginProps, {}>  {
     // Redirect to the correct login endpoint if the path is incorrect.
     const subdomain = window.location.host.split('.')[0];
     if (subdomain !== 'id') {
-      window.location.href = window.location.protocol + '//id.' +
-        DOMAIN_NAME + window.location.pathname + '?domain_name=' + subdomain;
+      RedirectUtils.redirect('id', window.location.pathname, {['domain_name']: subdomain});
     }
 
     this._lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {

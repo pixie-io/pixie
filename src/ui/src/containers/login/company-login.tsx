@@ -5,6 +5,7 @@ import * as React from 'react';
 import {Button, Form, FormControl, InputGroup} from 'react-bootstrap';
 import { HotKeys } from 'react-hotkeys';
 import { Link } from 'react-router-dom';
+import * as RedirectUtils from 'utils/redirect-utils';
 
 const HOT_KEY_MAP = {
   CLICK_CONTINUE: ['enter'],
@@ -32,8 +33,7 @@ function companyLoginOnClick(e) {
         error: 'The site doesn\'t exist. Please check the name and try again.',
       });
     } else {
-      window.location.href = window.location.protocol +
-        '//id.' + DOMAIN_NAME + '/login?domain_name=' + domainName;
+      RedirectUtils.redirect('id', '/login', {['domain_name']: domainName });
     }
   }).catch((error) => {
     this.setState({
@@ -56,8 +56,7 @@ function companyCreateOnClick(e) {
         error: 'Sorry, the site already exists. Try a different name.',
       });
     } else {
-      window.location.href = window.location.protocol + '//id.' +
-        DOMAIN_NAME + '/create-site?domain_name=' + domainName;
+      RedirectUtils.redirect('id', '/create-site', {['domain_name']: domainName});
     }
   }).catch((error) => {
     this.setState({
