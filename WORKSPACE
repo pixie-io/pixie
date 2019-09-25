@@ -363,6 +363,20 @@ go_repository(
 )
 
 go_repository(
+    name = "com_github_gomodule_redigo",
+    importpath = "github.com/gomodule/redigo",
+    sum = "h1:K/R+8tc58AaqLkqG2Ol3Qk+DR/TlNuhuh457pBFPtt0=",
+    version = "v2.0.0+incompatible",
+)
+
+go_repository(
+    name = "in_gopkg_boj_redistore_v1",
+    importpath = "github.com/boj/redistore",
+    sum = "h1:RmdPFa+slIr4SCBg4st/l/vZWVe9QJKMXGO60Bxbe04=",
+    version = "v0.0.0-20180917114910-cd5dcc76aeff",
+)
+
+go_repository(
     name = "com_github_grpc_ecosystem_go_grpc_middleware",
     importpath = "github.com/grpc-ecosystem/go-grpc-middleware",
     sum = "h1:Iju5GlWwrvL6UBg4zJJt3btmonfrMlCDdsejg4CZE7c=",

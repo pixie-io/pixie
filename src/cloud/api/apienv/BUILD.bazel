@@ -20,6 +20,7 @@ go_library(
         "@com_github_gorilla_sessions//:go_default_library",
         "@com_github_spf13_pflag//:go_default_library",
         "@com_github_spf13_viper//:go_default_library",
+        "@in_gopkg_boj_redistore_v1//:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
     ],
 )

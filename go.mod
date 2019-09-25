@@ -13,6 +13,7 @@ require (
 	github.com/ajstarks/svgo v0.0.0-20181006003313-6ce6a3bcf6cd // indirect
 	github.com/badoux/checkmail v0.0.0-20181210160741-9661bd69e9ad
 	github.com/beorn7/perks v1.0.0 // indirect
+	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/chzyer/logex v1.1.10 // indirect
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect

@@ -3,6 +3,7 @@ package apienv
 import (
 	"errors"
 
+	redistore "github.com/boj/redistore"
 	"github.com/gorilla/sessions"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -15,12 +16,15 @@ import (
 
 func init() {
 	pflag.String("session_key", "", "Cookie session key")
+	pflag.String("redis_address", "", "Address of redis to store the session keys (optional, defaults to in memory)")
+	pflag.String("redis_network", "tcp", "If redis_address is set, network to use (optional)")
+	pflag.Int("redis_max_idle_connections", 10, "Max idle connections for Redis (optional)")
 }
 
 // APIEnv store the contextual authenv used for API server requests.
 type APIEnv interface {
 	env.Env
-	CookieStore() *sessions.CookieStore
+	CookieStore() sessions.Store
 	AuthClient() authpb.AuthServiceClient
 	SiteManagerClient() sitemanagerpb.SiteManagerServiceClient
 	ProfileClient() profilepb.ProfileServiceClient
@@ -30,7 +34,7 @@ type APIEnv interface {
 // Impl is an implementation of the APIEnv interface.
 type Impl struct {
 	*env.BaseEnv
-	cookieStore       *sessions.CookieStore
+	cookieStore       sessions.Store
 	authClient        authpb.AuthServiceClient
 	siteManagerClient sitemanagerpb.SiteManagerServiceClient
 	profileClient     profilepb.ProfileServiceClient
@@ -43,14 +47,27 @@ func New(ac authpb.AuthServiceClient, sc sitemanagerpb.SiteManagerServiceClient,
 	if len(sessionKey) == 0 {
 		return nil, errors.New("session_key is required for cookie store")
 	}
-	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
+
+	var sessionStore sessions.Store
+	redisAddress := viper.GetString("redis_address")
+	if len(redisAddress) == 0 {
+		sessionStore = sessions.NewCookieStore([]byte(sessionKey))
+	} else {
+		network := viper.GetString("redis_network")
+		maxIdle := viper.GetInt("redis_max_idle_connections")
+		store, err := redistore.NewRediStore(maxIdle, network, redisAddress, "", []byte(sessionKey))
+		if err != nil {
+			return nil, err
+		}
+		sessionStore = store
+	}
+
 	return &Impl{env.New(), sessionStore, ac, sc, pc, vc}, nil
 }
 
 // CookieStore returns the CookieStore from the environment.
-func (e *Impl) CookieStore() *sessions.CookieStore {
+func (e *Impl) CookieStore() sessions.Store {
 	return e.cookieStore
-
 }
 
 // AuthClient returns an auth service client.
