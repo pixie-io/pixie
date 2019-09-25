@@ -14,7 +14,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -93,6 +93,8 @@ func NewCmdDeploy() *cobra.Command {
 				"cluster-id":      clusterID,
 				"jwt-signing-key": fmt.Sprintf("%x", jwtSigningKey),
 			})
+
+			waitForProxy(clientset, namespace)
 		},
 	}
 }
@@ -257,6 +259,26 @@ func checkCluster() {
 		}
 		if !compatible {
 			log.Info(fmt.Sprintf("Kernel version for node %s not supported. Must have minimum kernel version of %s", node.Name, kernelMinVersion))
+		}
+	}
+}
+
+// waitForProxy waits for the Vizier's Proxy service to be ready with an external IP.
+func waitForProxy(clientset *kubernetes.Clientset, namespace string) {
+	log.Info("Waiting for services and pods to start...")
+
+	// Watch for service updates.
+	watcher, err := k8s.WatchK8sResource(clientset, "services", namespace)
+	if err != nil {
+		log.WithError(err).Fatal("Could not watch k8s services")
+	}
+	for c := range watcher.ResultChan() {
+		service := c.Object.(*v1.Service)
+		if service.ObjectMeta.Name == "vizier-proxy-service" {
+			if len(service.Status.LoadBalancer.Ingress) > 0 && service.Status.LoadBalancer.Ingress[0].IP != "" {
+				log.Info("Setup complete.")
+				watcher.Stop()
+			}
 		}
 	}
 }
