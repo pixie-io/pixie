@@ -14,12 +14,10 @@ fi
 workspace=$(bazel info workspace)
 
 profile_args_str=""
-if [ "${has_minikube_profile}" ]; then
+if [ "${has_minikube_profile}" = true ]; then
     profile_args_str="-p $profile"
+    echo "Minikube Profile: ${profile_args_str}"
 fi
-
-echo "$profile_args_str"
-
 
 # On Linux we need to start minikube if not running.
 # On Macos we need to make sure kubernetes docker(docker-desktop) is running.
