@@ -1,4 +1,4 @@
-#include "src/stirling/testing/tcp_socket.h"
+#include "src/common/system/testing/tcp_socket.h"
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -13,7 +13,7 @@
 #include "src/common/base/base.h"
 
 namespace pl {
-namespace stirling {
+namespace system {
 namespace testing {
 
 TCPSocket::TCPSocket() {
@@ -165,5 +165,5 @@ bool TCPSocket::Recv(std::string* data) const {
 }
 
 }  // namespace testing
-}  // namespace stirling
+}  // namespace system
 }  // namespace pl

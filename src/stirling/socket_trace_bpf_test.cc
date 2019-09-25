@@ -6,6 +6,7 @@
 #include <string_view>
 #include <thread>
 
+#include "src/common/system/testing/tcp_socket.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
@@ -15,7 +16,6 @@
 #include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/client_server_system.h"
-#include "src/stirling/testing/tcp_socket.h"
 
 namespace pl {
 namespace stirling {

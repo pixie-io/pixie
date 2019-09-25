@@ -3,13 +3,14 @@
 #include <string>
 #include <vector>
 
-#include "src/stirling/testing/tcp_socket.h"
+#include "src/common/system/testing/tcp_socket.h"
 
 namespace pl {
 namespace stirling {
 namespace testing {
 
 using SendRecvScript = std::vector<std::vector<std::string_view>>;
+using TCPSocket = pl::system::testing::TCPSocket;
 
 class ClientServerSystem {
  public:

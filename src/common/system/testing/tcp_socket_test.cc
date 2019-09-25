@@ -7,10 +7,10 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/testing/tcp_socket.h"
+#include "src/common/system/testing/tcp_socket.h"
 
 namespace pl {
-namespace stirling {
+namespace system {
 namespace testing {
 
 TEST(TCPSocketTest, DataIsWrittenAndReceivedCorrectly) {
@@ -125,5 +125,5 @@ TEST(TCPSocketTest, ServerAddrAndPort) {
 }
 
 }  // namespace testing
-}  // namespace stirling
+}  // namespace system
 }  // namespace pl

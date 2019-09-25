@@ -7,7 +7,7 @@
 #include <vector>
 
 namespace pl {
-namespace stirling {
+namespace system {
 namespace testing {
 
 /**
@@ -50,5 +50,5 @@ class TCPSocket {
 };
 
 }  // namespace testing
-}  // namespace stirling
+}  // namespace system
 }  // namespace pl
