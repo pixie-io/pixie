@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bufio"
+	"bytes"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -36,6 +39,15 @@ func NewCmdDeploy() *cobra.Command {
 			check, _ := cmd.Flags().GetBool("check")
 			if check {
 				checkCluster()
+				return
+			}
+
+			currentCluster := getCurrentCluster()
+			log.Info(fmt.Sprintf("Deploying Pixie to the following cluster: %s", currentCluster))
+			log.Info("Is the cluster correct? (y/n)")
+			clusterOk := acceptUserInput()
+			if !clusterOk {
+				log.Info("Cluster is not correct. Aborting.")
 				return
 			}
 
@@ -97,6 +109,35 @@ func NewCmdDeploy() *cobra.Command {
 			waitForProxy(clientset, namespace)
 		},
 	}
+}
+
+func acceptUserInput() bool {
+	if viper.GetBool("y") {
+		return true
+	}
+	for true {
+		reader := bufio.NewReader(os.Stdin)
+		text, _ := reader.ReadString('\n')
+		if text == "y\n" || text == "yes\n" {
+			return true
+		} else if text == "n\n" || text == "no\n" {
+			return false
+		}
+		log.Info("Please enter (y/n)")
+	}
+	return false
+}
+
+func getCurrentCluster() string {
+	kcmd := exec.Command("kubectl", "config", "current-context")
+	var out bytes.Buffer
+	kcmd.Stdout = &out
+	err := kcmd.Run()
+
+	if err != nil {
+		log.WithError(err).Fatal("Error getting current kubernetes cluster")
+	}
+	return out.String()
 }
 
 func optionallyInstallCerts(clientset *kubernetes.Clientset, namespace string) {

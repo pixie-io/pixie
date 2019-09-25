@@ -26,6 +26,7 @@ func init() {
 	pflag.String("cluster_id", "", "The ID of the cluster")
 	pflag.Bool("deps_only", false, "Deploy only the cluster dependencies, not the agents")
 	pflag.String("cloud_addr", "withpixie.ai:443", "The address of Pixie Cloud")
+	pflag.Bool("y", false, "Whether to accept all user input")
 
 	// Flags for delete.
 	pflag.Bool("clobber_namespace", false, "Whether to delete all dependencies in the cluster")
@@ -77,6 +78,8 @@ func init() {
 	viper.BindPFlag("deps_only", deployCmd.Flags().Lookup("deps_only"))
 	deployCmd.Flags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
 	viper.BindPFlag("cloud_addr", deployCmd.Flags().Lookup("cloud_addr"))
+	deployCmd.Flags().BoolP("y", "y", false, "Whether to accept all user input")
+	viper.BindPFlag("y", deployCmd.Flags().Lookup("y"))
 
 	deleteCmd := NewCmdDeletePixie()
 	RootCmd.AddCommand(deleteCmd)
