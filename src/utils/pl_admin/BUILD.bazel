@@ -17,3 +17,12 @@ go_binary(
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )
+
+#TODO(zasgar): Refactor this into common utils/look into using hash.bzl.
+genrule(
+    name = "pixie.sha256",
+    srcs = [":pixie"],
+    outs = ["pixie.sha256"],
+    cmd = "sha256sum $< > $@",
+    visibility = ["//visibility:public"],
+)
