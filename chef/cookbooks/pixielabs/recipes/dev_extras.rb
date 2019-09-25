@@ -34,7 +34,7 @@ execute 'install gcloud' do
   action :run
 end
 
-remote_file '/usr/local/bin/kubectl' do
+remote_file '/opt/pixielabs/bin/kubectl' do
   source node['kubectl']['download_path']
   mode 0755
   checksum node['kubectl']['sha256']

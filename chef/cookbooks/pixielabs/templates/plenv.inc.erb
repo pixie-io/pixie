@@ -1,7 +1,6 @@
 # If changing this file, make sure to also update the ENV in chef/packer_docker_dev.json.
 # DO NOT EDIT! This is an automatically generated file by Chef and may be changed.
 export CLANG_PATH=/opt/clang-8.0
-export PATH=/opt/pixielabs/bin:$PATH
 export PATH=/opt/google-cloud-sdk/bin:$PATH
 export PATH=/opt/node/bin:$PATH
 export PATH=/opt/phab/arcanist/bin:$PATH
@@ -25,3 +24,7 @@ elif [ -n "`$SHELL -c 'echo $BASH_VERSION'`" ]; then
    source /opt/google-cloud-sdk/path.bash.inc
    source /opt/google-cloud-sdk/completion.bash.inc
 fi
+
+
+# Always pick our binaries first.
+export PATH=/opt/pixielabs/bin:$PATH
