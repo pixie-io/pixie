@@ -10,8 +10,6 @@ describe('<DeployInstructions/> test', () => {
       sitename={'pixielabs'}
       clusterID={'test'}
     />);
-    expect(wrapper.find('.deploy-instructions--subheader').text()).toEqual('pixielabs');
-    expect(wrapper.find(DialogBox)).toHaveLength(1);
     expect(wrapper.find(CodeSnippet)).toHaveLength(1);
   });
 });

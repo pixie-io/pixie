@@ -19,7 +19,26 @@
 .deploy-instructions .deploy-instructions--footer {
     border-top: 1px solid $gray-400;
     padding-top: 20px;
-    margin-top: 80px;
+    margin-top: 40px;
+}
+
+.deploy-instructions--notes {
+  font-size: 12px;
+}
+
+.deploy-instructions--notes ul {
+  list-style: none;
+}
+
+.deploy-instructions--notes li {
+  color: $gray-600;
+}
+
+.deploy-instructions--notes li:before {
+  content: "\2022";
+  color: black;
+  margin-left: -1em;
+  margin-right: 1em;
 }
 
 .deploy-instructions .code-snippet {
@@ -27,7 +46,7 @@
 }
 
 .deploy-instructions--instructions {
-    margin-top: 20px;
+    margin-top: 40px;
 }
 
 .deploy-instructions label {
@@ -67,13 +86,24 @@
 }
 
 .deploy-instructions .deploy-instructions--contact-info-line:not(:last-child) {
-    margin-bottom: 8px;
+    margin-bottom: 2px;
 }
 
 .deploy-instructions--contact-info-line img {
     margin-right: 10px;
 }
 
-.deploy-instructions--footer a {
-    color: $gray-600;
+.deploy-instructions a {
+    color: $info;
+    opacity: 0.8;
+}
+
+.deploy-instructions a:hover {
+    color: $info;
+    opacity: 1;
+}
+
+.deploy-instructions .code-snippet {
+    margin-top: 10px;
+    margin-bottom: 20px;
 }

@@ -5,9 +5,11 @@ import * as React from 'react';
 import {Dropdown, DropdownButton} from 'react-bootstrap';
 
 // @ts-ignore : TS does not like image files.
-import * as emailImage from 'images/icons/email.svg';
+import * as docsImage from 'images/icons/docs.svg';
 // @ts-ignore : TS does not like image files.
-import * as phoneImage from 'images/icons/phone.svg';
+import * as downloadImage from 'images/icons/download.svg';
+// @ts-ignore : TS does not like image files.
+import * as emailImage from 'images/icons/email.svg';
 
 import './deploy-instructions.scss';
 
@@ -25,43 +27,42 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
     <div className='deploy-instructions'>
       <DialogBox width={760}>
         <div className='deploy-instructions--content'>
-          <h3>Deploy pixie agent</h3>
-          <div className='deploy-instructions--subheader'>{props.sitename}</div>
+          <h3>Deployment Instructions</h3>
           <div className='deploy-instructions--instructions' style={{width: '100%'}}>
-            <label htmlFor='deploy'>Deploy Method</label>
-            <DropdownButton
-              id='deploy-method-dropdown'
-              title='Select the deploy method'
-            >
-              {
-                DEPLOY_METHODS.map((method, idx) => {
-                  return <Dropdown.Item
-                    key={idx}
-                    eventKey={idx}
-                  >
-                    {method}
-                  </Dropdown.Item>;
-                })
-              }
-            </DropdownButton>
+            <div className='deploy-instructions--notes'>
+              Notes for Alpha Users:
+             <ul>
+                <li>The command uses the Pixie CLI to deploy Pixie on your cluster: </li>
+                <li>Download the
+                  <a href='/assets/downloads/pixie/linux_amd64/pixie'>{' Pixie CLI '}
+                    <img src={downloadImage}/>
+                  </a>
+                    {' ('} <a href='/assets/downloads/pixie/linux_amd64/pixie.sha256'>{'SHA256 '}
+                      <img src={downloadImage}/>
+                    </a>{' )'}.
+                </li>
+                <li>The Pixie CLI is a Linux binary, so make sure you run it on a Linux machine.</li>
+                <li>Include the path to the credentials file where it says {'/*<credentials file path>*/'}.</li>
+                <li>Once Pixie is deployed, you must manually validate the SSL certs (see instructions
+                  <a href='/docs/admin/authentication/'> here</a>).
+                </li>
+             </ul>
+          </div>
+          Copy and execute the command below in your K8s cluster's terminal:
             <CodeSnippet showCopy={true} language='bash'>
               {'./pixie deploy --cluster_id ' + props.clusterID +
-                ' --use_version v0.1 --credentials_file <creds file path here>'}
+                ' --use_version v0.1 \\ \n --credentials_file /*<credentials file path>*/'}
             </CodeSnippet>
           </div>
           <div className='deploy-instructions--footer' style={{width: '100%'}}>
-            Need help with deploying your application? Read through the documentation
-            <a
-              href={'https://' + DOMAIN_NAME + '/docs/getting-started'}> here
-            </a>.
-            <br />
-            If you have any additional questions, please contact us.
+            Need help with deploying your application?
             <div className='deploy-instructions--contact-info'>
               <div className='deploy-instructions--contact-info-line'>
-                <img src={phoneImage}/> (xxx)xxx-xxxx
+                <img src={docsImage}/>
+                  <a href={'https://' + DOMAIN_NAME + '/docs/getting-started/'}>Pixie Product Documentation</a>
               </div>
               <div className='deploy-instructions--contact-info-line'>
-                <img src={emailImage}/> cs@pixielabs.ai
+                <img src={emailImage}/><a href='mailto:cs@pixielabs.ai'> cs@pixielabs.ai</a>
               </div>
             </div>
           </div>
