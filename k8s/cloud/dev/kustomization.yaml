@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 commonLabels:
   app: pl-cloud
-namespace: plc
+namespace: plc-dev
 replicas:
 - name: api-server
   count: 1
@@ -23,3 +23,6 @@ resources:
 - postgres_persistent_volume.yaml
 - redis_service.yaml
 - redis_stateful_set.yaml
+patchesStrategicMerge:
+  - db_config.yaml
+  - service_config.yaml
