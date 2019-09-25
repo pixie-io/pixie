@@ -447,7 +447,7 @@ Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) 
   std::string fpath = absl::Substitute("$0/$1/fd/$2", proc_base_path_, pid, fd);
 
   static constexpr int kMaxFDLinkLength = 256;
-  out->reserve(kMaxFDLinkLength);
+  out->resize(kMaxFDLinkLength);
   ssize_t num_bytes = readlink(fpath.c_str(), out->data(), out->size());
   if (num_bytes == -1) {
     return error::Internal("readlink failed [errno=$0]", errno);
