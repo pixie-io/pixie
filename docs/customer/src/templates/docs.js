@@ -1,16 +1,15 @@
-import { Component } from 'react';
+import React, { Component } from 'react';
 import Helmet from 'react-helmet';
 import { graphql } from 'gatsby';
-import MDXRenderer from 'gatsby-mdx/mdx-renderer';
-import { injectGlobal } from 'react-emotion';
-import { Layout } from '$components';
+import MDXRenderer from 'gatsby-plugin-mdx/mdx-renderer';
+import styled, { injectGlobal } from 'react-emotion';
+import { Layout, Link } from '$components';
 import NextPrevious from '../components/NextPrevious';
 import '../components/styles.css';
 import config from '../../config';
 
 const forcedNavOrder = config.sidebar.forcedNavOrder;
 
-/* tslint:disable */
 injectGlobal`
   * {
     margin: 0;
@@ -43,7 +42,32 @@ injectGlobal`
     color: #663399;
   }
 `;
-/* tslint:enable */
+
+const Edit = styled('div')`
+  padding: 1rem 1.5rem;
+  text-align: right;
+
+  a {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1em;
+    text-decoration: none;
+    color: #555;
+    border: 1px solid rgb(211, 220, 228);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s ease-out 0s;
+    text-decoration: none;
+    color: rgb(36, 42, 49);
+    background-color: rgb(255, 255, 255);
+    box-shadow: rgba(116, 129, 141, 0.1) 0px 1px 1px 0px;
+    height: 30px;
+    padding: 5px 16px;
+    &:hover {
+      background-color: rgb(245, 247, 249);
+    }
+  }
+`;
 
 export default class MDXRuntimeTest extends Component {
   render() {
@@ -51,21 +75,23 @@ export default class MDXRuntimeTest extends Component {
     const {
       allMdx,
       mdx,
+      site: {
+        siteMetadata: { docsLocation, title },
+      },
     } = data;
-
     const navItems = allMdx.edges
       .map(({ node }) => node.fields.slug)
-      .filter((slug) => slug !== '/')
+      .filter(slug => slug !== '/')
       .sort()
       .reduce(
         (acc, cur) => {
-          if (forcedNavOrder.find((url) => url === cur)) {
+          if (forcedNavOrder.find(url => url === cur)) {
             return { ...acc, [cur]: [cur] };
           }
 
           const prefix = cur.split('/')[1];
 
-          if (prefix && forcedNavOrder.find((url) => url === `/${prefix}`)) {
+          if (prefix && forcedNavOrder.find(url => url === `/${prefix}`)) {
             return { ...acc, [`/${prefix}`]: [...acc[`/${prefix}`], cur] };
           } else {
             return { ...acc, items: [...acc.items, cur] };
@@ -74,20 +100,22 @@ export default class MDXRuntimeTest extends Component {
         { items: [] },
       );
 
-    /* tslint:disable */
     const nav = forcedNavOrder
       .reduce((acc, cur) => {
         return acc.concat(navItems[cur]);
       }, [])
       .concat(navItems.items)
-      .map((slug) => {
-        const { node } = allMdx.edges.find(
-          ({ node }) => node.fields.slug === slug,
-        );
+      .map(slug => {
+        if (slug) {
+          const { node } = allMdx.edges.find(
+            // tslint:disable-next-line
+            ({ node }) => node.fields.slug === slug,
+          );
 
-        return { title: node.fields.title, url: node.fields.slug };
+
+          return { title: node.fields.title, url: node.fields.slug };
+        }
       });
-    /* tslint:enable */
 
     // meta tags
     const metaTitle = mdx.frontmatter.metaTitle;
@@ -113,8 +141,8 @@ export default class MDXRuntimeTest extends Component {
             {mdx.fields.title}
           </h1>
         </div>
-        <div className={'mainWrapper'}>
-          <MDXRenderer>{mdx.code.body}</MDXRenderer>
+            <div className={'mainWrapper'}>
+          <MDXRenderer>{mdx.body}</MDXRenderer>
         </div>
         <div className={'addPaddTopBottom'}>
           <NextPrevious mdx={mdx} nav={nav} />
@@ -138,9 +166,7 @@ export const pageQuery = graphql`
         title
         slug
       }
-      code {
-        body
-      }
+      body
       tableOfContents
       parent {
         ... on File {
