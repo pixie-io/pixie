@@ -16,6 +16,8 @@ import './vizier.scss';
 // @ts-ignore : TS does not like image files.
 import * as infoImage from 'images/icons/agent.svg';
 // @ts-ignore : TS does not like image files.
+import * as loadingSvg from 'images/icons/loading-dark.svg';
+// @ts-ignore : TS does not like image files.
 import * as codeImage from 'images/icons/query.svg';
 // @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/logo.svg';
@@ -67,7 +69,9 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
       <div className='create-cluster-instructions'>
         <DialogBox width={760}>
           <div className='create-cluster-instructions--content'>
-            Creating cluster...
+            Initializing...
+            <p></p>
+            <img className='spinner' src={loadingSvg} />
           </div>
         </DialogBox>
       </div>
