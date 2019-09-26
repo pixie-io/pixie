@@ -8,7 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
-	"pixielabs.ai/pixielabs/src/utils/pl_admin/cmd"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"pixielabs.ai/pixielabs/src/utils/pl_admin/cmd"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd"
 )
 
 func TestVersionMajorNotCompatible(t *testing.T) {

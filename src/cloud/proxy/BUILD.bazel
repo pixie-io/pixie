@@ -24,8 +24,8 @@ container_layer(
     name = "pixie_binary",
     directory = "/assets/downloads/pixie/linux_amd64/",
     files = [
-        "//src/utils/pl_admin:pixie",
-        "//src/utils/pl_admin:pixie.sha256",
+        "//src/utils/pixie_cli:pixie",
+        "//src/utils/pixie_cli:pixie.sha256",
     ],
 )
 

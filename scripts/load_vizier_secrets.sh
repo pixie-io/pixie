@@ -8,5 +8,5 @@ fi
 
 workspace=$(bazel info workspace 2> /dev/null)
 
-cd ${workspace}/src/utils/pl_admin/
-bazel run :pl_deploy -- install-certs --namespace=${namespace}
+cd ${workspace}/src/utils/pixie_cli/
+bazel run :pixie -- install-certs --namespace=${namespace}

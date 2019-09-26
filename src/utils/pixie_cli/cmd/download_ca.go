@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"pixielabs.ai/pixielabs/src/utils/pl_admin/cmd/k8s"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd/k8s"
 )
 
 // NewCmdDownloadCA creates a new "download-ca" command.

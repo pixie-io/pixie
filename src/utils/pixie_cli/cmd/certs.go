@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"pixielabs.ai/pixielabs/src/utils/pl_admin/cmd/certs"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd/certs"
 )
 
 // NewCmdInstallCerts creates a new "install-certs" command.

@@ -18,7 +18,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 
-	"pixielabs.ai/pixielabs/src/utils/pl_admin/cmd/k8s"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd/k8s"
 )
 
 func generateCA(certPath string, bitsize int) (*x509.Certificate, crypto.PrivateKey) {
