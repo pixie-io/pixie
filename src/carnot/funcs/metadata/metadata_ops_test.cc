@@ -238,6 +238,15 @@ TEST_F(MetadataOpsTest, upid_to_string) {
   EXPECT_EQ(udf.Exec(nullptr, upid2.value()), absl::Substitute("$0:$1:$2", 255, 123, 11111));
 }
 
+TEST_F(MetadataOpsTest, upid_to_pid) {
+  UPIDToPIDUDF udf;
+  auto upid1 = md::UPID(123, 567, 89101);
+  EXPECT_EQ(udf.Exec(nullptr, upid1.value()), 567);
+
+  auto upid2 = md::UPID(255, 123, 11111);
+  EXPECT_EQ(udf.Exec(nullptr, upid2.value()), 123);
+}
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot

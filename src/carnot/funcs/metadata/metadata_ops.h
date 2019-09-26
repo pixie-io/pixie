@@ -379,6 +379,14 @@ class UPIDToStringUDF : public ScalarUDF {
   }
 };
 
+class UPIDToPIDUDF : public ScalarUDF {
+ public:
+  types::Int64Value Exec(FunctionContext*, types::UInt128Value upid_value) {
+    auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
+    auto upid = md::UPID(upid_uint128);
+    return static_cast<int64_t>(upid.pid());
+  }
+};
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot
