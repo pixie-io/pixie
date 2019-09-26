@@ -123,22 +123,16 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 
 	// Verify that site belongs to org.
 	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: in.DomainName})
-	if err != nil {
-		return nil, err
-	}
-	if orgInfo == nil {
-		return nil, status.Error(codes.InvalidArgument, "organization does not exist")
+	if err != nil || orgInfo == nil {
+		return nil, status.Error(codes.InvalidArgument, "user does not belong to a registered organization")
 	}
 	siteInfo, err := sc.GetSiteByDomain(ctx, &sitemanagerpb.GetSiteByDomainRequest{DomainName: in.SiteName})
-	if err != nil {
-		return nil, err
-	}
-	if siteInfo == nil {
+	if err != nil || siteInfo == nil {
 		return nil, status.Error(codes.InvalidArgument, "site does not exist")
 	}
 
 	if pbutils.UUIDFromProtoOrNil(siteInfo.OrgID) != pbutils.UUIDFromProtoOrNil(orgInfo.ID) {
-		return nil, status.Error(codes.InvalidArgument, "site does not belong to org, cannot login")
+		return nil, status.Error(codes.InvalidArgument, "site does not belong to user's organization")
 	}
 
 	// If user does not exist in Auth0, then create a new user.

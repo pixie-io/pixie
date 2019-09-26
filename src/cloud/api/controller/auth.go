@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	"pixielabs.ai/pixielabs/src/shared/services"
 	commonenv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -75,7 +76,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	domainName, err := GetDomainNameFromEmail(params.UserEmail)
 	if err != nil {
-		return err
+		return services.HTTPStatusFromError(err, "failed to get domain from email")
 	}
 
 	rpcReq := &authpb.LoginRequest{
@@ -93,7 +94,8 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 				return handler.NewStatusError(http.StatusUnauthorized, s.Message())
 			}
 		}
-		return handler.NewStatusError(http.StatusInternalServerError, "failed to login")
+
+		return services.HTTPStatusFromError(err, "failed to login")
 	}
 
 	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)

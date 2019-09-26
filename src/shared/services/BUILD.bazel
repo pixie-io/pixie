@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "cors.go",
+        "errors.go",
         "grpc_server.go",
         "logging.go",
         "server.go",
@@ -15,6 +16,7 @@ go_library(
     deps = [
         "//src/shared/services/authcontext:go_default_library",
         "//src/shared/services/env:go_default_library",
+        "//src/shared/services/handler:go_default_library",
         "@com_github_gorilla_handlers//:go_default_library",
         "@com_github_grpc_ecosystem_go_grpc_middleware//:go_default_library",
         "@com_github_grpc_ecosystem_go_grpc_middleware//auth:go_default_library",

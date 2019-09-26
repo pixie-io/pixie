@@ -8,6 +8,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
+	"pixielabs.ai/pixielabs/src/shared/services"
 	commonenv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 )
@@ -82,7 +83,7 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 
 	resp, err := apiEnv.AuthClient().CreateUserOrg(ctxWithCreds, rpcReq)
 	if err != nil {
-		return handler.NewStatusError(http.StatusInternalServerError, "failed to create user/org")
+		return services.HTTPStatusFromError(err, "failed to create user/org")
 	}
 
 	siteReq := &sitemanagerpb.RegisterSiteRequest{
@@ -92,7 +93,7 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 
 	siteResp, err := apiEnv.SiteManagerClient().RegisterSite(ctxWithCreds, siteReq)
 	if err != nil {
-		return handler.NewStatusError(http.StatusInternalServerError, "failed to create site")
+		return services.HTTPStatusFromError(err, "failed to create site")
 	}
 	if !siteResp.SiteRegistered {
 		return handler.NewStatusError(http.StatusInternalServerError, "failed to create site")
