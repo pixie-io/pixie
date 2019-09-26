@@ -83,6 +83,7 @@ void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
   registry->RegisterOrDie<EqualUDF<types::Int64Value, types::BoolValue>>("pl.equal");
   registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Float64Value>>("pl.equal");
   registry->RegisterOrDie<EqualUDF<types::Float64Value, types::Int64Value>>("pl.equal");
+  registry->RegisterOrDie<EqualUDF<types::UInt128Value, types::UInt128Value>>("pl.equal");
   registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>("pl.equal");
 
   // !=

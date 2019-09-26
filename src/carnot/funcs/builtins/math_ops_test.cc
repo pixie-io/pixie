@@ -213,6 +213,13 @@ TEST(MathOps, basic_float_int_equal_test) {
   udf_tester.ForInput(3.14159, 3).Expect(false);
 }
 
+TEST(MathOps, basic_uint128_equal_test) {
+  auto udf_tester = udf::UDFTester<EqualUDF<types::UInt128Value, types::UInt128Value>>();
+  udf_tester.ForInput(types::UInt128Value(1, 2), absl::MakeUint128(1, 2)).Expect(true);
+  udf_tester.ForInput(types::UInt128Value(1, 2), absl::uint128(12)).Expect(false);
+  udf_tester.ForInput(types::UInt128Value(551, 2), absl::MakeUint128(551, 2)).Expect(true);
+}
+
 TEST(MathOps, basic_string_not_equal_test) {
   auto udf_tester = udf::UDFTester<NotEqualUDF<types::StringValue, types::StringValue>>();
   udf_tester.ForInput("abc", "abc").Expect(false);
