@@ -53,7 +53,6 @@ require (
 	github.com/hokaccha/go-prettyjson v0.0.0-20190818114111-108c894c2c0e // indirect
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.5.0+incompatible
 	github.com/jmoiron/sqlx v1.2.0
@@ -65,7 +64,6 @@ require (
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
-	github.com/mitchellh/mapstructure v1.1.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/nats-io/gnatsd v1.4.1
@@ -87,11 +85,12 @@ require (
 	github.com/shopspring/decimal v0.0.0-20190905144223-a36b5d85f337 // indirect
 	github.com/sirupsen/logrus v1.4.1
 	github.com/soheilhy/cmux v0.1.4 // indirect
-	github.com/spf13/cobra v0.0.3
-	github.com/spf13/pflag v1.0.2
-	github.com/spf13/viper v1.2.1
+	github.com/spf13/cobra v0.0.5
+	github.com/spf13/pflag v1.0.3
+	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.3.0
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
+	github.com/txn2/txeh v1.2.1
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5
