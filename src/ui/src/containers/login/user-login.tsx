@@ -1,14 +1,18 @@
 import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
+import {DialogBox} from 'components/dialog-box/dialog-box';
 import {AUTH0_CLIENT_ID, AUTH0_DOMAIN, DOMAIN_NAME} from 'containers/constants';
 import gql from 'graphql-tag';
 import * as QueryString from 'query-string';
 import * as React from 'react';
 import { ApolloConsumer } from 'react-apollo';
+import {Button} from 'react-bootstrap';
 import * as RedirectUtils from 'utils/redirect-utils';
 
 // @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/dark-logo.svg';
+// @ts-ignore : TS does not like image files.
+import * as criticalImage from 'images/icons/critical.svg';
 
 export interface RouterInfo {
   search: string;
@@ -21,6 +25,10 @@ interface Auth0LoginProps {
   onAuthenticated: (authResult) => void;
   allowSignUp: boolean;
   allowLogin: boolean;
+}
+
+interface Auth0LoginState {
+  error: string;
 }
 
 function onLoginAuthenticated(authResult) {
@@ -40,6 +48,10 @@ function onLoginAuthenticated(authResult) {
         expiresAt: response.data.ExpiresAt,
       });
       RedirectUtils.redirect(this.domain, '/vizier/query', {});
+    }).catch((err) => {
+      this.setState({
+        error: err.response.data,
+      });
     });
   });
 }
@@ -62,8 +74,10 @@ function onCreateAuthenticated(authResult) {
       });
     }).then((results) => {
         RedirectUtils.redirect(this.domain, '/vizier/query', {});
-    }).catch((gqlErr) => {
-        return gqlErr;
+    }).catch((err) => {
+      this.setState({
+        error: err.response.data,
+      });
     });
 });
 }
@@ -93,13 +107,21 @@ export const UserCreate = (props) => {
   }}</ApolloConsumer>);
 };
 
-class Auth0Login extends React.Component<Auth0LoginProps, {}>  {
+export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState>  {
   public static defaultProps: Partial<Auth0LoginProps> = {
     containerID: 'pl-auth0-lock-container',
   };
 
   private _lock: Auth0LockStatic;
   private domain: string | string[];
+
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      error: '',
+    };
+  }
 
   componentDidMount() {
     this.domain = QueryString.parse(this.props.location.search).domain_name;
@@ -165,6 +187,23 @@ class Auth0Login extends React.Component<Auth0LoginProps, {}>  {
   }
 
   render() {
-    return <div id={this.props.containerID}/>;
+    if (this.state.error === '') {
+      return <div id={this.props.containerID}/>;
+    }
+
+    return (
+      <DialogBox width={480}>
+        <div className='error-message'>
+          <div className='error-message--icon'><img src={criticalImage}/></div>
+          {this.state.error}
+        </div>
+        <Button variant='danger' onClick={() => {
+          // Just reload page to clear state and allow them to retry login.
+          document.location.reload();
+        }}>
+          Retry
+        </Button>
+      </DialogBox>
+    );
   }
 }

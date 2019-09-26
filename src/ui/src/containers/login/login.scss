@@ -74,3 +74,16 @@
   background: $white;
   color: $gray-700;
 }
+
+.login .dialog-box--content {
+  padding: 40px 80px 60px 80px;
+}
+
+.login .error-message {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.login .error-message--icon {
+  margin-right: 10px;
+}

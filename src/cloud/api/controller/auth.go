@@ -76,7 +76,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	domainName, err := GetDomainNameFromEmail(params.UserEmail)
 	if err != nil {
-		return services.HTTPStatusFromError(err, "failed to get domain from email")
+		return services.HTTPStatusFromError(err, "Failed to get domain from email")
 	}
 
 	rpcReq := &authpb.LoginRequest{
@@ -95,7 +95,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 			}
 		}
 
-		return services.HTTPStatusFromError(err, "failed to login")
+		return services.HTTPStatusFromError(err, "Failed to login")
 	}
 
 	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
