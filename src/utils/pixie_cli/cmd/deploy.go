@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"bytes"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -56,6 +55,7 @@ func NewCmdDeploy() *cobra.Command {
 			namespace, _ := cmd.Flags().GetString("namespace")
 			credsFile, _ := cmd.Flags().GetString("credentials_file")
 			cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
+			clusterID, _ := cmd.Flags().GetString("cluster_id")
 
 			optionallyCreateNamespace(clientset, namespace)
 
@@ -67,10 +67,7 @@ func NewCmdDeploy() *cobra.Command {
 				k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsFile)
 			}
 
-			err := createCloudConfig(cloudAddr, namespace)
-			if err != nil {
-				log.WithError(err).Fatal("could not create cloud config")
-			}
+			LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace)
 
 			path, _ := cmd.Flags().GetString("extract_yaml")
 			extractYAMLs(path)
@@ -88,23 +85,6 @@ func NewCmdDeploy() *cobra.Command {
 			}
 
 			deploy(path, depsOnly)
-
-			clusterID, _ := cmd.Flags().GetString("cluster_id")
-			if clusterID == "" {
-				log.Fatal("cluster_id is required")
-			}
-			jwtSigningKey := make([]byte, 64)
-			_, err = rand.Read(jwtSigningKey)
-			if err != nil {
-				log.Fatal("Could not generate JWT signing key")
-			}
-
-			// Load clusterID and JWT signing key as a secret.
-			k8s.DeleteSecret(clientset, namespace, "pl-cluster-secrets")
-			k8s.CreateGenericSecretFromLiterals(clientset, namespace, "pl-cluster-secrets", map[string]string{
-				"cluster-id":      clusterID,
-				"jwt-signing-key": fmt.Sprintf("%x", jwtSigningKey),
-			})
 
 			waitForProxy(clientset, namespace)
 		},
@@ -178,16 +158,6 @@ func deploy(extractPath string, depsOnly bool) {
 func deployFile(filePath string) error {
 	kcmd := exec.Command("kubectl", "apply", "-f", filePath)
 	return kcmd.Run()
-}
-
-func createCloudConfig(cloudAddr string, namespace string) error {
-	// Attempt to delete an existing pl-cloud-config configmap.
-	delCmd := exec.Command("kubectl", "delete", "configmap", "pl-cloud-config", "-n", namespace)
-	_ = delCmd.Run()
-
-	// Create a new pl-cloud-config configmap.
-	createCmd := exec.Command("kubectl", "create", "configmap", "pl-cloud-config", fmt.Sprintf("--from-literal=PL_CLOUD_ADDR=%s", cloudAddr), "-n", namespace)
-	return createCmd.Run()
 }
 
 func retryDeploy(filePath string) {

@@ -92,6 +92,15 @@ func init() {
 	viper.BindPFlag("ca_path", downloadCACmd.Flags().Lookup("ca_path"))
 	downloadCACmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
 	viper.BindPFlag("namespace", downloadCACmd.Flags().Lookup("namespace"))
+
+	loadClusterSecretsCmd := NewCmdLoadClusterSecrets()
+	RootCmd.AddCommand(loadClusterSecretsCmd)
+	loadClusterSecretsCmd.Flags().StringP("cluster_id", "i", "", "The ID of the cluster")
+	viper.BindPFlag("cluster_id", loadClusterSecretsCmd.Flags().Lookup("cluster_id"))
+	loadClusterSecretsCmd.Flags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
+	viper.BindPFlag("cloud_addr", loadClusterSecretsCmd.Flags().Lookup("cloud_addr"))
+	loadClusterSecretsCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
+	viper.BindPFlag("namespace", loadClusterSecretsCmd.Flags().Lookup("namespace"))
 }
 
 // RootCmd is the base command for Cobra.
