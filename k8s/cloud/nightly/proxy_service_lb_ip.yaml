@@ -3,4 +3,4 @@ kind: Service
 metadata:
   name: cloud-proxy-service
 spec:
-  loadBalancerIP: 10.32.0.82
+  loadBalancerIP: 10.32.0.104

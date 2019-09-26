@@ -1,5 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: plc-staging
 replicas:
 - name: api-server
   count: 3
@@ -14,7 +15,18 @@ replicas:
 - name: vzmgr-server
   count: 3
 resources:
+- cloud_proxy_backend_config.yaml
+- vzconn_backend_config.yaml
 - ../base
+- ../overlays/exposed_services_gclb
 patchesStrategicMerge:
-- domain_config.yaml
-- auth0_config.yaml
+  - auth0_config.yaml
+  - db_config.yaml
+  - service_config.yaml
+  - domain_config.yaml
+  - cloud_ingress_ip.yaml
+patches:
+  - path: db_sidecar.yaml
+    target:
+      kind: Deployment
+      labelSelector: db=pgsql

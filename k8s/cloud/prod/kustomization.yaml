@@ -20,14 +20,13 @@ resources:
 - cloud_proxy_backend_config.yaml
 - vzconn_backend_config.yaml
 - ../base
-- cloud_ingress.yaml
+- ../overlays/exposed_services_gclb
 patchesStrategicMerge:
   - auth0_config.yaml
   - db_config.yaml
   - service_config.yaml
   - domain_config.yaml
-  - cloud_proxy_service_np.yaml
-  - vzconn_service_be_config.yaml
+  - cloud_ingress_ip.yaml
 patches:
   - path: db_sidecar.yaml
     target:

@@ -4,14 +4,10 @@ commonLabels:
   app: pl-cloud
 namespace: plc-testing
 resources:
+  - ../overlays/dev_services
   - ../base
+  - ../overlays/exposed_services_ilb
 patchesStrategicMerge:
   - db_config.yaml
   - service_config.yaml
   - domain_config.yaml
-  - proxy_service_lb_ip.yaml
-patches:
-  - path: db_sidecar.yaml
-    target:
-      kind: Deployment
-      labelSelector: db=pgsql
