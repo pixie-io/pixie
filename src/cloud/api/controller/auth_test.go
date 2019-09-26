@@ -42,11 +42,13 @@ func TestAuthLoginHandler(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/users",
-		strings.NewReader("{\"accessToken\": \"the-token\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"domainName\": \"hulu\", \"userEmail\": \"user@hulu.com\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken: "the-token",
+		SiteName:    "hulu",
+		DomainName:  "hulu.com",
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
@@ -85,11 +87,13 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/api/users",
-		strings.NewReader("{\"accessToken\": \"the-token\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"domainName\": \"hulu\", \"userEmail\": \"user@gmail.com\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken: "the-token",
+		SiteName:    "hulu",
+		DomainName:  "user@gmail.com",
 	}
 
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
@@ -107,11 +111,13 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/api/users",
-		strings.NewReader("{\"accessToken\": \"the-token\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"domainName\": \"hulu\", \"userEmail\": \"user@hulu.com\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken: "the-token",
+		SiteName:    "hulu",
+		DomainName:  "hulu.com",
 	}
 
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {

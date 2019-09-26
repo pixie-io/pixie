@@ -63,6 +63,8 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	var params struct {
 		AccessToken string
 		State       string
+		DomainName  string
+		UserEmail   string
 	}
 
 	defer r.Body.Close()
@@ -71,8 +73,15 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 			"failed to decode json request")
 	}
 
+	domainName, err := GetDomainNameFromEmail(params.UserEmail)
+	if err != nil {
+		return err
+	}
+
 	rpcReq := &authpb.LoginRequest{
 		AccessToken: params.AccessToken,
+		SiteName:    params.DomainName,
+		DomainName:  domainName,
 	}
 
 	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)

@@ -51,6 +51,10 @@ message CreateUserOrgRequest {
 message LoginRequest {
   // The auth0 access token.
   string access_token = 1;
+  // The name of the site to log into.
+  string site_name = 2;
+  // The domain name for the org.
+  string domain_name = 3;
 }
 
 message LoginReply {

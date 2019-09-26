@@ -15,6 +15,21 @@ import (
 var emailDomainWhitelist = map[string]bool{
 	"hulu.com":         true,
 	"thousandeyes.com": true,
+	"pixielabs.ai":     true,
+}
+
+// GetDomainNameFromEmail gets the domain name from the provided email.
+func GetDomainNameFromEmail(email string) (string, error) {
+	emailComponents := strings.Split(email, "@")
+	if len(emailComponents) != 2 {
+		return "", handler.NewStatusError(http.StatusBadRequest, "failed to parse request")
+	}
+	// If the user is not part of a whitelisted org, they should have an individual org.
+	domainName := email
+	if _, exists := emailDomainWhitelist[emailComponents[1]]; exists {
+		domainName = emailComponents[1]
+	}
+	return domainName, nil
 }
 
 // CreateSiteHandler creates a new user/org and registers the site.
@@ -46,15 +61,9 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 			"failed to decode json request")
 	}
 
-	emailComponents := strings.Split(params.UserEmail, "@")
-	if len(emailComponents) != 2 {
-		return handler.NewStatusError(http.StatusBadRequest, "failed to parse request")
-	}
-	// If the user is not part of a whitelisted org, we should create an individual org
-	// for them.
-	domainName := params.UserEmail
-	if _, exists := emailDomainWhitelist[emailComponents[1]]; exists {
-		domainName = emailComponents[1]
+	domainName, err := GetDomainNameFromEmail(params.UserEmail)
+	if err != nil {
+		return err
 	}
 
 	rpcReq := &authpb.CreateUserOrgRequest{

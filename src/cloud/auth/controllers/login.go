@@ -11,6 +11,7 @@ import (
 
 	pb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
+	sitemanagerpb "pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -114,15 +115,37 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		return nil, err
 	}
 
-	// If user does not exist in Auth0, then create a new user.
-	newUser := userInfo.AppMetadata == nil || userInfo.AppMetadata.Clients[s.a.GetClientID()] == nil || userInfo.AppMetadata.Clients[s.a.GetClientID()].PLUserID == ""
-
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
+	pc := s.env.ProfileClient()
+	sc := s.env.SiteManagerClient()
+
+	// Verify that site belongs to org.
+	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: in.DomainName})
+	if err != nil {
+		return nil, err
+	}
+	if orgInfo == nil {
+		return nil, status.Error(codes.InvalidArgument, "organization does not exist")
+	}
+	siteInfo, err := sc.GetSiteByDomain(ctx, &sitemanagerpb.GetSiteByDomainRequest{DomainName: in.SiteName})
+	if err != nil {
+		return nil, err
+	}
+	if siteInfo == nil {
+		return nil, status.Error(codes.InvalidArgument, "site does not exist")
+	}
+
+	if pbutils.UUIDFromProtoOrNil(siteInfo.OrgID) != pbutils.UUIDFromProtoOrNil(orgInfo.ID) {
+		return nil, status.Error(codes.InvalidArgument, "site does not belong to org, cannot login")
+	}
+
+	// If user does not exist in Auth0, then create a new user.
+	newUser := userInfo.AppMetadata == nil || userInfo.AppMetadata.Clients[s.a.GetClientID()] == nil || userInfo.AppMetadata.Clients[s.a.GetClientID()].PLUserID == ""
+
 	// If user exists in Auth0, but not in the profile service, create a new user.
 	if !newUser {
-		pc := s.env.ProfileClient()
 		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.AppMetadata.Clients[s.a.GetClientID()].PLUserID)})
 		if err != nil {
 			newUser = true

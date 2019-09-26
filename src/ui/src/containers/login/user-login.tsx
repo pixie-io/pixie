@@ -24,19 +24,23 @@ interface Auth0LoginProps {
 }
 
 function onLoginAuthenticated(authResult) {
-  this._lock.hide();
-  return Axios({
-    method: 'post',
-    url: '/api/auth/login',
-    data: {
-      accessToken: authResult.accessToken,
-    },
-  }).then((response) => {
-    this.setSession({
-      idToken: response.data.Token,
-      expiresAt: response.data.ExpiresAt,
+  this._lock.getUserInfo(authResult.accessToken, (error, profile) => {
+    this._lock.hide();
+    return Axios({
+      method: 'post',
+      url: '/api/auth/login',
+      data: {
+        accessToken: authResult.accessToken,
+        userEmail: profile.email,
+        domainName: this.domain,
+      },
+    }).then((response) => {
+      this.setSession({
+        idToken: response.data.Token,
+        expiresAt: response.data.ExpiresAt,
+      });
+      RedirectUtils.redirect(this.domain, '/vizier/query', {});
     });
-    RedirectUtils.redirect(this.domain, '/vizier/query', {});
   });
 }
 
