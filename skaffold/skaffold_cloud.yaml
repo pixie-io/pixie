@@ -87,7 +87,6 @@ profiles:
   - name: staging
     activation:
       - env: PL_BUILD_TYPE=staging
-      - kubeContext: gke_pixie-prod_us-west1-a_pixie-cloud-prod
     patches:
       # Set compilation to be opt build.
       - op: add
@@ -98,6 +97,20 @@ profiles:
         path: /deploy/kustomize
         value:
           path: k8s/cloud/staging
+
+  - name: prod
+    activation:
+      - env: PL_BUILD_TYPE=prod
+    patches:
+      # Set compilation to be opt build.
+      - op: add
+        path: /build/artifacts/context=./bazel/args
+        value: ["--compilation_mode=opt"]
+
+      - op: replace
+        path: /deploy/kustomize
+        value:
+          path: k8s/cloud/prod
 
   - name: testing
     activation:
