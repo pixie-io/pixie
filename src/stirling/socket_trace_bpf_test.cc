@@ -29,6 +29,8 @@ using ::testing::UnorderedElementsAre;
 class SocketTraceBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    FLAGS_stirling_disable_self_tracing = false;
+
     source_ = SocketTraceConnector::Create("socket_trace_connector");
     ASSERT_OK(source_->Init());
 

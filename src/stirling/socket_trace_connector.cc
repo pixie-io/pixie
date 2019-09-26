@@ -1,8 +1,12 @@
 #ifdef __linux__
 
+#include <sys/types.h>
+#include <unistd.h>
+
 #include <google/protobuf/empty.pb.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
+
 #include <deque>
 #include <utility>
 
@@ -46,6 +50,8 @@ DEFINE_bool(stirling_enable_grpc_tracing, true,
 // build.
 DEFINE_bool(stirling_enable_mysql_tracing, false,
             "If true, stirling will trace and process syscalls called by MySQL RPCs.");
+DEFINE_bool(stirling_disable_self_tracing, true,
+            "If true, stirling will trace and process syscalls made by itself.");
 
 namespace pl {
 namespace stirling {
@@ -81,7 +87,9 @@ Status SocketTraceConnector::InitImpl() {
     PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kRoleRequestor));
   }
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
-
+  if (FLAGS_stirling_disable_self_tracing) {
+    PL_RETURN_IF_ERROR(DisableSelfTracing());
+  }
   if (!FLAGS_perf_buffer_events_output_path.empty()) {
     perf_buffer_events_output_stream_ =
         std::make_unique<std::ofstream>(FLAGS_perf_buffer_events_output_path);
@@ -145,15 +153,26 @@ Status SocketTraceConnector::Configure(TrafficProtocol protocol, uint64_t config
   return Status::OK();
 }
 
-Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
-  auto control_map_handle = bpf().get_percpu_array_table<uint64_t>(kTargetTGIDArrayName);
-  std::vector<uint64_t> target_pids(kCPUCount, pid);
-  auto update_res = control_map_handle.update_value(/*index*/ 0, target_pids);
+template <typename TValueType>
+Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable<TValueType>* arr) {
+  std::vector<TValueType> target_pids(BCCWrapper::kCPUCount, val);
+  auto update_res = arr->update_value(idx, target_pids);
   if (update_res.code() != 0) {
     return error::Internal(
         absl::StrCat("Failed to set target PID, error message: ", update_res.msg()));
   }
   return Status::OK();
+}
+
+Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
+  auto control_map_handle = bpf().get_percpu_array_table<int64_t>(kControlValuesArrayName);
+  return UpdatePerCPUArrayValue(kTargetTGIDIndex, pid, &control_map_handle);
+}
+
+Status SocketTraceConnector::DisableSelfTracing() {
+  auto control_map_handle = bpf().get_percpu_array_table<int64_t>(kControlValuesArrayName);
+  int64_t my_pid = getpid();
+  return UpdatePerCPUArrayValue(kStirlingTGIDIndex, my_pid, &control_map_handle);
 }
 
 //-----------------------------------------------------------------------------

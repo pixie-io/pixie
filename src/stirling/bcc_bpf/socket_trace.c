@@ -323,14 +323,13 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info, Traffic
   }
 }
 
-// This specify one pid to monitor. This is used during test to eliminate noise.
-// TODO(yzhao): We need a more robust mechanism for production use, which should be able to:
-// * Specify multiple pids up to a certain limit, let's say 1024.
-// * Support efficient lookup inside bpf to minimize overhead.
-BPF_PERCPU_ARRAY(test_only_target_tgid, s64, 1);
-static __inline bool test_only_should_trace_tgid(const u32 tgid) {
-  int kZero = 0;
-  s64* target_tgid = test_only_target_tgid.lookup(&kZero);
+// This array records singular values that are used by probes. We group them together to reduce the
+// number of arrays with only 1 element.
+BPF_PERCPU_ARRAY(control_values, s64, kNumControlValues);
+
+static __inline bool test_only_should_trace_target_tgid(const u32 tgid) {
+  int idx = kTargetTGIDIndex;
+  s64* target_tgid = control_values.lookup(&idx);
   if (target_tgid == NULL) {
     return true;
   }
@@ -338,6 +337,19 @@ static __inline bool test_only_should_trace_tgid(const u32 tgid) {
     return true;
   }
   return *target_tgid == tgid;
+}
+
+static __inline bool is_stirling_tgid(const u32 tgid) {
+  int idx = kStirlingTGIDIndex;
+  s64* target_tgid = control_values.lookup(&idx);
+  if (target_tgid == NULL) {
+    return false;
+  }
+  return *target_tgid == tgid;
+}
+
+static __inline bool should_trace_tgid(const u32 tgid) {
+  return test_only_should_trace_target_tgid(tgid) && !is_stirling_tgid(tgid);
 }
 
 /***********************************************************
@@ -373,7 +385,7 @@ static __inline void probe_entry_connect_impl(struct pt_regs* ctx, u64 id, int s
 
   u32 tgid = id >> 32;
 
-  if (!test_only_should_trace_tgid(tgid)) {
+  if (!should_trace_tgid(tgid)) {
     return;
   }
 
@@ -424,7 +436,7 @@ static __inline void probe_entry_accept_impl(struct pt_regs* ctx, u64 id, int so
                                              struct sockaddr* addr, size_t* addrlen) {
   u32 tgid = id >> 32;
 
-  if (!test_only_should_trace_tgid(tgid)) {
+  if (!should_trace_tgid(tgid)) {
     return;
   }
 
@@ -464,7 +476,7 @@ static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd,
 
   u32 tgid = id >> 32;
 
-  if (!test_only_should_trace_tgid(tgid)) {
+  if (!should_trace_tgid(tgid)) {
     return;
   }
 
@@ -678,7 +690,7 @@ static __inline void probe_entry_read_recv(struct pt_regs* ctx, u64 id, int fd, 
 
   u32 tgid = id >> 32;
 
-  if (!test_only_should_trace_tgid(tgid)) {
+  if (!should_trace_tgid(tgid)) {
     return;
   }
 
@@ -754,7 +766,7 @@ static __inline void probe_entry_close(struct pt_regs* ctx, u64 id, int fd) {
 
   u32 tgid = id >> 32;
 
-  if (!test_only_should_trace_tgid(tgid)) {
+  if (!should_trace_tgid(tgid)) {
     return;
   }
 

@@ -39,6 +39,7 @@ DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
 DECLARE_string(perf_buffer_events_output_path);
 DECLARE_bool(stirling_enable_grpc_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);
+DECLARE_bool(stirling_disable_self_tracing);
 
 OBJ_STRVIEW(http_trace_bcc_script, _binary_bcc_bpf_socket_trace_c_preprocessed);
 
@@ -96,6 +97,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   Status Configure(TrafficProtocol protocol, uint64_t config_mask);
   Status TestOnlySetTargetPID(int64_t pid);
+  Status DisableSelfTracing();
 
   /**
    * @brief Number of active ConnectionTrackers.
@@ -191,7 +193,6 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.
   inline static ::pl::grpc::ServiceDescriptorDatabase grpc_desc_db_{
       demos::hipster_shop::GetFileDescriptorSet()};
-  inline static const size_t kCPUCount = ebpf::BPFTable::get_possible_cpu_count();
 
   explicit SocketTraceConnector(std::string_view source_name)
       : SourceConnector(

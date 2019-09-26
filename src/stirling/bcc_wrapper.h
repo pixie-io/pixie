@@ -86,6 +86,8 @@ struct PerfEventSpec {
  */
 class BCCWrapper {
  public:
+  inline static const size_t kCPUCount = ebpf::BPFTable::get_possible_cpu_count();
+
   BCCWrapper() = delete;
 
   /**

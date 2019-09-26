@@ -21,8 +21,8 @@
 const char kControlMapName[] = "control_map";
 const uint64_t kSocketTraceNothing = 0;
 
-const char kTargetTGIDArrayName[] = "test_only_target_tgid";
 const int64_t kTraceAllTGIDs = -1;
+const char kControlValuesArrayName[] = "control_values";
 
 const char kStmtPreparePrefix = '\x16';
 const char kStmtExecutePrefix = '\x17';
@@ -53,6 +53,17 @@ typedef enum {
   kRoleRequestor = 1 << 1,
   kRoleResponder = 1 << 2
 } ReqRespRole;
+
+// Specifies the corresponding indexes of the entries of a per-cpu array.
+typedef enum {
+  // This specify one pid to monitor. This is used during test to eliminate noise.
+  // TODO(yzhao): We need a more robust mechanism for production use, which should be able to:
+  // * Specify multiple pids up to a certain limit, let's say 1024.
+  // * Support efficient lookup inside bpf to minimize overhead.
+  kTargetTGIDIndex = 0,
+  kStirlingTGIDIndex,
+  kNumControlValues,
+} ControlValueIndex;
 
 struct traffic_class_t {
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).

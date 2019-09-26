@@ -210,6 +210,7 @@ class GRPCCppTest : public ::testing::Test {
     // Also ensure test remain passing when the default changes.
     FLAGS_stirling_enable_parsing_protobufs = false;
     FLAGS_stirling_enable_grpc_tracing = true;
+    FLAGS_stirling_disable_self_tracing = false;
 
     source_ = SocketTraceConnector::Create("bcc_grpc_trace");
     ASSERT_OK(source_->Init());
