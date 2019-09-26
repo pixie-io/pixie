@@ -35,24 +35,24 @@ enum {
   TCP_CLOSING
 };
 
-SocketInfo::SocketInfo() {
+NetlinkSocketProber::NetlinkSocketProber() {
   fd_ = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_SOCK_DIAG);
   ECHECK(fd_ > 0) << absl::Substitute("Could not create NETLINK_SOCK_DIAG connection. [fd=$0]",
                                       fd_);
 }
 
-SocketInfo::~SocketInfo() {
+NetlinkSocketProber::~NetlinkSocketProber() {
   if (fd_ > 0) {
     close(fd_);
   }
 }
 
-StatusOr<std::vector<SocketInfoEntry>> SocketInfo::InetConnections() {
+StatusOr<std::unique_ptr<std::map<int, SocketInfo>>> NetlinkSocketProber::InetConnections() {
   PL_RETURN_IF_ERROR(SendInetDiagReq());
   return RecvInetDiagResp();
 }
 
-Status SocketInfo::SendInetDiagReq() {
+Status NetlinkSocketProber::SendInetDiagReq() {
   ssize_t msg_len = sizeof(struct nlmsghdr) + sizeof(struct inet_diag_req_v2);
 
   struct nlmsghdr msg_header = {};
@@ -82,14 +82,11 @@ Status SocketInfo::SendInetDiagReq() {
 
   ssize_t bytes_sent = 0;
 
-  LOG(INFO) << absl::Substitute("Trying to send messages [size=$0]", msg_len);
-
   while (bytes_sent < msg_len) {
     ssize_t retval = sendmsg(fd_, &msg, 0);
     if (retval < 0) {
-      return error::Internal("sendmsg failed with errno=$0", errno);
+      return error::Internal("Failed to send NetLink messages [errno=$0]", errno);
     }
-    LOG(INFO) << absl::Substitute("Sent $0 bytes", retval);
     bytes_sent += retval;
   }
 
@@ -98,8 +95,8 @@ Status SocketInfo::SendInetDiagReq() {
 
 namespace {
 
-StatusOr<SocketInfoEntry> ProcessInetDiagMsg(const struct inet_diag_msg& diag_msg,
-                                             unsigned int len) {
+Status ProcessInetDiagMsg(const struct inet_diag_msg& diag_msg, unsigned int len,
+                          std::map<int, SocketInfo>* socket_info_entries) {
   if (len < NLMSG_LENGTH(sizeof(diag_msg))) {
     return error::Internal("Not enough bytes");
   }
@@ -108,21 +105,27 @@ StatusOr<SocketInfoEntry> ProcessInetDiagMsg(const struct inet_diag_msg& diag_ms
     return error::Internal("Unsupported address family $0", diag_msg.idiag_family);
   }
 
-  SocketInfoEntry socket_info = {};
+  auto iter = socket_info_entries->find(diag_msg.idiag_inode);
+
+  ECHECK(iter == socket_info_entries->end())
+      << absl::Substitute("Clobbering socket info at inode=$0", diag_msg.idiag_inode);
+
+  SocketInfo socket_info = {};
   socket_info.family = diag_msg.idiag_family;
   socket_info.local_port = diag_msg.id.idiag_sport;
-  socket_info.local_addr = *reinterpret_cast<const struct in_addr*>(&diag_msg.id.idiag_src);
+  socket_info.local_addr = *reinterpret_cast<const struct in6_addr*>(&diag_msg.id.idiag_src);
   socket_info.remote_port = diag_msg.id.idiag_dport;
-  socket_info.remote_addr = *reinterpret_cast<const struct in_addr*>(&diag_msg.id.idiag_dst);
-  socket_info.inode = diag_msg.idiag_inode;
+  socket_info.remote_addr = *reinterpret_cast<const struct in6_addr*>(&diag_msg.id.idiag_dst);
 
-  return socket_info;
+  socket_info_entries->insert({diag_msg.idiag_inode, std::move(socket_info)});
+
+  return Status::OK();
 }
 
 }  // namespace
 
-StatusOr<std::vector<SocketInfoEntry>> SocketInfo::RecvInetDiagResp() {
-  std::vector<SocketInfoEntry> socket_info_entries;
+StatusOr<std::unique_ptr<std::map<int, SocketInfo>>> NetlinkSocketProber::RecvInetDiagResp() {
+  auto socket_info_entries = std::make_unique<std::map<int, SocketInfo>>();
 
   static constexpr int kBufSize = 8192;
   uint8_t buf[kBufSize];
@@ -155,9 +158,8 @@ StatusOr<std::vector<SocketInfoEntry>> SocketInfo::RecvInetDiagResp() {
       struct inet_diag_msg* diag_msg =
           reinterpret_cast<struct inet_diag_msg*>(NLMSG_DATA(msg_header));
 #pragma GCC diagnostic pop
-      PL_ASSIGN_OR_RETURN(SocketInfoEntry socket_info_entry,
-                          ProcessInetDiagMsg(*diag_msg, msg_header->nlmsg_len));
-      socket_info_entries.push_back(std::move(socket_info_entry));
+      PL_RETURN_IF_ERROR(
+          ProcessInetDiagMsg(*diag_msg, msg_header->nlmsg_len, socket_info_entries.get()));
     }
   }
 

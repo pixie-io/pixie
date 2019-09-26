@@ -5,40 +5,41 @@
 #include <linux/unix_diag.h>
 #include <netinet/in.h>
 
-#include <vector>
+#include <map>
+#include <memory>
 
 #include "src/common/base/base.h"
 
 namespace pl {
 namespace system {
 
-struct SocketInfoEntry {
-  uint32_t inode;
+struct SocketInfo {
   uint8_t family;
-  struct in_addr local_addr;
+  struct in6_addr local_addr;
   in_port_t local_port;
-  struct in_addr remote_addr;
+  struct in6_addr remote_addr;
   in_port_t remote_port;
 };
 
 /**
- * The SocketInfo class uses NetLink to probe the Linux kernel about active connections.
+ * The NetlinkSocketProber class uses NetLink to probe the Linux kernel about active connections.
  */
-class SocketInfo {
+class NetlinkSocketProber {
  public:
-  SocketInfo();
-  ~SocketInfo();
+  NetlinkSocketProber();
+  ~NetlinkSocketProber();
 
   /**
-   * Returns a vector of IPv4 or IPv6 TCP connections in the established state.
+   * Returns IPv4 or IPv6 TCP connections in the established state.
    *
-   * @return list of established TCP connections, or error if information could not be obtained.
+   * @return list of established TCP connections as a map of inode to SocketInfoEntry,
+   * or error if information could not be obtained.
    */
-  StatusOr<std::vector<SocketInfoEntry>> InetConnections();
+  StatusOr<std::unique_ptr<std::map<int, SocketInfo>>> InetConnections();
 
  private:
   Status SendInetDiagReq();
-  StatusOr<std::vector<SocketInfoEntry>> RecvInetDiagResp();
+  StatusOr<std::unique_ptr<std::map<int, SocketInfo>>> RecvInetDiagResp();
 
   int fd_;
 };

@@ -18,6 +18,18 @@ namespace system {
 using ::testing::Contains;
 using ::testing::Not;
 
+// Keep two versions of AddrPortStr, in case the host machine is using IPv6.
+std::string AddrPortStr(struct in6_addr in_addr, in_port_t in_port) {
+  std::string addr;
+  int port;
+
+  Status s = ParseIPv6Addr(in_addr, &addr);
+  CHECK(s.ok());
+  port = ntohs(in_port);
+
+  return absl::StrCat(addr, ":", port);
+}
+
 std::string AddrPortStr(struct in_addr in_addr, in_port_t in_port) {
   std::string addr;
   int port;
@@ -26,14 +38,22 @@ std::string AddrPortStr(struct in_addr in_addr, in_port_t in_port) {
   CHECK(s.ok());
   port = ntohs(in_port);
 
-  return absl::StrCat(addr, port);
+  return absl::StrCat(addr, ":", port);
 }
 
 MATCHER_P(HasLocalEndpoint, endpoint, "") {
-  return AddrPortStr(arg.local_addr, arg.local_port) == endpoint;
+  switch (arg.second.family) {
+    case AF_INET:
+      return AddrPortStr(*reinterpret_cast<const struct in_addr*>(&arg.second.local_addr),
+                         arg.second.local_port) == endpoint;
+    case AF_INET6:
+      return AddrPortStr(arg.second.local_addr, arg.second.local_port) == endpoint;
+    default:
+      return false;
+  }
 }
 
-TEST(SocketInfoTest, EstablishedConnection) {
+TEST(NetlinkSocketProberTest, EstablishedConnection) {
   testing::TCPSocket client;
   testing::TCPSocket server;
 
@@ -44,18 +64,18 @@ TEST(SocketInfoTest, EstablishedConnection) {
   std::string client_endpoint = AddrPortStr(client.addr(), client.port());
   std::string server_endpoint = AddrPortStr(server.addr(), server.port());
 
-  SocketInfo socket_info;
-  auto s = socket_info.InetConnections();
+  NetlinkSocketProber socket_prober;
+  auto s = socket_prober.InetConnections();
   ASSERT_OK(s);
-  std::vector<SocketInfoEntry>& socket_info_entries = s.ValueOrDie();
+  std::unique_ptr<std::map<int, SocketInfo>> socket_info_entries = s.ConsumeValueOrDie();
 
-  EXPECT_THAT(socket_info_entries, Contains(HasLocalEndpoint(client_endpoint)));
+  EXPECT_THAT(*socket_info_entries, Contains(HasLocalEndpoint(client_endpoint)));
 
   client.Close();
   server.Close();
 }
 
-TEST(SocketInfoTest, ClosedConnection) {
+TEST(NetlinkSocketProberTest, ClosedConnection) {
   testing::TCPSocket client;
   testing::TCPSocket server;
 
@@ -68,12 +88,12 @@ TEST(SocketInfoTest, ClosedConnection) {
   client.Close();
   server.Close();
 
-  SocketInfo socket_info;
-  auto s = socket_info.InetConnections();
+  NetlinkSocketProber socket_prober;
+  auto s = socket_prober.InetConnections();
   ASSERT_OK(s);
-  std::vector<SocketInfoEntry>& socket_info_entries = s.ValueOrDie();
+  std::unique_ptr<std::map<int, SocketInfo>> socket_info_entries = s.ConsumeValueOrDie();
 
-  EXPECT_THAT(socket_info_entries, Not(Contains(HasLocalEndpoint(client_endpoint))));
+  EXPECT_THAT(*socket_info_entries, Not(Contains(HasLocalEndpoint(client_endpoint))));
 }
 
 }  // namespace system
