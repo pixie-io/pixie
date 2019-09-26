@@ -10,7 +10,7 @@
 
 namespace pl {
 
-inline Status ParseIPv4Addr(struct in_addr in_addr, std::string* addr) {
+inline Status ParseIPv4Addr(const struct in_addr& in_addr, std::string* addr) {
   addr->resize(INET_ADDRSTRLEN);
   if (inet_ntop(AF_INET, &in_addr, addr->data(), INET_ADDRSTRLEN) == nullptr) {
     return error::Internal("Could not parse sockaddr (AF_INET) errno=$0", errno);
@@ -20,7 +20,17 @@ inline Status ParseIPv4Addr(struct in_addr in_addr, std::string* addr) {
   return Status::OK();
 }
 
-inline Status ParseIPv6Addr(struct in6_addr in6_addr, std::string* addr) {
+// This version parses an IPv6 struct as an IPv4 address.
+// This is handy, because we often use IPv6 structs as a container for either IPv4 addresses,
+// where we have to support both protocols.
+// In such cases, we use the sa_family to choose the correct function to call.
+// This convenience function just avoids the tedious reinterpret_cast that is otherwise required.
+inline Status ParseIPv4Addr(const struct in6_addr& in6_addr, std::string* addr) {
+  const struct in_addr* in_addr = reinterpret_cast<const struct in_addr*>(&in6_addr);
+  return ParseIPv4Addr(*in_addr, addr);
+}
+
+inline Status ParseIPv6Addr(const struct in6_addr& in6_addr, std::string* addr) {
   addr->resize(INET6_ADDRSTRLEN);
   if (inet_ntop(AF_INET6, &in6_addr, addr->data(), INET6_ADDRSTRLEN) == nullptr) {
     return error::InvalidArgument("Could not parse sockaddr (AF_INET6) errno=$0", errno);
