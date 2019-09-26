@@ -1,0 +1,13 @@
+@import "../../index.scss";
+
+.pl-alert {
+    color: $black;
+    background-color: #ffd1cc;
+    border-radius: 0;
+    border-left:  4px solid $danger;
+
+}
+
+.pl-alert--content {
+    padding: 20px;
+}
