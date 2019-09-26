@@ -21,6 +21,11 @@
 #include "src/vizier/services/agent/controller/controller.h"
 #include "src/vizier/services/agent/controller/throwaway_dummy_data.h"
 
+DEFINE_int32(agent_registration_attempts, 6,
+             "The attempts made by an agent to connect with the broker, "
+             "before giving up and crashing. Exponential backoffs are added between attempts. "
+             "The initial backoff is 1 second, 6 attempts roughly gives 2^6-1 = 63 seconds.");
+
 namespace pl {
 namespace vizier {
 namespace agent {
@@ -32,7 +37,6 @@ constexpr uint64_t kMaxHostnameSize = 128;
 
 // Retries for registration ACK.
 constexpr auto kRegistrationPeriod = std::chrono::seconds(2);
-constexpr uint32_t kRegistrationRetries = 5;
 
 // The amount of time to wait for a hearbeat ack.
 constexpr uint32_t kHeartbeatWaitMS = 5000;
@@ -147,9 +151,9 @@ Status Controller::RegisterAgent() {
   PL_RETURN_IF_ERROR(nats_connector_->Publish(req));
 
   // Wait for MDS to respond.
-  uint32_t num_tries = 0;
   bool got_mds_response = false;
-  do {
+  auto wait_period = std::chrono::seconds(1);
+  for (int num_attempts = 0; num_attempts < FLAGS_agent_registration_attempts; ++num_attempts) {
     auto msg = nats_connector_->GetNextMessage(kRegistrationPeriod);
     if (msg != nullptr &&
         msg->msg_case() == messages::VizierMessage::MsgCase::kRegisterAgentResponse) {
@@ -157,9 +161,12 @@ Status Controller::RegisterAgent() {
       got_mds_response = true;
       break;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    ++num_tries;
-  } while (num_tries < kRegistrationRetries);
+    std::this_thread::sleep_for(wait_period);
+    // TODO(yzhao): A fancier mechanism would be to draw wait period uniformly from
+    // [previous wait period, next doubled wait period]. That theoretically is the safest option to
+    // avoid flash crowd behavior.
+    wait_period *= 2;
+  }
 
   if (!got_mds_response) {
     LOG(FATAL) << "Failed to register agent. Terminating.";
