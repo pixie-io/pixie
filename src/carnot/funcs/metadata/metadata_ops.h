@@ -370,6 +370,15 @@ class PodNameToServiceIDUDF : public ScalarUDF {
 
 void RegisterMetadataOpsOrDie(pl::carnot::udf::ScalarUDFRegistry* registry);
 
+class UPIDToStringUDF : public ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext*, types::UInt128Value upid_value) {
+    auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
+    auto upid = md::UPID(upid_uint128);
+    return upid.String();
+  }
+};
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot

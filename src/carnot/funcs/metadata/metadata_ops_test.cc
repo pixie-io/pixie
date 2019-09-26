@@ -229,6 +229,15 @@ TEST_F(MetadataOpsTest, pod_name_to_service_id_test_multiple_services) {
               AnyOf("[\"3_uid\",\"5_uid\"]", "[\"5_uid\",\"3_uid\"]"));
 }
 
+TEST_F(MetadataOpsTest, upid_to_string) {
+  UPIDToStringUDF udf;
+  auto upid1 = md::UPID(123, 567, 89101);
+  EXPECT_EQ(udf.Exec(nullptr, upid1.value()), absl::Substitute("$0:$1:$2", 123, 567, 89101));
+
+  auto upid2 = md::UPID(255, 123, 11111);
+  EXPECT_EQ(udf.Exec(nullptr, upid2.value()), absl::Substitute("$0:$1:$2", 255, 123, 11111));
+}
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot
