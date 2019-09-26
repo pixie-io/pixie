@@ -16,6 +16,8 @@ var emailDomainWhitelist = map[string]bool{
 	"hulu.com":         true,
 	"thousandeyes.com": true,
 	"pixielabs.ai":     true,
+	"shiftleft.io":     true,
+	"umich.edu":        true,
 }
 
 // GetDomainNameFromEmail gets the domain name from the provided email.
