@@ -74,7 +74,7 @@ Controller::~Controller() {
   // But if it does, give a good chunk of time for final queries to terminate.
   // Note that kill signals go through a Signal handler, not through here,
   // and those cases will have a different (smaller) amount of time to live.
-  static const std::chrono::milliseconds kTimeout{10000};
+  static constexpr std::chrono::milliseconds kTimeout{10000};
   Status s = Stop(kTimeout);
   LOG_IF(WARNING, !s.ok()) << s.msg();
 }
@@ -125,7 +125,7 @@ Status Controller::StartHelperThreads() {
   mds_thread_ = std::make_unique<std::thread>([this]() {
     while (keep_alive_) {
       VLOG(1) << "State Update";
-      CHECK(mds_manager_->PerformMetadataStateUpdate().ok());
+      ECHECK_OK(mds_manager_->PerformMetadataStateUpdate());
       std::this_thread::sleep_for(std::chrono::seconds(5));
     }
   });

@@ -25,6 +25,9 @@
 #define ECHECK(condition) \
   LOG_IF(DFATAL, GOOGLE_PREDICT_BRANCH_NOT_TAKEN(!(condition))) << "Check failed: " #condition " "
 
+#define ECHECK_OK(status) \
+  LOG_IF(DFATAL, GOOGLE_PREDICT_BRANCH_NOT_TAKEN(!(status.ok()))) << "Check failed: " #status " "
+
 // In optimized mode, CheckOpString provides to hint to compiler that
 // the if statement is unlikely.
 #define ECHECK_OP_LOG(name, op, val1, val2)                                                        \
