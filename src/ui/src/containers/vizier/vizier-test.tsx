@@ -45,7 +45,7 @@ describe('<Vizier/> test', () => {
     expect(app.find(SidebarNav)).toHaveLength(1);
   });
 
-  it('should show deploy instructions if vizier not healthy', async () => {
+  it('should show deploy instructions if vizier not connected', async () => {
     const mocks = [
       {
         request: {
@@ -77,6 +77,41 @@ describe('<Vizier/> test', () => {
     app.update();
     expect(app.find(DeployInstructions)).toHaveLength(1);
     expect(app.find(DeployInstructions).get(0).props.clusterID).toBe('test');
+  });
+
+  it('should show pending message if cluster unhealthy', async () => {
+    const mocks = [
+      {
+        request: {
+          query: GET_CLUSTER,
+          variables: {},
+        },
+        result: {
+          data: {
+            cluster: {
+                status: 'VZ_ST_UNHEALTHY',
+                lastHeartbeatMs: -1,
+                id: 'test',
+            },
+          },
+        },
+      },
+    ];
+    const app = mount(
+        <Router>
+            <MockedProvider mocks={mocks} addTypename={false}>
+              <Vizier
+                location={ { pathname: 'query' } }
+              />
+            </MockedProvider>
+        </Router>);
+
+    await wait(0);
+    app.update();
+
+    expect(app.find('.cluster-instructions')).toHaveLength(1);
+    expect(app.find('.cluster-instructions').text()).toEqual(
+        'Cluster found. Waiting for pods and services to become ready...');
   });
 
   it('should try to create cluster if does not exist', async () => {
@@ -112,6 +147,7 @@ describe('<Vizier/> test', () => {
     await wait(0);
     app.update();
 
-    expect(app.find('.create-cluster-instructions')).toHaveLength(1);
+    expect(app.find('.cluster-instructions')).toHaveLength(1);
+    expect(app.find('.cluster-instructions').text()).toEqual('Initializing...');
   });
 });

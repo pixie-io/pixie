@@ -64,12 +64,12 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
     };
   }
 
-  renderCreateCluster() {
-    return (
-      <div className='create-cluster-instructions'>
+  renderClusterInstructions(message: string) {
+     return (
+      <div className='cluster-instructions'>
         <DialogBox width={760}>
-          <div className='create-cluster-instructions--content'>
-            Initializing...
+          <div className='cluster-instructions--content'>
+            {message}
             <p></p>
             <img className='spinner' src={loadingSvg} />
           </div>
@@ -97,12 +97,12 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
                     });
                   }
 
-                  return this.renderCreateCluster();
+                  return this.renderClusterInstructions('Initializing...');
                 }
                 return `Error! ${error.message}`;
               }
 
-              if (data.cluster.status !== 'VZ_ST_DISCONNECTED' && data.cluster.status !== 'VZ_ST_UNHEALTHY') {
+              if (data.cluster.status === 'VZ_ST_HEALTHY') {
                 return (
                   <div className='vizier'>
                     <SidebarNav
@@ -124,6 +124,9 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
                     </div>
                   </div>
                 );
+              } else if (data.cluster.status === 'VZ_ST_UNHEALTHY') {
+                return this.renderClusterInstructions(
+                  'Cluster found. Waiting for pods and services to become ready...');
               } else {
                 return (
                   <DeployInstructions
