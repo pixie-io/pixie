@@ -10,7 +10,7 @@ Administrators can setup Pixie in seven simple steps:
 
 > **Step 2:** Claim your Pixie site.
 
-> **Step 3:** Sign-up with your non-personal google account.
+> **Step 3:** Sign-up with your google account.
 
 > **Step 4:** Copy the Pixie CLI deployment curl command.
 

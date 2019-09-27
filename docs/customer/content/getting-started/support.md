@@ -11,4 +11,4 @@ Pixie support teams will create site specific Slack groups with each Beta custom
 You can file bug and features requests via Slack, email or in-person conversations with Pixie engineers. 
 
 #### Email 
-You can reach out to cs@pixielabs.ai with product related questions and suggestions.
+You can reach out to <cs@pixielabs.ai> with product related questions and suggestions.
