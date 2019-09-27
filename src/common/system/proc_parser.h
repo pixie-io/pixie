@@ -109,7 +109,7 @@ class ProcParser {
    * @param pid is the pid for which we want the start time.
    * @return start time in unix time since epoch. A time of 0 implies it failed to read the time.
    */
-  int64_t GetPIDStartTime(int32_t pid) const;
+  int64_t GetPIDStartTimeTicks(int32_t pid) const;
 
   /**
    * Gets the command line for a given pid.

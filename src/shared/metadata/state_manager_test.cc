@@ -77,7 +77,7 @@ class FakePIDData : public MockCGroupMetadataReader {
     return error::NotFound("no found");
   }
 
-  int64_t ReadPIDStartTime(uint32_t pid) const override {
+  int64_t ReadPIDStartTimeTicks(uint32_t pid) const override {
     if (pid == 100) {
       return 1000;
     }

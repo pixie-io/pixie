@@ -282,7 +282,7 @@ class ConnectionTracker {
    *
    * @return start time.
    */
-  uint64_t pid_start_time() const { return conn_id_.pid_start_time_ns; }
+  uint64_t pid_start_time_ticks() const { return conn_id_.pid_start_time_ticks; }
 
   /**
    * Get FD of the connection.

@@ -233,7 +233,7 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
 
     // We convert all the cgroup_active_pids to the UPIDs so that we can easily convert and check.
     for (uint32_t pid : cgroups_active_pids) {
-      cgroups_active_upids.emplace(asid, pid, md_reader->ReadPIDStartTime(pid));
+      cgroups_active_upids.emplace(asid, pid, md_reader->ReadPIDStartTimeTicks(pid));
     }
 
     const auto& active_upids = cinfo->active_upids();

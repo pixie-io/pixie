@@ -110,8 +110,7 @@ TEST_F(ProcParserTest, ParseMemInfo) {
 }
 
 TEST_F(ProcParserTest, read_pid_start_time) {
-  // This is the time from the file * 100 + 128.
-  EXPECT_EQ(1433028, parser_->GetPIDStartTime(123));
+  EXPECT_EQ(14329, parser_->GetPIDStartTimeTicks(123));
 }
 
 TEST_F(ProcParserTest, read_pid_cmdline) {

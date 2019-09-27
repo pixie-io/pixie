@@ -72,6 +72,13 @@ using ::pl::stirling::http2::MatchGRPCReqResp;
 Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders());
 
+  constexpr uint64_t kNanosPerSecond = 1000 * 1000 * 1000;
+  if (kNanosPerSecond % sysconfig_.KernelTicksPerSecond() != 0) {
+    return error::Internal(
+        "SC_CLK_TCK aka USER_HZ must be 100, otherwise our BPF code may not generate proper "
+        "timestamps in a way that matches how /proc/stat does it");
+  }
+
   std::vector<std::string> cflags;
   if (FLAGS_stirling_bpf_enable_logging) {
     cflags.emplace_back("-DENABLE_BPF_LOGGING");
@@ -251,7 +258,7 @@ uint64_t GetConnMapKey(struct conn_id_t conn_id) {
 void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEvent* pb) {
   pb->mutable_attr()->set_timestamp_ns(event.attr.timestamp_ns);
   pb->mutable_attr()->mutable_conn_id()->set_pid(event.attr.conn_id.pid);
-  pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(event.attr.conn_id.pid_start_time_ns);
+  pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(event.attr.conn_id.pid_start_time_ticks);
   pb->mutable_attr()->mutable_conn_id()->set_fd(event.attr.conn_id.fd);
   pb->mutable_attr()->mutable_conn_id()->set_generation(event.attr.conn_id.generation);
   pb->mutable_attr()->mutable_traffic_class()->set_protocol(event.attr.traffic_class.protocol);
@@ -471,7 +478,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   http::HTTPMessage& resp_message = record.resp_message;
 
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
-                conn_tracker.pid_start_time());
+                conn_tracker.pid_start_time_ticks());
 
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
@@ -510,7 +517,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   ECHECK(absl::SimpleAtoi(resp_message.HeaderValue(":status", "-1"), &resp_status));
 
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
-                conn_tracker.pid_start_time());
+                conn_tracker.pid_start_time_ticks());
 
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
@@ -559,12 +566,12 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   DCHECK_EQ(kMySQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
-                conn_tracker.pid_start_time());
+                conn_tracker.pid_start_time_ticks());
 
   RecordBuilder<&kMySQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(entry.req_timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
-  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
+  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time_ticks());
   r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
   r.Append<r.ColIndex("body")>(std::move(entry.msg));

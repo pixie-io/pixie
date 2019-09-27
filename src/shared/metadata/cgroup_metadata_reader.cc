@@ -108,7 +108,7 @@ std::string CGroupMetadataReader::ReadPIDCmdline(uint32_t pid) const {
   return cmdline;
 }
 
-int64_t CGroupMetadataReader::ReadPIDStartTime(uint32_t pid) const {
+int64_t CGroupMetadataReader::ReadPIDStartTimeTicks(uint32_t pid) const {
   std::string fpath = absl::Substitute("$0/$1/stat", proc_path_, pid);
   std::ifstream ifs;
   ifs.open(fpath);
@@ -127,14 +127,12 @@ int64_t CGroupMetadataReader::ReadPIDStartTime(uint32_t pid) const {
     return 0;
   }
 
-  int64_t start_time_ns;
-  if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ns)) {
+  int64_t start_time_ticks;
+  if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ticks)) {
     return 0;
   }
 
-  start_time_ns *= ns_per_kernel_tick_;
-  start_time_ns += clock_realtime_offset_;
-  return start_time_ns;
+  return start_time_ticks;
 }
 
 bool CGroupMetadataReader::PodDirExists(const PodInfo& pod_info) const {

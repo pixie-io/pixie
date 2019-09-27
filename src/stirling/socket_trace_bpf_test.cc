@@ -502,8 +502,16 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
 
   // Use a time window to make sure the recorded PID start_time is right.
   // Being super generous with the window, just in case test runs slow.
-  auto time_window_start = now - std::chrono::minutes(30);
-  auto time_window_end = now + std::chrono::minutes(5);
+  auto time_window_start_tp = now - std::chrono::minutes(30);
+  auto time_window_end_tp = now + std::chrono::minutes(5);
+
+  // Start times are reported by Linux in what is essentially 10 ms units.
+  constexpr int64_t kNsecondsPerSecond = 1000 * 1000 * 1000;
+  constexpr int64_t kClockTicks = 100;
+  constexpr int64_t kDivFactor = kNsecondsPerSecond / kClockTicks;
+
+  auto time_window_start = time_window_start_tp.time_since_epoch().count() / kDivFactor;
+  auto time_window_end = time_window_end_tp.time_since_epoch().count() / kDivFactor;
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
@@ -513,13 +521,13 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
 
   md::UPID upid0(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val);
   EXPECT_EQ(getpid(), upid0.pid());
-  EXPECT_LT(time_window_start.time_since_epoch().count(), upid0.start_ts());
-  EXPECT_GT(time_window_end.time_since_epoch().count(), upid0.start_ts());
+  EXPECT_LT(time_window_start, upid0.start_ts());
+  EXPECT_GT(time_window_end, upid0.start_ts());
 
   md::UPID upid1(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val);
   EXPECT_EQ(getpid(), upid1.pid());
-  EXPECT_LT(time_window_start.time_since_epoch().count(), upid1.start_ts());
-  EXPECT_GT(time_window_end.time_since_epoch().count(), upid1.start_ts());
+  EXPECT_LT(time_window_start, upid1.start_ts());
+  EXPECT_GT(time_window_end, upid1.start_ts());
 }
 
 // TODO(yzhao): Apply this pattern to other syscall pairs. An issue is that other syscalls do not

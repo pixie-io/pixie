@@ -211,7 +211,7 @@ Status ProcParser::ParseProcPIDStat(int32_t pid, ProcessStats* out) const {
 
     ok &= absl::SimpleAtoi(split[kProcStatUTimeField], &out->utime_ns);
     ok &= absl::SimpleAtoi(split[kProcStatKTimeField], &out->ktime_ns);
-    // The kernel tracks utime and ktime in jiffies.
+    // The kernel tracks utime and ktime in kernel ticks.
     out->utime_ns *= ns_per_kernel_tick_;
     out->ktime_ns *= ns_per_kernel_tick_;
 
@@ -414,7 +414,8 @@ std::string ProcParser::GetPIDCmdline(int32_t pid) const {
   return cmdline;
 }
 
-int64_t ProcParser::GetPIDStartTime(int32_t pid) const {
+// TODO(zasgar/michelle/oazizi): cleanup and merge with proc_parser.
+int64_t ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
   std::string fpath = absl::Substitute("$0/$1/stat", proc_base_path_, pid);
   std::ifstream ifs;
   ifs.open(fpath);
@@ -433,14 +434,12 @@ int64_t ProcParser::GetPIDStartTime(int32_t pid) const {
     return 0;
   }
 
-  int64_t start_time_ns;
-  if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ns)) {
+  int64_t start_time_ticks;
+  if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ticks)) {
     return 0;
   }
 
-  start_time_ns *= ns_per_kernel_tick_;
-  start_time_ns += clock_realtime_offset_;
-  return start_time_ns;
+  return start_time_ticks;
 }
 
 Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) const {

@@ -49,10 +49,10 @@ class CGroupMetadataReader : public NotCopyable {
 
   /**
    * ReadPIDStartTime gets the start time for given PID.
-   * @return the start time stamp in ns since unix epoch.
+   * @return the start timestamp in kernel ticks since boot.
    * A time of zero means the read failed, or the process died.
    */
-  virtual int64_t ReadPIDStartTime(uint32_t pid) const;
+  virtual int64_t ReadPIDStartTimeTicks(uint32_t pid) const;
 
   /**
    * ReadPIDCmdline gets the command line for a given pid.

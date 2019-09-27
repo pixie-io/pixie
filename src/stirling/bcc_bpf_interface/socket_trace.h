@@ -70,8 +70,8 @@ struct conn_id_t {
   };
   // The start time of the PID, so we can disambiguate PIDs.
   union {
-    uint64_t tgid_start_time_ns;
-    uint64_t pid_start_time_ns;
+    uint64_t tgid_start_time_ticks;
+    uint64_t pid_start_time_ticks;
   };
   // The file descriptor to the opened network connection.
   uint32_t fd;

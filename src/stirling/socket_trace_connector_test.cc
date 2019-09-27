@@ -23,7 +23,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
  protected:
   static constexpr uint32_t kASID = 1;
   static constexpr uint32_t kPID = 12345;
-  static constexpr uint64_t kPIDStartTimeNS = 112358;
+  static constexpr uint64_t kPIDStartTimeTicks = 112358;
   static constexpr uint32_t kFD = 3;
 
   void SetUp() override {
@@ -50,7 +50,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     conn_info.addr.sin6_family = AF_INET;
     conn_info.timestamp_ns = current_timestamp_;
     conn_info.conn_id.pid = kPID;
-    conn_info.conn_id.pid_start_time_ns = kPIDStartTimeNS;
+    conn_info.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
     conn_info.conn_id.fd = kFD;
     conn_info.conn_id.generation = generation_;
     conn_info.traffic_class.protocol = protocol;
@@ -83,7 +83,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     event.attr.traffic_class.role = kRoleRequestor;
     event.attr.timestamp_ns = current_timestamp_;
     event.attr.conn_id.pid = kPID;
-    event.attr.conn_id.pid_start_time_ns = kPIDStartTimeNS;
+    event.attr.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
     event.attr.conn_id.fd = kFD;
     event.attr.conn_id.generation = generation_;
     event.attr.msg_size = msg.size();
@@ -97,7 +97,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     conn_info_t conn_info{};
     conn_info.timestamp_ns = current_timestamp_;
     conn_info.conn_id.pid = kPID;
-    conn_info.conn_id.pid_start_time_ns = kPIDStartTimeNS;
+    conn_info.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
     conn_info.conn_id.fd = kFD;
     conn_info.conn_id.generation = generation_;
     conn_info.rd_seq_num = recv_seq_num_;
@@ -262,7 +262,7 @@ TEST_F(SocketTraceConnectorTest, End2End) {
 
   conn_id_t search_conn_id;
   search_conn_id.pid = kPID;
-  search_conn_id.pid_start_time_ns = kPIDStartTimeNS;
+  search_conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
   search_conn_id.fd = kFD;
   search_conn_id.generation = 1;
   const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
@@ -342,7 +342,7 @@ TEST_F(SocketTraceConnectorTest, UPIDCheck) {
     md::UPID upid(val.val);
 
     EXPECT_EQ(upid.pid(), kPID);
-    EXPECT_EQ(upid.start_ts(), kPIDStartTimeNS);
+    EXPECT_EQ(upid.start_ts(), kPIDStartTimeTicks);
     EXPECT_EQ(upid.asid(), kASID);
   }
 }

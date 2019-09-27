@@ -49,9 +49,8 @@ TEST_F(CGroupMetadataReaderTest, read_pid_list) {
   EXPECT_THAT(pid_set, ::testing::UnorderedElementsAre(123, 456, 789));
 }
 
-TEST_F(CGroupMetadataReaderTest, read_pid_start_time) {
-  // This is the time from the file * 100 + 128.
-  EXPECT_EQ(8001981028, md_reader_->ReadPIDStartTime(32391));
+TEST_F(CGroupMetadataReaderTest, read_pid_start_time_ticks) {
+  EXPECT_EQ(80019809, md_reader_->ReadPIDStartTimeTicks(32391));
 }
 
 TEST_F(CGroupMetadataReaderTest, read_pid_cmdline) {
