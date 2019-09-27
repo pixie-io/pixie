@@ -47,7 +47,7 @@ function onLoginAuthenticated(authResult) {
         idToken: response.data.Token,
         expiresAt: response.data.ExpiresAt,
       });
-      RedirectUtils.redirect(this.domain, '/vizier/query', {});
+      RedirectUtils.redirect(this.domain, this.redirectPath || '/vizier/query', {});
     }).catch((err) => {
       this.setState({
         error: err.response.data,
@@ -73,7 +73,7 @@ function onCreateAuthenticated(authResult) {
         expiresAt: response.data.ExpiresAt,
       });
     }).then((results) => {
-        RedirectUtils.redirect(this.domain, '/vizier/query', {});
+        RedirectUtils.redirect(this.domain, this.redirectPath || '/vizier/query', {});
     }).catch((err) => {
       this.setState({
         error: err.response.data,
@@ -113,7 +113,9 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
   };
 
   private _lock: Auth0LockStatic;
-  private domain: string | string[];
+  private domain: string;
+  private auth0Redirect: string;
+  private redirectPath: string;
 
   constructor(props) {
     super(props);
@@ -123,8 +125,29 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     };
   }
 
+  parseQueryParams() {
+    const queryParams = QueryString.parse(this.props.location.search);
+
+    const locationParam = typeof queryParams.location === 'string' ? queryParams.location : '';
+    const domainName = typeof queryParams.domain_name === 'string' ? queryParams.domain_name : '';
+    const localmode = typeof queryParams.localmode === 'string' ? queryParams.localmode : '';
+    const localmodeRedirect = typeof queryParams.redirect_uri === 'string' ? queryParams.redirect_uri : '';
+
+    this.domain = domainName;
+    this.redirectPath = locationParam;
+
+    // Default redirect URL.
+    this.auth0Redirect = window.location.origin + '/' + this.props.redirectPath + '?domain_name=' + this.domain;
+    if (locationParam !== '') {
+      this.auth0Redirect = this.auth0Redirect + '&location=' + locationParam;
+    }
+
+    // If localmode is on, redirect to the given location.
+    this.auth0Redirect = localmode === 'true' ? localmodeRedirect : this.auth0Redirect;
+  }
+
   componentDidMount() {
-    this.domain = QueryString.parse(this.props.location.search).domain_name;
+    this.parseQueryParams();
 
     // Redirect to the correct login endpoint if the path is incorrect.
     const subdomain = window.location.host.split('.')[0];
@@ -134,7 +157,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
 
     this._lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {
       auth: {
-        redirectUrl: window.location.origin + '/' + this.props.redirectPath + '?domain_name=' + this.domain,
+        redirectUrl: this.auth0Redirect,
         responseType: 'token',
         params: {
           scope: 'openid profile user_metadata email',
