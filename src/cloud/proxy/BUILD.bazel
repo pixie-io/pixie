@@ -5,7 +5,15 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 container_layer(
     name = "conf",
     directory = "/usr/local/openresty/nginx/conf",
-    files = ["nginx.conf"],
+    files = [
+        "pixie_vars.conf",
+        "pixie_server_defaults.conf",
+        "pixie_cache.conf",
+        "pixie_filter.conf",
+        "pixie_health_check.conf",
+        "pixie_api.conf",
+        "nginx.conf",
+    ],
 )
 
 container_layer(
