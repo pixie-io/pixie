@@ -77,6 +77,8 @@ struct Frame {
   nghttp2_frame frame;
   u8string u8payload;
   uint64_t timestamp_ns;
+  // The time stamp when this frame was created by socket tracer.
+  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
 
   // If true, means this frame is processed and can be destroyed.
   mutable bool consumed = false;

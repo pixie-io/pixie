@@ -664,6 +664,7 @@ ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
     }
     DCHECK(s == ParseState::kSuccess);
     start_position.push_back(frame_begin);
+    frame.creation_timestamp = std::chrono::steady_clock::now();
     frames->push_back(std::move(frame));
   }
   return {std::move(start_position), buf_size - buf.size(), s};

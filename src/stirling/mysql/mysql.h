@@ -1,4 +1,6 @@
 #pragma once
+
+#include <chrono>
 #include <deque>
 #include <map>
 #include <memory>
@@ -111,6 +113,7 @@ enum class MySQLEventType {
  */
 struct Packet {
   uint64_t timestamp_ns;
+  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
   std::string msg;
   MySQLEventType type = MySQLEventType::kUnknown;
 

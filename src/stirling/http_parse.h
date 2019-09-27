@@ -2,6 +2,7 @@
 
 #include <picohttpparser.h>
 
+#include <chrono>
 #include <deque>
 #include <map>
 #include <string>
@@ -32,6 +33,7 @@ using HTTPHeadersMap = std::map<std::string, std::string, CaseInsensitiveLess>;
 
 struct HTTPMessage {
   uint64_t timestamp_ns;
+  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
   MessageType type = MessageType::kUnknown;
 
   int http_minor_version = -1;

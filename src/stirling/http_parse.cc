@@ -362,6 +362,7 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
     }
 
     start_positions.push_back(bytes_processed);
+    message.creation_timestamp = std::chrono::steady_clock::now();
     messages->push_back(std::move(message));
     bytes_processed = (buf_size - buf.size());
   }

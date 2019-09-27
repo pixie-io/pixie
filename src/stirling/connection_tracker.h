@@ -15,6 +15,7 @@
 #include "src/stirling/socket_trace.h"
 
 DECLARE_uint32(messages_size_limit_bytes);
+DECLARE_uint32(messages_expiration_duration_secs);
 
 namespace pl {
 namespace stirling {
@@ -138,6 +139,8 @@ class DataStream {
           size, FLAGS_messages_size_limit_bytes);
       Messages<TMessageType>().clear();
     }
+    EraseExpiredFrames(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),
+                       &Messages<TMessageType>());
   }
 
   /**
@@ -152,6 +155,23 @@ class DataStream {
   }
 
  private:
+  template <typename TMessageType>
+  void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TMessageType>* frames) {
+    auto iter = frames->begin();
+    for (; iter != frames->end(); ++iter) {
+      auto frame_age = std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::steady_clock::now() - iter->creation_timestamp);
+      // As frames are put into the list with monotonically increasing creation time stamp,
+      // we can just stop at the first frame that is younger than the expiration duration.
+      //
+      // TODO(yzhao): Benchmark with binary search and pick the faster one.
+      if (frame_age < exp_dur) {
+        break;
+      }
+    }
+    frames->erase(frames->begin(), iter);
+  }
+
   // Helper function that appends all contiguous events to the parser.
   // Returns number of events appended.
   template <class TMessageType>

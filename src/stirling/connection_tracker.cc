@@ -16,12 +16,12 @@
 #include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
 
-// TODO(oazizi/yzhao): We also need the age-based purging, such that if there are a lot of
-// connections slowly accumulating messages, we'll be purge them as well.
 DEFINE_uint32(messages_size_limit_bytes, 1024 * 1024,
               "The limit of the size of the parsed messages, not the BPF events, "
               "for each direction, of each connection tracker. "
               "All cached messages are erased if this limit is breached.");
+DEFINE_uint32(messages_expiration_duration_secs, 10 * 60,
+              "The duration for which a cached message to be erased.");
 
 namespace pl {
 namespace stirling {

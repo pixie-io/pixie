@@ -64,21 +64,22 @@ std::string GenLengthEncodedInt(int num) {
  */
 Packet GenCountPacket(int num_col) {
   std::string msg = GenLengthEncodedInt(num_col);
-  return Packet{0, std::move(msg), MySQLEventType::kUnknown};
+  return Packet{0, std::chrono::steady_clock::now(), std::move(msg), MySQLEventType::kUnknown};
 }
 
 /**
  * Generates a Col Definition packet. Can be used in StmtPrepareResponse or Resultset.
  */
 Packet GenColDefinition(const ColDefinition& col_def) {
-  return Packet{0, std::move(col_def.msg), MySQLEventType::kUnknown};
+  return Packet{0, std::chrono::steady_clock::now(), std::move(col_def.msg),
+                MySQLEventType::kUnknown};
 }
 
 /**
  * Generates a resultset row.
  */
 Packet GenResultsetRow(const ResultsetRow& row) {
-  return Packet{0, std::move(row.msg), MySQLEventType::kUnknown};
+  return Packet{0, std::chrono::steady_clock::now(), std::move(row.msg), MySQLEventType::kUnknown};
 }
 
 /**
@@ -97,7 +98,7 @@ Packet GenStmtPrepareRespHeader(const StmtPrepareRespHeader& header) {
                                  std::string(num_columns, 2), std::string(num_params, 2),
                                  ConstStringView("\x00"), std::string(warning_count, 2));
 
-  return Packet{0, std::move(msg), MySQLEventType::kUnknown};
+  return Packet{0, std::chrono::steady_clock::now(), std::move(msg), MySQLEventType::kUnknown};
 }
 
 /**
@@ -173,14 +174,15 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
     msg += GenLengthEncodedInt(param.value.size());
     msg += param.value;
   }
-  return Packet{0, std::move(msg), MySQLEventType::kComStmtExecute};
+  return Packet{0, std::chrono::steady_clock::now(), std::move(msg),
+                MySQLEventType::kComStmtExecute};
 }
 
 Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
   char statement_id[4];
   utils::IntToLEBytes<4>(req.stmt_id(), statement_id);
   std::string msg = absl::StrCat(std::string(1, kStmtClosePrefix), std::string(statement_id, 4));
-  return Packet{0, std::move(msg), MySQLEventType::kComStmtClose};
+  return Packet{0, std::chrono::steady_clock::now(), std::move(msg), MySQLEventType::kComStmtClose};
 }
 
 /**
@@ -203,7 +205,8 @@ Packet GenStringRequest(const StringRequest& req, MySQLEventType type) {
       LOG(FATAL) << "Unknown type for string request.";
       break;
   }
-  return Packet{0, absl::StrCat(std::string(1, command), req.msg()), type};
+  return Packet{0, std::chrono::steady_clock::now(),
+                absl::StrCat(std::string(1, command), req.msg()), type};
 }
 
 /**
@@ -214,7 +217,7 @@ Packet GenErr(const ErrResponse& err) {
   utils::IntToLEBytes<2>(err.error_code(), error_code);
   std::string msg = absl::StrCat("\xff", std::string(error_code, 2), "\x23\x48\x59\x30\x30\x30",
                                  err.error_message());
-  return Packet{0, std::move(msg), MySQLEventType::kUnknown};
+  return Packet{0, std::chrono::steady_clock::now(), std::move(msg), MySQLEventType::kUnknown};
 }
 
 /**
@@ -222,7 +225,7 @@ Packet GenErr(const ErrResponse& err) {
  */
 Packet GenOK() {
   std::string msg = std::string(ConstStringView("\x00\x00\x00\x02\x00\x00\x00"));
-  return Packet{0, std::move(msg), MySQLEventType::kUnknown};
+  return Packet{0, std::chrono::steady_clock::now(), std::move(msg), MySQLEventType::kUnknown};
 }
 
 /**
@@ -230,7 +233,7 @@ Packet GenOK() {
  */
 Packet GenEOF() {
   std::string msg = std::string(ConstStringView("\xfe\x00\x00\x22\x00"));
-  return Packet{0, std::move(msg), MySQLEventType::kUnknown};
+  return Packet{0, std::chrono::steady_clock::now(), std::move(msg), MySQLEventType::kUnknown};
 }
 
 }  // namespace testutils
