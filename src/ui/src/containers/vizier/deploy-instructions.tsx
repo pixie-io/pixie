@@ -50,8 +50,8 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
           </div>
           Copy and execute the command below in your K8s cluster's terminal:
             <CodeSnippet showCopy={true} language='bash'>
-              {'./pixie deploy --cluster_id ' + props.clusterID +
-                ' --use_version v0.1.2 \\ \n --credentials_file /*<credentials file path>*/'}
+              {' chmod +x pixie \n pixie deploy --cluster_id "' + props.clusterID +
+                '" \\ \n --use_version v0.1.2 --credentials_file /*<credentials file path>*/'}
             </CodeSnippet>
           </div>
           <div className='deploy-instructions--footer' style={{width: '100%'}}>
