@@ -26,6 +26,11 @@ const config = {
              '/user-guides/query-language-overview',
              '/user-guides/common-queries',
              '/user-guides/guided-install',
+             '/misc',
+             '/misc/faq',
+             '/misc/product-updates',
+             '/misc/privacy-policy',
+             '/misc/terms-conditions',
         ],
         links: [
             { text: '', link: ''},
