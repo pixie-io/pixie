@@ -136,11 +136,11 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	}
 
 	// If user does not exist in Auth0, then create a new user.
-	newUser := userInfo.AppMetadata == nil || userInfo.AppMetadata.Clients[s.a.GetClientID()] == nil || userInfo.AppMetadata.Clients[s.a.GetClientID()].PLUserID == ""
+	newUser := userInfo.AppMetadata == nil || userInfo.AppMetadata[s.a.GetClientID()] == nil || userInfo.AppMetadata[s.a.GetClientID()].PLUserID == ""
 
 	// If user exists in Auth0, but not in the profile service, create a new user.
 	if !newUser {
-		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.AppMetadata.Clients[s.a.GetClientID()].PLUserID)})
+		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.AppMetadata[s.a.GetClientID()].PLUserID)})
 		if err != nil {
 			newUser = true
 		}
@@ -240,7 +240,7 @@ func (s *Server) GetAugmentedToken(
 
 func generateJWTTokenForUser(userInfo *UserInfo, signingKey string, clientID string) (string, time.Time, error) {
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	clientMetadata := userInfo.AppMetadata.Clients[clientID]
+	clientMetadata := userInfo.AppMetadata[clientID]
 	claims := utils.GenerateJWTForUser(clientMetadata.PLUserID, clientMetadata.PLOrgID, userInfo.Email, expiresAt)
 	token, err := utils.SignJWTClaims(claims, signingKey)
 
