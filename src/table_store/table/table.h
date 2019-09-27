@@ -19,6 +19,8 @@
 #include "src/table_store/schema/row_batch.h"
 #include "src/table_store/schema/row_descriptor.h"
 
+DECLARE_int32(table_store_table_size_limit);
+
 namespace pl {
 namespace table_store {
 
@@ -92,6 +94,11 @@ class Column {
  */
 class Table : public NotCopyable {
  public:
+  static inline std::shared_ptr<Table> Create(const schema::Relation& relation) {
+    // Create naked pointer, because std::make_shared() cannot access the private ctor.
+    return std::shared_ptr<Table>(new Table(relation, FLAGS_table_store_table_size_limit));
+  }
+
   /**
    * @brief Construct a new Table object along with its columns. Can be used to create
    * a table (along with columns) based on a subscription message from Stirling.
@@ -100,7 +107,7 @@ class Table : public NotCopyable {
    * @param max_table_size the maximum number of bytes that the table can hold. This is limitless
    * (-1) by default.
    */
-  explicit Table(const schema::Relation& relation, int64_t max_table_size = -1);
+  explicit Table(const schema::Relation& relation, int64_t max_table_size);
 
   /**
    * @ param i the index of the column to get.

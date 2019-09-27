@@ -41,7 +41,7 @@ inline StatusOr<std::shared_ptr<Table>> CreateTable(
     const datagen::DistributionParams* dist_vars, const datagen::DistributionParams* len_vars) {
   schema::RowDescriptor rd(types);
 
-  auto table = std::make_shared<Table>(table_store::schema::Relation(types, col_names));
+  auto table = Table::Create(table_store::schema::Relation(types, col_names));
 
   for (size_t col_idx = 0; col_idx < types.size(); col_idx++) {
     auto col = table->GetColumn(col_idx);

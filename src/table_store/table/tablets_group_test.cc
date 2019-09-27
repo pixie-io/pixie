@@ -23,8 +23,8 @@ class TabletsGroupTest : public ::testing::Test {
     rel2 =
         schema::Relation({types::DataType::INT64, types::DataType::FLOAT64, types::DataType::INT64},
                          {"table2col1", "table2col2", "table2col3"});
-    tablet1 = std::make_shared<Table>(rel1);
-    tablet2 = std::make_shared<Table>(rel2);
+    tablet1 = Table::Create(rel1);
+    tablet2 = Table::Create(rel2);
   }
 
   std::shared_ptr<Table> tablet1;

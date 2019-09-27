@@ -23,8 +23,8 @@ class TableStoreTest : public ::testing::Test {
     rel2 =
         schema::Relation({types::DataType::INT64, types::DataType::FLOAT64, types::DataType::INT64},
                          {"table2col1", "table2col2", "table2col3"});
-    table1 = std::make_shared<Table>(rel1);
-    table2 = std::make_shared<Table>(rel2);
+    table1 = Table::Create(rel1);
+    table2 = Table::Create(rel2);
   }
 
   std::shared_ptr<Table> table1;
@@ -110,9 +110,9 @@ class TableStoreTabletsTest : public TableStoreTest {
  protected:
   void SetUp() override {
     TableStoreTest::SetUp();
-    tablet1_1 = std::make_shared<Table>(rel1);
-    tablet1_2 = std::make_shared<Table>(rel1);
-    tablet2_1 = std::make_shared<Table>(rel2);
+    tablet1_1 = Table::Create(rel1);
+    tablet1_2 = Table::Create(rel1);
+    tablet2_1 = Table::Create(rel2);
   }
 
   std::unique_ptr<ColumnWrapperRecordBatch> MakeRel1ColumnWrapperBatch() {

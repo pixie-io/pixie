@@ -25,7 +25,7 @@ StatusOr<Table*> TableStore::CreateNewTable(uint64_t table_id, const types::Tabl
 
   const NameRelationPair& name_relation_pair = id_to_name_relation_pair_map_iter->second;
   const Relation& relation = name_relation_pair.relation;
-  std::shared_ptr<Table> new_tablet = std::make_shared<Table>(relation);
+  std::shared_ptr<Table> new_tablet = Table::Create(relation);
 
   TableIDTablet id_key = {table_id, tablet_id};
   id_to_table_map_[id_key] = new_tablet;

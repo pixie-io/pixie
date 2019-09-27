@@ -16,7 +16,7 @@ namespace {
 // TOOD(zasgar): deduplicate this with exec/test_utils.
 std::shared_ptr<Table> TestTable() {
   schema::Relation rel({types::DataType::FLOAT64, types::DataType::INT64}, {"col1", "col2"});
-  auto table = std::make_shared<Table>(rel);
+  auto table = Table::Create(rel);
 
   auto col1 = table->GetColumn(0);
   std::vector<types::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
@@ -61,7 +61,9 @@ TEST(ColumnTest, wrong_chunk_type_test) {
 TEST(TableTest, basic_test) {
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  Table table(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  Table& table = *table_ptr;
+
   auto col1 = table.GetColumn(0);
   auto col2 = table.GetColumn(1);
 
@@ -101,7 +103,8 @@ TEST(TableTest, bytes_test) {
   auto rd = schema::RowDescriptor({types::DataType::INT64, types::DataType::STRING});
   schema::Relation rel(rd.types(), {"col1", "col2"});
 
-  Table table(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  Table& table = *table_ptr;
 
   schema::RowBatch rb1(rd, 3);
   std::vector<types::Int64Value> col1_rb1 = {4, 5, 10};
@@ -264,7 +267,9 @@ TEST(TableTest, batch_size_too_big) {
 TEST(TableTest, wrong_batch_size_test) {
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::FLOAT64}, {"col1", "col2"});
 
-  Table table(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  Table& table = *table_ptr;
+
   auto col1 = table.GetColumn(0);
   auto col2 = table.GetColumn(1);
 
@@ -281,7 +286,8 @@ TEST(TableTest, write_row_batch) {
   auto rd = schema::RowDescriptor({types::DataType::BOOLEAN, types::DataType::INT64});
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  Table table(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  Table& table = *table_ptr;
 
   schema::RowBatch rb1(rd, 2);
   std::vector<types::BoolValue> col1_rb1 = {true, false};
@@ -301,7 +307,8 @@ TEST(TableTest, write_row_batch) {
 TEST(TableTest, hot_batches_test) {
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  Table table(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  Table& table = *table_ptr;
 
   std::vector<types::BoolValue> col1_in1 = {true, false, true};
   auto col1_in1_wrapper =
@@ -342,7 +349,8 @@ TEST(TableTest, greater_than_eq_eq) {
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
   schema::RowDescriptor rd({types::DataType::BOOLEAN, types::DataType::INT64});
 
-  Table table(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  Table& table = *table_ptr;
 
   schema::RowBatch rb1(rd, 2);
   std::vector<types::BoolValue> col1_rb1 = {true, false};
@@ -357,9 +365,11 @@ TEST(TableTest, greater_than_eq_eq) {
 }
 
 TEST(TableTest, find_batch_position_greater_or_eq) {
-  schema::Relation relation(std::vector<types::DataType>({types::DataType::TIME64NS}),
-                            std::vector<std::string>({"time_"}));
-  Table table(relation);
+  schema::Relation rel(std::vector<types::DataType>({types::DataType::TIME64NS}),
+                       std::vector<std::string>({"time_"}));
+  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  Table& table = *table_ptr;
+
   std::vector<types::Time64NSValue> time_cold_col1 = {2, 3, 4, 6};
   std::vector<types::Time64NSValue> time_cold_col2 = {8, 8, 8};
   std::vector<types::Time64NSValue> time_cold_col3 = {8, 9, 11};
@@ -496,7 +506,8 @@ TEST(TableTest, transfer_empty_record_batch_test) {
   schema::Relation rel({types::DataType::INT64}, {"col1"});
   schema::RowDescriptor rd({types::DataType::INT64});
 
-  Table table(rel);
+  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+  Table& table = *table_ptr;
 
   // ColumnWrapper with no columns should not be added to row batches.
   auto wrapper_batch_1 = std::make_unique<types::ColumnWrapperRecordBatch>();

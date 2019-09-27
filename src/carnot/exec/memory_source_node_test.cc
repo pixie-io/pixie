@@ -36,7 +36,7 @@ class MemorySourceNodeTest : public ::testing::Test {
     table_store::schema::Relation rel({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                       {"col1", "time_"});
 
-    std::shared_ptr<Table> table = std::make_shared<Table>(rel);
+    std::shared_ptr<Table> table = Table::Create(rel);
     exec_state_->table_store()->AddTable("cpu", table);
 
     auto col1 = table->GetColumn(0);
@@ -148,7 +148,7 @@ class MemorySourceNodeTabletTest : public ::testing::Test {
     rel = table_store::schema::Relation({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                         {"col1", "time_"});
 
-    std::shared_ptr<Table> tablet = std::make_shared<Table>(rel);
+    std::shared_ptr<Table> tablet = Table::Create(rel);
     AddValuesToTable(tablet.get());
 
     EXPECT_OK(exec_state_->table_store()->AddTable(table_id_, table_name_, tablet_id_, tablet));
@@ -207,7 +207,7 @@ TEST_F(MemorySourceNodeTabletTest, basic_tablet_test) {
 TEST_F(MemorySourceNodeTabletTest, multiple_tablet_test) {
   types::TabletID new_tablet_id = "456";
   EXPECT_NE(tablet_id_, new_tablet_id);
-  std::shared_ptr<Table> new_tablet = std::make_shared<Table>(rel);
+  std::shared_ptr<Table> new_tablet = Table::Create(rel);
 
   auto wrapper_batch_1 = std::make_unique<pl::types::ColumnWrapperRecordBatch>();
   auto col_wrapper_1 = std::make_shared<types::BoolValueColumnWrapper>(0);

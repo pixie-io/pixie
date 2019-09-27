@@ -119,7 +119,7 @@ std::shared_ptr<pl::table_store::Table> GetTableFromCsv(const std::string& filen
 
   // Construct the table.
   pl::table_store::schema::Relation rel(types, names);
-  auto table = std::make_shared<pl::table_store::Table>(rel);
+  auto table = pl::table_store::Table::Create(rel);
 
   // Add rowbatches to the table.
   row_idx = 0;

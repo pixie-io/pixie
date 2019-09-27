@@ -112,7 +112,7 @@ TEST_F(ExecGraphTest, execute) {
   table_store::schema::Relation rel(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = std::make_shared<Table>(rel);
+  auto table = Table::Create(rel);
 
   auto col1 = table->GetColumn(0);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
@@ -187,7 +187,7 @@ TEST_F(ExecGraphTest, execute_time) {
   table_store::schema::Relation rel(
       {types::DataType::TIME64NS, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
-  auto table = std::make_shared<Table>(rel);
+  auto table = Table::Create(rel);
 
   auto col1 = table->GetColumn(0);
   std::vector<types::Time64NSValue> col1_in1 = {types::Time64NSValue(1), types::Time64NSValue(2),
