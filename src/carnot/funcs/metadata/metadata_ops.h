@@ -417,6 +417,29 @@ class PodNameToPodStartTimeUDF : public ScalarUDF {
   }
 };
 
+class PodNameToPodStatusUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the Pod status for a passed in pod.
+   *
+   * @param ctx: the function context
+   * @param pod_name: the Value containing a pod name.
+   * @return types::StringValue: the status of the pod.
+   */
+  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+    types::StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+    if (pod_info->stop_time_ns() != 0) {
+      return "Terminated";
+    }
+    return "Running";
+  }
+};
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot

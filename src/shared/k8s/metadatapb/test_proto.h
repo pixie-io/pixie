@@ -134,7 +134,7 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingPo
 std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedPodUpdatePB() {
   auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
-      absl::Substitute(kResourceUpdateTmpl, "pod_update", kTerminatedContainerUpdatePbTxt);
+      absl::Substitute(kResourceUpdateTmpl, "pod_update", kTerminatedPodUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
       << "Failed to parse proto";
   return update;

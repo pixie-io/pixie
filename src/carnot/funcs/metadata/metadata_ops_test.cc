@@ -265,6 +265,17 @@ TEST_F(MetadataOpsTest, pod_name_to_start_time) {
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/blah").val, 0);
 }
 
+TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
+  PodNameToPodStatusUDF udf;
+  updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               updates_.get()));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  // 1_uid is the Pod id for the currently running pod.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/running_pod"), "Running");
+  EXPECT_EQ(std::string(udf.Exec(function_ctx.get(), "pl/terminating_pod")), "Terminated");
+}
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot
