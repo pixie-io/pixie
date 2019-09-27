@@ -46,7 +46,7 @@ class LogicalPlanner : public NotCopyable {
   StatusOr<std::unique_ptr<RelationMap>> MakeRelationMap(const Schema& schema_pb);
 
   StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
-      const distributedpb::LogicalPlannerState& logical_state);
+      const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* reg_info);
   Status ApplyTabletizer(distributed::DistributedPlan* distributed_plan);
 
   Compiler compiler_;

@@ -34,10 +34,10 @@ class PlannerExportTest : public ::testing::Test {
   PlannerPtr planner_;
 };
 
-StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string schema,
+StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string planner_state,
                                        std::string query, int* resultLen) {
-  char* result = PlannerPlan(planner_ptr, schema.c_str(), schema.length(), query.c_str(),
-                             query.length(), resultLen);
+  char* result = PlannerPlan(planner_ptr, planner_state.c_str(), planner_state.length(),
+                             query.c_str(), query.length(), resultLen);
   if (*resultLen == 0) {
     return error::InvalidArgument("Planner failed to return.");
   }
@@ -96,6 +96,26 @@ TEST_F(PlannerExportTest, bad_queries) {
   ASSERT_TRUE(planner_result_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
   EXPECT_NOT_OK(planner_result_pb.status());
   EXPECT_THAT(planner_result_pb.status(), HasCompilerError("Table 'bad_table_name' not found."));
+}
+
+const char* kUDFQuery = R"query(
+t1 = From(table='table1').Range(start='-30s')
+t1 = t1.Filter(fn=lambda r: r.cpu_cycles >= 0)
+t1.Result(name="")
+)query";
+
+// Previously had an issue where the UDF registry's memory was improperly handled, and this query
+// would cause a segfault. If this unit test passes, then that bug should be gone.
+TEST_F(PlannerExportTest, udf_in_query) {
+  auto logical_planner_state = distributedpb::testutils::CreateTwoAgentsPlannerState();
+  int result_len;
+  auto interface_result =
+      PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), kUDFQuery, &result_len);
+  // The compiler should successfully compile and a proto should be returned.
+  ASSERT_OK(interface_result);
+  distributedpb::LogicalPlannerResult planner_result_pb;
+  ASSERT_TRUE(planner_result_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
+  EXPECT_OK(planner_result_pb.status());
 }
 }  // namespace compiler
 }  // namespace carnot

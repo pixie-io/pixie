@@ -50,7 +50,6 @@ StatusOr<bool> TabletSourceConversionRule::ReplaceMemorySourceWithTabletSourceGr
 
 const distributedpb::TableInfo* TabletSourceConversionRule::GetTableInfo(
     const std::string& table_name) {
-  DCHECK_GT(carnot_info_.table_info_size(), 0);
   for (int64_t i = 0; i < carnot_info_.table_info_size(); ++i) {
     if (carnot_info_.table_info()[i].table() == table_name) {
       return &(carnot_info_.table_info()[i]);
