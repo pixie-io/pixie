@@ -11,7 +11,7 @@
 
 #include "absl/base/macros.h"
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_bpf/socket_trace.h"
+#include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/event_parser.h"
 
 namespace pl {

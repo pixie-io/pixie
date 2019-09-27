@@ -3,16 +3,16 @@
 #include <gtest/gtest.h>
 
 extern "C" {
-#include "src/stirling/bcc_bpf/socket_trace.h"
+#include "src/stirling/bcc_bpf_interface/socket_trace.h"
 }
 #include "src/common/base/types.h"
 
 extern "C" {
 // The following helper functions must be before include http2.h, so update_http2_frame_offset()
 // can be tested with the fake impls.
-#include "src/stirling/bcc_bpf/bpf_helper_test_impl.h"
-#include "src/stirling/bcc_bpf/grpc.h"
-#include "src/stirling/bcc_bpf/http2.h"
+#include "src/stirling/bcc_bpf_interface/bpf_helper_test_impl.h"
+#include "src/stirling/bcc_bpf_interface/grpc.h"
+#include "src/stirling/bcc_bpf_interface/http2.h"
 }
 
 TEST(HTTP2FrameParsingTest, update_http2_frame_offset) {

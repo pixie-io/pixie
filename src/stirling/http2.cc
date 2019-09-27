@@ -17,7 +17,7 @@ extern "C" {
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
 #include "src/common/grpcutils/utils.h"
-#include "src/stirling/bcc_bpf/grpc.h"
+#include "src/stirling/bcc_bpf_interface/grpc.h"
 #include "src/stirling/grpc.h"
 
 namespace pl {
@@ -423,7 +423,7 @@ constexpr size_t kRespHeadersFrameMinSize = kFrameHeaderSizeInBytes + 1;
 // frame of a gRPC response. Looks for 3 byte constant with specific format, and one byte with
 // 0 bit. The chance of a random byte sequence passes this function would be at most 1/2^25.
 //
-// TODO(yzhao): Consider move this into bcc_bpf/http2.h, that way this becomes symmetric with
+// TODO(yzhao): Consider moving this into shared/http2.h, that way this becomes symmetric with
 // looks_like_grpc_req_http2_headers_frame().
 bool LooksLikeHeadersFrameForGRPCResp(std::string_view buf) {
   const char type = buf[3];

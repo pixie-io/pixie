@@ -20,6 +20,7 @@ pl_cc_library(
         [
             "*.h",
             "bcc_bpf/*.h",
+            "bcc_bpf_interface/*.h",
         ],
         exclude = [
             "**/*_mock.h",
@@ -72,13 +73,14 @@ pl_bpf_cc_resource(
         "bcc_bpf/socket_trace.c",
     ],
     hdrs = [
-        ["bcc_bpf/pidruntime.h"],
+        ["bcc_bpf_interface/pidruntime.h"],
         [
-            "bcc_bpf/grpc.h",
-            "bcc_bpf/http2.h",
-            "bcc_bpf/log_event.h",
             "bcc_bpf/logging.h",
-            "bcc_bpf/socket_trace.h",
+            "bcc_bpf/utils.h",
+            "bcc_bpf_interface/grpc.h",
+            "bcc_bpf_interface/http2.h",
+            "bcc_bpf_interface/log_event.h",
+            "bcc_bpf_interface/socket_trace.h",
         ],
     ],
 )
@@ -230,8 +232,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "bcc_bpf_http2_test",
-    srcs = ["bcc_bpf/http2_test.cc"],
+    name = "bcc_bpf_interface_http2_test",
+    srcs = ["bcc_bpf_interface/http2_test.cc"],
     # This test always fails in Jenkins build because of unable to unroll loop.
     # TODO(yzhao): Fix and remove this 'manual' tag.
     tags = ["manual"],

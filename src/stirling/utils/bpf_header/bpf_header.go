@@ -38,7 +38,7 @@ func Preprocess(file io.Reader, headers []string) string {
 				log.Fatal(err)
 			}
 			headerString := string(headerByte)
-			if strings.Contains(headerString, "#include \"") {
+			if strings.HasPrefix(strings.TrimSpace(headerString), "#include \"") {
 				log.Fatal("Bpf header includes other user include headers")
 			}
 			fileContent += "//-----------------------------------\n"

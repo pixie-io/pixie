@@ -1,15 +1,17 @@
-#include "src/stirling/bcc_bpf/socket_trace.h"
-
 #include <linux/sched.h>
 #include <linux/socket.h>
 #include <uapi/linux/errno.h>
 #include <uapi/linux/in6.h>
 #include <uapi/linux/ptrace.h>
 
-#include "src/stirling/bcc_bpf/grpc.h"
-#include "src/stirling/bcc_bpf/http2.h"
-#include "src/stirling/bcc_bpf/log_event.h"
+#include "src/stirling/bcc_bpf_interface/socket_trace.h"
+
+#include "src/stirling/bcc_bpf_interface/grpc.h"
+#include "src/stirling/bcc_bpf_interface/http2.h"
+#include "src/stirling/bcc_bpf_interface/log_event.h"
+
 #include "src/stirling/bcc_bpf/logging.h"
+#include "src/stirling/bcc_bpf/utils.h"
 
 // TODO(yzhao): Investigate the performance overhead of active_*_info_map.delete(id), when id is not
 // in the map. If it's significant, change to only call delete() after knowing that id is in the

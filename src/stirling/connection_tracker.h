@@ -21,7 +21,7 @@ namespace stirling {
 
 /**
  * @brief Describes a connection from user space. This corresponds to struct conn_info_t in
- * src/stirling/bcc_bpf/socket_trace.h.
+ * src/stirling/bcc_bpf_interface/socket_trace.h.
  */
 struct SocketOpen {
   uint64_t timestamp_ns = 0;

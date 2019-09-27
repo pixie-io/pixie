@@ -12,12 +12,10 @@
 #include <vector>
 
 extern "C" {
-#include "src/stirling/bcc_bpf/log_event.h"
+#include "src/stirling/bcc_bpf_interface/log_event.h"
 }
 
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_bpf/pidruntime.h"
-#include "src/stirling/source_connector.h"
 
 DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
 DECLARE_bool(stirling_bpf_enable_logging);

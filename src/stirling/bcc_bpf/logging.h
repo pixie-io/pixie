@@ -3,6 +3,9 @@
 #include <linux/string.h>
 #include <uapi/linux/ptrace.h>
 
+// TODO(oazizi): Include this file. Problem is our pre-processor can't handle it.
+// #include "src/stirling/bcc_bpf_interface/log_event.h"
+
 BPF_PERF_OUTPUT(log_events);
 BPF_PERCPU_ARRAY(log_event_buf, struct log_event_t, 1);
 
@@ -10,6 +13,7 @@ BPF_PERCPU_ARRAY(log_event_buf, struct log_event_t, 1);
 #define STR(x) STR_HELPER(x)
 #define LOC __FILE__ ":" STR(__LINE__) "] "
 
+// TODO(oazizi): Use __inline from utils.h. Problem is our pre-processor can't handle it.
 #define BPF_FN static inline __attribute__((__always_inline__))
 
 BPF_FN void log_text(struct pt_regs* ctx, const char* text) {

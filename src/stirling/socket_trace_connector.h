@@ -32,6 +32,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
 #include "src/stirling/socket_trace.h"
+#include "src/stirling/source_connector.h"
 
 DECLARE_string(http_response_header_filters);
 DECLARE_bool(stirling_enable_parsing_protobufs);

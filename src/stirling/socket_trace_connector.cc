@@ -14,7 +14,7 @@
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
 #include "src/shared/metadata/metadata.h"
-#include "src/stirling/bcc_bpf/socket_trace.h"
+#include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/event_parser.h"
 #include "src/stirling/grpc.h"
 #include "src/stirling/http2.h"
