@@ -266,6 +266,7 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *querybrokerpb.AgentInfoR
 					Hostname: agentInfo.Info.HostInfo.Hostname,
 				},
 			},
+			CreateTimeNs:    agentInfo.CreateTimeNs,
 			LastHeartbeatNs: agentInfo.LastHeartbeatNs,
 			State:           querybrokerpb.AGENT_STATE_HEALTHY,
 		})
