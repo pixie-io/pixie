@@ -2587,6 +2587,22 @@ TEST_F(CompilerTest, right_join) {
   EXPECT_THAT(plan_status.ConsumeValueOrDie(), EqualsProto(kJoinRightQueryPlan));
 }
 
+// Test to make sure syntax errors are properly parsed.
+TEST_F(CompilerTest, syntax_error_test) {
+  auto syntax_error_query = "From(";
+  auto plan_status = compiler_.Compile(syntax_error_query, compiler_state_.get());
+  ASSERT_NOT_OK(plan_status);
+  EXPECT_THAT(plan_status.status(), HasCompilerError("SyntaxError: Expected `)`"));
+}
+
+TEST_F(CompilerTest, indentation_error_test) {
+  auto indent_error_query =
+      absl::StrJoin({"t = From(table='blah')", "    t.Result(name='blah')"}, "\n");
+  auto plan_status = compiler_.Compile(indent_error_query, compiler_state_.get());
+  ASSERT_NOT_OK(plan_status);
+  EXPECT_THAT(plan_status.status(), HasCompilerError("SyntaxError: invalid syntax"));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
