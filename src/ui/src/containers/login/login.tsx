@@ -2,6 +2,7 @@ import * as React from 'react';
 import {Route, Switch} from 'react-router-dom';
 
 import {CompanyCreate, CompanyLogin} from './company-login';
+import {Logout} from './logout';
 import {UserCreate, UserLogin} from './user-login';
 
 import './login.scss';
@@ -23,6 +24,7 @@ export class Login extends React.Component<LoginProps, {}> {
               <Route exact path={`/create`} component={CompanyCreate} />
               <Route exact path={`/login`} component={UserLogin} />
               <Route exact path={`/create-site`} component={UserCreate} />
+              <Route exact path={`/logout`} component={Logout} />
               <Route path={`/`} component={CompanyLogin} />
             </Switch>
         </div>

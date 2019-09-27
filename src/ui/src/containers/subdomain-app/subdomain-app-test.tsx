@@ -10,6 +10,6 @@ describe('<SubdomainApp/> test', () => {
       name='test name'
     />);
 
-    expect(app.find(Route)).toHaveLength(3);
+    expect(app.find(Route)).toHaveLength(4);
   });
 });

@@ -62,6 +62,7 @@ var webpackConfig = {
     publicPath: '/',
     historyApiFallback: {
       rewrites: [
+  {from: /logout/, to: '/subdomain-index.html'},
         {from: /login/, to: '/subdomain-index.html'},
         {from: /create-site/, to: '/subdomain-index.html'},
         {from: /vizier/, to: '/subdomain-index.html'},

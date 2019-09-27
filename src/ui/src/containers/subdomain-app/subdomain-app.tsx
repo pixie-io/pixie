@@ -30,6 +30,7 @@ export class SubdomainApp extends React.Component<SubdomainAppProps, {}> {
               <Switch>
                 <Route path='/login' component={Login} />
                 <Route path='/create-site' component={Login} />
+                <Route path='/logout' component={Login} />
                 <Route component={Vizier} />
               </Switch>
             </div>
