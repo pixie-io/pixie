@@ -99,7 +99,7 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		return handler.NewStatusError(http.StatusInternalServerError, "Failed to create site")
 	}
 
-	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, params.DomainName, r, w)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

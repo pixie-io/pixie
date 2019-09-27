@@ -80,6 +80,7 @@ func TestCreateSiteHandler(t *testing.T) {
 	req2 := http.Request{Header: header}
 	sess, err := controller.GetDefaultSession(env, &req2)
 	assert.Equal(t, testReplyToken, sess.Values["_at"])
+	assert.Equal(t, "def", sess.Values["_auth_domain"])
 }
 
 func TestCreateSiteHandler_IndividualDomain(t *testing.T) {
@@ -141,6 +142,7 @@ func TestCreateSiteHandler_IndividualDomain(t *testing.T) {
 	req2 := http.Request{Header: header}
 	sess, err := controller.GetDefaultSession(env, &req2)
 	assert.Equal(t, testReplyToken, sess.Values["_at"])
+	assert.Equal(t, "def", sess.Values["_auth_domain"])
 }
 
 func TestCreateSiteHandler_BadMethod(t *testing.T) {

@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -17,6 +18,16 @@ import (
 func GetTokenFromSession(env apienv.APIEnv, r *http.Request) (string, bool) {
 	session, err := GetDefaultSession(env, r)
 	if err != nil {
+		return "", false
+	}
+
+	// Check that the session is valid for the current subdomain.
+	sessionDomain, ok := session.Values["_auth_domain"]
+	if !ok {
+		return "", ok
+	}
+
+	if !strings.HasPrefix(r.Host, sessionDomain.(string)+".") {
 		return "", false
 	}
 

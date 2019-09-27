@@ -81,6 +81,7 @@ func TestAuthLoginHandler(t *testing.T) {
 	req2 := http.Request{Header: header}
 	sess, err := controller.GetDefaultSession(env, &req2)
 	assert.Equal(t, testReplyToken, sess.Values["_at"])
+	assert.Equal(t, "hulu", sess.Values["_auth_domain"])
 }
 
 func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
