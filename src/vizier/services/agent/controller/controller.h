@@ -33,8 +33,6 @@ namespace pl {
 namespace vizier {
 namespace agent {
 
-constexpr int kAgentHeartbeatIntervalSeconds = 5;
-
 /**
  * Controller is responsible for managing and orchestrating the
  * components that make up the agent.
@@ -114,7 +112,7 @@ class Controller : public NotCopyable {
                                      messages::AgentUpdateInfo* update_info);
   static void ProcessPIDTerminatedEvent(const pl::md::PIDTerminatedEvent& ev,
                                         messages::AgentUpdateInfo* update_info);
-  Status StartHelperThreads();
+  void StartHelperThreads();
   Status WaitForHelperThreads();
 
   // We direct heartbeat messages to this queue.

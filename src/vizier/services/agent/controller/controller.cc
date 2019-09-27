@@ -30,20 +30,23 @@ namespace pl {
 namespace vizier {
 namespace agent {
 
-using types::DataType;
+using ::pl::shared::k8s::metadatapb::ResourceUpdate;
+using ::pl::types::DataType;
 
 // The maximum size of the hostname, before we get an error.
-constexpr uint64_t kMaxHostnameSize = 128;
+constexpr int kMaxHostnameSize = 128;
 
 // Retries for registration ACK.
-constexpr auto kRegistrationPeriod = std::chrono::seconds(2);
+constexpr std::chrono::seconds kRegistrationPeriod{2};
 
 // The amount of time to wait for a hearbeat ack.
-constexpr uint32_t kHeartbeatWaitMS = 5000;
+constexpr std::chrono::milliseconds kHeartbeatWaitMillis{5000};
 
 // The number of seconds to wait before a timeout and retry. Note this is just
 // the max time before it runs the next iteration and does not imply an error.
-constexpr uint32_t kNextMessageTimeoutS = 5;
+constexpr std::chrono::seconds kNextMessageTimeoutSecs{5};
+
+constexpr int64_t kAgentHeartbeatIntervalNS = 5'000'000'000;
 
 StatusOr<std::unique_ptr<Controller>> Controller::Create(
     sole::uuid agent_id, std::unique_ptr<QBStub> qb_stub, std::unique_ptr<carnot::Carnot> carnot,
@@ -119,7 +122,7 @@ Status Controller::Init() {
   return Status::OK();
 }
 
-Status Controller::StartHelperThreads() {
+void Controller::StartHelperThreads() {
   heartbeat_thread_ = std::make_unique<std::thread>(&Controller::RunHeartbeat, this);
 
   mds_thread_ = std::make_unique<std::thread>([this]() {
@@ -129,24 +132,22 @@ Status Controller::StartHelperThreads() {
       std::this_thread::sleep_for(std::chrono::seconds(5));
     }
   });
-  return Status::OK();
 }
 
 Status Controller::RegisterAgent() {
   if (nats_connector_->ApproximatePendingMessages() != 0) {
-    // We already have messages in the queue. This should never happen since
-    // messages to this ID should never have been sent before registration.
-    // The agent will kill itself and hope that a restart will fix the issue.
-    LOG(FATAL) << "Agent has messages before registration. Terminating.";
+    LOG(FATAL) << "Agent has messages before registration. Terminating. "
+                  "We already have messages in the queue. This should never happen since "
+                  "messages to this ID should never have been sent before registration. "
+                  "The agent will kill itself and hope that a restart will fix the issue.";
   }
 
   // Send the registration request.
   messages::VizierMessage req;
-  auto register_request = req.mutable_register_agent_request();
-  auto agent_info = register_request->mutable_info();
+  auto agent_info = req.mutable_register_agent_request()->mutable_info();
   ToProto(agent_id_, agent_info->mutable_agent_id());
   auto host_info = agent_info->mutable_host_info();
-  *(host_info->mutable_hostname()) = hostname_;
+  host_info->set_hostname(hostname_);
 
   PL_RETURN_IF_ERROR(nats_connector_->Publish(req));
 
@@ -224,8 +225,7 @@ void Controller::ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* update_info) 
 
 Status Controller::HandleMDSUpdates(const messages::MetadataUpdateInfo& update_info) {
   for (const auto& update : update_info.updates()) {
-    auto resource_update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>(update);
-    PL_RETURN_IF_ERROR(mds_manager_->AddK8sUpdate(std::move(resource_update)));
+    PL_RETURN_IF_ERROR(mds_manager_->AddK8sUpdate(std::make_unique<ResourceUpdate>(update)));
   }
   return Status::OK();
 }
@@ -282,25 +282,25 @@ void Controller::RunHeartbeat() {
     // TODO(zasgar): We need to add sequence numbers to heartbeat before we can make this work
     // reliably.
     std::unique_ptr<messages::VizierMessage> resp;
-    incoming_heartbeat_queue_.wait_dequeue_timed(resp, std::chrono::milliseconds(kHeartbeatWaitMS));
+    incoming_heartbeat_queue_.wait_dequeue_timed(resp, kHeartbeatWaitMillis);
 
     if (resp == nullptr) {
-      LOG(FATAL) << "Failed to receive heartbeat ACK. terminating";
+      LOG(FATAL) << "Failed to receive heartbeat ACK, terminating ...";
     }
 
-    using pl::shared::k8s::metadatapb::ResourceUpdate;
     if (resp->heartbeat_ack().has_update_info()) {
       PL_CHECK_OK(HandleMDSUpdates(resp->heartbeat_ack().update_info()));
     }
 
-    int64_t elapsed_time = std::max<int64_t>(0, CurrentTimeNS() - current_time);
-    hb_latency_moving_average = alpha * hb_latency_moving_average + (1.0 - alpha) * elapsed_time;
+    const int64_t elapsed_time_ns = std::max<int64_t>(0, CurrentTimeNS() - current_time);
+    hb_latency_moving_average = alpha * hb_latency_moving_average + (1.0 - alpha) * elapsed_time_ns;
     LOG_EVERY_N(INFO, 10) << absl::StrFormat("Heartbeat ACK latency moving average: %.2f ms",
                                              hb_latency_moving_average / 1.0E6);
 
-    uint64_t sleep_interval_ms =
-        static_cast<uint64_t>(((kAgentHeartbeatIntervalSeconds * 1E9) - elapsed_time) / 1.0E6);
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_interval_ms));
+    int64_t sleep_interval_ns = kAgentHeartbeatIntervalNS - elapsed_time_ns;
+    if (sleep_interval_ns > 0) {
+      std::this_thread::sleep_for(std::chrono::nanoseconds(sleep_interval_ns));
+    }
   }
 }
 
@@ -332,12 +332,12 @@ Status Controller::ExecuteQuery(
 }
 
 Status Controller::Run() {
-  PL_RETURN_IF_ERROR(StartHelperThreads());
+  StartHelperThreads();
 
   running_ = true;
 
   while (keep_alive_) {
-    auto msg = nats_connector_->GetNextMessage(std::chrono::seconds(kNextMessageTimeoutS));
+    auto msg = nats_connector_->GetNextMessage(kNextMessageTimeoutSecs);
     if (msg == nullptr) {
       continue;
     }
