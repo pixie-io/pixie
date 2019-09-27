@@ -51,6 +51,11 @@ class PodNameToPodIDUDF : public ScalarUDF {
  public:
   types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_name) {
     auto md = GetMetadataState(ctx);
+    return GetPodID(md, pod_name);
+  }
+
+  static types::StringValue GetPodID(const pl::md::AgentMetadataState* md,
+                                     types::StringValue pod_name) {
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
     std::vector<std::string_view> name_parts = absl::StrSplit(pod_name, "/");
     if (name_parts.size() != 2) {
@@ -152,7 +157,6 @@ class ServiceNameToServiceIDUDF : public ScalarUDF {
   }
 };
 
-// TODO(zasgar) if this looks good, I'll update the pod classes to use this as well.
 class UPIDToK8S {
  public:
   static const pl::md::PodInfo* UPIDtoPod(const pl::md::AgentMetadataState* md,
@@ -387,6 +391,32 @@ class UPIDToPIDUDF : public ScalarUDF {
     return static_cast<int64_t>(upid.pid());
   }
 };
+
+class PodIDToPodStartTimeUDF : public ScalarUDF {
+ public:
+  types::Time64NSValue Exec(FunctionContext* ctx, types::StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return 0;
+    }
+    return pod_info->start_time_ns();
+  }
+};
+
+class PodNameToPodStartTimeUDF : public ScalarUDF {
+ public:
+  types::Time64NSValue Exec(FunctionContext* ctx, types::StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+    types::StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return 0;
+    }
+    return pod_info->start_time_ns();
+  }
+};
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot

@@ -247,6 +247,24 @@ TEST_F(MetadataOpsTest, upid_to_pid) {
   EXPECT_EQ(udf.Exec(nullptr, upid2.value()), 123);
 }
 
+TEST_F(MetadataOpsTest, pod_id_to_start_time) {
+  PodIDToPodStartTimeUDF udf;
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  // 1_uid is the Pod id for the currently running pod.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1_uid").val, 5);
+  // 1234567_uid is a nonexistant Pod id, should return 0.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1234567_uid").val, 0);
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_start_time) {
+  PodNameToPodStartTimeUDF udf;
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  // 1_uid is the Pod id for the currently running pod.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/running_pod").val, 5);
+  // 1234567_uid is a nonexistant Pod id, should return 0.
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/blah").val, 0);
+}
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot
