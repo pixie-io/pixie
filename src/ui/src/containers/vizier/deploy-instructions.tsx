@@ -59,7 +59,7 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
             <div className='deploy-instructions--contact-info'>
               <div className='deploy-instructions--contact-info-line'>
                 <img src={docsImage}/>
-                  <a href={'https://' + DOMAIN_NAME + '/docs/getting-started/'}>Pixie Product Documentation</a>
+                  <a href={'/docs/getting-started/'}>Pixie Product Documentation</a>
               </div>
               <div className='deploy-instructions--contact-info-line'>
                 <img src={emailImage}/><a href='mailto:cs@pixielabs.ai'> cs@pixielabs.ai</a>
