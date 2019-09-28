@@ -28,6 +28,7 @@
     margin-top: 25px;
     display: flex;
     flex: 1;
+    min-height: 0;
 }
 
 .hotkey-container {
@@ -45,6 +46,10 @@
 
 .query-executor .code-editor .CodeMirror-linenumber {
     color: $white;
+}
+
+.query-executor .ReactCodeMirror {
+    display: grid;
 }
 
 .query-results .ReactVirtualized__Table__row {
