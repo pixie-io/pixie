@@ -21,6 +21,9 @@ storiesOf('SidebarNav', module)
           { link: '/', selectedImg: infoImage, unselectedImg: codeImage },
           { link: '/test', selectedImg: codeImage, unselectedImg: infoImage },
         ]}
+        footerItems={[
+          { link: '/footer', selectedImg: infoImage, unselectedImg: codeImage },
+        ]}
       />
     </Router>
   ), {

@@ -4,6 +4,7 @@
     flex-direction: column;
     align-items: center;
     flex-shrink: 0;
+    padding-bottom: 30px;
 }
 
 .sidebar-nav--logo img {
@@ -14,4 +15,8 @@
 
 .sidebar-nav--item {
     padding-top: 24px;
+}
+
+.sidebar-nav--spacer {
+  flex: 1;
 }

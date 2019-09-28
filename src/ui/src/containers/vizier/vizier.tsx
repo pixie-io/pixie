@@ -14,7 +14,9 @@ import './vizier.scss';
 // TODO(zasgar/michelle): we should figure out a good way to
 // package assets.
 // @ts-ignore : TS does not like image files.
-import * as infoImage from 'images/icons/agent.svg';
+import * as infoImage from 'images/icons/agent-dark.svg';
+// @ts-ignore : TS does not like image files.
+import * as docsImage from 'images/icons/docs-light.svg';
 // @ts-ignore : TS does not like image files.
 import * as loadingSvg from 'images/icons/loading-dark.svg';
 // @ts-ignore : TS does not like image files.
@@ -109,7 +111,10 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
                       logo = {logoImage}
                       items={[
                         { link: '/vizier/query', selectedImg: codeImage, unselectedImg: codeImage },
+                      ]}
+                      footerItems={[
                         { link: '/vizier/agents', selectedImg: infoImage, unselectedImg: infoImage },
+                        { link: '/docs/getting-started/', selectedImg: docsImage, unselectedImg: docsImage },
                       ]}
                     />
                     <div className='vizier-body'>
