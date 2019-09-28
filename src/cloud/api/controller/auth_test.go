@@ -149,7 +149,7 @@ func TestAuthLogoutHandler(t *testing.T) {
 	env, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
-	req, err := http.NewRequest("POST", "/api/users", nil)
+	req, err := http.NewRequest("POST", "/logout", nil)
 	assert.Nil(t, err)
 
 	rr := httptest.NewRecorder()
@@ -158,8 +158,18 @@ func TestAuthLogoutHandler(t *testing.T) {
 	h.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	// Check the cookie is removed from session.
 	rawCookies := rr.Header().Get("Set-Cookie")
+
+	// The cookies are encrypted so it's hard to validate the values of the actual cookie.
+	// This is a *not* great test to make sure certain properties are set, so the browser correctly marks
+	// the cookie as dead.
+	assert.Contains(t, rawCookies, "Domain=example.com")
+	assert.Contains(t, rawCookies, "Path=/")
+	assert.Contains(t, rawCookies, "Max-Age=0")
+	assert.Contains(t, rawCookies, "HttpOnly")
+	assert.Contains(t, rawCookies, "Secure")
+
+	// Check the cookie is removed from session.
 	header := http.Header{}
 	header.Add("Cookie", rawCookies)
 	req2 := http.Request{Header: header}

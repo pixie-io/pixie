@@ -122,10 +122,16 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return &handler.StatusError{http.StatusInternalServerError, err}
 	}
+
 	// Delete the cookie.
 	session.Values["_at"] = ""
 	session.Values["_expires_at"] = 0
 	session.Options.MaxAge = -1
+	session.Options.HttpOnly = true
+	session.Options.Secure = true
+	session.Options.SameSite = http.SameSiteStrictMode
+	session.Options.Domain = viper.GetString("domain_name")
+
 	session.Save(r, w)
 	w.WriteHeader(http.StatusOK)
 	return nil

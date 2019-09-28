@@ -17,6 +17,7 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *mock_auth.MockAuthServiceCl
 	ctrl := gomock.NewController(t)
 	viper.Set("session_key", "fake-session-key")
 	viper.Set("jwt_signing_key", "jwt-key")
+	viper.Set("domain_name", "example.com")
 
 	mockAuthClient := mock_auth.NewMockAuthServiceClient(ctrl)
 	mockSiteManagerClient := mock_sitemanagerpb.NewMockSiteManagerServiceClient(ctrl)
