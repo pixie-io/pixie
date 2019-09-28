@@ -28,6 +28,8 @@ spec:
               name: pl-db-config
           - configMapRef:
               name: pl-tls-config
+          - configMapRef:
+              name: pl-dns-config
         env:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
@@ -42,7 +44,13 @@ spec:
         volumeMounts:
             - name: certs
               mountPath: /certs
+            - name: cloud-dns-secrets
+              mountPath: /secrets/clouddns
+              readOnly: true
       volumes:
         - name: certs
           secret:
             secretName: service-tls-certs
+        - name: cloud-dns-secrets
+          secret:
+            secretName: cloud-dns-secrets
