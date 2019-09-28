@@ -11,7 +11,8 @@ import (
 // GetDefaultSession loads the default session from the request.
 func GetDefaultSession(env apienv.APIEnv, r *http.Request) (*sessions.Session, error) {
 	store := env.CookieStore()
-	session, err := store.Get(r, "default-session")
+	// TODO(zasgar/michelle): Figure out why our sessions aren't getting cleared and remove this hack.
+	session, err := store.Get(r, "default-session2")
 	if err != nil {
 		return nil, errors.New("error fetching session info")
 	}
