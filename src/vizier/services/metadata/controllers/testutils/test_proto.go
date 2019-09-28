@@ -5,6 +5,7 @@ import ()
 // This file contains the protobufs used in vizier/services/metadata/controllers tests.
 
 // AgentInfo
+
 // ClockNowNS is the now time to use for the test clocks.
 const ClockNowNS = 1e9 * 70 // 70s in NS. This is slightly greater than the expiration time for the unhealthy agent.
 // HealthyAgentLastHeartbeatNS is the last heartbeat of the healthy agent.
@@ -44,6 +45,7 @@ last_heartbeat_ns: 0
 `
 
 // AgentStatus
+
 // Agent1StatusPB is a protobuf for an agent status.
 const Agent1StatusPB = `
 info {

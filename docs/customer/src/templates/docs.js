@@ -112,7 +112,6 @@ export default class MDXRuntimeTest extends Component {
             ({ node }) => node.fields.slug === slug,
           );
 
-
           return { title: node.fields.title, url: node.fields.slug };
         }
       });
