@@ -3,9 +3,10 @@ kind: Service
 metadata:
   name: cloud-proxy-service
   annotations:
-    cloud.google.com/app-protocols: '{"tcp-https":"HTTPS"}'
+    cloud.google.com/app-protocols: '{"tcp-https": "HTTPS", "tcp-http2": "HTTP2"}'
     cloud.google.com/load-balancer-type: external
-    beta.cloud.google.com/backend-config: '{"ports": {"443":"cloud-proxy-backend-config"}}'
+    beta.cloud.google.com/backend-config:
+      '{"ports": {"443": "cloud-proxy-backend-config", "5555": "cloud-proxy-backend-config"}}'
 spec:
   type: NodePort
   ports:
@@ -13,5 +14,9 @@ spec:
       protocol: TCP
       targetPort: 56000
       name: tcp-https
+    - port: 5555
+      protocol: TCP
+      targetPort: 56000
+      name: tcp-http2
   selector:
     name: cloud-proxy-server

@@ -11,5 +11,9 @@ spec:
       protocol: TCP
       targetPort: 56000
       name: tcp-https
+    - port: 5555
+      protocol: TCP
+      targetPort: 56000
+      name: tcp-http2
   selector:
     name: cloud-proxy-server

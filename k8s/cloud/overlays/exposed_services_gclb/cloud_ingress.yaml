@@ -16,3 +16,7 @@ spec:
         backend:
           serviceName: cloud-proxy-service
           servicePort: 443
+      - path: /pl.cloud.AuthService/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
