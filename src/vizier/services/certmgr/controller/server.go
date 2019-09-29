@@ -40,14 +40,16 @@ func (s *Server) UpdateCerts(ctx context.Context, req *certmgrpb.UpdateCertsRequ
 		return nil, err
 	}
 
-	if len(pods) != 1 {
+	if len(pods) == 0 {
 		return nil, errors.New("No pods exist for proxy service")
 	}
 
-	err = s.k8sAPI.DeletePod(pods[0])
+	for _, pod := range pods {
+		err = s.k8sAPI.DeletePod(pod)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &certmgrpb.UpdateCertsResponse{

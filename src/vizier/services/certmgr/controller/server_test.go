@@ -30,10 +30,14 @@ func TestServer_UpdateCerts(t *testing.T) {
 
 	mockK8s.EXPECT().
 		GetPodNamesForService("vizier-proxy-service").
-		Return([]string{"vizier-proxy-service-pod"}, nil)
+		Return([]string{"vizier-proxy-service-pod", "test"}, nil)
 
 	mockK8s.EXPECT().
 		DeletePod("vizier-proxy-service-pod").
+		Return(nil)
+
+	mockK8s.EXPECT().
+		DeletePod("test").
 		Return(nil)
 
 	resp, err := s.UpdateCerts(context.Background(), req)

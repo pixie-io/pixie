@@ -3,7 +3,7 @@
 
 // Package mock_controller is a generated GoMock package.
 package mock_controller
-
+ 
 import (
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"

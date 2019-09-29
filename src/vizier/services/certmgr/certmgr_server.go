@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
@@ -14,6 +15,8 @@ import (
 )
 
 func main() {
+	pflag.String("namespace", "pl", "The namespace of Vizier")
+
 	log.WithField("service", "certmgr-service").Info("Starting service")
 
 	services.SetupService("certmgr-service", 50900)
