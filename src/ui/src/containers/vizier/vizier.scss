@@ -18,6 +18,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    width: 0;
 }
 
 .query-executor .code-editor .CodeMirror {
@@ -48,12 +49,17 @@
     color: $white;
 }
 
-.query-executor .ReactCodeMirror {
-    display: grid;
-}
-
 .query-results .ReactVirtualized__Table__row {
     font-size: 0.8rem;
+}
+
+.query-executor .ReactCodeMirror .CodeMirror-vscrollbar,
+.query-executor .ReactCodeMirror .CodeMirror-scrollbar-filler {
+    display: none !important;
+}
+
+.query-executor .ReactCodeMirror {
+    width: 100%;
 }
 
 .agent-display-table {
@@ -75,6 +81,11 @@
     align-items: center;
     display: flex;
     flex: 1;
+}
+
+.query-executor .content-box .content-box--content {
+    overflow-x: hidden;
+    overflow-y: hidden;
 }
 
 .cluster-instructions {

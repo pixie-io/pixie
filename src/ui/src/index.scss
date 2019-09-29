@@ -198,4 +198,25 @@ $pre-color:                         inherit !default;
   flex: 1;
 }
 
+// Custom scrollbar
+/* width */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #0b1420;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #0b1420;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #0f222d;
+}
+
 @import "~bootstrap/scss/bootstrap";
