@@ -11,10 +11,12 @@ service CertMgrService {
     rpc UpdateCerts(UpdateCertsRequest) returns (UpdateCertsResponse) {}
 }
 
+// TODO(michelle): This request is from CloudConnector -> CrtMgr. In the future, we may
+// want CrtMgr to be the one initiating the request when it detects that its certs are
+// expiring.
 message UpdateCertsRequest {
-   string dns_address = 1 [
-                          (gogoproto.customname) = "DNSAddress"
-                          ];
+    string key = 1;
+    string cert = 2;
 }
 
 message UpdateCertsResponse {
