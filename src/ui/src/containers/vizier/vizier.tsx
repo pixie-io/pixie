@@ -22,6 +22,8 @@ import * as loadingSvg from 'images/icons/loading-dark.svg';
 // @ts-ignore : TS does not like image files.
 import * as codeImage from 'images/icons/query.svg';
 // @ts-ignore : TS does not like image files.
+import * as userImage from 'images/icons/user.svg';
+// @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/logo.svg';
 
 export const CREATE_CLUSTER = gql`
@@ -115,6 +117,7 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
                       footerItems={[
                         { link: '/vizier/agents', selectedImg: infoImage, unselectedImg: infoImage },
                         { link: '/docs/getting-started/', selectedImg: docsImage, unselectedImg: docsImage },
+                        { selectedImg: userImage, unselectedImg: userImage, menu: {'Sign out': '/logout'}},
                       ]}
                     />
                     <div className='vizier-body'>
