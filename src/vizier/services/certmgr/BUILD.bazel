@@ -1,0 +1,41 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["certmgr_server.go"],
+    importpath = "pixielabs.ai/pixielabs/src/vizier/services/certmgr",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//src/shared/services:go_default_library",
+        "//src/shared/services/healthz:go_default_library",
+        "//src/vizier/services/certmgr/certmgrenv:go_default_library",
+        "//src/vizier/services/certmgr/certmgrpb:service_go_proto",
+        "//src/vizier/services/certmgr/controller:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "certmgr",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+cc_image(
+    name = "certmgr_server_image",
+    base = "//:pl_cc_base_image",
+    binary = ":certmgr",
+    visibility = ["//visibility:public"],
+)
+
+container_push(
+    name = "push_certmgr_server_image",
+    format = "Docker",
+    image = ":certmgr_server_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/vizier/certmgr_server_image",
+    tag = "{STABLE_BUILD_TAG}",
+)

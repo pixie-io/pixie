@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["server.go"],
+    importpath = "pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/vizier/services/certmgr/certmgrenv:go_default_library",
+        "//src/vizier/services/certmgr/certmgrpb:service_go_proto",
+    ],
+)

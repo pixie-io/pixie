@@ -31,6 +31,10 @@ build:
     context: .
     bazel:
       target: //src/vizier/services/cloud_connector:cloud_connector_server_image.tar
+  - image: gcr.io/pl-dev-infra/vizier/certmgr_server_image
+    context: .
+    bazel:
+      target: //src/vizier/services/certmgr:certmgr_server_image.tar
   local:
     push: true
 deploy:

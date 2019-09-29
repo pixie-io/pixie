@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package pl.services;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/vizier/services/certmgr/proto;certmgr";
+
+// CertMgrService manages Vizier's proxy certs.
+service CertMgrService {
+    rpc UpdateCerts(UpdateCertsRequest) returns (UpdateCertsResponse) {}
+}
+
+message UpdateCertsRequest {
+   string dns_address = 1 [
+                          (gogoproto.customname) = "DNSAddress"
+                          ];
+}
+
+message UpdateCertsResponse {
+  bool ok = 1 [
+              (gogoproto.customname) = "OK"
+              ];
+}
