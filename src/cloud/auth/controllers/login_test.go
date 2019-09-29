@@ -111,6 +111,38 @@ func TestServer_LoginNewUser(t *testing.T) {
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
+func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		AppMetadata: nil,
+		Email:       "abc@defg.com",
+		FirstName:   "first",
+		LastName:    "last",
+	}
+
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
+	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile, mockSiteMgr)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	resp, err := doLoginRequestNoAutoCreate(getTestContext(), t, s)
+	assert.NotNil(t, err)
+	assert.Nil(t, resp)
+}
+
 func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -766,9 +798,20 @@ func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID strin
 
 func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.LoginReply, error) {
 	req := &pb.LoginRequest{
-		AccessToken: "tokenabc",
-		SiteName:    "defg",
-		DomainName:  "defg.com",
+		AccessToken:           "tokenabc",
+		SiteName:              "defg",
+		DomainName:            "defg.com",
+		CreateUserIfNotExists: true,
+	}
+	return server.Login(ctx, req)
+}
+
+func doLoginRequestNoAutoCreate(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.LoginReply, error) {
+	req := &pb.LoginRequest{
+		AccessToken:           "tokenabc",
+		SiteName:              "defg",
+		DomainName:            "defg.com",
+		CreateUserIfNotExists: false,
 	}
 	return server.Login(ctx, req)
 }

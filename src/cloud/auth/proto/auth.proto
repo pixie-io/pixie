@@ -55,6 +55,9 @@ message LoginRequest {
   string site_name = 2;
   // The domain name for the org.
   string domain_name = 3;
+
+  // Automatically create the user if they don't exist.
+  bool create_user_if_not_exists = 4;
 }
 
 message LoginReply {

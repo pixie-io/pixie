@@ -46,9 +46,10 @@ func TestAuthLoginHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
-		AccessToken: "the-token",
-		SiteName:    "hulu",
-		DomainName:  "hulu.com",
+		AccessToken:           "the-token",
+		SiteName:              "hulu",
+		DomainName:            "hulu.com",
+		CreateUserIfNotExists: true,
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
@@ -92,9 +93,10 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
-		AccessToken: "the-token",
-		SiteName:    "hulu",
-		DomainName:  "user@gmail.com",
+		AccessToken:           "the-token",
+		SiteName:              "hulu",
+		DomainName:            "user@gmail.com",
+		CreateUserIfNotExists: true,
 	}
 
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
@@ -116,9 +118,10 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
-		AccessToken: "the-token",
-		SiteName:    "hulu",
-		DomainName:  "hulu.com",
+		AccessToken:           "the-token",
+		SiteName:              "hulu",
+		DomainName:            "hulu.com",
+		CreateUserIfNotExists: true,
 	}
 
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {

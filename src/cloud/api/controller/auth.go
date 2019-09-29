@@ -80,9 +80,10 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	}
 
 	rpcReq := &authpb.LoginRequest{
-		AccessToken: params.AccessToken,
-		SiteName:    params.DomainName,
-		DomainName:  domainName,
+		AccessToken:           params.AccessToken,
+		SiteName:              params.DomainName,
+		DomainName:            domainName,
+		CreateUserIfNotExists: true,
 	}
 
 	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)
