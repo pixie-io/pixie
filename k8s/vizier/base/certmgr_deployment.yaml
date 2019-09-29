@@ -38,6 +38,10 @@ spec:
           # TODO(zasgar): Remove this.
         - name: PL_DISABLE_GRPC_AUTH
           value: "true"
+        - name: PL_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         volumeMounts:
         - name: certs
           mountPath: /certs

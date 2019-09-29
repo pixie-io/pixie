@@ -55,6 +55,24 @@ func (mr *MockVZMgrServiceClientMockRecorder) CreateVizierCluster(ctx, in interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVizierCluster", reflect.TypeOf((*MockVZMgrServiceClient)(nil).CreateVizierCluster), varargs...)
 }
 
+// GetSSLCerts mocks base method
+func (m *MockVZMgrServiceClient) GetSSLCerts(ctx context.Context, in *vzmgrpb.GetSSLCertsRequest, opts ...grpc.CallOption) (*vzmgrpb.GetSSLCertsResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetSSLCerts", varargs...)
+	ret0, _ := ret[0].(*vzmgrpb.GetSSLCertsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSSLCerts indicates an expected call of GetSSLCerts
+func (mr *MockVZMgrServiceClientMockRecorder) GetSSLCerts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSSLCerts", reflect.TypeOf((*MockVZMgrServiceClient)(nil).GetSSLCerts), varargs...)
+}
+
 // GetViziersByOrg mocks base method
 func (m *MockVZMgrServiceClient) GetViziersByOrg(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*vzmgrpb.GetViziersByOrgResponse, error) {
 	varargs := []interface{}{ctx, in}
@@ -179,6 +197,19 @@ func (m *MockVZMgrServiceServer) CreateVizierCluster(arg0 context.Context, arg1 
 // CreateVizierCluster indicates an expected call of CreateVizierCluster
 func (mr *MockVZMgrServiceServerMockRecorder) CreateVizierCluster(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVizierCluster", reflect.TypeOf((*MockVZMgrServiceServer)(nil).CreateVizierCluster), arg0, arg1)
+}
+
+// GetSSLCerts mocks base method
+func (m *MockVZMgrServiceServer) GetSSLCerts(arg0 context.Context, arg1 *vzmgrpb.GetSSLCertsRequest) (*vzmgrpb.GetSSLCertsResponse, error) {
+	ret := m.ctrl.Call(m, "GetSSLCerts", arg0, arg1)
+	ret0, _ := ret[0].(*vzmgrpb.GetSSLCertsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSSLCerts indicates an expected call of GetSSLCerts
+func (mr *MockVZMgrServiceServerMockRecorder) GetSSLCerts(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSSLCerts", reflect.TypeOf((*MockVZMgrServiceServer)(nil).GetSSLCerts), arg0, arg1)
 }
 
 // GetViziersByOrg mocks base method

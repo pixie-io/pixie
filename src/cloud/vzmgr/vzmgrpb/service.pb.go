@@ -114,9 +114,105 @@ func (m *GetViziersByOrgResponse) GetVizierIDs() []*proto1.UUID {
 	return nil
 }
 
+type GetSSLCertsRequest struct {
+	ClusterID *proto1.UUID `protobuf:"bytes,1,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
+}
+
+func (m *GetSSLCertsRequest) Reset()      { *m = GetSSLCertsRequest{} }
+func (*GetSSLCertsRequest) ProtoMessage() {}
+func (*GetSSLCertsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b112f5a7e47f58f, []int{2}
+}
+func (m *GetSSLCertsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetSSLCertsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetSSLCertsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetSSLCertsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetSSLCertsRequest.Merge(m, src)
+}
+func (m *GetSSLCertsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetSSLCertsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetSSLCertsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetSSLCertsRequest proto.InternalMessageInfo
+
+func (m *GetSSLCertsRequest) GetClusterID() *proto1.UUID {
+	if m != nil {
+		return m.ClusterID
+	}
+	return nil
+}
+
+type GetSSLCertsResponse struct {
+	Key  string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Cert string `protobuf:"bytes,2,opt,name=cert,proto3" json:"cert,omitempty"`
+}
+
+func (m *GetSSLCertsResponse) Reset()      { *m = GetSSLCertsResponse{} }
+func (*GetSSLCertsResponse) ProtoMessage() {}
+func (*GetSSLCertsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b112f5a7e47f58f, []int{3}
+}
+func (m *GetSSLCertsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetSSLCertsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetSSLCertsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetSSLCertsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetSSLCertsResponse.Merge(m, src)
+}
+func (m *GetSSLCertsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetSSLCertsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetSSLCertsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetSSLCertsResponse proto.InternalMessageInfo
+
+func (m *GetSSLCertsResponse) GetKey() string {
+	if m != nil {
+		return m.Key
+	}
+	return ""
+}
+
+func (m *GetSSLCertsResponse) GetCert() string {
+	if m != nil {
+		return m.Cert
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*CreateVizierClusterRequest)(nil), "pl.services.CreateVizierClusterRequest")
 	proto.RegisterType((*GetViziersByOrgResponse)(nil), "pl.services.GetViziersByOrgResponse")
+	proto.RegisterType((*GetSSLCertsRequest)(nil), "pl.services.GetSSLCertsRequest")
+	proto.RegisterType((*GetSSLCertsResponse)(nil), "pl.services.GetSSLCertsResponse")
 }
 
 func init() {
@@ -124,38 +220,43 @@ func init() {
 }
 
 var fileDescriptor_7b112f5a7e47f58f = []byte{
-	// 490 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x53, 0x4d, 0x6b, 0x14, 0x3f,
-	0x18, 0x4f, 0x28, 0x2d, 0x6c, 0xfa, 0x2f, 0x0b, 0xf9, 0x23, 0x2d, 0x83, 0x66, 0xd7, 0x41, 0xd1,
-	0x8b, 0x33, 0x58, 0xc1, 0x4b, 0xf1, 0xe0, 0xee, 0x82, 0x1d, 0x41, 0x16, 0x47, 0x5a, 0x4b, 0x2f,
-	0x65, 0x5e, 0xd2, 0x18, 0x9c, 0x9d, 0x8c, 0xc9, 0xcc, 0xa2, 0x3d, 0xf9, 0x11, 0xfc, 0x18, 0x7e,
-	0x14, 0x8f, 0x7b, 0xec, 0xa9, 0xb8, 0xd9, 0x8b, 0x27, 0xe9, 0x47, 0x90, 0x26, 0xeb, 0xb6, 0xb3,
-	0xce, 0xf6, 0x92, 0xe4, 0xc9, 0xef, 0x25, 0x4f, 0x7e, 0xf0, 0xa0, 0x87, 0x4a, 0x26, 0x7e, 0x92,
-	0x89, 0x2a, 0xf5, 0xc7, 0x67, 0x23, 0x26, 0xed, 0x5a, 0xc4, 0xbe, 0xa2, 0x72, 0xcc, 0x13, 0xea,
-	0x15, 0x52, 0x94, 0x02, 0x6f, 0x16, 0x99, 0x37, 0xbf, 0x51, 0xce, 0x13, 0xc6, 0xcb, 0x0f, 0x55,
-	0xec, 0x25, 0x62, 0xe4, 0x33, 0xc1, 0x84, 0x6f, 0x38, 0x71, 0x75, 0x6a, 0x2a, 0x53, 0x98, 0x93,
-	0xd5, 0x3a, 0x5d, 0xf3, 0x84, 0x18, 0x8d, 0x44, 0xee, 0x57, 0x15, 0x4f, 0x2d, 0xdd, 0x1c, 0xe7,
-	0x8c, 0x7b, 0xd7, 0x4d, 0x98, 0xb5, 0x88, 0xed, 0x6e, 0x61, 0x77, 0x88, 0x9c, 0xbe, 0xa4, 0x51,
-	0x49, 0x0f, 0xf9, 0x19, 0xa7, 0xb2, 0x9f, 0x55, 0xaa, 0xa4, 0x32, 0xa4, 0x9f, 0x2a, 0xaa, 0x4a,
-	0xfc, 0x14, 0x6d, 0x08, 0xc9, 0x4e, 0x78, 0xba, 0x03, 0xbb, 0xf0, 0xf1, 0xe6, 0x6e, 0xdb, 0x2b,
-	0x32, 0xef, 0xca, 0xbc, 0x88, 0xbd, 0x83, 0x83, 0x60, 0xd0, 0x6b, 0xe9, 0x8b, 0xce, 0xfa, 0x50,
-	0xb2, 0x60, 0x10, 0xae, 0x0b, 0xc9, 0x82, 0xd4, 0x3d, 0x42, 0xdb, 0xaf, 0x68, 0x69, 0xdd, 0x54,
-	0xef, 0xcb, 0x50, 0xb2, 0x90, 0xaa, 0x42, 0xe4, 0x8a, 0xe2, 0x17, 0x08, 0x8d, 0xcd, 0xfd, 0x09,
-	0x4f, 0xd5, 0x0e, 0xec, 0xae, 0x35, 0x39, 0x6e, 0xe9, 0x8b, 0x4e, 0xcb, 0xca, 0x83, 0x81, 0x0a,
-	0x5b, 0x56, 0x11, 0xa4, 0x6a, 0xf7, 0xf7, 0x1a, 0xfa, 0xef, 0xf0, 0xf8, 0x0d, 0x93, 0xef, 0x6c,
-	0x58, 0xf8, 0x2d, 0xfa, 0xbf, 0xa1, 0x77, 0xfc, 0xc8, 0xbb, 0x11, 0xa8, 0xb7, 0xfa, 0x77, 0xce,
-	0xf2, 0xdb, 0x2e, 0xc0, 0xaf, 0x51, 0x7b, 0xa9, 0x7b, 0xbc, 0xcc, 0x72, 0x1e, 0xd4, 0xfc, 0x57,
-	0x7c, 0xd6, 0x05, 0x78, 0x0f, 0x6d, 0x2d, 0xc0, 0x20, 0x3f, 0x15, 0xff, 0x3a, 0x6d, 0xd7, 0x9c,
-	0xae, 0x99, 0x2e, 0xc0, 0xc3, 0x1b, 0x31, 0xf6, 0x45, 0x9e, 0xd3, 0xa4, 0xe4, 0x22, 0x6f, 0xb6,
-	0xb9, 0xdf, 0x60, 0x53, 0xd7, 0xb8, 0x00, 0xbf, 0x47, 0xed, 0x1a, 0x42, 0x53, 0xec, 0xd6, 0x74,
-	0x21, 0x65, 0xfc, 0x2a, 0x1d, 0xcb, 0xfa, 0x9b, 0x11, 0xb9, 0x85, 0xf3, 0x32, 0xf9, 0xe8, 0x02,
-	0x7c, 0x84, 0xee, 0xec, 0x47, 0x79, 0x9a, 0xcd, 0x33, 0xde, 0xa7, 0x91, 0x2c, 0x63, 0x1a, 0x95,
-	0xf8, 0x6e, 0x43, 0x5b, 0x0b, 0xd4, 0xe9, 0xdc, 0x86, 0x1a, 0xe7, 0x5e, 0x36, 0x99, 0x12, 0x70,
-	0x3e, 0x25, 0xe0, 0x72, 0x4a, 0xe0, 0x57, 0x4d, 0xe0, 0x77, 0x4d, 0xe0, 0x0f, 0x4d, 0xe0, 0x44,
-	0x13, 0xf8, 0x53, 0x13, 0xf8, 0x4b, 0x13, 0x70, 0xa9, 0x09, 0xfc, 0x36, 0x23, 0x60, 0x32, 0x23,
-	0xe0, 0x7c, 0x46, 0xc0, 0xf1, 0xf3, 0x82, 0x7f, 0xe6, 0x34, 0x8b, 0x62, 0xe5, 0x45, 0xdc, 0x5f,
-	0x14, 0xfe, 0x8a, 0x61, 0xdc, 0x9b, 0xef, 0xf1, 0x86, 0x19, 0x88, 0x67, 0x7f, 0x02, 0x00, 0x00,
-	0xff, 0xff, 0x9d, 0x7b, 0xe5, 0xb3, 0xb6, 0x03, 0x00, 0x00,
+	// 573 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x94, 0x4d, 0x6f, 0xd3, 0x30,
+	0x18, 0xc7, 0x1d, 0xf6, 0x22, 0xd5, 0x63, 0x1a, 0xf2, 0x84, 0x36, 0x45, 0xe0, 0x96, 0x08, 0x04,
+	0x17, 0x12, 0x31, 0x24, 0x2e, 0xd3, 0x0e, 0xac, 0x95, 0xb6, 0x20, 0x50, 0x45, 0xaa, 0x8d, 0x69,
+	0x97, 0x29, 0x2f, 0x5e, 0xb0, 0x96, 0xc6, 0xc1, 0x76, 0x26, 0xb6, 0x13, 0x1f, 0x81, 0x8f, 0xc1,
+	0xe7, 0xe0, 0xc4, 0x71, 0xc7, 0x9d, 0x26, 0x96, 0x5e, 0x38, 0xee, 0x23, 0xa0, 0xda, 0x59, 0xd7,
+	0x74, 0x69, 0x2f, 0xc9, 0x63, 0x3f, 0xff, 0xe7, 0xe7, 0xbf, 0x9f, 0xa7, 0x0d, 0x7c, 0x21, 0x78,
+	0xe8, 0x84, 0x09, 0xcb, 0x23, 0xe7, 0xf4, 0xbc, 0x1f, 0x73, 0xfd, 0xcc, 0x02, 0x47, 0x10, 0x7e,
+	0x4a, 0x43, 0x62, 0x67, 0x9c, 0x49, 0x86, 0x96, 0xb2, 0xc4, 0x2e, 0x77, 0x84, 0xf9, 0x3a, 0xa6,
+	0xf2, 0x6b, 0x1e, 0xd8, 0x21, 0xeb, 0x3b, 0x31, 0x8b, 0x99, 0xa3, 0x34, 0x41, 0x7e, 0xac, 0x56,
+	0x6a, 0xa1, 0x22, 0x5d, 0x6b, 0xb6, 0xd4, 0x11, 0xac, 0xdf, 0x67, 0xa9, 0x93, 0xe7, 0x34, 0xd2,
+	0x72, 0x15, 0x96, 0x8a, 0xa7, 0x77, 0x26, 0xd4, 0x33, 0x0b, 0xf4, 0x5b, 0xa7, 0xad, 0x2e, 0x34,
+	0xdb, 0x9c, 0xf8, 0x92, 0xec, 0xd3, 0x73, 0x4a, 0x78, 0x3b, 0xc9, 0x85, 0x24, 0xdc, 0x23, 0xdf,
+	0x72, 0x22, 0x24, 0x7a, 0x03, 0x17, 0x19, 0x8f, 0x8f, 0x68, 0xb4, 0x6e, 0xb4, 0x8c, 0x57, 0x4b,
+	0x1b, 0x2b, 0x76, 0x96, 0xd8, 0x43, 0x78, 0x16, 0xd8, 0x7b, 0x7b, 0x6e, 0x67, 0xbb, 0x51, 0x5c,
+	0x35, 0x17, 0xba, 0x3c, 0x76, 0x3b, 0xde, 0x02, 0xe3, 0xb1, 0x1b, 0x59, 0x07, 0x70, 0x6d, 0x87,
+	0x48, 0x4d, 0x13, 0xdb, 0x67, 0x5d, 0x1e, 0x7b, 0x44, 0x64, 0x2c, 0x15, 0x04, 0x6d, 0x41, 0x78,
+	0xaa, 0xf6, 0x8f, 0x68, 0x24, 0xd6, 0x8d, 0xd6, 0x5c, 0x1d, 0x71, 0xb9, 0xb8, 0x6a, 0x36, 0x74,
+	0xb9, 0xdb, 0x11, 0x5e, 0x43, 0x57, 0xb8, 0x91, 0xb0, 0x7a, 0x10, 0xed, 0x10, 0xd9, 0xeb, 0x7d,
+	0x6c, 0x13, 0x2e, 0xc5, 0xad, 0xc5, 0x2d, 0x08, 0x43, 0x6d, 0x7a, 0x86, 0x4d, 0x05, 0x2d, 0xef,
+	0xe6, 0x76, 0xbc, 0x46, 0x59, 0xe1, 0x46, 0xd6, 0x26, 0x5c, 0xad, 0x40, 0x4b, 0xab, 0x8f, 0xe0,
+	0xdc, 0x09, 0x39, 0x53, 0xb8, 0x86, 0x37, 0x0c, 0x11, 0x82, 0xf3, 0x21, 0xe1, 0x72, 0xfd, 0x81,
+	0xda, 0x52, 0xf1, 0xc6, 0xef, 0x79, 0xf8, 0x70, 0xff, 0xf0, 0x53, 0xcc, 0x7b, 0x7a, 0x7c, 0xe8,
+	0x33, 0x5c, 0xad, 0xe9, 0x26, 0x7a, 0x69, 0x8f, 0x8d, 0xd8, 0x9e, 0xde, 0x6f, 0x73, 0xd2, 0xb8,
+	0x05, 0x90, 0x07, 0x97, 0xc6, 0x0c, 0xa2, 0x66, 0x05, 0x75, 0xbf, 0x1f, 0x66, 0x6b, 0xba, 0x40,
+	0xdf, 0xcd, 0x02, 0xe8, 0x03, 0x5c, 0x99, 0x98, 0x11, 0x9a, 0x3c, 0xd9, 0x7c, 0x3e, 0xc9, 0xa9,
+	0x1b, 0xa9, 0x05, 0xd0, 0x26, 0x5c, 0x1e, 0x25, 0xdd, 0xf4, 0x98, 0xdd, 0x27, 0xad, 0x55, 0x48,
+	0x77, 0x4a, 0x0b, 0xa0, 0xee, 0xd8, 0x8f, 0xa5, 0xcd, 0xd2, 0x94, 0x84, 0x92, 0xb2, 0xb4, 0x1e,
+	0xf3, 0xac, 0x06, 0x53, 0xad, 0xb1, 0x00, 0xfa, 0x02, 0x57, 0x2a, 0x19, 0x12, 0x21, 0xab, 0x52,
+	0xe7, 0x91, 0x98, 0x0e, 0x3b, 0xae, 0x55, 0xb7, 0x4d, 0xc3, 0x33, 0x34, 0xef, 0xc3, 0x13, 0x0b,
+	0xa0, 0x03, 0xf8, 0x78, 0xd7, 0x4f, 0xa3, 0xa4, 0x9c, 0xdb, 0x2e, 0xf1, 0xb9, 0x0c, 0x88, 0x2f,
+	0xd1, 0x93, 0x1a, 0x5b, 0xa3, 0xac, 0xd9, 0x9c, 0x95, 0x55, 0xe4, 0xed, 0xe4, 0xe2, 0x1a, 0x83,
+	0xcb, 0x6b, 0x0c, 0x6e, 0xae, 0xb1, 0xf1, 0xa3, 0xc0, 0xc6, 0xaf, 0x02, 0x1b, 0x7f, 0x0a, 0x6c,
+	0x5c, 0x14, 0xd8, 0xf8, 0x5b, 0x60, 0xe3, 0x5f, 0x81, 0xc1, 0x4d, 0x81, 0x8d, 0x9f, 0x03, 0x0c,
+	0x2e, 0x06, 0x18, 0x5c, 0x0e, 0x30, 0x38, 0x7c, 0x97, 0xd1, 0xef, 0x94, 0x24, 0x7e, 0x20, 0x6c,
+	0x9f, 0x3a, 0xa3, 0x85, 0x33, 0xe5, 0x93, 0xb3, 0x59, 0xbe, 0x83, 0x45, 0xf5, 0xb7, 0x7f, 0xfb,
+	0x3f, 0x00, 0x00, 0xff, 0xff, 0x91, 0x81, 0xb7, 0x25, 0x9c, 0x04, 0x00, 0x00,
 }
 
 func (this *CreateVizierClusterRequest) Equal(that interface{}) bool {
@@ -211,6 +312,57 @@ func (this *GetViziersByOrgResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *GetSSLCertsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetSSLCertsRequest)
+	if !ok {
+		that2, ok := that.(GetSSLCertsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ClusterID.Equal(that1.ClusterID) {
+		return false
+	}
+	return true
+}
+func (this *GetSSLCertsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetSSLCertsResponse)
+	if !ok {
+		that2, ok := that.(GetSSLCertsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Key != that1.Key {
+		return false
+	}
+	if this.Cert != that1.Cert {
+		return false
+	}
+	return true
+}
 func (this *CreateVizierClusterRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -232,6 +384,29 @@ func (this *GetViziersByOrgResponse) GoString() string {
 	if this.VizierIDs != nil {
 		s = append(s, "VizierIDs: "+fmt.Sprintf("%#v", this.VizierIDs)+",\n")
 	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetSSLCertsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&vzmgrpb.GetSSLCertsRequest{")
+	if this.ClusterID != nil {
+		s = append(s, "ClusterID: "+fmt.Sprintf("%#v", this.ClusterID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetSSLCertsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&vzmgrpb.GetSSLCertsResponse{")
+	s = append(s, "Key: "+fmt.Sprintf("%#v", this.Key)+",\n")
+	s = append(s, "Cert: "+fmt.Sprintf("%#v", this.Cert)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -257,6 +432,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type VZMgrServiceClient interface {
 	CreateVizierCluster(ctx context.Context, in *CreateVizierClusterRequest, opts ...grpc.CallOption) (*proto1.UUID, error)
+	GetSSLCerts(ctx context.Context, in *GetSSLCertsRequest, opts ...grpc.CallOption) (*GetSSLCertsResponse, error)
 	GetViziersByOrg(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*GetViziersByOrgResponse, error)
 	GetVizierInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cloudpb.VizierInfo, error)
 	GetVizierConnectionInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cloudpb.VizierConnectionInfo, error)
@@ -275,6 +451,15 @@ func NewVZMgrServiceClient(cc *grpc.ClientConn) VZMgrServiceClient {
 func (c *vZMgrServiceClient) CreateVizierCluster(ctx context.Context, in *CreateVizierClusterRequest, opts ...grpc.CallOption) (*proto1.UUID, error) {
 	out := new(proto1.UUID)
 	err := c.cc.Invoke(ctx, "/pl.services.VZMgrService/CreateVizierCluster", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vZMgrServiceClient) GetSSLCerts(ctx context.Context, in *GetSSLCertsRequest, opts ...grpc.CallOption) (*GetSSLCertsResponse, error) {
+	out := new(GetSSLCertsResponse)
+	err := c.cc.Invoke(ctx, "/pl.services.VZMgrService/GetSSLCerts", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -329,6 +514,7 @@ func (c *vZMgrServiceClient) HandleVizierHeartbeat(ctx context.Context, in *clou
 // VZMgrServiceServer is the server API for VZMgrService service.
 type VZMgrServiceServer interface {
 	CreateVizierCluster(context.Context, *CreateVizierClusterRequest) (*proto1.UUID, error)
+	GetSSLCerts(context.Context, *GetSSLCertsRequest) (*GetSSLCertsResponse, error)
 	GetViziersByOrg(context.Context, *proto1.UUID) (*GetViziersByOrgResponse, error)
 	GetVizierInfo(context.Context, *proto1.UUID) (*cloudpb.VizierInfo, error)
 	GetVizierConnectionInfo(context.Context, *proto1.UUID) (*cloudpb.VizierConnectionInfo, error)
@@ -354,6 +540,24 @@ func _VZMgrService_CreateVizierCluster_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(VZMgrServiceServer).CreateVizierCluster(ctx, req.(*CreateVizierClusterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VZMgrService_GetSSLCerts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSSLCertsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VZMgrServiceServer).GetSSLCerts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.VZMgrService/GetSSLCerts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VZMgrServiceServer).GetSSLCerts(ctx, req.(*GetSSLCertsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -457,6 +661,10 @@ var _VZMgrService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _VZMgrService_CreateVizierCluster_Handler,
 		},
 		{
+			MethodName: "GetSSLCerts",
+			Handler:    _VZMgrService_GetSSLCerts_Handler,
+		},
+		{
 			MethodName: "GetViziersByOrg",
 			Handler:    _VZMgrService_GetViziersByOrg_Handler,
 		},
@@ -539,6 +747,64 @@ func (m *GetViziersByOrgResponse) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *GetSSLCertsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetSSLCertsRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.ClusterID != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.ClusterID.Size()))
+		n2, err := m.ClusterID.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	return i, nil
+}
+
+func (m *GetSSLCertsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetSSLCertsResponse) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Key) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintService(dAtA, i, uint64(len(m.Key)))
+		i += copy(dAtA[i:], m.Key)
+	}
+	if len(m.Cert) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintService(dAtA, i, uint64(len(m.Cert)))
+		i += copy(dAtA[i:], m.Cert)
+	}
+	return i, nil
+}
+
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -576,6 +842,36 @@ func (m *GetViziersByOrgResponse) Size() (n int) {
 	return n
 }
 
+func (m *GetSSLCertsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ClusterID != nil {
+		l = m.ClusterID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *GetSSLCertsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.Cert)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
 func sovService(x uint64) (n int) {
 	for {
 		n++
@@ -605,6 +901,27 @@ func (this *GetViziersByOrgResponse) String() string {
 	}
 	s := strings.Join([]string{`&GetViziersByOrgResponse{`,
 		`VizierIDs:` + strings.Replace(fmt.Sprintf("%v", this.VizierIDs), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetSSLCertsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetSSLCertsRequest{`,
+		`ClusterID:` + strings.Replace(fmt.Sprintf("%v", this.ClusterID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetSSLCertsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetSSLCertsResponse{`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Cert:` + fmt.Sprintf("%v", this.Cert) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -768,6 +1085,212 @@ func (m *GetViziersByOrgResponse) Unmarshal(dAtA []byte) error {
 			if err := m.VizierIDs[len(m.VizierIDs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetSSLCertsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetSSLCertsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetSSLCertsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClusterID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ClusterID == nil {
+				m.ClusterID = &proto1.UUID{}
+			}
+			if err := m.ClusterID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetSSLCertsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetSSLCertsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetSSLCertsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Cert", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Cert = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

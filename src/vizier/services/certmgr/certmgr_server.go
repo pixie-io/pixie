@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller"
@@ -25,8 +26,13 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
+	k8sAPI, err := controller.NewK8sAPI(viper.GetString("namespace"))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to K8S API")
+	}
+
 	env := certmgrenv.New()
-	server := controller.NewServer(env)
+	server := controller.NewServer(env, k8sAPI)
 
 	s := services.NewPLServer(env, mux)
 	certmgrpb.RegisterCertMgrServiceServer(s.GRPCServer(), server)

@@ -293,3 +293,9 @@ func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cloudpb.VizierH
 		SequenceNumber: req.SequenceNumber,
 	}, nil
 }
+
+// GetSSLCerts registers certs for the vizier cluster.
+func (s *Server) GetSSLCerts(ctx context.Context, req *vzmgrpb.GetSSLCertsRequest) (*vzmgrpb.GetSSLCertsResponse, error) {
+	// TODO(michelle): GetSSLCerts should talk to the DNS manager to get an available cert for the cluster.
+	return nil, errors.New("Not implemented yet")
+}
