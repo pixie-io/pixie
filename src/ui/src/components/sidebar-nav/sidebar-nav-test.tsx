@@ -1,7 +1,6 @@
 import {shallow} from 'enzyme';
 import * as React from 'react';
 import {Dropdown} from 'react-bootstrap';
-import { Link } from 'react-router-dom';
 import {SidebarItem, SidebarMenuItem, SidebarNav} from './sidebar-nav';
 
 describe('<SidebarNav/> test', () => {
@@ -35,8 +34,7 @@ describe('<SidebarItem/> test', () => {
       selectedImg='selectedImg'
       unselectedImg='unselectedImg'
     />);
-    expect(wrapper.find(Link)).toHaveLength(1);
-    expect(wrapper.find(Link).at(0).prop('to')).toEqual('/');
+    expect(wrapper.find('.sidebar-nav--link')).toHaveLength(1);
     expect(wrapper.find(SidebarMenuItem)).toHaveLength(0);
   });
 
@@ -46,7 +44,7 @@ describe('<SidebarItem/> test', () => {
       selectedImg='selectedImg'
       unselectedImg='unselectedImg'
     />);
-    expect(wrapper.find(Link)).toHaveLength(0);
+    expect(wrapper.find('sidebar-nav--link')).toHaveLength(0);
     expect(wrapper.find(SidebarMenuItem)).toHaveLength(1);
     expect(wrapper.find(SidebarMenuItem).at(0).prop('unselectedImg')).toEqual('unselectedImg');
     expect(wrapper.find(SidebarMenuItem).at(0).prop('selectedImg')).toEqual('selectedImg');

@@ -2,7 +2,6 @@ import * as React from 'react';
 import './sidebar-nav.scss';
 
 import {Dropdown} from 'react-bootstrap';
-import { Link } from 'react-router-dom';
 
 interface StringMap {
   [s: string]: string;
@@ -76,15 +75,19 @@ export class SidebarMenuItem extends React.Component<SidebarMenuItemProps, {}> {
 }
 
 export class SidebarItem extends React.Component<SidebarNavItem, {}> {
+  handleClick(e) {
+    window.location.href = this.props.link;
+  }
+
   render() {
     return (
       <div className='sidebar-nav--item'>
         {
           this.props.link ?
-            <Link to={this.props.link}>
+            <div className='sidebar-nav--link' onClick={this.handleClick.bind(this)}>
               <img src={window.location.pathname === this.props.link ?
                 this.props.selectedImg : this.props.unselectedImg }/>
-            </Link> :
+            </div> :
             <SidebarMenuItem
               menu={this.props.menu}
               unselectedImg={this.props.unselectedImg}
