@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["server.go"],
+    importpath = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/cloud/dnsmgr/dnsmgrenv:go_default_library",
+        "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
+    ],
+)

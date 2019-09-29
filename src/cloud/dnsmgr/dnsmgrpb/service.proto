@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package pl.services;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
+
+
+option go_package = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/proto;dnsmgr";
+
+// DNSMgrService tracks DNS information for clusters.
+service DNSMgrService {
+    rpc GetDNSAddress(GetDNSAddressRequest) returns (GetDNSAddressResponse) {}
+}
+
+message GetDNSAddressRequest {
+   pl.uuidpb.UUID cluster_id = 1 [
+                                 (gogoproto.customname) = "ClusterID"
+                                 ];
+   string ip_address = 2 [
+                         (gogoproto.customname) = "IPAddress"
+                         ];
+}
+
+message GetDNSAddressResponse {
+  string dns_address = 1 [
+                         (gogoproto.customname) = "DNSAddress"
+                         ];
+}

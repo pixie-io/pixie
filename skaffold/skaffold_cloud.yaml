@@ -42,6 +42,10 @@ build:
     bazel:
       target: //docs/customer:customer_docs_prod_image.tar
 
+  - image: gcr.io/pl-dev-infra/cloud/dnsmgr_server_image
+    context: .
+    bazel:
+      target: //src/cloud/dnsmgr:dnsmgr_server_image.tar
   local:
     push: true
 deploy:

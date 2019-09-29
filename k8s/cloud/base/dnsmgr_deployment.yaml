@@ -1,48 +1,47 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: vzmgr-server
-  labels:
-    db: pgsql
+  name: dnsmgr-server
 spec:
   selector:
     matchLabels:
-      name: vzmgr-server
+      name: dnsmgr-server
   template:
     metadata:
       labels:
-        name: vzmgr-server
+        name: dnsmgr-server
     spec:
       containers:
-      - name: vzmgr-server
-        image: gcr.io/pl-dev-infra/cloud/vzmgr_server_image:latest
+      - name: dnsmgr-server
+        image: gcr.io/pl-dev-infra/cloud/dnsmgr_server_image:latest
         ports:
-          - containerPort: 51800
+          - containerPort: 51900
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
-            port: 51800
+            port: 51900
         envFrom:
           - configMapRef:
-              name: pl-db-config
-          - configMapRef:
               name: pl-tls-config
+          - configMapRef:
+              name: pl-dns-config
         env:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
               secretKeyRef:
                 name: cloud-auth-secrets
                 key: jwt-signing-key
-          - name: PL_DATABASE_KEY
-            valueFrom:
-              secretKeyRef:
-                name: cloud-db-secrets
-                key: database-key
         volumeMounts:
             - name: certs
               mountPath: /certs
+            - name: cloud-dns-secrets
+              mountPath: /secrets/clouddns
+              readOnly: true
       volumes:
         - name: certs
           secret:
             secretName: service-tls-certs
+        - name: cloud-dns-secrets
+          secret:
+            secretName: cloud-dns-secrets

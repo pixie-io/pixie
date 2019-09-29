@@ -10,3 +10,4 @@ data:
   PL_PROFILE_SERVICE: profile-service.plc-dev.svc.cluster.local:51500
   PL_SITE_MANAGER_SERVICE: site-manager-service.plc-dev.svc.cluster.local:50300
   PL_VZMGR_SERVICE: vzmgr-service.plc-dev.svc.cluster.local:51800
+  PL_DNSMGR_SERVICE: dnsmgr-service.plc-dev.svc.cluster.local:51900

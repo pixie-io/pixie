@@ -14,6 +14,8 @@ resources:
 - auth_service.yaml
 - api_deployment.yaml
 - api_service.yaml
+- dnsmgr_deployment.yaml
+- dnsmgr_service.yaml
 - docs_deployment.yaml
 - docs_service.yaml
 - profile_deployment.yaml
