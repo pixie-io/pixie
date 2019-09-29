@@ -3,5 +3,5 @@ kind: ConfigMap
 metadata:
   name: pl-dns-config
 data:
-  PL_DNS_ZONE: with-pixie-ai
+  PL_DNS_ZONE: clusters-with-pixie-ai
   PL_DNS_PROJECT: pixie-prod

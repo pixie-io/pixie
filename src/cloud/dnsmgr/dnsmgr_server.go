@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrenv"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
@@ -11,6 +13,11 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 )
+
+func init() {
+	pflag.String("dns_zone", "cluster-dev-withpixie-dev", "The zone to use for cloud DNS")
+	pflag.String("dns_project", "pl-dev-infra", "The project to use for cloud DNS")
+}
 
 func main() {
 	log.WithField("service", "dnsmgr-service").Info("Starting service")
@@ -24,7 +31,18 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	env := dnsmgrenv.New()
-	server := controller.NewServer(env)
+
+	dnsService, err := controller.NewCloudDNSService(
+		viper.GetString("dns_zone"),
+		viper.GetString("dns_project"),
+		"/secrets/clouddns/dns_service_account.json",
+	)
+
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to Cloud DNS service")
+	}
+
+	server := controller.NewServer(env, dnsService)
 
 	s := services.NewPLServer(env, mux)
 	dnsmgrpb.RegisterDNSMgrServiceServer(s.GRPCServer(), server)
