@@ -28,5 +28,5 @@ function package_and_encrypt_certs(){
 package_and_encrypt_certs "dev" "clusters.dev.withpixie.dev"
 package_and_encrypt_certs "nightly" "clusters.nightly.withpixie.dev"
 package_and_encrypt_certs "testing" "clusters.testing.withpixie.dev"
-package_and_encrypt_certs "staging" "clusters.nightly.withpixie.dev"
+package_and_encrypt_certs "staging" "clusters.staging.withpixie.dev"
 package_and_encrypt_certs "prod" "clusters.withpixie.ai"
