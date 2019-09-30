@@ -58,7 +58,7 @@ func TestServer_GetDNSAddressExisting(t *testing.T) {
 	s := controller.NewServer(nil, mockDNS, db)
 
 	mockDNS.EXPECT().
-		CreateResourceRecord("1305560198000000000.abcd.clusters.withpixie.ai", "127.0.0.1", int64(controller.ResourceRecordTTL)).
+		CreateResourceRecord("1305560198000000000.abcd.clusters.withpixie.ai.", "127.0.0.1", int64(controller.ResourceRecordTTL)).
 		Return(nil)
 
 	resp, err := s.GetDNSAddress(context.Background(), req)
@@ -89,7 +89,7 @@ func TestServer_GetDNSAddressDefault(t *testing.T) {
 		CreateResourceRecord(gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(cname string, addr string, ttl int64) error {
 			actualCname = cname
-			assert.True(t, strings.Contains(cname, ".default.clusters.withpixie.ai"))
+			assert.True(t, strings.Contains(cname, ".default.clusters.withpixie.ai."))
 			assert.NotEqual(t, "1305560198000000000.default.clusters.withpixie.ai", cname)
 			assert.Equal(t, "127.0.0.2", addr)
 			return nil
@@ -98,7 +98,7 @@ func TestServer_GetDNSAddressDefault(t *testing.T) {
 	resp, err := s.GetDNSAddress(context.Background(), req)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	assert.Equal(t, actualCname, resp.DNSAddress)
+	assert.Equal(t, actualCname, resp.DNSAddress+".")
 }
 
 func TestServer_GetDNSAddressNew(t *testing.T) {
@@ -124,7 +124,7 @@ func TestServer_GetDNSAddressNew(t *testing.T) {
 		CreateResourceRecord(gomock.Any(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(cname string, addr string, ttl int64) error {
 			actualCname = cname
-			assert.True(t, strings.Contains(cname, ".abcd.clusters.withpixie.ai"))
+			assert.True(t, strings.Contains(cname, ".abcd.clusters.withpixie.ai."))
 			assert.NotEqual(t, "1305560198000000000.abcd.clusters.withpixie.ai", cname)
 			assert.Equal(t, "127.0.0.2", addr)
 			return nil
@@ -133,7 +133,7 @@ func TestServer_GetDNSAddressNew(t *testing.T) {
 	resp, err := s.GetDNSAddress(context.Background(), req)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	assert.Equal(t, actualCname, resp.DNSAddress)
+	assert.Equal(t, actualCname, resp.DNSAddress+".")
 }
 
 func TestServer_CreateSSLCertExisting(t *testing.T) {

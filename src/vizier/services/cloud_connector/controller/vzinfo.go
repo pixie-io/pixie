@@ -2,9 +2,7 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 
-	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -42,11 +40,6 @@ func NewK8sVizierInfo() (*K8sVizierInfo, error) {
 
 // GetAddress gets the external address of Vizier's proxy service.
 func (v *K8sVizierInfo) GetAddress() (string, error) {
-	protocol := "https"
-	if viper.GetBool("disable_ssl") {
-		protocol = "http"
-	}
-
 	// TODO(michelle): Make the service name a flag that can be passed in.
 	proxySvc, err := v.clientset.CoreV1().Services(plNamespace).Get("vizier-proxy-service", metav1.GetOptions{})
 	if err != nil {
@@ -69,7 +62,7 @@ func (v *K8sVizierInfo) GetAddress() (string, error) {
 		return "", errors.New("could not determine port for vizier service")
 	}
 
-	externalAddr := fmt.Sprintf("%s://%s:%d", protocol, ip, port)
+	externalAddr := ip
 
 	return externalAddr, nil
 }

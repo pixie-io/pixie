@@ -188,7 +188,7 @@ func (s *Server) GetDNSAddress(ctx context.Context, req *dnsmgrpb.GetDNSAddressR
 
 	dnsAddr := s.getDNSAddress(cname, timeCreated)
 
-	err = s.dnsService.CreateResourceRecord(dnsAddr, req.IPAddress, ResourceRecordTTL)
+	err = s.dnsService.CreateResourceRecord(dnsAddr+".", req.IPAddress, ResourceRecordTTL)
 	if err != nil {
 		return nil, err
 	}
