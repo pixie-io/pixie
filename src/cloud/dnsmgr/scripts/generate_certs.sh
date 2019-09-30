@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Script to generate certs.
-LEGO=./lego
+workspace=$(bazel info workspace 2> /dev/null)
+LEGO=${workspace}/lego
 
-if [ $# -ne 2 ]; then
-  echo "Expected 2 Arguments: EMAIL and OUTDIR. Received $#."
+if [ $# -ne 3 ]; then
+  echo "Expected 3 Arguments: EMAIL and OUTDIR and NUMCERTS. Received $#."
   exit 1
 fi
 EMAIL=$1
 OUTDIR=$2
+NUMCERTS=$3
 
 function create_cert() {
   if [ $# -ne 2 ]; then
@@ -17,7 +19,17 @@ function create_cert() {
 
   ID=$1
   MIDDOMAIN=$2
-  DOMAIN="*.$ID.$MIDDOMAIN"
+  DOMAIN="*.${ID}.${MIDDOMAIN}"
+
+  FNAME_PREFIX="_.${ID}.${MIDDOMAIN}"
+
+  EXISTING_FILES=$(ls ${OUTDIR}/certificates/* | grep ${FNAME_PREFIX} | wc -l)
+  if [ $EXISTING_FILES -ne 0 ]; then
+    echo "Found ${EXISTING_FILES} files with same ID: ${ID}";
+    exit 1;
+  fi
+
+
   $LEGO --email=$EMAIL --domains=$DOMAIN --dns='gcloud' --path=${OUTDIR} -a run
 }
 
@@ -27,8 +39,9 @@ function create_uuid_certs() {
     exit 1
   fi
   SUBDOMAIN=$1
-  for i in {1..100}
+  for i in $(seq 1 ${NUMCERTS})
   do
+    echo "Creating $i for $SUBDOMAIN"
     UUID=$(uuidgen)
     ADDRESS_ID=${UUID:0:8}
     create_cert "$ADDRESS_ID" "$SUBDOMAIN"
@@ -49,10 +62,11 @@ create_cert "default" "clusters.nightly.withpixie.dev"
 
 echo "Creating the production certificates."
 
-gcloud config set project pixie-prod
+# gcloud config set project pixie-prod
 export GCE_PROJECT="pixie-prod"
-create_uuid_certs "clusters.withpixie.ai"
 create_uuid_certs "clusters.staging.withpixie.dev"
+create_uuid_certs "clusters.withpixie.ai"
 
-# Return to the original GCP project.
+
+# # Return to the original GCP project.
 gcloud config set project ${ORIGINAL_GCP_PROJECT}
