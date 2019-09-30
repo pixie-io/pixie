@@ -41,7 +41,7 @@ TEST_P(BPFProgramTest, CheckSyntax) {
 
 INSTANTIATE_TEST_CASE_P(AllConnectors, BPFProgramTest,
                         ::testing::Values(
-                            // TODO(yzhao): Remember to add new connectors into this list.
+                            // TODO(yzhao): Remember to add new BPF connectors into this list.
                             TestParam{"SocketTraceConnector", SocketTraceConnector::kBCCScript},
                             TestParam{"PIDRuntimeConnector", PIDRuntimeConnector::kBCCScript}),
                         [](const ::testing::TestParamInfo<TestParam> info) -> std::string {

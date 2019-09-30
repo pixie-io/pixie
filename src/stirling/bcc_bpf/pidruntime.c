@@ -1,6 +1,5 @@
-#include <linux/perf_event.h>
+#include <linux/ptrace.h>
 #include <linux/sched.h>
-#include <uapi/linux/ptrace.h>
 
 #include "src/stirling/bcc_bpf_interface/pidruntime.h"
 

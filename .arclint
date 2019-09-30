@@ -5,6 +5,7 @@
     "(experimental/.*$)",
     "(^linters/cpplint)",
     "(^src/ui/offline_package_cache)",
+    "(^src/stirling/bcc_bpf/system-headers)",
     "(\\.pb\\.gw\\.go$)",
     "(\\.pb\\.go$)",
     "(\\.gen\\.go$)",

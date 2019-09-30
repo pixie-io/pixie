@@ -24,7 +24,7 @@ DUMMY_SOURCE_CONNECTOR(PIDRuntimeConnector);
 #include "src/stirling/bcc_wrapper.h"
 #include "src/stirling/source_connector.h"
 
-OBJ_STRVIEW(pidruntime_bcc_script, _binary_bcc_bpf_pidruntime_c_preprocessed);
+OBJ_STRVIEW(pidruntime_bcc_script, _binary_pidruntime_bpf_src);
 
 namespace pl {
 namespace stirling {

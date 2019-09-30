@@ -42,7 +42,7 @@ DECLARE_bool(stirling_enable_grpc_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 
-OBJ_STRVIEW(http_trace_bcc_script, _binary_bcc_bpf_socket_trace_c_preprocessed);
+OBJ_STRVIEW(http_trace_bcc_script, _binary_socket_trace_bpf_src);
 
 namespace pl {
 namespace stirling {

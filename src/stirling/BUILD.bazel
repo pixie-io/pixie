@@ -1,11 +1,8 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource", "pl_cc_resource")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
-
-#TODO(yzhao): Add a BUILD.bazel file under bcc_bpf.
 
 pl_cc_library(
     name = "cc_library",
@@ -19,7 +16,6 @@ pl_cc_library(
     hdrs = glob(
         [
             "*.h",
-            "bcc_bpf/*.h",
             "bcc_bpf_interface/*.h",
         ],
         exclude = [
@@ -40,10 +36,11 @@ pl_cc_library(
         "//src/stirling/mysql:cc_library",
         "//src/shared/metadata:cc_library",
         "//src/stirling/proto:sock_event_pl_cc_proto",
+        "//src/stirling/bcc_bpf_interface:cc_library",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
-            ":bt_files",
-            ":bcc_bpf_files",
+            "//src/stirling/bcc_bpf:socket_trace",
+            "//src/stirling/bcc_bpf:pidruntime",
             "//third_party/foreign_cc:bcc",
             "@com_llvm_lib//:llvm",
         ],
@@ -56,33 +53,6 @@ pl_cc_test(
     srcs = ["bpf_program_test.cc"],
     tags = ["requires_bpf"],
     deps = [":cc_library"],
-)
-
-pl_cc_resource(
-    name = "bt_files",
-    srcs = [
-        "bt/cpustat.bt",
-        "bt/pidruntime.bt",
-    ],
-)
-
-pl_bpf_cc_resource(
-    name = "bcc_bpf_files",
-    srcs = [
-        "bcc_bpf/pidruntime.c",
-        "bcc_bpf/socket_trace.c",
-    ],
-    hdrs = [
-        ["bcc_bpf_interface/pidruntime.h"],
-        [
-            "bcc_bpf/logging.h",
-            "bcc_bpf/utils.h",
-            "bcc_bpf_interface/grpc.h",
-            "bcc_bpf_interface/http2.h",
-            "bcc_bpf_interface/log_event.h",
-            "bcc_bpf_interface/socket_trace.h",
-        ],
-    ],
 )
 
 pl_cc_binary(
@@ -229,15 +199,6 @@ pl_cc_test(
         "//src/stirling/testing:cc_library",
         "//src/stirling/testing/proto:greet_pl_cc_proto",
     ],
-)
-
-pl_cc_test(
-    name = "bcc_bpf_interface_http2_test",
-    srcs = ["bcc_bpf_interface/http2_test.cc"],
-    # This test always fails in Jenkins build because of unable to unroll loop.
-    # TODO(yzhao): Fix and remove this 'manual' tag.
-    tags = ["manual"],
-    deps = [":cc_library"],
 )
 
 pl_cc_test(

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "src/stirling/bcc_bpf_interface/socket_trace.h"
+
 // Macros pleases formatter. Directly use _Pragma() triggers weird reformatting.
 #define CLANG_SUPPRESS_WARNINGS_START() \
   _Pragma("clang diagnostic push") _Pragma("clang diagnostic ignored \"-Weverything\"")

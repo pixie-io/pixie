@@ -15,14 +15,12 @@ func TestPreprocess(t *testing.T) {
 	expandedFile := main.Preprocess(reader, headers)
 	expected := `//-----------------------------------
 #pragma once
-#ifdef __linux__
 
 struct pidruntime_val_t {
   uint64_t timestamp;
   uint64_t run_time;
   char name[16];
 };
-#endif
 
 //-----------------------------------
 #include <linux/sched.h>

@@ -15,6 +15,8 @@ extern "C" {
 #include "src/stirling/bcc_bpf_interface/http2.h"
 }
 
+using pl::ConstStringView;
+
 TEST(HTTP2FrameParsingTest, update_http2_frame_offset) {
   conn_info_t conn_info = {};
   conn_info.wr_next_http2_frame_offset = 0;

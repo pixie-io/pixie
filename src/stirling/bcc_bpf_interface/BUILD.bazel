@@ -1,0 +1,31 @@
+package(default_visibility = [
+    "//src/stirling:__pkg__",
+    "//src/stirling/bcc_bpf:__pkg__",
+])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+
+filegroup(
+    name = "headers",
+    srcs = glob(["*.h"]),
+)
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+        ],
+    ),
+    hdrs = [":headers"],
+)
+
+pl_cc_test(
+    name = "http2_test",
+    srcs = ["http2_test.cc"],
+    # This test always fails in Jenkins build because of unable to unroll loop.
+    # TODO(yzhao): Fix and remove this 'manual' tag.
+    tags = ["manual"],
+    deps = [":cc_library"],
+)
