@@ -22,11 +22,11 @@ describe('<QueryManager/> test', () => {
     const dropdown = wrapper.find(DropdownButton).find('button').at(0);
     dropdown.simulate('click');
 
-    expect(wrapper.find(Dropdown.Item)).toHaveLength(8);
-    const dropdownItem = wrapper.find(Dropdown.Item).at(1);
+    expect(wrapper.find(Dropdown.Item)).toHaveLength(5);
+    const dropdownItem = wrapper.find(Dropdown.Item).at(0);
     dropdownItem.simulate('click');
 
-    expect(wrapper.find(QueryManager).at(0).state('code')).toContain('t1 = From(table=\'http_events\',');
+    expect(wrapper.find(QueryManager).at(0).state('code')).toContain('t1 = From(table=\'http_events\'');
   });
 
   it('should pass correct headers into query editor box', async () => {

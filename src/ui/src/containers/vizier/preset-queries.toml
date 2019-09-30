@@ -1,140 +1,5 @@
 queries = [
-["Sample HTTP Data",
-"""
-t1 = From(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns']).Range(start='-30s')
-t2 = t1.Map(fn=lambda r: {'time_': r.time_,
-                       'remote_addr': r.remote_addr,
-                       'remote_port': r.remote_port,
-                       'http_resp_status': r.http_resp_status,
-                       'http_resp_message': r.http_resp_message,
-                       'http_resp_body': r.http_resp_body,
-                       'http_resp_latency_ms': r.http_resp_latency_ns / 1.0E6})
-t3 = t2.Limit(rows=100).Result(name='resp_table')
-"""],
-["Filter by Service",
-"""
-t1 = From(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns']).Range(start='-30s')
-t2 = t1.Map(fn=lambda r: {'time_': r.time_,
-                       'remote_addr': r.remote_addr,
-                       'remote_port': r.remote_port,
-                       'http_resp_status': r.http_resp_status,
-                       'http_resp_message': r.http_resp_message,
-                       'http_resp_body': r.http_resp_body,
-                       'http_resp_latency_ms': r.http_resp_latency_ns / 1.0E6})
-t3 = t2.Filter(fn=lambda r: r.remote_addr == '::ffff:10.44.10.10').Limit(rows=100).Result(name='resp_table')
-"""],
-["Count by Service & User",
-"""
-t1 = From(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns']).Range(start='-30s')
-t2 = t1.Map(fn=lambda r: {'time_': r.time_,
-                       'remote_addr': r.remote_addr,
-                       'remote_port': r.remote_port,
-                       'http_resp_status': r.http_resp_status,
-                       'http_resp_message': r.http_resp_message,
-                       'http_resp_body': r.http_resp_body,
-                       'http_resp_latency_ns': r.http_resp_latency_ns/1E6,
-                       'user_id': pl.pluck(r.http_resp_body, 'id')})
-t3 = t2.Agg(by=lambda r: [r.remote_addr, r.user_id], fn=lambda r: {'count': pl.count(r.remote_addr)})
-t4 = t3.Result(name='resp_table')
-"""],
-["Data Exfiltration",
-"""
-t1 = From(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns']).Range(start='-30s')
-t2 = t1.Map(fn=lambda r: {'time_': r.time_,
-                       'remote_addr': r.remote_addr,
-                       'remote_port': r.remote_port,
-                       'http_resp_status': r.http_resp_status,
-                       'http_resp_message': r.http_resp_message,
-                       'http_resp_body': r.http_resp_body,
-                       'http_resp_latency_ns': r.http_resp_latency_ns/1E6,
-                       'Alert': r.remote_addr == '::ffff:10.44.10.10'})
-t4 = t2.Result(name='resp_table')
-"""],
-["CPU Stats",
-"""
-t1 = From(table='process_stats', select=['time_', 'upid', 'major_faults', 'minor_faults', 'cpu_utime_ns', 'cpu_ktime_ns',
-                                         'num_threads', 'vsize_bytes', 'rss_bytes', 'rchar_bytes', 'wchar_bytes', 'read_bytes', 'write_bytes'] ).Range(start='-30s')
-t2 = t1.Limit(rows=100).Result(name='stats')
-"""],
-["Network Stats",
-"""
-t1 = From(table='network_stats', select=['time_', 'pod_id', 'rx_bytes', 'rx_packets', 'rx_errors',
-                                         'rx_drops', 'tx_bytes', 'tx_packets', 'tx_errors', 'tx_drops']).Range(start='-30s')
-t2 = t1.Limit(rows=100).Result(name='stats')
-"""],
-["Pod Statstics",
-"""
-t1 = From(table='process_stats').Range(start='-60s')
-# Convert to better units.
-mapop = t1.Map(fn=lambda r:{
-  'time_': r.time_,
-  'upid': r.upid,
-  'cpu_utime_s': r.cpu_utime_ns / 1.0E9,
-  'cpu_ktime_s': r.cpu_ktime_ns / 1.0E9,
-  'vsize_mb': r.vsize_bytes / 1.0E6,
-  'rss_bytes_mb': r.rss_bytes / 1.0E6,
-  'read_bytes_mb': r.read_bytes/1.0E6,
-  'write_bytes_mb': r.write_bytes/1.0E6,
-  'rchar_bytes_mb': r.rchar_bytes / 1.0E6,
-  'wchar_bytes_mb': r.wchar_bytes / 1.0E6,
-})
-
-upid_aggop = mapop.Agg(by=lambda r: r.upid, fn=lambda r:{
-  # For cpu time (which are both counters), we diff the value at the beginning 
-  # of the period from the end of the period.
-  'cpu_utime_s_end': pl.max(r.cpu_utime_s),
-  'cpu_ktime_s_end': pl.max(r.cpu_ktime_s),
-  'cpu_utime_s_start': pl.min(r.cpu_utime_s),
-  'cpu_ktime_s_start': pl.min(r.cpu_ktime_s),
-  # The rest of the values are Gauges, so we only need to take the gauge.
-  'vsize_mb': pl.mean(r.vsize_mb),
-  'rss_bytes_mb': pl.mean(r.rss_bytes_mb),
-  'read_bytes_mb': pl.mean(r.read_bytes_mb),
-  'write_bytes_mb': pl.mean(r.write_bytes_mb),
-  "rchar_bytes_mb": pl.mean(r.rchar_bytes_mb),
-  "wchar_bytes_mb": pl.mean(r.wchar_bytes_mb)
-})
-upid_aggop= upid_aggop.Map(fn=lambda r:{
-  'upid': r.upid,
-  # The cpu time diff.
-  'cpu_utime_s': r.cpu_utime_s_end - r.cpu_utime_s_start,
-  'cpu_ktime_s': r.cpu_ktime_s_end - r.cpu_ktime_s_start,
-  'vsize_mb': r.vsize_mb,
-  'rss_bytes_mb': r.rss_bytes_mb,
-  'read_bytes_mb': r.read_bytes_mb,
-  'write_bytes_mb': r.write_bytes_mb,
-  "rchar_bytes_mb": r.rchar_bytes_mb,
-  "wchar_bytes_mb": r.wchar_bytes_mb,
-})
-# For this aggregate, we sum up the values as we've already calculated the average/usage 
-# for the upids already.
-pod_aggop = upid_aggop.Agg(by=lambda r: r.attr.pod, fn=lambda r:{
-  'cpu_utime_s': pl.sum(r.cpu_utime_s),
-  'cpu_ktime_s': pl.sum(r.cpu_ktime_s),
-  'vsize_mb': pl.sum(r.vsize_mb),
-  'rss_bytes_mb': pl.sum(r.rss_bytes_mb),
-  'read_bytes_mb': pl.sum(r.read_bytes_mb),
-  'write_bytes_mb': pl.sum(r.write_bytes_mb),
-  "rchar_bytes_mb": pl.sum(r.rchar_bytes_mb),
-  "wchar_bytes_mb": pl.sum(r.wchar_bytes_mb)
-})
-# Format everything nicely.
-rename = pod_aggop.Map(fn=lambda r:{
-  "pod_name": r.attr.pod,
-  "status": pl.pod_name_to_status(r._attr_pod_name),
-  "Created on": pl.pod_name_to_start_time(r._attr_pod_name),
-  "CPU User time (s)": r.cpu_utime_s,
-  "CPU System time (s)": r.cpu_ktime_s,
-  "Virtual Memory (mb)": r.vsize_mb,
-  "Average Memory (mb)": r.rss_bytes_mb,
-  "Read to IO (mb)": r.read_bytes_mb,
-  "Write to IO (mb)": r.write_bytes_mb,
-  "Characters Read (mb)": r.rchar_bytes_mb,
-  "Characters written (mb)": r.wchar_bytes_mb,
-})
-rename.Limit(rows=100).Result(name='out')
-"""],
-["Service HTTP Request Statistics",
+["Service HTTP Requests",
 """
 t1 = From(table='http_events').Range(start='-30s')
 
@@ -184,5 +49,160 @@ joined_table = quantiles_table.Join(rps_table,  type='inner',
                                     })
 joined_table.Filter(fn=lambda r: r.service != "").Result(name="out")
 """
-]
+],
+["Pod Resource Usage In Time Interval",
+"""
+# 
+# Returns the Resource Usage for each pod during an interval.
+# 
+t1 = From(table='process_stats').Range(start='-60s')
+# Convert to better units.
+mapop = t1.Map(fn=lambda r:{
+  'time_': r.time_,
+  'upid': r.upid,
+  'cpu_utime_s': r.cpu_utime_ns / 1.0E9,
+  'cpu_ktime_s': r.cpu_ktime_ns / 1.0E9,
+  'vsize_mb': r.vsize_bytes / 1024.0 / 1024.0,
+  'rss_bytes_mb': r.rss_bytes / 1024.0 / 1024.0,
+  'read_bytes_mb': r.read_bytes / 1024.0 / 1024.0,
+  'write_bytes_mb': r.write_bytes / 1024.0 / 1024.0,
+  'rchar_bytes_mb': r.rchar_bytes / 1024.0 / 1024.0, 
+  'wchar_bytes_mb': r.wchar_bytes / 1024.0 / 1024.0,
+})
+
+upid_aggop = mapop.Agg(by=lambda r: r.upid, fn=lambda r:{
+  'vsize_mb': pl.mean(r.vsize_mb),
+  'rss_bytes_mb': pl.mean(r.rss_bytes_mb),
+  # The following columns are all counters, so we diff the value at the beginning 
+  # of the period with the value at the end of the period.
+  'cpu_utime_s_end': pl.max(r.cpu_utime_s),
+  'cpu_ktime_s_end': pl.max(r.cpu_ktime_s),
+  'cpu_utime_s_start': pl.min(r.cpu_utime_s),
+  'cpu_ktime_s_start': pl.min(r.cpu_ktime_s),
+  'read_bytes_mb_end': pl.max(r.read_bytes_mb),
+  'read_bytes_mb_start': pl.min(r.read_bytes_mb),
+  'write_bytes_mb_end': pl.max(r.write_bytes_mb),
+  'write_bytes_mb_start': pl.min(r.write_bytes_mb),
+  "rchar_bytes_mb_end": pl.max(r.rchar_bytes_mb),
+  "rchar_bytes_mb_start": pl.min(r.rchar_bytes_mb),
+  "wchar_bytes_mb_end": pl.max(r.wchar_bytes_mb),
+  "wchar_bytes_mb_start": pl.min(r.wchar_bytes_mb)
+})
+upid_aggop= upid_aggop.Map(fn=lambda r:{
+  'upid': r.upid,
+  # The cpu time diff.
+  'cpu_utime_s': r.cpu_utime_s_end - r.cpu_utime_s_start,
+  'cpu_ktime_s': r.cpu_ktime_s_end - r.cpu_ktime_s_start,
+  'vsize_mb': r.vsize_mb,
+  'rss_bytes_mb': r.rss_bytes_mb,
+  'read_bytes_mb': r.read_bytes_mb_end - r.read_bytes_mb_start,
+  'write_bytes_mb': r.write_bytes_mb_end - r.write_bytes_mb_start,
+  "rchar_bytes_mb": r.rchar_bytes_mb_end - r.rchar_bytes_mb_start,
+  "wchar_bytes_mb": r.wchar_bytes_mb_end - r.wchar_bytes_mb_start,
+})
+# For this aggregate, we sum up the values as we've already calculated the average/usage 
+# for the upids already.
+pod_aggop = upid_aggop.Agg(by=lambda r: r.attr.pod, fn=lambda r:{
+  'cpu_utime_s': pl.sum(r.cpu_utime_s),
+  'cpu_ktime_s': pl.sum(r.cpu_ktime_s),
+  'vsize_mb': pl.sum(r.vsize_mb),
+  'rss_bytes_mb': pl.sum(r.rss_bytes_mb),
+  'read_bytes_mb': pl.sum(r.read_bytes_mb),
+  'write_bytes_mb': pl.sum(r.write_bytes_mb),
+  "rchar_bytes_mb": pl.sum(r.rchar_bytes_mb),
+  "wchar_bytes_mb": pl.sum(r.wchar_bytes_mb)
+})
+# Format everything nicely.
+rename = pod_aggop.Map(fn=lambda r:{
+  "pod_name": r.attr.pod,
+  "status": pl.pod_name_to_status(r._attr_pod_name),
+  "Created on": pl.pod_name_to_start_time(r._attr_pod_name),
+  "CPU User time (s)": r.cpu_utime_s,
+  "CPU System time (s)": r.cpu_ktime_s,
+  "Virtual Memory (mb)": r.vsize_mb,
+  "Average Memory (mb)": r.rss_bytes_mb,
+  "Read to IO (mb)": r.read_bytes_mb,
+  "Write to IO (mb)": r.write_bytes_mb,
+  "Characters Read (mb)": r.rchar_bytes_mb,
+  "Characters written (mb)": r.wchar_bytes_mb,
+})
+rename.Result(name='out')
+"""],
+["Total Resource Usage During Pod Lifetime",
+"""
+# 
+# Returns the Total Resource Usage for each pod.
+# 
+t1 = From(table='process_stats').Range(start='-60s')
+# Convert to better units.
+mapop = t1.Map(fn=lambda r:{
+  'time_': r.time_,
+  'upid': r.upid,
+  'cpu_utime_s': r.cpu_utime_ns / 1.0E9,
+  'cpu_ktime_s': r.cpu_ktime_ns / 1.0E9,
+  'vsize_mb': r.vsize_bytes / 1024.0 / 1024.0,
+  'rss_bytes_mb': r.rss_bytes / 1024.0 / 1024.0,
+  'read_bytes_mb': r.read_bytes / 1024.0 / 1024.0,
+  'write_bytes_mb': r.write_bytes / 1024.0 / 1024.0,
+  'rchar_bytes_mb': r.rchar_bytes / 1024.0 / 1024.0, 
+  'wchar_bytes_mb': r.wchar_bytes / 1024.0 / 1024.0,
+})
+
+upid_aggop = mapop.Agg(by=lambda r: r.upid, fn=lambda r:{
+  'vsize_mb': pl.mean(r.vsize_mb),
+  'rss_bytes_mb': pl.mean(r.rss_bytes_mb),
+  # The following columns are all counters, so we take the maximum value.
+  'cpu_utime_s': pl.max(r.cpu_utime_s),
+  'cpu_ktime_s': pl.max(r.cpu_ktime_s),
+  'read_bytes_mb': pl.max(r.read_bytes_mb),
+  'write_bytes_mb': pl.max(r.write_bytes_mb),
+  "rchar_bytes_mb": pl.max(r.rchar_bytes_mb),
+  "wchar_bytes_mb": pl.max(r.wchar_bytes_mb),
+})
+# For this aggregate, we sum up the values as we've already calculated the average/usage 
+# for the upids already.
+pod_aggop = upid_aggop.Agg(by=lambda r: r.attr.pod, fn=lambda r:{
+  'cpu_utime_s': pl.sum(r.cpu_utime_s),
+  'cpu_ktime_s': pl.sum(r.cpu_ktime_s),
+  'vsize_mb': pl.sum(r.vsize_mb),
+  'rss_bytes_mb': pl.sum(r.rss_bytes_mb),
+  'read_bytes_mb': pl.sum(r.read_bytes_mb),
+  'write_bytes_mb': pl.sum(r.write_bytes_mb),
+  "rchar_bytes_mb": pl.sum(r.rchar_bytes_mb),
+  "wchar_bytes_mb": pl.sum(r.wchar_bytes_mb)
+})
+# Format everything nicely.
+rename = pod_aggop.Map(fn=lambda r:{
+  "pod_name": r.attr.pod,
+  "status": pl.pod_name_to_status(r._attr_pod_name),
+  "Created on": pl.pod_name_to_start_time(r._attr_pod_name),
+  "CPU User time (s)": r.cpu_utime_s,
+  "CPU System time (s)": r.cpu_ktime_s,
+  "Virtual Memory (mb)": r.vsize_mb,
+  "Average Memory (mb)": r.rss_bytes_mb,
+  "Read to IO (mb)": r.read_bytes_mb,
+  "Write to IO (mb)": r.write_bytes_mb,
+  "Characters Read (mb)": r.rchar_bytes_mb,
+  "Characters written (mb)": r.wchar_bytes_mb,
+})
+rename.Result(name='out')
+"""],
+["Sample HTTP Data",
+"""
+t1 = From(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns']).Range(start='-30s')
+t2 = t1.Map(fn=lambda r: {'time_': r.time_,
+                       'remote_addr': r.remote_addr,
+                       'remote_port': r.remote_port,
+                       'http_resp_status': r.http_resp_status,
+                       'http_resp_message': r.http_resp_message,
+                       'http_resp_body': r.http_resp_body,
+                       'http_resp_latency_ms': r.http_resp_latency_ns / 1.0E6})
+t3 = t2.Limit(rows=100).Result(name='resp_table')
+"""],
+["Network Stats",
+"""
+t1 = From(table='network_stats', select=['time_', 'pod_id', 'rx_bytes', 'rx_packets', 'rx_errors',
+                                         'rx_drops', 'tx_bytes', 'tx_packets', 'tx_errors', 'tx_drops']).Range(start='-30s')
+t2 = t1.Limit(rows=100).Result(name='stats')
+"""]
 ]
