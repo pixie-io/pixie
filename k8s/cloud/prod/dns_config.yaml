@@ -5,3 +5,4 @@ metadata:
 data:
   PL_DNS_ZONE: clusters-with-pixie-ai
   PL_DNS_PROJECT: pixie-prod
+  PL_USE_DEFAULT_DNS_CERT: "true"

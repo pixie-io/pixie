@@ -84,7 +84,7 @@ func _000001_create_dns_tablesDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_dns_tables.down.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1569808803, 0)}
+	info := bindataFileInfo{name: "000001_create_dns_tables.down.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1569807989, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -104,7 +104,7 @@ func _000001_create_dns_tablesUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_dns_tables.up.sql", size: 733, mode: os.FileMode(436), modTime: time.Unix(1569810051, 0)}
+	info := bindataFileInfo{name: "000001_create_dns_tables.up.sql", size: 733, mode: os.FileMode(436), modTime: time.Unix(1569815232, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
