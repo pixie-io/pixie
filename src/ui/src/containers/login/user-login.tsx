@@ -1,5 +1,6 @@
 import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
+import {CodeSnippet} from 'components/code-snippet/code-snippet';
 import {DialogBox} from 'components/dialog-box/dialog-box';
 import {AUTH0_CLIENT_ID, AUTH0_DOMAIN, DOMAIN_NAME} from 'containers/constants';
 import gql from 'graphql-tag';
@@ -29,11 +30,19 @@ interface Auth0LoginProps {
 
 interface Auth0LoginState {
   error: string;
+  token: string;
 }
 
 function onLoginAuthenticated(authResult) {
   this._lock.getUserInfo(authResult.accessToken, (error, profile) => {
     this._lock.hide();
+    if (this.localMode) {
+      this.setState({
+        token: authResult.accessToken,
+      });
+      return;
+    }
+
     return Axios({
       method: 'post',
       url: '/api/auth/login',
@@ -116,12 +125,15 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
   private domain: string;
   private auth0Redirect: string;
   private redirectPath: string;
+  private localMode: boolean;
+  private responseType: string;
 
   constructor(props) {
     super(props);
 
     this.state = {
       error: '',
+      token: '',
     };
   }
 
@@ -130,8 +142,8 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
 
     const locationParam = typeof queryParams.location === 'string' ? queryParams.location : '';
     const domainName = typeof queryParams.domain_name === 'string' ? queryParams.domain_name : '';
-    const localmode = typeof queryParams.localmode === 'string' ? queryParams.localmode : '';
-    const localmodeRedirect = typeof queryParams.redirect_uri === 'string' ? queryParams.redirect_uri : '';
+    const localMode = typeof queryParams.local_mode === 'string' ? queryParams.local_mode : '';
+    const localModeRedirect = typeof queryParams.redirect_uri === 'string' ? queryParams.redirect_uri : '';
 
     this.domain = domainName;
     this.redirectPath = locationParam;
@@ -141,9 +153,16 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     if (locationParam !== '') {
       this.auth0Redirect = this.auth0Redirect + '&location=' + locationParam;
     }
+    this.responseType = 'token';
 
-    // If localmode is on, redirect to the given location.
-    this.auth0Redirect = localmode === 'true' ? localmodeRedirect : this.auth0Redirect;
+    // If localMode is on, redirect to the given location.
+    if (localMode === 'true' && localModeRedirect !== '') {
+      this.auth0Redirect = localModeRedirect;
+      this.responseType = 'code';
+    } else if (localMode === 'true') {
+      this.localMode = true;
+      this.auth0Redirect = this.auth0Redirect + '&local_mode=true';
+    }
   }
 
   componentDidMount() {
@@ -158,7 +177,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     this._lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {
       auth: {
         redirectUrl: this.auth0Redirect,
-        responseType: 'token',
+        responseType: this.responseType,
         params: {
           scope: 'openid profile user_metadata email',
         },
@@ -210,6 +229,17 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
   }
 
   render() {
+    if (this.state.token !== '') {
+      return (
+        <DialogBox width={480}>
+          Please copy this code, switch to the CLI and paste it there:
+          <CodeSnippet showCopy={true} language=''>
+            {this.state.token}
+          </CodeSnippet>
+        </DialogBox>
+      );
+    }
+
     if (this.state.error === '') {
       return <div id={this.props.containerID}/>;
     }
