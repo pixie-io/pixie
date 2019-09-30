@@ -207,6 +207,15 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
+pl_cc_test(
+    name = "socket_resolver_test",
+    srcs = ["socket_resolver_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/system/testing:cc_library",
+    ],
+)
+
 # TODO(oazizi): Currently test needs to be run manually with sudo.
 sh_test(
     name = "stirling_wrapper_kprobe_leak_test",

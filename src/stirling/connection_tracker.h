@@ -8,10 +8,13 @@
 #include <variant>
 #include <vector>
 
+#include "src/common/system/proc_parser.h"
+#include "src/common/system/socket_info.h"
 #include "src/stirling/http2.h"
 #include "src/stirling/http_parse.h"
 #include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql_parse.h"
+#include "src/stirling/socket_resolver.h"
 #include "src/stirling/socket_trace.h"
 
 DECLARE_uint32(messages_size_limit_bytes);
@@ -249,6 +252,17 @@ class ConnectionTracker {
   void AddDataEvent(std::unique_ptr<SocketDataEvent> event);
 
   /**
+   * @brief Attempts to infer the remote endpoint of a connection.
+   *
+   * Intended for cases where the accept/connect was not traced.
+   *
+   * @param proc_parser Pointer to a proc_parser for access to /proc filesystem.
+   * @param connections A map of inodes to endpoint information.
+   */
+  void InferConnInfo(system::ProcParser* proc_parser,
+                     const std::map<int, system::SocketInfo>& connections);
+
+  /**
    * @brief Processes the connection tracker, parsing raw events into messages,
    * and messages into entries.
    *
@@ -428,8 +442,12 @@ class ConnectionTracker {
   /**
    * @brief Updates the any state that changes per iteration on this connection tracker.
    * Should be called once per sampling (PerfBuffer read).
+   *
+   * @param proc_parser Pointer to a proc_parser for access to /proc filesystem.
+   * @param connections A map of inodes to endpoint information.
    */
-  void IterationTick();
+  void IterationTick(system::ProcParser* proc_parser,
+                     const std::map<int, system::SocketInfo>& connections);
 
   /**
    * @brief Sets a the duration after which a connection is deemed to be inactive.
@@ -528,6 +546,10 @@ class ConnectionTracker {
   void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void HandleInactivity();
+
+  // Used to identify the remove endpoint in case the accept/connect was not traced.
+  std::unique_ptr<SocketResolver> conn_resolver_ = nullptr;
+  bool conn_resolution_failed_ = false;
 
   struct conn_id_t conn_id_ = {};
   traffic_class_t traffic_class_{kProtocolUnknown, kRoleUnknown};

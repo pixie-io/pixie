@@ -2,6 +2,7 @@
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 #include <experimental/filesystem>
 
@@ -10,7 +11,10 @@
 #include <numeric>
 #include <vector>
 
+#include "absl/strings/numbers.h"
+
 #include "src/common/base/inet_utils.h"
+#include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
 #include "src/stirling/http2.h"
 #include "src/stirling/mysql/mysql.h"
@@ -26,6 +30,10 @@ DEFINE_uint32(messages_expiration_duration_secs, 10 * 60,
 namespace pl {
 namespace stirling {
 
+//--------------------------------------------------------------
+// ConnectionTracker
+//--------------------------------------------------------------
+
 template <>
 void ConnectionTracker::InitState<mysql::Packet>() {
   DCHECK(std::holds_alternative<std::monostate>(state_) ||
@@ -35,10 +43,6 @@ void ConnectionTracker::InitState<mysql::Packet>() {
     state_ = std::make_unique<mysql::State>(std::move(s));
   }
 }
-
-//--------------------------------------------------------------
-// ConnectionTracker
-//--------------------------------------------------------------
 
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   LOG_IF(ERROR, open_info_.timestamp_ns != 0) << "Clobbering existing ConnOpenEvent.";
@@ -357,7 +361,8 @@ bool ConnectionTracker::ReadyForDestruction() const {
   return death_countdown_ == 0;
 }
 
-void ConnectionTracker::IterationTick() {
+void ConnectionTracker::IterationTick(system::ProcParser* proc_parser,
+                                      const std::map<int, system::SocketInfo>& connections) {
   if (death_countdown_ > 0) {
     death_countdown_--;
   }
@@ -368,6 +373,12 @@ void ConnectionTracker::IterationTick() {
 
   if (send_data().IsEOS() || recv_data().IsEOS()) {
     Disable();
+  }
+
+  // If remote_addr is missing, it means the connect/accept was not traced.
+  // Attempt to infer the connection information, to populate remote_addr.
+  if (open_info_.remote_addr == "-") {
+    InferConnInfo(proc_parser, connections);
   }
 }
 
@@ -385,6 +396,88 @@ void ConnectionTracker::HandleInactivity() {
     send_data_.Reset();
     recv_data_.Reset();
   }
+}
+
+void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
+                                      const std::map<int, system::SocketInfo>& connections) {
+  // TODO(oazizi): Convert this to DCHECK, and fix tests to pass in a proc parser.
+  if (proc_parser == nullptr) {
+    return;
+  }
+
+  if (conn_resolution_failed_) {
+    // We've previously tried and failed to perform connection inference,
+    // so don't waste any time...a connection only gets one chance.
+    VLOG(2)
+        << "Can't infer remote endpoint. Previous inference attempt failed, and won't try again.";
+    return;
+  }
+
+  if (conn_resolver_ == nullptr) {
+    conn_resolver_ = std::make_unique<SocketResolver>(proc_parser, conn_id_.pid, conn_id_.fd);
+    bool success = conn_resolver_->Setup();
+    if (!success) {
+      conn_resolver_ = nullptr;
+      conn_resolution_failed_ = true;
+      VLOG(2) << "Can't infer remote endpoint. Setup failed.";
+    }
+    // Return after Setup(), since we won't be able to infer until some time has elapsed.
+    // This is because file descriptors can be re-used, and if we sample the FD just once,
+    // we don't know which generation of the FD we've captured.
+    // Waiting some time allows us to build some understanding of whether the FD is stable
+    // at the time that we're interested at.
+    return;
+  }
+
+  VLOG(2) << absl::Substitute("Attempting connection inference pid=$0 fd=$1 gen=$2", conn_id_.pid,
+                              conn_id_.fd, conn_id_.generation);
+  bool success = conn_resolver_->Update();
+  if (!success) {
+    conn_resolver_ = nullptr;
+    conn_resolution_failed_ = true;
+    VLOG(2) << "Can't infer remote endpoint. Could not determine socket inode number of FD.";
+    return;
+  }
+
+  std::optional<int> inode_num_or_nullopt = conn_resolver_->InferSocket(last_update_timestamp_);
+  if (!inode_num_or_nullopt) {
+    return;
+  }
+  int inode_num = inode_num_or_nullopt.value();
+
+  // We found the inode number, now lets see if it maps to a known connection.
+  auto iter = connections.find(inode_num);
+  if (iter == connections.end()) {
+    VLOG(2) << "Can't infer remote endpoint. No inode match (possibly not a TCP connection).";
+    return;
+  }
+
+  // Success! Now copy the inferred socket information into the ConnectionTracker.
+  const system::SocketInfo& socket_info = iter->second;
+  open_info_.remote_port = ntohs(socket_info.remote_port);
+
+  Status s;
+  switch (socket_info.family) {
+    case AF_INET:
+      s = ParseIPv4Addr(socket_info.remote_addr, &open_info_.remote_addr);
+      break;
+    case AF_INET6:
+      s = ParseIPv6Addr(socket_info.remote_addr, &open_info_.remote_addr);
+      break;
+    default:
+      LOG(DFATAL) << absl::Substitute("Unexpected family $0", socket_info.family);
+  }
+
+  if (!s.ok()) {
+    LOG(ERROR) << absl::Substitute("IP parsing failed [msg=$0]", s.msg());
+    return;
+  }
+
+  LOG(INFO) << absl::Substitute("Inferred connection $0:$1", open_info_.remote_addr,
+                                open_info_.remote_port);
+
+  // No need for the resolver anymore, so free its memory.
+  conn_resolver_.reset();
 }
 
 //--------------------------------------------------------------

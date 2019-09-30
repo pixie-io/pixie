@@ -101,6 +101,9 @@ Status SocketTraceConnector::InitImpl() {
     perf_buffer_events_output_stream_ =
         std::make_unique<std::ofstream>(FLAGS_perf_buffer_events_output_path);
   }
+
+  netlink_socket_prober_ = std::make_unique<system::NetlinkSocketProber>();
+
   return Status::OK();
 }
 
@@ -119,6 +122,14 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   // TODO(oazizi): Should this run more frequently than TransferDataImpl?
   // This drains the relevant perf buffer, and causes Handle() callback functions to get called.
   ReadPerfBuffer(table_num);
+
+  // Grab a list of active connections, in case we need to infer the endpoints of any connections
+  // with missing endpoints.
+  // TODO(oazizi): Optimization is to skip this if we don't have any connection trackers with
+  // unknown remote endpoints.
+  auto status_or = netlink_socket_prober_->InetConnections();
+  LOG_IF(ERROR, !status_or.ok()) << "Failed to probe InetConnections";
+  inet_connections_ = status_or.ok() ? status_or.ConsumeValueOrDie() : nullptr;
 
   switch (table_num) {
     case kHTTPTableNum:
@@ -388,7 +399,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, TrafficProtoco
         PL_UNUSED(data_table);
       }
 
-      tracker.IterationTick();
+      tracker.IterationTick(proc_parser_.get(), *inet_connections_);
 
       // Only the most recent generation of a connection on a PID+FD should be active.
       // Mark all others for death (after having their data processed, of course).

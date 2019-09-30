@@ -27,6 +27,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include "demos/applications/hipster_shop/reflection.h"
 #include "src/common/grpcutils/service_descriptor_database.h"
+#include "src/common/system/socket_info.h"
 #include "src/stirling/bcc_wrapper.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/http_table.h"
@@ -203,6 +204,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
         BCCWrapper(kBCCScript) {
     // TODO(yzhao): Is there a better place/time to grab the flags?
     http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
+    proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
+    netlink_socket_prober_ = std::make_unique<system::NetlinkSocketProber>();
   }
 
   // Events from BPF.
@@ -237,6 +240,12 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   // If not a nullptr, writes the events received from perf buffers to this stream.
   std::unique_ptr<std::ofstream> perf_buffer_events_output_stream_;
+
+  std::unique_ptr<system::NetlinkSocketProber> netlink_socket_prober_;
+
+  std::unique_ptr<std::map<int, system::SocketInfo> > inet_connections_;
+
+  std::unique_ptr<system::ProcParser> proc_parser_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);

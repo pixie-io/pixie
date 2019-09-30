@@ -23,6 +23,7 @@ class TCPSocket {
   void Connect(const TCPSocket& addr);
   void Close();
 
+  int sockfd() { return sockfd_; }
   struct in_addr addr() {
     return addr_.sin_addr;
   }
