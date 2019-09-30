@@ -19,21 +19,8 @@
 namespace pl {
 namespace system {
 
-// Kernel TCP states, copieid from <linux_srcs>/include/net/tcp_states.h
-// Unfortunately, there is no public header in <linux_srcs>/include/uapi.
-enum {
-  TCP_ESTABLISHED = 1,
-  TCP_SYN_SENT,
-  TCP_SYN_RECV,
-  TCP_FIN_WAIT1,
-  TCP_FIN_WAIT2,
-  TCP_TIME_WAIT,
-  TCP_CLOSE,
-  TCP_CLOSE_WAIT,
-  TCP_LAST_ACK,
-  TCP_LISTEN,
-  TCP_CLOSING
-};
+// See tcp_states.h for other states if we ever need them.
+constexpr int kTCPEstablishedState = 1;
 
 NetlinkSocketProber::NetlinkSocketProber() {
   fd_ = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_SOCK_DIAG);
@@ -63,7 +50,7 @@ Status NetlinkSocketProber::SendInetDiagReq() {
   struct inet_diag_req_v2 msg_req = {};
   msg_req.sdiag_family = AF_INET;
   msg_req.sdiag_protocol = IPPROTO_TCP;
-  msg_req.idiag_states = (1 << TCP_ESTABLISHED);
+  msg_req.idiag_states = 1 << kTCPEstablishedState;
 
   struct iovec iov[2];
   iov[0].iov_base = &msg_header;
