@@ -11,6 +11,7 @@ option go_package = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/proto;dnsmgr";
 // DNSMgrService tracks DNS information for clusters.
 service DNSMgrService {
     rpc GetDNSAddress(GetDNSAddressRequest) returns (GetDNSAddressResponse) {}
+    rpc GetSSLCerts(GetSSLCertsRequest) returns (GetSSLCertsResponse) {}
 }
 
 message GetDNSAddressRequest {
@@ -26,4 +27,15 @@ message GetDNSAddressResponse {
   string dns_address = 1 [
                          (gogoproto.customname) = "DNSAddress"
                          ];
+}
+
+message GetSSLCertsRequest {
+  uuidpb.UUID cluster_id = 1 [
+                              (gogoproto.customname) = "ClusterID"
+                             ];
+}
+
+message GetSSLCertsResponse {
+  string key = 1;
+  string cert = 2;
 }

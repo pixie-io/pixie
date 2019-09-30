@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrenv"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
@@ -34,4 +35,9 @@ func (s *Server) GetDNSAddress(ctx context.Context, req *dnsmgrpb.GetDNSAddressR
 	return &dnsmgrpb.GetDNSAddressResponse{
 		DNSAddress: dnsAddr,
 	}, nil
+}
+
+// GetSSLCerts gets a ssl cert for the given cluster ID.
+func (s *Server) GetSSLCerts(ctx context.Context, req *dnsmgrpb.GetSSLCertsRequest) (*dnsmgrpb.GetSSLCertsResponse, error) {
+	return nil, errors.New("not implemented")
 }
