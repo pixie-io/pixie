@@ -19,6 +19,7 @@ spec:
       containers:
       - name: agent
         image: gcr.io/pl-dev-infra/vizier/agent_image:latest
+        args: ["--stirling_enable_parsing_protobufs=true"]
         env:
         - name: PL_CLIENT_TLS_CERT
           value: /certs/client.crt
