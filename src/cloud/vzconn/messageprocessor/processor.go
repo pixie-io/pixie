@@ -109,6 +109,9 @@ func (m *MessageProcessor) handleVizierHeartbeat(msg *cloudpb.VizierHeartbeat) e
 		fmt.Sprintf("bearer %s", serviceAuthToken))
 
 	vzmgrResp, err := m.vzmgrClient.HandleVizierHeartbeat(ctx, msg)
+	if err != nil {
+		return err
+	}
 
 	var respAsAny *types.Any
 	if respAsAny, err = types.MarshalAny(vzmgrResp); err != nil {
@@ -127,6 +130,38 @@ func (m *MessageProcessor) handleLogMessage(msg *vzconnpb.TransferLogRequest) er
 	for _, logMsg := range msg.GetBatchedLogs() {
 		m.streamLog.WithField("pod", logMsg.GetPod()).WithField("service", logMsg.GetSvc()).Info(logMsg.GetLog())
 	}
+	return nil
+}
+
+func (m *MessageProcessor) handleSSLCertMessage(msg *cloudpb.VizierSSLCertRequest) error {
+	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return err
+	}
+	ctx := metadata.AppendToOutgoingContext(m.ctx, "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
+
+	rpcReq := &vzmgrpb.GetSSLCertsRequest{ClusterID: msg.VizierID}
+	vzmgrResp, err := m.vzmgrClient.GetSSLCerts(ctx, rpcReq)
+	if err != nil {
+		return err
+	}
+
+	ccResp := &cloudpb.VizierSSLCertResponse{
+		Key:  vzmgrResp.Key,
+		Cert: vzmgrResp.Cert,
+	}
+	var respAsAny *types.Any
+	if respAsAny, err = types.MarshalAny(ccResp); err != nil {
+		return err
+	}
+
+	m.sendMessage(&vzconnpb.CloudConnectResponse{
+		// TODO(zasgar/michelle): Should this be on a vizier specific channel? Need to change this when we move to pubsub model.
+		Topic: "ssl",
+		Msg:   respAsAny,
+	}, nil)
+
 	return nil
 }
 
@@ -154,6 +189,8 @@ func (m *MessageProcessor) handleMessage(msg *vzconnpb.CloudConnectRequest) erro
 	case *vzconnpb.TransferLogRequest:
 		// TODO(zasgar/michelle): move this to a channel.
 		err = m.handleLogMessage(msg)
+	case *cloudpb.VizierSSLCertRequest:
+		err = m.handleSSLCertMessage(msg)
 	default:
 		m.streamLog.
 			WithField("msg", msg.String()).

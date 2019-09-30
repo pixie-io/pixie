@@ -86,3 +86,14 @@ message VizierConnectionInfo {
                         ];
   string token = 2;
 }
+
+message VizierSSLCertRequest {
+  uuidpb.UUID vizier_id = 1 [
+                          (gogoproto.customname) = "VizierID"
+                         ];
+}
+
+message VizierSSLCertResponse {
+    string key = 1;
+    string cert = 2;
+}

@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/messageprocessor"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -86,6 +87,15 @@ func TestMessageProcessor(t *testing.T) {
 				Log: "log msg",
 			},
 		},
+	}
+
+	sslRequest := &cloudpb.VizierSSLCertRequest{
+		VizierID: utils.ProtoFromUUID(&u),
+	}
+
+	sslResponseOK := &cloudpb.VizierSSLCertResponse{
+		Key:  "abcd",
+		Cert: "efgh",
 	}
 
 	tests := []struct {
@@ -166,6 +176,29 @@ func TestMessageProcessor(t *testing.T) {
 			expectedOuts:     []*vzconnpb.CloudConnectResponse{},
 			expectOutErrs:    []error{},
 			mockExpectations: func(*mock_vzmgrpb.MockVZMgrServiceClient) {},
+		},
+		{
+			name: "SSL Certs",
+			ins: []*vzconnpb.CloudConnectRequest{
+				mustEnvelopeReq(registerReq, "register"),
+				mustEnvelopeReq(sslRequest, "ssl"),
+			},
+			expectInErrs: []error{nil, nil},
+
+			expectedOuts: []*vzconnpb.CloudConnectResponse{
+				mustEnvelopeResp(registerAckOK, "register"),
+				mustEnvelopeResp(sslResponseOK, "ssl"),
+			},
+			expectOutErrs: []error{nil, nil},
+
+			mockExpectations: func(mockVZMgr *mock_vzmgrpb.MockVZMgrServiceClient) {
+				mockVZMgr.EXPECT().VizierConnected(gomock.Any(), registerReq).
+					Return(registerAckOK, nil)
+
+				mockVZMgr.EXPECT().GetSSLCerts(gomock.Any(),
+					&vzmgrpb.GetSSLCertsRequest{ClusterID: utils.ProtoFromUUID(&u)}).
+					Return(&vzmgrpb.GetSSLCertsResponse{Key: "abcd", Cert: "efgh"}, nil)
+			},
 		},
 	}
 
