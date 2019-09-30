@@ -126,7 +126,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
   private auth0Redirect: string;
   private redirectPath: string;
   private localMode: boolean;
-  private responseType: string;
+  private responseMode: string;
 
   constructor(props) {
     super(props);
@@ -153,12 +153,12 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     if (locationParam !== '') {
       this.auth0Redirect = this.auth0Redirect + '&location=' + locationParam;
     }
-    this.responseType = 'token';
+    this.responseMode = '';
 
     // If localMode is on, redirect to the given location.
     if (localMode === 'true' && localModeRedirect !== '') {
       this.auth0Redirect = localModeRedirect;
-      this.responseType = 'code';
+      this.responseMode = 'form_post';
     } else if (localMode === 'true') {
       this.localMode = true;
       this.auth0Redirect = this.auth0Redirect + '&local_mode=true';
@@ -177,7 +177,8 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     this._lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {
       auth: {
         redirectUrl: this.auth0Redirect,
-        responseType: this.responseType,
+        responseType: 'token',
+        responseMode: this.responseMode,
         params: {
           scope: 'openid profile user_metadata email',
         },
