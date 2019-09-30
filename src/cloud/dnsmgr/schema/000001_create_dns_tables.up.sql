@@ -2,8 +2,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- This table contains information about our SSL certs and which clusters are using them.
 CREATE TABLE ssl_certs (
-  -- The ID for the cert.
-  id varchar(100),
+  -- The cname for the cert.
+  cname varchar(100),
   -- cluster_id is the id of the cluster using the cert.
   cluster_id UUID,
   -- cert is the cert for the SSL cert.
@@ -21,5 +21,5 @@ CREATE TABLE dns_addresses (
   -- ip_address is the current IP address of the cluster.
   address varchar(1000),
 
-  PRIMARY KEY(cluster_id)
+  PRIMARY KEY(cluster_id, time_created)
 );
