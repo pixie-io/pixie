@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
@@ -12,28 +11,6 @@ import (
 	commonenv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 )
-
-var emailDomainWhitelist = map[string]bool{
-	"hulu.com":         true,
-	"thousandeyes.com": true,
-	"pixielabs.ai":     true,
-	"shiftleft.io":     true,
-	"umich.edu":        true,
-}
-
-// GetDomainNameFromEmail gets the domain name from the provided email.
-func GetDomainNameFromEmail(email string) (string, error) {
-	emailComponents := strings.Split(email, "@")
-	if len(emailComponents) != 2 {
-		return "", handler.NewStatusError(http.StatusBadRequest, "failed to parse request")
-	}
-	// If the user is not part of a whitelisted org, they should have an individual org.
-	domainName := email
-	if _, exists := emailDomainWhitelist[emailComponents[1]]; exists {
-		domainName = emailComponents[1]
-	}
-	return domainName, nil
-}
 
 // CreateSiteHandler creates a new user/org and registers the site.
 func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
@@ -64,16 +41,9 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 			"failed to decode json request")
 	}
 
-	domainName, err := GetDomainNameFromEmail(params.UserEmail)
-	if err != nil {
-		return err
-	}
-
 	rpcReq := &authpb.CreateUserOrgRequest{
 		AccessToken: params.AccessToken,
 		UserEmail:   params.UserEmail,
-		DomainName:  domainName,
-		OrgName:     domainName,
 	}
 
 	apiEnv, ok := env.(apienv.APIEnv)

@@ -25,10 +25,6 @@ message CreateUserOrgRequest {
   string access_token = 1;
   // The email of the user, this needs to match the auth0 info or the request, otherwise it will be aborted.
   string user_email = 2;
-  // The domain name for the org.
-  string domain_name = 3;
-  // The name of the organization.
-  string org_name = 4;
 }
 
  message CreateUserOrgResponse {
@@ -53,11 +49,8 @@ message LoginRequest {
   string access_token = 1;
   // The name of the site to log into.
   string site_name = 2;
-  // The domain name for the org.
-  string domain_name = 3;
-
   // Automatically create the user if they don't exist.
-  bool create_user_if_not_exists = 4;
+  bool create_user_if_not_exists = 3;
 }
 
 message LoginReply {

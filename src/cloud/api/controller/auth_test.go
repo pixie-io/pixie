@@ -48,7 +48,6 @@ func TestAuthLoginHandler(t *testing.T) {
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
-		DomainName:            "hulu.com",
 		CreateUserIfNotExists: true,
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
@@ -95,7 +94,6 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
-		DomainName:            "user@gmail.com",
 		CreateUserIfNotExists: true,
 	}
 
@@ -120,7 +118,6 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
-		DomainName:            "hulu.com",
 		CreateUserIfNotExists: true,
 	}
 

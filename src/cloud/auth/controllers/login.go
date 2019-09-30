@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -11,8 +10,9 @@ import (
 
 	pb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	sitemanagerpb "pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
+	"pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
@@ -55,13 +55,18 @@ func (s *Server) CreateUserOrg(ctx context.Context, in *pb.CreateUserOrgRequest)
 		return nil, status.Error(codes.InvalidArgument, "email addresses don't match")
 	}
 
+	domainName, err := GetDomainNameFromEmail(userInfo.Email)
+	if err != nil {
+		return nil, services.HTTPStatusFromError(err, "Failed to get domain from email")
+	}
+
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	rpcReq := &profilepb.CreateOrgAndUserRequest{
 		Org: &profilepb.CreateOrgAndUserRequest_Org{
-			OrgName:    in.OrgName,
-			DomainName: in.DomainName,
+			OrgName:    domainName,
+			DomainName: domainName,
 		},
 		User: &profilepb.CreateOrgAndUserRequest_User{
 			Username:  userInfo.Email,
@@ -137,8 +142,12 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		return nil, status.Error(codes.PermissionDenied, "user not found, please register.")
 	}
 
+	domainName, err := GetDomainNameFromEmail(userInfo.Email)
+	if err != nil {
+		return nil, services.HTTPStatusFromError(err, "Failed to get domain from email")
+	}
 	// Verify that site belongs to org.
-	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: in.DomainName})
+	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
 	if err != nil || orgInfo == nil {
 		return nil, status.Error(codes.InvalidArgument, "user does not belong to a registered organization")
 	}
@@ -170,11 +179,10 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 }
 
 func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserInfo) (*UserInfo, error) {
-	emailComponents := strings.Split(userInfo.Email, "@")
-	if len(emailComponents) != 2 {
-		return nil, status.Error(codes.InvalidArgument, "invalid email address")
+	domainName, err := GetDomainNameFromEmail(userInfo.Email)
+	if err != nil {
+		return nil, err
 	}
-	domainName := emailComponents[1]
 
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
