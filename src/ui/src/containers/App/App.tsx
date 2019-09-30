@@ -29,6 +29,7 @@ export class App extends React.Component<AppProps, {}> {
             <div className='content'>
               <Switch>
                 <Route exact path='/create' component={Login} />
+                <Route exact path='/auth_success' component={Login} />
                 <Route component={Login} />
               </Switch>
             </div>
