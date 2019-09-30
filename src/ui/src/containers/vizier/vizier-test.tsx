@@ -4,12 +4,73 @@ import * as React from 'react';
 import { MockedProvider } from 'react-apollo/test-utils';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import {DeployInstructions} from './deploy-instructions';
-import {CREATE_CLUSTER, GET_CLUSTER, Vizier} from './vizier';
+import {CHECK_VIZIER, CREATE_CLUSTER, GET_CLUSTER, Vizier, VizierMain} from './vizier';
 
 // Mock CodeMirror component because it does not mount properly in Jest.
 jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
 
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+
+describe('<VizierMain/> test', () => {
+  it('should have sidebar if Vizier is connected', async () => {
+    const mocks = [
+      {
+        request: {
+            query: CHECK_VIZIER,
+            variables: {},
+        },
+        result: {
+            data: {
+                vizier: {},
+            },
+        },
+      },
+    ];
+
+    const app = mount(
+        <Router>
+            <MockedProvider mocks={mocks} addTypename={false}>
+              <VizierMain
+                pathname={'test'}
+              />
+            </MockedProvider>
+        </Router>);
+
+    await wait(0);
+    app.update();
+    expect(app.find(SidebarNav)).toHaveLength(1);
+  });
+
+  it('should show instructions if Vizier is not connected', async () => {
+    const mocks = [
+      {
+        request: {
+            query: CHECK_VIZIER,
+            variables: {},
+        },
+        error: {
+            name: 'error',
+            message: 'cant connect to vizier',
+        },
+      },
+    ];
+
+    const app = mount(
+        <Router>
+            <MockedProvider mocks={mocks} addTypename={false}>
+              <VizierMain
+                pathname={'test'}
+              />
+            </MockedProvider>
+        </Router>);
+
+    await wait(0);
+    app.update();
+    expect(app.find(SidebarNav)).toHaveLength(0);
+    expect(app.find('.cluster-instructions')).toHaveLength(1);
+    expect(app.find('.cluster-instructions').text()).toEqual('Setting up DNS records for cluster...');
+  });
+});
 
 describe('<Vizier/> test', () => {
   it('should have sidebar if Vizier is healthy', async () => {
@@ -29,6 +90,17 @@ describe('<Vizier/> test', () => {
           },
         },
       },
+      {
+        request: {
+            query: CHECK_VIZIER,
+            variables: {},
+        },
+        result: {
+            data: {
+                vizier: {},
+            },
+        },
+      },
     ];
 
     const app = mount(
@@ -42,7 +114,7 @@ describe('<Vizier/> test', () => {
 
     await wait(0);
     app.update();
-    expect(app.find(SidebarNav)).toHaveLength(1);
+    expect(app.find(VizierMain)).toHaveLength(1);
   });
 
   it('should show deploy instructions if vizier not connected', async () => {

@@ -43,6 +43,11 @@ export const GET_CLUSTER = gql`
   }
 }`;
 
+export const CHECK_VIZIER = gql`
+{
+  vizier
+}`;
+
 const PATH_TO_HEADER_TITLE = {
   '/vizier/agents': 'Agents',
   '/vizier/query': 'Query',
@@ -59,6 +64,67 @@ interface VizierState {
 interface VizierProps {
   location: RouterInfo;
 }
+
+interface ClusterInstructionsProps {
+  message: string;
+}
+
+interface VizierMainProps {
+  pathname: string;
+}
+
+const ClusterInstructions = (props: ClusterInstructionsProps) => (
+  <div className='cluster-instructions'>
+    <DialogBox width={760}>
+      <div className='cluster-instructions--content'>
+        {props.message}
+        <p></p>
+        <img className='spinner' src={loadingSvg} />
+      </div>
+    </DialogBox>
+  </div>
+);
+
+export class VizierMain extends React.Component<VizierMainProps, {}> {
+  render() {
+    return (
+      <Query context={{clientName: 'vizier'}} query={CHECK_VIZIER}>
+        {({ loading, error, data }) => {
+          if (loading || error) {
+            // TODO(michelle): Make a separate HTTP request to Vizier so we can get a better error message
+            // for Vizier's status.
+            const dnsMsg = 'Setting up DNS records for cluster...';
+            return <ClusterInstructions message={dnsMsg}/>;
+          }
+          return (<div className='vizier'>
+            <SidebarNav
+              logo = {logoImage}
+              items={[
+                { link: '/vizier/query', selectedImg: codeImage, unselectedImg: codeImage },
+              ]}
+              footerItems={[
+                { link: '/vizier/agents', selectedImg: infoImage, unselectedImg: infoImage },
+                { link: '/docs/getting-started/', selectedImg: docsImage, unselectedImg: docsImage },
+                { selectedImg: userImage, unselectedImg: userImage, menu: {'Sign out': '/logout'}},
+              ]}
+            />
+            <div className='vizier-body'>
+              <Header
+                 primaryHeading='Pixie Console'
+                 secondaryHeading={PATH_TO_HEADER_TITLE[this.props.pathname]}
+              />
+              <Switch>
+                <Route path={`/vizier/agents`} component={AgentDisplay} />
+                <Route path={`/`} component={QueryManager} />
+              </Switch>
+            </div>
+          </div>);
+        }}
+      </Query>
+    );
+  }
+}
+
 export class Vizier extends React.Component<VizierProps, VizierState> {
   constructor(props) {
     super(props);
@@ -66,20 +132,6 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
     this.state = {
       creatingCluster: false,
     };
-  }
-
-  renderClusterInstructions(message: string) {
-     return (
-      <div className='cluster-instructions'>
-        <DialogBox width={760}>
-          <div className='cluster-instructions--content'>
-            {message}
-            <p></p>
-            <img className='spinner' src={loadingSvg} />
-          </div>
-        </DialogBox>
-      </div>
-    );
   }
 
   render() {
@@ -101,40 +153,20 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
                     });
                   }
 
-                  return this.renderClusterInstructions('Initializing...');
+                  return <ClusterInstructions message='Initializing...' />;
                 }
                 return `Error! ${error.message}`;
               }
 
               if (data.cluster.status === 'VZ_ST_HEALTHY') {
                 return (
-                  <div className='vizier'>
-                    <SidebarNav
-                      logo = {logoImage}
-                      items={[
-                        { link: '/vizier/query', selectedImg: codeImage, unselectedImg: codeImage },
-                      ]}
-                      footerItems={[
-                        { link: '/vizier/agents', selectedImg: infoImage, unselectedImg: infoImage },
-                        { link: '/docs/getting-started/', selectedImg: docsImage, unselectedImg: docsImage },
-                        { selectedImg: userImage, unselectedImg: userImage, menu: {'Sign out': '/logout'}},
-                      ]}
-                    />
-                    <div className='vizier-body'>
-                      <Header
-                         primaryHeading='Pixie Console'
-                         secondaryHeading={PATH_TO_HEADER_TITLE[this.props.location.pathname]}
-                      />
-                      <Switch>
-                        <Route path={`/vizier/agents`} component={AgentDisplay} />
-                        <Route path={`/`} component={QueryManager} />
-                      </Switch>
-                    </div>
-                  </div>
+                  <VizierMain
+                    pathname={this.props.location.pathname}
+                  />
                 );
               } else if (data.cluster.status === 'VZ_ST_UNHEALTHY') {
-                return this.renderClusterInstructions(
-                  'Cluster found. Waiting for pods and services to become ready...');
+                const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
+                return <ClusterInstructions message={clusterStarting} />;
               } else {
                 return (
                   <DeployInstructions
