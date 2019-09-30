@@ -11,9 +11,12 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
+	dnsmgr "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -25,13 +28,14 @@ const SaltLength int = 10
 
 // Server is a controller implementation of vzmgr.
 type Server struct {
-	db    *sqlx.DB
-	dbKey string
+	db           *sqlx.DB
+	dbKey        string
+	dnsMgrClient dnsmgr.DNSMgrServiceClient
 }
 
 // New creates a new server.
-func New(db *sqlx.DB, dbKey string) *Server {
-	return &Server{db, dbKey}
+func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgr.DNSMgrServiceClient) *Server {
+	return &Server{db, dbKey, dnsMgrClient}
 }
 
 type vizierStatus cloudpb.VizierInfo_Status
@@ -217,8 +221,13 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 		return nil, status.Errorf(codes.Internal, "failed to sign token: %s", err.Error())
 	}
 
+	addr := info.Address
+	if addr != "" {
+		addr = "https://" + addr
+	}
+
 	return &cloudpb.VizierConnectionInfo{
-		IPAddress: info.Address,
+		IPAddress: addr,
 		Token:     tokenString,
 	}, nil
 }
@@ -260,6 +269,26 @@ func (s *Server) VizierConnected(ctx context.Context, req *cloudpb.RegisterVizie
 
 // HandleVizierHeartbeat handles the heartbeat from connected viziers.
 func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cloudpb.VizierHeartbeat) (*cloudpb.VizierHeartbeatAck, error) {
+	// Send DNS address.
+	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return nil, err
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
+
+	addr := req.Address
+	if req.Address != "" {
+		dnsMgrReq := &dnsmgr.GetDNSAddressRequest{
+			ClusterID: req.VizierID,
+			IPAddress: req.Address,
+		}
+		resp, err := s.dnsMgrClient.GetDNSAddress(ctx, dnsMgrReq)
+		if err == nil {
+			addr = resp.DNSAddress
+		}
+	}
+
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 	query := `
     UPDATE vizier_cluster_info
@@ -272,7 +301,7 @@ func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cloudpb.VizierH
 	}
 
 	// TODO(zasgar/michelle): handle sequence ID and time.
-	res, err := s.db.Exec(query, vzStatus, req.Address, vizierID)
+	res, err := s.db.Exec(query, vzStatus, addr, vizierID)
 	if err != nil {
 		return &cloudpb.VizierHeartbeatAck{
 			Status:         cloudpb.HB_ERROR,
@@ -296,6 +325,28 @@ func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cloudpb.VizierH
 
 // GetSSLCerts registers certs for the vizier cluster.
 func (s *Server) GetSSLCerts(ctx context.Context, req *vzmgrpb.GetSSLCertsRequest) (*vzmgrpb.GetSSLCertsResponse, error) {
-	// TODO(michelle): GetSSLCerts should talk to the DNS manager to get an available cert for the cluster.
-	return nil, errors.New("Not implemented yet")
+	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
+
+	dnsMgrReq := &dnsmgr.GetSSLCertsRequest{ClusterID: req.ClusterID}
+	resp, err := s.dnsMgrClient.GetSSLCerts(ctx, dnsMgrReq)
+	if err != nil {
+		return nil, err
+	}
+
+	return &vzmgrpb.GetSSLCertsResponse{
+		Key:  resp.Key,
+		Cert: resp.Cert,
+	}, nil
+}
+
+// getServiceCredentials returns JWT credentials for inter-service requests.
+func getServiceCredentials(signingKey string) (string, error) {
+	claims := jwtutils.GenerateJWTForService("vzmgr Service")
+	return jwtutils.SignJWTClaims(claims, signingKey)
 }

@@ -2,12 +2,14 @@ package controller_test
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	"github.com/golang/mock/gomock"
 	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -15,6 +17,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
+	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
+	mock_dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb/mock"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
@@ -55,7 +59,10 @@ func TestServer_CreateVizierCluster(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db, "test")
+	ctrl := gomock.NewController(t)
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient)
 	orgID := uuid.NewV4()
 
 	tests := []struct {
@@ -125,7 +132,10 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db, "test")
+	ctrl := gomock.NewController(t)
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient)
 
 	t.Run("valid", func(t *testing.T) {
 		// Fetch the test data that was inserted earlier.
@@ -178,7 +188,10 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db, "test")
+	ctrl := gomock.NewController(t)
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient)
 	resp, err := s.GetVizierInfo(context.Background(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.Nil(t, err)
 	require.NotNil(t, resp)
@@ -191,12 +204,15 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db, "test")
+	ctrl := gomock.NewController(t)
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient)
 	resp, err := s.GetVizierConnectionInfo(context.Background(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 
-	assert.Equal(t, resp.IPAddress, "addr1")
+	assert.Equal(t, resp.IPAddress, "https://addr1")
 	assert.NotNil(t, resp.Token)
 	claims := jwt.MapClaims{}
 	_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
@@ -213,7 +229,10 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db, "test")
+	ctrl := gomock.NewController(t)
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient)
 	req := &cloudpb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
@@ -247,7 +266,10 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db, "test")
+	ctrl := gomock.NewController(t)
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient)
 	req := &cloudpb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
@@ -280,9 +302,25 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db, "test")
+	ctrl := gomock.NewController(t)
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient)
 
 	t.Run("valid Vizier", func(t *testing.T) {
+		dnsMgrReq := &dnsmgrpb.GetDNSAddressRequest{
+			ClusterID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+			IPAddress: "127.0.0.1",
+		}
+
+		dnsMgrResp := &dnsmgrpb.GetDNSAddressResponse{
+			DNSAddress: "abc.clusters.dev.withpixie.dev",
+		}
+
+		mockDNSClient.EXPECT().
+			GetDNSAddress(gomock.Any(), dnsMgrReq).
+			Return(dnsMgrResp, nil)
+
 		req := &cloudpb.VizierHeartbeat{
 			VizierID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 			Time:           100,
@@ -297,15 +335,54 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		assert.True(t, resp.Time >= time.Now().Unix())
 		assert.Equal(t, resp.Status, cloudpb.HB_OK)
 
-		clusterQuery := `SELECT status from vizier_cluster_info WHERE vizier_cluster_id=$1`
+		clusterQuery := `SELECT status, address from vizier_cluster_info WHERE vizier_cluster_id=$1`
 
 		var clusterInfo struct {
-			Status string `db:"status"`
+			Status  string `db:"status"`
+			Address string `db:"address"`
 		}
 		clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
 		assert.Nil(t, err)
 		err = db.Get(&clusterInfo, clusterQuery, clusterID)
 		assert.Equal(t, "HEALTHY", clusterInfo.Status)
+		assert.Equal(t, "abc.clusters.dev.withpixie.dev", clusterInfo.Address)
+	})
+
+	t.Run("valid Vizier dns failed", func(t *testing.T) {
+		dnsMgrReq := &dnsmgrpb.GetDNSAddressRequest{
+			ClusterID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+			IPAddress: "127.0.0.1",
+		}
+
+		mockDNSClient.EXPECT().
+			GetDNSAddress(gomock.Any(), dnsMgrReq).
+			Return(nil, errors.New("Could not get DNS address"))
+
+		req := &cloudpb.VizierHeartbeat{
+			VizierID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+			Time:           100,
+			SequenceNumber: 200,
+			Address:        "127.0.0.1",
+		}
+		resp, err := s.HandleVizierHeartbeat(context.Background(), req)
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+
+		assert.Equal(t, resp.SequenceNumber, req.SequenceNumber)
+		assert.True(t, resp.Time >= time.Now().Unix())
+		assert.Equal(t, resp.Status, cloudpb.HB_OK)
+
+		clusterQuery := `SELECT status, address from vizier_cluster_info WHERE vizier_cluster_id=$1`
+
+		var clusterInfo struct {
+			Status  string `db:"status"`
+			Address string `db:"address"`
+		}
+		clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
+		assert.Nil(t, err)
+		err = db.Get(&clusterInfo, clusterQuery, clusterID)
+		assert.Equal(t, "HEALTHY", clusterInfo.Status)
+		assert.Equal(t, "127.0.0.1", clusterInfo.Address)
 	})
 
 	t.Run("valid Vizier no address", func(t *testing.T) {
@@ -347,4 +424,40 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	})
 
 	// TODO(zasgar): Add more tests here.
+}
+
+func TestServer_GetSSLCerts(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	ctrl := gomock.NewController(t)
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient)
+
+	t.Run("dnsmgr error", func(t *testing.T) {
+		dnsMgrReq := &dnsmgrpb.GetSSLCertsRequest{
+			ClusterID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		}
+
+		dnsMgrResp := &dnsmgrpb.GetSSLCertsResponse{
+			Key:  "abcd",
+			Cert: "efgh",
+		}
+
+		mockDNSClient.EXPECT().
+			GetSSLCerts(gomock.Any(), dnsMgrReq).
+			Return(dnsMgrResp, nil)
+
+		req := &vzmgrpb.GetSSLCertsRequest{
+			ClusterID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		}
+		resp, err := s.GetSSLCerts(context.Background(), req)
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+
+		assert.Equal(t, "abcd", resp.Key)
+		assert.Equal(t, "efgh", resp.Cert)
+	})
 }
