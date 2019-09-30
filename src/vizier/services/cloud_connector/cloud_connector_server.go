@@ -13,11 +13,31 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
+	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller"
 )
 
 func init() {
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
+	pflag.String("certmgr_service", "vizier-certmgr.pl.svc.cluster.local:50900", "The cert manager service url (load balancer/list is ok)")
+}
+
+// NewCertMgrServiceClient creates a new cert mgr RPC client stub.
+func NewCertMgrServiceClient() (certmgrpb.CertMgrServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	// Block until we connect to prevent races.
+	dialOpts = append(dialOpts, grpc.WithBlock())
+
+	certMgrChannel, err := grpc.Dial(viper.GetString("certmgr_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return certmgrpb.NewCertMgrServiceClient(certMgrChannel), nil
 }
 
 func main() {
@@ -35,6 +55,11 @@ func main() {
 		log.WithError(err).Fatal("Failed to init vzconn client")
 	}
 
+	certMgrClient, err := NewCertMgrServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init certmgr client")
+	}
+
 	clusterID := viper.GetString("cluster_id")
 	if clusterID == "" {
 		log.Fatal("Cluster ID is required")
@@ -49,7 +74,7 @@ func main() {
 		log.WithError(err).Fatal("Could not get k8s info")
 	}
 
-	server := controllers.NewServer(vizierID, viper.GetString("jwt_signing_key"), vzClient, vzInfo)
+	server := controllers.NewServer(vizierID, viper.GetString("jwt_signing_key"), vzClient, certMgrClient, vzInfo)
 	server.StartStream()
 	defer server.Stop()
 

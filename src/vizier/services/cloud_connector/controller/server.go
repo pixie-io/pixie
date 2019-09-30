@@ -12,6 +12,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/utils"
+	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 )
 
 const heartbeatIntervalS = 5 * time.Second
@@ -25,6 +26,7 @@ type VizierInfo interface {
 // Server defines an gRPC server type.
 type Server struct {
 	vzConnClient  vzconnpb.VZConnServiceClient
+	certMgrClient certmgrpb.CertMgrServiceClient
 	vizierID      uuid.UUID
 	jwtSigningKey string
 	hbSeqNum      int64
@@ -34,17 +36,18 @@ type Server struct {
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(vizierID uuid.UUID, jwtSigningKey string, vzConnClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo) *Server {
+func NewServer(vizierID uuid.UUID, jwtSigningKey string, vzConnClient vzconnpb.VZConnServiceClient, certMgrClient certmgrpb.CertMgrServiceClient, vzInfo VizierInfo) *Server {
 	clock := utils.SystemClock{}
-	return NewServerWithClock(vizierID, jwtSigningKey, vzConnClient, vzInfo, clock)
+	return NewServerWithClock(vizierID, jwtSigningKey, vzConnClient, certMgrClient, vzInfo, clock)
 }
 
 // NewServerWithClock creates a new server with the given clock.
-func NewServerWithClock(vizierID uuid.UUID, jwtSigningKey string, vzConnClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, clock utils.Clock) *Server {
+func NewServerWithClock(vizierID uuid.UUID, jwtSigningKey string, vzConnClient vzconnpb.VZConnServiceClient, certMgrClient certmgrpb.CertMgrServiceClient, vzInfo VizierInfo, clock utils.Clock) *Server {
 	return &Server{
 		vizierID:      vizierID,
 		jwtSigningKey: jwtSigningKey,
 		vzConnClient:  vzConnClient,
+		certMgrClient: certMgrClient,
 		hbSeqNum:      0,
 		clock:         clock,
 		quitCh:        make(chan bool),
@@ -82,6 +85,14 @@ func (s *Server) StartStream() {
 	err = s.RegisterVizier(stream)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to register vizier")
+	}
+
+	// Request the SSL certs and then send them cert manager.
+	// TODO(zasgar/michelle): In the future we should update this so that the
+	// cert manager is the one who initiates cert requests.
+	err = s.RequestAndHandleSSLCerts(stream)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to fetch SSL certs")
 	}
 
 	// Send heartbeats.
@@ -207,6 +218,47 @@ func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClien
 	if err != nil {
 		log.WithError(err).Fatal("Did not receive heartbeat ack")
 	}
+}
+
+// RequestAndHandleSSLCerts registers the cluster with VZConn.
+func (s *Server) RequestAndHandleSSLCerts(stream vzconnpb.VZConnService_CloudConnectClient) error {
+	// Send over a request for SSL certs.
+	regReq := &cloudpb.VizierSSLCertRequest{
+		VizierID: utils.ProtoFromUUID(&s.vizierID),
+	}
+	anyMsg, err := types.MarshalAny(regReq)
+	if err != nil {
+		return err
+	}
+	wrappedReq := wrapRequest(anyMsg, "ssl")
+	if err := stream.Send(wrappedReq); err != nil {
+		return err
+	}
+
+	resp, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+
+	sslCertResp := &cloudpb.VizierSSLCertResponse{}
+	err = types.UnmarshalAny(resp.Msg, sslCertResp)
+	if err != nil {
+		return err
+	}
+
+	certMgrReq := &certmgrpb.UpdateCertsRequest{
+		Key:  sslCertResp.Key,
+		Cert: sslCertResp.Cert,
+	}
+	crtMgrResp, err := s.certMgrClient.UpdateCerts(stream.Context(), certMgrReq)
+	if err != nil {
+		return err
+	}
+
+	if !crtMgrResp.OK {
+		return errors.New("Failed to update certs")
+	}
+	return nil
 }
 
 // Stop stops the server and ends the heartbeats.
