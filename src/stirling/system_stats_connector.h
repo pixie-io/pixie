@@ -39,10 +39,10 @@ class SystemStatsConnector : public SourceConnector {
       {"num_threads", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
       {"vsize_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
       {"rss_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
-      {"rchar_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
-      {"wchar_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
-      {"read_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
-      {"write_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
+      {"rchar_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
+      {"wchar_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
+      {"read_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
+      {"write_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
   };
   // clang-format on
   static constexpr auto kProcessStatsTable =
