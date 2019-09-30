@@ -29,7 +29,7 @@ func NewServer(env certmgrenv.CertMgrEnv, k8sAPI K8sAPI) *Server {
 // UpdateCerts updates the proxy certs with the given DNS address.
 func (s *Server) UpdateCerts(ctx context.Context, req *certmgrpb.UpdateCertsRequest) (*certmgrpb.UpdateCertsResponse, error) {
 	// Load secrets.
-	err := s.k8sAPI.CreateTLSSecret("cloud-proxy-tls-certs", req.Key, req.Cert)
+	err := s.k8sAPI.CreateTLSSecret("proxy-tls-certs", req.Key, req.Cert)
 	if err != nil {
 		return nil, err
 	}

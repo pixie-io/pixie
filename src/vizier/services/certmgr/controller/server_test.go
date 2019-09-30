@@ -25,7 +25,7 @@ func TestServer_UpdateCerts(t *testing.T) {
 	}
 
 	mockK8s.EXPECT().
-		CreateTLSSecret("cloud-proxy-tls-certs", "abc", "def").
+		CreateTLSSecret("proxy-tls-certs", "abc", "def").
 		Return(nil)
 
 	mockK8s.EXPECT().
@@ -58,7 +58,7 @@ func TestServer_UpdateCerts_SecretsFailed(t *testing.T) {
 	}
 
 	mockK8s.EXPECT().
-		CreateTLSSecret("cloud-proxy-tls-certs", "abc", "def").
+		CreateTLSSecret("proxy-tls-certs", "abc", "def").
 		Return(errors.New("Could not create secret"))
 
 	resp, err := s.UpdateCerts(context.Background(), req)
@@ -78,7 +78,7 @@ func TestServer_UpdateCerts_NoPods(t *testing.T) {
 	}
 
 	mockK8s.EXPECT().
-		CreateTLSSecret("cloud-proxy-tls-certs", "abc", "def").
+		CreateTLSSecret("proxy-tls-certs", "abc", "def").
 		Return(nil)
 
 	mockK8s.EXPECT().
@@ -102,7 +102,7 @@ func TestServer_UpdateCerts_FailedPodDeletion(t *testing.T) {
 	}
 
 	mockK8s.EXPECT().
-		CreateTLSSecret("cloud-proxy-tls-certs", "abc", "def").
+		CreateTLSSecret("proxy-tls-certs", "abc", "def").
 		Return(nil)
 
 	mockK8s.EXPECT().
