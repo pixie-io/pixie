@@ -69,6 +69,9 @@ func NewMessageProcessor(ctx context.Context, streamID uuid.UUID, vzmgrClient vz
 }
 
 func (m *MessageProcessor) handleRegisterMessage(msg *cloudpb.RegisterVizierRequest) error {
+	m.streamLog.WithField("vizier_id", msg.VizierID).
+		Info("Vizier registration request")
+
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	if err != nil {
 		return err
