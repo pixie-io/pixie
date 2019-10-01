@@ -229,11 +229,14 @@ func (p *PixieCloudLogin) tryBrowserAuth() (string, error) {
 		}
 	}()
 
-	log.Info("Starting browser")
-	err := open.Start(authURL.String())
-	if err != nil {
-		return "", errBrowserFailed
-	}
+	go func() {
+		log.Info("Starting browser")
+		err := open.Run(authURL.String())
+		if err != nil {
+			results <- result{"", errBrowserFailed}
+			close(results)
+		}
+	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
