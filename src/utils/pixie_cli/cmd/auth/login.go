@@ -48,11 +48,11 @@ const authSuccessPage = `
 </html>
 `
 
-// SaveRefreshToken saves the refresh token in default spot.
-func SaveRefreshToken(token *RefreshToken) error {
+// EnsureDefaultAuthFilePath returns and creates the file path is missing.
+func EnsureDefaultAuthFilePath() (string, error) {
 	u, err := user.Current()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	pixieDirPath := filepath.Join(u.HomeDir, pixieAuthPath)
@@ -61,6 +61,16 @@ func SaveRefreshToken(token *RefreshToken) error {
 	}
 
 	pixieAuthFilePath := filepath.Join(pixieDirPath, pixieAuthFile)
+	return pixieAuthFilePath, nil
+}
+
+// SaveRefreshToken saves the refresh token in default spot.
+func SaveRefreshToken(token *RefreshToken) error {
+	pixieAuthFilePath, err := EnsureDefaultAuthFilePath()
+	if err != nil {
+		return err
+	}
+
 	f, err := os.OpenFile(pixieAuthFilePath, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return err
@@ -68,6 +78,26 @@ func SaveRefreshToken(token *RefreshToken) error {
 	defer f.Close()
 
 	return json.NewEncoder(f).Encode(token)
+}
+
+// LoadDefaultCredentials loads the default credentials for the user.
+func LoadDefaultCredentials() (*RefreshToken, error) {
+	pixieAuthFilePath, err := EnsureDefaultAuthFilePath()
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Open(pixieAuthFilePath)
+	if err != nil {
+		log.Fatal("Cannot open auth file. Please run 'auth login'")
+	}
+	defer f.Close()
+
+	token := &RefreshToken{}
+	if err := json.NewDecoder(f).Decode(token); err != nil {
+		return nil, err
+	}
+	// TODO(zasgar): Exchange refresh token for new token type.
+	return token, nil
 }
 
 // LoginCmd is the Login sub-command of Auth.

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
@@ -107,15 +107,10 @@ func CreateTLSSecret(clientset *kubernetes.Clientset, namespace, name string, ke
 // CreateDockerConfigJSONSecret creates a secret in the docker config format.
 // Currently the golang v1.Secret API doesn't perform the massaging of the credentials file that invoking
 // kubectl with a docker-registry secret (like below) does.
-func CreateDockerConfigJSONSecret(clientset *kubernetes.Clientset, namespace, name, credsFile string) {
+func CreateDockerConfigJSONSecret(clientset *kubernetes.Clientset, namespace, name, credsData string) {
 	_, err := clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err == nil {
 		DeleteSecret(clientset, namespace, name)
-	}
-
-	credsData, err := readFile(credsFile)
-	if err != nil {
-		log.WithError(err).Fatal(fmt.Sprintf("Could not read file: %s", credsFile))
 	}
 
 	kcmd := exec.Command("kubectl", "create", "secret", "docker-registry", name, "-n", namespace,

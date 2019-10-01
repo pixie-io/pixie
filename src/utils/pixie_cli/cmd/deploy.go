@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +13,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"google.golang.org/grpc/metadata"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd/auth"
+
+	"google.golang.org/grpc"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/shared/services"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -28,6 +36,51 @@ const (
 	k8sMinVersion    = "1.8"
 	kernelMinVersion = "4.14"
 )
+
+func newVizAuthClient(cloudAddr string) (cloudapipb.VizierImageAuthorizationClient, error) {
+	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
+
+	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := grpc.Dial(cloudAddr, dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return cloudapipb.NewVizierImageAuthorizationClient(c), nil
+}
+
+func mustGetImagePullSecret(cloudAddr string) string {
+	// Make rpc request to the cloud to get creds.
+	client, err := newVizAuthClient(cloudAddr)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to Pixie cloud service")
+	}
+	creds, err := auth.LoadDefaultCredentials()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to get creds")
+	}
+	req := &cloudapipb.GetImageCredentialsRequest{}
+	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", creds.Token))
+
+	resp, err := client.GetImageCredentials(ctxWithCreds, req)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to fetch image credentials")
+	}
+	return resp.Creds
+}
+
+func mustReadCredsFile(credsFile string) string {
+	credsData, err := ioutil.ReadFile(credsFile)
+	if err != nil {
+		log.WithError(err).Fatal(fmt.Sprintf("Could not read file: %s", credsFile))
+	}
+	return string(credsData)
+}
 
 // NewCmdDeploy creates a new "deploy" command.
 func NewCmdDeploy() *cobra.Command {
@@ -57,15 +110,19 @@ func NewCmdDeploy() *cobra.Command {
 			cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
 			clusterID, _ := cmd.Flags().GetString("cluster_id")
 
+			var credsData string
+			if credsFile == "" {
+				credsData = mustGetImagePullSecret(cloudAddr)
+			} else {
+				credsData = mustReadCredsFile(credsFile)
+			}
 			optionallyCreateNamespace(clientset, namespace)
 
 			// Install certs.
 			optionallyInstallCerts(clientset, namespace)
 
-			if credsFile != "" {
-				secretName, _ := cmd.Flags().GetString("secret_name")
-				k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsFile)
-			}
+			secretName, _ := cmd.Flags().GetString("secret_name")
+			k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsData)
 
 			LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace)
 
