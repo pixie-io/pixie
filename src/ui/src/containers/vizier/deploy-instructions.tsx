@@ -30,7 +30,7 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
           <h3>Deployment Instructions</h3>
           <div className='deploy-instructions--instructions' style={{width: '100%'}}>
             <div className='deploy-instructions--notes'>
-              Notes for Alpha Users:
+              Notes for Beta Users:
              <ul>
                 <li>The command uses the Pixie CLI to deploy Pixie on your cluster: </li>
                 <li>Download the
@@ -46,7 +46,7 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
           </div>
           Copy and execute the command below in your K8s cluster's terminal:
             <CodeSnippet showCopy={true} language='bash'>
-              {' chmod +x pixie \n ./pixie auth login --site_name="' + props.sitename + '" \n' +
+              {' chmod +x pixie \n ./pixie auth login --site="' + props.sitename + '" \n' +
                ' ./pixie deploy --cluster_id "' + props.clusterID + '" \\ \n --use_version v0.1.3'}
             </CodeSnippet>
           </div>
