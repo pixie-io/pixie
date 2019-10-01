@@ -3,6 +3,25 @@ Location: gcr.io/pl-dev-infra/demos/microservices-demo-app/*
 All the docker images for the individual components are in the above location
 https://github.com/GoogleCloudPlatform/microservices-demo
 
+# Deploy Hipster-Shop
+You can deploy Hipster-Shop with `skaffold` from inside the original Hipster-Shop repo.
+Make sure that you've created a GKE cluster.
+
+1.  Clone the repo:
+    ```
+    git clone https://github.com/GoogleCloudPlatform/microservices-demo.git
+    ```
+2.  Create a namespace `hipster-shop`:
+    ```
+    kubectl create namespace hipster_shop
+    ```
+3.  Build and deploy Hipster-Shop:
+    ```
+    skaffold run --default-repo=gcr.io/pl-dev-infra/demos/microservices-demo-app \
+    --namespace=hipster-shop --tag=${USER}
+    ```
+    You may customize the namespace or tag to your needs. But the default-repo should be fixed.
+
 # Generating Docker Images
 The microservices demo application comes with support for skaffold.
 To generate docker images that we can use, we can use the skaffold
