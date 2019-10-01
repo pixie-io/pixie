@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
@@ -74,6 +76,9 @@ func main() {
 
 	healthz.RegisterDefaultChecks(mux)
 	s := services.NewPLServer(env, mux)
+	imageAuthServer := &controller.VizierImageAuthSever{}
+	cloudapipb.RegisterVizierImageAuthorizationServer(s.GRPCServer(), imageAuthServer)
+
 	s.Start()
 	s.StopOnInterrupt()
 }

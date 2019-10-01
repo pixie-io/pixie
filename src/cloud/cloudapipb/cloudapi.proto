@@ -35,3 +35,15 @@ message LoginReply {
   // When this login expires.
   int64 expires_at      = 2;
 }
+
+// VizierImageAuthorization is the service responsible for giving authorization to fetch vizier image.
+service VizierImageAuthorization {
+  rpc GetImageCredentials(GetImageCredentialsRequest) returns (GetImageCredentialsResponse) {}
+}
+
+message GetImageCredentialsRequest {}
+
+// GetImageCredentialsResponse returns the docker credentials.
+message GetImageCredentialsResponse {
+  string creds = 1;
+}

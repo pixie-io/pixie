@@ -129,9 +129,89 @@ func (m *LoginReply) GetExpiresAt() int64 {
 	return 0
 }
 
+type GetImageCredentialsRequest struct {
+}
+
+func (m *GetImageCredentialsRequest) Reset()      { *m = GetImageCredentialsRequest{} }
+func (*GetImageCredentialsRequest) ProtoMessage() {}
+func (*GetImageCredentialsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{2}
+}
+func (m *GetImageCredentialsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetImageCredentialsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetImageCredentialsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetImageCredentialsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetImageCredentialsRequest.Merge(m, src)
+}
+func (m *GetImageCredentialsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetImageCredentialsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetImageCredentialsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetImageCredentialsRequest proto.InternalMessageInfo
+
+type GetImageCredentialsResponse struct {
+	Creds string `protobuf:"bytes,1,opt,name=creds,proto3" json:"creds,omitempty"`
+}
+
+func (m *GetImageCredentialsResponse) Reset()      { *m = GetImageCredentialsResponse{} }
+func (*GetImageCredentialsResponse) ProtoMessage() {}
+func (*GetImageCredentialsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{3}
+}
+func (m *GetImageCredentialsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetImageCredentialsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetImageCredentialsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetImageCredentialsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetImageCredentialsResponse.Merge(m, src)
+}
+func (m *GetImageCredentialsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetImageCredentialsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetImageCredentialsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetImageCredentialsResponse proto.InternalMessageInfo
+
+func (m *GetImageCredentialsResponse) GetCreds() string {
+	if m != nil {
+		return m.Creds
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*LoginRequest)(nil), "pl.cloudapi.LoginRequest")
 	proto.RegisterType((*LoginReply)(nil), "pl.cloudapi.LoginReply")
+	proto.RegisterType((*GetImageCredentialsRequest)(nil), "pl.cloudapi.GetImageCredentialsRequest")
+	proto.RegisterType((*GetImageCredentialsResponse)(nil), "pl.cloudapi.GetImageCredentialsResponse")
 }
 
 func init() {
@@ -139,28 +219,34 @@ func init() {
 }
 
 var fileDescriptor_c309ce7890afda1a = []byte{
-	// 336 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x91, 0xb1, 0x6e, 0xea, 0x30,
-	0x18, 0x85, 0xed, 0x8b, 0xb8, 0xba, 0x18, 0x26, 0xeb, 0x4a, 0x97, 0x4b, 0xd5, 0x5f, 0x94, 0x2e,
-	0x2c, 0x4d, 0xa4, 0x56, 0xea, 0x52, 0x75, 0xa0, 0x33, 0x62, 0xa0, 0x9d, 0xba, 0x20, 0x27, 0xb8,
-	0xc1, 0x6a, 0x12, 0xbb, 0xb1, 0x5d, 0xc1, 0xd6, 0x47, 0xe8, 0x63, 0xf4, 0x51, 0x3a, 0x32, 0x32,
-	0x16, 0xb3, 0x74, 0xe4, 0x11, 0x2a, 0x1c, 0x4a, 0x19, 0x58, 0xa2, 0x73, 0xbe, 0xff, 0xe4, 0xd8,
-	0xfa, 0x4d, 0x4e, 0x75, 0x11, 0x87, 0x71, 0x2a, 0xed, 0xb8, 0xfc, 0x32, 0x25, 0x54, 0xb4, 0x93,
-	0x81, 0x2a, 0xa4, 0x91, 0xb4, 0xae, 0xd2, 0xe0, 0x1b, 0xb5, 0xce, 0x12, 0x61, 0x26, 0x36, 0x0a,
-	0x62, 0x99, 0x85, 0x89, 0x4c, 0x64, 0xe8, 0x33, 0x91, 0x7d, 0xf0, 0xce, 0x1b, 0xaf, 0xca, 0x7f,
-	0x5b, 0x6d, 0x7f, 0x80, 0xcc, 0x32, 0x99, 0x87, 0xd6, 0x8a, 0x71, 0x19, 0xf7, 0xb2, 0x4c, 0x74,
-	0x06, 0xa4, 0xd1, 0x97, 0x89, 0xc8, 0x87, 0xfc, 0xc9, 0x72, 0x6d, 0xe8, 0x09, 0x69, 0xb0, 0x38,
-	0xe6, 0x5a, 0x8f, 0x8c, 0x7c, 0xe4, 0x79, 0x13, 0xb7, 0x71, 0xb7, 0x36, 0xac, 0x97, 0xec, 0x6e,
-	0x83, 0xe8, 0x11, 0xa9, 0x69, 0x61, 0xf8, 0x28, 0x67, 0x19, 0x6f, 0x56, 0xfc, 0xfc, 0xcf, 0x06,
-	0x0c, 0x58, 0xc6, 0x3b, 0x3d, 0x42, 0xb6, 0x7d, 0x2a, 0x9d, 0xd1, 0xbf, 0xa4, 0xba, 0x5f, 0x53,
-	0x1a, 0x7a, 0x4c, 0x08, 0x9f, 0x2a, 0x51, 0x70, 0x3d, 0x62, 0xa6, 0xf9, 0xab, 0x8d, 0xbb, 0x95,
-	0x61, 0x6d, 0x4b, 0x7a, 0xe6, 0xbc, 0x4f, 0xea, 0x3d, 0x6b, 0x26, 0xb7, 0xbc, 0x78, 0x16, 0x31,
-	0xa7, 0xd7, 0xa4, 0xea, 0x1b, 0xe9, 0xff, 0x60, 0x6f, 0x13, 0xc1, 0xfe, 0xad, 0x5b, 0xff, 0x0e,
-	0x8d, 0x54, 0x3a, 0xeb, 0xa0, 0x9b, 0x74, 0xbe, 0x04, 0xb4, 0x58, 0x02, 0x5a, 0x2f, 0x01, 0xbf,
-	0x38, 0xc0, 0x6f, 0x0e, 0xf0, 0xbb, 0x03, 0x3c, 0x77, 0x80, 0x3f, 0x1c, 0xe0, 0x4f, 0x07, 0x68,
-	0xed, 0x00, 0xbf, 0xae, 0x00, 0xcd, 0x57, 0x80, 0x16, 0x2b, 0x40, 0xf7, 0x97, 0x4a, 0x4c, 0x05,
-	0x4f, 0x59, 0xa4, 0x03, 0x26, 0xc2, 0x9d, 0x09, 0x0f, 0x3d, 0xd8, 0xd5, 0x8f, 0x8c, 0x7e, 0xfb,
-	0xad, 0x5e, 0x7c, 0x05, 0x00, 0x00, 0xff, 0xff, 0x13, 0x7b, 0x3e, 0x68, 0xda, 0x01, 0x00, 0x00,
+	// 419 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x52, 0x31, 0x8f, 0xd3, 0x30,
+	0x18, 0xb5, 0x39, 0x1d, 0xa2, 0xee, 0x4d, 0x06, 0x89, 0x90, 0x03, 0xab, 0x84, 0x81, 0x2e, 0x24,
+	0xd2, 0x9d, 0xc4, 0x82, 0x18, 0x0a, 0x03, 0x42, 0x3a, 0xdd, 0x50, 0x10, 0x03, 0x4b, 0xe5, 0x24,
+	0x1f, 0x39, 0x43, 0x12, 0x1b, 0xdb, 0x41, 0x6d, 0x27, 0x26, 0x66, 0x7e, 0x06, 0x3f, 0x85, 0xb1,
+	0x63, 0x47, 0x9a, 0x2e, 0x8c, 0xfd, 0x09, 0x28, 0x4e, 0x5b, 0x8a, 0x14, 0x74, 0x4b, 0xf4, 0xde,
+	0xfb, 0x5e, 0xde, 0xf7, 0x6c, 0x99, 0x3c, 0x32, 0x3a, 0x89, 0x92, 0x5c, 0x56, 0x69, 0xfb, 0xe5,
+	0x4a, 0xa8, 0x78, 0x0f, 0x43, 0xa5, 0xa5, 0x95, 0xb4, 0xaf, 0xf2, 0x70, 0x27, 0xf9, 0x4f, 0x32,
+	0x61, 0xaf, 0xaa, 0x38, 0x4c, 0x64, 0x11, 0x65, 0x32, 0x93, 0x91, 0xf3, 0xc4, 0xd5, 0x07, 0xc7,
+	0x1c, 0x71, 0xa8, 0xfd, 0xd7, 0x1f, 0xb8, 0x05, 0xb2, 0x28, 0x64, 0x19, 0x55, 0x95, 0x48, 0x5b,
+	0xbb, 0x83, 0xad, 0x23, 0xb8, 0x24, 0x27, 0x17, 0x32, 0x13, 0xe5, 0x18, 0x3e, 0x57, 0x60, 0x2c,
+	0x7d, 0x48, 0x4e, 0x78, 0x92, 0x80, 0x31, 0x13, 0x2b, 0x3f, 0x41, 0xe9, 0xe1, 0x01, 0x1e, 0xf6,
+	0xc6, 0xfd, 0x56, 0x7b, 0xdb, 0x48, 0xf4, 0x94, 0xf4, 0x8c, 0xb0, 0x30, 0x29, 0x79, 0x01, 0xde,
+	0x91, 0x9b, 0xdf, 0x6a, 0x84, 0x4b, 0x5e, 0x40, 0x30, 0x22, 0x64, 0x9b, 0xa7, 0xf2, 0x19, 0xbd,
+	0x43, 0x8e, 0x0f, 0x63, 0x5a, 0x42, 0x1f, 0x10, 0x02, 0x53, 0x25, 0x34, 0x98, 0x09, 0xb7, 0xde,
+	0x8d, 0x01, 0x1e, 0x1e, 0x8d, 0x7b, 0x5b, 0x65, 0x64, 0x83, 0xfb, 0xc4, 0x7f, 0x05, 0xf6, 0x75,
+	0xc1, 0x33, 0x78, 0xa9, 0x21, 0x85, 0xd2, 0x0a, 0x9e, 0x9b, 0x6d, 0xc1, 0xe0, 0x9c, 0x9c, 0x76,
+	0x4e, 0x8d, 0x92, 0xa5, 0x81, 0x66, 0x63, 0xa2, 0x21, 0x35, 0xbb, 0x8d, 0x8e, 0x9c, 0x5d, 0x90,
+	0xfe, 0xa8, 0xb2, 0x57, 0x6f, 0x40, 0x7f, 0x11, 0x09, 0xd0, 0xe7, 0xe4, 0xd8, 0x95, 0xa4, 0xf7,
+	0xc2, 0x83, 0xcb, 0x0d, 0x0f, 0x2f, 0xc2, 0xbf, 0xdb, 0x35, 0x52, 0xf9, 0x2c, 0x40, 0x67, 0xdf,
+	0x30, 0xf1, 0xde, 0x89, 0xb9, 0x00, 0xed, 0x6a, 0x34, 0xc9, 0x52, 0x8b, 0x39, 0xb7, 0x42, 0x96,
+	0xf4, 0x23, 0xb9, 0xdd, 0xd1, 0x8f, 0x3e, 0xfe, 0x27, 0xee, 0xff, 0xe7, 0xf3, 0x87, 0xd7, 0x1b,
+	0xdb, 0xa3, 0x06, 0xe8, 0x45, 0xbe, 0x58, 0x31, 0xb4, 0x5c, 0x31, 0xb4, 0x59, 0x31, 0xfc, 0xb5,
+	0x66, 0xf8, 0x47, 0xcd, 0xf0, 0xcf, 0x9a, 0xe1, 0x45, 0xcd, 0xf0, 0xaf, 0x9a, 0xe1, 0xdf, 0x35,
+	0x43, 0x9b, 0x9a, 0xe1, 0xef, 0x6b, 0x86, 0x16, 0x6b, 0x86, 0x96, 0x6b, 0x86, 0xde, 0x3f, 0x55,
+	0x62, 0x2a, 0x20, 0xe7, 0xb1, 0x09, 0xb9, 0x88, 0xf6, 0x24, 0xea, 0x7a, 0x8c, 0xcf, 0xfe, 0xc2,
+	0xf8, 0xa6, 0x7b, 0x31, 0xe7, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x42, 0x02, 0x02, 0xbc, 0xb6,
+	0x02, 0x00, 0x00,
 }
 
 func (this *LoginRequest) Equal(that interface{}) bool {
@@ -217,6 +303,51 @@ func (this *LoginReply) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *GetImageCredentialsRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetImageCredentialsRequest)
+	if !ok {
+		that2, ok := that.(GetImageCredentialsRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *GetImageCredentialsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetImageCredentialsResponse)
+	if !ok {
+		that2, ok := that.(GetImageCredentialsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Creds != that1.Creds {
+		return false
+	}
+	return true
+}
 func (this *LoginRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -236,6 +367,25 @@ func (this *LoginReply) GoString() string {
 	s = append(s, "&cloudapipb.LoginReply{")
 	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
 	s = append(s, "ExpiresAt: "+fmt.Sprintf("%#v", this.ExpiresAt)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetImageCredentialsRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&cloudapipb.GetImageCredentialsRequest{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetImageCredentialsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cloudapipb.GetImageCredentialsResponse{")
+	s = append(s, "Creds: "+fmt.Sprintf("%#v", this.Creds)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -320,6 +470,70 @@ var _AuthService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "src/cloud/cloudapipb/cloudapi.proto",
 }
 
+// VizierImageAuthorizationClient is the client API for VizierImageAuthorization service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type VizierImageAuthorizationClient interface {
+	GetImageCredentials(ctx context.Context, in *GetImageCredentialsRequest, opts ...grpc.CallOption) (*GetImageCredentialsResponse, error)
+}
+
+type vizierImageAuthorizationClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewVizierImageAuthorizationClient(cc *grpc.ClientConn) VizierImageAuthorizationClient {
+	return &vizierImageAuthorizationClient{cc}
+}
+
+func (c *vizierImageAuthorizationClient) GetImageCredentials(ctx context.Context, in *GetImageCredentialsRequest, opts ...grpc.CallOption) (*GetImageCredentialsResponse, error) {
+	out := new(GetImageCredentialsResponse)
+	err := c.cc.Invoke(ctx, "/pl.cloudapi.VizierImageAuthorization/GetImageCredentials", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// VizierImageAuthorizationServer is the server API for VizierImageAuthorization service.
+type VizierImageAuthorizationServer interface {
+	GetImageCredentials(context.Context, *GetImageCredentialsRequest) (*GetImageCredentialsResponse, error)
+}
+
+func RegisterVizierImageAuthorizationServer(s *grpc.Server, srv VizierImageAuthorizationServer) {
+	s.RegisterService(&_VizierImageAuthorization_serviceDesc, srv)
+}
+
+func _VizierImageAuthorization_GetImageCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetImageCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VizierImageAuthorizationServer).GetImageCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.cloudapi.VizierImageAuthorization/GetImageCredentials",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VizierImageAuthorizationServer).GetImageCredentials(ctx, req.(*GetImageCredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _VizierImageAuthorization_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "pl.cloudapi.VizierImageAuthorization",
+	HandlerType: (*VizierImageAuthorizationServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetImageCredentials",
+			Handler:    _VizierImageAuthorization_GetImageCredentials_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "src/cloud/cloudapipb/cloudapi.proto",
+}
+
 func (m *LoginRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -379,6 +593,48 @@ func (m *LoginReply) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *GetImageCredentialsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetImageCredentialsRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
+func (m *GetImageCredentialsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetImageCredentialsResponse) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Creds) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.Creds)))
+		i += copy(dAtA[i:], m.Creds)
+	}
+	return i, nil
+}
+
 func encodeVarintCloudapi(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -421,6 +677,28 @@ func (m *LoginReply) Size() (n int) {
 	return n
 }
 
+func (m *GetImageCredentialsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *GetImageCredentialsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creds)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	return n
+}
+
 func sovCloudapi(x uint64) (n int) {
 	for {
 		n++
@@ -452,6 +730,25 @@ func (this *LoginReply) String() string {
 	s := strings.Join([]string{`&LoginReply{`,
 		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
 		`ExpiresAt:` + fmt.Sprintf("%v", this.ExpiresAt) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetImageCredentialsRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetImageCredentialsRequest{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetImageCredentialsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetImageCredentialsResponse{`,
+		`Creds:` + fmt.Sprintf("%v", this.Creds) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -661,6 +958,144 @@ func (m *LoginReply) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetImageCredentialsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetImageCredentialsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetImageCredentialsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetImageCredentialsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetImageCredentialsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetImageCredentialsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creds", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creds = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCloudapi(dAtA[iNdEx:])
