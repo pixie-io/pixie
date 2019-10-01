@@ -104,7 +104,6 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controller.AuthLoginHandler)
 	h.ServeHTTP(rr, req)
-	fmt.Printf(rr.Body.String())
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
 

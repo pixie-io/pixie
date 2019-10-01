@@ -25,7 +25,6 @@ func init() {
 	pflag.String("secret_name", "pl-image-secret", "The name of the secret used to access the Pixie images")
 	pflag.String("cluster_id", "", "The ID of the cluster")
 	pflag.Bool("deps_only", false, "Deploy only the cluster dependencies, not the agents")
-	pflag.String("cloud_addr", "withpixie.ai:443", "The address of Pixie Cloud")
 	pflag.Bool("y", false, "Whether to accept all user input")
 
 	// Flags for delete.
@@ -34,14 +33,11 @@ func init() {
 	// Flags for download-ca.
 	pflag.String("ca_path", "", "Directory to save the CA in")
 
-	pflag.Parse()
-
-	// Must call after all flags are setup.
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("PL")
-	viper.BindPFlags(pflag.CommandLine)
-
 	RootCmd.AddCommand(NewCmdVersion())
+	RootCmd.PersistentFlags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
+	viper.BindPFlag("cloud_addr", RootCmd.PersistentFlags().Lookup("cloud_addr"))
+
+	RootCmd.AddCommand(AuthCmd)
 
 	installCertsCmd := NewCmdInstallCerts()
 	RootCmd.AddCommand(installCertsCmd)
@@ -76,8 +72,6 @@ func init() {
 	viper.BindPFlag("cluster_id", deployCmd.Flags().Lookup("cluster_id"))
 	deployCmd.Flags().BoolP("deps_only", "d", false, "Deploy only the cluster dependencies, not the agents")
 	viper.BindPFlag("deps_only", deployCmd.Flags().Lookup("deps_only"))
-	deployCmd.Flags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
-	viper.BindPFlag("cloud_addr", deployCmd.Flags().Lookup("cloud_addr"))
 	deployCmd.Flags().BoolP("y", "y", false, "Whether to accept all user input")
 	viper.BindPFlag("y", deployCmd.Flags().Lookup("y"))
 
@@ -97,8 +91,7 @@ func init() {
 	RootCmd.AddCommand(loadClusterSecretsCmd)
 	loadClusterSecretsCmd.Flags().StringP("cluster_id", "i", "", "The ID of the cluster")
 	viper.BindPFlag("cluster_id", loadClusterSecretsCmd.Flags().Lookup("cluster_id"))
-	loadClusterSecretsCmd.Flags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
-	viper.BindPFlag("cloud_addr", loadClusterSecretsCmd.Flags().Lookup("cloud_addr"))
+
 	loadClusterSecretsCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
 	viper.BindPFlag("namespace", loadClusterSecretsCmd.Flags().Lookup("namespace"))
 }
@@ -113,6 +106,11 @@ var RootCmd = &cobra.Command{
 
 // Execute is the main function for the Cobra CLI.
 func Execute() {
+	// Must call after all flags are setup.
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("PL")
+	viper.BindPFlags(pflag.CommandLine)
+
 	if err := RootCmd.Execute(); err != nil {
 		log.WithError(err).Fatal("Error executing command")
 	}
