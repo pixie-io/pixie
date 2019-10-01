@@ -57,10 +57,19 @@ spec:
               configMapKeyRef:
                 name: pl-service-config
                 key: PL_PROFILE_SERVICE
+          - name: PL_VIZIER_IMAGE_SECRET_PATH
+            value: /vizier-image-secret
+          - name: PL_VIZIER_IMAGE_SECRET_FILE
+            value: vizier_image_secret.json
         volumeMounts:
             - name: certs
               mountPath: /certs
+            - name: vizier-image-secret
+              mountPath: /vizier-image-secret
       volumes:
         - name: certs
           secret:
             secretName: service-tls-certs
+        - name: vizier-image-secret
+          secret:
+            secretName: vizier-image-secret
