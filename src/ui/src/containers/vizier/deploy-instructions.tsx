@@ -42,16 +42,12 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
                     </a>{' )'}.
                 </li>
                 <li>The Pixie CLI is a Linux binary, so make sure you run it on a Linux machine.</li>
-                <li>Include the path to the credentials file where it says {'/*<credentials file path>*/'}.</li>
-                <li>Once Pixie is deployed, you must manually validate the SSL certs (see instructions
-                  <a href='/docs/admin/authentication/'> here</a>).
-                </li>
              </ul>
           </div>
           Copy and execute the command below in your K8s cluster's terminal:
             <CodeSnippet showCopy={true} language='bash'>
-              {' chmod +x pixie \n ./pixie deploy --cluster_id "' + props.clusterID +
-                '" \\ \n --use_version v0.1.3 --credentials_file /*<credentials file path>*/'}
+              {' chmod +x pixie \n ./pixie auth login --site_name="' + props.sitename + '" \n' +
+               './pixie deploy --cluster_id "' + props.clusterID + '" --use_version v0.1.3'}
             </CodeSnippet>
           </div>
           <div className='deploy-instructions--footer' style={{width: '100%'}}>
