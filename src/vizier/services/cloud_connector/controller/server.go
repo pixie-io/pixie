@@ -137,16 +137,21 @@ func (s *Server) RegisterVizier(stream vzconnpb.VZConnService_CloudConnectClient
 			if err != nil {
 				return err
 			}
+
 			registerAck := &cloudpb.RegisterVizierAck{}
 			err = types.UnmarshalAny(resp.Msg, registerAck)
 			if err != nil {
 				return err
 			}
 
-			if registerAck.Status != cloudpb.ST_OK {
-				return errors.New("vizier registration unsuccessful")
+			switch registerAck.Status {
+			case cloudpb.ST_FAILED_NOT_FOUND:
+				return errors.New("registration not found, cluster unknown in pixie-cloud")
+			case cloudpb.ST_OK:
+				return nil
+			default:
+				return errors.New("registration unsuccessful: " + err.Error())
 			}
-			return nil
 		}, heartbeatWaitS)
 
 		if err == nil {
