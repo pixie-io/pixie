@@ -22,6 +22,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+using ::pl::table_store::schema::Relation;
 using ::pl::testing::proto::EqualsProto;
 using planpb::testutils::CompareLogicalPlans;
 using ::testing::_;
@@ -60,34 +61,29 @@ class CompilerTest : public ::testing::Test {
     SetUpRegistryInfo();
 
     auto rel_map = std::make_unique<RelationMap>();
-    rel_map->emplace("sequences", table_store::schema::Relation(
-                                      std::vector<types::DataType>({
-                                          types::DataType::TIME64NS,
-                                          types::DataType::FLOAT64,
-                                          types::DataType::FLOAT64,
-                                      }),
-                                      std::vector<std::string>({"time_", "xmod10", "PIx"})));
+    rel_map->emplace("sequences", Relation(
+                                      {
+                                          types::TIME64NS,
+                                          types::FLOAT64,
+                                          types::FLOAT64,
+                                      },
+                                      {"time_", "xmod10", "PIx"}));
 
-    rel_map->emplace(
-        "cpu", table_store::schema::Relation(
-                   std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
-                                                 types::DataType::FLOAT64, types::DataType::FLOAT64,
-                                                 types::DataType::UINT128}),
-                   std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2", "upid"})));
-    cgroups_relation_ = table_store::schema::Relation(
-        std::vector<types::DataType>(
-            {types::DataType::TIME64NS, types::DataType::STRING, types::DataType::STRING}),
-        std::vector<std::string>({"time_", "qos", "_attr_pod_id"}));
+    rel_map->emplace("cpu", Relation({types::INT64, types::FLOAT64, types::FLOAT64, types::FLOAT64,
+                                      types::UINT128},
+                                     {"count", "cpu0", "cpu1", "cpu2", "upid"}));
+    cgroups_relation_ =
+        Relation({types::TIME64NS, types::STRING, types::STRING}, {"time_", "qos", "_attr_pod_id"});
 
     rel_map->emplace("cgroups", cgroups_relation_);
 
-    rel_map->emplace(
-        "http_table",
-        table_store::schema::Relation(
-            std::vector<types::DataType>({types::DataType::TIME64NS, types::DataType::UINT128,
-                                          types::DataType::INT64, types::DataType::INT64}),
-            std::vector<std::string>(
-                {"time_", "upid", "http_resp_status", "http_resp_latency_ns"})));
+    rel_map->emplace("http_table",
+                     Relation({types::TIME64NS, types::UINT128, types::INT64, types::INT64},
+
+                              {"time_", "upid", "http_resp_status", "http_resp_latency_ns"}));
+    rel_map->emplace("network", Relation({types::UINT128, types::INT64, types::INT64, types::INT64},
+                                         {MetadataProperty::kUniquePIDColumn, "bytes_in",
+                                          "bytes_out", "agent_id"}));
 
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
 
@@ -97,7 +93,7 @@ class CompilerTest : public ::testing::Test {
   std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   Compiler compiler_;
-  table_store::schema::Relation cgroups_relation_;
+  Relation cgroups_relation_;
 };
 
 const char* kExpectedLogicalPlan = R"(

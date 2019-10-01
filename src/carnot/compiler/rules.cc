@@ -199,6 +199,9 @@ StatusOr<bool> OperatorRelationRule::SetJoin(JoinIR* join_node) const {
 
   for (size_t col_idx = 0; col_idx < join_node->output_columns().size(); ++col_idx) {
     const ColumnIR* col = join_node->output_columns()[col_idx];
+    if (!col->IsDataTypeEvaluated()) {
+      return false;
+    }
     const std::string& new_col_name = join_node->column_names()[col_idx];
     Relation* col_relation;
     if (col->container_op_parent_idx() == 0) {
@@ -206,7 +209,6 @@ StatusOr<bool> OperatorRelationRule::SetJoin(JoinIR* join_node) const {
     } else {
       col_relation = &right_relation;
     }
-
     out_relation.AddColumn(col_relation->GetColumnType(col->col_name()), new_col_name);
   }
 

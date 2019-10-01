@@ -178,6 +178,7 @@ class AnalyzerTest : public ::testing::Test {
                         Analyzer::Create(compiler_state_.get()));
     return analyzer->Execute(ir_graph.get());
   }
+  // TODO(philkuz) remove this  -> we now have a function for this in the Relation class.
   bool RelationEquality(const table_store::schema::Relation& r1,
                         const table_store::schema::Relation& r2) {
     std::vector<std::string> r1_names;
@@ -1115,6 +1116,32 @@ TEST_F(AnalyzerTest, join_equal_condition_expression) {
       HasCompilerError(
           "Expression pl.equal(Func,Column) not supported as a condition in the Join. Only "
           "equality of columns and the AND compositions of equality expressions are supported."));
+}
+const char* kJoinMissingParentColumnOutCols = R"query(
+src1 = From(table='cpu', select=['upid', 'cpu0','cpu1', 'agent_id'])
+src2 = From(table='network', select=['upid', 'bytes_in', 'bytes_out', 'agent_id'])
+src1 = src1.Map(fn=lambda r: {
+  'upid': r.upid,
+  'cpu0_ms': r.cpu0,
+})
+join = src1.Join(src2,  type='inner',
+                      cond=lambda r1, r2: r1.upid == r2.upid,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'missingcol': r1.thiscoldoesnotexist,
+                      })
+join.Result(name='joined')
+)query";
+
+TEST_F(AnalyzerTest, join_missing_parent_column_output_cols) {
+  auto ir_graph_status = CompileGraph(kJoinMissingParentColumnOutCols);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_NOT_OK(analyzer_status);
+  LOG(INFO) << analyzer_status.ToString();
+  EXPECT_THAT(analyzer_status,
+              HasCompilerError("Column 'thiscoldoesnotexist' not found in relation of Map(id=14)"));
 }
 
 }  // namespace compiler

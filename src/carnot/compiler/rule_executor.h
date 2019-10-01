@@ -82,6 +82,7 @@ class RuleBatch {
     rules_.push_back(std::move(rule));
     return raw_rule;
   }
+  const std::string name() const { return name_; }
 
  private:
   std::string name_;
