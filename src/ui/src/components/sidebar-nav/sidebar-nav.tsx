@@ -2,6 +2,7 @@ import * as React from 'react';
 import './sidebar-nav.scss';
 
 import {Dropdown} from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 
 interface StringMap {
   [s: string]: string;
@@ -12,6 +13,7 @@ export interface SidebarNavItem {
   selectedImg: string;
   unselectedImg: string;
   menu?: StringMap; // Map from menu item name -> link to redirect to.
+  redirect?: boolean; // Whether this should be a hard-redirect rather than a RouteLink.
 }
 
 export interface SidebarMenuItemProps {
@@ -45,9 +47,9 @@ class DropdownToggle extends React.Component<DropdownToggleProps, {}> {
 
   render() {
     return (
-      <a href='' onClick={this.handleClick}>
+      <div className='sidebar-nav--link' onClick={this.handleClick}>
          {this.props.children}
-      </a>
+      </div>
     );
   }
 }
@@ -80,21 +82,28 @@ export class SidebarItem extends React.Component<SidebarNavItem, {}> {
   }
 
   render() {
+    let sidebarItem;
+    if (this.props.link) {
+      const linkImg = (
+        <img src={window.location.pathname === this.props.link ?
+          this.props.selectedImg : this.props.unselectedImg }/>
+      );
+      sidebarItem = this.props.redirect ?
+        (<div className='sidebar-nav--link' onClick={this.handleClick.bind(this)}>{linkImg}</div>) :
+        (<Link to={this.props.link}>{linkImg}</Link>);
+    } else {
+      sidebarItem = (
+        <SidebarMenuItem
+          menu={this.props.menu}
+          unselectedImg={this.props.unselectedImg}
+          selectedImg={this.props.selectedImg}
+        />
+      );
+    }
+
     return (
       <div className='sidebar-nav--item'>
-        {
-          this.props.link ?
-            <div className='sidebar-nav--link' onClick={this.handleClick.bind(this)}>
-              <img src={window.location.pathname === this.props.link ?
-                this.props.selectedImg : this.props.unselectedImg }/>
-            </div> :
-            <SidebarMenuItem
-              menu={this.props.menu}
-              unselectedImg={this.props.unselectedImg}
-              selectedImg={this.props.selectedImg}
-            />
-        }
-
+        { sidebarItem }
       </div>);
   }
 }
@@ -118,6 +127,7 @@ export class SidebarNav extends React.Component<SidebarNavProps, {}> {
               selectedImg={item.selectedImg}
               unselectedImg={item.unselectedImg}
               menu={item.menu}
+              redirect={item.redirect}
             />;
           },
         )}
@@ -129,6 +139,7 @@ export class SidebarNav extends React.Component<SidebarNavProps, {}> {
               selectedImg={item.selectedImg}
               unselectedImg={item.unselectedImg}
               menu={item.menu}
+              redirect={item.redirect}
             />;
           },
         )}

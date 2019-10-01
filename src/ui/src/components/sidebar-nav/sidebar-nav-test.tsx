@@ -1,6 +1,7 @@
 import {shallow} from 'enzyme';
 import * as React from 'react';
 import {Dropdown} from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import {SidebarItem, SidebarMenuItem, SidebarNav} from './sidebar-nav';
 
 describe('<SidebarNav/> test', () => {
@@ -28,13 +29,25 @@ describe('<SidebarNav/> test', () => {
 });
 
 describe('<SidebarItem/> test', () => {
-  it('should show links', () => {
+  it('should show redirect links', () => {
     const wrapper = shallow(<SidebarItem
       link='/'
+      redirect={true}
       selectedImg='selectedImg'
       unselectedImg='unselectedImg'
     />);
     expect(wrapper.find('.sidebar-nav--link')).toHaveLength(1);
+    expect(wrapper.find(SidebarMenuItem)).toHaveLength(0);
+  });
+
+  it('should show react links', () => {
+    const wrapper = shallow(<SidebarItem
+      link='/abcd'
+      selectedImg='selectedImg'
+      unselectedImg='unselectedImg'
+    />);
+    expect(wrapper.find(Link)).toHaveLength(1);
+    expect(wrapper.find(Link).at(0).prop('to')).toEqual('/abcd');
     expect(wrapper.find(SidebarMenuItem)).toHaveLength(0);
   });
 

@@ -90,11 +90,7 @@ export class VizierMain extends React.Component<VizierMainProps, {}> {
     return (
       <Query context={{clientName: 'vizier'}} query={CHECK_VIZIER} pollInterval={2500}>
         {({ loading, error, data }) => {
-          if (loading) {
-            return <div></div>;
-          }
-
-          if (error && error.networkError) {
+          if (loading || (error && error.networkError)) {
             // TODO(michelle): Make a separate HTTP request to Vizier so we can get a better error message
             // for Vizier's status.
             const dnsMsg = 'Setting up DNS records for cluster...';
@@ -109,7 +105,7 @@ export class VizierMain extends React.Component<VizierMainProps, {}> {
               ]}
               footerItems={[
                 { link: '/vizier/agents', selectedImg: infoImage, unselectedImg: infoImage },
-                { link: '/docs/getting-started/', selectedImg: docsImage, unselectedImg: docsImage },
+                { link: '/docs/getting-started/', selectedImg: docsImage, unselectedImg: docsImage, redirect: true },
                 { selectedImg: userImage, unselectedImg: userImage, menu: {'Sign out': '/logout'}},
               ]}
             />
