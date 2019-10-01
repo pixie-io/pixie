@@ -88,14 +88,19 @@ const ClusterInstructions = (props: ClusterInstructionsProps) => (
 export class VizierMain extends React.Component<VizierMainProps, {}> {
   render() {
     return (
-      <Query context={{clientName: 'vizier'}} query={CHECK_VIZIER}>
+      <Query context={{clientName: 'vizier'}} query={CHECK_VIZIER} pollInterval={2500}>
         {({ loading, error, data }) => {
-          if (loading || error) {
+          if (loading) {
+            return <div></div>;
+          }
+
+          if (error && error.networkError) {
             // TODO(michelle): Make a separate HTTP request to Vizier so we can get a better error message
             // for Vizier's status.
             const dnsMsg = 'Setting up DNS records for cluster...';
             return <ClusterInstructions message={dnsMsg}/>;
           }
+
           return (<div className='vizier'>
             <SidebarNav
               logo = {logoImage}
