@@ -22,8 +22,6 @@ go_test(
     name = "go_default_test",
     srcs = ["processor_test.go"],
     embed = [":go_default_library"],
-    # keep
-    tags = ["manual"],
     deps = [
         "//src/cloud/cloudpb:cloud_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",

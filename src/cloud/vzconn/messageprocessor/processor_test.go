@@ -59,6 +59,8 @@ func (g *goRoutineTestReporter) Fatalf(format string, args ...interface{}) {
 }
 
 func TestMessageProcessor(t *testing.T) {
+	// TODO(zasgar/michelle): Fix this test.
+	t.Skip("This test is currently unstable.")
 	u := uuid.NewV4()
 	registerReq := &cloudpb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUID(&u),
