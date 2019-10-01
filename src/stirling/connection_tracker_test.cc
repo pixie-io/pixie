@@ -147,8 +147,6 @@ class ConnectionTrackerTest : public ::testing::Test {
       ConstStringView("\x0\x0\x0\x1\x5\x0\x0\x0\x1");
   static constexpr std::string_view kHTTP2EndStreamDataFrame =
       ConstStringView("\x0\x0\x0\x0\x1\x0\x0\x0\x1");
-
-  inline static const auto kDummyConnections = std::map<int, system::SocketInfo>();
 };
 
 TEST_F(ConnectionTrackerTest, timestamp_test) {
@@ -625,7 +623,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   tracker.AddDataEvent(std::move(resp1));
 
   req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
-  tracker.IterationTick(nullptr, kDummyConnections);
+  tracker.IterationPostTick();
 
   ASSERT_EQ(2, req_resp_pairs.size());
   ASSERT_FALSE(tracker.IsZombie());
@@ -638,7 +636,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   // All future calls to ProcessMessages() should produce no results.
 
   req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
-  tracker.IterationTick(nullptr, kDummyConnections);
+  tracker.IterationPostTick();
 
   ASSERT_EQ(0, req_resp_pairs.size());
   ASSERT_FALSE(tracker.IsZombie());
@@ -650,7 +648,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   // The tracker should, however, still process the close event.
 
   req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
-  tracker.IterationTick(nullptr, kDummyConnections);
+  tracker.IterationPostTick();
 
   ASSERT_EQ(0, req_resp_pairs.size());
   ASSERT_TRUE(tracker.IsZombie());

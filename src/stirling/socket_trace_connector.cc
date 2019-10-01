@@ -393,6 +393,8 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, TrafficProtoco
         continue;
       }
 
+      tracker.IterationPreTick(proc_parser_.get(), *socket_connections_);
+
       // Don't try to extract and parse messages when template type is nullptr_t.
       // Template parameter of nullptr_t is used to process connections with unknown protocols.
       // This is required to clean-up old connections.
@@ -411,7 +413,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, TrafficProtoco
         PL_UNUSED(data_table);
       }
 
-      tracker.IterationTick(proc_parser_.get(), *socket_connections_);
+      tracker.IterationPostTick();
 
       // Only the most recent generation of a connection on a PID+FD should be active.
       // Mark all others for death (after having their data processed, of course).

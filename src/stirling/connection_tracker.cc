@@ -370,8 +370,16 @@ bool ConnectionTracker::ReadyForDestruction() const {
   return death_countdown_ == 0;
 }
 
-void ConnectionTracker::IterationTick(system::ProcParser* proc_parser,
-                                      const std::map<int, system::SocketInfo>& connections) {
+void ConnectionTracker::IterationPreTick(system::ProcParser* proc_parser,
+                                         const std::map<int, system::SocketInfo>& connections) {
+  // If remote_addr is missing, it means the connect/accept was not traced.
+  // Attempt to infer the connection information, to populate remote_addr.
+  if (open_info_.remote_addr == "-") {
+    InferConnInfo(proc_parser, connections);
+  }
+}
+
+void ConnectionTracker::IterationPostTick() {
   if (death_countdown_ > 0) {
     death_countdown_--;
   }
@@ -382,12 +390,6 @@ void ConnectionTracker::IterationTick(system::ProcParser* proc_parser,
 
   if (!disabled() && (send_data().IsEOS() || recv_data().IsEOS())) {
     Disable("End-of-stream");
-  }
-
-  // If remote_addr is missing, it means the connect/accept was not traced.
-  // Attempt to infer the connection information, to populate remote_addr.
-  if (open_info_.remote_addr == "-") {
-    InferConnInfo(proc_parser, connections);
   }
 }
 
@@ -409,10 +411,7 @@ void ConnectionTracker::HandleInactivity() {
 
 void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
                                       const std::map<int, system::SocketInfo>& connections) {
-  // TODO(oazizi): Convert this to DCHECK, and fix tests to pass in a proc parser.
-  if (proc_parser == nullptr) {
-    return;
-  }
+  DCHECK(proc_parser != nullptr);
 
   if (conn_resolution_failed_) {
     // We've previously tried and failed to perform connection inference,

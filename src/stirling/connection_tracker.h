@@ -442,13 +442,20 @@ class ConnectionTracker {
 
   /**
    * @brief Updates the any state that changes per iteration on this connection tracker.
-   * Should be called once per sampling (PerfBuffer read).
+   * Should be called once per sampling, after ProcessMessages().
+   */
+  void IterationPostTick();
+
+  /**
+   * @brief Performs any preprocessing that should happen per iteration on this
+   * connection tracker.
+   * Should be called once per sampling, before ProcessMessages().
    *
    * @param proc_parser Pointer to a proc_parser for access to /proc filesystem.
    * @param connections A map of inodes to endpoint information.
    */
-  void IterationTick(system::ProcParser* proc_parser,
-                     const std::map<int, system::SocketInfo>& connections);
+  void IterationPreTick(system::ProcParser* proc_parser,
+                        const std::map<int, system::SocketInfo>& connections);
 
   /**
    * @brief Sets a the duration after which a connection is deemed to be inactive.
