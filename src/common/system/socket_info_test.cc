@@ -65,11 +65,11 @@ TEST(NetlinkSocketProberTest, EstablishedConnection) {
   std::string server_endpoint = AddrPortStr(server.addr(), server.port());
 
   NetlinkSocketProber socket_prober;
-  auto s = socket_prober.InetConnections();
+  std::map<int, SocketInfo> socket_info_entries;
+  auto s = socket_prober.InetConnections(&socket_info_entries);
   ASSERT_OK(s);
-  std::unique_ptr<std::map<int, SocketInfo>> socket_info_entries = s.ConsumeValueOrDie();
 
-  EXPECT_THAT(*socket_info_entries, Contains(HasLocalEndpoint(client_endpoint)));
+  EXPECT_THAT(socket_info_entries, Contains(HasLocalEndpoint(client_endpoint)));
 
   client.Close();
   server.Close();
@@ -89,11 +89,11 @@ TEST(NetlinkSocketProberTest, ClosedConnection) {
   server.Close();
 
   NetlinkSocketProber socket_prober;
-  auto s = socket_prober.InetConnections();
+  std::map<int, SocketInfo> socket_info_entries;
+  auto s = socket_prober.InetConnections(&socket_info_entries);
   ASSERT_OK(s);
-  std::unique_ptr<std::map<int, SocketInfo>> socket_info_entries = s.ConsumeValueOrDie();
 
-  EXPECT_THAT(*socket_info_entries, Not(Contains(HasLocalEndpoint(client_endpoint))));
+  EXPECT_THAT(socket_info_entries, Not(Contains(HasLocalEndpoint(client_endpoint))));
 }
 
 }  // namespace system

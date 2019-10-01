@@ -243,7 +243,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   std::unique_ptr<system::NetlinkSocketProber> netlink_socket_prober_;
 
-  std::unique_ptr<std::map<int, system::SocketInfo> > inet_connections_;
+  std::unique_ptr<std::map<int, system::SocketInfo> > socket_connections_;
 
   std::unique_ptr<system::ProcParser> proc_parser_;
 

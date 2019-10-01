@@ -19,6 +19,7 @@
 
 DECLARE_uint32(messages_size_limit_bytes);
 DECLARE_uint32(messages_expiration_duration_secs);
+DECLARE_bool(enable_unix_domain_sockets);
 
 namespace pl {
 namespace stirling {

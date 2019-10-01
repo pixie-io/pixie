@@ -27,6 +27,8 @@ DEFINE_uint32(messages_size_limit_bytes, 1024 * 1024,
 DEFINE_uint32(messages_expiration_duration_secs, 10 * 60,
               "The duration for which a cached message to be erased.");
 
+DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
+
 namespace pl {
 namespace stirling {
 
@@ -454,27 +456,46 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
 
   // Success! Now copy the inferred socket information into the ConnectionTracker.
   const system::SocketInfo& socket_info = iter->second;
-  open_info_.remote_port = ntohs(socket_info.remote_port);
 
+  bool unix_domain_socket = false;
   Status s;
   switch (socket_info.family) {
     case AF_INET:
       s = ParseIPv4Addr(socket_info.remote_addr, &open_info_.remote_addr);
+      open_info_.remote_port = ntohs(socket_info.remote_port);
+      if (!s.ok()) {
+        LOG(ERROR) << absl::Substitute("IP parsing failed [msg=$0]", s.msg());
+        return;
+      }
       break;
     case AF_INET6:
       s = ParseIPv6Addr(socket_info.remote_addr, &open_info_.remote_addr);
+      open_info_.remote_port = ntohs(socket_info.remote_port);
+      if (!s.ok()) {
+        LOG(ERROR) << absl::Substitute("IP parsing failed [msg=$0]", s.msg());
+        return;
+      }
+      break;
+    case AF_UNIX:
+      // TODO(oazizi): This actually records the source inode number. Should actually populate the
+      // remote peer.
+      open_info_.remote_addr = "unix_socket";
+      open_info_.remote_port = inode_num;
+      unix_domain_socket = true;
       break;
     default:
       LOG(DFATAL) << absl::Substitute("Unexpected family $0", socket_info.family);
   }
 
-  if (!s.ok()) {
-    LOG(ERROR) << absl::Substitute("IP parsing failed [msg=$0]", s.msg());
-    return;
-  }
-
   LOG(INFO) << absl::Substitute("Inferred connection $0:$1", open_info_.remote_addr,
                                 open_info_.remote_port);
+
+  // TODO(oazizi): Move this out of this function, since it is not a part of the inference.
+  // I don't like side-effects.
+  if (unix_domain_socket && !FLAGS_enable_unix_domain_sockets) {
+    // Turns out we've been tracing a Unix domain socket, so disable tracker to stop tracing it.
+    Disable();
+  }
 
   // No need for the resolver anymore, so free its memory.
   conn_resolver_.reset();

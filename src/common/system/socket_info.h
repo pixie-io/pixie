@@ -30,16 +30,27 @@ class NetlinkSocketProber {
   ~NetlinkSocketProber();
 
   /**
-   * Returns IPv4 or IPv6 TCP connections in the established state.
+   * Finds IPv4 or IPv6 TCP connections in the established state.
    *
-   * @return list of established TCP connections as a map of inode to SocketInfoEntry,
-   * or error if information could not be obtained.
+   * @param map of inode to SocketInfoEntry that will be populated with established connections.
+   * @return error if connection information could not be obtained from kernel.
    */
-  StatusOr<std::unique_ptr<std::map<int, SocketInfo>>> InetConnections();
+  Status InetConnections(std::map<int, SocketInfo>* socket_info_entries);
+
+  /**
+   * Finds Unix domain socket connections in the established state.
+   *
+   * @param map of inode to SocketInfoEntry that will be populated with established connections.
+   * @return error if connection information could not be obtained from kernel.
+   */
+  Status UnixConnections(std::map<int, SocketInfo>* socket_info_entries);
 
  private:
-  Status SendInetDiagReq();
-  StatusOr<std::unique_ptr<std::map<int, SocketInfo>>> RecvInetDiagResp();
+  template <typename TDiagReqType>
+  Status SendDiagReq(const TDiagReqType& msg_req);
+
+  template <typename TDiagMsgType>
+  Status RecvDiagResp(std::map<int, SocketInfo>* socket_info_entries);
 
   int fd_;
 };
