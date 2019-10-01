@@ -47,7 +47,9 @@ void ConnectionTracker::InitState<mysql::Packet>() {
 }
 
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
-  LOG_IF(ERROR, open_info_.timestamp_ns != 0) << "Clobbering existing ConnOpenEvent.";
+  LOG_IF(ERROR, open_info_.timestamp_ns != 0) << absl::Substitute(
+      "Clobbering existing ConnOpenEvent [pid=$0 fd=$1 gen=$2].", conn_info.conn_id.pid,
+      conn_info.conn_id.fd, conn_info.conn_id.generation);
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
              "Did not expect to receive Open event more than 1 sampling iteration after Close "
@@ -69,7 +71,9 @@ void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
 }
 
 void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
-  LOG_IF(ERROR, close_info_.timestamp_ns != 0) << "Clobbering existing ConnCloseEvent";
+  LOG_IF(ERROR, close_info_.timestamp_ns != 0) << absl::Substitute(
+      "Clobbering existing ConnCloseEvent [pid=$0 fd=$1 gen=$2].", conn_info.conn_id.pid,
+      conn_info.conn_id.fd, conn_info.conn_id.generation);
 
   UpdateTimestamps(conn_info.timestamp_ns);
   SetPID(conn_info.conn_id);
@@ -280,9 +284,9 @@ std::vector<mysql::Entry> ConnectionTracker::ProcessMessagesImpl() {
 
 // TODO(oazizi): Consider providing a reason field with the disable.
 void ConnectionTracker::Disable(std::string_view reason) {
-  LOG(INFO) << absl::Substitute("Disabling connection pid=$0 fd=$1 gen=$2 dest=$3:$4 reason=$5",
-                                pid(), fd(), generation(), open_info_.remote_addr,
-                                open_info_.remote_port, reason);
+  VLOG(1) << absl::Substitute("Disabling connection pid=$0 fd=$1 gen=$2 dest=$3:$4 reason=$5",
+                              pid(), fd(), generation(), open_info_.remote_addr,
+                              open_info_.remote_port, reason);
   disabled_ = true;
   send_data_.Reset();
   recv_data_.Reset();
@@ -413,10 +417,15 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   if (conn_resolution_failed_) {
     // We've previously tried and failed to perform connection inference,
     // so don't waste any time...a connection only gets one chance.
-    VLOG(2)
-        << "Can't infer remote endpoint. Previous inference attempt failed, and won't try again.";
+    VLOG(2) << absl::Substitute(
+        "Skipping connection inference (previous inference attempt failed, and won't try again) "
+        "pid=$0 fd=$1 gen=$2",
+        conn_id_.pid, conn_id_.fd, conn_id_.generation);
     return;
   }
+
+  VLOG(2) << absl::Substitute("Attempting connection inference pid=$0 fd=$1 gen=$2", conn_id_.pid,
+                              conn_id_.fd, conn_id_.generation);
 
   if (conn_resolver_ == nullptr) {
     conn_resolver_ = std::make_unique<SocketResolver>(proc_parser, conn_id_.pid, conn_id_.fd);
@@ -434,8 +443,6 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
     return;
   }
 
-  VLOG(2) << absl::Substitute("Attempting connection inference pid=$0 fd=$1 gen=$2", conn_id_.pid,
-                              conn_id_.fd, conn_id_.generation);
   bool success = conn_resolver_->Update();
   if (!success) {
     conn_resolver_ = nullptr;
@@ -497,7 +504,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   // I don't like side-effects.
   if (unix_domain_socket && !FLAGS_enable_unix_domain_sockets) {
     // Turns out we've been tracing a Unix domain socket, so disable tracker to stop tracing it.
-    Disable();
+    Disable("Unix domain socket");
   }
 
   // No need for the resolver anymore, so free its memory.
@@ -525,7 +532,9 @@ void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 
   auto res = events_.emplace(seq_num, TimestampedData(std::move(event)));
-  LOG_IF(ERROR, !res.second) << "Clobbering data event";
+  LOG_IF(ERROR, !res.second) << absl::Substitute("Clobbering data event [pid=$0 fd=$1 gen=$2].",
+                                                 event->attr.conn_id.pid, event->attr.conn_id.fd,
+                                                 event->attr.conn_id.generation);
   has_new_events_ = true;
 }
 
