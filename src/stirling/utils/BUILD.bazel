@@ -12,7 +12,7 @@ pl_cc_library(
         ],
     ),
     hdrs = glob(["*.h"]),
-    deps = [],
+    deps = ["@com_github_tencent_rapidjson//:rapidjson"],
 )
 
 pl_cc_test(
@@ -24,6 +24,12 @@ pl_cc_test(
 pl_cc_test(
     name = "byte_format_test",
     srcs = ["byte_format_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "json_test",
+    srcs = ["json_test.cc"],
     deps = [":cc_library"],
 )
 

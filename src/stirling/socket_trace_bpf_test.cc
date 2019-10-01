@@ -23,8 +23,14 @@ namespace stirling {
 using ::pl::stirling::testing::TCPSocket;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
+using ::testing::HasSubstr;
+using ::testing::Pair;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
+
+// TODO(yzhao): We'd better rewrite the test to use BCCWrapper directly, instead of
+// SocketTraceConnector, to avoid triggering the userland parsing code, so these tests do not need
+// change if we alter output format.
 
 class SocketTraceBPFTest : public ::testing::Test {
  protected:
@@ -196,13 +202,11 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
 
     EXPECT_EQ(getpid(),
               md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
-    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
 
     EXPECT_EQ(getpid(),
               md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
-    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
 
     // Additional verifications. These are common to all HTTP1.x tracing, so we decide to not
     // duplicate them on all relevant tests.
@@ -247,13 +251,11 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
 
     EXPECT_EQ(getpid(),
               md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
-    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
 
     EXPECT_EQ(getpid(),
               md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
-    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
   }
 
   // Check that MySQL table did not capture any data.
@@ -289,13 +291,11 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
 
     EXPECT_EQ(getpid(),
               md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
-    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
 
     EXPECT_EQ(getpid(),
               md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
-    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
   }
 
   // Check that MySQL table did not capture any data.
@@ -331,13 +331,11 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
 
     EXPECT_EQ(getpid(),
               md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
-    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
 
     EXPECT_EQ(getpid(),
               md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
-    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
   }
 
   // Check that MySQL table did not capture any data.
@@ -476,18 +474,15 @@ TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
       ASSERT_EQ(2, col->Size());
     }
 
-    std::vector<std::tuple<int64_t, std::string>> results;
+    std::vector<std::pair<int64_t, std::string>> results;
     for (int i = 0; i < 2; ++i) {
-      results.emplace_back(std::make_tuple(
+      results.emplace_back(std::make_pair(
           md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(i).val).pid(),
           record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(i)));
     }
 
-    EXPECT_THAT(
-        results,
-        UnorderedElementsAre(
-            std::make_tuple(getpid(), "Content-Length: 0\nContent-Type: application/json; msg1"),
-            std::make_tuple(getpid(), "Content-Length: 0\nContent-Type: application/json; msg2")));
+    EXPECT_THAT(results, UnorderedElementsAre(Pair(getpid(), HasSubstr("msg1")),
+                                              Pair(getpid(), HasSubstr("msg2"))));
   }
 }
 
@@ -568,8 +563,6 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   }
 
   for (int i : {0, 2}) {
-    EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(i)),
-                StrEq("Content-Length: 1\nContent-Type: json"));
     EXPECT_EQ(200, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val);
     EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(i)),
                 StrEq("a"));
@@ -577,8 +570,6 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
                 StrEq("OK"));
   }
   for (int i : {1, 3}) {
-    EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(i)),
-                StrEq("Content-Length: 2\nContent-Type: json"));
     EXPECT_EQ(404, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val);
     EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(i)),
                 StrEq("bc"));

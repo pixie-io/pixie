@@ -22,6 +22,7 @@
 #include "src/stirling/mysql_parse.h"
 #include "src/stirling/proto/sock_event.pb.h"
 #include "src/stirling/socket_trace_connector.h"
+#include "src/stirling/utils/json.h"
 #include "src/stirling/utils/linux_headers.h"
 
 // TODO(yzhao): Consider simplify the semantic by filtering entirely on content type.
@@ -68,6 +69,7 @@ using ::pl::stirling::http2::Frame;
 using ::pl::stirling::http2::GRPCMessage;
 using ::pl::stirling::http2::GRPCReqResp;
 using ::pl::stirling::http2::MatchGRPCReqResp;
+using ::pl::stirling::utils::WriteMapAsJSON;
 
 Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders());
@@ -515,13 +517,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_major_version")>(1);
   r.Append<r.ColIndex("http_minor_version")>(resp_message.http_minor_version);
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(DetectContentType(resp_message)));
-  r.Append<r.ColIndex("http_req_headers")>(
-      absl::StrJoin(req_message.http_headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_req_headers")>(WriteMapAsJSON(req_message.http_headers));
   r.Append<r.ColIndex("http_req_method")>(std::move(req_message.http_req_method));
   r.Append<r.ColIndex("http_req_path")>(std::move(req_message.http_req_path));
   r.Append<r.ColIndex("http_req_body")>("-");
-  r.Append<r.ColIndex("http_resp_headers")>(
-      absl::StrJoin(resp_message.http_headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_resp_headers")>(WriteMapAsJSON(resp_message.http_headers));
   r.Append<r.ColIndex("http_resp_status")>(resp_message.http_resp_status);
   r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.http_resp_message));
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.http_msg_body));
@@ -552,11 +552,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("http_minor_version")>(0);
-  r.Append<r.ColIndex("http_req_headers")>(
-      absl::StrJoin(req_message.headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_req_headers")>(WriteMapAsJSON(req_message.headers));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
-  r.Append<r.ColIndex("http_resp_headers")>(
-      absl::StrJoin(resp_message.headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_resp_headers")>(WriteMapAsJSON(resp_message.headers));
   r.Append<r.ColIndex("http_req_method")>(req_message.HeaderValue(":method"));
   r.Append<r.ColIndex("http_req_path")>(req_message.HeaderValue(":path"));
   r.Append<r.ColIndex("http_resp_status")>(resp_status);

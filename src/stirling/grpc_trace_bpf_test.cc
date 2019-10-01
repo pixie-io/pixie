@@ -39,6 +39,7 @@ using ::pl::stirling::testing::StreamingGreeter;
 using ::pl::stirling::testing::StreamingGreeterService;
 using ::pl::testing::proto::EqualsProto;
 using ::pl::types::ColumnWrapperRecordBatch;
+using ::testing::AllOf;
 using ::testing::AnyOf;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
@@ -147,20 +148,18 @@ TEST_F(GRPCTraceGoTest, TestGolangGrpcService) {
 
   EXPECT_THAT(
       std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(target_record_idx)),
-      MatchesRegex(":authority: localhost:50051\n"
-                   ":method: POST\n"
-                   ":path: /pl.stirling.testing.Greeter/SayHello\n"
-                   ":scheme: http\n"
-                   "content-type: application/grpc\n"
-                   "grpc-timeout: [0-9a-zA-Z]+u\n"
-                   "te: trailers\n"
-                   "user-agent: grpc-go/.+"));
+      AllOf(HasSubstr(R"({":authority":"localhost:50051",)"
+                      R"(":method":"POST",)"
+                      R"(":path":"/pl.stirling.testing.Greeter/SayHello",)"
+                      R"(":scheme":"http",)"
+                      R"("content-type":"application/grpc")"),
+            HasSubstr(R"("grpc-timeout")"), HasSubstr(R"("te":"trailers","user-agent")")));
   EXPECT_THAT(
       std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(target_record_idx)),
-      MatchesRegex(":status: 200\n"
-                   "content-type: application/grpc\n"
-                   "grpc-message: \n"
-                   "grpc-status: 0"));
+      StrEq(R"({":status":"200",)"
+            R"("content-type":"application/grpc",)"
+            R"("grpc-message":"",)"
+            R"("grpc-status":"0"})"));
   EXPECT_THAT(
       std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
       HasSubstr("127.0.0.1"));
@@ -311,23 +310,6 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
   EXPECT_THAT(indices, SizeIs(12));
 
   for (size_t idx : indices) {
-    EXPECT_THAT(std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx)),
-                MatchesRegex(":authority: 127.0.0.1:[0-9]+\n"
-                             ":method: POST\n"
-                             ":path: /pl.stirling.testing.Greeter(|2)/Say(Hi|Hello)(|Again)\n"
-                             ":scheme: http\n"
-                             "accept-encoding: identity,gzip\n"
-                             "content-type: application/grpc\n"
-                             "grpc-accept-encoding: identity,deflate,gzip\n"
-                             "grpc-timeout: [0-9a-zA-Z]+\n"
-                             "te: trailers\n"
-                             "user-agent: .*"));
-    EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx)),
-                MatchesRegex(":status: 200\n"
-                             "accept-encoding: identity,gzip\n"
-                             "content-type: application/grpc\n"
-                             "grpc-accept-encoding: identity,deflate,gzip\n"
-                             "grpc-status: 0"));
     EXPECT_THAT(std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(idx)),
                 HasSubstr("127.0.0.1"));
     EXPECT_EQ(runner_.port(), record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(idx).val);
@@ -397,22 +379,6 @@ TEST_F(GRPCCppTest, ServerStreamingRPC) {
   EXPECT_THAT(indices, SizeIs(1));
 
   for (size_t idx : indices) {
-    std::vector<std::string> header_fields =
-        absl::StrSplit(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx), "\n");
-    EXPECT_THAT(
-        header_fields,
-        ElementsAre(MatchesRegex(":authority: 127.0.0.1:[0-9]+"), ":method: POST",
-                    ":path: /pl.stirling.testing.StreamingGreeter/SayHelloServerStreaming",
-                    ":scheme: http", "accept-encoding: identity,gzip",
-                    "content-type: application/grpc", "grpc-accept-encoding: identity,deflate,gzip",
-                    MatchesRegex("grpc-timeout: [0-9a-zA-Z]+"), "te: trailers",
-                    MatchesRegex("user-agent: .*")));
-    header_fields =
-        absl::StrSplit(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx), "\n");
-    EXPECT_THAT(header_fields,
-                ElementsAre(":status: 200", "accept-encoding: identity,gzip",
-                            "content-type: application/grpc",
-                            "grpc-accept-encoding: identity,deflate,gzip", "grpc-status: 0"));
     EXPECT_THAT(GetHelloRequest(record_batch, idx),
                 EqualsProto(R"proto(name: "pixielabs" count: 3)proto"));
     EXPECT_THAT(ParseProtobufRecords<HelloReply>(
@@ -446,22 +412,6 @@ TEST_F(GRPCCppTest, BidirStreamingRPC) {
   EXPECT_THAT(indices, SizeIs(1));
 
   for (size_t idx : indices) {
-    std::vector<std::string> header_fields =
-        absl::StrSplit(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx), "\n");
-    EXPECT_THAT(
-        header_fields,
-        ElementsAre(MatchesRegex(":authority: 127.0.0.1:[0-9]+"), ":method: POST",
-                    ":path: /pl.stirling.testing.StreamingGreeter/SayHelloBidirStreaming",
-                    ":scheme: http", "accept-encoding: identity,gzip",
-                    "content-type: application/grpc", "grpc-accept-encoding: identity,deflate,gzip",
-                    MatchesRegex("grpc-timeout: [0-9a-zA-Z]+"), "te: trailers",
-                    MatchesRegex("user-agent: .*")));
-    header_fields =
-        absl::StrSplit(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx), "\n");
-    EXPECT_THAT(header_fields,
-                ElementsAre(":status: 200", "accept-encoding: identity,gzip",
-                            "content-type: application/grpc",
-                            "grpc-accept-encoding: identity,deflate,gzip", "grpc-status: 0"));
     EXPECT_THAT(ParseProtobufRecords<HelloRequest>(
                     record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(idx)),
                 ElementsAre(EqualsProto(R"proto(name: "foo" count: 1)proto"),
@@ -526,21 +476,10 @@ TEST_F(GRPCCppCallingNonRegisteredServiceTest, ResultsAreAsExpected) {
   std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
   EXPECT_THAT(indices, SizeIs(3));
   for (size_t idx : indices) {
-    EXPECT_THAT(std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx)),
-                MatchesRegex(":authority: 127.0.0.1:[0-9]+\n"
-                             ":method: POST\n"
-                             ":path: /pl.stirling.testing.Greeter(|2)/Say(Hi|Hello)(|Again)\n"
-                             ":scheme: http\n"
-                             "accept-encoding: identity,gzip\n"
-                             "content-type: application/grpc\n"
-                             "grpc-accept-encoding: identity,deflate,gzip\n"
-                             "grpc-timeout: [0-9a-zA-Z]+\n"
-                             "te: trailers\n"
-                             "user-agent: .*"));
     EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx)),
-                MatchesRegex(":status: 200\n"
-                             "content-type: application/grpc\n"
-                             "grpc-status: 12"));
+                StrEq(R"({":status":"200",)"
+                      R"("content-type":"application/grpc",)"
+                      R"("grpc-status":"12"})"));
     EXPECT_THAT(GetHelloRequest(record_batch, idx), EqualsProto(R"proto(name: "pixielabs")proto"));
     EXPECT_THAT(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx), IsEmpty());
   }
