@@ -12,6 +12,8 @@ spec:
       labels:
         name: vizier-cloud-connector
     spec:
+      imagePullSecrets:
+      - name: pl-image-secret
       containers:
       - name: vizier-cloud-connector-server
         image: gcr.io/pl-dev-infra/vizier/cloud_connector_server_image:latest
@@ -43,8 +45,8 @@ spec:
           - name: PL_TLS_CA_CERT
             value: /certs/ca.crt
         volumeMounts:
-            - name: certs
-              mountPath: /certs
+        - name: certs
+          mountPath: /certs
       volumes:
         - name: certs
           secret:
