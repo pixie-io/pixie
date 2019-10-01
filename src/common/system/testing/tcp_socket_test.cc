@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <gtest/gtest.h>
 
 #include <string>
@@ -122,6 +123,30 @@ TEST(TCPSocketTest, ServerAddrAndPort) {
 
   client.Close();
   server.Close();
+}
+
+TEST(TCPSocketTest, MultipleSequencialConnectsFailed) {
+  {
+    TCPSocket server;
+    server.Bind();
+
+    TCPSocket client;
+    client.Connect(server);
+    EXPECT_DEATH(client.Connect(server), "Transport endpoint is already connected");
+  }
+  {
+    TCPSocket server;
+    server.Bind();
+
+    TCPSocket client;
+    int flags = fcntl(client.sockfd(), F_GETFL);
+    ASSERT_GT(flags, 0);
+    int rv = fcntl(client.sockfd(), F_SETFL, flags | O_NONBLOCK);
+    ASSERT_EQ(rv, 0);
+    EXPECT_DEATH(client.Connect(server), "Operation now in progress");
+    client.Connect(server);
+    EXPECT_DEATH(client.Connect(server), "Transport endpoint is already connected");
+  }
 }
 
 }  // namespace testing
