@@ -4,7 +4,7 @@ metaTitle: "Misc | Pixie"
 metaDescription: "Pixie is ..."
 ---
 
-**Last Udpated: 10/01/2019**
+**Last Updated: 09/12/2019**
 
 
 ### 1.	Objective
@@ -90,4 +90,4 @@ The contents of this ISP will apply to third parties who are intended to receive
 
 ### 11. Exceptions 
 
-Any exceptions to this policy require prior written authorization and approval from the Data Security Coordinator or legal counsel. 
+Any exceptions to this policy require prior written authorization and approval from the Data Security Coordinator or legal counsel.
