@@ -40,7 +40,7 @@ func getTestCookie(t *testing.T, env apienv.APIEnv, domain string) string {
 	req, err := http.NewRequest("GET", "/", nil)
 	assert.Nil(t, err)
 	rr := httptest.NewRecorder()
-	session, err := env.CookieStore().Get(req, "default-session2")
+	session, err := env.CookieStore().Get(req, "default-session3")
 	assert.Nil(t, err)
 	session.Values["_at"] = "authpb-token"
 	session.Values["_auth_domain"] = domain
