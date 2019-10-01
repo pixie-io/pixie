@@ -402,7 +402,7 @@ class ConnectionTracker {
    *
    * The tracker will still wait for a Close event to get destroyed.
    */
-  void Disable();
+  void Disable(std::string_view reason = "");
 
   /**
    * @brief The tracker is disabled and will not produce any new results.

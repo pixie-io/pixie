@@ -279,7 +279,10 @@ std::vector<mysql::Entry> ConnectionTracker::ProcessMessagesImpl() {
 }
 
 // TODO(oazizi): Consider providing a reason field with the disable.
-void ConnectionTracker::Disable() {
+void ConnectionTracker::Disable(std::string_view reason) {
+  LOG(INFO) << absl::Substitute("Disabling connection pid=$0 fd=$1 gen=$2 dest=$3:$4 reason=$5",
+                                pid(), fd(), generation(), open_info_.remote_addr,
+                                open_info_.remote_port, reason);
   disabled_ = true;
   send_data_.Reset();
   recv_data_.Reset();
@@ -373,8 +376,8 @@ void ConnectionTracker::IterationTick(system::ProcParser* proc_parser,
     HandleInactivity();
   }
 
-  if (send_data().IsEOS() || recv_data().IsEOS()) {
-    Disable();
+  if (!disabled() && (send_data().IsEOS() || recv_data().IsEOS())) {
+    Disable("End-of-stream");
   }
 
   // If remote_addr is missing, it means the connect/accept was not traced.
@@ -487,8 +490,8 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
       LOG(DFATAL) << absl::Substitute("Unexpected family $0", socket_info.family);
   }
 
-  LOG(INFO) << absl::Substitute("Inferred connection $0:$1", open_info_.remote_addr,
-                                open_info_.remote_port);
+  LOG(INFO) << absl::Substitute("Inferred connection pid=$0 fd=$1 gen=$2 dest=$3:$4", pid(), fd(),
+                                generation(), open_info_.remote_addr, open_info_.remote_port);
 
   // TODO(oazizi): Move this out of this function, since it is not a part of the inference.
   // I don't like side-effects.

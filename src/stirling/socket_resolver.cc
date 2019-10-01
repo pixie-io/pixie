@@ -24,7 +24,7 @@ bool SocketResolver::Setup() {
     return false;
   }
 
-  LOG(INFO) << absl::Substitute("Set-up connection inference: $0", first_fd_link_);
+  VLOG(2) << absl::Substitute("Set-up connection inference: $0", first_fd_link_);
   // Record the time slightly after recording the FD, so we have a more conservative
   // time window. We don't want false positives.
   first_timestamp_ = std::chrono::steady_clock::now();
