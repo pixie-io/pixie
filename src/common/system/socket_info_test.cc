@@ -1,7 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #include <cstdlib>
@@ -9,6 +11,7 @@
 
 #include "absl/strings/numbers.h"
 #include "src/common/base/inet_utils.h"
+#include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/system/testing/tcp_socket.h"
 
@@ -41,7 +44,7 @@ std::string AddrPortStr(struct in_addr in_addr, in_port_t in_port) {
   return absl::StrCat(addr, ":", port);
 }
 
-MATCHER_P(HasLocalEndpoint, endpoint, "") {
+MATCHER_P(HasLocalIPEndpoint, endpoint, "") {
   switch (arg.second.family) {
     case AF_INET:
       return AddrPortStr(*reinterpret_cast<const struct in_addr*>(&arg.second.local_addr),
@@ -53,7 +56,16 @@ MATCHER_P(HasLocalEndpoint, endpoint, "") {
   }
 }
 
-TEST(NetlinkSocketProberTest, EstablishedConnection) {
+MATCHER_P(HasLocalUnixEndpoint, endpoint, "") {
+  switch (arg.second.family) {
+    case AF_UNIX:
+      return endpoint == absl::Substitute("socket:[$0]", arg.second.local_port);
+    default:
+      return false;
+  }
+}
+
+TEST(NetlinkSocketProberTest, EstablishedInetConnection) {
   testing::TCPSocket client;
   testing::TCPSocket server;
 
@@ -69,13 +81,66 @@ TEST(NetlinkSocketProberTest, EstablishedConnection) {
   auto s = socket_prober.InetConnections(&socket_info_entries);
   ASSERT_OK(s);
 
-  EXPECT_THAT(socket_info_entries, Contains(HasLocalEndpoint(client_endpoint)));
+  EXPECT_THAT(socket_info_entries, Contains(HasLocalIPEndpoint(client_endpoint)));
 
   client.Close();
   server.Close();
 }
 
-TEST(NetlinkSocketProberTest, ClosedConnection) {
+TEST(NetlinkSocketProberTest, EstablishedUnixConnection) {
+  Status s;
+  int retval;
+
+  // Create client and server, and connect them together.
+  struct sockaddr_un server_addr = {AF_UNIX, ""};
+  int server_listen_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NE(-1, server_listen_fd);
+
+  retval =
+      bind(server_listen_fd, reinterpret_cast<struct sockaddr*>(&server_addr), sizeof(server_addr));
+  ASSERT_EQ(0, retval);
+
+  retval = listen(server_listen_fd, 2);
+  ASSERT_EQ(0, retval);
+
+  int client_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NE(-1, client_fd);
+
+  retval =
+      connect(client_fd, reinterpret_cast<struct sockaddr*>(&server_addr), sizeof(server_addr));
+  ASSERT_EQ(0, retval);
+
+  struct sockaddr_un client_addr;
+  socklen_t len;
+  int server_accept_fd =
+      accept(server_listen_fd, reinterpret_cast<struct sockaddr*>(&client_addr), &len);
+  ASSERT_NE(-1, server_accept_fd);
+
+  // Extract inode numbers.
+  auto proc_parser = std::make_unique<system::ProcParser>(system::Config::GetInstance());
+  std::string server_socket_id;
+  s = proc_parser->ReadProcPIDFDLink(getpid(), server_accept_fd, &server_socket_id);
+  ASSERT_OK(s);
+
+  std::string client_socket_id;
+  s = proc_parser->ReadProcPIDFDLink(getpid(), client_fd, &client_socket_id);
+  ASSERT_OK(s);
+
+  // Now begin the test of NetlinkSocketProber.
+  NetlinkSocketProber socket_prober;
+  std::map<int, SocketInfo> socket_info_entries;
+  s = socket_prober.UnixConnections(&socket_info_entries);
+  ASSERT_OK(s);
+
+  EXPECT_THAT(socket_info_entries, Contains(HasLocalUnixEndpoint(client_socket_id)));
+  EXPECT_THAT(socket_info_entries, Contains(HasLocalUnixEndpoint(server_socket_id)));
+
+  close(client_fd);
+  close(server_accept_fd);
+  close(server_listen_fd);
+}
+
+TEST(NetlinkSocketProberTest, ClosedInetConnection) {
   testing::TCPSocket client;
   testing::TCPSocket server;
 
@@ -93,7 +158,7 @@ TEST(NetlinkSocketProberTest, ClosedConnection) {
   auto s = socket_prober.InetConnections(&socket_info_entries);
   ASSERT_OK(s);
 
-  EXPECT_THAT(socket_info_entries, Not(Contains(HasLocalEndpoint(client_endpoint))));
+  EXPECT_THAT(socket_info_entries, Not(Contains(HasLocalIPEndpoint(client_endpoint))));
 }
 
 }  // namespace system

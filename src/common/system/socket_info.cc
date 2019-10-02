@@ -14,6 +14,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include <linux/in6.h>
 #include <utility>
 
 namespace pl {
@@ -109,15 +110,36 @@ Status ProcessDiagMsg(const struct unix_diag_msg& diag_msg, unsigned int len,
     return error::Internal("Unsupported address family $0", diag_msg.udiag_family);
   }
 
+  // Since we asked for UDIAG_SHOW_PEER in the unix_diag_req,
+  // The response has additional attributes, which we parse here.
+  // In particular, we are looking for the peer socket's inode number.
+  const struct rtattr* attr;
+  unsigned int rta_len = len - NLMSG_LENGTH(sizeof(diag_msg));
+  unsigned int peer = 0;
+
+  for (attr = reinterpret_cast<const struct rtattr*>(&diag_msg + 1); RTA_OK(attr, rta_len);
+       attr = RTA_NEXT(attr, rta_len)) {
+    switch (attr->rta_type) {
+      case UNIX_DIAG_NAME:
+        // Nothing for now, but could extract path name, if needed.
+        // For this to work, one should also add UDIAG_SHOW_NAME to the request.
+        break;
+      case UNIX_DIAG_PEER:
+        if (RTA_PAYLOAD(attr) >= sizeof(peer)) {
+          peer = *reinterpret_cast<unsigned int*>(RTA_DATA(attr));
+        }
+    }
+  }
+
   auto iter = socket_info_entries->find(diag_msg.udiag_ino);
   ECHECK(iter == socket_info_entries->end())
       << absl::Substitute("Clobbering socket info at inode=$0", diag_msg.udiag_ino);
 
   SocketInfo socket_info = {};
   socket_info.family = diag_msg.udiag_family;
-  socket_info.local_port = 0;
+  socket_info.local_port = diag_msg.udiag_ino;
   socket_info.local_addr = {};
-  socket_info.remote_port = 0;
+  socket_info.remote_port = peer;
   socket_info.remote_addr = {};
 
   socket_info_entries->insert({diag_msg.udiag_ino, std::move(socket_info)});
@@ -181,6 +203,7 @@ Status NetlinkSocketProber::UnixConnections(std::map<int, SocketInfo>* socket_in
   struct unix_diag_req msg_req = {};
   msg_req.sdiag_family = AF_UNIX;
   msg_req.udiag_states = (1 << kTCPEstablishedState);
+  msg_req.udiag_show = UDIAG_SHOW_PEER;
 
   PL_RETURN_IF_ERROR(SendDiagReq(msg_req));
   PL_RETURN_IF_ERROR(RecvDiagResp<struct unix_diag_msg>(socket_info_entries));

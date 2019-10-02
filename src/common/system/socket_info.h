@@ -16,9 +16,9 @@ namespace system {
 struct SocketInfo {
   uint8_t family;
   struct in6_addr local_addr;
-  in_port_t local_port;
+  uint32_t local_port;
   struct in6_addr remote_addr;
-  in_port_t remote_port;
+  uint32_t remote_port;
 };
 
 /**
