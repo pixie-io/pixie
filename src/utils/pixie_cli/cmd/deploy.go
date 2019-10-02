@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc/metadata"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd/auth"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
 
 	"google.golang.org/grpc"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"

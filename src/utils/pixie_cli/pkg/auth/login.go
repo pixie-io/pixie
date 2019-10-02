@@ -18,8 +18,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const pixieAuthPath = ".pixie"
@@ -98,27 +96,6 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 	}
 	// TODO(zasgar): Exchange refresh token for new token type.
 	return token, nil
-}
-
-// LoginCmd is the Login sub-command of Auth.
-var LoginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "Login to Pixie",
-	Run: func(cmd *cobra.Command, args []string) {
-		l := PixieCloudLogin{
-			Site:       viper.GetString("site"),
-			ManualMode: viper.GetBool("manual"),
-			CloudAddr:  viper.GetString("cloud_addr"),
-		}
-		refreshToken := &RefreshToken{}
-		var err error
-		if refreshToken, err = l.Run(); err != nil {
-			log.WithError(err).Fatal("Failed to login")
-		}
-		if err = SaveRefreshToken(refreshToken); err != nil {
-			log.WithError(err).Fatal("Failed to persists auth token")
-		}
-	},
 }
 
 // PixieCloudLogin performs login on the pixie cloud.
