@@ -174,6 +174,7 @@ export class QueryResultViewer extends React.Component<QueryResultViewerProps, {
           cellRenderer={ResultCellRenderer}
           expandable={true}
           expandRenderer={ExpandedRowRenderer}
+          resizableCols={true}
         />
       </div>
     );

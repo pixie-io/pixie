@@ -1,5 +1,6 @@
 import * as _ from 'lodash';
 import * as React from 'react';
+import { DraggableCore } from 'react-draggable';
 import { AutoSizer, Column, defaultTableRowRenderer, Table } from 'react-virtualized';
 import 'react-virtualized/styles.css'; // Only needs to be imported once.
 import './scrollable-table.scss';
@@ -26,6 +27,7 @@ export interface AutoSizedScrollableTableProps {
     data: any[];
     columnInfo: TableColumnInfo[];
     expandable?: boolean;
+    resizableCols?: boolean;
     expandRenderer?: (rowData: any) => JSX.Element;
     cellRenderer?: (cellData: any, columnInfo: TableColumnInfo) => JSX.Element;
 }
@@ -34,6 +36,7 @@ export interface ScrollableTableProps {
     data: any[];
     columnInfo: TableColumnInfo[];
     expandable?: boolean;
+    resizableCols?: boolean;
     expandRenderer?: (rowData: any) => JSX.Element;
     cellRenderer?: (cellData: any, columnInfo: TableColumnInfo) => JSX.Element;
     width: number;
@@ -47,6 +50,7 @@ export interface ExpandedRows {
 export interface ScrollableTableState {
     expandedRows: ExpandedRows;
     table: any; // Ref to TableComponent.
+    widths: number[];
 }
 
 function DefaultRowRenderer(props) {
@@ -87,6 +91,7 @@ export class ScrollableTable extends React.Component<ScrollableTableProps, Scrol
         this.state = {
             expandedRows: {},
             table: React.createRef(),
+            widths: [],
         };
     }
 
@@ -121,13 +126,81 @@ export class ScrollableTable extends React.Component<ScrollableTableProps, Scrol
                 rowRenderer={RowRenderer.bind(this)}>
                 {columnInfo && columnInfo.map((colProp, idx) => {
                     if (!colProp.key) { colProp.key = idx; }
+
+                    // Calculate width of column.
+                    if (this.props.resizableCols) {
+                        if (this.state.widths.length === 0) {
+                            colProp.width = this.props.width / this.props.columnInfo.length;
+                        } else {
+                            colProp.width  = this.state.widths[idx] * this.props.width;
+                        }
+                    }
+
+                    // If column is last column, don't render header with drag handle.
+                    if (idx === this.props.columnInfo.length - 1 || !this.props.resizableCols) {
+                        return (<Column
+                        cellRenderer={CellRenderer.bind(this)}
+                        {...colProp} />);
+                    }
                     return (<Column
+                        headerRenderer={this.headerRenderer}
                         cellRenderer={CellRenderer.bind(this)}
                         {...colProp} />);
                 })}
             </Table>);
     }
-}
+
+    headerRenderer = ({
+        columnData,
+        dataKey,
+        disableSort,
+        label,
+        sortBy,
+        sortDirection,
+    }) => {
+        return (
+          <React.Fragment key={dataKey}>
+            <div className='ReactVirtualized__Table__headerTruncatedText'>
+              {label}
+            </div>
+            <DraggableCore
+              onDrag={(event, { deltaX }) => {
+                    this.resizeRow({
+                      dataKey,
+                      deltaX,
+                    });
+                }
+              }
+            >
+              <span className='scrollable-table--drag-handle'>|</span>
+            </DraggableCore>
+          </React.Fragment>
+        );
+    }
+
+      resizeRow = ({ dataKey, deltaX }) =>
+        this.setState((prevState) => {
+            let prevWidths = [];
+            if (prevState.widths.length === 0 && this.props.width !== 0) {
+                // If no widths defined, start with equal-sized columns.
+                prevWidths = _.map(this.props.columnInfo, () => 1 / this.props.columnInfo.length );
+            } else {
+                prevWidths = prevState.widths;
+            }
+
+            // Find index of column being resized.
+            const dataKeys = _.map(this.props.columnInfo, (col) => col.dataKey);
+            const  idx = _.findIndex(dataKeys, (key) =>  key === dataKey);
+
+            const percentDelta = deltaX / this.props.width;
+            prevWidths[idx] = prevWidths[idx] + percentDelta;
+            prevWidths[idx + 1] = prevWidths[idx + 1] - percentDelta;
+
+            return {
+              widths: prevWidths,
+            };
+        })
+    }
 
 /**
  * Scrollable table is a inifinite-scroll table component.

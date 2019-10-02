@@ -28,3 +28,27 @@
     font-size: 14px;
     height: 40px;
 }
+
+.ReactVirtualized__Table__headerTruncatedText {
+  flex: auto;
+}
+
+.ReactVirtualized__Table__headerColumn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding: 0;
+}
+
+.scrollable-table--drag-handle {
+  flex: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: col-resize;
+}
+
+.scrollable-table--drag-handle:hover {
+  color: $white;
+}
