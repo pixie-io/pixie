@@ -68,7 +68,7 @@ elsif node[:platform] == 'mac_os_x'
   default['golang']['download_path'] =
     'https://dl.google.com/go/go1.13.darwin-amd64.tar.gz'
   default['golang']['sha256'] =
-    '7dc05b582ed8730b7f188af55ca68500dd1eaa267f0f84e46751858360d2b665'
+    '234ebbba1fbed8474340f79059cfb3af2a0f8b531c4ff0785346e0710e4003dd'
 
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/pl-infra-dev-artifacts/skaffold/543f1efa/skaffold-darwin-amd64'
