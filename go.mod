@@ -57,6 +57,7 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
+	github.com/jteeuwen/go-bindata v3.0.7+incompatible // indirect
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/magiconair/properties v1.8.0
 	github.com/mattn/go-colorable v0.0.9 // indirect

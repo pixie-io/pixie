@@ -132,4 +132,8 @@ message VizierQueryResponse {
   // Status message carries information
   // about any potential failures, ie compiler error failures
   pl.statuspb.Status status = 2;
+  // The id for the query
+  uuidpb.UUID query_id = 3 [
+    (gogoproto.customname) = "QueryID"
+  ];
 }

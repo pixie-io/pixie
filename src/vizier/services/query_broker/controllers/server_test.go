@@ -2,8 +2,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
@@ -688,12 +686,15 @@ func TestPlannerErrorResult(t *testing.T) {
 		QueryStr: badQuery,
 	})
 
+	if !assert.Nil(t, err) {
+		t.Fatal("Cannot execute query.")
+	}
+
 	agentRespPB := new(querybrokerpb.VizierQueryResponse)
 	if err := proto.UnmarshalText(failedPlannerResult, agentRespPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	assert.Equal(t, errors.New(proto.MarshalTextString(compilerErrorGroupPB)), err)
-	assert.Equal(t, agentRespPB, result)
+	assert.Equal(t, agentRespPB.Status, result.Status)
 }
 
 // This test makes sure that the planner can safely drop carnot instances
@@ -882,9 +883,13 @@ func TestErrorInStatusResult(t *testing.T) {
 		Return(badPlannerResultPB, nil)
 
 	s, err := newServer(env, mds, nc, createExecutorMock, planner)
-	_, err = s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+
+	result, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
 	})
 
-	assert.Equal(t, fmt.Errorf("Error occurred without line and column: '%s'", badPlannerResultPB.Status.Msg), err)
+	if !assert.Nil(t, err) {
+		t.Fatal("Error while executing query.")
+	}
+	assert.Equal(t, result.Status, badPlannerResultPB.Status)
 }

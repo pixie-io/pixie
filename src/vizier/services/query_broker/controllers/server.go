@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
@@ -85,9 +84,11 @@ func (s *Server) deleteExecutorForQuery(queryID uuid.UUID) {
 	delete(s.executors, queryID)
 }
 
-func failedStatusQueryResponse(status *statuspb.Status) *querybrokerpb.VizierQueryResponse {
+func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *querybrokerpb.VizierQueryResponse {
+	queryIDPB := utils.ProtoFromUUID(&queryID)
 	queryResponse := &querybrokerpb.VizierQueryResponse{
-		Status: status,
+		QueryID: queryIDPB,
+		Status:  status,
 	}
 	return queryResponse
 }
@@ -184,22 +185,18 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 		return nil, err
 	}
 
+	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
+	queryID := uuid.NewV4()
+
 	// Compile the query plan.
 	plannerResultPB, err := s.planner.Plan(plannerState, req.QueryStr)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO(philkuz/michelle) do we want to return the problem through the error
-	// or through the message? I've done both for now because the error route is
-	// the only one that appears in the front end.
+	// When the status is not OK, this means it's a compilation error on the query passed in.
 	if plannerResultPB.Status.ErrCode != statuspb.OK {
-		errorStr, err := formatCompilerError(plannerResultPB.Status)
-		if err != nil {
-			log.WithError(err).Errorf("Couldn't get the compiler status for message: %s", proto.MarshalTextString(plannerResultPB.Status))
-			return nil, fmt.Errorf("Error occurred without line and column: '%s'", plannerResultPB.Status.Msg)
-		}
-		return failedStatusQueryResponse(plannerResultPB.Status), fmt.Errorf(errorStr)
+		return failedStatusQueryResponse(queryID, plannerResultPB.Status), nil
 	}
 
 	// Plan describes the mapping of agents to the plan that should execute on them.
@@ -220,7 +217,6 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 		planCarnotList = append(planCarnotList, carnotID)
 	}
 
-	queryID := uuid.NewV4()
 	queryExecutor := s.newExecutor(s.natsConn, queryID, &planCarnotList)
 
 	s.trackExecutorForQuery(queryExecutor)
@@ -235,6 +231,7 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 	}
 
 	queryResponse := &querybrokerpb.VizierQueryResponse{
+		QueryID:   utils.ProtoFromUUID(&queryID),
 		Responses: responses,
 	}
 
