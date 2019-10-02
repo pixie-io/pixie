@@ -37,6 +37,42 @@ const (
 	kernelMinVersion = "4.14"
 )
 
+// DeployCmd is the "deploy" command.
+var DeployCmd = &cobra.Command{
+	Use:   "deploy",
+	Short: "Deploys Pixie on the current K8s cluster",
+	Run:   runDeployCmd,
+}
+
+func init() {
+	DeployCmd.Flags().StringP("extract_yaml", "e", "", "Directory to extract the Pixie yamls to")
+	viper.BindPFlag("extract_yaml", DeployCmd.Flags().Lookup("extract_yaml"))
+
+	DeployCmd.Flags().StringP("use_version", "v", "", "Pixie version to deploy")
+	viper.BindPFlag("use_version", DeployCmd.Flags().Lookup("use_version"))
+
+	DeployCmd.Flags().BoolP("check", "c", false, "Check whether the cluster can run Pixie")
+	viper.BindPFlag("check", DeployCmd.Flags().Lookup("check"))
+
+	DeployCmd.Flags().StringP("registration_key", "k", "", "The registration key to use for this cluster")
+	viper.BindPFlag("registration_key", DeployCmd.Flags().Lookup("registration_key"))
+
+	DeployCmd.Flags().StringP("credentials_file", "f", "", "Location of the Pixie credentials file")
+	viper.BindPFlag("credentials_file", DeployCmd.Flags().Lookup("credentials_file"))
+
+	DeployCmd.Flags().StringP("secret_name", "s", "pl-image-secret", "The name of the secret used to access the Pixie images")
+	viper.BindPFlag("credentials_file", DeployCmd.Flags().Lookup("credentials_file"))
+
+	DeployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
+	viper.BindPFlag("namespace", DeployCmd.Flags().Lookup("namespace"))
+
+	DeployCmd.Flags().StringP("cluster_id", "i", "", "The ID of the cluster")
+	viper.BindPFlag("cluster_id", DeployCmd.Flags().Lookup("cluster_id"))
+
+	DeployCmd.Flags().BoolP("deps_only", "d", false, "Deploy only the cluster dependencies, not the agents")
+	viper.BindPFlag("deps_only", DeployCmd.Flags().Lookup("deps_only"))
+}
+
 func newVizAuthClient(cloudAddr string) (cloudapipb.VizierImageAuthorizationClient, error) {
 	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
 
@@ -82,70 +118,63 @@ func mustReadCredsFile(credsFile string) string {
 	return string(credsData)
 }
 
-// NewCmdDeploy creates a new "deploy" command.
-func NewCmdDeploy() *cobra.Command {
-	return &cobra.Command{
-		Use:   "deploy",
-		Short: "Deploys Pixie on the current K8s cluster",
-		Run: func(cmd *cobra.Command, args []string) {
-			check, _ := cmd.Flags().GetBool("check")
-			if check {
-				checkCluster()
-				return
-			}
-
-			currentCluster := getCurrentCluster()
-			log.Info(fmt.Sprintf("Deploying Pixie to the following cluster: %s", currentCluster))
-			log.Info("Is the cluster correct? (y/n)")
-			clusterOk := acceptUserInput()
-			if !clusterOk {
-				log.Info("Cluster is not correct. Aborting.")
-				return
-			}
-
-			kubeConfig := k8s.GetConfig()
-			clientset := k8s.GetClientset(kubeConfig)
-			namespace, _ := cmd.Flags().GetString("namespace")
-			credsFile, _ := cmd.Flags().GetString("credentials_file")
-			cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
-			clusterID, _ := cmd.Flags().GetString("cluster_id")
-
-			var credsData string
-			if credsFile == "" {
-				credsData = mustGetImagePullSecret(cloudAddr)
-			} else {
-				credsData = mustReadCredsFile(credsFile)
-			}
-			optionallyCreateNamespace(clientset, namespace)
-
-			// Install certs.
-			optionallyInstallCerts(clientset, namespace)
-
-			secretName, _ := cmd.Flags().GetString("secret_name")
-			k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsData)
-
-			LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace)
-
-			path, _ := cmd.Flags().GetString("extract_yaml")
-			extractYAMLs(path)
-
-			versionString, err := cmd.Flags().GetString("use_version")
-			if err != nil || len(versionString) == 0 {
-				log.Fatal("Version string is invalid")
-			}
-
-			depsOnly, _ := cmd.Flags().GetBool("deps_only")
-
-			err = updateYAMLsImageTag(path, versionString)
-			if err != nil {
-				log.WithError(err).Fatal("Failed to update image tags for YAML files.")
-			}
-
-			deploy(path, depsOnly)
-
-			waitForProxy(clientset, namespace)
-		},
+func runDeployCmd(cmd *cobra.Command, args []string) {
+	check, _ := cmd.Flags().GetBool("check")
+	if check {
+		checkCluster()
+		return
 	}
+
+	currentCluster := getCurrentCluster()
+	log.Info(fmt.Sprintf("Deploying Pixie to the following cluster: %s", currentCluster))
+	log.Info("Is the cluster correct? (y/n)")
+	clusterOk := acceptUserInput()
+	if !clusterOk {
+		log.Info("Cluster is not correct. Aborting.")
+		return
+	}
+
+	kubeConfig := k8s.GetConfig()
+	clientset := k8s.GetClientset(kubeConfig)
+	namespace, _ := cmd.Flags().GetString("namespace")
+	credsFile, _ := cmd.Flags().GetString("credentials_file")
+	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
+	clusterID, _ := cmd.Flags().GetString("cluster_id")
+
+	var credsData string
+	if credsFile == "" {
+		credsData = mustGetImagePullSecret(cloudAddr)
+	} else {
+		credsData = mustReadCredsFile(credsFile)
+	}
+	optionallyCreateNamespace(clientset, namespace)
+
+	// Install certs.
+	optionallyInstallCerts(clientset, namespace)
+
+	secretName, _ := cmd.Flags().GetString("secret_name")
+	k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsData)
+
+	LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace)
+
+	path, _ := cmd.Flags().GetString("extract_yaml")
+	extractYAMLs(path)
+
+	versionString, err := cmd.Flags().GetString("use_version")
+	if err != nil || len(versionString) == 0 {
+		log.Fatal("Version string is invalid")
+	}
+
+	depsOnly, _ := cmd.Flags().GetBool("deps_only")
+
+	err = updateYAMLsImageTag(path, versionString)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to update image tags for YAML files.")
+	}
+
+	deploy(path, depsOnly)
+
+	waitForProxy(clientset, namespace)
 }
 
 func acceptUserInput() bool {

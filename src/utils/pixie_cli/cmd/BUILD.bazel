@@ -9,7 +9,6 @@ go_library(
         "delete_pixie.go",
         "deploy.go",
         "deploy_yamls.go",
-        "download_ca.go",
         "load_cluster_secrets.go",
         "root.go",
         "version.go",

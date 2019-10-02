@@ -8,18 +8,22 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-// NewCmdDeletePixie creates a new "delete" command.
-func NewCmdDeletePixie() *cobra.Command {
-	return &cobra.Command{
-		Use:   "delete",
-		Short: "Deletes Pixie on the current K8s cluster",
-		Run: func(cmd *cobra.Command, args []string) {
-			clobberAll, _ := cmd.Flags().GetBool("clobber_namespace")
-			deletePixie(clobberAll)
-		},
-	}
+// DeleteCmd is the "delete" command.
+var DeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Deletes Pixie on the current K8s cluster",
+	Run: func(cmd *cobra.Command, args []string) {
+		clobberAll, _ := cmd.Flags().GetBool("clobber")
+		deletePixie(clobberAll)
+	},
+}
+
+func init() {
+	DeleteCmd.Flags().BoolP("clobber", "d", false, "Whether to delete all dependencies in the cluster")
+	viper.BindPFlag("clobber", DeleteCmd.Flags().Lookup("clobber"))
 }
 
 func deletePixie(clobberAll bool) {
