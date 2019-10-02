@@ -20,6 +20,7 @@ spec:
       containers:
       - name: stirling-wrapper
         image: gcr.io/pl-dev-infra/stirling_wrapper:{{USER}}
+        args: ["--stirling_enable_parsing_protobufs=true"]
         imagePullPolicy: Always
         resources:
           limits:
