@@ -299,10 +299,17 @@ bool ConnectionTracker::AllEventsReceived() const {
 
 void ConnectionTracker::SetPID(struct conn_id_t conn_id) {
   DCHECK(conn_id_.pid == 0 || conn_id_.pid == conn_id.pid);
-  DCHECK(conn_id_.pid_start_time_ticks == 0 ||
-         conn_id_.pid_start_time_ticks == conn_id.pid_start_time_ticks);
   DCHECK(conn_id_.fd == 0 || conn_id_.fd == conn_id.fd);
-  DCHECK(conn_id_.generation == 0 || conn_id_.generation == conn_id.generation);
+  DCHECK(conn_id_.generation == 0 || conn_id_.generation == conn_id.generation)
+      << absl::Substitute("Mismatched generation pid=$0 fd=$1 old gen: $2 new gen: $3",
+                          conn_id_.pid, conn_id_.fd, conn_id_.generation, conn_id.generation);
+  DCHECK(conn_id_.pid_start_time_ticks == 0 ||
+         conn_id_.pid_start_time_ticks == conn_id.pid_start_time_ticks)
+      << absl::Substitute(
+             "Mismatched PID start time ticks pid=$0 fd=$1 "
+             "old start time ticks: $2 new start time ticks: $3",
+             conn_id_.pid, conn_id_.fd, conn_id_.pid_start_time_ticks,
+             conn_id.pid_start_time_ticks);
 
   conn_id_.pid = conn_id.pid;
   conn_id_.pid_start_time_ticks = conn_id.pid_start_time_ticks;
