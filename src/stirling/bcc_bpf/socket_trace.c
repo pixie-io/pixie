@@ -108,6 +108,18 @@ BPF_HASH(active_close_info_map, u64, struct close_info_t);
 // Key is {tgid, fd}.
 BPF_HASH(proc_conn_map, u64, u32);
 
+// BPF programs are limited to a 512-byte stack. We store this value per CPU
+// and use it as a heap allocated value.
+BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
+
+// This array records singular values that are used by probes. We group them together to reduce the
+// number of arrays with only 1 element.
+BPF_PERCPU_ARRAY(control_values, s64, kNumControlValues);
+
+/***********************************************************
+ * General helper functions
+ ***********************************************************/
+
 static __inline uint64_t get_tgid_start_time() {
   struct task_struct* task = (struct task_struct*)bpf_get_current_task();
   return pl_nsec_to_clock_t(task->group_leader->start_time);
@@ -139,6 +151,30 @@ static __inline void clear_open_file(u64 id, int fd) {
   open_file_map.delete(&tgid_fd);
 }
 
+static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  struct conn_info_t new_conn_info;
+  memset(&new_conn_info, 0, sizeof(struct conn_info_t));
+  struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
+  // Use TGID zero to detect that a new conn_info was initialized.
+  if (conn_info->conn_id.tgid == 0) {
+    // If lookup_or_init initialized a new conn_info, we need to set some fields.
+    conn_info->conn_id.tgid = tgid;
+    conn_info->conn_id.tgid_start_time_ticks = get_tgid_start_time();
+    conn_info->conn_id.fd = fd;
+    // Note that many calls to this function are not for socket descriptors,
+    // so we are actually "wasting" generations numbers.
+    // But this is still the most straightforward thing to do, and
+    // using one generation number per second should still provide 136 years of coverage.
+    conn_info->conn_id.generation = get_tgid_fd_generation(tgid_fd);
+  }
+  return conn_info;
+}
+
+/***********************************************************
+ * Trace filtering functions
+ ***********************************************************/
+
 static __inline bool should_trace(const struct traffic_class_t* traffic_class) {
   u32 protocol = traffic_class->protocol;
 
@@ -157,9 +193,30 @@ static __inline bool should_trace(const struct traffic_class_t* traffic_class) {
   return control & traffic_class->role;
 }
 
-// BPF programs are limited to a 512-byte stack. We store this value per CPU
-// and use it as a heap allocated value.
-BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
+static __inline bool test_only_should_trace_target_tgid(const u32 tgid) {
+  int idx = kTargetTGIDIndex;
+  s64* target_tgid = control_values.lookup(&idx);
+  if (target_tgid == NULL) {
+    return true;
+  }
+  if (*target_tgid < 0) {
+    return true;
+  }
+  return *target_tgid == tgid;
+}
+
+static __inline bool is_stirling_tgid(const u32 tgid) {
+  int idx = kStirlingTGIDIndex;
+  s64* target_tgid = control_values.lookup(&idx);
+  if (target_tgid == NULL) {
+    return false;
+  }
+  return *target_tgid == tgid;
+}
+
+static __inline bool should_trace_tgid(const u32 tgid) {
+  return test_only_should_trace_target_tgid(tgid) && !is_stirling_tgid(tgid);
+}
 
 static __inline struct socket_data_event_t* fill_event(TrafficDirection direction,
                                                        const struct conn_info_t* conn_info) {
@@ -179,7 +236,7 @@ static __inline struct socket_data_event_t* fill_event(TrafficDirection directio
 }
 
 /***********************************************************
- * Buffer processing helper functions
+ * Traffic inference helper functions
  ***********************************************************/
 
 static __inline bool is_http_response(const char* buf, size_t count) {
@@ -286,26 +343,6 @@ static __inline struct traffic_class_t infer_traffic(TrafficDirection direction,
   return traffic_class;
 }
 
-static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
-  struct conn_info_t new_conn_info;
-  memset(&new_conn_info, 0, sizeof(struct conn_info_t));
-  struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
-  // Use TGID zero to detect that a new conn_info was initialized.
-  if (conn_info->conn_id.tgid == 0) {
-    // If lookup_or_init initialized a new conn_info, we need to set some fields.
-    conn_info->conn_id.tgid = tgid;
-    conn_info->conn_id.tgid_start_time_ticks = get_tgid_start_time();
-    conn_info->conn_id.fd = fd;
-    // Note that many calls to this function are not for socket descriptors,
-    // so we are actually "wasting" generations numbers.
-    // But this is still the most straightforward thing to do, and
-    // using one generation number per second should still provide 136 years of coverage.
-    conn_info->conn_id.generation = get_tgid_fd_generation(tgid_fd);
-  }
-  return conn_info;
-}
-
 // TODO(oazizi): This function should go away once the protocol is identified externally.
 //               Also, could move this function into the header file, so we can test it.
 static __inline void update_traffic_class(struct conn_info_t* conn_info, TrafficDirection direction,
@@ -319,46 +356,12 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info, Traffic
   if (conn_info != NULL && conn_info->traffic_class.protocol == kProtocolUnknown) {
     // TODO(oazizi): Look for only certain protocols on write/send()?
     struct traffic_class_t traffic_class = infer_traffic(direction, buf, count);
-    if (conn_info->traffic_class.protocol == traffic_class.protocol) {
-      ++conn_info->protocol_observed_count;
-    } else {
-      conn_info->protocol_observed_count = 1;
-    }
     conn_info->traffic_class = traffic_class;
   }
 }
 
-// This array records singular values that are used by probes. We group them together to reduce the
-// number of arrays with only 1 element.
-BPF_PERCPU_ARRAY(control_values, s64, kNumControlValues);
-
-static __inline bool test_only_should_trace_target_tgid(const u32 tgid) {
-  int idx = kTargetTGIDIndex;
-  s64* target_tgid = control_values.lookup(&idx);
-  if (target_tgid == NULL) {
-    return true;
-  }
-  if (*target_tgid < 0) {
-    return true;
-  }
-  return *target_tgid == tgid;
-}
-
-static __inline bool is_stirling_tgid(const u32 tgid) {
-  int idx = kStirlingTGIDIndex;
-  s64* target_tgid = control_values.lookup(&idx);
-  if (target_tgid == NULL) {
-    return false;
-  }
-  return *target_tgid == tgid;
-}
-
-static __inline bool should_trace_tgid(const u32 tgid) {
-  return test_only_should_trace_target_tgid(tgid) && !is_stirling_tgid(tgid);
-}
-
 /***********************************************************
- * BPF syscall probe functions
+ * Perf submit functions
  ***********************************************************/
 
 static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
@@ -382,138 +385,10 @@ static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
   socket_open_conns.perf_submit(ctx, &conn_info, sizeof(struct conn_info_t));
 }
 
-static __inline void probe_entry_connect_impl(struct pt_regs* ctx, u64 id, int sockfd,
-                                              const struct sockaddr* addr, size_t addrlen) {
-  if (sockfd < 0) {
-    return;
-  }
-
-  u32 tgid = id >> 32;
-
-  if (!should_trace_tgid(tgid)) {
-    return;
-  }
-
-  // Only record IP (IPV4 and IPV6) connections.
-  if (!(addr->sa_family == AF_INET || addr->sa_family == AF_INET6)) {
-    return;
-  }
-
-  struct connect_info_t connect_info;
-  memset(&connect_info, 0, sizeof(struct connect_info_t));
-  connect_info.fd = sockfd;
-  bpf_probe_read(&connect_info.addr, sizeof(struct sockaddr_in6), (const void*)addr);
-
-  active_connect_info_map.update(&id, &connect_info);
-}
-
-static __inline void probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
-  int ret_val = PT_REGS_RC(ctx);
-  // We allow EINPROGRESS to go through, which indicates that a NON_BLOCK socket is undergoing
-  // handshake.
-  //
-  // In case connect() eventually fails, any write or read on the fd would fail nonetheless, and we
-  // wont's see spurious events.
-  //
-  // In case a separate connect() is called concurrently in another thread, and succeeds
-  // immediately, any write or read on the fd would be attributed to the new connection, which would
-  // have a new generation number. That is harmless, and only result into inflated generation
-  // numbers.
-  if (ret_val < 0 && ret_val != -EINPROGRESS) {
-    return;
-  }
-
-  const struct connect_info_t* connect_info = active_connect_info_map.lookup(&id);
-  if (connect_info == NULL) {
-    return;
-  }
-
-  u32 tgid = id >> 32;
-  submit_new_conn(ctx, tgid, (u32)connect_info->fd, connect_info->addr);
-}
-
-// This function stores the address to the sockaddr struct in the active_accept_info_map map.
-// The key is the current pid/tgid.
-//
-// TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
-// socket() syscall.
-static __inline void probe_entry_accept_impl(struct pt_regs* ctx, u64 id, int sockfd,
-                                             struct sockaddr* addr, size_t* addrlen) {
-  u32 tgid = id >> 32;
-
-  if (!should_trace_tgid(tgid)) {
-    return;
-  }
-
-  struct accept_info_t accept_info;
-  memset(&accept_info, 0, sizeof(struct accept_info_t));
-  accept_info.addr = addr;
-  accept_info.addrlen = addrlen;
-  active_accept_info_map.update(&id, &accept_info);
-}
-
-// Read the sockaddr values and write to the output buffer.
-static __inline void probe_ret_accept_impl(struct pt_regs* ctx, u64 id) {
-  int ret_fd = PT_REGS_RC(ctx);
-  if (ret_fd < 0) {
-    return;
-  }
-
-  struct accept_info_t* accept_info = active_accept_info_map.lookup(&id);
-  if (accept_info == NULL) {
-    return;
-  }
-
-  // Only record IP (IPV4 and IPV6) connections.
-  if (!(accept_info->addr->sa_family == AF_INET || accept_info->addr->sa_family == AF_INET6)) {
-    return;
-  }
-
-  u32 tgid = id >> 32;
-  submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_info->addr));
-}
-
-static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd, char* buf,
-                                            size_t count, const struct iovec* iov, size_t iovlen) {
-  if (fd < 0) {
-    return;
-  }
-
-  u32 tgid = id >> 32;
-
-  if (!should_trace_tgid(tgid)) {
-    return;
-  }
-
-  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
-  if (conn_info == NULL) {
-    return;
-  }
-
-  struct data_info_t write_info;
-  memset(&write_info, 0, sizeof(struct data_info_t));
-  write_info.fd = fd;
-  write_info.buf = buf;
-  write_info.iov = iov;
-  write_info.iovlen = iovlen;
-
-  // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
-  // are handled separately without mixed interface. The plan is to factor out helper functions for
-  // lower-level functionalities, and call them separately for each case.
-  if (buf != NULL) {
-    update_traffic_class(conn_info, kEgress, buf, count);
-  } else if (write_info.iov != NULL && write_info.iovlen > 0) {
-    struct iovec iov_cpy;
-    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &write_info.iov[0]);
-    update_traffic_class(conn_info, kEgress, iov_cpy.iov_base, iov_cpy.iov_len);
-  }
-
-  // Filter for request or response based on control flags and protocol type.
-  if (!should_trace(&conn_info->traffic_class)) {
-    return;
-  }
-
-  active_write_info_map.update(&id, &write_info);
+static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t* conn_info) {
+  // Update timestamp to reflect the close event.
+  conn_info->timestamp_ns = bpf_ktime_get_ns();
+  socket_close_conns.perf_submit(ctx, conn_info, sizeof(struct conn_info_t));
 }
 
 // TODO(yzhao): We can write a test for this, by define a dummy bpf_probe_read() function. Similar
@@ -653,6 +528,144 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const TrafficDirect
         perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, conn_info, event);
     bytes_copied += submit_size;
   }
+}
+
+/***********************************************************
+ * BPF syscall probe functions
+ ***********************************************************/
+
+static __inline void probe_entry_connect_impl(struct pt_regs* ctx, u64 id, int sockfd,
+                                              const struct sockaddr* addr, size_t addrlen) {
+  if (sockfd < 0) {
+    return;
+  }
+
+  u32 tgid = id >> 32;
+
+  if (!should_trace_tgid(tgid)) {
+    return;
+  }
+
+  // Only record IP (IPV4 and IPV6) connections.
+  if (!(addr->sa_family == AF_INET || addr->sa_family == AF_INET6)) {
+    return;
+  }
+
+  struct connect_info_t connect_info;
+  memset(&connect_info, 0, sizeof(struct connect_info_t));
+  connect_info.fd = sockfd;
+  bpf_probe_read(&connect_info.addr, sizeof(struct sockaddr_in6), (const void*)addr);
+
+  active_connect_info_map.update(&id, &connect_info);
+}
+
+static __inline void probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
+  int ret_val = PT_REGS_RC(ctx);
+  // We allow EINPROGRESS to go through, which indicates that a NON_BLOCK socket is undergoing
+  // handshake.
+  //
+  // In case connect() eventually fails, any write or read on the fd would fail nonetheless, and we
+  // wont's see spurious events.
+  //
+  // In case a separate connect() is called concurrently in another thread, and succeeds
+  // immediately, any write or read on the fd would be attributed to the new connection, which would
+  // have a new generation number. That is harmless, and only result into inflated generation
+  // numbers.
+  if (ret_val < 0 && ret_val != -EINPROGRESS) {
+    return;
+  }
+
+  const struct connect_info_t* connect_info = active_connect_info_map.lookup(&id);
+  if (connect_info == NULL) {
+    return;
+  }
+
+  u32 tgid = id >> 32;
+  submit_new_conn(ctx, tgid, (u32)connect_info->fd, connect_info->addr);
+}
+
+// This function stores the address to the sockaddr struct in the active_accept_info_map map.
+// The key is the current pid/tgid.
+//
+// TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
+// socket() syscall.
+static __inline void probe_entry_accept_impl(struct pt_regs* ctx, u64 id, int sockfd,
+                                             struct sockaddr* addr, size_t* addrlen) {
+  u32 tgid = id >> 32;
+
+  if (!should_trace_tgid(tgid)) {
+    return;
+  }
+
+  struct accept_info_t accept_info;
+  memset(&accept_info, 0, sizeof(struct accept_info_t));
+  accept_info.addr = addr;
+  accept_info.addrlen = addrlen;
+  active_accept_info_map.update(&id, &accept_info);
+}
+
+// Read the sockaddr values and write to the output buffer.
+static __inline void probe_ret_accept_impl(struct pt_regs* ctx, u64 id) {
+  int ret_fd = PT_REGS_RC(ctx);
+  if (ret_fd < 0) {
+    return;
+  }
+
+  struct accept_info_t* accept_info = active_accept_info_map.lookup(&id);
+  if (accept_info == NULL) {
+    return;
+  }
+
+  // Only record IP (IPV4 and IPV6) connections.
+  if (!(accept_info->addr->sa_family == AF_INET || accept_info->addr->sa_family == AF_INET6)) {
+    return;
+  }
+
+  u32 tgid = id >> 32;
+  submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_info->addr));
+}
+
+static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd, char* buf,
+                                            size_t count, const struct iovec* iov, size_t iovlen) {
+  if (fd < 0) {
+    return;
+  }
+
+  u32 tgid = id >> 32;
+
+  if (!should_trace_tgid(tgid)) {
+    return;
+  }
+
+  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
+  if (conn_info == NULL) {
+    return;
+  }
+
+  struct data_info_t write_info;
+  memset(&write_info, 0, sizeof(struct data_info_t));
+  write_info.fd = fd;
+  write_info.buf = buf;
+  write_info.iov = iov;
+  write_info.iovlen = iovlen;
+
+  // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
+  // are handled separately without mixed interface. The plan is to factor out helper functions for
+  // lower-level functionalities, and call them separately for each case.
+  if (buf != NULL) {
+    update_traffic_class(conn_info, kEgress, buf, count);
+  } else if (write_info.iov != NULL && write_info.iovlen > 0) {
+    struct iovec iov_cpy;
+    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &write_info.iov[0]);
+    update_traffic_class(conn_info, kEgress, iov_cpy.iov_base, iov_cpy.iov_len);
+  }
+
+  // Filter for request or response based on control flags and protocol type.
+  if (!should_trace(&conn_info->traffic_class)) {
+    return;
+  }
+
+  active_write_info_map.update(&id, &write_info);
 }
 
 static __inline void probe_ret_write_send(struct pt_regs* ctx, u64 id) {
@@ -806,14 +819,11 @@ static __inline void probe_ret_close(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  // Update timestamp to reflect the close event.
-  conn_info->timestamp_ns = bpf_ktime_get_ns();
-
   // Only submit event to user-space if there was a corresponding open or data event reported.
   // This is to avoid polluting the perf buffer.
   if (conn_info->addr.sin6_family != 0 || conn_info->wr_seq_num != 0 ||
       conn_info->rd_seq_num != 0) {
-    socket_close_conns.perf_submit(ctx, conn_info, sizeof(struct conn_info_t));
+    submit_close_event(ctx, conn_info);
   }
 
   conn_info_map.delete(&tgid_fd);
