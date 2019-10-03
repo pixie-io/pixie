@@ -428,8 +428,8 @@ Status Controller::HandleExecuteQueryMessage(std::unique_ptr<messages::VizierMes
   grpc::ClientContext context;
   auto query_response_status = qb_stub_->ReceiveAgentQueryResult(&context, req, &resp);
   if (!query_response_status.ok()) {
-    LOG(ERROR) << absl::StrFormat(
-        "Failed to send query response, code = %d, message = %s, details = %s",
+    LOG(ERROR) << absl::Substitute(
+        "Failed to send query response, code = $0, message = $1, details = $2",
         query_response_status.error_code(), query_response_status.error_message(),
         query_response_status.error_details());
   }
