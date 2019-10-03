@@ -40,8 +40,8 @@ void ConnectionTracker::InitState<mysql::Packet>() {
 }
 
 void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
-  LOG_IF(ERROR, open_info_.timestamp_ns != 0) << absl::Substitute(
-      "Clobbering existing ConnOpenEvent [pid=$0 fd=$1 gen=$2].", conn_event.conn_id.pid,
+  LOG_IF_EVERY_N(WARNING, open_info_.timestamp_ns != 0, 10) << absl::Substitute(
+      "[PL-985] Clobbering existing ConnOpenEvent [pid=$0 fd=$1 gen=$2].", conn_event.conn_id.pid,
       conn_event.conn_id.fd, conn_event.conn_id.generation);
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
