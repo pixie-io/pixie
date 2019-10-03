@@ -19,30 +19,11 @@
 .deploy-instructions .deploy-instructions--footer {
     border-top: 1px solid $gray-400;
     padding-top: 20px;
-    margin-top: 40px;
+    margin-top: 20px;
 }
 
-.deploy-instructions--notes {
-  font-size: 12px;
-}
-
-.deploy-instructions--notes ul {
-  list-style: none;
-}
-
-.deploy-instructions--notes li {
-  color: $gray-600;
-}
-
-.deploy-instructions--notes li:before {
-  content: "\2022";
-  color: black;
-  margin-left: -1em;
-  margin-right: 1em;
-}
-
-.deploy-instructions .code-snippet {
-    height: 100px;
+.deploy-instructions--step {
+    font-weight: 500;
 }
 
 .deploy-instructions--instructions {
@@ -104,6 +85,5 @@
 }
 
 .deploy-instructions .code-snippet {
-    margin-top: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }

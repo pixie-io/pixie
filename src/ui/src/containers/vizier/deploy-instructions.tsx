@@ -29,26 +29,31 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
         <div className='deploy-instructions--content'>
           <h3>Deployment Instructions</h3>
           <div className='deploy-instructions--instructions' style={{width: '100%'}}>
-            <div className='deploy-instructions--notes'>
-              Notes for Beta Users:
-             <ul>
-                <li>The command uses the Pixie CLI to deploy Pixie on your cluster: </li>
-                <li>Download the
+            <div><span className='deploy-instructions--step'>Step 1:</span> Download the
                   <a href='/assets/downloads/pixie/linux_amd64/pixie'>{' Pixie CLI '}
                     <img src={downloadImage}/>
                   </a>
                     {' ('} <a href='/assets/downloads/pixie/linux_amd64/pixie.sha256'>{'SHA256 '}
                       <img src={downloadImage}/>
                     </a>{' )'}.
-                </li>
-                <li>The Pixie CLI is a Linux binary, so make sure you run it on a Linux machine.</li>
-             </ul>
-          </div>
-          Copy and execute the command below in your K8s cluster's terminal:
+            </div>
+            <br/>
+            <div><span className='deploy-instructions--step'>Step 2:
+              </span> Copy and execute the following commands in your K8s cluster terminal:
+            </div>
+            <p/>
             <CodeSnippet showCopy={true} language='bash'>
-              {' chmod +x pixie \n ./pixie auth login --site="' + props.sitename + '" \n' +
-               ' ./pixie deploy --cluster_id "' + props.clusterID + '" \\ \n --use_version v0.1.4'}
+              {' chmod +x pixie'}
             </CodeSnippet>
+            <CodeSnippet showCopy={true} language='bash'>
+              {' ./pixie auth login --site="' + props.sitename + '"'}
+            </CodeSnippet>
+            <CodeSnippet showCopy={true} language='bash'>
+              {' ./pixie deploy --cluster_id "' + props.clusterID + '"\n --use_version v0.1.4'}
+            </CodeSnippet>
+            <br/>
+            <br/>
+            <div>Note: Pixie CLI is a linux binary. Make sure you run it on a Linux machine.</div>
           </div>
           <div className='deploy-instructions--footer' style={{width: '100%'}}>
             Need help with deploying your application?
@@ -58,7 +63,7 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
                   <a href={'/docs/getting-started/'}>Pixie Product Documentation</a>
               </div>
               <div className='deploy-instructions--contact-info-line'>
-                <img src={emailImage}/><a href='mailto:cs@pixielabs.ai'> cs@pixielabs.ai</a>
+                <img src={emailImage}/><a href='mailto:cs@pixielabs.ai'>cs@pixielabs.ai</a>
               </div>
             </div>
           </div>

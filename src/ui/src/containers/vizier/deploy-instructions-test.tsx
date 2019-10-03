@@ -10,6 +10,6 @@ describe('<DeployInstructions/> test', () => {
       sitename={'pixielabs'}
       clusterID={'test'}
     />);
-    expect(wrapper.find(CodeSnippet)).toHaveLength(1);
+    expect(wrapper.find(CodeSnippet)).toHaveLength(3);
   });
 });
