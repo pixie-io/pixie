@@ -1,6 +1,7 @@
 package controllers_test
 
 import (
+	"io"
 	"testing"
 	"time"
 
@@ -113,7 +114,47 @@ func TestServer_HandleHeartbeat(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(10, 0))
 	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, mockCertMgr, mockVzInfo, clock)
-	server.HandleHeartbeat(mockStream)
+	err = server.HandleHeartbeat(mockStream)
+	assert.Nil(t, err)
+}
+
+func TestServer_HandleHeartbeat_EOFError(t *testing.T) {
+	vizierID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	vizierUUID, err := uuid.FromString(vizierID)
+	assert.Nil(t, err)
+
+	ctrl := gomock.NewController(t)
+	mockVZConn := mock_vzconnpb.NewMockVZConnServiceClient(ctrl)
+	mockCertMgr := mock_certmgrpb.NewMockCertMgrServiceClient(ctrl)
+
+	mockStream := mock_vzconnpb.NewMockVZConnService_CloudConnectClient(ctrl)
+
+	mockVZConn.EXPECT().CloudConnect(gomock.Any()).
+		Return(mockStream, nil)
+
+	hbReq := &cloudpb.VizierHeartbeat{
+		VizierID:       utils.ProtoFromUUID(&vizierUUID),
+		Time:           10,
+		SequenceNumber: 0,
+		Address:        "https://127.0.0.1",
+	}
+	anyMsg, err := types.MarshalAny(hbReq)
+	assert.Nil(t, err)
+	wrappedReq := &vzconnpb.CloudConnectRequest{
+		Topic: "heartbeat",
+		Msg:   anyMsg,
+	}
+
+	mockStream.EXPECT().Send(wrappedReq).Return(nil)
+	mockStream.EXPECT().Recv().Return(nil, io.EOF)
+
+	mockVzInfo := mock_controller.NewMockVizierInfo(ctrl)
+	mockVzInfo.EXPECT().GetAddress().Return("https://127.0.0.1", nil)
+
+	clock := testingutils.NewTestClock(time.Unix(10, 0))
+	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, mockCertMgr, mockVzInfo, clock)
+	err = server.HandleHeartbeat(mockStream)
+	assert.NotNil(t, err)
 }
 
 func TestServer_RequestAndHandleSSLCerts(t *testing.T) {

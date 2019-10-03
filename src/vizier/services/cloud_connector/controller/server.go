@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"io"
 	"time"
 
 	"github.com/gogo/protobuf/types"
@@ -75,16 +76,37 @@ func DoWithTimeout(f func() error, d time.Duration) error {
 	}
 }
 
+// RunStream manages starting and restarting the stream to VZConn.
+func (s *Server) RunStream() {
+	for {
+		select {
+		case <-s.quitCh:
+			return
+		default:
+			log.Info("Starting stream")
+			err := s.StartStream()
+			if err == nil {
+				log.Info("Stream ending")
+				return
+			}
+			log.WithError(err).Error("Stream errored. Restarting stream")
+			time.Sleep(heartbeatWaitS)
+		}
+	}
+}
+
 // StartStream starts the stream between the cloud connector and vizier connector.
-func (s *Server) StartStream() {
+func (s *Server) StartStream() error {
 	stream, err := s.vzConnClient.CloudConnect(context.Background())
 	if err != nil {
-		log.WithError(err).Fatal("Could not start stream")
+		log.WithError(err).Error("Error starting stream")
+		return err
 	}
 
 	err = s.RegisterVizier(stream)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to register vizier")
+		log.WithError(err).Error("failed to register Vizier")
+		return err
 	}
 
 	// Request the SSL certs and then send them cert manager.
@@ -92,11 +114,12 @@ func (s *Server) StartStream() {
 	// cert manager is the one who initiates cert requests.
 	err = s.RequestAndHandleSSLCerts(stream)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to fetch SSL certs")
+		log.WithError(err).Error("Failed to fetch SSL certs")
+		return err
 	}
 
 	// Send heartbeats.
-	go s.doHeartbeats(stream)
+	return s.doHeartbeats(stream)
 }
 
 func wrapRequest(p *types.Any, topic string) *vzconnpb.CloudConnectRequest {
@@ -163,20 +186,23 @@ func (s *Server) RegisterVizier(stream vzconnpb.VZConnService_CloudConnectClient
 	return err
 }
 
-func (s *Server) doHeartbeats(stream vzconnpb.VZConnService_CloudConnectClient) {
+func (s *Server) doHeartbeats(stream vzconnpb.VZConnService_CloudConnectClient) error {
 	for {
 		select {
 		case <-s.quitCh:
-			return
+			return nil
 		default:
-			s.HandleHeartbeat(stream)
+			err := s.HandleHeartbeat(stream)
+			if err != nil {
+				return err
+			}
 			time.Sleep(heartbeatIntervalS)
 		}
 	}
 }
 
 // HandleHeartbeat sends a heartbeat to the VZConn and waits for a response.
-func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClient) {
+func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClient) error {
 	addr, err := s.vzInfo.GetAddress()
 	if err != nil {
 		log.WithError(err).Info("Unable to get vizier proxy address")
@@ -191,14 +217,22 @@ func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClien
 
 	hbMsgAny, err := types.MarshalAny(&hbMsg)
 	if err != nil {
-		log.WithError(err).Fatal("Could not marshal heartbeat message")
+		log.WithError(err).Info("Could not marshal heartbeat message")
+		return err
 	}
 
 	// TODO(zasgar/michelle): There should be a vizier specific topic.
 	msg := wrapRequest(hbMsgAny, "heartbeat")
-	if err := stream.Send(msg); err != nil {
-		log.WithError(err).Fatal("Could not send heartbeat (will retry)")
-		return
+	err = stream.Send(msg)
+
+	if err == io.EOF {
+		log.WithError(err).Info("Stream closed")
+		return err
+	}
+
+	if err != nil {
+		log.WithError(err).Info("Could not send heartbeat (will retry)")
+		return nil
 	}
 
 	s.hbSeqNum++
@@ -220,9 +254,7 @@ func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClien
 		return nil
 	}, heartbeatWaitS)
 
-	if err != nil {
-		log.WithError(err).Fatal("Did not receive heartbeat ack")
-	}
+	return err
 }
 
 // RequestAndHandleSSLCerts registers the cluster with VZConn.
