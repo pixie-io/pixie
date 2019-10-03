@@ -3,9 +3,14 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: front-end
+  labels:
+    name: front-end
   namespace: sock-shop
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      name: front-end
   template:
     metadata:
       labels:
