@@ -53,7 +53,9 @@ void UnpackData(const uint8_t* buf, Frame* f) {
   if (frame_body_length >= frame.padlen) {
     f->u8payload.assign(buf, frame_body_length - frame.padlen);
   } else {
-    LOG(DFATAL) << "Pad length cannot be larger than frame body";
+    LOG(DFATAL) << absl::Substitute(
+        "Pad length cannot be larger than frame body, padlen: $0 bodylen: $1", frame.padlen,
+        frame_body_length);
     f->u8payload.clear();
   }
 }
@@ -79,7 +81,9 @@ void UnpackHeaders(const uint8_t* buf, Frame* f) {
   if (frame_body_length >= frame.padlen) {
     f->u8payload.assign(buf, frame_body_length - frame.padlen);
   } else {
-    LOG(DFATAL) << "Pad length cannot be larger than frame body";
+    LOG(DFATAL) << absl::Substitute(
+        "Pad length cannot be larger than frame body, padlen: $0 bodylen: $1", frame.padlen,
+        frame_body_length);
     f->u8payload.clear();
   }
 }
