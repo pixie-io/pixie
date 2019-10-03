@@ -76,6 +76,11 @@
     flex: 1;
 }
 
+.query-results--compiler-error {
+    display: flex;
+    flex: 1;
+}
+
 .query-results--empty {
     justify-content: center;
     align-items: center;

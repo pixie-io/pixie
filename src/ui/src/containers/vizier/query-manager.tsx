@@ -67,6 +67,16 @@ mutation ExecuteQuery($queryStr: String!) {
         }
         data
       }
+      error {
+        compilerError {
+          msg
+          lineColErrors {
+            line
+            col
+            msg
+          }
+        }
+      }
     }
 }
 `;
@@ -172,6 +182,10 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
         'Ctrl-Enter': executeQueryFn,
       },
     };
+    // TODO(philkuz) (PL-??) pass in the ExecuteQueryResult data to populate
+    // code mirror nnotations. See the folowing for an example:
+    // https://github.com/codemirror/CodeMirror/blob/master/addon/lint/lint.js#L160
+
 
     return (<CodeMirror
       value={this.state.code}

@@ -1,4 +1,5 @@
 import { AutoSizedScrollableTable, TableColumnInfo } from 'components/table/scrollable-table';
+import { ParseCompilerErrors } from 'utils/parse-compiler-errors';
 import * as numeral from 'numeral';
 import * as React from 'react';
 import * as FormatData from 'utils/format-data';
@@ -8,6 +9,8 @@ import {
   GQLDataColTypes,
   GQLDataTable,
   GQLDataTableRelation,
+  GQLCompilerErrors,
+  GQLQueryErrors,
   GQLQuery,
   GQLQueryResult,
 } from '../../../../vizier/services/api/controller/schema/schema';
@@ -147,6 +150,43 @@ function ExpandedRowRenderer(rowData) {
   />;
 }
 
+function formatError(error: GQLQueryErrors) {
+    const parsedErrors = ParseCompilerErrors(error.compilerError);
+    const colInfo: TableColumnInfo[] = [
+      {
+        dataKey: 'line',
+        label: 'Line',
+        type: 'INT64',
+        flexGrow: 8,
+        width: 10,
+      }, {
+        dataKey: 'col',
+        label: 'Column',
+        type: 'INT64',
+        flexGrow: 8,
+        width: 10,
+      }, {
+        dataKey: 'msg',
+        label: 'Message',
+        type: 'STRING',
+        flexGrow: 8,
+        width: 600,
+      },
+    ];
+
+    return (
+      <div className='query-results--compiler-error'>
+        <AutoSizedScrollableTable
+          data={parsedErrors}
+          columnInfo={colInfo}
+          cellRenderer={ResultCellRenderer}
+          expandable={true}
+          expandRenderer={ExpandedRowRenderer}
+          resizableCols={false}
+        />
+      </div>);
+}
+
 export class QueryResultViewer extends React.Component<QueryResultViewerProps, {}> {
   constructor(props) {
     super(props);
@@ -157,6 +197,10 @@ export class QueryResultViewer extends React.Component<QueryResultViewerProps, {
     const data = this.props.data;
     if (!data) {
       return <div>No Data Available</div>;
+    }
+
+    if (data.error.compilerError) {
+      return formatError(data.error);
     }
 
     const relation = data.table.relation;

@@ -89,6 +89,9 @@ describe('<QueryManager/> test', () => {
                   colTypes: ['TIME64NS', 'STRING'],
                 },
               },
+              error: {
+                compilerError: null,
+              },
             },
           },
         },
@@ -128,6 +131,9 @@ describe('<QueryManager/> test', () => {
                   colNames: ['time_', 'http_request'],
                   colTypes: ['TIME64NS', 'STRING'],
                 },
+              },
+              error: {
+                compilerError: null,
               },
             },
           },
@@ -175,4 +181,49 @@ describe('<QueryManager/> test', () => {
 
     expect(wrapper.find('.spinner')).toHaveLength(1);
   });
+
+  it('should handle error messages', async () => {
+    const mocks = [
+      {
+        request: {
+          query: EXECUTE_QUERY,
+          variables: { queryStr: '# Enter Query Here\n' },
+        },
+        result: {
+          data: {
+            ExecuteQuery: {
+              id: '1',
+              table: null,
+              error: {
+                compilerError: {
+                  msg: '',
+                  lineColErrors: [{line: 1, col: 1, msg: 'blah'}, {line: 2, col: 2, msg: 'blahblah'}],
+                },
+              },
+            },
+          },
+        },
+      },
+    ];
+
+    const wrapper = mount(
+      <MockedProvider mocks={mocks} addTypename={false}>
+        <QueryManager/>
+      </MockedProvider>,
+    );
+
+    const executeButton = wrapper.find('#execute-button').at(0);
+    executeButton.simulate('click');
+    // TODO(michelle/philkuz)  need to figure out why our tests are flakey if wait(0)
+    await wait(10);
+    wrapper.update();
+
+    expect(wrapper.find('.ReactVirtualized__Table__headerTruncatedText').at(0).text()).toEqual('Line');
+    expect(wrapper.find('.ReactVirtualized__Table__headerTruncatedText').at(1).text()).toEqual('Column');
+    expect(wrapper.find('.ReactVirtualized__Table__headerTruncatedText').at(2).text()).toEqual('Message');
+    expect(wrapper.find('.query-results')).toHaveLength(0);
+    expect(wrapper.find('.query-results--compiler-error')).toHaveLength(1);
+
+  });
+
 });
