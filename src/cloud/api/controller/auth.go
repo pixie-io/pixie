@@ -64,7 +64,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	var params struct {
 		AccessToken string
 		State       string
-		DomainName  string
+		SiteName    string
 	}
 
 	defer r.Body.Close()
@@ -75,7 +75,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	rpcReq := &authpb.LoginRequest{
 		AccessToken:           params.AccessToken,
-		SiteName:              params.DomainName,
+		SiteName:              params.SiteName,
 		CreateUserIfNotExists: true,
 	}
 
@@ -92,7 +92,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		return services.HTTPStatusFromError(err, "Failed to login")
 	}
 
-	setSessionCookie(session, resp.Token, resp.ExpiresAt, params.DomainName, r, w)
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, params.SiteName, r, w)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -158,11 +158,11 @@ func attachCredentialsToContext(env commonenv.Env, r *http.Request) (context.Con
 	return ctxWithCreds, nil
 }
 
-func setSessionCookie(session *sessions.Session, token string, expiresAt int64, domainName string, r *http.Request, w http.ResponseWriter) {
+func setSessionCookie(session *sessions.Session, token string, expiresAt int64, siteName string, r *http.Request, w http.ResponseWriter) {
 	// Set session cookie.
 	session.Values["_at"] = token
 	session.Values["_expires_at"] = expiresAt
-	session.Values["_auth_domain"] = domainName
+	session.Values["_auth_site"] = siteName
 	session.Options.MaxAge = int(time.Unix(expiresAt, 0).Sub(time.Now()).Seconds())
 	session.Options.HttpOnly = true
 	session.Options.Secure = true

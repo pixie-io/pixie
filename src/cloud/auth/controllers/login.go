@@ -151,7 +151,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	if err != nil || orgInfo == nil {
 		return nil, status.Error(codes.InvalidArgument, "user does not belong to a registered organization")
 	}
-	siteInfo, err := sc.GetSiteByDomain(ctx, &sitemanagerpb.GetSiteByDomainRequest{DomainName: in.SiteName})
+	siteInfo, err := sc.GetSiteByName(ctx, &sitemanagerpb.GetSiteByNameRequest{SiteName: in.SiteName})
 	if err != nil || siteInfo == nil {
 		return nil, status.Error(codes.InvalidArgument, "site does not exist")
 	}

@@ -19,22 +19,22 @@ type CheckSiteHandler struct {
 // HandlerFunc is an http.handlerfunc that will make requests to the site manager server.
 func (c *CheckSiteHandler) HandlerFunc(w http.ResponseWriter, r *http.Request) {
 	sc := c.env.SiteManagerClient()
-	keys, ok := r.URL.Query()["domain_name"]
+	keys, ok := r.URL.Query()["site_name"]
 
 	if !ok || len(keys[0]) < 1 {
-		http.Error(w, http.StatusText(http.StatusBadRequest)+" : missing domain_name", http.StatusBadRequest)
+		http.Error(w, http.StatusText(http.StatusBadRequest)+" : missing site name", http.StatusBadRequest)
 		return
 	}
 
-	domainName := keys[0]
+	siteName := keys[0]
 
-	if len(domainName) < 3 {
-		http.Error(w, http.StatusText(http.StatusBadRequest)+" : domain name should be atleast 3 characters", http.StatusBadRequest)
+	if len(siteName) < 3 {
+		http.Error(w, http.StatusText(http.StatusBadRequest)+" : site name should be atleast 3 characters", http.StatusBadRequest)
 		return
 	}
 
 	reqPB := &sitemanagerpb.IsSiteAvailableRequest{
-		DomainName: domainName,
+		SiteName: siteName,
 	}
 
 	serviceAuthToken, err := GetServiceCredentials(c.env.JWTSigningKey())

@@ -90,22 +90,22 @@ func (mr *MockSiteManagerServiceClientMockRecorder) GetSiteForOrg(ctx, in interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSiteForOrg", reflect.TypeOf((*MockSiteManagerServiceClient)(nil).GetSiteForOrg), varargs...)
 }
 
-// GetSiteByDomain mocks base method
-func (m *MockSiteManagerServiceClient) GetSiteByDomain(ctx context.Context, in *sitemanagerpb.GetSiteByDomainRequest, opts ...grpc.CallOption) (*sitemanagerpb.SiteInfo, error) {
+// GetSiteByName mocks base method
+func (m *MockSiteManagerServiceClient) GetSiteByName(ctx context.Context, in *sitemanagerpb.GetSiteByNameRequest, opts ...grpc.CallOption) (*sitemanagerpb.SiteInfo, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "GetSiteByDomain", varargs...)
+	ret := m.ctrl.Call(m, "GetSiteByName", varargs...)
 	ret0, _ := ret[0].(*sitemanagerpb.SiteInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetSiteByDomain indicates an expected call of GetSiteByDomain
-func (mr *MockSiteManagerServiceClientMockRecorder) GetSiteByDomain(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// GetSiteByName indicates an expected call of GetSiteByName
+func (mr *MockSiteManagerServiceClientMockRecorder) GetSiteByName(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSiteByDomain", reflect.TypeOf((*MockSiteManagerServiceClient)(nil).GetSiteByDomain), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSiteByName", reflect.TypeOf((*MockSiteManagerServiceClient)(nil).GetSiteByName), varargs...)
 }
 
 // MockSiteManagerServiceServer is a mock of SiteManagerServiceServer interface
@@ -170,15 +170,15 @@ func (mr *MockSiteManagerServiceServerMockRecorder) GetSiteForOrg(arg0, arg1 int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSiteForOrg", reflect.TypeOf((*MockSiteManagerServiceServer)(nil).GetSiteForOrg), arg0, arg1)
 }
 
-// GetSiteByDomain mocks base method
-func (m *MockSiteManagerServiceServer) GetSiteByDomain(arg0 context.Context, arg1 *sitemanagerpb.GetSiteByDomainRequest) (*sitemanagerpb.SiteInfo, error) {
-	ret := m.ctrl.Call(m, "GetSiteByDomain", arg0, arg1)
+// GetSiteByName mocks base method
+func (m *MockSiteManagerServiceServer) GetSiteByName(arg0 context.Context, arg1 *sitemanagerpb.GetSiteByNameRequest) (*sitemanagerpb.SiteInfo, error) {
+	ret := m.ctrl.Call(m, "GetSiteByName", arg0, arg1)
 	ret0, _ := ret[0].(*sitemanagerpb.SiteInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetSiteByDomain indicates an expected call of GetSiteByDomain
-func (mr *MockSiteManagerServiceServerMockRecorder) GetSiteByDomain(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSiteByDomain", reflect.TypeOf((*MockSiteManagerServiceServer)(nil).GetSiteByDomain), arg0, arg1)
+// GetSiteByName indicates an expected call of GetSiteByName
+func (mr *MockSiteManagerServiceServerMockRecorder) GetSiteByName(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSiteByName", reflect.TypeOf((*MockSiteManagerServiceServer)(nil).GetSiteByName), arg0, arg1)
 }

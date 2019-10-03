@@ -29,7 +29,7 @@ func TestCreateSiteHandler(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"domainName\": \"def\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"siteName\": \"def\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.CreateUserOrgRequest{
@@ -49,8 +49,8 @@ func TestCreateSiteHandler(t *testing.T) {
 	}).Return(createUserOrgReply, nil)
 
 	expectedSiteManagerReq := &sitemanagerpb.RegisterSiteRequest{
-		DomainName: "def",
-		OrgID:      &uuidpb.UUID{Data: []byte(orgID)},
+		SiteName: "def",
+		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
 	}
 	registerSiteResponse := &sitemanagerpb.RegisterSiteResponse{
 		SiteRegistered: true,
@@ -78,10 +78,10 @@ func TestCreateSiteHandler(t *testing.T) {
 	req2 := http.Request{Header: header}
 	sess, err := controller.GetDefaultSession(env, &req2)
 	assert.Equal(t, testReplyToken, sess.Values["_at"])
-	assert.Equal(t, "def", sess.Values["_auth_domain"])
+	assert.Equal(t, "def", sess.Values["_auth_site"])
 }
 
-func TestCreateSiteHandler_IndividualDomain(t *testing.T) {
+func TestCreateSiteHandler_IndividualSite(t *testing.T) {
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
@@ -89,7 +89,7 @@ func TestCreateSiteHandler_IndividualDomain(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@gmail.com\", \"domainName\": \"def\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@gmail.com\", \"siteName\": \"def\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.CreateUserOrgRequest{
@@ -109,8 +109,8 @@ func TestCreateSiteHandler_IndividualDomain(t *testing.T) {
 	}).Return(createUserOrgReply, nil)
 
 	expectedSiteManagerReq := &sitemanagerpb.RegisterSiteRequest{
-		DomainName: "def",
-		OrgID:      &uuidpb.UUID{Data: []byte(orgID)},
+		SiteName: "def",
+		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
 	}
 	registerSiteResponse := &sitemanagerpb.RegisterSiteResponse{
 		SiteRegistered: true,
@@ -138,7 +138,7 @@ func TestCreateSiteHandler_IndividualDomain(t *testing.T) {
 	req2 := http.Request{Header: header}
 	sess, err := controller.GetDefaultSession(env, &req2)
 	assert.Equal(t, testReplyToken, sess.Values["_at"])
-	assert.Equal(t, "def", sess.Values["_auth_domain"])
+	assert.Equal(t, "def", sess.Values["_auth_site"])
 }
 
 func TestCreateSiteHandler_BadMethod(t *testing.T) {
@@ -159,7 +159,7 @@ func TestCreateSiteHandler_UserCreationError(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"domainName\": \"def\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"siteName\": \"def\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.CreateUserOrgRequest{
@@ -186,7 +186,7 @@ func TestCreateSiteHandler_SiteCreationError(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"domainName\": \"def\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"siteName\": \"def\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.CreateUserOrgRequest{
@@ -206,8 +206,8 @@ func TestCreateSiteHandler_SiteCreationError(t *testing.T) {
 	}).Return(createUserOrgReply, nil)
 
 	expectedSiteManagerReq := &sitemanagerpb.RegisterSiteRequest{
-		DomainName: "def",
-		OrgID:      &uuidpb.UUID{Data: []byte(orgID)},
+		SiteName: "def",
+		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
 	}
 	mockSiteManagerClient.EXPECT().RegisterSite(gomock.Any(), expectedSiteManagerReq).Return(nil, errors.New("Could not create site"))
 
@@ -226,7 +226,7 @@ func TestCreateSiteHandler_SiteCreationFailed(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"domainName\": \"def\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abc@hulu.com\", \"siteName\": \"def\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.CreateUserOrgRequest{
@@ -246,8 +246,8 @@ func TestCreateSiteHandler_SiteCreationFailed(t *testing.T) {
 	}).Return(createUserOrgReply, nil)
 
 	expectedSiteManagerReq := &sitemanagerpb.RegisterSiteRequest{
-		DomainName: "def",
-		OrgID:      &uuidpb.UUID{Data: []byte(orgID)},
+		SiteName: "def",
+		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
 	}
 	registerSiteResponse := &sitemanagerpb.RegisterSiteResponse{
 		SiteRegistered: false,

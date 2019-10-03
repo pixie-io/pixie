@@ -28,8 +28,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type SiteInfo struct {
-	DomainName string       `protobuf:"bytes,1,opt,name=domain_name,json=domainName,proto3" json:"domain_name,omitempty"`
-	OrgID      *proto1.UUID `protobuf:"bytes,2,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	SiteName string       `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
+	OrgID    *proto1.UUID `protobuf:"bytes,2,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
 }
 
 func (m *SiteInfo) Reset()      { *m = SiteInfo{} }
@@ -64,9 +64,9 @@ func (m *SiteInfo) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SiteInfo proto.InternalMessageInfo
 
-func (m *SiteInfo) GetDomainName() string {
+func (m *SiteInfo) GetSiteName() string {
 	if m != nil {
-		return m.DomainName
+		return m.SiteName
 	}
 	return ""
 }
@@ -78,21 +78,21 @@ func (m *SiteInfo) GetOrgID() *proto1.UUID {
 	return nil
 }
 
-type GetSiteByDomainRequest struct {
-	DomainName string `protobuf:"bytes,1,opt,name=domain_name,json=domainName,proto3" json:"domain_name,omitempty"`
+type GetSiteByNameRequest struct {
+	SiteName string `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
 }
 
-func (m *GetSiteByDomainRequest) Reset()      { *m = GetSiteByDomainRequest{} }
-func (*GetSiteByDomainRequest) ProtoMessage() {}
-func (*GetSiteByDomainRequest) Descriptor() ([]byte, []int) {
+func (m *GetSiteByNameRequest) Reset()      { *m = GetSiteByNameRequest{} }
+func (*GetSiteByNameRequest) ProtoMessage() {}
+func (*GetSiteByNameRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ccc3521a7def8121, []int{1}
 }
-func (m *GetSiteByDomainRequest) XXX_Unmarshal(b []byte) error {
+func (m *GetSiteByNameRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *GetSiteByDomainRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *GetSiteByNameRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_GetSiteByDomainRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_GetSiteByNameRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalTo(b)
@@ -102,27 +102,27 @@ func (m *GetSiteByDomainRequest) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return b[:n], nil
 	}
 }
-func (m *GetSiteByDomainRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetSiteByDomainRequest.Merge(m, src)
+func (m *GetSiteByNameRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetSiteByNameRequest.Merge(m, src)
 }
-func (m *GetSiteByDomainRequest) XXX_Size() int {
+func (m *GetSiteByNameRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *GetSiteByDomainRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetSiteByDomainRequest.DiscardUnknown(m)
+func (m *GetSiteByNameRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetSiteByNameRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_GetSiteByDomainRequest proto.InternalMessageInfo
+var xxx_messageInfo_GetSiteByNameRequest proto.InternalMessageInfo
 
-func (m *GetSiteByDomainRequest) GetDomainName() string {
+func (m *GetSiteByNameRequest) GetSiteName() string {
 	if m != nil {
-		return m.DomainName
+		return m.SiteName
 	}
 	return ""
 }
 
 type IsSiteAvailableRequest struct {
-	DomainName string `protobuf:"bytes,1,opt,name=domain_name,json=domainName,proto3" json:"domain_name,omitempty"`
+	SiteName string `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
 }
 
 func (m *IsSiteAvailableRequest) Reset()      { *m = IsSiteAvailableRequest{} }
@@ -157,9 +157,9 @@ func (m *IsSiteAvailableRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_IsSiteAvailableRequest proto.InternalMessageInfo
 
-func (m *IsSiteAvailableRequest) GetDomainName() string {
+func (m *IsSiteAvailableRequest) GetSiteName() string {
 	if m != nil {
-		return m.DomainName
+		return m.SiteName
 	}
 	return ""
 }
@@ -208,8 +208,8 @@ func (m *IsSiteAvailableResponse) GetAvailable() bool {
 }
 
 type RegisterSiteRequest struct {
-	DomainName string       `protobuf:"bytes,1,opt,name=domain_name,json=domainName,proto3" json:"domain_name,omitempty"`
-	OrgID      *proto1.UUID `protobuf:"bytes,2,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	SiteName string       `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
+	OrgID    *proto1.UUID `protobuf:"bytes,2,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
 }
 
 func (m *RegisterSiteRequest) Reset()      { *m = RegisterSiteRequest{} }
@@ -244,9 +244,9 @@ func (m *RegisterSiteRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RegisterSiteRequest proto.InternalMessageInfo
 
-func (m *RegisterSiteRequest) GetDomainName() string {
+func (m *RegisterSiteRequest) GetSiteName() string {
 	if m != nil {
-		return m.DomainName
+		return m.SiteName
 	}
 	return ""
 }
@@ -303,7 +303,7 @@ func (m *RegisterSiteResponse) GetSiteRegistered() bool {
 
 func init() {
 	proto.RegisterType((*SiteInfo)(nil), "pl.services.SiteInfo")
-	proto.RegisterType((*GetSiteByDomainRequest)(nil), "pl.services.GetSiteByDomainRequest")
+	proto.RegisterType((*GetSiteByNameRequest)(nil), "pl.services.GetSiteByNameRequest")
 	proto.RegisterType((*IsSiteAvailableRequest)(nil), "pl.services.IsSiteAvailableRequest")
 	proto.RegisterType((*IsSiteAvailableResponse)(nil), "pl.services.IsSiteAvailableResponse")
 	proto.RegisterType((*RegisterSiteRequest)(nil), "pl.services.RegisterSiteRequest")
@@ -315,38 +315,38 @@ func init() {
 }
 
 var fileDescriptor_ccc3521a7def8121 = []byte{
-	// 490 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x4f, 0x6f, 0xd3, 0x30,
-	0x14, 0x8f, 0x27, 0x6d, 0x5a, 0x5d, 0xa0, 0x92, 0xf9, 0x37, 0x45, 0xc8, 0x2b, 0x01, 0x89, 0x5d,
-	0x70, 0x44, 0x39, 0xa0, 0x89, 0x03, 0xa2, 0xaa, 0x40, 0x39, 0x40, 0xa5, 0x4c, 0xbd, 0x70, 0x58,
-	0xe5, 0x34, 0x9e, 0xb1, 0x94, 0xc4, 0xc1, 0x4e, 0x26, 0x38, 0xc1, 0x47, 0xe0, 0x63, 0xf0, 0x51,
-	0x38, 0xf6, 0xc6, 0x4e, 0x88, 0xa6, 0x17, 0x8e, 0xfb, 0x08, 0x28, 0x4e, 0x3a, 0xd6, 0x50, 0x4a,
-	0xc5, 0xed, 0xbd, 0x97, 0xdf, 0x9f, 0x97, 0xa7, 0x9f, 0x61, 0x4f, 0xab, 0x89, 0x3b, 0x89, 0x64,
-	0x1e, 0xba, 0x5a, 0x64, 0x6c, 0x1c, 0xd3, 0x84, 0x72, 0xa6, 0x4c, 0x53, 0xd7, 0x69, 0xe0, 0x6a,
-	0xa6, 0x4e, 0xc5, 0x84, 0x91, 0x54, 0xc9, 0x4c, 0xa2, 0x76, 0x1a, 0x91, 0x7a, 0xa2, 0xed, 0x87,
-	0x5c, 0x64, 0x6f, 0xf3, 0x80, 0x4c, 0x64, 0xec, 0x72, 0xc9, 0xa5, 0x6b, 0x30, 0x41, 0x7e, 0x62,
-	0x3a, 0xd3, 0x98, 0xaa, 0xe2, 0xda, 0x5d, 0xe3, 0x27, 0xe3, 0x58, 0x26, 0x6e, 0x9e, 0x8b, 0xb0,
-	0x82, 0x9b, 0xb2, 0x42, 0x38, 0xc7, 0x70, 0xf7, 0x48, 0x64, 0xcc, 0x4b, 0x4e, 0x24, 0xda, 0x87,
-	0xed, 0x50, 0xc6, 0x54, 0x24, 0xe3, 0x84, 0xc6, 0x6c, 0x0f, 0x74, 0xc1, 0x41, 0xcb, 0x87, 0xd5,
-	0xe8, 0x35, 0x8d, 0x19, 0x7a, 0x04, 0x77, 0xa4, 0xe2, 0x63, 0x11, 0xee, 0x6d, 0x75, 0xc1, 0x41,
-	0xbb, 0xd7, 0x21, 0x69, 0x44, 0x4a, 0xb1, 0x34, 0x20, 0xa3, 0x91, 0x37, 0xe8, 0xb7, 0x8a, 0xef,
-	0xfb, 0xdb, 0x43, 0xc5, 0xbd, 0x81, 0xbf, 0x2d, 0x15, 0xf7, 0x42, 0xe7, 0x10, 0xde, 0x7a, 0xc9,
-	0xb2, 0xd2, 0xa2, 0xff, 0x61, 0x60, 0x94, 0x7c, 0xf6, 0x2e, 0x67, 0x3a, 0xfb, 0xa7, 0x5b, 0x49,
-	0xf5, 0x74, 0xc9, 0x7c, 0x7e, 0x4a, 0x45, 0x44, 0x83, 0x88, 0x6d, 0x4c, 0x7d, 0x02, 0x6f, 0xff,
-	0x41, 0xd5, 0xa9, 0x4c, 0x34, 0x43, 0x77, 0x60, 0x8b, 0x2e, 0x86, 0x86, 0xb9, 0xeb, 0xff, 0x1e,
-	0x38, 0x02, 0x5e, 0xf7, 0x19, 0x17, 0x3a, 0x63, 0xaa, 0xa4, 0x6f, 0x6a, 0xf8, 0x3f, 0x97, 0x79,
-	0x06, 0x6f, 0x2c, 0x5b, 0xd5, 0x0b, 0x3e, 0x80, 0x1d, 0x93, 0x0d, 0x55, 0x7f, 0x64, 0x61, 0xbd,
-	0xe6, 0x35, 0x6d, 0x60, 0x8b, 0x69, 0xef, 0xdb, 0x16, 0x44, 0x25, 0xf3, 0x55, 0x15, 0x9c, 0xa3,
-	0x2a, 0x23, 0xe8, 0x18, 0x76, 0x1a, 0xff, 0x8e, 0xee, 0x91, 0x4b, 0x19, 0x22, 0xab, 0x8f, 0x6a,
-	0xdf, 0x5f, 0x0f, 0xaa, 0xb6, 0x73, 0x2c, 0x34, 0x82, 0x57, 0x2e, 0xef, 0x8d, 0xba, 0x4b, 0xbc,
-	0x15, 0xd7, 0xb3, 0xef, 0xae, 0x41, 0x5c, 0xc8, 0x1e, 0xc2, 0xab, 0x75, 0x50, 0x5e, 0x48, 0x35,
-	0x54, 0x1c, 0x35, 0x4f, 0x68, 0xdf, 0x5c, 0x92, 0x59, 0xa4, 0xd6, 0xb1, 0xd0, 0x10, 0x76, 0x1a,
-	0x19, 0x6b, 0xfc, 0xf1, 0xea, 0x04, 0xfe, 0x55, 0xb0, 0xff, 0x71, 0x3a, 0xc3, 0xd6, 0xd9, 0x0c,
-	0x5b, 0xe7, 0x33, 0x0c, 0x3e, 0x15, 0x18, 0x7c, 0x29, 0x30, 0xf8, 0x5a, 0x60, 0x30, 0x2d, 0x30,
-	0xf8, 0x51, 0x60, 0xf0, 0xb3, 0xc0, 0xd6, 0x79, 0x81, 0xc1, 0xe7, 0x39, 0xb6, 0xa6, 0x73, 0x6c,
-	0x9d, 0xcd, 0xb1, 0xf5, 0xc6, 0x4b, 0xc5, 0x7b, 0xc1, 0x22, 0x1a, 0x68, 0x42, 0x85, 0x7b, 0xd1,
-	0xb8, 0x9b, 0xbc, 0xf9, 0xa7, 0x4b, 0x5d, 0xb0, 0x63, 0x1e, 0xe7, 0xe3, 0x5f, 0x01, 0x00, 0x00,
-	0xff, 0xff, 0x4d, 0x2a, 0x8b, 0x49, 0x30, 0x04, 0x00, 0x00,
+	// 488 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x4f, 0x6b, 0xd4, 0x40,
+	0x14, 0xcf, 0x14, 0x5a, 0x76, 0xa7, 0xea, 0xc2, 0x58, 0xb5, 0x44, 0x19, 0xd7, 0x28, 0xd8, 0x8b,
+	0x13, 0xdc, 0x22, 0x22, 0x1e, 0xc4, 0xa5, 0x28, 0x41, 0xb4, 0x90, 0xb2, 0x97, 0x1e, 0x2c, 0x93,
+	0x64, 0x3a, 0x0e, 0x24, 0x99, 0x38, 0x93, 0x14, 0x3d, 0xe9, 0x47, 0xf0, 0x63, 0xf8, 0x51, 0x3c,
+	0x2e, 0x78, 0xe9, 0x49, 0xdc, 0xec, 0xc5, 0x63, 0x3f, 0x82, 0x64, 0x92, 0x5d, 0x9b, 0xba, 0x2e,
+	0x8b, 0xb7, 0xf7, 0x5e, 0x7e, 0x7f, 0x5e, 0x1e, 0xbf, 0x81, 0x03, 0xad, 0x42, 0x37, 0x8c, 0x65,
+	0x11, 0xb9, 0x5a, 0xe4, 0xec, 0x28, 0xa1, 0x29, 0xe5, 0x4c, 0x99, 0xa6, 0xa9, 0xb3, 0xc0, 0xd5,
+	0x4c, 0x9d, 0x88, 0x90, 0x91, 0x4c, 0xc9, 0x5c, 0xa2, 0xcd, 0x2c, 0x26, 0xcd, 0x44, 0xdb, 0x0f,
+	0xb8, 0xc8, 0xdf, 0x15, 0x01, 0x09, 0x65, 0xe2, 0x72, 0xc9, 0xa5, 0x6b, 0x30, 0x41, 0x71, 0x6c,
+	0x3a, 0xd3, 0x98, 0xaa, 0xe6, 0xda, 0x7d, 0xe3, 0x27, 0x93, 0x44, 0xa6, 0x6e, 0x51, 0x88, 0xa8,
+	0x86, 0x9b, 0xb2, 0x46, 0x38, 0x87, 0xb0, 0x73, 0x20, 0x72, 0xe6, 0xa5, 0xc7, 0x12, 0xdd, 0x84,
+	0x5d, 0xb3, 0x55, 0x4a, 0x13, 0xb6, 0x0d, 0xfa, 0x60, 0xa7, 0xeb, 0x77, 0xaa, 0xc1, 0x1b, 0x9a,
+	0x30, 0xf4, 0x10, 0x6e, 0x48, 0xc5, 0x8f, 0x44, 0xb4, 0xbd, 0xd6, 0x07, 0x3b, 0x9b, 0x83, 0x1e,
+	0xc9, 0x62, 0x52, 0x09, 0x65, 0x01, 0x19, 0x8d, 0xbc, 0xbd, 0x61, 0xb7, 0xfc, 0x71, 0x7b, 0x7d,
+	0x5f, 0x71, 0x6f, 0xcf, 0x5f, 0x97, 0x8a, 0x7b, 0x91, 0xb3, 0x0b, 0xb7, 0x5e, 0xb2, 0xbc, 0x92,
+	0x1f, 0x7e, 0xac, 0x34, 0x7c, 0xf6, 0xbe, 0x60, 0x3a, 0x5f, 0xea, 0xe3, 0x3c, 0x82, 0xd7, 0x3d,
+	0x5d, 0x71, 0x9e, 0x9f, 0x50, 0x11, 0xd3, 0x20, 0x5e, 0x8d, 0xf6, 0x18, 0xde, 0xf8, 0x8b, 0xa6,
+	0x33, 0x99, 0x6a, 0x86, 0x6e, 0xc1, 0x2e, 0x9d, 0x0d, 0x0d, 0xaf, 0xe3, 0xff, 0x19, 0x38, 0x0c,
+	0x5e, 0xf5, 0x19, 0x17, 0x3a, 0x67, 0xaa, 0xa2, 0xaf, 0x62, 0xf6, 0x3f, 0xb7, 0x78, 0x06, 0xb7,
+	0xda, 0x36, 0xcd, 0x72, 0xf7, 0x61, 0xcf, 0xf8, 0xa8, 0xe6, 0x23, 0x8b, 0x9a, 0x15, 0xaf, 0x68,
+	0x03, 0x9b, 0x4d, 0x07, 0xdf, 0xd7, 0x20, 0xaa, 0x98, 0xaf, 0xeb, 0x98, 0x1c, 0xd4, 0x89, 0x40,
+	0x6f, 0x61, 0xef, 0xc2, 0x7f, 0xa3, 0xbb, 0xe4, 0x5c, 0x62, 0xc8, 0xe2, 0x63, 0xda, 0xf7, 0x96,
+	0x83, 0xea, 0xed, 0x1c, 0x0b, 0x8d, 0xe0, 0xa5, 0xf3, 0x7b, 0xa3, 0x7e, 0x8b, 0xb7, 0xe0, 0x72,
+	0xf6, 0x9d, 0x25, 0x88, 0xb9, 0xec, 0x13, 0x78, 0xb9, 0x89, 0xc6, 0x0b, 0xa9, 0xf6, 0x15, 0x47,
+	0x17, 0x4f, 0x68, 0x5f, 0x6b, 0xc9, 0xcc, 0x32, 0xea, 0x58, 0xe8, 0xd5, 0x9c, 0x5a, 0xa7, 0x0a,
+	0xb5, 0x0d, 0x17, 0x25, 0xee, 0x9f, 0x62, 0xc3, 0x4f, 0xe3, 0x09, 0xb6, 0x4e, 0x27, 0xd8, 0x3a,
+	0x9b, 0x60, 0xf0, 0xb9, 0xc4, 0xe0, 0x6b, 0x89, 0xc1, 0xb7, 0x12, 0x83, 0x71, 0x89, 0xc1, 0xcf,
+	0x12, 0x83, 0x5f, 0x25, 0xb6, 0xce, 0x4a, 0x0c, 0xbe, 0x4c, 0xb1, 0x35, 0x9e, 0x62, 0xeb, 0x74,
+	0x8a, 0xad, 0x43, 0x2f, 0x13, 0x1f, 0x04, 0x8b, 0x69, 0xa0, 0x09, 0x15, 0xee, 0xbc, 0x71, 0x57,
+	0x79, 0xdd, 0x4f, 0x5b, 0x5d, 0xb0, 0x61, 0x9e, 0xe1, 0xee, 0xef, 0x00, 0x00, 0x00, 0xff, 0xff,
+	0xd6, 0x69, 0x25, 0xef, 0x1a, 0x04, 0x00, 0x00,
 }
 
 func (this *SiteInfo) Equal(that interface{}) bool {
@@ -368,7 +368,7 @@ func (this *SiteInfo) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.DomainName != that1.DomainName {
+	if this.SiteName != that1.SiteName {
 		return false
 	}
 	if !this.OrgID.Equal(that1.OrgID) {
@@ -376,14 +376,14 @@ func (this *SiteInfo) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *GetSiteByDomainRequest) Equal(that interface{}) bool {
+func (this *GetSiteByNameRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*GetSiteByDomainRequest)
+	that1, ok := that.(*GetSiteByNameRequest)
 	if !ok {
-		that2, ok := that.(GetSiteByDomainRequest)
+		that2, ok := that.(GetSiteByNameRequest)
 		if ok {
 			that1 = &that2
 		} else {
@@ -395,7 +395,7 @@ func (this *GetSiteByDomainRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.DomainName != that1.DomainName {
+	if this.SiteName != that1.SiteName {
 		return false
 	}
 	return true
@@ -419,7 +419,7 @@ func (this *IsSiteAvailableRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.DomainName != that1.DomainName {
+	if this.SiteName != that1.SiteName {
 		return false
 	}
 	return true
@@ -467,7 +467,7 @@ func (this *RegisterSiteRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.DomainName != that1.DomainName {
+	if this.SiteName != that1.SiteName {
 		return false
 	}
 	if !this.OrgID.Equal(that1.OrgID) {
@@ -505,20 +505,20 @@ func (this *SiteInfo) GoString() string {
 	}
 	s := make([]string, 0, 6)
 	s = append(s, "&sitemanagerpb.SiteInfo{")
-	s = append(s, "DomainName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
+	s = append(s, "SiteName: "+fmt.Sprintf("%#v", this.SiteName)+",\n")
 	if this.OrgID != nil {
 		s = append(s, "OrgID: "+fmt.Sprintf("%#v", this.OrgID)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *GetSiteByDomainRequest) GoString() string {
+func (this *GetSiteByNameRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 5)
-	s = append(s, "&sitemanagerpb.GetSiteByDomainRequest{")
-	s = append(s, "DomainName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
+	s = append(s, "&sitemanagerpb.GetSiteByNameRequest{")
+	s = append(s, "SiteName: "+fmt.Sprintf("%#v", this.SiteName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -528,7 +528,7 @@ func (this *IsSiteAvailableRequest) GoString() string {
 	}
 	s := make([]string, 0, 5)
 	s = append(s, "&sitemanagerpb.IsSiteAvailableRequest{")
-	s = append(s, "DomainName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
+	s = append(s, "SiteName: "+fmt.Sprintf("%#v", this.SiteName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -548,7 +548,7 @@ func (this *RegisterSiteRequest) GoString() string {
 	}
 	s := make([]string, 0, 6)
 	s = append(s, "&sitemanagerpb.RegisterSiteRequest{")
-	s = append(s, "DomainName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
+	s = append(s, "SiteName: "+fmt.Sprintf("%#v", this.SiteName)+",\n")
 	if this.OrgID != nil {
 		s = append(s, "OrgID: "+fmt.Sprintf("%#v", this.OrgID)+",\n")
 	}
@@ -589,7 +589,7 @@ type SiteManagerServiceClient interface {
 	IsSiteAvailable(ctx context.Context, in *IsSiteAvailableRequest, opts ...grpc.CallOption) (*IsSiteAvailableResponse, error)
 	RegisterSite(ctx context.Context, in *RegisterSiteRequest, opts ...grpc.CallOption) (*RegisterSiteResponse, error)
 	GetSiteForOrg(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*SiteInfo, error)
-	GetSiteByDomain(ctx context.Context, in *GetSiteByDomainRequest, opts ...grpc.CallOption) (*SiteInfo, error)
+	GetSiteByName(ctx context.Context, in *GetSiteByNameRequest, opts ...grpc.CallOption) (*SiteInfo, error)
 }
 
 type siteManagerServiceClient struct {
@@ -627,9 +627,9 @@ func (c *siteManagerServiceClient) GetSiteForOrg(ctx context.Context, in *proto1
 	return out, nil
 }
 
-func (c *siteManagerServiceClient) GetSiteByDomain(ctx context.Context, in *GetSiteByDomainRequest, opts ...grpc.CallOption) (*SiteInfo, error) {
+func (c *siteManagerServiceClient) GetSiteByName(ctx context.Context, in *GetSiteByNameRequest, opts ...grpc.CallOption) (*SiteInfo, error) {
 	out := new(SiteInfo)
-	err := c.cc.Invoke(ctx, "/pl.services.SiteManagerService/GetSiteByDomain", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/pl.services.SiteManagerService/GetSiteByName", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -641,7 +641,7 @@ type SiteManagerServiceServer interface {
 	IsSiteAvailable(context.Context, *IsSiteAvailableRequest) (*IsSiteAvailableResponse, error)
 	RegisterSite(context.Context, *RegisterSiteRequest) (*RegisterSiteResponse, error)
 	GetSiteForOrg(context.Context, *proto1.UUID) (*SiteInfo, error)
-	GetSiteByDomain(context.Context, *GetSiteByDomainRequest) (*SiteInfo, error)
+	GetSiteByName(context.Context, *GetSiteByNameRequest) (*SiteInfo, error)
 }
 
 func RegisterSiteManagerServiceServer(s *grpc.Server, srv SiteManagerServiceServer) {
@@ -702,20 +702,20 @@ func _SiteManagerService_GetSiteForOrg_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SiteManagerService_GetSiteByDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetSiteByDomainRequest)
+func _SiteManagerService_GetSiteByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSiteByNameRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SiteManagerServiceServer).GetSiteByDomain(ctx, in)
+		return srv.(SiteManagerServiceServer).GetSiteByName(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/pl.services.SiteManagerService/GetSiteByDomain",
+		FullMethod: "/pl.services.SiteManagerService/GetSiteByName",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SiteManagerServiceServer).GetSiteByDomain(ctx, req.(*GetSiteByDomainRequest))
+		return srv.(SiteManagerServiceServer).GetSiteByName(ctx, req.(*GetSiteByNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -737,8 +737,8 @@ var _SiteManagerService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _SiteManagerService_GetSiteForOrg_Handler,
 		},
 		{
-			MethodName: "GetSiteByDomain",
-			Handler:    _SiteManagerService_GetSiteByDomain_Handler,
+			MethodName: "GetSiteByName",
+			Handler:    _SiteManagerService_GetSiteByName_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -760,11 +760,11 @@ func (m *SiteInfo) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.DomainName) > 0 {
+	if len(m.SiteName) > 0 {
 		dAtA[i] = 0xa
 		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.DomainName)))
-		i += copy(dAtA[i:], m.DomainName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.SiteName)))
+		i += copy(dAtA[i:], m.SiteName)
 	}
 	if m.OrgID != nil {
 		dAtA[i] = 0x12
@@ -779,7 +779,7 @@ func (m *SiteInfo) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *GetSiteByDomainRequest) Marshal() (dAtA []byte, err error) {
+func (m *GetSiteByNameRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -789,16 +789,16 @@ func (m *GetSiteByDomainRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *GetSiteByDomainRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *GetSiteByNameRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.DomainName) > 0 {
+	if len(m.SiteName) > 0 {
 		dAtA[i] = 0xa
 		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.DomainName)))
-		i += copy(dAtA[i:], m.DomainName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.SiteName)))
+		i += copy(dAtA[i:], m.SiteName)
 	}
 	return i, nil
 }
@@ -818,11 +818,11 @@ func (m *IsSiteAvailableRequest) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.DomainName) > 0 {
+	if len(m.SiteName) > 0 {
 		dAtA[i] = 0xa
 		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.DomainName)))
-		i += copy(dAtA[i:], m.DomainName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.SiteName)))
+		i += copy(dAtA[i:], m.SiteName)
 	}
 	return i, nil
 }
@@ -870,11 +870,11 @@ func (m *RegisterSiteRequest) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.DomainName) > 0 {
+	if len(m.SiteName) > 0 {
 		dAtA[i] = 0xa
 		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.DomainName)))
-		i += copy(dAtA[i:], m.DomainName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.SiteName)))
+		i += copy(dAtA[i:], m.SiteName)
 	}
 	if m.OrgID != nil {
 		dAtA[i] = 0x12
@@ -932,7 +932,7 @@ func (m *SiteInfo) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.DomainName)
+	l = len(m.SiteName)
 	if l > 0 {
 		n += 1 + l + sovService(uint64(l))
 	}
@@ -943,13 +943,13 @@ func (m *SiteInfo) Size() (n int) {
 	return n
 }
 
-func (m *GetSiteByDomainRequest) Size() (n int) {
+func (m *GetSiteByNameRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.DomainName)
+	l = len(m.SiteName)
 	if l > 0 {
 		n += 1 + l + sovService(uint64(l))
 	}
@@ -962,7 +962,7 @@ func (m *IsSiteAvailableRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.DomainName)
+	l = len(m.SiteName)
 	if l > 0 {
 		n += 1 + l + sovService(uint64(l))
 	}
@@ -987,7 +987,7 @@ func (m *RegisterSiteRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.DomainName)
+	l = len(m.SiteName)
 	if l > 0 {
 		n += 1 + l + sovService(uint64(l))
 	}
@@ -1028,18 +1028,18 @@ func (this *SiteInfo) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&SiteInfo{`,
-		`DomainName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
+		`SiteName:` + fmt.Sprintf("%v", this.SiteName) + `,`,
 		`OrgID:` + strings.Replace(fmt.Sprintf("%v", this.OrgID), "UUID", "proto1.UUID", 1) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *GetSiteByDomainRequest) String() string {
+func (this *GetSiteByNameRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&GetSiteByDomainRequest{`,
-		`DomainName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
+	s := strings.Join([]string{`&GetSiteByNameRequest{`,
+		`SiteName:` + fmt.Sprintf("%v", this.SiteName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1049,7 +1049,7 @@ func (this *IsSiteAvailableRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&IsSiteAvailableRequest{`,
-		`DomainName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
+		`SiteName:` + fmt.Sprintf("%v", this.SiteName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1069,7 +1069,7 @@ func (this *RegisterSiteRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&RegisterSiteRequest{`,
-		`DomainName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
+		`SiteName:` + fmt.Sprintf("%v", this.SiteName) + `,`,
 		`OrgID:` + strings.Replace(fmt.Sprintf("%v", this.OrgID), "UUID", "proto1.UUID", 1) + `,`,
 		`}`,
 	}, "")
@@ -1124,7 +1124,7 @@ func (m *SiteInfo) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DomainName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SiteName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1152,7 +1152,7 @@ func (m *SiteInfo) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.DomainName = string(dAtA[iNdEx:postIndex])
+			m.SiteName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -1214,7 +1214,7 @@ func (m *SiteInfo) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *GetSiteByDomainRequest) Unmarshal(dAtA []byte) error {
+func (m *GetSiteByNameRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1237,15 +1237,15 @@ func (m *GetSiteByDomainRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: GetSiteByDomainRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: GetSiteByNameRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetSiteByDomainRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: GetSiteByNameRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DomainName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SiteName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1273,7 +1273,7 @@ func (m *GetSiteByDomainRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.DomainName = string(dAtA[iNdEx:postIndex])
+			m.SiteName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1330,7 +1330,7 @@ func (m *IsSiteAvailableRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DomainName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SiteName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1358,7 +1358,7 @@ func (m *IsSiteAvailableRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.DomainName = string(dAtA[iNdEx:postIndex])
+			m.SiteName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1488,7 +1488,7 @@ func (m *RegisterSiteRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DomainName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SiteName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1516,7 +1516,7 @@ func (m *RegisterSiteRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.DomainName = string(dAtA[iNdEx:postIndex])
+			m.SiteName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {

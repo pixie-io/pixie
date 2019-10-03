@@ -19,16 +19,16 @@ import (
 type fakeDatastore struct {
 }
 
-func (d *fakeDatastore) RegisterSite(orgID uuid.UUID, domainName string) error {
+func (d *fakeDatastore) RegisterSite(orgID uuid.UUID, siteName string) error {
 	return nil
 }
 
-func (d *fakeDatastore) CheckAvailability(domainName string) (bool, error) {
-	if domainName == "is_available" {
+func (d *fakeDatastore) CheckAvailability(siteName string) (bool, error) {
+	if siteName == "is_available" {
 		return true, nil
 	}
 
-	if domainName == "should_error" {
+	if siteName == "should_error" {
 		return false, errors.New("something bad happened")
 	}
 
@@ -38,8 +38,8 @@ func (d *fakeDatastore) CheckAvailability(domainName string) (bool, error) {
 func (d *fakeDatastore) GetSiteForOrg(org uuid.UUID) (*datastore.SiteInfo, error) {
 	if org.String() == "123e4567-e89b-12d3-a456-426655440000" {
 		return &datastore.SiteInfo{
-			OrgID:      uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
-			DomainName: "hulu",
+			OrgID:    uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			SiteName: "hulu",
 		}, nil
 	}
 	if org.String() == "323e4567-e89b-12d3-a456-426655440000" {
@@ -48,14 +48,14 @@ func (d *fakeDatastore) GetSiteForOrg(org uuid.UUID) (*datastore.SiteInfo, error
 	return nil, nil
 }
 
-func (d *fakeDatastore) GetSiteByDomain(domainName string) (*datastore.SiteInfo, error) {
-	if domainName == "hulu" {
+func (d *fakeDatastore) GetSiteByName(siteName string) (*datastore.SiteInfo, error) {
+	if siteName == "hulu" {
 		return &datastore.SiteInfo{
-			OrgID:      uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
-			DomainName: "hulu",
+			OrgID:    uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			SiteName: "hulu",
 		}, nil
 	}
-	if domainName == "goo" {
+	if siteName == "goo" {
 		return nil, errors.New("badness")
 	}
 	// Not found.
@@ -72,7 +72,7 @@ func TestServer_IsSiteAvailable(t *testing.T) {
 	server := SetupServerTest(t)
 
 	req := &sitemanagerpb.IsSiteAvailableRequest{
-		DomainName: "is_available",
+		SiteName: "is_available",
 	}
 	resp, err := server.IsSiteAvailable(context.Background(), req)
 
@@ -86,7 +86,7 @@ func TestServer_IsSiteAvailableNotAvailable(t *testing.T) {
 	server := SetupServerTest(t)
 
 	req := &sitemanagerpb.IsSiteAvailableRequest{
-		DomainName: "asdsad",
+		SiteName: "asdsad",
 	}
 	resp, err := server.IsSiteAvailable(context.Background(), req)
 
@@ -100,7 +100,7 @@ func TestServer_IsSiteAvailableError(t *testing.T) {
 	server := SetupServerTest(t)
 
 	req := &sitemanagerpb.IsSiteAvailableRequest{
-		DomainName: "should_error",
+		SiteName: "should_error",
 	}
 	resp, err := server.IsSiteAvailable(context.Background(), req)
 
@@ -110,22 +110,22 @@ func TestServer_IsSiteAvailableError(t *testing.T) {
 	assert.Equal(t, err.Error(), "something bad happened")
 }
 
-func TestServer_GetSiteByDomain(t *testing.T) {
+func TestServer_GetSiteByName(t *testing.T) {
 	server := SetupServerTest(t)
 
-	t.Run("domain found", func(t *testing.T) {
-		req := &sitemanagerpb.GetSiteByDomainRequest{DomainName: "hulu"}
-		resp, err := server.GetSiteByDomain(context.Background(), req)
+	t.Run("site found", func(t *testing.T) {
+		req := &sitemanagerpb.GetSiteByNameRequest{SiteName: "hulu"}
+		resp, err := server.GetSiteByName(context.Background(), req)
 		require.Nil(t, err)
 		require.NotNil(t, resp)
 
-		assert.Equal(t, resp.DomainName, "hulu")
+		assert.Equal(t, resp.SiteName, "hulu")
 		assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"))
 	})
 
-	t.Run("domain not found", func(t *testing.T) {
-		req := &sitemanagerpb.GetSiteByDomainRequest{DomainName: "somedomain"}
-		resp, err := server.GetSiteByDomain(context.Background(), req)
+	t.Run("site not found", func(t *testing.T) {
+		req := &sitemanagerpb.GetSiteByNameRequest{SiteName: "somesite"}
+		resp, err := server.GetSiteByName(context.Background(), req)
 		assert.NotNil(t, err)
 		assert.Nil(t, resp)
 
@@ -135,8 +135,8 @@ func TestServer_GetSiteByDomain(t *testing.T) {
 	})
 
 	t.Run("failed datastore request", func(t *testing.T) {
-		req := &sitemanagerpb.GetSiteByDomainRequest{DomainName: "goo"}
-		resp, err := server.GetSiteByDomain(context.Background(), req)
+		req := &sitemanagerpb.GetSiteByNameRequest{SiteName: "goo"}
+		resp, err := server.GetSiteByName(context.Background(), req)
 		require.NotNil(t, err)
 		assert.Nil(t, resp)
 
@@ -145,9 +145,9 @@ func TestServer_GetSiteByDomain(t *testing.T) {
 		assert.Equal(t, codes.Internal, s.Code())
 	})
 
-	t.Run("request with empty domain", func(t *testing.T) {
-		req := &sitemanagerpb.GetSiteByDomainRequest{}
-		resp, err := server.GetSiteByDomain(context.Background(), req)
+	t.Run("request with empty site", func(t *testing.T) {
+		req := &sitemanagerpb.GetSiteByNameRequest{}
+		resp, err := server.GetSiteByName(context.Background(), req)
 		require.NotNil(t, err)
 		assert.Nil(t, resp)
 
@@ -160,12 +160,12 @@ func TestServer_GetSiteByDomain(t *testing.T) {
 func TestServer_GetSiteForOrg(t *testing.T) {
 	server := SetupServerTest(t)
 
-	t.Run("domain found", func(t *testing.T) {
+	t.Run("site found", func(t *testing.T) {
 		resp, err := server.GetSiteForOrg(context.Background(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"))
 		require.Nil(t, err)
 		require.NotNil(t, resp)
 
-		assert.Equal(t, resp.DomainName, "hulu")
+		assert.Equal(t, resp.SiteName, "hulu")
 		assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"))
 	})
 

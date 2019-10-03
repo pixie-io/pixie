@@ -20,12 +20,12 @@ interface CompanyDialogProps {
 }
 
 function companyLoginOnClick(e) {
-  const domainName = this.inputRef.current.value;
+  const siteName = this.inputRef.current.value;
   Axios({
     method: 'get',
     url: '/api/site/check',
     params: {
-      domain_name: domainName,
+      site_name: siteName,
     },
   }).then((response) => {
     if (response.data.available) {
@@ -33,7 +33,7 @@ function companyLoginOnClick(e) {
         error: 'The site doesn\'t exist. Please check the name and try again.',
       });
     } else {
-      RedirectUtils.redirect('id', '/login', {['domain_name']: domainName });
+      RedirectUtils.redirect('id', '/login', {['site_name']: siteName });
     }
   }).catch((error) => {
     this.setState({
@@ -43,12 +43,12 @@ function companyLoginOnClick(e) {
 }
 
 function companyCreateOnClick(e) {
-  const domainName = this.inputRef.current.value;
+  const siteName = this.inputRef.current.value;
   Axios({
     method: 'get',
     url: '/api/site/check',
     params: {
-      domain_name: domainName,
+      site_name: siteName,
     },
   }).then((response) => {
     if (!response.data.available) {
@@ -56,7 +56,7 @@ function companyCreateOnClick(e) {
         error: 'Sorry, the site already exists. Try a different name.',
       });
     } else {
-      RedirectUtils.redirect('id', '/create-site', {['domain_name']: domainName});
+      RedirectUtils.redirect('id', '/create-site', {['site_name']: siteName});
     }
   }).catch((error) => {
     this.setState({

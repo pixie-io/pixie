@@ -247,10 +247,10 @@ func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
 func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, error) {
 	params := struct {
 		AccessToken string `json:"accessToken"`
-		DomainName  string `json:"domainName"`
+		SiteName    string `json:"siteName"`
 	}{
 		AccessToken: strings.Trim(accessToken, "\n"),
-		DomainName:  p.Site,
+		SiteName:    p.Site,
 	}
 	b, err := json.Marshal(params)
 	if err != nil {

@@ -35,15 +35,15 @@ func callFailsTestHandler(t *testing.T) http.Handler {
 	return http.HandlerFunc(f)
 }
 
-func getTestCookie(t *testing.T, env apienv.APIEnv, domain string) string {
+func getTestCookie(t *testing.T, env apienv.APIEnv, siteName string) string {
 	// Make a fake request to create a cookie with fake user credentials.
 	req, err := http.NewRequest("GET", "/", nil)
 	assert.Nil(t, err)
 	rr := httptest.NewRecorder()
-	session, err := env.CookieStore().Get(req, "default-session3")
+	session, err := env.CookieStore().Get(req, "default-session4")
 	assert.Nil(t, err)
 	session.Values["_at"] = "authpb-token"
-	session.Values["_auth_domain"] = domain
+	session.Values["_auth_site"] = siteName
 	session.Save(req, rr)
 	cookies, ok := rr.Header()["Set-Cookie"]
 	assert.True(t, ok)

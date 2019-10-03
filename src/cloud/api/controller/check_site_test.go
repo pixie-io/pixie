@@ -52,12 +52,12 @@ func TestCheckSiteHandler_HandlerFunc(t *testing.T) {
 	require.Nil(t, err)
 	cs := controller.NewCheckSiteHandler(env)
 
-	req, err := http.NewRequest("GET", "/check-site?domain_name=blah", nil)
+	req, err := http.NewRequest("GET", "/check-site?site_name=blah", nil)
 	require.Nil(t, err)
 
 	t.Run("site does not exists", func(t *testing.T) {
 		sc.EXPECT().
-			IsSiteAvailable(gomock.Any(), &sitemanagerpb.IsSiteAvailableRequest{DomainName: "blah"}).
+			IsSiteAvailable(gomock.Any(), &sitemanagerpb.IsSiteAvailableRequest{SiteName: "blah"}).
 			Return(&sitemanagerpb.IsSiteAvailableResponse{Available: true}, nil)
 
 		rr := httptest.NewRecorder()
@@ -69,7 +69,7 @@ func TestCheckSiteHandler_HandlerFunc(t *testing.T) {
 
 	t.Run("site already exists", func(t *testing.T) {
 		sc.EXPECT().
-			IsSiteAvailable(gomock.Any(), &sitemanagerpb.IsSiteAvailableRequest{DomainName: "blah"}).
+			IsSiteAvailable(gomock.Any(), &sitemanagerpb.IsSiteAvailableRequest{SiteName: "blah"}).
 			Return(&sitemanagerpb.IsSiteAvailableResponse{Available: false}, nil)
 
 		rr := httptest.NewRecorder()
@@ -81,7 +81,7 @@ func TestCheckSiteHandler_HandlerFunc(t *testing.T) {
 
 	t.Run("error on request", func(t *testing.T) {
 		sc.EXPECT().
-			IsSiteAvailable(gomock.Any(), &sitemanagerpb.IsSiteAvailableRequest{DomainName: "blah"}).
+			IsSiteAvailable(gomock.Any(), &sitemanagerpb.IsSiteAvailableRequest{SiteName: "blah"}).
 			Return(nil, status.Error(codes.Internal, "badness"))
 
 		rr := httptest.NewRecorder()
@@ -101,7 +101,7 @@ func TestCheckSiteHandler_HandlerFunc_BadInput(t *testing.T) {
 	require.Nil(t, err)
 	cs := controller.NewCheckSiteHandler(env)
 
-	t.Run("missing domain name", func(t *testing.T) {
+	t.Run("missing site name", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "/check-site", nil)
 		require.Nil(t, err)
 
@@ -111,8 +111,8 @@ func TestCheckSiteHandler_HandlerFunc_BadInput(t *testing.T) {
 		assert.Equal(t, rr.Code, http.StatusBadRequest)
 	})
 
-	t.Run("short domain name", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/check-site?domain_name=t", nil)
+	t.Run("short site name", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/check-site?site_name=t", nil)
 		require.Nil(t, err)
 
 		rr := httptest.NewRecorder()

@@ -32,7 +32,7 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		AccessToken string
 		UserEmail   string
 		State       string
-		DomainName  string
+		SiteName    string
 	}
 
 	defer r.Body.Close()
@@ -57,8 +57,8 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	}
 
 	siteReq := &sitemanagerpb.RegisterSiteRequest{
-		DomainName: params.DomainName,
-		OrgID:      resp.OrgID,
+		SiteName: params.SiteName,
+		OrgID:    resp.OrgID,
 	}
 
 	siteResp, err := apiEnv.SiteManagerClient().RegisterSite(ctxWithCreds, siteReq)
@@ -69,7 +69,7 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		return handler.NewStatusError(http.StatusInternalServerError, "Failed to create site")
 	}
 
-	setSessionCookie(session, resp.Token, resp.ExpiresAt, params.DomainName, r, w)
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, params.SiteName, r, w)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

@@ -22,7 +22,7 @@ func GetTokenFromSession(env apienv.APIEnv, r *http.Request) (string, bool) {
 	}
 
 	// Check that the session is valid for the current subdomain.
-	sessionDomain, ok := session.Values["_auth_domain"]
+	sessionDomain, ok := session.Values["_auth_site"]
 	if !ok {
 		return "", ok
 	}

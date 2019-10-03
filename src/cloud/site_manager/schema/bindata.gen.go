@@ -2,6 +2,8 @@
 // sources:
 // 000001_create_sites_table.down.sql
 // 000001_create_sites_table.up.sql
+// 000002_create_site_name_column.down.sql
+// 000002_create_site_name_column.up.sql
 // DO NOT EDIT!
 
 package schema
@@ -84,7 +86,7 @@ func _000001_create_sites_tableDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_sites_table.down.sql", size: 28, mode: os.FileMode(436), modTime: time.Unix(1565916117, 0)}
+	info := bindataFileInfo{name: "000001_create_sites_table.down.sql", size: 28, mode: os.FileMode(436), modTime: time.Unix(1566263024, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -104,7 +106,47 @@ func _000001_create_sites_tableUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_sites_table.up.sql", size: 167, mode: os.FileMode(436), modTime: time.Unix(1565916117, 0)}
+	info := bindataFileInfo{name: "000001_create_sites_table.up.sql", size: 167, mode: os.FileMode(436), modTime: time.Unix(1566263024, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000002_create_site_name_columnDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x0a\x0d\x70\x71\x0c\x71\x55\x28\xce\x2c\x49\x2d\xe6\x0a\x76\x0d\x51\x48\xc9\xcf\x4d\xcc\xcc\x8b\xcf\x4b\xcc\x4d\x55\xb0\x05\x8b\x83\xd9\xd6\x5c\x5c\x8e\x3e\x21\xae\x41\x0a\x21\x8e\x4e\x3e\x30\xf5\x2e\x41\xfe\x01\x0a\xc9\xf9\x39\xa5\xb9\x79\xc8\x2a\x01\x01\x00\x00\xff\xff\x2f\x17\x40\x82\x54\x00\x00\x00")
+
+func _000002_create_site_name_columnDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_create_site_name_columnDownSql,
+		"000002_create_site_name_column.down.sql",
+	)
+}
+
+func _000002_create_site_name_columnDownSql() (*asset, error) {
+	bytes, err := _000002_create_site_name_columnDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_create_site_name_column.down.sql", size: 84, mode: os.FileMode(436), modTime: time.Unix(1570133612, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000002_create_site_name_columnUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xce\x2c\x49\x2d\xe6\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x00\x8b\xc4\xe7\x25\xe6\xa6\x2a\x84\x39\x06\x39\x7b\x38\x06\x69\x98\x1a\x68\x2a\x84\xfa\x79\x06\x86\xba\x5a\x73\x71\x85\x06\xb8\x38\x86\xc0\xf4\x05\xbb\x86\x20\xa9\xb7\x55\x48\xc9\xcf\x4d\xcc\xcc\x03\xf3\xac\x01\x01\x00\x00\xff\xff\xac\x51\xbf\x48\x66\x00\x00\x00")
+
+func _000002_create_site_name_columnUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_create_site_name_columnUpSql,
+		"000002_create_site_name_column.up.sql",
+	)
+}
+
+func _000002_create_site_name_columnUpSql() (*asset, error) {
+	bytes, err := _000002_create_site_name_columnUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_create_site_name_column.up.sql", size: 102, mode: os.FileMode(436), modTime: time.Unix(1570133357, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -163,6 +205,8 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"000001_create_sites_table.down.sql": _000001_create_sites_tableDownSql,
 	"000001_create_sites_table.up.sql": _000001_create_sites_tableUpSql,
+	"000002_create_site_name_column.down.sql": _000002_create_site_name_columnDownSql,
+	"000002_create_site_name_column.up.sql": _000002_create_site_name_columnUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -207,6 +251,8 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	"000001_create_sites_table.down.sql": &bintree{_000001_create_sites_tableDownSql, map[string]*bintree{}},
 	"000001_create_sites_table.up.sql": &bintree{_000001_create_sites_tableUpSql, map[string]*bintree{}},
+	"000002_create_site_name_column.down.sql": &bintree{_000002_create_site_name_columnDownSql, map[string]*bintree{}},
+	"000002_create_site_name_column.up.sql": &bintree{_000002_create_site_name_columnUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

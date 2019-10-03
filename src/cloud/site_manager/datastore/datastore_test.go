@@ -17,7 +17,7 @@ import (
 )
 
 func loadTestData(t *testing.T, db *sqlx.DB) {
-	insertQuery := `INSERT INTO sites (org_id, domain_name) VALUES ($1, $2)`
+	insertQuery := `INSERT INTO sites (org_id, site_name) VALUES ($1, $2)`
 	db.MustExec(insertQuery, "123e4567-e89b-12d3-a456-426655440000", "hulu")
 	db.MustExec(insertQuery, "223e4567-e89b-12d3-a456-426655440000", "thousand-eyes")
 }
@@ -34,19 +34,19 @@ func TestDatastore(t *testing.T) {
 	require.NotNil(t, db)
 
 	tests := []struct {
-		name       string
-		domainName string
-		available  bool
+		name      string
+		siteName  string
+		available bool
 	}{
-		{"domain in database", "hulu", false},
-		{"domain not in database", "domain2", true},
+		{"site in database", "hulu", false},
+		{"site not in database", "domain2", true},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			datastore, err := datastore.NewDatastore(db)
 			require.Nil(t, err)
-			available, err := datastore.CheckAvailability(test.domainName)
+			available, err := datastore.CheckAvailability(test.siteName)
 			assert.Nil(t, err)
 			assert.Equal(t, available, test.available)
 		})
@@ -73,29 +73,29 @@ func TestDatastore(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Get site by domain for existing domain", func(t *testing.T) {
+	t.Run("Get site by name for existing site", func(t *testing.T) {
 		datastore, err := datastore.NewDatastore(db)
 		require.Nil(t, err)
-		siteInfo, err := datastore.GetSiteByDomain("hulu")
+		siteInfo, err := datastore.GetSiteByName("hulu")
 		require.Nil(t, err)
 		require.NotNil(t, siteInfo)
 
 		assert.Equal(t, siteInfo.OrgID.String(), "123e4567-e89b-12d3-a456-426655440000")
-		assert.Equal(t, siteInfo.DomainName, "hulu")
+		assert.Equal(t, siteInfo.SiteName, "hulu")
 	})
 
-	t.Run("Get site by domain for missing domain", func(t *testing.T) {
+	t.Run("Get site by name for missing site", func(t *testing.T) {
 		datastore, err := datastore.NewDatastore(db)
 		require.Nil(t, err)
-		siteInfo, err := datastore.GetSiteByDomain("h")
+		siteInfo, err := datastore.GetSiteByName("h")
 		assert.Nil(t, err)
 		assert.Nil(t, siteInfo)
 	})
 
-	t.Run("Get site by domain for empty domain", func(t *testing.T) {
+	t.Run("Get site by name for empty site", func(t *testing.T) {
 		datastore, err := datastore.NewDatastore(db)
 		require.Nil(t, err)
-		siteInfo, err := datastore.GetSiteByDomain("")
+		siteInfo, err := datastore.GetSiteByName("")
 		assert.Nil(t, err)
 		assert.Nil(t, siteInfo)
 	})
@@ -108,7 +108,7 @@ func TestDatastore(t *testing.T) {
 		require.NotNil(t, siteInfo)
 
 		assert.Equal(t, siteInfo.OrgID.String(), "123e4567-e89b-12d3-a456-426655440000")
-		assert.Equal(t, siteInfo.DomainName, "hulu")
+		assert.Equal(t, siteInfo.SiteName, "hulu")
 	})
 
 	t.Run("Get site by org for missing org", func(t *testing.T) {

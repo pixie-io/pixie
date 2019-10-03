@@ -17,7 +17,7 @@ type SiteDatastore interface {
 	CheckAvailability(string) (bool, error)
 	RegisterSite(uuid.UUID, string) error
 	GetSiteForOrg(uuid.UUID) (*datastore.SiteInfo, error)
-	GetSiteByDomain(string) (*datastore.SiteInfo, error)
+	GetSiteByName(string) (*datastore.SiteInfo, error)
 }
 
 // Server defines an gRPC server type.
@@ -32,10 +32,10 @@ func NewServer(datastore SiteDatastore) *Server {
 	}
 }
 
-// IsSiteAvailable checks to see if a site domain is available.
+// IsSiteAvailable checks to see if a site is available.
 func (s *Server) IsSiteAvailable(ctx context.Context, req *sitemanagerpb.IsSiteAvailableRequest) (*sitemanagerpb.IsSiteAvailableResponse, error) {
 	resp := &sitemanagerpb.IsSiteAvailableResponse{}
-	isAvailable, err := s.datastore.CheckAvailability(req.DomainName)
+	isAvailable, err := s.datastore.CheckAvailability(req.SiteName)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (s *Server) RegisterSite(ctx context.Context, req *sitemanagerpb.RegisterSi
 		return nil, err
 	}
 	// TODO(zasgar/michelle): We need to maybe have different error types.
-	err = s.datastore.RegisterSite(parsedOrgID, req.DomainName)
+	err = s.datastore.RegisterSite(parsedOrgID, req.SiteName)
 	if err != nil {
 		resp.SiteRegistered = false
 		return resp, err
@@ -80,19 +80,19 @@ func (s *Server) GetSiteForOrg(ctx context.Context, req *uuidpb.UUID) (*sitemana
 	}
 
 	resp := &sitemanagerpb.SiteInfo{}
-	resp.DomainName = siteInfo.DomainName
+	resp.SiteName = siteInfo.SiteName
 	resp.OrgID = utils.ProtoFromUUID(&siteInfo.OrgID)
 
 	return resp, nil
 }
 
-// GetSiteByDomain gets the site information based on the passed in domain name.
-func (s *Server) GetSiteByDomain(ctx context.Context, req *sitemanagerpb.GetSiteByDomainRequest) (*sitemanagerpb.SiteInfo, error) {
-	if len(req.DomainName) <= 0 {
-		return nil, status.Error(codes.InvalidArgument, "domain name is a required argument")
+// GetSiteByName gets the site information based on the passed in site name.
+func (s *Server) GetSiteByName(ctx context.Context, req *sitemanagerpb.GetSiteByNameRequest) (*sitemanagerpb.SiteInfo, error) {
+	if len(req.SiteName) <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "site name is a required argument")
 	}
 	var err error
-	siteInfo, err := s.datastore.GetSiteByDomain(req.DomainName)
+	siteInfo, err := s.datastore.GetSiteByName(req.SiteName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -101,7 +101,7 @@ func (s *Server) GetSiteByDomain(ctx context.Context, req *sitemanagerpb.GetSite
 	}
 
 	resp := &sitemanagerpb.SiteInfo{}
-	resp.DomainName = siteInfo.DomainName
+	resp.SiteName = siteInfo.SiteName
 	resp.OrgID = utils.ProtoFromUUID(&siteInfo.OrgID)
 
 	return resp, nil

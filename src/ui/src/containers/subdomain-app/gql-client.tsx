@@ -31,7 +31,7 @@ const cloudFetch = (uri, options) => {
   return fetchPolyfill(uri, options).then((resp) => {
     if (resp.status === 401) { // Unauthorized. Cookies are not valid, redirect to login.
       const subdomain = window.location.host.split('.')[0];
-      RedirectUtils.redirect('id', '/login', {['domain_name']: subdomain});
+      RedirectUtils.redirect('id', '/login', {['site_name']: subdomain});
     }
     const result = {} as FetchResponse;
     result.ok = true;

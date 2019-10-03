@@ -6,14 +6,15 @@ package profile
 import (
 	context "context"
 	fmt "fmt"
+	io "io"
+	math "math"
+	reflect "reflect"
+	strings "strings"
+
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
-	io "io"
-	math "math"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	reflect "reflect"
-	strings "strings"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -840,7 +841,7 @@ func (this *OrgInfo) GoString() string {
 		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	}
 	s = append(s, "OrgName: "+fmt.Sprintf("%#v", this.OrgName)+",\n")
-	s = append(s, "DomainName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
+	s = append(s, "SiteName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -882,7 +883,7 @@ func (this *CreateOrgAndUserRequest_Org) GoString() string {
 	s := make([]string, 0, 6)
 	s = append(s, "&profile.CreateOrgAndUserRequest_Org{")
 	s = append(s, "OrgName: "+fmt.Sprintf("%#v", this.OrgName)+",\n")
-	s = append(s, "DomainName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
+	s = append(s, "SiteName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -920,7 +921,7 @@ func (this *GetOrgByDomainRequest) GoString() string {
 	}
 	s := make([]string, 0, 5)
 	s = append(s, "&profile.GetOrgByDomainRequest{")
-	s = append(s, "DomainName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
+	s = append(s, "SiteName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1679,7 +1680,7 @@ func (this *OrgInfo) String() string {
 	s := strings.Join([]string{`&OrgInfo{`,
 		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
 		`OrgName:` + fmt.Sprintf("%v", this.OrgName) + `,`,
-		`DomainName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
+		`SiteName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1715,7 +1716,7 @@ func (this *CreateOrgAndUserRequest_Org) String() string {
 	}
 	s := strings.Join([]string{`&CreateOrgAndUserRequest_Org{`,
 		`OrgName:` + fmt.Sprintf("%v", this.OrgName) + `,`,
-		`DomainName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
+		`SiteName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1749,7 +1750,7 @@ func (this *GetOrgByDomainRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&GetOrgByDomainRequest{`,
-		`DomainName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
+		`SiteName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2114,7 +2115,7 @@ func (m *OrgInfo) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DomainName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SiteName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2573,7 +2574,7 @@ func (m *CreateOrgAndUserRequest_Org) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DomainName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SiteName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2964,7 +2965,7 @@ func (m *GetOrgByDomainRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DomainName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SiteName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {

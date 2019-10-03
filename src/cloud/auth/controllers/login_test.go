@@ -87,11 +87,11 @@ func TestServer_LoginNewUser(t *testing.T) {
 
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 	siteInfo := &sitemanagerpb.SiteInfo{
-		DomainName: "defg",
-		OrgID:      &uuidpb.UUID{Data: []byte(orgID)},
+		SiteName: "defg",
+		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
 	}
 	mockSiteMgr.EXPECT().
-		GetSiteByDomain(gomock.Any(), &sitemanagerpb.GetSiteByDomainRequest{DomainName: "defg"}).
+		GetSiteByName(gomock.Any(), &sitemanagerpb.GetSiteByNameRequest{SiteName: "defg"}).
 		Return(siteInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -249,11 +249,11 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 		Return(nil, errors.New("Could not create user"))
 
 	siteInfo := &sitemanagerpb.SiteInfo{
-		DomainName: "defg",
-		OrgID:      &uuidpb.UUID{Data: []byte(orgID)},
+		SiteName: "defg",
+		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
 	}
 	mockSiteMgr.EXPECT().
-		GetSiteByDomain(gomock.Any(), &sitemanagerpb.GetSiteByDomainRequest{DomainName: "defg"}).
+		GetSiteByName(gomock.Any(), &sitemanagerpb.GetSiteByNameRequest{SiteName: "defg"}).
 		Return(siteInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -329,11 +329,11 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 	siteInfo := &sitemanagerpb.SiteInfo{
-		DomainName: "defg",
-		OrgID:      &uuidpb.UUID{Data: []byte(orgID)},
+		SiteName: "defg",
+		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
 	}
 	mockSiteMgr.EXPECT().
-		GetSiteByDomain(gomock.Any(), &sitemanagerpb.GetSiteByDomainRequest{DomainName: "defg"}).
+		GetSiteByName(gomock.Any(), &sitemanagerpb.GetSiteByNameRequest{SiteName: "defg"}).
 		Return(siteInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -421,11 +421,11 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 	siteInfo := &sitemanagerpb.SiteInfo{
-		DomainName: "defg",
-		OrgID:      &uuidpb.UUID{Data: []byte(orgID)},
+		SiteName: "defg",
+		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
 	}
 	mockSiteMgr.EXPECT().
-		GetSiteByDomain(gomock.Any(), &sitemanagerpb.GetSiteByDomainRequest{DomainName: "defg"}).
+		GetSiteByName(gomock.Any(), &sitemanagerpb.GetSiteByNameRequest{SiteName: "defg"}).
 		Return(siteInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -837,11 +837,11 @@ func TestServer_LoginSiteNotInOrg(t *testing.T) {
 
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 	siteInfo := &sitemanagerpb.SiteInfo{
-		DomainName: "abc@defg.com",
-		OrgID:      &uuidpb.UUID{Data: []byte(otherOrgID)},
+		SiteName: "abc@defg.com",
+		OrgID:    &uuidpb.UUID{Data: []byte(otherOrgID)},
 	}
 	mockSiteMgr.EXPECT().
-		GetSiteByDomain(gomock.Any(), &sitemanagerpb.GetSiteByDomainRequest{DomainName: "defg"}).
+		GetSiteByName(gomock.Any(), &sitemanagerpb.GetSiteByNameRequest{SiteName: "defg"}).
 		Return(siteInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -884,7 +884,7 @@ func TestServer_LoginGetSiteFailed(t *testing.T) {
 
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 	mockSiteMgr.EXPECT().
-		GetSiteByDomain(gomock.Any(), &sitemanagerpb.GetSiteByDomainRequest{DomainName: "defg"}).
+		GetSiteByName(gomock.Any(), &sitemanagerpb.GetSiteByNameRequest{SiteName: "defg"}).
 		Return(nil, errors.New("Could not get site"))
 
 	viper.Set("jwt_signing_key", "jwtkey")

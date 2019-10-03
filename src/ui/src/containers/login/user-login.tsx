@@ -49,14 +49,14 @@ function onLoginAuthenticated(authResult) {
       data: {
         accessToken: authResult.accessToken,
         userEmail: profile.email,
-        domainName: this.domain,
+        siteName: this.siteName,
       },
     }).then((response) => {
       this.setSession({
         idToken: response.data.Token,
         expiresAt: response.data.ExpiresAt,
       });
-      RedirectUtils.redirect(this.domain, this.redirectPath || '/vizier/query', {});
+      RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
     }).catch((err) => {
       this.setState({
         error: err.response.data,
@@ -74,7 +74,7 @@ function onCreateAuthenticated(authResult) {
       data: {
         accessToken: authResult.accessToken,
         userEmail: profile.email,
-        domainName: this.domain,
+        siteName: this.siteName,
       },
     }).then((response) => {
       this.setSession({
@@ -82,7 +82,7 @@ function onCreateAuthenticated(authResult) {
         expiresAt: response.data.ExpiresAt,
       });
     }).then((results) => {
-        RedirectUtils.redirect(this.domain, this.redirectPath || '/vizier/query', {});
+        RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
     }).catch((err) => {
       this.setState({
         error: err.response.data,
@@ -122,7 +122,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
   };
 
   private _lock: Auth0LockStatic;
-  private domain: string;
+  private siteName: string;
   private auth0Redirect: string;
   private redirectPath: string;
   private localMode: boolean;
@@ -141,15 +141,15 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     const queryParams = QueryString.parse(this.props.location.search);
 
     const locationParam = typeof queryParams.location === 'string' ? queryParams.location : '';
-    const domainName = typeof queryParams.domain_name === 'string' ? queryParams.domain_name : '';
+    const siteName = typeof queryParams.site_name === 'string' ? queryParams.site_name : '';
     const localMode = typeof queryParams.local_mode === 'string' ? queryParams.local_mode : '';
     const localModeRedirect = typeof queryParams.redirect_uri === 'string' ? queryParams.redirect_uri : '';
 
-    this.domain = domainName;
+    this.siteName = siteName;
     this.redirectPath = locationParam;
 
     // Default redirect URL.
-    this.auth0Redirect = window.location.origin + '/' + this.props.redirectPath + '?domain_name=' + this.domain;
+    this.auth0Redirect = window.location.origin + '/' + this.props.redirectPath + '?site_name=' + this.siteName;
     if (locationParam !== '') {
       this.auth0Redirect = this.auth0Redirect + '&location=' + locationParam;
     }
@@ -171,7 +171,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     // Redirect to the correct login endpoint if the path is incorrect.
     const subdomain = window.location.host.split('.')[0];
     if (subdomain !== 'id') {
-      RedirectUtils.redirect('id', window.location.pathname, {['domain_name']: subdomain});
+      RedirectUtils.redirect('id', window.location.pathname, {['site_name']: subdomain});
     }
 
     this._lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {
@@ -191,8 +191,8 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
         logo: logoImage,
       },
       languageDictionary: {
-        title: this.domain,
-        signUpTitle: this.domain,
+        title: this.siteName,
+        signUpTitle: this.siteName,
         signUpTerms: 'By signing up, I agree to the Terms of Services and Privacy Policy',
       },
       allowedConnections: ['google-oauth2'],

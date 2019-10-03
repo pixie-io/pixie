@@ -42,7 +42,7 @@ func TestAuthLoginHandler(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/users",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"domainName\": \"hulu\", \"userEmail\": \"user@hulu.com\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"siteName\": \"hulu\", \"userEmail\": \"user@hulu.com\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
@@ -81,14 +81,14 @@ func TestAuthLoginHandler(t *testing.T) {
 	req2 := http.Request{Header: header}
 	sess, err := controller.GetDefaultSession(env, &req2)
 	assert.Equal(t, testReplyToken, sess.Values["_at"])
-	assert.Equal(t, "hulu", sess.Values["_auth_domain"])
+	assert.Equal(t, "hulu", sess.Values["_auth_site"])
 }
 
 func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/api/users",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"domainName\": \"hulu\", \"userEmail\": \"user@gmail.com\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"siteName\": \"hulu\", \"userEmail\": \"user@gmail.com\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
@@ -111,7 +111,7 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/api/users",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"domainName\": \"hulu\", \"userEmail\": \"user@hulu.com\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"siteName\": \"hulu\", \"userEmail\": \"user@hulu.com\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
