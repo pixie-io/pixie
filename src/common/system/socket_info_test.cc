@@ -65,7 +65,8 @@ MATCHER_P(HasLocalUnixEndpoint, endpoint, "") {
   }
 }
 
-TEST(NetlinkSocketProberTest, EstablishedInetConnection) {
+// TODO(PL-1001): Fix and re-enable.
+TEST(NetlinkSocketProberTest, DISABLED_EstablishedInetConnection) {
   testing::TCPSocket client;
   testing::TCPSocket server;
 
