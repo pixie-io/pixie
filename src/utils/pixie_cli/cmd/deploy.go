@@ -28,8 +28,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd/certs"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd/k8s"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/certs"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
 )
 
 const (

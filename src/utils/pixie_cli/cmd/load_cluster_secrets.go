@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd/k8s"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
 )
 
 // LoadClusterSecretsCmd loads cluster secretss
