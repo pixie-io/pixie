@@ -120,9 +120,9 @@ export class SidebarNav extends React.Component<SidebarNavProps, {}> {
         <div className='sidebar-nav--logo'>
           <img src={logo}/>
         </div>
-        {items.map((item) => {
+        {items.map((item, idx) => {
             return <SidebarItem
-              key={item.link}
+              key={item.link + '-' + idx}
               link={item.link}
               selectedImg={item.selectedImg}
               unselectedImg={item.unselectedImg}
@@ -132,9 +132,9 @@ export class SidebarNav extends React.Component<SidebarNavProps, {}> {
           },
         )}
         <div className='sidebar-nav--spacer'/>
-        {this.props.footerItems.map((item) => {
+        {this.props.footerItems.map((item, idx) => {
             return <SidebarItem
-              key={item.link}
+              key={item.link + '-' + idx}
               link={item.link}
               selectedImg={item.selectedImg}
               unselectedImg={item.unselectedImg}

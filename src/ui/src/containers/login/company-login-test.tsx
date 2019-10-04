@@ -7,6 +7,12 @@ import { BrowserRouter as Router, Route } from 'react-router-dom';
 import {CompanyCreate, CompanyLogin} from './company-login';
 
 jest.mock('containers/constants', () => ({ DOMAIN_NAME: 'dev.withpixie.dev' }));
+// Mock out window.location because jsdom doesn't handle redirects.
+const windowLocation = JSON.stringify(window.location);
+delete window.location;
+Object.defineProperty(window, 'location', {
+  value: JSON.parse(windowLocation),
+});
 
 describe('<CompanyCreate/> test', () => {
   it('should have correct content', () => {
