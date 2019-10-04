@@ -61,7 +61,7 @@ func TestServer_Register(t *testing.T) {
 	mockStream.EXPECT().Recv().Return(wrappedResp, nil)
 
 	mockVzInfo := mock_controller.NewMockVizierInfo(ctrl)
-	mockVzInfo.EXPECT().GetAddress().Return("https://127.0.0.1", nil)
+	mockVzInfo.EXPECT().GetAddress().Return("https://127.0.0.1", int32(123), nil)
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, mockCertMgr, mockVzInfo, clock)
@@ -88,6 +88,7 @@ func TestServer_HandleHeartbeat(t *testing.T) {
 		Time:           10,
 		SequenceNumber: 0,
 		Address:        "https://127.0.0.1",
+		Port:           int32(123),
 	}
 	anyMsg, err := types.MarshalAny(hbReq)
 	assert.Nil(t, err)
@@ -110,7 +111,7 @@ func TestServer_HandleHeartbeat(t *testing.T) {
 	mockStream.EXPECT().Recv().Return(wrappedResp, nil)
 
 	mockVzInfo := mock_controller.NewMockVizierInfo(ctrl)
-	mockVzInfo.EXPECT().GetAddress().Return("https://127.0.0.1", nil)
+	mockVzInfo.EXPECT().GetAddress().Return("https://127.0.0.1", int32(123), nil)
 
 	clock := testingutils.NewTestClock(time.Unix(10, 0))
 	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, mockCertMgr, mockVzInfo, clock)
@@ -137,6 +138,7 @@ func TestServer_HandleHeartbeat_EOFError(t *testing.T) {
 		Time:           10,
 		SequenceNumber: 0,
 		Address:        "https://127.0.0.1",
+		Port:           int32(123),
 	}
 	anyMsg, err := types.MarshalAny(hbReq)
 	assert.Nil(t, err)
@@ -149,7 +151,7 @@ func TestServer_HandleHeartbeat_EOFError(t *testing.T) {
 	mockStream.EXPECT().Recv().Return(nil, io.EOF)
 
 	mockVzInfo := mock_controller.NewMockVizierInfo(ctrl)
-	mockVzInfo.EXPECT().GetAddress().Return("https://127.0.0.1", nil)
+	mockVzInfo.EXPECT().GetAddress().Return("https://127.0.0.1", int32(123), nil)
 
 	clock := testingutils.NewTestClock(time.Unix(10, 0))
 	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, mockCertMgr, mockVzInfo, clock)

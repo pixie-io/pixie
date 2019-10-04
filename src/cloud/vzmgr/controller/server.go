@@ -288,6 +288,9 @@ func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cloudpb.VizierH
 			addr = resp.DNSAddress
 		}
 	}
+	if req.Port != int32(0) {
+		addr = fmt.Sprintf("%s:%d", addr, req.Port)
+	}
 
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 	query := `

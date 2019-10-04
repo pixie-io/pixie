@@ -326,6 +326,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			Time:           100,
 			SequenceNumber: 200,
 			Address:        "127.0.0.1",
+			Port:           int32(123),
 		}
 		resp, err := s.HandleVizierHeartbeat(context.Background(), req)
 		require.Nil(t, err)
@@ -345,7 +346,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		assert.Nil(t, err)
 		err = db.Get(&clusterInfo, clusterQuery, clusterID)
 		assert.Equal(t, "HEALTHY", clusterInfo.Status)
-		assert.Equal(t, "abc.clusters.dev.withpixie.dev", clusterInfo.Address)
+		assert.Equal(t, "abc.clusters.dev.withpixie.dev:123", clusterInfo.Address)
 	})
 
 	t.Run("valid Vizier dns failed", func(t *testing.T) {
@@ -363,6 +364,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			Time:           100,
 			SequenceNumber: 200,
 			Address:        "127.0.0.1",
+			Port:           int32(123),
 		}
 		resp, err := s.HandleVizierHeartbeat(context.Background(), req)
 		require.Nil(t, err)
@@ -382,7 +384,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		assert.Nil(t, err)
 		err = db.Get(&clusterInfo, clusterQuery, clusterID)
 		assert.Equal(t, "HEALTHY", clusterInfo.Status)
-		assert.Equal(t, "127.0.0.1", clusterInfo.Address)
+		assert.Equal(t, "127.0.0.1:123", clusterInfo.Address)
 	})
 
 	t.Run("valid Vizier no address", func(t *testing.T) {

@@ -21,7 +21,7 @@ const heartbeatWaitS = 2 * time.Second
 
 // VizierInfo fetches information about Vizier.
 type VizierInfo interface {
-	GetAddress() (string, error)
+	GetAddress() (string, int32, error)
 }
 
 // Server defines an gRPC server type.
@@ -131,7 +131,7 @@ func wrapRequest(p *types.Any, topic string) *vzconnpb.CloudConnectRequest {
 
 // RegisterVizier registers the cluster with VZConn.
 func (s *Server) RegisterVizier(stream vzconnpb.VZConnService_CloudConnectClient) error {
-	addr, err := s.vzInfo.GetAddress()
+	addr, _, err := s.vzInfo.GetAddress()
 	if err != nil {
 		log.WithError(err).Info("Unable to get vizier proxy address")
 	}
@@ -203,7 +203,7 @@ func (s *Server) doHeartbeats(stream vzconnpb.VZConnService_CloudConnectClient) 
 
 // HandleHeartbeat sends a heartbeat to the VZConn and waits for a response.
 func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClient) error {
-	addr, err := s.vzInfo.GetAddress()
+	addr, port, err := s.vzInfo.GetAddress()
 	if err != nil {
 		log.WithError(err).Info("Unable to get vizier proxy address")
 	}
@@ -213,6 +213,7 @@ func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClien
 		Time:           s.clock.Now().Unix(),
 		SequenceNumber: s.hbSeqNum,
 		Address:        addr,
+		Port:           port,
 	}
 
 	hbMsgAny, err := types.MarshalAny(&hbMsg)

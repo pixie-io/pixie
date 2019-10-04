@@ -42,6 +42,8 @@ message VizierHeartbeat {
   int64 sequence_number = 3;
   // Address of the proxy service.
   string address = 4;
+  // Port of the proxy service.
+  int32 port = 5;
 }
 
 message VizierHeartbeatAck {

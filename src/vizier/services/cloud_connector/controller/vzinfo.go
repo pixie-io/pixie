@@ -40,11 +40,11 @@ func NewK8sVizierInfo() (*K8sVizierInfo, error) {
 }
 
 // GetAddress gets the external address of Vizier's proxy service.
-func (v *K8sVizierInfo) GetAddress() (string, error) {
+func (v *K8sVizierInfo) GetAddress() (string, int32, error) {
 	// TODO(michelle): Make the service name a flag that can be passed in.
 	proxySvc, err := v.clientset.CoreV1().Services(plNamespace).Get("vizier-proxy-service", metav1.GetOptions{})
 	if err != nil {
-		return "", err
+		return "", int32(0), err
 	}
 
 	ip := ""
@@ -53,10 +53,10 @@ func (v *K8sVizierInfo) GetAddress() (string, error) {
 	if proxySvc.Spec.Type == corev1.ServiceTypeNodePort {
 		nodesList, err := v.clientset.CoreV1().Nodes().List(metav1.ListOptions{})
 		if err != nil {
-			return "", err
+			return "", int32(0), err
 		}
 		if len(nodesList.Items) == 0 {
-			return "", errors.New("Could not find node for NodePort")
+			return "", int32(0), errors.New("Could not find node for NodePort")
 		}
 
 		// Just select the first node for now.
@@ -69,7 +69,7 @@ func (v *K8sVizierInfo) GetAddress() (string, error) {
 			}
 		}
 		if ip == "" {
-			return "", errors.New("Could not determine IP address of node for NodePort")
+			return "", int32(0), errors.New("Could not determine IP address of node for NodePort")
 		}
 
 		for _, portSpec := range proxySvc.Spec.Ports {
@@ -78,12 +78,12 @@ func (v *K8sVizierInfo) GetAddress() (string, error) {
 			}
 		}
 		if port <= 0 {
-			return "", errors.New("Could not determine port for vizier service")
+			return "", int32(0), errors.New("Could not determine port for vizier service")
 		}
 	} else if proxySvc.Spec.Type == corev1.ServiceTypeLoadBalancer {
 		// It's possible to have more than one external IP. Just select the first one for now.
 		if len(proxySvc.Status.LoadBalancer.Ingress) == 0 {
-			return "", errors.New("Proxy service has no external IPs")
+			return "", int32(0), errors.New("Proxy service has no external IPs")
 		}
 		ip = proxySvc.Status.LoadBalancer.Ingress[0].IP
 
@@ -93,13 +93,13 @@ func (v *K8sVizierInfo) GetAddress() (string, error) {
 			}
 		}
 		if port <= 0 {
-			return "", errors.New("Could not determine port for vizier service")
+			return "", int32(0), errors.New("Could not determine port for vizier service")
 		}
 	} else {
-		return "", errors.New("Unexpected service type")
+		return "", int32(0), errors.New("Unexpected service type")
 	}
 
 	externalAddr := ip
 
-	return externalAddr, nil
+	return externalAddr, port, nil
 }
