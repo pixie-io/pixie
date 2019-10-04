@@ -98,23 +98,23 @@ TEST(NetlinkSocketProberTest, EstablishedUnixConnection) {
 
   retval =
       bind(server_listen_fd, reinterpret_cast<struct sockaddr*>(&server_addr), sizeof(server_addr));
-  ASSERT_EQ(0, retval);
+  ASSERT_EQ(0, retval) << absl::Substitute("bind() failed with errno=$0", errno);
 
   retval = listen(server_listen_fd, 2);
-  ASSERT_EQ(0, retval);
+  ASSERT_EQ(0, retval) << absl::Substitute("listen() failed with errno=$0", errno);
 
   int client_fd = socket(AF_UNIX, SOCK_STREAM, 0);
-  ASSERT_NE(-1, client_fd);
+  ASSERT_NE(-1, client_fd) << absl::Substitute("socket() failed with errno=$0", errno);
 
   retval =
       connect(client_fd, reinterpret_cast<struct sockaddr*>(&server_addr), sizeof(server_addr));
   ASSERT_EQ(0, retval);
 
   struct sockaddr_un client_addr;
-  socklen_t len;
+  socklen_t len = sizeof(client_addr);
   int server_accept_fd =
       accept(server_listen_fd, reinterpret_cast<struct sockaddr*>(&client_addr), &len);
-  ASSERT_NE(-1, server_accept_fd);
+  ASSERT_NE(-1, server_accept_fd) << absl::Substitute("accept() failed with errno=$0", errno);
 
   // Extract inode numbers.
   auto proc_parser = std::make_unique<system::ProcParser>(system::Config::GetInstance());
