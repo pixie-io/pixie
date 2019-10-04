@@ -8,7 +8,7 @@ else
 end
 
 execute 'install_python_packages' do
-  command 'pip3 install flake8 flake8-mypy setuptools'
+  command 'pip3 install flake8 flake8-mypy setuptools yamllint'
 end
 
 # pyyaml is needed by clang-tidy
