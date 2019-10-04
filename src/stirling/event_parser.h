@@ -10,12 +10,10 @@
 #include "absl/base/macros.h"
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
+#include "src/stirling/socket_trace.h"
 
 namespace pl {
 namespace stirling {
-
-// The direction of traffic expected on a probe.
-enum class MessageType { kUnknown, kRequest, kResponse };
 
 enum class ParseState {
   kUnknown,
