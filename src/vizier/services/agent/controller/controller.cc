@@ -32,6 +32,7 @@ namespace agent {
 
 using ::pl::shared::k8s::metadatapb::ResourceUpdate;
 using ::pl::types::DataType;
+using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse;
 
 // The maximum size of the hostname, before we get an error.
 constexpr int kMaxHostnameSize = 128;
@@ -95,10 +96,14 @@ Status Controller::Init() {
   // Downstream dependencies like stirling/carnot depend on knowing
   // ASID and metadata state, which is only available after registration is
   // complete.
-  PL_RETURN_IF_ERROR(nats_connector_->Connect());
-
-  // Send the agent info.
-  PL_RETURN_IF_ERROR(RegisterAgent());
+  if (nats_connector_ == nullptr) {
+    LOG(WARNING) << "NATS is not configured, skip connecting. Stirling and Carnot might not behave "
+                    "as expected because of this.";
+  } else {
+    PL_RETURN_IF_ERROR(nats_connector_->Connect());
+    // Send the agent info.
+    PL_RETURN_IF_ERROR(RegisterAgent());
+  }
 
   mds_manager_ =
       std::make_unique<pl::md::AgentMetadataStateManager>(asid_, pl::system::Config::GetInstance());
@@ -253,6 +258,13 @@ void Controller::RunHeartbeat() {
   double alpha = 0.25;
 
   while (keep_alive_) {
+    if (nats_connector_ == nullptr) {
+      // TODO(yzhao): LOG_EVERY_N has a known data race: https://github.com/google/glog/issues/212.
+      // We'd want to switch this to LOG_EVERY_N(WARNING, 100) for better visibility.
+      VLOG(1) << "NATS is not configured, sleep for 1 second ...";
+      std::this_thread::sleep_for(std::chrono::seconds{1});
+      continue;
+    }
     // Send a heartbeat on a fixed interval.
     messages::VizierMessage req;
     auto hb = req.mutable_heartbeat();
@@ -304,9 +316,8 @@ void Controller::RunHeartbeat() {
   }
 }
 
-Status Controller::ExecuteQuery(
-    const messages::ExecuteQueryRequest& req,
-    pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse* resp) {
+Status Controller::ExecuteQuery(const messages::ExecuteQueryRequest& req,
+                                AgentQueryResponse* resp) {
   auto query_id = ParseUUID(req.query_id()).ConsumeValueOrDie();
   LOG(INFO) << absl::StrFormat("Executing query: id=%s, query=%s", query_id.str(), req.query_str());
   CHECK(resp != nullptr);
@@ -337,6 +348,11 @@ Status Controller::Run() {
   running_ = true;
 
   while (keep_alive_) {
+    if (nats_connector_ == nullptr || qb_stub_ == nullptr) {
+      VLOG(1) << "NATS or Query Broker is not configured, sleep for 1 second ...";
+      std::this_thread::sleep_for(std::chrono::seconds{1});
+      continue;
+    }
     auto msg = nats_connector_->GetNextMessage(kNextMessageTimeoutSecs);
     if (msg == nullptr) {
       continue;
@@ -346,7 +362,7 @@ Status Controller::Run() {
       if (!s.ok()) {
         // Ignore query execution failures, since they might hapeen for legitimate reasons.
         // TODO(zasgar) : Make sure failures are used for truly exceptional circumstances.
-        LOG(ERROR) << absl::StrFormat("Failed to execute query... ignoring: %s", s.msg());
+        LOG(ERROR) << absl::Substitute("Failed to execute query, ignoring: $0", s.msg());
       }
     } else if (msg->has_heartbeat_ack() || msg->has_heartbeat_nack()) {
       PL_CHECK_OK(HandleHeartbeatMessage(std::move(msg)));
@@ -418,8 +434,8 @@ Status Controller::HandleExecuteQueryMessage(std::unique_ptr<messages::VizierMes
 
   auto s = ExecuteQuery(executor_query_req, req.mutable_result());
   if (!s.ok()) {
-    LOG(ERROR) << absl::StrFormat("Query failed, reason: %s, query: %s", s.ToString(),
-                                  executor_query_req.query_str());
+    LOG(ERROR) << absl::Substitute("Query failed, reason: $0, query: $1", s.ToString(),
+                                   executor_query_req.query_str());
   }
 
   // RPC the results to the query broker.

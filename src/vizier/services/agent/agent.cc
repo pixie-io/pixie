@@ -36,8 +36,9 @@ DEFINE_string(tls_ca_crt, gflags::StringFromEnv("PL_TLS_CA_CERT", "../../service
 
 DEFINE_bool(disable_SSL, gflags::BoolFromEnv("PL_DISABLE_SSL", false), "Disable GRPC SSL");
 
-using pl::stirling::Stirling;
-using pl::vizier::agent::Controller;
+using ::pl::stirling::Stirling;
+using ::pl::vizier::agent::Controller;
+using ::pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService;
 
 Stirling* g_stirling = nullptr;
 Controller* g_controller = nullptr;
@@ -87,25 +88,30 @@ int main(int argc, char** argv) {
 
   auto carnot = pl::carnot::Carnot::Create(table_store, stub_generator).ConsumeValueOrDie();
   auto stirling = pl::stirling::Stirling::Create(pl::stirling::CreateProdSourceRegistry());
+
+  // Assign global variable for signal handlers.
   g_stirling = stirling.get();
 
   // Store the sirling ptr b/c we need a bit later to start the thread.
   auto stirling_ptr = stirling.get();
 
-  // We need to move the channel here since GRPC mocking is done by the stub.
-  auto chan = grpc::CreateChannel(FLAGS_query_broker_addr, channel_creds);
-  // Try to connect to vizier.
-  grpc_connectivity_state state = chan->GetState(true);
-  while (state != grpc_connectivity_state::GRPC_CHANNEL_READY) {
-    LOG(ERROR) << "Failed to connect to query broker";
-    // Do a small sleep to avoud busy loop.
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    state = chan->GetState(true);
+  std::unique_ptr<QueryBrokerService::Stub> query_broker_stub;
+  if (FLAGS_query_broker_addr.empty()) {
+    LOG(WARNING) << "--query_broker_addr is empty, skip connecting to query broker.";
+  } else {
+    // We need to move the channel here since gRPC mocking is done by the stub.
+    auto chan = grpc::CreateChannel(FLAGS_query_broker_addr, channel_creds);
+    // Try to connect to vizier.
+    grpc_connectivity_state state = chan->GetState(true);
+    while (state != grpc_connectivity_state::GRPC_CHANNEL_READY) {
+      LOG(ERROR) << "Failed to connect to query broker at: " << FLAGS_query_broker_addr;
+      // Do a small sleep to avoid busy loop.
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+      state = chan->GetState(true);
+    }
+    LOG(INFO) << "Connected to query broker at: " << FLAGS_query_broker_addr;
+    query_broker_stub = std::make_unique<QueryBrokerService::Stub>(chan);
   }
-  LOG(INFO) << "Connected to query broker";
-  auto stub =
-      std::make_unique<pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService::Stub>(
-          chan);
 
   sole::uuid agent_id = sole::uuid4();
 
@@ -118,10 +124,15 @@ int main(int argc, char** argv) {
     tls_config->tls_key = FLAGS_client_tls_key;
   }
 
-  auto nats_connector = std::make_unique<Controller::VizierNATSConnector>(
-      FLAGS_nats_url, "update_agent" /*pub_topic*/, agent_sub_topic, std::move(tls_config));
+  std::unique_ptr<Controller::VizierNATSConnector> nats_connector;
+  if (FLAGS_nats_url.empty()) {
+    LOG(WARNING) << "--nats_url is empty, skip connecting to NATS.";
+  } else {
+    auto nats_connector = std::make_unique<Controller::VizierNATSConnector>(
+        FLAGS_nats_url, "update_agent" /*pub_topic*/, agent_sub_topic, std::move(tls_config));
+  }
 
-  auto controller = Controller::Create(agent_id, std::move(stub), std::move(carnot),
+  auto controller = Controller::Create(agent_id, std::move(query_broker_stub), std::move(carnot),
                                        std::move(stirling), table_store, std::move(nats_connector))
                         .ConsumeValueOrDie();
   g_controller = controller.get();
