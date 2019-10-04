@@ -119,7 +119,9 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
 AgentMetadataType AgentMetadataCallback() {
   // Injecting empty state here. If we want to monitor some pids we can directly add them to this
   // data structure.
-  return std::make_shared<const pl::md::AgentMetadataState>(/* asid */ 1);
+
+  // Set ASID to 0, so {ASID, PID} == {PID}.
+  return std::make_shared<const pl::md::AgentMetadataState>(/* asid */ 0);
 }
 
 // Put this in global space, so we can kill it in the signal handler.
