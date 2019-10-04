@@ -213,8 +213,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   //                     The Handle* functions should call make_unique() of new corresponding
   //                     objects, and these functions should take unique_ptrs.
   void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);
-  void AcceptOpenConnEvent(conn_info_t conn_info);
-  void AcceptCloseConnEvent(conn_info_t conn_info);
+  void AcceptOpenConnEvent(const conn_event_t& conn_info);
+  void AcceptCloseConnEvent(const close_event_t& close_event);
 
   // Transfer of messages to the data table.
   template <class TMessageType>

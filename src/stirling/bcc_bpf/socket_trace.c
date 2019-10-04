@@ -370,7 +370,6 @@ static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
 
   struct conn_info_t conn_info;
   memset(&conn_info, 0, sizeof(struct conn_info_t));
-  conn_info.timestamp_ns = bpf_ktime_get_ns();
   conn_info.addr = addr;
   conn_info.traffic_class.protocol = kProtocolUnknown;
   conn_info.traffic_class.role = kRoleUnknown;
@@ -382,13 +381,26 @@ static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
   conn_info.conn_id.generation = get_tgid_fd_generation(tgid_fd);
 
   conn_info_map.update(&tgid_fd, &conn_info);
-  socket_open_conns.perf_submit(ctx, &conn_info, sizeof(struct conn_info_t));
+
+  struct conn_event_t conn_event;
+  memset(&conn_event, 0, sizeof(struct conn_event_t));
+  conn_event.timestamp_ns = bpf_ktime_get_ns();
+  conn_event.conn_id = conn_info.conn_id;
+  conn_event.addr = conn_info.addr;
+  conn_event.traffic_class = conn_info.traffic_class;
+
+  socket_open_conns.perf_submit(ctx, &conn_event, sizeof(struct conn_event_t));
 }
 
 static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t* conn_info) {
-  // Update timestamp to reflect the close event.
-  conn_info->timestamp_ns = bpf_ktime_get_ns();
-  socket_close_conns.perf_submit(ctx, conn_info, sizeof(struct conn_info_t));
+  struct close_event_t close_event;
+  memset(&close_event, 0, sizeof(struct close_event_t));
+  close_event.timestamp_ns = bpf_ktime_get_ns();
+  close_event.conn_id = conn_info->conn_id;
+  close_event.rd_seq_num = conn_info->rd_seq_num;
+  close_event.wr_seq_num = conn_info->wr_seq_num;
+
+  socket_close_conns.perf_submit(ctx, &close_event, sizeof(struct close_event_t));
 }
 
 // TODO(yzhao): We can write a test for this, by define a dummy bpf_probe_read() function. Similar

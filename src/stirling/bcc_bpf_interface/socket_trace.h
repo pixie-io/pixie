@@ -81,11 +81,10 @@ struct conn_id_t {
 
 // This struct contains information collected when a connection is established,
 // via an accept() syscall.
-// This struct must be aligned, because BCC cannot currently handle unaligned structs.
 struct conn_info_t {
-  uint64_t timestamp_ns;
   // Connection identifier (PID, FD, etc.).
   struct conn_id_t conn_id;
+
   // IP address of the remote endpoint.
   struct sockaddr_in6 addr;
 
@@ -110,6 +109,24 @@ struct conn_info_t {
   // The offset to start read the first frame of the upcoming bytes buffer.
   uint64_t wr_next_http2_frame_offset;
   uint64_t rd_next_http2_frame_offset;
+};
+
+// This struct is a subset of conn_info_t. It is used to communicate connect/accept events.
+// See conn_info_t for descriptions of the members.
+struct conn_event_t {
+  uint64_t timestamp_ns;
+  struct conn_id_t conn_id;
+  struct sockaddr_in6 addr;
+  struct traffic_class_t traffic_class;
+};
+
+// This struct is a subset of conn_info_t. It is used to communicate close events.
+// See conn_info_t for descriptions of the members.
+struct close_event_t {
+  uint64_t timestamp_ns;
+  struct conn_id_t conn_id;
+  uint64_t wr_seq_num;
+  uint64_t rd_seq_num;
 };
 
 // Data buffer message size. BPF can submit at most this amount of data to a perf buffer.

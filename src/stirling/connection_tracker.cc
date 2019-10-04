@@ -46,41 +46,41 @@ void ConnectionTracker::InitState<mysql::Packet>() {
   }
 }
 
-void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
+void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   LOG_IF(ERROR, open_info_.timestamp_ns != 0) << absl::Substitute(
-      "Clobbering existing ConnOpenEvent [pid=$0 fd=$1 gen=$2].", conn_info.conn_id.pid,
-      conn_info.conn_id.fd, conn_info.conn_id.generation);
+      "Clobbering existing ConnOpenEvent [pid=$0 fd=$1 gen=$2].", conn_event.conn_id.pid,
+      conn_event.conn_id.fd, conn_event.conn_id.generation);
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
              "Did not expect to receive Open event more than 1 sampling iteration after Close "
              "[pid=$0 fd=$1 gen=$2].",
-             conn_info.conn_id.pid, conn_info.conn_id.fd, conn_info.conn_id.generation);
+             conn_event.conn_id.pid, conn_event.conn_id.fd, conn_event.conn_id.generation);
 
-  UpdateTimestamps(conn_info.timestamp_ns);
-  SetTrafficClass(conn_info.traffic_class);
-  SetPID(conn_info.conn_id);
+  UpdateTimestamps(conn_event.timestamp_ns);
+  SetTrafficClass(conn_event.traffic_class);
+  SetPID(conn_event.conn_id);
 
-  open_info_.timestamp_ns = conn_info.timestamp_ns;
-  Status s = ParseSockAddr(*reinterpret_cast<struct sockaddr*>(&conn_info.addr),
+  open_info_.timestamp_ns = conn_event.timestamp_ns;
+  Status s = ParseSockAddr(*reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
                            &open_info_.remote_addr, &open_info_.remote_port);
   if (!s.ok()) {
-    LOG(WARNING) << "Could not parse IP address.";
+    LOG(WARNING) << absl::Substitute("Could not parse IP address, msg: $0", s.msg());
     open_info_.remote_addr = "-'";
     open_info_.remote_port = 0;
   }
 }
 
-void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
+void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
   LOG_IF(ERROR, close_info_.timestamp_ns != 0) << absl::Substitute(
-      "Clobbering existing ConnCloseEvent [pid=$0 fd=$1 gen=$2].", conn_info.conn_id.pid,
-      conn_info.conn_id.fd, conn_info.conn_id.generation);
+      "Clobbering existing ConnCloseEvent [pid=$0 fd=$1 gen=$2].", close_event.conn_id.pid,
+      close_event.conn_id.fd, close_event.conn_id.generation);
 
-  UpdateTimestamps(conn_info.timestamp_ns);
-  SetPID(conn_info.conn_id);
+  UpdateTimestamps(close_event.timestamp_ns);
+  SetPID(close_event.conn_id);
 
-  close_info_.timestamp_ns = conn_info.timestamp_ns;
-  close_info_.send_seq_num = conn_info.wr_seq_num;
-  close_info_.recv_seq_num = conn_info.rd_seq_num;
+  close_info_.timestamp_ns = close_event.timestamp_ns;
+  close_info_.send_seq_num = close_event.wr_seq_num;
+  close_info_.recv_seq_num = close_event.rd_seq_num;
 
   MarkForDeath();
 }

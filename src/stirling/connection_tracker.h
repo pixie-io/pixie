@@ -238,12 +238,12 @@ class ConnectionTracker {
    *
    * @param event The data event from BPF.
    */
-  void AddConnOpenEvent(conn_info_t conn_info);
+  void AddConnOpenEvent(const conn_event_t& conn_info);
 
   /**
    * @brief Registers a BPF connection close event into the tracker.
    */
-  void AddConnCloseEvent(conn_info_t conn_info);
+  void AddConnCloseEvent(const close_event_t& close_event);
 
   /**
    * @brief Registers a BPF data event into the tracker.
