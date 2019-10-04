@@ -84,6 +84,13 @@ Status ProcessDiagMsg(const struct inet_diag_msg& diag_msg, unsigned int len,
     return error::Internal("Unsupported address family $0", diag_msg.idiag_family);
   }
 
+  if (diag_msg.idiag_inode == 0) {
+    // TODO(PL-1001): Investigate why inode of 0 is intermittently produced.
+    // Shouldn't happen since we ask for for established connections only.
+    LOG(WARNING) << "Did not expect inode of 0 for established connections...ignoring it.";
+    return Status::OK();
+  }
+
   auto iter = socket_info_entries->find(diag_msg.idiag_inode);
   ECHECK(iter == socket_info_entries->end())
       << absl::Substitute("Clobbering socket info at inode=$0", diag_msg.idiag_inode);
