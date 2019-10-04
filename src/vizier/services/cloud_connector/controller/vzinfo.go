@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -46,20 +47,56 @@ func (v *K8sVizierInfo) GetAddress() (string, error) {
 		return "", err
 	}
 
-	// It's possible to have more than one external IP. Just select the first one for now.
-	if len(proxySvc.Status.LoadBalancer.Ingress) == 0 {
-		return "", errors.New("Proxy service has no external IPs")
-	}
-	ip := proxySvc.Status.LoadBalancer.Ingress[0].IP
-
+	ip := ""
 	port := int32(0)
-	for _, portSpec := range proxySvc.Spec.Ports {
-		if portSpec.Name == "tcp-https" {
-			port = portSpec.Port
+
+	if proxySvc.Spec.Type == corev1.ServiceTypeNodePort {
+		nodesList, err := v.clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+		if err != nil {
+			return "", err
 		}
-	}
-	if port <= 0 {
-		return "", errors.New("could not determine port for vizier service")
+		if len(nodesList.Items) == 0 {
+			return "", errors.New("Could not find node for NodePort")
+		}
+
+		// Just select the first node for now.
+		// Don't want to randomly pick, because it'll affect DNS.
+		nodeAddrs := nodesList.Items[0].Status.Addresses
+
+		for _, nodeAddr := range nodeAddrs {
+			if nodeAddr.Type == corev1.NodeInternalIP {
+				ip = nodeAddr.Address
+			}
+		}
+		if ip == "" {
+			return "", errors.New("Could not determine IP address of node for NodePort")
+		}
+
+		for _, portSpec := range proxySvc.Spec.Ports {
+			if portSpec.Name == "tcp-https" {
+				port = portSpec.NodePort
+			}
+		}
+		if port <= 0 {
+			return "", errors.New("Could not determine port for vizier service")
+		}
+	} else if proxySvc.Spec.Type == corev1.ServiceTypeLoadBalancer {
+		// It's possible to have more than one external IP. Just select the first one for now.
+		if len(proxySvc.Status.LoadBalancer.Ingress) == 0 {
+			return "", errors.New("Proxy service has no external IPs")
+		}
+		ip = proxySvc.Status.LoadBalancer.Ingress[0].IP
+
+		for _, portSpec := range proxySvc.Spec.Ports {
+			if portSpec.Name == "tcp-https" {
+				port = portSpec.Port
+			}
+		}
+		if port <= 0 {
+			return "", errors.New("Could not determine port for vizier service")
+		}
+	} else {
+		return "", errors.New("Unexpected service type")
 	}
 
 	externalAddr := ip
