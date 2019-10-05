@@ -2,6 +2,8 @@ licenses(["restricted"])
 
 load("@bazel_gazelle//:def.bzl", "gazelle")
 
+exports_files(["LICENSE"])
+
 gazelle(
     name = "gazelle",
     mode = "fix",

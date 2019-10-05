@@ -3,6 +3,8 @@ load("//bazel:flex_bison.bzl", "genbison", "genflex")
 
 licenses(["notice"])
 
+exports_files(["libpypa/COPYING", "arrow/LICENSE.txt"])
+
 filegroup(
     name = "bcc_source",
     srcs = glob(["bcc/**"]),
