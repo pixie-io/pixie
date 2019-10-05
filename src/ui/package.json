@@ -75,6 +75,7 @@
     "highlight.js": "9.15.10",
     "immutable-tuple": "^0.4.8",
     "numeral": "^2.0.6",
+    "license-checker": "^25.0.1",
     "query-string": "^6.8.2",
     "react": "^16.8.6",
     "react-apollo": "^2.2.4",
@@ -97,6 +98,7 @@
     "build_prod": "./node_modules/.bin/webpack -p",
     "dev": "./node_modules/.bin/webpack-dev-server",
     "storybook": "start-storybook -p 9001 -c .storybook",
-    "storybook_static": "./node_modules/.bin/build-storybook -c .storybook -o storybook_static"
+    "storybook_static": "./node_modules/.bin/build-storybook -c .storybook -o storybook_static",
+    "license_check": "./node_modules/license-checker/bin/license-checker"
   }
 }
