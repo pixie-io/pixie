@@ -54,3 +54,40 @@ genrule(
         "ui_build",
     ],
 )
+
+genrule(
+    name = "ui-licenses",
+    srcs = [
+        "yarn.lock",
+        ".yarnrc",
+    ] + glob([
+        "*.js",
+        "*.json",
+        "offline_package_cache/**",
+    ]) + [
+        ":ui-bundle",
+    ],
+    outs = [
+        "NPM_LICENSES",
+    ],
+    tools = ["tools/licenses/npm_license_extractor.py", "tools/licenses/override_license.json"],
+    cmd = """
+      export PATH=/usr/local/bin:/opt/node/bin:$$PATH;
+      export HOME=`mktemp -d` # This makes node-gyp happy.
+      export PL_DIST_BUNDLE_OUTPUT=`pwd`/$(RULEDIR)
+      export TMPPATH=`mktemp -d`
+
+      cp -aL `pwd`/* $${TMPPATH}
+
+      pushd $${TMPPATH}/src/ui
+      yarn install --prefer_offline
+
+      # License check
+      yarn license-checker --json --out $@ 
+      cp $@ $${PL_DIST_BUNDLE_OUTPUT}
+      popd;
+      python $(location :tools/licenses/npm_license_extractor.py) $@ $@ --override_license $(location :tools/licenses/override_license.json)
+
+      rm -rf $${TMPPATH}
+    """,
+)
