@@ -1,5 +1,3 @@
-#include <sys/stat.h>
-
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -8,6 +6,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/base/file.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 #include "src/shared/metadata/k8s_objects.h"
 
@@ -20,33 +19,95 @@ namespace md {
 constexpr int kProcStatNumFields = 52;
 constexpr int kProcStatStartTimeField = 21;
 
-/**
- * Constants controlling where in sys/fs to look for the cgroups data.
- */
-constexpr char kSysfsCpuAcctPatch[] = "cgroup/cpu,cpuacct/kubepods";
-constexpr std::string_view kPidFile = "cgroup.procs";
+// Note that there are different cgroup naming formats used by Kuberenetes under sysfs.
+// The standard version is more verbose, and uses underscores instead of dashes.
+//
+// This is a sample used by GKE:
+// /sys/fs/cgroup/cpu,cpuacct/kubepods/pod8dbc5577-d0e2-4706-8787-57d52c03ddf2/
+//        14011c7d92a9e513dfd69211da0413dbf319a5e45a02b354ba6e98e10272542d/cgroup.procs
+//
+// This is a sample used by a standard kubernetes deployment:
+// /sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods-pod8dbc5577_d0e2_4706_8787_57d52c03ddf2.slice/
+//        docker-14011c7d92a9e513dfd69211da0413dbf319a5e45a02b354ba6e98e10272542d.scope/cgroup.procs
 
-std::string CGroupMetadataReader::CGroupPodDirPath(std::string_view sysfs_prefix,
-                                                   PodQOSClass qos_class, std::string_view pod_id) {
+void CGroupMetadataReader::InitPathTemplates(std::string_view proc_path,
+                                             std::string_view sysfs_path) {
+  // Note that as we create these templates, we often substitute in unresolved parameters by using
+  // $0. For example, the pod ID is left as a template parameter to be resolved later.
+
+  proc_stat_path_template_ = absl::Substitute("$0/$1/stat", proc_path, "$0");
+  proc_cmdline_path_template_ = absl::Substitute("$0/$1/cmdline", proc_path, "$0");
+
+  // Attempt assuming naming scheme #1.
+  constexpr char kSysfsCpuAcctPath1[] = "cgroup/cpu,cpuacct/kubepods";
+  std::string cgroup_kubepods_base_path = absl::Substitute("$0/$1", sysfs_path, kSysfsCpuAcctPath1);
+  if (FileExists(cgroup_kubepods_base_path)) {
+    cgroup_kubepod_guaranteed_path_template_ =
+        absl::Substitute("$0/pod$1", cgroup_kubepods_base_path, "$0");
+    cgroup_kubepod_besteffort_path_template_ =
+        absl::Substitute("$0/besteffort/pod$1", cgroup_kubepods_base_path, "$0");
+    cgroup_kubepod_burstable_path_template_ =
+        absl::Substitute("$0/burstable/pod$1", cgroup_kubepods_base_path, "$0");
+    container_template_ = "/$0/$1";
+    cgroup_kubepod_convert_dashes_ = false;
+    return;
+  }
+
+  // Attempt assuming naming scheme #2.
+  constexpr char kSysfsCpuAcctPath2[] = "cgroup/cpu,cpuacct/kubepods.slice";
+  cgroup_kubepods_base_path = absl::Substitute("$0/$1", sysfs_path, kSysfsCpuAcctPath2);
+  if (FileExists(cgroup_kubepods_base_path)) {
+    cgroup_kubepod_guaranteed_path_template_ =
+        absl::Substitute("$0/kubepods-pod$1.slice", cgroup_kubepods_base_path, "$0");
+    cgroup_kubepod_besteffort_path_template_ =
+        absl::Substitute("$0/kubepods-besteffort.slice/kubepods-besteffort-pod$1.slice",
+                         cgroup_kubepods_base_path, "$0");
+    cgroup_kubepod_burstable_path_template_ =
+        absl::Substitute("$0/kubepods-burstable.slice/kubepods-burstable-pod$1.slice",
+                         cgroup_kubepods_base_path, "$0");
+    container_template_ = "/docker-$0.scope/$1";
+    cgroup_kubepod_convert_dashes_ = true;
+    return;
+  }
+
+  LOG(ERROR) << absl::Substitute("Could not find kubepods slice under sysfs ($0)", sysfs_path);
+}
+
+CGroupMetadataReader::CGroupMetadataReader(const system::Config& cfg)
+    : ns_per_kernel_tick_(static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond())),
+      clock_realtime_offset_(cfg.ClockRealTimeOffset()) {
+  InitPathTemplates(cfg.proc_path(), cfg.sysfs_path());
+}
+
+std::string CGroupMetadataReader::CGroupPodDirPath(PodQOSClass qos_class,
+                                                   std::string_view pod_id) const {
+  std::string formatted_pod_id(pod_id);
+
+  // Convert any dashes to underscores, because there are two conventions.
+  if (cgroup_kubepod_convert_dashes_) {
+    std::replace(formatted_pod_id.begin(), formatted_pod_id.end(), '-', '_');
+  }
+
   switch (qos_class) {
     case PodQOSClass::kGuaranteed:
-      return absl::Substitute("$0/$1/pod$2", sysfs_prefix, kSysfsCpuAcctPatch, pod_id);
+      return absl::Substitute(cgroup_kubepod_guaranteed_path_template_, formatted_pod_id);
     case PodQOSClass::kBestEffort:
-      return absl::Substitute("$0/$1/besteffort/pod$2", sysfs_prefix, kSysfsCpuAcctPatch, pod_id);
+      return absl::Substitute(cgroup_kubepod_besteffort_path_template_, formatted_pod_id);
     case PodQOSClass::kBurstable:
-      return absl::Substitute("$0/$1/burstable/pod$2", sysfs_prefix, kSysfsCpuAcctPatch, pod_id);
+      return absl::Substitute(cgroup_kubepod_burstable_path_template_, formatted_pod_id);
     default:
       CHECK(0) << "Unknown QOS class";
   }
 }
 
-std::string CGroupMetadataReader::CGroupProcFilePath(std::string_view sysfs_prefix,
-                                                     PodQOSClass qos_class, std::string_view pod_id,
-                                                     std::string_view container_id) {
-  // TODO(oazizi): It might be better to copy code from CGroupPodDirPath for performance reasons
-  // (avoid string copies).
-  return absl::StrCat(CGroupPodDirPath(sysfs_prefix, qos_class, pod_id),
-                      absl::Substitute("/$0/$1", container_id, kPidFile));
+std::string CGroupMetadataReader::CGroupProcFilePath(PodQOSClass qos_class, std::string_view pod_id,
+                                                     std::string_view container_id) const {
+  constexpr std::string_view kPidFile = "cgroup.procs";
+
+  // TODO(oazizi): Might be better to inline code from CGroupPodDirPath for performance reasons
+  // (avoid string copies and perform a single absl::Substitute).
+  return absl::StrCat(CGroupPodDirPath(qos_class, pod_id),
+                      absl::Substitute(container_template_, container_id, kPidFile));
 }
 
 // TODO(zasgar/michelle): Reconcile this code with cgroup manager. We should delete the cgroup
@@ -59,7 +120,7 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
   // The container files need to be recursively read and the PID needs be merge across all
   // containers.
 
-  auto fpath = CGroupProcFilePath(sysfs_path_, qos_class, pod_id, container_id);
+  auto fpath = CGroupProcFilePath(qos_class, pod_id, container_id);
   std::ifstream ifs(fpath);
   if (!ifs) {
     // This might not be a real error since the pod could have disappeared.
@@ -83,7 +144,7 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
 
 // TODO(zasgar/michelle): cleanup and merge with proc_parser.
 std::string CGroupMetadataReader::ReadPIDCmdline(uint32_t pid) const {
-  std::string fpath = absl::Substitute("$0/$1/cmdline", proc_path_, pid);
+  std::string fpath = absl::Substitute(proc_cmdline_path_template_, pid);
   std::ifstream ifs(fpath);
   if (!ifs) {
     return "";
@@ -109,7 +170,7 @@ std::string CGroupMetadataReader::ReadPIDCmdline(uint32_t pid) const {
 }
 
 int64_t CGroupMetadataReader::ReadPIDStartTimeTicks(uint32_t pid) const {
-  std::string fpath = absl::Substitute("$0/$1/stat", proc_path_, pid);
+  std::string fpath = absl::Substitute(proc_stat_path_template_, pid);
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
@@ -136,11 +197,8 @@ int64_t CGroupMetadataReader::ReadPIDStartTimeTicks(uint32_t pid) const {
 }
 
 bool CGroupMetadataReader::PodDirExists(const PodInfo& pod_info) const {
-  auto pod_path = CGroupPodDirPath(sysfs_path_, pod_info.qos_class(), pod_info.uid());
-
-  // This appears to be the fastest way to check for file existence.
-  struct stat buffer;
-  return stat(pod_path.c_str(), &buffer) == 0;
+  auto pod_path = CGroupPodDirPath(pod_info.qos_class(), pod_info.uid());
+  return FileExists(pod_path);
 }
 
 }  // namespace md

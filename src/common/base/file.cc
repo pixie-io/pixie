@@ -1,3 +1,5 @@
+#include <sys/stat.h>
+
 #include <fstream>
 #include <string>
 
@@ -6,6 +8,13 @@
 #include "src/common/base/logging.h"
 
 namespace pl {
+
+bool FileExists(const std::string& filename) {
+  // This appears to be the fastest way to check for file existence.
+  struct stat buffer;
+  return stat(filename.c_str(), &buffer) == 0;
+}
+
 std::string FileContentsOrDie(const std::string& filename) {
   return ReadFileToString(filename).ConsumeValueOrDie();
 }

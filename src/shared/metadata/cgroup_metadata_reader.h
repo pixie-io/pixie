@@ -25,11 +25,7 @@ class CGroupMetadataReader : public NotCopyable {
   virtual ~CGroupMetadataReader() = default;
 
   // TODO(zasgar/michelle): Reconcile this constructor with the SysConfig changes when ready.
-  explicit CGroupMetadataReader(const system::Config& cfg)
-      : sysfs_path_(cfg.sysfs_path()),
-        proc_path_(cfg.proc_path()),
-        ns_per_kernel_tick_(static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond())),
-        clock_realtime_offset_(cfg.ClockRealTimeOffset()) {}
+  explicit CGroupMetadataReader(const system::Config& cfg);
 
   /**
    * ReadPIDList reads pids for a container running as part of a given pod.
@@ -63,18 +59,27 @@ class CGroupMetadataReader : public NotCopyable {
   virtual bool PodDirExists(const PodInfo& pod_info) const;
 
  private:
-  static std::string CGroupPodDirPath(std::string_view sysfs_prefix, PodQOSClass qos_class,
-                                      std::string_view pod_id);
+  void InitPathTemplates(std::string_view proc_path, std::string_view sysfs_path);
 
-  static std::string CGroupProcFilePath(std::string_view sysfs_prefix, PodQOSClass qos_class,
-                                        std::string_view pod_id, std::string_view container_id);
+  std::string CGroupPodDirPath(PodQOSClass qos_class, std::string_view pod_id) const;
 
-  std::string sysfs_path_;
-  std::string proc_path_;
+  std::string CGroupProcFilePath(PodQOSClass qos_class, std::string_view pod_id,
+                                 std::string_view container_id) const;
+
+  std::string cgroup_kubepod_guaranteed_path_template_;
+  std::string cgroup_kubepod_besteffort_path_template_;
+  std::string cgroup_kubepod_burstable_path_template_;
+  std::string container_template_;
+  bool cgroup_kubepod_convert_dashes_;
+
+  std::string proc_stat_path_template_;
+  std::string proc_cmdline_path_template_;
+
   int64_t ns_per_kernel_tick_;
   int64_t clock_realtime_offset_;
 
   FRIEND_TEST(CGroupMetadataReaderTest, cgroup_proc_file_path);
+  FRIEND_TEST(CGroupMetadataReaderTest, cgroup_proc_file_path_alternate);
 };
 
 }  // namespace md

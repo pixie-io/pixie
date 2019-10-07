@@ -16,4 +16,11 @@ It has two lines.)";
   EXPECT_EQ(read_val, write_val);
 }
 
+TEST(FileUtils, FileExists) {
+  // Relying on common files in any Linux/Mac system.
+  EXPECT_TRUE(FileExists("/tmp"));
+  EXPECT_TRUE(FileExists("/etc/hosts"));
+  EXPECT_FALSE(FileExists("/bogus-file-that-should-not-exist"));
+}
+
 }  // namespace pl
