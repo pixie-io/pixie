@@ -11,7 +11,7 @@ import * as expanded from 'images/icons/expanded.svg';
 import * as unexpanded from 'images/icons/unexpanded.svg';
 
 const ROW_HEIGHT = 40;
-const EXPANDED_ROW_HEIGHT = 180;
+const EXPANDED_ROW_HEIGHT = 300;
 
 export interface TableColumnInfo {
     dataKey: string;
