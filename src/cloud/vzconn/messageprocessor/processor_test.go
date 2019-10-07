@@ -19,6 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
 	"pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb"
 )
 
 func mustEnvelopeReq(pb proto.Message, topic string) *vzconnpb.CloudConnectRequest {
@@ -81,9 +82,9 @@ func TestMessageProcessor(t *testing.T) {
 		SequenceNumber: 1,
 	}
 
-	logMessage := &vzconnpb.TransferLogRequest{
-		BatchedLogs: []*vzconnpb.LogMessage{
-			&vzconnpb.LogMessage{
+	logMessage := &cloud_connectorpb.TransferLogRequest{
+		BatchedLogs: []*cloud_connectorpb.LogMessage{
+			&cloud_connectorpb.LogMessage{
 				Pod: "bar",
 				Svc: "xyz",
 				Log: "log msg",

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+import "src/cloud/cloudpb/cloud.proto";
+
+package pl.vizier.services.cloud_connector;
+
+option go_package = "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb;cloud_connectorpb";
+
+// This service runs on the Vizier cloud connector and is where Vizier pods can send information
+// that needs to go to the cloud connector. For now it is responsible for proxying log messages
+// to Pixie cloud, but it can be used for any information that needs to be passed from the agent
+// to the cloud. We assume that not all pods in the cluster have access to the network, but that
+// the cloud connector will.
+service CloudConnectorService {
+  rpc TransferLog(stream TransferLogRequest) returns (TransferLogResponse) {}
+}
+
+message LogMessage {
+    string pod = 1;
+    string svc = 2;
+    string log = 3;
+}
+
+message TransferLogRequest {
+    repeated LogMessage batched_logs = 1;
+}
+
+// While TransferLogRequest is used between vizier and the cloud,
+// TransferLogResponse is only used within a given cluster.
+message TransferLogResponse {
+  bool ok = 1;
+  string msg = 2;
+}

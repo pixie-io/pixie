@@ -15,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb"
 )
 
 // ErrorRegistrationFailedUnknown is the error for vizier registration failure.
@@ -129,7 +130,7 @@ func (m *MessageProcessor) handleVizierHeartbeat(msg *cloudpb.VizierHeartbeat) e
 	return nil
 }
 
-func (m *MessageProcessor) handleLogMessage(msg *vzconnpb.TransferLogRequest) error {
+func (m *MessageProcessor) handleLogMessage(msg *cloud_connectorpb.TransferLogRequest) error {
 	for _, logMsg := range msg.GetBatchedLogs() {
 		m.streamLog.WithField("pod", logMsg.GetPod()).WithField("service", logMsg.GetSvc()).Info(logMsg.GetLog())
 	}
@@ -189,11 +190,11 @@ func (m *MessageProcessor) handleMessage(msg *vzconnpb.CloudConnectRequest) erro
 	case *cloudpb.VizierHeartbeat:
 		// TODO(zasgar/michelle): move this to a channel.
 		err = m.handleVizierHeartbeat(msg)
-	case *vzconnpb.TransferLogRequest:
-		// TODO(zasgar/michelle): move this to a channel.
-		err = m.handleLogMessage(msg)
 	case *cloudpb.VizierSSLCertRequest:
 		err = m.handleSSLCertMessage(msg)
+	case *cloud_connectorpb.TransferLogRequest:
+		// TODO(zasgar/michelle/nserrino): move this to a channel.
+		err = m.handleLogMessage(msg)
 	default:
 		m.streamLog.
 			WithField("msg", msg.String()).

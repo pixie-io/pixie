@@ -130,113 +130,9 @@ func (m *CloudConnectResponse) GetMsg() *types.Any {
 	return nil
 }
 
-type LogMessage struct {
-	Pod string `protobuf:"bytes,1,opt,name=pod,proto3" json:"pod,omitempty"`
-	Svc string `protobuf:"bytes,2,opt,name=svc,proto3" json:"svc,omitempty"`
-	Log string `protobuf:"bytes,3,opt,name=log,proto3" json:"log,omitempty"`
-}
-
-func (m *LogMessage) Reset()      { *m = LogMessage{} }
-func (*LogMessage) ProtoMessage() {}
-func (*LogMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_935788a74a5b0e3d, []int{2}
-}
-func (m *LogMessage) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *LogMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_LogMessage.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *LogMessage) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LogMessage.Merge(m, src)
-}
-func (m *LogMessage) XXX_Size() int {
-	return m.Size()
-}
-func (m *LogMessage) XXX_DiscardUnknown() {
-	xxx_messageInfo_LogMessage.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_LogMessage proto.InternalMessageInfo
-
-func (m *LogMessage) GetPod() string {
-	if m != nil {
-		return m.Pod
-	}
-	return ""
-}
-
-func (m *LogMessage) GetSvc() string {
-	if m != nil {
-		return m.Svc
-	}
-	return ""
-}
-
-func (m *LogMessage) GetLog() string {
-	if m != nil {
-		return m.Log
-	}
-	return ""
-}
-
-type TransferLogRequest struct {
-	BatchedLogs []*LogMessage `protobuf:"bytes,1,rep,name=batched_logs,json=batchedLogs,proto3" json:"batched_logs,omitempty"`
-}
-
-func (m *TransferLogRequest) Reset()      { *m = TransferLogRequest{} }
-func (*TransferLogRequest) ProtoMessage() {}
-func (*TransferLogRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_935788a74a5b0e3d, []int{3}
-}
-func (m *TransferLogRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *TransferLogRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_TransferLogRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *TransferLogRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TransferLogRequest.Merge(m, src)
-}
-func (m *TransferLogRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *TransferLogRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_TransferLogRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TransferLogRequest proto.InternalMessageInfo
-
-func (m *TransferLogRequest) GetBatchedLogs() []*LogMessage {
-	if m != nil {
-		return m.BatchedLogs
-	}
-	return nil
-}
-
 func init() {
 	proto.RegisterType((*CloudConnectRequest)(nil), "pl.services.CloudConnectRequest")
 	proto.RegisterType((*CloudConnectResponse)(nil), "pl.services.CloudConnectResponse")
-	proto.RegisterType((*LogMessage)(nil), "pl.services.LogMessage")
-	proto.RegisterType((*TransferLogRequest)(nil), "pl.services.TransferLogRequest")
 }
 
 func init() {
@@ -244,34 +140,28 @@ func init() {
 }
 
 var fileDescriptor_935788a74a5b0e3d = []byte{
-	// 419 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x92, 0xb1, 0x6e, 0xd4, 0x30,
-	0x1c, 0xc6, 0x63, 0x22, 0x90, 0xea, 0x14, 0x09, 0x85, 0x93, 0x08, 0x37, 0x58, 0x21, 0x03, 0x64,
-	0xc1, 0x46, 0xc7, 0x04, 0x4c, 0xb4, 0xeb, 0x21, 0xa1, 0xb4, 0x42, 0xa2, 0x0b, 0x4a, 0x1c, 0xd7,
-	0x0d, 0x4a, 0xfc, 0x0f, 0x71, 0x72, 0xa2, 0x4c, 0x3c, 0x02, 0x8f, 0xc1, 0xa3, 0x30, 0xde, 0xd8,
-	0x91, 0xcb, 0x2d, 0x8c, 0x7d, 0x04, 0x14, 0x3b, 0xc7, 0xdd, 0x49, 0xc0, 0xd2, 0x29, 0xdf, 0xf7,
-	0xe5, 0xcb, 0xcf, 0xf9, 0xdb, 0xc6, 0x4f, 0x74, 0xc3, 0x19, 0x2f, 0xa1, 0xcb, 0xd9, 0xe2, 0x0b,
-	0x07, 0xa5, 0xc6, 0x47, 0x9d, 0x31, 0x2d, 0x9a, 0x45, 0xc1, 0x05, 0xad, 0x1b, 0x68, 0xc1, 0xf7,
-	0xea, 0x92, 0x8e, 0x89, 0x9e, 0x3e, 0x95, 0x45, 0x7b, 0xd1, 0x65, 0x94, 0x43, 0xc5, 0x24, 0x48,
-	0x60, 0xa6, 0x93, 0x75, 0xe7, 0xc6, 0x19, 0x63, 0x94, 0xfd, 0x76, 0x1a, 0x9a, 0x45, 0xa0, 0xaa,
-	0x40, 0xb1, 0xae, 0x2b, 0x72, 0x5b, 0x37, 0x72, 0x6c, 0x3c, 0x94, 0x00, 0xb2, 0x14, 0x5b, 0x4e,
-	0xaa, 0x2e, 0xed, 0xab, 0xe8, 0x04, 0xdf, 0x3f, 0x1e, 0xfe, 0xef, 0x18, 0x94, 0x12, 0xbc, 0x4d,
-	0xc4, 0xa7, 0x4e, 0xe8, 0xd6, 0x9f, 0xe0, 0xdb, 0x2d, 0xd4, 0x05, 0x0f, 0x50, 0x88, 0xe2, 0x83,
-	0xc4, 0x1a, 0xff, 0x31, 0x76, 0x2b, 0x2d, 0x83, 0x5b, 0x21, 0x8a, 0xbd, 0xd9, 0x84, 0x5a, 0x2a,
-	0xdd, 0x50, 0xe9, 0x6b, 0x75, 0x99, 0x0c, 0x85, 0xe8, 0x14, 0x4f, 0xf6, 0xa1, 0xba, 0x06, 0xa5,
-	0xc5, 0x0d, 0xa9, 0x47, 0x18, 0xcf, 0x41, 0xbe, 0x11, 0x5a, 0xa7, 0x52, 0xf8, 0xf7, 0xb0, 0x5b,
-	0x43, 0x3e, 0x92, 0x06, 0x39, 0x24, 0x7a, 0xc1, 0x0d, 0xe7, 0x20, 0x19, 0xe4, 0x90, 0x94, 0x20,
-	0x03, 0xd7, 0x26, 0x25, 0xc8, 0xe8, 0x2d, 0xf6, 0x4f, 0x9b, 0x54, 0xe9, 0x73, 0xd1, 0xcc, 0x41,
-	0x6e, 0xa6, 0x7d, 0x89, 0x0f, 0xb3, 0xb4, 0xe5, 0x17, 0x22, 0xff, 0x50, 0x82, 0xd4, 0x01, 0x0a,
-	0xdd, 0xd8, 0x9b, 0x3d, 0xa0, 0x3b, 0x87, 0x42, 0xb7, 0x4b, 0x27, 0xde, 0x58, 0x9e, 0x83, 0xd4,
-	0xb3, 0x8f, 0xf8, 0xee, 0xbb, 0xb3, 0x61, 0xd0, 0x13, 0xdb, 0xf4, 0xdf, 0xe3, 0xc3, 0xdd, 0xe1,
-	0xfd, 0x70, 0x0f, 0xf3, 0x97, 0xcd, 0x9e, 0x3e, 0xfa, 0x4f, 0xc3, 0xee, 0x5c, 0xe4, 0xc4, 0xe8,
-	0x19, 0x3a, 0x82, 0xe5, 0x8a, 0x38, 0x57, 0x2b, 0xe2, 0x5c, 0xaf, 0x08, 0xfa, 0xda, 0x13, 0xf4,
-	0xbd, 0x27, 0xe8, 0x47, 0x4f, 0xd0, 0xb2, 0x27, 0xe8, 0x67, 0x4f, 0xd0, 0xaf, 0x9e, 0x38, 0xd7,
-	0x3d, 0x41, 0xdf, 0xd6, 0xc4, 0x59, 0xae, 0x89, 0x73, 0xb5, 0x26, 0xce, 0xd9, 0x8b, 0xba, 0xf8,
-	0x5c, 0x88, 0x32, 0xcd, 0x34, 0x4d, 0x0b, 0xf6, 0xc7, 0xb0, 0x7f, 0xde, 0xcd, 0x57, 0x1b, 0x91,
-	0xdd, 0x31, 0xa7, 0xf0, 0xfc, 0x77, 0x00, 0x00, 0x00, 0xff, 0xff, 0xc5, 0x62, 0x70, 0xc6, 0xc8,
-	0x02, 0x00, 0x00,
+	// 332 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x92, 0xbf, 0x4e, 0x02, 0x31,
+	0x1c, 0xc7, 0x5b, 0x8d, 0x26, 0x16, 0x5d, 0x4e, 0x06, 0x64, 0x68, 0x4e, 0x06, 0x65, 0xb1, 0x35,
+	0x38, 0x19, 0x27, 0xe5, 0x0d, 0xc0, 0x98, 0xc8, 0xc6, 0x95, 0x7a, 0xd6, 0xdc, 0xf5, 0x77, 0xd2,
+	0x3b, 0x22, 0x4e, 0x3e, 0x82, 0x8f, 0xe1, 0xa3, 0x38, 0x32, 0x32, 0x4a, 0x59, 0x1c, 0x79, 0x04,
+	0x43, 0x0b, 0x8a, 0x89, 0xba, 0x38, 0xdd, 0xf7, 0x7b, 0xfd, 0xf6, 0xf3, 0xfb, 0x93, 0x92, 0x43,
+	0xd3, 0x17, 0x5c, 0x24, 0x50, 0xf4, 0xf8, 0xe0, 0x51, 0x80, 0xd6, 0x8b, 0x4f, 0x16, 0x71, 0x23,
+	0xfb, 0x03, 0x25, 0x24, 0xcb, 0xfa, 0x90, 0x43, 0x50, 0xca, 0x12, 0xb6, 0xf8, 0x63, 0xaa, 0x47,
+	0xb1, 0xca, 0x6f, 0x8b, 0x88, 0x09, 0x48, 0x79, 0x0c, 0x31, 0x70, 0x97, 0x89, 0x8a, 0x1b, 0xe7,
+	0x9c, 0x71, 0xca, 0xdf, 0xad, 0x86, 0xae, 0x08, 0xa4, 0x29, 0x68, 0x5e, 0x14, 0xaa, 0xe7, 0xe3,
+	0x4e, 0x2e, 0x12, 0x7b, 0x31, 0x40, 0x9c, 0xc8, 0x2f, 0x4e, 0x57, 0x0f, 0xfd, 0x51, 0xad, 0x4d,
+	0x76, 0x9b, 0xf3, 0xfe, 0x9a, 0xa0, 0xb5, 0x14, 0x79, 0x4b, 0xde, 0x17, 0xd2, 0xe4, 0x41, 0x99,
+	0x6c, 0xe4, 0x90, 0x29, 0x51, 0xc1, 0x21, 0xae, 0x6f, 0xb5, 0xbc, 0x09, 0x0e, 0xc8, 0x7a, 0x6a,
+	0xe2, 0xca, 0x5a, 0x88, 0xeb, 0xa5, 0x46, 0x99, 0x79, 0x2a, 0x5b, 0x52, 0xd9, 0xb9, 0x1e, 0xb6,
+	0xe6, 0x81, 0xda, 0x25, 0x29, 0x7f, 0x87, 0x9a, 0x0c, 0xb4, 0x91, 0xff, 0xa3, 0x36, 0xee, 0xc8,
+	0xce, 0x55, 0x67, 0x8e, 0x6c, 0xfb, 0x45, 0x05, 0xd7, 0x64, 0x7b, 0xb5, 0x4c, 0x10, 0xb2, 0x95,
+	0x2d, 0xb2, 0x1f, 0xc6, 0xaa, 0xee, 0xff, 0x91, 0xf0, 0x3d, 0xd6, 0x50, 0x1d, 0x1f, 0xe3, 0x0b,
+	0x18, 0x4d, 0x28, 0x1a, 0x4f, 0x28, 0x9a, 0x4d, 0x28, 0x7e, 0xb2, 0x14, 0xbf, 0x58, 0x8a, 0x5f,
+	0x2d, 0xc5, 0x23, 0x4b, 0xf1, 0x9b, 0xa5, 0xf8, 0xdd, 0x52, 0x34, 0xb3, 0x14, 0x3f, 0x4f, 0x29,
+	0x1a, 0x4d, 0x29, 0x1a, 0x4f, 0x29, 0xea, 0x9c, 0x66, 0xea, 0x41, 0xc9, 0xa4, 0x1b, 0x19, 0xd6,
+	0x55, 0xfc, 0xd3, 0xf0, 0x5f, 0x5f, 0xc1, 0xd9, 0x52, 0x44, 0x9b, 0x6e, 0xde, 0x93, 0x8f, 0x00,
+	0x00, 0x00, 0xff, 0xff, 0x2a, 0xcc, 0x49, 0x7d, 0x32, 0x02, 0x00, 0x00,
 }
 
 func (this *CloudConnectRequest) Equal(that interface{}) bool {
@@ -328,65 +218,6 @@ func (this *CloudConnectResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *LogMessage) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*LogMessage)
-	if !ok {
-		that2, ok := that.(LogMessage)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Pod != that1.Pod {
-		return false
-	}
-	if this.Svc != that1.Svc {
-		return false
-	}
-	if this.Log != that1.Log {
-		return false
-	}
-	return true
-}
-func (this *TransferLogRequest) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*TransferLogRequest)
-	if !ok {
-		that2, ok := that.(TransferLogRequest)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.BatchedLogs) != len(that1.BatchedLogs) {
-		return false
-	}
-	for i := range this.BatchedLogs {
-		if !this.BatchedLogs[i].Equal(that1.BatchedLogs[i]) {
-			return false
-		}
-	}
-	return true
-}
 func (this *CloudConnectRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -409,30 +240,6 @@ func (this *CloudConnectResponse) GoString() string {
 	s = append(s, "Topic: "+fmt.Sprintf("%#v", this.Topic)+",\n")
 	if this.Msg != nil {
 		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *LogMessage) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 7)
-	s = append(s, "&vzconnpb.LogMessage{")
-	s = append(s, "Pod: "+fmt.Sprintf("%#v", this.Pod)+",\n")
-	s = append(s, "Svc: "+fmt.Sprintf("%#v", this.Svc)+",\n")
-	s = append(s, "Log: "+fmt.Sprintf("%#v", this.Log)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *TransferLogRequest) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&vzconnpb.TransferLogRequest{")
-	if this.BatchedLogs != nil {
-		s = append(s, "BatchedLogs: "+fmt.Sprintf("%#v", this.BatchedLogs)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -618,72 +425,6 @@ func (m *CloudConnectResponse) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *LogMessage) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *LogMessage) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Pod) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Pod)))
-		i += copy(dAtA[i:], m.Pod)
-	}
-	if len(m.Svc) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Svc)))
-		i += copy(dAtA[i:], m.Svc)
-	}
-	if len(m.Log) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Log)))
-		i += copy(dAtA[i:], m.Log)
-	}
-	return i, nil
-}
-
-func (m *TransferLogRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *TransferLogRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.BatchedLogs) > 0 {
-		for _, msg := range m.BatchedLogs {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -727,42 +468,6 @@ func (m *CloudConnectResponse) Size() (n int) {
 	return n
 }
 
-func (m *LogMessage) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Pod)
-	if l > 0 {
-		n += 1 + l + sovService(uint64(l))
-	}
-	l = len(m.Svc)
-	if l > 0 {
-		n += 1 + l + sovService(uint64(l))
-	}
-	l = len(m.Log)
-	if l > 0 {
-		n += 1 + l + sovService(uint64(l))
-	}
-	return n
-}
-
-func (m *TransferLogRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.BatchedLogs) > 0 {
-		for _, e := range m.BatchedLogs {
-			l = e.Size()
-			n += 1 + l + sovService(uint64(l))
-		}
-	}
-	return n
-}
-
 func sovService(x uint64) (n int) {
 	for {
 		n++
@@ -794,28 +499,6 @@ func (this *CloudConnectResponse) String() string {
 	s := strings.Join([]string{`&CloudConnectResponse{`,
 		`Topic:` + fmt.Sprintf("%v", this.Topic) + `,`,
 		`Msg:` + strings.Replace(fmt.Sprintf("%v", this.Msg), "Any", "types.Any", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *LogMessage) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&LogMessage{`,
-		`Pod:` + fmt.Sprintf("%v", this.Pod) + `,`,
-		`Svc:` + fmt.Sprintf("%v", this.Svc) + `,`,
-		`Log:` + fmt.Sprintf("%v", this.Log) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *TransferLogRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&TransferLogRequest{`,
-		`BatchedLogs:` + strings.Replace(fmt.Sprintf("%v", this.BatchedLogs), "LogMessage", "LogMessage", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1043,242 +726,6 @@ func (m *CloudConnectResponse) Unmarshal(dAtA []byte) error {
 				m.Msg = &types.Any{}
 			}
 			if err := m.Msg.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *LogMessage) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: LogMessage: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LogMessage: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Pod", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Pod = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Svc", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Svc = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Log", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Log = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *TransferLogRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: TransferLogRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: TransferLogRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BatchedLogs", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.BatchedLogs = append(m.BatchedLogs, &LogMessage{})
-			if err := m.BatchedLogs[len(m.BatchedLogs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
