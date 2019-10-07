@@ -173,27 +173,20 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   DumpBPFLog();
 }
 
-Status SocketTraceConnector::Configure(TrafficProtocol protocol, uint64_t config_mask) {
-  auto control_map_handle = bpf().get_percpu_array_table<uint64_t>(kControlMapName);
-  std::vector<uint64_t> config_mask_allcpus(kCPUCount, config_mask);
-  auto update_res =
-      control_map_handle.update_value(static_cast<int>(protocol), config_mask_allcpus);
+template <typename TValueType>
+Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable<TValueType>* arr) {
+  std::vector<TValueType> values(BCCWrapper::kCPUCount, val);
+  auto update_res = arr->update_value(idx, values);
   if (update_res.code() != 0) {
-    return error::Internal(
-        absl::StrCat("Failed to update control map, error message: ", update_res.msg()));
+    return error::Internal(absl::Substitute("Failed to set value on index: $0, error message: $1",
+                                            idx, update_res.msg()));
   }
   return Status::OK();
 }
 
-template <typename TValueType>
-Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable<TValueType>* arr) {
-  std::vector<TValueType> target_pids(BCCWrapper::kCPUCount, val);
-  auto update_res = arr->update_value(idx, target_pids);
-  if (update_res.code() != 0) {
-    return error::Internal(
-        absl::StrCat("Failed to set target PID, error message: ", update_res.msg()));
-  }
-  return Status::OK();
+Status SocketTraceConnector::Configure(TrafficProtocol protocol, uint64_t config_mask) {
+  auto control_map_handle = bpf().get_percpu_array_table<uint64_t>(kControlMapName);
+  return UpdatePerCPUArrayValue(static_cast<int>(protocol), config_mask, &control_map_handle);
 }
 
 Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
