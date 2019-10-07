@@ -128,7 +128,7 @@ int main(int argc, char** argv) {
   if (FLAGS_nats_url.empty()) {
     LOG(WARNING) << "--nats_url is empty, skip connecting to NATS.";
   } else {
-    auto nats_connector = std::make_unique<Controller::VizierNATSConnector>(
+    nats_connector = std::make_unique<Controller::VizierNATSConnector>(
         FLAGS_nats_url, "update_agent" /*pub_topic*/, agent_sub_topic, std::move(tls_config));
   }
 
