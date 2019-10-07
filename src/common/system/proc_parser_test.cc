@@ -51,6 +51,11 @@ TEST_F(ProcParserTest, ParseNetworkStat) {
   EXPECT_EQ(65296, stats.rx_packets);
   EXPECT_EQ(0, stats.rx_drops);
   EXPECT_EQ(0, stats.rx_errs);
+
+  EXPECT_EQ(4258632, stats.tx_bytes);
+  EXPECT_EQ(39739, stats.tx_packets);
+  EXPECT_EQ(0, stats.tx_drops);
+  EXPECT_EQ(0, stats.tx_errs);
 }
 
 TEST_F(ProcParserTest, ParseStatIO) {

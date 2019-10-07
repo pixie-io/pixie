@@ -39,10 +39,10 @@ constexpr int kProcNetDevRxPacketsField = 2;
 constexpr int kProcNetDevRxErrsField = 3;
 constexpr int kProcNetDevRxDropField = 4;
 
-constexpr int kProcNetDevTxBytesField = 10;
-constexpr int kProcNetDevTxPacketsField = 11;
-constexpr int kProcNetDevTxErrsField = 12;
-constexpr int kProcNetDevTxDropField = 13;
+constexpr int kProcNetDevTxBytesField = 9;
+constexpr int kProcNetDevTxPacketsField = 10;
+constexpr int kProcNetDevTxErrsField = 11;
+constexpr int kProcNetDevTxDropField = 12;
 
 /*************************************************
  * constexprants for the /proc/<pid>/stat file
