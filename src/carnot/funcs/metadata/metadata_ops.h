@@ -33,6 +33,13 @@ class ASIDUDF : public ScalarUDF {
   }
 };
 
+class UPIDToASIDUDF : public ScalarUDF {
+ public:
+  types::Int64Value Exec(FunctionContext*, types::UInt128Value upid_value) {
+    return upid_value.High64() >> 32;
+  }
+};
+
 class PodIDToPodNameUDF : public ScalarUDF {
  public:
   types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_id) {

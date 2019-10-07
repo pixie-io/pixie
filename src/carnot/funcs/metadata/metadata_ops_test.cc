@@ -66,6 +66,13 @@ TEST_F(MetadataOpsTest, asid_test) {
   udf_tester.ForInput().Expect(1);
 }
 
+TEST_F(MetadataOpsTest, upid_to_asid_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto upid = types::UInt128Value(528280977975, 89101);
+  auto udf_tester = pl::carnot::udf::UDFTester<UPIDToASIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput(upid).Expect(123);
+}
+
 TEST_F(MetadataOpsTest, pod_id_to_pod_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   auto udf_tester = pl::carnot::udf::UDFTester<PodIDToPodNameUDF>(std::move(function_ctx));

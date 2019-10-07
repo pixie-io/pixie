@@ -12,6 +12,7 @@ namespace metadata {
 void RegisterMetadataOpsOrDie(pl::carnot::udf::ScalarUDFRegistry* registry) {
   CHECK(registry != nullptr);
   registry->RegisterOrDie<ASIDUDF>("pl.asid");
+  registry->RegisterOrDie<UPIDToASIDUDF>("pl.upid_to_asid");
   registry->RegisterOrDie<PodIDToPodNameUDF>("pl.pod_id_to_pod_name");
   registry->RegisterOrDie<PodNameToPodIDUDF>("pl.pod_name_to_pod_id");
   registry->RegisterOrDie<ServiceIDToServiceNameUDF>("pl.service_id_to_service_name");
