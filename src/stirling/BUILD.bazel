@@ -48,13 +48,6 @@ pl_cc_library(
     }),
 )
 
-pl_cc_test(
-    name = "bpf_program_test",
-    srcs = ["bpf_program_test.cc"],
-    tags = ["requires_bpf"],
-    deps = [":cc_library"],
-)
-
 pl_cc_binary(
     name = "stirling_wrapper",
     srcs = ["stirling_wrapper.cc"],
