@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: site-manager-server
-        image: gcr.io/pl-dev-infra/cloud/site_manager_server_image:latest
+        image: gcr.io/pl-dev-infra/cloud/site_manager_server_image
         ports:
           - containerPort: 50300
         readinessProbe:

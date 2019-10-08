@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: cloud-proxy-server
-        image: gcr.io/pl-dev-infra/cloud/proxy_server_image:latest
+        image: gcr.io/pl-dev-infra/cloud/proxy_server_image
         ports:
           - containerPort: 56000
         readinessProbe:

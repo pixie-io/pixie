@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: profile-server
-        image: gcr.io/pl-dev-infra/cloud/profile_server_image:latest
+        image: gcr.io/pl-dev-infra/cloud/profile_server_image
         ports:
           - containerPort: 51500
         readinessProbe:

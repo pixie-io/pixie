@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: dnsmgr-server
-        image: gcr.io/pl-dev-infra/cloud/dnsmgr_server_image:latest
+        image: gcr.io/pl-dev-infra/cloud/dnsmgr_server_image
         ports:
           - containerPort: 51900
         readinessProbe:

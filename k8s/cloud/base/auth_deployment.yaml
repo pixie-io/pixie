@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: auth-server
-        image: gcr.io/pl-dev-infra/cloud/auth_server_image:latest
+        image: gcr.io/pl-dev-infra/cloud/auth_server_image
         ports:
           - containerPort: 50100
         readinessProbe:

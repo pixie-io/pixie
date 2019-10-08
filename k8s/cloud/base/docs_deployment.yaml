@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
       - name: customer-docs-server
-        image: gcr.io/pl-dev-infra/customer_docs_prod_image:latest
+        image: gcr.io/pl-dev-infra/customer_docs_prod_image
         ports:
           - containerPort: 59000
         readinessProbe:
