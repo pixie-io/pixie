@@ -28,7 +28,7 @@ class MySQLParserTest : public ::testing::Test {
   // TODO(chengruizhe): Define GenResponse to generate responses.
   MySQLReqResp kMySQLStmtPrepareMessage = {
       testutils::GenRequest(
-          kStmtPreparePrefix,
+          kComStmtPrepare,
           "SELECT COUNT(DISTINCT sock.sock_id) FROM sock JOIN sock_tag ON "
           "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id;"),
       // Response
@@ -42,7 +42,7 @@ class MySQLParserTest : public ::testing::Test {
                       54),
           // EOF packet
           std::string("\x05\x00\x00\x03\xfe\x00\x00\x02\x00", 9)),
-      MySQLEventType::kComStmtPrepare};
+      MySQLEventType::kStmtPrepare};
   EventParser<Packet> parser_;
 };
 
@@ -54,20 +54,18 @@ bool operator==(const Packet& lhs, const Packet& rhs) {
 }
 
 TEST_F(MySQLParserTest, ParseComStmtPrepare) {
-  std::string msg1 =
-      testutils::GenRequest(kStmtPreparePrefix, "SELECT name FROM users WHERE id = ?");
-  std::string msg2 =
-      testutils::GenRequest(kStmtPreparePrefix, "SELECT age FROM users WHERE id = ?");
+  std::string msg1 = testutils::GenRequest(kComStmtPrepare, "SELECT name FROM users WHERE id = ?");
+  std::string msg2 = testutils::GenRequest(kComStmtPrepare, "SELECT age FROM users WHERE id = ?");
 
   Packet expected_message1;
-  expected_message1.type = MySQLEventType::kComStmtPrepare;
+  expected_message1.type = MySQLEventType::kStmtPrepare;
   expected_message1.msg =
-      absl::StrCat(std::string(1, kStmtPreparePrefix), "SELECT name FROM users WHERE id = ?");
+      absl::StrCat(std::string(1, kComStmtPrepare), "SELECT name FROM users WHERE id = ?");
 
   Packet expected_message2;
-  expected_message2.type = MySQLEventType::kComStmtPrepare;
+  expected_message2.type = MySQLEventType::kStmtPrepare;
   expected_message2.msg =
-      absl::StrCat(std::string(1, kStmtPreparePrefix), "SELECT age FROM users WHERE id = ?");
+      absl::StrCat(std::string(1, kComStmtPrepare), "SELECT age FROM users WHERE id = ?");
 
   parser_.Append(msg1, 0);
   parser_.Append(msg2, 1);
@@ -87,7 +85,7 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   std::string msg1 = testutils::GenRequest(kStmtExecutePrefix, body);
 
   Packet expected_message1;
-  expected_message1.type = MySQLEventType::kComStmtExecute;
+  expected_message1.type = MySQLEventType::kStmtExecute;
   expected_message1.msg = absl::StrCat(std::string(1, kStmtExecutePrefix), body);
 
   parser_.Append(msg1, 0);
@@ -117,11 +115,11 @@ TEST_F(MySQLParserTest, ParseComQuery) {
   std::string msg2 = testutils::GenRequest(kQueryPrefix, "SELECT age FROM users");
 
   Packet expected_message1;
-  expected_message1.type = MySQLEventType::kComQuery;
+  expected_message1.type = MySQLEventType::kQuery;
   expected_message1.msg = absl::StrCat(std::string(1, kQueryPrefix), "SELECT name FROM users");
 
   Packet expected_message2;
-  expected_message2.type = MySQLEventType::kComQuery;
+  expected_message2.type = MySQLEventType::kQuery;
   expected_message2.msg = absl::StrCat(std::string(1, kQueryPrefix), "SELECT age FROM users");
 
   parser_.Append(msg1, 0);

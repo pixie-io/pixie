@@ -1,3 +1,5 @@
+#include "src/stirling/mysql_parse.h"
+
 #include <arpa/inet.h>
 #include <deque>
 #include <string>
@@ -6,62 +8,12 @@
 
 #include "src/stirling/event_parser.h"
 #include "src/stirling/mysql/mysql.h"
-#include "src/stirling/mysql_parse.h"
 #include "src/stirling/utils/byte_format.h"
 
 namespace pl {
 namespace stirling {
+
 namespace mysql {
-
-namespace {
-MySQLEventType decode_event_type(char command_byte) {
-  switch (command_byte) {
-    case kStmtPreparePrefix:
-      return MySQLEventType::kComStmtPrepare;
-    case kStmtExecutePrefix:
-      return MySQLEventType::kComStmtExecute;
-    case kStmtClosePrefix:
-      return MySQLEventType::kComStmtClose;
-    case kQueryPrefix:
-      return MySQLEventType::kComQuery;
-    case kSleepPrefix:
-      return MySQLEventType::kSleep;
-    case kQuitPrefix:
-      return MySQLEventType::kQuit;
-    case kInitDBPrefix:
-      return MySQLEventType::kInitDB;
-    case kCreateDBPrefix:
-      return MySQLEventType::kCreateDB;
-    case kDropDBPrefix:
-      return MySQLEventType::kDropDB;
-    case kRefreshPrefix:
-      return MySQLEventType::kRefresh;
-    case kShutdownPrefix:
-      return MySQLEventType::kShutdown;
-    case kStatisticsPrefix:
-      return MySQLEventType::kStatistics;
-    case kConnectPrefix:
-      return MySQLEventType::kConnect;
-    case kProcessKillPrefix:
-      return MySQLEventType::kProcessKill;
-    case kDebugPrefix:
-      return MySQLEventType::kDebug;
-    case kPingPrefix:
-      return MySQLEventType::kPing;
-    case kTimePrefix:
-      return MySQLEventType::kTime;
-    case kDelayedInsertPrefix:
-      return MySQLEventType::kDelayedInsert;
-    case kComResetConnectionPrefix:
-      return MySQLEventType::kComResetConnection;
-    case kDaemonPrefix:
-      return MySQLEventType::kDaemon;
-    default:
-      return MySQLEventType::kUnknown;
-  }
-}
-}  // namespace
-
 ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
   static constexpr int kPacketHeaderLength = 4;
 
@@ -74,7 +26,7 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
   }
 
   if (type == MessageType::kRequest) {
-    result->type = decode_event_type((*buf)[4]);
+    result->type = DecodeEventType((*buf)[4]);
     if (result->type == MySQLEventType::kUnknown) {
       return ParseState::kInvalid;
     }
@@ -93,7 +45,6 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
 
   return ParseState::kSuccess;
 }
-
 }  // namespace mysql
 
 // TODO(chengruizhe): Could be templatized with HTTP Parser

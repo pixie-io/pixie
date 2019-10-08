@@ -57,7 +57,7 @@ const StmtPrepareOKResponse kStmtPrepareResponse(kStmtPrepareRespHeader, kStmtPr
 ReqRespEvent InitStmtPrepare() {
   std::unique_ptr<Request> req_ptr(new StringRequest(kStmtPrepareRequest));
   std::unique_ptr<Response> resp_ptr(new StmtPrepareOKResponse(kStmtPrepareResponse));
-  return ReqRespEvent(MySQLEventType::kComStmtPrepare, std::move(req_ptr), std::move(resp_ptr));
+  return ReqRespEvent(MySQLEventType::kStmtPrepare, std::move(req_ptr), std::move(resp_ptr));
 }
 
 /**
@@ -90,7 +90,7 @@ const Resultset kStmtExecuteResultset(2, kStmtExecuteColDefs, kStmtExecuteResult
 ReqRespEvent InitStmtExecute() {
   std::unique_ptr<Request> req_ptr(new StmtExecuteRequest(kStmtExecuteRequest));
   std::unique_ptr<Response> resp_ptr(new Resultset(kStmtExecuteResultset));
-  return ReqRespEvent(MySQLEventType::kComStmtExecute, std::move(req_ptr), std::move(resp_ptr));
+  return ReqRespEvent(MySQLEventType::kStmtExecute, std::move(req_ptr), std::move(resp_ptr));
 }
 
 /**

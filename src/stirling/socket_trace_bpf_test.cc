@@ -63,7 +63,7 @@ class SocketTraceBPFTest : public ::testing::Test {
     // Stmt Prepare
     kStmtPrepareReq = mysql::testutils::GenRawPacket(
         0, mysql::testutils::GenStringRequest(mysql::testutils::kStmtPrepareRequest,
-                                              mysql::MySQLEventType::kComStmtPrepare)
+                                              mysql::MySQLEventType::kStmtPrepare)
                .msg);
     prepare_execute_script.push_back({kStmtPrepareReq});
     prepare_execute_script.push_back({});
@@ -99,7 +99,7 @@ class SocketTraceBPFTest : public ::testing::Test {
 
     kQueryReq = mysql::testutils::GenRawPacket(
         0, mysql::testutils::GenStringRequest(mysql::testutils::kQueryRequest,
-                                              mysql::MySQLEventType::kComQuery)
+                                              mysql::MySQLEventType::kQuery)
                .msg);
     query_script.push_back({kQueryReq});
     query_script.push_back({});

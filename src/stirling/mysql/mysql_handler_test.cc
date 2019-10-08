@@ -180,7 +180,7 @@ TEST_F(HandlerTest, TestHandleStmtExecuteRequest) {
 
 TEST_F(HandlerTest, TestHandleStringRequest) {
   Packet req_packet =
-      testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kComStmtPrepare);
+      testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
   auto s = HandleStringRequest(req_packet);
   EXPECT_TRUE(s.ok());
   auto result_request = s.ValueOrDie().get();

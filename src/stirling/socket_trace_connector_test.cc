@@ -184,7 +184,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
   void InitMySQLData() {
     mySQLStmtPrepareReq = mysql::testutils::GenRawPacket(
         0, mysql::testutils::GenStringRequest(mysql::testutils::kStmtPrepareRequest,
-                                              mysql::MySQLEventType::kComStmtPrepare)
+                                              mysql::MySQLEventType::kStmtPrepare)
                .msg);
 
     std::deque<mysql::Packet> prepare_packets =
@@ -212,7 +212,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
     mySQLQueryReq = mysql::testutils::GenRawPacket(
         0, mysql::testutils::GenStringRequest(mysql::testutils::kQueryRequest,
-                                              mysql::MySQLEventType::kComQuery)
+                                              mysql::MySQLEventType::kQuery)
                .msg);
     std::deque<mysql::Packet> query_packets =
         mysql::testutils::GenResultset(mysql::testutils::kQueryResultset);

@@ -19,7 +19,7 @@ bool operator==(const Entry& lhs, const Entry& rhs) {
 
 TEST_F(StitcherTest, TestStitchStmtPrepareOK) {
   Packet req =
-      testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kComStmtPrepare);
+      testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
 
   int stmt_id = testutils::kStmtPrepareResponse.resp_header().stmt_id;
 
@@ -35,7 +35,7 @@ TEST_F(StitcherTest, TestStitchStmtPrepareOK) {
 
 TEST_F(StitcherTest, TestStitchStmtPrepareErr) {
   Packet req =
-      testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kComStmtPrepare);
+      testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
   int stmt_id = testutils::kStmtPrepareResponse.resp_header().stmt_id;
 
   std::deque<Packet> err_resp_packets;
@@ -95,7 +95,7 @@ TEST_F(StitcherTest, TestStitchStmtClose) {
 }
 
 TEST_F(StitcherTest, TestStitchQuery) {
-  Packet req = testutils::GenStringRequest(testutils::kQueryRequest, MySQLEventType::kComQuery);
+  Packet req = testutils::GenStringRequest(testutils::kQueryRequest, MySQLEventType::kQuery);
 
   std::deque<Packet> resultset = testutils::GenResultset(testutils::kQueryResultset);
 

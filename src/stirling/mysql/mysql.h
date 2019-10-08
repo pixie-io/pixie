@@ -14,13 +14,12 @@ namespace stirling {
 namespace mysql {
 
 /**
- * The MySQL parsing structure has 4 different levels of abstraction. From low to high level:
- * 1. Socket Data Event (Raw data from BPF).
- * 2. MySQL Packet (Output of MySQL Parser). The content of it is not parsed.
+ * The MySQL parsing structure has 3 different levels of abstraction. From low to high level:
+ * 1. MySQL Packet (Output of MySQL Parser). The content of it is not parsed.
  *    https://dev.mysql.com/doc/internals/en/mysql-packet.html
- * 3. MySQL Message, a Request or Response, consisting of one or more MySQL Packets. It contains
+ * 2. MySQL Message, a Request or Response, consisting of one or more MySQL Packets. It contains
  * parsed out fields based on the type of request/response.
- * 4. MySQL ReqRespEvent contains a request and response pair. It owns unique ptrs to
+ * 3. MySQL ReqRespEvent contains a request and response pair. It owns unique ptrs to
  * its request and response, and a MySQLEventType.
  *
  * A MySQL ReqRespEvent can be a standalone entry, or multiple can be combined to form one entry
@@ -29,67 +28,63 @@ namespace mysql {
  * a new query with different params.
  */
 
-inline constexpr char kEOFPrefix = '\xfe';
-inline constexpr char kErrPrefix = '\xff';
-inline constexpr char kOKPrefix = '\x00';
+//-----------------------------------------------------------------------------
+// Packet Level Definitions
+//-----------------------------------------------------------------------------
 
-inline constexpr int kStmtIDStartOffset = 1;
-inline constexpr int kStmtIDBytes = 4;
-inline constexpr int kFlagsBytes = 1;
-inline constexpr int kIterationCountBytes = 4;
-
-// Parameter Prefix
-// https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
-inline constexpr char kTinyPrefix = '\x01';
-inline constexpr char kShortPrefix = '\x02';
-inline constexpr char kLongPrefix = '\x03';
-inline constexpr char kFloatPrefix = '\x04';
-inline constexpr char kDoublePrefix = '\x05';
-inline constexpr char kTimeStampPrefix = '\x07';
-inline constexpr char kLongLongPrefix = '\x08';
-inline constexpr char kDatePrefix = '\x0a';
-inline constexpr char kDateTimePrefix = '\x0c';
-inline constexpr char kNewDecimalPrefix = '\xf6';
-inline constexpr char kBlobPrefix = '\xfc';
-inline constexpr char kVarStringPrefix = '\xfd';
-inline constexpr char kStringPrefix = '\xfe';
-
-// Command Prefix
-// TODO(chengruizhe): we could define a type for MySQLCommand, which just equates to char or
-// uint8_t.
-inline constexpr char kStmtPreparePrefix = '\x16';
-inline constexpr char kStmtExecutePrefix = '\x17';
-inline constexpr char kStmtClosePrefix = '\x19';
-inline constexpr char kQueryPrefix = '\x03';
+// Command Types
+// https://dev.mysql.com/doc/internals/en/command-phase.html
+constexpr uint8_t kComQuery = 0x03;
+constexpr uint8_t kComStmtPrepare = 0x16;
+constexpr uint8_t kComStmtExecute = 0x17;
+constexpr uint8_t kComStmtClose = 0x19;
 // commands below are single req, resp pairs
 // TODO(chengruizhe): Handle the following commands.
-inline constexpr char kSleepPrefix = '\x00';
-inline constexpr char kQuitPrefix = '\x01';
-inline constexpr char kInitDBPrefix = '\x02';
-inline constexpr char kCreateDBPrefix = '\x05';
-inline constexpr char kDropDBPrefix = '\x06';
-inline constexpr char kRefreshPrefix = '\x07';
-inline constexpr char kShutdownPrefix = '\x08';
-inline constexpr char kStatisticsPrefix = '\x09';
-inline constexpr char kConnectPrefix = '\x0b';
-inline constexpr char kProcessKillPrefix = '\x0c';
-inline constexpr char kDebugPrefix = '\x0d';
-inline constexpr char kPingPrefix = '\x0e';
-inline constexpr char kTimePrefix = '\x0f';
-inline constexpr char kDelayedInsertPrefix = '\x10';
-inline constexpr char kComResetConnectionPrefix = '\x1f';
-inline constexpr char kDaemonPrefix = '\x1d';
+constexpr uint8_t kComSleep = 0x00;
+constexpr uint8_t kComQuit = 0x01;
+constexpr uint8_t kComInitDB = 0x02;
+constexpr uint8_t kComCreateDB = 0x05;
+constexpr uint8_t kComDropDB = 0x06;
+constexpr uint8_t kComRefresh = 0x07;
+constexpr uint8_t kComShutdown = 0x08;
+constexpr uint8_t kComStatistics = 0x09;
+constexpr uint8_t kComConnect = 0x0b;
+constexpr uint8_t kComProcessKill = 0x0c;
+constexpr uint8_t kComDebug = 0x0d;
+constexpr uint8_t kComPing = 0x0e;
+constexpr uint8_t kComTime = 0x0f;
+constexpr uint8_t kComDelayedInsert = 0x10;
+constexpr uint8_t kComDaemon = 0x1d;
+constexpr uint8_t kComResetConnection = 0x1f;
 
-inline constexpr char kLencIntPrefix2b = '\xfc';
-inline constexpr char kLencIntPrefix3b = '\xfd';
-inline constexpr char kLencIntPrefix8b = '\xfe';
+// Response types
+// https://dev.mysql.com/doc/internals/en/generic-response-packets.html
+constexpr uint8_t kRespHeaderEOF = 0xfe;
+constexpr uint8_t kRespHeaderErr = 0xff;
+constexpr uint8_t kRespHeaderOK = 0x00;
+
+// Column Types
+// https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
+constexpr uint8_t kColTypeTiny = 0x01;
+constexpr uint8_t kColTypeShort = 0x02;
+constexpr uint8_t kColTypeLong = 0x03;
+constexpr uint8_t kColTypeFloat = 0x04;
+constexpr uint8_t kColTypeDouble = 0x05;
+constexpr uint8_t kColTypeTimeStamp = 0x07;
+constexpr uint8_t kColTypeLongLong = 0x08;
+constexpr uint8_t kColTypeDate = 0x0a;
+constexpr uint8_t kColTypeDateTime = 0x0c;
+constexpr uint8_t kColTypeNewDecimal = 0xf6;
+constexpr uint8_t kColTypeBlob = 0xfc;
+constexpr uint8_t kColTypeVarString = 0xfd;
+constexpr uint8_t kColTypeString = 0xfe;
 
 enum class MySQLEventType {
   kUnknown,
-  kComStmtPrepare,
-  kComStmtExecute,
-  kComStmtClose,
-  kComQuery,
+  kStmtPrepare,
+  kStmtExecute,
+  kStmtClose,
+  kQuery,
   kSleep,
   kQuit,
   kInitDB,
@@ -104,9 +99,71 @@ enum class MySQLEventType {
   kPing,
   kTime,
   kDelayedInsert,
-  kComResetConnection,
+  kResetConnection,
   kDaemon
 };
+
+inline MySQLEventType DecodeEventType(char command_byte) {
+  switch (command_byte) {
+    case kComStmtPrepare:
+      return MySQLEventType::kStmtPrepare;
+    case kComStmtExecute:
+      return MySQLEventType::kStmtExecute;
+    case kComStmtClose:
+      return MySQLEventType::kStmtClose;
+    case kComQuery:
+      return MySQLEventType::kQuery;
+    case kComSleep:
+      return MySQLEventType::kSleep;
+    case kComQuit:
+      return MySQLEventType::kQuit;
+    case kComInitDB:
+      return MySQLEventType::kInitDB;
+    case kComCreateDB:
+      return MySQLEventType::kCreateDB;
+    case kComDropDB:
+      return MySQLEventType::kDropDB;
+    case kComRefresh:
+      return MySQLEventType::kRefresh;
+    case kComShutdown:
+      return MySQLEventType::kShutdown;
+    case kComStatistics:
+      return MySQLEventType::kStatistics;
+    case kComConnect:
+      return MySQLEventType::kConnect;
+    case kComProcessKill:
+      return MySQLEventType::kProcessKill;
+    case kComDebug:
+      return MySQLEventType::kDebug;
+    case kComPing:
+      return MySQLEventType::kPing;
+    case kComTime:
+      return MySQLEventType::kTime;
+    case kComDelayedInsert:
+      return MySQLEventType::kDelayedInsert;
+    case kComResetConnection:
+      return MySQLEventType::kResetConnection;
+    case kComDaemon:
+      return MySQLEventType::kDaemon;
+    default:
+      return MySQLEventType::kUnknown;
+  }
+}
+
+// Constants for StmtExecute packet, where the payload is as follows:
+// bytes  description
+//    1   [17] COM_STMT_EXECUTE
+//    4   stmt-id
+//    1   flags
+//    4   iteration-count
+constexpr int kStmtIDStartOffset = 1;
+constexpr int kStmtIDBytes = 4;
+constexpr int kFlagsBytes = 1;
+constexpr int kIterationCountBytes = 4;
+
+//-----------------------------------------------------------------------------
+// Packet Level Structs
+//-----------------------------------------------------------------------------
 
 /**
  * Raw MySQLPacket from MySQL Parser
@@ -114,15 +171,12 @@ enum class MySQLEventType {
 struct Packet {
   uint64_t timestamp_ns;
   std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
+  // TODO(oazizi): Convert to std::basic_string<uint8_t>.
   std::string msg;
   MySQLEventType type = MySQLEventType::kUnknown;
 
   size_t ByteSize() const { return sizeof(Packet) + msg.size(); }
 };
-
-//-----------------------------------------------------------------------------
-// Packet Level Structs
-//-----------------------------------------------------------------------------
 
 /**
  * Column definition is not parsed right now, but may be further parsed in the future.

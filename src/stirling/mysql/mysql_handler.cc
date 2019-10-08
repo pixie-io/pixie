@@ -16,17 +16,19 @@ namespace {
 /**
  * Converts a length encoded int from string to int.
  * https://dev.mysql.com/doc/internals/en/integer.html#packet-Protocol::LengthEncodedInteger
+ *
  * If it is < 0xfb, treat it as a 1-byte integer.
-
  * If it is 0xfc, it is followed by a 2-byte integer.
-
  * If it is 0xfd, it is followed by a 3-byte integer.
-
  * If it is 0xfe, it is followed by a 8-byte integer.
  */
 int ProcessLengthEncodedInt(const std::string_view s, int* param_offset) {
+  constexpr uint8_t kLencIntPrefix2b = 0xfc;
+  constexpr uint8_t kLencIntPrefix3b = 0xfd;
+  constexpr uint8_t kLencIntPrefix8b = 0xfe;
+
   int result;
-  switch (s[*param_offset]) {
+  switch (static_cast<uint8_t>(s[*param_offset])) {
     case kLencIntPrefix2b:
       *param_offset += 1;
       result = utils::LEStrToInt(s.substr(*param_offset, 2));
@@ -67,19 +69,19 @@ void DissectIntParam(const std::string_view msg, const char prefix, int* param_o
   StmtExecuteParamType type;
   size_t length;
   switch (prefix) {
-    case kTinyPrefix:
+    case kColTypeTiny:
       type = StmtExecuteParamType::kTiny;
       length = 1;
       break;
-    case kShortPrefix:
+    case kColTypeShort:
       type = StmtExecuteParamType::kShort;
       length = 2;
       break;
-    case kLongPrefix:
+    case kColTypeLong:
       type = StmtExecuteParamType::kLong;
       length = 4;
       break;
-    case kLongLongPrefix:
+    case kColTypeLongLong:
       type = StmtExecuteParamType::kLongLong;
       length = 8;
       break;
@@ -296,11 +298,7 @@ StatusOr<std::unique_ptr<StringRequest>> HandleStringRequest(const Packet& req_p
 
 StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
     const Packet& req_packet, std::map<int, ReqRespEvent>* prepare_map) {
-  int offset = kStmtIDStartOffset;
-  int stmt_id = utils::LEStrToInt(req_packet.msg.substr(offset, kStmtIDBytes));
-
-  int bytes_parsed = kStmtIDBytes + kFlagsBytes + kIterationCountBytes;
-  offset += bytes_parsed;
+  int stmt_id = utils::LEStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
 
   auto iter = prepare_map->find(stmt_id);
   if (iter == prepare_map->end()) {
@@ -315,6 +313,8 @@ StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
 
   int num_params = prepare_resp->resp_header().num_params;
 
+  int offset = kStmtIDStartOffset + kStmtIDBytes + kFlagsBytes + kIterationCountBytes;
+
   // This is copied directly from the MySQL spec.
   const int null_bitmap_length = (num_params + 7) / 8;
   offset += null_bitmap_length;
@@ -326,23 +326,23 @@ StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
     int param_offset = offset + 2 * num_params;
 
     for (int i = 0; i < num_params; ++i) {
-      char param_type = req_packet.msg[offset];
+      uint8_t param_type = req_packet.msg[offset];
       offset += 2;
 
       ParamPacket param;
       switch (param_type) {
         // TODO(chengruizhe): Add more exec param types (short, long, float, double, datetime etc.)
         // https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
-        case kNewDecimalPrefix:
-        case kBlobPrefix:
-        case kVarStringPrefix:
-        case kStringPrefix:
+        case kColTypeNewDecimal:
+        case kColTypeBlob:
+        case kColTypeVarString:
+        case kColTypeString:
           DissectStringParam(req_packet.msg, &param_offset, &param);
           break;
-        case kTinyPrefix:
-        case kShortPrefix:
-        case kLongPrefix:
-        case kLongLongPrefix:
+        case kColTypeTiny:
+        case kColTypeShort:
+        case kColTypeLong:
+        case kColTypeLongLong:
           DissectIntParam(req_packet.msg, param_type, &param_offset, &param);
           break;
         default:

@@ -13,7 +13,8 @@ bool IsEOFPacket(const Packet& packet) {
   if (packet.msg.size() != 1 && packet.msg.size() != 5) {
     return false;
   }
-  return packet.msg[0] == kEOFPrefix;
+  // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
+  return packet.msg[0] == static_cast<char>(kRespHeaderEOF);
 }
 
 /**
@@ -24,7 +25,8 @@ bool IsErrPacket(const Packet& packet) {
   if (packet.msg.size() < 3) {
     return false;
   }
-  return packet.msg[0] == kErrPrefix;
+  // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
+  return packet.msg[0] == static_cast<char>(kRespHeaderErr);
 }
 
 /**
@@ -35,7 +37,8 @@ bool IsOKPacket(const Packet& packet) {
   if (packet.msg.size() < 7) {
     return false;
   }
-  return packet.msg[0] == kOKPrefix;
+  // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
+  return packet.msg[0] == static_cast<char>(kRespHeaderOK);
 }
 
 // TODO(chengruizhe): Since currently we don't intercept/store user capability flags, we don't know

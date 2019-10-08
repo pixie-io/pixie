@@ -65,16 +65,16 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
     StatusOr<Entry> e;
     // TODO(chengruizhe): Remove type from Packet and infer type here.
     switch (req_packet.type) {
-      case MySQLEventType::kComStmtPrepare:
+      case MySQLEventType::kStmtPrepare:
         e = StitchStmtPrepare(req_packet, resp_packets, state);
         break;
-      case MySQLEventType::kComStmtExecute:
+      case MySQLEventType::kStmtExecute:
         e = StitchStmtExecute(req_packet, resp_packets, state);
         break;
-      case MySQLEventType::kComStmtClose:
+      case MySQLEventType::kStmtClose:
         e = StitchStmtClose(req_packet, state);
         break;
-      case MySQLEventType::kComQuery:
+      case MySQLEventType::kQuery:
         e = StitchQuery(req_packet, resp_packets, state);
         break;
       case MySQLEventType::kSleep:
@@ -91,7 +91,7 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
       case MySQLEventType::kPing:
       case MySQLEventType::kTime:
       case MySQLEventType::kDelayedInsert:
-      case MySQLEventType::kComResetConnection:
+      case MySQLEventType::kResetConnection:
       case MySQLEventType::kDaemon:
         resp_packets->pop_front();
         continue;
@@ -133,7 +133,7 @@ StatusOr<Entry> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* 
     PL_ASSIGN_OR_RETURN(auto resp, HandleStmtPrepareOKResponse(resp_packets));
     int stmt_id = resp->resp_header().stmt_id;
     state->prepare_events.emplace(
-        stmt_id, ReqRespEvent(MySQLEventType::kComStmtPrepare, std::move(req), std::move(resp)));
+        stmt_id, ReqRespEvent(MySQLEventType::kStmtPrepare, std::move(req), std::move(resp)));
     return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
   }
 }
