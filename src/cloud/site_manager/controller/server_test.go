@@ -110,6 +110,32 @@ func TestServer_IsSiteAvailableError(t *testing.T) {
 	assert.Equal(t, err.Error(), "something bad happened")
 }
 
+func TestServer_IsSiteAvailableBlacklist(t *testing.T) {
+	server := SetupServerTest(t)
+
+	req := &sitemanagerpb.IsSiteAvailableRequest{
+		SiteName: "cloud",
+	}
+	resp, err := server.IsSiteAvailable(context.Background(), req)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+
+	assert.Equal(t, false, resp.Available)
+}
+
+func TestServer_RegisterSiteBlacklist(t *testing.T) {
+	server := SetupServerTest(t)
+
+	req := &sitemanagerpb.RegisterSiteRequest{
+		SiteName: "cloud",
+	}
+	resp, err := server.RegisterSite(context.Background(), req)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, resp)
+}
+
 func TestServer_GetSiteByName(t *testing.T) {
 	server := SetupServerTest(t)
 

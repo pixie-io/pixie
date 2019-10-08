@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
@@ -32,9 +33,20 @@ func NewServer(datastore SiteDatastore) *Server {
 	}
 }
 
+var siteNameBlacklist = map[string]bool{
+	"cloud": true,
+	"id":    true,
+}
+
 // IsSiteAvailable checks to see if a site is available.
 func (s *Server) IsSiteAvailable(ctx context.Context, req *sitemanagerpb.IsSiteAvailableRequest) (*sitemanagerpb.IsSiteAvailableResponse, error) {
 	resp := &sitemanagerpb.IsSiteAvailableResponse{}
+
+	if _, exists := siteNameBlacklist[req.SiteName]; exists {
+		resp.Available = false
+		return resp, nil
+	}
+
 	isAvailable, err := s.datastore.CheckAvailability(req.SiteName)
 	if err != nil {
 		return nil, err
@@ -47,6 +59,10 @@ func (s *Server) IsSiteAvailable(ctx context.Context, req *sitemanagerpb.IsSiteA
 // RegisterSite registers a new site..
 func (s *Server) RegisterSite(ctx context.Context, req *sitemanagerpb.RegisterSiteRequest) (*sitemanagerpb.RegisterSiteResponse, error) {
 	resp := &sitemanagerpb.RegisterSiteResponse{}
+
+	if _, exists := siteNameBlacklist[req.SiteName]; exists {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("cannot register site with name: %s", req.SiteName))
+	}
 
 	parsedOrgID, err := utils.UUIDFromProto(req.OrgID)
 	if err != nil {
