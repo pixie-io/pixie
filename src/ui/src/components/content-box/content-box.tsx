@@ -1,5 +1,6 @@
 import * as _ from 'lodash';
 import * as React from 'react';
+import { DraggableCore } from 'react-draggable';
 import './content-box.scss';
 
 // @ts-ignore : TS does not like image files.
@@ -19,9 +20,6 @@ export interface ContentBoxState {
 }
 
 export class ContentBox extends React.Component<ContentBoxProps, ContentBoxState> {
-  pointerMoveListener: EventListener;
-  pointerUpListener: EventListener;
-
   constructor(props) {
       super(props);
       this.state = {
@@ -29,35 +27,23 @@ export class ContentBox extends React.Component<ContentBoxProps, ContentBoxState
       };
   }
 
-  handlePointerDown(e: PointerEvent) {
-    this.pointerMoveListener = this.handlePointerMove.bind(this);
-    this.pointerUpListener = this.handlePointerUp.bind(this);
-    document.body.style.cursor = 'row-resize';
-
-    document.addEventListener('pointermove', this.pointerMoveListener);
-    document.addEventListener('pointerup', this.pointerUpListener);
-    e.preventDefault();
-  }
-
-  handlePointerMove(e: PointerEvent) {
-    this.setState({ height: this.state.height + (e.movementY || 0)});
-  }
-
-  handlePointerUp(e: PointerEvent) {
-    document.body.style.cursor = 'default';
-
-    document.removeEventListener('pointermove', this.pointerMoveListener);
-    document.removeEventListener('pointerup', this.pointerUpListener);
-  }
-
   renderResizer() {
     return (
-      <div
-        className='content-box--resizer'
-        onPointerDown={this.handlePointerDown.bind(this)}
-        >
-        <img src={resizerSvg}/>
-      </div>);
+      <DraggableCore
+        onDrag={(event, { deltaX, deltaY }) => {
+              this.setState({
+                height: this.state.height + deltaY,
+              });
+          }
+        }
+      >
+        <div
+          className='content-box--resizer'
+          >
+          <img draggable={false} src={resizerSvg}/>
+        </div>
+      </DraggableCore>
+      );
   }
 
   render() {
