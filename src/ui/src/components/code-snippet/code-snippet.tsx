@@ -1,5 +1,6 @@
 import * as _ from 'lodash';
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 import {OverlayTrigger, Tooltip} from 'react-bootstrap';
 import Highlight from 'react-highlight';
 
@@ -28,7 +29,8 @@ export class CodeSnippet extends React.Component<CodeSnippetProps, CodeSnippetSt
   }
 
   handleCopySnippet() {
-    const copyText = document.querySelector('.code-snippet pre');
+    const domEl = ReactDOM.findDOMNode(this) as Element;
+    const copyText = domEl.querySelector('.code-snippet pre');
 
     // You can only copy from a visible text area, so create a text area containing
     // the snippet contents, copy, then delete the text area.
