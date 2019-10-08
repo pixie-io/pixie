@@ -43,13 +43,13 @@ using pl::ArrayView;
 DEFINE_string(source_name, "*", "The name of the source to report.");
 DEFINE_bool(all_sources, false,
             "If true, turns on all sources. Default turns on only prod sources.");
-DEFINE_bool(suppress_output, false, "If true, does not output captured record batches.");
+DEFINE_bool(print_record_batches, true, "If true, prints captured record batches on STDOUT.");
 
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 
 void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& schema,
                       size_t num_records, const ColumnWrapperRecordBatch& record_batch) {
-  if (FLAGS_suppress_output) {
+  if (!FLAGS_print_record_batches) {
     return;
   }
 
