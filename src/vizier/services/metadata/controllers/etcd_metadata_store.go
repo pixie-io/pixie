@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"path"
 	"strconv"
 	"strings"
@@ -95,6 +96,31 @@ func (mds *EtcdMetadataStore) GetEndpoints() ([]*metadatapb.Endpoints, error) {
 	return endpoints, nil
 }
 
+// GetNodeEndpoints gets all endpoints in the metadata store that belong to a particular hostname.
+func (mds *EtcdMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error) {
+	resp, err := mds.client.Get(context.Background(), getEndpointsKey(), clientv3.WithPrefix())
+	if err != nil {
+		log.WithError(err).Error("Failed to execute etcd Get")
+		return nil, err
+	}
+
+	var endpoints []*metadatapb.Endpoints
+	for _, kv := range resp.Kvs {
+		pb := &metadatapb.Endpoints{}
+		proto.Unmarshal(kv.Value, pb)
+
+		for _, subset := range pb.Subsets {
+			for _, address := range subset.Addresses {
+				if address.NodeName == hostname {
+					log.Info("Appending endpoint=" + pb.Metadata.UID)
+					endpoints = append(endpoints, pb)
+				}
+			}
+		}
+	}
+	return endpoints, nil
+}
+
 func getNamespaceFromMetadata(md *metadatapb.ObjectMetadata) string {
 	return getNamespaceFromString(md.Namespace)
 }
@@ -139,6 +165,33 @@ func (mds *EtcdMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
 		pb := &metadatapb.Pod{}
 		proto.Unmarshal(kv.Value, pb)
 		pods[i] = pb
+	}
+	return pods, nil
+}
+
+// GetNodePods gets all pods belonging to a node in the metadata store.
+func (mds *EtcdMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, error) {
+	resp, err := mds.client.Get(context.Background(), getPodsKey(), clientv3.WithPrefix())
+	if err != nil {
+		log.WithError(err).Error("Failed to execute etcd Get")
+		return nil, err
+	}
+
+	ip, _ := net.LookupIP(hostname)
+	ipStr := ""
+
+	if len(ip) > 0 {
+		ipStr = ip[0].String()
+	}
+
+	var pods []*metadatapb.Pod
+	for _, kv := range resp.Kvs {
+		pb := &metadatapb.Pod{}
+		proto.Unmarshal(kv.Value, pb)
+		if pb.Status.HostIP == ipStr {
+			log.Info("Appending pod=" + pb.Metadata.UID)
+			pods = append(pods, pb)
+		}
 	}
 	return pods, nil
 }

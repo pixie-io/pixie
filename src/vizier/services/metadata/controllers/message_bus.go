@@ -196,7 +196,7 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 		return
 	}
 
-	updates, err := mc.agentManager.GetMetadataUpdates()
+	updates, err := mc.agentManager.GetMetadataUpdates(m.Info.HostInfo.Hostname)
 	if err != nil {
 		log.WithError(err).Error("Could not get metadata updates.")
 		return

@@ -700,15 +700,15 @@ func TestGetMetadataUpdates(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetPods().
+		GetNodePods("localhost").
 		Return(podMock, nil)
 
 	mockMds.
 		EXPECT().
-		GetEndpoints().
+		GetNodeEndpoints("localhost").
 		Return(epMock, nil)
 
-	updates, err := agtMgr.GetMetadataUpdates()
+	updates, err := agtMgr.GetMetadataUpdates("localhost")
 	assert.Nil(t, err)
 
 	assert.Equal(t, 5, len(updates))
@@ -776,10 +776,10 @@ func TestGetMetadataUpdatesGetPodsFailed(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetPods().
+		GetNodePods("localhost").
 		Return(nil, errors.New("Could not get pods"))
 
-	_, err := agtMgr.GetMetadataUpdates()
+	_, err := agtMgr.GetMetadataUpdates("localhost")
 	assert.NotNil(t, err)
 }
 
@@ -806,14 +806,14 @@ func TestGetMetadataUpdatesGetEndpointsFailed(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetPods().
+		GetNodePods("localhost").
 		Return(podMock, nil)
 
 	mockMds.
 		EXPECT().
-		GetEndpoints().
+		GetNodeEndpoints("localhost").
 		Return(nil, errors.New("Get endpoints failed"))
 
-	_, err := agtMgr.GetMetadataUpdates()
+	_, err := agtMgr.GetMetadataUpdates("localhost")
 	assert.NotNil(t, err)
 }

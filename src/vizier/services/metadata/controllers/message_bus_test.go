@@ -114,8 +114,8 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		GetMetadataUpdates().
-		DoAndReturn(func() ([]*metadatapb.ResourceUpdate, error) {
+		GetMetadataUpdates("test-host").
+		DoAndReturn(func(hostname string) ([]*metadatapb.ResourceUpdate, error) {
 			wg.Done()
 			return updates, nil
 		})
@@ -215,8 +215,8 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		GetMetadataUpdates().
-		DoAndReturn(func() ([]*metadatapb.ResourceUpdate, error) {
+		GetMetadataUpdates("test-host").
+		DoAndReturn(func(hostname string) ([]*metadatapb.ResourceUpdate, error) {
 			wg.Done()
 			return updates, errors.New("Could not get metadata info")
 		})

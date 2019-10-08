@@ -155,8 +155,9 @@ Status K8sMetadataState::HandleServiceUpdate(const ServiceUpdate& update) {
     service_info->AddPod(uid);
 
     // Check assumption that MDS does not send dangling reference.
-    DCHECK(k8s_objects_.find(uid) != k8s_objects_.end());
-    DCHECK(k8s_objects_[uid]->type() == K8sObjectType::kPod);
+    ECHECK(k8s_objects_.find(uid) != k8s_objects_.end())
+        << absl::Substitute("Could not find UID=$0", uid);
+    ECHECK(k8s_objects_[uid]->type() == K8sObjectType::kPod);
 
     // We add the service uid to the pod. Lifetime of service still handled by the service object.
     PodInfo* pod_info = static_cast<PodInfo*>(k8s_objects_[uid].get());

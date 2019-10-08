@@ -38,6 +38,7 @@ func (m *MockAgentManager) EXPECT() *MockAgentManagerMockRecorder {
 
 // RegisterAgent mocks base method
 func (m *MockAgentManager) RegisterAgent(info *controllers.AgentInfo) (uint32, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterAgent", info)
 	ret0, _ := ret[0].(uint32)
 	ret1, _ := ret[1].(error)
@@ -46,11 +47,13 @@ func (m *MockAgentManager) RegisterAgent(info *controllers.AgentInfo) (uint32, e
 
 // RegisterAgent indicates an expected call of RegisterAgent
 func (mr *MockAgentManagerMockRecorder) RegisterAgent(info interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterAgent", reflect.TypeOf((*MockAgentManager)(nil).RegisterAgent), info)
 }
 
 // UpdateHeartbeat mocks base method
 func (m *MockAgentManager) UpdateHeartbeat(agentID go_uuid.UUID) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateHeartbeat", agentID)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -58,11 +61,13 @@ func (m *MockAgentManager) UpdateHeartbeat(agentID go_uuid.UUID) error {
 
 // UpdateHeartbeat indicates an expected call of UpdateHeartbeat
 func (mr *MockAgentManagerMockRecorder) UpdateHeartbeat(agentID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateHeartbeat", reflect.TypeOf((*MockAgentManager)(nil).UpdateHeartbeat), agentID)
 }
 
 // UpdateAgent mocks base method
 func (m *MockAgentManager) UpdateAgent(info *controllers.AgentInfo) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAgent", info)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -70,11 +75,13 @@ func (m *MockAgentManager) UpdateAgent(info *controllers.AgentInfo) error {
 
 // UpdateAgent indicates an expected call of UpdateAgent
 func (mr *MockAgentManagerMockRecorder) UpdateAgent(info interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgent", reflect.TypeOf((*MockAgentManager)(nil).UpdateAgent), info)
 }
 
 // UpdateAgentState mocks base method
 func (m *MockAgentManager) UpdateAgentState() error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAgentState")
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -82,11 +89,13 @@ func (m *MockAgentManager) UpdateAgentState() error {
 
 // UpdateAgentState indicates an expected call of UpdateAgentState
 func (mr *MockAgentManagerMockRecorder) UpdateAgentState() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgentState", reflect.TypeOf((*MockAgentManager)(nil).UpdateAgentState))
 }
 
 // GetActiveAgents mocks base method
 func (m *MockAgentManager) GetActiveAgents() ([]controllers.AgentInfo, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetActiveAgents")
 	ret0, _ := ret[0].([]controllers.AgentInfo)
 	ret1, _ := ret[1].(error)
@@ -95,11 +104,13 @@ func (m *MockAgentManager) GetActiveAgents() ([]controllers.AgentInfo, error) {
 
 // GetActiveAgents indicates an expected call of GetActiveAgents
 func (mr *MockAgentManagerMockRecorder) GetActiveAgents() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveAgents", reflect.TypeOf((*MockAgentManager)(nil).GetActiveAgents))
 }
 
 // AddToFrontOfAgentQueue mocks base method
 func (m *MockAgentManager) AddToFrontOfAgentQueue(arg0 string, arg1 *metadatapb.ResourceUpdate) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddToFrontOfAgentQueue", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -107,11 +118,13 @@ func (m *MockAgentManager) AddToFrontOfAgentQueue(arg0 string, arg1 *metadatapb.
 
 // AddToFrontOfAgentQueue indicates an expected call of AddToFrontOfAgentQueue
 func (mr *MockAgentManagerMockRecorder) AddToFrontOfAgentQueue(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToFrontOfAgentQueue", reflect.TypeOf((*MockAgentManager)(nil).AddToFrontOfAgentQueue), arg0, arg1)
 }
 
 // GetFromAgentQueue mocks base method
 func (m *MockAgentManager) GetFromAgentQueue(arg0 string) ([]*metadatapb.ResourceUpdate, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFromAgentQueue", arg0)
 	ret0, _ := ret[0].([]*metadatapb.ResourceUpdate)
 	ret1, _ := ret[1].(error)
@@ -120,34 +133,40 @@ func (m *MockAgentManager) GetFromAgentQueue(arg0 string) ([]*metadatapb.Resourc
 
 // GetFromAgentQueue indicates an expected call of GetFromAgentQueue
 func (mr *MockAgentManagerMockRecorder) GetFromAgentQueue(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromAgentQueue", reflect.TypeOf((*MockAgentManager)(nil).GetFromAgentQueue), arg0)
 }
 
 // AddToUpdateQueue mocks base method
 func (m *MockAgentManager) AddToUpdateQueue(arg0 go_uuid.UUID, arg1 *messagespb.AgentUpdateInfo) {
+	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "AddToUpdateQueue", arg0, arg1)
 }
 
 // AddToUpdateQueue indicates an expected call of AddToUpdateQueue
 func (mr *MockAgentManagerMockRecorder) AddToUpdateQueue(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToUpdateQueue", reflect.TypeOf((*MockAgentManager)(nil).AddToUpdateQueue), arg0, arg1)
 }
 
 // GetMetadataUpdates mocks base method
-func (m *MockAgentManager) GetMetadataUpdates() ([]*metadatapb.ResourceUpdate, error) {
-	ret := m.ctrl.Call(m, "GetMetadataUpdates")
+func (m *MockAgentManager) GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetadataUpdates", hostname)
 	ret0, _ := ret[0].([]*metadatapb.ResourceUpdate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetMetadataUpdates indicates an expected call of GetMetadataUpdates
-func (mr *MockAgentManagerMockRecorder) GetMetadataUpdates() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadataUpdates", reflect.TypeOf((*MockAgentManager)(nil).GetMetadataUpdates))
+func (mr *MockAgentManagerMockRecorder) GetMetadataUpdates(hostname interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadataUpdates", reflect.TypeOf((*MockAgentManager)(nil).GetMetadataUpdates), hostname)
 }
 
 // AddUpdatesToAgentQueue mocks base method
 func (m *MockAgentManager) AddUpdatesToAgentQueue(arg0 go_uuid.UUID, arg1 []*metadatapb.ResourceUpdate) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddUpdatesToAgentQueue", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -155,5 +174,6 @@ func (m *MockAgentManager) AddUpdatesToAgentQueue(arg0 go_uuid.UUID, arg1 []*met
 
 // AddUpdatesToAgentQueue indicates an expected call of AddUpdatesToAgentQueue
 func (mr *MockAgentManagerMockRecorder) AddUpdatesToAgentQueue(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUpdatesToAgentQueue", reflect.TypeOf((*MockAgentManager)(nil).AddUpdatesToAgentQueue), arg0, arg1)
 }

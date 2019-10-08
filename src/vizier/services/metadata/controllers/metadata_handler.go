@@ -32,8 +32,10 @@ type MetadataStore interface {
 	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
 	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
 	GetAgents() (*[]datapb.AgentData, error)
+	GetNodePods(hostname string) ([]*metadatapb.Pod, error)
 	GetPods() ([]*metadatapb.Pod, error)
 	GetContainers() ([]*metadatapb.ContainerInfo, error)
+	GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
 	GetServices() ([]*metadatapb.Service, error)
 	GetComputedSchemas() ([]*metadatapb.SchemaInfo, error)
@@ -290,17 +292,7 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 	return update
 }
 
-// GetResourceUpdateFromEndpoints gets the update info from the given pod proto.
-func GetResourceUpdateFromEndpoints(ep *metadatapb.Endpoints) *metadatapb.ResourceUpdate {
-	var pods []string
-	for _, subset := range ep.Subsets {
-		for _, addr := range subset.Addresses {
-			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
-				pods = append(pods, addr.TargetRef.UID)
-			}
-		}
-	}
-
+func serviceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, pods []string) *metadatapb.ResourceUpdate {
 	update := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
@@ -314,6 +306,34 @@ func GetResourceUpdateFromEndpoints(ep *metadatapb.Endpoints) *metadatapb.Resour
 		},
 	}
 	return update
+}
+
+// GetResourceUpdateFromEndpoints gets the update info from the given endpoint proto.
+func GetResourceUpdateFromEndpoints(ep *metadatapb.Endpoints) *metadatapb.ResourceUpdate {
+	var pods []string
+	for _, subset := range ep.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+				pods = append(pods, addr.TargetRef.UID)
+			}
+		}
+	}
+
+	return serviceResourceUpdateFromEndpoint(ep, pods)
+}
+
+// GetNodeResourceUpdateFromEndpoints gets the update info for a node from the given endpoint proto.
+func GetNodeResourceUpdateFromEndpoints(ep *metadatapb.Endpoints, hostname string) *metadatapb.ResourceUpdate {
+	var pods []string
+	for _, subset := range ep.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" && addr.NodeName == hostname {
+				pods = append(pods, addr.TargetRef.UID)
+			}
+		}
+	}
+
+	return serviceResourceUpdateFromEndpoint(ep, pods)
 }
 
 // GetContainerResourceUpdatesFromPod gets the container updates for the given pod.

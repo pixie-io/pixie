@@ -60,7 +60,7 @@ type AgentManager interface {
 
 	AddToUpdateQueue(uuid.UUID, *messagespb.AgentUpdateInfo)
 
-	GetMetadataUpdates() ([]*metadatapb.ResourceUpdate, error)
+	GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error)
 
 	AddUpdatesToAgentQueue(uuid.UUID, []*metadatapb.ResourceUpdate) error
 }
@@ -401,15 +401,15 @@ func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID uuid.UUID, updates []*
 }
 
 // GetMetadataUpdates gets all updates from the metadata store.
-func (m *AgentManagerImpl) GetMetadataUpdates() ([]*metadatapb.ResourceUpdate, error) {
+func (m *AgentManagerImpl) GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error) {
 	var updates []*metadatapb.ResourceUpdate
 
-	pods, err := m.mds.GetPods()
+	pods, err := m.mds.GetNodePods(hostname)
 	if err != nil {
 		return nil, err
 	}
 
-	endpoints, err := m.mds.GetEndpoints()
+	endpoints, err := m.mds.GetNodeEndpoints(hostname)
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +423,7 @@ func (m *AgentManagerImpl) GetMetadataUpdates() ([]*metadatapb.ResourceUpdate, e
 	}
 
 	for _, endpoint := range endpoints {
-		epUpdate := GetResourceUpdateFromEndpoints(endpoint)
+		epUpdate := GetNodeResourceUpdateFromEndpoints(endpoint, hostname)
 		updates = append(updates, epUpdate)
 	}
 
