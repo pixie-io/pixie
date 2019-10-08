@@ -1,7 +1,9 @@
 import { AutoSizedScrollableTable, TableColumnInfo } from 'components/table/scrollable-table';
+import * as numeral from 'numeral';
 import * as React from 'react';
 import * as FormatData from 'utils/format-data';
-// TODO(zasgar/michelle): Figure out how to impor schema properly
+
+// TODO(zasgar/michelle): Figure out how to import schema properly
 import {
   GQLDataColTypes,
   GQLDataTable,
@@ -42,6 +44,16 @@ function formatUInt128(high: string, low: string): string {
   return uuidStr;
 }
 
+// Formats int64 data, the input type is a string because JS does not
+// natively support 64-bit data.
+function formatInt64Data(val: string): string {
+  return numeral(val).format('0,0');
+}
+
+function formatFloat64Data(val: number): string {
+  return numeral(val).format('0[.]00');
+}
+
 function extractData(colType: string, col: any, rowIdx): string {
   switch (colType) {
     case 'STRING':
@@ -52,12 +64,12 @@ function extractData(colType: string, col: any, rowIdx): string {
       const data = col.time64nsData.data[rowIdx];
       return new Date(parseFloat(data) / 1000000).toLocaleString();
     case 'INT64':
-      return '' + col.int64Data.data[rowIdx];
+      return formatInt64Data(col.int64Data.data[rowIdx]);
     case 'UINT128':
       const v = col.uint128Data.data[rowIdx];
       return formatUInt128(v.high, v.low);
     case 'FLOAT64':
-      return col.float64Data.data[rowIdx].toFixed(2);
+      return formatFloat64Data(col.float64Data.data[rowIdx]);
     case 'BOOLEAN':
        return col.booleanData.data[rowIdx] ? 'true' : 'false';
     default:
