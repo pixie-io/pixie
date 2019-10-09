@@ -22,6 +22,8 @@ import (
 
 func TestServer_CreateUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	testOrgUUID := uuid.NewV4()
@@ -65,7 +67,7 @@ func TestServer_CreateUser(t *testing.T) {
 		},
 		{
 			name:      "invalid username",
-			makesCall: true,
+			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
 				Username:  "",
@@ -79,7 +81,7 @@ func TestServer_CreateUser(t *testing.T) {
 		},
 		{
 			name:      "invalid first name",
-			makesCall: true,
+			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
 				Username:  "foobar",
@@ -93,7 +95,7 @@ func TestServer_CreateUser(t *testing.T) {
 		},
 		{
 			name:      "invalid last name",
-			makesCall: true,
+			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
 				Username:  "foobar",
@@ -107,7 +109,7 @@ func TestServer_CreateUser(t *testing.T) {
 		},
 		{
 			name:      "empty email",
-			makesCall: true,
+			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
 				Username:  "foobar",
@@ -121,7 +123,7 @@ func TestServer_CreateUser(t *testing.T) {
 		},
 		{
 			name:      "banned email",
-			makesCall: true,
+			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
 				Username:  "foobar",
@@ -149,7 +151,7 @@ func TestServer_CreateUser(t *testing.T) {
 		},
 		{
 			name:      "invalid email",
-			makesCall: true,
+			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
 				Username:  "foobar",
@@ -194,6 +196,8 @@ func TestServer_CreateUser(t *testing.T) {
 
 func TestServer_GetUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	userUUID := uuid.NewV4()
@@ -226,6 +230,8 @@ func TestServer_GetUser(t *testing.T) {
 
 func TestServer_GetUser_MissingUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	userUUID := uuid.NewV4()
@@ -242,6 +248,8 @@ func TestServer_GetUser_MissingUser(t *testing.T) {
 
 func TestServer_CreateOrgAndUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	testOrgUUID := uuid.NewV4()
@@ -278,7 +286,7 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 		},
 		{
 			name:      "invalid org name",
-			makesCall: true,
+			makesCall: false,
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
 					OrgName:    "",
@@ -296,7 +304,7 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 		},
 		{
 			name:      "invalid domain name",
-			makesCall: true,
+			makesCall: false,
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
 					OrgName:    "hulu",
@@ -314,7 +322,7 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 		},
 		{
 			name:      "invalid username",
-			makesCall: true,
+			makesCall: false,
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
 					OrgName:    "hulu",
@@ -332,7 +340,7 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 		},
 		{
 			name:      "invalid first name",
-			makesCall: true,
+			makesCall: false,
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
 					OrgName:    "hulu",
@@ -350,7 +358,7 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 		},
 		{
 			name:      "invalid last name",
-			makesCall: true,
+			makesCall: false,
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
 					OrgName:    "hulu",
@@ -368,7 +376,7 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 		},
 		{
 			name:      "missing email",
-			makesCall: true,
+			makesCall: false,
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
 					OrgName:    "hulu",
@@ -386,7 +394,7 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 		},
 		{
 			name:      "banned email",
-			makesCall: true,
+			makesCall: false,
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
 					OrgName:    "hulu",
@@ -459,6 +467,8 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 
 func TestServer_GetOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	orgUUID := uuid.NewV4()
@@ -484,6 +494,8 @@ func TestServer_GetOrg(t *testing.T) {
 
 func TestServer_GetOrg_MissingOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	orgUUID := uuid.NewV4()
@@ -501,6 +513,8 @@ func TestServer_GetOrg_MissingOrg(t *testing.T) {
 
 func TestServer_GetOrgByDomain(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	orgUUID := uuid.NewV4()
@@ -528,6 +542,8 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 
 func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	s := controller.NewServer(nil, d)

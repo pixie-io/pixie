@@ -47,6 +47,8 @@ func TestCheckSiteHandler_HandlerFunc(t *testing.T) {
 	viper.Set("session_key", "abcd")
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	sc := mock_sitemanagerpb.NewMockSiteManagerServiceClient(ctrl)
 	env, err := apienv.New(nil, sc, nil, nil)
 	require.Nil(t, err)
@@ -96,6 +98,8 @@ func TestCheckSiteHandler_HandlerFunc_BadInput(t *testing.T) {
 	viper.Set("session_key", "abcd")
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	sc := mock_sitemanagerpb.NewMockSiteManagerServiceClient(ctrl)
 	env, err := apienv.New(nil, sc, nil, nil)
 	require.Nil(t, err)

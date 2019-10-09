@@ -15,6 +15,7 @@ import (
 
 func TestServer_UpdateCerts(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockK8s := mock_controller.NewMockK8sAPI(ctrl)
 
 	s := controller.NewServer(nil, mockK8s)
@@ -48,6 +49,7 @@ func TestServer_UpdateCerts(t *testing.T) {
 
 func TestServer_UpdateCerts_SecretsFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockK8s := mock_controller.NewMockK8sAPI(ctrl)
 
 	s := controller.NewServer(nil, mockK8s)
@@ -68,6 +70,7 @@ func TestServer_UpdateCerts_SecretsFailed(t *testing.T) {
 
 func TestServer_UpdateCerts_NoPods(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockK8s := mock_controller.NewMockK8sAPI(ctrl)
 
 	s := controller.NewServer(nil, mockK8s)
@@ -92,6 +95,7 @@ func TestServer_UpdateCerts_NoPods(t *testing.T) {
 
 func TestServer_UpdateCerts_FailedPodDeletion(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockK8s := mock_controller.NewMockK8sAPI(ctrl)
 
 	s := controller.NewServer(nil, mockK8s)

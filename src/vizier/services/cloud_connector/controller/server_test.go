@@ -27,13 +27,10 @@ func TestServer_Register(t *testing.T) {
 	assert.Nil(t, err)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockVZConn := mock_vzconnpb.NewMockVZConnServiceClient(ctrl)
 	mockCertMgr := mock_certmgrpb.NewMockCertMgrServiceClient(ctrl)
-
 	mockStream := mock_vzconnpb.NewMockVZConnService_CloudConnectClient(ctrl)
-
-	mockVZConn.EXPECT().CloudConnect(gomock.Any()).
-		Return(mockStream, nil)
 
 	regReq := &cloudpb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUID(&vizierUUID),
@@ -75,13 +72,10 @@ func TestServer_HandleHeartbeat(t *testing.T) {
 	assert.Nil(t, err)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockVZConn := mock_vzconnpb.NewMockVZConnServiceClient(ctrl)
 	mockCertMgr := mock_certmgrpb.NewMockCertMgrServiceClient(ctrl)
-
 	mockStream := mock_vzconnpb.NewMockVZConnService_CloudConnectClient(ctrl)
-
-	mockVZConn.EXPECT().CloudConnect(gomock.Any()).
-		Return(mockStream, nil)
 
 	hbReq := &cloudpb.VizierHeartbeat{
 		VizierID:       utils.ProtoFromUUID(&vizierUUID),
@@ -125,13 +119,10 @@ func TestServer_HandleHeartbeat_EOFError(t *testing.T) {
 	assert.Nil(t, err)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockVZConn := mock_vzconnpb.NewMockVZConnServiceClient(ctrl)
 	mockCertMgr := mock_certmgrpb.NewMockCertMgrServiceClient(ctrl)
-
 	mockStream := mock_vzconnpb.NewMockVZConnService_CloudConnectClient(ctrl)
-
-	mockVZConn.EXPECT().CloudConnect(gomock.Any()).
-		Return(mockStream, nil)
 
 	hbReq := &cloudpb.VizierHeartbeat{
 		VizierID:       utils.ProtoFromUUID(&vizierUUID),
@@ -165,14 +156,12 @@ func TestServer_RequestAndHandleSSLCerts(t *testing.T) {
 	assert.Nil(t, err)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockVZConn := mock_vzconnpb.NewMockVZConnServiceClient(ctrl)
 	mockCertMgr := mock_certmgrpb.NewMockCertMgrServiceClient(ctrl)
 
 	mockStream := mock_vzconnpb.NewMockVZConnService_CloudConnectClient(ctrl)
 	mockStream.EXPECT().Context().Return(nil)
-
-	mockVZConn.EXPECT().CloudConnect(gomock.Any()).
-		Return(mockStream, nil)
 
 	req := &cloudpb.VizierSSLCertRequest{
 		VizierID: utils.ProtoFromUUID(&vizierUUID),

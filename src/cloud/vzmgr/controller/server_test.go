@@ -60,6 +60,7 @@ func TestServer_CreateVizierCluster(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient)
@@ -133,6 +134,7 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient)
@@ -189,6 +191,7 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient)
@@ -205,6 +208,7 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient)
@@ -230,6 +234,7 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient)
@@ -267,6 +272,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient)
@@ -303,6 +309,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient)
@@ -434,6 +441,7 @@ func TestServer_GetSSLCerts(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient)

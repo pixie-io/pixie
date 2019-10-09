@@ -48,6 +48,7 @@ func TestServer_GetDNSAddressExisting(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNS := mock_controller.NewMockDNSService(ctrl)
 
 	req := &dnsmgrpb.GetDNSAddressRequest{
@@ -56,10 +57,6 @@ func TestServer_GetDNSAddressExisting(t *testing.T) {
 	}
 
 	s := controller.NewServer(nil, mockDNS, db)
-
-	mockDNS.EXPECT().
-		CreateResourceRecord("1305560198000000000.abcd.clusters.withpixie.ai.", "127.0.0.1", int64(controller.ResourceRecordTTL)).
-		Return(nil)
 
 	resp, err := s.GetDNSAddress(context.Background(), req)
 	assert.Nil(t, err)
@@ -75,6 +72,8 @@ func TestServer_GetDNSAddressDefault(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	mockDNS := mock_controller.NewMockDNSService(ctrl)
 
 	s := controller.NewServer(nil, mockDNS, db)
@@ -110,6 +109,7 @@ func TestServer_GetDNSAddressNew(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNS := mock_controller.NewMockDNSService(ctrl)
 
 	s := controller.NewServer(nil, mockDNS, db)
@@ -143,6 +143,7 @@ func TestServer_CreateSSLCertExisting(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNS := mock_controller.NewMockDNSService(ctrl)
 
 	s := controller.NewServer(nil, mockDNS, db)
@@ -165,6 +166,7 @@ func TestServer_CreateNewSSLCert(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNS := mock_controller.NewMockDNSService(ctrl)
 
 	s := controller.NewServer(nil, mockDNS, db)
@@ -188,6 +190,7 @@ func TestServer_CreateNewSSLCertDefault(t *testing.T) {
 	loadTestData(t, db)
 
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	mockDNS := mock_controller.NewMockDNSService(ctrl)
 
 	s := controller.NewServer(nil, mockDNS, db)
