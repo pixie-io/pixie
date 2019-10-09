@@ -1,0 +1,53 @@
+# Packaging licenses for the entire pixie repository.
+# This includes the C API, Java API, and protocol buffer files.
+
+package(default_visibility = ["//visibility:private"])
+
+exports_files(["manual_license_map.json"])
+
+genrule(
+    name = "manual_cpp_licenses",
+    srcs = [
+        ":manual_license_map.json",
+    ],
+    outs = ["MANUAL_CPP_LICENSES"],
+    cmd = "python $(location :assemble_manual_licenses.py) $@ $(SRCS)",
+    tools = [":assemble_manual_licenses.py"],
+)
+
+genrule(
+    name = "cpp_licenses",
+    srcs = [
+        "@com_google_protobuf//:LICENSE",
+        "@com_github_ariafallah_csv_parser//:LICENSE",
+        "@com_github_grpc_grpc//:LICENSE",
+        "@com_github_grpc_grpc//third_party/address_sorting:LICENSE",
+        "@com_efficient_libcuckoo//:LICENSE",
+        "@com_github_cameron314_concurrentqueue//:LICENSE.md",
+        "@com_github_rlyeh_sole//:LICENSE",
+        "@com_github_gflags_gflags//:COPYING.txt",
+        "@com_github_tencent_rapidjson//:license.txt",
+        "@com_google_farmhash//:COPYING",
+        "@com_google_double_conversion//:LICENSE",
+        "//third_party/tdigest:LICENSE",
+        "//third_party:libpypa/COPYING",
+        "//third_party:arrow/LICENSE.txt",
+        "@com_google_boringssl//:LICENSE",
+    ],
+    outs = ["CPP_LICENSES"],
+    cmd = "python $(location :combine_bazel_licenses.py) $@ $(SRCS)",
+    tools = [":combine_bazel_licenses.py"],
+)
+
+genrule(
+    name = "all_licenses",
+    srcs = [
+        ":cpp_licenses",
+        ":manual_cpp_licenses",
+        "//src/ui:ui-licenses",
+        ":go_licenses.json",
+    ],
+    outs = ["CREDITS.md"],
+    cmd = "python $(location :render_licenses_as_markdown.py) $@ $(SRCS)",
+    tools = [":render_licenses_as_markdown.py"],
+)
