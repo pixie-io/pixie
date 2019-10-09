@@ -1494,3 +1494,50 @@ go_repository(
     sum = "h1:iJ1oCzPQ/aacsbCWLfJW1hPKkHMvCEgNSA9kvWcb9MY=",
     version = "v2.1.0+incompatible",
 )
+
+go_repository(
+    name = "com_github_google_go_querystring",
+    importpath = "github.com/google/go-querystring",
+    sum = "h1:Xkwi/a1rcvNg1PPYe5vI8GbeBY/jrVuDX5ASuANWTrk=",
+    version = "v1.0.0",
+)
+
+go_repository(
+    name = "com_github_google_go_github",
+    importpath = "github.com/google/go-github",
+    sum = "h1:N0LgJ1j65A7kfXrZnUDaYCs/Sf4rEjNlfyDHW9dolSY=",
+    version = "v17.0.0+incompatible",
+)
+
+go_repository(
+    name = "com_github_keighl_metabolize",
+    importpath = "github.com/keighl/metabolize",
+    version = "v0.0.0-20150915210303-97ab655d4034",
+    sum = "h1:1ijjWJbbN7za3tZ7eXUO5fVcC9ogGYShQh+zM6YiCYE=",
+)
+
+go_repository(
+    name = "com_github_ernesto_jimenez_gogen",
+    importpath = "github.com/ernesto-jimenez/gogen",
+    commit = "d7d4131e6607813977e78297a6060f360f056a97",
+)
+go_repository(
+    name = "com_github_serenize_snaker",
+    importpath = "github.com/serenize/snaker",
+    version = "v0.0.0-20171204205717-a683aaf2d516",
+    sum = "h1:ofR1ZdrNSkiWcMsRrubK9tb2/SlZVWttAfqUjJi6QYc=",
+)
+
+go_repository(
+    name = "com_github_markbates_going",
+    importpath = "github.com/markbates/going",
+    sum = "h1:mY45T5TvW+Xz5A6jY7lf4+NLg9D8+iuStIHyR7M8qsE=",
+    version = "v1.0.3",
+)
+
+go_repository(
+    name = "com_github_markbates_validate",
+    importpath = "github.com/markbates/validate",
+    sum = "h1:S8c3GX3EJScCYy0SXaktwPTrqY8a6TlekYxcq4jHvsg=",
+    version = "v1.0.0",
+)
