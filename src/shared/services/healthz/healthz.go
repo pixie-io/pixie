@@ -18,7 +18,7 @@ import (
 // Checker is a named healthz checker.
 type Checker interface {
 	Name() string
-	Check(req *http.Request) error
+	Check() error
 }
 
 // PingHealthz returns true automatically when checked.
@@ -44,7 +44,7 @@ func RegisterDefaultChecks(mux mux, checks ...Checker) {
 // healthzCheck implements Checker on an arbitrary name and check function.
 type healthzCheck struct {
 	name  string
-	check func(r *http.Request) error
+	check func() error
 }
 
 var _ Checker = &healthzCheck{}
@@ -53,12 +53,12 @@ func (c *healthzCheck) Name() string {
 	return c.name
 }
 
-func (c *healthzCheck) Check(r *http.Request) error {
-	return c.check(r)
+func (c *healthzCheck) Check() error {
+	return c.check()
 }
 
 // NamedCheck returns a healthz checker for the given name and function.
-func NamedCheck(name string, check func(r *http.Request) error) Checker {
+func NamedCheck(name string, check func() error) Checker {
 	return &healthzCheck{name, check}
 }
 
@@ -77,9 +77,9 @@ func InstallPathHandler(mux mux, path string, checks ...Checker) {
 }
 
 // adaptCheckToHandler returns an http.HandlerFunc that serves the provided checks.
-func adaptCheckToHandler(c func(r *http.Request) error) http.HandlerFunc {
+func adaptCheckToHandler(c func() error) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := c(r)
+		err := c()
 		if err != nil {
 			http.Error(w, fmt.Sprintf("FAILED internal server error: %v", err), http.StatusInternalServerError)
 		} else {
@@ -106,7 +106,7 @@ func registerRootHealthzChecks(checks ...Checker) http.HandlerFunc {
 		failed := false
 		var verboseOut bytes.Buffer
 		for _, check := range checks {
-			if err := check.Check(r); err != nil {
+			if err := check.Check(); err != nil {
 				// don't include the error since this endpoint is public.  If someone wants more detail
 				// they should have explicit permission to the detailed checks.
 				log.WithField("checker", check.Name()).WithError(err).Error("healthz check failed")
@@ -137,6 +137,6 @@ func (ping) Name() string {
 }
 
 // PingHealthz is a health check that returns true.
-func (ping) Check(_ *http.Request) error {
+func (ping) Check() error {
 	return nil
 }

@@ -44,10 +44,10 @@ func TestRegisterDefaultChecks(t *testing.T) {
 
 func TestMultipleChecks(t *testing.T) {
 	var checks []healthz.Checker
-	checks = append(checks, healthz.NamedCheck("bad-check", func(_ *http.Request) error {
+	checks = append(checks, healthz.NamedCheck("bad-check", func() error {
 		return fmt.Errorf("failed check")
 	}))
-	checks = append(checks, healthz.NamedCheck("good", func(_ *http.Request) error {
+	checks = append(checks, healthz.NamedCheck("good", func() error {
 		return nil
 	}))
 
