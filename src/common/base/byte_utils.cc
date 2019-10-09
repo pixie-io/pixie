@@ -1,8 +1,7 @@
-#include "src/stirling/utils/byte_format.h"
+#include "src/common/base/byte_utils.h"
 #include <glog/logging.h>
 
 namespace pl {
-namespace stirling {
 namespace utils {
 
 int LEStrToInt(const std::string_view str) {
@@ -15,5 +14,4 @@ int LEStrToInt(const std::string_view str) {
 }
 
 }  // namespace utils
-}  // namespace stirling
 }  // namespace pl

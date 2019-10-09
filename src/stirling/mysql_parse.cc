@@ -6,9 +6,9 @@
 #include <string_view>
 #include <utility>
 
+#include "src/common/base/byte_utils.h"
 #include "src/stirling/event_parser.h"
 #include "src/stirling/mysql/mysql.h"
-#include "src/stirling/utils/byte_format.h"
 
 namespace pl {
 namespace stirling {

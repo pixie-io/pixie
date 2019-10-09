@@ -61,6 +61,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "byte_utils_test",
+    srcs = ["byte_utils_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "utils_test",
     srcs = ["utils_test.cc"],
     deps = [":cc_library"],

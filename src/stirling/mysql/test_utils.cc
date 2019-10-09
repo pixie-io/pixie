@@ -2,9 +2,9 @@
 #include <deque>
 #include <string>
 
+#include "src/common/base/byte_utils.h"
 #include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql/test_utils.h"
-#include "src/stirling/utils/byte_format.h"
 
 namespace pl {
 namespace stirling {
