@@ -36,7 +36,7 @@ func etcdTLSConfig() (*tls.Config, error) {
 func main() {
 	log.WithField("service", "metadata").Info("Starting service")
 
-	pflag.String("md_etcd_server", "https://pl-etcd-client.pl.svc.cluster.local:2379", "The address to metadata etcd server.")
+	pflag.String("md_etcd_server", "https://pl-etcd-client.pl.svc:2379", "The address to metadata etcd server.")
 	services.SetupService("metadata", 50400)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()

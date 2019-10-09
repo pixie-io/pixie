@@ -19,8 +19,7 @@ DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
               "The host address of the nats cluster");
 
 DEFINE_string(query_broker_addr,
-              gflags::StringFromEnv("PL_QUERY_BROKER_ADDR",
-                                    "vizier-query-broker.pl.svc.cluster.local:50300"),
+              gflags::StringFromEnv("PL_QUERY_BROKER_ADDR", "vizier-query-broker.pl.svc:50300"),
               "The host address of Query Broker");
 
 DEFINE_string(client_tls_cert,

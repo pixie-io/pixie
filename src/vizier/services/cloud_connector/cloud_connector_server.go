@@ -19,7 +19,7 @@ import (
 
 func init() {
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
-	pflag.String("certmgr_service", "vizier-certmgr.pl.svc.cluster.local:50900", "The cert manager service url (load balancer/list is ok)")
+	pflag.String("certmgr_service", "vizier-certmgr.pl.svc:50900", "The cert manager service url (load balancer/list is ok)")
 }
 
 // NewCertMgrServiceClient creates a new cert mgr RPC client stub.

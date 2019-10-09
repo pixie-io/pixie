@@ -1480,3 +1480,10 @@ go_repository(
     sum = "h1:VAzdS5Nw68fbf5RZ8RDVlUvPXNU6Z3jtPCK/qvm4FoQ=",
     version = "v0.0.0-20190402232053-79abb63cd66e",
 )
+
+go_repository(
+    name = "com_github_jteeuwen_go_bindata",
+    importpath = "github.com/jteeuwen/go-bindata",
+    sum = "h1:91Uy4d9SYVr1kyTJ15wJsog+esAZZl7JmEfTkwmhJts=",
+    version = "v3.0.7+incompatible",
+)

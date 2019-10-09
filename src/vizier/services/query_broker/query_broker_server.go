@@ -19,7 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
-const plMDSAddr = "vizier-metadata.pl.svc.cluster.local:50400"
+const plMDSAddr = "vizier-metadata.pl.svc:50400"
 
 func main() {
 	log.WithField("service", "query-broker").Info("Starting service")

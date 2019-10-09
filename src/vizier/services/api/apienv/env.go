@@ -11,7 +11,7 @@ import (
 
 func init() {
 	pflag.String("query_broker_grpc_addr",
-		"vizier-query-broker.pl.svc.cluster.local:50300",
+		"vizier-query-broker.pl.svc:50300",
 		"The address to the query broker grpc server")
 }
 
