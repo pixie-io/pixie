@@ -59,7 +59,7 @@ func main() {
 		TLS:         tlsConfig,
 	})
 	if err != nil {
-		log.WithError(err).Fatal("Failed to connect to etcd.")
+		log.WithError(err).Fatal("Failed to connect to etcd at " + viper.GetString("md_etcd_server"))
 	}
 	defer etcdClient.Close()
 

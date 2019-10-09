@@ -27,7 +27,7 @@ retry() {
 
 ensure_namespace() {
   ns=$1
-  kubectl get namespaces ${ns} 2> /dev/null
+  kubectl get namespaces ${ns} > /dev/null 2> /dev/null
   if [ $? -ne 0 ]; then
     kubectl create namespace ${ns}
   fi

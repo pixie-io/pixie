@@ -7,4 +7,7 @@
 # TODO(oazizi/philkuz): Change this once we understand RBAC better.
 username=`whoami`
 user_email=`git config user.email`
-kubectl create clusterrolebinding ${username}-binding --clusterrole=cluster-admin --user=${user_email}
+kubectl get clusterrolebinding ${username}-binding > /dev/null 2> /dev/null
+if [ $? -ne 0 ]; then
+  kubectl create clusterrolebinding ${username}-binding --clusterrole=cluster-admin --user=${user_email}
+fi
