@@ -77,12 +77,13 @@ const vizierFetch = (uri, options) => {
   });
 
   const initialRequest = fetchPolyfill(address + uri, options);
+  const localhostRequest = fetchPolyfill('http://127.0.0.1:31067' + uri, options);
 
   this.refreshingToken = null;
 
-  return Promise.race([initialRequest, timeout]).then((response) => {
+  return localhostRequest.then((response) => {
     if (!response || response.status !== 200) {
-      throw new Error('failed initial request');
+      throw new Error('failed localhost request');
     }
 
     return response.text();
@@ -94,29 +95,45 @@ const vizierFetch = (uri, options) => {
       resolve(respText);
     });
     return result;
-  }).catch((err) => {
-    if (!this.refreshingToken) {
-      this.refreshingToken = cloudClient.query({
-        query: GET_CLUSTER_CONN,
+  }).catch((localhostError) => {
+    return Promise.race([initialRequest, timeout]).then((response) => {
+      if (!response || response.status !== 200) {
+        throw new Error('failed initial request');
+      }
+
+      return response.text();
+    }).then((respText) => {
+      // If no errors, repackage response into expected return format.
+      const result = {} as FetchResponse;
+      result.ok = true;
+      result.text = () => new Promise((resolve, reject) => {
+        resolve(respText);
       });
-    }
-    return this.refreshingToken.then(({loading, error, data}) => {
-      this.refreshingToken = null;
+      return result;
+    }).catch((err) => {
+      if (!this.refreshingToken) {
+        this.refreshingToken = cloudClient.query({
+          query: GET_CLUSTER_CONN,
+        });
+      }
+      return this.refreshingToken.then(({loading, error, data}) => {
+        this.refreshingToken = null;
 
-      const newToken = data.clusterConnection.token;
-      const newAddress = data.clusterConnection.ipAddress;
-      localStorage.setItem('vizierAuth', JSON.stringify({
-        token: newToken,
-        address: newAddress,
-      }));
+        const newToken = data.clusterConnection.token;
+        const newAddress = data.clusterConnection.ipAddress;
+        localStorage.setItem('vizierAuth', JSON.stringify({
+          token: newToken,
+          address: newAddress,
+        }));
 
-      options.headers.authorization = `Bearer ${newToken}`;
-      return fetchPolyfill(newAddress + uri, options);
-    }).catch((error) => {
-      this.refreshingToken = null;
-      const errResult = {} as FetchResponse;
-      errResult.ok = false;
-      return errResult;
+        options.headers.authorization = `Bearer ${newToken}`;
+        return fetchPolyfill(newAddress + uri, options);
+      }).catch((error) => {
+        this.refreshingToken = null;
+        const errResult = {} as FetchResponse;
+        errResult.ok = false;
+        return errResult;
+      });
     });
   });
 };
