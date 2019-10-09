@@ -28,3 +28,12 @@ container_push(
     repository = "pl-dev-infra/vizier/agent_image",
     tag = "{STABLE_BUILD_TAG}",
 )
+
+container_push(
+    name = "push_test_agent_image",
+    format = "Docker",
+    image = ":agent_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/vizier/agent_image",
+    tag = "{BUILD_USER}",
+)

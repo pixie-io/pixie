@@ -4,8 +4,7 @@ commonLabels:
   app: pl-monitoring
 namespace: pl
 resources:
-- node_view_cluster_role.yaml
-- agent_daemonset.yaml
+- agent
 - api_deployment.yaml
 - api_service.yaml
 - certmgr_role.yaml
@@ -15,7 +14,11 @@ resources:
 - metadata_deployment.yaml
 - metadata_service.yaml
 - metadata_role.yaml
+- node_view_cluster_role.yaml
 - proxy_deployment.yaml
 - proxy_service.yaml
 - query_broker_deployment.yaml
 - query_broker_service.yaml
+
+patchesStrategicMerge:
+- patch_agent_daemonset.yaml
