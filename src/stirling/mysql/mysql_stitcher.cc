@@ -95,7 +95,7 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
       case MySQLEventType::kDaemon:
         resp_packets->pop_front();
         continue;
-      case MySQLEventType::kUnknown:
+      default:
         // TODO(chengruizhe): Here we assume that if the request type is unknown, the response will
         // be just one packet. Make it more robust.
         resp_packets->pop_front();

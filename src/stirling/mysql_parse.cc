@@ -26,13 +26,16 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
   }
 
   if (type == MessageType::kRequest) {
-    result->type = DecodeEventType((*buf)[4]);
+    char command = (*buf)[kPacketHeaderLength];
+    result->type = DecodeEventType(command);
     if (result->type == MySQLEventType::kUnknown) {
+      LOG(ERROR) << absl::Substitute("Unexpected command type: $0", command);
+      // Send invalid to trigger recovery.
       return ParseState::kInvalid;
     }
   }
 
-  int packet_length = utils::LEStrToInt(buf->substr(0, 3));
+  int packet_length = utils::LEStrToInt(buf->substr(0, kPacketHeaderLength - 1));
   int buffer_length = buf->length();
 
   // 3 bytes of packet length and 1 byte of packet number.

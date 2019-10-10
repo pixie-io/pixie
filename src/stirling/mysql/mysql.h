@@ -34,27 +34,37 @@ namespace mysql {
 
 // Command Types
 // https://dev.mysql.com/doc/internals/en/command-phase.html
-constexpr uint8_t kComQuery = 0x03;
-constexpr uint8_t kComStmtPrepare = 0x16;
-constexpr uint8_t kComStmtExecute = 0x17;
-constexpr uint8_t kComStmtClose = 0x19;
-// commands below are single req, resp pairs
-// TODO(chengruizhe): Handle the following commands.
 constexpr uint8_t kComSleep = 0x00;
 constexpr uint8_t kComQuit = 0x01;
 constexpr uint8_t kComInitDB = 0x02;
+constexpr uint8_t kComQuery = 0x03;
+constexpr uint8_t kComFieldList = 0x04;
 constexpr uint8_t kComCreateDB = 0x05;
 constexpr uint8_t kComDropDB = 0x06;
 constexpr uint8_t kComRefresh = 0x07;
 constexpr uint8_t kComShutdown = 0x08;
 constexpr uint8_t kComStatistics = 0x09;
+constexpr uint8_t kComProcessInfo = 0x0a;
 constexpr uint8_t kComConnect = 0x0b;
 constexpr uint8_t kComProcessKill = 0x0c;
 constexpr uint8_t kComDebug = 0x0d;
 constexpr uint8_t kComPing = 0x0e;
 constexpr uint8_t kComTime = 0x0f;
 constexpr uint8_t kComDelayedInsert = 0x10;
+constexpr uint8_t kComChangeUser = 0x11;
+constexpr uint8_t kComBinlogDump = 0x12;
+constexpr uint8_t kComTableDump = 0x13;
+constexpr uint8_t kComConnectOut = 0x14;
+constexpr uint8_t kComRegisterSlave = 0x15;
+constexpr uint8_t kComStmtPrepare = 0x16;
+constexpr uint8_t kComStmtExecute = 0x17;
+constexpr uint8_t kComStmtSendLongData = 0x18;
+constexpr uint8_t kComStmtClose = 0x19;
+constexpr uint8_t kComStmtReset = 0x1a;
+constexpr uint8_t kComSetOption = 0x1b;
+constexpr uint8_t kComStmtFetch = 0x1c;
 constexpr uint8_t kComDaemon = 0x1d;
+constexpr uint8_t kComBinlogDumpGTID = 0x1e;
 constexpr uint8_t kComResetConnection = 0x1f;
 
 // Response types
@@ -81,44 +91,52 @@ constexpr uint8_t kColTypeString = 0xfe;
 
 enum class MySQLEventType {
   kUnknown,
-  kStmtPrepare,
-  kStmtExecute,
-  kStmtClose,
-  kQuery,
   kSleep,
   kQuit,
   kInitDB,
+  kQuery,
+  kFieldList,
   kCreateDB,
   kDropDB,
   kRefresh,
   kShutdown,
   kStatistics,
+  kProcessInfo,
   kConnect,
   kProcessKill,
   kDebug,
   kPing,
   kTime,
   kDelayedInsert,
+  kChangeUser,
+  kBinlogDump,
+  kTableDump,
+  kConnectOut,
+  kRegisterSlave,
+  kStmtPrepare,
+  kStmtExecute,
+  kStmtSendLongData,
+  kStmtClose,
+  kStmtReset,
+  kSetOption,
+  kStmtFetch,
+  kDaemon,
+  kBinlogDumpGTID,
   kResetConnection,
-  kDaemon
 };
 
 inline MySQLEventType DecodeEventType(char command_byte) {
   switch (command_byte) {
-    case kComStmtPrepare:
-      return MySQLEventType::kStmtPrepare;
-    case kComStmtExecute:
-      return MySQLEventType::kStmtExecute;
-    case kComStmtClose:
-      return MySQLEventType::kStmtClose;
-    case kComQuery:
-      return MySQLEventType::kQuery;
     case kComSleep:
       return MySQLEventType::kSleep;
     case kComQuit:
       return MySQLEventType::kQuit;
     case kComInitDB:
       return MySQLEventType::kInitDB;
+    case kComQuery:
+      return MySQLEventType::kQuery;
+    case kComFieldList:
+      return MySQLEventType::kFieldList;
     case kComCreateDB:
       return MySQLEventType::kCreateDB;
     case kComDropDB:
@@ -129,6 +147,8 @@ inline MySQLEventType DecodeEventType(char command_byte) {
       return MySQLEventType::kShutdown;
     case kComStatistics:
       return MySQLEventType::kStatistics;
+    case kComProcessInfo:
+      return MySQLEventType::kProcessInfo;
     case kComConnect:
       return MySQLEventType::kConnect;
     case kComProcessKill:
@@ -141,10 +161,36 @@ inline MySQLEventType DecodeEventType(char command_byte) {
       return MySQLEventType::kTime;
     case kComDelayedInsert:
       return MySQLEventType::kDelayedInsert;
-    case kComResetConnection:
-      return MySQLEventType::kResetConnection;
+    case kComChangeUser:
+      return MySQLEventType::kChangeUser;
+    case kComBinlogDump:
+      return MySQLEventType::kBinlogDump;
+    case kComTableDump:
+      return MySQLEventType::kTableDump;
+    case kComConnectOut:
+      return MySQLEventType::kConnectOut;
+    case kComRegisterSlave:
+      return MySQLEventType::kRegisterSlave;
+    case kComStmtPrepare:
+      return MySQLEventType::kStmtPrepare;
+    case kComStmtExecute:
+      return MySQLEventType::kStmtExecute;
+    case kComStmtSendLongData:
+      return MySQLEventType::kStmtSendLongData;
+    case kComStmtClose:
+      return MySQLEventType::kStmtClose;
+    case kComStmtReset:
+      return MySQLEventType::kStmtReset;
+    case kComSetOption:
+      return MySQLEventType::kSetOption;
+    case kComStmtFetch:
+      return MySQLEventType::kStmtFetch;
     case kComDaemon:
       return MySQLEventType::kDaemon;
+    case kComBinlogDumpGTID:
+      return MySQLEventType::kBinlogDumpGTID;
+    case kComResetConnection:
+      return MySQLEventType::kResetConnection;
     default:
       return MySQLEventType::kUnknown;
   }
