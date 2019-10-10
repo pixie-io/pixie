@@ -37,6 +37,9 @@ using u8string_view = std::basic_string_view<uint8_t>;
 // A request or response containing uppercase header field names MUST be treated as malformed.
 using NVMap = std::multimap<std::string, std::string>;
 
+// HTTP2 frame header size, see https://http2.github.io/http2-spec/#FrameHeader.
+constexpr size_t kFrameHeaderSizeInBytes = 9;
+
 /**
  * @brief Inflater wraps nghttp2_hd_inflater and implements RAII.
  */
@@ -252,18 +255,6 @@ inline std::string_view GetLiteralNameAsStringView(const HeaderField& field) {
 ParseState ParseHeaderBlock(u8string_view* buf, std::vector<HeaderField>* res);
 
 }  // namespace http2
-
-/**
- * @brief Unpacks the buf as HTTP2 frames. The results are put into messages.
- * The parameter type is not used, but is required to matches the function used by
- * EventParser<std::unique_ptr<Frame>>.
- */
-template <>
-ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
-                          std::deque<http2::Frame>* messages);
-
-template <>
-size_t FindMessageBoundary<http2::Frame>(MessageType type, std::string_view buf, size_t start_pos);
 
 }  // namespace stirling
 }  // namespace pl
