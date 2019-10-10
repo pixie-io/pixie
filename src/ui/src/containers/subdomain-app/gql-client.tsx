@@ -60,11 +60,13 @@ const vizierFetch = (uri, options) => {
   // Attempt to execute an initial fetch.
   const auth: string = localStorage.getItem('vizierAuth');
   let token: string = '';
+  let mode: string = '';
   let address: string = 'http://vizier-cluster';
   if (auth != null) {
     const parsedAuth = JSON.parse(auth);
     address = parsedAuth.address;
     token = parsedAuth.token;
+    mode = parsedAuth.mode;
   }
   options.headers.authorization = `Bearer ${token}`;
 
@@ -76,8 +78,8 @@ const vizierFetch = (uri, options) => {
     }, TIMEOUT_MS);
   });
 
-  const initialRequest = fetchPolyfill(address + uri, options);
-  const localhostRequest = fetchPolyfill('http://127.0.0.1:31067' + uri, options);
+  const localhostRequest = mode === 'vizier' ?
+    Promise.reject('Should use Vizier mode') : fetchPolyfill('http://127.0.0.1:31067' + uri, options);
 
   this.refreshingToken = null;
 
@@ -96,6 +98,7 @@ const vizierFetch = (uri, options) => {
     });
     return result;
   }).catch((localhostError) => {
+    const initialRequest = fetchPolyfill(address + uri, options);
     return Promise.race([initialRequest, timeout]).then((response) => {
       if (!response || response.status !== 200) {
         throw new Error('failed initial request');
@@ -124,11 +127,23 @@ const vizierFetch = (uri, options) => {
         localStorage.setItem('vizierAuth', JSON.stringify({
           token: newToken,
           address: newAddress,
+          mode: 'vizier',
         }));
 
         options.headers.authorization = `Bearer ${newToken}`;
         return fetchPolyfill(newAddress + uri, options);
       }).catch((error) => {
+        const lsAuth: string = localStorage.getItem('vizierAuth');
+        if (lsAuth != null) {
+          const parsedLsAuth = JSON.parse(lsAuth);
+          // Vizier DNS failed, so reset mode to enable search for localhost again.
+          localStorage.setItem('vizierAuth', JSON.stringify({
+            token: parsedLsAuth.token,
+            address: parsedLsAuth.address,
+            mode: '',
+          }));
+        }
+
         this.refreshingToken = null;
         const errResult = {} as FetchResponse;
         errResult.ok = false;
