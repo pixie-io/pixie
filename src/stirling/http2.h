@@ -83,7 +83,20 @@ struct Frame {
   // If true, means this frame is processed and can be destroyed.
   mutable bool consumed = false;
 
-  size_t ByteSize() const { return sizeof(Frame) + u8payload.size(); }
+  // Only meaningful for HEADERS frame, indicates if a frame syncing error is detected.
+  ParseState frame_sync_state = ParseState::kUnknown;
+  // Only meaningful for HEADERS frame, indicates if a header block is already processed.
+  ParseState headers_parse_state = ParseState::kUnknown;
+  NVMap headers;
+
+  size_t ByteSize() const {
+    size_t res = sizeof(Frame) + u8payload.size();
+    for (const auto& [header, value] : headers) {
+      res += header.size();
+      res += value.size();
+    }
+    return res;
+  }
 };
 
 // TODO(yzhao): Move ParseState inside http_parse.h to utils/parse_state.h; and then use it as
@@ -97,6 +110,7 @@ struct GRPCMessage {
   // TODO(yzhao): We keep this field for easier testing. Update tests to not rely on input invalid
   // data.
   ParseState parse_state = ParseState::kUnknown;
+  ParseState headers_parse_state = ParseState::kUnknown;
   MessageType type = MessageType::kUnknown;
   uint64_t timestamp_ns = 0;
 
@@ -119,9 +133,21 @@ struct GRPCMessage {
   }
 };
 
+/**
+ * @brief Stitches frames to create header blocks and inflate them.
+ *
+ * HTTP2 requires the frames of a header block not mixed with any types of frames other than
+ * CONTINUATION or frames with any other stream IDs.
+ *
+ * Since they need to be parsed exactly once and in the same order as they arrive, they are stitched
+ * together first and then inflated in place. The resultant name & value pairs of a header block is
+ * stored in the first HEADERS frame of the header block.
+ */
+void StitchAndInflateHeaderBlocks(nghttp2_hd_inflater* inflater, std::deque<Frame>* frames);
+
 // Used by StitchFramesToGRPCMessages() put here for testing.
-ParseState StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* inflater,
-                        std::vector<GRPCMessage>* msgs);
+ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
+                                   std::vector<GRPCMessage>* msgs);
 
 /*
  * @brief Stitches frames as either request or response. Also marks the consumed frames.
@@ -131,7 +157,7 @@ ParseState StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_infl
  * @param stream_msgs The gRPC messages for each stream, keyed by stream ID. Note this is HTTP2
  * stream ID, not our internal stream ID for TCP connections.
  */
-ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames, Inflater* inflater,
+ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames,
                                       std::map<uint32_t, GRPCMessage>* stream_msgs);
 
 /**

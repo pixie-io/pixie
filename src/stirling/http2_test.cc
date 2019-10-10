@@ -129,29 +129,30 @@ TEST(MatchGRPCReqRespTest, InputsAreMoved) {
   EXPECT_EQ("d", resp.message);
 }
 
-std::string PackEmptyHeadersFrame(uint8_t flags, uint32_t stream_id) {
-  std::string res(NGHTTP2_FRAME_HDLEN, '\0');
-  uint8_t* buf = reinterpret_cast<uint8_t*>(res.data());
-  nghttp2_frame_hd hd = {};
-  hd.length = 0;
-  hd.type = NGHTTP2_HEADERS;
-  hd.flags = flags;
-  hd.stream_id = stream_id;
-  nghttp2_frame_pack_frame_hd(buf, &hd);
-  return res;
-}
-
-std::string PackDataFrame(std::string_view msg, uint8_t flags, uint32_t stream_id) {
+std::string PackFrame(nghttp2_frame_type type, std::string_view msg, uint8_t flags,
+                      uint32_t stream_id) {
   std::string res(NGHTTP2_FRAME_HDLEN + msg.size(), '\0');
   uint8_t* buf = reinterpret_cast<uint8_t*>(res.data());
   nghttp2_frame_hd hd = {};
   hd.length = msg.size();
-  hd.type = NGHTTP2_DATA;
+  hd.type = type;
   hd.flags = flags;
   hd.stream_id = stream_id;
   nghttp2_frame_pack_frame_hd(buf, &hd);
   res.replace(NGHTTP2_FRAME_HDLEN, msg.size(), msg);
   return res;
+}
+
+std::string PackHeadersFrame(std::string_view msg, uint8_t flags, uint32_t stream_id) {
+  return PackFrame(NGHTTP2_HEADERS, msg, flags, stream_id);
+}
+
+std::string PackDataFrame(std::string_view msg, uint8_t flags, uint32_t stream_id) {
+  return PackFrame(NGHTTP2_DATA, msg, flags, stream_id);
+}
+
+std::string PackContinuationFrame(std::string_view msg, uint8_t flags, uint32_t stream_id) {
+  return PackFrame(NGHTTP2_CONTINUATION, msg, flags, stream_id);
 }
 
 std::vector<const Frame*> ExtractPtrs(const std::deque<Frame>& frames) {
@@ -162,45 +163,50 @@ std::vector<const Frame*> ExtractPtrs(const std::deque<Frame>& frames) {
   return frame_ptrs;
 }
 
-TEST(StitchFramesTest, SuccessiveHeadersFrameCausesError) {
-  {
-    std::string input = absl::StrCat(PackEmptyHeadersFrame(0, 1), PackEmptyHeadersFrame(0, 1));
-    std::deque<Frame> frames;
-    ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
-    EXPECT_EQ(ParseState::kSuccess, res.state);
-    EXPECT_THAT(frames, SizeIs(2));
+TEST(StitchGRPCMessageFramesTest, SuccessiveHeadersFrameCausesError) {
+  std::string input = absl::StrCat(PackHeadersFrame("", 0, 1), PackHeadersFrame("", 0, 1));
+  std::deque<Frame> frames;
+  ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
+  EXPECT_EQ(ParseState::kSuccess, res.state);
+  EXPECT_THAT(frames, SizeIs(2));
 
-    Inflater inflater;
-    std::vector<GRPCMessage> msgs;
-    EXPECT_EQ(ParseState::kInvalid, StitchFrames(ExtractPtrs(frames), inflater.inflater(), &msgs));
-  }
-  {
-    std::string input = absl::StrCat(PackEmptyHeadersFrame(0, 1), PackDataFrame("abcd", 0, 1));
-    std::deque<Frame> frames;
-    ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
-    EXPECT_EQ(ParseState::kSuccess, res.state);
-    EXPECT_THAT(frames, SizeIs(2));
+  Inflater inflater;
+  StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
 
-    Inflater inflater;
-    std::vector<GRPCMessage> msgs;
-    EXPECT_EQ(ParseState::kInvalid, StitchFrames(ExtractPtrs(frames), inflater.inflater(), &msgs));
-  }
+  std::vector<GRPCMessage> msgs;
+  EXPECT_EQ(ParseState::kInvalid, StitchGRPCMessageFrames(ExtractPtrs(frames), &msgs));
+}
+
+TEST(StitchGRPCMessageFramesTest, DataAfterHeadersCausesError) {
+  std::string input = absl::StrCat(PackHeadersFrame("", 0, 1), PackDataFrame("abcd", 0, 1));
+  std::deque<Frame> frames;
+  ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
+  EXPECT_EQ(ParseState::kSuccess, res.state);
+  EXPECT_THAT(frames, SizeIs(2));
+
+  Inflater inflater;
+  StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
+
+  std::vector<GRPCMessage> msgs;
+  EXPECT_EQ(ParseState::kInvalid, StitchGRPCMessageFrames(ExtractPtrs(frames), &msgs));
 }
 
 TEST(StitchFramesToGRPCMessagesTest, StitchReqsRespsOfDifferentStreams) {
-  Inflater inflater;
   std::string input =
-      absl::StrCat(PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS, 1),
-                   PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS, 2), PackDataFrame("abcd", 0, 1),
+      absl::StrCat(PackHeadersFrame("", NGHTTP2_FLAG_END_HEADERS, 1),
+                   PackHeadersFrame("", NGHTTP2_FLAG_END_HEADERS, 2), PackDataFrame("abcd", 0, 1),
                    PackDataFrame("abcd", NGHTTP2_FLAG_END_STREAM, 2),
-                   PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS | NGHTTP2_FLAG_END_STREAM, 1));
+                   PackHeadersFrame("", NGHTTP2_FLAG_END_HEADERS | NGHTTP2_FLAG_END_STREAM, 1));
   std::map<uint32_t, GRPCMessage> stream_msgs;
   std::deque<Frame> frames;
   ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
   EXPECT_EQ(ParseState::kSuccess, res.state);
   ASSERT_THAT(frames, SizeIs(5));
 
-  StitchFramesToGRPCMessages(frames, &inflater, &stream_msgs);
+  Inflater inflater;
+  StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
+
+  StitchFramesToGRPCMessages(frames, &stream_msgs);
   // There should be one gRPC request and response.
   ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, _), Pair(2, _)));
 
@@ -217,14 +223,17 @@ TEST(StitchFramesToGRPCMessagesTest, StitchReqsRespsOfDifferentStreams) {
 }
 
 TEST(StitchFramesToGRPCMessagesTest, InCompleteMessage) {
-  Inflater inflater;
   std::string input =
-      absl::StrCat(PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS, 1), PackDataFrame("abcd", 0, 2));
+      absl::StrCat(PackHeadersFrame("", NGHTTP2_FLAG_END_HEADERS, 1), PackDataFrame("abcd", 0, 2));
   std::deque<Frame> frames;
   ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
   EXPECT_EQ(ParseState::kSuccess, res.state);
+
+  Inflater inflater;
+  StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
+
   std::map<uint32_t, GRPCMessage> stream_msgs;
-  StitchFramesToGRPCMessages(frames, &inflater, &stream_msgs);
+  StitchFramesToGRPCMessages(frames, &stream_msgs);
   EXPECT_THAT(stream_msgs, IsEmpty()) << "There is no END_STREAM in frames, so there is no data";
 }
 
@@ -450,6 +459,123 @@ TEST(DecodeIntegerTest, AllCases) {
     EXPECT_EQ(ParseState::kNeedsMoreData, DecodeInteger(&buf, /*prefix*/ 7, &res));
     EXPECT_EQ(u8string_view(kBuf, sizeof(kBuf) - 1), buf);
   }
+}
+
+TEST(StitchAndInflateHeaderBlocksTest, HeadersAndContinuationFramesAreStitched) {
+  // \x86 & \x83 are static code can always be decode correctly.
+  const std::string input = absl::StrCat(
+      PackHeadersFrame("\x86", 0, 1), PackContinuationFrame("\x83", NGHTTP2_FLAG_END_HEADERS, 1));
+  std::deque<Frame> frames;
+  Parse(MessageType::kUnknown, input, &frames);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "\x86"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "\x83")));
+  Inflater inflater;
+  StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "\x86\x83"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "\x83")));
+  ASSERT_THAT(frames, SizeIs(2));
+
+  EXPECT_FALSE(frames[0].consumed);
+  EXPECT_EQ(ParseState::kSuccess, frames[0].headers_parse_state);
+  EXPECT_THAT(frames[0].headers, ElementsAre(Pair(":method", "POST"), Pair(":scheme", "http")));
+
+  EXPECT_TRUE(frames[1].consumed);
+  EXPECT_EQ(ParseState::kUnknown, frames[1].headers_parse_state);
+}
+
+TEST(StitchAndInflateHeaderBlocksTest, HeadersAndThenDataFrame) {
+  const std::string input =
+      absl::StrCat(PackHeadersFrame("a:b", 0, 1), PackContinuationFrame("c:d", 0, 1),
+                   PackDataFrame("abc", 1, 2));
+  std::deque<Frame> frames;
+  Parse(MessageType::kUnknown, input, &frames);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "a:b"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "c:d"),
+                                  MatchesTypePayload(NGHTTP2_DATA, "abc")));
+  Inflater inflater;
+  StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "a:bc:d"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "c:d"),
+                                  MatchesTypePayload(NGHTTP2_DATA, "abc")));
+  ASSERT_THAT(frames, SizeIs(3));
+
+  EXPECT_FALSE(frames[0].consumed);
+  EXPECT_EQ(ParseState::kInvalid, frames[0].headers_parse_state);
+
+  EXPECT_TRUE(frames[1].consumed);
+  EXPECT_EQ(ParseState::kUnknown, frames[1].headers_parse_state);
+}
+
+TEST(StitchAndInflateHeaderBlocksTest, SuccessiveHeadersFrames) {
+  const std::string input =
+      absl::StrCat(PackHeadersFrame("a:b", 0, 1), PackHeadersFrame("c:d", 0, 1));
+  std::deque<Frame> frames;
+  Parse(MessageType::kUnknown, input, &frames);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "a:b"),
+                                  MatchesTypePayload(NGHTTP2_HEADERS, "c:d")));
+  Inflater inflater;
+  StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "a:b"),
+                                  MatchesTypePayload(NGHTTP2_HEADERS, "c:d")));
+  ASSERT_THAT(frames, SizeIs(2));
+
+  EXPECT_FALSE(frames[0].consumed);
+  EXPECT_EQ(ParseState::kInvalid, frames[0].headers_parse_state);
+
+  EXPECT_FALSE(frames[1].consumed);
+  EXPECT_EQ(ParseState::kUnknown, frames[1].headers_parse_state);
+}
+
+TEST(StitchAndInflateHeaderBlocksTest, SuccessiveContinuationFrames) {
+  std::string input =
+      absl::StrCat(PackContinuationFrame("a", 0, 1), PackContinuationFrame("b", 0, 1),
+                   PackContinuationFrame("c", 9, 1));
+  std::deque<Frame> frames;
+  Parse(MessageType::kUnknown, input, &frames);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_CONTINUATION, "a"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "b"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "c")));
+  Inflater inflater;
+  StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "abc"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "b"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "c")));
+  ASSERT_THAT(frames, SizeIs(3));
+
+  EXPECT_FALSE(frames[0].consumed);
+  EXPECT_EQ(ParseState::kInvalid, frames[0].headers_parse_state);
+
+  EXPECT_TRUE(frames[1].consumed);
+  EXPECT_EQ(ParseState::kUnknown, frames[1].headers_parse_state);
+
+  EXPECT_TRUE(frames[2].consumed);
+  EXPECT_EQ(ParseState::kUnknown, frames[2].headers_parse_state);
+}
+
+// Tests that the first HEADERS frame of an incomplete header block is left intact.
+TEST(StitchAndInflateHeaderBlocksTest, IncompleteHeaderBlock) {
+  std::string input = absl::StrCat(PackHeadersFrame("a", 0, 1), PackContinuationFrame("b", 0, 1));
+  std::deque<Frame> frames;
+  Parse(MessageType::kUnknown, input, &frames);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "a"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "b")));
+
+  Inflater inflater;
+  StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "ab"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "b")));
+  ASSERT_THAT(frames, SizeIs(2));
+
+  EXPECT_FALSE(frames[0].consumed);
+  // Should still indicate that this header block is unprocessed.
+  EXPECT_EQ(ParseState::kUnknown, frames[0].headers_parse_state);
+  EXPECT_EQ(ParseState::kUnknown, frames[0].frame_sync_state);
+
+  EXPECT_TRUE(frames[1].consumed);
+
+  std::map<uint32_t, GRPCMessage> stream_msgs;
+  EXPECT_EQ(ParseState::kSuccess, StitchFramesToGRPCMessages(frames, &stream_msgs));
+  EXPECT_THAT(stream_msgs, IsEmpty());
 }
 
 }  // namespace http2

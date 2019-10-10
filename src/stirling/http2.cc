@@ -227,39 +227,117 @@ ParseState CheckGRPCMessage(std::string_view buf) {
 
 }  // namespace
 
+// Stitches header block frames, by appending all payload of the CONTINUATION frames of
+// a header block into the block's first HEADERS frame. Also inflates the resultant header blocks.
+//
+// TODO(yzhao): If there is ever header parse failure because of missing data from any of
+// the header blocks, all followup parsings are busted. We can record this state, and skip
+// parsing for the rest of the stream.
+//
+// TODO(yzhao): If the header block parse failure is because of application logic errors,
+// HTTP2 runtime would reset stream. We now ignore all such signalling frames.
+// If needed, we need to handle all those.
+void StitchAndInflateHeaderBlocks(nghttp2_hd_inflater* inflater, std::deque<Frame>* frames) {
+  Frame* first_headers_frame = nullptr;
+
+  auto reset_when_lost_frame_sync = [&first_headers_frame]() {
+    first_headers_frame->headers_parse_state = ParseState::kInvalid;
+    first_headers_frame->frame_sync_state = ParseState::kInvalid;
+    first_headers_frame = nullptr;
+  };
+
+  auto coerce_continuation_to_headers = [&first_headers_frame](Frame& frame) {
+    frame.frame.hd.type = NGHTTP2_HEADERS;
+    frame.headers_parse_state = ParseState::kInvalid;
+    frame.frame_sync_state = ParseState::kInvalid;
+
+    first_headers_frame = &frame;
+    if (IsEndHeaders(frame.frame.hd)) {
+      first_headers_frame = nullptr;
+    }
+  };
+
+  for (Frame& frame : *frames) {
+    auto frame_type = frame.frame.hd.type;
+    if (frame_type == NGHTTP2_HEADERS) {
+      if (frame.headers_parse_state != ParseState::kUnknown) {
+        // This HEADERS frame is already processed.
+        continue;
+      }
+      if (first_headers_frame != nullptr) {
+        LOG(WARNING) << absl::Substitute(
+            "HEADERS frame follows another HEADERS frame. "
+            "Indicates lost frame boundary. Stream ID: $0.",
+            frame.frame.hd.stream_id);
+        reset_when_lost_frame_sync();
+      }
+      first_headers_frame = &frame;
+      if (IsEndHeaders(frame.frame.hd)) {
+        frame.headers_parse_state = InflateHeaderBlock(inflater, frame.u8payload, &frame.headers);
+        first_headers_frame = nullptr;
+      }
+      continue;
+    }
+    if (frame_type == NGHTTP2_CONTINUATION) {
+      if (frame.consumed) {
+        // This CONTINUATION frame is already processed.
+        continue;
+      }
+      if (first_headers_frame == nullptr) {
+        LOG(WARNING) << absl::Substitute(
+            "There was no HEADERS frame before this CONTINUATION frame. "
+            "Indicates lost frame boundary. This frame is coerced into a HEADERS frame. "
+            "Stream ID: $0.",
+            frame.frame.hd.stream_id);
+        coerce_continuation_to_headers(frame);
+        continue;
+      }
+      if (first_headers_frame->frame.hd.stream_id != frame.frame.hd.stream_id) {
+        LOG(WARNING) << absl::Substitute(
+            "CONTINUATION frame stream ID: $0 is different from "
+            "the first HEADERS frame stream ID: $1.",
+            frame.frame.hd.stream_id, first_headers_frame->frame.hd.stream_id);
+        reset_when_lost_frame_sync();
+        coerce_continuation_to_headers(frame);
+        continue;
+      }
+      // CONTINUATION frame can be discarded after being appended to the first HEADERS frame.
+      frame.consumed = true;
+      // TODO(yzhao): Keep string_view of the frames' payload, and join them lastly.
+      first_headers_frame->u8payload.append(frame.u8payload);
+      if (IsEndHeaders(frame.frame.hd)) {
+        if (first_headers_frame->headers_parse_state == ParseState::kUnknown) {
+          // Only parse the header block if it has not been parsed yet.
+          first_headers_frame->headers_parse_state = InflateHeaderBlock(
+              inflater, first_headers_frame->u8payload, &first_headers_frame->headers);
+        }
+        first_headers_frame = nullptr;
+      }
+      continue;
+    }
+    if (frame_type == NGHTTP2_DATA) {
+      if (first_headers_frame != nullptr) {
+        LOG(WARNING) << absl::Substitute(
+            "DATA frame follows a HEADERS frame. Indicates lost frame boundary. Stream ID: $0.",
+            frame.frame.hd.stream_id);
+        reset_when_lost_frame_sync();
+      }
+      continue;
+    }
+  }
+}
+
 /**
  * @brief Given a list of frames for one stream, stitches them together into gRPC request and
  * response messages. Also mark consumed frames, so the caller can destroy them afterwards.
  */
 // TODO(yzhao): Turn this into a class that parse frames one by one.
-ParseState StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* inflater,
-                        std::vector<GRPCMessage>* msgs) {
-  size_t header_block_size = 0;
-  std::vector<const Frame*> header_block_frames;
-
+ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
+                                   std::vector<GRPCMessage>* msgs) {
   size_t data_block_size = 0;
   std::vector<const Frame*> data_block_frames;
 
   GRPCMessage msg;
-  bool is_in_header_block = false;
-
-  auto handle_headers_or_continuation = [&is_in_header_block, &header_block_size,
-                                         &header_block_frames, &msg, inflater](const Frame* f) {
-    header_block_size += f->u8payload.size();
-    header_block_frames.push_back(f);
-    if (IsEndHeaders(f->frame.hd)) {
-      is_in_header_block = false;
-      u8string u8buf;
-      u8buf.reserve(header_block_size);
-      for (auto* f : header_block_frames) {
-        u8buf.append(f->u8payload);
-      }
-      msg.frames.insert(msg.frames.end(), header_block_frames.begin(), header_block_frames.end());
-      header_block_frames.clear();
-      header_block_size = 0;
-      msg.parse_state = InflateHeaderBlock(inflater, u8buf, &msg.headers);
-    }
-  };
 
   auto handle_end_stream = [&data_block_size, &data_block_frames, &msg, msgs]() {
     // HTTP2 spec allows the following frames sequence:
@@ -288,13 +366,6 @@ ParseState StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_infl
     const uint8_t type = f->frame.hd.type;
     switch (type) {
       case NGHTTP2_DATA:
-        if (is_in_header_block) {
-          LOG(WARNING) << "DATA frame must not follow a unended HEADERS frame. "
-                          "Indicates losing track of the frame boundary. Stream ID: "
-                       << f->frame.hd.stream_id;
-          return ParseState::kInvalid;
-        }
-        is_in_header_block = false;
         data_block_size += f->u8payload.size();
         data_block_frames.push_back(f);
         // gRPC request EOS (end-of-stream) is indicated by END_STREAM flag on the last DATA frame.
@@ -307,14 +378,19 @@ ParseState StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_infl
         }
         break;
       case NGHTTP2_HEADERS:
-        if (is_in_header_block) {
-          LOG(WARNING) << "HEADERS frame must not follow another unended HEADERS frame. "
-                          "Indicates losing track of the frame boundary. Stream ID: "
-                       << f->frame.hd.stream_id;
+        if (f->frame_sync_state == ParseState::kInvalid) {
           return ParseState::kInvalid;
         }
-        is_in_header_block = true;
-        handle_headers_or_continuation(f);
+        // All headers frames are considered complete header blocks.
+        msg.frames.push_back(f);
+        // A gRPC response has 2 header blocks, so we need to merge them.
+        msg.headers.insert(f->headers.begin(), f->headers.end());
+        if (msg.headers_parse_state != ParseState::kUnknown ||
+            f->headers_parse_state != ParseState::kSuccess) {
+          // Only assign new state for initialization or an error state.
+          msg.headers_parse_state = f->headers_parse_state;
+        }
+
         // gRPC response EOS (end-of-stream) is indicated by END_STREAM flag on the last HEADERS
         // frame. This also indicates this message is a response.
         // No CONTINUATION frame will be used.
@@ -324,36 +400,35 @@ ParseState StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_infl
           handle_end_stream();
         }
         break;
-      case NGHTTP2_CONTINUATION:
-        if (!is_in_header_block) {
-          LOG(WARNING) << "CONTINUATION frame must follow a HEADERS or CONTINUATION frame. "
-                          "Indicates losing track of the frame boundary. Stream ID: "
-                       << f->frame.hd.stream_id;
-          return ParseState::kInvalid;
-        }
-        handle_headers_or_continuation(f);
-        // No need to handle END_STREAM as CONTINUATION frame does not define END_STREAM flag.
-        break;
       default:
         LOG(DFATAL) << "This function does not accept any frame types other than "
-                       "DATA, HEADERS, and CONTINUATION.";
+                       "DATA, HEADERS.";
         break;
     }
   }
   return ParseState::kSuccess;
 }
 
-ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames, Inflater* inflater,
+ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames,
                                       std::map<uint32_t, GRPCMessage>* stream_msgs) {
   std::map<uint32_t, std::vector<const Frame*>> stream_frames;
 
   // Collect frames for each stream.
   for (const Frame& f : frames) {
+    if (f.frame.hd.type == NGHTTP2_HEADERS && f.headers_parse_state == ParseState::kUnknown) {
+      // Stop at the first unprocessed HEADERS frame, which indicates that the header block started
+      // at this frame is not complete yet.
+      break;
+    }
+    if (f.consumed) {
+      // Skip consumed frames.
+      continue;
+    }
     stream_frames[f.frame.hd.stream_id].push_back(&f);
   }
   for (auto& [stream_id, frame_ptrs] : stream_frames) {
     std::vector<GRPCMessage> msgs;
-    ParseState state = StitchFrames(frame_ptrs, inflater->inflater(), &msgs);
+    ParseState state = StitchGRPCMessageFrames(frame_ptrs, &msgs);
     if (state != ParseState::kSuccess) {
       return state;
     }
