@@ -15,8 +15,6 @@ namespace stirling {
 
 namespace mysql {
 ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
-  static constexpr int kPacketHeaderLength = 4;
-
   if (type != MessageType::kRequest && type != MessageType::kResponse) {
     return ParseState::kInvalid;
   }
@@ -25,12 +23,12 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
     return ParseState::kInvalid;
   }
 
+  // TODO(oazizi): Is pre-checking type here a good idea? Somewhat out of place.
   if (type == MessageType::kRequest) {
     char command = (*buf)[kPacketHeaderLength];
-    result->type = DecodeEventType(command);
-    if (result->type == MySQLEventType::kUnknown) {
+    if (DecodeEventType(command) == MySQLEventType::kUnknown) {
+      // Return invalid to trigger recovery.
       LOG(ERROR) << absl::Substitute("Unexpected command type: $0", command);
-      // Send invalid to trigger recovery.
       return ParseState::kInvalid;
     }
   }

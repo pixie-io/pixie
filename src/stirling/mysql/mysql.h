@@ -196,6 +196,8 @@ inline MySQLEventType DecodeEventType(char command_byte) {
   }
 }
 
+constexpr int kPacketHeaderLength = 4;
+
 // Constants for StmtExecute packet, where the payload is as follows:
 // bytes  description
 //    1   [17] COM_STMT_EXECUTE
@@ -219,7 +221,6 @@ struct Packet {
   std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
   // TODO(oazizi): Convert to std::basic_string<uint8_t>.
   std::string msg;
-  MySQLEventType type = MySQLEventType::kUnknown;
 
   size_t ByteSize() const { return sizeof(Packet) + msg.size(); }
 };

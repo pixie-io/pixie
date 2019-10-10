@@ -47,7 +47,7 @@ class MySQLParserTest : public ::testing::Test {
 };
 
 bool operator==(const Packet& lhs, const Packet& rhs) {
-  if (lhs.type == rhs.type && lhs.msg.compare(rhs.msg) == 0) {
+  if (lhs.msg.compare(rhs.msg) == 0) {
     return true;
   }
   return false;
@@ -58,12 +58,10 @@ TEST_F(MySQLParserTest, ParseComStmtPrepare) {
   std::string msg2 = testutils::GenRequest(kComStmtPrepare, "SELECT age FROM users WHERE id = ?");
 
   Packet expected_message1;
-  expected_message1.type = MySQLEventType::kStmtPrepare;
   expected_message1.msg =
       absl::StrCat(std::string(1, kComStmtPrepare), "SELECT name FROM users WHERE id = ?");
 
   Packet expected_message2;
-  expected_message2.type = MySQLEventType::kStmtPrepare;
   expected_message2.msg =
       absl::StrCat(std::string(1, kComStmtPrepare), "SELECT age FROM users WHERE id = ?");
 
@@ -80,13 +78,12 @@ TEST_F(MySQLParserTest, ParseComStmtPrepare) {
 TEST_F(MySQLParserTest, ParseComStmtExecute) {
   // body of the MySQL StmtExecute message, from
   // https://dev.mysql.com/doc/internals/en/com-stmt-execute.html.
-  const std::string body =
-      std::string("\x01\x00\x00\x00\x00\x01\x00\x00\x00\x00\x01\x0f\x00\x03\x66\x6f\x6f", 17);
-  std::string msg1 = testutils::GenRequest(kStmtExecutePrefix, body);
+  const std::string body(
+      ConstStringView("\x01\x00\x00\x00\x00\x01\x00\x00\x00\x00\x01\x0f\x00\x03\x66\x6f\x6f"));
+  std::string msg1 = testutils::GenRequest(kComStmtExecute, body);
 
   Packet expected_message1;
-  expected_message1.type = MySQLEventType::kStmtExecute;
-  expected_message1.msg = absl::StrCat(std::string(1, kStmtExecutePrefix), body);
+  expected_message1.msg = absl::StrCat(std::string(1, kComStmtExecute), body);
 
   parser_.Append(msg1, 0);
 
@@ -111,16 +108,14 @@ TEST_F(MySQLParserTest, ParseComStmtClose) {
 }
 
 TEST_F(MySQLParserTest, ParseComQuery) {
-  std::string msg1 = testutils::GenRequest(kQueryPrefix, "SELECT name FROM users");
-  std::string msg2 = testutils::GenRequest(kQueryPrefix, "SELECT age FROM users");
+  std::string msg1 = testutils::GenRequest(kComQuery, "SELECT name FROM users");
+  std::string msg2 = testutils::GenRequest(kComQuery, "SELECT age FROM users");
 
   Packet expected_message1;
-  expected_message1.type = MySQLEventType::kQuery;
-  expected_message1.msg = absl::StrCat(std::string(1, kQueryPrefix), "SELECT name FROM users");
+  expected_message1.msg = absl::StrCat(std::string(1, kComQuery), "SELECT name FROM users");
 
   Packet expected_message2;
-  expected_message2.type = MySQLEventType::kQuery;
-  expected_message2.msg = absl::StrCat(std::string(1, kQueryPrefix), "SELECT age FROM users");
+  expected_message2.msg = absl::StrCat(std::string(1, kComQuery), "SELECT age FROM users");
 
   parser_.Append(msg1, 0);
   parser_.Append(msg2, 1);
@@ -140,17 +135,16 @@ TEST_F(MySQLParserTest, ParseResponse) {
   EXPECT_EQ(ParseState::kSuccess, result.state);
 
   Packet expected_header;
-  expected_header.msg = std::string("\x00\x1a\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00", 12);
+  expected_header.msg = ConstStringView("\x00\x1a\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00");
 
   Packet expected_col_def;
-  expected_col_def.msg = std::string(
+  expected_col_def.msg = ConstStringView(
       "\x03\x64\x65\x66\x00\x00\x00\x1c\x43\x4f\x55\x4e\x54\x28\x44\x49\x53\x54\x49\x4e\x43\x54\x20"
       "\x73\x6f\x63\x6b\x2e\x73\x6f\x63\x6b\x5f\x69\x64\x29\x00\x0c\x3f\x00\x15\x00\x00\x00\x08\x81"
-      "\x00\x00\x00\x00",
-      50);
+      "\x00\x00\x00\x00");
 
   Packet expected_eof;
-  expected_eof.msg = std::string("\xfe\x00\x00\x02\x00", 5);
+  expected_eof.msg = ConstStringView("\xfe\x00\x00\x02\x00");
 
   EXPECT_THAT(parsed_messages, ElementsAre(expected_header, expected_col_def, expected_eof));
 }
@@ -204,7 +198,7 @@ TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
 }
 
 TEST_F(MySQLParserTest, ParseIncompleteRequest) {
-  std::string msg1 = testutils::GenRequest(kStmtPreparePrefix, "SELECT name FROM users WHERE");
+  std::string msg1 = testutils::GenRequest(kComStmtPrepare, "SELECT name FROM users WHERE");
   // Change the length of the request so that it isn't complete.
   msg1[0] = '\x24';
 

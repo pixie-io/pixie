@@ -62,9 +62,11 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
 
     Packet& req_packet = req_packets->front();
 
+    // Command is the first byte.
+    char command = req_packet.msg[0];
+
     StatusOr<Entry> e;
-    // TODO(chengruizhe): Remove type from Packet and infer type here.
-    switch (req_packet.type) {
+    switch (DecodeEventType(command)) {
       case MySQLEventType::kStmtPrepare:
         e = StitchStmtPrepare(req_packet, resp_packets, state);
         break;
