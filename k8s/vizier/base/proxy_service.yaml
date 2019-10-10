@@ -9,5 +9,9 @@ spec:
       protocol: TCP
       targetPort: 55000
       name: tcp-https
+    - port: 80
+      protocol: TCP
+      targetPort: 55001
+      name: tcp-http
   selector:
     name: vizier-proxy
