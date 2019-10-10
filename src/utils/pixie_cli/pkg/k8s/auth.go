@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
+
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
@@ -23,7 +24,6 @@ func GetClientset(config *rest.Config) *kubernetes.Clientset {
 	if err != nil {
 		log.WithError(err).Fatal("Could not create k8s clientset")
 	}
-
 	return clientset
 }
 
