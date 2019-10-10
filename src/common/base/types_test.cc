@@ -5,6 +5,29 @@
 namespace pl {
 namespace const_types_test {
 
+TEST(ConstStringViewTest, const_string_view) {
+  EXPECT_EQ(ConstStringView("This is a string"), std::string_view("This is a string"));
+
+  // String views on string literals can be dangerous when there is a \x00 character.
+  EXPECT_NE(ConstStringView("\xff\x00\x00"), std::string_view("\xff\x00\x00"));
+
+  // But ConstStringView is smart about it.
+  EXPECT_EQ(ConstStringView("\xff\x00\x00"), std::string_view("\xff\x00\x00", 3));
+}
+
+TEST(ConstStringViewTest, char_array_string_view) {
+  // An array with a zero byte somewhere in the middle.
+  char val[] = {1, 0, 2, 4};
+
+  // Whoa...don't use ConstStringView on char arrays, because it strips off the last character.
+  EXPECT_NE(ConstStringView(val), std::string_view(val, 4));
+  EXPECT_EQ(ConstStringView(val).length(), 3);
+
+  // Use CharArrayStringView and you'll get what you expect.
+  EXPECT_EQ(CharArrayStringView(val), std::string_view(val, 4));
+  EXPECT_EQ(CharArrayStringView(val).length(), 4);
+}
+
 TEST(ConstStringViewTest, compile_time_functions) {
   static constexpr std::string_view const_str0 = "This is a constant string";
   static constexpr std::string_view const_str1 = "It's really just a pointer and a size";

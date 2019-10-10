@@ -18,6 +18,11 @@ inline constexpr std::string_view ConstStringView(const char (&a)[N]) {
   return std::string_view(a, N - 1);
 }
 
+template <size_t N>
+inline constexpr std::string_view CharArrayStringView(const char (&a)[N]) {
+  return std::string_view(a, N);
+}
+
 /**
  * A view into an array, with vector-like interface.
  * Similar to how string_view is a view into a string.
