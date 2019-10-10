@@ -1,0 +1,22 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: node-view
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "watch", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: node-view-binding
+subjects:
+- kind: ServiceAccount
+  name: default
+roleRef:
+  kind: ClusterRole
+  name: node-view
+  apiGroup: rbac.authorization.k8s.io

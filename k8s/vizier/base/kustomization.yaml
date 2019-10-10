@@ -4,6 +4,7 @@ commonLabels:
   app: pl-monitoring
 namespace: pl
 resources:
+- node_view_cluster_role.yaml
 - agent_daemonset.yaml
 - api_deployment.yaml
 - api_service.yaml
