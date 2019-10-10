@@ -41,15 +41,6 @@ struct SocketClose {
   uint64_t recv_seq_num = 0;
 };
 
-// TODO(oazizi): Convert ReqRespPair to hold unique_ptrs to messages.
-// TODO(yzhao/oazizi): Consider use of std::optional to indicate a non-existent request/response.
-// Note that using unique_ptrs may make use of std::optional unnecessary.
-template <class TMessageType>
-struct ReqRespPair {
-  TMessageType req_message;
-  TMessageType resp_message;
-};
-
 /**
  * Connection tracker is the main class that tracks all the events for a monitored TCP connection.
  *

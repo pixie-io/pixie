@@ -123,8 +123,8 @@ TEST(MatchGRPCReqRespTest, InputsAreMoved) {
 
   std::vector<GRPCReqResp> matched_msgs = MatchGRPCReqResp(std::move(reqs), std::move(resps));
   ASSERT_THAT(matched_msgs, SizeIs(1));
-  const GRPCMessage& req = matched_msgs.begin()->req;
-  const GRPCMessage& resp = matched_msgs.begin()->resp;
+  const GRPCMessage& req = matched_msgs.begin()->req_message;
+  const GRPCMessage& resp = matched_msgs.begin()->resp_message;
   EXPECT_EQ("a", req.message);
   EXPECT_EQ("d", resp.message);
 }

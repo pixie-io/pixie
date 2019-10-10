@@ -21,6 +21,7 @@ extern "C" {
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/event_parser.h"
+#include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {
@@ -160,14 +161,7 @@ ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
 ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames,
                                       std::map<uint32_t, GRPCMessage>* stream_msgs);
 
-/**
- * @brief A convenience holder of gRPC req & resp.
- */
-// TODO(yzhao): Investigate converging with ReqRespPair in socket_trace_connector.h.
-struct GRPCReqResp {
-  GRPCMessage req;
-  GRPCMessage resp;
-};
+using GRPCReqResp = ReqRespPair<GRPCMessage>;
 
 /**
  * @brief Matchs req & resp GRPCMessage of the same streams. The input arguments are moved to the

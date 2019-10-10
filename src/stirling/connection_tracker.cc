@@ -218,9 +218,9 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesI
 
   std::vector<ReqRespPair<http2::GRPCMessage>> trace_records;
   for (auto& r : records) {
-    r.req.MarkFramesConsumed();
-    r.resp.MarkFramesConsumed();
-    ReqRespPair<http2::GRPCMessage> tmp{std::move(r.req), std::move(r.resp)};
+    r.req_message.MarkFramesConsumed();
+    r.resp_message.MarkFramesConsumed();
+    ReqRespPair<http2::GRPCMessage> tmp{std::move(r.req_message), std::move(r.resp_message)};
     trace_records.push_back(tmp);
   }
 
