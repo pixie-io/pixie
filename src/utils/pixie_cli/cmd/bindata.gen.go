@@ -85,7 +85,7 @@ func tmpVizier_yamlsEtcdYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "tmp/vizier_yamls/etcd.yaml", size: 2004, mode: os.FileMode(436), modTime: time.Unix(1570689821, 0)}
+	info := bindataFileInfo{name: "tmp/vizier_yamls/etcd.yaml", size: 2004, mode: os.FileMode(436), modTime: time.Unix(1570690336, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -105,7 +105,7 @@ func tmpVizier_yamlsNatsYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "tmp/vizier_yamls/nats.yaml", size: 2954, mode: os.FileMode(436), modTime: time.Unix(1570689821, 0)}
+	info := bindataFileInfo{name: "tmp/vizier_yamls/nats.yaml", size: 2954, mode: os.FileMode(436), modTime: time.Unix(1570690336, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -125,7 +125,7 @@ func tmpVizier_yamlsVizierYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "tmp/vizier_yamls/vizier.yaml", size: 12867, mode: os.FileMode(436), modTime: time.Unix(1570689821, 0)}
+	info := bindataFileInfo{name: "tmp/vizier_yamls/vizier.yaml", size: 12867, mode: os.FileMode(436), modTime: time.Unix(1570690336, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

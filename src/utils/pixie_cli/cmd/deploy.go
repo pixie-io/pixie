@@ -372,9 +372,21 @@ func waitForProxy(clientset *kubernetes.Clientset, namespace string) {
 	for c := range watcher.ResultChan() {
 		service := c.Object.(*v1.Service)
 		if service.ObjectMeta.Name == "vizier-proxy-service" {
-			if len(service.Status.LoadBalancer.Ingress) > 0 && service.Status.LoadBalancer.Ingress[0].IP != "" {
-				log.Info("Setup complete.")
-				watcher.Stop()
+			switch service.Spec.Type {
+			case v1.ServiceTypeNodePort:
+				{
+					// TODO(zasgar): NodePorts get ready right away, we need to make sure
+					// that the service is actually healthy.
+					log.Info("Setup complete.")
+					watcher.Stop()
+				}
+			case v1.ServiceTypeLoadBalancer:
+				{
+					if len(service.Status.LoadBalancer.Ingress) > 0 && service.Status.LoadBalancer.Ingress[0].IP != "" {
+						log.Info("Setup complete.")
+						watcher.Stop()
+					}
+				}
 			}
 		}
 	}
