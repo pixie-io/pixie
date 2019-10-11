@@ -16,6 +16,8 @@ std::string CombinePrepareExecute(const StmtExecuteRequest* req,
                                   std::map<int, ReqRespEvent>* prepare_events) {
   auto iter = prepare_events->find(req->stmt_id());
   if (iter == prepare_events->end()) {
+    LOG(WARNING) << absl::Substitute("Could not find prepare statement for stmt_id=$0",
+                                     req->stmt_id());
     return "";
   }
 
@@ -24,7 +26,7 @@ std::string CombinePrepareExecute(const StmtExecuteRequest* req,
 
   size_t offset = 0;
   size_t count = 0;
-  std::string result = "";
+  std::string result;
 
   for (size_t index = stmt_prepare_request.find("?", offset); index != std::string::npos;
        index = stmt_prepare_request.find("?", offset)) {
@@ -43,11 +45,12 @@ std::string CombinePrepareExecute(const StmtExecuteRequest* req,
 }
 
 // TODO(chengruizhe): Use RapidJSON to generate JSON.
-std::string CreateErrorJSON(std::string_view body, std::string_view error) {
-  if (error == "") {
-    return absl::StrCat("{\"Message\": \"", body, "\"}");
-  }
-  return absl::StrCat("{\"Error\": \"", error, "\", \"Message\": \"", body, "\"}");
+std::string CreateErrorJSON(std::string_view message, std::string_view error) {
+  return absl::Substitute(R"({"Error": "$0", "Message": "$1"})", error, message);
+}
+
+std::string CreateMessageJSON(std::string_view message) {
+  return absl::Substitute(R"({"Message": "$0"})", message);
 }
 
 }  // namespace
@@ -125,7 +128,7 @@ StatusOr<Entry> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* 
                                   mysql::State* state) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStringRequest(req_packet));
 
-  Packet header_packet = resp_packets->front();
+  Packet& header_packet = resp_packets->front();
   if (IsErrPacket(header_packet)) {
     auto resp = HandleErrMessage(resp_packets);
     return Entry{CreateErrorJSON(req->msg(), resp->error_message()), MySQLEntryStatus::kErr,
@@ -144,7 +147,7 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
                                   mysql::State* state) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStmtExecuteRequest(req_packet, &state->prepare_events));
 
-  Packet first_packet = resp_packets->front();
+  Packet& first_packet = resp_packets->front();
 
   // Assuming that if corresponding StmtPrepare is not found, and the first response packet is
   // an error, client made a mistake, so we pop off the error response.
@@ -162,13 +165,11 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
 
   std::string error_message = "";
   if (IsOKPacket(first_packet)) {
-    auto resp = HandleOKMessage(resp_packets);
-
+    HandleOKMessage(resp_packets);
   } else if (IsErrPacket(first_packet)) {
     auto resp = HandleErrMessage(resp_packets);
 
     error_message = resp->error_message();
-
   } else {
     PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
   }
@@ -176,8 +177,7 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
   // TODO(chengruizhe): Write result set to entry.
   std::string filled_msg = CombinePrepareExecute(req.get(), &state->prepare_events);
   if (error_message == "") {
-    return Entry{CreateErrorJSON(filled_msg, error_message), MySQLEntryStatus::kOK,
-                 req_packet.timestamp_ns};
+    return Entry{CreateMessageJSON(filled_msg), MySQLEntryStatus::kOK, req_packet.timestamp_ns};
   } else {
     return Entry{CreateErrorJSON(filled_msg, error_message), MySQLEntryStatus::kErr,
                  req_packet.timestamp_ns};
@@ -192,7 +192,7 @@ StatusOr<Entry> StitchStmtClose(const Packet& req_packet, State* state) {
 StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStringRequest(req_packet));
 
-  Packet first_packet = resp_packets->front();
+  Packet& first_packet = resp_packets->front();
   if (IsOKPacket(first_packet)) {
     auto resp = HandleOKMessage(resp_packets);
 
@@ -206,7 +206,7 @@ StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_p
     PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
   }
 
-  return Entry{CreateErrorJSON(req->msg(), ""), MySQLEntryStatus::kOK, req_packet.timestamp_ns};
+  return Entry{CreateMessageJSON(req->msg()), MySQLEntryStatus::kOK, req_packet.timestamp_ns};
 }
 
 }  // namespace mysql

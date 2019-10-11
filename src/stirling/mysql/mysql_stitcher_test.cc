@@ -49,8 +49,8 @@ TEST_F(StitcherTest, TestStitchStmtPrepareErr) {
   EXPECT_EQ(iter2, state.prepare_events.end());
   Entry err_entry = s2.ValueOrDie();
 
-  Entry expected_err_entry{absl::StrCat("{\"Error\": \"This an error.\", \"Message\": \"",
-                                        testutils::kStmtPrepareRequest.msg(), "\"}"),
+  Entry expected_err_entry{absl::Substitute(R"({"Error": "$0", "Message": "$1"})", "This an error.",
+                                            testutils::kStmtPrepareRequest.msg()),
                            MySQLEntryStatus::kErr, 0};
 
   EXPECT_EQ(expected_err_entry, err_entry);
