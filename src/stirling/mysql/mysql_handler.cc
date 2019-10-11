@@ -158,7 +158,7 @@ StatusOr<std::unique_ptr<ErrResponse>> HandleErrMessage(std::deque<Packet>* resp
 
 StatusOr<std::unique_ptr<OKResponse>> HandleOKMessage(std::deque<Packet>* resp_packets) {
   resp_packets->pop_front();
-  return std::make_unique<OKResponse>(OKResponse());
+  return std::make_unique<OKResponse>();
 }
 
 StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets) {
@@ -169,7 +169,7 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
   int param_offset = 0;
   int num_col = ProcessLengthEncodedInt(packet.msg, &param_offset);
   if (num_col == 0) {
-    return error::Cancelled("Handle Resultset: num of column is 0.");
+    return error::Internal("HandleResultset(): num columns should never be 0.");
   }
 
   if (!IsResultsetComplete(num_col, *resp_packets)) {
@@ -270,12 +270,12 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
     }
   }
 
-  return std::make_unique<StmtPrepareOKResponse>(
-      StmtPrepareOKResponse(resp_header, std::move(col_defs), std::move(param_defs)));
+  return std::make_unique<StmtPrepareOKResponse>(resp_header, std::move(col_defs),
+                                                 std::move(param_defs));
 }
 
 StatusOr<std::unique_ptr<StringRequest>> HandleStringRequest(const Packet& req_packet) {
-  return std::make_unique<StringRequest>(StringRequest(req_packet.msg.substr(1)));
+  return std::make_unique<StringRequest>(req_packet.msg.substr(1));
 }
 
 StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
@@ -335,7 +335,7 @@ StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
     }
   }
   // If stmt_bound = 1, assume no params.
-  return std::make_unique<StmtExecuteRequest>(StmtExecuteRequest(stmt_id, std::move(params)));
+  return std::make_unique<StmtExecuteRequest>(stmt_id, std::move(params));
 }
 
 Status HandleStmtCloseRequest(const Packet& req_packet, std::map<int, ReqRespEvent>* prepare_map) {
