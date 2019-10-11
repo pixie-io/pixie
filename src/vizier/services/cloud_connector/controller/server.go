@@ -14,6 +14,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
+	cloud_connectorpb "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb"
 )
 
 const heartbeatIntervalS = 5 * time.Second
@@ -34,6 +35,7 @@ type Server struct {
 	clock         utils.Clock
 	quitCh        chan bool
 	vzInfo        VizierInfo
+	logCh         chan *cloud_connectorpb.TransferLogRequest
 }
 
 // NewServer creates GRPC handlers.
@@ -51,8 +53,9 @@ func NewServerWithClock(vizierID uuid.UUID, jwtSigningKey string, vzConnClient v
 		certMgrClient: certMgrClient,
 		hbSeqNum:      0,
 		clock:         clock,
-		quitCh:        make(chan bool),
 		vzInfo:        vzInfo,
+		quitCh:        make(chan bool),
+		logCh:         make(chan *cloud_connectorpb.TransferLogRequest),
 	}
 }
 
@@ -118,8 +121,8 @@ func (s *Server) StartStream() error {
 		return err
 	}
 
-	// Send heartbeats.
-	return s.doHeartbeats(stream)
+	// Send heartbeats and forward logs to vizier connector.
+	return s.DoHeartbeatsAndLogTransfer(stream)
 }
 
 func wrapRequest(p *types.Any, topic string) *vzconnpb.CloudConnectRequest {
@@ -186,17 +189,22 @@ func (s *Server) RegisterVizier(stream vzconnpb.VZConnService_CloudConnectClient
 	return err
 }
 
-func (s *Server) doHeartbeats(stream vzconnpb.VZConnService_CloudConnectClient) error {
+// DoHeartbeatsAndLogTransfer is responsible for executing the heartbeats and forwarding log messages to vzconn.
+func (s *Server) DoHeartbeatsAndLogTransfer(stream vzconnpb.VZConnService_CloudConnectClient) error {
 	for {
 		select {
 		case <-s.quitCh:
 			return nil
-		default:
+		case logMsg := <-s.logCh:
+			err := s.transferLogMsg(stream, logMsg)
+			if err != nil {
+				return err
+			}
+		case <-time.Tick(heartbeatIntervalS * time.Second):
 			err := s.HandleHeartbeat(stream)
 			if err != nil {
 				return err
 			}
-			time.Sleep(heartbeatIntervalS)
 		}
 	}
 }
@@ -299,7 +307,42 @@ func (s *Server) RequestAndHandleSSLCerts(stream vzconnpb.VZConnService_CloudCon
 	return nil
 }
 
+func (s *Server) transferLogMsg(stream vzconnpb.VZConnService_CloudConnectClient, logMsg *cloud_connectorpb.TransferLogRequest) error {
+	if logMsg == nil {
+		// Stream got closed
+		return nil
+	}
+	anyMsg, err := types.MarshalAny(logMsg)
+	if err != nil {
+		return err
+	}
+	wrappedReq := wrapRequest(anyMsg, "logs")
+	// Vzconn does not respond to log messages
+	if err := stream.Send(wrappedReq); err != nil {
+		return err
+	}
+	return nil
+}
+
+// TransferLog is a method necessary to implement cloud_connectorpb's service
+func (s *Server) TransferLog(stream cloud_connectorpb.CloudConnectorService_TransferLogServer) error {
+	req, err := stream.Recv()
+	if err == io.EOF {
+		log.Info("Stream ending")
+		stream.SendAndClose(&cloud_connectorpb.TransferLogResponse{
+			Ok: true,
+		})
+		return nil
+	} else if err != nil {
+		log.WithError(err).Info("Received error from TransferLog stream")
+		return err
+	}
+	s.logCh <- req
+	return nil
+}
+
 // Stop stops the server and ends the heartbeats.
 func (s *Server) Stop() {
+	close(s.logCh)
 	close(s.quitCh)
 }
