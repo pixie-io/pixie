@@ -15,9 +15,9 @@ namespace mysql {
  * MySQL Response can have one or more packets, so the functions pop off packets from the
  * deque as it parses the first packet.
  */
-StatusOr<std::unique_ptr<ErrResponse>> HandleErrMessage(std::deque<Packet>* resp_packets);
+std::unique_ptr<ErrResponse> HandleErrMessage(std::deque<Packet>* resp_packets);
 
-StatusOr<std::unique_ptr<OKResponse>> HandleOKMessage(std::deque<Packet>* resp_packets);
+std::unique_ptr<OKResponse> HandleOKMessage(std::deque<Packet>* resp_packets);
 
 StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets);
 

@@ -101,10 +101,9 @@ TEST_F(HandlerTest, TestHandleErrMessage) {
   std::deque<Packet> resp_packets;
   Packet packet = testutils::GenErr(expected_response);
   resp_packets.emplace_back(packet);
-  auto s = HandleErrMessage(&resp_packets);
-  EXPECT_TRUE(s.ok());
+  std::unique_ptr<ErrResponse> result_response = HandleErrMessage(&resp_packets);
+  ASSERT_NE(nullptr, result_response);
   ASSERT_THAT(resp_packets, SizeIs(0));
-  ErrResponse* result_response = s.ValueOrDie().get();
   EXPECT_EQ(expected_response, *result_response);
 }
 
@@ -112,8 +111,8 @@ TEST_F(HandlerTest, TestHandleOKMessage) {
   std::deque<Packet> resp_packets;
   Packet packet = testutils::GenOK();
   resp_packets.emplace_back(packet);
-  auto s = HandleOKMessage(&resp_packets);
-  EXPECT_TRUE(s.ok());
+  std::unique_ptr<OKResponse> ok_response = HandleOKMessage(&resp_packets);
+  EXPECT_NE(nullptr, ok_response);
 }
 
 TEST_F(HandlerTest, TestHandleResultset) {
@@ -122,7 +121,8 @@ TEST_F(HandlerTest, TestHandleResultset) {
     std::deque<Packet> packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
     auto s = HandleResultset(&packets);
     EXPECT_TRUE(s.ok());
-    auto result = s.ValueOrDie().get();
+    std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
+    ASSERT_NE(nullptr, result);
     EXPECT_EQ(testutils::kStmtExecuteResultset, *result);
   }
 
@@ -131,7 +131,8 @@ TEST_F(HandlerTest, TestHandleResultset) {
     std::deque<Packet> packets = testutils::GenResultset(testutils::kStmtExecuteResultset, true);
     auto s = HandleResultset(&packets);
     EXPECT_TRUE(s.ok());
-    auto result = s.ValueOrDie().get();
+    std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
+    ASSERT_NE(nullptr, result);
     EXPECT_EQ(testutils::kStmtExecuteResultset, *result);
   }
 }
@@ -140,7 +141,8 @@ TEST_F(HandlerTest, TestHandleStmtPrepareOKResponse) {
   std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
   auto s = HandleStmtPrepareOKResponse(&packets);
   EXPECT_TRUE(s.ok());
-  auto result_response = s.ValueOrDie().get();
+  std::unique_ptr<StmtPrepareOKResponse> result_response = s.ConsumeValueOrDie();
+  ASSERT_NE(nullptr, result_response);
   EXPECT_EQ(testutils::kStmtPrepareResponse, *result_response);
 }
 
@@ -152,7 +154,8 @@ TEST_F(HandlerTest, TestHandleStmtExecuteRequest) {
   prepare_map.emplace(stmt_id, std::move(e));
   auto s = HandleStmtExecuteRequest(req_packet, &prepare_map);
   EXPECT_TRUE(s.ok());
-  auto result_request = s.ValueOrDie().get();
+  std::unique_ptr<StmtExecuteRequest> result_request = s.ConsumeValueOrDie();
+  ASSERT_NE(nullptr, result_request);
   EXPECT_EQ(testutils::kStmtExecuteRequest, *result_request);
 }
 
@@ -161,7 +164,8 @@ TEST_F(HandlerTest, TestHandleStringRequest) {
       testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
   auto s = HandleStringRequest(req_packet);
   EXPECT_TRUE(s.ok());
-  auto result_request = s.ValueOrDie().get();
+  std::unique_ptr<StringRequest> result_request = s.ConsumeValueOrDie();
+  ASSERT_NE(nullptr, result_request);
   EXPECT_EQ(testutils::kStmtPrepareRequest, *result_request);
 }
 

@@ -144,25 +144,27 @@ bool IsResultsetComplete(int num_col, const std::deque<Packet>& resp_packets) {
 // Message Level Functions
 //-----------------------------------------------------------------------------
 
-// TODO(chengruizhe): Move resp_packets->pop_front() out to the caller function and remove the arg.
-StatusOr<std::unique_ptr<ErrResponse>> HandleErrMessage(std::deque<Packet>* resp_packets) {
+std::unique_ptr<ErrResponse> HandleErrMessage(std::deque<Packet>* resp_packets) {
+  DCHECK(!resp_packets->empty());
   Packet packet = resp_packets->front();
   int error_code = utils::LEStrToInt(packet.msg.substr(1, 2));
   // TODO(chengruizhe): Assuming CLIENT_PROTOCOL_41 here. Make it more robust.
   // "\xff" + error_code[2] + sql_state_marker[1] + sql_state[5] (CLIENT_PROTOCOL_41) = 9
   // https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html
   std::string err_message = packet.msg.substr(9);
+
   resp_packets->pop_front();
-  return std::make_unique<ErrResponse>(ErrResponse(error_code, std::move(err_message)));
+  return std::make_unique<ErrResponse>(error_code, std::move(err_message));
 }
 
-StatusOr<std::unique_ptr<OKResponse>> HandleOKMessage(std::deque<Packet>* resp_packets) {
+std::unique_ptr<OKResponse> HandleOKMessage(std::deque<Packet>* resp_packets) {
+  DCHECK(!resp_packets->empty());
   resp_packets->pop_front();
   return std::make_unique<OKResponse>();
 }
 
 StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets) {
-  ECHECK(!resp_packets->empty());
+  DCHECK(!resp_packets->empty());
 
   Packet packet = resp_packets->front();
 
@@ -217,6 +219,7 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
 
 StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
     std::deque<Packet>* resp_packets) {
+  DCHECK(!resp_packets->empty());
   Packet packet = resp_packets->front();
   LOG_IF(DFATAL, packet.msg.size() != 12)
       << "StmtPrepareOK response package message size must be 12.";
@@ -342,7 +345,7 @@ Status HandleStmtCloseRequest(const Packet& req_packet, std::map<int, ReqRespEve
   int stmt_id = utils::LEStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
   auto iter = prepare_map->find(stmt_id);
   if (iter == prepare_map->end()) {
-    return error::Cancelled("Can not find Stmt Prepare Event to close.");
+    return error::Cancelled("Cannot find Stmt Prepare Event to close [stmt_id=$0].", stmt_id);
   }
   prepare_map->erase(iter);
   return Status::OK();

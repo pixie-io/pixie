@@ -127,7 +127,7 @@ StatusOr<Entry> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* 
 
   Packet header_packet = resp_packets->front();
   if (IsErrPacket(header_packet)) {
-    PL_ASSIGN_OR_RETURN(auto resp, HandleErrMessage(resp_packets));
+    auto resp = HandleErrMessage(resp_packets);
     return Entry{CreateErrorJSON(req->msg(), resp->error_message()), MySQLEntryStatus::kErr,
                  req_packet.timestamp_ns};
 
@@ -150,7 +150,7 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
   // an error, client made a mistake, so we pop off the error response.
   if (req->stmt_id() == -1) {
     if (IsErrPacket(first_packet)) {
-      PL_ASSIGN_OR_RETURN(auto resp, HandleErrMessage(resp_packets));
+      auto resp = HandleErrMessage(resp_packets);
       std::string error_msg = absl::Substitute(R"({"Error": "$0"})", resp->error_message());
       return Entry{error_msg, MySQLEntryStatus::kErr, req_packet.timestamp_ns};
     } else {
@@ -162,10 +162,10 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
 
   std::string error_message = "";
   if (IsOKPacket(first_packet)) {
-    PL_ASSIGN_OR_RETURN(auto resp, HandleOKMessage(resp_packets));
+    auto resp = HandleOKMessage(resp_packets);
 
   } else if (IsErrPacket(first_packet)) {
-    PL_ASSIGN_OR_RETURN(auto resp, HandleErrMessage(resp_packets));
+    auto resp = HandleErrMessage(resp_packets);
 
     error_message = resp->error_message();
 
@@ -194,10 +194,10 @@ StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_p
 
   Packet first_packet = resp_packets->front();
   if (IsOKPacket(first_packet)) {
-    PL_ASSIGN_OR_RETURN(auto resp, HandleOKMessage(resp_packets));
+    auto resp = HandleOKMessage(resp_packets);
 
   } else if (IsErrPacket(first_packet)) {
-    PL_ASSIGN_OR_RETURN(auto resp, HandleErrMessage(resp_packets));
+    auto resp = HandleErrMessage(resp_packets);
     return Entry{CreateErrorJSON(req->msg(), resp->error_message()), MySQLEntryStatus::kErr,
                  req_packet.timestamp_ns};
 
