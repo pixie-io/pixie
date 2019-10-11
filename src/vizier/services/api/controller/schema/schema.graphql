@@ -40,10 +40,26 @@ type DataTable {
   data: String!
 }
 
+type QueryErrors {
+  compilerError: CompilerErrors
+}
+
+type CompilerErrors {
+  msg: String
+  lineColErrors: [LineColError]
+}
+
 # The result of a query.
 type QueryResult {
   id: ID!
   table: DataTable
+  error: QueryErrors
+}
+
+type LineColError {
+  line: Int!
+  col: Int!
+  msg: String!
 }
 
 # Information about the host machine.

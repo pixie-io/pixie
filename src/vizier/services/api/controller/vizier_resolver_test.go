@@ -5,14 +5,19 @@ import (
 	"testing"
 	"time"
 
+	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
+
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/errors"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 	uuid "github.com/satori/go.uuid"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	qrpb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
@@ -224,6 +229,178 @@ func TestVizierExecuteQuery(t *testing.T) {
 			},
 		},
 	})
+	resp.QueryID = upb
+	resp.Status = &statuspb.Status{}
+	env.client.EXPECT().
+		ExecuteQuery(gomock.Any(), gomock.Any()).
+		Return(&resp, nil).
+		AnyTimes()
+
+	gqlSchema := LoadSchema(env)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					ExecuteQuery(queryStr: "the_query") {
+						id
+						table {
+							relation {
+								colNames
+								colTypes
+							}
+							data
+						}
+						error {
+							compilerError{
+								msg
+								lineColErrors {
+									line
+									col
+									msg
+								}
+							}
+						}
+					}
+				}`,
+			ExpectedResult: `
+				{
+				   "ExecuteQuery":{
+					  "id":"65294d6a-6ceb-48a7-96b0-9a1eb7d467cb",
+					  "table":{
+						 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"scolE\",\"columnType\":\"BOOLEAN\"},{\"columnName\":\"scolI\",\"columnType\":\"STRING\"}]},\"rowBatches\":[{\"cols\":[{\"stringData\":{\"data\":[\"hello\",\"test\"]}}]}]}",
+						 "relation":{
+							"colNames":[
+							   "scolE",
+							   "scolI"
+							],
+							"colTypes":[
+							   "BOOLEAN",
+							   "STRING"
+							]
+						 }
+					  },
+					  "error":{
+							"compilerError": null 
+						}
+				  }
+				}
+				`,
+		},
+	})
+}
+
+// Makes sure that the api server can handle compiler errors.
+func TestVizierExecuteQueryFailedCompilation(t *testing.T) {
+	// TODO add a test that fails without line column errors.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	env := NewFakeAPIEnv(ctrl)
+	ctx := CreateTestContext()
+
+	resp := service.VizierQueryResponse{}
+	u, _ := uuid.FromString("65294d6a-6ceb-48a7-96b0-9a1eb7d467cb")
+	upb := utils.ProtoFromUUID(&u)
+	statusContext, err := types.MarshalAny(&compilerpb.CompilerErrorGroup{
+		Errors: []*compilerpb.CompilerError{
+			&compilerpb.CompilerError{
+				Error: &compilerpb.CompilerError_LineColError{
+					&compilerpb.LineColError{
+						Line:    10,
+						Column:  54,
+						Message: "Missing table",
+					},
+				},
+			},
+		},
+	})
+	resp.QueryID = upb
+
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+
+	resp.Status = &statuspb.Status{
+		ErrCode: statuspb.INVALID_ARGUMENT,
+		Context: statusContext}
+
+	env.client.EXPECT().
+		ExecuteQuery(gomock.Any(), gomock.Any()).
+		Return(&resp, nil).
+		AnyTimes()
+
+	gqlSchema := LoadSchema(env)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					ExecuteQuery(queryStr: "the_query") {
+					  id
+					  table {
+							relation {
+								colNames
+								colTypes
+							}
+							data
+					  }
+					  error{
+					    compilerError {
+								msg
+								lineColErrors {
+									line
+									col
+									msg
+								}
+							}
+					  }
+					}
+				}`,
+			ExpectedResult: `
+			{
+				"ExecuteQuery":{
+					"id":"65294d6a-6ceb-48a7-96b0-9a1eb7d467cb",
+					"table": null,
+					"error": {
+						"compilerError": {
+							"msg": "", 
+							"lineColErrors": [
+								{ 
+									"line": 10,
+									"col": 54,
+									"msg": "Missing table"
+								}
+							]
+						}
+					}
+				}
+			}
+			`,
+		},
+	})
+}
+
+// Makes sure that the api server can handle compiler errors that don't have line, col errors.
+func TestVizierExecuteQueryFailedCompilationNoContextObj(t *testing.T) {
+	// TODO add a test that fails without line column errors.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	env := NewFakeAPIEnv(ctrl)
+	ctx := CreateTestContext()
+
+	resp := service.VizierQueryResponse{}
+	u, _ := uuid.FromString("65294d6a-6ceb-48a7-96b0-9a1eb7d467cb")
+	upb := utils.ProtoFromUUID(&u)
+	resp.QueryID = upb
+
+	resp.Status = &statuspb.Status{
+		ErrCode: statuspb.INVALID_ARGUMENT,
+		Msg:     "Missing UDF"}
+
 	env.client.EXPECT().
 		ExecuteQuery(gomock.Any(), gomock.Any()).
 		Return(&resp, nil).
@@ -245,28 +422,32 @@ func TestVizierExecuteQuery(t *testing.T) {
 						}
 						data
 					  }
+						error {
+							compilerError{
+								msg
+								lineColErrors {
+									line
+									col
+									msg
+								}
+							}
+						}
 					}
 				}`,
 			ExpectedResult: `
-				{
-				   "ExecuteQuery":{
-					  "id":"65294d6a-6ceb-48a7-96b0-9a1eb7d467cb",
-					  "table":{
-						 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"scolE\",\"columnType\":\"BOOLEAN\"},{\"columnName\":\"scolI\",\"columnType\":\"STRING\"}]},\"rowBatches\":[{\"cols\":[{\"stringData\":{\"data\":[\"hello\",\"test\"]}}]}]}",
-						 "relation":{
-							"colNames":[
-							   "scolE",
-							   "scolI"
-							],
-							"colTypes":[
-							   "BOOLEAN",
-							   "STRING"
-							]
-						 }
-					  }
-				   }
+			{
+				"ExecuteQuery":{
+					"id":"65294d6a-6ceb-48a7-96b0-9a1eb7d467cb",
+					"table": null,
+					"error": {
+						"compilerError": {
+							"msg": "Missing UDF", 
+							"lineColErrors": null
+						}
+					}
 				}
-				`,
+			}
+			`,
 		},
 	})
 }

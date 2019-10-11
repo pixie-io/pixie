@@ -12,7 +12,10 @@ import "bytes"
 func MustLoadSchema() string {
 	buf := bytes.Buffer{}
 	for _, name := range AssetNames() {
-		b := MustAsset(name)
+		b, err := Asset(name)
+		if err != nil {
+			panic(err)
+		}
 		buf.Write(b)
 
 		// Add a newline if the file does not end in a newline.

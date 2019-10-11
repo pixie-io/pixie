@@ -49,6 +49,7 @@ export interface GQLMutation {
 export interface GQLQueryResult {
   id: string;
   table?: GQLDataTable;
+  error?: GQLQueryErrors;
 }
 
 export interface GQLDataTable {
@@ -69,7 +70,214 @@ export enum GQLDataColTypes {
   STRING = 'STRING'
 }
 
+export interface GQLQueryErrors {
+  compilerError?: GQLCompilerErrors;
+}
+
+export interface GQLCompilerErrors {
+  msg?: string;
+  lineColErrors?: Array<GQLLineColError | null>;
+}
+
+export interface GQLLineColError {
+  line: number;
+  col: number;
+  msg: string;
+}
+
 export interface GQLInt64 {
   l: number;
   h: number;
+}
+
+/*********************************
+ *                               *
+ *         TYPE RESOLVERS        *
+ *                               *
+ *********************************/
+/**
+ * This interface define the shape of your resolver
+ * Note that this type is designed to be compatible with graphql-tools resolvers
+ * However, you can still use other generated interfaces to make your resolver type-safed
+ */
+export interface GQLResolver {
+  Query?: GQLQueryTypeResolver;
+  VizierInfo?: GQLVizierInfoTypeResolver;
+  AgentStatus?: GQLAgentStatusTypeResolver;
+  AgentInfo?: GQLAgentInfoTypeResolver;
+  HostInfo?: GQLHostInfoTypeResolver;
+  Mutation?: GQLMutationTypeResolver;
+  QueryResult?: GQLQueryResultTypeResolver;
+  DataTable?: GQLDataTableTypeResolver;
+  DataTableRelation?: GQLDataTableRelationTypeResolver;
+  QueryErrors?: GQLQueryErrorsTypeResolver;
+  CompilerErrors?: GQLCompilerErrorsTypeResolver;
+  LineColError?: GQLLineColErrorTypeResolver;
+  Int64?: GQLInt64TypeResolver;
+}
+export interface GQLQueryTypeResolver<TParent = any> {
+  vizier?: QueryToVizierResolver<TParent>;
+}
+
+export interface QueryToVizierResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLVizierInfoTypeResolver<TParent = any> {
+  agents?: VizierInfoToAgentsResolver<TParent>;
+}
+
+export interface VizierInfoToAgentsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLAgentStatusTypeResolver<TParent = any> {
+  info?: AgentStatusToInfoResolver<TParent>;
+  lastHeartbeatMs?: AgentStatusToLastHeartbeatMsResolver<TParent>;
+  uptimeS?: AgentStatusToUptimeSResolver<TParent>;
+  state?: AgentStatusToStateResolver<TParent>;
+}
+
+export interface AgentStatusToInfoResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AgentStatusToLastHeartbeatMsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AgentStatusToUptimeSResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AgentStatusToStateResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLAgentInfoTypeResolver<TParent = any> {
+  id?: AgentInfoToIdResolver<TParent>;
+  hostInfo?: AgentInfoToHostInfoResolver<TParent>;
+}
+
+export interface AgentInfoToIdResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AgentInfoToHostInfoResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLHostInfoTypeResolver<TParent = any> {
+  hostname?: HostInfoToHostnameResolver<TParent>;
+}
+
+export interface HostInfoToHostnameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLMutationTypeResolver<TParent = any> {
+  ExecuteQuery?: MutationToExecuteQueryResolver<TParent>;
+}
+
+export interface MutationToExecuteQueryArgs {
+  queryStr?: string;
+}
+export interface MutationToExecuteQueryResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToExecuteQueryArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLQueryResultTypeResolver<TParent = any> {
+  id?: QueryResultToIdResolver<TParent>;
+  table?: QueryResultToTableResolver<TParent>;
+  error?: QueryResultToErrorResolver<TParent>;
+}
+
+export interface QueryResultToIdResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryResultToTableResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryResultToErrorResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLDataTableTypeResolver<TParent = any> {
+  relation?: DataTableToRelationResolver<TParent>;
+  data?: DataTableToDataResolver<TParent>;
+}
+
+export interface DataTableToRelationResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface DataTableToDataResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLDataTableRelationTypeResolver<TParent = any> {
+  colNames?: DataTableRelationToColNamesResolver<TParent>;
+  colTypes?: DataTableRelationToColTypesResolver<TParent>;
+}
+
+export interface DataTableRelationToColNamesResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface DataTableRelationToColTypesResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLQueryErrorsTypeResolver<TParent = any> {
+  compilerError?: QueryErrorsToCompilerErrorResolver<TParent>;
+}
+
+export interface QueryErrorsToCompilerErrorResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLCompilerErrorsTypeResolver<TParent = any> {
+  msg?: CompilerErrorsToMsgResolver<TParent>;
+  lineColErrors?: CompilerErrorsToLineColErrorsResolver<TParent>;
+}
+
+export interface CompilerErrorsToMsgResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface CompilerErrorsToLineColErrorsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLLineColErrorTypeResolver<TParent = any> {
+  line?: LineColErrorToLineResolver<TParent>;
+  col?: LineColErrorToColResolver<TParent>;
+  msg?: LineColErrorToMsgResolver<TParent>;
+}
+
+export interface LineColErrorToLineResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface LineColErrorToColResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface LineColErrorToMsgResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLInt64TypeResolver<TParent = any> {
+  l?: Int64ToLResolver<TParent>;
+  h?: Int64ToHResolver<TParent>;
+}
+
+export interface Int64ToLResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface Int64ToHResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }

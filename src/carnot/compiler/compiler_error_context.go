@@ -22,3 +22,9 @@ func GetCompilerErrorContext(status *statuspb.Status, errorPB *pb.CompilerErrorG
 	}
 	return types.UnmarshalAny(context, errorPB)
 }
+
+// HasContext returns true whether status has context or not.
+func HasContext(status *statuspb.Status) bool {
+	context := status.GetContext()
+	return context != nil
+}

@@ -11,7 +11,11 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/graph-gophers/graphql-go"
 	uuid "github.com/satori/go.uuid"
+
+	"pixielabs.ai/pixielabs/src/carnot/compiler"
+	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	qrpb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
@@ -31,14 +35,66 @@ type executeQueryArgs struct {
 	QueryStr *string
 }
 
+func makeLineColError(errorPB *compilerpb.LineColError) *LineColError {
+	if errorPB == nil {
+		return nil
+	}
+	newError := &LineColError{
+		Line: int32(errorPB.Line),
+		Col:  int32(errorPB.Column),
+		Msg:  errorPB.Message,
+	}
+	return newError
+
+}
+
+func makeErrorFromStatus(status *statuspb.Status) (*QueryError, error) {
+	queryError := new(QueryError)
+	compilerError := new(CompilerError)
+	compilerError.Msg = &status.Msg
+	queryError.CompilerError = compilerError
+	if !compiler.HasContext(status) {
+		return queryError, nil
+	}
+
+	// Convert the LineCol
+	compilerErrorGroupPB := new(compilerpb.CompilerErrorGroup)
+	compiler.GetCompilerErrorContext(status, compilerErrorGroupPB)
+
+	lineColErrsArr := make([]*LineColError, len(compilerErrorGroupPB.Errors))
+	compilerError.LineColErrors = &lineColErrsArr
+	for i, errorPB := range compilerErrorGroupPB.Errors {
+		(*compilerError.LineColErrors)[i] = makeLineColError(errorPB.GetLineColError())
+	}
+
+	return queryError, nil
+}
+
 // ExecuteQuery executes a query on vizier.
 func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs) (*QueryResultResolver, error) {
 	client := q.Env.QueryBrokerClient()
+	// TODO(michelle/zasgar) is there any reason we don't have a query id here? Might as well start it off somewhere here instead of down the line.
 	req := qbpb.QueryRequest{QueryStr: *args.QueryStr}
 
 	resp, err := client.ExecuteQuery(ctx, &req)
 	if err != nil {
 		return nil, err
+	}
+	returnedQueryID := resp.QueryID
+
+	u, err := utils.UUIDFromProto(returnedQueryID)
+	if err != nil {
+		return nil, err
+	}
+
+	// If there's a compiler error, we need to do something about it.
+	if resp.Status.ErrCode != statuspb.OK {
+		queryError, err := makeErrorFromStatus(resp.Status)
+		if err != nil {
+			return nil, err
+		}
+		errorResult := &QueryResultResolver{u, &qrpb.QueryResult{}, queryError}
+		return errorResult, nil
 	}
 
 	// Find the response with the most data.
@@ -60,13 +116,8 @@ func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs
 		return nil, errors.New("no results were returned")
 	}
 
-	returnedQueryID := resp.Responses[0].Response.QueryID
-	u, err := utils.UUIDFromProto(returnedQueryID)
-	if err != nil {
-		return nil, err
-	}
 	// Always return response from first agent.
-	return &QueryResultResolver{u, maxQR}, nil
+	return &QueryResultResolver{u, maxQR, &QueryError{}}, nil
 }
 
 /**
@@ -162,6 +213,25 @@ func (h *HostInfoResolver) Hostname() *string {
 type QueryResultResolver struct {
 	QueryID uuid.UUID
 	Result  *qrpb.QueryResult
+	Error   *QueryError
+}
+
+// QueryError contains all possible errors that aren't system breaking in the query.
+type QueryError struct {
+	CompilerError *CompilerError
+}
+
+// CompilerError contains the accumulated information about compiler errors.
+type CompilerError struct {
+	Msg           *string
+	LineColErrors *[]*LineColError
+}
+
+// LineColError is a line column error.
+type LineColError struct {
+	Line int32
+	Col  int32
+	Msg  string
 }
 
 // ID returns the ID of the query (as string).
@@ -172,6 +242,9 @@ func (q *QueryResultResolver) ID() graphql.ID {
 // Table returns a resolver for a table. Selects first returned table.
 func (q *QueryResultResolver) Table() *QueryResultTableResolver {
 	// Always select first table.
+	if len(q.Result.Tables) == 0 {
+		return nil
+	}
 	selectedTable := q.Result.Tables[0]
 	names := []string{}
 	types := []string{}
