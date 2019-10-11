@@ -77,7 +77,7 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
         e = StitchStmtClose(req_packet, state);
         break;
       case MySQLEventType::kQuery:
-        e = StitchQuery(req_packet, resp_packets, state);
+        e = StitchQuery(req_packet, resp_packets);
         break;
       case MySQLEventType::kSleep:
       case MySQLEventType::kQuit:
@@ -170,7 +170,7 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
     error_message = resp->error_message();
 
   } else {
-    PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets, state));
+    PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
   }
 
   // TODO(chengruizhe): Write result set to entry.
@@ -189,8 +189,7 @@ StatusOr<Entry> StitchStmtClose(const Packet& req_packet, State* state) {
   return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
 }
 
-StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                            mysql::State* state) {
+StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStringRequest(req_packet));
 
   Packet first_packet = resp_packets->front();
@@ -204,7 +203,7 @@ StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_p
 
   } else {
     // TODO(chengruizhe): Write result set to entry.
-    PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets, state));
+    PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
   }
 
   return Entry{CreateErrorJSON(req->msg(), ""), MySQLEntryStatus::kOK, req_packet.timestamp_ns};

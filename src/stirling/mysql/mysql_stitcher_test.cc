@@ -99,8 +99,7 @@ TEST_F(StitcherTest, TestStitchQuery) {
 
   std::deque<Packet> resultset = testutils::GenResultset(testutils::kQueryResultset);
 
-  State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
-  auto s1 = StitchQuery(req, &resultset, &state);
+  auto s1 = StitchQuery(req, &resultset);
   EXPECT_TRUE(s1.ok());
   Entry resultset_entry = s1.ValueOrDie();
 

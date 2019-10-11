@@ -41,16 +41,6 @@ bool IsOKPacket(const Packet& packet) {
   return packet.msg[0] == static_cast<char>(kRespHeaderOK);
 }
 
-// TODO(chengruizhe): Since currently we don't intercept/store user capability flags, we don't know
-// if e.g. CLIENT_DEPRECATE_EOF is set. So we pop off an EOF packet if there is one, and do nothing
-// if there isn't one. https://dev.mysql.com/doc/internals/en/capability-flags.html
-void ProcessEOFPacket(std::deque<Packet>* resp_packets) {
-  Packet eof_packet = resp_packets->front();
-  if (IsEOFPacket(eof_packet)) {
-    resp_packets->pop_front();
-  }
-}
-
 }  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

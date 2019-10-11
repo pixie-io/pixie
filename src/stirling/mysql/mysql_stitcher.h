@@ -36,8 +36,7 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
 
 StatusOr<Entry> StitchStmtClose(const Packet& req_packet, mysql::State* state);
 
-StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                            mysql::State* state);
+StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets);
 
 }  // namespace mysql
 }  // namespace stirling

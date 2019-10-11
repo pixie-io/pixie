@@ -102,58 +102,40 @@ void DissectUnknownParam(const std::string_view msg, int* param_offset, ParamPac
 }
 
 /**
+ * This functions checks if the resultset is complete (has all its packets).
  * @param num_col number of columns expected (parsed from header packet)
  * @param resp_packets deque of response packets to be checked
- * @param client_deprecate_eof_status whether client_deprecate_eof flag is set
- * This functions checks if the resultset is complete.
  */
-Status CheckResultsetComplete(int num_col, std::deque<Packet>* resp_packets,
-                              const FlagStatus& client_deprecate_eof_status) {
-  bool client_deprecate_eof = client_deprecate_eof_status == FlagStatus::kSet;
-  size_t expected_length = 1 + num_col + (client_deprecate_eof ? 0 : 1);
-  if (resp_packets->size() < expected_length) {
-    return error::Cancelled(
-        "Handle Resultset: Not enough column definitions. Incomplete resultset.");
+bool IsResultsetComplete(int num_col, const std::deque<Packet>& resp_packets) {
+  // A resultset has:
+  //  1             column_count packet
+  //  column_count  column definition packets
+  //  0 or 1        EOF packet (if CLIENT_DEPRECATE_EOF is false)
+  //  1+            ResultsetRow packets
+  //  1             OK or EOF packet
+
+  // Must have at least the minimum number of packets in a response.
+  if (resp_packets.size() < static_cast<size_t>(3 + num_col)) {
+    return false;
   }
 
-  bool is_complete = false;
+  size_t pos = 1 + num_col;
+
+  // Now check for extra EOF packet.
+  if (IsEOFPacket(resp_packets[pos])) {
+    ++pos;
+  }
 
   // If it errors, an Err packet follows one or more resultset row packets.
-  // If it doesn't error, in order to check if resultset is complete, we check that an EOF
-  // packet exists after these packets. If client_deprecate_eof is set then an Ok is present.
-  for (Packet p : *resp_packets) {
-    bool ok_or_eof = client_deprecate_eof ? IsOKPacket(p) : IsEOFPacket(p);
-    if (ok_or_eof || IsErrPacket(p)) {
-      is_complete = true;
-      break;
+  // Otherwise, search for an EOF packet or OK packet (depending on client_deprecate_eof).
+  for (size_t i = pos; i < resp_packets.size(); ++i) {
+    const Packet& p = resp_packets[i];
+
+    if (IsEOFPacket(p) || IsOKPacket(p) || IsErrPacket(p)) {
+      return true;
     }
   }
-  if (!is_complete) {
-    return error::Cancelled(
-        "Handle Resultset: missing EOF after resultset rows. Incomplete resultset.");
-  }
-  return Status::OK();
-}
-
-/**
- * @param num_col number of columns expected (parsed from header packet)
- * @param resp_packets deque of response packets to be checked
- * @param state
- */
-Status InferClientDeprecateEOF(int num_col, std::deque<Packet>* resp_packets,
-                               FlagStatus* client_deprecate_eof_status) {
-  size_t expected_length = 2 + num_col;
-  if (resp_packets->size() < expected_length) {
-    return error::Cancelled(
-        "Handle Resultset: Not enough column definitions. Incomplete resultset.");
-  }
-
-  if (IsEOFPacket((*resp_packets)[num_col + 1])) {
-    *client_deprecate_eof_status = FlagStatus::kNotSet;
-  } else {
-    *client_deprecate_eof_status = FlagStatus::kSet;
-  }
-  return Status::OK();
+  return false;
 }
 
 }  // namespace
@@ -179,8 +161,9 @@ StatusOr<std::unique_ptr<OKResponse>> HandleOKMessage(std::deque<Packet>* resp_p
   return std::make_unique<OKResponse>(OKResponse());
 }
 
-StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets,
-                                                     State* state) {
+StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets) {
+  ECHECK(!resp_packets->empty());
+
   Packet packet = resp_packets->front();
 
   int param_offset = 0;
@@ -189,13 +172,9 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
     return error::Cancelled("Handle Resultset: num of column is 0.");
   }
 
-  if (state->client_deprecate_eof == FlagStatus::kUnknown) {
-    PL_RETURN_IF_ERROR(
-        InferClientDeprecateEOF(num_col, resp_packets, &state->client_deprecate_eof));
+  if (!IsResultsetComplete(num_col, *resp_packets)) {
+    return std::unique_ptr<Resultset>(nullptr);
   }
-  // header + col * n + eof(if n != 0 && !CLIENT_DEPRECATE_EOF) + result_set_row * m + eof(if
-  // !CLIENT_DEPRECATE_EOF else ok)
-  PL_RETURN_IF_ERROR(CheckResultsetComplete(num_col, resp_packets, state->client_deprecate_eof));
 
   // Pops header packet
   resp_packets->pop_front();
@@ -211,15 +190,16 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
     resp_packets->pop_front();
   }
 
-  ProcessEOFPacket(resp_packets);
+  // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
+  if (IsEOFPacket(resp_packets->front())) {
+    resp_packets->pop_front();
+  }
 
   std::vector<ResultsetRow> results;
-  auto isLastPacket = [state, resp_packets](const Packet& p) {
-    if (IsErrPacket(p)) {
-      return true;
-    }
-    return state->client_deprecate_eof == FlagStatus::kSet ? IsOKPacket(resp_packets->front())
-                                                           : IsEOFPacket(resp_packets->front());
+
+  auto isLastPacket = [](const Packet& p) {
+    // Depending on CLIENT_DEPRECATE_EOF, we may either get an OK or EOF packet.
+    return IsErrPacket(p) || IsOKPacket(p) || IsEOFPacket(p);
   };
 
   while (!isLastPacket(resp_packets->front())) {
@@ -269,10 +249,11 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
   }
 
   if (num_param != 0) {
-    LOG_IF(DFATAL, !IsEOFPacket(resp_packets->front()))
-        << "The first packet in response must be EOF.";
+    // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
+    if (IsEOFPacket(resp_packets->front())) {
+      resp_packets->pop_front();
+    }
   }
-  ProcessEOFPacket(resp_packets);
 
   std::vector<ColDefinition> col_defs;
   for (size_t i = 0; i < num_col; ++i) {
@@ -283,10 +264,11 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
   }
 
   if (num_col != 0) {
-    LOG_IF(DFATAL, !IsEOFPacket(resp_packets->front()))
-        << "The first packet in response must be EOF.";
+    // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
+    if (IsEOFPacket(resp_packets->front())) {
+      resp_packets->pop_front();
+    }
   }
-  ProcessEOFPacket(resp_packets);
 
   return std::make_unique<StmtPrepareOKResponse>(
       StmtPrepareOKResponse(resp_header, std::move(col_defs), std::move(param_defs)));
