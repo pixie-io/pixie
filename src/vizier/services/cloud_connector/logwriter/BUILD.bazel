@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["logwriter.go"],
+    importpath = "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/logwriter",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//src/vizier/services/cloud_connector/cloud_connectorpb:service_pl_go_proto",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["logwriter_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//src/vizier/services/cloud_connector/cloud_connectorpb:service_pl_go_proto",
+        "//src/vizier/services/cloud_connector/cloud_connectorpb/mock:go_default_library",
+        "@com_github_golang_mock//gomock:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
+)
