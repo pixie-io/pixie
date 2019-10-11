@@ -564,6 +564,20 @@ def buildScriptForCommits = {
       stage('Build Steps') {
         parallel(builders)
       }
+
+      // Only run the cloud deploy build on master run.
+      if (isMasterRun) {
+        stage('Create cloud artifacts') {
+          deleteDir()
+          WithSourceCode {
+            dockerStep('', devDockerImageExtrasWithTag) {
+                sh './scripts/ci_build_cloud_artifacts.sh'
+                archiveArtifacts "manifest.json"
+            }
+          }
+        }
+      }
+
       stage('Archive') {
         deleteDir()
         // Unstash the build artifacts.
@@ -699,9 +713,8 @@ def buildScriptForNightlyTestRegression = {
   }
 }
 
-if (isNightlyDeployRun) {
-  buildScriptForNightly()
-} else if(isNightlyTestRegressionRun) {
+
+if(isNightlyTestRegressionRun) {
   // Disable retries for regression run.
   JENKINS_RETRIES=1
   buildScriptForNightlyTestRegression()
