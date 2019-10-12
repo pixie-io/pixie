@@ -1,9 +1,0 @@
-# We need an IP for this so we can contact it directly
-# at cloud.nightly.withpixie.dev. WE need this since the internal
-# load balancer can't route both GRPC and HTTP traffic.
-apiVersion: v1
-kind: Service
-metadata:
-  name: vzconn-service
-spec:
-  loadBalancerIP: 10.32.0.116
