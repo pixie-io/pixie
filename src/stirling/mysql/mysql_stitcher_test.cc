@@ -11,13 +11,11 @@ namespace pl {
 namespace stirling {
 namespace mysql {
 
-class StitcherTest : public ::testing::Test {};
-
 bool operator==(const Entry& lhs, const Entry& rhs) {
   return lhs.msg == rhs.msg && lhs.status == rhs.status;
 }
 
-TEST_F(StitcherTest, TestProcessStmtPrepareOK) {
+TEST(StitcherTest, TestProcessStmtPrepareOK) {
   // Test setup.
   Packet req =
       testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
@@ -38,7 +36,7 @@ TEST_F(StitcherTest, TestProcessStmtPrepareOK) {
   EXPECT_EQ(entries.size(), 0);
 }
 
-TEST_F(StitcherTest, TestProcessStmtPrepareErr) {
+TEST(StitcherTest, TestProcessStmtPrepareErr) {
   // Test setup.
   Packet req =
       testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
@@ -65,7 +63,7 @@ TEST_F(StitcherTest, TestProcessStmtPrepareErr) {
   EXPECT_EQ(expected_err_entry, err_entry);
 }
 
-TEST_F(StitcherTest, TestProcessStmtExecute) {
+TEST(StitcherTest, TestProcessStmtExecute) {
   // Test setup.
   Packet req = testutils::GenStmtExecuteRequest(testutils::kStmtExecuteRequest);
   int stmt_id = testutils::kStmtExecuteRequest.stmt_id();
@@ -92,7 +90,7 @@ TEST_F(StitcherTest, TestProcessStmtExecute) {
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
 
-TEST_F(StitcherTest, TestProcessStmtClose) {
+TEST(StitcherTest, TestProcessStmtClose) {
   // Test setup.
   Packet req = testutils::GenStmtCloseRequest(testutils::kStmtCloseRequest);
   int stmt_id = testutils::kStmtCloseRequest.stmt_id();
@@ -111,7 +109,7 @@ TEST_F(StitcherTest, TestProcessStmtClose) {
   EXPECT_EQ(0, entries.size());
 }
 
-TEST_F(StitcherTest, TestProcessQuery) {
+TEST(StitcherTest, TestProcessQuery) {
   // Test setup.
   Packet req = testutils::GenStringRequest(testutils::kQueryRequest, MySQLEventType::kQuery);
   std::deque<Packet> resultset = testutils::GenResultset(testutils::kQueryResultset);
@@ -130,7 +128,7 @@ TEST_F(StitcherTest, TestProcessQuery) {
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
 
-TEST_F(StitcherTest, ProcessRequestWithBasicResponse) {
+TEST(StitcherTest, ProcessRequestWithBasicResponse) {
   // Test setup.
   // Ping is a request that always has a response OK.
   Packet req = testutils::GenStringRequest(StringRequest(), kComPing);
