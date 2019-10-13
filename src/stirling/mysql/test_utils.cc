@@ -189,6 +189,7 @@ Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
  */
 Packet GenStringRequest(const StringRequest& req, MySQLEventType type) {
   char command;
+  // TODO(oazizi): This switch statement is not sustainable. Remove.
   switch (type) {
     case MySQLEventType::kStmtPrepare:
       command = kComStmtPrepare;
@@ -203,6 +204,10 @@ Packet GenStringRequest(const StringRequest& req, MySQLEventType type) {
       LOG(FATAL) << "Unknown type for string request.";
       break;
   }
+  return GenStringRequest(req, command);
+}
+
+Packet GenStringRequest(const StringRequest& req, char command) {
   return Packet{0, std::chrono::steady_clock::now(),
                 absl::StrCat(std::string(1, command), req.msg())};
 }

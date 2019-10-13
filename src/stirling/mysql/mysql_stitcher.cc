@@ -59,10 +59,6 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
                                       std::deque<Packet>* resp_packets, mysql::State* state) {
   std::vector<Entry> entries;
   while (!req_packets->empty()) {
-    if (resp_packets->empty()) {
-      break;
-    }
-
     Packet& req_packet = req_packets->front();
 
     // Command is the first byte.
@@ -70,42 +66,96 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
 
     StatusOr<Entry> e;
     switch (DecodeEventType(command)) {
-      case MySQLEventType::kStmtPrepare:
-        e = StitchStmtPrepare(req_packet, resp_packets, state);
+      // Internal commands with response: ERR_Packet.
+      case MySQLEventType::kConnect:
+      case MySQLEventType::kConnectOut:
+      case MySQLEventType::kTime:
+      case MySQLEventType::kDelayedInsert:
+      case MySQLEventType::kDaemon:
+        e = StitchRequestWithBasicResponse(req_packet, resp_packets);
         break;
-      case MySQLEventType::kStmtExecute:
-        e = StitchStmtExecute(req_packet, resp_packets, state);
+
+      // Basic Commands with response: OK_Packet or ERR_Packet
+      case MySQLEventType::kSleep:
+      case MySQLEventType::kInitDB:
+      case MySQLEventType::kRegisterSlave:
+      case MySQLEventType::kResetConnection:
+      case MySQLEventType::kCreateDB:
+      case MySQLEventType::kDropDB:
+      case MySQLEventType::kProcessKill:
+      case MySQLEventType::kRefresh:  // Deprecated.
+      case MySQLEventType::kPing:     // COM_PING can't actually send ERR_Packet.
+        e = StitchRequestWithBasicResponse(req_packet, resp_packets);
         break;
-      case MySQLEventType::kStmtClose:
-        e = StitchStmtClose(req_packet, state);
+
+      case MySQLEventType::kQuit:  // Response: OK_Packet or a connection close.
+        e = StitchRequestWithBasicResponse(req_packet, resp_packets);
         break;
+
+      // Basic Commands with response: EOF_Packet or ERR_Packet.
+      case MySQLEventType::kShutdown:  // Deprecated.
+      case MySQLEventType::kSetOption:
+      case MySQLEventType::kDebug:
+        e = StitchRequestWithBasicResponse(req_packet, resp_packets);
+        break;
+
+      // COM_FIELD_LIST has its own COM_FIELD_LIST meta response (ERR_Packet or one or more Column
+      // Definition packets and a closing EOF_Packet).
+      case MySQLEventType::kFieldList:  // Deprecated.
+        e = StitchFieldList(req_packet, resp_packets);
+        break;
+
+      // COM_QUERY has its own COM_QUERY meta response (ERR_Packet, OK_Packet,
+      // Protocol::LOCAL_INFILE_Request, or ProtocolText::Resultset).
       case MySQLEventType::kQuery:
         e = StitchQuery(req_packet, resp_packets);
         break;
-      case MySQLEventType::kSleep:
-      case MySQLEventType::kQuit:
-      case MySQLEventType::kInitDB:
-      case MySQLEventType::kCreateDB:
-      case MySQLEventType::kDropDB:
-      case MySQLEventType::kRefresh:
-      case MySQLEventType::kShutdown:
-      case MySQLEventType::kStatistics:
-      case MySQLEventType::kConnect:
-      case MySQLEventType::kProcessKill:
-      case MySQLEventType::kDebug:
-      case MySQLEventType::kPing:
-      case MySQLEventType::kTime:
-      case MySQLEventType::kDelayedInsert:
-      case MySQLEventType::kResetConnection:
-      case MySQLEventType::kDaemon:
-        resp_packets->pop_front();
-        continue;
+
+      // COM_STMT_PREPARE returns COM_STMT_PREPARE_OK on success, ERR_Packet otherwise.
+      case MySQLEventType::kStmtPrepare:
+        e = StitchStmtPrepare(req_packet, resp_packets, state);
+        break;
+
+      // COM_STMT_SEND_LONG_DATA has no response.
+      case MySQLEventType::kStmtSendLongData:
+        e = StitchStmtSendLongData(req_packet);
+        break;
+
+      // COM_STMT_EXECUTE has its own COM_STMT_EXECUTE meta response (OK_Packet, ERR_Packet or a
+      // resultset: Binary Protocol Resultset).
+      case MySQLEventType::kStmtExecute:
+        e = StitchStmtExecute(req_packet, resp_packets, state);
+        break;
+
+      // COM_CLOSE has no response.
+      case MySQLEventType::kStmtClose:
+        e = StitchStmtClose(req_packet, state);
+        break;
+
+      // COM_STMT_RESET response is OK_Packet if the statement could be reset, ERR_Packet if not.
+      case MySQLEventType::kStmtReset:
+        e = StitchRequestWithBasicResponse(req_packet, resp_packets);
+        break;
+
+      // COM_STMT_FETCH has a meta response (multi-resultset, or ERR_Packet).
+      case MySQLEventType::kStmtFetch:
+        e = StitchStmtFetch(req_packet, resp_packets);
+        break;
+
+      case MySQLEventType::kProcessInfo:     // a ProtocolText::Resultset or ERR_Packet
+      case MySQLEventType::kChangeUser:      // Authentication Method Switch Request Packet or
+                                             // ERR_Packet
+      case MySQLEventType::kBinlogDumpGTID:  // binlog network stream, ERR_Packet or EOF_Packet
+      case MySQLEventType::kBinlogDump:      // binlog network stream, ERR_Packet or EOF_Packet
+      case MySQLEventType::kTableDump:       // a table dump or ERR_Packet
+      case MySQLEventType::kStatistics:      // string.EOF
+        // Rely on recovery to re-sync responses based on timestamps.
+        e = error::Internal("Unimplemented command $0.", command);
+        break;
+
       default:
-        // TODO(chengruizhe): Here we assume that if the request type is unknown, the response will
-        // be just one packet. Make it more robust.
-        resp_packets->pop_front();
-        LOG(WARNING) << "Unknown MySQL event type in stitcher";
-        continue;
+        e = error::Internal("Unknown command $0.", command);
+        break;
     }
 
     if (e.ok()) {
@@ -147,12 +197,12 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
                                   mysql::State* state) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStmtExecuteRequest(req_packet, &state->prepare_events));
 
-  Packet& first_packet = resp_packets->front();
+  Packet& first_resp_packet = resp_packets->front();
 
   // Assuming that if corresponding StmtPrepare is not found, and the first response packet is
   // an error, client made a mistake, so we pop off the error response.
   if (req->stmt_id() == -1) {
-    if (IsErrPacket(first_packet)) {
+    if (IsErrPacket(first_resp_packet)) {
       auto resp = HandleErrMessage(resp_packets);
       std::string error_msg = absl::Substitute(R"({"Error": "$0"})", resp->error_message());
       return Entry{error_msg, MySQLEntryStatus::kErr, req_packet.timestamp_ns};
@@ -163,10 +213,10 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
     }
   }
 
-  std::string error_message = "";
-  if (IsOKPacket(first_packet)) {
+  std::string error_message;
+  if (IsOKPacket(first_resp_packet)) {
     HandleOKMessage(resp_packets);
-  } else if (IsErrPacket(first_packet)) {
+  } else if (IsErrPacket(first_resp_packet)) {
     auto resp = HandleErrMessage(resp_packets);
 
     error_message = resp->error_message();
@@ -176,7 +226,7 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
 
   // TODO(chengruizhe): Write result set to entry.
   std::string filled_msg = CombinePrepareExecute(req.get(), &state->prepare_events);
-  if (error_message == "") {
+  if (error_message.empty()) {
     return Entry{CreateMessageJSON(filled_msg), MySQLEntryStatus::kOK, req_packet.timestamp_ns};
   } else {
     return Entry{CreateErrorJSON(filled_msg, error_message), MySQLEntryStatus::kErr,
@@ -192,21 +242,54 @@ StatusOr<Entry> StitchStmtClose(const Packet& req_packet, State* state) {
 StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStringRequest(req_packet));
 
-  Packet& first_packet = resp_packets->front();
-  if (IsOKPacket(first_packet)) {
+  Packet& first_resp_packet = resp_packets->front();
+  if (IsOKPacket(first_resp_packet)) {
     auto resp = HandleOKMessage(resp_packets);
-
-  } else if (IsErrPacket(first_packet)) {
+  } else if (IsErrPacket(first_resp_packet)) {
     auto resp = HandleErrMessage(resp_packets);
     return Entry{CreateErrorJSON(req->msg(), resp->error_message()), MySQLEntryStatus::kErr,
                  req_packet.timestamp_ns};
-
   } else {
     // TODO(chengruizhe): Write result set to entry.
     PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
   }
 
   return Entry{CreateMessageJSON(req->msg()), MySQLEntryStatus::kOK, req_packet.timestamp_ns};
+}
+
+StatusOr<Entry> StitchStmtSendLongData(const Packet& req_packet) {
+  return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
+}
+
+StatusOr<Entry> StitchStmtFetch(const Packet& req_packet, std::deque<Packet>* resp_packets) {
+  if (resp_packets->empty()) {
+    // Need more data.
+    return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
+  }
+
+  return error::Unimplemented("COM_STMT_FETCH is unhandled.");
+}
+
+StatusOr<Entry> StitchFieldList(const Packet& req_packet, std::deque<Packet>* resp_packets) {
+  if (resp_packets->empty()) {
+    // Need more data.
+    return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
+  }
+
+  return error::Unimplemented("COM_FIELD_LIST is unhandled.");
+}
+
+StatusOr<Entry> StitchRequestWithBasicResponse(const Packet& req_packet,
+                                               std::deque<Packet>* resp_packets) {
+  if (resp_packets->empty()) {
+    // Need more data.
+    return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
+  }
+
+  Packet& resp_packet = resp_packets->front();
+  ECHECK(IsOKPacket(resp_packet) || IsEOFPacket(resp_packet) || IsErrPacket(resp_packet));
+  resp_packets->pop_front();
+  return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
 }
 
 }  // namespace mysql

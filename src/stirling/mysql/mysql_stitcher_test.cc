@@ -109,6 +109,20 @@ TEST_F(StitcherTest, TestStitchQuery) {
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
 
+TEST_F(StitcherTest, StitchRequestWithBasicResponse) {
+  // Ping is a request that always has a response OK.
+  Packet req = testutils::GenStringRequest(StringRequest(), kComPing);
+  std::deque<Packet> response_packets = {testutils::GenOK()};
+
+  auto s1 = StitchRequestWithBasicResponse(req, &response_packets);
+  EXPECT_TRUE(s1.ok());
+  Entry entry = s1.ValueOrDie();
+
+  Entry expected_entry{"", MySQLEntryStatus::kUnknown, 0};
+
+  EXPECT_EQ(expected_entry, entry);
+}
+
 // TODO(chengruizhe): Add test cases for inputs that would return Status error.
 
 }  // namespace mysql

@@ -29,6 +29,8 @@ Packet GenStmtCloseRequest(const StmtCloseRequest& req);
 
 Packet GenStringRequest(const StringRequest& req, MySQLEventType type);
 
+Packet GenStringRequest(const StringRequest& req, char command);
+
 std::deque<Packet> GenResultset(const Resultset& resultset, bool client_eof_deprecate = false);
 
 std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp);

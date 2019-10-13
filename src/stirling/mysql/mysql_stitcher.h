@@ -22,7 +22,7 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
 // TODO(chengruizhe): Can potentially templatize these functions, especially when we have more
 // event types.
 /**
- * The following stitch functions takes req_packet, infer the type of the first response, and
+ * The following stitch functions take req_packet, infer the type of the first response, and
  * calls handle functions to handle the request/response. It forms a ReqRespEvent and emits a
  * string. The prepare_events map maps stmt_id to stmt prepare event, such that stmt execute
  * event with the same stmt_id can look it up.
@@ -31,12 +31,21 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
 StatusOr<Entry> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
                                   mysql::State* state);
 
+StatusOr<Entry> StitchStmtSendLongData(const Packet& req_packet);
+
 StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
                                   mysql::State* state);
 
 StatusOr<Entry> StitchStmtClose(const Packet& req_packet, mysql::State* state);
 
+StatusOr<Entry> StitchStmtFetch(const Packet& req_packet, std::deque<Packet>* resp_packets);
+
 StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets);
+
+StatusOr<Entry> StitchFieldList(const Packet& req_packet, std::deque<Packet>* resp_packets);
+
+StatusOr<Entry> StitchRequestWithBasicResponse(const Packet& req_packet,
+                                               std::deque<Packet>* resp_packets);
 
 }  // namespace mysql
 }  // namespace stirling
