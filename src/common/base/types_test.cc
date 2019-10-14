@@ -15,6 +15,16 @@ TEST(ConstStringViewTest, const_string_view) {
   EXPECT_EQ(ConstStringView("\xff\x00\x00"), std::string_view("\xff\x00\x00", 3));
 }
 
+TEST(ConstStringTest, const_string) {
+  EXPECT_EQ(ConstString("This is a string"), std::string("This is a string"));
+
+  // Creating strings from string literals can be dangerous when there is a \x00 character.
+  EXPECT_NE(ConstString("\xff\x00\x00"), std::string("\xff\x00\x00"));
+
+  // But ConstString is smart about inferring the length.
+  EXPECT_EQ(ConstString("\xff\x00\x00"), std::string("\xff\x00\x00", 3));
+}
+
 TEST(ConstStringViewTest, char_array_string_view) {
   // An array with a zero byte somewhere in the middle.
   char val[] = {1, 0, 2, 4};

@@ -19,6 +19,11 @@ inline constexpr std::string_view ConstStringView(const char (&a)[N]) {
 }
 
 template <size_t N>
+inline std::string ConstString(const char (&a)[N]) {
+  return std::string(a, N - 1);
+}
+
+template <size_t N>
 inline constexpr std::string_view CharArrayStringView(const char (&a)[N]) {
   return std::string_view(a, N);
 }
