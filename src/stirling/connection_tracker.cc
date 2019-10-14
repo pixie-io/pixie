@@ -269,11 +269,18 @@ std::vector<mysql::Entry> ConnectionTracker::ProcessMessagesImpl() {
   auto& resp_messages = resp_data()->Messages<mysql::Packet>();
 
   auto state_ptr = state<mysql::State>();
-  auto result = mysql::StitchMySQLPackets(&req_messages, &resp_messages, state_ptr);
+  auto status_or_result = mysql::StitchMySQLPackets(&req_messages, &resp_messages, state_ptr);
+
+  if (!status_or_result.ok()) {
+    // TODO(oazizi): Revisit whether this is the right action to take.
+    req_messages.clear();
+    resp_messages.clear();
+    return {};
+  }
 
   Cleanup<mysql::Packet>();
 
-  return result;
+  return status_or_result.ValueOrDie();
 }
 
 // TODO(oazizi): Consider providing a reason field with the disable.

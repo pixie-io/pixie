@@ -16,11 +16,10 @@ namespace mysql {
  * parse their types, and calls the corresponding Stitch functions.
  * @return A vector of entries to be appended to table store.
  */
-std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
-                                      std::deque<Packet>* resp_packets, mysql::State* state);
+StatusOr<std::vector<Entry>> StitchMySQLPackets(std::deque<Packet>* req_packets,
+                                                std::deque<Packet>* resp_packets,
+                                                mysql::State* state);
 
-// TODO(chengruizhe): Can potentially templatize these functions, especially when we have more
-// event types.
 /**
  * The following stitch functions take req_packet, infer the type of the first response, and
  * calls handle functions to handle the request/response. It forms a ReqRespEvent and emits a
@@ -28,24 +27,36 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
  * event with the same stmt_id can look it up.
  * @return A entry in the table store.
  */
-StatusOr<Entry> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  mysql::State* state);
+// TODO(oazizi): Convert these to StatusOr<ParseState>, since that adds clarity.
+// Errors can still be returned through status instead of ParseState::kInvalid,
+// because we can include an error message.
+StatusOr<bool> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                 mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<Entry> StitchStmtSendLongData(const Packet& req_packet);
+StatusOr<bool> StitchStmtSendLongData(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                      mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  mysql::State* state);
+StatusOr<bool> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                 mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<Entry> StitchStmtClose(const Packet& req_packet, mysql::State* state);
+StatusOr<bool> StitchStmtClose(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                               mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<Entry> StitchStmtFetch(const Packet& req_packet, std::deque<Packet>* resp_packets);
+StatusOr<bool> StitchStmtFetch(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                               mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets);
+StatusOr<bool> StitchStmtReset(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                               mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<Entry> StitchFieldList(const Packet& req_packet, std::deque<Packet>* resp_packets);
+StatusOr<bool> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                           std::vector<Entry>* entries);
 
-StatusOr<Entry> StitchRequestWithBasicResponse(const Packet& req_packet,
-                                               std::deque<Packet>* resp_packets);
+StatusOr<bool> StitchFieldList(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                               std::vector<Entry>* entries);
+
+StatusOr<bool> StitchRequestWithBasicResponse(const Packet& req_packet,
+                                              std::deque<Packet>* resp_packets,
+                                              std::vector<Entry>* entries);
 
 }  // namespace mysql
 }  // namespace stirling

@@ -18,58 +18,70 @@ bool operator==(const Entry& lhs, const Entry& rhs) {
 }
 
 TEST_F(StitcherTest, TestStitchStmtPrepareOK) {
+  // Test setup.
   Packet req =
       testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
-
   int stmt_id = testutils::kStmtPrepareResponse.resp_header().stmt_id;
-
   std::deque<Packet> ok_resp_packets =
       testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
-
   State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
-  auto s1 = StitchStmtPrepare(req, &ok_resp_packets, &state);
-  EXPECT_TRUE(s1.ok());
-  auto iter1 = state.prepare_events.find(stmt_id);
-  EXPECT_TRUE(iter1 != state.prepare_events.end());
+
+  // Run function-under-test.
+  std::vector<Entry> entries;
+  StatusOr<bool> s = StitchStmtPrepare(req, &ok_resp_packets, &state, &entries);
+  EXPECT_TRUE(s.ok());
+  EXPECT_TRUE(s.ValueOrDie());
+
+  // Check resulting state and entries.
+  auto iter = state.prepare_events.find(stmt_id);
+  EXPECT_TRUE(iter != state.prepare_events.end());
+  EXPECT_EQ(entries.size(), 0);
 }
 
 TEST_F(StitcherTest, TestStitchStmtPrepareErr) {
+  // Test setup.
   Packet req =
       testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
   int stmt_id = testutils::kStmtPrepareResponse.resp_header().stmt_id;
-
   std::deque<Packet> err_resp_packets;
   ErrResponse expected_response(1096, "This an error.");
   err_resp_packets.emplace_back(testutils::GenErr(expected_response));
-
   State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
-  auto s2 = StitchStmtPrepare(req, &err_resp_packets, &state);
-  EXPECT_TRUE(s2.ok());
-  auto iter2 = state.prepare_events.find(stmt_id);
-  EXPECT_EQ(iter2, state.prepare_events.end());
-  Entry err_entry = s2.ValueOrDie();
 
+  // Run function-under-test.
+  std::vector<Entry> entries;
+  StatusOr<bool> s = StitchStmtPrepare(req, &err_resp_packets, &state, &entries);
+  EXPECT_TRUE(s.ok());
+  EXPECT_TRUE(s.ValueOrDie());
+
+  // Check resulting state and entries.
+  auto iter = state.prepare_events.find(stmt_id);
+  EXPECT_EQ(iter, state.prepare_events.end());
+  ASSERT_EQ(1, entries.size());
+  Entry& err_entry = entries[0];
   Entry expected_err_entry{absl::Substitute(R"({"Error": "$0", "Message": "$1"})", "This an error.",
                                             testutils::kStmtPrepareRequest.msg()),
                            MySQLEntryStatus::kErr, 0};
-
   EXPECT_EQ(expected_err_entry, err_entry);
 }
 
 TEST_F(StitcherTest, TestStitchStmtExecute) {
+  // Test setup.
   Packet req = testutils::GenStmtExecuteRequest(testutils::kStmtExecuteRequest);
-
   int stmt_id = testutils::kStmtExecuteRequest.stmt_id();
-
   std::deque<Packet> resultset = testutils::GenResultset(testutils::kStmtExecuteResultset);
-
   State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
   state.prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
 
-  auto s1 = StitchStmtExecute(req, &resultset, &state);
-  EXPECT_TRUE(s1.ok());
-  Entry resultset_entry = s1.ValueOrDie();
+  // Run function-under-test.
+  std::vector<Entry> entries;
+  StatusOr<bool> s = StitchStmtExecute(req, &resultset, &state, &entries);
+  EXPECT_TRUE(s.ok());
+  EXPECT_TRUE(s.ValueOrDie());
 
+  // Check resulting state and entries.
+  ASSERT_EQ(1, entries.size());
+  Entry& resultset_entry = entries[0];
   Entry expected_resultset_entry{
       "{\"Message\": \"SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
       "JOIN sock_tag ON "
@@ -77,50 +89,61 @@ TEST_F(StitcherTest, TestStitchStmtExecute) {
       "GROUP "
       "BY id ORDER BY id\"}",
       MySQLEntryStatus::kOK, 0};
-
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
 
 TEST_F(StitcherTest, TestStitchStmtClose) {
+  // Test setup.
   Packet req = testutils::GenStmtCloseRequest(testutils::kStmtCloseRequest);
-
   int stmt_id = testutils::kStmtCloseRequest.stmt_id();
-
+  std::deque<Packet> resp_packets = {};
   State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
   state.prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
 
-  auto s1 = StitchStmtClose(req, &state);
-  EXPECT_TRUE(s1.ok());
+  // Run function-under-test.
+  std::vector<Entry> entries;
+  StatusOr<bool> s = StitchStmtClose(req, &resp_packets, &state, &entries);
+  EXPECT_TRUE(s.ok());
+  EXPECT_TRUE(s.ValueOrDie());
+
+  // Check the resulting entries and state.
   EXPECT_EQ(0, state.prepare_events.size());
+  EXPECT_EQ(0, entries.size());
 }
 
 TEST_F(StitcherTest, TestStitchQuery) {
+  // Test setup.
   Packet req = testutils::GenStringRequest(testutils::kQueryRequest, MySQLEventType::kQuery);
-
   std::deque<Packet> resultset = testutils::GenResultset(testutils::kQueryResultset);
 
-  auto s1 = StitchQuery(req, &resultset);
-  EXPECT_TRUE(s1.ok());
-  Entry resultset_entry = s1.ValueOrDie();
+  // Run function-under-test.
+  std::vector<Entry> entries;
+  auto s = StitchQuery(req, &resultset, &entries);
+  EXPECT_TRUE(s.ok());
+  EXPECT_TRUE(s.ValueOrDie());
 
+  // Check resulting state and entries.
+  ASSERT_EQ(1, entries.size());
+  Entry& resultset_entry = entries[0];
   Entry expected_resultset_entry{"{\"Message\": \"SELECT name FROM tag;\"}", MySQLEntryStatus::kOK,
                                  0};
-
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
 
 TEST_F(StitcherTest, StitchRequestWithBasicResponse) {
+  // Test setup.
   // Ping is a request that always has a response OK.
   Packet req = testutils::GenStringRequest(StringRequest(), kComPing);
   std::deque<Packet> response_packets = {testutils::GenOK()};
 
-  auto s1 = StitchRequestWithBasicResponse(req, &response_packets);
-  EXPECT_TRUE(s1.ok());
-  Entry entry = s1.ValueOrDie();
+  // Run function-under-test.
+  std::vector<Entry> entries;
+  auto s = StitchRequestWithBasicResponse(req, &response_packets, &entries);
+  EXPECT_TRUE(s.ok());
+  EXPECT_TRUE(s.ValueOrDie());
 
-  Entry expected_entry{"", MySQLEntryStatus::kUnknown, 0};
-
-  EXPECT_EQ(expected_entry, entry);
+  // Check resulting state and entries.
+  EXPECT_EQ(0, entries.size());
 }
 
 // TODO(chengruizhe): Add test cases for inputs that would return Status error.
