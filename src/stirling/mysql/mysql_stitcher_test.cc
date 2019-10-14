@@ -17,7 +17,7 @@ bool operator==(const Entry& lhs, const Entry& rhs) {
   return lhs.msg == rhs.msg && lhs.status == rhs.status;
 }
 
-TEST_F(StitcherTest, TestStitchStmtPrepareOK) {
+TEST_F(StitcherTest, TestProcessStmtPrepareOK) {
   // Test setup.
   Packet req =
       testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
@@ -28,7 +28,7 @@ TEST_F(StitcherTest, TestStitchStmtPrepareOK) {
 
   // Run function-under-test.
   std::vector<Entry> entries;
-  StatusOr<bool> s = StitchStmtPrepare(req, &ok_resp_packets, &state, &entries);
+  StatusOr<bool> s = ProcessStmtPrepare(req, &ok_resp_packets, &state, &entries);
   EXPECT_TRUE(s.ok());
   EXPECT_TRUE(s.ValueOrDie());
 
@@ -38,7 +38,7 @@ TEST_F(StitcherTest, TestStitchStmtPrepareOK) {
   EXPECT_EQ(entries.size(), 0);
 }
 
-TEST_F(StitcherTest, TestStitchStmtPrepareErr) {
+TEST_F(StitcherTest, TestProcessStmtPrepareErr) {
   // Test setup.
   Packet req =
       testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
@@ -50,7 +50,7 @@ TEST_F(StitcherTest, TestStitchStmtPrepareErr) {
 
   // Run function-under-test.
   std::vector<Entry> entries;
-  StatusOr<bool> s = StitchStmtPrepare(req, &err_resp_packets, &state, &entries);
+  StatusOr<bool> s = ProcessStmtPrepare(req, &err_resp_packets, &state, &entries);
   EXPECT_TRUE(s.ok());
   EXPECT_TRUE(s.ValueOrDie());
 
@@ -65,7 +65,7 @@ TEST_F(StitcherTest, TestStitchStmtPrepareErr) {
   EXPECT_EQ(expected_err_entry, err_entry);
 }
 
-TEST_F(StitcherTest, TestStitchStmtExecute) {
+TEST_F(StitcherTest, TestProcessStmtExecute) {
   // Test setup.
   Packet req = testutils::GenStmtExecuteRequest(testutils::kStmtExecuteRequest);
   int stmt_id = testutils::kStmtExecuteRequest.stmt_id();
@@ -75,7 +75,7 @@ TEST_F(StitcherTest, TestStitchStmtExecute) {
 
   // Run function-under-test.
   std::vector<Entry> entries;
-  StatusOr<bool> s = StitchStmtExecute(req, &resultset, &state, &entries);
+  StatusOr<bool> s = ProcessStmtExecute(req, &resultset, &state, &entries);
   EXPECT_TRUE(s.ok());
   EXPECT_TRUE(s.ValueOrDie());
 
@@ -92,7 +92,7 @@ TEST_F(StitcherTest, TestStitchStmtExecute) {
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
 
-TEST_F(StitcherTest, TestStitchStmtClose) {
+TEST_F(StitcherTest, TestProcessStmtClose) {
   // Test setup.
   Packet req = testutils::GenStmtCloseRequest(testutils::kStmtCloseRequest);
   int stmt_id = testutils::kStmtCloseRequest.stmt_id();
@@ -102,7 +102,7 @@ TEST_F(StitcherTest, TestStitchStmtClose) {
 
   // Run function-under-test.
   std::vector<Entry> entries;
-  StatusOr<bool> s = StitchStmtClose(req, &resp_packets, &state, &entries);
+  StatusOr<bool> s = ProcessStmtClose(req, &resp_packets, &state, &entries);
   EXPECT_TRUE(s.ok());
   EXPECT_TRUE(s.ValueOrDie());
 
@@ -111,14 +111,14 @@ TEST_F(StitcherTest, TestStitchStmtClose) {
   EXPECT_EQ(0, entries.size());
 }
 
-TEST_F(StitcherTest, TestStitchQuery) {
+TEST_F(StitcherTest, TestProcessQuery) {
   // Test setup.
   Packet req = testutils::GenStringRequest(testutils::kQueryRequest, MySQLEventType::kQuery);
   std::deque<Packet> resultset = testutils::GenResultset(testutils::kQueryResultset);
 
   // Run function-under-test.
   std::vector<Entry> entries;
-  auto s = StitchQuery(req, &resultset, &entries);
+  auto s = ProcessQuery(req, &resultset, &entries);
   EXPECT_TRUE(s.ok());
   EXPECT_TRUE(s.ValueOrDie());
 
@@ -130,7 +130,7 @@ TEST_F(StitcherTest, TestStitchQuery) {
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
 
-TEST_F(StitcherTest, StitchRequestWithBasicResponse) {
+TEST_F(StitcherTest, ProcessRequestWithBasicResponse) {
   // Test setup.
   // Ping is a request that always has a response OK.
   Packet req = testutils::GenStringRequest(StringRequest(), kComPing);
@@ -138,7 +138,7 @@ TEST_F(StitcherTest, StitchRequestWithBasicResponse) {
 
   // Run function-under-test.
   std::vector<Entry> entries;
-  auto s = StitchRequestWithBasicResponse(req, &response_packets, &entries);
+  auto s = ProcessRequestWithBasicResponse(req, &response_packets, &entries);
   EXPECT_TRUE(s.ok());
   EXPECT_TRUE(s.ValueOrDie());
 

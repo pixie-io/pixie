@@ -60,9 +60,9 @@ std::string CreateMessageJSON(std::string_view message) {
 #define PL_ASSIGN_OR_RETURN_NO_DECL(lhs, rexpr) \
   { PL_ASSIGN_OR_RETURN(lhs, rexpr); }
 
-StatusOr<std::vector<Entry>> StitchMySQLPackets(std::deque<Packet>* req_packets,
-                                                std::deque<Packet>* resp_packets,
-                                                mysql::State* state) {
+StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets,
+                                                 std::deque<Packet>* resp_packets,
+                                                 mysql::State* state) {
   std::vector<Entry> entries;
 
   // Process one request per loop iteration. Each request may consume 0, 1 or 2+ response packets.
@@ -91,7 +91,7 @@ StatusOr<std::vector<Entry>> StitchMySQLPackets(std::deque<Packet>* req_packets,
       case MySQLEventType::kDelayedInsert:
       case MySQLEventType::kDaemon:
         PL_ASSIGN_OR_RETURN_NO_DECL(
-            success, StitchRequestWithBasicResponse(req_packet, resp_packets, &entries));
+            success, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
         break;
 
       // Basic Commands with response: OK_Packet or ERR_Packet
@@ -105,12 +105,12 @@ StatusOr<std::vector<Entry>> StitchMySQLPackets(std::deque<Packet>* req_packets,
       case MySQLEventType::kRefresh:  // Deprecated.
       case MySQLEventType::kPing:     // COM_PING can't actually send ERR_Packet.
         PL_ASSIGN_OR_RETURN_NO_DECL(
-            success, StitchRequestWithBasicResponse(req_packet, resp_packets, &entries));
+            success, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
         break;
 
       case MySQLEventType::kQuit:  // Response: OK_Packet or a connection close.
         PL_ASSIGN_OR_RETURN_NO_DECL(
-            success, StitchRequestWithBasicResponse(req_packet, resp_packets, &entries));
+            success, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
         break;
 
       // Basic Commands with response: EOF_Packet or ERR_Packet.
@@ -118,56 +118,56 @@ StatusOr<std::vector<Entry>> StitchMySQLPackets(std::deque<Packet>* req_packets,
       case MySQLEventType::kSetOption:
       case MySQLEventType::kDebug:
         PL_ASSIGN_OR_RETURN_NO_DECL(
-            success, StitchRequestWithBasicResponse(req_packet, resp_packets, &entries));
+            success, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
         break;
 
       // COM_FIELD_LIST has its own COM_FIELD_LIST meta response (ERR_Packet or one or more Column
       // Definition packets and a closing EOF_Packet).
       case MySQLEventType::kFieldList:  // Deprecated.
-        PL_ASSIGN_OR_RETURN_NO_DECL(success, StitchFieldList(req_packet, resp_packets, &entries));
+        PL_ASSIGN_OR_RETURN_NO_DECL(success, ProcessFieldList(req_packet, resp_packets, &entries));
         break;
 
       // COM_QUERY has its own COM_QUERY meta response (ERR_Packet, OK_Packet,
       // Protocol::LOCAL_INFILE_Request, or ProtocolText::Resultset).
       case MySQLEventType::kQuery:
-        PL_ASSIGN_OR_RETURN_NO_DECL(success, StitchQuery(req_packet, resp_packets, &entries));
+        PL_ASSIGN_OR_RETURN_NO_DECL(success, ProcessQuery(req_packet, resp_packets, &entries));
         break;
 
       // COM_STMT_PREPARE returns COM_STMT_PREPARE_OK on success, ERR_Packet otherwise.
       case MySQLEventType::kStmtPrepare:
         PL_ASSIGN_OR_RETURN_NO_DECL(success,
-                                    StitchStmtPrepare(req_packet, resp_packets, state, &entries));
+                                    ProcessStmtPrepare(req_packet, resp_packets, state, &entries));
         break;
 
       // COM_STMT_SEND_LONG_DATA has no response.
       case MySQLEventType::kStmtSendLongData:
         PL_ASSIGN_OR_RETURN_NO_DECL(
-            success, StitchStmtSendLongData(req_packet, resp_packets, state, &entries));
+            success, ProcessStmtSendLongData(req_packet, resp_packets, state, &entries));
         break;
 
       // COM_STMT_EXECUTE has its own COM_STMT_EXECUTE meta response (OK_Packet, ERR_Packet or a
       // resultset: Binary Protocol Resultset).
       case MySQLEventType::kStmtExecute:
         PL_ASSIGN_OR_RETURN_NO_DECL(success,
-                                    StitchStmtExecute(req_packet, resp_packets, state, &entries));
+                                    ProcessStmtExecute(req_packet, resp_packets, state, &entries));
         break;
 
       // COM_CLOSE has no response.
       case MySQLEventType::kStmtClose:
         PL_ASSIGN_OR_RETURN_NO_DECL(success,
-                                    StitchStmtClose(req_packet, resp_packets, state, &entries));
+                                    ProcessStmtClose(req_packet, resp_packets, state, &entries));
         break;
 
       // COM_STMT_RESET response is OK_Packet if the statement could be reset, ERR_Packet if not.
       case MySQLEventType::kStmtReset:
         PL_ASSIGN_OR_RETURN_NO_DECL(success,
-                                    StitchStmtReset(req_packet, resp_packets, state, &entries));
+                                    ProcessStmtReset(req_packet, resp_packets, state, &entries));
         break;
 
       // COM_STMT_FETCH has a meta response (multi-resultset, or ERR_Packet).
       case MySQLEventType::kStmtFetch:
         PL_ASSIGN_OR_RETURN_NO_DECL(success,
-                                    StitchStmtFetch(req_packet, resp_packets, state, &entries));
+                                    ProcessStmtFetch(req_packet, resp_packets, state, &entries));
         break;
 
       case MySQLEventType::kProcessInfo:     // a ProtocolText::Resultset or ERR_Packet
@@ -193,8 +193,8 @@ StatusOr<std::vector<Entry>> StitchMySQLPackets(std::deque<Packet>* req_packets,
   return entries;
 }
 
-StatusOr<bool> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                 mysql::State* state, std::vector<Entry>* entries) {
+StatusOr<bool> ProcessStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                  mysql::State* state, std::vector<Entry>* entries) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStringRequest(req_packet));
 
   if (resp_packets->empty()) {
@@ -220,9 +220,9 @@ StatusOr<bool> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* r
   return true;
 }
 
-StatusOr<bool> StitchStmtSendLongData(const Packet& /* req_packet */,
-                                      std::deque<Packet>* resp_packets, mysql::State* /* state */,
-                                      std::vector<Entry>* entries) {
+StatusOr<bool> ProcessStmtSendLongData(const Packet& /* req_packet */,
+                                       std::deque<Packet>* resp_packets, mysql::State* /* state */,
+                                       std::vector<Entry>* entries) {
   // COM_STMT_SEND_LONG_DATA doesn't have a response.
   PL_UNUSED(resp_packets);
 
@@ -232,8 +232,8 @@ StatusOr<bool> StitchStmtSendLongData(const Packet& /* req_packet */,
   return false;
 }
 
-StatusOr<bool> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                 mysql::State* state, std::vector<Entry>* entries) {
+StatusOr<bool> ProcessStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                  mysql::State* state, std::vector<Entry>* entries) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStmtExecuteRequest(req_packet, &state->prepare_events));
 
   if (resp_packets->empty()) {
@@ -271,8 +271,8 @@ StatusOr<bool> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* r
   return true;
 }
 
-StatusOr<bool> StitchStmtClose(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                               mysql::State* state, std::vector<Entry>* entries) {
+StatusOr<bool> ProcessStmtClose(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                mysql::State* state, std::vector<Entry>* entries) {
   PL_RETURN_IF_ERROR(HandleStmtCloseRequest(req_packet, &state->prepare_events));
 
   // COM_STMT_CLOSE doesn't use any response packets.
@@ -284,8 +284,8 @@ StatusOr<bool> StitchStmtClose(const Packet& req_packet, std::deque<Packet>* res
   return true;
 }
 
-StatusOr<bool> StitchStmtFetch(const Packet& /* req_packet */, std::deque<Packet>* resp_packets,
-                               mysql::State* /* state */, std::vector<Entry>* /* entries */) {
+StatusOr<bool> ProcessStmtFetch(const Packet& /* req_packet */, std::deque<Packet>* resp_packets,
+                                mysql::State* /* state */, std::vector<Entry>* /* entries */) {
   if (resp_packets->empty()) {
     // Need more data.
     return false;
@@ -294,16 +294,16 @@ StatusOr<bool> StitchStmtFetch(const Packet& /* req_packet */, std::deque<Packet
   return error::Unimplemented("COM_STMT_FETCH is unhandled.");
 }
 
-StatusOr<bool> StitchStmtReset(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                               mysql::State* state, std::vector<Entry>* entries) {
+StatusOr<bool> ProcessStmtReset(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                mysql::State* state, std::vector<Entry>* entries) {
   PL_UNUSED(state);
 
   // Defer to basic response for now.
-  return StitchRequestWithBasicResponse(req_packet, resp_packets, entries);
+  return ProcessRequestWithBasicResponse(req_packet, resp_packets, entries);
 }
 
-StatusOr<bool> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                           std::vector<Entry>* entries) {
+StatusOr<bool> ProcessQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                            std::vector<Entry>* entries) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStringRequest(req_packet));
 
   if (resp_packets->empty()) {
@@ -338,8 +338,8 @@ StatusOr<bool> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_pa
   return true;
 }
 
-StatusOr<bool> StitchFieldList(const Packet& /* req_packet */, std::deque<Packet>* resp_packets,
-                               std::vector<Entry>* /* entries */) {
+StatusOr<bool> ProcessFieldList(const Packet& /* req_packet */, std::deque<Packet>* resp_packets,
+                                std::vector<Entry>* /* entries */) {
   if (resp_packets->empty()) {
     // Need more data.
     return false;
@@ -348,16 +348,18 @@ StatusOr<bool> StitchFieldList(const Packet& /* req_packet */, std::deque<Packet
   return error::Unimplemented("COM_FIELD_LIST is unhandled.");
 }
 
-StatusOr<bool> StitchRequestWithBasicResponse(const Packet& /* req_packet */,
-                                              std::deque<Packet>* resp_packets,
-                                              std::vector<Entry>* entries) {
+StatusOr<bool> ProcessRequestWithBasicResponse(const Packet& /* req_packet */,
+                                               std::deque<Packet>* resp_packets,
+                                               std::vector<Entry>* entries) {
   if (resp_packets->empty()) {
     // Need more data.
     return false;
   }
 
   Packet& resp_packet = resp_packets->front();
-  ECHECK(IsOKPacket(resp_packet) || IsEOFPacket(resp_packet) || IsErrPacket(resp_packet));
+  if (!(IsOKPacket(resp_packet) || IsEOFPacket(resp_packet) || IsErrPacket(resp_packet))) {
+    return error::Internal("Unexpected packet.");
+  }
   resp_packets->pop_front();
 
   // Currently don't record basic request/response events.
