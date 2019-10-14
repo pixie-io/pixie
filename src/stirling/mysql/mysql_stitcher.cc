@@ -366,41 +366,6 @@ StatusOr<bool> StitchRequestWithBasicResponse(const Packet& /* req_packet */,
   return true;
 }
 
-StatusOr<Entry> StitchStmtSendLongData(const Packet& req_packet) {
-  return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
-}
-
-StatusOr<Entry> StitchStmtFetch(const Packet& req_packet, std::deque<Packet>* resp_packets) {
-  if (resp_packets->empty()) {
-    // Need more data.
-    return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
-  }
-
-  return error::Unimplemented("COM_STMT_FETCH is unhandled.");
-}
-
-StatusOr<Entry> StitchFieldList(const Packet& req_packet, std::deque<Packet>* resp_packets) {
-  if (resp_packets->empty()) {
-    // Need more data.
-    return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
-  }
-
-  return error::Unimplemented("COM_FIELD_LIST is unhandled.");
-}
-
-StatusOr<Entry> StitchRequestWithBasicResponse(const Packet& req_packet,
-                                               std::deque<Packet>* resp_packets) {
-  if (resp_packets->empty()) {
-    // Need more data.
-    return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
-  }
-
-  Packet& resp_packet = resp_packets->front();
-  ECHECK(IsOKPacket(resp_packet) || IsEOFPacket(resp_packet) || IsErrPacket(resp_packet));
-  resp_packets->pop_front();
-  return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
-}
-
 }  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

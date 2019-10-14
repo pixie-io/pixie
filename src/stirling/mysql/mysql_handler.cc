@@ -184,8 +184,15 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
   std::vector<ColDefinition> col_defs;
   for (int i = 0; i < num_col; ++i) {
     if (IsEOFPacket(resp_packets->front())) {
-      break;
+      return error::Internal("Did not expect EOF packet during column definitions.");
     }
+    if (IsOKPacket(resp_packets->front())) {
+      return error::Internal("Did not expect OK packet during column definitions.");
+    }
+    if (IsErrPacket(resp_packets->front())) {
+      return error::Internal("Did not expect ERR packet during column definitions.");
+    }
+
     Packet col_def_packet = resp_packets->front();
     ColDefinition col_def{col_def_packet.msg};
     col_defs.push_back(std::move(col_def));
@@ -345,7 +352,11 @@ Status HandleStmtCloseRequest(const Packet& req_packet, std::map<int, ReqRespEve
   int stmt_id = utils::LEStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
   auto iter = prepare_map->find(stmt_id);
   if (iter == prepare_map->end()) {
-    return error::Cancelled("Cannot find Stmt Prepare Event to close [stmt_id=$0].", stmt_id);
+    // We may have missed the prepare statement (e.g. due to the missing start of connection
+    // problem), but we can still process the close, and continue on. Just print a warning.
+    LOG(WARNING) << absl::Substitute("Cannot find Stmt Prepare Event to close [stmt_id=$0].",
+                                     stmt_id);
+    return Status::OK();
   }
   prepare_map->erase(iter);
   return Status::OK();
