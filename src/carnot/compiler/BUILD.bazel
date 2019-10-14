@@ -1,8 +1,8 @@
 # gazelle:ignore
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_cgo_library", "pl_linkopts")
-load("@io_bazel_rules_go//go:def.bzl", "go_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_linkopts")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -27,27 +27,6 @@ pl_cc_library(
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",
         "//third_party:libpypa",
-    ],
-)
-
-pl_cc_library(
-    name = "cc_compiler_export",
-    srcs = [
-        "compiler_export.cc",
-    ],
-    hdrs = ["compiler_export.h"],
-    deps = [
-        "//src/carnot/compiler:cc_library",
-        "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "compiler_export_test",
-    srcs = ["compiler_export_test.cc"],
-    deps = [
-        ":cc_compiler_export",
     ],
 )
 
@@ -214,15 +193,9 @@ pl_cc_test(
     ],
 )
 
-# keep
-pl_cgo_library(
+go_library(
     name = "go_default_library",
-    srcs = glob(
-        include = ["*.go"],
-        exclude = ["*_test.go"],
-    ),
-    cdeps = [":cc_compiler_export"],
-    cgo = True,
+    srcs = ["compiler_error_context.go"],
     importpath = "pixielabs.ai/pixielabs/src/carnot/compiler",
     deps = [
         "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
@@ -230,20 +203,6 @@ pl_cgo_library(
         "//src/table_store/proto:schema_pl_go_proto",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_default_test",
-    srcs = ["compiler_test.go"],
-    deps = [
-        ":go_default_library",
-        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
-        "//src/carnot/planpb:plan_pl_go_proto",
-        "//src/common/base/proto:status_pl_go_proto",
-        "//src/table_store/proto:schema_pl_go_proto",
-        "@com_github_gogo_protobuf//proto:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )
 
