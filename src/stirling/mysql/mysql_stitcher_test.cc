@@ -131,7 +131,7 @@ TEST(StitcherTest, TestProcessQuery) {
 TEST(StitcherTest, ProcessRequestWithBasicResponse) {
   // Test setup.
   // Ping is a request that always has a response OK.
-  Packet req = testutils::GenStringRequest(StringRequest(), kComPing);
+  Packet req = testutils::GenStringRequest(StringRequest(), MySQLEventType::kPing);
   std::deque<Packet> response_packets = {testutils::GenOK()};
 
   // Run function-under-test.

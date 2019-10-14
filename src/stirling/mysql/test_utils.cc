@@ -30,8 +30,8 @@ std::string GenRawPacket(uint8_t packet_num, std::string_view msg) {
 /**
  * Generates a raw packet with a string request.
  */
-std::string GenRequest(char command, std::string_view msg) {
-  return GenRawPacket(0, absl::StrCat(std::string(1, command), msg));
+std::string GenRequest(MySQLEventType command, std::string_view msg) {
+  return GenRawPacket(0, absl::StrCat(CommandToString(command), msg));
 }
 
 /**
@@ -149,8 +149,9 @@ std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
 Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
   char statement_id[4];
   utils::IntToLEBytes(req.stmt_id(), statement_id);
-  std::string msg = absl::StrCat(std::string(1, kComStmtExecute), CharArrayStringView(statement_id),
-                                 ConstStringView("\x00\x01\x00\x00\x00"));
+  std::string msg =
+      absl::StrCat(CommandToString(MySQLEventType::kStmtExecute), CharArrayStringView(statement_id),
+                   ConstStringView("\x00\x01\x00\x00\x00"));
   int num_params = req.params().size();
   if (num_params > 0) {
     for (int i = 0; i < (num_params + 7) / 8; i++) {
@@ -179,37 +180,18 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
 Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
   char statement_id[4];
   utils::IntToLEBytes(req.stmt_id(), statement_id);
-  std::string msg = absl::StrCat(std::string(1, kComStmtClose), CharArrayStringView(statement_id));
+  std::string msg =
+      absl::StrCat(CommandToString(MySQLEventType::kStmtClose), CharArrayStringView(statement_id));
   return Packet{0, std::chrono::steady_clock::now(), std::move(msg)};
 }
 
 /**
- * Generates a String Request packet. Takes in an eventType for now.
- * TODO(chengruizhe): Remove MySQLEventType once type is inferred in stitcher.
+ * Generates a String Request packet of the specified type.
  */
-Packet GenStringRequest(const StringRequest& req, MySQLEventType type) {
-  char command;
-  // TODO(oazizi): This switch statement is not sustainable. Remove.
-  switch (type) {
-    case MySQLEventType::kStmtPrepare:
-      command = kComStmtPrepare;
-      break;
-    case MySQLEventType::kStmtExecute:
-      command = kComStmtExecute;
-      break;
-    case MySQLEventType::kQuery:
-      command = kComQuery;
-      break;
-    default:
-      LOG(FATAL) << "Unknown type for string request.";
-      break;
-  }
-  return GenStringRequest(req, command);
-}
-
-Packet GenStringRequest(const StringRequest& req, char command) {
+Packet GenStringRequest(const StringRequest& req, MySQLEventType command) {
+  DCHECK_LE(static_cast<uint8_t>(command), kMaxCommandValue);
   return Packet{0, std::chrono::steady_clock::now(),
-                absl::StrCat(std::string(1, command), req.msg())};
+                absl::StrCat(CommandToString(command), req.msg())};
 }
 
 /**

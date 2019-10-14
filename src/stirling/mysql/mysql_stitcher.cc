@@ -83,7 +83,7 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
     StatusOr<bool> s;
     bool success = false;
 
-    switch (DecodeEventType(command)) {
+    switch (DecodeCommand(command)) {
       // Internal commands with response: ERR_Packet.
       case MySQLEventType::kConnect:
       case MySQLEventType::kConnectOut:

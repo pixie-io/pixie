@@ -23,12 +23,11 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
     return ParseState::kInvalid;
   }
 
-  // TODO(oazizi): Is pre-checking type here a good idea? Somewhat out of place.
+  // TODO(oazizi): Is pre-checking requests here a good idea? Somewhat out of place.
+  // Better fit for stitcher (process of converting packets to events).
   if (type == MessageType::kRequest) {
-    char command = (*buf)[kPacketHeaderLength];
-    if (DecodeEventType(command) == MySQLEventType::kUnknown) {
-      // Return invalid to trigger recovery.
-      LOG(ERROR) << absl::Substitute("Unexpected command type: $0", command);
+    uint8_t command = (*buf)[kPacketHeaderLength];
+    if (command > kMaxCommandValue) {
       return ParseState::kInvalid;
     }
   }

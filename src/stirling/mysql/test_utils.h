@@ -13,7 +13,7 @@ namespace testutils {
 
 std::string GenRawPacket(uint8_t packet_num, std::string_view msg);
 
-std::string GenRequest(char command, std::string_view msg);
+std::string GenRequest(MySQLEventType command, std::string_view msg);
 
 Packet GenCountPacket(int num_col);
 

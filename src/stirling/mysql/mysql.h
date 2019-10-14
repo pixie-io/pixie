@@ -34,38 +34,50 @@ namespace mysql {
 
 // Command Types
 // https://dev.mysql.com/doc/internals/en/command-phase.html
-constexpr uint8_t kComSleep = 0x00;
-constexpr uint8_t kComQuit = 0x01;
-constexpr uint8_t kComInitDB = 0x02;
-constexpr uint8_t kComQuery = 0x03;
-constexpr uint8_t kComFieldList = 0x04;
-constexpr uint8_t kComCreateDB = 0x05;
-constexpr uint8_t kComDropDB = 0x06;
-constexpr uint8_t kComRefresh = 0x07;
-constexpr uint8_t kComShutdown = 0x08;
-constexpr uint8_t kComStatistics = 0x09;
-constexpr uint8_t kComProcessInfo = 0x0a;
-constexpr uint8_t kComConnect = 0x0b;
-constexpr uint8_t kComProcessKill = 0x0c;
-constexpr uint8_t kComDebug = 0x0d;
-constexpr uint8_t kComPing = 0x0e;
-constexpr uint8_t kComTime = 0x0f;
-constexpr uint8_t kComDelayedInsert = 0x10;
-constexpr uint8_t kComChangeUser = 0x11;
-constexpr uint8_t kComBinlogDump = 0x12;
-constexpr uint8_t kComTableDump = 0x13;
-constexpr uint8_t kComConnectOut = 0x14;
-constexpr uint8_t kComRegisterSlave = 0x15;
-constexpr uint8_t kComStmtPrepare = 0x16;
-constexpr uint8_t kComStmtExecute = 0x17;
-constexpr uint8_t kComStmtSendLongData = 0x18;
-constexpr uint8_t kComStmtClose = 0x19;
-constexpr uint8_t kComStmtReset = 0x1a;
-constexpr uint8_t kComSetOption = 0x1b;
-constexpr uint8_t kComStmtFetch = 0x1c;
-constexpr uint8_t kComDaemon = 0x1d;
-constexpr uint8_t kComBinlogDumpGTID = 0x1e;
-constexpr uint8_t kComResetConnection = 0x1f;
+enum class MySQLEventType : char {
+  kSleep = 0x00,
+  kQuit = 0x01,
+  kInitDB = 0x02,
+  kQuery = 0x03,
+  kFieldList = 0x04,
+  kCreateDB = 0x05,
+  kDropDB = 0x06,
+  kRefresh = 0x07,
+  kShutdown = 0x08,
+  kStatistics = 0x09,
+  kProcessInfo = 0x0a,
+  kConnect = 0x0b,
+  kProcessKill = 0x0c,
+  kDebug = 0x0d,
+  kPing = 0x0e,
+  kTime = 0x0f,
+  kDelayedInsert = 0x10,
+  kChangeUser = 0x11,
+  kBinlogDump = 0x12,
+  kTableDump = 0x13,
+  kConnectOut = 0x14,
+  kRegisterSlave = 0x15,
+  kStmtPrepare = 0x16,
+  kStmtExecute = 0x17,
+  kStmtSendLongData = 0x18,
+  kStmtClose = 0x19,
+  kStmtReset = 0x1a,
+  kSetOption = 0x1b,
+  kStmtFetch = 0x1c,
+  kDaemon = 0x1d,
+  kBinlogDumpGTID = 0x1e,
+  kResetConnection = 0x1f,
+};
+
+constexpr uint8_t kMaxCommandValue = 0x1f;
+
+inline MySQLEventType DecodeCommand(uint8_t command) {
+  return static_cast<MySQLEventType>(command);
+}
+
+inline std::string CommandToString(MySQLEventType command) {
+  return std::string(1, static_cast<char>(command));
+}
 
 // Response types
 // https://dev.mysql.com/doc/internals/en/generic-response-packets.html
@@ -88,113 +100,6 @@ constexpr uint8_t kColTypeNewDecimal = 0xf6;
 constexpr uint8_t kColTypeBlob = 0xfc;
 constexpr uint8_t kColTypeVarString = 0xfd;
 constexpr uint8_t kColTypeString = 0xfe;
-
-enum class MySQLEventType {
-  kUnknown,
-  kSleep,
-  kQuit,
-  kInitDB,
-  kQuery,
-  kFieldList,
-  kCreateDB,
-  kDropDB,
-  kRefresh,
-  kShutdown,
-  kStatistics,
-  kProcessInfo,
-  kConnect,
-  kProcessKill,
-  kDebug,
-  kPing,
-  kTime,
-  kDelayedInsert,
-  kChangeUser,
-  kBinlogDump,
-  kTableDump,
-  kConnectOut,
-  kRegisterSlave,
-  kStmtPrepare,
-  kStmtExecute,
-  kStmtSendLongData,
-  kStmtClose,
-  kStmtReset,
-  kSetOption,
-  kStmtFetch,
-  kDaemon,
-  kBinlogDumpGTID,
-  kResetConnection,
-};
-
-inline MySQLEventType DecodeEventType(char command_byte) {
-  switch (command_byte) {
-    case kComSleep:
-      return MySQLEventType::kSleep;
-    case kComQuit:
-      return MySQLEventType::kQuit;
-    case kComInitDB:
-      return MySQLEventType::kInitDB;
-    case kComQuery:
-      return MySQLEventType::kQuery;
-    case kComFieldList:
-      return MySQLEventType::kFieldList;
-    case kComCreateDB:
-      return MySQLEventType::kCreateDB;
-    case kComDropDB:
-      return MySQLEventType::kDropDB;
-    case kComRefresh:
-      return MySQLEventType::kRefresh;
-    case kComShutdown:
-      return MySQLEventType::kShutdown;
-    case kComStatistics:
-      return MySQLEventType::kStatistics;
-    case kComProcessInfo:
-      return MySQLEventType::kProcessInfo;
-    case kComConnect:
-      return MySQLEventType::kConnect;
-    case kComProcessKill:
-      return MySQLEventType::kProcessKill;
-    case kComDebug:
-      return MySQLEventType::kDebug;
-    case kComPing:
-      return MySQLEventType::kPing;
-    case kComTime:
-      return MySQLEventType::kTime;
-    case kComDelayedInsert:
-      return MySQLEventType::kDelayedInsert;
-    case kComChangeUser:
-      return MySQLEventType::kChangeUser;
-    case kComBinlogDump:
-      return MySQLEventType::kBinlogDump;
-    case kComTableDump:
-      return MySQLEventType::kTableDump;
-    case kComConnectOut:
-      return MySQLEventType::kConnectOut;
-    case kComRegisterSlave:
-      return MySQLEventType::kRegisterSlave;
-    case kComStmtPrepare:
-      return MySQLEventType::kStmtPrepare;
-    case kComStmtExecute:
-      return MySQLEventType::kStmtExecute;
-    case kComStmtSendLongData:
-      return MySQLEventType::kStmtSendLongData;
-    case kComStmtClose:
-      return MySQLEventType::kStmtClose;
-    case kComStmtReset:
-      return MySQLEventType::kStmtReset;
-    case kComSetOption:
-      return MySQLEventType::kSetOption;
-    case kComStmtFetch:
-      return MySQLEventType::kStmtFetch;
-    case kComDaemon:
-      return MySQLEventType::kDaemon;
-    case kComBinlogDumpGTID:
-      return MySQLEventType::kBinlogDumpGTID;
-    case kComResetConnection:
-      return MySQLEventType::kResetConnection;
-    default:
-      return MySQLEventType::kUnknown;
-  }
-}
 
 constexpr int kPacketHeaderLength = 4;
 
