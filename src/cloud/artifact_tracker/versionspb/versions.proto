@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package pl.versions;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb;versionspb";
+
+// ArtifactSet stores a list artifacts. This is typically stored in a VERSIONS file in JSON format.
+message ArtifactSet {
+    // The name of the artifact: (cli, vizier).
+    string name = 1;
+    // List of artifacts, sorted by release date.
+    repeated Artifact artifact = 2;
+}
+
+// Artifact stores information about a specific artifact version.
+message Artifact {
+    // The timestamp that this artifact was released.
+    google.protobuf.Timestamp timestamp = 1;
+    // The version string of the artifact (in either CalVer or SemVer).
+    string version_str = 2;
+    // The fully qualified GCS/GCR locations of the artifact(s).
+    repeated string artifact_location = 3;
+    // The changelog for this version (in markdown format).
+    string changelog = 4;
+}

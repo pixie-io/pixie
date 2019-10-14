@@ -70,7 +70,10 @@ genrule(
     outs = [
         "NPM_LICENSES",
     ],
-    tools = ["tools/licenses/npm_license_extractor.py", "tools/licenses/override_license.json"],
+    tools = [
+        "tools/licenses/npm_license_extractor.py",
+        "tools/licenses/override_license.json",
+    ],
     cmd = """
       export PATH=/usr/local/bin:/opt/node/bin:$$PATH;
       export HOME=`mktemp -d` # This makes node-gyp happy.
