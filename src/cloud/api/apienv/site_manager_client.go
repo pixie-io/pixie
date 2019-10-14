@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	pflag.String("site_manager_service", "site-manager-service.plc.svc.cluster.local:50300", "The sitemanager service url (load balancer/list is ok)")
+	pflag.String("site_manager_service", "kubernetes:///site-manager-service.plc:50300", "The sitemanager service url (load balancer/list is ok)")
 }
 
 // NewSiteManagerServiceClient creates a new auth RPC client stub.
@@ -19,10 +19,10 @@ func NewSiteManagerServiceClient() (sitemanagerpb.SiteManagerServiceClient, erro
 		return nil, err
 	}
 
-	authChannel, err := grpc.Dial(viper.GetString("site_manager_service"), dialOpts...)
+	siteManagerChannel, err := grpc.Dial(viper.GetString("site_manager_service"), dialOpts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return sitemanagerpb.NewSiteManagerServiceClient(authChannel), nil
+	return sitemanagerpb.NewSiteManagerServiceClient(siteManagerChannel), nil
 }

@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	pflag.String("vzmgr_service", "vzmgr-service.plc.svc.cluster.local:51800", "The profile service url (load balancer/list is ok)")
+	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
 }
 
 // NewVZMgrServiceClient creates a new profile RPC client stub.
@@ -27,12 +27,12 @@ func NewVZMgrServiceClient() (vzmgrpb.VZMgrServiceClient, error) {
 		return nil, err
 	}
 
-	authChannel, err := grpc.Dial(viper.GetString("vzmgr_service"), dialOpts...)
+	vzmgrChannel, err := grpc.Dial(viper.GetString("vzmgr_service"), dialOpts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return vzmgrpb.NewVZMgrServiceClient(authChannel), nil
+	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), nil
 }
 
 func main() {
@@ -51,6 +51,7 @@ func main() {
 	s := services.NewPLServer(env.New(), mux)
 
 	vzmgrClient, err := NewVZMgrServiceClient()
+
 	if err != nil {
 		log.WithError(err).Fatal("failed to initialize vizer manager RPC client")
 		panic(err)

@@ -4,6 +4,7 @@ metadata:
   name: vzmgr-service
 spec:
   type: ClusterIP
+  clusterIP: None
   ports:
     - port: 51800
       protocol: TCP

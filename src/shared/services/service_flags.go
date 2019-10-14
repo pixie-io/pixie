@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"sync"
 
+	"github.com/sercand/kuberesolver"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -17,6 +18,11 @@ import (
 var (
 	commonSetup sync.Once
 )
+
+func init() {
+	// Enable the k8s DNS resolver to lookup services.
+	kuberesolver.RegisterInCluster()
+}
 
 func setupCommonFlags() {
 	pflag.Bool("disable_ssl", false, "Disable SSL on the server")
@@ -140,6 +146,7 @@ func GetGRPCClientDialOpts() ([]grpc.DialOption, error) {
 
 	creds := credentials.NewTLS(tlsConfig)
 	dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
+	dialOpts = append(dialOpts, grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`))
 
 	return dialOpts, nil
 }

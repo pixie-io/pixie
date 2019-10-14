@@ -1487,3 +1487,10 @@ go_repository(
     sum = "h1:91Uy4d9SYVr1kyTJ15wJsog+esAZZl7JmEfTkwmhJts=",
     version = "v3.0.7+incompatible",
 )
+
+go_repository(
+    name = "com_github_sercand_kuberesolver",
+    importpath = "github.com/sercand/kuberesolver",
+    sum = "h1:iJ1oCzPQ/aacsbCWLfJW1hPKkHMvCEgNSA9kvWcb9MY=",
+    version = "v2.1.0+incompatible",
+)

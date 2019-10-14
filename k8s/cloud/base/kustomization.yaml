@@ -4,6 +4,7 @@ commonLabels:
   app: pl-cloud
 namespace: plc
 resources:
+- kuberesolver_role.yaml
 - dns_config.yaml
 - db_config.yaml
 - tls_config.yaml

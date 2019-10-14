@@ -4,6 +4,7 @@ metadata:
   name: dnsmgr-service
 spec:
   type: ClusterIP
+  clusterIP: None
   ports:
     - port: 51900
       protocol: TCP

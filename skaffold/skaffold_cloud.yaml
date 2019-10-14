@@ -123,7 +123,7 @@ profiles:
       # Set compilation to be opt build.
       - op: add
         path: /build/artifacts/context=./bazel/args
-        value: ["--stamp --compilation_mode=opt"]
+        value: ["--stamp", "--compilation_mode=opt"]
 
       - op: replace
         path: /deploy/kustomize

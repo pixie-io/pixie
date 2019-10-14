@@ -4,6 +4,7 @@ metadata:
   name: auth-service
 spec:
   type: ClusterIP
+  clusterIP: None
   ports:
     - port: 50100
       protocol: TCP

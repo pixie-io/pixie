@@ -4,10 +4,10 @@ kind: ConfigMap
 metadata:
   name: pl-service-config
 data:
-  PL_AUTH_SERVICE: auth-service.plc-dev.svc.cluster.local:50100
+  PL_AUTH_SERVICE: kubernetes:///auth-service.plc-dev:50100
   PL_API_SERVICE_HTTP: api-service.plc-dev.svc.cluster.local:51200
   PL_DOCS_SERVICE_HTTP: docs-service.plc-dev.svc.cluster.local:59000
-  PL_PROFILE_SERVICE: profile-service.plc-dev.svc.cluster.local:51500
-  PL_SITE_MANAGER_SERVICE: site-manager-service.plc-dev.svc.cluster.local:50300
-  PL_VZMGR_SERVICE: vzmgr-service.plc-dev.svc.cluster.local:51800
-  PL_DNSMGR_SERVICE: dnsmgr-service.plc-dev.svc.cluster.local:51900
+  PL_PROFILE_SERVICE: kubernetes:///profile-service.plc-dev:51500
+  PL_SITE_MANAGER_SERVICE: kubernetes:///site-manager-service.plc-dev:50300
+  PL_VZMGR_SERVICE: kubernetes:///vzmgr-service.plc-dev:51800
+  PL_DNSMGR_SERVICE: kubernetes:///dnsmgr-service.plc-dev:51900
