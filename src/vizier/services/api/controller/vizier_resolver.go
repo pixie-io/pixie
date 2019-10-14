@@ -88,7 +88,7 @@ func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs
 	}
 
 	// If there's a compiler error, we need to do something about it.
-	if resp.Status.ErrCode != statuspb.OK {
+	if resp.Status != nil && resp.Status.ErrCode != statuspb.OK {
 		queryError, err := makeErrorFromStatus(resp.Status)
 		if err != nil {
 			return nil, err
