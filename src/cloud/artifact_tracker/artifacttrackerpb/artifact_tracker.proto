@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package pl.services;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "src/cloud/artifact_tracker/versionspb/versions.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker;artifacttrackerpb";
+
+// ArtifactTracker tracks versions of released artifacts.
+service ArtifactTracker {
+    // GetLatestArtifact returns the latest version of a specfic artifact.
+    rpc GetLatestArtifact(GetLatestArtifactRequest) returns(pl.versions.Artifact) {}
+    // GetArtifactList is used to request a list of artifacts.
+    rpc GetArtifactList(GetArtifactListRequest) returns(pl.versions.ArtifactSet) {}
+    // GetDownloadLink is used to request a signed URL.
+    rpc GetDownloadLink(GetDownloadLinkRequest) returns(GetDownloadLinkResponse) {}
+}
+
+// ArtifactGroup is use to select the type of artifact. We use this instead of a free form name since
+// we don't want to use user input to directly access a GCS bucket.
+enum ArtifactGroup {
+    AG_UNKNOWN = 0;
+    AG_CLI = 1;
+    AG_VIZIER = 2;
+}
+
+message GetLatestArtifactRequest {
+    ArtifactGroup group = 1;
+}
+
+message GetArtifactListRequest {
+    ArtifactGroup group = 1;
+    // Limit the number of responses, ordered by time.
+    int64 limit = 2;
+}
+
+// GetDownloadLinkRequest is used to get a signed URL for a specific artifact. Only singular
+// artifacts are currently supported.
+message GetDownloadLinkRequest {
+    ArtifactGroup group = 1;
+    string version_str = 2;
+}
+
+// GetDownloadLinkResponse returns a signed url that can be used to download the artifact.
+message GetDownloadLinkResponse {
+    string url = 1;
+    // The sha256 of the artifact.
+    string sha256 = 2;
+    google.protobuf.Timestamp valid_until = 3;
+}
