@@ -20,15 +20,21 @@ type LeaderElection struct {
 	session  *concurrency.Session
 	election *concurrency.Election
 	quitCh   chan bool
+	pollTime time.Duration
 }
 
 // NewLeaderElection starts a new leader election.
 func NewLeaderElection(session *concurrency.Session) *LeaderElection {
+	return NewLeaderElectionWithPollTime(session, electionPollTime)
+}
+
+// NewLeaderElectionWithPollTime starst a new leader election with the given poll time.
+func NewLeaderElectionWithPollTime(session *concurrency.Session, pollTime time.Duration) *LeaderElection {
 	id := uuid.NewV4()
 	election := concurrency.NewElection(session, electionKey)
 	quitCh := make(chan bool)
 
-	return &LeaderElection{id, session, election, quitCh}
+	return &LeaderElection{id, session, election, quitCh, pollTime}
 }
 
 // RunElection starts a loop where the leaderElection actively attempts to become leader.
@@ -42,14 +48,14 @@ func (l *LeaderElection) RunElection() {
 			if err == nil {
 				log.Info(fmt.Sprintf("%s is currently leader", l.id.String()))
 			}
-			time.Sleep(electionPollTime)
+			time.Sleep(l.pollTime)
 		}
 	}
 }
 
 // Campaign attempts to elect the current instance as leader.
 func (l *LeaderElection) Campaign() error {
-	ctx, cancel := context.WithTimeout(context.Background(), electionPollTime/2)
+	ctx, cancel := context.WithTimeout(context.Background(), l.pollTime/2)
 	defer cancel()
 	return l.election.Campaign(ctx, l.id.String())
 }

@@ -3,6 +3,7 @@ package etcd_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,7 @@ func TestLeaderElection(t *testing.T) {
 		t.Fatal("Could not create new session for etcd")
 	}
 
-	l := etcd.NewLeaderElection(sess)
+	l := etcd.NewLeaderElectionWithPollTime(sess, 5*time.Second)
 
 	// First campaign attempt should succeed.
 	err = l.Campaign()
@@ -41,7 +42,7 @@ func TestLeaderElection(t *testing.T) {
 		t.Fatal("Could not create new session for etcd")
 	}
 
-	l2 := etcd.NewLeaderElection(sess2)
+	l2 := etcd.NewLeaderElectionWithPollTime(sess2, 5*time.Second)
 
 	// Campaigning when another instance is already the leader should fail.
 	err = l2.Campaign()
@@ -60,7 +61,7 @@ func TestLeaderElection_Stop(t *testing.T) {
 		t.Fatal("Could not create new session for etcd")
 	}
 
-	l := etcd.NewLeaderElection(sess)
+	l := etcd.NewLeaderElectionWithPollTime(sess, 5*time.Second)
 
 	// First campaign attempt should succeed.
 	err = l.Campaign()
@@ -81,7 +82,7 @@ func TestLeaderElection_Stop(t *testing.T) {
 		t.Fatal("Could not create new session for etcd")
 	}
 
-	l2 := etcd.NewLeaderElection(sess2)
+	l2 := etcd.NewLeaderElectionWithPollTime(sess2, 5*time.Second)
 
 	// Campaigning when another instance is already the leader should fail.
 	err = l2.Campaign()
