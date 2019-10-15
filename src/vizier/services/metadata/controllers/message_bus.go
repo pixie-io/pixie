@@ -20,9 +20,10 @@ type MessageBusController struct {
 	ch                chan *nats.Msg
 	clock             utils.Clock
 	agentManager      AgentManager
+	isLeader          *bool
 }
 
-func newMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, clock utils.Clock) (*MessageBusController, error) {
+func newMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, isLeader *bool, clock utils.Clock) (*MessageBusController, error) {
 	var conn *nats.Conn
 	var err error
 	if viper.GetBool("disable_ssl") {
@@ -37,7 +38,7 @@ func newMessageBusController(natsURL string, agentTopic string, agentManager Age
 		return nil, err
 	}
 
-	mc := &MessageBusController{conn: conn, clock: clock, agentManager: agentManager}
+	mc := &MessageBusController{conn: conn, clock: clock, agentManager: agentManager, isLeader: isLeader}
 
 	ch := make(chan *nats.Msg, 64)
 
@@ -54,14 +55,14 @@ func newMessageBusController(natsURL string, agentTopic string, agentManager Age
 }
 
 // NewTestMessageBusController creates a new message bus controller where you can specify a test clock.
-func NewTestMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, clock utils.Clock) (*MessageBusController, error) {
-	return newMessageBusController(natsURL, agentTopic, agentManager, clock)
+func NewTestMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, isLeader *bool, clock utils.Clock) (*MessageBusController, error) {
+	return newMessageBusController(natsURL, agentTopic, agentManager, isLeader, clock)
 }
 
 // NewMessageBusController creates a new message bus controller.
-func NewMessageBusController(natsURL string, agentTopic string, agentManager AgentManager) (*MessageBusController, error) {
+func NewMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, isLeader *bool) (*MessageBusController, error) {
 	clock := utils.SystemClock{}
-	return newMessageBusController(natsURL, agentTopic, agentManager, clock)
+	return newMessageBusController(natsURL, agentTopic, agentManager, isLeader, clock)
 }
 
 // AgentTopicListener handles any incoming messages on the controller's channel.
@@ -71,6 +72,11 @@ func (mc *MessageBusController) AgentTopicListener() {
 		if !more {
 			return
 		}
+
+		if !*mc.isLeader {
+			continue
+		}
+
 		pb := &messages.VizierMessage{}
 		proto.Unmarshal(msg.Data, pb)
 

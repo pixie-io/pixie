@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"net/http"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/clientv3/concurrency"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -15,6 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
@@ -55,6 +58,7 @@ func main() {
 		}
 	}
 
+	// Connect to etcd.
 	etcdClient, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{viper.GetString("md_etcd_server")},
 		DialTimeout: 5 * time.Second,
@@ -71,18 +75,38 @@ func main() {
 	}
 	defer etcdMds.Close()
 
-	// TODO(michelle): Add code for leader election. For now, since we only have one metadata
-	// service, it is always the leader.
-	agtMgr := controllers.NewAgentManager(etcdClient, etcdMds, true)
+	// Set up leader election.
+	leaseResp, err := etcdClient.Grant(context.TODO(), int64(10))
+	if err != nil {
+		log.Fatal("Could not get grant for leader election session")
+	}
+	leaseID := leaseResp.ID
+	session, err := concurrency.NewSession(etcdClient, concurrency.WithLease(leaseID))
+	if err != nil {
+		log.WithError(err).Fatal("Could not create new session for etcd")
+	}
+	defer session.Close()
+
+	isLeader := false
+	leaderElection := etcd.NewLeaderElection(session)
+	go leaderElection.RunElection(&isLeader)
+	defer leaderElection.Stop()
+
+	agtMgr := controllers.NewAgentManager(etcdClient, etcdMds)
 	keepAlive := true
 	go func() {
 		for keepAlive {
-			agtMgr.UpdateAgentState()
+			if isLeader {
+				agtMgr.UpdateAgentState()
+			}
 			time.Sleep(10 * time.Second)
 		}
 	}()
+	defer func() {
+		keepAlive = false
+	}()
 
-	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent", agtMgr)
+	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent", agtMgr, &isLeader)
 
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
@@ -90,7 +114,7 @@ func main() {
 	defer mc.Close()
 
 	// Listen for K8s metadata updates.
-	mdHandler, err := controllers.NewMetadataHandler(etcdMds)
+	mdHandler, err := controllers.NewMetadataHandler(etcdMds, &isLeader)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create metadata handler")
 	}
@@ -99,6 +123,7 @@ func main() {
 
 	_, err = controllers.NewK8sMetadataController(mdHandler)
 
+	// Set up server.
 	env, err := metadataenv.New()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")

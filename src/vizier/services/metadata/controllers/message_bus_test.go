@@ -61,11 +61,11 @@ func getNATSURL(port int) string {
 	return fmt.Sprintf("nats://%s:%d", testOptions.Host, port)
 }
 
-func getTestNATSInstance(t *testing.T, port int, agtMgr controllers.AgentManager) (*nats.Conn, *controllers.MessageBusController) {
+func getTestNATSInstance(t *testing.T, port int, agtMgr controllers.AgentManager, isLeader *bool) (*nats.Conn, *controllers.MessageBusController) {
 	viper.Set("disable_ssl", true)
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 
-	mc, err := controllers.NewTestMessageBusController(getNATSURL(port), "agent_update", agtMgr, clock)
+	mc, err := controllers.NewTestMessageBusController(getNATSURL(port), "agent_update", agtMgr, isLeader, clock)
 	assert.Equal(t, err, nil)
 
 	nc, err := nats.Connect(testingutils.GetNATSURL(port))
@@ -129,7 +129,8 @@ func TestAgentRegisterRequest(t *testing.T) {
 		})
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -222,7 +223,8 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 		})
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -266,7 +268,8 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -310,7 +313,8 @@ func TestAgentCreateFailed(t *testing.T) {
 	}
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -356,7 +360,8 @@ func TestAgentUpdateRequest(t *testing.T) {
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -396,7 +401,8 @@ func TestAgentUpdateRequestInvalidUUID(t *testing.T) {
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -487,7 +493,8 @@ func TestAgentHeartbeat(t *testing.T) {
 		})
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -544,7 +551,8 @@ func TestAgentHeartbeatInvalidUUID(t *testing.T) {
 		Return(updates, nil)
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -618,7 +626,8 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 		})
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -652,7 +661,8 @@ func TestEmptyMessage(t *testing.T) {
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	_, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -679,7 +689,8 @@ func TestUnhandledMessage(t *testing.T) {
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	// Create Metadata Service controller.
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	_, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -708,7 +719,8 @@ func TestClose(t *testing.T) {
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	// Create Metadata Service controller.
-	nc, mc := getTestNATSInstance(t, port, mockAgtMgr)
+	isLeader := true
+	nc, mc := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))

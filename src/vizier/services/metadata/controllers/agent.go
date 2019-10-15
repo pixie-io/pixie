@@ -67,7 +67,6 @@ type AgentManager interface {
 
 // AgentManagerImpl is an implementation for AgentManager which talks to etcd.
 type AgentManagerImpl struct {
-	IsLeader bool
 	client   *clientv3.Client
 	clock    utils.Clock
 	mds      MetadataStore
@@ -76,7 +75,7 @@ type AgentManagerImpl struct {
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
-func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, isLeader bool, clock utils.Clock) *AgentManagerImpl {
+func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, clock utils.Clock) *AgentManagerImpl {
 	c := make(chan *AgentUpdate)
 
 	sess, err := concurrency.NewSession(client, concurrency.WithContext(context.Background()))
@@ -86,7 +85,6 @@ func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, isLead
 
 	agentManager := &AgentManagerImpl{
 		client:   client,
-		IsLeader: isLeader,
 		clock:    clock,
 		mds:      mds,
 		updateCh: c,
@@ -184,9 +182,9 @@ func (m *AgentManagerImpl) AddToUpdateQueue(agentID uuid.UUID, update *messagesp
 }
 
 // NewAgentManager creates a new agent manager.
-func NewAgentManager(client *clientv3.Client, mds MetadataStore, isLeader bool) *AgentManagerImpl {
+func NewAgentManager(client *clientv3.Client, mds MetadataStore) *AgentManagerImpl {
 	clock := utils.SystemClock{}
-	return NewAgentManagerWithClock(client, mds, isLeader, clock)
+	return NewAgentManagerWithClock(client, mds, clock)
 }
 
 func updateAgentData(agentID uuid.UUID, data *data.AgentData, client *clientv3.Client) error {
@@ -205,9 +203,6 @@ func updateAgentData(agentID uuid.UUID, data *data.AgentData, client *clientv3.C
 
 // RegisterAgent creates a new agent.
 func (m *AgentManagerImpl) RegisterAgent(info *AgentInfo) (asid uint32, err error) {
-	if !m.IsLeader { // Only write to etcd if current service is a leader.
-		return 0, errors.New("Non-leader can't create agent")
-	}
 	ctx := context.Background()
 
 	// Check if agent already exists.
@@ -268,9 +263,6 @@ func (m *AgentManagerImpl) RegisterAgent(info *AgentInfo) (asid uint32, err erro
 
 // UpdateHeartbeat updates the agent heartbeat with the current time.
 func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
-	if !m.IsLeader {
-		return nil
-	}
 	ctx := context.Background()
 
 	// Get current AgentData.
@@ -328,10 +320,6 @@ func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, host
 // UpdateAgentState will run through all agents and delete those
 // that are dead.
 func (m *AgentManagerImpl) UpdateAgentState() error {
-	if !m.IsLeader {
-		return nil
-	}
-
 	// TODO(michelle): PL-665 Move all etcd-specific functionality into etcd_metadata_store, so that the agent manager itself
 	// is not directly interfacing with etcd.
 	ctx := context.Background()

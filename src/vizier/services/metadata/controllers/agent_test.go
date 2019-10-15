@@ -23,7 +23,7 @@ import (
 	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
-func setupAgentManager(t *testing.T, isLeader bool) (*clientv3.Client, controllers.AgentManager, *mock_controllers.MockMetadataStore, func()) {
+func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, *mock_controllers.MockMetadataStore, func()) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 
 	ctrl := gomock.NewController(t)
@@ -34,7 +34,7 @@ func setupAgentManager(t *testing.T, isLeader bool) (*clientv3.Client, controlle
 	CreateAgent(t, testutils.UnhealthyAgentUUID, etcdClient, testutils.UnhealthyAgentInfo)
 
 	clock := testingutils.NewTestClock(time.Unix(0, testutils.ClockNowNS))
-	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, mockMds, isLeader, clock)
+	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, mockMds, clock)
 
 	return etcdClient, agtMgr, mockMds, cleanup
 }
@@ -76,7 +76,7 @@ func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 }
 
 func TestRegisterAgent(t *testing.T) {
-	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
@@ -123,35 +123,8 @@ func TestRegisterAgent(t *testing.T) {
 	assert.Equal(t, testutils.NewAgentUUID, string(resp.Kvs[0].Value))
 }
 
-func TestRegisterAgentNotLeader(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, false)
-	defer cleanup()
-
-	u, err := uuid.FromString(testutils.NewAgentUUID)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-
-	agentInfo := &controllers.AgentInfo{
-		LastHeartbeatNS: 1,
-		CreateTimeNS:    4,
-		Hostname:        "localhost",
-		AgentID:         u,
-	}
-	id, err := agtMgr.RegisterAgent(agentInfo)
-	assert.NotNil(t, err)
-	assert.Equal(t, uint32(0), id)
-
-	// Check that agent info is not in etcd.
-	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
-	if err != nil {
-		t.Fatal("Failed to get agent.")
-	}
-	assert.Equal(t, 0, len(resp.Kvs))
-}
-
 func TestRegisterAgentWithExistingHostname(t *testing.T) {
-	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
@@ -207,7 +180,7 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 }
 
 func TestRegisterExistingAgent(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
@@ -242,7 +215,7 @@ func TestRegisterExistingAgent(t *testing.T) {
 }
 
 func TestUpdateHeartbeat(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
@@ -270,32 +243,8 @@ func TestUpdateHeartbeat(t *testing.T) {
 	assert.Equal(t, "testhost", pb.HostInfo.Hostname)
 }
 
-func TestUpdateHeartbeatNotLeader(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, false)
-	defer cleanup()
-
-	u, err := uuid.FromString(testutils.ExistingAgentUUID)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-
-	err = agtMgr.UpdateHeartbeat(u)
-	assert.Nil(t, err)
-
-	// Check that correct agent info is in etcd.
-	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
-	if err != nil {
-		t.Fatal("Failed to get agent.")
-	}
-	assert.Equal(t, 1, len(resp.Kvs))
-	pb := &data.AgentData{}
-	proto.Unmarshal(resp.Kvs[0].Value, pb)
-
-	assert.Equal(t, int64(testutils.HealthyAgentLastHeartbeatNS), pb.LastHeartbeatNS)
-}
-
 func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
@@ -314,7 +263,7 @@ func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
 }
 
 func TestUpdateAgentState(t *testing.T) {
-	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	agents := make([]data.AgentData, 2)
@@ -358,27 +307,8 @@ func TestUpdateAgentState(t *testing.T) {
 	assert.Equal(t, 1, len(resp.Kvs))
 }
 
-func TestUpdateAgentStateNotLeader(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, false)
-	defer cleanup()
-
-	err := agtMgr.UpdateAgentState()
-	assert.Nil(t, err)
-
-	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKey(""), clientv3.WithPrefix())
-	assert.Equal(t, 2, len(resp.Kvs))
-
-	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentKey(testutils.UnhealthyAgentUUID))
-	// Agent should still exist in etcd.
-	assert.Equal(t, 1, len(resp.Kvs))
-
-	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("anotherhost"))
-	// Agent should still exist in etcd.
-	assert.Equal(t, 1, len(resp.Kvs))
-}
-
 func TestUpdateAgentStateGetAgentsFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	agents := make([]data.AgentData, 0)
@@ -393,7 +323,7 @@ func TestUpdateAgentStateGetAgentsFailed(t *testing.T) {
 }
 
 func TestGetActiveAgents(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	agentsMock := make([]data.AgentData, 2)
@@ -445,7 +375,7 @@ func TestGetActiveAgents(t *testing.T) {
 }
 
 func TestGetActiveAgentsGetAgentsFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	agents := make([]data.AgentData, 0)
@@ -460,7 +390,7 @@ func TestGetActiveAgentsGetAgentsFailed(t *testing.T) {
 }
 
 func TestAddToUpdateQueue(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	var wg sync.WaitGroup
@@ -531,7 +461,7 @@ func TestAddToUpdateQueue(t *testing.T) {
 }
 
 func TestAgentQueueTerminatedProcesses(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	var wg sync.WaitGroup
@@ -620,7 +550,7 @@ func TestAgentQueueTerminatedProcesses(t *testing.T) {
 }
 
 func TestAddToUpdateQueueFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	var wg sync.WaitGroup
@@ -656,7 +586,7 @@ func TestAddToUpdateQueueFailed(t *testing.T) {
 }
 
 func TestGetMetadataUpdates(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	podMock := make([]*metadatapb.Pod, 2)
@@ -735,7 +665,7 @@ func TestGetMetadataUpdates(t *testing.T) {
 }
 
 func TestAgentAddUpdatesToAgentQueue(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
@@ -771,7 +701,7 @@ func TestAgentAddUpdatesToAgentQueue(t *testing.T) {
 }
 
 func TestGetMetadataUpdatesGetPodsFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	mockMds.
@@ -784,7 +714,7 @@ func TestGetMetadataUpdatesGetPodsFailed(t *testing.T) {
 }
 
 func TestGetMetadataUpdatesGetEndpointsFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
 	podMock := make([]*metadatapb.Pod, 2)

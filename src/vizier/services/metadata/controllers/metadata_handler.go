@@ -61,10 +61,11 @@ type MetadataHandler struct {
 	mds           MetadataStore
 	agentUpdateCh chan *UpdateMessage
 	clock         utils.Clock
+	isLeader      *bool
 }
 
 // NewMetadataHandlerWithClock creates a new metadata handler with a clock.
-func NewMetadataHandlerWithClock(mds MetadataStore, clock utils.Clock) (*MetadataHandler, error) {
+func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, clock utils.Clock) (*MetadataHandler, error) {
 	c := make(chan *K8sMessage)
 	agentUpdateCh := make(chan *UpdateMessage, maxAgentUpdates)
 
@@ -73,6 +74,7 @@ func NewMetadataHandlerWithClock(mds MetadataStore, clock utils.Clock) (*Metadat
 		mds:           mds,
 		agentUpdateCh: agentUpdateCh,
 		clock:         clock,
+		isLeader:      isLeader,
 	}
 
 	go mh.MetadataListener()
@@ -81,9 +83,9 @@ func NewMetadataHandlerWithClock(mds MetadataStore, clock utils.Clock) (*Metadat
 }
 
 // NewMetadataHandler creates a new metadata handler.
-func NewMetadataHandler(mds MetadataStore) (*MetadataHandler, error) {
+func NewMetadataHandler(mds MetadataStore, isLeader *bool) (*MetadataHandler, error) {
 	clock := utils.SystemClock{}
-	return NewMetadataHandlerWithClock(mds, clock)
+	return NewMetadataHandlerWithClock(mds, isLeader, clock)
 }
 
 // GetChannel returns the channel the MetadataHandler is listening to.
@@ -130,6 +132,10 @@ func (mh *MetadataHandler) MetadataListener() {
 		msg, more := <-mh.ch
 		if !more {
 			return
+		}
+
+		if !*mh.isLeader {
+			continue
 		}
 
 		switch msg.ObjectType {
@@ -357,6 +363,10 @@ func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.Resou
 
 // SyncPodData syncs the data in etcd according to the current active pods.
 func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
+	if !*mh.isLeader {
+		return
+	}
+
 	activePods := map[string]bool{}
 	activeContainers := map[string]bool{}
 
@@ -423,6 +433,10 @@ func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
 
 // SyncEndpointsData syncs the data in etcd according to the current active pods.
 func (mh *MetadataHandler) SyncEndpointsData(epList *v1.EndpointsList) {
+	if !*mh.isLeader {
+		return
+	}
+
 	activeEps := map[string]bool{}
 
 	currentTime := mh.clock.Now().UnixNano()
@@ -453,6 +467,10 @@ func (mh *MetadataHandler) SyncEndpointsData(epList *v1.EndpointsList) {
 
 // SyncServiceData syncs the data in etcd according to the current active pods.
 func (mh *MetadataHandler) SyncServiceData(sList *v1.ServiceList) {
+	if !*mh.isLeader {
+		return
+	}
+
 	activeServices := map[string]bool{}
 
 	currentTime := mh.clock.Now().UnixNano()

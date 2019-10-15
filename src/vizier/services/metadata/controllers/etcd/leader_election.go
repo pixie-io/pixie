@@ -38,7 +38,7 @@ func NewLeaderElectionWithPollTime(session *concurrency.Session, pollTime time.D
 }
 
 // RunElection starts a loop where the leaderElection actively attempts to become leader.
-func (l *LeaderElection) RunElection() {
+func (l *LeaderElection) RunElection(isLeader *bool) {
 	for {
 		select {
 		case <-l.quitCh:
@@ -46,8 +46,14 @@ func (l *LeaderElection) RunElection() {
 		default:
 			err := l.Campaign()
 			if err == nil {
-				log.Info(fmt.Sprintf("%s is currently leader", l.id.String()))
+				if !*isLeader {
+					log.Info(fmt.Sprintf("%s is currently leader", l.id.String()))
+				}
+				*isLeader = true
+			} else {
+				*isLeader = false
 			}
+			l.session.Client().KeepAliveOnce(context.Background(), l.session.Lease())
 			time.Sleep(l.pollTime)
 		}
 	}

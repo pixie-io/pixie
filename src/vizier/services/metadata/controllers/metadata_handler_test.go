@@ -150,7 +150,8 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		Subsets:    subsets,
 	}
 
-	mh, err := controllers.NewMetadataHandler(mockMds)
+	isLeader := true
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -264,7 +265,8 @@ func TestNoHostnameResolvedProto(t *testing.T) {
 		Subsets:    subsets,
 	}
 
-	mh, err := controllers.NewMetadataHandler(mockMds)
+	isLeader := true
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -425,7 +427,8 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 		Subsets:    subsets,
 	}
 
-	mh, err := controllers.NewMetadataHandler(mockMds)
+	isLeader := true
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -497,7 +500,8 @@ func TestKubernetesEndpointHandler(t *testing.T) {
 		Subsets:    subsets,
 	}
 
-	mh, err := controllers.NewMetadataHandler(mockMds)
+	isLeader := true
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -580,7 +584,8 @@ func TestObjectToServiceProto(t *testing.T) {
 		Spec:       spec,
 	}
 
-	mh, err := controllers.NewMetadataHandler(mockMds)
+	isLeader := true
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -693,7 +698,8 @@ func TestObjectToPodProto(t *testing.T) {
 		Spec:       spec,
 	}
 
-	mh, err := controllers.NewMetadataHandler(mockMds)
+	isLeader := true
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -930,7 +936,149 @@ func TestSyncPodData(t *testing.T) {
 		Return(nil)
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, clock)
+	isLeader := true
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	assert.Nil(t, err)
+
+	mh.SyncPodData(&podList)
+}
+
+func TestSyncPodData_NotLeader(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	pods := make([]v1.Pod, 1)
+
+	creationTime := metav1.Unix(0, 4)
+	p1Md := metav1.ObjectMeta{
+		Name:              "object_md",
+		UID:               "active_pod",
+		ResourceVersion:   "1",
+		ClusterName:       "a_cluster",
+		CreationTimestamp: creationTime,
+	}
+
+	p1Containers := make([]v1.ContainerStatus, 1)
+	waitingState := v1.ContainerStateWaiting{}
+
+	p1Containers[0] = v1.ContainerStatus{
+		Name:        "container1",
+		ContainerID: "docker://active_container",
+		State: v1.ContainerState{
+			Waiting: &waitingState,
+		},
+	}
+
+	p1Status := v1.PodStatus{
+		Message:           "this is message",
+		Phase:             v1.PodRunning,
+		ContainerStatuses: p1Containers,
+		QOSClass:          v1.PodQOSBurstable,
+	}
+
+	activePod := v1.Pod{
+		ObjectMeta: p1Md,
+		Status:     p1Status,
+	}
+	pods[0] = activePod
+
+	podList := v1.PodList{
+		Items: pods,
+	}
+
+	// Test case 1: A pod that is active, and known to be active by etcd.
+	etcdPods := make([](*metadatapb.Pod), 4)
+	activePodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, activePodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	activePodPb.Metadata.UID = "active_pod"
+	activePodPb.Metadata.DeletionTimestampNS = 0
+	etcdPods[0] = activePodPb
+
+	// Test case 2: A pod that is dead, and known to be dead by etcd.
+	deadPodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, deadPodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deadPodPb.Metadata.DeletionTimestampNS = 10
+	deadPodPb.Status.ContainerStatuses[0].StopTimestampNS = 6
+	etcdPods[1] = deadPodPb
+
+	// Test case 3: A pod that is dead, but which etcd does not know to be dead.
+	undeadPodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, undeadPodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	undeadPodPb.Metadata.UID = "undead_pod"
+	undeadPodPb.Metadata.DeletionTimestampNS = 0
+	undeadPodPb.Status.ContainerStatuses[0].StopTimestampNS = 0
+	etcdPods[2] = undeadPodPb
+
+	deletedUndeadPodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, deletedUndeadPodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deletedUndeadPodPb.Metadata.UID = "undead_pod"
+	deletedUndeadPodPb.Metadata.DeletionTimestampNS = 10
+	deletedUndeadPodPb.Status.ContainerStatuses[0].StopTimestampNS = 10
+
+	// Test case 4: A pod that is dead, and known to be dead by etcd,
+	// but for which etcd thinks the inner container is alive.
+	anotherUndeadPodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, anotherUndeadPodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	anotherUndeadPodPb.Metadata.UID = "another_undead_pod"
+	anotherUndeadPodPb.Metadata.DeletionTimestampNS = 10
+	anotherUndeadPodPb.Status.ContainerStatuses[0].StopTimestampNS = 0
+	anotherUndeadPodPb.Status.ContainerStatuses[0].Name = "another_undead_container_name"
+	anotherUndeadPodPb.Status.ContainerStatuses[0].ContainerID = "another_undead_container"
+	etcdPods[3] = anotherUndeadPodPb
+
+	anotherDeletedUndeadPodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, anotherDeletedUndeadPodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	anotherDeletedUndeadPodPb.Metadata.UID = "another_undead_pod"
+	anotherDeletedUndeadPodPb.Metadata.DeletionTimestampNS = 10
+	anotherDeletedUndeadPodPb.Status.ContainerStatuses[0].StopTimestampNS = 10
+	anotherDeletedUndeadPodPb.Status.ContainerStatuses[0].Name = "another_undead_container_name"
+	anotherDeletedUndeadPodPb.Status.ContainerStatuses[0].ContainerID = "another_undead_container"
+
+	etcdContainers := make([](*metadatapb.ContainerInfo), 4)
+	activeContainerPb := &metadatapb.ContainerInfo{
+		Name:             "active_container_name",
+		UID:              "active_container",
+		StartTimestampNS: 4,
+	}
+	etcdContainers[0] = activeContainerPb
+	undeadContainerPb := &metadatapb.ContainerInfo{
+		Name:             "undead_container_name",
+		UID:              "undead_container",
+		StartTimestampNS: 4,
+	}
+	etcdContainers[1] = undeadContainerPb
+	deletedContainerPb := &metadatapb.ContainerInfo{
+		Name:             "deleted_container_name",
+		UID:              "deleted_container",
+		StartTimestampNS: 4,
+		StopTimestampNS:  10,
+	}
+	etcdContainers[2] = deletedContainerPb
+
+	anotherDeletedContainerPb := &metadatapb.ContainerInfo{
+		Name:             "another_deleted_container_name",
+		UID:              "another_deleted_container",
+		StartTimestampNS: 4,
+	}
+	etcdContainers[3] = anotherDeletedContainerPb
+
+	clock := testingutils.NewTestClock(time.Unix(0, 10))
+	isLeader := false
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
 	assert.Nil(t, err)
 
 	mh.SyncPodData(&podList)
@@ -1005,7 +1153,67 @@ func TestSyncEndpointsData(t *testing.T) {
 		Return(nil)
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, clock)
+	isLeader := true
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	assert.Nil(t, err)
+
+	mh.SyncEndpointsData(&epList)
+}
+
+func TestSyncEndpointsData_NotLeader(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	endpoints := make([]v1.Endpoints, 1)
+	// Create endpoints object.
+	creationTime := metav1.Unix(0, 4)
+	md := metav1.ObjectMeta{
+		Name:              "kubernetes",
+		Namespace:         "default",
+		UID:               "active_ep",
+		ResourceVersion:   "1",
+		CreationTimestamp: creationTime,
+	}
+
+	activeEndpoint := v1.Endpoints{
+		ObjectMeta: md,
+	}
+	endpoints[0] = activeEndpoint
+
+	epList := v1.EndpointsList{
+		Items: endpoints,
+	}
+
+	etcdEps := make([](*metadatapb.Endpoints), 3)
+	activeEpPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(testutils.EndpointsPb, activeEpPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	activeEpPb.Metadata.UID = "active_ep"
+	activeEpPb.Metadata.DeletionTimestampNS = 0
+	etcdEps[0] = activeEpPb
+
+	deadEpPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(testutils.EndpointsPb, deadEpPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deadEpPb.Metadata.UID = "dead_ep"
+	deadEpPb.Metadata.DeletionTimestampNS = 5
+	etcdEps[1] = deadEpPb
+
+	undeadEpPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(testutils.EndpointsPb, undeadEpPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	undeadEpPb.Metadata.UID = "undead_ep"
+	undeadEpPb.Metadata.DeletionTimestampNS = 0
+	etcdEps[2] = undeadEpPb
+
+	clock := testingutils.NewTestClock(time.Unix(0, 10))
+	isLeader := false
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
 	assert.Nil(t, err)
 
 	mh.SyncEndpointsData(&epList)
@@ -1080,7 +1288,67 @@ func TestSyncServicesData(t *testing.T) {
 		Return(nil)
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, clock)
+	isLeader := true
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	assert.Nil(t, err)
+
+	mh.SyncServiceData(&sList)
+}
+
+func TestSyncServicesData_NotLeader(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	services := make([]v1.Service, 1)
+	// Create endpoints object.
+	creationTime := metav1.Unix(0, 4)
+	md := metav1.ObjectMeta{
+		Name:              "kubernetes",
+		Namespace:         "default",
+		UID:               "active_service",
+		ResourceVersion:   "1",
+		CreationTimestamp: creationTime,
+	}
+
+	activeService := v1.Service{
+		ObjectMeta: md,
+	}
+	services[0] = activeService
+
+	sList := v1.ServiceList{
+		Items: services,
+	}
+
+	etcdServices := make([](*metadatapb.Service), 3)
+	activeServicePb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(testutils.ServicePb, activeServicePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	activeServicePb.Metadata.UID = "active_service"
+	activeServicePb.Metadata.DeletionTimestampNS = 0
+	etcdServices[0] = activeServicePb
+
+	deadServicePb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(testutils.ServicePb, deadServicePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deadServicePb.Metadata.UID = "dead_service"
+	deadServicePb.Metadata.DeletionTimestampNS = 5
+	etcdServices[1] = deadServicePb
+
+	undeadServicePb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(testutils.ServicePb, undeadServicePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	undeadServicePb.Metadata.UID = "undead_service"
+	undeadServicePb.Metadata.DeletionTimestampNS = 0
+	etcdServices[2] = undeadServicePb
+
+	clock := testingutils.NewTestClock(time.Unix(0, 10))
+	isLeader := false
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
 	assert.Nil(t, err)
 
 	mh.SyncServiceData(&sList)
