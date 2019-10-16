@@ -70,14 +70,6 @@ const vizierFetch = (uri, options) => {
   }
   options.headers.authorization = `Bearer ${token}`;
 
-  // Add timeout, in case the initial request hangs.
-  const timeout = new Promise((resolve, reject) => {
-    const id = setTimeout(() => {
-      clearTimeout(id);
-      resolve(null);
-    }, TIMEOUT_MS);
-  });
-
   const localhostRequest = mode === 'vizier' ?
     Promise.reject('Should use Vizier mode') : fetchPolyfill('http://127.0.0.1:31067' + uri, options);
 
@@ -98,8 +90,15 @@ const vizierFetch = (uri, options) => {
     });
     return result;
   }).catch((localhostError) => {
+    // Add timeout, in case the initial request hangs.
+    const initialTimeout = new Promise((resolve, reject) => {
+      const id = setTimeout(() => {
+        clearTimeout(id);
+        resolve(null);
+      }, TIMEOUT_MS);
+    });
     const initialRequest = fetchPolyfill(address + uri, options);
-    return Promise.race([initialRequest, timeout]).then((response) => {
+    return Promise.race([initialRequest, initialTimeout]).then((response) => {
       if (!response || response.status !== 200) {
         throw new Error('failed initial request');
       }
@@ -131,7 +130,15 @@ const vizierFetch = (uri, options) => {
         }));
 
         options.headers.authorization = `Bearer ${newToken}`;
-        return fetchPolyfill(newAddress + uri, options);
+
+        const refreshTimeout = new Promise((resolve, reject) => {
+          const refreshId = setTimeout(() => {
+            clearTimeout(refreshId);
+            resolve(null);
+          }, TIMEOUT_MS);
+        });
+        const refreshRequest = fetchPolyfill(newAddress + uri, options);
+        return Promise.race([refreshRequest, refreshTimeout]);
       }).catch((error) => {
         const lsAuth: string = localStorage.getItem('vizierAuth');
         if (lsAuth != null) {
