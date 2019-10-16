@@ -272,38 +272,55 @@ static __inline bool is_http_request(const char* buf, size_t count) {
   return false;
 }
 
-// TODO(oazizi/yzhao): This function only check two bytes, buf[3] == 0 and buf[4], which is too
-// error-prone.  Add stronger protocol detection.
-static __inline bool is_mysql_protocol(const char* buf, size_t count) {
+// TODO(oazizi/yzhao): This function produces too many false positives.
+// Add stronger protocol detection.
+static __inline bool is_mysql_protocol(const uint8_t* buf, size_t count) {
+  static const uint8_t kComStmtPrepare = 0x16;
+  static const uint8_t kComStmtExecute = 0x17;
+  static const uint8_t kComStmtClose = 0x19;
+  static const uint8_t kComQuery = 0x03;
+
   // MySQL packets start with a 3-byte packet length and a 1-byte packet number.
   // The 5th byte on a request contains a command that tells the type.
-  // 0x16: Statement Prepare, 0x17 Statement Execute, 0x19 Statement Close,
-  // 0x03 Query.
-  // TODO(chengruizhe): Add more commands when more are supported.
   if (count < 5) {
     return false;
   }
 
+  // Convert 3-byte length to uint32_t.
+  // NOLINTNEXTLINE: readability/casting
+  uint32_t len = *((uint32_t*)buf);
+  len = len & 0x00ffffff;
+
+  uint8_t seq = buf[3];
+  uint8_t com = buf[4];
+
   // The packet number of a request should always be 0.
-  if (buf[3] != 0) {
+  if (seq != 0) {
     return false;
   }
 
-  // Assuming that the lengh of a request is less than 2^16 to avoid false
-  // positive flagging as MySQL, which statiscally happen for a single-byte
+  // No such thing as a zero-length request in MySQL protocol.
+  if (len == 0) {
+    return false;
+  }
+
+  // Assuming that the length of a request is less than 10k characters to avoid false
+  // positive flagging as MySQL, which statistically happens frequently for a single-byte
   // check.
-  if (buf[2] != 0) {
+  if (len > 10000) {
     return false;
   }
 
-  if (buf[4] == kStmtPreparePrefix || buf[4] == kStmtExecutePrefix || buf[4] == kStmtClosePrefix ||
-      buf[4] == kQueryPrefix) {
+  // TODO(oazizi): Consider adding more commands (0x00 to 0x1f).
+  // Be careful, though: trade-off is higher rates of false positives.
+  if (com == kComStmtPrepare || com == kComStmtExecute || com == kComStmtClose ||
+      com == kComQuery) {
     return true;
   }
   return false;
 }
 
-// Technically, HTTP2 client connection preface is 24 octes [1]. Practically,
+// Technically, HTTP2 client connection preface is 24 octets [1]. Practically,
 // the first 3 shall be sufficient. Note this is sent from client,
 // so it would be captured on server's read()/recvfrom()/recvmsg() or client's
 // write()/sendto()/sendmsg().
