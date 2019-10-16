@@ -49,7 +49,7 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
               {' ./pixie auth login --site="' + props.sitename + '"'}
             </CodeSnippet>
             <CodeSnippet showCopy={true} language='bash'>
-              {' ./pixie deploy --cluster_id "' + props.clusterID + '"\n --use_version v0.1.4'}
+              {' ./pixie deploy --cluster_id "' + props.clusterID + '"\n \\ --use_version v0.1.4'}
             </CodeSnippet>
             <br/>
             <br/>
