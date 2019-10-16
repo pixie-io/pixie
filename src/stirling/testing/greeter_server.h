@@ -94,8 +94,15 @@ class StreamingGreeterService final : public StreamingGreeter::Service {
 
 class ServiceRunner {
  public:
+  explicit ServiceRunner(int port = 0) : port_(port) {}
+
   std::unique_ptr<::grpc::Server> Run() {
-    server_builder_.AddListeningPort("localhost:0", ::grpc::InsecureServerCredentials(), &port_);
+    if (port_ == 0) {
+      server_builder_.AddListeningPort("localhost:0", ::grpc::InsecureServerCredentials(), &port_);
+    } else {
+      server_builder_.AddListeningPort(absl::StrCat("localhost:", port_),
+                                       ::grpc::InsecureServerCredentials());
+    }
     return server_builder_.BuildAndStart();
   }
 
