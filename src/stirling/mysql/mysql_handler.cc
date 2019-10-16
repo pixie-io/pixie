@@ -166,14 +166,13 @@ std::unique_ptr<OKResponse> HandleOKMessage(std::deque<Packet>* resp_packets) {
 StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets) {
   DCHECK(!resp_packets->empty());
 
+  // Process header packet.
   Packet packet = resp_packets->front();
-
   int param_offset = 0;
   int num_col = ProcessLengthEncodedInt(packet.msg, &param_offset);
   if (num_col == 0) {
     return error::Internal("HandleResultset(): num columns should never be 0.");
   }
-
   if (!IsResultsetComplete(num_col, *resp_packets)) {
     return std::unique_ptr<Resultset>(nullptr);
   }
@@ -200,15 +199,17 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
   }
 
   // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
+  bool client_deprecate_eof = true;
   if (IsEOFPacket(resp_packets->front())) {
+    client_deprecate_eof = false;
     resp_packets->pop_front();
   }
 
   std::vector<ResultsetRow> results;
 
-  auto isLastPacket = [](const Packet& p) {
+  auto isLastPacket = [client_deprecate_eof](const Packet& p) {
     // Depending on CLIENT_DEPRECATE_EOF, we may either get an OK or EOF packet.
-    return IsErrPacket(p) || IsOKPacket(p) || IsEOFPacket(p);
+    return IsErrPacket(p) || (client_deprecate_eof ? IsOKPacket(p) : IsEOFPacket(p));
   };
 
   while (!isLastPacket(resp_packets->front())) {
@@ -228,8 +229,14 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
     std::deque<Packet>* resp_packets) {
   DCHECK(!resp_packets->empty());
   Packet packet = resp_packets->front();
-  LOG_IF(DFATAL, packet.msg.size() != 12)
-      << "StmtPrepareOK response package message size must be 12.";
+
+  if (packet.msg.size() != 12U) {
+    return error::Internal("StmtPrepareOK response packet message size must be 12.");
+  }
+  if (packet.msg[0] != 0 || packet.msg[9] != 0) {
+    return error::Internal("Does not appear to be a StmtPrepareOK response.");
+  }
+
   int stmt_id = utils::LEStrToInt(packet.msg.substr(1, 4));
   size_t num_col = utils::LEStrToInt(packet.msg.substr(5, 2));
   size_t num_param = utils::LEStrToInt(packet.msg.substr(7, 2));
@@ -240,9 +247,7 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
   // Reference: https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html.
   size_t expected_num_packets = 1 + num_col + num_param + (num_col != 0) + (num_param != 0);
   if (expected_num_packets > resp_packets->size()) {
-    return error::Cancelled(
-        "Handle StmtPrepareOKResponse: Not enough packets. Expected: %d. Actual:%d",
-        expected_num_packets, resp_packets->size());
+    return std::unique_ptr<StmtPrepareOKResponse>(nullptr);
   }
 
   StmtPrepareRespHeader resp_header{stmt_id, num_col, num_param, warning_count};
