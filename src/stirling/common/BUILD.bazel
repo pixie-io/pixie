@@ -1,0 +1,15 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+    ),
+    hdrs = glob(
+        [
+            "*.h",
+        ],
+    ),
+)

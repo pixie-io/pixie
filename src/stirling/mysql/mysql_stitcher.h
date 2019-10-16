@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "src/common/base/status.h"
+#include "src/stirling/common/parse_state.h"
 #include "src/stirling/mysql/mysql.h"
 
 namespace pl {
@@ -37,42 +38,42 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
  * @param state: MySQL state from previous "statement" requests (i.e. state from prepared
  * statements).
  * @param entries: vector of entries that can be appended to if an event of interest is discovered.
- * @return There are three possible outcomes for each request (success, needs-more-data or error).
- *         Resp packets are only consumed on success. Needs-more-data simply indicates that
- *         not all response packets were present. Error means that an unexpected packet was
- * discovered, indicating that we have lost track of the connection.
+ * @return There are two possible normal outcomes for each request (success or needs-more-data),
+ *         in addition to error cases. Resp packets are only consumed on success.
+ *         Needs-more-data simply indicates that not all response packets were present.
+ *         Error are communicated through Status, and indicate an unexpected packet.
+ *         This usually means we have lost track of the connection.
+ *         Note that errors are communicated through Status and include an error message.
  */
-// TODO(oazizi): Convert these to StatusOr<ParseState>, since that adds clarity.
-// Errors can still be returned through status instead of ParseState::kInvalid,
-// because we can include an error message.
 
-StatusOr<bool> ProcessStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                        mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<bool> ProcessStmtSendLongData(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                       mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
+                                             std::deque<Packet>* resp_packets, mysql::State* state,
+                                             std::vector<Entry>* entries);
 
-StatusOr<bool> ProcessStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                        mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<bool> ProcessStmtClose(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                      mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<bool> ProcessStmtFetch(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                      mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<bool> ProcessStmtReset(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtReset(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                      mysql::State* state, std::vector<Entry>* entries);
 
-StatusOr<bool> ProcessQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                            std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                  std::vector<Entry>* entries);
 
-StatusOr<bool> ProcessFieldList(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessFieldList(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                      std::vector<Entry>* entries);
 
-StatusOr<bool> ProcessRequestWithBasicResponse(const Packet& req_packet,
-                                               std::deque<Packet>* resp_packets,
-                                               std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet,
+                                                     std::deque<Packet>* resp_packets,
+                                                     std::vector<Entry>* entries);
 
 }  // namespace mysql
 }  // namespace stirling

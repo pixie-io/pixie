@@ -80,8 +80,8 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
     // Command is the first byte.
     char command = req_packet.msg[0];
 
-    StatusOr<bool> s;
-    bool success = false;
+    StatusOr<ParseState> s;
+    ParseState result = ParseState::kInvalid;
 
     switch (DecodeCommand(command)) {
       // Internal commands with response: ERR_Packet.
@@ -91,7 +91,7 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
       case MySQLEventType::kDelayedInsert:
       case MySQLEventType::kDaemon:
         PL_ASSIGN_OR_RETURN_NO_DECL(
-            success, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
+            result, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
         break;
 
       // Basic Commands with response: OK_Packet or ERR_Packet
@@ -105,12 +105,12 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
       case MySQLEventType::kRefresh:  // Deprecated.
       case MySQLEventType::kPing:     // COM_PING can't actually send ERR_Packet.
         PL_ASSIGN_OR_RETURN_NO_DECL(
-            success, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
+            result, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
         break;
 
       case MySQLEventType::kQuit:  // Response: OK_Packet or a connection close.
         PL_ASSIGN_OR_RETURN_NO_DECL(
-            success, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
+            result, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
         break;
 
       // Basic Commands with response: EOF_Packet or ERR_Packet.
@@ -118,55 +118,55 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
       case MySQLEventType::kSetOption:
       case MySQLEventType::kDebug:
         PL_ASSIGN_OR_RETURN_NO_DECL(
-            success, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
+            result, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
         break;
 
       // COM_FIELD_LIST has its own COM_FIELD_LIST meta response (ERR_Packet or one or more Column
       // Definition packets and a closing EOF_Packet).
       case MySQLEventType::kFieldList:  // Deprecated.
-        PL_ASSIGN_OR_RETURN_NO_DECL(success, ProcessFieldList(req_packet, resp_packets, &entries));
+        PL_ASSIGN_OR_RETURN_NO_DECL(result, ProcessFieldList(req_packet, resp_packets, &entries));
         break;
 
       // COM_QUERY has its own COM_QUERY meta response (ERR_Packet, OK_Packet,
       // Protocol::LOCAL_INFILE_Request, or ProtocolText::Resultset).
       case MySQLEventType::kQuery:
-        PL_ASSIGN_OR_RETURN_NO_DECL(success, ProcessQuery(req_packet, resp_packets, &entries));
+        PL_ASSIGN_OR_RETURN_NO_DECL(result, ProcessQuery(req_packet, resp_packets, &entries));
         break;
 
       // COM_STMT_PREPARE returns COM_STMT_PREPARE_OK on success, ERR_Packet otherwise.
       case MySQLEventType::kStmtPrepare:
-        PL_ASSIGN_OR_RETURN_NO_DECL(success,
+        PL_ASSIGN_OR_RETURN_NO_DECL(result,
                                     ProcessStmtPrepare(req_packet, resp_packets, state, &entries));
         break;
 
       // COM_STMT_SEND_LONG_DATA has no response.
       case MySQLEventType::kStmtSendLongData:
         PL_ASSIGN_OR_RETURN_NO_DECL(
-            success, ProcessStmtSendLongData(req_packet, resp_packets, state, &entries));
+            result, ProcessStmtSendLongData(req_packet, resp_packets, state, &entries));
         break;
 
       // COM_STMT_EXECUTE has its own COM_STMT_EXECUTE meta response (OK_Packet, ERR_Packet or a
       // resultset: Binary Protocol Resultset).
       case MySQLEventType::kStmtExecute:
-        PL_ASSIGN_OR_RETURN_NO_DECL(success,
+        PL_ASSIGN_OR_RETURN_NO_DECL(result,
                                     ProcessStmtExecute(req_packet, resp_packets, state, &entries));
         break;
 
       // COM_CLOSE has no response.
       case MySQLEventType::kStmtClose:
-        PL_ASSIGN_OR_RETURN_NO_DECL(success,
+        PL_ASSIGN_OR_RETURN_NO_DECL(result,
                                     ProcessStmtClose(req_packet, resp_packets, state, &entries));
         break;
 
       // COM_STMT_RESET response is OK_Packet if the statement could be reset, ERR_Packet if not.
       case MySQLEventType::kStmtReset:
-        PL_ASSIGN_OR_RETURN_NO_DECL(success,
+        PL_ASSIGN_OR_RETURN_NO_DECL(result,
                                     ProcessStmtReset(req_packet, resp_packets, state, &entries));
         break;
 
       // COM_STMT_FETCH has a meta response (multi-resultset, or ERR_Packet).
       case MySQLEventType::kStmtFetch:
-        PL_ASSIGN_OR_RETURN_NO_DECL(success,
+        PL_ASSIGN_OR_RETURN_NO_DECL(result,
                                     ProcessStmtFetch(req_packet, resp_packets, state, &entries));
         break;
 
@@ -184,7 +184,9 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
         return error::Internal("Unknown command $0.", command);
     }
 
-    if (!success) {
+    DCHECK(result != ParseState::kInvalid);
+
+    if (result == ParseState::kNeedsMoreData) {
       break;
     }
 
@@ -193,13 +195,13 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
   return entries;
 }
 
-StatusOr<bool> ProcessStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  mysql::State* state, std::vector<Entry>* entries) {
+StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                        mysql::State* state, std::vector<Entry>* entries) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStringRequest(req_packet));
 
   if (resp_packets->empty()) {
     // Need more data.
-    return false;
+    return ParseState::kNeedsMoreData;
   }
 
   Packet& header_packet = resp_packets->front();
@@ -207,7 +209,7 @@ StatusOr<bool> ProcessStmtPrepare(const Packet& req_packet, std::deque<Packet>* 
     std::unique_ptr<ErrResponse> resp = HandleErrMessage(resp_packets);
     entries->push_back(Entry{CreateErrorJSON(req->msg(), resp->error_message()),
                              MySQLEntryStatus::kErr, req_packet.timestamp_ns});
-    return true;
+    return ParseState::kSuccess;
   }
 
   PL_ASSIGN_OR_RETURN(auto resp, HandleStmtPrepareOKResponse(resp_packets));
@@ -217,28 +219,29 @@ StatusOr<bool> ProcessStmtPrepare(const Packet& req_packet, std::deque<Packet>* 
 
   PL_UNUSED(entries);  // Don't push any entry for a prepare statement. Execute does that.
 
-  return true;
+  return ParseState::kSuccess;
 }
 
-StatusOr<bool> ProcessStmtSendLongData(const Packet& /* req_packet */,
-                                       std::deque<Packet>* resp_packets, mysql::State* /* state */,
-                                       std::vector<Entry>* entries) {
+StatusOr<ParseState> ProcessStmtSendLongData(const Packet& /* req_packet */,
+                                             std::deque<Packet>* resp_packets,
+                                             mysql::State* /* state */,
+                                             std::vector<Entry>* entries) {
   // COM_STMT_SEND_LONG_DATA doesn't have a response.
   PL_UNUSED(resp_packets);
 
   // No entries to record.
   PL_UNUSED(entries);
 
-  return false;
+  return ParseState::kNeedsMoreData;
 }
 
-StatusOr<bool> ProcessStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  mysql::State* state, std::vector<Entry>* entries) {
+StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                        mysql::State* state, std::vector<Entry>* entries) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStmtExecuteRequest(req_packet, &state->prepare_events));
 
   if (resp_packets->empty()) {
     // Need more data.
-    return false;
+    return ParseState::kNeedsMoreData;
   }
 
   // TODO(chengruizhe/oazizi): Write result set to entry.
@@ -250,7 +253,7 @@ StatusOr<bool> ProcessStmtExecute(const Packet& req_packet, std::deque<Packet>* 
     std::unique_ptr<ErrResponse> resp = HandleErrMessage(resp_packets);
     entries->emplace_back(Entry{CreateErrorJSON(filled_msg, resp->error_message()),
                                 MySQLEntryStatus::kErr, req_packet.timestamp_ns});
-    return true;
+    return ParseState::kSuccess;
   }
 
   if (IsOKPacket(first_resp_packet)) {
@@ -260,19 +263,20 @@ StatusOr<bool> ProcessStmtExecute(const Packet& req_packet, std::deque<Packet>* 
     PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
 
     // Nullptr indicates there was not enough packets to process the Resultset.
-    // This is not an error, but we return false to indicate that we need more data.
+    // This is not an error, but we return ParseState::kNeedsMoreData to indicate that we need more
+    // data.
     if (resp == nullptr) {
-      return false;
+      return ParseState::kNeedsMoreData;
     }
   }
 
   entries->emplace_back(
       Entry{CreateMessageJSON(filled_msg), MySQLEntryStatus::kOK, req_packet.timestamp_ns});
-  return true;
+  return ParseState::kSuccess;
 }
 
-StatusOr<bool> ProcessStmtClose(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                mysql::State* state, std::vector<Entry>* entries) {
+StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                      mysql::State* state, std::vector<Entry>* entries) {
   PL_RETURN_IF_ERROR(HandleStmtCloseRequest(req_packet, &state->prepare_events));
 
   // COM_STMT_CLOSE doesn't use any response packets.
@@ -281,34 +285,35 @@ StatusOr<bool> ProcessStmtClose(const Packet& req_packet, std::deque<Packet>* re
   // No entries to record.
   PL_UNUSED(entries);
 
-  return true;
+  return ParseState::kSuccess;
 }
 
-StatusOr<bool> ProcessStmtFetch(const Packet& /* req_packet */, std::deque<Packet>* resp_packets,
-                                mysql::State* /* state */, std::vector<Entry>* /* entries */) {
+StatusOr<ParseState> ProcessStmtFetch(const Packet& /* req_packet */,
+                                      std::deque<Packet>* resp_packets, mysql::State* /* state */,
+                                      std::vector<Entry>* /* entries */) {
   if (resp_packets->empty()) {
     // Need more data.
-    return false;
+    return ParseState::kNeedsMoreData;
   }
 
   return error::Unimplemented("COM_STMT_FETCH is unhandled.");
 }
 
-StatusOr<bool> ProcessStmtReset(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                mysql::State* state, std::vector<Entry>* entries) {
+StatusOr<ParseState> ProcessStmtReset(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                      mysql::State* state, std::vector<Entry>* entries) {
   PL_UNUSED(state);
 
   // Defer to basic response for now.
   return ProcessRequestWithBasicResponse(req_packet, resp_packets, entries);
 }
 
-StatusOr<bool> ProcessQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                            std::vector<Entry>* entries) {
+StatusOr<ParseState> ProcessQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                                  std::vector<Entry>* entries) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStringRequest(req_packet));
 
   if (resp_packets->empty()) {
     // Need more data.
-    return false;
+    return ParseState::kNeedsMoreData;
   }
 
   Packet& first_resp_packet = resp_packets->front();
@@ -317,7 +322,7 @@ StatusOr<bool> ProcessQuery(const Packet& req_packet, std::deque<Packet>* resp_p
     std::unique_ptr<ErrResponse> resp = HandleErrMessage(resp_packets);
     entries->emplace_back(Entry{CreateErrorJSON(req->msg(), resp->error_message()),
                                 MySQLEntryStatus::kErr, req_packet.timestamp_ns});
-    return true;
+    return ParseState::kSuccess;
   }
 
   if (IsOKPacket(first_resp_packet)) {
@@ -327,33 +332,35 @@ StatusOr<bool> ProcessQuery(const Packet& req_packet, std::deque<Packet>* resp_p
     PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
 
     // Nullptr indicates there was not enough packets to process the Resultset.
-    // This is not an error, but we return false to indicate that we need more data.
+    // This is not an error, but we return ParseState::kNeedsMoreData to indicate that we need more
+    // data.
     if (resp == nullptr) {
-      return false;
+      return ParseState::kNeedsMoreData;
     }
   }
 
   entries->emplace_back(
       Entry{CreateMessageJSON(req->msg()), MySQLEntryStatus::kOK, req_packet.timestamp_ns});
-  return true;
+  return ParseState::kSuccess;
 }
 
-StatusOr<bool> ProcessFieldList(const Packet& /* req_packet */, std::deque<Packet>* resp_packets,
-                                std::vector<Entry>* /* entries */) {
+StatusOr<ParseState> ProcessFieldList(const Packet& /* req_packet */,
+                                      std::deque<Packet>* resp_packets,
+                                      std::vector<Entry>* /* entries */) {
   if (resp_packets->empty()) {
     // Need more data.
-    return false;
+    return ParseState::kNeedsMoreData;
   }
 
   return error::Unimplemented("COM_FIELD_LIST is unhandled.");
 }
 
-StatusOr<bool> ProcessRequestWithBasicResponse(const Packet& /* req_packet */,
-                                               std::deque<Packet>* resp_packets,
-                                               std::vector<Entry>* entries) {
+StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& /* req_packet */,
+                                                     std::deque<Packet>* resp_packets,
+                                                     std::vector<Entry>* entries) {
   if (resp_packets->empty()) {
     // Need more data.
-    return false;
+    return ParseState::kNeedsMoreData;
   }
 
   Packet& resp_packet = resp_packets->front();
@@ -365,7 +372,7 @@ StatusOr<bool> ProcessRequestWithBasicResponse(const Packet& /* req_packet */,
   // Currently don't record basic request/response events.
   PL_UNUSED(entries);
 
-  return true;
+  return ParseState::kSuccess;
 }
 
 }  // namespace mysql

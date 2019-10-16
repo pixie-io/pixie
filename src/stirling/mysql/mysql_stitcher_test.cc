@@ -26,9 +26,9 @@ TEST(StitcherTest, TestProcessStmtPrepareOK) {
 
   // Run function-under-test.
   std::vector<Entry> entries;
-  StatusOr<bool> s = ProcessStmtPrepare(req, &ok_resp_packets, &state, &entries);
+  StatusOr<ParseState> s = ProcessStmtPrepare(req, &ok_resp_packets, &state, &entries);
   EXPECT_TRUE(s.ok());
-  EXPECT_TRUE(s.ValueOrDie());
+  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
   auto iter = state.prepare_events.find(stmt_id);
@@ -48,9 +48,9 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
 
   // Run function-under-test.
   std::vector<Entry> entries;
-  StatusOr<bool> s = ProcessStmtPrepare(req, &err_resp_packets, &state, &entries);
+  StatusOr<ParseState> s = ProcessStmtPrepare(req, &err_resp_packets, &state, &entries);
   EXPECT_TRUE(s.ok());
-  EXPECT_TRUE(s.ValueOrDie());
+  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
   auto iter = state.prepare_events.find(stmt_id);
@@ -73,9 +73,9 @@ TEST(StitcherTest, TestProcessStmtExecute) {
 
   // Run function-under-test.
   std::vector<Entry> entries;
-  StatusOr<bool> s = ProcessStmtExecute(req, &resultset, &state, &entries);
+  StatusOr<ParseState> s = ProcessStmtExecute(req, &resultset, &state, &entries);
   EXPECT_TRUE(s.ok());
-  EXPECT_TRUE(s.ValueOrDie());
+  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
   ASSERT_EQ(1, entries.size());
@@ -100,9 +100,9 @@ TEST(StitcherTest, TestProcessStmtClose) {
 
   // Run function-under-test.
   std::vector<Entry> entries;
-  StatusOr<bool> s = ProcessStmtClose(req, &resp_packets, &state, &entries);
+  StatusOr<ParseState> s = ProcessStmtClose(req, &resp_packets, &state, &entries);
   EXPECT_TRUE(s.ok());
-  EXPECT_TRUE(s.ValueOrDie());
+  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check the resulting entries and state.
   EXPECT_EQ(0, state.prepare_events.size());
@@ -118,7 +118,7 @@ TEST(StitcherTest, TestProcessQuery) {
   std::vector<Entry> entries;
   auto s = ProcessQuery(req, &resultset, &entries);
   EXPECT_TRUE(s.ok());
-  EXPECT_TRUE(s.ValueOrDie());
+  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
   ASSERT_EQ(1, entries.size());
@@ -138,7 +138,7 @@ TEST(StitcherTest, ProcessRequestWithBasicResponse) {
   std::vector<Entry> entries;
   auto s = ProcessRequestWithBasicResponse(req, &response_packets, &entries);
   EXPECT_TRUE(s.ok());
-  EXPECT_TRUE(s.ValueOrDie());
+  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
   EXPECT_EQ(0, entries.size());
