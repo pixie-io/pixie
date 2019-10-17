@@ -13,14 +13,14 @@ namespace pl {
  */
 class SubProcess {
  public:
-  explicit SubProcess(std::vector<std::string> args);
+  SubProcess();
 
   /**
    * @brief Start the command.
    *
    * @return OK if succeed, otherwise an error status.
    */
-  Status Start();
+  Status Start(const std::vector<std::string>& args);
 
   /**
    * @brief Kill the started process.
@@ -35,8 +35,6 @@ class SubProcess {
   int child_pid() const { return child_pid_; }
 
  private:
-  const std::vector<std::string> args_;
-  std::vector<char*> exec_args_;
   int child_pid_;
 };
 

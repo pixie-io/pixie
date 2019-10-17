@@ -83,11 +83,16 @@ class GRPCTraceGoTest : public ::testing::Test {
  protected:
   GRPCTraceGoTest()
       : data_table_(kHTTPTable),
-        s_({kServerPath}),
         ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
 
   void SetUp() override {
-    CHECK(s_.Start().ok());
+    static constexpr char kBaseDir[] = "src/stirling/testing";
+    server_path_ =
+        TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_server"));
+    client_path_ =
+        TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_client"));
+
+    CHECK(s_.Start({server_path_}).ok());
 
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
@@ -107,11 +112,8 @@ class GRPCTraceGoTest : public ::testing::Test {
     EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
   }
 
-  static constexpr char kBaseDir[] = "src/stirling/testing";
-  inline static const std::string kServerPath =
-      TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_server"));
-  inline static const std::string kClientPath =
-      TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_client"));
+  std::string server_path_;
+  std::string client_path_;
 
   // Create a context to pass into each TransferData() in the test, using a dummy ASID.
   static constexpr uint32_t kASID = 1;
@@ -126,8 +128,8 @@ class GRPCTraceGoTest : public ::testing::Test {
 TEST_F(GRPCTraceGoTest, TestGolangGrpcService) {
   // TODO(yzhao): Add a --count flag to greeter client so we can test the case of multiple RPC calls
   // (multiple HTTP2 streams).
-  SubProcess c({kClientPath, "-name=PixieLabs", "-once"});
-  EXPECT_OK(c.Start());
+  SubProcess c;
+  EXPECT_OK(c.Start({client_path_, "-name=PixieLabs", "-once"}));
 
   EXPECT_OK(socket_trace_connector_->TestOnlySetTargetPID(c.child_pid()));
 
@@ -181,8 +183,8 @@ class GRPCTraceGoDisabledThroughFlagTest : public GRPCTraceGoTest {
 };
 
 TEST_F(GRPCTraceGoDisabledThroughFlagTest, DISABLED_NoDataCaptured) {
-  SubProcess c({kClientPath, "-name=PixieLabs", "-once"});
-  EXPECT_OK(c.Start());
+  SubProcess c;
+  EXPECT_OK(c.Start({client_path_, "-name=PixieLabs", "-once"}));
 
   // Avoid the noise from HTTP traffic.
   EXPECT_OK(socket_trace_connector_->TestOnlySetTargetPID(c.child_pid()));

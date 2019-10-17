@@ -4,15 +4,16 @@
 
 namespace pl {
 
-SubProcess::SubProcess(std::vector<std::string> args) : args_(std::move(args)), child_pid_(-1) {
-  exec_args_.reserve(args_.size() + 1);
-  for (const std::string& arg : args_) {
-    exec_args_.push_back(const_cast<char*>(arg.c_str()));
-  }
-  exec_args_.push_back(nullptr);
-}
+SubProcess::SubProcess() : child_pid_(-1) {}
 
-Status SubProcess::Start() {
+Status SubProcess::Start(const std::vector<std::string>& args) {
+  std::vector<char*> exec_args;
+  exec_args.reserve(args.size() + 1);
+  for (const std::string& arg : args) {
+    exec_args.push_back(const_cast<char*>(arg.c_str()));
+  }
+  exec_args.push_back(nullptr);
+
   child_pid_ = fork();
   if (child_pid_ < 0) {
     return error::Internal("Could not fork!");
@@ -25,7 +26,7 @@ Status SubProcess::Start() {
     // argv[1] = "-la";
     // argv[2] = NULL;
     // execvp(cmd, argv);
-    int retval = execvp(exec_args_[0], exec_args_.data());
+    int retval = execvp(exec_args[0], exec_args.data());
     if (retval == -1) {
       exit(1);
     }

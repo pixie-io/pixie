@@ -44,6 +44,7 @@ void UnpackData(const uint8_t* buf, Frame* f) {
   if (IsPadded(frame.hd)) {
     frame.padlen = *buf;
     ++buf;
+    DCHECK_NE(frame_body_length, 0U);
     --frame_body_length;
   }
 
