@@ -270,6 +270,12 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, errors.New("invalid token")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Request for token failed with status %d", resp.StatusCode)
+	}
 	refreshToken := &RefreshToken{}
 	if err := json.NewDecoder(resp.Body).Decode(refreshToken); err != nil {
 		return nil, err
