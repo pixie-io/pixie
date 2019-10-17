@@ -12,6 +12,10 @@ const ReplacePlugin = require('webpack-plugin-replace');
 const YAML = require('yaml');
 
 const isDevServer = process.argv.find(v => v.includes('webpack-dev-server'));
+let topLevelDir = '';
+if (isDevServer) {
+  topLevelDir = execSync('git rev-parse --show-toplevel').toString().trim();
+}
 
 let plugins = [
   new CheckerPlugin(),
@@ -183,6 +187,21 @@ module.exports = (env) => {
 
   // Normally, these values are replaced by Nginx. However, since we do not
   // use nginx for the dev server, we need to replace them here.
+  let environment = process.env.PL_BUILD_TYPE;
+  if (!environment || environment === 'dev') {
+    environment = 'base';
+  }
+
+  // Get Auth0ClientID.
+  authYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'auth0_config.yaml').replace(/\//g, '\\/');
+  auth0YamlReq = execSync('cat ' + authYamlPath);
+  auth0YAML = YAML.parse(auth0YamlReq.toString());
+
+  // Get domain name.
+  domainYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'domain_config.yaml').replace(/\//g, '\\/');
+  domainYamlReq = execSync('cat ' + domainYamlPath);
+  domainYAML = YAML.parse(domainYamlReq.toString());
+
   webpackConfig.plugins.push(
     new ReplacePlugin({
       include: [
@@ -190,12 +209,14 @@ module.exports = (env) => {
       ],
       values: {
         __CONFIG_AUTH0_DOMAIN__: 'pixie-labs.auth0.com',
-        __CONFIG_AUTH0_CLIENT_ID__: 'qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup',
-        __CONFIG_DOMAIN_NAME__: 'dev.withpixie.dev',
+        __CONFIG_AUTH0_CLIENT_ID__: auth0YAML.data.PL_AUTH0_CLIENT_ID,
+        __CONFIG_DOMAIN_NAME__: domainYAML.data.PL_DOMAIN_NAME,
       },
     }));
 
-  results = execSync('sops --decrypt ..\/..\/credentials\/k8s\/dev\/cloud_proxy_tls_certs.yaml');
+  credsEnv = environment === 'base' ? 'dev' : environment;
+  certsPath = join(topLevelDir, 'credentials', 'k8s', credsEnv, 'cloud_proxy_tls_certs.yaml').replace(/\//g, '\\/');
+  results = execSync('sops --decrypt ' + certsPath);
   credsYAML = YAML.parse(results.toString());
   webpackConfig.devServer.https = {
     key: credsYAML.stringData['tls.key'],
