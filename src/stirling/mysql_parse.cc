@@ -54,7 +54,7 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
   std::vector<size_t> start_positions;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
-  size_t bytes_prcocessed = 0;
+  size_t bytes_processed = 0;
 
   while (!buf.empty()) {
     mysql::Packet message;
@@ -64,11 +64,12 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
       break;
     }
 
-    start_positions.push_back(bytes_prcocessed);
+    start_positions.push_back(bytes_processed);
+    message.creation_timestamp = std::chrono::steady_clock::now();
     messages->push_back(std::move(message));
-    bytes_prcocessed = (buf_size - buf.size());
+    bytes_processed = (buf_size - buf.size());
   }
-  ParseResult<size_t> result{std::move(start_positions), bytes_prcocessed, s};
+  ParseResult<size_t> result{std::move(start_positions), bytes_processed, s};
   return result;
 }
 

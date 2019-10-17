@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 
 #include "src/common/base/types.h"
+#include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/testing/events_fixture.h"
 
 namespace pl {
@@ -345,7 +346,7 @@ TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
 }
 
 // TODO(yzhao): Add the same test for HTTPMessage.
-TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedupAfterBreakingSizeLimit) {
+TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedUpAfterBreakingSizeLimit) {
   FLAGS_messages_size_limit_bytes = 10000;
   ConnectionTracker tracker;
 
@@ -469,7 +470,7 @@ TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
 
 TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
   FLAGS_messages_size_limit_bytes = 10000;
-  // Intentionally use non-HTTP data so make it stuck.
+
   auto frame0 = InitSendEvent(kHTTPReq0);
   auto frame1 = InitRecvEvent(kHTTPResp0);
   auto frame2 = InitSendEvent(kHTTPReq0);
@@ -490,6 +491,25 @@ TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
 
   // TODO(yzhao): It's not possible to test the response messages, as they are immediately exported
   // without waiting for the requests.
+}
+
+TEST_F(ConnectionTrackerTest, MySQLMessagesErasedAfterExpiration) {
+  FLAGS_messages_size_limit_bytes = 10000;
+
+  auto msg0 = InitSendEvent(mysql::testutils::GenRawPacket(0, "\x03SELECT"));
+
+  ConnectionTracker tracker;
+
+  FLAGS_messages_expiration_duration_secs = 10000;
+
+  tracker.AddDataEvent(std::move(msg0));
+  tracker.ProcessMessages<mysql::Entry>();
+  EXPECT_THAT(tracker.req_messages<mysql::Packet>(), SizeIs(1));
+
+  FLAGS_messages_expiration_duration_secs = 0;
+
+  tracker.ProcessMessages<mysql::Entry>();
+  EXPECT_THAT(tracker.req_messages<mysql::Packet>(), IsEmpty());
 }
 
 }  // namespace stirling
