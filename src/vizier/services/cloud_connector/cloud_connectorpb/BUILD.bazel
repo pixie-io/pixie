@@ -5,9 +5,12 @@ pl_proto_library(
     name = "service_pl_proto",
     srcs = ["service.proto"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//src/cloud/cloudpb:cloud_pl_proto",
-    ],
+)
+
+pl_cc_proto_library(
+    name = "service_pl_cc_proto",
+    proto = ":service_pl_proto",
+    visibility = ["//visibility:public"],
 )
 
 pl_go_proto_library(
@@ -15,7 +18,4 @@ pl_go_proto_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb",
     proto = ":service_pl_proto",
     visibility = ["//visibility:public"],
-    deps = [
-        "//src/cloud/cloudpb:cloud_pl_go_proto",
-    ],
 )
