@@ -22,9 +22,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/benchmark/archive/v1.5.0.tar.gz"],
     ),
     io_bazel_rules_skylib = dict(
-        sha256 = "2ea8a5ed2b448baf4a6855d3ce049c4c452a6470b1efd1504fdb7c1c134d220a",
-        strip_prefix = "bazel-skylib-0.8.0",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.8.0.tar.gz"],
+        sha256 = "e5d90f0ec952883d56747b7604e2a15ee36e288bb556c3d0ed33e818a4d971f2",
+        strip_prefix = "bazel-skylib-1.0.2",
+        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/1.0.2.tar.gz"],
     ),
     io_bazel_rules_docker = dict(
         sha256 = "413bb1ec0895a8d3249a01edf24b82fd06af3c8633c9fb833a0cb1d4b234d46d",
@@ -32,11 +32,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.12.0.tar.gz"],
     ),
     io_bazel_toolchains = dict(
-        sha256 = "ab0d8aaeaeeef413ddb03922dbdb99bbae9e1b2c157a87c77d70d45a830be5b0",
-        strip_prefix = "bazel-toolchains-0.29.1",
+        sha256 = "e9bab54199722935f239cb1cd56a80be2ac3c3843e1a6d3492e2bc11f9c21daf",
+        strip_prefix = "bazel-toolchains-1.0.0",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/0.29.1.tar.gz",
-            "https://github.com/bazelbuild/bazel-toolchains/archive/0.29.1.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/1.0.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-toolchains/archive/1.0.0.tar.gz",
         ],
     ),
     com_google_googletest = dict(
