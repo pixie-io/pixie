@@ -189,6 +189,7 @@ def pl_deps():
     _repository_impl(name = "com_google_farmhash", build_file = "@pl//third_party:farmhash.BUILD")
     _repository_impl(name = "com_github_h2o_picohttpparser", build_file = "@pl//third_party:picohttpparser.BUILD")
     _repository_impl(name = "rules_foreign_cc")
+    _repository_impl(name = "io_bazel_rules_k8s")
 
     _cc_deps()
     _go_deps()

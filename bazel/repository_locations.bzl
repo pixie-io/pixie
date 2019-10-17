@@ -11,6 +11,13 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/bazelbuild/rules_go/releases/download/v0.20.0/rules_go-v0.20.0.tar.gz",
         ],
     ),
+    io_bazel_rules_k8s = dict(
+        sha256 = "649a851538f863410fd78147b78334bc7f47008d77712a4ee2f76d6aade704e7",
+        strip_prefix = "rules_k8s-0.2",
+        urls = [
+            "https://github.com/bazelbuild/rules_k8s/releases/download/v0.2/rules_k8s-v0.2.tar.gz",
+        ],
+    ),
     com_github_bazelbuild_buildtools = dict(
         sha256 = "f3ef44916e6be705ae862c0520bac6834dd2ff1d4ac7e5abc61fe9f12ce7a865",
         strip_prefix = "buildtools-0.29.0",

@@ -10,6 +10,8 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 load("@distroless//package_manager:package_manager.bzl", "package_manager_repositories")
 load("@distroless//package_manager:dpkg.bzl", "dpkg_list", "dpkg_src")
+load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
+load("@io_bazel_rules_k8s//k8s:k8s_go_deps.bzl", k8s_go_deps = "deps")
 
 # Sets up package manager which we use build deploy images.
 def _package_manager_setup():
