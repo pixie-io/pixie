@@ -5,9 +5,9 @@
 
 printenv
 
-PL_BUILD_TYPE=prod
-PL_IMAGE_TAG=nightly-$(date +%s)-`cat SOURCE_VERSION`
-GIT_COMMIT=`cat GIT_COMMIT`
+export PL_BUILD_TYPE=prod
+export PL_IMAGE_TAG=nightly-$(date +%s)-`cat SOURCE_VERSION`
+export GIT_COMMIT=`cat GIT_COMMIT`
 
 skaffold build -q -o '{{json .}}' -f skaffold/skaffold_cloud.yaml > manifest_internal.json
 
