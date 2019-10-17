@@ -1521,6 +1521,7 @@ go_repository(
     importpath = "github.com/ernesto-jimenez/gogen",
     commit = "d7d4131e6607813977e78297a6060f360f056a97",
 )
+
 go_repository(
     name = "com_github_serenize_snaker",
     importpath = "github.com/serenize/snaker",
