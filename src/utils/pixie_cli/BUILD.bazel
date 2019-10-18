@@ -18,6 +18,13 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
+go_binary(
+    name = "pixie_mac",
+    goos = "darwin",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
 #TODO(zasgar): Refactor this into common utils/look into using hash.bzl.
 genrule(
     name = "pixie.sha256",
