@@ -148,10 +148,10 @@ TEST(SyncTest, OldResponses) {
   uint64_t t = 0;
 
   // First two packets are dangling, and pre-date the request below.
-  Packet resp0 = testutils::GenOK();
+  Packet resp0 = testutils::GenOK(/*seq_id*/ 1);
   resp0.timestamp_ns = t++;
 
-  Packet resp1 = testutils::GenOK();
+  Packet resp1 = testutils::GenOK(/*seq_id*/ 1);
   resp1.timestamp_ns = t++;
 
   // This is the main request, with a well-formed response below.
