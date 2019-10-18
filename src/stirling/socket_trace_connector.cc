@@ -218,7 +218,7 @@ void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
   }
 }
 
-void SocketTraceConnector::HandleHTTPProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
+void SocketTraceConnector::HandleDataOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto data_event_ptr = std::make_unique<SocketDataEvent>(data);
@@ -234,18 +234,8 @@ std::string ProbeLossMessage(std::string_view perf_buffer_name, uint64_t lost) {
 
 }  // namespace
 
-void SocketTraceConnector::HandleHTTPProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
-  LOG(WARNING) << ProbeLossMessage("socket_http_events", lost);
-}
-
-void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
-  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
-  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  connector->AcceptDataEvent(std::make_unique<SocketDataEvent>(data));
-}
-
-void SocketTraceConnector::HandleMySQLProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
-  LOG(WARNING) << ProbeLossMessage("socket_mysql_events", lost);
+void SocketTraceConnector::HandleDataLoss(void* /*cb_cookie*/, uint64_t lost) {
+  LOG(WARNING) << ProbeLossMessage("socket_data_events", lost);
 }
 
 void SocketTraceConnector::HandleOpenProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
@@ -312,17 +302,11 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
 
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-
-  switch (event->attr.traffic_class.protocol) {
-    case kProtocolHTTP:
-    case kProtocolHTTP2:
-    case kProtocolMySQL:
-      break;
-    default:
-      LOG(WARNING) << absl::Substitute("AcceptDataEvent ignored due to unknown protocol: $0",
-                                       event->attr.traffic_class.protocol);
-      return;
-  }
+  DCHECK(event->attr.traffic_class.protocol == kProtocolHTTP ||
+         event->attr.traffic_class.protocol == kProtocolHTTP2 ||
+         event->attr.traffic_class.protocol == kProtocolMySQL)
+      << absl::Substitute("AcceptDataEvent ignored due to unknown protocol: $0",
+                          event->attr.traffic_class.protocol);
 
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
   tracker.AddDataEvent(std::move(event));

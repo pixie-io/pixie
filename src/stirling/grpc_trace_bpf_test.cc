@@ -104,7 +104,7 @@ class GRPCTraceGoTest : public ::testing::Test {
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     socket_trace_connector_ = static_cast<SocketTraceConnector*>(connector_.get());
     CHECK(socket_trace_connector_ != nullptr);
-    CHECK(connector_->Init().ok());
+    PL_CHECK_OK(connector_->Init());
   }
 
   void TearDown() override {

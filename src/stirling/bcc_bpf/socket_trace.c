@@ -42,8 +42,7 @@ const int kTrafficInferenceThresholdDen = 5;
 const int kTrafficInferenceBias = 5;
 
 // This is the perf buffer for BPF program to export data from kernel to user space.
-BPF_PERF_OUTPUT(socket_http_events);
-BPF_PERF_OUTPUT(socket_mysql_events);
+BPF_PERF_OUTPUT(socket_data_events);
 BPF_PERF_OUTPUT(socket_open_conns);
 BPF_PERF_OUTPUT(socket_close_conns);
 
@@ -507,11 +506,11 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
   switch (event->attr.traffic_class.protocol) {
     case kProtocolHTTP:
     case kProtocolHTTP2:
-      socket_http_events.perf_submit(ctx, event, size_to_submit);
+      socket_data_events.perf_submit(ctx, event, size_to_submit);
       break;
     case kProtocolMySQL:
       if (meets_threshold) {
-        socket_mysql_events.perf_submit(ctx, event, size_to_submit);
+        socket_data_events.perf_submit(ctx, event, size_to_submit);
       }
       break;
     default:

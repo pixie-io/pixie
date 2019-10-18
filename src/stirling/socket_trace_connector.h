@@ -62,7 +62,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   static constexpr std::string_view kHTTPPerfBufferNames[] = {
       "socket_open_conns",
-      "socket_http_events",
+      "socket_data_events",
       "socket_close_conns",
   };
 
@@ -71,7 +71,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   static constexpr std::string_view kMySQLPerfBufferNames[] = {
       "socket_open_conns",
-      "socket_mysql_events",
+      "socket_data_events",
       "socket_close_conns",
   };
 
@@ -87,6 +87,9 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   // Dim 0: DataTables; dim 1: perfBuffer Names
   static constexpr ArrayView<std::string_view> perfBufferNames[] = {kHTTPPerfBuffers,
                                                                     kMySQLPerfBuffers};
+  // TODO(yzhao/oazizi): This is no longer necessary because different tables now pull data from the
+  // same set of perf buffers. But we'd need to think about how to adapt the APIs with the table_num
+  // argument.
   static constexpr auto kTablePerfBufferMap =
       ArrayView<ArrayView<std::string_view> >(perfBufferNames);
 
@@ -128,10 +131,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
  private:
   // ReadPerfBuffer poll callback functions (must be static).
   // These are used by the static variables below, and have to be placed here.
-  static void HandleHTTPProbeOutput(void* cb_cookie, void* data, int data_size);
-  static void HandleHTTPProbeLoss(void* cb_cookie, uint64_t lost);
-  static void HandleMySQLProbeOutput(void* cb_cookie, void* data, int data_size);
-  static void HandleMySQLProbeLoss(void* cb_cookie, uint64_t lost);
+  static void HandleDataOutput(void* cb_cookie, void* data, int data_size);
+  static void HandleDataLoss(void* cb_cookie, uint64_t lost);
   static void HandleCloseProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleCloseProbeLoss(void* cb_cookie, uint64_t lost);
   static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
@@ -179,11 +180,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   static constexpr PerfBufferSpec kPerfBufferSpecsArray[] = {
       // For data events. The order must be consistent with output tables.
-      {"socket_http_events", &SocketTraceConnector::HandleHTTPProbeOutput,
-       &SocketTraceConnector::HandleHTTPProbeLoss},
-      {"socket_mysql_events", &SocketTraceConnector::HandleMySQLProbeOutput,
-       &SocketTraceConnector::HandleMySQLProbeLoss},
-
+      {"socket_data_events", &SocketTraceConnector::HandleDataOutput,
+       &SocketTraceConnector::HandleDataLoss},
       // For non-data events. Must not mix with the above perf buffers for data events.
       {"socket_open_conns", &SocketTraceConnector::HandleOpenProbeOutput,
        &SocketTraceConnector::HandleOpenProbeLoss},
