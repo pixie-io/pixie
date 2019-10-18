@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/artifact_tracker/versionspb:versions_pl_go_proto",
+        "//src/cloud/artifact_tracker/versionspb/utils:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_googleapis_google_cloud_go_testing//storage/stiface:go_default_library",
         "@com_github_jmoiron_sqlx//:go_default_library",

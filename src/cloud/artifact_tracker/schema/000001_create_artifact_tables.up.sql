@@ -15,7 +15,8 @@ CREATE TABLE artifacts (
   version_str varchar(50),
   available_artifacts artifact_type[],
 
-  PRIMARY KEY(id, artifact_name, version_str)
+  PRIMARY KEY(id, artifact_name, version_str),
+  UNIQUE(artifact_name, version_str)
 );
 
 CREATE TABLE artifact_changelogs (

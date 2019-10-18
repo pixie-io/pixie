@@ -2,8 +2,6 @@ package controller
 
 import (
 	"context"
-	"database/sql/driver"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"path"
@@ -11,6 +9,7 @@ import (
 	"time"
 
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
+	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb/utils"
 
 	"golang.org/x/oauth2/jwt"
 
@@ -25,32 +24,8 @@ import (
 	vpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb"
 )
 
-// artifactType values
-const (
-	atUnknown                artifactType = "UNKNOWN"
-	atLinuxAMD64             artifactType = "LINUX_AMD64"
-	atDarwinAMD64            artifactType = "DARWIN_AMD64"
-	atContainerSetLinuxAMD64 artifactType = "CONTAINER_SET_LINUX_AMD64"
-)
-
 // URLSigner is the function used to sign urls.
 var URLSigner = storage.SignedURL
-
-type artifactType string
-
-func (s *artifactType) Scan(value interface{}) error {
-	asBytes, ok := value.([]byte)
-	if !ok {
-		return errors.New("Scan source is not []byte")
-	}
-	*s = artifactType(string(asBytes))
-	return nil
-}
-
-func (s artifactType) Value() (driver.Value, error) {
-	fmt.Print(s)
-	return string(s), nil
-}
 
 // Server is the controller for the atrifact tracker service.
 type Server struct {
@@ -65,47 +40,13 @@ func NewServer(db *sqlx.DB, client stiface.Client, bucket string, gcsSA *jwt.Con
 	return &Server{db: db, sc: client, artifactBucket: bucket, gcsSA: gcsSA}
 }
 
-func toArtifactType(a vpb.ArtifactType) artifactType {
-	switch a {
-	case vpb.AT_LINUX_AMD64:
-		return atLinuxAMD64
-	case vpb.AT_DARWIN_AMD64:
-		return atDarwinAMD64
-	case vpb.AT_CONTAINER_SET_LINUX_AMD64:
-		return atContainerSetLinuxAMD64
-	default:
-		return atUnknown
-	}
-}
-
-func toProtoArtifactType(a artifactType) vpb.ArtifactType {
-	switch a {
-	case atLinuxAMD64:
-		return vpb.AT_LINUX_AMD64
-	case atDarwinAMD64:
-		return vpb.AT_DARWIN_AMD64
-	case atContainerSetLinuxAMD64:
-		return vpb.AT_CONTAINER_SET_LINUX_AMD64
-	default:
-		return vpb.AT_UNKNOWN
-	}
-}
-
-func toProtoArtifactTypeArray(a pq.StringArray) []vpb.ArtifactType {
-	res := make([]vpb.ArtifactType, len(a))
-	for i, val := range a {
-		res[i] = toProtoArtifactType(artifactType(val))
-	}
-	return res
-}
-
 // GetArtifactList returns a list of artifacts matching the passed in criteria.
 func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListRequest) (*vpb.ArtifactSet, error) {
 	name := in.ArtifactName
-	at := toArtifactType(in.ArtifactType)
+	at := utils.ToArtifactTypeDB(in.ArtifactType)
 	limit := in.Limit
 
-	if at == atUnknown {
+	if at == utils.ATUnknown {
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be unknown")
 	}
 
@@ -129,7 +70,7 @@ func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListReq
 			Timestamp:          t,
 			CommitHash:         res.CommitHash,
 			VersionStr:         res.VersionStr,
-			AvailableArtifacts: toProtoArtifactTypeArray(res.AvailableArtifacts),
+			AvailableArtifacts: utils.ToProtoArtifactTypeArray(res.AvailableArtifacts),
 			Changelog:          res.Changelog,
 		}
 		return pb
@@ -205,7 +146,7 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
                     AND version_str=$3
 	          LIMIT 1;`
 
-	rows, err := s.db.Query(query, name, toArtifactType(at), versionStr)
+	rows, err := s.db.Query(query, name, utils.ToArtifactTypeDB(at), versionStr)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to query database")
 	}
