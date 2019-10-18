@@ -7,7 +7,5 @@ metaDescription: "Pixie is ..."
 You can delete Pixie on the current Kubernetes cluster by running the following Pixie CLI command: 
 
 ``` curl
-
 ./pixie delete
-
 ```
