@@ -11,3 +11,4 @@ data:
   PL_SITE_MANAGER_SERVICE: kubernetes:///site-manager-service.plc:50300
   PL_VZMGR_SERVICE: kubernetes:///vzmgr-service.plc:51800
   PL_DNSMGR_SERVICE: kubernetes:///dnsmgr-service.plc:51900
+  PL_ARTIFACT_TRACKER_SERVICE: kubernetes:///artifact-tracker-service.plc:50750

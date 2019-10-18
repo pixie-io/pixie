@@ -21,6 +21,7 @@ import (
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/api/option"
 	atpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/controller"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
@@ -36,6 +37,7 @@ func init() {
 func mustLoadServiceAccountConfig() *jwt.Config {
 	saKeyFile := viper.GetString("sa_key_path")
 	saKey, err := ioutil.ReadFile(saKeyFile)
+
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -86,7 +88,7 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
+	client, err := storage.NewClient(ctx, option.WithCredentialsFile(viper.GetString("sa_key_path")))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GCS client.")
 	}
