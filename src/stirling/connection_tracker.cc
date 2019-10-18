@@ -269,18 +269,14 @@ std::vector<mysql::Entry> ConnectionTracker::ProcessMessagesImpl() {
   auto& resp_messages = resp_data()->Messages<mysql::Packet>();
 
   auto state_ptr = state<mysql::State>();
-  auto status_or_result = mysql::ProcessMySQLPackets(&req_messages, &resp_messages, state_ptr);
 
-  if (!status_or_result.ok()) {
-    // TODO(oazizi): Revisit whether this is the right action to take.
-    req_messages.clear();
-    resp_messages.clear();
-    return {};
-  }
+  // ProcessMySQLPackets handles errors internally.
+  std::vector<mysql::Entry> result =
+      mysql::ProcessMySQLPackets(&req_messages, &resp_messages, state_ptr);
 
   Cleanup<mysql::Packet>();
 
-  return status_or_result.ValueOrDie();
+  return result;
 }
 
 // TODO(oazizi): Consider providing a reason field with the disable.

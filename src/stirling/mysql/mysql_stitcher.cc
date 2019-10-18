@@ -55,14 +55,34 @@ std::string CreateMessageJSON(std::string_view message) {
 
 }  // namespace
 
-// A wrapper around PL_ASSIGN_OR_RETURN that adds the braces.
-// Only works if lhs is not a declaration, but that is the case here.
-#define PL_ASSIGN_OR_RETURN_NO_DECL(lhs, rexpr) \
-  { PL_ASSIGN_OR_RETURN(lhs, rexpr); }
+// This function looks for unsynchronized req/resp packet queues.
+// This could happen for a number of reasons:
+//  - lost events
+//  - previous unhandled case resulting in a bad state.
+// Currently handles the case where an apparently missing request has left dangling responses,
+// in which case those requests are popped off.
+// TODO(oazizi): Also handle cases where responses should match to a later request (in which case
+// requests should be popped off).
+// TODO(oazizi): Should also consider sequence IDs in this function.
+void SyncRespQueue(const Packet& req_packet, std::deque<Packet>* resp_packets) {
+  // This handles the case where there are responses that pre-date a request.
+  while (!resp_packets->empty()) {
+    Packet& resp_packet = resp_packets->front();
 
-StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets,
-                                                 std::deque<Packet>* resp_packets,
-                                                 mysql::State* state) {
+    if (resp_packet.timestamp_ns > req_packet.timestamp_ns) {
+      break;
+    }
+
+    LOG(WARNING) << absl::Substitute(
+        "Ignoring response packet that pre-dates request. Size=$0 [OK=$1 ERR=$2 EOF=$3]",
+        resp_packet.msg.size(), IsOKPacket(resp_packet), IsErrPacket(resp_packet),
+        IsEOFPacket(resp_packet));
+    resp_packets->pop_front();
+  }
+}
+
+std::vector<Entry> ProcessMySQLPackets(std::deque<Packet>* req_packets,
+                                       std::deque<Packet>* resp_packets, mysql::State* state) {
   std::vector<Entry> entries;
 
   // Process one request per loop iteration. Each request may consume 0, 1 or 2+ response packets.
@@ -80,8 +100,15 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
     // Command is the first byte.
     char command = req_packet.msg[0];
 
+    VLOG(2) << absl::StrFormat("command=%x %s", command, req_packet.msg.substr(1));
+
+    // For safety, make sure we have no stale response packets.
+    SyncRespQueue(req_packet, resp_packets);
+
+    // TODO(oazizi): Also try to sync if responses appear to be for the second request in the queue.
+    // (i.e. dropped responses).
+
     StatusOr<ParseState> s;
-    ParseState result = ParseState::kInvalid;
 
     switch (DecodeCommand(command)) {
       // Internal commands with response: ERR_Packet.
@@ -90,8 +117,7 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
       case MySQLEventType::kTime:
       case MySQLEventType::kDelayedInsert:
       case MySQLEventType::kDaemon:
-        PL_ASSIGN_OR_RETURN_NO_DECL(
-            result, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
+        s = ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries);
         break;
 
       // Basic Commands with response: OK_Packet or ERR_Packet
@@ -104,70 +130,61 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
       case MySQLEventType::kProcessKill:
       case MySQLEventType::kRefresh:  // Deprecated.
       case MySQLEventType::kPing:     // COM_PING can't actually send ERR_Packet.
-        PL_ASSIGN_OR_RETURN_NO_DECL(
-            result, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
+        s = ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries);
         break;
 
       case MySQLEventType::kQuit:  // Response: OK_Packet or a connection close.
-        PL_ASSIGN_OR_RETURN_NO_DECL(
-            result, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
+        s = ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries);
         break;
 
       // Basic Commands with response: EOF_Packet or ERR_Packet.
       case MySQLEventType::kShutdown:  // Deprecated.
       case MySQLEventType::kSetOption:
       case MySQLEventType::kDebug:
-        PL_ASSIGN_OR_RETURN_NO_DECL(
-            result, ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries));
+        s = ProcessRequestWithBasicResponse(req_packet, resp_packets, &entries);
         break;
 
       // COM_FIELD_LIST has its own COM_FIELD_LIST meta response (ERR_Packet or one or more Column
       // Definition packets and a closing EOF_Packet).
       case MySQLEventType::kFieldList:  // Deprecated.
-        PL_ASSIGN_OR_RETURN_NO_DECL(result, ProcessFieldList(req_packet, resp_packets, &entries));
+        s = ProcessFieldList(req_packet, resp_packets, &entries);
         break;
 
       // COM_QUERY has its own COM_QUERY meta response (ERR_Packet, OK_Packet,
       // Protocol::LOCAL_INFILE_Request, or ProtocolText::Resultset).
       case MySQLEventType::kQuery:
-        PL_ASSIGN_OR_RETURN_NO_DECL(result, ProcessQuery(req_packet, resp_packets, &entries));
+        s = ProcessQuery(req_packet, resp_packets, &entries);
         break;
 
       // COM_STMT_PREPARE returns COM_STMT_PREPARE_OK on success, ERR_Packet otherwise.
       case MySQLEventType::kStmtPrepare:
-        PL_ASSIGN_OR_RETURN_NO_DECL(result,
-                                    ProcessStmtPrepare(req_packet, resp_packets, state, &entries));
+        s = ProcessStmtPrepare(req_packet, resp_packets, state, &entries);
         break;
 
       // COM_STMT_SEND_LONG_DATA has no response.
       case MySQLEventType::kStmtSendLongData:
-        PL_ASSIGN_OR_RETURN_NO_DECL(
-            result, ProcessStmtSendLongData(req_packet, resp_packets, state, &entries));
+        s = ProcessStmtSendLongData(req_packet, resp_packets, state, &entries);
         break;
 
       // COM_STMT_EXECUTE has its own COM_STMT_EXECUTE meta response (OK_Packet, ERR_Packet or a
       // resultset: Binary Protocol Resultset).
       case MySQLEventType::kStmtExecute:
-        PL_ASSIGN_OR_RETURN_NO_DECL(result,
-                                    ProcessStmtExecute(req_packet, resp_packets, state, &entries));
+        s = ProcessStmtExecute(req_packet, resp_packets, state, &entries);
         break;
 
       // COM_CLOSE has no response.
       case MySQLEventType::kStmtClose:
-        PL_ASSIGN_OR_RETURN_NO_DECL(result,
-                                    ProcessStmtClose(req_packet, resp_packets, state, &entries));
+        s = ProcessStmtClose(req_packet, resp_packets, state, &entries);
         break;
 
       // COM_STMT_RESET response is OK_Packet if the statement could be reset, ERR_Packet if not.
       case MySQLEventType::kStmtReset:
-        PL_ASSIGN_OR_RETURN_NO_DECL(result,
-                                    ProcessStmtReset(req_packet, resp_packets, state, &entries));
+        s = ProcessStmtReset(req_packet, resp_packets, state, &entries);
         break;
 
       // COM_STMT_FETCH has a meta response (multi-resultset, or ERR_Packet).
       case MySQLEventType::kStmtFetch:
-        PL_ASSIGN_OR_RETURN_NO_DECL(result,
-                                    ProcessStmtFetch(req_packet, resp_packets, state, &entries));
+        s = ProcessStmtFetch(req_packet, resp_packets, state, &entries);
         break;
 
       case MySQLEventType::kProcessInfo:     // a ProtocolText::Resultset or ERR_Packet
@@ -178,15 +195,32 @@ StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets
       case MySQLEventType::kTableDump:       // a table dump or ERR_Packet
       case MySQLEventType::kStatistics:      // string.EOF
         // Rely on recovery to re-sync responses based on timestamps.
-        return error::Internal("Unimplemented command $0.", command);
+        s = error::Internal("Unimplemented command $0.", command);
+        break;
 
       default:
-        return error::Internal("Unknown command $0.", command);
+        s = error::Internal("Unknown command $0.", command);
     }
 
+    if (!s.ok()) {
+      LOG(ERROR) << absl::Substitute("MySQL packet processing error: msg=$0", s.msg());
+      LOG(ERROR) << "Will attempt response queue recovery.";
+
+      // Just pop off the request, resync the response queue based on timestamps, and hope for the
+      // best.
+      req_packets->pop_front();
+      SyncRespQueue(req_packet, resp_packets);
+      continue;
+    }
+
+    ParseState result = s.ValueOrDie();
     DCHECK(result != ParseState::kInvalid);
 
+    // Unlike an error, an unsuccessful iteration just means we don't have enough packets.
+    // So stop processing and wait for more packets to arrive on next iteration.
     if (result == ParseState::kNeedsMoreData) {
+      LOG_IF(WARNING, req_packets->size() != 1) << "Didn't have enough response packets, so would "
+                                                   "have expected there to be only one request.";
       break;
     }
 

@@ -21,12 +21,10 @@ namespace mysql {
  * @param resp_packets: deque of all response packets (each request may have a 0, 1 or multiple
  * response packets).
  * @param state: MySQL state from previous requests (particularly state from prepared statements).
- * @return A vector of entries to be appended to table store,
- * or an error if an inconsistency was found that indicates we have lost track of the connection.
+ * @return A vector of entries to be appended to table store.
  */
-StatusOr<std::vector<Entry>> ProcessMySQLPackets(std::deque<Packet>* req_packets,
-                                                 std::deque<Packet>* resp_packets,
-                                                 mysql::State* state);
+std::vector<Entry> ProcessMySQLPackets(std::deque<Packet>* req_packets,
+                                       std::deque<Packet>* resp_packets, mysql::State* state);
 
 /**
  * The following process functions are helper functions that each processes a type of req_packet.

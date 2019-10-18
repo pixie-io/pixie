@@ -144,6 +144,40 @@ TEST(StitcherTest, ProcessRequestWithBasicResponse) {
   EXPECT_EQ(0, entries.size());
 }
 
+TEST(SyncTest, OldResponses) {
+  uint64_t t = 0;
+
+  // First two packets are dangling, and pre-date the request below.
+  Packet resp0 = testutils::GenOK();
+  resp0.timestamp_ns = t++;
+
+  Packet resp1 = testutils::GenOK();
+  resp1.timestamp_ns = t++;
+
+  // This is the main request, with a well-formed response below.
+  Packet req = testutils::GenStmtExecuteRequest(testutils::kStmtExecuteRequest);
+  req.timestamp_ns = t++;
+
+  std::deque<Packet> responses = testutils::GenResultset(testutils::kStmtExecuteResultset);
+  for (auto& p : responses) {
+    p.timestamp_ns = t++;
+  }
+
+  // Now prepend the two dangling packets to the responses.
+  responses.push_front(resp1);
+  responses.push_front(resp0);
+
+  int stmt_id = testutils::kStmtExecuteRequest.stmt_id();
+  State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
+  state.prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
+
+  std::deque<Packet> requests = {req};
+  std::vector<Entry> entries = ProcessMySQLPackets(&requests, &responses, &state);
+  EXPECT_EQ(entries.size(), 1);
+  EXPECT_EQ(requests.size(), 0);
+  EXPECT_EQ(responses.size(), 0);
+}
+
 // TODO(chengruizhe): Add test cases for inputs that would return Status error.
 
 }  // namespace mysql
