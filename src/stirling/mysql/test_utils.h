@@ -13,15 +13,17 @@ namespace testutils {
 
 std::string GenRawPacket(uint8_t packet_num, std::string_view msg);
 
+std::string GenRawPacket(const Packet& packet);
+
 std::string GenRequest(MySQLEventType command, std::string_view msg);
 
-Packet GenCountPacket(int num_col);
+Packet GenCountPacket(uint8_t seq_id, int num_col);
 
-Packet GenColDefinition(const ColDefinition& col_def);
+Packet GenColDefinition(uint8_t seq_id, const ColDefinition& col_def);
 
-Packet GenResultsetRow(const ResultsetRow& row);
+Packet GenResultsetRow(uint8_t seq_id, const ResultsetRow& row);
 
-Packet GenStmtPrepareRespHeader(const StmtPrepareRespHeader& header);
+Packet GenStmtPrepareRespHeader(uint8_t seq_id, const StmtPrepareRespHeader& header);
 
 Packet GenStmtExecuteRequest(const StmtExecuteRequest& req);
 
@@ -35,11 +37,11 @@ std::deque<Packet> GenResultset(const Resultset& resultset, bool client_eof_depr
 
 std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp);
 
-Packet GenErr(const ErrResponse& err);
+Packet GenErr(uint8_t seq_id, const ErrResponse& err);
 
-Packet GenOK();
+Packet GenOK(uint8_t seq_id);
 
-Packet GenEOF();
+Packet GenEOF(uint8_t seq_id);
 
 }  // namespace testutils
 }  // namespace mysql

@@ -124,6 +124,8 @@ constexpr int kIterationCountBytes = 4;
 struct Packet {
   uint64_t timestamp_ns;
   std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
+
+  uint8_t sequence_id;
   // TODO(oazizi): Convert to std::basic_string<uint8_t>.
   std::string msg;
 

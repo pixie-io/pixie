@@ -23,6 +23,8 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
     return ParseState::kInvalid;
   }
 
+  result->sequence_id = static_cast<uint8_t>((*buf)[3]);
+
   // TODO(oazizi): Is pre-checking requests here a good idea? Somewhat out of place.
   // Better fit for stitcher (process of converting packets to events).
   if (type == MessageType::kRequest) {

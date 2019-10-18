@@ -61,10 +61,8 @@ class SocketTraceBPFTest : public ::testing::Test {
     testing::SendRecvScript prepare_execute_script;
 
     // Stmt Prepare
-    kStmtPrepareReq = mysql::testutils::GenRawPacket(
-        0, mysql::testutils::GenStringRequest(mysql::testutils::kStmtPrepareRequest,
-                                              mysql::MySQLEventType::kStmtPrepare)
-               .msg);
+    kStmtPrepareReq = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
+        mysql::testutils::kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare));
     prepare_execute_script.push_back({kStmtPrepareReq});
     prepare_execute_script.push_back({});
     std::deque<mysql::Packet> prepare_packets =
@@ -97,10 +95,8 @@ class SocketTraceBPFTest : public ::testing::Test {
   testing::SendRecvScript GetQueryScript() {
     testing::SendRecvScript query_script;
 
-    kQueryReq = mysql::testutils::GenRawPacket(
-        0, mysql::testutils::GenStringRequest(mysql::testutils::kQueryRequest,
-                                              mysql::MySQLEventType::kQuery)
-               .msg);
+    kQueryReq = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
+        mysql::testutils::kQueryRequest, mysql::MySQLEventType::kQuery));
     query_script.push_back({kQueryReq});
     query_script.push_back({});
     std::deque<mysql::Packet> query_packets =

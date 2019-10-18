@@ -28,6 +28,15 @@ std::string GenRawPacket(uint8_t packet_num, std::string_view msg) {
 }
 
 /**
+ * Generate a raw MySQL packet from a Packet object.
+ * @param packet The original Packet object.
+ * @return the packet as a raw string, including header.
+ */
+std::string GenRawPacket(const Packet& packet) {
+  return GenRawPacket(packet.sequence_id, packet.msg);
+}
+
+/**
  * Generates a raw packet with a string request.
  */
 std::string GenRequest(MySQLEventType command, std::string_view msg) {
@@ -62,29 +71,29 @@ std::string GenLengthEncodedInt(int num) {
 /**
  * Generates the header packet of Resultset response. It contains num of cols.
  */
-Packet GenCountPacket(int num_col) {
+Packet GenCountPacket(uint8_t seq_id, int num_col) {
   std::string msg = GenLengthEncodedInt(num_col);
-  return Packet{0, std::chrono::steady_clock::now(), std::move(msg)};
+  return Packet{0, std::chrono::steady_clock::now(), seq_id, std::move(msg)};
 }
 
 /**
  * Generates a Col Definition packet. Can be used in StmtPrepareResponse or Resultset.
  */
-Packet GenColDefinition(const ColDefinition& col_def) {
-  return Packet{0, std::chrono::steady_clock::now(), std::move(col_def.msg)};
+Packet GenColDefinition(uint8_t seq_id, const ColDefinition& col_def) {
+  return Packet{0, std::chrono::steady_clock::now(), seq_id, std::move(col_def.msg)};
 }
 
 /**
  * Generates a resultset row.
  */
-Packet GenResultsetRow(const ResultsetRow& row) {
-  return Packet{0, std::chrono::steady_clock::now(), std::move(row.msg)};
+Packet GenResultsetRow(uint8_t seq_id, const ResultsetRow& row) {
+  return Packet{0, std::chrono::steady_clock::now(), seq_id, std::move(row.msg)};
 }
 
 /**
  * Generates a header of StmtPrepare Response.
  */
-Packet GenStmtPrepareRespHeader(const StmtPrepareRespHeader& header) {
+Packet GenStmtPrepareRespHeader(uint8_t seq_id, const StmtPrepareRespHeader& header) {
   char statement_id[4];
   char num_columns[2];
   char num_params[2];
@@ -97,29 +106,31 @@ Packet GenStmtPrepareRespHeader(const StmtPrepareRespHeader& header) {
                                  CharArrayStringView(num_columns), CharArrayStringView(num_params),
                                  ConstStringView("\x00"), CharArrayStringView(warning_count));
 
-  return Packet{0, std::chrono::steady_clock::now(), std::move(msg)};
+  return Packet{0, std::chrono::steady_clock::now(), seq_id, std::move(msg)};
 }
 
 /**
  * Generates a deque of packets. Contains a col counter packet and n resultset rows.
  */
 std::deque<Packet> GenResultset(const Resultset& resultset, bool client_eof_deprecate) {
+  uint8_t seq_id = 1;
+
   std::deque<Packet> result;
-  auto resp_header = GenCountPacket(resultset.num_col());
+  auto resp_header = GenCountPacket(seq_id++, resultset.num_col());
   result.emplace_back(std::move(resp_header));
   for (ColDefinition col_def : resultset.col_defs()) {
-    result.emplace_back(GenColDefinition(col_def));
+    result.emplace_back(GenColDefinition(seq_id++, col_def));
   }
   if (!client_eof_deprecate) {
-    result.emplace_back(GenEOF());
+    result.emplace_back(GenEOF(seq_id++));
   }
   for (ResultsetRow row : resultset.results()) {
-    result.emplace_back(GenResultsetRow(row));
+    result.emplace_back(GenResultsetRow(seq_id++, row));
   }
   if (client_eof_deprecate) {
-    result.emplace_back(GenOK());
+    result.emplace_back(GenOK(seq_id++));
   } else {
-    result.emplace_back(GenEOF());
+    result.emplace_back(GenEOF(seq_id++));
   }
   return result;
 }
@@ -128,21 +139,23 @@ std::deque<Packet> GenResultset(const Resultset& resultset, bool client_eof_depr
  * Generates a StmtPrepareOkResponse.
  */
 std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
+  uint8_t seq_id = 1;
+
   std::deque<Packet> result;
-  auto resp_header = GenStmtPrepareRespHeader(resp.resp_header());
+  auto resp_header = GenStmtPrepareRespHeader(seq_id++, resp.resp_header());
   result.push_back(resp_header);
 
   for (ColDefinition param_def : resp.param_defs()) {
     ColDefinition p{std::move(param_def.msg)};
-    result.push_back(GenColDefinition(p));
+    result.push_back(GenColDefinition(seq_id++, p));
   }
-  result.push_back(GenEOF());
+  result.push_back(GenEOF(seq_id++));
 
   for (ColDefinition col_def : resp.col_defs()) {
     ColDefinition c{std::move(col_def.msg)};
-    result.push_back(GenColDefinition(c));
+    result.push_back(GenColDefinition(seq_id++, c));
   }
-  result.push_back(GenEOF());
+  result.push_back(GenEOF(seq_id++));
   return result;
 }
 
@@ -174,7 +187,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
     msg += GenLengthEncodedInt(param.value.size());
     msg += param.value;
   }
-  return Packet{0, std::chrono::steady_clock::now(), std::move(msg)};
+  return Packet{0, std::chrono::steady_clock::now(), 0, std::move(msg)};
 }
 
 Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
@@ -182,7 +195,7 @@ Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
   utils::IntToLEBytes(req.stmt_id(), statement_id);
   std::string msg =
       absl::StrCat(CommandToString(MySQLEventType::kStmtClose), CharArrayStringView(statement_id));
-  return Packet{0, std::chrono::steady_clock::now(), std::move(msg)};
+  return Packet{0, std::chrono::steady_clock::now(), 0, std::move(msg)};
 }
 
 /**
@@ -190,35 +203,35 @@ Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
  */
 Packet GenStringRequest(const StringRequest& req, MySQLEventType command) {
   DCHECK_LE(static_cast<uint8_t>(command), kMaxCommandValue);
-  return Packet{0, std::chrono::steady_clock::now(),
+  return Packet{0, std::chrono::steady_clock::now(), 0,
                 absl::StrCat(CommandToString(command), req.msg())};
 }
 
 /**
  * Generates a Err packet.
  */
-Packet GenErr(const ErrResponse& err) {
+Packet GenErr(uint8_t seq_id, const ErrResponse& err) {
   char error_code[2];
   utils::IntToLEBytes(err.error_code(), error_code);
   std::string msg = absl::StrCat("\xff", CharArrayStringView(error_code),
                                  "\x23\x48\x59\x30\x30\x30", err.error_message());
-  return Packet{0, std::chrono::steady_clock::now(), std::move(msg)};
+  return Packet{0, std::chrono::steady_clock::now(), seq_id, std::move(msg)};
 }
 
 /**
  * Generates a OK packet. Content is fixed.
  */
-Packet GenOK() {
-  std::string msg(ConstStringView("\x00\x00\x00\x02\x00\x00\x00"));
-  return Packet{0, std::chrono::steady_clock::now(), std::move(msg)};
+Packet GenOK(uint8_t seq_id) {
+  std::string msg = ConstString("\x00\x00\x00\x02\x00\x00\x00");
+  return Packet{0, std::chrono::steady_clock::now(), seq_id, std::move(msg)};
 }
 
 /**
  * Generates a EOF packet. Content is fixed.
  */
-Packet GenEOF() {
-  std::string msg(ConstStringView("\xfe\x00\x00\x22\x00"));
-  return Packet{0, std::chrono::steady_clock::now(), std::move(msg)};
+Packet GenEOF(uint8_t seq_id) {
+  std::string msg = ConstString("\xfe\x00\x00\x22\x00");
+  return Packet{0, std::chrono::steady_clock::now(), seq_id, std::move(msg)};
 }
 
 }  // namespace testutils

@@ -99,7 +99,7 @@ TEST_F(HandlerTest, TestHandleErrMessage) {
   ErrResponse expected_response(1096, "This an error.");
 
   std::deque<Packet> resp_packets;
-  Packet packet = testutils::GenErr(expected_response);
+  Packet packet = testutils::GenErr(/* seq_id */ 1, expected_response);
   resp_packets.emplace_back(packet);
   std::unique_ptr<ErrResponse> result_response = HandleErrMessage(&resp_packets);
   ASSERT_NE(nullptr, result_response);
@@ -109,7 +109,7 @@ TEST_F(HandlerTest, TestHandleErrMessage) {
 
 TEST_F(HandlerTest, TestHandleOKMessage) {
   std::deque<Packet> resp_packets;
-  Packet packet = testutils::GenOK();
+  Packet packet = testutils::GenOK(1);
   resp_packets.emplace_back(packet);
   std::unique_ptr<OKResponse> ok_response = HandleOKMessage(&resp_packets);
   EXPECT_NE(nullptr, ok_response);

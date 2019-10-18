@@ -205,15 +205,13 @@ class SocketTraceConnectorTest : public ::testing::Test {
     }
 
     mySQLErrResp = mysql::testutils::GenRawPacket(
-        1, mysql::testutils::GenErr(mysql::ErrResponse(1096, "This an error.")).msg);
+        mysql::testutils::GenErr(1, mysql::ErrResponse(1096, "This an error.")));
 
     mySQLStmtCloseReq = mysql::testutils::GenRawPacket(
-        0, mysql::testutils::GenStmtCloseRequest(mysql::testutils::kStmtCloseRequest).msg);
+        mysql::testutils::GenStmtCloseRequest(mysql::testutils::kStmtCloseRequest));
 
-    mySQLQueryReq = mysql::testutils::GenRawPacket(
-        0, mysql::testutils::GenStringRequest(mysql::testutils::kQueryRequest,
-                                              mysql::MySQLEventType::kQuery)
-               .msg);
+    mySQLQueryReq = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
+        mysql::testutils::kQueryRequest, mysql::MySQLEventType::kQuery));
     std::deque<mysql::Packet> query_packets =
         mysql::testutils::GenResultset(mysql::testutils::kQueryResultset);
     for (int i = 0; i < static_cast<int>(query_packets.size()); ++i) {

@@ -43,7 +43,7 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
   int stmt_id = testutils::kStmtPrepareResponse.resp_header().stmt_id;
   std::deque<Packet> err_resp_packets;
   ErrResponse expected_response(1096, "This an error.");
-  err_resp_packets.emplace_back(testutils::GenErr(expected_response));
+  err_resp_packets.emplace_back(testutils::GenErr(/* seq_id */ 1, expected_response));
   State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
 
   // Run function-under-test.
@@ -132,7 +132,7 @@ TEST(StitcherTest, ProcessRequestWithBasicResponse) {
   // Test setup.
   // Ping is a request that always has a response OK.
   Packet req = testutils::GenStringRequest(StringRequest(), MySQLEventType::kPing);
-  std::deque<Packet> response_packets = {testutils::GenOK()};
+  std::deque<Packet> response_packets = {testutils::GenOK(/*seq_id*/ 1)};
 
   // Run function-under-test.
   std::vector<Entry> entries;
