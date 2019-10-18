@@ -104,6 +104,10 @@ struct conn_info_t {
   // The offset to start read the first frame of the upcoming bytes buffer.
   uint64_t wr_next_http2_frame_offset;
   uint64_t rd_next_http2_frame_offset;
+
+  // Some stats for protocol inference. Used for threshold-based filtering.
+  int32_t protocol_match_count;
+  int32_t protocol_total_count;
 };
 
 // This struct is a subset of conn_info_t. It is used to communicate connect/accept events.

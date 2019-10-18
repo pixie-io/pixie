@@ -27,6 +27,20 @@ static __inline u64 pl_nsec_to_clock_t(u64 x) { return div_u64(x, NSEC_PER_SEC /
 // See the referenced Jira issue for more details.
 #define LOOP_LIMIT 35
 
+// Determines what percentage of events must be inferred as a certain type for us to consider the
+// connection to be of that type. Encoded as a numerator/denominator. Currently set to 20%. While
+// this may seem low, one must consider that not all captures are packet-aligned, and the inference
+// logic doesn't work on the middle of packets. Moreover, a large data packet would get split up
+// and cause issues. This threshold only needs to be larger than the false positive rate, which
+// for MySQL is 32/256 based on command only.
+const int kTrafficInferenceThresholdNum = 1;
+const int kTrafficInferenceThresholdDen = 5;
+
+// This bias is added to the numerator of the traffic inference threshold.
+// By using a positive number, it biases messages to be classified as matches,
+// when the number of samples is low.
+const int kTrafficInferenceBias = 5;
+
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(socket_http_events);
 BPF_PERF_OUTPUT(socket_mysql_events);
@@ -357,6 +371,7 @@ static __inline struct traffic_class_t infer_traffic(TrafficDirection direction,
     traffic_class.protocol = kProtocolHTTP2;
     traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
   }
+
   return traffic_class;
 }
 
@@ -368,12 +383,22 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info, Traffic
   // TODO(oazizi): conn_info currently works only if tracing on the send or recv side of a process,
   //               but not both simultaneously, because we need to mark two traffic classes.
 
-  // Try to infer connection type (protocol) based on data.
-  // If protocol is detected, then let it through, even though accept()/connect() was not captured.
-  if (conn_info != NULL && conn_info->traffic_class.protocol == kProtocolUnknown) {
-    // TODO(oazizi): Look for only certain protocols on write/send()?
+  if (conn_info != NULL) {
+    // Try to infer connection type (protocol) based on data.
     struct traffic_class_t traffic_class = infer_traffic(direction, buf, count);
-    conn_info->traffic_class = traffic_class;
+
+    if (conn_info->traffic_class.protocol == kProtocolUnknown) {
+      // TODO(oazizi): Look for only certain protocols on write/send()?
+      conn_info->traffic_class = traffic_class;
+
+      if (conn_info->traffic_class.protocol != kProtocolUnknown) {
+        conn_info->protocol_match_count = 1;
+      }
+    } else if (traffic_class.protocol == conn_info->traffic_class.protocol) {
+      conn_info->protocol_match_count += 1;
+    }
+
+    conn_info->protocol_total_count += 1;
   }
 }
 
@@ -470,6 +495,13 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
 
   event->attr.msg_size = buf_size;
 
+  // Since some protocols are hard to infer from a single event, we track the inference stats over
+  // time, and then use the match rate to determine whether we really want to consider it to be of
+  // the protocol or not. This helps reduce polluting events to user-space.
+  bool meets_threshold =
+      kTrafficInferenceThresholdDen * (conn_info->protocol_match_count + kTrafficInferenceBias) >
+      kTrafficInferenceThresholdNum * conn_info->protocol_total_count;
+
   // Write snooped arguments to perf ring buffer.
   const size_t size_to_submit = sizeof(event->attr) + msg_submit_size;
   switch (event->attr.traffic_class.protocol) {
@@ -478,7 +510,9 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
       socket_http_events.perf_submit(ctx, event, size_to_submit);
       break;
     case kProtocolMySQL:
-      socket_mysql_events.perf_submit(ctx, event, size_to_submit);
+      if (meets_threshold) {
+        socket_mysql_events.perf_submit(ctx, event, size_to_submit);
+      }
       break;
     default:
       break;
