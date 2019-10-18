@@ -10,11 +10,13 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	versionspb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb"
 	reflect "reflect"
-	strconv "strconv"
 	strings "strings"
 )
 
@@ -27,84 +29,18 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
-
-type ArtifactGroup int32
-
-const (
-	AG_UNKNOWN ArtifactGroup = 0
-	AG_CLI     ArtifactGroup = 1
-	AG_VIZIER  ArtifactGroup = 2
-)
-
-var ArtifactGroup_name = map[int32]string{
-	0: "AG_UNKNOWN",
-	1: "AG_CLI",
-	2: "AG_VIZIER",
-}
-
-var ArtifactGroup_value = map[string]int32{
-	"AG_UNKNOWN": 0,
-	"AG_CLI":     1,
-	"AG_VIZIER":  2,
-}
-
-func (ArtifactGroup) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_6fba5f49ea413862, []int{0}
-}
-
-type GetLatestArtifactRequest struct {
-	Group ArtifactGroup `protobuf:"varint,1,opt,name=group,proto3,enum=pl.services.ArtifactGroup" json:"group,omitempty"`
-}
-
-func (m *GetLatestArtifactRequest) Reset()      { *m = GetLatestArtifactRequest{} }
-func (*GetLatestArtifactRequest) ProtoMessage() {}
-func (*GetLatestArtifactRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6fba5f49ea413862, []int{0}
-}
-func (m *GetLatestArtifactRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *GetLatestArtifactRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GetLatestArtifactRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *GetLatestArtifactRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetLatestArtifactRequest.Merge(m, src)
-}
-func (m *GetLatestArtifactRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *GetLatestArtifactRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetLatestArtifactRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_GetLatestArtifactRequest proto.InternalMessageInfo
-
-func (m *GetLatestArtifactRequest) GetGroup() ArtifactGroup {
-	if m != nil {
-		return m.Group
-	}
-	return AG_UNKNOWN
-}
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type GetArtifactListRequest struct {
-	Group ArtifactGroup `protobuf:"varint,1,opt,name=group,proto3,enum=pl.services.ArtifactGroup" json:"group,omitempty"`
-	Limit int64         `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	ArtifactName string                  `protobuf:"bytes,1,opt,name=artifact_name,json=artifactName,proto3" json:"artifact_name,omitempty"`
+	ArtifactType versionspb.ArtifactType `protobuf:"varint,2,opt,name=artifact_type,json=artifactType,proto3,enum=pl.versions.ArtifactType" json:"artifact_type,omitempty"`
+	Limit        int64                   `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 }
 
 func (m *GetArtifactListRequest) Reset()      { *m = GetArtifactListRequest{} }
 func (*GetArtifactListRequest) ProtoMessage() {}
 func (*GetArtifactListRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6fba5f49ea413862, []int{1}
+	return fileDescriptor_6fba5f49ea413862, []int{0}
 }
 func (m *GetArtifactListRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -114,7 +50,7 @@ func (m *GetArtifactListRequest) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return xxx_messageInfo_GetArtifactListRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -133,11 +69,18 @@ func (m *GetArtifactListRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetArtifactListRequest proto.InternalMessageInfo
 
-func (m *GetArtifactListRequest) GetGroup() ArtifactGroup {
+func (m *GetArtifactListRequest) GetArtifactName() string {
 	if m != nil {
-		return m.Group
+		return m.ArtifactName
 	}
-	return AG_UNKNOWN
+	return ""
+}
+
+func (m *GetArtifactListRequest) GetArtifactType() versionspb.ArtifactType {
+	if m != nil {
+		return m.ArtifactType
+	}
+	return versionspb.AT_UNKNOWN
 }
 
 func (m *GetArtifactListRequest) GetLimit() int64 {
@@ -148,14 +91,15 @@ func (m *GetArtifactListRequest) GetLimit() int64 {
 }
 
 type GetDownloadLinkRequest struct {
-	Group      ArtifactGroup `protobuf:"varint,1,opt,name=group,proto3,enum=pl.services.ArtifactGroup" json:"group,omitempty"`
-	VersionStr string        `protobuf:"bytes,2,opt,name=version_str,json=versionStr,proto3" json:"version_str,omitempty"`
+	ArtifactName string                  `protobuf:"bytes,1,opt,name=artifact_name,json=artifactName,proto3" json:"artifact_name,omitempty"`
+	VersionStr   string                  `protobuf:"bytes,2,opt,name=version_str,json=versionStr,proto3" json:"version_str,omitempty"`
+	ArtifactType versionspb.ArtifactType `protobuf:"varint,3,opt,name=artifact_type,json=artifactType,proto3,enum=pl.versions.ArtifactType" json:"artifact_type,omitempty"`
 }
 
 func (m *GetDownloadLinkRequest) Reset()      { *m = GetDownloadLinkRequest{} }
 func (*GetDownloadLinkRequest) ProtoMessage() {}
 func (*GetDownloadLinkRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6fba5f49ea413862, []int{2}
+	return fileDescriptor_6fba5f49ea413862, []int{1}
 }
 func (m *GetDownloadLinkRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -165,7 +109,7 @@ func (m *GetDownloadLinkRequest) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return xxx_messageInfo_GetDownloadLinkRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -184,11 +128,11 @@ func (m *GetDownloadLinkRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetDownloadLinkRequest proto.InternalMessageInfo
 
-func (m *GetDownloadLinkRequest) GetGroup() ArtifactGroup {
+func (m *GetDownloadLinkRequest) GetArtifactName() string {
 	if m != nil {
-		return m.Group
+		return m.ArtifactName
 	}
-	return AG_UNKNOWN
+	return ""
 }
 
 func (m *GetDownloadLinkRequest) GetVersionStr() string {
@@ -198,16 +142,23 @@ func (m *GetDownloadLinkRequest) GetVersionStr() string {
 	return ""
 }
 
+func (m *GetDownloadLinkRequest) GetArtifactType() versionspb.ArtifactType {
+	if m != nil {
+		return m.ArtifactType
+	}
+	return versionspb.AT_UNKNOWN
+}
+
 type GetDownloadLinkResponse struct {
 	Url        string           `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
-	Sha256     string           `protobuf:"bytes,2,opt,name=sha256,proto3" json:"sha256,omitempty"`
+	SHA256     string           `protobuf:"bytes,2,opt,name=sha256,proto3" json:"sha256,omitempty"`
 	ValidUntil *types.Timestamp `protobuf:"bytes,3,opt,name=valid_until,json=validUntil,proto3" json:"valid_until,omitempty"`
 }
 
 func (m *GetDownloadLinkResponse) Reset()      { *m = GetDownloadLinkResponse{} }
 func (*GetDownloadLinkResponse) ProtoMessage() {}
 func (*GetDownloadLinkResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6fba5f49ea413862, []int{3}
+	return fileDescriptor_6fba5f49ea413862, []int{2}
 }
 func (m *GetDownloadLinkResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -217,7 +168,7 @@ func (m *GetDownloadLinkResponse) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return xxx_messageInfo_GetDownloadLinkResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -243,9 +194,9 @@ func (m *GetDownloadLinkResponse) GetUrl() string {
 	return ""
 }
 
-func (m *GetDownloadLinkResponse) GetSha256() string {
+func (m *GetDownloadLinkResponse) GetSHA256() string {
 	if m != nil {
-		return m.Sha256
+		return m.SHA256
 	}
 	return ""
 }
@@ -258,8 +209,6 @@ func (m *GetDownloadLinkResponse) GetValidUntil() *types.Timestamp {
 }
 
 func init() {
-	proto.RegisterEnum("pl.services.ArtifactGroup", ArtifactGroup_name, ArtifactGroup_value)
-	proto.RegisterType((*GetLatestArtifactRequest)(nil), "pl.services.GetLatestArtifactRequest")
 	proto.RegisterType((*GetArtifactListRequest)(nil), "pl.services.GetArtifactListRequest")
 	proto.RegisterType((*GetDownloadLinkRequest)(nil), "pl.services.GetDownloadLinkRequest")
 	proto.RegisterType((*GetDownloadLinkResponse)(nil), "pl.services.GetDownloadLinkResponse")
@@ -270,74 +219,41 @@ func init() {
 }
 
 var fileDescriptor_6fba5f49ea413862 = []byte{
-	// 540 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x94, 0xcf, 0x6e, 0xd3, 0x40,
-	0x10, 0xc6, 0xbd, 0x8d, 0x1a, 0x29, 0x13, 0xb5, 0x0d, 0x2b, 0x28, 0x91, 0x0f, 0xdb, 0xc8, 0x80,
-	0x14, 0x21, 0x61, 0xa3, 0xf0, 0xe7, 0x40, 0x4f, 0x21, 0x20, 0x2b, 0x22, 0x0a, 0x92, 0xd3, 0x82,
-	0xd4, 0x03, 0xc6, 0x76, 0xb6, 0xee, 0x2a, 0x4e, 0xd6, 0x78, 0xd7, 0x01, 0x6e, 0x7d, 0x04, 0xce,
-	0x3c, 0x01, 0x8f, 0xc2, 0x31, 0xc7, 0x1e, 0x89, 0x73, 0xe1, 0xd8, 0x47, 0x40, 0xb1, 0x9d, 0xd0,
-	0x36, 0x69, 0x0f, 0xbd, 0xed, 0xb7, 0xf9, 0xcd, 0x37, 0xab, 0xf9, 0x26, 0x86, 0x96, 0x88, 0x3c,
-	0xc3, 0x0b, 0x78, 0xdc, 0x37, 0x9c, 0x48, 0xb2, 0x63, 0xc7, 0x93, 0xb6, 0x8c, 0x1c, 0x6f, 0x40,
-	0xa3, 0xe5, 0x45, 0xae, 0x43, 0x77, 0x05, 0xd1, 0xc3, 0x88, 0x4b, 0x8e, 0xcb, 0x61, 0xa0, 0x0b,
-	0x1a, 0x8d, 0x99, 0x47, 0x85, 0xfa, 0xc4, 0x67, 0xf2, 0x24, 0x76, 0x75, 0x8f, 0x0f, 0x0d, 0x9f,
-	0xfb, 0xdc, 0x48, 0x19, 0x37, 0x3e, 0x4e, 0x55, 0x2a, 0xd2, 0x53, 0x56, 0xab, 0xee, 0xf9, 0x9c,
-	0xfb, 0x01, 0xfd, 0x4f, 0x49, 0x36, 0xa4, 0x42, 0x3a, 0xc3, 0x30, 0x07, 0x9e, 0xdf, 0xf0, 0xc2,
-	0x31, 0x8d, 0x04, 0xe3, 0x23, 0x11, 0xba, 0xcb, 0x63, 0x56, 0xa5, 0x75, 0xa0, 0x6a, 0x52, 0xd9,
-	0x71, 0x24, 0x15, 0xb2, 0x99, 0x97, 0x59, 0xf4, 0x4b, 0x4c, 0x85, 0xc4, 0x4f, 0x61, 0xd3, 0x8f,
-	0x78, 0x1c, 0x56, 0x51, 0x0d, 0xd5, 0xb7, 0x1b, 0xaa, 0x7e, 0xe1, 0xf9, 0xfa, 0x02, 0x36, 0xe7,
-	0x84, 0x95, 0x81, 0xda, 0x67, 0xd8, 0x35, 0xe9, 0xd2, 0xa7, 0xc3, 0xc4, 0xed, 0xbd, 0xf0, 0x5d,
-	0xd8, 0x0c, 0xd8, 0x90, 0xc9, 0xea, 0x46, 0x0d, 0xd5, 0x0b, 0x56, 0x26, 0xb4, 0x41, 0xda, 0xe1,
-	0x0d, 0xff, 0x3a, 0x0a, 0xb8, 0xd3, 0xef, 0xb0, 0xd1, 0xe0, 0xf6, 0x1d, 0xf6, 0xa0, 0x9c, 0x4f,
-	0xc3, 0x16, 0x32, 0x4a, 0xfb, 0x94, 0x2c, 0xc8, 0xaf, 0x7a, 0x32, 0xd2, 0x4e, 0x11, 0xdc, 0x5f,
-	0xe9, 0x26, 0x42, 0x3e, 0x12, 0x14, 0x57, 0xa0, 0x10, 0x47, 0x41, 0xda, 0xac, 0x64, 0xcd, 0x8f,
-	0x78, 0x17, 0x8a, 0xe2, 0xc4, 0x69, 0xbc, 0x78, 0x99, 0x3b, 0xe5, 0x0a, 0xef, 0x43, 0x79, 0xec,
-	0x04, 0xac, 0x6f, 0xc7, 0x23, 0xc9, 0x82, 0x6a, 0xa1, 0x86, 0xea, 0xe5, 0x86, 0xaa, 0x67, 0x79,
-	0xea, 0x8b, 0x3c, 0xf5, 0x83, 0x45, 0x9e, 0x16, 0xa4, 0xf8, 0xe1, 0x9c, 0x7e, 0xfc, 0x0a, 0xb6,
-	0x2e, 0xbd, 0x1d, 0x6f, 0x03, 0x34, 0x4d, 0xfb, 0xb0, 0xfb, 0xae, 0xfb, 0xfe, 0x63, 0xb7, 0xa2,
-	0x60, 0x80, 0x62, 0xd3, 0xb4, 0x5b, 0x9d, 0x76, 0x05, 0xe1, 0x2d, 0x28, 0x35, 0x4d, 0xfb, 0x43,
-	0xfb, 0xa8, 0xfd, 0xd6, 0xaa, 0x6c, 0x34, 0x7e, 0x6e, 0xc0, 0xce, 0xa2, 0xf8, 0x20, 0xdb, 0x04,
-	0xdc, 0x83, 0x3b, 0x2b, 0x79, 0xe3, 0x47, 0x97, 0x66, 0x75, 0xdd, 0x3e, 0xa8, 0xf7, 0xe6, 0xd8,
-	0x72, 0x7f, 0x16, 0xbf, 0x6a, 0x0a, 0xb6, 0x60, 0xe7, 0x4a, 0xec, 0xf8, 0xc1, 0x55, 0xcb, 0x35,
-	0x4b, 0xa1, 0x56, 0xd7, 0x1a, 0xf6, 0xe8, 0xdc, 0xf3, 0x53, 0xea, 0x79, 0x71, 0xf4, 0xab, 0x9e,
-	0x6b, 0xd6, 0x40, 0x7d, 0x78, 0x33, 0x94, 0xa5, 0xa7, 0x29, 0xaf, 0xbf, 0x4f, 0xa6, 0x44, 0x39,
-	0x9b, 0x12, 0xe5, 0x7c, 0x4a, 0xd0, 0x69, 0x42, 0xd0, 0xaf, 0x84, 0xa0, 0xdf, 0x09, 0x41, 0x93,
-	0x84, 0xa0, 0x3f, 0x09, 0x41, 0x7f, 0x13, 0xa2, 0x9c, 0x27, 0x04, 0xfd, 0x98, 0x11, 0x65, 0x32,
-	0x23, 0xca, 0xd9, 0x8c, 0x28, 0x47, 0xad, 0x90, 0x7d, 0x63, 0x34, 0x70, 0x5c, 0xa1, 0x3b, 0xcc,
-	0x58, 0x0a, 0xe3, 0xfa, 0xff, 0xde, 0xfe, 0xca, 0xd7, 0xc1, 0x2d, 0xa6, 0x99, 0x3f, 0xfb, 0x17,
-	0x00, 0x00, 0xff, 0xff, 0xf9, 0x65, 0xe8, 0xfe, 0x54, 0x04, 0x00, 0x00,
+	// 501 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x93, 0x31, 0x6f, 0xd3, 0x4e,
+	0x18, 0xc6, 0x7d, 0xff, 0xe8, 0x1f, 0xa9, 0x17, 0xa0, 0xe8, 0x84, 0x20, 0x64, 0xb8, 0x44, 0x2e,
+	0x43, 0x16, 0xce, 0x52, 0xa0, 0x5d, 0x2a, 0x21, 0xb5, 0x45, 0x82, 0xa1, 0x62, 0x70, 0xca, 0xc2,
+	0x40, 0x74, 0x76, 0xae, 0xee, 0xa9, 0x67, 0xdf, 0x71, 0x77, 0x0e, 0x64, 0xe3, 0x03, 0x30, 0x20,
+	0xb1, 0x33, 0xf3, 0x45, 0x90, 0x18, 0x33, 0x76, 0x42, 0xc4, 0x59, 0x18, 0xfb, 0x11, 0x50, 0x6c,
+	0xc7, 0x8d, 0x70, 0xa8, 0xd4, 0xed, 0x9e, 0x37, 0xcf, 0xfb, 0xde, 0x2f, 0xef, 0xe3, 0x83, 0x47,
+	0x46, 0x87, 0x5e, 0x28, 0x64, 0x3a, 0xf6, 0xa8, 0xb6, 0xfc, 0x94, 0x86, 0x76, 0x64, 0x35, 0x0d,
+	0xcf, 0x99, 0xae, 0x0a, 0xa5, 0x56, 0x41, 0xcd, 0x42, 0x94, 0x96, 0x56, 0xa2, 0x96, 0x12, 0xc4,
+	0x30, 0x3d, 0xe1, 0x21, 0x33, 0x9d, 0xc7, 0x11, 0xb7, 0x67, 0x69, 0x40, 0x42, 0x19, 0x7b, 0x91,
+	0x8c, 0xa4, 0x97, 0x7b, 0x82, 0xf4, 0x34, 0x57, 0xb9, 0xc8, 0x4f, 0x45, 0x6f, 0xa7, 0x1b, 0x49,
+	0x19, 0x09, 0x76, 0xe5, 0xb2, 0x3c, 0x66, 0xc6, 0xd2, 0x58, 0x95, 0x86, 0xa7, 0xd7, 0x10, 0x4e,
+	0x98, 0x36, 0x5c, 0x26, 0x46, 0x05, 0xd5, 0xb1, 0xe8, 0x72, 0xbf, 0x00, 0x78, 0xff, 0x05, 0xb3,
+	0x07, 0x65, 0xc7, 0x31, 0x37, 0xd6, 0x67, 0xef, 0x52, 0x66, 0x2c, 0xda, 0x81, 0xb7, 0xab, 0x41,
+	0x09, 0x8d, 0x59, 0x1b, 0xf4, 0x40, 0x7f, 0xcb, 0xbf, 0xb5, 0x2a, 0xbe, 0xa2, 0x31, 0x43, 0xcf,
+	0xd6, 0x4c, 0x76, 0xaa, 0x58, 0xfb, 0xbf, 0x1e, 0xe8, 0xdf, 0x19, 0x3c, 0x24, 0x4a, 0x90, 0xea,
+	0xaa, 0xd5, 0xf4, 0x93, 0xa9, 0x62, 0x57, 0xfd, 0x4b, 0x85, 0xee, 0xc1, 0xff, 0x05, 0x8f, 0xb9,
+	0x6d, 0x37, 0x7a, 0xa0, 0xdf, 0xf0, 0x0b, 0xe1, 0x7e, 0x2d, 0xa8, 0x9e, 0xcb, 0xf7, 0x89, 0x90,
+	0x74, 0x7c, 0xcc, 0x93, 0xf3, 0x1b, 0x51, 0x75, 0x61, 0xab, 0xbc, 0x7c, 0x64, 0xac, 0xce, 0x99,
+	0xb6, 0x7c, 0x58, 0x96, 0x86, 0x56, 0xd7, 0xb1, 0x1b, 0x37, 0xc2, 0x76, 0x3f, 0x01, 0xf8, 0xa0,
+	0x06, 0x68, 0x94, 0x4c, 0x0c, 0x43, 0x77, 0x61, 0x23, 0xd5, 0xa2, 0xe4, 0x5a, 0x1e, 0x91, 0x0b,
+	0x9b, 0xe6, 0x8c, 0x0e, 0x76, 0xf7, 0x0a, 0x92, 0x43, 0x98, 0xfd, 0xec, 0x36, 0x87, 0x2f, 0x0f,
+	0x06, 0xbb, 0x7b, 0x7e, 0xf9, 0x0b, 0xda, 0x87, 0xad, 0x09, 0x15, 0x7c, 0x3c, 0x4a, 0x13, 0xcb,
+	0x45, 0xce, 0xd3, 0x1a, 0x74, 0x48, 0x91, 0x3a, 0x59, 0xa5, 0x4e, 0x4e, 0x56, 0xa9, 0xfb, 0x30,
+	0xb7, 0xbf, 0x5e, 0xba, 0x07, 0xdf, 0x01, 0xdc, 0xae, 0x68, 0x8b, 0xcc, 0x91, 0x0f, 0xb7, 0xff,
+	0x0a, 0x16, 0xed, 0x90, 0xb5, 0x0f, 0x90, 0x6c, 0x8e, 0xbd, 0xd3, 0xde, 0xb8, 0x83, 0x21, 0xb3,
+	0xae, 0x83, 0xde, 0xe6, 0x33, 0xd7, 0xff, 0x75, 0x7d, 0xe6, 0x86, 0xd0, 0x3a, 0x8f, 0xae, 0x37,
+	0x15, 0x8b, 0x73, 0x9d, 0xc3, 0xe9, 0x6c, 0x8e, 0x9d, 0x8b, 0x39, 0x76, 0x2e, 0xe7, 0x18, 0x7c,
+	0xcc, 0x30, 0xf8, 0x96, 0x61, 0xf0, 0x23, 0xc3, 0x60, 0x96, 0x61, 0xf0, 0x2b, 0xc3, 0xe0, 0x77,
+	0x86, 0x9d, 0xcb, 0x0c, 0x83, 0xcf, 0x0b, 0xec, 0xcc, 0x16, 0xd8, 0xb9, 0x58, 0x60, 0xe7, 0xcd,
+	0x91, 0xe2, 0x1f, 0x38, 0x13, 0x34, 0x30, 0x84, 0x72, 0xaf, 0x12, 0xde, 0xbf, 0x1f, 0xc4, 0x7e,
+	0xed, 0xc9, 0x06, 0xcd, 0x7c, 0xc5, 0x4f, 0xfe, 0x04, 0x00, 0x00, 0xff, 0xff, 0x07, 0x42, 0x99,
+	0xb7, 0xe9, 0x03, 0x00, 0x00,
 }
 
-func (x ArtifactGroup) String() string {
-	s, ok := ArtifactGroup_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (this *GetLatestArtifactRequest) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*GetLatestArtifactRequest)
-	if !ok {
-		that2, ok := that.(GetLatestArtifactRequest)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Group != that1.Group {
-		return false
-	}
-	return true
-}
 func (this *GetArtifactListRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -357,7 +273,10 @@ func (this *GetArtifactListRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Group != that1.Group {
+	if this.ArtifactName != that1.ArtifactName {
+		return false
+	}
+	if this.ArtifactType != that1.ArtifactType {
 		return false
 	}
 	if this.Limit != that1.Limit {
@@ -384,10 +303,13 @@ func (this *GetDownloadLinkRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Group != that1.Group {
+	if this.ArtifactName != that1.ArtifactName {
 		return false
 	}
 	if this.VersionStr != that1.VersionStr {
+		return false
+	}
+	if this.ArtifactType != that1.ArtifactType {
 		return false
 	}
 	return true
@@ -414,7 +336,7 @@ func (this *GetDownloadLinkResponse) Equal(that interface{}) bool {
 	if this.Url != that1.Url {
 		return false
 	}
-	if this.Sha256 != that1.Sha256 {
+	if this.SHA256 != that1.SHA256 {
 		return false
 	}
 	if !this.ValidUntil.Equal(that1.ValidUntil) {
@@ -422,23 +344,14 @@ func (this *GetDownloadLinkResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *GetLatestArtifactRequest) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&artifacttrackerpb.GetLatestArtifactRequest{")
-	s = append(s, "Group: "+fmt.Sprintf("%#v", this.Group)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
 func (this *GetArtifactListRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&artifacttrackerpb.GetArtifactListRequest{")
-	s = append(s, "Group: "+fmt.Sprintf("%#v", this.Group)+",\n")
+	s = append(s, "ArtifactName: "+fmt.Sprintf("%#v", this.ArtifactName)+",\n")
+	s = append(s, "ArtifactType: "+fmt.Sprintf("%#v", this.ArtifactType)+",\n")
 	s = append(s, "Limit: "+fmt.Sprintf("%#v", this.Limit)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -447,10 +360,11 @@ func (this *GetDownloadLinkRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&artifacttrackerpb.GetDownloadLinkRequest{")
-	s = append(s, "Group: "+fmt.Sprintf("%#v", this.Group)+",\n")
+	s = append(s, "ArtifactName: "+fmt.Sprintf("%#v", this.ArtifactName)+",\n")
 	s = append(s, "VersionStr: "+fmt.Sprintf("%#v", this.VersionStr)+",\n")
+	s = append(s, "ArtifactType: "+fmt.Sprintf("%#v", this.ArtifactType)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -461,7 +375,7 @@ func (this *GetDownloadLinkResponse) GoString() string {
 	s := make([]string, 0, 7)
 	s = append(s, "&artifacttrackerpb.GetDownloadLinkResponse{")
 	s = append(s, "Url: "+fmt.Sprintf("%#v", this.Url)+",\n")
-	s = append(s, "Sha256: "+fmt.Sprintf("%#v", this.Sha256)+",\n")
+	s = append(s, "SHA256: "+fmt.Sprintf("%#v", this.SHA256)+",\n")
 	if this.ValidUntil != nil {
 		s = append(s, "ValidUntil: "+fmt.Sprintf("%#v", this.ValidUntil)+",\n")
 	}
@@ -489,7 +403,6 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ArtifactTrackerClient interface {
-	GetLatestArtifact(ctx context.Context, in *GetLatestArtifactRequest, opts ...grpc.CallOption) (*versionspb.Artifact, error)
 	GetArtifactList(ctx context.Context, in *GetArtifactListRequest, opts ...grpc.CallOption) (*versionspb.ArtifactSet, error)
 	GetDownloadLink(ctx context.Context, in *GetDownloadLinkRequest, opts ...grpc.CallOption) (*GetDownloadLinkResponse, error)
 }
@@ -500,15 +413,6 @@ type artifactTrackerClient struct {
 
 func NewArtifactTrackerClient(cc *grpc.ClientConn) ArtifactTrackerClient {
 	return &artifactTrackerClient{cc}
-}
-
-func (c *artifactTrackerClient) GetLatestArtifact(ctx context.Context, in *GetLatestArtifactRequest, opts ...grpc.CallOption) (*versionspb.Artifact, error) {
-	out := new(versionspb.Artifact)
-	err := c.cc.Invoke(ctx, "/pl.services.ArtifactTracker/GetLatestArtifact", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *artifactTrackerClient) GetArtifactList(ctx context.Context, in *GetArtifactListRequest, opts ...grpc.CallOption) (*versionspb.ArtifactSet, error) {
@@ -531,31 +435,23 @@ func (c *artifactTrackerClient) GetDownloadLink(ctx context.Context, in *GetDown
 
 // ArtifactTrackerServer is the server API for ArtifactTracker service.
 type ArtifactTrackerServer interface {
-	GetLatestArtifact(context.Context, *GetLatestArtifactRequest) (*versionspb.Artifact, error)
 	GetArtifactList(context.Context, *GetArtifactListRequest) (*versionspb.ArtifactSet, error)
 	GetDownloadLink(context.Context, *GetDownloadLinkRequest) (*GetDownloadLinkResponse, error)
 }
 
-func RegisterArtifactTrackerServer(s *grpc.Server, srv ArtifactTrackerServer) {
-	s.RegisterService(&_ArtifactTracker_serviceDesc, srv)
+// UnimplementedArtifactTrackerServer can be embedded to have forward compatible implementations.
+type UnimplementedArtifactTrackerServer struct {
 }
 
-func _ArtifactTracker_GetLatestArtifact_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetLatestArtifactRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ArtifactTrackerServer).GetLatestArtifact(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pl.services.ArtifactTracker/GetLatestArtifact",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ArtifactTrackerServer).GetLatestArtifact(ctx, req.(*GetLatestArtifactRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+func (*UnimplementedArtifactTrackerServer) GetArtifactList(ctx context.Context, req *GetArtifactListRequest) (*versionspb.ArtifactSet, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetArtifactList not implemented")
+}
+func (*UnimplementedArtifactTrackerServer) GetDownloadLink(ctx context.Context, req *GetDownloadLinkRequest) (*GetDownloadLinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDownloadLink not implemented")
+}
+
+func RegisterArtifactTrackerServer(s *grpc.Server, srv ArtifactTrackerServer) {
+	s.RegisterService(&_ArtifactTracker_serviceDesc, srv)
 }
 
 func _ArtifactTracker_GetArtifactList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -599,10 +495,6 @@ var _ArtifactTracker_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*ArtifactTrackerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetLatestArtifact",
-			Handler:    _ArtifactTracker_GetLatestArtifact_Handler,
-		},
-		{
 			MethodName: "GetArtifactList",
 			Handler:    _ArtifactTracker_GetArtifactList_Handler,
 		},
@@ -615,33 +507,10 @@ var _ArtifactTracker_serviceDesc = grpc.ServiceDesc{
 	Metadata: "src/cloud/artifact_tracker/artifacttrackerpb/artifact_tracker.proto",
 }
 
-func (m *GetLatestArtifactRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *GetLatestArtifactRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Group != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintArtifactTracker(dAtA, i, uint64(m.Group))
-	}
-	return i, nil
-}
-
 func (m *GetArtifactListRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -649,27 +518,39 @@ func (m *GetArtifactListRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetArtifactListRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetArtifactListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Group != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintArtifactTracker(dAtA, i, uint64(m.Group))
-	}
 	if m.Limit != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintArtifactTracker(dAtA, i, uint64(m.Limit))
+		i--
+		dAtA[i] = 0x18
 	}
-	return i, nil
+	if m.ArtifactType != 0 {
+		i = encodeVarintArtifactTracker(dAtA, i, uint64(m.ArtifactType))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.ArtifactName) > 0 {
+		i -= len(m.ArtifactName)
+		copy(dAtA[i:], m.ArtifactName)
+		i = encodeVarintArtifactTracker(dAtA, i, uint64(len(m.ArtifactName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *GetDownloadLinkRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -677,28 +558,41 @@ func (m *GetDownloadLinkRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetDownloadLinkRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetDownloadLinkRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Group != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintArtifactTracker(dAtA, i, uint64(m.Group))
+	if m.ArtifactType != 0 {
+		i = encodeVarintArtifactTracker(dAtA, i, uint64(m.ArtifactType))
+		i--
+		dAtA[i] = 0x18
 	}
 	if len(m.VersionStr) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.VersionStr)
+		copy(dAtA[i:], m.VersionStr)
 		i = encodeVarintArtifactTracker(dAtA, i, uint64(len(m.VersionStr)))
-		i += copy(dAtA[i:], m.VersionStr)
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.ArtifactName) > 0 {
+		i -= len(m.ArtifactName)
+		copy(dAtA[i:], m.ArtifactName)
+		i = encodeVarintArtifactTracker(dAtA, i, uint64(len(m.ArtifactName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *GetDownloadLinkResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -706,64 +600,67 @@ func (m *GetDownloadLinkResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetDownloadLinkResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetDownloadLinkResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Url) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintArtifactTracker(dAtA, i, uint64(len(m.Url)))
-		i += copy(dAtA[i:], m.Url)
-	}
-	if len(m.Sha256) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintArtifactTracker(dAtA, i, uint64(len(m.Sha256)))
-		i += copy(dAtA[i:], m.Sha256)
-	}
 	if m.ValidUntil != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintArtifactTracker(dAtA, i, uint64(m.ValidUntil.Size()))
-		n1, err := m.ValidUntil.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.ValidUntil.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintArtifactTracker(dAtA, i, uint64(size))
 		}
-		i += n1
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	if len(m.SHA256) > 0 {
+		i -= len(m.SHA256)
+		copy(dAtA[i:], m.SHA256)
+		i = encodeVarintArtifactTracker(dAtA, i, uint64(len(m.SHA256)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Url) > 0 {
+		i -= len(m.Url)
+		copy(dAtA[i:], m.Url)
+		i = encodeVarintArtifactTracker(dAtA, i, uint64(len(m.Url)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintArtifactTracker(dAtA []byte, offset int, v uint64) int {
+	offset -= sovArtifactTracker(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
-func (m *GetLatestArtifactRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Group != 0 {
-		n += 1 + sovArtifactTracker(uint64(m.Group))
-	}
-	return n
-}
-
 func (m *GetArtifactListRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Group != 0 {
-		n += 1 + sovArtifactTracker(uint64(m.Group))
+	l = len(m.ArtifactName)
+	if l > 0 {
+		n += 1 + l + sovArtifactTracker(uint64(l))
+	}
+	if m.ArtifactType != 0 {
+		n += 1 + sovArtifactTracker(uint64(m.ArtifactType))
 	}
 	if m.Limit != 0 {
 		n += 1 + sovArtifactTracker(uint64(m.Limit))
@@ -777,12 +674,16 @@ func (m *GetDownloadLinkRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Group != 0 {
-		n += 1 + sovArtifactTracker(uint64(m.Group))
+	l = len(m.ArtifactName)
+	if l > 0 {
+		n += 1 + l + sovArtifactTracker(uint64(l))
 	}
 	l = len(m.VersionStr)
 	if l > 0 {
 		n += 1 + l + sovArtifactTracker(uint64(l))
+	}
+	if m.ArtifactType != 0 {
+		n += 1 + sovArtifactTracker(uint64(m.ArtifactType))
 	}
 	return n
 }
@@ -797,7 +698,7 @@ func (m *GetDownloadLinkResponse) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovArtifactTracker(uint64(l))
 	}
-	l = len(m.Sha256)
+	l = len(m.SHA256)
 	if l > 0 {
 		n += 1 + l + sovArtifactTracker(uint64(l))
 	}
@@ -809,34 +710,18 @@ func (m *GetDownloadLinkResponse) Size() (n int) {
 }
 
 func sovArtifactTracker(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozArtifactTracker(x uint64) (n int) {
 	return sovArtifactTracker(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (this *GetLatestArtifactRequest) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&GetLatestArtifactRequest{`,
-		`Group:` + fmt.Sprintf("%v", this.Group) + `,`,
-		`}`,
-	}, "")
-	return s
 }
 func (this *GetArtifactListRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
 	s := strings.Join([]string{`&GetArtifactListRequest{`,
-		`Group:` + fmt.Sprintf("%v", this.Group) + `,`,
+		`ArtifactName:` + fmt.Sprintf("%v", this.ArtifactName) + `,`,
+		`ArtifactType:` + fmt.Sprintf("%v", this.ArtifactType) + `,`,
 		`Limit:` + fmt.Sprintf("%v", this.Limit) + `,`,
 		`}`,
 	}, "")
@@ -847,8 +732,9 @@ func (this *GetDownloadLinkRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&GetDownloadLinkRequest{`,
-		`Group:` + fmt.Sprintf("%v", this.Group) + `,`,
+		`ArtifactName:` + fmt.Sprintf("%v", this.ArtifactName) + `,`,
 		`VersionStr:` + fmt.Sprintf("%v", this.VersionStr) + `,`,
+		`ArtifactType:` + fmt.Sprintf("%v", this.ArtifactType) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -859,7 +745,7 @@ func (this *GetDownloadLinkResponse) String() string {
 	}
 	s := strings.Join([]string{`&GetDownloadLinkResponse{`,
 		`Url:` + fmt.Sprintf("%v", this.Url) + `,`,
-		`Sha256:` + fmt.Sprintf("%v", this.Sha256) + `,`,
+		`SHA256:` + fmt.Sprintf("%v", this.SHA256) + `,`,
 		`ValidUntil:` + strings.Replace(fmt.Sprintf("%v", this.ValidUntil), "Timestamp", "types.Timestamp", 1) + `,`,
 		`}`,
 	}, "")
@@ -872,78 +758,6 @@ func valueToStringArtifactTracker(v interface{}) string {
 	}
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
-}
-func (m *GetLatestArtifactRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowArtifactTracker
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: GetLatestArtifactRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetLatestArtifactRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Group", wireType)
-			}
-			m.Group = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowArtifactTracker
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Group |= ArtifactGroup(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipArtifactTracker(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthArtifactTracker
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthArtifactTracker
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
 }
 func (m *GetArtifactListRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -975,10 +789,10 @@ func (m *GetArtifactListRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Group", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ArtifactName", wireType)
 			}
-			m.Group = 0
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowArtifactTracker
@@ -988,12 +802,44 @@ func (m *GetArtifactListRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Group |= ArtifactGroup(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthArtifactTracker
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthArtifactTracker
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ArtifactName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ArtifactType", wireType)
+			}
+			m.ArtifactType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowArtifactTracker
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ArtifactType |= versionspb.ArtifactType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
 			}
@@ -1066,10 +912,10 @@ func (m *GetDownloadLinkRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Group", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ArtifactName", wireType)
 			}
-			m.Group = 0
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowArtifactTracker
@@ -1079,11 +925,24 @@ func (m *GetDownloadLinkRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Group |= ArtifactGroup(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthArtifactTracker
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthArtifactTracker
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ArtifactName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field VersionStr", wireType)
@@ -1116,6 +975,25 @@ func (m *GetDownloadLinkRequest) Unmarshal(dAtA []byte) error {
 			}
 			m.VersionStr = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ArtifactType", wireType)
+			}
+			m.ArtifactType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowArtifactTracker
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ArtifactType |= versionspb.ArtifactType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipArtifactTracker(dAtA[iNdEx:])
@@ -1203,7 +1081,7 @@ func (m *GetDownloadLinkResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Sha256", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SHA256", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1231,7 +1109,7 @@ func (m *GetDownloadLinkResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Sha256 = string(dAtA[iNdEx:postIndex])
+			m.SHA256 = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {

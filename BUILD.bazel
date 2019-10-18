@@ -23,6 +23,8 @@ gazelle(
 # Make gazelle resolve the proto paths correctly.
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/cloudpb //src/cloud/cloudpb:cloud_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/cloudapipb //src/cloud/cloudapipb:cloudapi_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb //src/cloud/artifact_tracker/versionspb:versions_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb //src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb //src/cloud/vzconn/vzconnpb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb //src/cloud/vzmgr/vzmgrpb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/services/proto //src/shared/services/proto:jwt_go_proto

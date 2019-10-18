@@ -10,6 +10,7 @@ import (
 	types "github.com/gogo/protobuf/types"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strconv "strconv"
 	strings "strings"
@@ -24,7 +25,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ArtifactType int32
 
@@ -71,7 +72,7 @@ func (m *ArtifactSet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_ArtifactSet.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +126,7 @@ func (m *Artifact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Artifact.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -342,7 +343,7 @@ func valueToGoStringVersions(v interface{}, typ string) string {
 func (m *ArtifactSet) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -350,35 +351,43 @@ func (m *ArtifactSet) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ArtifactSet) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ArtifactSet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintVersions(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
 	if len(m.Artifact) > 0 {
-		for _, msg := range m.Artifact {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintVersions(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Artifact) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Artifact[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintVersions(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintVersions(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Artifact) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -386,66 +395,79 @@ func (m *Artifact) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Artifact) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Artifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Timestamp != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintVersions(dAtA, i, uint64(m.Timestamp.Size()))
-		n1, err := m.Timestamp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if len(m.CommitHash) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintVersions(dAtA, i, uint64(len(m.CommitHash)))
-		i += copy(dAtA[i:], m.CommitHash)
-	}
-	if len(m.VersionStr) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintVersions(dAtA, i, uint64(len(m.VersionStr)))
-		i += copy(dAtA[i:], m.VersionStr)
+	if len(m.Changelog) > 0 {
+		i -= len(m.Changelog)
+		copy(dAtA[i:], m.Changelog)
+		i = encodeVarintVersions(dAtA, i, uint64(len(m.Changelog)))
+		i--
+		dAtA[i] = 0x2a
 	}
 	if len(m.AvailableArtifacts) > 0 {
-		dAtA3 := make([]byte, len(m.AvailableArtifacts)*10)
-		var j2 int
+		dAtA2 := make([]byte, len(m.AvailableArtifacts)*10)
+		var j1 int
 		for _, num := range m.AvailableArtifacts {
 			for num >= 1<<7 {
-				dAtA3[j2] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA2[j1] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j2++
+				j1++
 			}
-			dAtA3[j2] = uint8(num)
-			j2++
+			dAtA2[j1] = uint8(num)
+			j1++
 		}
+		i -= j1
+		copy(dAtA[i:], dAtA2[:j1])
+		i = encodeVarintVersions(dAtA, i, uint64(j1))
+		i--
 		dAtA[i] = 0x22
-		i++
-		i = encodeVarintVersions(dAtA, i, uint64(j2))
-		i += copy(dAtA[i:], dAtA3[:j2])
 	}
-	if len(m.Changelog) > 0 {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintVersions(dAtA, i, uint64(len(m.Changelog)))
-		i += copy(dAtA[i:], m.Changelog)
+	if len(m.VersionStr) > 0 {
+		i -= len(m.VersionStr)
+		copy(dAtA[i:], m.VersionStr)
+		i = encodeVarintVersions(dAtA, i, uint64(len(m.VersionStr)))
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	if len(m.CommitHash) > 0 {
+		i -= len(m.CommitHash)
+		copy(dAtA[i:], m.CommitHash)
+		i = encodeVarintVersions(dAtA, i, uint64(len(m.CommitHash)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Timestamp != nil {
+		{
+			size, err := m.Timestamp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintVersions(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintVersions(dAtA []byte, offset int, v uint64) int {
+	offset -= sovVersions(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *ArtifactSet) Size() (n int) {
 	if m == nil {
@@ -499,14 +521,7 @@ func (m *Artifact) Size() (n int) {
 }
 
 func sovVersions(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozVersions(x uint64) (n int) {
 	return sovVersions(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -515,9 +530,14 @@ func (this *ArtifactSet) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForArtifact := "[]*Artifact{"
+	for _, f := range this.Artifact {
+		repeatedStringForArtifact += strings.Replace(f.String(), "Artifact", "Artifact", 1) + ","
+	}
+	repeatedStringForArtifact += "}"
 	s := strings.Join([]string{`&ArtifactSet{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Artifact:` + strings.Replace(fmt.Sprintf("%v", this.Artifact), "Artifact", "Artifact", 1) + `,`,
+		`Artifact:` + repeatedStringForArtifact + `,`,
 		`}`,
 	}, "")
 	return s

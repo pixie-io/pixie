@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["server.go"],
+    importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/controller",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
+        "//src/cloud/artifact_tracker/versionspb:versions_pl_go_proto",
+        "@com_github_gogo_protobuf//types:go_default_library",
+        "@com_github_googleapis_google_cloud_go_testing//storage/stiface:go_default_library",
+        "@com_github_jmoiron_sqlx//:go_default_library",
+        "@com_github_lib_pq//:go_default_library",
+        "@com_google_cloud_go//storage:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
+        "@org_golang_x_oauth2//jwt:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["server_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
+        "//src/cloud/artifact_tracker/schema:go_default_library",
+        "//src/cloud/artifact_tracker/versionspb:versions_pl_go_proto",
+        "//src/shared/services/pgtest:go_default_library",
+        "@com_github_gogo_protobuf//types:go_default_library",
+        "@com_github_golang_migrate_migrate//source/go_bindata:go_default_library",
+        "@com_github_googleapis_google_cloud_go_testing//storage/stiface:go_default_library",
+        "@com_github_jmoiron_sqlx//:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
+        "@com_google_cloud_go//storage:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
+        "@org_golang_x_oauth2//jwt:go_default_library",
+    ],
+)
