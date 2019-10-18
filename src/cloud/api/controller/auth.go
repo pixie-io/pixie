@@ -41,25 +41,6 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		return &handler.StatusError{http.StatusInternalServerError, err}
 	}
 
-	// Bail early if the session is valid.
-	if len(session.Values) != 0 && session.Values["_at"] != nil {
-		expiresAt, ok := session.Values["_expires_at"].(int64)
-		if !ok {
-			http.Error(w, "failed to get session expiration", http.StatusInternalServerError)
-			return nil
-		}
-		// Check if token is still valid.
-		if expiresAt > time.Now().Unix() {
-			w.WriteHeader(http.StatusOK)
-			return nil
-		}
-	}
-
-	ctxWithCreds, err := attachCredentialsToContext(env, r)
-	if err != nil {
-		return &handler.StatusError{http.StatusInternalServerError, err}
-	}
-
 	// Extract params from the body which consists of the Auth0 ID token.
 	var params struct {
 		AccessToken string
@@ -71,6 +52,25 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		return handler.NewStatusError(http.StatusBadRequest,
 			"failed to decode json request")
+	}
+
+	// Bail early if the session is valid.
+	if len(session.Values) != 0 && session.Values["_at"] != nil {
+		expiresAt, ok := session.Values["_expires_at"].(int64)
+		if !ok {
+			http.Error(w, "failed to get session expiration", http.StatusInternalServerError)
+			return nil
+		}
+		// Check if token is still valid.
+		if expiresAt > time.Now().Unix() && session.Values["_auth_site"] == params.SiteName {
+			w.WriteHeader(http.StatusOK)
+			return nil
+		}
+	}
+
+	ctxWithCreds, err := attachCredentialsToContext(env, r)
+	if err != nil {
+		return &handler.StatusError{http.StatusInternalServerError, err}
 	}
 
 	rpcReq := &authpb.LoginRequest{
