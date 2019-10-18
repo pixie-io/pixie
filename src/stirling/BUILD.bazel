@@ -222,6 +222,12 @@ pl_cc_test(
     ],
 )
 
+pl_cc_test(
+    name = "message_types_test",
+    srcs = ["message_types_test.cc"],
+    deps = [":cc_library"],
+)
+
 # TODO(oazizi): Currently test needs to be run manually with sudo.
 sh_test(
     name = "stirling_wrapper_kprobe_leak_test",

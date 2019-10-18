@@ -1,0 +1,37 @@
+#pragma once
+
+#include "src/stirling/http2.h"
+#include "src/stirling/http_parse.h"
+#include "src/stirling/mysql_parse.h"
+
+namespace pl {
+namespace stirling {
+
+/**
+ * A map from an EntryType to MessageType.
+ * Example usage:
+ *   GetMessageType<mysql::Entry>::type --> mysql::Packet
+ *
+ * @tparam TEntryType The higher-level entry type, which is they map 'key'.
+ */
+
+template <class TEntryType>
+struct GetMessageType;
+
+template <>
+struct GetMessageType<ReqRespPair<http::HTTPMessage>> {
+  typedef http::HTTPMessage type;
+};
+
+template <>
+struct GetMessageType<ReqRespPair<http2::GRPCMessage>> {
+  typedef http2::Frame type;
+};
+
+template <>
+struct GetMessageType<mysql::Entry> {
+  typedef mysql::Packet type;
+};
+
+}  // namespace stirling
+}  // namespace pl
