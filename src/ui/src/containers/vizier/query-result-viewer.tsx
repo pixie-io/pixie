@@ -54,7 +54,12 @@ function formatInt64Data(val: string): string {
 }
 
 function formatFloat64Data(val: number): string {
-  return numeral(val).format('0[.]00');
+  // Floating point division of 0 can yield 2e-380 which numeral considers a NaN, this just ignores the error.
+  let num = numeral(val);
+  if (isNaN(num)) {
+    num = numeral(0);
+  }
+  return num.format('0[.]00');
 }
 
 function extractData(colType: string, col: any, rowIdx): string {
