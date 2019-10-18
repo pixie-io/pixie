@@ -35,7 +35,7 @@ void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
   has_new_events_ = true;
 }
 
-template <class TMessageType>
+template <typename TMessageType>
 std::deque<TMessageType>& DataStream::Messages() {
   DCHECK(std::holds_alternative<std::monostate>(messages_) ||
          std::holds_alternative<std::deque<TMessageType>>(messages_))
@@ -49,7 +49,7 @@ std::deque<TMessageType>& DataStream::Messages() {
   return std::get<std::deque<TMessageType>>(messages_);
 }
 
-template <class TMessageType>
+template <typename TMessageType>
 size_t DataStream::AppendEvents(EventParser<TMessageType>* parser) const {
   size_t append_count = 0;
 
@@ -133,7 +133,7 @@ ParseSyncType SelectSyncType(int64_t stuck_count) {
 // To be robust to lost events, which are not necessarily aligned to parseable entity boundaries,
 // ExtractMessages() will invoke a call to ParseMessages() with a stream recovery argument when
 // necessary.
-template <class TMessageType>
+template <typename TMessageType>
 std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   auto& typed_messages = Messages<TMessageType>();
 
@@ -238,7 +238,7 @@ void DataStream::Reset() {
   inflater_.reset(nullptr);
 }
 
-template <class TMessageType>
+template <typename TMessageType>
 bool DataStream::Empty() const {
   return events_.empty() && (std::holds_alternative<std::monostate>(messages_) ||
                              std::get<std::deque<TMessageType>>(messages_).empty());

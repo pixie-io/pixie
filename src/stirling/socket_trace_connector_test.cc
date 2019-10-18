@@ -231,7 +231,7 @@ auto ToStringVector(const types::SharedColumnWrapper& col) {
   return result;
 }
 
-template <class TValueType>
+template <typename TValueType>
 auto ToIntVector(const types::SharedColumnWrapper& col) {
   std::vector<int64_t> result;
   for (size_t i = 0; i < col->Size(); ++i) {

@@ -217,10 +217,10 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   void AcceptCloseConnEvent(const close_event_t& close_event);
 
   // Transfer of messages to the data table.
-  template <class TMessageType>
+  template <typename TMessageType>
   void TransferStreams(ConnectorContext* ctx, TrafficProtocol protocol, DataTable* data_table);
 
-  template <class TMessageType>
+  template <typename TMessageType>
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
                             ReqRespPair<TMessageType> record, DataTable* data_table);
 

@@ -39,7 +39,7 @@ class DataStream {
    * @param type whether to parse as requests, responses or mixed traffic.
    * @return deque of parsed messages.
    */
-  template <class TMessageType>
+  template <typename TMessageType>
   std::deque<TMessageType>& ExtractMessages(MessageType type);
 
   /**
@@ -47,7 +47,7 @@ class DataStream {
    * @tparam TMessageType The parsed message type within the deque.
    * @return deque of messages.
    */
-  template <class TMessageType>
+  template <typename TMessageType>
   std::deque<TMessageType>& Messages();
 
   /**
@@ -59,7 +59,7 @@ class DataStream {
    * @brief Checks if the DataStream is empty of both raw events and parsed messages.
    * @return true if empty of all data.
    */
-  template <class TMessageType>
+  template <typename TMessageType>
   bool Empty() const;
 
   /**
@@ -142,7 +142,7 @@ class DataStream {
 
   // Helper function that appends all contiguous events to the parser.
   // Returns number of events appended.
-  template <class TMessageType>
+  template <typename TMessageType>
   size_t AppendEvents(EventParser<TMessageType>* parser) const;
 
   // Raw data events from BPF.

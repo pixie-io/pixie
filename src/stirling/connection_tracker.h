@@ -88,14 +88,14 @@ class ConnectionTracker {
    * @tparam TEntryType the type of the entries to be parsed.
    * @return Vector of processed entries.
    */
-  template <class TEntryType>
+  template <typename TEntryType>
   std::vector<TEntryType> ProcessMessages();
 
   /**
    * @brief Returns reference to current set of unconsumed requests.
    * Note: A call to ProcessMessages() is required to parse new requests.
    */
-  template <class TMessageType>
+  template <typename TMessageType>
   std::deque<TMessageType>& req_messages() {
     return req_data()->Messages<TMessageType>();
   }
@@ -104,7 +104,7 @@ class ConnectionTracker {
    * @brief Returns reference to current set of unconsumed responses.
    * Note: A call to ProcessMessages() is required to parse new responses.
    */
-  template <class TMessageType>
+  template <typename TMessageType>
   std::deque<TMessageType>& resp_messages() {
     return resp_data()->Messages<TMessageType>();
   }
@@ -342,14 +342,14 @@ class ConnectionTracker {
    * Curretly, only MySQL needs to keep a state, so it has a specialized template of
    * the InitState function, and the general template is empty.
    */
-  template <class TMessageType>
+  template <typename TMessageType>
   void InitState() {}
 
   /**
    * state() gets the state of a connection tracker. This function is only expected to
    * be called in a templated environment, such as in ProcessMessages<mysql::Packet>.
    */
-  template <class TStateType>
+  template <typename TStateType>
   TStateType* state() const {
     return std::get<std::unique_ptr<TStateType>>(state_).get();
   }
@@ -364,9 +364,9 @@ class ConnectionTracker {
   }
 
  private:
-  template <class TEntryType>
+  template <typename TEntryType>
   std::vector<TEntryType> ProcessMessagesImpl();
-  template <class TMessageType>
+  template <typename TMessageType>
   Status ExtractReqResp();
   void SetPID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);

@@ -106,7 +106,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
-template <class TMessageType>
+template <typename TMessageType>
 Status ConnectionTracker::ExtractReqResp() {
   DataStream* resp_data_ptr = resp_data();
   if (resp_data_ptr == nullptr) {
@@ -123,12 +123,12 @@ Status ConnectionTracker::ExtractReqResp() {
   return Status::OK();
 }
 
-template <class TMessageType>
-std::vector<TMessageType> ConnectionTracker::ProcessMessages() {
+template <typename TEntryType>
+std::vector<TEntryType> ConnectionTracker::ProcessMessages() {
   if (disabled()) {
     return {};
   }
-  return ProcessMessagesImpl<TMessageType>();
+  return ProcessMessagesImpl<TEntryType>();
 }
 
 template <>

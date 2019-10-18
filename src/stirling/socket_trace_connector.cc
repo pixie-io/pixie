@@ -361,7 +361,7 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
 // Generic/Templatized TransferData Helpers
 //-----------------------------------------------------------------------------
 
-template <class TEntryType>
+template <typename TEntryType>
 void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, TrafficProtocol protocol,
                                            DataTable* data_table) {
   // TODO(oazizi): The single connection trackers model makes TransferStreams() inefficient,
