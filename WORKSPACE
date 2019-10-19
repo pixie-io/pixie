@@ -66,6 +66,15 @@ container_pull(
     repository = "openresty/openresty",
 )
 
+# These dependencies are needed by GRPC.
+load("@build_bazel_rules_apple//apple:repositories.bzl", "apple_rules_dependencies")
+
+apple_rules_dependencies()
+
+load("@build_bazel_apple_support//lib:repositories.bzl", "apple_support_dependencies")
+
+apple_support_dependencies()
+
 # gazelle:repo bazel_gazelle
 ##########################################################
 # Auto-generated GO dependencies (DO NOT EDIT).

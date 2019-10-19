@@ -51,13 +51,10 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "googletest-release-1.8.1",
         urls = ["https://github.com/google/googletest/archive/release-1.8.1.tar.gz"],
     ),
-    # WHEN UPDATING EITHER GRPC OR BORING SSL please make sure that the version of
-    # boringssl matches the version used by GRPC.
-    # TODO(zasgar): Figure out how we can make GRPC using our boringssl as a dep.
     com_github_grpc_grpc = dict(
-        sha256 = "50747c8939c535b1059f19534de263eb9b7570b5347390fb24b0bbce8763e9a4",
-        strip_prefix = "grpc-1.21.3",
-        urls = ["https://github.com/grpc/grpc/archive/v1.21.3.tar.gz"],
+        sha256 = "fd040f5238ff1e32b468d9d38e50f0d7f8da0828019948c9001e9a03093e1d8f",
+        strip_prefix = "grpc-1.24.2",
+        urls = ["https://github.com/grpc/grpc/archive/v1.24.2.tar.gz"],
     ),
     com_google_boringssl = dict(
         sha256 = "2b18e1c1ad15cc180529ababde8a62885ac35005131e9a797cdaf0e07d76a767",

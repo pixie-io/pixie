@@ -75,10 +75,28 @@ def _artifacts_setup():
         downloaded_file_path = "linux_headers.tar.gz",
     )
 
+# TODO(zasgar): remove this when downstream bugs relying on bazel version are removed.
+def _impl(repository_ctx):
+    bazel_verision_for_upb = "bazel_version = \"" + native.bazel_version + "\""
+    bazel_version_for_foreign_cc = "BAZEL_VERSION = \"" + native.bazel_version + "\""
+    repository_ctx.file("bazel_version.bzl", bazel_verision_for_upb)
+    repository_ctx.file("def.bzl", bazel_version_for_foreign_cc)
+    repository_ctx.file("BUILD", "")
+
+bazel_version_repository = repository_rule(
+    implementation = _impl,
+    local = True,
+)
+
 def pl_workspace_setup():
     gazelle_dependencies()
     buildifier_dependencies()
     grpc_deps()
+
+    bazel_version_repository(
+        name = "bazel_version",
+    )
+
     container_repositories()
 
     _package_manager_setup()

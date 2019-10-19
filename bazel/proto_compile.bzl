@@ -56,7 +56,7 @@ def pl_cc_proto_library(name, proto, deps = [], **kwargs):
     )
 
     # Generate the GRPC library.
-    plugin = "@com_github_grpc_grpc//:grpc_cpp_plugin"
+    plugin = "@com_github_grpc_grpc//src/compiler:grpc_cpp_plugin"
     generate_cc(
         name = codegen_cc_grpc_target,
         srcs = [proto],
