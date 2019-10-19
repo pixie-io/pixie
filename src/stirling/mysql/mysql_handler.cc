@@ -168,6 +168,10 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
 
   // Process header packet.
   Packet packet = resp_packets->front();
+  if (!IsLengthEncodedIntPacket(packet)) {
+    return error::Internal("First packet should be length-encoded integer.");
+  }
+
   int param_offset = 0;
   int num_col = ProcessLengthEncodedInt(packet.msg, &param_offset);
   if (num_col == 0) {
@@ -182,14 +186,8 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
 
   std::vector<ColDefinition> col_defs;
   for (int i = 0; i < num_col; ++i) {
-    if (IsEOFPacket(resp_packets->front())) {
-      return error::Internal("Did not expect EOF packet during column definitions.");
-    }
-    if (IsOKPacket(resp_packets->front())) {
-      return error::Internal("Did not expect OK packet during column definitions.");
-    }
-    if (IsErrPacket(resp_packets->front())) {
-      return error::Internal("Did not expect ERR packet during column definitions.");
+    if (!IsColumnDefPacket(resp_packets->front())) {
+      return error::Internal("Expected column definition packet");
     }
 
     Packet col_def_packet = resp_packets->front();
@@ -214,6 +212,9 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
 
   while (!isLastPacket(resp_packets->front())) {
     Packet row_packet = resp_packets->front();
+    if (!IsResultsetRowPacket(row_packet)) {
+      return error::Internal("Expected resultset row packet");
+    }
     ResultsetRow row{row_packet.msg};
     results.emplace_back(std::move(row));
     resp_packets->pop_front();
@@ -230,11 +231,8 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
   DCHECK(!resp_packets->empty());
   Packet packet = resp_packets->front();
 
-  if (packet.msg.size() != 12U) {
-    return error::Internal("StmtPrepareOK response packet message size must be 12.");
-  }
-  if (packet.msg[0] != 0 || packet.msg[9] != 0) {
-    return error::Internal("Does not appear to be a StmtPrepareOK response.");
+  if (!IsStmtPrepareOKPacket(packet)) {
+    return error::Internal("Expected StmtPrepareOK packet");
   }
 
   int stmt_id = utils::LEStrToInt(packet.msg.substr(1, 4));

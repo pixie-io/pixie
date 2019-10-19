@@ -13,8 +13,6 @@ namespace mysql {
 
 using ::testing::SizeIs;
 
-class HandlerTest : public ::testing::Test {};
-
 bool operator==(const ErrResponse& lhs, const ErrResponse& rhs) {
   return (lhs.error_code() == rhs.error_code() && lhs.error_message() == rhs.error_message());
 }
@@ -95,49 +93,60 @@ bool operator==(const Resultset& lhs, const Resultset& rhs) {
   return true;
 }
 
-TEST_F(HandlerTest, TestHandleErrMessage) {
+TEST(HandleErrMessage, Basic) {
   ErrResponse expected_response(1096, "This an error.");
-
-  std::deque<Packet> resp_packets;
-  Packet packet = testutils::GenErr(/* seq_id */ 1, expected_response);
-  resp_packets.emplace_back(packet);
+  std::deque<Packet> resp_packets = {testutils::GenErr(/* seq_id */ 1, expected_response)};
   std::unique_ptr<ErrResponse> result_response = HandleErrMessage(&resp_packets);
   ASSERT_NE(nullptr, result_response);
   ASSERT_THAT(resp_packets, SizeIs(0));
   EXPECT_EQ(expected_response, *result_response);
 }
 
-TEST_F(HandlerTest, TestHandleOKMessage) {
-  std::deque<Packet> resp_packets;
-  Packet packet = testutils::GenOK(1);
-  resp_packets.emplace_back(packet);
+TEST(HandleOKMessage, Basic) {
+  std::deque<Packet> resp_packets = {testutils::GenOK(1)};
   std::unique_ptr<OKResponse> ok_response = HandleOKMessage(&resp_packets);
   EXPECT_NE(nullptr, ok_response);
 }
 
-TEST_F(HandlerTest, TestHandleResultset) {
-  {
-    // Test without CLIENT_DEPRECATE_EOF.
-    std::deque<Packet> packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
-    auto s = HandleResultset(&packets);
-    EXPECT_TRUE(s.ok());
-    std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
-    ASSERT_NE(nullptr, result);
-    EXPECT_EQ(testutils::kStmtExecuteResultset, *result);
-  }
-
-  {
-    // Test with CLIENT_DEPRECATE_EOF.
-    std::deque<Packet> packets = testutils::GenResultset(testutils::kStmtExecuteResultset, true);
-    auto s = HandleResultset(&packets);
-    EXPECT_TRUE(s.ok());
-    std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
-    ASSERT_NE(nullptr, result);
-    EXPECT_EQ(testutils::kStmtExecuteResultset, *result);
-  }
+TEST(HandleResultset, ValidWithEOF) {
+  // Test without CLIENT_DEPRECATE_EOF.
+  std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
+  auto s = HandleResultset(&resp_packets);
+  EXPECT_TRUE(s.ok());
+  std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
+  ASSERT_NE(nullptr, result);
+  EXPECT_EQ(testutils::kStmtExecuteResultset, *result);
 }
 
-TEST_F(HandlerTest, TestHandleStmtPrepareOKResponse) {
+TEST(HandleResultset, ValidNoEOF) {
+  // Test with CLIENT_DEPRECATE_EOF.
+  std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset, true);
+  auto s = HandleResultset(&resp_packets);
+  EXPECT_TRUE(s.ok());
+  std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
+  ASSERT_NE(nullptr, result);
+  EXPECT_EQ(testutils::kStmtExecuteResultset, *result);
+}
+
+TEST(HandleResultset, NeedsMoreData) {
+  // Test for incomplete response.
+  std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
+  resp_packets.pop_back();
+  auto s = HandleResultset(&resp_packets);
+  EXPECT_TRUE(s.ok());
+  std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
+  ASSERT_EQ(nullptr, result);
+}
+
+TEST(HandleResultset, InvalidResponse) {
+  // Test for invalid response by changing first packet.
+  std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
+  resp_packets.front() = testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This an error."));
+  auto s = HandleResultset(&resp_packets);
+  EXPECT_FALSE(s.ok());
+}
+
+TEST(HandleStmtPrepareOKResponse, Valid) {
   std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
   auto s = HandleStmtPrepareOKResponse(&packets);
   EXPECT_TRUE(s.ok());
@@ -146,7 +155,23 @@ TEST_F(HandlerTest, TestHandleStmtPrepareOKResponse) {
   EXPECT_EQ(testutils::kStmtPrepareResponse, *result_response);
 }
 
-TEST_F(HandlerTest, TestHandleStmtExecuteRequest) {
+TEST(HandleStmtPrepareOKResponse, NeedsMoreData) {
+  std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
+  packets.pop_back();
+  auto s = HandleStmtPrepareOKResponse(&packets);
+  EXPECT_TRUE(s.ok());
+  std::unique_ptr<StmtPrepareOKResponse> result_response = s.ConsumeValueOrDie();
+  ASSERT_EQ(nullptr, result_response);
+}
+
+TEST(HandleStmtPrepareOKResponse, Invalid) {
+  std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
+  packets.front() = testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This an error."));
+  auto s = HandleStmtPrepareOKResponse(&packets);
+  EXPECT_FALSE(s.ok());
+}
+
+TEST(HandleStmtExecuteRequest, Basic) {
   Packet req_packet = testutils::GenStmtExecuteRequest(testutils::kStmtExecuteRequest);
   ReqRespEvent e = testutils::InitStmtPrepare();
   int stmt_id = static_cast<StmtPrepareOKResponse*>(e.response())->resp_header().stmt_id;
@@ -159,7 +184,7 @@ TEST_F(HandlerTest, TestHandleStmtExecuteRequest) {
   EXPECT_EQ(testutils::kStmtExecuteRequest, *result_request);
 }
 
-TEST_F(HandlerTest, TestHandleStringRequest) {
+TEST(HandleStringRequest, Basic) {
   Packet req_packet =
       testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
   auto s = HandleStringRequest(req_packet);

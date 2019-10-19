@@ -411,11 +411,10 @@ struct State {
 bool IsEOFPacket(const Packet& packet);
 bool IsErrPacket(const Packet& packet);
 bool IsOKPacket(const Packet& packet);
-
-/**
- * Checks whether an EOF packet is present and pops it off if it is.
- */
-void ProcessEOFPacket(std::deque<Packet>* resp_packets);
+bool IsLengthEncodedIntPacket(const Packet& packet);
+bool IsColumnDefPacket(const Packet& packet);
+bool IsResultsetRowPacket(const Packet& packet);
+bool IsStmtPrepareOKPacket(const Packet& packet);
 
 }  // namespace mysql
 }  // namespace stirling
