@@ -89,10 +89,6 @@ SRC_STASH_NAME = "${BUILD_TAG}_src"
 DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
 DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
 
-K8S_CREDS_NAME = 'nightly-cluster-0001'
-K8S_ADDR = 'https://nightly-cluster-0001.pixielabs.ai'
-K8S_NS = 'pl'
-
 // Sometimes docker fetches fail, so we just do a retry. This can be optimized to just
 // retry on docker failues, but not worth it now.
 JENKINS_RETRIES = 2;
@@ -105,7 +101,6 @@ stashList = [];
 
 // Flag controlling if coverage job is enabled.
 isMasterRun =  (env.JOB_NAME == "pixielabs-master")
-isNightlyDeployRun = (env.JOB_NAME == "pixielabs-master-nightly-deploy")
 isNightlyTestRegressionRun = (env.JOB_NAME == "pixielabs-master-nightly-test-regression")
 
 runCoverageJob = isMasterRun
@@ -611,35 +606,6 @@ def buildScriptForCommits = {
     postBuildActions()
   }
 }
-
-def buildScriptForNightly = {
-  node {
-    currentBuild.result = 'SUCCESS'
-    deleteDir()
-    try {
-      stage('Checkout code') {
-        checkoutAndInitialize()
-      }
-      stage('Deploy to K8s Nightly') {
-        dockerStep('', devDockerImageExtrasWithTag) {
-          withKubeConfig([credentialsId: K8S_CREDS_NAME,
-                          serverUrl: K8S_ADDR, namespace: K8S_NS]) {
-            sh 'PL_IMAGE_TAG=nightly-$(date +%s)-`cat SOURCE_VERSION` make deploy-vizier-nightly'
-            sh 'PL_IMAGE_TAG=nightly-$(date +%s)-`cat SOURCE_VERSION` make deploy-customer-docs-nightly'
-          }
-        }
-      }
-    }
-    catch(err) {
-      currentBuild.result = 'FAILURE'
-      echo "Exception thrown:\n ${err}"
-      echo "Stacktrace:"
-      err.printStackTrace()
-    }
-    postBuildActions()
-  }
-}
-
 
 
 /*****************************************************************************
