@@ -363,6 +363,9 @@ class ConnectionTracker {
     recv_data_.CleanupEvents();
   }
 
+  template <typename TEntryType>
+  std::string DebugString(std::string_view prefix = "") const;
+
  private:
   template <typename TEntryType>
   std::vector<TEntryType> ProcessMessagesImpl();

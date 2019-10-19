@@ -3,6 +3,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <string>
 
 #include "src/stirling/http2.h"
 #include "src/stirling/http_parse.h"
@@ -120,6 +121,23 @@ class DataStream {
       // to be useful, as they are even older than the events being purged now.
       Reset();
     }
+  }
+
+  template <typename TMessageType>
+  std::string DebugString(std::string_view prefix = "") const {
+    std::string info;
+    info += absl::Substitute("$0raw events=$1\n", prefix, events_.size());
+    int messages_size;
+    if (std::holds_alternative<std::deque<TMessageType>>(messages_)) {
+      messages_size = std::get<std::deque<TMessageType>>(messages_).size();
+    } else if (std::holds_alternative<std::monostate>(messages_)) {
+      messages_size = 0;
+    } else {
+      messages_size = -1;
+      LOG(DFATAL) << "Bad variant access";
+    }
+    info += absl::Substitute("$0parsed messages=$1\n", prefix, messages_size);
+    return info;
   }
 
  private:

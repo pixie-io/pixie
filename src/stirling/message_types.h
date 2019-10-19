@@ -33,5 +33,20 @@ struct GetMessageType<mysql::Entry> {
   typedef mysql::Packet type;
 };
 
+inline std::string_view ProtocolName(TrafficProtocol protocol) {
+  switch (protocol) {
+    case kProtocolUnknown:
+      return "Unknown";
+    case kProtocolHTTP:
+      return "HTTP";
+    case kProtocolHTTP2:
+      return "HTTP2";
+    case kProtocolMySQL:
+      return "MySQL";
+    default:
+      return "unknown";
+  }
+}
+
 }  // namespace stirling
 }  // namespace pl

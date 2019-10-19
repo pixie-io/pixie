@@ -17,6 +17,7 @@
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
 #include "src/stirling/http2.h"
+#include "src/stirling/message_types.h"
 #include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
 
@@ -514,9 +515,30 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   conn_resolver_.reset();
 }
 
+template <typename TEntryType>
+std::string ConnectionTracker::DebugString(std::string_view prefix) const {
+  std::string info;
+  info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, pid(), fd(), generation());
+  info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, remote_addr(), remote_port());
+  info += absl::Substitute("$0protocol=$1\n", prefix, ProtocolName(protocol()));
+  info += absl::Substitute("$0recv queue\n", prefix);
+  info += recv_data().DebugString<typename GetMessageType<TEntryType>::type>(
+      absl::StrCat(prefix, "  "));
+  info += absl::Substitute("$0send queue\n", prefix);
+  info += send_data().DebugString<typename GetMessageType<TEntryType>::type>(
+      absl::StrCat(prefix, "  "));
+  return info;
+}
+
 template std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessages();
 template std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessages();
 template std::vector<mysql::Entry> ConnectionTracker::ProcessMessages();
+
+template std::string ConnectionTracker::DebugString<ReqRespPair<http::HTTPMessage>>(
+    std::string_view prefix) const;
+template std::string ConnectionTracker::DebugString<ReqRespPair<http2::GRPCMessage>>(
+    std::string_view prefix) const;
+template std::string ConnectionTracker::DebugString<mysql::Entry>(std::string_view prefix) const;
 
 }  // namespace stirling
 }  // namespace pl

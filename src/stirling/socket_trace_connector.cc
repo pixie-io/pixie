@@ -397,6 +397,8 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, TrafficProtoco
         for (auto& msg : messages) {
           AppendMessage(ctx, tracker, msg, data_table);
         }
+
+        VLOG(3) << absl::StrCat("Connection\n", tracker.DebugString<TEntryType>());
       } else {
         // Needed to keep GCC happy.
         PL_UNUSED(ctx);

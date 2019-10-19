@@ -47,6 +47,53 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
   EXPECT_EQ(8, tracker.last_bpf_timestamp_ns());
 }
 
+// This test is of marginal value. Remove if it becomes hard to maintain.
+TEST_F(ConnectionTrackerTest, info_string) {
+  ConnectionTracker tracker;
+
+  conn_event_t conn = InitConn();
+  std::unique_ptr<SocketDataEvent> event0 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> event2 = InitSendEvent(kHTTPReq1);
+
+  tracker.AddConnOpenEvent(conn);
+  tracker.AddDataEvent(std::move(event0));
+  tracker.AddDataEvent(std::move(event1));
+  tracker.AddDataEvent(std::move(event2));
+
+  std::string debug_info = tracker.DebugString<ReqRespPair<http::HTTPMessage>>();
+
+  std::string expected_output = R"(pid=12345 fd=3 gen=2
+remote_addr=0.0.0.0:0
+protocol=HTTP
+recv queue
+  raw events=1
+  parsed messages=0
+send queue
+  raw events=2
+  parsed messages=0
+)";
+
+  EXPECT_EQ(expected_output, debug_info);
+
+  tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+
+  debug_info = tracker.DebugString<ReqRespPair<http::HTTPMessage>>();
+
+  expected_output = R"(pid=12345 fd=3 gen=2
+remote_addr=0.0.0.0:0
+protocol=HTTP
+recv queue
+  raw events=0
+  parsed messages=0
+send queue
+  raw events=0
+  parsed messages=1
+)";
+
+  EXPECT_EQ(expected_output, debug_info);
+}
+
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
   ConnectionTracker tracker;
 
