@@ -44,13 +44,14 @@ DEFINE_uint32(stirling_socket_trace_sampling_period_millis, 100,
 DEFINE_string(perf_buffer_events_output_path, "",
               "If not empty, specifies the path to a directory that the socket tracer should "
               "write the events to Record IO formatted files named after the perf buffer name.");
-// TODO(yzhao): Remove this once the gRPC tracing is no longer causing crash on nightly build.
+
+// TODO(oazizi/yzhao): Re-enable grpc and mysql tracing once stable.
+DEFINE_bool(stirling_enable_http_tracing, true,
+            "If true, stirling will trace and process HTTP messages");
 DEFINE_bool(stirling_enable_grpc_tracing, true,
-            "If true, stirling will trace and process syscalls called by gRPC RPCs.");
-// TODO(oazizi/yzhao): Remove this once the MySQL tracing is no longer causing crash on nightly
-// build.
+            "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_mysql_tracing, false,
-            "If true, stirling will trace and process syscalls called by MySQL RPCs.");
+            "If true, stirling will trace and process MySQL messages.");
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will trace and process syscalls made by itself.");
 
@@ -88,7 +89,9 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFCode(cflags));
   PL_RETURN_IF_ERROR(AttachProbes(kProbeSpecs));
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
-  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
+  if (FLAGS_stirling_enable_http_tracing) {
+    PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
+  }
   if (FLAGS_stirling_enable_grpc_tracing) {
     PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleRequestor));
   }
@@ -147,7 +150,9 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
 
   switch (table_num) {
     case kHTTPTableNum:
-      TransferStreams<ReqRespPair<http::HTTPMessage>>(ctx, kProtocolHTTP, data_table);
+      if (FLAGS_stirling_enable_http_tracing) {
+        TransferStreams<ReqRespPair<http::HTTPMessage>>(ctx, kProtocolHTTP, data_table);
+      }
 
       if (FLAGS_stirling_enable_grpc_tracing) {
         TransferStreams<ReqRespPair<GRPCMessage>>(ctx, kProtocolHTTP2, data_table);

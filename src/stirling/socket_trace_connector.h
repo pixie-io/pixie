@@ -39,6 +39,7 @@ DECLARE_string(http_response_header_filters);
 DECLARE_bool(stirling_enable_parsing_protobufs);
 DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
 DECLARE_string(perf_buffer_events_output_path);
+DECLARE_bool(stirling_enable_http_tracing);
 DECLARE_bool(stirling_enable_grpc_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
