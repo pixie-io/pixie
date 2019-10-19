@@ -3,7 +3,7 @@
     "(Doxyfile$)",
     "(chef/site-cookbooks/.*$)",
     "(experimental/.*$)",
-    "(^linters/cpplint)",
+    "(^linters/.*$)",
     "(^src/ui/offline_package_cache)",
     "(^src/stirling/bcc_bpf/system-headers)",
     "(\\.pb\\.gw\\.go$)",

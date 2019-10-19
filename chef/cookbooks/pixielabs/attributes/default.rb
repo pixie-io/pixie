@@ -18,6 +18,7 @@ default['kubectl']                   = {}
 default['bazel']                     = {}
 default['golang']                    = {}
 default['sops']                      = {}
+default['shellcheck']                = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
@@ -59,6 +60,11 @@ if node[:platform] == 'ubuntu'
     'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.linux'
   default['sops']['sha256']        =
     '6eacdd01b68fd140eb71bbca233bea897cccb75dbf9e00a02e648b2f9a8a6939'
+
+  default['shellcheck']['download_path'] =
+    'https://storage.googleapis.com/shellcheck/shellcheck-v0.7.0.linux.x86_64.tar.xz'
+  default['shellcheck']['sha256']        =
+    '39c501aaca6aae3f3c7fc125b3c3af779ddbe4e67e4ebdc44c2ae5cba76c847f'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/1.0.0/bazel-1.0.0-darwin-x86_64'
@@ -97,4 +103,9 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.darwin'
   default['sops']['sha256']        =
     '09bb5920ae609bdf041b74843e2d8211a7059847b21729fadfbd3c3e33e67d26'
+
+  default['shellcheck']['download_path'] =
+    'https://storage.googleapis.com/shellcheck/shellcheck-v0.7.0.darwin.x86_64.tar.xz'
+  default['shellcheck']['sha256']        =
+    'c4edf1f04e53a35c39a7ef83598f2c50d36772e4cc942fb08a1114f9d48e5380'
 end

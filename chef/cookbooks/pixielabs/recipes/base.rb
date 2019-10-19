@@ -71,3 +71,9 @@ remote_file '/opt/pixielabs/bin/sops' do
   mode 0755
   checksum node['sops']['sha256']
 end
+
+ark 'shellcheck' do
+  url node['shellcheck']['download_path']
+  has_binaries ['shellcheck']
+  checksum node['shellcheck']['sha256']
+end
