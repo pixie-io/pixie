@@ -566,7 +566,7 @@ def buildScriptForCommits = {
           deleteDir()
           WithSourceCode {
             dockerStep('', devDockerImageExtrasWithTag) {
-                sh './scripts/ci_build_cloud_artifacts.sh'
+                sh './ci/build_cloud_artifacts.sh'
                 archiveArtifacts "manifest.json"
             }
           }
