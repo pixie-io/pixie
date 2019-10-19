@@ -1593,3 +1593,10 @@ go_repository(
     sum = "h1:AV2c/EiW3KqPNT9ZKl07ehoAGi4C5/01Cfbblndcapg=",
     version = "v1.0.0",
 )
+
+go_repository(
+    name = "com_github_go_bindata_go_bindata",
+    importpath = "github.com/go-bindata/go-bindata",
+    sum = "h1:5vjJMVhowQdPzjE1LdxyFF7YFTXg5IgGVW4gBr5IbvE=",
+    version = "v3.1.2+incompatible",
+)

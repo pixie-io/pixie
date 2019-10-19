@@ -51,7 +51,12 @@ func main() {
 		log.WithError(err).Fatal("Failed to init vzmgr client")
 	}
 
-	env, err := apienv.New(ac, sc, pc, vc)
+	at, err := apienv.NewArtifactTrackerClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init artifact tracker client")
+	}
+
+	env, err := apienv.New(ac, sc, pc, vc, at)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}

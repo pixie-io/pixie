@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "artifact_resolver.go",
         "auth.go",
         "auth_client.go",
         "check_site.go",
@@ -19,6 +20,8 @@ go_library(
     deps = [
         "//src/cloud/api/apienv:go_default_library",
         "//src/cloud/api/controller/schema:go_default_library",
+        "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
+        "//src/cloud/artifact_tracker/versionspb:versions_pl_go_proto",
         "//src/cloud/auth/proto:auth_go_proto",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/cloud/cloudpb:cloud_pl_go_proto",
@@ -49,6 +52,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "artifact_resolver_test.go",
         "auth_test.go",
         "check_site_test.go",
         "cluster_resolver_test.go",
@@ -61,6 +65,8 @@ go_test(
         "//src/cloud/api/apienv:go_default_library",
         "//src/cloud/api/controller/schema:go_default_library",
         "//src/cloud/api/controller/testutils:go_default_library",
+        "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
+        "//src/cloud/artifact_tracker/versionspb:versions_pl_go_proto",
         "//src/cloud/auth/proto:auth_go_proto",
         "//src/cloud/auth/proto/mock:go_default_library",
         "//src/cloud/cloudpb:cloud_pl_go_proto",

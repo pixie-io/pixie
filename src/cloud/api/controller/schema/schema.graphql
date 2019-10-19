@@ -18,10 +18,18 @@ type UserInfo {
   picture: String!
 }
 
+enum ArtifactType {
+    AT_UNKNOWN
+    AT_LINUX_AMD64
+    AT_DARWIN_AMD64
+    AT_CONTAINER_SET_LINUX_AMD64
+}
+
 type Query {
   user: UserInfo!
   cluster: ClusterInfo!
   clusterConnection: ClusterConnectionInfo!
+  cliArtifact(artifactType: ArtifactType): CLIArtifact!
 }
 
 enum ClusterStatus {
@@ -48,4 +56,9 @@ type ClusterConnectionInfo {
 
 type Mutation {
   CreateCluster: ClusterInfo
+}
+
+type CLIArtifact {
+    url: String!
+    sha256: String!
 }

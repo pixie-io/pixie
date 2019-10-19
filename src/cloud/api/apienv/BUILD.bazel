@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "artifact_tracker_client.go",
         "env.go",
         "profile_client.go",
         "site_manager_client.go",
@@ -11,6 +12,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/apienv",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/auth/proto:auth_go_proto",
         "//src/cloud/profile/profilepb:service_go_proto",
         "//src/cloud/site_manager/sitemanagerpb:service_go_proto",

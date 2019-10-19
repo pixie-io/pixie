@@ -50,7 +50,7 @@ func TestCheckSiteHandler_HandlerFunc(t *testing.T) {
 	defer ctrl.Finish()
 
 	sc := mock_sitemanagerpb.NewMockSiteManagerServiceClient(ctrl)
-	env, err := apienv.New(nil, sc, nil, nil)
+	env, err := apienv.New(nil, sc, nil, nil, nil)
 	require.Nil(t, err)
 	cs := controller.NewCheckSiteHandler(env)
 
@@ -101,7 +101,7 @@ func TestCheckSiteHandler_HandlerFunc_BadInput(t *testing.T) {
 	defer ctrl.Finish()
 
 	sc := mock_sitemanagerpb.NewMockSiteManagerServiceClient(ctrl)
-	env, err := apienv.New(nil, sc, nil, nil)
+	env, err := apienv.New(nil, sc, nil, nil, nil)
 	require.Nil(t, err)
 	cs := controller.NewCheckSiteHandler(env)
 

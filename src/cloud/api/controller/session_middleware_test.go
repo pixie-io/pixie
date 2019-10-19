@@ -95,7 +95,7 @@ func failedRequestCheckHelper(t *testing.T, env apienv.APIEnv, mockAuthClient *m
 }
 
 func TestWithAugmentedAuthMiddlewareWithSession(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
@@ -107,7 +107,7 @@ func TestWithAugmentedAuthMiddlewareWithSession(t *testing.T) {
 }
 
 func TestWithAugmentedAuthMiddlewareWithSession_IncorrectHost(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
@@ -119,7 +119,7 @@ func TestWithAugmentedAuthMiddlewareWithSession_IncorrectHost(t *testing.T) {
 }
 
 func TestWithAugmentedAuthMiddlewareWithBearer(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
@@ -130,7 +130,7 @@ func TestWithAugmentedAuthMiddlewareWithBearer(t *testing.T) {
 }
 
 func TestWithAugmentedAuthMiddlewareMissingAuth(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
@@ -140,7 +140,7 @@ func TestWithAugmentedAuthMiddlewareMissingAuth(t *testing.T) {
 }
 
 func TestWithAugmentedAuthMiddlewareFailedAugmentation(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	mockAuthClient.EXPECT().GetAugmentedToken(
