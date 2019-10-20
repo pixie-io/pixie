@@ -1,0 +1,7 @@
+---
+
+extends: default
+
+rules:
+  key-ordering: {}
+  indentation: {spaces: 2, indent-sequences: false, check-multi-line-strings: true}
