@@ -159,38 +159,7 @@ def codeReviewPostBuild = {
 }
 
 def writeBazelRCFile() {
-  def bazelRcFile = [
-    'common --color=yes',
-    // Build arguments.
-    'build --announce_rc',
-    'build --verbose_failures',
-    '--experimental_remote_download_outputs=toplevel',
-    '--experimental_inmemory_jdeps_files',
-    '--experimental_inmemory_dotd_files',
-    '--remote_max_connections=256',
-
-    // Build remote jobs setup.
-    'build --google_default_credentials',
-
-    // Use GCS as cache as this is more scalable than our machine.
-    "build --remote_http_cache=https://storage.googleapis.com/bazel-cache-pl",
-    'build --remote_timeout=5',
-    'build --remote_retries=2',
-
-    // Keep the build going even with failures.
-    // This makes it easier to find multiple issues in
-    // a given Jenkins runs.
-    'build --keep_going',
-    'test --keep_going',
-
-    // Test remote jobs setup.
-    'test --remote_timeout=5',
-    'test --remote_retries=2',
-    'test --test_output=errors',
-    // Other test args.
-    'test --verbose_failures',
-  ].join('\n')
-  writeFile file: "jenkins.bazelrc", text: "${bazelRcFile}"
+  sh 'cp ci/jenkins.bazelrc jenkins.bazelrc'
 }
 
 def createBazelStash(String stashName) {
