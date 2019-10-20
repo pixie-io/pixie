@@ -12,6 +12,7 @@ apt_pkg_list = [
   'lcov',
   'php',
   'php-curl',
+  'php-xml',
   'python',
   'python-pip',
   'python3-pip',

@@ -125,6 +125,12 @@
         "(.*\\.key)"
       ]
     },
+    "shellcheck": {
+      "type": "shellcheck",
+      "include": [
+        "(.*\\.sh$)"
+      ]
+    },
     "text": {
       "type": "text",
       "text.max-line-length": 120,

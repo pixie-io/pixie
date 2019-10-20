@@ -11,7 +11,7 @@ usage() {
 parse_args() {
   local OPTIND
   # Process the command line arguments.
-  while getopts "n:d:" opt; do
+  while getopts "n:d:h" opt; do
     case ${opt} in
       n)
         namespace=$OPTARG
@@ -35,21 +35,21 @@ parse_args() {
 
 parse_args "$@"
 
-if [ -z $namespace ]; then
+if [ -z "${namespace}" ]; then
   echo "Namespace (-n) must be provided."
   exit 1
 fi
 
-if [ -z $dir ]; then
+if [ -z "${dir}" ]; then
   echo "Path to the directory service_tls_certs.yaml file (-d) must be provided."
   exit 1
 fi
 
 workspace=$(bazel info workspace 2> /dev/null)
-pushd $dir
-bazel run //src/utils/pixie_cli:pixie -- install-certs --namespace=$namespace
-kubectl -n $namespace get secrets service-tls-certs -o yaml | \
-  python ${workspace}/scripts/decode_yaml_secret.py > out.unenc.yaml
+pushd "${dir}"
+bazel run //src/utils/pixie_cli:pixie -- install-certs --namespace="$namespace"
+kubectl -n "${namespace}" get secrets service-tls-certs -o yaml | \
+  python "${workspace}/scripts/decode_yaml_secret.py" > out.unenc.yaml
 sops --encrypt out.unenc.yaml > service_tls_certs.yaml
 rm out.unenc.yaml
 popd
