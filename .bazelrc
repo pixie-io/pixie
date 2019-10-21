@@ -3,6 +3,9 @@
 # Get version information into the build.
 build --workspace_status_command=bazel/get_workspace_status
 
+# Some of our dependencies still need Python 2.x.
+--host_force_python=PY2
+
 # Limit memory for JVM to reduce runaway usage.
 startup --host_jvm_args=-Xmx1g
 
