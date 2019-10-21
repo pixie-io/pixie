@@ -228,6 +228,8 @@ func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string
 
 func deploy(extractPath string, depsOnly bool) {
 	// NATS and etcd deploys depend on timing, so may sometimes fail. Include some retry behavior.
+	// TODO(zasgar/michelle): This logic is flaky and we should make smarter to actually detect and wait
+	// based on the message.
 	log.Info("Deploying NATS")
 	retryDeploy(path.Join(extractPath, "nats.yaml"))
 	log.Info("Deploying etcd")
@@ -254,7 +256,7 @@ func retryDeploy(filePath string) {
 		if err == nil {
 			break
 		}
-		time.Sleep(time.Second)
+		time.Sleep(5 * time.Second)
 		tries--
 	}
 	if tries == 0 {
