@@ -22,6 +22,7 @@ import (
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/option"
+	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerenv"
 	atpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/controller"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
@@ -93,11 +94,13 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize GCS client.")
 	}
 
+	env := artifacttrackerenv.New()
+
 	db := mustLoadDB()
 	saCfg := mustLoadServiceAccountConfig()
 	bucket := viper.GetString("artifact_bucket")
 	server := controller.NewServer(db, stiface.AdaptClient(client), bucket, saCfg)
-	s := services.NewPLServer(nil, mux)
+	s := services.NewPLServer(env, mux)
 	atpb.RegisterArtifactTrackerServer(s.GRPCServer(), server)
 	s.Start()
 	s.StopOnInterrupt()

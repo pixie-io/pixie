@@ -8,6 +8,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker",
     visibility = ["//visibility:private"],
     deps = [
+        "//src/cloud/artifact_tracker/artifacttrackerenv:go_default_library",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/artifact_tracker/controller:go_default_library",
         "//src/cloud/artifact_tracker/schema:go_default_library",
