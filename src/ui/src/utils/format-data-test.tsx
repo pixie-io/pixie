@@ -127,3 +127,23 @@ describe('<JSONData/> test', () => {
     expect(wrapper.find(FormatData.JSONData).at(1).props().indentation).toEqual(1);
   });
 });
+
+describe('formatFloat64Data test', () => {
+  it('should accept decimal-rendered scientific notation', () => {
+    // 1e-6 renders to "0.000001" in numeral.js internally
+    expect(FormatData.formatFloat64Data(1e-6)).toEqual('0');
+  });
+  it('should accept scientific notation rendered scientific notation', () => {
+    // 1e-6 renders to '1e-7' internally in numeral.js, usually throws NaNs
+    expect(FormatData.formatFloat64Data(1e-7)).toEqual('0');
+  });
+  it('should render NaNs correctly', () => {
+    expect(FormatData.formatFloat64Data(NaN)).toEqual('NaN');
+  });
+  it('should render normal floats correctly', () => {
+    expect(FormatData.formatFloat64Data(123.456)).toEqual('123.46');
+  });
+  it('should render huge floats correctly', () => {
+    expect(FormatData.formatFloat64Data(123.456789101)).toEqual('123.46');
+  });
+});

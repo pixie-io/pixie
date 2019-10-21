@@ -1,3 +1,4 @@
+import * as numeral from 'numeral';
 import * as React from 'react';
 import './format-data.scss';
 
@@ -10,6 +11,20 @@ interface JSONDataProps {
   data: any;
   indentation?: number;
   multiline?: boolean;
+}
+
+export function formatFloat64Data(val: number): string {
+  // Numeral.js doesn't actually format NaNs, it ignores them.
+  if (isNaN(val)) {
+    return 'NaN';
+  }
+
+  let num = numeral(val).format('0[.]00');
+  // Numeral.js doesn't have a catch for abs-value decimals less than 1e-6.
+  if (num === 'NaN' && Math.abs(val) < 1e-6) {
+    num = formatFloat64Data(0);
+  }
+  return num;
 }
 
 export function looksLikeLatencyCol(colName: string, colType: string) {
