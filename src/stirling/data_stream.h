@@ -142,7 +142,7 @@ class DataStream {
 
  private:
   template <typename TMessageType>
-  void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TMessageType>* frames) {
+  static void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TMessageType>* frames) {
     auto iter = frames->begin();
     for (; iter != frames->end(); ++iter) {
       auto frame_age = std::chrono::duration_cast<std::chrono::seconds>(

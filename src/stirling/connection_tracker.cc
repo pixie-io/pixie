@@ -280,14 +280,17 @@ std::vector<mysql::Entry> ConnectionTracker::ProcessMessagesImpl() {
   return result;
 }
 
-// TODO(oazizi): Consider providing a reason field with the disable.
 void ConnectionTracker::Disable(std::string_view reason) {
   VLOG(1) << absl::Substitute("Disabling connection pid=$0 fd=$1 gen=$2 dest=$3:$4 reason=$5",
                               pid(), fd(), generation(), open_info_.remote_addr,
                               open_info_.remote_port, reason);
   disabled_ = true;
+  // TODO(oazizi): Consider storing the reason field.
+
   send_data_.Reset();
   recv_data_.Reset();
+
+  // TODO(oazizi): Propagate the disable back to BPF, so it doesn't even send the data.
 }
 
 bool ConnectionTracker::AllEventsReceived() const {
