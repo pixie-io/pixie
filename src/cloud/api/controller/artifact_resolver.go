@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	versionspb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb"
+	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 )
 
 // CLIArtifactResolver is the resolver responsible for resolving the CLI artifact.

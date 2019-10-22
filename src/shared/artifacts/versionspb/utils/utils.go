@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/lib/pq"
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb"
+	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 )
 
 // Enum values for artifact type.

@@ -7,11 +7,11 @@ import (
 	"syscall"
 
 	"gopkg.in/yaml.v2"
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb/utils"
+	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils"
 
 	// This must be GOGO variant or the ENUMs won't work.
 	"github.com/gogo/protobuf/jsonpb"
-	vpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb"
+	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"

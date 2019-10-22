@@ -23,7 +23,7 @@ import (
 	apb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/controller"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
-	vpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb"
+	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
 )
 

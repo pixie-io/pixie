@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb/utils"
+	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils"
 
 	"golang.org/x/oauth2/jwt"
 
@@ -21,7 +21,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	apb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	vpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb"
+	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 )
 
 // URLSigner is the function used to sign urls.

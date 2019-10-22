@@ -9,7 +9,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	versionspb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb"
+	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	reflect "reflect"
 )
 

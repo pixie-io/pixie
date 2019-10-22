@@ -14,7 +14,7 @@ pl_proto_library(
 
 pl_go_proto_library(
     name = "versions_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb",
+    importpath = "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb",
     proto = ":versions_pl_proto",
     visibility = ["//visibility:public"],
     deps = [

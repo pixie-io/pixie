@@ -9,7 +9,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	versionspb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb"
+	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 )
 
 func TestCLIArtifact(t *testing.T) {
