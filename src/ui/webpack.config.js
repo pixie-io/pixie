@@ -10,6 +10,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const utils = require('./webpack-utils');
 const ReplacePlugin = require('webpack-plugin-replace');
 const YAML = require('yaml');
+const fs = require('fs');
 
 const isDevServer = process.argv.find(v => v.includes('webpack-dev-server'));
 let topLevelDir = '';
@@ -45,7 +46,7 @@ if (isDevServer) {
 
   entryFiles = [require.resolve('react-dev-utils/webpackHotDevClient'), 'index.tsx'];
 } else {
-    // Archive plugin has problems with dev server.
+  // Archive plugin has problems with dev server.
   plugins.push(
     new ArchivePlugin({
       output: join(resolve(__dirname, 'dist'), 'bundle'),
@@ -66,11 +67,11 @@ var webpackConfig = {
     publicPath: '/',
     historyApiFallback: {
       rewrites: [
-  {from: /logout/, to: '/subdomain-index.html'},
-        {from: /login/, to: '/subdomain-index.html'},
-        {from: /create-site/, to: '/subdomain-index.html'},
-        {from: /vizier/, to: '/subdomain-index.html'},
-        {from: /(.*)/, to: '/index.html'},
+        { from: /logout/, to: '/subdomain-index.html' },
+        { from: /login/, to: '/subdomain-index.html' },
+        { from: /create-site/, to: '/subdomain-index.html' },
+        { from: /vizier/, to: '/subdomain-index.html' },
+        { from: /(.*)/, to: '/index.html' },
       ],
     },
     proxy: [],
@@ -176,7 +177,7 @@ module.exports = (env) => {
   let gatewayPath = process.env.PL_GATEWAY_URL;
   if (!gatewayPath) {
     gatewayPath =
-        'http' + (sslDisabled ? '' : 's') + '://' + utils.findGatewayProxyPath();
+      'http' + (sslDisabled ? '' : 's') + '://' + utils.findGatewayProxyPath();
   }
 
   webpackConfig.devServer.proxy.push({
@@ -214,14 +215,21 @@ module.exports = (env) => {
       },
     }));
 
-  credsEnv = environment === 'base' ? 'dev' : environment;
-  certsPath = join(topLevelDir, 'credentials', 'k8s', credsEnv, 'cloud_proxy_tls_certs.yaml').replace(/\//g, '\\/');
-  results = execSync('sops --decrypt ' + certsPath);
-  credsYAML = YAML.parse(results.toString());
-  webpackConfig.devServer.https = {
-    key: credsYAML.stringData['tls.key'],
-    cert: credsYAML.stringData['tls.crt'],
-  };
+  if (process.env.SELFSIGN_CERT_FILE && process.env.SELFSIGN_CERT_KEY) {
+    const cert = fs.readFileSync(process.env.SELFSIGN_CERT_FILE);
+    const key = fs.readFileSync(process.env.SELFSIGN_CERT_KEY);
+    webpackConfig.devServer.https = { key, cert };
+  } else {
+    let credsEnv = environment === 'base' ? 'dev' : environment;
+    let certsPath =
+      join(topLevelDir, 'credentials', 'k8s', credsEnv, 'cloud_proxy_tls_certs.yaml').replace(/\//g, '\\/');
+    let results = execSync('sops --decrypt ' + certsPath);
+    let credsYAML = YAML.parse(results.toString());
+    webpackConfig.devServer.https = {
+      key: credsYAML.stringData['tls.key'],
+      cert: credsYAML.stringData['tls.crt'],
+    };
+  }
 
   return webpackConfig;
 };
