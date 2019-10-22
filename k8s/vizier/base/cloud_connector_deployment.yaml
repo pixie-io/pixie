@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,42 +13,34 @@ spec:
       labels:
         name: vizier-cloud-connector
     spec:
-      imagePullSecrets:
-      - name: pl-image-secret
       containers:
       - name: vizier-cloud-connector-server
         image: gcr.io/pl-dev-infra/vizier/cloud_connector_server_image:latest
-        ports:
-          - containerPort: 50800
-            hostPort: 50800
-        envFrom:
-          - configMapRef:
-              name: pl-cloud-config
         env:
-          - name: PL_JWT_SIGNING_KEY
-            valueFrom:
-              secretKeyRef:
-                name: pl-cluster-secrets
-                key: jwt-signing-key
-          - name: PL_CLUSTER_ID
-            valueFrom:
-              secretKeyRef:
-                name: pl-cluster-secrets
-                key: cluster-id
-          - name: PL_SERVER_TLS_CERT
-            value: /certs/server.crt
-          - name: PL_SERVER_TLS_KEY
-            value: /certs/server.key
-          - name: PL_CLIENT_TLS_CERT
-            value: /certs/client.crt
-          - name: PL_CLIENT_TLS_KEY
-            value: /certs/client.key
-          - name: PL_TLS_CA_CERT
-            value: /certs/ca.crt
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              key: jwt-signing-key
+              name: pl-cluster-secrets
+        - name: PL_CLUSTER_ID
+          valueFrom:
+            secretKeyRef:
+              key: cluster-id
+              name: pl-cluster-secrets
+        envFrom:
+        - configMapRef:
+            name: pl-cloud-config
+        - configMapRef:
+            name: pl-tls-config
+        ports:
+        - containerPort: 50800
+          hostPort: 50800
         volumeMounts:
-        - name: certs
-          mountPath: /certs
+        - mountPath: /certs
+          name: certs
+      imagePullSecrets:
+      - name: pl-image-secret
       volumes:
-        - name: certs
-          secret:
-            secretName: service-tls-certs
+      - name: certs
+        secret:
+          secretName: service-tls-certs

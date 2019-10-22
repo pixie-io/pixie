@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,40 +13,33 @@ spec:
       labels:
         name: vizier-certmgr
     spec:
-      imagePullSecrets:
-      - name: pl-image-secret
       containers:
-      - image: gcr.io/pl-dev-infra/vizier/certmgr_server_image:latest
-        name: vizier-certmgr
-        ports:
-        - containerPort: 50900
+      - name: vizier-certmgr
+        image: gcr.io/pl-dev-infra/vizier/certmgr_server_image:latest
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:
             secretKeyRef:
-              name: pl-cluster-secrets
               key: jwt-signing-key
-        - name: PL_SERVER_TLS_CERT
-          value: /certs/server.crt
-        - name: PL_SERVER_TLS_KEY
-          value: /certs/server.key
-        - name: PL_CLIENT_TLS_CERT
-          value: /certs/client.crt
-        - name: PL_CLIENT_TLS_KEY
-          value: /certs/client.key
-        - name: PL_TLS_CA_CERT
-          value: /certs/ca.crt
-          # TODO(zasgar): Remove this.
+              name: pl-cluster-secrets
+        # TODO(zasgar): Remove this.
         - name: PL_DISABLE_GRPC_AUTH
           value: "true"
         - name: PL_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
+        ports:
+        - containerPort: 50900
         volumeMounts:
-        - name: certs
-          mountPath: /certs
+        - mountPath: /certs
+          name: certs
+      imagePullSecrets:
+      - name: pl-image-secret
       volumes:
-        - name: certs
-          secret:
-            secretName: service-tls-certs
+      - name: certs
+        secret:
+          secretName: service-tls-certs
