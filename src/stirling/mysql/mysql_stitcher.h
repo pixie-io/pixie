@@ -35,7 +35,7 @@ std::vector<Entry> ProcessMySQLPackets(std::deque<Packet>* req_packets,
  * packets.
  * @param state: MySQL state from previous "statement" requests (i.e. state from prepared
  * statements).
- * @param entries: vector of entries that can be appended to if an event of interest is discovered.
+ * @param entry: entry where details of the request and responses are populated.
  * @return There are two possible normal outcomes for each request (success or needs-more-data),
  *         in addition to error cases. Resp packets are only consumed on success.
  *         Needs-more-data simply indicates that not all response packets were present.
@@ -44,34 +44,33 @@ std::vector<Entry> ProcessMySQLPackets(std::deque<Packet>* req_packets,
  *         Note that errors are communicated through Status and include an error message.
  */
 
-StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                        mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Packet> resp_packets,
+                                        mysql::State* state, Entry* entry);
 
 StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
-                                             std::deque<Packet>* resp_packets, mysql::State* state,
-                                             std::vector<Entry>* entries);
+                                             DequeView<Packet> resp_packets, mysql::State* state,
+                                             Entry* entry);
 
-StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                        mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Packet> resp_packets,
+                                        mysql::State* state, Entry* entry);
 
-StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                      mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet> resp_packets,
+                                      mysql::State* state, Entry* entry);
 
-StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                      mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet, DequeView<Packet> resp_packets,
+                                      mysql::State* state, Entry* entry);
 
-StatusOr<ParseState> ProcessStmtReset(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                      mysql::State* state, std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessStmtReset(const Packet& req_packet, DequeView<Packet> resp_packets,
+                                      mysql::State* state, Entry* entry);
 
-StatusOr<ParseState> ProcessQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> resp_packets,
+                                  Entry* entry);
 
-StatusOr<ParseState> ProcessFieldList(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                      std::vector<Entry>* entries);
+StatusOr<ParseState> ProcessFieldList(const Packet& req_packet, DequeView<Packet> resp_packets,
+                                      Entry* entry);
 
 StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet,
-                                                     std::deque<Packet>* resp_packets,
-                                                     std::vector<Entry>* entries);
+                                                     DequeView<Packet> resp_packets, Entry* entry);
 
 }  // namespace mysql
 }  // namespace stirling

@@ -25,15 +25,18 @@ TEST(StitcherTest, TestProcessStmtPrepareOK) {
   State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
 
   // Run function-under-test.
-  std::vector<Entry> entries;
-  StatusOr<ParseState> s = ProcessStmtPrepare(req, &ok_resp_packets, &state, &entries);
+  Entry entry;
+  StatusOr<ParseState> s = ProcessStmtPrepare(req, ok_resp_packets, &state, &entry);
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
   auto iter = state.prepare_events.find(stmt_id);
   EXPECT_TRUE(iter != state.prepare_events.end());
-  EXPECT_EQ(entries.size(), 0);
+  Entry expected_entry{MySQLEventType::kStmtPrepare,
+                       std::string(testutils::kStmtPrepareRequest.msg()), MySQLRespStatus::kOK, "",
+                       0};
+  EXPECT_EQ(expected_entry, entry);
 }
 
 TEST(StitcherTest, TestProcessStmtPrepareErr) {
@@ -47,20 +50,18 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
   State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
 
   // Run function-under-test.
-  std::vector<Entry> entries;
-  StatusOr<ParseState> s = ProcessStmtPrepare(req, &err_resp_packets, &state, &entries);
+  Entry entry;
+  StatusOr<ParseState> s = ProcessStmtPrepare(req, err_resp_packets, &state, &entry);
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
   auto iter = state.prepare_events.find(stmt_id);
   EXPECT_EQ(iter, state.prepare_events.end());
-  ASSERT_EQ(1, entries.size());
-  Entry& err_entry = entries[0];
   Entry expected_err_entry{MySQLEventType::kStmtPrepare,
                            std::string(testutils::kStmtPrepareRequest.msg()), MySQLRespStatus::kErr,
                            "This is an error.", 0};
-  EXPECT_EQ(expected_err_entry, err_entry);
+  EXPECT_EQ(expected_err_entry, entry);
 }
 
 TEST(StitcherTest, TestProcessStmtExecute) {
@@ -72,14 +73,12 @@ TEST(StitcherTest, TestProcessStmtExecute) {
   state.prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
 
   // Run function-under-test.
-  std::vector<Entry> entries;
-  StatusOr<ParseState> s = ProcessStmtExecute(req, &resultset, &state, &entries);
+  Entry entry;
+  StatusOr<ParseState> s = ProcessStmtExecute(req, resultset, &state, &entry);
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
-  ASSERT_EQ(1, entries.size());
-  Entry& resultset_entry = entries[0];
   Entry expected_resultset_entry{
       MySQLEventType::kStmtExecute,
       "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
@@ -88,7 +87,7 @@ TEST(StitcherTest, TestProcessStmtExecute) {
       "GROUP "
       "BY id ORDER BY id",
       MySQLRespStatus::kOK, "", 0};
-  EXPECT_EQ(expected_resultset_entry, resultset_entry);
+  EXPECT_EQ(expected_resultset_entry, entry);
 }
 
 TEST(StitcherTest, TestProcessStmtClose) {
@@ -100,14 +99,14 @@ TEST(StitcherTest, TestProcessStmtClose) {
   state.prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
 
   // Run function-under-test.
-  std::vector<Entry> entries;
-  StatusOr<ParseState> s = ProcessStmtClose(req, &resp_packets, &state, &entries);
+  Entry entry;
+  StatusOr<ParseState> s = ProcessStmtClose(req, resp_packets, &state, &entry);
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check the resulting entries and state.
-  EXPECT_EQ(0, state.prepare_events.size());
-  EXPECT_EQ(0, entries.size());
+  Entry expected_entry{MySQLEventType::kStmtClose, "", MySQLRespStatus::kOK, "", 0};
+  EXPECT_EQ(expected_entry, entry);
 }
 
 TEST(StitcherTest, TestProcessQuery) {
@@ -116,33 +115,32 @@ TEST(StitcherTest, TestProcessQuery) {
   std::deque<Packet> resultset = testutils::GenResultset(testutils::kQueryResultset);
 
   // Run function-under-test.
-  std::vector<Entry> entries;
-  auto s = ProcessQuery(req, &resultset, &entries);
+  Entry entry;
+  auto s = ProcessQuery(req, resultset, &entry);
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
-  ASSERT_EQ(1, entries.size());
-  Entry& resultset_entry = entries[0];
   Entry expected_resultset_entry{MySQLEventType::kQuery, "SELECT name FROM tag;",
                                  MySQLRespStatus::kOK, "", 0};
-  EXPECT_EQ(expected_resultset_entry, resultset_entry);
+  EXPECT_EQ(expected_resultset_entry, entry);
 }
 
 TEST(StitcherTest, ProcessRequestWithBasicResponse) {
   // Test setup.
   // Ping is a request that always has a response OK.
   Packet req = testutils::GenStringRequest(StringRequest(), MySQLEventType::kPing);
-  std::deque<Packet> response_packets = {testutils::GenOK(/*seq_id*/ 1)};
+  std::deque<Packet> resp_packets = {testutils::GenOK(/*seq_id*/ 1)};
 
   // Run function-under-test.
-  std::vector<Entry> entries;
-  auto s = ProcessRequestWithBasicResponse(req, &response_packets, &entries);
+  Entry entry;
+  auto s = ProcessRequestWithBasicResponse(req, resp_packets, &entry);
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
-  EXPECT_EQ(0, entries.size());
+  Entry expected_entry{MySQLEventType::kPing, "", MySQLRespStatus::kOK, "", 0};
+  EXPECT_EQ(expected_entry, entry);
 }
 
 TEST(SyncTest, OldResponses) {

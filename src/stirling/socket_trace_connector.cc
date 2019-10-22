@@ -50,7 +50,7 @@ DEFINE_bool(stirling_enable_http_tracing, true,
             "If true, stirling will trace and process HTTP messages");
 DEFINE_bool(stirling_enable_grpc_tracing, true,
             "If true, stirling will trace and process gRPC RPCs.");
-DEFINE_bool(stirling_enable_mysql_tracing, false,
+DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will trace and process syscalls made by itself.");

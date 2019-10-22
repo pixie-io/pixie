@@ -48,7 +48,7 @@ class ArrayView {
  public:
   constexpr ArrayView() : elements_(nullptr), size_(0) {}
   template <std::size_t N>
-  // NOLINTNEXTLINE: implicit constructor.
+  // NOLINTNEXTLINE: runtime/explicit
   constexpr ArrayView(const T (&a)[N]) : elements_(a), size_(N) {}
   constexpr ArrayView(const T* ptr, size_t size) : elements_(ptr), size_(size) {}
   constexpr size_t size() const { return size_; }
@@ -56,7 +56,7 @@ class ArrayView {
 
   class iterator {
    public:
-    // NOLINTNEXTLINE: implicit constructor.
+    // NOLINTNEXTLINE: runtime/explicit
     iterator(const T* ptr) : ptr(ptr) {}
     iterator operator++() {
       ++ptr;
@@ -85,6 +85,8 @@ class ContainerView {
   const size_t size_;
 
  public:
+  // NOLINTNEXTLINE: runtime/explicit
+  ContainerView(const TContainer<T>& vec) : vec_(vec), start_(0), size_(vec.size()) {}
   ContainerView(const TContainer<T>& vec, size_t start, size_t size)
       : vec_(vec), start_(start), size_(size) {}
   constexpr size_t size() const { return size_; }

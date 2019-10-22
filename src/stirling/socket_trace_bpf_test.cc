@@ -50,10 +50,11 @@ class SocketTraceBPFTest : public ::testing::Test {
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
 
-  std::string kStmtPrepareReq;
-  std::vector<std::string> StmtPrepareResp;
-  std::string kStmtExecuteReq;
-  std::vector<std::string> StmtExecuteResp;
+  std::string stmt_prepare_req;
+  std::vector<std::string> stmt_prepare_resp;
+  std::string stmt_execute_req;
+  std::vector<std::string> stmt_execute_resp;
+  std::string stmt_close_req;
   std::string kQueryReq;
   std::vector<std::string> QueryResp;
 
@@ -61,34 +62,41 @@ class SocketTraceBPFTest : public ::testing::Test {
     testing::SendRecvScript prepare_execute_script;
 
     // Stmt Prepare
-    kStmtPrepareReq = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
+    stmt_prepare_req = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
         mysql::testutils::kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare));
-    prepare_execute_script.push_back({kStmtPrepareReq});
+    prepare_execute_script.push_back({stmt_prepare_req});
     prepare_execute_script.push_back({});
     std::deque<mysql::Packet> prepare_packets =
         mysql::testutils::GenStmtPrepareOKResponse(mysql::testutils::kStmtPrepareResponse);
     for (int i = 0; i < static_cast<int>(prepare_packets.size()); ++i) {
       // i + 1 because packet_num 0 is the request, so response starts from 1.
-      StmtPrepareResp.push_back(mysql::testutils::GenRawPacket(i + 1, prepare_packets[i].msg));
+      stmt_prepare_resp.push_back(mysql::testutils::GenRawPacket(i + 1, prepare_packets[i].msg));
     }
-    for (size_t i = 0; i < StmtPrepareResp.size(); ++i) {
-      prepare_execute_script[1].push_back(StmtPrepareResp[i]);
+    for (size_t i = 0; i < stmt_prepare_resp.size(); ++i) {
+      prepare_execute_script[1].push_back(stmt_prepare_resp[i]);
     }
 
     // Stmt Execute
-    kStmtExecuteReq = mysql::testutils::GenRawPacket(
+    stmt_execute_req = mysql::testutils::GenRawPacket(
         0, mysql::testutils::GenStmtExecuteRequest(mysql::testutils::kStmtExecuteRequest).msg);
-    prepare_execute_script.push_back({kStmtExecuteReq});
+    prepare_execute_script.push_back({stmt_execute_req});
     prepare_execute_script.push_back({});
     std::deque<mysql::Packet> execute_packets =
         mysql::testutils::GenResultset(mysql::testutils::kStmtExecuteResultset);
     for (int i = 0; i < static_cast<int>(execute_packets.size()); ++i) {
       // i + 1 because packet_num 0 is the request, so response starts from 1.
-      StmtExecuteResp.push_back(mysql::testutils::GenRawPacket(i + 1, execute_packets[i].msg));
+      stmt_execute_resp.push_back(mysql::testutils::GenRawPacket(i + 1, execute_packets[i].msg));
     }
-    for (size_t i = 0; i < StmtExecuteResp.size(); ++i) {
-      prepare_execute_script[3].push_back(StmtExecuteResp[i]);
+    for (size_t i = 0; i < stmt_execute_resp.size(); ++i) {
+      prepare_execute_script[3].push_back(stmt_execute_resp[i]);
     }
+
+    // Stmt Execute
+    stmt_close_req = mysql::testutils::GenRawPacket(
+        0, mysql::testutils::GenStmtCloseRequest(mysql::testutils::kStmtCloseRequest).msg);
+    prepare_execute_script.push_back({stmt_close_req});
+    prepare_execute_script.push_back({});
+
     return prepare_execute_script;
   }
 
@@ -154,7 +162,7 @@ Content-Length: 0
   std::unique_ptr<ConnectorContext> ctx_;
 };
 
-TEST_F(SocketTraceBPFTest, TestFramework) {
+TEST_F(SocketTraceBPFTest, Framework) {
   ConfigureCapture(kProtocolHTTP, kRoleRequestor | kRoleResponder);
 
   testing::SendRecvScript script({
@@ -177,7 +185,7 @@ TEST_F(SocketTraceBPFTest, TestFramework) {
 
 // TODO(chengruizhe): Add test targeted at checking IPs.
 
-TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
+TEST_F(SocketTraceBPFTest, WriteRespCapture) {
   ConfigureCapture(kProtocolHTTP, kRoleResponder);
 
   testing::ClientServerSystem system;
@@ -226,7 +234,7 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
+TEST_F(SocketTraceBPFTest, SendRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleResponder);
 
   testing::ClientServerSystem system;
@@ -266,7 +274,7 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
+TEST_F(SocketTraceBPFTest, ReadRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   testing::ClientServerSystem system;
@@ -306,7 +314,7 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
+TEST_F(SocketTraceBPFTest, RecvRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   testing::ClientServerSystem system;
@@ -346,7 +354,7 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLPrepareExecute) {
+TEST_F(SocketTraceBPFTest, MySQLStmtPrepareExecuteClose) {
   FLAGS_stirling_enable_mysql_tracing = true;
 
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
@@ -371,8 +379,17 @@ TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLPrepareExecute) {
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(1, col->Size());
+      ASSERT_EQ(3, col->Size());
     }
+
+    EXPECT_EQ(
+        "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM "
+        "sock "
+        "JOIN sock_tag ON "
+        "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=? "
+        "GROUP "
+        "BY id ORDER BY ?",
+        record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(0));
 
     EXPECT_EQ(
         "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM "
@@ -381,11 +398,13 @@ TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLPrepareExecute) {
         "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=brown "
         "GROUP "
         "BY id ORDER BY id",
-        record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(0));
+        record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(1));
+
+    EXPECT_EQ("", record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(2));
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLQuery) {
+TEST_F(SocketTraceBPFTest, MySQLQuery) {
   FLAGS_stirling_enable_mysql_tracing = true;
 
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
@@ -417,7 +436,7 @@ TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLQuery) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
+TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor | kRoleResponder);
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
 
@@ -450,7 +469,7 @@ TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
+TEST_F(SocketTraceBPFTest, MultipleConnections) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   // Two separate connections.
@@ -481,7 +500,7 @@ TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestStartTime) {
+TEST_F(SocketTraceBPFTest, StartTime) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   testing::ClientServerSystem system;

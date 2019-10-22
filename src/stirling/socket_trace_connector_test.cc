@@ -773,18 +773,26 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
   for (const auto& column : record_batch) {
-    EXPECT_EQ(1, column->Size());
+    EXPECT_EQ(2, column->Size());
   }
 
-  std::string expected_entry =
+  std::string expected_entry0 =
+      "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
+      "JOIN sock_tag ON "
+      "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=? "
+      "GROUP "
+      "BY id ORDER BY ?";
+
+  std::string expected_entry1 =
       "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
       "JOIN sock_tag ON "
       "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=brown "
       "GROUP "
       "BY id ORDER BY id";
 
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]), ElementsAre(expected_entry));
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre(""));
+  EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
+              ElementsAre(expected_entry0, expected_entry1));
+  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre("", ""));
 
   // Test execute fail after close. It should create an entry with the Error.
   std::unique_ptr<SocketDataEvent> close_req_event = InitSendEvent(mySQLStmtCloseReq);
@@ -796,12 +804,13 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   source_->AcceptDataEvent(std::move(execute_resp_event2));
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
   for (const auto& column : record_batch) {
-    EXPECT_EQ(2, column->Size());
+    EXPECT_EQ(4, column->Size());
   }
 
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]), ElementsAre(expected_entry, ""));
+  EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
+              ElementsAre(expected_entry0, expected_entry1, "", ""));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
-              ElementsAre("", "This is an error."));
+              ElementsAre("", "", "", "This is an error."));
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {
@@ -830,6 +839,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
 
   std::string expected_entry = "SELECT name FROM tag;";
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]), ElementsAre(expected_entry));
+  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre(""));
 }
 
 }  // namespace stirling

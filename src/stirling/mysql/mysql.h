@@ -221,10 +221,8 @@ class Response {
  */
 class StmtPrepareOKResponse : public Response {
  public:
-  StmtPrepareOKResponse() = default;
-  StmtPrepareOKResponse(StmtPrepareRespHeader resp_header,
-                        const std::vector<ColDefinition>& col_defs,
-                        const std::vector<ColDefinition>& param_defs)
+  StmtPrepareOKResponse(const StmtPrepareRespHeader& resp_header,
+                        std::vector<ColDefinition> col_defs, std::vector<ColDefinition> param_defs)
       : Response(ResponseType::kStmtPrepareOKResponse),
         resp_header_(resp_header),
         col_defs_(std::move(col_defs)),
@@ -247,7 +245,6 @@ class StmtPrepareOKResponse : public Response {
 // TODO(chengruizhe): Same as above. Differentiate binary Resultset and text Resultset.
 class Resultset : public Response {
  public:
-  Resultset() = default;
   // num_col could diverge from size of col_defs if packet is lost. Keeping it for detection
   // purposes.
   explicit Resultset(const int num_col, const std::vector<ColDefinition>& col_defs,
@@ -273,7 +270,6 @@ class Resultset : public Response {
  */
 class ErrResponse : public Response {
  public:
-  ErrResponse() = default;
   ErrResponse(int error_code, std::string_view msg)
       : Response(ResponseType::kErrResponse), error_code_(error_code), error_message_(msg) {}
 
@@ -316,8 +312,8 @@ class Request {
  */
 class StringRequest : public Request {
  public:
-  StringRequest() = default;
-  explicit StringRequest(std::string_view msg) : Request(RequestType::kStringRequest), msg_(msg) {}
+  explicit StringRequest(std::string_view msg = "")
+      : Request(RequestType::kStringRequest), msg_(msg) {}
 
   const std::string_view msg() const { return msg_; }
 
@@ -327,7 +323,6 @@ class StringRequest : public Request {
 
 class StmtExecuteRequest : public Request {
  public:
-  StmtExecuteRequest() = default;
   explicit StmtExecuteRequest(int stmt_id, const std::vector<ParamPacket>& params)
       : Request(RequestType::kStmtExecuteRequest), stmt_id_(stmt_id), params_(std::move(params)) {}
 
@@ -341,7 +336,6 @@ class StmtExecuteRequest : public Request {
 
 class StmtCloseRequest : public Request {
  public:
-  StmtCloseRequest() = default;
   explicit StmtCloseRequest(int stmt_id)
       : Request(RequestType::kStmtCloseRequest), stmt_id_(stmt_id) {}
 
@@ -360,7 +354,6 @@ class StmtCloseRequest : public Request {
  */
 class ReqRespEvent {
  public:
-  ReqRespEvent() = default;
   explicit ReqRespEvent(MySQLEventType event_type, std::unique_ptr<Request> request,
                         std::unique_ptr<Response> response)
       : event_type_(event_type), request_(std::move(request)), response_(std::move(response)) {}
@@ -373,8 +366,8 @@ class ReqRespEvent {
 
  private:
   MySQLEventType event_type_;
-  std::unique_ptr<Request> request_ = nullptr;
-  std::unique_ptr<Response> response_ = nullptr;
+  std::unique_ptr<Request> request_;
+  std::unique_ptr<Response> response_;
 };
 
 //-----------------------------------------------------------------------------
@@ -426,7 +419,7 @@ bool IsErrPacket(const Packet& packet);
 bool IsOKPacket(const Packet& packet);
 bool IsLengthEncodedIntPacket(const Packet& packet);
 bool IsColumnDefPacket(const Packet& packet);
-bool IsResultsetRowPacket(const Packet& packet);
+bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof);
 bool IsStmtPrepareOKPacket(const Packet& packet);
 
 }  // namespace mysql

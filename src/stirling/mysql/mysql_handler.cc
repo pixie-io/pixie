@@ -101,106 +101,88 @@ void DissectUnknownParam(const std::string_view msg, int* param_offset, ParamPac
   DissectStringParam(msg, param_offset, packet);
 }
 
-/**
- * This functions checks if the resultset is complete (has all its packets).
- * @param num_col number of columns expected (parsed from header packet)
- * @param resp_packets deque of response packets to be checked
- */
-bool IsResultsetComplete(int num_col, const std::deque<Packet>& resp_packets) {
-  // A resultset has:
-  //  1             column_count packet
-  //  column_count  column definition packets
-  //  0 or 1        EOF packet (if CLIENT_DEPRECATE_EOF is false)
-  //  1+            ResultsetRow packets
-  //  1             OK or EOF packet
-
-  // Must have at least the minimum number of packets in a response.
-  if (resp_packets.size() < static_cast<size_t>(3 + num_col)) {
-    return false;
-  }
-
-  size_t pos = 1 + num_col;
-
-  // Now check for extra EOF packet.
-  if (IsEOFPacket(resp_packets[pos])) {
-    ++pos;
-  }
-
-  // If it errors, an Err packet follows one or more resultset row packets.
-  // Otherwise, search for an EOF packet or OK packet (depending on client_deprecate_eof).
-  for (size_t i = pos; i < resp_packets.size(); ++i) {
-    const Packet& p = resp_packets[i];
-
-    if (IsEOFPacket(p) || IsOKPacket(p) || IsErrPacket(p)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 }  // namespace
 
 //-----------------------------------------------------------------------------
 // Message Level Functions
 //-----------------------------------------------------------------------------
 
-std::unique_ptr<ErrResponse> HandleErrMessage(std::deque<Packet>* resp_packets) {
-  DCHECK(!resp_packets->empty());
-  Packet packet = resp_packets->front();
+std::unique_ptr<ErrResponse> HandleErrMessage(DequeView<Packet> resp_packets) {
+  DCHECK(!resp_packets.empty());
+  const Packet& packet = resp_packets.front();
   int error_code = utils::LEStrToInt(packet.msg.substr(1, 2));
   // TODO(chengruizhe): Assuming CLIENT_PROTOCOL_41 here. Make it more robust.
   // "\xff" + error_code[2] + sql_state_marker[1] + sql_state[5] (CLIENT_PROTOCOL_41) = 9
   // https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html
   std::string err_message = packet.msg.substr(9);
 
-  resp_packets->pop_front();
   return std::make_unique<ErrResponse>(error_code, std::move(err_message));
 }
 
-std::unique_ptr<OKResponse> HandleOKMessage(std::deque<Packet>* resp_packets) {
-  DCHECK(!resp_packets->empty());
-  resp_packets->pop_front();
+std::unique_ptr<OKResponse> HandleOKMessage(DequeView<Packet> resp_packets) {
+  DCHECK(!resp_packets.empty());
   return std::make_unique<OKResponse>();
 }
 
-StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets) {
-  DCHECK(!resp_packets->empty());
+#define RETURN_NEEDS_MORE_DATA_IF_END(type, iter, resp_packets) \
+  if (iter == resp_packets.end()) {                             \
+    return std::unique_ptr<type>(nullptr);                      \
+  }
+
+StatusOr<std::unique_ptr<Resultset>> HandleResultset(DequeView<Packet> resp_packets) {
+  auto iter = resp_packets.begin();
+
+  VLOG(3) << absl::Substitute("HandleResultset with $0 packets", resp_packets.size());
 
   // Process header packet.
-  Packet packet = resp_packets->front();
-  if (!IsLengthEncodedIntPacket(packet)) {
+  RETURN_NEEDS_MORE_DATA_IF_END(Resultset, iter, resp_packets);
+  const Packet& first_resp_packet = *iter;
+  if (!IsLengthEncodedIntPacket(first_resp_packet)) {
     return error::Internal("First packet should be length-encoded integer.");
   }
 
   int param_offset = 0;
-  int num_col = ProcessLengthEncodedInt(packet.msg, &param_offset);
+  int num_col = ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset);
   if (num_col == 0) {
     return error::Internal("HandleResultset(): num columns should never be 0.");
   }
-  if (!IsResultsetComplete(num_col, *resp_packets)) {
+
+  VLOG(3) << absl::Substitute("num_columns=$0", num_col);
+
+  // A resultset has:
+  //  1             column_count packet
+  //  column_count  column definition packets
+  //  0 or 1        EOF packet (if CLIENT_DEPRECATE_EOF is false)
+  //  1+            ResultsetRow packets
+  //  1             OK or EOF packet
+  // Must have at least the minimum number of packets in a response.
+  if (resp_packets.size() < static_cast<size_t>(3 + num_col)) {
     return std::unique_ptr<Resultset>(nullptr);
   }
 
-  // Pops header packet
-  resp_packets->pop_front();
+  // Go to next packet.
+  ++iter;
 
   std::vector<ColDefinition> col_defs;
   for (int i = 0; i < num_col; ++i) {
-    if (!IsColumnDefPacket(resp_packets->front())) {
+    RETURN_NEEDS_MORE_DATA_IF_END(Resultset, iter, resp_packets);
+
+    if (!IsColumnDefPacket(*iter)) {
       return error::Internal("Expected column definition packet");
     }
 
-    Packet col_def_packet = resp_packets->front();
+    const Packet& col_def_packet = *iter;
     ColDefinition col_def{col_def_packet.msg};
     col_defs.push_back(std::move(col_def));
-    resp_packets->pop_front();
+    ++iter;
   }
 
   // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
   bool client_deprecate_eof = true;
-  if (IsEOFPacket(resp_packets->front())) {
+  RETURN_NEEDS_MORE_DATA_IF_END(Resultset, iter, resp_packets);
+  if (IsEOFPacket(*iter)) {
     client_deprecate_eof = false;
-    resp_packets->pop_front();
+    ++iter;
   }
 
   std::vector<ResultsetRow> results;
@@ -210,88 +192,116 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
     return IsErrPacket(p) || (client_deprecate_eof ? IsOKPacket(p) : IsEOFPacket(p));
   };
 
-  while (!isLastPacket(resp_packets->front())) {
-    Packet row_packet = resp_packets->front();
-    if (!IsResultsetRowPacket(row_packet)) {
-      return error::Internal("Expected resultset row packet");
+  while (iter != resp_packets.end() && !isLastPacket(*iter)) {
+    const Packet& row_packet = *iter;
+    if (!IsResultsetRowPacket(row_packet, client_deprecate_eof)) {
+      return error::Internal(
+          "Expected resultset row packet [OK=$0 ERR=$1 EOF=$2 client_deprecate_eof=$3]",
+          IsOKPacket(row_packet), IsErrPacket(row_packet), IsEOFPacket(row_packet),
+          client_deprecate_eof);
     }
     ResultsetRow row{row_packet.msg};
     results.emplace_back(std::move(row));
-    resp_packets->pop_front();
+    ++iter;
   }
 
-  // TODO(chengruizhe): If it ends with err packet, handle the error and propagate up error_message.
+  RETURN_NEEDS_MORE_DATA_IF_END(Resultset, iter, resp_packets);
 
-  resp_packets->pop_front();
+  const Packet& last_packet = *iter;
+  if (IsErrPacket(last_packet)) {
+    // TODO(chengruizhe/oazizi): If it ends with err packet, propagate up error_message.
+    PL_UNUSED(last_packet);
+  }
+
+  ++iter;
+  if (iter != resp_packets.end()) {
+    LOG(ERROR) << absl::Substitute("Found $0 extra packets",
+                                   std::distance(iter, resp_packets.end()));
+  }
+
   return std::make_unique<Resultset>(Resultset(num_col, std::move(col_defs), std::move(results)));
 }
 
 StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
-    std::deque<Packet>* resp_packets) {
-  DCHECK(!resp_packets->empty());
-  Packet packet = resp_packets->front();
+    DequeView<Packet> resp_packets) {
+  auto iter = resp_packets.begin();
 
-  if (!IsStmtPrepareOKPacket(packet)) {
+  RETURN_NEEDS_MORE_DATA_IF_END(StmtPrepareOKResponse, iter, resp_packets);
+  const Packet& first_resp_packet = *iter;
+  if (!IsStmtPrepareOKPacket(first_resp_packet)) {
     return error::Internal("Expected StmtPrepareOK packet");
   }
 
-  int stmt_id = utils::LEStrToInt(packet.msg.substr(1, 4));
-  size_t num_col = utils::LEStrToInt(packet.msg.substr(5, 2));
-  size_t num_param = utils::LEStrToInt(packet.msg.substr(7, 2));
-  size_t warning_count = utils::LEStrToInt(packet.msg.substr(10, 2));
+  int stmt_id = utils::LEStrToInt(first_resp_packet.msg.substr(1, 4));
+  size_t num_col = utils::LEStrToInt(first_resp_packet.msg.substr(5, 2));
+  size_t num_param = utils::LEStrToInt(first_resp_packet.msg.substr(7, 2));
+  size_t warning_count = utils::LEStrToInt(first_resp_packet.msg.substr(10, 2));
 
   // TODO(chengruizhe): Handle missing packets more robustly. Assuming no missing packet.
   // If num_col or num_param is non-zero, they will be followed by EOF.
   // Reference: https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html.
   size_t expected_num_packets = 1 + num_col + num_param + (num_col != 0) + (num_param != 0);
-  if (expected_num_packets > resp_packets->size()) {
+  if (expected_num_packets > resp_packets.size()) {
     return std::unique_ptr<StmtPrepareOKResponse>(nullptr);
   }
 
   StmtPrepareRespHeader resp_header{stmt_id, num_col, num_param, warning_count};
   // Pops header packet
-  resp_packets->pop_front();
+  ++iter;
 
   // Params come before columns
   std::vector<ColDefinition> param_defs;
   for (size_t i = 0; i < num_param; ++i) {
-    Packet param_def_packet = resp_packets->front();
+    RETURN_NEEDS_MORE_DATA_IF_END(StmtPrepareOKResponse, iter, resp_packets);
+
+    const Packet& param_def_packet = *iter;
     ColDefinition param_def{param_def_packet.msg};
     param_defs.push_back(std::move(param_def));
-    resp_packets->pop_front();
+    ++iter;
   }
 
+  bool client_deprecate_eof = true;
   if (num_param != 0) {
+    RETURN_NEEDS_MORE_DATA_IF_END(StmtPrepareOKResponse, iter, resp_packets);
     // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
-    if (IsEOFPacket(resp_packets->front())) {
-      resp_packets->pop_front();
+    if (IsEOFPacket(*iter)) {
+      ++iter;
+      client_deprecate_eof = false;
     }
   }
 
   std::vector<ColDefinition> col_defs;
   for (size_t i = 0; i < num_col; ++i) {
-    Packet col_def_packet = resp_packets->front();
+    RETURN_NEEDS_MORE_DATA_IF_END(StmtPrepareOKResponse, iter, resp_packets);
+
+    const Packet& col_def_packet = *iter;
     ColDefinition col_def{col_def_packet.msg};
     col_defs.push_back(std::move(col_def));
-    resp_packets->pop_front();
+    ++iter;
   }
 
-  if (num_col != 0) {
-    // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
-    if (IsEOFPacket(resp_packets->front())) {
-      resp_packets->pop_front();
+  // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
+  if (!client_deprecate_eof && num_col != 0) {
+    if (iter == resp_packets.end()) {
+      LOG(ERROR) << "Ignoring EOF packet that is expected, but appears to be missing.";
+    } else if (IsEOFPacket(*iter)) {
+      ++iter;
     }
+  }
+
+  if (iter != resp_packets.end()) {
+    LOG(ERROR) << "Extra packets";
   }
 
   return std::make_unique<StmtPrepareOKResponse>(resp_header, std::move(col_defs),
                                                  std::move(param_defs));
 }
 
-StatusOr<std::unique_ptr<StringRequest>> HandleStringRequest(const Packet& req_packet) {
+std::unique_ptr<StringRequest> HandleStringRequest(const Packet& req_packet) {
   return std::make_unique<StringRequest>(req_packet.msg.substr(1));
 }
 
-StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
+std::unique_ptr<StmtExecuteRequest> HandleStmtExecuteRequest(
     const Packet& req_packet, std::map<int, ReqRespEvent>* prepare_map) {
   int stmt_id = utils::LEStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
 

@@ -66,12 +66,13 @@ bool IsColumnDefPacket(const Packet& packet) {
   return !(IsEOFPacket(packet) || IsOKPacket(packet) || IsErrPacket(packet));
 }
 
-bool IsResultsetRowPacket(const Packet& packet) {
+bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof) {
   // TODO(oazizi): This is a weak placeholder.
   // Study link below for a stronger implementation.
   // https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-ProtocolText::ResultsetRow
 
-  return !(IsEOFPacket(packet) || IsOKPacket(packet) || IsErrPacket(packet));
+  return (client_deprecate_eof ? !IsOKPacket(packet) : !IsEOFPacket(packet)) &&
+         !IsErrPacket(packet);
 }
 
 bool IsStmtPrepareOKPacket(const Packet& packet) {
