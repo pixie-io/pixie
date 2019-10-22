@@ -1,0 +1,68 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: artifact-db-updater-job
+  labels:
+    jobgroup: artifact-db-updater
+spec:
+  ttlSecondsAfterFinished: 10
+  template:
+    metadata:
+      name: artifact-db-updater-job
+      labels:
+        jobgroup: artifact-db-updater
+    spec:
+      containers:
+      - name: updater
+        image: gcr.io/pl-dev-infra/utils/artifact_db_updater_image:latest
+        command: ["/busybox/sh", "-c"]
+        args:
+        - |
+            trap "touch /tmp/pod/terminated" EXIT
+            /artifact_db_updater/artifact_db_updater
+        volumeMounts:
+        - mountPath: /tmp/pod
+          name: tmp-pod
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+        env:
+        - name: PL_VERSIONS_FILE
+          value: /changelogs/VERSIONS.json
+      - image: b.gcr.io/cloudsql-docker/gce-proxy:1.14
+        name: cloudsql-proxy
+        command: ["/bin/sh", "-c"]
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+        args:
+        - |
+            /cloud_sql_proxy \
+            -instances=${PL_POSTGRES_INSTANCE}=tcp:${PL_POSTGRES_PORT} \
+            -ip_address_types=PRIVATE \
+            -credential_file=/secrets/cloudsql/db_service_account.json & CHILD_PID=$!
+            (while true; do if [[ -f "/tmp/pod/terminated" ]]; then kill $CHILD_PID;
+            echo "Killed $CHILD_PID because the main container terminated."; fi; sleep 1; done) &
+            wait $CHILD_PID
+            if [[ -f "/tmp/pod/terminated" ]]; then exit 0; echo "Job completed. Exiting..."; fi
+        volumeMounts:
+        - name: cloud-db-secrets
+          mountPath: /secrets/cloudsql
+          readOnly: true
+        - mountPath: /tmp/pod
+          name: tmp-pod
+          readOnly: true
+        securityContext:
+          runAsUser: 2  # non-root user
+          allowPrivilegeEscalation: false
+      restartPolicy: Never
+      volumes:
+      - name: cloud-db-secrets
+        secret:
+          secretName: cloud-db-secrets
+      - name: tmp-pod
+        emptyDir: {}
+  backoffLimit: 1
+  parallelism: 1
+  completions: 1

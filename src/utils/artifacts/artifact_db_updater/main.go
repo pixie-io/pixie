@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"os"
 	"syscall"
 
-	"gopkg.in/yaml.v2"
 	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils"
 
 	// This must be GOGO variant or the ENUMs won't work.
@@ -25,7 +22,7 @@ import (
 )
 
 func init() {
-	pflag.String("versions_file", "VERSIONS", "Path to the versions file")
+	pflag.String("versions_file", "VERSIONS.json", "Path to the versions file")
 	pflag.Bool("check_only", false, "Only run check")
 }
 
@@ -56,23 +53,6 @@ func mustLoadDB() *sqlx.DB {
 	return db
 }
 
-// From: https://stackoverflow.com/questions/40737122/convert-yaml-to-json-without-struct.
-func convertYAMLFormat(i interface{}) interface{} {
-	switch x := i.(type) {
-	case map[interface{}]interface{}:
-		m2 := map[string]interface{}{}
-		for k, v := range x {
-			m2[k.(string)] = convertYAMLFormat(v)
-		}
-		return m2
-	case []interface{}:
-		for i, v := range x {
-			x[i] = convertYAMLFormat(v)
-		}
-	}
-	return i
-}
-
 func mustReadVersionFile() *vpb.ArtifactSet {
 	versionsFilePath := viper.GetString("versions_file")
 	log.WithField("file", versionsFilePath).Info("Reading file")
@@ -83,21 +63,10 @@ func mustReadVersionFile() *vpb.ArtifactSet {
 	}
 	defer r.Close()
 
-	var body interface{}
-	if err := yaml.NewDecoder(r).Decode(&body); err != nil {
-		log.Fatalln(err)
-	}
-
-	body = convertYAMLFormat(body)
-	var jsonBytes []byte
-	if jsonBytes, err = json.Marshal(body); err != nil {
-		log.Fatalln(err)
-	}
-
 	msg := &vpb.ArtifactSet{}
 	u := jsonpb.Unmarshaler{}
 
-	err = u.Unmarshal(bytes.NewReader(jsonBytes), msg)
+	err = u.Unmarshal(r, msg)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -151,6 +120,9 @@ func checkVersionData(artifacts *vpb.ArtifactSet) {
 	for _, artifact := range artifacts.Artifact {
 		if len(artifact.VersionStr) == 0 {
 			log.WithField("entry", artifact.String()).Fatal("Version str must be specified")
+		}
+		if len(artifact.CommitHash) == 0 {
+			log.WithField("version", artifact.VersionStr).Fatal("Must specify the commit hash")
 		}
 		if len(artifact.AvailableArtifacts) == 0 {
 			log.WithField("version", artifact.VersionStr).Fatal("Must have atleast one available artifact")
