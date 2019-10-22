@@ -384,11 +384,24 @@ class ReqRespEvent {
 /**
  *  MySQL Entry is emitted by Stitch functions, and will be appended to the table store.
  */
-enum class MySQLEntryStatus { kUnknown, kOK, kErr };
+enum class MySQLRespStatus { kUnknown, kOK, kErr };
 
 struct Entry {
-  std::string msg;
-  MySQLEntryStatus status;
+  // MySQL command. See MySQLEventType.
+  MySQLEventType cmd;
+
+  // The body of the request, if the request is a request with a string parameter. Otherwise empty
+  // for now.
+  std::string req_msg;
+
+  // MySQL response status: OK, ERR or Unknown.
+  MySQLRespStatus resp_status;
+
+  // Any relevant response message. Currently used to return error messages. Otherwise empty for
+  // now.
+  std::string resp_msg;
+
+  // Timestamp of the entry is considered to be the timestamp of the request packet.
   uint64_t req_timestamp_ns;
 };
 

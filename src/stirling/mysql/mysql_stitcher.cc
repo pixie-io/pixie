@@ -44,15 +44,6 @@ std::string CombinePrepareExecute(const StmtExecuteRequest* req,
   return result;
 }
 
-// TODO(chengruizhe): Use RapidJSON to generate JSON.
-std::string CreateErrorJSON(std::string_view message, std::string_view error) {
-  return absl::Substitute(R"({"Error": "$0", "Message": "$1"})", error, message);
-}
-
-std::string CreateMessageJSON(std::string_view message) {
-  return absl::Substitute(R"({"Message": "$0"})", message);
-}
-
 }  // namespace
 
 // This function looks for unsynchronized req/resp packet queues.
@@ -241,8 +232,9 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, std::deque<Pac
   Packet& header_packet = resp_packets->front();
   if (IsErrPacket(header_packet)) {
     std::unique_ptr<ErrResponse> resp = HandleErrMessage(resp_packets);
-    entries->push_back(Entry{CreateErrorJSON(req->msg(), resp->error_message()),
-                             MySQLEntryStatus::kErr, req_packet.timestamp_ns});
+    entries->push_back(Entry{MySQLEventType::kStmtPrepare, std::string(req->msg()),
+                             MySQLRespStatus::kErr, std::string(resp->error_message()),
+                             req_packet.timestamp_ns});
     return ParseState::kSuccess;
   }
 
@@ -285,8 +277,8 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, std::deque<Pac
 
   if (IsErrPacket(first_resp_packet)) {
     std::unique_ptr<ErrResponse> resp = HandleErrMessage(resp_packets);
-    entries->emplace_back(Entry{CreateErrorJSON(filled_msg, resp->error_message()),
-                                MySQLEntryStatus::kErr, req_packet.timestamp_ns});
+    entries->emplace_back(Entry{MySQLEventType::kStmtExecute, filled_msg, MySQLRespStatus::kErr,
+                                std::string(resp->error_message()), req_packet.timestamp_ns});
     return ParseState::kSuccess;
   }
 
@@ -304,8 +296,8 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, std::deque<Pac
     }
   }
 
-  entries->emplace_back(
-      Entry{CreateMessageJSON(filled_msg), MySQLEntryStatus::kOK, req_packet.timestamp_ns});
+  entries->emplace_back(Entry{MySQLEventType::kStmtExecute, filled_msg, MySQLRespStatus::kOK, "",
+                              req_packet.timestamp_ns});
   return ParseState::kSuccess;
 }
 
@@ -354,8 +346,9 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, std::deque<Packet>* 
 
   if (IsErrPacket(first_resp_packet)) {
     std::unique_ptr<ErrResponse> resp = HandleErrMessage(resp_packets);
-    entries->emplace_back(Entry{CreateErrorJSON(req->msg(), resp->error_message()),
-                                MySQLEntryStatus::kErr, req_packet.timestamp_ns});
+    entries->emplace_back(Entry{MySQLEventType::kQuery, std::string(req->msg()),
+                                MySQLRespStatus::kErr, std::string(resp->error_message()),
+                                req_packet.timestamp_ns});
     return ParseState::kSuccess;
   }
 
@@ -373,8 +366,8 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, std::deque<Packet>* 
     }
   }
 
-  entries->emplace_back(
-      Entry{CreateMessageJSON(req->msg()), MySQLEntryStatus::kOK, req_packet.timestamp_ns});
+  entries->emplace_back(Entry{MySQLEventType::kQuery, std::string(req->msg()), MySQLRespStatus::kOK,
+                              "", req_packet.timestamp_ns});
   return ParseState::kSuccess;
 }
 

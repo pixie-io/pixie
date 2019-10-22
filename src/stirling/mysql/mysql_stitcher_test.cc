@@ -12,7 +12,7 @@ namespace stirling {
 namespace mysql {
 
 bool operator==(const Entry& lhs, const Entry& rhs) {
-  return lhs.msg == rhs.msg && lhs.status == rhs.status;
+  return lhs.req_msg == rhs.req_msg && lhs.resp_status == rhs.resp_status;
 }
 
 TEST(StitcherTest, TestProcessStmtPrepareOK) {
@@ -42,7 +42,7 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
       testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
   int stmt_id = testutils::kStmtPrepareResponse.resp_header().stmt_id;
   std::deque<Packet> err_resp_packets;
-  ErrResponse expected_response(1096, "This an error.");
+  ErrResponse expected_response(1096, "This is an error.");
   err_resp_packets.emplace_back(testutils::GenErr(/* seq_id */ 1, expected_response));
   State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
 
@@ -57,9 +57,9 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
   EXPECT_EQ(iter, state.prepare_events.end());
   ASSERT_EQ(1, entries.size());
   Entry& err_entry = entries[0];
-  Entry expected_err_entry{absl::Substitute(R"({"Error": "$0", "Message": "$1"})", "This an error.",
-                                            testutils::kStmtPrepareRequest.msg()),
-                           MySQLEntryStatus::kErr, 0};
+  Entry expected_err_entry{MySQLEventType::kStmtPrepare,
+                           std::string(testutils::kStmtPrepareRequest.msg()), MySQLRespStatus::kErr,
+                           "This is an error.", 0};
   EXPECT_EQ(expected_err_entry, err_entry);
 }
 
@@ -81,12 +81,13 @@ TEST(StitcherTest, TestProcessStmtExecute) {
   ASSERT_EQ(1, entries.size());
   Entry& resultset_entry = entries[0];
   Entry expected_resultset_entry{
-      "{\"Message\": \"SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
+      MySQLEventType::kStmtExecute,
+      "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
       "JOIN sock_tag ON "
       "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=brown "
       "GROUP "
-      "BY id ORDER BY id\"}",
-      MySQLEntryStatus::kOK, 0};
+      "BY id ORDER BY id",
+      MySQLRespStatus::kOK, "", 0};
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
 
@@ -123,8 +124,8 @@ TEST(StitcherTest, TestProcessQuery) {
   // Check resulting state and entries.
   ASSERT_EQ(1, entries.size());
   Entry& resultset_entry = entries[0];
-  Entry expected_resultset_entry{"{\"Message\": \"SELECT name FROM tag;\"}", MySQLEntryStatus::kOK,
-                                 0};
+  Entry expected_resultset_entry{MySQLEventType::kQuery, "SELECT name FROM tag;",
+                                 MySQLRespStatus::kOK, "", 0};
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
 

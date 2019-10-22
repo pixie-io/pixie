@@ -141,7 +141,7 @@ TEST(HandleResultset, NeedsMoreData) {
 TEST(HandleResultset, InvalidResponse) {
   // Test for invalid response by changing first packet.
   std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
-  resp_packets.front() = testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This an error."));
+  resp_packets.front() = testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This is an error."));
   auto s = HandleResultset(&resp_packets);
   EXPECT_FALSE(s.ok());
 }
@@ -166,7 +166,7 @@ TEST(HandleStmtPrepareOKResponse, NeedsMoreData) {
 
 TEST(HandleStmtPrepareOKResponse, Invalid) {
   std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
-  packets.front() = testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This an error."));
+  packets.front() = testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This is an error."));
   auto s = HandleStmtPrepareOKResponse(&packets);
   EXPECT_FALSE(s.ok());
 }

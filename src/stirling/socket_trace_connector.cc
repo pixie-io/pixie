@@ -576,8 +576,10 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time_ticks());
   r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
-  r.Append<r.ColIndex("body")>(std::move(entry.msg));
-  r.Append<r.ColIndex("status")>(static_cast<uint64_t>(entry.status));
+  r.Append<r.ColIndex("req_cmd")>(static_cast<uint64_t>(entry.cmd));
+  r.Append<r.ColIndex("req_body")>(std::move(entry.req_msg));
+  r.Append<r.ColIndex("resp_status")>(static_cast<uint64_t>(entry.resp_status));
+  r.Append<r.ColIndex("resp_body")>(std::move(entry.resp_msg));
 }
 
 }  // namespace stirling

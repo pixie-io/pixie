@@ -148,7 +148,7 @@ Content-Length: 0
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
-  static constexpr uint32_t kMySQLBodyIdx = kMySQLTable.ColIndex("body");
+  static constexpr uint32_t kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");
 
   std::unique_ptr<SourceConnector> source_;
   std::unique_ptr<ConnectorContext> ctx_;
@@ -375,13 +375,13 @@ TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLPrepareExecute) {
     }
 
     EXPECT_EQ(
-        "{\"Message\": \"SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM "
+        "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM "
         "sock "
         "JOIN sock_tag ON "
         "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=brown "
         "GROUP "
-        "BY id ORDER BY id\"}",
-        record_batch[kMySQLBodyIdx]->Get<types::StringValue>(0));
+        "BY id ORDER BY id",
+        record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(0));
   }
 }
 
@@ -413,8 +413,7 @@ TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLQuery) {
       ASSERT_EQ(1, col->Size());
     }
 
-    EXPECT_EQ("{\"Message\": \"SELECT name FROM tag;\"}",
-              record_batch[kMySQLBodyIdx]->Get<types::StringValue>(0));
+    EXPECT_EQ("SELECT name FROM tag;", record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(0));
   }
 }
 
