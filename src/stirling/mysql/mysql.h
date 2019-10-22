@@ -350,24 +350,12 @@ class StmtCloseRequest : public Request {
 //-----------------------------------------------------------------------------
 
 /**
- * ReqRespEvent holds a request and response pair, e.g. Stmt Prepare, Stmt Execute, Query
+ * PreparedStatement holds a prepared statement string, and a parsed response,
+ * which contains the placeholder column definitions.
  */
-class ReqRespEvent {
- public:
-  explicit ReqRespEvent(MySQLEventType event_type, std::unique_ptr<Request> request,
-                        std::unique_ptr<Response> response)
-      : event_type_(event_type), request_(std::move(request)), response_(std::move(response)) {}
-
-  MySQLEventType event_type() { return event_type_; }
-
-  Request* request() const { return request_.get(); }
-
-  Response* response() const { return response_.get(); }
-
- private:
-  MySQLEventType event_type_;
-  std::unique_ptr<Request> request_;
-  std::unique_ptr<Response> response_;
+struct PreparedStatement {
+  std::string request;
+  std::unique_ptr<StmtPrepareOKResponse> response;
 };
 
 //-----------------------------------------------------------------------------
@@ -406,7 +394,7 @@ enum class FlagStatus { kUnknown = 0, kSet, kNotSet };
  * whether the ClientDeprecateEOF Flag is set.
  */
 struct State {
-  std::map<int, mysql::ReqRespEvent> prepare_events;
+  std::map<int, PreparedStatement> prepare_events;
   FlagStatus client_deprecate_eof;
 };
 

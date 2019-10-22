@@ -107,41 +107,41 @@ TEST(HandleOKMessage, Basic) {
   EXPECT_NE(nullptr, ok_response);
 }
 
-TEST(HandleResultset, ValidWithEOF) {
+TEST(HandleResultsetResponse, ValidWithEOF) {
   // Test without CLIENT_DEPRECATE_EOF.
   std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
-  auto s = HandleResultset(resp_packets);
+  auto s = HandleResultsetResponse(resp_packets);
   EXPECT_TRUE(s.ok());
   std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
   ASSERT_NE(nullptr, result);
   EXPECT_EQ(testutils::kStmtExecuteResultset, *result);
 }
 
-TEST(HandleResultset, ValidNoEOF) {
+TEST(HandleResultsetResponse, ValidNoEOF) {
   // Test with CLIENT_DEPRECATE_EOF.
   std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset, true);
-  auto s = HandleResultset(resp_packets);
+  auto s = HandleResultsetResponse(resp_packets);
   EXPECT_TRUE(s.ok());
   std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
   ASSERT_NE(nullptr, result);
   EXPECT_EQ(testutils::kStmtExecuteResultset, *result);
 }
 
-TEST(HandleResultset, NeedsMoreData) {
+TEST(HandleResultsetResponse, NeedsMoreData) {
   // Test for incomplete response.
   std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
   resp_packets.pop_back();
-  auto s = HandleResultset(resp_packets);
+  auto s = HandleResultsetResponse(resp_packets);
   EXPECT_TRUE(s.ok());
   std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
   ASSERT_EQ(nullptr, result);
 }
 
-TEST(HandleResultset, InvalidResponse) {
+TEST(HandleResultsetResponse, InvalidResponse) {
   // Test for invalid response by changing first packet.
   std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
   resp_packets.front() = testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This is an error."));
-  auto s = HandleResultset(resp_packets);
+  auto s = HandleResultsetResponse(resp_packets);
   EXPECT_FALSE(s.ok());
 }
 
@@ -172,22 +172,31 @@ TEST(HandleStmtPrepareOKResponse, Invalid) {
 
 TEST(HandleStmtExecuteRequest, Basic) {
   Packet req_packet = testutils::GenStmtExecuteRequest(testutils::kStmtExecuteRequest);
-  ReqRespEvent e = testutils::InitStmtPrepare();
-  int stmt_id = static_cast<StmtPrepareOKResponse*>(e.response())->resp_header().stmt_id;
-  std::map<int, ReqRespEvent> prepare_map;
-  prepare_map.emplace(stmt_id, std::move(e));
-  std::unique_ptr<StmtExecuteRequest> result_request =
-      HandleStmtExecuteRequest(req_packet, &prepare_map);
-  ASSERT_NE(nullptr, result_request);
-  EXPECT_EQ(testutils::kStmtExecuteRequest, *result_request);
+  PreparedStatement prepared_stmt = testutils::InitStmtPrepare();
+  int stmt_id = prepared_stmt.response->resp_header().stmt_id;
+  std::map<int, PreparedStatement> prepare_map;
+  prepare_map.emplace(stmt_id, std::move(prepared_stmt));
+
+  Entry entry;
+  HandleStmtExecuteRequest(req_packet, &prepare_map, &entry);
+  EXPECT_EQ(entry.cmd, MySQLEventType::kStmtExecute);
+  EXPECT_EQ(entry.req_msg,
+            "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock JOIN sock_tag "
+            "ON sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE "
+            "tag.name=brown GROUP BY id ORDER BY id");
 }
 
 TEST(HandleStringRequest, Basic) {
   Packet req_packet =
       testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
-  std::unique_ptr<StringRequest> result_request = HandleStringRequest(req_packet);
-  ASSERT_NE(nullptr, result_request);
-  EXPECT_EQ(testutils::kStmtPrepareRequest, *result_request);
+
+  Entry entry;
+  HandleStringRequest(req_packet, &entry);
+  EXPECT_EQ(entry.cmd, MySQLEventType::kStmtPrepare);
+  EXPECT_EQ(entry.req_msg,
+            "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock JOIN sock_tag "
+            "ON sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE "
+            "tag.name=? GROUP BY id ORDER BY ?");
 }
 
 // TODO(chengruizhe): Add failure test cases.

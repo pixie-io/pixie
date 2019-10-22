@@ -129,10 +129,10 @@ std::unique_ptr<OKResponse> HandleOKMessage(DequeView<Packet> resp_packets) {
     return std::unique_ptr<type>(nullptr);                      \
   }
 
-StatusOr<std::unique_ptr<Resultset>> HandleResultset(DequeView<Packet> resp_packets) {
+StatusOr<std::unique_ptr<Resultset>> HandleResultsetResponse(DequeView<Packet> resp_packets) {
   auto iter = resp_packets.begin();
 
-  VLOG(3) << absl::Substitute("HandleResultset with $0 packets", resp_packets.size());
+  VLOG(3) << absl::Substitute("HandleResultsetResponse with $0 packets", resp_packets.size());
 
   // Process header packet.
   RETURN_NEEDS_MORE_DATA_IF_END(Resultset, iter, resp_packets);
@@ -144,7 +144,7 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(DequeView<Packet> resp_pack
   int param_offset = 0;
   int num_col = ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset);
   if (num_col == 0) {
-    return error::Internal("HandleResultset(): num columns should never be 0.");
+    return error::Internal("HandleResultsetResponse(): num columns should never be 0.");
   }
 
   VLOG(3) << absl::Substitute("num_columns=$0", num_col);
@@ -297,12 +297,50 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
                                                  std::move(param_defs));
 }
 
-std::unique_ptr<StringRequest> HandleStringRequest(const Packet& req_packet) {
-  return std::make_unique<StringRequest>(req_packet.msg.substr(1));
+void HandleStringRequest(const Packet& req_packet, Entry* entry) {
+  DCHECK(!req_packet.msg.empty());
+  entry->cmd = DecodeCommand(req_packet.msg[0]);
+  entry->req_msg = req_packet.msg.substr(1);
+  entry->req_timestamp_ns = req_packet.timestamp_ns;
 }
 
-std::unique_ptr<StmtExecuteRequest> HandleStmtExecuteRequest(
-    const Packet& req_packet, std::map<int, ReqRespEvent>* prepare_map) {
+void HandleNonStringRequest(const Packet& req_packet, Entry* entry) {
+  DCHECK(!req_packet.msg.empty());
+  entry->cmd = DecodeCommand(req_packet.msg[0]);
+  entry->req_msg.clear();
+  entry->req_timestamp_ns = req_packet.timestamp_ns;
+}
+
+namespace {
+std::string CombinePrepareExecute(std::string_view stmt_prepare_request,
+                                  const std::vector<ParamPacket>& params) {
+  size_t offset = 0;
+  size_t count = 0;
+  std::string result;
+
+  for (size_t index = stmt_prepare_request.find("?", offset); index != std::string::npos;
+       index = stmt_prepare_request.find("?", offset)) {
+    if (count >= params.size()) {
+      LOG(WARNING) << "Unequal number of stmt exec parameters for stmt prepare.";
+      break;
+    }
+    absl::StrAppend(&result, stmt_prepare_request.substr(offset, index - offset),
+                    params[count].value);
+    count++;
+    offset = index + 1;
+  }
+  result += stmt_prepare_request.substr(offset);
+
+  return result;
+}
+}  // namespace
+
+void HandleStmtExecuteRequest(const Packet& req_packet,
+                              std::map<int, PreparedStatement>* prepare_map, Entry* entry) {
+  DCHECK(!req_packet.msg.empty());
+  entry->cmd = DecodeCommand(req_packet.msg[0]);
+  entry->req_timestamp_ns = req_packet.timestamp_ns;
+
   int stmt_id = utils::LEStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
 
   auto iter = prepare_map->find(stmt_id);
@@ -311,10 +349,11 @@ std::unique_ptr<StmtExecuteRequest> HandleStmtExecuteRequest(
     // 1. The stitcher is confused/messed up and accidentally deleted wrong prepare event.
     // 2. Client sent a Stmt Exec for a deleted Stmt Prepare
     // We return -1 as stmt_id to indicate error and defer decision to the caller.
-    return std::make_unique<StmtExecuteRequest>(StmtExecuteRequest(-1, {}));
+    LOG(WARNING) << absl::Substitute("Could not find prepare statement for stmt_id=$0", stmt_id);
+    return;
   }
 
-  auto prepare_resp = static_cast<StmtPrepareOKResponse*>(iter->second.response());
+  StmtPrepareOKResponse* prepare_resp = iter->second.response.get();
 
   int num_params = prepare_resp->resp_header().num_params;
 
@@ -357,11 +396,18 @@ std::unique_ptr<StmtExecuteRequest> HandleStmtExecuteRequest(
       params.emplace_back(param);
     }
   }
-  // If stmt_bound = 1, assume no params.
-  return std::make_unique<StmtExecuteRequest>(stmt_id, std::move(params));
+
+  std::string_view stmt_prepare_request = iter->second.request;
+  entry->req_msg = CombinePrepareExecute(stmt_prepare_request, params);
 }
 
-Status HandleStmtCloseRequest(const Packet& req_packet, std::map<int, ReqRespEvent>* prepare_map) {
+void HandleStmtCloseRequest(const Packet& req_packet, std::map<int, PreparedStatement>* prepare_map,
+                            Entry* entry) {
+  DCHECK(!req_packet.msg.empty());
+  entry->cmd = DecodeCommand(req_packet.msg[0]);
+  entry->req_msg = "";
+  entry->req_timestamp_ns = req_packet.timestamp_ns;
+
   int stmt_id = utils::LEStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
   auto iter = prepare_map->find(stmt_id);
   if (iter == prepare_map->end()) {
@@ -369,10 +415,9 @@ Status HandleStmtCloseRequest(const Packet& req_packet, std::map<int, ReqRespEve
     // problem), but we can still process the close, and continue on. Just print a warning.
     LOG(WARNING) << absl::Substitute("Cannot find Stmt Prepare Event to close [stmt_id=$0].",
                                      stmt_id);
-    return Status::OK();
+    return;
   }
   prepare_map->erase(iter);
-  return Status::OK();
 }
 
 }  // namespace mysql

@@ -35,7 +35,7 @@ void ConnectionTracker::InitState<mysql::Packet>() {
   DCHECK(std::holds_alternative<std::monostate>(state_) ||
          (std::holds_alternative<std::unique_ptr<mysql::State>>(state_)));
   if (std::holds_alternative<std::monostate>(state_)) {
-    mysql::State s{std::map<int, mysql::ReqRespEvent>(), mysql::FlagStatus::kUnknown};
+    mysql::State s{std::map<int, mysql::PreparedStatement>(), mysql::FlagStatus::kUnknown};
     state_ = std::make_unique<mysql::State>(std::move(s));
   }
 }

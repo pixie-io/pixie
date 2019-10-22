@@ -54,10 +54,9 @@ const std::vector<ColDefinition> kStmtPrepareColDefs{
 const StmtPrepareOKResponse kStmtPrepareResponse(kStmtPrepareRespHeader, kStmtPrepareColDefs,
                                                  kStmtPrepareParamDefs);
 
-ReqRespEvent InitStmtPrepare() {
-  std::unique_ptr<Request> req_ptr(new StringRequest(kStmtPrepareRequest));
-  std::unique_ptr<Response> resp_ptr(new StmtPrepareOKResponse(kStmtPrepareResponse));
-  return ReqRespEvent(MySQLEventType::kStmtPrepare, std::move(req_ptr), std::move(resp_ptr));
+PreparedStatement InitStmtPrepare() {
+  auto resp_ptr = std::make_unique<StmtPrepareOKResponse>(kStmtPrepareResponse);
+  return PreparedStatement{std::string(kStmtPrepareRequest.msg()), std::move(resp_ptr)};
 }
 
 /**
@@ -83,12 +82,6 @@ const std::vector<ResultsetRow> kStmtExecuteResultsetRows = {ResultsetRow{ConstS
                                                              ResultsetRow{ConstString("\x03id2")}};
 
 const Resultset kStmtExecuteResultset(2, kStmtExecuteColDefs, kStmtExecuteResultsetRows);
-
-ReqRespEvent InitStmtExecute() {
-  std::unique_ptr<Request> req_ptr(new StmtExecuteRequest(kStmtExecuteRequest));
-  std::unique_ptr<Response> resp_ptr(new Resultset(kStmtExecuteResultset));
-  return ReqRespEvent(MySQLEventType::kStmtExecute, std::move(req_ptr), std::move(resp_ptr));
-}
 
 /**
  * Statement Close Event

@@ -69,7 +69,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
 StatusOr<ParseState> ProcessFieldList(const Packet& req_packet, DequeView<Packet> resp_packets,
                                       Entry* entry);
 
-StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet,
+StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, bool string_req,
                                                      DequeView<Packet> resp_packets, Entry* entry);
 
 }  // namespace mysql

@@ -11,41 +11,6 @@ namespace pl {
 namespace stirling {
 namespace mysql {
 
-namespace {
-std::string CombinePrepareExecute(const StmtExecuteRequest* req,
-                                  std::map<int, ReqRespEvent>* prepare_events) {
-  auto iter = prepare_events->find(req->stmt_id());
-  if (iter == prepare_events->end()) {
-    LOG(WARNING) << absl::Substitute("Could not find prepare statement for stmt_id=$0",
-                                     req->stmt_id());
-    return "";
-  }
-
-  std::string_view stmt_prepare_request =
-      static_cast<StringRequest*>(iter->second.request())->msg();
-
-  size_t offset = 0;
-  size_t count = 0;
-  std::string result;
-
-  for (size_t index = stmt_prepare_request.find("?", offset); index != std::string::npos;
-       index = stmt_prepare_request.find("?", offset)) {
-    if (count >= req->params().size()) {
-      LOG(WARNING) << "Unequal number of stmt exec parameters for stmt prepare.";
-      break;
-    }
-    absl::StrAppend(&result, stmt_prepare_request.substr(offset, index - offset),
-                    req->params()[count].value);
-    count++;
-    offset = index + 1;
-  }
-  result += stmt_prepare_request.substr(offset);
-
-  return result;
-}
-
-}  // namespace
-
 // This function looks for unsynchronized req/resp packet queues.
 // This could happen for a number of reasons:
 //  - lost events
@@ -147,31 +112,39 @@ std::vector<Entry> ProcessMySQLPackets(std::deque<Packet>* req_packets,
       case MySQLEventType::kTime:
       case MySQLEventType::kDelayedInsert:
       case MySQLEventType::kDaemon:
-        s = ProcessRequestWithBasicResponse(req_packet, resp_packets_view, &entry);
+        s = ProcessRequestWithBasicResponse(req_packet, /* string_req */ false, resp_packets_view,
+                                            &entry);
+        break;
+
+      case MySQLEventType::kInitDB:
+      case MySQLEventType::kCreateDB:
+      case MySQLEventType::kDropDB:
+        s = ProcessRequestWithBasicResponse(req_packet, /* string_req */ true, resp_packets_view,
+                                            &entry);
         break;
 
       // Basic Commands with response: OK_Packet or ERR_Packet
       case MySQLEventType::kSleep:
-      case MySQLEventType::kInitDB:
       case MySQLEventType::kRegisterSlave:
       case MySQLEventType::kResetConnection:
-      case MySQLEventType::kCreateDB:
-      case MySQLEventType::kDropDB:
       case MySQLEventType::kProcessKill:
       case MySQLEventType::kRefresh:  // Deprecated.
       case MySQLEventType::kPing:     // COM_PING can't actually send ERR_Packet.
-        s = ProcessRequestWithBasicResponse(req_packet, resp_packets_view, &entry);
+        s = ProcessRequestWithBasicResponse(req_packet, /* string_req */ false, resp_packets_view,
+                                            &entry);
         break;
 
       case MySQLEventType::kQuit:  // Response: OK_Packet or a connection close.
-        s = ProcessRequestWithBasicResponse(req_packet, resp_packets_view, &entry);
+        s = ProcessRequestWithBasicResponse(req_packet, /* string_req */ false, resp_packets_view,
+                                            &entry);
         break;
 
       // Basic Commands with response: EOF_Packet or ERR_Packet.
       case MySQLEventType::kShutdown:  // Deprecated.
       case MySQLEventType::kSetOption:
       case MySQLEventType::kDebug:
-        s = ProcessRequestWithBasicResponse(req_packet, resp_packets_view, &entry);
+        s = ProcessRequestWithBasicResponse(req_packet, /* string_req */ false, resp_packets_view,
+                                            &entry);
         break;
 
       // COM_FIELD_LIST has its own COM_FIELD_LIST meta response (ERR_Packet or one or more Column
@@ -266,11 +239,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
   // Request
   //----------------
 
-  auto req = HandleStringRequest(req_packet);
-  DCHECK(!req_packet.msg.empty());
-  entry->cmd = DecodeCommand(req_packet.msg[0]);
-  entry->req_msg = req->msg();
-  entry->req_timestamp_ns = req_packet.timestamp_ns;
+  HandleStringRequest(req_packet, entry);
 
   //----------------
   // Response
@@ -306,8 +275,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
 
   // Update state.
   int stmt_id = resp->resp_header().stmt_id;
-  state->prepare_events.emplace(
-      stmt_id, ReqRespEvent(MySQLEventType::kStmtPrepare, std::move(req), std::move(resp)));
+  state->prepare_events.emplace(stmt_id, PreparedStatement{entry->req_msg, std::move(resp)});
 
   entry->resp_status = MySQLRespStatus::kOK;
   return ParseState::kSuccess;
@@ -322,10 +290,7 @@ StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
   // Request
   //----------------
 
-  DCHECK(!req_packet.msg.empty());
-  entry->cmd = DecodeCommand(req_packet.msg[0]);
-  entry->req_msg = "";
-  entry->req_timestamp_ns = req_packet.timestamp_ns;
+  HandleNonStringRequest(req_packet, entry);
 
   //----------------
   // Response
@@ -349,12 +314,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   // Request
   //----------------
 
-  auto req = HandleStmtExecuteRequest(req_packet, &state->prepare_events);
-  std::string expanded_request = CombinePrepareExecute(req.get(), &state->prepare_events);
-  DCHECK(!req_packet.msg.empty());
-  entry->cmd = DecodeCommand(req_packet.msg[0]);
-  entry->req_msg = expanded_request;
-  entry->req_timestamp_ns = req_packet.timestamp_ns;
+  HandleStmtExecuteRequest(req_packet, &state->prepare_events, entry);
 
   //----------------
   // Response
@@ -397,7 +357,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   }
 
   // TODO(chengruizhe): Write result set to entry.
-  PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
+  PL_ASSIGN_OR_RETURN(auto resp, HandleResultsetResponse(resp_packets));
 
   // Nullptr indicates there was not enough packets to process the Resultset.
   // This is not an error, but we return ParseState::kNeedsMoreData to indicate that we need more
@@ -419,11 +379,7 @@ StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet
   // Request
   //----------------
 
-  PL_RETURN_IF_ERROR(HandleStmtCloseRequest(req_packet, &state->prepare_events));
-  DCHECK(!req_packet.msg.empty());
-  entry->cmd = DecodeCommand(req_packet.msg[0]);
-  entry->req_msg = "";
-  entry->req_timestamp_ns = req_packet.timestamp_ns;
+  HandleStmtCloseRequest(req_packet, &state->prepare_events, entry);
 
   //----------------
   // Response
@@ -450,10 +406,7 @@ StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet,
   // Request
   //----------------
 
-  DCHECK(!req_packet.msg.empty());
-  entry->cmd = DecodeCommand(req_packet.msg[0]);
-  entry->req_msg = "";
-  entry->req_timestamp_ns = req_packet.timestamp_ns;
+  HandleNonStringRequest(req_packet, entry);
 
   //----------------
   // Response
@@ -470,7 +423,7 @@ StatusOr<ParseState> ProcessStmtReset(const Packet& req_packet, DequeView<Packet
   PL_UNUSED(state);
 
   // Defer to basic response for now.
-  return ProcessRequestWithBasicResponse(req_packet, resp_packets, entry);
+  return ProcessRequestWithBasicResponse(req_packet, /* string_req */ false, resp_packets, entry);
 }
 
 // Process a COM_QUERY request and response, and populate details into a record entry.
@@ -481,11 +434,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   // Request
   //----------------
 
-  DCHECK(!req_packet.msg.empty());
-  auto req = HandleStringRequest(req_packet);
-  entry->cmd = DecodeCommand(req_packet.msg[0]);
-  entry->req_msg = req->msg();
-  entry->req_timestamp_ns = req_packet.timestamp_ns;
+  HandleStringRequest(req_packet, entry);
 
   //----------------
   // Response
@@ -528,7 +477,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   }
 
   // TODO(chengruizhe): Write result set to entry.
-  PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
+  PL_ASSIGN_OR_RETURN(auto resp, HandleResultsetResponse(resp_packets));
 
   // Nullptr indicates there was not enough packets to process the Resultset.
   // This is not an error, but we return ParseState::kNeedsMoreData to indicate that we need more
@@ -550,11 +499,7 @@ StatusOr<ParseState> ProcessFieldList(const Packet& req_packet,
   // Request
   //----------------
 
-  DCHECK(!req_packet.msg.empty());
-  auto req = HandleStringRequest(req_packet);
-  entry->cmd = DecodeCommand(req_packet.msg[0]);
-  entry->req_msg = req->msg();
-  entry->req_timestamp_ns = req_packet.timestamp_ns;
+  HandleStringRequest(req_packet, entry);
 
   //----------------
   // Response
@@ -570,16 +515,17 @@ StatusOr<ParseState> ProcessFieldList(const Packet& req_packet,
 // to expect a subset, since some responses are invalid for certain commands.
 // For example, a COM_INIT_DB command should never receive an EOF response.
 // All we would do is print a warning, though, so this is low priority.
-StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet,
+StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, bool string_req,
                                                      DequeView<Packet> resp_packets, Entry* entry) {
   //----------------
   // Request
   //----------------
 
-  DCHECK(!req_packet.msg.empty());
-  entry->cmd = DecodeCommand(req_packet.msg[0]);
-  entry->req_msg = "";
-  entry->req_timestamp_ns = req_packet.timestamp_ns;
+  if (string_req) {
+    HandleStringRequest(req_packet, entry);
+  } else {
+    HandleNonStringRequest(req_packet, entry);
+  }
 
   //----------------
   // Response
