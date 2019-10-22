@@ -17,19 +17,6 @@ namespace pl {
 
 inline bool IsRoot() { return (geteuid() == 0); }
 
-/**
- * @brief Copy from BPF data pointed by a pointer. The target should be a memory aligned type to
- * necessitate this function. This is because BPF memory might lost memory alignment when copied
- * from BPF to perf buffer, in which case, a naive pointer cast might cause runtime error in ASAN,
- * or in rare situations where the compiler produces misaligned code on different CPU arches.
- */
-template <typename MemAlignedType>
-inline MemAlignedType CopyFromBPF(const void* data) {
-  MemAlignedType result;
-  memcpy(&result, data, sizeof(MemAlignedType));
-  return result;
-}
-
 // Implementation borrowed from: http://reedbeta.com/blog/python-like-enumerate-in-cpp17/
 template <typename T, typename TIter = decltype(std::begin(std::declval<T>())),
           typename = decltype(std::end(std::declval<T>()))>

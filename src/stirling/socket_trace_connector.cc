@@ -241,7 +241,7 @@ void SocketTraceConnector::HandleDataLoss(void* /*cb_cookie*/, uint64_t lost) {
 void SocketTraceConnector::HandleOpenProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto conn_event = CopyFromBPF<conn_event_t>(data);
+  auto conn_event = *static_cast<const conn_event_t*>(data);
   conn_event.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptOpenConnEvent(conn_event);
 }
@@ -253,7 +253,7 @@ void SocketTraceConnector::HandleOpenProbeLoss(void* /*cb_cookie*/, uint64_t los
 void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto close_event = CopyFromBPF<close_event_t>(data);
+  auto close_event = *static_cast<const close_event_t*>(data);
   close_event.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptCloseConnEvent(close_event);
 }

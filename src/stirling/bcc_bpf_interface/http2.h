@@ -8,6 +8,8 @@
 
 #define CLANG_SUPPRESS_WARNINGS_END() _Pragma("clang diagnostic pop")
 
+const int kHTTP2FrameHeaderSizeInBytes = 9;
+
 static __inline uint32_t bpf_ntohl_chars(const char* buf) {
   uint32_t res = 0;
   bpf_probe_read(&res, sizeof(uint32_t), buf);
@@ -30,7 +32,6 @@ static __inline void update_http2_frame_offset(TrafficDirection direction, const
   // being smaller than the BPF limit per kprobe:
   // https://docs.cilium.io/en/v1.4/bpf/#instruction-set.
   const int kLoopCount = 100;
-  const int kHTTP2FrameHeaderSizeInBytes = 9;
 
   // Avoid warning in GCC and unrolling failure in opt + UI build.
 #if defined(__clang__)

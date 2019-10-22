@@ -1,9 +1,5 @@
 #pragma once
 
-#ifdef __cplusplus
-#include <cstdint>
-#endif
-
 #include <linux/in6.h>
 
 const char kControlMapName[] = "control_map";
@@ -11,8 +7,6 @@ const uint64_t kSocketTraceNothing = 0;
 
 const int64_t kTraceAllTGIDs = -1;
 const char kControlValuesArrayName[] = "control_values";
-
-const size_t kHTTP2FrameHeaderSizeInBytes = 9;
 
 // TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
 
