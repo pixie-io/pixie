@@ -82,6 +82,11 @@ func main() {
 	imageAuthServer := &controller.VizierImageAuthSever{}
 	cloudapipb.RegisterVizierImageAuthorizationServer(s.GRPCServer(), imageAuthServer)
 
+	artifactTrackerServer := controller.ArtifactTrackerServer{
+		ArtifactTrackerClient: at,
+	}
+	cloudapipb.RegisterArtifactTrackerServer(s.GRPCServer(), artifactTrackerServer)
+
 	s.Start()
 	s.StopOnInterrupt()
 }

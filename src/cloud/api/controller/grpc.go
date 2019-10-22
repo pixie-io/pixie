@@ -11,7 +11,9 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/spf13/pflag"
+	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 )
 
 func init() {
@@ -40,4 +42,89 @@ func (v VizierImageAuthSever) GetImageCredentials(context.Context, *cloudapipb.G
 	}
 
 	return &cloudapipb.GetImageCredentialsResponse{Creds: string(b)}, nil
+}
+
+// ArtifactTrackerServer is the GRPC server responsible for providing access to artifacts.
+type ArtifactTrackerServer struct {
+	ArtifactTrackerClient artifacttrackerpb.ArtifactTrackerClient
+}
+
+func getArtifactTypeFromCloudProto(a cloudapipb.ArtifactType) versionspb.ArtifactType {
+	switch a {
+	case cloudapipb.AT_LINUX_AMD64:
+		return versionspb.AT_LINUX_AMD64
+	case cloudapipb.AT_DARWIN_AMD64:
+		return versionspb.AT_DARWIN_AMD64
+	case cloudapipb.AT_CONTAINER_SET_LINUX_AMD64:
+		return versionspb.AT_CONTAINER_SET_LINUX_AMD64
+	default:
+		return versionspb.AT_UNKNOWN
+	}
+}
+
+func getArtifactTypeFromVersionsProto(a versionspb.ArtifactType) cloudapipb.ArtifactType {
+	switch a {
+	case versionspb.AT_LINUX_AMD64:
+		return cloudapipb.AT_LINUX_AMD64
+	case versionspb.AT_DARWIN_AMD64:
+		return cloudapipb.AT_DARWIN_AMD64
+	case versionspb.AT_CONTAINER_SET_LINUX_AMD64:
+		return cloudapipb.AT_CONTAINER_SET_LINUX_AMD64
+	default:
+		return cloudapipb.AT_UNKNOWN
+	}
+}
+
+// GetArtifactList gets the set of artifact versions for the given artifact.
+func (a ArtifactTrackerServer) GetArtifactList(ctx context.Context, req *cloudapipb.GetArtifactListRequest) (*cloudapipb.ArtifactSet, error) {
+	atReq := &artifacttrackerpb.GetArtifactListRequest{
+		ArtifactType: getArtifactTypeFromCloudProto(req.ArtifactType),
+		ArtifactName: req.ArtifactName,
+		Limit:        req.Limit,
+	}
+
+	resp, err := a.ArtifactTrackerClient.GetArtifactList(ctx, atReq)
+	if err != nil {
+		return nil, err
+	}
+
+	cloudpbArtifacts := make([]*cloudapipb.Artifact, len(resp.Artifact))
+	for i, artifact := range resp.Artifact {
+		availableArtifacts := make([]cloudapipb.ArtifactType, len(artifact.AvailableArtifacts))
+		for j, a := range artifact.AvailableArtifacts {
+			availableArtifacts[j] = getArtifactTypeFromVersionsProto(a)
+		}
+		cloudpbArtifacts[i] = &cloudapipb.Artifact{
+			Timestamp:          artifact.Timestamp,
+			CommitHash:         artifact.CommitHash,
+			VersionStr:         artifact.VersionStr,
+			Changelog:          artifact.Changelog,
+			AvailableArtifacts: availableArtifacts,
+		}
+	}
+
+	return &cloudapipb.ArtifactSet{
+		Name:     resp.Name,
+		Artifact: cloudpbArtifacts,
+	}, nil
+}
+
+// GetDownloadLink gets the download link for the given artifact.
+func (a ArtifactTrackerServer) GetDownloadLink(ctx context.Context, req *cloudapipb.GetDownloadLinkRequest) (*cloudapipb.GetDownloadLinkResponse, error) {
+	atReq := &artifacttrackerpb.GetDownloadLinkRequest{
+		ArtifactName: req.ArtifactName,
+		VersionStr:   req.VersionStr,
+		ArtifactType: getArtifactTypeFromCloudProto(req.ArtifactType),
+	}
+
+	resp, err := a.ArtifactTrackerClient.GetDownloadLink(ctx, atReq)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudapipb.GetDownloadLinkResponse{
+		Url:        resp.Url,
+		SHA256:     resp.SHA256,
+		ValidUntil: resp.ValidUntil,
+	}, nil
 }
