@@ -40,6 +40,19 @@ void ConnectionTracker::InitState<mysql::Packet>() {
   }
 }
 
+void ConnectionTracker::AddControlEvent(const socket_control_event_t& event) {
+  switch (event.type) {
+    case kConnOpen:
+      AddConnOpenEvent(event.open);
+      break;
+    case kConnClose:
+      AddConnCloseEvent(event.close);
+      break;
+    default:
+      LOG(DFATAL) << "Unknown control event type: " << event.type;
+  }
+}
+
 void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   LOG_IF_EVERY_N(WARNING, open_info_.timestamp_ns != 0, 10) << absl::Substitute(
       "[PL-985] Clobbering existing ConnOpenEvent [pid=$0 fd=$1 gen=$2].", conn_event.conn_id.pid,

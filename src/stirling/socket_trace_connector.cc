@@ -238,28 +238,17 @@ void SocketTraceConnector::HandleDataEventsLoss(void* /*cb_cookie*/, uint64_t lo
   LOG(WARNING) << ProbeLossMessage("socket_data_events", lost);
 }
 
-void SocketTraceConnector::HandleOpenProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
+void SocketTraceConnector::HandleControlEvent(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto conn_event = *static_cast<const conn_event_t*>(data);
-  conn_event.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
-  connector->AcceptOpenConnEvent(conn_event);
+  auto event = *static_cast<const socket_control_event_t*>(data);
+  // timestamp_ns is a common field of open and close fields.
+  event.open.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
+  connector->AcceptControlEvent(event);
 }
 
-void SocketTraceConnector::HandleOpenProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
-  LOG(WARNING) << ProbeLossMessage("socket_open_events", lost);
-}
-
-void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
-  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
-  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto close_event = *static_cast<const close_event_t*>(data);
-  close_event.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
-  connector->AcceptCloseConnEvent(close_event);
-}
-
-void SocketTraceConnector::HandleCloseProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
-  LOG(WARNING) << ProbeLossMessage("socket_close_events", lost);
+void SocketTraceConnector::HandleControlEventsLoss(void* /*cb_cookie*/, uint64_t lost) {
+  LOG(WARNING) << ProbeLossMessage("socket_control_events", lost);
 }
 
 //-----------------------------------------------------------------------------
@@ -312,20 +301,12 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
   tracker.AddDataEvent(std::move(event));
 }
 
-void SocketTraceConnector::AcceptOpenConnEvent(const conn_event_t& conn_event) {
-  const uint64_t conn_map_key = GetConnMapKey(conn_event.conn_id);
+void SocketTraceConnector::AcceptControlEvent(const socket_control_event_t& event) {
+  // conn_id is a common field of open & close.
+  const uint64_t conn_map_key = GetConnMapKey(event.open.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][conn_event.conn_id.generation];
-  tracker.AddConnOpenEvent(conn_event);
-}
-
-void SocketTraceConnector::AcceptCloseConnEvent(const close_event_t& close_event) {
-  const uint64_t conn_map_key = GetConnMapKey(close_event.conn_id);
-  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][close_event.conn_id.generation];
-  tracker.AddConnCloseEvent(close_event);
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.open.conn_id.generation];
+  tracker.AddControlEvent(event);
 }
 
 const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(

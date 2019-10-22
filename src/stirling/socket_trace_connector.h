@@ -62,6 +62,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   static constexpr std::string_view kHTTPPerfBufferNames[] = {
       "socket_open_conns",
+      "socket_control_events",
       "socket_data_events",
       "socket_close_conns",
   };
@@ -71,6 +72,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   static constexpr std::string_view kMySQLPerfBufferNames[] = {
       "socket_open_conns",
+      "socket_control_events",
       "socket_data_events",
       "socket_close_conns",
   };
@@ -133,10 +135,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   // These are used by the static variables below, and have to be placed here.
   static void HandleDataEvent(void* cb_cookie, void* data, int data_size);
   static void HandleDataEventsLoss(void* cb_cookie, uint64_t lost);
-  static void HandleCloseProbeOutput(void* cb_cookie, void* data, int data_size);
-  static void HandleCloseProbeLoss(void* cb_cookie, uint64_t lost);
-  static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
-  static void HandleOpenProbeLoss(void* cb_cookie, uint64_t lost);
+  static void HandleControlEvent(void* cb_cookie, void* data, int data_size);
+  static void HandleControlEventsLoss(void* cb_cookie, uint64_t lost);
 
   static constexpr ProbeSpec kProbeSpecsArray[] = {
       {"connect", "syscall__probe_entry_connect", bpf_probe_attach_type::BPF_PROBE_ENTRY},
@@ -183,10 +183,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
       {"socket_data_events", &SocketTraceConnector::HandleDataEvent,
        &SocketTraceConnector::HandleDataEventsLoss},
       // For non-data events. Must not mix with the above perf buffers for data events.
-      {"socket_open_conns", &SocketTraceConnector::HandleOpenProbeOutput,
-       &SocketTraceConnector::HandleOpenProbeLoss},
-      {"socket_close_conns", &SocketTraceConnector::HandleCloseProbeOutput,
-       &SocketTraceConnector::HandleCloseProbeLoss},
+      {"socket_control_events", &SocketTraceConnector::HandleControlEvent,
+       &SocketTraceConnector::HandleControlEventsLoss},
   };
   static constexpr auto kPerfBufferSpecs = ArrayView<PerfBufferSpec>(kPerfBufferSpecsArray);
 
@@ -212,8 +210,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   //                     The Handle* functions should call make_unique() of new corresponding
   //                     objects, and these functions should take unique_ptrs.
   void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);
-  void AcceptOpenConnEvent(const conn_event_t& conn_info);
-  void AcceptCloseConnEvent(const close_event_t& close_event);
+  void AcceptControlEvent(const socket_control_event_t& event);
 
   // Transfer of messages to the data table.
   template <typename TMessageType>

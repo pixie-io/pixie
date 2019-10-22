@@ -19,17 +19,17 @@ using ConnectionTrackerTest = testing::EventsFixture;
 TEST_F(ConnectionTrackerTest, timestamp_test) {
   ConnectionTracker tracker;
 
-  conn_event_t conn = InitConn();
+  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> event0 = InitSendEvent("event0");
   std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent("event1");
   std::unique_ptr<SocketDataEvent> event2 = InitSendEvent("event2");
   std::unique_ptr<SocketDataEvent> event3 = InitRecvEvent("event3");
   std::unique_ptr<SocketDataEvent> event4 = InitSendEvent("event4");
   std::unique_ptr<SocketDataEvent> event5 = InitRecvEvent("event5");
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
   EXPECT_EQ(0, tracker.last_bpf_timestamp_ns());
-  tracker.AddConnOpenEvent(conn);
+  tracker.AddControlEvent(conn);
   EXPECT_EQ(1, tracker.last_bpf_timestamp_ns());
   tracker.AddDataEvent(std::move(event0));
   EXPECT_EQ(2, tracker.last_bpf_timestamp_ns());
@@ -43,7 +43,7 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
   EXPECT_EQ(7, tracker.last_bpf_timestamp_ns());
   tracker.AddDataEvent(std::move(event4));
   EXPECT_EQ(7, tracker.last_bpf_timestamp_ns());
-  tracker.AddConnCloseEvent(close_event);
+  tracker.AddControlEvent(close_event);
   EXPECT_EQ(8, tracker.last_bpf_timestamp_ns());
 }
 
@@ -51,19 +51,19 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
 TEST_F(ConnectionTrackerTest, info_string) {
   ConnectionTracker tracker;
 
-  conn_event_t conn = InitConn();
+  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> event0 = InitSendEvent(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent(kHTTPResp0);
   std::unique_ptr<SocketDataEvent> event2 = InitSendEvent(kHTTPReq1);
 
-  tracker.AddConnOpenEvent(conn);
+  tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(event0));
   tracker.AddDataEvent(std::move(event1));
   tracker.AddDataEvent(std::move(event2));
 
   std::string debug_info = tracker.DebugString<ReqRespPair<http::HTTPMessage>>();
 
-  std::string expected_output = R"(pid=12345 fd=3 gen=2
+  std::string expected_output = R"(pid=12345 fd=3 gen=1
 remote_addr=0.0.0.0:0
 protocol=HTTP
 recv queue
@@ -80,7 +80,7 @@ send queue
 
   debug_info = tracker.DebugString<ReqRespPair<http::HTTPMessage>>();
 
-  expected_output = R"(pid=12345 fd=3 gen=2
+  expected_output = R"(pid=12345 fd=3 gen=1
 remote_addr=0.0.0.0:0
 protocol=HTTP
 recv queue
@@ -97,23 +97,23 @@ send queue
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
   ConnectionTracker tracker;
 
-  conn_event_t conn = InitConn();
+  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
   std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
   std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
   std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
   std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
-  tracker.AddConnOpenEvent(conn);
+  tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
   tracker.AddDataEvent(std::move(req1));
   tracker.AddDataEvent(std::move(resp1));
   tracker.AddDataEvent(std::move(req2));
   tracker.AddDataEvent(std::move(resp2));
-  tracker.AddConnCloseEvent(close_event);
+  tracker.AddControlEvent(close_event);
 
   std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
   req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
@@ -133,23 +133,23 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
 TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
   ConnectionTracker tracker;
 
-  conn_event_t conn = InitConn();
+  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
   std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
   std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
   std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
   std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
-  tracker.AddConnOpenEvent(conn);
+  tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(req1));
   tracker.AddDataEvent(std::move(req2));
   tracker.AddDataEvent(std::move(resp0));
   tracker.AddDataEvent(std::move(resp1));
   tracker.AddDataEvent(std::move(resp2));
-  tracker.AddConnCloseEvent(close_event);
+  tracker.AddControlEvent(close_event);
 
   std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
   req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
@@ -169,23 +169,23 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   ConnectionTracker tracker;
 
-  conn_event_t conn = InitConn();
+  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
   std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
   std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
   std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
   std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
-  tracker.AddConnOpenEvent(conn);
+  tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
   PL_UNUSED(req1);  // Missing event.
   tracker.AddDataEvent(std::move(resp1));
   tracker.AddDataEvent(std::move(req2));
   tracker.AddDataEvent(std::move(resp2));
-  tracker.AddConnCloseEvent(close_event);
+  tracker.AddControlEvent(close_event);
 
   std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
   req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
@@ -205,23 +205,23 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   ConnectionTracker tracker;
 
-  conn_event_t conn = InitConn();
+  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
   std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
   std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
   std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
   std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
-  tracker.AddConnOpenEvent(conn);
+  tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
   tracker.AddDataEvent(std::move(req1));
   PL_UNUSED(req2);  // Missing event.
   tracker.AddDataEvent(std::move(req2));
   tracker.AddDataEvent(std::move(resp2));
-  tracker.AddConnCloseEvent(close_event);
+  tracker.AddControlEvent(close_event);
 
   std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
 
@@ -244,7 +244,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   ConnectionTracker tracker;
   std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
 
-  conn_event_t conn = InitConn();
+  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
   std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
@@ -253,9 +253,9 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent("hello to you too");
   std::unique_ptr<SocketDataEvent> req3 = InitSendEvent("good-bye");
   std::unique_ptr<SocketDataEvent> resp3 = InitRecvEvent("good-bye to you too");
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
-  tracker.AddConnOpenEvent(conn);
+  tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
   tracker.AddDataEvent(std::move(req1));
@@ -280,7 +280,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
 
   tracker.AddDataEvent(std::move(req3));
   tracker.AddDataEvent(std::move(resp3));
-  tracker.AddConnCloseEvent(close_event);
+  tracker.AddControlEvent(close_event);
 
   req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
 
@@ -292,7 +292,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   ConnectionTracker tracker;
   std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
 
-  conn_event_t conn = InitConn();
+  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
   std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPUpgradeReq);
@@ -301,9 +301,9 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp1);
   std::unique_ptr<SocketDataEvent> req3 = InitSendEvent("good-bye");
   std::unique_ptr<SocketDataEvent> resp3 = InitRecvEvent("good-bye to you too");
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
-  tracker.AddConnOpenEvent(conn);
+  tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
   tracker.AddDataEvent(std::move(req1));
@@ -330,7 +330,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
 
   tracker.AddDataEvent(std::move(req3));
   tracker.AddDataEvent(std::move(resp3));
-  tracker.AddConnCloseEvent(close_event);
+  tracker.AddControlEvent(close_event);
 
   // The tracker should, however, still process the close event.
 

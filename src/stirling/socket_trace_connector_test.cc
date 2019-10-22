@@ -12,6 +12,7 @@
 #include "src/stirling/data_table.h"
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
+#include "src/stirling/testing/events_fixture.h"
 
 namespace pl {
 namespace stirling {
@@ -19,14 +20,13 @@ namespace stirling {
 using ::testing::ElementsAre;
 using RecordBatch = types::ColumnWrapperRecordBatch;
 
-class SocketTraceConnectorTest : public ::testing::Test {
+class SocketTraceConnectorTest : public testing::EventsFixture {
  protected:
   static constexpr uint32_t kASID = 1;
-  static constexpr uint32_t kPID = 12345;
-  static constexpr uint64_t kPIDStartTimeTicks = 112358;
-  static constexpr uint32_t kFD = 3;
 
   void SetUp() override {
+    testing::EventsFixture::SetUp();
+
     // Create and configure the connector.
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
@@ -39,74 +39,6 @@ class SocketTraceConnectorTest : public ::testing::Test {
     ConnectionTracker::SetInactivityDuration(ConnectionTracker::kDefaultInactivityDuration);
     InitMySQLData();
   }
-
-  conn_event_t InitConn(TrafficProtocol protocol) {
-    ++generation_;
-    ++current_timestamp_;
-    send_seq_num_ = 0;
-    recv_seq_num_ = 0;
-
-    conn_event_t conn_info{};
-    conn_info.addr.sin6_family = AF_INET;
-    conn_info.timestamp_ns = current_timestamp_;
-    conn_info.conn_id.pid = kPID;
-    conn_info.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
-    conn_info.conn_id.fd = kFD;
-    conn_info.conn_id.generation = generation_;
-    conn_info.traffic_class.protocol = protocol;
-    conn_info.traffic_class.role = kRoleRequestor;
-    return conn_info;
-  }
-
-  std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg) {
-    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kEgress, msg);
-    event->attr.seq_num = send_seq_num_;
-    send_seq_num_++;
-    return event;
-  }
-
-  std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg) {
-    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kIngress, msg);
-    event->attr.seq_num = recv_seq_num_;
-    recv_seq_num_++;
-    return event;
-  }
-
-  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, std::string_view msg) {
-    ++current_timestamp_;
-
-    socket_data_event_t event = {};
-    event.attr.direction = direction;
-    event.attr.traffic_class.protocol = kProtocolHTTP;
-    event.attr.traffic_class.role = kRoleRequestor;
-    event.attr.timestamp_ns = current_timestamp_;
-    event.attr.conn_id.pid = kPID;
-    event.attr.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
-    event.attr.conn_id.fd = kFD;
-    event.attr.conn_id.generation = generation_;
-    event.attr.msg_size = msg.size();
-    msg.copy(event.msg, msg.size());
-    return std::make_unique<SocketDataEvent>(&event);
-  }
-
-  close_event_t InitClose() {
-    ++current_timestamp_;
-
-    close_event_t close_event{};
-    close_event.timestamp_ns = current_timestamp_;
-    close_event.conn_id.pid = kPID;
-    close_event.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
-    close_event.conn_id.fd = kFD;
-    close_event.conn_id.generation = generation_;
-    close_event.rd_seq_num = recv_seq_num_;
-    close_event.wr_seq_num = send_seq_num_;
-    return close_event;
-  }
-
-  uint32_t generation_ = 0;
-  uint64_t current_timestamp_ = 0;
-  uint64_t send_seq_num_ = 0;
-  uint64_t recv_seq_num_ = 0;
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 
@@ -240,12 +172,12 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
 }
 
 TEST_F(SocketTraceConnectorTest, End2End) {
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> event0_json = InitRecvEvent(kJSONResp);
   std::unique_ptr<SocketDataEvent> event1_text = InitRecvEvent(kTextResp);
   std::unique_ptr<SocketDataEvent> event2_text = InitRecvEvent(kTextResp);
   std::unique_ptr<SocketDataEvent> event3_json = InitRecvEvent(kJSONResp);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
@@ -253,7 +185,7 @@ TEST_F(SocketTraceConnectorTest, End2End) {
   EXPECT_NE(0, source_->ClockRealTimeOffset());
 
   // Registers a new connection.
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
 
   ASSERT_THAT(source_->NumActiveConnections(), 1);
 
@@ -300,7 +232,7 @@ TEST_F(SocketTraceConnectorTest, End2End) {
       {{"Content-Encoding", "gzip"}},
   });
   source_->AcceptDataEvent(std::move(event3_json));
-  source_->AcceptCloseConnEvent(close_event);
+  source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(3, column->Size())
@@ -312,19 +244,19 @@ TEST_F(SocketTraceConnectorTest, End2End) {
 }
 
 TEST_F(SocketTraceConnectorTest, UPIDCheck) {
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> event0_json = InitRecvEvent(kJSONResp);
   std::unique_ptr<SocketDataEvent> event1_json = InitRecvEvent(kJSONResp);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   // Registers a new connection.
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(std::move(event0_json)));
   source_->AcceptDataEvent(std::move(std::move(event1_json)));
-  source_->AcceptCloseConnEvent(close_event);
+  source_->AcceptControlEvent(close_event);
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
@@ -343,37 +275,37 @@ TEST_F(SocketTraceConnectorTest, UPIDCheck) {
 }
 
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> event0 =
       InitRecvEvent(absl::StrCat(kResp0, kResp1.substr(0, kResp1.length() / 2)));
   std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent(kResp1.substr(kResp1.length() / 2));
   std::unique_ptr<SocketDataEvent> event2 = InitRecvEvent(kResp2);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(event0));
   source_->AcceptDataEvent(std::move(event2));
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(2, record_batch[0]->Size());
 
   source_->AcceptDataEvent(std::move(event1));
-  source_->AcceptCloseConnEvent(close_event);
+  source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(2, record_batch[0]->Size()) << "Late events won't get processed.";
 }
 
 TEST_F(SocketTraceConnectorTest, NoEvents) {
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> event0 = InitRecvEvent(kResp0);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
 
   // Check empty transfer.
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
@@ -387,31 +319,31 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   EXPECT_EQ(1, record_batch[0]->Size());
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->AcceptCloseConnEvent(close_event);
+  source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 }
 
 TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
   std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
   std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
   std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
   std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
   std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
   source_->AcceptDataEvent(std::move(req_event1));
   source_->AcceptDataEvent(std::move(req_event2));
   source_->AcceptDataEvent(std::move(resp_event0));
   source_->AcceptDataEvent(std::move(resp_event1));
   source_->AcceptDataEvent(std::move(resp_event2));
-  source_->AcceptCloseConnEvent(close_event);
+  source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(3, record_batch[0]->Size());
 
@@ -422,7 +354,7 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
 }
 
 TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
   std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
   std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
@@ -436,7 +368,7 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
   source_->AcceptDataEvent(std::move(req_event1));
   source_->AcceptDataEvent(std::move(req_event2));
@@ -459,20 +391,20 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
   std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
   std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
   std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
   std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
   std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
 
   EXPECT_EQ(0, source_->NumActiveConnections());
 
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
 
   EXPECT_EQ(1, source_->NumActiveConnections());
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
@@ -489,7 +421,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
-  source_->AcceptCloseConnEvent(close_event);
+  source_->AcceptControlEvent(close_event);
   // CloseConnEvent results in countdown = kDeathCountdownIters.
 
   // Death countdown period: keep calling Transfer Data to increment iterations.
@@ -504,19 +436,19 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
   std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
   std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
   std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
   std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
   std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
 
   source_->AcceptDataEvent(std::move(req_event1));
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
   source_->AcceptDataEvent(std::move(resp_event2));
   source_->AcceptDataEvent(std::move(resp_event0));
@@ -524,7 +456,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
-  source_->AcceptCloseConnEvent(close_event);
+  source_->AcceptControlEvent(close_event);
   source_->AcceptDataEvent(std::move(resp_event1));
   source_->AcceptDataEvent(std::move(req_event2));
 
@@ -541,7 +473,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
   std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
   std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
@@ -550,18 +482,18 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
   std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
   std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
   std::unique_ptr<SocketDataEvent> resp_event3 = InitRecvEvent(kResp2);
-  close_event_t close_event = InitClose();
+  struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
 
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
   source_->AcceptDataEvent(std::move(req_event1));
   source_->AcceptDataEvent(std::move(req_event2));
   source_->AcceptDataEvent(std::move(resp_event0));
   PL_UNUSED(resp_event1);  // Missing event.
   source_->AcceptDataEvent(std::move(resp_event2));
-  source_->AcceptCloseConnEvent(close_event);
+  source_->AcceptControlEvent(close_event);
 
   // CloseConnEvent results in countdown = kDeathCountdownIters.
 
@@ -576,33 +508,33 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
-  conn_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> conn0_req_event = InitSendEvent(kReq0);
   std::unique_ptr<SocketDataEvent> conn0_resp_event = InitRecvEvent(kResp0);
-  close_event_t conn0_close = InitClose();
+  struct socket_control_event_t conn0_close = InitClose();
 
-  conn_event_t conn1 = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn1 = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> conn1_req_event = InitSendEvent(kReq1);
   std::unique_ptr<SocketDataEvent> conn1_resp_event = InitRecvEvent(kResp1);
-  close_event_t conn1_close = InitClose();
+  struct socket_control_event_t conn1_close = InitClose();
 
-  conn_event_t conn2 = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn2 = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> conn2_req_event = InitSendEvent(kReq2);
   std::unique_ptr<SocketDataEvent> conn2_resp_event = InitRecvEvent(kResp2);
-  close_event_t conn2_close = InitClose();
+  struct socket_control_event_t conn2_close = InitClose();
 
   DataTable data_table(kHTTPTable);
 
   // Simulating scrambled order due to perf buffer, with a couple missing events.
   source_->AcceptDataEvent(std::move(conn0_req_event));
-  source_->AcceptOpenConnEvent(conn1);
-  source_->AcceptCloseConnEvent(conn2_close);
+  source_->AcceptControlEvent(conn1);
+  source_->AcceptControlEvent(conn2_close);
   source_->AcceptDataEvent(std::move(conn0_resp_event));
-  source_->AcceptOpenConnEvent(conn0);
+  source_->AcceptControlEvent(conn0);
   source_->AcceptDataEvent(std::move(conn2_req_event));
   source_->AcceptDataEvent(std::move(conn1_resp_event));
   source_->AcceptDataEvent(std::move(conn1_req_event));
-  source_->AcceptOpenConnEvent(conn2);
+  source_->AcceptControlEvent(conn2);
   source_->AcceptDataEvent(std::move(conn2_resp_event));
   PL_UNUSED(conn0_close);  // Missing close event.
   PL_UNUSED(conn1_close);  // Missing close event.
@@ -623,15 +555,15 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
-  conn_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
-  close_event_t conn0_close = InitClose();
+  struct socket_control_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn0_close = InitClose();
 
-  conn0.traffic_class.protocol = kProtocolUnknown;
+  conn0.open.traffic_class.protocol = kProtocolUnknown;
 
   DataTable data_table(kHTTPTable);
 
-  source_->AcceptOpenConnEvent(conn0);
-  source_->AcceptCloseConnEvent(conn0_close);
+  source_->AcceptControlEvent(conn0);
+  source_->AcceptControlEvent(conn0_close);
 
   // TransferData results in countdown = kDeathCountdownIters for old generations.
 
@@ -653,8 +585,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   // Note that max PID bits in Linux is 22 bits.
   uint32_t impossible_pid = 1 << 23;
 
-  conn_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
-  conn0.conn_id.pid = impossible_pid;
+  struct socket_control_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
+  conn0.open.conn_id.pid = impossible_pid;
 
   std::unique_ptr<SocketDataEvent> conn0_req_event = InitSendEvent(kReq0);
   conn0_req_event->attr.conn_id.pid = impossible_pid;
@@ -662,13 +594,13 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   std::unique_ptr<SocketDataEvent> conn0_resp_event = InitRecvEvent(kResp0);
   conn0_resp_event->attr.conn_id.pid = impossible_pid;
 
-  close_event_t conn0_close = InitClose();
-  conn0_close.conn_id.pid = impossible_pid;
+  struct socket_control_event_t conn0_close = InitClose();
+  conn0_close.close.conn_id.pid = impossible_pid;
 
   DataTable data_table(kHTTPTable);
 
   // Simulating events being emitted from BPF perf buffer.
-  source_->AcceptOpenConnEvent(conn0);
+  source_->AcceptControlEvent(conn0);
   source_->AcceptDataEvent(std::move(conn0_req_event));
   source_->AcceptDataEvent(std::move(conn0_resp_event));
   PL_UNUSED(conn0_close);  // Missing close event.
@@ -697,9 +629,9 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   uint32_t real_pid = getpid();
   uint32_t real_fd = 1;
 
-  conn_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
-  conn0.conn_id.pid = real_pid;
-  conn0.conn_id.fd = real_fd;
+  struct socket_control_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
+  conn0.open.conn_id.pid = real_pid;
+  conn0.open.conn_id.fd = real_fd;
 
   // An incomplete message means it shouldn't be parseable (we don't want TranfserData to succeed).
   std::unique_ptr<SocketDataEvent> conn0_req_event = InitSendEvent("GET /index.html HTTP/1.1\r\n");
@@ -710,7 +642,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   // Simulating events being emitted from BPF perf buffer.
-  source_->AcceptOpenConnEvent(conn0);
+  source_->AcceptControlEvent(conn0);
   source_->AcceptDataEvent(std::move(conn0_req_event));
 
   for (int i = 0; i < 100; ++i) {
@@ -745,7 +677,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
 TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   FLAGS_stirling_enable_mysql_tracing = true;
 
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
   std::unique_ptr<SocketDataEvent> prepare_req_event = InitSendEvent(mySQLStmtPrepareReq);
   std::vector<std::unique_ptr<SocketDataEvent>> prepare_resp_events;
   for (std::string resp_packet : mySQLStmtPrepareResp) {
@@ -758,7 +690,7 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
     execute_resp_events.push_back(InitRecvEvent(resp_packet));
   }
 
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(prepare_req_event));
   for (size_t i = 0; i < prepare_resp_events.size(); ++i) {
     source_->AcceptDataEvent(std::move(prepare_resp_events[i]));
@@ -817,14 +749,14 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {
   FLAGS_stirling_enable_mysql_tracing = true;
 
-  conn_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
   std::unique_ptr<SocketDataEvent> query_req_event = InitSendEvent(mySQLQueryReq);
   std::vector<std::unique_ptr<SocketDataEvent>> query_resp_events;
   for (std::string resp_packet : mySQLQueryResp) {
     query_resp_events.push_back(InitRecvEvent(resp_packet));
   }
 
-  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(query_req_event));
   for (size_t i = 0; i < query_resp_events.size(); ++i) {
     source_->AcceptDataEvent(std::move(query_resp_events[i]));

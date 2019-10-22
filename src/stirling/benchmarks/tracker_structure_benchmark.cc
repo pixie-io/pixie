@@ -71,18 +71,19 @@ std::vector<uint32_t> GenerateRandomSequence(size_t n, size_t c) {
 
 template <typename Tcontainer>
 void AddConnectionTrackers(Tcontainer* connection_trackers, const std::vector<uint32_t>& values) {
-  conn_event_t conn_event{};
-  conn_event.addr.sin6_family = AF_INET;
-  conn_event.traffic_class.protocol = kProtocolHTTP;
-  conn_event.traffic_class.role = kRoleRequestor;
+  struct socket_control_event_t conn_event {};
+  conn_event.type = kConnOpen;
+  conn_event.open.addr.sin6_family = AF_INET;
+  conn_event.open.traffic_class.protocol = kProtocolHTTP;
+  conn_event.open.traffic_class.role = kRoleRequestor;
 
   for (size_t i = 0; i < values.size(); ++i) {
     uint32_t conn_id = values[i];
     uint32_t gen_num = global_gen_num++;
     auto& container = (*connection_trackers)[conn_id];
     auto tracker = ConnectionTracker();
-    conn_event.conn_id.generation = gen_num;
-    tracker.AddConnOpenEvent(conn_event);
+    conn_event.open.conn_id.generation = gen_num;
+    tracker.AddControlEvent(conn_event);
 #if defined(INNER_MAP)
     container.emplace(gen_num, std::move(tracker));
 #elif defined(INNER_PRIQUEUE)

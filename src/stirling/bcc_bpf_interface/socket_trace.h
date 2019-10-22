@@ -107,8 +107,9 @@ struct conn_info_t {
 // This struct is a subset of conn_info_t. It is used to communicate connect/accept events.
 // See conn_info_t for descriptions of the members.
 struct conn_event_t {
-  uint64_t timestamp_ns;
-  struct conn_id_t conn_id;
+  uint64_t timestamp_ns;     // Must be shared with close_event_t.
+  struct conn_id_t conn_id;  // Must be shared with close_event_t.
+
   struct sockaddr_in6 addr;
   struct traffic_class_t traffic_class;
 };
@@ -116,8 +117,9 @@ struct conn_event_t {
 // This struct is a subset of conn_info_t. It is used to communicate close events.
 // See conn_info_t for descriptions of the members.
 struct close_event_t {
-  uint64_t timestamp_ns;
-  struct conn_id_t conn_id;
+  uint64_t timestamp_ns;     // Must be shared with conn_event_t.
+  struct conn_id_t conn_id;  // Must be shared with conn_event_t.
+
   uint64_t wr_seq_num;
   uint64_t rd_seq_num;
 };
@@ -169,4 +171,17 @@ struct socket_data_event_t {
     uint32_t msg_size;
   } attr;
   char msg[MAX_MSG_SIZE];
+};
+
+typedef enum {
+  kConnOpen,
+  kConnClose,
+} ControlEventType;
+
+struct socket_control_event_t {
+  ControlEventType type;
+  union {
+    struct conn_event_t open;
+    struct close_event_t close;
+  };
 };

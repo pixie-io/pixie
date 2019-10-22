@@ -12,27 +12,28 @@ namespace testing {
 // Convenience functions and predefined data for generating events expected from BPF socket probes.
 class EventsFixture : public ::testing::Test {
  protected:
-  // TODO(oazizi): Code related to creating BPF events is copied from SocketTraceConnectorTest.
-  // Refactor to share.
   static constexpr uint32_t kPID = 12345;
   static constexpr uint32_t kFD = 3;
-  static constexpr uint32_t kPIDFDGeneration = 2;
+  static constexpr uint64_t kPIDStartTimeTicks = 112358;
 
   void SetUp() {
+    generation_ = 0;
     send_seq_num_ = 0;
     recv_seq_num_ = 0;
     current_ts_ns_ = 0;
   }
 
-  conn_event_t InitConn() {
-    conn_event_t conn_event{};
-    conn_event.addr.sin6_family = AF_INET;
-    conn_event.timestamp_ns = ++current_ts_ns_;
-    conn_event.conn_id.pid = kPID;
-    conn_event.conn_id.fd = kFD;
-    conn_event.conn_id.generation = kPIDFDGeneration;
-    conn_event.traffic_class.protocol = kProtocolHTTP;
-    conn_event.traffic_class.role = kRoleRequestor;
+  struct socket_control_event_t InitConn(TrafficProtocol protocol) {
+    struct socket_control_event_t conn_event {};
+    conn_event.type = kConnOpen;
+    conn_event.open.timestamp_ns = ++current_ts_ns_;
+    conn_event.open.conn_id.pid = kPID;
+    conn_event.open.conn_id.fd = kFD;
+    conn_event.open.conn_id.generation = ++generation_;
+    conn_event.open.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
+    conn_event.open.addr.sin6_family = AF_INET;
+    conn_event.open.traffic_class.protocol = protocol;
+    conn_event.open.traffic_class.role = kRoleRequestor;
     return conn_event;
   }
 
@@ -66,24 +67,28 @@ class EventsFixture : public ::testing::Test {
     event.attr.timestamp_ns = ++current_ts_ns_;
     event.attr.conn_id.pid = kPID;
     event.attr.conn_id.fd = kFD;
-    event.attr.conn_id.generation = kPIDFDGeneration;
+    event.attr.conn_id.generation = generation_;
+    event.attr.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
     event.attr.seq_num = seq_num;
     event.attr.msg_size = msg.size();
     msg.copy(event.msg, msg.size());
     return std::make_unique<SocketDataEvent>(&event);
   }
 
-  close_event_t InitClose() {
-    close_event_t close_event{};
-    close_event.timestamp_ns = ++current_ts_ns_;
-    close_event.conn_id.pid = kPID;
-    close_event.conn_id.fd = kFD;
-    close_event.conn_id.generation = kPIDFDGeneration;
-    close_event.rd_seq_num = recv_seq_num_;
-    close_event.wr_seq_num = send_seq_num_;
+  socket_control_event_t InitClose() {
+    struct socket_control_event_t close_event {};
+    close_event.type = kConnClose;
+    close_event.close.timestamp_ns = ++current_ts_ns_;
+    close_event.close.conn_id.pid = kPID;
+    close_event.close.conn_id.fd = kFD;
+    close_event.close.conn_id.generation = generation_;
+    close_event.close.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
+    close_event.close.rd_seq_num = recv_seq_num_;
+    close_event.close.wr_seq_num = send_seq_num_;
     return close_event;
   }
 
+  uint32_t generation_ = 0;
   uint64_t send_seq_num_ = 0;
   uint64_t recv_seq_num_ = 0;
   uint64_t current_ts_ns_ = 0;

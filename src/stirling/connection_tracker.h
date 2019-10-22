@@ -52,16 +52,11 @@ struct SocketClose {
 class ConnectionTracker {
  public:
   /**
-   * @brief Registers a BPF connection open event into the tracker.
+   * @brief Registers a BPF connection control event into the tracker.
    *
    * @param event The data event from BPF.
    */
-  void AddConnOpenEvent(const conn_event_t& conn_info);
-
-  /**
-   * @brief Registers a BPF connection close event into the tracker.
-   */
-  void AddConnCloseEvent(const close_event_t& close_event);
+  void AddControlEvent(const socket_control_event_t& event);
 
   /**
    * @brief Registers a BPF data event into the tracker.
@@ -367,6 +362,9 @@ class ConnectionTracker {
   std::string DebugString(std::string_view prefix = "") const;
 
  private:
+  void AddConnOpenEvent(const conn_event_t& conn_info);
+  void AddConnCloseEvent(const close_event_t& close_event);
+
   template <typename TEntryType>
   std::vector<TEntryType> ProcessMessagesImpl();
   template <typename TMessageType>
