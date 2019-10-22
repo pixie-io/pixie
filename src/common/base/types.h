@@ -1,7 +1,10 @@
 #pragma once
 
+#include <deque>
+#include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace pl {
 
@@ -68,6 +71,35 @@ class ArrayView {
   iterator begin() const { return iterator(elements_); }
   iterator end() const { return iterator(elements_ + size_); }
 };
+
+/**
+ * A read-only view into an container, with std library like interface.
+ * Similar to how string_view is a view into a string.
+ */
+// TODO(oazizi): Investigate switching to std::span once we have c++20.
+template <typename T, template <typename, typename = std::allocator<T>> class TContainer>
+class ContainerView {
+ private:
+  const TContainer<T>& vec_;
+  const size_t start_;
+  const size_t size_;
+
+ public:
+  ContainerView(const TContainer<T>& vec, size_t start, size_t size)
+      : vec_(vec), start_(start), size_(size) {}
+  constexpr size_t size() const { return size_; }
+  constexpr const T& operator[](size_t i) const { return vec_[start_ + i]; }
+  typename TContainer<T>::const_iterator begin() const { return vec_.cbegin() + start_; }
+  typename TContainer<T>::const_iterator end() const { return vec_.cbegin() + (start_ + size_); }
+  const T& front() { return vec_[start_]; }
+  bool empty() { return size_ == 0; }
+};
+
+template <typename T>
+using VectorView = ContainerView<T, std::vector>;
+
+template <typename T>
+using DequeView = ContainerView<T, std::deque>;
 
 }  // namespace pl
 

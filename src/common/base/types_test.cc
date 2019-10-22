@@ -159,5 +159,43 @@ TEST(ConstVectorTest, compile_time_lookup) {
   static_assert(foo.elements.size() == foo.StringIndex(("value10")));
 }
 
+TEST(ContainerView, basics) {
+  std::vector<int> vec = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+  VectorView<int> vec_view_front(vec, 0, 5);
+  EXPECT_EQ(vec_view_front.size(), 5);
+  EXPECT_FALSE(vec_view_front.empty());
+  EXPECT_EQ(vec_view_front.front(), 0);
+  EXPECT_EQ(vec_view_front[3], 3);
+
+  VectorView<int> vec_view_mid(vec, 2, 6);
+  EXPECT_EQ(vec_view_mid.size(), 6);
+  EXPECT_FALSE(vec_view_mid.empty());
+  EXPECT_EQ(vec_view_mid.front(), 2);
+  EXPECT_EQ(vec_view_mid[3], 5);
+
+  VectorView<int> vec_view_empty(vec, 2, 0);
+  EXPECT_EQ(vec_view_empty.size(), 0);
+  EXPECT_TRUE(vec_view_empty.empty());
+  // front() and operator[] have undefined behavior, just like std::vector.
+}
+
+TEST(ContainerView, iterator) {
+  std::vector<int> vec = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+  int expected_val = 2;
+  for (const auto& val : VectorView<int>(vec, 2, 6)) {
+    EXPECT_EQ(val, expected_val);
+    ++expected_val;
+  }
+  EXPECT_EQ(expected_val, 8);
+
+  for (const auto& val : VectorView<int>(vec, 0, 0)) {
+    // Should never enter the loop.
+    EXPECT_TRUE(false);
+    (void)(val);
+  }
+}
+
 }  // namespace const_types_test
 }  // namespace pl
