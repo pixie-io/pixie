@@ -792,7 +792,8 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
 
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
               ElementsAre(expected_entry0, expected_entry1));
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre("", ""));
+  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
+              ElementsAre("", "Resultset rows = 2"));
 
   // Test execute fail after close. It should create an entry with the Error.
   std::unique_ptr<SocketDataEvent> close_req_event = InitSendEvent(mySQLStmtCloseReq);
@@ -810,7 +811,7 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
               ElementsAre(expected_entry0, expected_entry1, "", ""));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
-              ElementsAre("", "", "", "This is an error."));
+              ElementsAre("", "Resultset rows = 2", "", "This is an error."));
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {
@@ -837,9 +838,8 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
     EXPECT_EQ(1, column->Size());
   }
 
-  std::string expected_entry = "SELECT name FROM tag;";
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]), ElementsAre(expected_entry));
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre(""));
+  EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]), ElementsAre("SELECT name FROM tag;"));
+  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre("Resultset rows = 3"));
 }
 
 }  // namespace stirling

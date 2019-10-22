@@ -26,9 +26,11 @@ bool operator!=(const StmtPrepareRespHeader& lhs, const StmtPrepareRespHeader& r
   return !(lhs == rhs);
 }
 
-bool operator!=(const ColDefinition& lhs, const ColDefinition& rhs) { return lhs.msg != rhs.msg; }
+bool operator==(const ColDefinition& lhs, const ColDefinition& rhs) { return lhs.msg == rhs.msg; }
+bool operator!=(const ColDefinition& lhs, const ColDefinition& rhs) { return !(lhs == rhs); }
 
-bool operator!=(const ResultsetRow& lhs, const ResultsetRow& rhs) { return lhs.msg != rhs.msg; }
+bool operator==(const ResultsetRow& lhs, const ResultsetRow& rhs) { return lhs.msg == rhs.msg; }
+bool operator!=(const ResultsetRow& lhs, const ResultsetRow& rhs) { return !(lhs == rhs); }
 
 bool operator==(const StmtPrepareOKResponse& lhs, const StmtPrepareOKResponse& rhs) {
   if (lhs.resp_header() != rhs.resp_header()) {
@@ -74,21 +76,11 @@ bool operator==(const Resultset& lhs, const Resultset& rhs) {
   if (lhs.num_col() != rhs.num_col()) {
     return false;
   }
-  if (lhs.col_defs().size() != rhs.col_defs().size()) {
+  if (lhs.col_defs() != rhs.col_defs()) {
     return false;
   }
-  if (lhs.results().size() != rhs.results().size()) {
+  if (lhs.results() != rhs.results()) {
     return false;
-  }
-  for (size_t i = 0; i < lhs.col_defs().size(); ++i) {
-    if (lhs.col_defs()[i] != rhs.col_defs()[i]) {
-      return false;
-    }
-  }
-  for (size_t i = 0; i < lhs.results().size(); ++i) {
-    if (lhs.results()[i] != rhs.results()[i]) {
-      return false;
-    }
   }
   return true;
 }

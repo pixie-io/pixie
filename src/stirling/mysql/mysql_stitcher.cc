@@ -366,6 +366,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
     entry->resp_status = MySQLRespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   } else {
+    entry->resp_msg = absl::Substitute("Resultset rows = $0", resp->results().size());
     entry->resp_status = MySQLRespStatus::kOK;
     return ParseState::kSuccess;
   }
@@ -486,6 +487,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
     entry->resp_status = MySQLRespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   } else {
+    entry->resp_msg = absl::Substitute("Resultset rows = $0", resp->results().size());
     entry->resp_status = MySQLRespStatus::kOK;
     return ParseState::kSuccess;
   }

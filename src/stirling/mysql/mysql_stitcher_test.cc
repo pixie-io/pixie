@@ -12,7 +12,9 @@ namespace stirling {
 namespace mysql {
 
 bool operator==(const Entry& lhs, const Entry& rhs) {
-  return lhs.req_msg == rhs.req_msg && lhs.resp_status == rhs.resp_status;
+  return lhs.cmd == rhs.cmd && lhs.req_msg == rhs.req_msg &&
+         lhs.req_timestamp_ns == rhs.req_timestamp_ns && lhs.resp_status == rhs.resp_status &&
+         lhs.resp_msg == rhs.resp_msg;
 }
 
 TEST(StitcherTest, TestProcessStmtPrepareOK) {
@@ -86,7 +88,7 @@ TEST(StitcherTest, TestProcessStmtExecute) {
       "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=brown "
       "GROUP "
       "BY id ORDER BY id",
-      MySQLRespStatus::kOK, "", 0};
+      MySQLRespStatus::kOK, "Resultset rows = 2", 0};
   EXPECT_EQ(expected_resultset_entry, entry);
 }
 
@@ -122,7 +124,7 @@ TEST(StitcherTest, TestProcessQuery) {
 
   // Check resulting state and entries.
   Entry expected_resultset_entry{MySQLEventType::kQuery, "SELECT name FROM tag;",
-                                 MySQLRespStatus::kOK, "", 0};
+                                 MySQLRespStatus::kOK, "Resultset rows = 3", 0};
   EXPECT_EQ(expected_resultset_entry, entry);
 }
 
