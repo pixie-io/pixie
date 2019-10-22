@@ -131,8 +131,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
  private:
   // ReadPerfBuffer poll callback functions (must be static).
   // These are used by the static variables below, and have to be placed here.
-  static void HandleDataOutput(void* cb_cookie, void* data, int data_size);
-  static void HandleDataLoss(void* cb_cookie, uint64_t lost);
+  static void HandleDataEvent(void* cb_cookie, void* data, int data_size);
+  static void HandleDataEventsLoss(void* cb_cookie, uint64_t lost);
   static void HandleCloseProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleCloseProbeLoss(void* cb_cookie, uint64_t lost);
   static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
@@ -180,8 +180,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   static constexpr PerfBufferSpec kPerfBufferSpecsArray[] = {
       // For data events. The order must be consistent with output tables.
-      {"socket_data_events", &SocketTraceConnector::HandleDataOutput,
-       &SocketTraceConnector::HandleDataLoss},
+      {"socket_data_events", &SocketTraceConnector::HandleDataEvent,
+       &SocketTraceConnector::HandleDataEventsLoss},
       // For non-data events. Must not mix with the above perf buffers for data events.
       {"socket_open_conns", &SocketTraceConnector::HandleOpenProbeOutput,
        &SocketTraceConnector::HandleOpenProbeLoss},

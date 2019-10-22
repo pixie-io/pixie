@@ -218,7 +218,7 @@ void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
   }
 }
 
-void SocketTraceConnector::HandleDataOutput(void* cb_cookie, void* data, int /*data_size*/) {
+void SocketTraceConnector::HandleDataEvent(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto data_event_ptr = std::make_unique<SocketDataEvent>(data);
@@ -234,7 +234,7 @@ std::string ProbeLossMessage(std::string_view perf_buffer_name, uint64_t lost) {
 
 }  // namespace
 
-void SocketTraceConnector::HandleDataLoss(void* /*cb_cookie*/, uint64_t lost) {
+void SocketTraceConnector::HandleDataEventsLoss(void* /*cb_cookie*/, uint64_t lost) {
   LOG(WARNING) << ProbeLossMessage("socket_data_events", lost);
 }
 
