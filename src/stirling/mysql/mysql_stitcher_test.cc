@@ -24,7 +24,7 @@ TEST(StitcherTest, TestProcessStmtPrepareOK) {
   int stmt_id = testutils::kStmtPrepareResponse.resp_header().stmt_id;
   std::deque<Packet> ok_resp_packets =
       testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
-  State state{std::map<int, PreparedStatement>(), FlagStatus::kUnknown};
+  State state{std::map<int, PreparedStatement>()};
 
   // Run function-under-test.
   Entry entry;
@@ -49,7 +49,7 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
   std::deque<Packet> err_resp_packets;
   ErrResponse expected_response(1096, "This is an error.");
   err_resp_packets.emplace_back(testutils::GenErr(/* seq_id */ 1, expected_response));
-  State state{std::map<int, PreparedStatement>(), FlagStatus::kUnknown};
+  State state{std::map<int, PreparedStatement>()};
 
   // Run function-under-test.
   Entry entry;
@@ -71,7 +71,7 @@ TEST(StitcherTest, TestProcessStmtExecute) {
   Packet req = testutils::GenStmtExecuteRequest(testutils::kStmtExecuteRequest);
   int stmt_id = testutils::kStmtExecuteRequest.stmt_id();
   std::deque<Packet> resultset = testutils::GenResultset(testutils::kStmtExecuteResultset);
-  State state{std::map<int, PreparedStatement>(), FlagStatus::kUnknown};
+  State state{std::map<int, PreparedStatement>()};
   state.prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
 
   // Run function-under-test.
@@ -97,7 +97,7 @@ TEST(StitcherTest, TestProcessStmtClose) {
   Packet req = testutils::GenStmtCloseRequest(testutils::kStmtCloseRequest);
   int stmt_id = testutils::kStmtCloseRequest.stmt_id();
   std::deque<Packet> resp_packets = {};
-  State state{std::map<int, PreparedStatement>(), FlagStatus::kUnknown};
+  State state{std::map<int, PreparedStatement>()};
   state.prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
 
   // Run function-under-test.
@@ -169,7 +169,7 @@ TEST(SyncTest, OldResponses) {
   responses.push_front(resp0);
 
   int stmt_id = testutils::kStmtExecuteRequest.stmt_id();
-  State state{std::map<int, PreparedStatement>(), FlagStatus::kUnknown};
+  State state{std::map<int, PreparedStatement>()};
   state.prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
 
   std::deque<Packet> requests = {req};
