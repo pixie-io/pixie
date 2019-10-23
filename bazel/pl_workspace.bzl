@@ -99,6 +99,9 @@ def pl_workspace_setup():
 
     container_repositories()
 
+    k8s_repositories()
+    k8s_go_deps()
+
     _package_manager_setup()
     _docker_images_setup()
     _artifacts_setup()

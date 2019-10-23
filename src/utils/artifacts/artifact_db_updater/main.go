@@ -127,8 +127,8 @@ func checkVersionData(artifacts *vpb.ArtifactSet) {
 		if len(artifact.AvailableArtifacts) == 0 {
 			log.WithField("version", artifact.VersionStr).Fatal("Must have atleast one available artifact")
 		}
-		if artifact.Timestamp != nil && (artifact.Timestamp.Seconds > 0 || artifact.Timestamp.Nanos > 0) {
-			log.WithField("version", artifact.VersionStr).Fatal("Timestamp should not be specified.")
+		if artifact.Timestamp == nil || (artifact.Timestamp.Seconds == 0) {
+			log.WithField("version", artifact.VersionStr).Fatal("Timestamp should be specified.")
 		}
 	}
 }
