@@ -16,6 +16,12 @@ spec:
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555
+      # GCP does not support multiple wildcards so unfortunately we need this for each
+      # GRPC API service.
+      - path: /pl.cloudapi.ArtifactTracker/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
       - path: /*
         backend:
           serviceName: cloud-proxy-service
