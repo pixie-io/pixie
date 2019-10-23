@@ -2,18 +2,21 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
 	"github.com/spf13/viper"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/spf13/pflag"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
 
 func init() {
@@ -75,6 +78,11 @@ func getArtifactTypeFromVersionsProto(a versionspb.ArtifactType) cloudapipb.Arti
 	}
 }
 
+func getServiceCredentials(signingKey string) (string, error) {
+	claims := utils.GenerateJWTForService("API Service")
+	return utils.SignJWTClaims(claims, signingKey)
+}
+
 // GetArtifactList gets the set of artifact versions for the given artifact.
 func (a ArtifactTrackerServer) GetArtifactList(ctx context.Context, req *cloudapipb.GetArtifactListRequest) (*cloudapipb.ArtifactSet, error) {
 	atReq := &artifacttrackerpb.GetArtifactListRequest{
@@ -82,6 +90,13 @@ func (a ArtifactTrackerServer) GetArtifactList(ctx context.Context, req *cloudap
 		ArtifactName: req.ArtifactName,
 		Limit:        req.Limit,
 	}
+
+	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return nil, err
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
 
 	resp, err := a.ArtifactTrackerClient.GetArtifactList(ctx, atReq)
 	if err != nil {
@@ -116,6 +131,13 @@ func (a ArtifactTrackerServer) GetDownloadLink(ctx context.Context, req *cloudap
 		VersionStr:   req.VersionStr,
 		ArtifactType: getArtifactTypeFromCloudProto(req.ArtifactType),
 	}
+
+	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return nil, err
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
 
 	resp, err := a.ArtifactTrackerClient.GetDownloadLink(ctx, atReq)
 	if err != nil {
