@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 versions_file="$(pwd)/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 
 # Print out the versions file so we can inspect.
-jq -r . "${versions_file}"
+jq -C -r . "${versions_file}"
 
 bazel run //src/utils/artifacts/artifact_db_updater:artifact_db_updater_job > manifest.yaml
 

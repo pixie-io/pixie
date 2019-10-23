@@ -85,9 +85,12 @@ BAZEL_SRC_FILES_PATH = "//src/..."
 BAZEL_EXCEPT_CLAUSE='attr(\"tags\", \"manual\", //...)'
 BAZEL_KIND_CLAUSE='kind(\"cc_(binary|test) rule\", //... -//third_party/...)'
 BAZEL_CC_QUERY = "`bazel query '${BAZEL_KIND_CLAUSE} except ${BAZEL_EXCEPT_CLAUSE}'`"
-SRC_STASH_NAME = "${BUILD_TAG}_src"
+SRC_STASH_NAME = 'src'
 DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
 DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
+
+K8S_STAGING_CLUSTER='https://pixie-cloud-staging-cluster.internal.pixielabs.ai'
+K8S_PROD_CLUSTER='https://pixie-cloud-prod-cluster.internal.pixielabs.ai'
 
 // Sometimes docker fetches fail, so we just do a retry. This can be optimized to just
 // retry on docker failues, but not worth it now.
@@ -102,6 +105,8 @@ stashList = [];
 // Flag controlling if coverage job is enabled.
 isMasterRun =  (env.JOB_NAME == "pixielabs-master")
 isNightlyTestRegressionRun = (env.JOB_NAME == "pixielabs-master-nightly-test-regression")
+isCLIBuildRun =  env.JOB_NAME.startsWith("pixielabs-master-cli-release-build/")
+
 
 runCoverageJob = isMasterRun
 
@@ -171,15 +176,27 @@ def createBazelStash(String stashName) {
 /**
   * This function checks out the source code and wraps the builds steps.
   */
-def WithSourceCode(Closure body) {
+def WithSourceCode(String stashName = SRC_STASH_NAME, Closure body) {
   warnError('Script failed') {
     node {
       deleteDir()
-      unstash SRC_STASH_NAME
+      unstash stashName
       body()
     }
   }
 }
+
+/**
+  * This function checks out the source code and wraps the builds steps.
+  */
+def WithSourceCodeFatalError(String stashName = SRC_STASH_NAME, Closure body) {
+  node {
+    deleteDir()
+    unstash stashName
+    body()
+  }
+}
+
 
 /**
   * Our default docker step :
@@ -350,11 +367,8 @@ def postBuildActions = {
   }
 }
 
-/**
- * Checkout the source code, record git info and stash sources.
- */
-def checkoutAndInitialize() {
-  checkout scm
+
+def InitializeRepoState(String stashName = SRC_STASH_NAME) {
   sh '''
     printenv
 
@@ -374,7 +388,15 @@ def checkoutAndInitialize() {
   devDockerImageExtrasWithTag = DEV_DOCKER_IMAGE_EXTRAS + ":${properties.DOCKER_IMAGE_TAG}"
 
   // Excluding default excludes also stashes the .git folder which downstream steps need.
-  stash name: SRC_STASH_NAME, useDefaultExcludes: false
+  stash name: stashName, useDefaultExcludes: false
+}
+
+/**
+ * Checkout the source code, record git info and stash sources.
+ */
+def checkoutAndInitialize() {
+  checkout scm
+  InitializeRepoState()
 }
 
 /*****************************************************************************
@@ -648,11 +670,58 @@ def buildScriptForNightlyTestRegression = {
   }
 }
 
+def updateVersionsDB(String credsName, String clusterURL, String namespace) {
+  WithSourceCodeFatalError {
+    dockerStep('', devDockerImageExtrasWithTag) {
+      unstash "versions"
+      withKubeConfig([credentialsId: credsName,
+                    serverUrl: clusterURL, namespace: namespace]) {
+        sh './ci/update_artifact_db.sh'
+      }
+    }
+  }
+}
+
+def  buildScriptForCLIRelease = {
+  node {
+    currentBuild.result = 'SUCCESS'
+    deleteDir()
+    try {
+      stage('Checkout code') {
+        checkoutAndInitialize()
+      }
+      stage('Build & Push Artifacts') {
+        WithSourceCodeFatalError {
+          dockerStep('', devDockerImageExtrasWithTag) {
+            sh './ci/cli_build_release.sh'
+            stash name: "versions", includes: "src/utils/artifacts/artifact_db_updater/VERSIONS.json"
+          }
+        }
+      }
+      stage('Update versions database (prod)') {
+        updateVersionsDB("pixie-cloud-prod", K8S_PROD_CLUSTER, "plc")
+      }
+      stage('Update versions database (staging)') {
+        updateVersionsDB("pixie-cloud-staging", K8S_STAGING_CLUSTER, "plc-staging")
+      }
+    }
+    catch(err) {
+      currentBuild.result = 'FAILURE'
+      echo "Exception thrown:\n ${err}"
+      echo "Stacktrace:"
+      err.printStackTrace()
+    }
+
+    postBuildActions()
+  }
+}
 
 if(isNightlyTestRegressionRun) {
   // Disable retries for regression run.
   JENKINS_RETRIES=1
   buildScriptForNightlyTestRegression()
+} else if(isCLIBuildRun) {
+  buildScriptForCLIRelease()
 } else {
   buildScriptForCommits()
 }

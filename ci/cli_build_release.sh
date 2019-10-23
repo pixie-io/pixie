@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 printenv
 
 repo_path=$(pwd)
-release_tag=$($TAG_NAME | sed 's|release/cli-\(v.*\)|\1|')
+release_tag=$(echo $TAG_NAME | sed 's|release/cli-\(v.*\)|\1|')
 versions_file="$(pwd)/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 
 echo "The release tag is: ${release_tag}"
@@ -17,9 +17,14 @@ bazel build -c opt --stamp //src/utils/pixie_cli:pixie_mac
 
 bazel build -c opt --stamp //src/utils/pixie_cli:pixie
 
+mac_binary=bazel-bin/src/utils/pixie_cli/darwin_amd64_pure_stripped/pixie_mac
+linux_binary=bazel-bin/src/utils/pixie_cli/linux_amd64_stripped/pixie
+output_path="gs://pixie-prod-artifacts/cli/${release_tag}"
 
-gsutil cp bazel-bin/src/utils/pixie_cli/darwin_amd64_pure_stripped/pixie_mac \
-       "gs://pixie-prod-artifacts/cli/${release_tag}/cli_darwin_amd64"
+sha256sum ${mac_binary} > sha
+gsutil cp ${mac_binary} "${output_path}/cli_darwin_amd64"
+gsutil cp sha "${output_path}/cli_darwin_amd64.sha256"
 
-gsutil cp bazel-bin/src/utils/pixie_cli/linux_amd64_stripped/pixie \
-       "gs://pixie-prod-artifacts/cli/${release_tag}/cli_linux_amd64"
+sha256sum ${linux_binary} > sha
+gsutil cp ${linux_binary} "${output_path}/cli_linux_amd64"
+gsutil cp sha "${output_path}/cli_linux_amd64.sha256"
