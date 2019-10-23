@@ -32,31 +32,44 @@ using ::testing::StrEq;
 
 TEST(UnpackFrameTest, TestVariousCases) {
   struct TestCase {
+    std::string desc;
     std::string input;
     std::string expected_result_buf;
     ParseState expected_parse_state;
   };
 
   const std::vector<TestCase> test_cases = {
-      {std::string(8, ' '), std::string(8, ' '), ParseState::kNeedsMoreData},
-      // Non-compressed headers.
-      {std::string{"\x0\x0\x3\x1\x4\x0\x0\x0\x1"
+      {"Incomplete frame header should return kNeedsMoreData", std::string(8, ' '),
+       std::string(8, ' '), ParseState::kNeedsMoreData},
+      {"Valid HEADERS frame",
+       std::string{"\x0\x0\x3\x1\x4\x0\x0\x0\x1"
                    "a:b",
                    12},
        "", ParseState::kSuccess},
-      {std::string{"\x0\x0\x2\x1\x1\x0\x0\x0\x1", 9},
+      {"Incomplete frame body should return kNeedsMoreData",
+       std::string{"\x0\x0\x2\x1\x1\x0\x0\x0\x1", 9},
        {"\x0\x0\x2\x1\x1\x0\x0\x0\x1", 9},
        ParseState::kNeedsMoreData},
-      {std::string{"\x0\x0\x0\x1\x1\x0\x0\x0\x1", 9}, "", ParseState::kSuccess},
-      {std::string{"\x0\x0\x0\x4\x1\x0\x0\x0\x1", 9}, "", ParseState::kIgnored},
+      {"Zero-sized HEADERS frame", std::string{"\x0\x0\x0\x1\x1\x0\x0\x0\x1", 9}, "",
+       ParseState::kSuccess},
+      {"SETTINGS frame is ignored", std::string{"\x0\x0\x0\x4\x1\x0\x0\x0\x1", 9}, "",
+       ParseState::kIgnored},
+      {"DATA frame with padding but frame length is 0",
+       std::string{"\x0\x0\x0\x0\x8\x0\x0\x0\x1", 9}, "", ParseState::kInvalid},
+      {"DATA frame body smaller than padding length",
+       std::string{"\x0\x0\x1\x0\x8\x0\x0\x0\x1\x3", 10}, "", ParseState::kInvalid},
+      {"HEADERS frame with padding but frame length is 0",
+       std::string{"\x0\x0\x0\x1\x8\x0\x0\x0\x1", 9}, "", ParseState::kInvalid},
+      {"HEADERS frame body smaller than padding length",
+       std::string{"\x0\x0\x1\x1\x8\x0\x0\x0\x1\x3", 10}, "", ParseState::kInvalid},
   };
 
   for (const TestCase& c : test_cases) {
     std::string_view buf = c.input;
     Frame frame;
     ParseState s = UnpackFrame(&buf, &frame);
-    EXPECT_THAT(s, Eq(c.expected_parse_state));
-    EXPECT_THAT(std::string(buf), StrEq(c.expected_result_buf));
+    EXPECT_THAT(s, Eq(c.expected_parse_state)) << c.desc;
+    EXPECT_THAT(std::string(buf), StrEq(c.expected_result_buf)) << c.desc;
   }
 }
 

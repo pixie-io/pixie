@@ -35,55 +35,72 @@ bool IsPadded(const nghttp2_frame_hd& hd) { return hd.flags & NGHTTP2_FLAG_PADDE
 bool IsEndHeaders(const nghttp2_frame_hd& hd) { return hd.flags & NGHTTP2_FLAG_END_HEADERS; }
 bool IsEndStream(const nghttp2_frame_hd& hd) { return hd.flags & NGHTTP2_FLAG_END_STREAM; }
 
-void UnpackData(const uint8_t* buf, Frame* f) {
-  nghttp2_data& frame = f->frame.data;
-  size_t frame_body_length = frame.hd.length;
+struct Params {
+  const nghttp2_frame_hd& hd = {};
+  const uint8_t* buf = nullptr;
+  size_t frame_body_length = 0;
+  size_t pad_len = 0;
+};
 
-  DCHECK(frame.hd.type == NGHTTP2_DATA) << "Must be a DATA frame, got: " << frame.hd.type;
-
-  if (IsPadded(frame.hd)) {
-    frame.padlen = *buf;
-    ++buf;
-    DCHECK_NE(frame_body_length, 0U);
-    --frame_body_length;
+Status ProcessPadding(Params* p) {
+  if (IsPadded(p->hd)) {
+    p->pad_len = *p->buf;
+    if (p->frame_body_length == 0) {
+      return error::InvalidArgument("Frame size is 0 but is padded");
+    }
+    ++p->buf;
+    --p->frame_body_length;
   }
-
-  if (frame_body_length >= frame.padlen) {
-    f->u8payload.assign(buf, frame_body_length - frame.padlen);
-  } else {
-    LOG(DFATAL) << absl::Substitute(
-        "Pad length cannot be larger than frame body, padlen: $0 bodylen: $1", frame.padlen,
-        frame_body_length);
-    f->u8payload.clear();
-  }
+  return Status::OK();
 }
 
-void UnpackHeaders(const uint8_t* buf, Frame* f) {
-  nghttp2_headers& frame = f->frame.headers;
-  size_t frame_body_length = frame.hd.length;
+Status AssignPayload(const Params& p, Frame* f) {
+  if (p.frame_body_length < p.pad_len) {
+    return error::InvalidArgument(absl::Substitute(
+        "Frame size cannot be smaller than frame padding size, frame_size: $0 pad_size: $1",
+        p.frame_body_length, p.pad_len));
+  }
+  f->u8payload.assign(p.buf, p.frame_body_length - p.pad_len);
+  return Status::OK();
+}
 
+// https://http2.github.io/http2-spec/#DATA
+Status UnpackData(const uint8_t* buf, Frame* f) {
+  nghttp2_data& frame = f->frame.data;
+  DCHECK(frame.hd.type == NGHTTP2_DATA) << "Must be a DATA frame, got: " << frame.hd.type;
+
+  Params p{frame.hd, buf, frame.hd.length, 0};
+
+  PL_RETURN_IF_ERROR(ProcessPadding(&p));
+
+  return AssignPayload(p, f);
+}
+
+Status ProcessPrioritySetting(nghttp2_headers* frame, Params* p) {
+  nghttp2_frame_unpack_headers_payload(frame, p->buf);
+
+  const size_t offset = nghttp2_frame_headers_payload_nv_offset(frame);
+  if (p->frame_body_length < offset) {
+    return error::InvalidArgument(absl::Substitute(
+        "Frame size cannot be smaller than priority section size, frame_size: $0 prisec_size: $1",
+        p->frame_body_length, offset));
+  }
+  p->buf += offset;
+  p->frame_body_length -= offset;
+  return Status::OK();
+}
+
+Status UnpackHeaders(const uint8_t* buf, Frame* f) {
+  nghttp2_headers& frame = f->frame.headers;
   DCHECK(frame.hd.type == NGHTTP2_HEADERS) << "Must be a HEADERS frame, got: " << frame.hd.type;
 
-  if (IsPadded(frame.hd)) {
-    frame.padlen = *buf;
-    ++buf;
-    --frame_body_length;
-  }
+  Params p{frame.hd, buf, frame.hd.length, 0};
 
-  nghttp2_frame_unpack_headers_payload(&frame, buf);
+  PL_RETURN_IF_ERROR(ProcessPadding(&p));
 
-  const size_t offset = nghttp2_frame_headers_payload_nv_offset(&frame);
-  buf += offset;
-  frame_body_length -= offset;
+  PL_RETURN_IF_ERROR(ProcessPrioritySetting(&frame, &p));
 
-  if (frame_body_length >= frame.padlen) {
-    f->u8payload.assign(buf, frame_body_length - frame.padlen);
-  } else {
-    LOG(DFATAL) << absl::Substitute(
-        "Pad length cannot be larger than frame body, padlen: $0 bodylen: $1", frame.padlen,
-        frame_body_length);
-    f->u8payload.clear();
-  }
+  return AssignPayload(p, f);
 }
 
 void UnpackContinuation(const uint8_t* buf, Frame* frame) {
@@ -193,10 +210,14 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame) {
   const uint8_t type = frame->frame.hd.type;
   switch (type) {
     case NGHTTP2_DATA:
-      UnpackData(u8_buf, frame);
+      if (!UnpackData(u8_buf, frame).ok()) {
+        return ParseState::kInvalid;
+      }
       break;
     case NGHTTP2_HEADERS:
-      UnpackHeaders(u8_buf, frame);
+      if (!UnpackHeaders(u8_buf, frame).ok()) {
+        return ParseState::kInvalid;
+      }
       break;
     case NGHTTP2_CONTINUATION:
       UnpackContinuation(u8_buf, frame);
