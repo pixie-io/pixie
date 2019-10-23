@@ -61,7 +61,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 container_pull(
     name = "openresty",
     # Stretch image.
-    digest = "sha256:034c52fcefbec7f3e9aaf51b4933ed3842c317022aec184cb6453cf2f07a9c41",
+    digest = "sha256:1702786dcbb5b6b6d096f5e56b2153d8b508e62396fd4324367913b6645bb0b8",
     registry = "index.docker.io",
     repository = "openresty/openresty",
 )
