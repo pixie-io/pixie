@@ -17,16 +17,30 @@ var DeleteCmd = &cobra.Command{
 	Short: "Deletes Pixie on the current K8s cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		clobberAll, _ := cmd.Flags().GetBool("clobber")
-		deletePixie(clobberAll)
+		ns, _ := cmd.Flags().GetString("namespace")
+		deletePixie(ns, clobberAll)
 	},
 }
 
 func init() {
 	DeleteCmd.Flags().BoolP("clobber", "d", false, "Whether to delete all dependencies in the cluster")
 	viper.BindPFlag("clobber", DeleteCmd.Flags().Lookup("clobber"))
+
+	DeleteCmd.Flags().StringP("namespace", "n", "pl", "The namespace where pixie is located")
+	viper.BindPFlag("namespace", DeleteCmd.Flags().Lookup("namespace"))
 }
 
-func deletePixie(clobberAll bool) {
+func deletePixie(ns string, clobberAll bool) {
+	if clobberAll {
+		log.WithField("namespace", ns).Info("Deleting Pixie Namespace")
+		kcmd := exec.Command("kubectl", "delete", "namespace", ns)
+		if err := kcmd.Run(); err != nil {
+			log.WithError(err).Fatal("failed to delete pixie")
+		}
+		log.Info("Pixie Deleted")
+		return
+	}
+
 	// Extract yamls into tmp dir, to use for deletion.
 	dir, err := ioutil.TempDir("", "vizier_yamls")
 	if err != nil {
@@ -52,27 +66,13 @@ func deletePixie(clobberAll bool) {
 	}
 
 	log.Info("Deleting Vizier pods/services")
-	err = deleteFile(path.Join(dir, "vizier.yaml"))
+	err = deleteFile(ns, path.Join(dir, "vizier.yaml"))
 	if err != nil {
 		log.WithError(err).Error("Could not delete Vizier")
 	}
-
-	if clobberAll {
-		log.Info("Deleting NATS operator")
-		err = deleteFile(path.Join(dir, "nats.yaml"))
-		if err != nil {
-			log.WithError(err).Error("Could not delete NATS operator")
-		}
-
-		log.Info("Deleting etcd operator")
-		err = deleteFile(path.Join(dir, "etcd.yaml"))
-		if err != nil {
-			log.WithError(err).Error("Could not delete etcd operator")
-		}
-	}
 }
 
-func deleteFile(filePath string) error {
-	kcmd := exec.Command("kubectl", "delete", "-f", filePath)
+func deleteFile(ns, filePath string) error {
+	kcmd := exec.Command("kubectl", "-n", ns, "delete", "-f", filePath)
 	return kcmd.Run()
 }
