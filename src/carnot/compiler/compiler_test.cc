@@ -2588,7 +2588,7 @@ TEST_F(CompilerTest, syntax_error_test) {
   auto syntax_error_query = "From(";
   auto plan_status = compiler_.Compile(syntax_error_query, compiler_state_.get());
   ASSERT_NOT_OK(plan_status);
-  EXPECT_THAT(plan_status.status(), HasCompilerError("SyntaxError: Expected `)`"));
+  EXPECT_THAT(plan_status.status(), HasCompilerError("SyntaxError: Expected `\\)`"));
 }
 
 TEST_F(CompilerTest, indentation_error_test) {

@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <fstream>
 #include <memory>
+#include <regex>
 #include <string>
 
 #include <pypa/ast/tree_walker.hh>
@@ -66,8 +67,8 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
 }
 
 struct CompilerErrorMatcher {
-  explicit CompilerErrorMatcher(std::string text_pb)
-      : expected_compiler_error_(std::move(text_pb)) {}
+  explicit CompilerErrorMatcher(std::string expected_compiler_error)
+      : expected_compiler_error_(std::move(expected_compiler_error)) {}
 
   bool MatchAndExplain(const Status& status, ::testing::MatchResultListener* listener) const {
     if (status.ok()) {
@@ -93,15 +94,17 @@ struct CompilerErrorMatcher {
     }
 
     std::vector<std::string> error_messages;
+    std::regex re(expected_compiler_error_);
     for (int64_t i = 0; i < error_group.errors_size(); i++) {
       auto error = error_group.errors(i).line_col_error();
       std::string msg = error.message();
-      if (msg == expected_compiler_error_) {
+      std::smatch match;
+      if (std::regex_search(msg, match, re)) {
         return true;
       }
       error_messages.push_back(msg);
     }
-    (*listener) << absl::Substitute("Expected compiler error '$0' not found. Have '$1'",
+    (*listener) << absl::Substitute("Regex '$0' not matched in compiler errors: '$1'",
                                     expected_compiler_error_, absl::StrJoin(error_messages, ","));
     return false;
   }

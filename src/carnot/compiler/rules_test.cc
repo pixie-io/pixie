@@ -418,8 +418,7 @@ TEST_F(SourceRelationTest, missing_table_name) {
   SourceRelationRule source_relation_rule(compiler_state_.get());
   auto result = source_relation_rule.Execute(graph.get());
   EXPECT_NOT_OK(result);
-  std::string error_string = absl::Substitute("Table '$0' not found.", table_name);
-  EXPECT_THAT(result.status(), HasCompilerError(error_string));
+  EXPECT_THAT(result.status(), HasCompilerError("Table '$0' not found.", table_name));
 }
 
 TEST_F(SourceRelationTest, missing_columns) {
@@ -447,8 +446,8 @@ TEST_F(SourceRelationTest, missing_columns) {
   EXPECT_NOT_OK(result);
   VLOG(1) << result.status().ToString();
 
-  std::string error_string = absl::Substitute("Columns {$0} are missing in table.", missing_column);
-  EXPECT_THAT(result.status(), HasCompilerError(error_string));
+  EXPECT_THAT(result.status(),
+              HasCompilerError("Columns \\{$0\\} are missing in table.", missing_column));
 }
 
 class BlockingAggRuleTest : public RulesTest {
@@ -675,11 +674,12 @@ TEST_F(UnionRelationTest, union_relations_disagree) {
   EXPECT_THAT(
       result.status(),
       HasCompilerError(
-          "Table schema disagreement between parent ops MemorySource(id=$0) and "
-          "MemorySource(id=$1) "
-          "of Union(id=$2). MemorySource(id=$0): [count:int64, cpu0:float64, cpu1:float64, "
-          "cpu2:float64] vs MemorySource(id=$1): [count:int64, cpu0:float64]. Column count wrong.",
-          mem_src1->id(), mem_src2->id(), union_op->id()));
+          "Table schema disagreement between parent ops MemorySource\\(id=[0-9]*\\) and "
+          "MemorySource\\(id=[0-9]*\\) "
+          "of Union\\(id=[0-9]*\\). MemorySource\\(id=[0-9]*\\): \\[count:int64, cpu0:float64, "
+          "cpu1:float64, "
+          "cpu2:float64\\] vs MemorySource\\(id=[0-9]*\\): \\[count:int64, cpu0:float64\\]. "
+          "Column count wrong."));
 }
 
 TEST_F(UnionRelationTest, union_relation_different_order) {
@@ -1262,8 +1262,9 @@ TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
   auto status = rule.Execute(graph.get());
 
   EXPECT_NOT_OK(status);
-  EXPECT_THAT(status.status(), HasCompilerError("Function \'pl.equals\' with metadata arg in "
-                                                "conjunction with \'[Int]\' is not supported."));
+  EXPECT_THAT(status.status(),
+              HasCompilerError("Function \'pl.equals\' with metadata arg in "
+                               "conjunction with \'\\[Int\\]\' is not supported."));
 }
 
 TEST_F(FormatMetadataTest, only_equal_supported) {
@@ -1276,8 +1277,9 @@ TEST_F(FormatMetadataTest, only_equal_supported) {
   auto status = rule.Execute(graph.get());
 
   EXPECT_NOT_OK(status);
-  EXPECT_THAT(status.status(), HasCompilerError("Function \'pl.add\' with metadata arg in "
-                                                "conjunction with \'[String]\' is not supported."));
+  EXPECT_THAT(status.status(),
+              HasCompilerError("Function \'pl.add\' with metadata arg in "
+                               "conjunction with \'\\[String\\]\' is not supported."));
 }
 
 class CheckRelationRule : public RulesTest {
@@ -1539,7 +1541,7 @@ TEST_F(MetadataResolverConversionTest, missing_conversion_column) {
               HasCompilerError(
                   "Can\'t resolve metadata because of lack of converting columns in the parent. "
                   "Need one of "
-                  "[upid]. Parent relation has columns [count,cpu0,cpu1,cpu2] available."));
+                  "\\[upid\\]. Parent relation has columns \\[count,cpu0,cpu1,cpu2\\] available."));
 }
 
 // When the parent relation has multiple columns that can be converted into

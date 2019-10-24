@@ -795,11 +795,9 @@ TEST_F(AnalyzerTest, metadata_fails_no_upid) {
   auto ir_graph_status = CompileGraph(valid_query);
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  EXPECT_THAT(
-      HandleRelation(ir_graph),
-      HasCompilerError("Can't resolve metadata because of lack of converting columns in the "
-                       "parent. Need one of [upid,_attr_service_id]. Parent relation has "
-                       "columns [cpu0] available."));
+  EXPECT_THAT(HandleRelation(ir_graph),
+              HasCompilerError(".*Need one of \\[upid.*?. Parent relation has "
+                               "columns \\[cpu0\\] available."));
 }
 
 TEST_F(AnalyzerTest, define_column_metadata) {
@@ -1111,11 +1109,9 @@ TEST_F(AnalyzerTest, join_equal_condition_expression) {
   auto analyzer_status = HandleRelation(ir_graph);
   ASSERT_NOT_OK(analyzer_status);
   VLOG(1) << analyzer_status.ToString();
-  EXPECT_THAT(
-      analyzer_status,
-      HasCompilerError(
-          "Expression pl.equal(Func,Column) not supported as a condition in the Join. Only "
-          "equality of columns and the AND compositions of equality expressions are supported."));
+  EXPECT_THAT(analyzer_status,
+              HasCompilerError(
+                  "Expression pl.equal\\(Func,Column\\) not supported as a condition in the Join"));
 }
 const char* kJoinMissingParentColumnOutCols = R"query(
 src1 = From(table='cpu', select=['upid', 'cpu0','cpu1', 'agent_id'])
@@ -1141,7 +1137,7 @@ TEST_F(AnalyzerTest, join_missing_parent_column_output_cols) {
   ASSERT_NOT_OK(analyzer_status);
   LOG(INFO) << analyzer_status.ToString();
   EXPECT_THAT(analyzer_status,
-              HasCompilerError("Column 'thiscoldoesnotexist' not found in relation of Map(id=14)"));
+              HasCompilerError("Column 'thiscoldoesnotexist' not found in relation of Map."));
 }
 
 }  // namespace compiler

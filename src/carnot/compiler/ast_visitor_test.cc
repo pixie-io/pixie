@@ -787,9 +787,10 @@ TEST(JoinTest, test_right_join) {
 TEST(JoinTest, bad_join_type) {
   auto ir_graph_status = ParseQuery(absl::Substitute(kJoinQueryTpl, "nothin"));
   ASSERT_NOT_OK(ir_graph_status);
-  EXPECT_THAT(ir_graph_status.status(),
-              HasCompilerError("'nothin' join type not supported. Only {inner,left,right,outer} "
-                               "are available join types."));
+  EXPECT_THAT(
+      ir_graph_status.status(),
+      HasCompilerError("'nothin' join type not supported. Only \\{inner,left,right,outer\\} "
+                       "are available join types."));
 }
 
 }  // namespace compiler
