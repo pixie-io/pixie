@@ -1,10 +1,12 @@
+import './vizier.scss';
+
 import { ContentBox } from 'components/content-box/content-box';
 import { AutoSizedScrollableTable } from 'components/table/scrollable-table';
 import { distanceInWords, subSeconds } from 'date-fns';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import { Query } from 'react-apollo';
-import './vizier.scss';
+import { pluralize } from 'utils/pluralize';
 
 export const GET_AGENTS = gql`
 {
@@ -56,13 +58,7 @@ const agentTableCols = [{
 }];
 
 const agentString = (agentCount: number) => {
-  let s = `${agentCount} agents available`;
-  if (agentCount === 1) {
-    s = `1 agent available`;
-  } else if (agentCount === 0) {
-    s = `0 agents available`;
-  }
-  return s;
+  return `${agentCount} ${pluralize('agent', agentCount)} available`;
 };
 
 export class AgentDisplay extends React.Component {

@@ -1,11 +1,13 @@
-import {ContentBox} from 'components/content-box/content-box';
-import {mount} from 'enzyme';
+import { ContentBox } from 'components/content-box/content-box';
+import { mount } from 'enzyme';
 import * as React from 'react';
 import { MockedProvider } from 'react-apollo/test-utils';
-import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
+import { Button, Dropdown, DropdownButton } from 'react-bootstrap';
 import * as CodeMirror from 'react-codemirror';
 import { HotKeys } from 'react-hotkeys';
-import {EXECUTE_QUERY, GET_AGENT_IDS, QueryManager} from './query-manager';
+import { MemoryRouter } from 'react-router-dom';
+
+import { EXECUTE_QUERY, GET_AGENT_IDS, QueryManager } from './query-manager';
 
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -15,9 +17,11 @@ jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
 describe('<QueryManager/> test', () => {
   it('should update code upon dropdown selection', () => {
     const wrapper = mount(
-      <MockedProvider addTypename={false}>
-        <QueryManager/>
-      </MockedProvider>,
+      <MemoryRouter>
+        <MockedProvider addTypename={false}>
+          <QueryManager />
+        </MockedProvider>
+      </MemoryRouter>,
     );
     const dropdown = wrapper.find(DropdownButton).find('button').at(0);
     dropdown.simulate('click');
@@ -49,9 +53,11 @@ describe('<QueryManager/> test', () => {
     ];
 
     const wrapper = mount(
-      <MockedProvider mocks={mocks} addTypename={false}>
-        <QueryManager/>
-      </MockedProvider>,
+      <MemoryRouter>
+        <MockedProvider mocks={mocks} addTypename={false}>
+          <QueryManager />
+        </MockedProvider>
+      </MemoryRouter>,
     );
     await wait(0);
     wrapper.update();
@@ -62,7 +68,7 @@ describe('<QueryManager/> test', () => {
   it('should pass correct headers into results box when no data', async () => {
     const wrapper = mount(
       <MockedProvider addTypename={false}>
-        <QueryManager/>
+        <QueryManager />
       </MockedProvider>,
     );
 
@@ -100,7 +106,7 @@ describe('<QueryManager/> test', () => {
 
     const wrapper = mount(
       <MockedProvider mocks={mocks} addTypename={false}>
-        <QueryManager/>
+        <QueryManager />
       </MockedProvider>,
     );
 
@@ -143,7 +149,7 @@ describe('<QueryManager/> test', () => {
 
     const wrapper = mount(
       <MockedProvider mocks={mocks} addTypename={false}>
-        <QueryManager/>
+        <QueryManager />
       </MockedProvider>,
     );
 
@@ -167,11 +173,11 @@ describe('<QueryManager/> test', () => {
         result: {
           loading: true,
         },
-    }];
+      }];
 
     const wrapper = mount(
       <MockedProvider mocks={mocks} addTypename={false}>
-        <QueryManager/>
+        <QueryManager />
       </MockedProvider>,
     );
 
@@ -197,7 +203,7 @@ describe('<QueryManager/> test', () => {
               error: {
                 compilerError: {
                   msg: '',
-                  lineColErrors: [{line: 1, col: 1, msg: 'blah'}, {line: 2, col: 2, msg: 'blahblah'}],
+                  lineColErrors: [{ line: 1, col: 1, msg: 'blah' }, { line: 2, col: 2, msg: 'blahblah' }],
                 },
               },
             },
@@ -208,7 +214,7 @@ describe('<QueryManager/> test', () => {
 
     const wrapper = mount(
       <MockedProvider mocks={mocks} addTypename={false}>
-        <QueryManager/>
+        <QueryManager />
       </MockedProvider>,
     );
 

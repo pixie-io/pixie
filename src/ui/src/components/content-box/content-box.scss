@@ -38,6 +38,10 @@
   font-family: monospace;
   color: $secondary;
   opacity: 0.65;
+
+  a, a:hover {
+    color: inherit;
+  }
 }
 
 .content-box--content {
@@ -45,14 +49,6 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-}
-
-.content-box--header a {
-  color: $light;
-}
-
-.content-box--header a:hover {
-  color: $lighter;
 }
 
 .content-box--resizer {

@@ -4,23 +4,25 @@ import 'codemirror/mode/python/python';
 import 'codemirror/theme/monokai.css';
 
 import { OperationVariables } from 'apollo-client';
-import {ContentBox} from 'components/content-box/content-box';
+import { ContentBox } from 'components/content-box/content-box';
 import gql from 'graphql-tag';
-import * as React from 'react';
-import {Mutation, MutationFn, Query} from 'react-apollo';
-import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
-import * as CodeMirror from 'react-codemirror';
-import { HotKeys } from 'react-hotkeys';
-import * as toml from 'toml';
-import * as ResultDataUtils from 'utils/result-data-utils';
-// @ts-ignore : TS does not seem to like this import.
-import * as PresetQueries from './preset-queries.toml';
-import {QueryResultViewer} from './query-result-viewer';
-
 // @ts-ignore : TS does not like image files.
 import * as loadingSvg from 'images/icons/Loading.svg';
+import * as React from 'react';
+import { Mutation, MutationFn, Query } from 'react-apollo';
+import { Button, Dropdown, DropdownButton } from 'react-bootstrap';
+import * as CodeMirror from 'react-codemirror';
+import { HotKeys } from 'react-hotkeys';
+import { Link } from 'react-router-dom';
+import * as toml from 'toml';
+import { pluralize } from 'utils/pluralize';
+import * as ResultDataUtils from 'utils/result-data-utils';
+
 // TODO(zasgar/michelle): Figure out how to impor schema properly
-import {GQLQueryResult} from '../../../../vizier/services/api/controller/schema/schema';
+import { GQLQueryResult } from '../../../../vizier/services/api/controller/schema/schema';
+// @ts-ignore : TS does not seem to like this import.
+import * as PresetQueries from './preset-queries.toml';
+import { QueryResultViewer } from './query-result-viewer';
 
 const HOT_KEY_MAP = {
   EXECUTE_QUERY: ['ctrl+enter', 'command+enter'],
@@ -85,25 +87,16 @@ const PRESET_QUERIES = toml.parse(PresetQueries).queries;
 
 // This component displays the number of agents available to query.
 const AgentCountDisplay = () => (
-  <Query context={{clientName: 'vizier'}} query={GET_AGENT_IDS} pollInterval={1000}>
-  {({ loading, error, data }) => {
-    if (loading) { return 'Loading...'; }
-    if (error) { return `Error! ${error.message}`; }
+  <Query context={{ clientName: 'vizier' }} query={GET_AGENT_IDS} pollInterval={1000}>
+    {({ loading, error, data }) => {
+      if (loading) { return 'Loading...'; }
+      if (error) { return `Error! ${error.message}`; }
 
-    const agentCount = data.vizier.agents.length;
-    let s = `${agentCount} agents available`;
-    if (agentCount === 1) {
-      s = `1 agent available`;
-    } else if (agentCount === 0) {
-      s = `0 agents available`;
-    }
+      const agentCount = data.vizier.agents.length;
+      const s = `${agentCount} ${pluralize('agent', agentCount)} available`;
 
-    return (
-        <div>
-          {s}
-        </div>
-    );
-  }}
+      return <Link to='/vizier/agents'>{s}</Link>;
+    }}
   </Query>
 );
 
@@ -134,7 +127,7 @@ const QueryInfo = (props: QueryInfoProps) => {
                 const download = document.createElement('a');
                 download.setAttribute('type', 'hidden');
                 const blob = new Blob([ResultDataUtils.ResultsToCsv(props.data.ExecuteQuery.table.data)],
-                  {type: 'octet/stream'});
+                  { type: 'octet/stream' });
                 const url = window.URL.createObjectURL(blob);
                 download.setAttribute('href', url);
                 download.setAttribute('download', String(props.data.ExecuteQuery.id) + '.csv');
@@ -201,9 +194,11 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
     };
 
     const executeQueryClickHandler = (mutationFn: MutationFn<any, OperationVariables>) => {
-      mutationFn({variables: {
-        queryStr: this.state.code,
-      }}).catch((err) => err);
+      mutationFn({
+        variables: {
+          queryStr: this.state.code,
+        },
+      }).catch((err) => err);
     };
 
     const setQuery = (eventKey, event) => {
@@ -217,7 +212,7 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
       }
     };
     return (
-      <Mutation context={{clientName: 'vizier'}} mutation={EXECUTE_QUERY}>
+      <Mutation context={{ clientName: 'vizier' }} mutation={EXECUTE_QUERY}>
         {(executeQuery, { loading, error, data }) => (
           <HotKeys
             className='hotkey-container'
@@ -232,38 +227,42 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
                   headerText='Enter Query'
                   initialHeight={250}
                   resizable={true}
-                  secondaryText={<AgentCountDisplay/>}
+                  secondaryText={<AgentCountDisplay />}
                 >
-                <DropdownButton
-                  id='query-dropdown'
-                  title='Select a query template to start with'
-                >
-                  {
-                    PRESET_QUERIES.map((query, idx) => {
-                      return <Dropdown.Item
-                        key={idx}
-                        eventKey={idx}
-                        onSelect={setQuery.bind(this)}
-                      >
-                        {query[0]}
-                      </Dropdown.Item>;
-                    })
-                  }
-                </DropdownButton>
-                <div className='code-editor'>
-                  { this.renderCodeEditor(() => executeQueryClickHandler(executeQuery)) }
-                </div>
-                <div className='query-executor--footer'>
-                  <div className='spacer'/>
-                  <Button id='execute-button' variant='primary' onClick={() => executeQueryClickHandler(executeQuery)}>
-                    Execute
-                  </Button>
-                </div>
+                  <DropdownButton
+                    id='query-dropdown'
+                    title='Select a query template to start with'
+                  >
+                    {
+                      PRESET_QUERIES.map((query, idx) => {
+                        return <Dropdown.Item
+                          key={idx}
+                          eventKey={idx}
+                          onSelect={setQuery.bind(this)}
+                        >
+                          {query[0]}
+                        </Dropdown.Item>;
+                      })
+                    }
+                  </DropdownButton>
+                  <div className='code-editor'>
+                    {this.renderCodeEditor(() => executeQueryClickHandler(executeQuery))}
+                  </div>
+                  <div className='query-executor--footer'>
+                    <div className='spacer' />
+                    <Button
+                      id='execute-button'
+                      variant='primary'
+                      onClick={() => executeQueryClickHandler(executeQuery)}
+                    >
+                      Execute
+                    </Button>
+                  </div>
                 </ContentBox>
               </div>
               <ContentBox
                 headerText={'Results'}
-                subheaderText={data ? <QueryInfo data={data}/> : ''}
+                subheaderText={data ? <QueryInfo data={data} /> : ''}
               >
                 <ResultDisplay
                   data={data}
@@ -273,8 +272,8 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
               </ContentBox>
             </div>
           </HotKeys>
-      )}
-    </Mutation>
+        )}
+      </Mutation>
     );
   }
 }
