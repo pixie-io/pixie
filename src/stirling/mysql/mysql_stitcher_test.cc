@@ -12,9 +12,9 @@ namespace stirling {
 namespace mysql {
 
 bool operator==(const Entry& lhs, const Entry& rhs) {
-  return lhs.cmd == rhs.cmd && lhs.req_msg == rhs.req_msg &&
-         lhs.req_timestamp_ns == rhs.req_timestamp_ns && lhs.resp_status == rhs.resp_status &&
-         lhs.resp_msg == rhs.resp_msg;
+  return lhs.req.cmd == rhs.req.cmd && lhs.req.msg == rhs.req.msg &&
+         lhs.req.timestamp_ns == rhs.req.timestamp_ns && lhs.resp.status == rhs.resp.status &&
+         lhs.resp.msg == rhs.resp.msg && lhs.resp.timestamp_ns == rhs.resp.timestamp_ns;
 }
 
 TEST(StitcherTest, TestProcessStmtPrepareOK) {
@@ -34,8 +34,8 @@ TEST(StitcherTest, TestProcessStmtPrepareOK) {
   // Check resulting state and entries.
   auto iter = state.prepared_statements.find(testdata::kStmtID);
   EXPECT_TRUE(iter != state.prepared_statements.end());
-  Entry expected_entry{MySQLEventType::kStmtPrepare, testdata::kStmtPrepareRequest.msg,
-                       MySQLRespStatus::kOK, "", 0};
+  Entry expected_entry{.req = {MySQLEventType::kStmtPrepare, testdata::kStmtPrepareRequest.msg, 0},
+                       .resp = {MySQLRespStatus::kOK, "", 0}};
   EXPECT_EQ(expected_entry, entry);
 }
 
@@ -57,8 +57,9 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
   // Check resulting state and entries.
   auto iter = state.prepared_statements.find(testdata::kStmtID);
   EXPECT_EQ(iter, state.prepared_statements.end());
-  Entry expected_err_entry{MySQLEventType::kStmtPrepare, testdata::kStmtPrepareRequest.msg,
-                           MySQLRespStatus::kErr, "This is an error.", 0};
+  Entry expected_err_entry{
+      .req = {MySQLEventType::kStmtPrepare, testdata::kStmtPrepareRequest.msg, 0},
+      .resp = {MySQLRespStatus::kErr, "This is an error.", 0}};
   EXPECT_EQ(expected_err_entry, entry);
 }
 
@@ -77,13 +78,15 @@ TEST(StitcherTest, TestProcessStmtExecute) {
 
   // Check resulting state and entries.
   Entry expected_resultset_entry{
-      MySQLEventType::kStmtExecute,
-      "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
-      "JOIN sock_tag ON "
-      "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=brown "
-      "GROUP "
-      "BY id ORDER BY id",
-      MySQLRespStatus::kOK, "Resultset rows = 2", 0};
+      .req = {MySQLEventType::kStmtExecute,
+              "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
+              "JOIN sock_tag ON "
+              "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE "
+              "tag.name=brown "
+              "GROUP "
+              "BY id ORDER BY id",
+              0},
+      .resp = {MySQLRespStatus::kOK, "Resultset rows = 2", 0}};
   EXPECT_EQ(expected_resultset_entry, entry);
 }
 
@@ -101,7 +104,8 @@ TEST(StitcherTest, TestProcessStmtClose) {
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check the resulting entries and state.
-  Entry expected_entry{MySQLEventType::kStmtClose, "", MySQLRespStatus::kOK, "", 0};
+  Entry expected_entry{.req = {MySQLEventType::kStmtClose, "", 0},
+                       .resp = {MySQLRespStatus::kOK, "", 0}};
   EXPECT_EQ(expected_entry, entry);
 }
 
@@ -117,8 +121,8 @@ TEST(StitcherTest, TestProcessQuery) {
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
-  Entry expected_resultset_entry{MySQLEventType::kQuery, "SELECT name FROM tag;",
-                                 MySQLRespStatus::kOK, "Resultset rows = 3", 0};
+  Entry expected_resultset_entry{.req = {MySQLEventType::kQuery, "SELECT name FROM tag;", 0},
+                                 .resp = {MySQLRespStatus::kOK, "Resultset rows = 3", 0}};
   EXPECT_EQ(expected_resultset_entry, entry);
 }
 
@@ -135,7 +139,8 @@ TEST(StitcherTest, ProcessRequestWithBasicResponse) {
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
-  Entry expected_entry{MySQLEventType::kPing, "", MySQLRespStatus::kOK, "", 0};
+  Entry expected_entry{.req = {MySQLEventType::kPing, "", 0},
+                       .resp = {MySQLRespStatus::kOK, "", 0}};
   EXPECT_EQ(expected_entry, entry);
 }
 

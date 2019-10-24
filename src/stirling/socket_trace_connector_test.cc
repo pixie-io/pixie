@@ -28,6 +28,7 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
     testing::EventsFixture::SetUp();
 
     // Create and configure the connector.
+    FLAGS_stirling_enable_http_tracing = true;
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
     ASSERT_NE(nullptr, source_);

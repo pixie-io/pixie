@@ -246,7 +246,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
   //----------------
 
   if (resp_packets.empty()) {
-    entry->resp_status = MySQLRespStatus::kUnknown;
+    entry->resp.status = MySQLRespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
@@ -308,7 +308,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   //----------------
 
   if (resp_packets.empty()) {
-    entry->resp_status = MySQLRespStatus::kUnknown;
+    entry->resp.status = MySQLRespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
@@ -365,7 +365,9 @@ StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet
         static_cast<uint8_t>(req_packet.msg[0]), resp_packets.size());
   }
 
-  entry->resp_status = MySQLRespStatus::kOK;
+  entry->resp.status = MySQLRespStatus::kOK;
+  // Use request as the timestamp because a close has no response. Latency is 0.
+  entry->resp.timestamp_ns = req_packet.timestamp_ns;
   return ParseState::kSuccess;
 }
 
@@ -384,7 +386,7 @@ StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet,
   // Response
   //----------------
 
-  entry->resp_status = MySQLRespStatus::kUnknown;
+  entry->resp.status = MySQLRespStatus::kUnknown;
   return error::Unimplemented("COM_STMT_FETCH response is unhandled.");
 }
 
@@ -413,7 +415,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   //----------------
 
   if (resp_packets.empty()) {
-    entry->resp_status = MySQLRespStatus::kUnknown;
+    entry->resp.status = MySQLRespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
@@ -462,7 +464,7 @@ StatusOr<ParseState> ProcessFieldList(const Packet& req_packet,
   // Response
   //----------------
 
-  entry->resp_status = MySQLRespStatus::kUnknown;
+  entry->resp.status = MySQLRespStatus::kUnknown;
   return error::Unimplemented("COM_FIELD_LIST response is unhandled.");
 }
 
@@ -489,7 +491,7 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
   //----------------
 
   if (resp_packets.empty()) {
-    entry->resp_status = MySQLRespStatus::kUnknown;
+    entry->resp.status = MySQLRespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
@@ -503,7 +505,8 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
   const Packet& resp_packet = resp_packets.front();
 
   if (IsOKPacket(resp_packet) || IsEOFPacket(resp_packet)) {
-    entry->resp_status = MySQLRespStatus::kOK;
+    entry->resp.status = MySQLRespStatus::kOK;
+    entry->resp.timestamp_ns = resp_packet.timestamp_ns;
     return ParseState::kSuccess;
   }
 
@@ -512,7 +515,7 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
     return ParseState::kSuccess;
   }
 
-  entry->resp_status = MySQLRespStatus::kUnknown;
+  entry->resp.status = MySQLRespStatus::kUnknown;
   return error::Internal("Unexpected packet");
 }
 

@@ -264,23 +264,31 @@ struct State {
  */
 enum class MySQLRespStatus { kUnknown, kOK, kErr };
 
-struct Entry {
+struct EntryRequest {
   // MySQL command. See MySQLEventType.
   MySQLEventType cmd;
 
-  // The body of the request, if the request is a request with a string parameter. Otherwise empty
-  // for now.
-  std::string req_msg;
-
-  // MySQL response status: OK, ERR or Unknown.
-  MySQLRespStatus resp_status;
-
-  // Any relevant response message. Currently used to return error messages. Otherwise empty for
-  // now.
-  std::string resp_msg;
+  // The body of the request, if request has a single string parameter. Otherwise empty for now.
+  std::string msg;
 
   // Timestamp of the entry is considered to be the timestamp of the request packet.
-  uint64_t req_timestamp_ns;
+  uint64_t timestamp_ns;
+};
+
+struct EntryResponse {
+  // MySQL response status: OK, ERR or Unknown.
+  MySQLRespStatus status;
+
+  // Any relevant response message.
+  std::string msg;
+
+  // Timestamp of the entry is considered to be the timestamp of the request packet.
+  uint64_t timestamp_ns;
+};
+
+struct Entry {
+  EntryRequest req;
+  EntryResponse resp;
 };
 
 //-----------------------------------------------------------------------------
