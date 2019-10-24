@@ -107,37 +107,43 @@ void DissectUnknownParam(const std::string_view msg, int* param_offset, ParamPac
 // Message Level Functions
 //-----------------------------------------------------------------------------
 
-std::unique_ptr<ErrResponse> HandleErrMessage(DequeView<Packet> resp_packets) {
+void HandleErrMessage(DequeView<Packet> resp_packets, Entry* entry) {
   DCHECK(!resp_packets.empty());
   const Packet& packet = resp_packets.front();
-  int error_code = utils::LEStrToInt(packet.msg.substr(1, 2));
+
   // TODO(chengruizhe): Assuming CLIENT_PROTOCOL_41 here. Make it more robust.
   // "\xff" + error_code[2] + sql_state_marker[1] + sql_state[5] (CLIENT_PROTOCOL_41) = 9
   // https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html
-  std::string err_message = packet.msg.substr(9);
+  entry->resp_msg = packet.msg.substr(9);
 
-  return std::make_unique<ErrResponse>(error_code, std::move(err_message));
+  int error_code = utils::LEStrToInt(packet.msg.substr(1, 2));
+  // TODO(oazizi): Add error code into resp msg.
+  PL_UNUSED(error_code);
+
+  entry->resp_status = MySQLRespStatus::kErr;
 }
 
-std::unique_ptr<OKResponse> HandleOKMessage(DequeView<Packet> resp_packets) {
+void HandleOKMessage(DequeView<Packet> resp_packets, Entry* entry) {
   DCHECK(!resp_packets.empty());
-  return std::make_unique<OKResponse>();
+  entry->resp_status = MySQLRespStatus::kOK;
 }
 
-#define RETURN_NEEDS_MORE_DATA_IF_END(type, iter, resp_packets) \
-  if (iter == resp_packets.end()) {                             \
-    return std::unique_ptr<type>(nullptr);                      \
+#define RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets) \
+  if (iter == resp_packets.end()) {                       \
+    entry->resp_status = MySQLRespStatus::kUnknown;       \
+    return ParseState::kNeedsMoreData;                    \
   }
 
-StatusOr<std::unique_ptr<Resultset>> HandleResultsetResponse(DequeView<Packet> resp_packets) {
+StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Entry* entry) {
   auto iter = resp_packets.begin();
 
   VLOG(3) << absl::Substitute("HandleResultsetResponse with $0 packets", resp_packets.size());
 
   // Process header packet.
-  RETURN_NEEDS_MORE_DATA_IF_END(Resultset, iter, resp_packets);
+  RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
   const Packet& first_resp_packet = *iter;
   if (!IsLengthEncodedIntPacket(first_resp_packet)) {
+    entry->resp_status = MySQLRespStatus::kUnknown;
     return error::Internal("First packet should be length-encoded integer.");
   }
 
@@ -157,7 +163,8 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultsetResponse(DequeView<Packet> r
   //  1             OK or EOF packet
   // Must have at least the minimum number of packets in a response.
   if (resp_packets.size() < static_cast<size_t>(3 + num_col)) {
-    return std::unique_ptr<Resultset>(nullptr);
+    entry->resp_status = MySQLRespStatus::kUnknown;
+    return ParseState::kNeedsMoreData;
   }
 
   // Go to next packet.
@@ -165,9 +172,10 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultsetResponse(DequeView<Packet> r
 
   std::vector<ColDefinition> col_defs;
   for (int i = 0; i < num_col; ++i) {
-    RETURN_NEEDS_MORE_DATA_IF_END(Resultset, iter, resp_packets);
+    RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
 
     if (!IsColumnDefPacket(*iter)) {
+      entry->resp_status = MySQLRespStatus::kUnknown;
       return error::Internal("Expected column definition packet");
     }
 
@@ -179,7 +187,7 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultsetResponse(DequeView<Packet> r
 
   // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
   bool client_deprecate_eof = true;
-  RETURN_NEEDS_MORE_DATA_IF_END(Resultset, iter, resp_packets);
+  RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
   if (IsEOFPacket(*iter)) {
     client_deprecate_eof = false;
     ++iter;
@@ -195,6 +203,7 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultsetResponse(DequeView<Packet> r
   while (iter != resp_packets.end() && !isLastPacket(*iter)) {
     const Packet& row_packet = *iter;
     if (!IsResultsetRowPacket(row_packet, client_deprecate_eof)) {
+      entry->resp_status = MySQLRespStatus::kUnknown;
       return error::Internal(
           "Expected resultset row packet [OK=$0 ERR=$1 EOF=$2 client_deprecate_eof=$3]",
           IsOKPacket(row_packet), IsErrPacket(row_packet), IsEOFPacket(row_packet),
@@ -205,7 +214,7 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultsetResponse(DequeView<Packet> r
     ++iter;
   }
 
-  RETURN_NEEDS_MORE_DATA_IF_END(Resultset, iter, resp_packets);
+  RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
 
   const Packet& last_packet = *iter;
   if (IsErrPacket(last_packet)) {
@@ -219,16 +228,19 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultsetResponse(DequeView<Packet> r
                                    std::distance(iter, resp_packets.end()));
   }
 
-  return std::make_unique<Resultset>(Resultset(num_col, std::move(col_defs), std::move(results)));
+  entry->resp_status = MySQLRespStatus::kOK;
+  entry->resp_msg = absl::Substitute("Resultset rows = $0", results.size());
+  return ParseState::kSuccess;
 }
 
-StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
-    DequeView<Packet> resp_packets) {
+StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* state,
+                                                 Entry* entry) {
   auto iter = resp_packets.begin();
 
-  RETURN_NEEDS_MORE_DATA_IF_END(StmtPrepareOKResponse, iter, resp_packets);
+  RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
   const Packet& first_resp_packet = *iter;
   if (!IsStmtPrepareOKPacket(first_resp_packet)) {
+    entry->resp_status = MySQLRespStatus::kUnknown;
     return error::Internal("Expected StmtPrepareOK packet");
   }
 
@@ -242,7 +254,8 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
   // Reference: https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html.
   size_t expected_num_packets = 1 + num_col + num_param + (num_col != 0) + (num_param != 0);
   if (expected_num_packets > resp_packets.size()) {
-    return std::unique_ptr<StmtPrepareOKResponse>(nullptr);
+    entry->resp_status = MySQLRespStatus::kUnknown;
+    return ParseState::kNeedsMoreData;
   }
 
   StmtPrepareRespHeader resp_header{stmt_id, num_col, num_param, warning_count};
@@ -252,7 +265,7 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
   // Params come before columns
   std::vector<ColDefinition> param_defs;
   for (size_t i = 0; i < num_param; ++i) {
-    RETURN_NEEDS_MORE_DATA_IF_END(StmtPrepareOKResponse, iter, resp_packets);
+    RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
 
     const Packet& param_def_packet = *iter;
     ColDefinition param_def{param_def_packet.msg};
@@ -262,7 +275,7 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
 
   bool client_deprecate_eof = true;
   if (num_param != 0) {
-    RETURN_NEEDS_MORE_DATA_IF_END(StmtPrepareOKResponse, iter, resp_packets);
+    RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
     // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
     if (IsEOFPacket(*iter)) {
       ++iter;
@@ -272,7 +285,7 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
 
   std::vector<ColDefinition> col_defs;
   for (size_t i = 0; i < num_col; ++i) {
-    RETURN_NEEDS_MORE_DATA_IF_END(StmtPrepareOKResponse, iter, resp_packets);
+    RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
 
     const Packet& col_def_packet = *iter;
     ColDefinition col_def{col_def_packet.msg};
@@ -293,8 +306,14 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
     LOG(ERROR) << "Extra packets";
   }
 
-  return std::make_unique<StmtPrepareOKResponse>(resp_header, std::move(col_defs),
-                                                 std::move(param_defs));
+  // Update state.
+  state->prepare_events.emplace(
+      stmt_id, PreparedStatement{.request = entry->req_msg,
+                                 .response = StmtPrepareOKResponse(resp_header, std::move(col_defs),
+                                                                   std::move(param_defs))});
+
+  entry->resp_status = MySQLRespStatus::kOK;
+  return ParseState::kSuccess;
 }
 
 void HandleStringRequest(const Packet& req_packet, Entry* entry) {
@@ -353,9 +372,7 @@ void HandleStmtExecuteRequest(const Packet& req_packet,
     return;
   }
 
-  StmtPrepareOKResponse* prepare_resp = iter->second.response.get();
-
-  int num_params = prepare_resp->resp_header().num_params;
+  int num_params = iter->second.response.header().num_params;
 
   int offset = kStmtIDStartOffset + kStmtIDBytes + kFlagsBytes + kIterationCountBytes;
 

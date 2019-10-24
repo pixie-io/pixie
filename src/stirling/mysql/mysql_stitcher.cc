@@ -253,9 +253,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
   const Packet& first_resp_packet = resp_packets.front();
 
   if (IsErrPacket(first_resp_packet)) {
-    std::unique_ptr<ErrResponse> resp = HandleErrMessage(resp_packets);
-    entry->resp_status = MySQLRespStatus::kErr;
-    entry->resp_msg = resp->error_message();
+    HandleErrMessage(resp_packets, entry);
 
     if (resp_packets.size() > 1) {
       LOG(ERROR) << absl::Substitute(
@@ -267,18 +265,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
     return ParseState::kSuccess;
   }
 
-  PL_ASSIGN_OR_RETURN(auto resp, HandleStmtPrepareOKResponse(resp_packets));
-  if (resp == nullptr) {
-    entry->resp_status = MySQLRespStatus::kUnknown;
-    return ParseState::kNeedsMoreData;
-  }
-
-  // Update state.
-  int stmt_id = resp->resp_header().stmt_id;
-  state->prepare_events.emplace(stmt_id, PreparedStatement{entry->req_msg, std::move(resp)});
-
-  entry->resp_status = MySQLRespStatus::kOK;
-  return ParseState::kSuccess;
+  return HandleStmtPrepareOKResponse(resp_packets, state, entry);
 }
 
 // Process a COM_STMT_SEND_LONG_DATA request and response, and populate details into a record entry.
@@ -328,9 +315,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   const Packet& first_resp_packet = resp_packets.front();
 
   if (IsErrPacket(first_resp_packet)) {
-    std::unique_ptr<ErrResponse> resp = HandleErrMessage(resp_packets);
-    entry->resp_status = MySQLRespStatus::kErr;
-    entry->resp_msg = resp->error_message();
+    HandleErrMessage(resp_packets, entry);
 
     if (resp_packets.size() > 1) {
       LOG(ERROR) << absl::Substitute(
@@ -343,8 +328,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   }
 
   if (IsOKPacket(first_resp_packet)) {
-    std::unique_ptr<OKResponse> resp = HandleOKMessage(resp_packets);
-    entry->resp_status = MySQLRespStatus::kOK;
+    HandleOKMessage(resp_packets, entry);
 
     if (resp_packets.size() > 1) {
       LOG(ERROR) << absl::Substitute(
@@ -356,20 +340,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
     return ParseState::kSuccess;
   }
 
-  // TODO(chengruizhe): Write result set to entry.
-  PL_ASSIGN_OR_RETURN(auto resp, HandleResultsetResponse(resp_packets));
-
-  // Nullptr indicates there was not enough packets to process the Resultset.
-  // This is not an error, but we return ParseState::kNeedsMoreData to indicate that we need more
-  // data.
-  if (resp == nullptr) {
-    entry->resp_status = MySQLRespStatus::kUnknown;
-    return ParseState::kNeedsMoreData;
-  } else {
-    entry->resp_msg = absl::Substitute("Resultset rows = $0", resp->results().size());
-    entry->resp_status = MySQLRespStatus::kOK;
-    return ParseState::kSuccess;
-  }
+  return HandleResultsetResponse(resp_packets, entry);
 }
 
 // Process a COM_STMT_CLOSE request and response, and populate details into a record entry.
@@ -449,9 +420,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   const Packet& first_resp_packet = resp_packets.front();
 
   if (IsErrPacket(first_resp_packet)) {
-    std::unique_ptr<ErrResponse> resp = HandleErrMessage(resp_packets);
-    entry->resp_status = MySQLRespStatus::kErr;
-    entry->resp_msg = resp->error_message();
+    HandleErrMessage(resp_packets, entry);
 
     if (resp_packets.size() > 1) {
       LOG(ERROR) << absl::Substitute(
@@ -464,8 +433,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   }
 
   if (IsOKPacket(first_resp_packet)) {
-    std::unique_ptr<OKResponse> resp = HandleOKMessage(resp_packets);
-    entry->resp_status = MySQLRespStatus::kOK;
+    HandleOKMessage(resp_packets, entry);
 
     if (resp_packets.size() > 1) {
       LOG(ERROR) << absl::Substitute(
@@ -477,20 +445,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
     return ParseState::kSuccess;
   }
 
-  // TODO(chengruizhe): Write result set to entry.
-  PL_ASSIGN_OR_RETURN(auto resp, HandleResultsetResponse(resp_packets));
-
-  // Nullptr indicates there was not enough packets to process the Resultset.
-  // This is not an error, but we return ParseState::kNeedsMoreData to indicate that we need more
-  // data.
-  if (resp == nullptr) {
-    entry->resp_status = MySQLRespStatus::kUnknown;
-    return ParseState::kNeedsMoreData;
-  } else {
-    entry->resp_msg = absl::Substitute("Resultset rows = $0", resp->results().size());
-    entry->resp_status = MySQLRespStatus::kOK;
-    return ParseState::kSuccess;
-  }
+  return HandleResultsetResponse(resp_packets, entry);
 }
 
 // Process a COM_FIELD_LIST request and response, and populate details into a record entry.
@@ -553,9 +508,7 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
   }
 
   if (IsErrPacket(resp_packet)) {
-    std::unique_ptr<ErrResponse> resp = HandleErrMessage(resp_packets);
-    entry->resp_status = MySQLRespStatus::kErr;
-    entry->resp_msg = resp->error_message();
+    HandleErrMessage(resp_packets, entry);
     return ParseState::kSuccess;
   }
 

@@ -17,6 +17,8 @@ namespace testdata {
  * that can fit into the StmtPrepare's request.
  */
 
+const int kStmtID = 2;
+
 /**
  * Statement Prepare Event with 2 col definitions and 2 params.
  */
@@ -54,10 +56,10 @@ const std::vector<ColDefinition> kStmtPrepareColDefs{
 const StmtPrepareOKResponse kStmtPrepareResponse(kStmtPrepareRespHeader, kStmtPrepareColDefs,
                                                  kStmtPrepareParamDefs);
 
-PreparedStatement InitStmtPrepare() {
-  auto resp_ptr = std::make_unique<StmtPrepareOKResponse>(kStmtPrepareResponse);
-  return PreparedStatement{std::string(kStmtPrepareRequest.msg()), std::move(resp_ptr)};
-}
+PreparedStatement kPreparedStatement{
+    .request = std::string(kStmtPrepareRequest.msg()),
+    .response = kStmtPrepareResponse,
+};
 
 /**
  * Statement Execute Event with 2 params, 2 col definitions, and 2 resultset rows.

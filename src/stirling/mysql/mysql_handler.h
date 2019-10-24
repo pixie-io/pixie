@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "src/common/base/statusor.h"
+#include "src/stirling/common/parse_state.h"
 #include "src/stirling/mysql/mysql.h"
 
 namespace pl {
@@ -15,14 +16,14 @@ namespace mysql {
  * MySQL Response can have one or more packets, so the functions pop off packets from the
  * deque as it parses the first packet.
  */
-std::unique_ptr<ErrResponse> HandleErrMessage(DequeView<Packet> resp_packets);
+void HandleErrMessage(DequeView<Packet> resp_packets, Entry* entry);
 
-std::unique_ptr<OKResponse> HandleOKMessage(DequeView<Packet> resp_packets);
+void HandleOKMessage(DequeView<Packet> resp_packets, Entry* entry);
 
-StatusOr<std::unique_ptr<Resultset>> HandleResultsetResponse(DequeView<Packet> resp_packets);
+StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Entry* entry);
 
-StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
-    DequeView<Packet> resp_packets);
+StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* state,
+                                                 Entry* entry);
 
 /**
  * MySQL Request can only have one packet, but StmtExecuteRequest is special. It needs to

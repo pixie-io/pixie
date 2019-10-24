@@ -221,19 +221,19 @@ class Response {
  */
 class StmtPrepareOKResponse : public Response {
  public:
-  StmtPrepareOKResponse(const StmtPrepareRespHeader& resp_header,
-                        std::vector<ColDefinition> col_defs, std::vector<ColDefinition> param_defs)
+  StmtPrepareOKResponse(const StmtPrepareRespHeader& header, std::vector<ColDefinition> col_defs,
+                        std::vector<ColDefinition> param_defs)
       : Response(ResponseType::kStmtPrepareOKResponse),
-        resp_header_(resp_header),
+        header_(header),
         col_defs_(std::move(col_defs)),
         param_defs_(std::move(param_defs)) {}
 
-  const StmtPrepareRespHeader& resp_header() const { return resp_header_; }
+  const StmtPrepareRespHeader& header() const { return header_; }
   const std::vector<ColDefinition>& col_defs() const { return col_defs_; }
   const std::vector<ColDefinition>& param_defs() const { return param_defs_; }
 
  private:
-  StmtPrepareRespHeader resp_header_;
+  StmtPrepareRespHeader header_;
   std::vector<ColDefinition> col_defs_;
   std::vector<ColDefinition> param_defs_;
 };
@@ -355,7 +355,7 @@ class StmtCloseRequest : public Request {
  */
 struct PreparedStatement {
   std::string request;
-  std::unique_ptr<StmtPrepareOKResponse> response;
+  StmtPrepareOKResponse response;
 };
 
 //-----------------------------------------------------------------------------

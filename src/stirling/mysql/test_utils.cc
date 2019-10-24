@@ -142,7 +142,7 @@ std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
   uint8_t seq_id = 1;
 
   std::deque<Packet> result;
-  auto resp_header = GenStmtPrepareRespHeader(seq_id++, resp.resp_header());
+  auto resp_header = GenStmtPrepareRespHeader(seq_id++, resp.header());
   result.push_back(resp_header);
 
   for (ColDefinition param_def : resp.param_defs()) {
