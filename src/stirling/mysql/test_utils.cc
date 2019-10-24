@@ -1,10 +1,11 @@
+#include "src/stirling/mysql/test_utils.h"
+
 #include <math.h>
 #include <deque>
 #include <string>
 
 #include "src/common/base/byte_utils.h"
 #include "src/stirling/mysql/mysql.h"
-#include "src/stirling/mysql/test_utils.h"
 
 namespace pl {
 namespace stirling {
@@ -116,15 +117,15 @@ std::deque<Packet> GenResultset(const Resultset& resultset, bool client_eof_depr
   uint8_t seq_id = 1;
 
   std::deque<Packet> result;
-  auto resp_header = GenCountPacket(seq_id++, resultset.num_col());
+  auto resp_header = GenCountPacket(seq_id++, resultset.num_col);
   result.emplace_back(std::move(resp_header));
-  for (ColDefinition col_def : resultset.col_defs()) {
+  for (ColDefinition col_def : resultset.col_defs) {
     result.emplace_back(GenColDefinition(seq_id++, col_def));
   }
   if (!client_eof_deprecate) {
     result.emplace_back(GenEOF(seq_id++));
   }
-  for (ResultsetRow row : resultset.results()) {
+  for (ResultsetRow row : resultset.results) {
     result.emplace_back(GenResultsetRow(seq_id++, row));
   }
   if (client_eof_deprecate) {
@@ -142,16 +143,16 @@ std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
   uint8_t seq_id = 1;
 
   std::deque<Packet> result;
-  auto resp_header = GenStmtPrepareRespHeader(seq_id++, resp.header());
+  auto resp_header = GenStmtPrepareRespHeader(seq_id++, resp.header);
   result.push_back(resp_header);
 
-  for (ColDefinition param_def : resp.param_defs()) {
+  for (ColDefinition param_def : resp.param_defs) {
     ColDefinition p{std::move(param_def.msg)};
     result.push_back(GenColDefinition(seq_id++, p));
   }
   result.push_back(GenEOF(seq_id++));
 
-  for (ColDefinition col_def : resp.col_defs()) {
+  for (ColDefinition col_def : resp.col_defs) {
     ColDefinition c{std::move(col_def.msg)};
     result.push_back(GenColDefinition(seq_id++, c));
   }
@@ -161,18 +162,18 @@ std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
 
 Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
   char statement_id[4];
-  utils::IntToLEBytes(req.stmt_id(), statement_id);
+  utils::IntToLEBytes(req.stmt_id, statement_id);
   std::string msg =
       absl::StrCat(CommandToString(MySQLEventType::kStmtExecute), CharArrayStringView(statement_id),
                    ConstStringView("\x00\x01\x00\x00\x00"));
-  int num_params = req.params().size();
+  int num_params = req.params.size();
   if (num_params > 0) {
     for (int i = 0; i < (num_params + 7) / 8; i++) {
       msg += ConstStringView("\x00");
     }
     msg += "\x01";
   }
-  for (ParamPacket param : req.params()) {
+  for (ParamPacket param : req.params) {
     switch (param.type) {
       // TODO(chengruizhe): Add more types.
       case StmtExecuteParamType::kString:
@@ -183,7 +184,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
         break;
     }
   }
-  for (ParamPacket param : req.params()) {
+  for (ParamPacket param : req.params) {
     msg += GenLengthEncodedInt(param.value.size());
     msg += param.value;
   }
@@ -192,7 +193,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
 
 Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
   char statement_id[4];
-  utils::IntToLEBytes(req.stmt_id(), statement_id);
+  utils::IntToLEBytes(req.stmt_id, statement_id);
   std::string msg =
       absl::StrCat(CommandToString(MySQLEventType::kStmtClose), CharArrayStringView(statement_id));
   return Packet{0, std::chrono::steady_clock::now(), 0, std::move(msg)};
@@ -204,7 +205,7 @@ Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
 Packet GenStringRequest(const StringRequest& req, MySQLEventType command) {
   DCHECK_LE(static_cast<uint8_t>(command), kMaxCommandValue);
   return Packet{0, std::chrono::steady_clock::now(), 0,
-                absl::StrCat(CommandToString(command), req.msg())};
+                absl::StrCat(CommandToString(command), req.msg)};
 }
 
 /**
@@ -212,9 +213,9 @@ Packet GenStringRequest(const StringRequest& req, MySQLEventType command) {
  */
 Packet GenErr(uint8_t seq_id, const ErrResponse& err) {
   char error_code[2];
-  utils::IntToLEBytes(err.error_code(), error_code);
+  utils::IntToLEBytes(err.error_code, error_code);
   std::string msg = absl::StrCat("\xff", CharArrayStringView(error_code),
-                                 "\x23\x48\x59\x30\x30\x30", err.error_message());
+                                 "\x23\x48\x59\x30\x30\x30", err.error_message);
   return Packet{0, std::chrono::steady_clock::now(), seq_id, std::move(msg)};
 }
 

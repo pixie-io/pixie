@@ -307,10 +307,12 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
   }
 
   // Update state.
-  state->prepare_events.emplace(
-      stmt_id, PreparedStatement{.request = entry->req_msg,
-                                 .response = StmtPrepareOKResponse(resp_header, std::move(col_defs),
-                                                                   std::move(param_defs))});
+  state->prepared_statements.emplace(
+      stmt_id,
+      PreparedStatement{.request = entry->req_msg,
+                        .response = StmtPrepareOKResponse{.header = resp_header,
+                                                          .col_defs = std::move(col_defs),
+                                                          .param_defs = std::move(param_defs)}});
 
   entry->resp_status = MySQLRespStatus::kOK;
   return ParseState::kSuccess;
@@ -372,7 +374,7 @@ void HandleStmtExecuteRequest(const Packet& req_packet,
     return;
   }
 
-  int num_params = iter->second.response.header().num_params;
+  int num_params = iter->second.response.header.num_params;
 
   int offset = kStmtIDStartOffset + kStmtIDBytes + kFlagsBytes + kIterationCountBytes;
 

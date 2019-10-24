@@ -12,8 +12,8 @@ namespace stirling {
 namespace mysql {
 
 TEST(HandleErrMessage, Basic) {
-  std::deque<Packet> resp_packets = {
-      testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This is an error."))};
+  ErrResponse err_resp = {.error_code = 1096, .error_message = "This is an error."};
+  std::deque<Packet> resp_packets = {testutils::GenErr(/* seq_id */ 1, err_resp)};
 
   Entry entry;
   HandleErrMessage(resp_packets, &entry);
@@ -68,8 +68,9 @@ TEST(HandleResultsetResponse, NeedsMoreData) {
 
 TEST(HandleResultsetResponse, InvalidResponse) {
   // Test for invalid response by changing first packet.
+  ErrResponse err_resp = {.error_code = 1096, .error_message = "This is an error."};
   std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset);
-  resp_packets.front() = testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This is an error."));
+  resp_packets.front() = testutils::GenErr(/* seq_id */ 1, err_resp);
 
   Entry entry;
   State state;
@@ -88,7 +89,7 @@ TEST(HandleStmtPrepareOKResponse, Valid) {
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
   EXPECT_EQ(entry.resp_status, MySQLRespStatus::kOK);
-  EXPECT_EQ(state.prepare_events.size(), 1);
+  EXPECT_EQ(state.prepared_statements.size(), 1);
   EXPECT_EQ(entry.resp_msg, "");
 }
 
@@ -102,28 +103,28 @@ TEST(HandleStmtPrepareOKResponse, NeedsMoreData) {
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kNeedsMoreData);
   EXPECT_EQ(entry.resp_status, MySQLRespStatus::kUnknown);
-  EXPECT_EQ(state.prepare_events.size(), 0);
+  EXPECT_EQ(state.prepared_statements.size(), 0);
   EXPECT_EQ(entry.resp_msg, "");
 }
 
 TEST(HandleStmtPrepareOKResponse, Invalid) {
   std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testdata::kStmtPrepareResponse);
-  packets.front() =
-      testutils::GenErr(/* seq_id */ 1, ErrResponse(/* error_code */ 1096, "This is an error."));
+  ErrResponse err_resp = {.error_code = 1096, .error_message = "This is an error."};
+  packets.front() = testutils::GenErr(/* seq_id */ 1, err_resp);
 
   Entry entry;
   State state;
   auto s = HandleStmtPrepareOKResponse(packets, &state, &entry);
   EXPECT_FALSE(s.ok());
   EXPECT_EQ(entry.resp_status, MySQLRespStatus::kUnknown);
-  EXPECT_EQ(state.prepare_events.size(), 0);
+  EXPECT_EQ(state.prepared_statements.size(), 0);
   EXPECT_EQ(entry.resp_msg, "");
 }
 
 TEST(HandleStmtExecuteRequest, Basic) {
   Packet req_packet = testutils::GenStmtExecuteRequest(testdata::kStmtExecuteRequest);
   PreparedStatement prepared_stmt = testdata::kPreparedStatement;
-  int stmt_id = prepared_stmt.response.header().stmt_id;
+  int stmt_id = prepared_stmt.response.header.stmt_id;
   std::map<int, PreparedStatement> prepare_map;
   prepare_map.emplace(stmt_id, std::move(prepared_stmt));
 

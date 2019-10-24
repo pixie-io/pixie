@@ -188,165 +188,53 @@ struct ParamPacket {
 // Message Level Structs
 //-----------------------------------------------------------------------------
 
-enum class RequestType { kUnknown = 0, kStringRequest, kStmtExecuteRequest, kStmtCloseRequest };
-
-enum class ResponseType {
-  kUnknown = 0,
-  kStmtPrepareOKResponse,
-  kResultset,
-  kErrResponse,
-  kOKResponse
-};
-
-/**
- * Response is a base for different kinds of MySQL Responses. They can consist of single
- * or multiple packets.
- */
-class Response {
- public:
-  virtual ~Response() = default;
-  // TODO(chengruizhe): Remove default ctor when handle functions are implemented. Same below.
-  Response() = default;
-  ResponseType type() const { return type_; }
-
- protected:
-  explicit Response(ResponseType type) : type_(type) {}
-
- private:
-  ResponseType type_;
-};
-
 /**
  * https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html
  */
-class StmtPrepareOKResponse : public Response {
- public:
-  StmtPrepareOKResponse(const StmtPrepareRespHeader& header, std::vector<ColDefinition> col_defs,
-                        std::vector<ColDefinition> param_defs)
-      : Response(ResponseType::kStmtPrepareOKResponse),
-        header_(header),
-        col_defs_(std::move(col_defs)),
-        param_defs_(std::move(param_defs)) {}
-
-  const StmtPrepareRespHeader& header() const { return header_; }
-  const std::vector<ColDefinition>& col_defs() const { return col_defs_; }
-  const std::vector<ColDefinition>& param_defs() const { return param_defs_; }
-
- private:
-  StmtPrepareRespHeader header_;
-  std::vector<ColDefinition> col_defs_;
-  std::vector<ColDefinition> param_defs_;
+struct StmtPrepareOKResponse {
+  StmtPrepareRespHeader header;
+  std::vector<ColDefinition> col_defs;
+  std::vector<ColDefinition> param_defs;
 };
 
 /**
  * A set of MySQL Query results. Contains a vector of resultset rows.
  * https://dev.mysql.com/doc/internals/en/binary-protocol-resultset.html
  */
-// TODO(chengruizhe): Same as above. Differentiate binary Resultset and text Resultset.
-class Resultset : public Response {
- public:
-  // num_col could diverge from size of col_defs if packet is lost. Keeping it for detection
-  // purposes.
-  explicit Resultset(const int num_col, const std::vector<ColDefinition>& col_defs,
-                     const std::vector<ResultsetRow>& results)
-      : Response(ResponseType::kResultset),
-        num_col_(num_col),
-        col_defs_(col_defs),
-        results_(results) {}
-
-  int num_col() const { return num_col_; }
-  const std::vector<ColDefinition>& col_defs() const { return col_defs_; }
-  const std::vector<ResultsetRow>& results() const { return results_; }
-
- private:
-  int num_col_;
-  std::vector<ColDefinition> col_defs_;
-  std::vector<ResultsetRow> results_;
+struct Resultset {
+  // Keep num_col explicitly, since it could diverge from col_defs.size() if packet is lost.
+  int num_col = 0;
+  std::vector<ColDefinition> col_defs;
+  std::vector<ResultsetRow> results;
 };
 
 /**
- *
  * https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html
  */
-class ErrResponse : public Response {
- public:
-  ErrResponse(int error_code, std::string_view msg)
-      : Response(ResponseType::kErrResponse), error_code_(error_code), error_message_(msg) {}
-
-  int error_code() const { return error_code_; }
-  std::string_view error_message() const { return error_message_; }
-
- private:
-  int error_code_;
-  std::string error_message_;
-};
-
-/**
- * A generic OK Response. Returned when there is no result to be returned.
- * https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html
- */
-class OKResponse : public Response {
- public:
-  OKResponse() : Response(ResponseType::kOKResponse) {}
-};
-
-/**
- * Request is a base for different kinds of MySQL requests. It has a single packet.
- */
-class Request {
- public:
-  virtual ~Request() = default;
-  Request() = default;
-  RequestType type() const { return type_; }
-
- protected:
-  explicit Request(RequestType type) : type_(type) {}
-
- private:
-  RequestType type_;
+struct ErrResponse {
+  int error_code = 0;
+  std::string error_message;
 };
 
 /**
  * StringRequest is a MySQL Request with a string as its message.
  * Most commonly StmtPrepare or Query requests, but also can be CreateDB.
  */
-class StringRequest : public Request {
- public:
-  explicit StringRequest(std::string_view msg = "")
-      : Request(RequestType::kStringRequest), msg_(msg) {}
-
-  const std::string_view msg() const { return msg_; }
-
- private:
-  std::string msg_;
+struct StringRequest {
+  std::string msg;
 };
 
-class StmtExecuteRequest : public Request {
- public:
-  explicit StmtExecuteRequest(int stmt_id, const std::vector<ParamPacket>& params)
-      : Request(RequestType::kStmtExecuteRequest), stmt_id_(stmt_id), params_(std::move(params)) {}
-
-  int stmt_id() const { return stmt_id_; }
-  const std::vector<ParamPacket>& params() const { return params_; }
-
- private:
-  int stmt_id_;
-  std::vector<ParamPacket> params_;
+struct StmtExecuteRequest {
+  int stmt_id;
+  std::vector<ParamPacket> params;
 };
 
-class StmtCloseRequest : public Request {
- public:
-  explicit StmtCloseRequest(int stmt_id)
-      : Request(RequestType::kStmtCloseRequest), stmt_id_(stmt_id) {}
-
-  int stmt_id() const { return stmt_id_; }
-
- private:
-  int stmt_id_;
+struct StmtCloseRequest {
+  int stmt_id;
 };
 
 //-----------------------------------------------------------------------------
-// Event Level Structs
+// State Structs
 //-----------------------------------------------------------------------------
 
 /**
@@ -356,6 +244,15 @@ class StmtCloseRequest : public Request {
 struct PreparedStatement {
   std::string request;
   StmtPrepareOKResponse response;
+};
+
+/**
+ * State stores a map of stmt_id to active StmtPrepare event. It's used to be looked up
+ * for the Stmtprepare event when a StmtExecute is received. cllient_deprecate_eof indicates
+ * whether the ClientDeprecateEOF Flag is set.
+ */
+struct State {
+  std::map<int, PreparedStatement> prepared_statements;
 };
 
 //-----------------------------------------------------------------------------
@@ -386,13 +283,9 @@ struct Entry {
   uint64_t req_timestamp_ns;
 };
 
-/**
- * State stores a map of stmt_id to active StmtPrepare event. It's used to be looked up
- * for the Stmtprepare event when a StmtExecute is received.
- */
-struct State {
-  std::map<int, PreparedStatement> prepare_events;
-};
+//-----------------------------------------------------------------------------
+// Packet identification functions
+//-----------------------------------------------------------------------------
 
 /**
  * The following functions check whether a Packet is of a certain type, based on the prefixed

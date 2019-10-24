@@ -301,7 +301,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   // Request
   //----------------
 
-  HandleStmtExecuteRequest(req_packet, &state->prepare_events, entry);
+  HandleStmtExecuteRequest(req_packet, &state->prepared_statements, entry);
 
   //----------------
   // Response
@@ -351,7 +351,7 @@ StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet
   // Request
   //----------------
 
-  HandleStmtCloseRequest(req_packet, &state->prepare_events, entry);
+  HandleStmtCloseRequest(req_packet, &state->prepared_statements, entry);
 
   //----------------
   // Response

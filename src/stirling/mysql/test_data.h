@@ -22,13 +22,15 @@ const int kStmtID = 2;
 /**
  * Statement Prepare Event with 2 col definitions and 2 params.
  */
-const StringRequest kStmtPrepareRequest(
-    "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock JOIN sock_tag ON "
-    "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=? GROUP "
-    "BY id ORDER BY ?");
+const StringRequest kStmtPrepareRequest{
+    .msg =
+        "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock JOIN sock_tag ON "
+        "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=? "
+        "GROUP "
+        "BY id ORDER BY ?"};
 
-const StmtPrepareRespHeader kStmtPrepareRespHeader{2 /*stmt_id*/, 2 /*num_cols*/, 2 /*num_param*/,
-                                                   0 /*num_warning*/};
+const StmtPrepareRespHeader kStmtPrepareRespHeader{
+    .stmt_id = kStmtID, .num_columns = 2, .num_params = 2, .warning_count = 0};
 
 // The following columns definitions and resultset rows are from real packet capture, but the
 // contents don't really matter to the functionality of the test.
@@ -53,11 +55,12 @@ const std::vector<ColDefinition> kStmtPrepareColDefs{
         "\x6e\x61\x6d\x65\x04\x6e\x61\x6d\x65\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00"
         "\x00")}};
 
-const StmtPrepareOKResponse kStmtPrepareResponse(kStmtPrepareRespHeader, kStmtPrepareColDefs,
-                                                 kStmtPrepareParamDefs);
+const StmtPrepareOKResponse kStmtPrepareResponse{.header = kStmtPrepareRespHeader,
+                                                 .col_defs = kStmtPrepareColDefs,
+                                                 .param_defs = kStmtPrepareParamDefs};
 
 PreparedStatement kPreparedStatement{
-    .request = std::string(kStmtPrepareRequest.msg()),
+    .request = kStmtPrepareRequest.msg,
     .response = kStmtPrepareResponse,
 };
 
@@ -68,7 +71,7 @@ const std::vector<ParamPacket> kStmtExecuteParams = {
     {StmtExecuteParamType::kString, "\x62\x72\x6f\x77\x6e"},
     {StmtExecuteParamType::kString, "\x69\x64"}};
 
-const StmtExecuteRequest kStmtExecuteRequest(2 /*stmt_id*/, kStmtExecuteParams /*params*/);
+const StmtExecuteRequest kStmtExecuteRequest{.stmt_id = kStmtID, .params = kStmtExecuteParams};
 
 const std::vector<ColDefinition> kStmtExecuteColDefs = {
     ColDefinition{ConstString("\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62"
@@ -83,17 +86,18 @@ const std::vector<ColDefinition> kStmtExecuteColDefs = {
 const std::vector<ResultsetRow> kStmtExecuteResultsetRows = {ResultsetRow{ConstString("\x03id1")},
                                                              ResultsetRow{ConstString("\x03id2")}};
 
-const Resultset kStmtExecuteResultset(2, kStmtExecuteColDefs, kStmtExecuteResultsetRows);
+const Resultset kStmtExecuteResultset{
+    .num_col = 2, .col_defs = kStmtExecuteColDefs, .results = kStmtExecuteResultsetRows};
 
 /**
  * Statement Close Event
  */
-const StmtCloseRequest kStmtCloseRequest(2 /*stmt_id*/);
+const StmtCloseRequest kStmtCloseRequest{.stmt_id = kStmtID};
 
 /**
  * Query Event with 1 column and 3 resultset rows.
  */
-const StringRequest kQueryRequest("SELECT name FROM tag;");
+const StringRequest kQueryRequest{.msg = "SELECT name FROM tag;"};
 
 const std::vector<ColDefinition> kQueryColDefs = {
     ColDefinition{ConstString("\x2b\x00\x00\x02\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62"
@@ -106,7 +110,8 @@ const std::vector<ResultsetRow> kQueryResultsetRows = {
     ResultsetRow{ConstString("\x06formal")},
 };
 
-const Resultset kQueryResultset(1, kQueryColDefs, kQueryResultsetRows);
+const Resultset kQueryResultset{
+    .num_col = 1, .col_defs = kQueryColDefs, .results = kQueryResultsetRows};
 
 }  // namespace testdata
 }  // namespace mysql

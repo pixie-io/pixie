@@ -133,8 +133,8 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
       mySQLStmtExecuteResp.push_back(mysql::testutils::GenRawPacket(execute_packet));
     }
 
-    mySQLErrResp = mysql::testutils::GenRawPacket(
-        mysql::testutils::GenErr(1, mysql::ErrResponse(1096, "This is an error.")));
+    mysql::ErrResponse err_resp = {.error_code = 1096, .error_message = "This is an error."};
+    mySQLErrResp = mysql::testutils::GenRawPacket(mysql::testutils::GenErr(1, err_resp));
 
     mySQLStmtCloseReq = mysql::testutils::GenRawPacket(
         mysql::testutils::GenStmtCloseRequest(mysql::testdata::kStmtCloseRequest));

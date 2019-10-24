@@ -32,11 +32,10 @@ TEST(StitcherTest, TestProcessStmtPrepareOK) {
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
-  auto iter = state.prepare_events.find(testdata::kStmtID);
-  EXPECT_TRUE(iter != state.prepare_events.end());
-  Entry expected_entry{MySQLEventType::kStmtPrepare,
-                       std::string(testdata::kStmtPrepareRequest.msg()), MySQLRespStatus::kOK, "",
-                       0};
+  auto iter = state.prepared_statements.find(testdata::kStmtID);
+  EXPECT_TRUE(iter != state.prepared_statements.end());
+  Entry expected_entry{MySQLEventType::kStmtPrepare, testdata::kStmtPrepareRequest.msg,
+                       MySQLRespStatus::kOK, "", 0};
   EXPECT_EQ(expected_entry, entry);
 }
 
@@ -45,8 +44,8 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
   Packet req =
       testutils::GenStringRequest(testdata::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
   std::deque<Packet> err_resp_packets;
-  err_resp_packets.emplace_back(
-      testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This is an error.")));
+  ErrResponse err_resp = {.error_code = 1096, .error_message = "This is an error."};
+  err_resp_packets.emplace_back(testutils::GenErr(/* seq_id */ 1, err_resp));
   State state{std::map<int, PreparedStatement>()};
 
   // Run function-under-test.
@@ -56,11 +55,10 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
 
   // Check resulting state and entries.
-  auto iter = state.prepare_events.find(testdata::kStmtID);
-  EXPECT_EQ(iter, state.prepare_events.end());
-  Entry expected_err_entry{MySQLEventType::kStmtPrepare,
-                           std::string(testdata::kStmtPrepareRequest.msg()), MySQLRespStatus::kErr,
-                           "This is an error.", 0};
+  auto iter = state.prepared_statements.find(testdata::kStmtID);
+  EXPECT_EQ(iter, state.prepared_statements.end());
+  Entry expected_err_entry{MySQLEventType::kStmtPrepare, testdata::kStmtPrepareRequest.msg,
+                           MySQLRespStatus::kErr, "This is an error.", 0};
   EXPECT_EQ(expected_err_entry, entry);
 }
 
@@ -69,7 +67,7 @@ TEST(StitcherTest, TestProcessStmtExecute) {
   Packet req = testutils::GenStmtExecuteRequest(testdata::kStmtExecuteRequest);
   std::deque<Packet> resultset = testutils::GenResultset(testdata::kStmtExecuteResultset);
   State state{std::map<int, PreparedStatement>()};
-  state.prepare_events.emplace(testdata::kStmtID, testdata::kPreparedStatement);
+  state.prepared_statements.emplace(testdata::kStmtID, testdata::kPreparedStatement);
 
   // Run function-under-test.
   Entry entry;
@@ -94,7 +92,7 @@ TEST(StitcherTest, TestProcessStmtClose) {
   Packet req = testutils::GenStmtCloseRequest(testdata::kStmtCloseRequest);
   std::deque<Packet> resp_packets = {};
   State state{std::map<int, PreparedStatement>()};
-  state.prepare_events.emplace(testdata::kStmtID, testdata::kPreparedStatement);
+  state.prepared_statements.emplace(testdata::kStmtID, testdata::kPreparedStatement);
 
   // Run function-under-test.
   Entry entry;
@@ -165,7 +163,7 @@ TEST(SyncTest, OldResponses) {
   responses.push_front(resp0);
 
   State state{std::map<int, PreparedStatement>()};
-  state.prepare_events.emplace(testdata::kStmtID, testdata::kPreparedStatement);
+  state.prepared_statements.emplace(testdata::kStmtID, testdata::kPreparedStatement);
 
   std::deque<Packet> requests = {req};
   std::vector<Entry> entries = ProcessMySQLPackets(&requests, &responses, &state);
