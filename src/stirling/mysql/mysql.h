@@ -19,13 +19,7 @@ namespace mysql {
  *    https://dev.mysql.com/doc/internals/en/mysql-packet.html
  * 2. MySQL Message, a Request or Response, consisting of one or more MySQL Packets. It contains
  * parsed out fields based on the type of request/response.
- * 3. MySQL ReqRespEvent contains a request and response pair. It owns unique ptrs to
- * its request and response, and a MySQLEventType.
- *
- * A MySQL ReqRespEvent can be a standalone entry, or multiple can be combined to form one entry
- * in the table store. For events other than Stmt Prepare/Execute, an event contains all info in
- * this entry. A Stmt Prepare Event can be followed by multiple Stmt Execute Events, each generating
- * a new query with different params.
+ * 3. MySQL Event, containing a request and response pair.
  */
 
 //-----------------------------------------------------------------------------

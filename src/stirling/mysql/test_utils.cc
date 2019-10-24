@@ -117,15 +117,14 @@ std::deque<Packet> GenResultset(const Resultset& resultset, bool client_eof_depr
   uint8_t seq_id = 1;
 
   std::deque<Packet> result;
-  auto resp_header = GenCountPacket(seq_id++, resultset.num_col);
-  result.emplace_back(std::move(resp_header));
-  for (ColDefinition col_def : resultset.col_defs) {
+  result.emplace_back(GenCountPacket(seq_id++, resultset.num_col));
+  for (const ColDefinition& col_def : resultset.col_defs) {
     result.emplace_back(GenColDefinition(seq_id++, col_def));
   }
   if (!client_eof_deprecate) {
     result.emplace_back(GenEOF(seq_id++));
   }
-  for (ResultsetRow row : resultset.results) {
+  for (const ResultsetRow& row : resultset.results) {
     result.emplace_back(GenResultsetRow(seq_id++, row));
   }
   if (client_eof_deprecate) {
@@ -143,17 +142,16 @@ std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
   uint8_t seq_id = 1;
 
   std::deque<Packet> result;
-  auto resp_header = GenStmtPrepareRespHeader(seq_id++, resp.header);
-  result.push_back(resp_header);
+  result.push_back(GenStmtPrepareRespHeader(seq_id++, resp.header));
 
-  for (ColDefinition param_def : resp.param_defs) {
-    ColDefinition p{std::move(param_def.msg)};
+  for (const ColDefinition& param_def : resp.param_defs) {
+    ColDefinition p{param_def.msg};
     result.push_back(GenColDefinition(seq_id++, p));
   }
   result.push_back(GenEOF(seq_id++));
 
-  for (ColDefinition col_def : resp.col_defs) {
-    ColDefinition c{std::move(col_def.msg)};
+  for (const ColDefinition& col_def : resp.col_defs) {
+    ColDefinition c{col_def.msg};
     result.push_back(GenColDefinition(seq_id++, c));
   }
   result.push_back(GenEOF(seq_id++));
@@ -173,7 +171,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
     }
     msg += "\x01";
   }
-  for (ParamPacket param : req.params) {
+  for (const ParamPacket& param : req.params) {
     switch (param.type) {
       // TODO(chengruizhe): Add more types.
       case StmtExecuteParamType::kString:
@@ -184,7 +182,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
         break;
     }
   }
-  for (ParamPacket param : req.params) {
+  for (const ParamPacket& param : req.params) {
     msg += GenLengthEncodedInt(param.value.size());
     msg += param.value;
   }
