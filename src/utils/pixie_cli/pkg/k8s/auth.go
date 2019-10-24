@@ -1,11 +1,11 @@
 package k8s
 
 import (
-	"flag"
 	"os"
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 
@@ -17,6 +17,16 @@ import (
 
 // Contents in this file are copied and modified from
 // https://github.com/kubernetes/client-go/blob/master/examples/out-of-cluster-client-configuration/main.go
+
+var kubeconfig *string
+
+func init() {
+	if home := homeDir(); home != "" {
+		kubeconfig = pflag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfig = pflag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
+}
 
 // GetClientset gets the clientset for the current kubernetes cluster.
 func GetClientset(config *rest.Config) *kubernetes.Clientset {
@@ -39,14 +49,6 @@ func GetDiscoveryClient(config *rest.Config) *discovery.DiscoveryClient {
 
 // GetConfig gets the kubernetes rest config.
 func GetConfig() *rest.Config {
-	var kubeconfig *string
-	if home := homeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {

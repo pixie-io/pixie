@@ -110,8 +110,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_sys",
     importpath = "golang.org/x/sys",
-    sum = "h1:D5TXcfTk7xF7hvieo4QErS3qqCB4teTffacDWr7CI+0=",
-    version = "v0.0.0-20190726091711-fc99dfbffb4e",
+    sum = "h1:I7efaDQAsIQmkTF+WSdcydwVWzK07Yuz8IFF8rNkDe0=",
+    version = "v0.0.0-20191023151326-f89234f9a2c2",
 )
 
 go_repository(
@@ -249,8 +249,9 @@ go_repository(
 
 go_repository(
     name = "com_github_blang_semver",
-    commit = "2ee87856327ba09384cabd113bc6b5d174e9ec0f",
     importpath = "github.com/blang/semver",
+    sum = "h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=",
+    version = "v3.5.1+incompatible",
 )
 
 go_repository(
@@ -297,8 +298,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_crypto",
     importpath = "golang.org/x/crypto",
-    sum = "h1:HuIa8hRrWRSrqYzx1qI49NNxhdi2PrY7gxVSq1JjLDc=",
-    version = "v0.0.0-20190701094942-4def268fd1a4",
+    sum = "h1:ObdrDkeb4kJdCP557AjRjq69pTHfNouLtWZG7j9rPN8=",
+    version = "v0.0.0-20191011191535-87dc89f01550",
 )
 
 go_repository(
@@ -325,15 +326,15 @@ go_repository(
 go_repository(
     name = "com_github_mattn_go_colorable",
     importpath = "github.com/mattn/go-colorable",
-    sum = "h1:UVL0vNpWh04HeJXV0KLcaT7r06gOH2l4OW6ddYRUIY4=",
-    version = "v0.0.9",
+    sum = "h1:/bC9yWikZXAL9uJdulbSfyVNIR3n3trXl+v8+1sx8mU=",
+    version = "v0.1.2",
 )
 
 go_repository(
     name = "com_github_mattn_go_isatty",
     importpath = "github.com/mattn/go-isatty",
-    sum = "h1:bnP0vzxcAdeI1zdubAl5PjU6zsERjGZb7raWodagDYs=",
-    version = "v0.0.4",
+    sum = "h1:HLtExJ+uU2HOZ+wI0Tt5DtUDrx8yhUqDcp7fYERX4CE=",
+    version = "v0.0.8",
 )
 
 go_repository(
@@ -1725,4 +1726,18 @@ go_repository(
     importpath = "gopkg.in/warnings.v0",
     sum = "h1:wFXVbFY8DY5/xOe1ECiWdKCzZlxgshcYVNkBHstARME=",
     version = "v0.1.2",
+)
+
+go_repository(
+    name = "com_github_briandowns_spinner",
+    importpath = "github.com/briandowns/spinner",
+    sum = "h1:aan1hBBOoscry2TXAkgtxkJiq7Se0+9pt+TUWaPrB4g=",
+    version = "v1.7.0",
+)
+
+go_repository(
+    name = "com_github_gernest_wow",
+    importpath = "github.com/gernest/wow",
+    sum = "h1:g9xdwCwP0+xgVYlA2sopI0gZHqXe7HjI/7/LykG4fks=",
+    version = "v0.1.0",
 )
