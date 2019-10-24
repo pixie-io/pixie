@@ -28,15 +28,6 @@ container_layer(
     tars = ["//docs/customer:customer_docs_bundle"],
 )
 
-container_layer(
-    name = "pixie_binary",
-    directory = "/assets/downloads/pixie/linux_amd64/",
-    files = [
-        "//src/utils/pixie_cli:pixie",
-        "//src/utils/pixie_cli:pixie.sha256",
-    ],
-)
-
 container_image(
     name = "proxy_prod_server_image",
     base = "@openresty//image",
@@ -44,7 +35,6 @@ container_image(
         ":conf",
         ":ui_assets",
         ":customer_docs_assets",
-        ":pixie_binary",
     ],
     visibility = ["//visibility:public"],
 )

@@ -1,7 +1,9 @@
 import {CodeSnippet} from 'components/code-snippet/code-snippet';
 import {DialogBox} from 'components/dialog-box/dialog-box';
 import {DOMAIN_NAME} from 'containers/constants';
+import gql from 'graphql-tag';
 import * as React from 'react';
+import {Query} from 'react-apollo';
 import {Dropdown, DropdownButton} from 'react-bootstrap';
 
 // @ts-ignore : TS does not like image files.
@@ -18,22 +20,77 @@ interface DeployInstructionsProps {
   clusterID: string;
 }
 
+interface DeployInstructionsContentProps {
+  sitename: string;
+  clusterID: string;
+  cliURL: string;
+  cliSHA256: string;
+}
+
+export const GET_LINUX_CLI_BINARY = gql`
+  query {
+    cliArtifact(artifactType: AT_LINUX_AMD64) {
+      url
+      sha256
+    }
+  }
+`;
+
 // TODO(michelle): Fill this out with the correct deploy methods.
 const DEPLOY_METHODS = ['a', 'b'];
 
+// DeployInstructions is a wrapper around DeployInstructionsContent, which queries
+// for the CLI artifact information.
 export const DeployInstructions = (props: DeployInstructionsProps) => {
   // TODO(michelle): Pull --use_version tag from backend.
-  return (
-    <div className='deploy-instructions'>
+  return (<Query query={GET_LINUX_CLI_BINARY}>
+    {
+      ({ loading, error, data }) => {
+        let cliURL = '';
+        let cliSHA256 = '';
+
+        if (data.cliArtifact) {
+          cliURL = data.cliArtifact.url;
+          cliSHA256 = data.cliArtifact.sha256;
+        }
+
+        return (<DeployInstructionsContent
+          cliURL={cliURL}
+          cliSHA256={cliSHA256}
+          {...props}
+        />);
+      }
+    }
+  </Query>);
+};
+
+// DeployInstructionsContent contains the actual contents of the deploy instructions.
+export class DeployInstructionsContent extends React.Component<DeployInstructionsContentProps, {}> {
+  private shaURL: string;
+
+  componentWillUnmount() {
+    if (this.shaURL) {
+      window.URL.revokeObjectURL(this.shaURL);
+      this.shaURL = '';
+    }
+  }
+
+  render() {
+    if (!this.shaURL && this.props.cliSHA256) {
+      const blob = new Blob([this.props.cliSHA256], {type: 'octet/stream'});
+      this.shaURL = window.URL.createObjectURL(blob);
+    }
+
+    return (<div className='deploy-instructions'>
       <DialogBox width={760}>
         <div className='deploy-instructions--content'>
           <h3>Deployment Instructions</h3>
           <div className='deploy-instructions--instructions' style={{width: '100%'}}>
             <div><span className='deploy-instructions--step'>Step 1:</span> Download the
-                  <a href='/assets/downloads/pixie/linux_amd64/pixie'>{' Pixie CLI '}
+                  <a id='cli-download-link' href={this.props.cliURL}>{' Pixie CLI '}
                     <img src={downloadImage}/>
                   </a>
-                    {' ('} <a href='/assets/downloads/pixie/linux_amd64/pixie.sha256'>{'SHA256 '}
+                    {' ('} <a id='cli-sha-link' href={this.shaURL} download='pixie.sha256'>{'SHA256 '}
                       <img src={downloadImage}/>
                     </a>{' )'}.
             </div>
@@ -46,10 +103,10 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
               {' chmod +x pixie'}
             </CodeSnippet>
             <CodeSnippet showCopy={true} language='bash'>
-              {' ./pixie auth login --site="' + props.sitename + '"'}
+              {' ./pixie auth login --site="' + this.props.sitename + '"'}
             </CodeSnippet>
             <CodeSnippet showCopy={true} language='bash'>
-              {' ./pixie deploy --cluster_id "' + props.clusterID + '"\n \\ --use_version v0.1.4'}
+              {' ./pixie deploy --cluster_id "' + this.props.clusterID + '"\n \\ --use_version v0.1.4'}
             </CodeSnippet>
             <br/>
             <br/>
@@ -69,6 +126,6 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
           </div>
         </div>
       </DialogBox>
-    </div>
-  );
-};
+    </div>);
+  }
+}

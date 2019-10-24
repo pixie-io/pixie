@@ -3,7 +3,7 @@ import {mount} from 'enzyme';
 import * as React from 'react';
 import { MockedProvider } from 'react-apollo/test-utils';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
-import {DeployInstructions} from './deploy-instructions';
+import {DeployInstructions, GET_LINUX_CLI_BINARY} from './deploy-instructions';
 import {CHECK_VIZIER, CREATE_CLUSTER, GET_CLUSTER, Vizier, VizierMain} from './vizier';
 
 // Mock CodeMirror component because it does not mount properly in Jest.
@@ -118,6 +118,9 @@ describe('<Vizier/> test', () => {
   });
 
   it('should show deploy instructions if vizier not connected', async () => {
+    // Mock out createObjectURL function used in deploy instructions.
+    window.URL.createObjectURL = jest.fn();
+
     const mocks = [
       {
         request: {
@@ -130,6 +133,20 @@ describe('<Vizier/> test', () => {
                 status: 'VZ_ST_DISCONNECTED',
                 lastHeartbeatMs: -1,
                 id: 'test',
+            },
+          },
+        },
+      },
+      {
+        request: {
+          query: GET_LINUX_CLI_BINARY,
+          variables: {},
+        },
+        result: {
+          data: {
+            cliArtifact: {
+              url: 'http://pixie.ai/cliArtifact',
+              sha256: 'abcd',
             },
           },
         },
