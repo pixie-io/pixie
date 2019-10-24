@@ -28,9 +28,7 @@ describe('<AgentDisplay/> test', () => {
 
     const wrapper = mount(
       <MockedProvider mocks={mocks} addTypename={false}>
-        <AgentDisplay
-          onAgents={'test'}
-        />
+        <AgentDisplay />
       </MockedProvider>,
     );
     await wait(0);

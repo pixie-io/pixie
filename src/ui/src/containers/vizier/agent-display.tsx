@@ -1,6 +1,6 @@
-import {ContentBox} from 'components/content-box/content-box';
+import { ContentBox } from 'components/content-box/content-box';
 import { AutoSizedScrollableTable } from 'components/table/scrollable-table';
-import {distanceInWords, subSeconds} from 'date-fns';
+import { distanceInWords, subSeconds } from 'date-fns';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import { Query } from 'react-apollo';
@@ -65,33 +65,40 @@ const agentString = (agentCount: number) => {
   return s;
 };
 
-export const AgentDisplay = ({onAgents}) => (
-    <Query context={{clientName: 'vizier'}} query={GET_AGENTS} pollInterval={2500}>
-    {({ loading, error, data }) => {
-      if (loading) { return 'Loading...'; }
-      if (error) { return `Error! ${error.message}`; }
-      const agents = (data.vizier.agents);
-      const now = new Date();
-      const mappedData = agents.map((agent) => {
-        return {
-          id: agent.info.id,
-          hostname: agent.info.hostInfo.hostname,
-          heartbeat: (agent.lastHeartbeatMs / 1000.0).toFixed(2),
-          uptime: distanceInWords(subSeconds(now, agent.uptimeS), now, {addSuffix: false}),
-          state: agent.state,
-        };
-      });
+export class AgentDisplay extends React.Component {
+  private loaded = false;
 
-      return (
-        <ContentBox
-          headerText='Available Agents'
-          secondaryText={agentString(agents.length)}
-        >
-          <div className='agent-display-table'>
-            <AutoSizedScrollableTable data={mappedData} columnInfo={agentTableCols}></AutoSizedScrollableTable>
-          </div>
-        </ContentBox>
-      );
-    }}
-  </Query>
-);
+  render() {
+    return <Query context={{ clientName: 'vizier' }} query={GET_AGENTS} pollInterval={2500}>
+      {({ loading, error, data }) => {
+        if (loading && !this.loaded) { return 'Loading...'; }
+        if (error) { return `Error! ${error.message}`; }
+        this.loaded = true;
+        return <AgentDisplayContent agents={data.vizier.agents} />;
+      }}
+    </Query>;
+  }
+}
+
+const AgentDisplayContent = ({ agents }) => {
+  const now = new Date();
+  const mappedData = agents.map((agent) => {
+    return {
+      id: agent.info.id,
+      hostname: agent.info.hostInfo.hostname,
+      heartbeat: (agent.lastHeartbeatMs / 1000.0).toFixed(2),
+      uptime: distanceInWords(subSeconds(now, agent.uptimeS), now, { addSuffix: false }),
+      state: agent.state,
+    };
+  });
+  return (
+    <ContentBox
+      headerText='Available Agents'
+      secondaryText={agentString(agents.length)}
+    >
+      <div className='agent-display-table'>
+        <AutoSizedScrollableTable data={mappedData} columnInfo={agentTableCols}></AutoSizedScrollableTable>
+      </div>
+    </ContentBox>
+  );
+};
