@@ -115,26 +115,22 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
   std::vector<std::string> mySQLQueryResp;
 
   void InitMySQLData() {
-    mySQLStmtPrepareReq = mysql::testutils::GenRawPacket(
-        0, mysql::testutils::GenStringRequest(mysql::testutils::kStmtPrepareRequest,
-                                              mysql::MySQLEventType::kStmtPrepare)
-               .msg);
+    mySQLStmtPrepareReq = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
+        mysql::testutils::kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare));
 
     std::deque<mysql::Packet> prepare_packets =
         mysql::testutils::GenStmtPrepareOKResponse(mysql::testutils::kStmtPrepareResponse);
-    for (int i = 0; i < static_cast<int>(prepare_packets.size()); ++i) {
-      // i + 1 because packet_num 0 is the request, so response starts from 1.
-      mySQLStmtPrepareResp.push_back(mysql::testutils::GenRawPacket(i + 1, prepare_packets[i].msg));
+    for (const auto& prepare_packet : prepare_packets) {
+      mySQLStmtPrepareResp.push_back(mysql::testutils::GenRawPacket(prepare_packet));
     }
 
     mySQLStmtExecuteReq = mysql::testutils::GenRawPacket(
-        0, mysql::testutils::GenStmtExecuteRequest(mysql::testutils::kStmtExecuteRequest).msg);
+        mysql::testutils::GenStmtExecuteRequest(mysql::testutils::kStmtExecuteRequest));
 
     std::deque<mysql::Packet> execute_packets =
         mysql::testutils::GenResultset(mysql::testutils::kStmtExecuteResultset);
-    for (int i = 0; i < static_cast<int>(execute_packets.size()); ++i) {
-      // i + 1 because packet_num 0 is the request, so response starts from 1.
-      mySQLStmtExecuteResp.push_back(mysql::testutils::GenRawPacket(i + 1, execute_packets[i].msg));
+    for (const auto& execute_packet : execute_packets) {
+      mySQLStmtExecuteResp.push_back(mysql::testutils::GenRawPacket(execute_packet));
     }
 
     mySQLErrResp = mysql::testutils::GenRawPacket(
@@ -147,9 +143,8 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
         mysql::testutils::kQueryRequest, mysql::MySQLEventType::kQuery));
     std::deque<mysql::Packet> query_packets =
         mysql::testutils::GenResultset(mysql::testutils::kQueryResultset);
-    for (int i = 0; i < static_cast<int>(query_packets.size()); ++i) {
-      // i + 1 because packet_num 0 is the request, so response starts from 1.
-      mySQLQueryResp.push_back(mysql::testutils::GenRawPacket(i + 1, query_packets[i].msg));
+    for (const auto& query_packet : query_packets) {
+      mySQLQueryResp.push_back(mysql::testutils::GenRawPacket(query_packet));
     }
   }
 };

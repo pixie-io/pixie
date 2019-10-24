@@ -108,7 +108,7 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
 
 TEST_F(MySQLParserTest, ParseComStmtClose) {
   Packet expected_packet = testutils::GenStmtCloseRequest(testutils::kStmtCloseRequest);
-  std::string msg = testutils::GenRawPacket(0, expected_packet.msg);
+  std::string msg = testutils::GenRawPacket(expected_packet);
 
   parser_.Append(msg, 0);
 
@@ -196,24 +196,20 @@ TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
   // Splitting packets from 2 responses into 3 different raw packet chunks.
   std::vector<std::string> packets1;
   for (size_t i = 0; i < 3; ++i) {
-    packets1.push_back(
-        testutils::GenRawPacket(prepare_resp_packets[i].sequence_id, prepare_resp_packets[i].msg));
+    packets1.push_back(testutils::GenRawPacket(prepare_resp_packets[i]));
   }
 
   std::vector<std::string> packets2;
   for (size_t i = 3; i < prepare_resp_packets.size(); ++i) {
-    packets2.push_back(
-        testutils::GenRawPacket(prepare_resp_packets[i].sequence_id, prepare_resp_packets[i].msg));
+    packets2.push_back(testutils::GenRawPacket(prepare_resp_packets[i]));
   }
   for (size_t i = 0; i < 2; ++i) {
-    packets2.push_back(
-        testutils::GenRawPacket(execute_resp_packets[i].sequence_id, execute_resp_packets[i].msg));
+    packets2.push_back(testutils::GenRawPacket(execute_resp_packets[i]));
   }
 
   std::vector<std::string> packets3;
   for (size_t i = 2; i < execute_resp_packets.size(); ++i) {
-    packets3.push_back(
-        testutils::GenRawPacket(execute_resp_packets[i].sequence_id, execute_resp_packets[i].msg));
+    packets3.push_back(testutils::GenRawPacket(execute_resp_packets[i]));
   }
 
   std::string chunk1 = absl::StrJoin(packets1, "");

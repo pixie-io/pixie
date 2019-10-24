@@ -68,9 +68,8 @@ class SocketTraceBPFTest : public ::testing::Test {
     prepare_execute_script.push_back({});
     std::deque<mysql::Packet> prepare_packets =
         mysql::testutils::GenStmtPrepareOKResponse(mysql::testutils::kStmtPrepareResponse);
-    for (int i = 0; i < static_cast<int>(prepare_packets.size()); ++i) {
-      // i + 1 because packet_num 0 is the request, so response starts from 1.
-      stmt_prepare_resp.push_back(mysql::testutils::GenRawPacket(i + 1, prepare_packets[i].msg));
+    for (const auto& prepare_packet : prepare_packets) {
+      stmt_prepare_resp.push_back(mysql::testutils::GenRawPacket(prepare_packet));
     }
     for (size_t i = 0; i < stmt_prepare_resp.size(); ++i) {
       prepare_execute_script[1].push_back(stmt_prepare_resp[i]);
@@ -78,22 +77,21 @@ class SocketTraceBPFTest : public ::testing::Test {
 
     // Stmt Execute
     stmt_execute_req = mysql::testutils::GenRawPacket(
-        0, mysql::testutils::GenStmtExecuteRequest(mysql::testutils::kStmtExecuteRequest).msg);
+        mysql::testutils::GenStmtExecuteRequest(mysql::testutils::kStmtExecuteRequest));
     prepare_execute_script.push_back({stmt_execute_req});
     prepare_execute_script.push_back({});
     std::deque<mysql::Packet> execute_packets =
         mysql::testutils::GenResultset(mysql::testutils::kStmtExecuteResultset);
-    for (int i = 0; i < static_cast<int>(execute_packets.size()); ++i) {
-      // i + 1 because packet_num 0 is the request, so response starts from 1.
-      stmt_execute_resp.push_back(mysql::testutils::GenRawPacket(i + 1, execute_packets[i].msg));
+    for (const auto& execute_packet : execute_packets) {
+      stmt_execute_resp.push_back(mysql::testutils::GenRawPacket(execute_packet));
     }
     for (size_t i = 0; i < stmt_execute_resp.size(); ++i) {
       prepare_execute_script[3].push_back(stmt_execute_resp[i]);
     }
 
-    // Stmt Execute
+    // Stmt Close
     stmt_close_req = mysql::testutils::GenRawPacket(
-        0, mysql::testutils::GenStmtCloseRequest(mysql::testutils::kStmtCloseRequest).msg);
+        mysql::testutils::GenStmtCloseRequest(mysql::testutils::kStmtCloseRequest));
     prepare_execute_script.push_back({stmt_close_req});
     prepare_execute_script.push_back({});
 
@@ -109,9 +107,8 @@ class SocketTraceBPFTest : public ::testing::Test {
     query_script.push_back({});
     std::deque<mysql::Packet> query_packets =
         mysql::testutils::GenResultset(mysql::testutils::kQueryResultset);
-    for (int i = 0; i < static_cast<int>(query_packets.size()); ++i) {
-      // i + 1 because packet_num 0 is the request, so response starts from 1.
-      QueryResp.push_back(mysql::testutils::GenRawPacket(i + 1, query_packets[i].msg));
+    for (const auto& query_packet : query_packets) {
+      QueryResp.push_back(mysql::testutils::GenRawPacket(query_packet));
     }
     for (size_t i = 0; i < QueryResp.size(); ++i) {
       query_script[1].push_back(QueryResp[i]);
