@@ -23,8 +23,8 @@ namespace mysql {
  * @param state: MySQL state from previous requests (particularly state from prepared statements).
  * @return A vector of entries to be appended to table store.
  */
-std::vector<Entry> ProcessMySQLPackets(std::deque<Packet>* req_packets,
-                                       std::deque<Packet>* resp_packets, mysql::State* state);
+std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
+                                        std::deque<Packet>* resp_packets, mysql::State* state);
 
 /**
  * The following process functions are helper functions that each processes a type of req_packet.
@@ -45,32 +45,32 @@ std::vector<Entry> ProcessMySQLPackets(std::deque<Packet>* req_packets,
  */
 
 StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                        mysql::State* state, Entry* entry);
+                                        mysql::State* state, Record* entry);
 
 StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
                                              DequeView<Packet> resp_packets, mysql::State* state,
-                                             Entry* entry);
+                                             Record* entry);
 
 StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                        mysql::State* state, Entry* entry);
+                                        mysql::State* state, Record* entry);
 
 StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                      mysql::State* state, Entry* entry);
+                                      mysql::State* state, Record* entry);
 
 StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                      mysql::State* state, Entry* entry);
+                                      mysql::State* state, Record* entry);
 
 StatusOr<ParseState> ProcessStmtReset(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                      mysql::State* state, Entry* entry);
+                                      mysql::State* state, Record* entry);
 
 StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                  Entry* entry);
+                                  Record* entry);
 
 StatusOr<ParseState> ProcessFieldList(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                      Entry* entry);
+                                      Record* entry);
 
 StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, bool string_req,
-                                                     DequeView<Packet> resp_packets, Entry* entry);
+                                                     DequeView<Packet> resp_packets, Record* entry);
 
 }  // namespace mysql
 }  // namespace stirling

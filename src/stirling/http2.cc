@@ -352,11 +352,11 @@ void StitchAndInflateHeaderBlocks(nghttp2_hd_inflater* inflater, std::deque<Fram
  */
 // TODO(yzhao): Turn this into a class that parse frames one by one.
 ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
-                                   std::vector<GRPCMessage>* msgs) {
+                                   std::vector<HTTP2Message>* msgs) {
   size_t data_block_size = 0;
   std::vector<const Frame*> data_block_frames;
 
-  GRPCMessage msg;
+  HTTP2Message msg;
 
   auto handle_end_stream = [&data_block_size, &data_block_frames, &msg, msgs]() {
     // HTTP2 spec allows the following frames sequence:
@@ -429,7 +429,7 @@ ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
 }
 
 ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames,
-                                      std::map<uint32_t, GRPCMessage>* stream_msgs) {
+                                      std::map<uint32_t, HTTP2Message>* stream_msgs) {
   std::map<uint32_t, std::vector<const Frame*>> stream_frames;
 
   // Collect frames for each stream.
@@ -446,7 +446,7 @@ ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames,
     stream_frames[f.frame.hd.stream_id].push_back(&f);
   }
   for (auto& [stream_id, frame_ptrs] : stream_frames) {
-    std::vector<GRPCMessage> msgs;
+    std::vector<HTTP2Message> msgs;
     ParseState state = StitchGRPCMessageFrames(frame_ptrs, &msgs);
     if (state != ParseState::kSuccess) {
       return state;
@@ -462,8 +462,8 @@ ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames,
   return ParseState::kSuccess;
 }
 
-std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, GRPCMessage> reqs,
-                                          std::map<uint32_t, GRPCMessage> resps) {
+std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, HTTP2Message> reqs,
+                                          std::map<uint32_t, HTTP2Message> resps) {
   std::vector<GRPCReqResp> res;
 
   // Treat 2 maps as 2 lists ordered according to stream ID, then merge on common stream IDs.
@@ -473,8 +473,8 @@ std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, GRPCMessage> reqs,
     const uint32_t req_stream_id = req_iter->first;
     const uint32_t resp_stream_id = resp_iter->first;
 
-    GRPCMessage& stream_req = req_iter->second;
-    GRPCMessage& stream_resp = resp_iter->second;
+    HTTP2Message& stream_req = req_iter->second;
+    HTTP2Message& stream_resp = resp_iter->second;
     if (req_stream_id == resp_stream_id) {
       LOG_IF(DFATAL, stream_req.type == stream_resp.type)
           << "gRPC messages from two streams should be different, got the same type: "
@@ -491,7 +491,7 @@ std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, GRPCMessage> reqs,
   return res;
 }
 
-MethodInputOutput GetProtobufMessages(const GRPCMessage& req, ServiceDescriptorDatabase* db) {
+MethodInputOutput GetProtobufMessages(const HTTP2Message& req, ServiceDescriptorDatabase* db) {
   const char kPathHeader[] = ":path";
   auto iter = req.headers.find(kPathHeader);
   if (iter == req.headers.end()) {

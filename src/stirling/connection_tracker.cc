@@ -146,7 +146,7 @@ std::vector<TEntryType> ConnectionTracker::ProcessMessages() {
 }
 
 template <>
-std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessagesImpl() {
+std::vector<http::Record> ConnectionTracker::ProcessMessagesImpl() {
   Status s = ExtractReqResp<http::HTTPMessage>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
@@ -157,7 +157,7 @@ std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessagesIm
   auto& resp_messages = resp_data()->Messages<http::HTTPMessage>();
 
   // Match request response pairs.
-  std::vector<ReqRespPair<http::HTTPMessage>> trace_records;
+  std::vector<http::Record> trace_records;
   for (auto req_iter = req_messages.begin(), resp_iter = resp_messages.begin();
        req_iter != req_messages.end() && resp_iter != resp_messages.end();) {
     http::HTTPMessage& req = *req_iter;
@@ -167,7 +167,7 @@ std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessagesIm
       // Oldest message is a response.
       // This means the corresponding request was not traced.
       // Push without request.
-      ReqRespPair<http::HTTPMessage> record{http::HTTPMessage(), std::move(resp)};
+      http::Record record{http::HTTPMessage(), std::move(resp)};
       resp_messages.pop_front();
       trace_records.push_back(std::move(record));
       ++resp_iter;
@@ -177,7 +177,7 @@ std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessagesIm
       //  2) No missing messages.
       // With missing messages, there are no guarantees.
       // With no missing messages and pipelining, it's even more complicated.
-      ReqRespPair<http::HTTPMessage> record{std::move(req), std::move(resp)};
+      http::Record record{std::move(req), std::move(resp)};
       req_messages.pop_front();
       resp_messages.pop_front();
       trace_records.push_back(std::move(record));
@@ -189,7 +189,7 @@ std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessagesIm
   // Any leftover responses must have lost their requests.
   for (auto resp_iter = resp_messages.begin(); resp_iter != resp_messages.end(); ++resp_iter) {
     http::HTTPMessage& resp = *resp_iter;
-    ReqRespPair<http::HTTPMessage> record{http::HTTPMessage(), std::move(resp)};
+    http::Record record{http::HTTPMessage(), std::move(resp)};
     trace_records.push_back(std::move(record));
   }
   resp_messages.clear();
@@ -205,15 +205,15 @@ std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessagesIm
 }
 
 template <>
-std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesImpl() {
+std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
   Status s = ExtractReqResp<http2::Frame>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
     return {};
   }
 
-  std::map<uint32_t, http2::GRPCMessage> reqs;
-  std::map<uint32_t, http2::GRPCMessage> resps;
+  std::map<uint32_t, http2::HTTP2Message> reqs;
+  std::map<uint32_t, http2::HTTP2Message> resps;
 
   DataStream* req_stream = req_data();
   DataStream* resp_stream = resp_data();
@@ -230,11 +230,11 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesI
 
   std::vector<http2::GRPCReqResp> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
 
-  std::vector<ReqRespPair<http2::GRPCMessage>> trace_records;
+  std::vector<http2::Record> trace_records;
   for (auto& r : records) {
-    r.req_message.MarkFramesConsumed();
-    r.resp_message.MarkFramesConsumed();
-    ReqRespPair<http2::GRPCMessage> tmp{std::move(r.req_message), std::move(r.resp_message)};
+    r.req.MarkFramesConsumed();
+    r.resp.MarkFramesConsumed();
+    http2::Record tmp{std::move(r.req), std::move(r.resp)};
     trace_records.push_back(tmp);
   }
 
@@ -268,8 +268,8 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesI
 }
 
 template <>
-std::vector<mysql::Entry> ConnectionTracker::ProcessMessagesImpl() {
-  std::vector<mysql::Entry> entries;
+std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
+  std::vector<mysql::Record> entries;
 
   Status s = ExtractReqResp<mysql::Packet>();
   if (!s.ok()) {
@@ -285,7 +285,7 @@ std::vector<mysql::Entry> ConnectionTracker::ProcessMessagesImpl() {
   auto state_ptr = state<mysql::State>();
 
   // ProcessMySQLPackets handles errors internally.
-  std::vector<mysql::Entry> result =
+  std::vector<mysql::Record> result =
       mysql::ProcessMySQLPackets(&req_messages, &resp_messages, state_ptr);
 
   Cleanup<mysql::Packet>();
@@ -546,15 +546,13 @@ std::string ConnectionTracker::DebugString(std::string_view prefix) const {
   return info;
 }
 
-template std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessages();
-template std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessages();
-template std::vector<mysql::Entry> ConnectionTracker::ProcessMessages();
+template std::vector<http::Record> ConnectionTracker::ProcessMessages();
+template std::vector<http2::Record> ConnectionTracker::ProcessMessages();
+template std::vector<mysql::Record> ConnectionTracker::ProcessMessages();
 
-template std::string ConnectionTracker::DebugString<ReqRespPair<http::HTTPMessage>>(
-    std::string_view prefix) const;
-template std::string ConnectionTracker::DebugString<ReqRespPair<http2::GRPCMessage>>(
-    std::string_view prefix) const;
-template std::string ConnectionTracker::DebugString<mysql::Entry>(std::string_view prefix) const;
+template std::string ConnectionTracker::DebugString<http::Record>(std::string_view prefix) const;
+template std::string ConnectionTracker::DebugString<http2::Record>(std::string_view prefix) const;
+template std::string ConnectionTracker::DebugString<mysql::Record>(std::string_view prefix) const;
 
 }  // namespace stirling
 }  // namespace pl

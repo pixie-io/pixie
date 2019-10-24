@@ -19,17 +19,17 @@ template <class TEntryType>
 struct GetMessageType;
 
 template <>
-struct GetMessageType<ReqRespPair<http::HTTPMessage>> {
+struct GetMessageType<http::Record> {
   typedef http::HTTPMessage type;
 };
 
 template <>
-struct GetMessageType<ReqRespPair<http2::GRPCMessage>> {
+struct GetMessageType<http2::Record> {
   typedef http2::Frame type;
 };
 
 template <>
-struct GetMessageType<mysql::Entry> {
+struct GetMessageType<mysql::Record> {
   typedef mysql::Packet type;
 };
 

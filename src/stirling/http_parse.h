@@ -14,6 +14,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/event_parser.h"
+#include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {
@@ -59,6 +60,8 @@ struct HTTPMessage {
            http_resp_message.size() + http_msg_body.size();
   }
 };
+
+using Record = ReqRespPair<HTTPMessage, HTTPMessage>;
 
 void PreProcessMessage(HTTPMessage* message);
 

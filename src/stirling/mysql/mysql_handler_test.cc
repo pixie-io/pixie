@@ -15,7 +15,7 @@ TEST(HandleErrMessage, Basic) {
   ErrResponse err_resp = {.error_code = 1096, .error_message = "This is an error."};
   std::deque<Packet> resp_packets = {testutils::GenErr(/* seq_id */ 1, err_resp)};
 
-  Entry entry;
+  Record entry;
   HandleErrMessage(resp_packets, &entry);
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kErr);
   EXPECT_EQ(entry.resp.msg, "This is an error.");
@@ -24,7 +24,7 @@ TEST(HandleErrMessage, Basic) {
 TEST(HandleOKMessage, Basic) {
   std::deque<Packet> resp_packets = {testutils::GenOK(1)};
 
-  Entry entry;
+  Record entry;
   HandleOKMessage(resp_packets, &entry);
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kOK);
 }
@@ -33,7 +33,7 @@ TEST(HandleResultsetResponse, ValidWithEOF) {
   // Test without CLIENT_DEPRECATE_EOF.
   std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset);
 
-  Entry entry;
+  Record entry;
   auto s = HandleResultsetResponse(resp_packets, &entry);
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
@@ -45,7 +45,7 @@ TEST(HandleResultsetResponse, ValidNoEOF) {
   // Test with CLIENT_DEPRECATE_EOF.
   std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset, true);
 
-  Entry entry;
+  Record entry;
   auto s = HandleResultsetResponse(resp_packets, &entry);
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
@@ -58,7 +58,7 @@ TEST(HandleResultsetResponse, NeedsMoreData) {
   std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset);
   resp_packets.pop_back();
 
-  Entry entry;
+  Record entry;
   auto s = HandleResultsetResponse(resp_packets, &entry);
   EXPECT_TRUE(s.ok());
   EXPECT_EQ(s.ValueOrDie(), ParseState::kNeedsMoreData);
@@ -72,7 +72,7 @@ TEST(HandleResultsetResponse, InvalidResponse) {
   std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset);
   resp_packets.front() = testutils::GenErr(/* seq_id */ 1, err_resp);
 
-  Entry entry;
+  Record entry;
   State state;
   auto s = HandleResultsetResponse(resp_packets, &entry);
   EXPECT_FALSE(s.ok());
@@ -83,7 +83,7 @@ TEST(HandleResultsetResponse, InvalidResponse) {
 TEST(HandleStmtPrepareOKResponse, Valid) {
   std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testdata::kStmtPrepareResponse);
 
-  Entry entry;
+  Record entry;
   State state;
   auto s = HandleStmtPrepareOKResponse(packets, &state, &entry);
   EXPECT_TRUE(s.ok());
@@ -97,7 +97,7 @@ TEST(HandleStmtPrepareOKResponse, NeedsMoreData) {
   std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testdata::kStmtPrepareResponse);
   packets.pop_back();
 
-  Entry entry;
+  Record entry;
   State state;
   auto s = HandleStmtPrepareOKResponse(packets, &state, &entry);
   EXPECT_TRUE(s.ok());
@@ -112,7 +112,7 @@ TEST(HandleStmtPrepareOKResponse, Invalid) {
   ErrResponse err_resp = {.error_code = 1096, .error_message = "This is an error."};
   packets.front() = testutils::GenErr(/* seq_id */ 1, err_resp);
 
-  Entry entry;
+  Record entry;
   State state;
   auto s = HandleStmtPrepareOKResponse(packets, &state, &entry);
   EXPECT_FALSE(s.ok());
@@ -128,7 +128,7 @@ TEST(HandleStmtExecuteRequest, Basic) {
   std::map<int, PreparedStatement> prepare_map;
   prepare_map.emplace(stmt_id, std::move(prepared_stmt));
 
-  Entry entry;
+  Record entry;
   HandleStmtExecuteRequest(req_packet, &prepare_map, &entry);
   EXPECT_EQ(entry.req.cmd, MySQLEventType::kStmtExecute);
   EXPECT_EQ(entry.req.msg,
@@ -141,7 +141,7 @@ TEST(HandleStringRequest, Basic) {
   Packet req_packet =
       testutils::GenStringRequest(testdata::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
 
-  Entry entry;
+  Record entry;
   HandleStringRequest(req_packet, &entry);
   EXPECT_EQ(entry.req.cmd, MySQLEventType::kStmtPrepare);
   EXPECT_EQ(entry.req.msg,

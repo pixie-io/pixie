@@ -110,7 +110,7 @@ struct Frame {
  */
 ParseState UnpackFrame(std::string_view* buf, Frame* frame);
 
-struct GRPCMessage {
+struct HTTP2Message {
   // TODO(yzhao): We keep this field for easier testing. Update tests to not rely on input invalid
   // data.
   ParseState parse_state = ParseState::kUnknown;
@@ -137,6 +137,8 @@ struct GRPCMessage {
   }
 };
 
+using Record = ReqRespPair<HTTP2Message, HTTP2Message>;
+
 /**
  * @brief Stitches frames to create header blocks and inflate them.
  *
@@ -151,7 +153,7 @@ void StitchAndInflateHeaderBlocks(nghttp2_hd_inflater* inflater, std::deque<Fram
 
 // Used by StitchFramesToGRPCMessages() put here for testing.
 ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
-                                   std::vector<GRPCMessage>* msgs);
+                                   std::vector<HTTP2Message>* msgs);
 
 /*
  * @brief Stitches frames as either request or response. Also marks the consumed frames.
@@ -162,16 +164,16 @@ ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
  * stream ID, not our internal stream ID for TCP connections.
  */
 ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames,
-                                      std::map<uint32_t, GRPCMessage>* stream_msgs);
+                                      std::map<uint32_t, HTTP2Message>* stream_msgs);
 
-using GRPCReqResp = ReqRespPair<GRPCMessage>;
+using GRPCReqResp = ReqRespPair<HTTP2Message, HTTP2Message>;
 
 /**
- * @brief Matchs req & resp GRPCMessage of the same streams. The input arguments are moved to the
+ * @brief Matchs req & resp HTTP2Message of the same streams. The input arguments are moved to the
  * returned result.
  */
-std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, GRPCMessage> reqs,
-                                          std::map<uint32_t, GRPCMessage> resps);
+std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, HTTP2Message> reqs,
+                                          std::map<uint32_t, HTTP2Message> resps);
 
 inline void EraseConsumedFrames(std::deque<Frame>* frames) {
   frames->erase(
@@ -182,7 +184,7 @@ inline void EraseConsumedFrames(std::deque<Frame>* frames) {
 /**
  * @brief Returns the dynamic protobuf messages for the called method in the request.
  */
-::pl::grpc::MethodInputOutput GetProtobufMessages(const GRPCMessage& req,
+::pl::grpc::MethodInputOutput GetProtobufMessages(const HTTP2Message& req,
                                                   ::pl::grpc::ServiceDescriptorDatabase* db);
 
 // TODO(yzhao): gRPC has a feature called bidirectional streaming:
@@ -255,6 +257,5 @@ inline std::string_view GetLiteralNameAsStringView(const HeaderField& field) {
 ParseState ParseHeaderBlock(u8string_view* buf, std::vector<HeaderField>* res);
 
 }  // namespace http2
-
 }  // namespace stirling
 }  // namespace pl

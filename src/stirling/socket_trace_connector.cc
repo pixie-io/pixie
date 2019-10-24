@@ -67,8 +67,8 @@ using ::pl::stirling::kMySQLTable;
 using ::pl::stirling::grpc::PBTextFormat;
 using ::pl::stirling::grpc::PBWireToText;
 using ::pl::stirling::http2::Frame;
-using ::pl::stirling::http2::GRPCMessage;
 using ::pl::stirling::http2::GRPCReqResp;
+using ::pl::stirling::http2::HTTP2Message;
 using ::pl::stirling::http2::MatchGRPCReqResp;
 using ::pl::stirling::utils::WriteMapAsJSON;
 
@@ -151,11 +151,11 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   switch (table_num) {
     case kHTTPTableNum:
       if (FLAGS_stirling_enable_http_tracing) {
-        TransferStreams<ReqRespPair<http::HTTPMessage>>(ctx, kProtocolHTTP, data_table);
+        TransferStreams<http::Record>(ctx, kProtocolHTTP, data_table);
       }
 
       if (FLAGS_stirling_enable_grpc_tracing) {
-        TransferStreams<ReqRespPair<GRPCMessage>>(ctx, kProtocolHTTP2, data_table);
+        TransferStreams<http2::Record>(ctx, kProtocolHTTP2, data_table);
       }
 
       // Also call transfer streams on kProtocolUnknown to clean up any closed connections.
@@ -168,7 +168,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
     case kMySQLTableNum:
       // TODO(oazizi): Re-enable this after more stress-testing.
       if (FLAGS_stirling_enable_mysql_tracing) {
-        TransferStreams<mysql::Entry>(ctx, kProtocolMySQL, data_table);
+        TransferStreams<mysql::Record>(ctx, kProtocolMySQL, data_table);
       }
       break;
     default:
@@ -424,8 +424,8 @@ int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
 
 }  // namespace
 
-bool SocketTraceConnector::SelectMessage(const ReqRespPair<http::HTTPMessage>& record) {
-  const http::HTTPMessage& message = record.resp_message;
+bool SocketTraceConnector::SelectMessage(const http::Record& record) {
+  const http::HTTPMessage& message = record.resp;
 
   // Rule: Exclude anything that doesn't specify its Content-Type.
   auto content_type_iter = message.http_headers.find(http::kContentType);
@@ -447,8 +447,7 @@ bool SocketTraceConnector::SelectMessage(const ReqRespPair<http::HTTPMessage>& r
 
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker,
-                                         ReqRespPair<http::HTTPMessage> record,
+                                         const ConnectionTracker& conn_tracker, http::Record record,
                                          DataTable* data_table) {
   // Only allow certain records to be transferred upstream.
   if (!SelectMessage(record)) {
@@ -457,12 +456,12 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 
   // Currently decompresses gzip content, but could handle other transformations too.
   // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
-  PreProcessMessage(&record.resp_message);
+  PreProcessMessage(&record.resp);
 
   DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  http::HTTPMessage& req_message = record.req_message;
-  http::HTTPMessage& resp_message = record.resp_message;
+  http::HTTPMessage& req_message = record.req;
+  http::HTTPMessage& resp_message = record.resp;
 
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());
@@ -492,11 +491,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker,
-                                         ReqRespPair<GRPCMessage> record, DataTable* data_table) {
+                                         http2::Record record, DataTable* data_table) {
   DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  GRPCMessage& req_message = record.req_message;
-  GRPCMessage& resp_message = record.resp_message;
+  HTTP2Message& req_message = record.req;
+  HTTP2Message& resp_message = record.resp;
 
   int64_t resp_status;
   ECHECK(absl::SimpleAtoi(resp_message.HeaderValue(":status", "-1"), &resp_status));
@@ -543,8 +542,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 }
 
+template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker, mysql::Entry entry,
+                                         const ConnectionTracker& conn_tracker, mysql::Record entry,
                                          DataTable* data_table) {
   DCHECK_EQ(kMySQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
 

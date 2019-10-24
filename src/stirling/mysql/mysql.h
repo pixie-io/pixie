@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include "src/common/base/base.h"
+#include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {
@@ -253,12 +254,9 @@ struct State {
 // Table Store Entry Level Structs
 //-----------------------------------------------------------------------------
 
-/**
- *  MySQL Entry is emitted by Stitch functions, and will be appended to the table store.
- */
 enum class MySQLRespStatus { kUnknown, kOK, kErr };
 
-struct EntryRequest {
+struct MySQLRequest {
   // MySQL command. See MySQLEventType.
   MySQLEventType cmd;
 
@@ -269,7 +267,7 @@ struct EntryRequest {
   uint64_t timestamp_ns;
 };
 
-struct EntryResponse {
+struct MySQLResponse {
   // MySQL response status: OK, ERR or Unknown.
   MySQLRespStatus status;
 
@@ -280,10 +278,10 @@ struct EntryResponse {
   uint64_t timestamp_ns;
 };
 
-struct Entry {
-  EntryRequest req;
-  EntryResponse resp;
-};
+/**
+ *  Record is the primary output of the mysql parser.
+ */
+using Record = ReqRespPair<MySQLRequest, MySQLResponse>;
 
 //-----------------------------------------------------------------------------
 // Packet identification functions

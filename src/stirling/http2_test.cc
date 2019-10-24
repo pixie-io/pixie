@@ -117,9 +117,9 @@ TEST(UnpackFramesTest, ResultsAreAsExpected) {
                                   MatchesTypePayload(NGHTTP2_DATA, "abcd")));
 }
 
-// Returns a vector of single GRPCMessage constructed from the input.
-GRPCMessage GRPCMsg(MessageType type, std::string_view msg, NVMap headers) {
-  GRPCMessage res;
+// Returns a vector of single HTTP2Message constructed from the input.
+HTTP2Message GRPCMsg(MessageType type, std::string_view msg, NVMap headers) {
+  HTTP2Message res;
   res.type = type;
   res.message = msg;
   res.headers = std::move(headers);
@@ -129,15 +129,16 @@ GRPCMessage GRPCMsg(MessageType type, std::string_view msg, NVMap headers) {
 MATCHER_P2(HasMsgAndHdrs, msg, hdrs, "") { return arg.message == msg && arg.headers == hdrs; }
 
 TEST(MatchGRPCReqRespTest, InputsAreMoved) {
-  std::map<uint32_t, GRPCMessage> reqs{{1u, GRPCMsg(MessageType::kRequest, "a", {{"h1", "v1"}})},
-                                       {2u, GRPCMsg(MessageType::kRequest, "b", {{"h2", "v2"}})}};
-  std::map<uint32_t, GRPCMessage> resps{{0u, GRPCMsg(MessageType::kResponse, "c", {{"h3", "v3"}})},
-                                        {1u, GRPCMsg(MessageType::kResponse, "d", {{"h4", "v4"}})}};
+  std::map<uint32_t, HTTP2Message> reqs{{1u, GRPCMsg(MessageType::kRequest, "a", {{"h1", "v1"}})},
+                                        {2u, GRPCMsg(MessageType::kRequest, "b", {{"h2", "v2"}})}};
+  std::map<uint32_t, HTTP2Message> resps{
+      {0u, GRPCMsg(MessageType::kResponse, "c", {{"h3", "v3"}})},
+      {1u, GRPCMsg(MessageType::kResponse, "d", {{"h4", "v4"}})}};
 
   std::vector<GRPCReqResp> matched_msgs = MatchGRPCReqResp(std::move(reqs), std::move(resps));
   ASSERT_THAT(matched_msgs, SizeIs(1));
-  const GRPCMessage& req = matched_msgs.begin()->req_message;
-  const GRPCMessage& resp = matched_msgs.begin()->resp_message;
+  const HTTP2Message& req = matched_msgs.begin()->req;
+  const HTTP2Message& resp = matched_msgs.begin()->resp;
   EXPECT_EQ("a", req.message);
   EXPECT_EQ("d", resp.message);
 }
@@ -186,7 +187,7 @@ TEST(StitchGRPCMessageFramesTest, SuccessiveHeadersFrameCausesError) {
   Inflater inflater;
   StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
 
-  std::vector<GRPCMessage> msgs;
+  std::vector<HTTP2Message> msgs;
   EXPECT_EQ(ParseState::kInvalid, StitchGRPCMessageFrames(ExtractPtrs(frames), &msgs));
 }
 
@@ -200,7 +201,7 @@ TEST(StitchGRPCMessageFramesTest, DataAfterHeadersCausesError) {
   Inflater inflater;
   StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
 
-  std::vector<GRPCMessage> msgs;
+  std::vector<HTTP2Message> msgs;
   EXPECT_EQ(ParseState::kInvalid, StitchGRPCMessageFrames(ExtractPtrs(frames), &msgs));
 }
 
@@ -210,7 +211,7 @@ TEST(StitchFramesToGRPCMessagesTest, StitchReqsRespsOfDifferentStreams) {
                    PackHeadersFrame("", NGHTTP2_FLAG_END_HEADERS, 2), PackDataFrame("abcd", 0, 1),
                    PackDataFrame("abcd", NGHTTP2_FLAG_END_STREAM, 2),
                    PackHeadersFrame("", NGHTTP2_FLAG_END_HEADERS | NGHTTP2_FLAG_END_STREAM, 1));
-  std::map<uint32_t, GRPCMessage> stream_msgs;
+  std::map<uint32_t, HTTP2Message> stream_msgs;
   std::deque<Frame> frames;
   ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
   EXPECT_EQ(ParseState::kSuccess, res.state);
@@ -223,12 +224,12 @@ TEST(StitchFramesToGRPCMessagesTest, StitchReqsRespsOfDifferentStreams) {
   // There should be one gRPC request and response.
   ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, _), Pair(2, _)));
 
-  const GRPCMessage& req_msg = stream_msgs[2];
+  const HTTP2Message& req_msg = stream_msgs[2];
   EXPECT_EQ(MessageType::kRequest, req_msg.type);
   EXPECT_EQ("abcd", req_msg.message);
   EXPECT_THAT(req_msg.frames, ElementsAre(&frames[1], &frames[3]));
 
-  const GRPCMessage& resp_msg = stream_msgs[1];
+  const HTTP2Message& resp_msg = stream_msgs[1];
   EXPECT_EQ(MessageType::kResponse, resp_msg.type);
   EXPECT_EQ("abcd", resp_msg.message);
   // Note we put the HEADERS frames first, and then DATA frames.
@@ -245,13 +246,13 @@ TEST(StitchFramesToGRPCMessagesTest, InCompleteMessage) {
   Inflater inflater;
   StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
 
-  std::map<uint32_t, GRPCMessage> stream_msgs;
+  std::map<uint32_t, HTTP2Message> stream_msgs;
   StitchFramesToGRPCMessages(frames, &stream_msgs);
   EXPECT_THAT(stream_msgs, IsEmpty()) << "There is no END_STREAM in frames, so there is no data";
 }
 
 TEST(ParseProtobufsTest, GreeterServiceReqResp) {
-  GRPCMessage req;
+  HTTP2Message req;
   req.headers.emplace(":path", "/pl.stirling.testing.Greeter/SayHello");
 
   ServiceDescriptorDatabase db(GreetServiceFDSet());
@@ -402,7 +403,7 @@ TEST(DeflateEnflateTest, RandomGeneratedHeaderFields) {
 }
 
 TEST(HeadersTest, GetHeaderValue) {
-  GRPCMessage req;
+  HTTP2Message req;
   req.headers.emplace(":path", "/pl.stirling.testing.Greeter/SayHello");
   req.headers.emplace("foo", "200");
 
@@ -586,7 +587,7 @@ TEST(StitchAndInflateHeaderBlocksTest, IncompleteHeaderBlock) {
 
   EXPECT_TRUE(frames[1].consumed);
 
-  std::map<uint32_t, GRPCMessage> stream_msgs;
+  std::map<uint32_t, HTTP2Message> stream_msgs;
   EXPECT_EQ(ParseState::kSuccess, StitchFramesToGRPCMessages(frames, &stream_msgs));
   EXPECT_THAT(stream_msgs, IsEmpty());
 }

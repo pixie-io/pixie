@@ -61,7 +61,7 @@ TEST_F(ConnectionTrackerTest, info_string) {
   tracker.AddDataEvent(std::move(event1));
   tracker.AddDataEvent(std::move(event2));
 
-  std::string debug_info = tracker.DebugString<ReqRespPair<http::HTTPMessage>>();
+  std::string debug_info = tracker.DebugString<http::Record>();
 
   std::string expected_output = R"(pid=12345 fd=3 gen=1
 remote_addr=0.0.0.0:0
@@ -76,9 +76,9 @@ send queue
 
   EXPECT_EQ(expected_output, debug_info);
 
-  tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  tracker.ProcessMessages<http::Record>();
 
-  debug_info = tracker.DebugString<ReqRespPair<http::HTTPMessage>>();
+  debug_info = tracker.DebugString<http::Record>();
 
   expected_output = R"(pid=12345 fd=3 gen=1
 remote_addr=0.0.0.0:0
@@ -115,19 +115,19 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddControlEvent(close_event);
 
-  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  std::vector<http::Record> req_resp_pairs;
+  req_resp_pairs = tracker.ProcessMessages<http::Record>();
 
   ASSERT_EQ(3, req_resp_pairs.size());
 
-  EXPECT_EQ(req_resp_pairs[0].req_message.http_req_path, "/index.html");
-  EXPECT_EQ(req_resp_pairs[0].resp_message.http_msg_body, "pixie");
+  EXPECT_EQ(req_resp_pairs[0].req.http_req_path, "/index.html");
+  EXPECT_EQ(req_resp_pairs[0].resp.http_msg_body, "pixie");
 
-  EXPECT_EQ(req_resp_pairs[1].req_message.http_req_path, "/foo.html");
-  EXPECT_EQ(req_resp_pairs[1].resp_message.http_msg_body, "foo");
+  EXPECT_EQ(req_resp_pairs[1].req.http_req_path, "/foo.html");
+  EXPECT_EQ(req_resp_pairs[1].resp.http_msg_body, "foo");
 
-  EXPECT_EQ(req_resp_pairs[2].req_message.http_req_path, "/bar.html");
-  EXPECT_EQ(req_resp_pairs[2].resp_message.http_msg_body, "bar");
+  EXPECT_EQ(req_resp_pairs[2].req.http_req_path, "/bar.html");
+  EXPECT_EQ(req_resp_pairs[2].resp.http_msg_body, "bar");
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
@@ -151,19 +151,19 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddControlEvent(close_event);
 
-  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  std::vector<http::Record> req_resp_pairs;
+  req_resp_pairs = tracker.ProcessMessages<http::Record>();
 
   ASSERT_EQ(3, req_resp_pairs.size());
 
-  EXPECT_EQ(req_resp_pairs[0].req_message.http_req_path, "/index.html");
-  EXPECT_EQ(req_resp_pairs[0].resp_message.http_msg_body, "pixie");
+  EXPECT_EQ(req_resp_pairs[0].req.http_req_path, "/index.html");
+  EXPECT_EQ(req_resp_pairs[0].resp.http_msg_body, "pixie");
 
-  EXPECT_EQ(req_resp_pairs[1].req_message.http_req_path, "/foo.html");
-  EXPECT_EQ(req_resp_pairs[1].resp_message.http_msg_body, "foo");
+  EXPECT_EQ(req_resp_pairs[1].req.http_req_path, "/foo.html");
+  EXPECT_EQ(req_resp_pairs[1].resp.http_msg_body, "foo");
 
-  EXPECT_EQ(req_resp_pairs[2].req_message.http_req_path, "/bar.html");
-  EXPECT_EQ(req_resp_pairs[2].resp_message.http_msg_body, "bar");
+  EXPECT_EQ(req_resp_pairs[2].req.http_req_path, "/bar.html");
+  EXPECT_EQ(req_resp_pairs[2].resp.http_msg_body, "bar");
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
@@ -187,19 +187,19 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddControlEvent(close_event);
 
-  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  std::vector<http::Record> req_resp_pairs;
+  req_resp_pairs = tracker.ProcessMessages<http::Record>();
 
   ASSERT_EQ(3, req_resp_pairs.size());
 
-  EXPECT_EQ(req_resp_pairs[0].req_message.http_req_path, "/index.html");
-  EXPECT_EQ(req_resp_pairs[0].resp_message.http_msg_body, "pixie");
+  EXPECT_EQ(req_resp_pairs[0].req.http_req_path, "/index.html");
+  EXPECT_EQ(req_resp_pairs[0].resp.http_msg_body, "pixie");
 
-  EXPECT_EQ(req_resp_pairs[1].req_message.http_req_path, "-");
-  EXPECT_EQ(req_resp_pairs[1].resp_message.http_msg_body, "foo");
+  EXPECT_EQ(req_resp_pairs[1].req.http_req_path, "-");
+  EXPECT_EQ(req_resp_pairs[1].resp.http_msg_body, "foo");
 
-  EXPECT_EQ(req_resp_pairs[2].req_message.http_req_path, "/bar.html");
-  EXPECT_EQ(req_resp_pairs[2].resp_message.http_msg_body, "bar");
+  EXPECT_EQ(req_resp_pairs[2].req.http_req_path, "/bar.html");
+  EXPECT_EQ(req_resp_pairs[2].resp.http_msg_body, "bar");
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
@@ -223,18 +223,18 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddControlEvent(close_event);
 
-  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
+  std::vector<http::Record> req_resp_pairs;
 
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  req_resp_pairs = tracker.ProcessMessages<http::Record>();
 
   ASSERT_EQ(2, req_resp_pairs.size());
 
-  EXPECT_EQ(req_resp_pairs[0].req_message.http_req_path, "/index.html");
-  EXPECT_EQ(req_resp_pairs[0].resp_message.http_msg_body, "pixie");
+  EXPECT_EQ(req_resp_pairs[0].req.http_req_path, "/index.html");
+  EXPECT_EQ(req_resp_pairs[0].resp.http_msg_body, "pixie");
 
   // Oops - expecting a mismatch? Yes! What else can we do?
-  EXPECT_EQ(req_resp_pairs[1].req_message.http_req_path, "/foo.html");
-  EXPECT_EQ(req_resp_pairs[1].resp_message.http_msg_body, "bar");
+  EXPECT_EQ(req_resp_pairs[1].req.http_req_path, "/foo.html");
+  EXPECT_EQ(req_resp_pairs[1].resp.http_msg_body, "bar");
 
   // Final request sticks around waiting for a partner - who will never come!
   // TODO(oazizi): The close should be an indicator that the partner will never come.
@@ -242,7 +242,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
 
 TEST_F(ConnectionTrackerTest, TrackerDisable) {
   ConnectionTracker tracker;
-  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
+  std::vector<http::Record> req_resp_pairs;
 
   struct socket_control_event_t conn = InitConn(kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
@@ -261,7 +261,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   tracker.AddDataEvent(std::move(req1));
   tracker.AddDataEvent(std::move(resp1));
 
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  req_resp_pairs = tracker.ProcessMessages<http::Record>();
 
   ASSERT_EQ(2, req_resp_pairs.size());
   ASSERT_FALSE(tracker.IsZombie());
@@ -273,7 +273,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   tracker.AddDataEvent(std::move(req2));
   tracker.AddDataEvent(std::move(resp2));
 
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  req_resp_pairs = tracker.ProcessMessages<http::Record>();
 
   ASSERT_EQ(0, req_resp_pairs.size());
   ASSERT_FALSE(tracker.IsZombie());
@@ -282,7 +282,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   tracker.AddDataEvent(std::move(resp3));
   tracker.AddControlEvent(close_event);
 
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  req_resp_pairs = tracker.ProcessMessages<http::Record>();
 
   ASSERT_EQ(0, req_resp_pairs.size());
   ASSERT_TRUE(tracker.IsZombie());
@@ -290,7 +290,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
 
 TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   ConnectionTracker tracker;
-  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
+  std::vector<http::Record> req_resp_pairs;
 
   struct socket_control_event_t conn = InitConn(kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
@@ -309,7 +309,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   tracker.AddDataEvent(std::move(req1));
   tracker.AddDataEvent(std::move(resp1));
 
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  req_resp_pairs = tracker.ProcessMessages<http::Record>();
   tracker.IterationPostTick();
 
   ASSERT_EQ(2, req_resp_pairs.size());
@@ -322,7 +322,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   // Since we previously received connection Upgrade, this tracker should be disabled.
   // All future calls to ProcessMessages() should produce no results.
 
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  req_resp_pairs = tracker.ProcessMessages<http::Record>();
   tracker.IterationPostTick();
 
   ASSERT_EQ(0, req_resp_pairs.size());
@@ -334,7 +334,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
 
   // The tracker should, however, still process the close event.
 
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  req_resp_pairs = tracker.ProcessMessages<http::Record>();
   tracker.IterationPostTick();
 
   ASSERT_EQ(0, req_resp_pairs.size());
@@ -366,28 +366,28 @@ TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
   auto frame5 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
 
   tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   EXPECT_THAT(tracker.resp_messages<http2::Frame>(), SizeIs(1));
 
   tracker.AddDataEvent(std::move(frame1));
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   // Now we see two END_STREAM headers frame on stream ID 1, then that translate to 2 gRPC
   // response messages. That failure will cause stream being reset.
   EXPECT_THAT(tracker.resp_messages<http2::Frame>(), IsEmpty());
 
   tracker.AddDataEvent(std::move(frame2));
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   EXPECT_THAT(tracker.req_messages<http2::Frame>(), SizeIs(1));
 
   tracker.AddDataEvent(std::move(frame3));
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   // Ditto.
   EXPECT_THAT(tracker.req_messages<http2::Frame>(), IsEmpty());
 
   // Add a call to make sure things do not go haywire after resetting stream.
   tracker.AddDataEvent(std::move(frame4));
   tracker.AddDataEvent(std::move(frame5));
-  auto req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  auto req_resp_pairs = tracker.ProcessMessages<http2::Record>();
   // These 2 messages forms a matching req & resp.
   EXPECT_THAT(req_resp_pairs, SizeIs(1));
 }
@@ -404,29 +404,29 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedUpAfterBreakingSizeLimit) {
   auto frame3 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
 
   tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   EXPECT_THAT(tracker.resp_messages<http2::Frame>(), SizeIs(1));
 
   // Set to 0 so it can expire immediately.
   FLAGS_messages_size_limit_bytes = 0;
 
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   EXPECT_THAT(tracker.resp_messages<http2::Frame>(), IsEmpty());
 
   FLAGS_messages_size_limit_bytes = 10000;
   tracker.AddDataEvent(std::move(frame1));
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   EXPECT_THAT(tracker.req_messages<http2::Frame>(), SizeIs(1));
 
   FLAGS_messages_size_limit_bytes = 0;
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   // Ditto.
   EXPECT_THAT(tracker.req_messages<http2::Frame>(), IsEmpty());
 
   // Add a call to make sure things do not go haywire after resetting stream.
   tracker.AddDataEvent(std::move(frame2));
   tracker.AddDataEvent(std::move(frame3));
-  auto req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  auto req_resp_pairs = tracker.ProcessMessages<http2::Record>();
   // These 2 messages forms a matching req & resp.
   EXPECT_THAT(req_resp_pairs, SizeIs(1));
 }
@@ -444,29 +444,29 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesErasedAfterExpiration) {
   FLAGS_messages_expiration_duration_secs = 10000;
 
   tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   EXPECT_THAT(tracker.resp_messages<http2::Frame>(), SizeIs(1));
 
   // Set to 0 so it can expire immediately.
   FLAGS_messages_expiration_duration_secs = 0;
 
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   EXPECT_THAT(tracker.resp_messages<http2::Frame>(), IsEmpty());
 
   FLAGS_messages_expiration_duration_secs = 10000;
   tracker.AddDataEvent(std::move(frame1));
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   EXPECT_THAT(tracker.req_messages<http2::Frame>(), SizeIs(1));
 
   FLAGS_messages_expiration_duration_secs = 0;
-  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  tracker.ProcessMessages<http2::Record>();
   // Ditto.
   EXPECT_THAT(tracker.req_messages<http2::Frame>(), IsEmpty());
 
   // Add a call to make sure things do not go haywire after resetting stream.
   tracker.AddDataEvent(std::move(frame2));
   tracker.AddDataEvent(std::move(frame3));
-  auto req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  auto req_resp_pairs = tracker.ProcessMessages<http2::Record>();
   // These 2 messages forms a matching req & resp.
   EXPECT_THAT(req_resp_pairs, SizeIs(1));
 }
@@ -481,36 +481,36 @@ TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
   ConnectionTracker tracker;
   {
     tracker.AddDataEvent(std::move(frame0));
-    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    tracker.ProcessMessages<http::Record>();
     EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
-    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    tracker.ProcessMessages<http::Record>();
     EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
-    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    tracker.ProcessMessages<http::Record>();
     EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
 
     // The 4th time, the stuck is detected and data are purged.
-    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    tracker.ProcessMessages<http::Record>();
     EXPECT_TRUE(tracker.req_data()->Empty<http::HTTPMessage>());
 
     // Now the stuck count is reset, so the event is kept.
     tracker.AddDataEvent(std::move(frame1));
-    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    tracker.ProcessMessages<http::Record>();
     EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
   }
   {
     tracker.AddDataEvent(std::move(frame2));
-    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    tracker.ProcessMessages<http::Record>();
     EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
-    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    tracker.ProcessMessages<http::Record>();
     EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
-    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    tracker.ProcessMessages<http::Record>();
     EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
 
-    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    tracker.ProcessMessages<http::Record>();
     EXPECT_TRUE(tracker.resp_data()->Empty<http::HTTPMessage>());
 
     tracker.AddDataEvent(std::move(frame3));
-    tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+    tracker.ProcessMessages<http::Record>();
     EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
   }
 }
@@ -528,12 +528,12 @@ TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
   FLAGS_messages_expiration_duration_secs = 10000;
 
   tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  tracker.ProcessMessages<http::Record>();
   EXPECT_THAT(tracker.req_messages<http::HTTPMessage>(), SizeIs(1));
 
   FLAGS_messages_expiration_duration_secs = 0;
 
-  tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  tracker.ProcessMessages<http::Record>();
   EXPECT_THAT(tracker.req_messages<http::HTTPMessage>(), IsEmpty());
 
   // TODO(yzhao): It's not possible to test the response messages, as they are immediately exported
@@ -550,12 +550,12 @@ TEST_F(ConnectionTrackerTest, MySQLMessagesErasedAfterExpiration) {
   FLAGS_messages_expiration_duration_secs = 10000;
 
   tracker.AddDataEvent(std::move(msg0));
-  tracker.ProcessMessages<mysql::Entry>();
+  tracker.ProcessMessages<mysql::Record>();
   EXPECT_THAT(tracker.req_messages<mysql::Packet>(), SizeIs(1));
 
   FLAGS_messages_expiration_duration_secs = 0;
 
-  tracker.ProcessMessages<mysql::Entry>();
+  tracker.ProcessMessages<mysql::Record>();
   EXPECT_THAT(tracker.req_messages<mysql::Packet>(), IsEmpty());
 }
 

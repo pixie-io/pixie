@@ -107,7 +107,7 @@ void DissectUnknownParam(const std::string_view msg, int* param_offset, ParamPac
 // Message Level Functions
 //-----------------------------------------------------------------------------
 
-void HandleErrMessage(DequeView<Packet> resp_packets, Entry* entry) {
+void HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
   DCHECK(!resp_packets.empty());
   const Packet& packet = resp_packets.front();
 
@@ -124,7 +124,7 @@ void HandleErrMessage(DequeView<Packet> resp_packets, Entry* entry) {
   entry->resp.timestamp_ns = packet.timestamp_ns;
 }
 
-void HandleOKMessage(DequeView<Packet> resp_packets, Entry* entry) {
+void HandleOKMessage(DequeView<Packet> resp_packets, Record* entry) {
   DCHECK(!resp_packets.empty());
   entry->resp.status = MySQLRespStatus::kOK;
   entry->resp.timestamp_ns = resp_packets.front().timestamp_ns;
@@ -136,7 +136,7 @@ void HandleOKMessage(DequeView<Packet> resp_packets, Entry* entry) {
     return ParseState::kNeedsMoreData;                    \
   }
 
-StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Entry* entry) {
+StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry) {
   auto iter = resp_packets.begin();
 
   VLOG(3) << absl::Substitute("HandleResultsetResponse with $0 packets", resp_packets.size());
@@ -237,7 +237,7 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Ent
 }
 
 StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* state,
-                                                 Entry* entry) {
+                                                 Record* entry) {
   auto iter = resp_packets.begin();
 
   RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
@@ -325,14 +325,14 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
   return ParseState::kSuccess;
 }
 
-void HandleStringRequest(const Packet& req_packet, Entry* entry) {
+void HandleStringRequest(const Packet& req_packet, Record* entry) {
   DCHECK(!req_packet.msg.empty());
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.msg = req_packet.msg.substr(1);
   entry->req.timestamp_ns = req_packet.timestamp_ns;
 }
 
-void HandleNonStringRequest(const Packet& req_packet, Entry* entry) {
+void HandleNonStringRequest(const Packet& req_packet, Record* entry) {
   DCHECK(!req_packet.msg.empty());
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.msg.clear();
@@ -364,7 +364,7 @@ std::string CombinePrepareExecute(std::string_view stmt_prepare_request,
 }  // namespace
 
 void HandleStmtExecuteRequest(const Packet& req_packet,
-                              std::map<int, PreparedStatement>* prepare_map, Entry* entry) {
+                              std::map<int, PreparedStatement>* prepare_map, Record* entry) {
   DCHECK(!req_packet.msg.empty());
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.timestamp_ns = req_packet.timestamp_ns;
@@ -428,7 +428,7 @@ void HandleStmtExecuteRequest(const Packet& req_packet,
 }
 
 void HandleStmtCloseRequest(const Packet& req_packet, std::map<int, PreparedStatement>* prepare_map,
-                            Entry* entry) {
+                            Record* entry) {
   DCHECK(!req_packet.msg.empty());
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.msg = "";

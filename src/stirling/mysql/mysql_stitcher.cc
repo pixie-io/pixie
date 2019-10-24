@@ -72,9 +72,9 @@ DequeView<Packet> GetRespView(const std::deque<Packet>& req_packets,
   return DequeView<Packet>(resp_packets, 0, count);
 }
 
-std::vector<Entry> ProcessMySQLPackets(std::deque<Packet>* req_packets,
-                                       std::deque<Packet>* resp_packets, mysql::State* state) {
-  std::vector<Entry> entries;
+std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
+                                        std::deque<Packet>* resp_packets, mysql::State* state) {
+  std::vector<Record> entries;
 
   // Process one request per loop iteration. Each request may consume 0, 1 or 2+ response packets.
   // The actual work is forked off to a helper function depending on the command type.
@@ -103,7 +103,7 @@ std::vector<Entry> ProcessMySQLPackets(std::deque<Packet>* req_packets,
 
     StatusOr<ParseState> s;
     entries.emplace_back();
-    Entry& entry = entries.back();
+    Record& entry = entries.back();
 
     switch (DecodeCommand(command)) {
       // Internal commands with response: ERR_Packet.
@@ -234,7 +234,7 @@ std::vector<Entry> ProcessMySQLPackets(std::deque<Packet>* req_packets,
 // Process a COM_STMT_PREPARE request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-prepare.html
 StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                        mysql::State* state, Entry* entry) {
+                                        mysql::State* state, Record* entry) {
   //----------------
   // Request
   //----------------
@@ -272,7 +272,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-send-long-data.html
 StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
                                              DequeView<Packet> resp_packets,
-                                             mysql::State* /* state */, Entry* entry) {
+                                             mysql::State* /* state */, Record* entry) {
   //----------------
   // Request
   //----------------
@@ -296,7 +296,7 @@ StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
 // Process a COM_STMT_EXECUTE request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-execute.html
 StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                        mysql::State* state, Entry* entry) {
+                                        mysql::State* state, Record* entry) {
   //----------------
   // Request
   //----------------
@@ -346,7 +346,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
 // Process a COM_STMT_CLOSE request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-close.html
 StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                      mysql::State* state, Entry* entry) {
+                                      mysql::State* state, Record* entry) {
   //----------------
   // Request
   //----------------
@@ -375,7 +375,7 @@ StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-fetch.html
 StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet,
                                       DequeView<Packet> /* resp_packets */,
-                                      mysql::State* /* state */, Entry* entry) {
+                                      mysql::State* /* state */, Record* entry) {
   //----------------
   // Request
   //----------------
@@ -393,7 +393,7 @@ StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet,
 // Process a COM_STMT_RESET request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-reset.html
 StatusOr<ParseState> ProcessStmtReset(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                      mysql::State* state, Entry* entry) {
+                                      mysql::State* state, Record* entry) {
   PL_UNUSED(state);
 
   // Defer to basic response for now.
@@ -403,7 +403,7 @@ StatusOr<ParseState> ProcessStmtReset(const Packet& req_packet, DequeView<Packet
 // Process a COM_QUERY request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-query.html
 StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                  Entry* entry) {
+                                  Record* entry) {
   //----------------
   // Request
   //----------------
@@ -453,7 +453,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
 // Process a COM_FIELD_LIST request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-field-list.html
 StatusOr<ParseState> ProcessFieldList(const Packet& req_packet,
-                                      DequeView<Packet> /* resp_packets */, Entry* entry) {
+                                      DequeView<Packet> /* resp_packets */, Record* entry) {
   //----------------
   // Request
   //----------------
@@ -475,7 +475,8 @@ StatusOr<ParseState> ProcessFieldList(const Packet& req_packet,
 // For example, a COM_INIT_DB command should never receive an EOF response.
 // All we would do is print a warning, though, so this is low priority.
 StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, bool string_req,
-                                                     DequeView<Packet> resp_packets, Entry* entry) {
+                                                     DequeView<Packet> resp_packets,
+                                                     Record* entry) {
   //----------------
   // Request
   //----------------

@@ -213,18 +213,15 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   void AcceptControlEvent(const socket_control_event_t& event);
 
   // Transfer of messages to the data table.
-  template <typename TMessageType>
+  template <typename TEntryType>
   void TransferStreams(ConnectorContext* ctx, TrafficProtocol protocol, DataTable* data_table);
 
-  template <typename TMessageType>
+  template <typename TEntryType>
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
-                            ReqRespPair<TMessageType> record, DataTable* data_table);
-
-  static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
-                            mysql::Entry entry, DataTable* data_table);
+                            TEntryType record, DataTable* data_table);
 
   // HTTP-specific helper function.
-  static bool SelectMessage(const ReqRespPair<http::HTTPMessage>& record);
+  static bool SelectMessage(const http::Record& record);
 
   // TODO(oazizi/yzhao): Change to use std::unique_ptr.
 
