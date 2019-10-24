@@ -773,6 +773,23 @@ inline OperatorChainMatch<ParentType, ChildType> OperatorChain(ParentType parent
   return OperatorChainMatch(parent, child);
 }
 
+struct JoinMatch : public ParentMatch {
+  explicit JoinMatch(const std::string& join_type)
+      : ParentMatch(IRNodeType::kJoin), join_type_(join_type) {}
+  bool Match(IRNode* node) const override {
+    if (!Join().Match(node)) {
+      return false;
+    }
+    JoinIR* join = static_cast<JoinIR*>(node);
+    return join->join_type() == join_type_;
+  }
+
+ private:
+  std::string join_type_;
+};
+
+inline JoinMatch RightJoin() { return JoinMatch("right"); }
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

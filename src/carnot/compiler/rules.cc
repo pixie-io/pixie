@@ -809,6 +809,56 @@ Status JoinEqualityConditionRule::ProcessExpression(JoinIR* join_node, Expressio
       expr->DebugString());
 }
 
+StatusOr<bool> SetupJoinTypeRule::Apply(IRNode* ir_node) {
+  if (Match(ir_node, RightJoin())) {
+    PL_RETURN_IF_ERROR(ConvertRightJoinToLeftJoin(static_cast<JoinIR*>(ir_node)));
+    return true;
+  }
+  return false;
+}
+
+Status SetupJoinTypeRule::ConvertRightJoinToLeftJoin(JoinIR* join_ir) {
+  DCHECK_EQ(join_ir->parents().size(), 2UL) << "There should be exactly two parents.";
+  DCHECK_EQ(join_ir->join_type(), "right");
+
+  std::vector<OperatorIR*> old_parents = join_ir->parents();
+  for (OperatorIR* parent : old_parents) {
+    PL_RETURN_IF_ERROR(join_ir->RemoveParent(parent));
+  }
+
+  PL_RETURN_IF_ERROR(join_ir->AddParent(old_parents[1]));
+  PL_RETURN_IF_ERROR(join_ir->AddParent(old_parents[0]));
+
+  // Update the columns in the output_columns
+  for (ColumnIR* col : join_ir->output_columns()) {
+    DCHECK_LT(col->container_op_parent_idx(), 2);
+    // 1 -> 0, 0 -> 1
+    col->SetContainingOperatorParentIdx(1 - col->container_op_parent_idx());
+  }
+
+  // Update the columns in the expression.
+  std::vector<ColumnIR*> child_columns;
+  std::queue<int64_t> nodes_to_visit({join_ir->condition_expr()->id()});
+  IR* graph = join_ir->graph_ptr();
+  const plan::DAG& dag = graph->dag();
+  while (!nodes_to_visit.empty()) {
+    int64_t cur_node = nodes_to_visit.front();
+    nodes_to_visit.pop();
+    if (Match(graph->Get(cur_node), ColumnNode())) {
+      ColumnIR* col = static_cast<ColumnIR*>(graph->Get(cur_node));
+
+      DCHECK_LT(col->container_op_parent_idx(), 2);
+      // 1 -> 0, 0 -> 1
+      col->SetContainingOperatorParentIdx(1 - col->container_op_parent_idx());
+    }
+    for (int64_t dep : dag.DependenciesOf(cur_node)) {
+      nodes_to_visit.push(dep);
+    }
+  }
+  join_ir->SetJoinType("left");
+
+  return Status::OK();
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

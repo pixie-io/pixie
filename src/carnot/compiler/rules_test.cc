@@ -1809,6 +1809,41 @@ TEST_F(RulesTest, join_equality_condition_rule) {
   EXPECT_EQ(join_op->equality_conditions()[0].right_column_idx, 3);
 }
 
+TEST_F(RulesTest, setup_join_type_rule) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  auto left_only_col = MakeColumn("left_only", 0, relation0);
+  auto right_only_col = MakeColumn("right_only", 1, relation1);
+  auto join_op =
+      MakeJoin({mem_src1, mem_src2}, "right",
+               MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
+               {{"left_only", left_only_col},
+                {"col4", MakeColumn("col4", 1, relation1)},
+                {"col1", MakeColumn("col1", 0, relation0)},
+                {"right_only", right_only_col}});
+
+  EXPECT_EQ(left_only_col->container_op_parent_idx(), 0);
+  EXPECT_EQ(right_only_col->container_op_parent_idx(), 1);
+
+  SetupJoinTypeRule rule;
+  auto result = rule.Execute(graph.get());
+  EXPECT_OK(result);
+  EXPECT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_EQ(join_op->parents()[0], mem_src2);
+  EXPECT_EQ(join_op->parents()[1], mem_src1);
+  EXPECT_EQ(left_only_col->container_op_parent_idx(), 1);
+  EXPECT_EQ(right_only_col->container_op_parent_idx(), 0);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -496,7 +496,6 @@ Status LimitIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
-// TODO(philkuz) fix up the initimpl to make this less hardcoded
 Status BlockingAggIR::InitImpl(const ArgMap& args) {
   IRNode* by_func = args.kwargs.find("by")->second;
   IRNode* agg_func = args.kwargs.find("fn")->second;
@@ -554,7 +553,7 @@ Status BlockingAggIR::SetupGroupBy(LambdaIR* by_lambda) {
         "a '$0'.",
         by_expr->type_string());
   }
-  // Clean up the pointer to parent
+  // Point the groups to the blocking agg node.
   for (ColumnIR* g : groups_) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(id(), g->id()));
   }
@@ -1334,10 +1333,31 @@ Status UnionIR::SetRelationFromParents() {
   return Status::OK();
 }
 
-Status JoinIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::JoinOperator();
+StatusOr<planpb::JoinOperator::JoinType> JoinIR::GetJoinEnum(const std::string& join_type) const {
+  DCHECK_NE(join_type, "right");
+  absl::flat_hash_map<std::string, planpb::JoinOperator::JoinType> join_key_mapping = {
+      {"inner", planpb::JoinOperator_JoinType_INNER},
+      {"left", planpb::JoinOperator_JoinType_LEFT_OUTER},
+      {"outer", planpb::JoinOperator_JoinType_FULL_OUTER}};
+  auto iter = join_key_mapping.find(join_type);
 
-  pb->set_type(join_type_);
+  // If the join type is not found, then return an error.
+  if (iter == join_key_mapping.end()) {
+    std::vector<std::string> valid_join_keys;
+    for (auto kv : join_key_mapping) {
+      valid_join_keys.push_back(kv.first);
+    }
+
+    return CreateIRNodeError("'$0' join type not supported. Only {$1} are available join types.",
+                             join_type, absl::StrJoin(valid_join_keys, ","));
+  }
+  return iter->second;
+}
+
+Status JoinIR::ToProto(planpb::Operator* op) const {
+  PL_ASSIGN_OR_RETURN(planpb::JoinOperator::JoinType join_enum_type, GetJoinEnum(join_type_));
+  auto pb = new planpb::JoinOperator();
+  pb->set_type(join_enum_type);
   for (const auto& cond : equality_conditions()) {
     auto eq_condition = pb->add_equality_conditions();
     eq_condition->set_left_column_index(cond.left_column_idx);
@@ -1386,7 +1406,10 @@ Status JoinIR::InitImpl(const ArgMap& args) {
 
   PL_RETURN_IF_ERROR(SetupConditionFromLambda(static_cast<LambdaIR*>(cond)));
   PL_RETURN_IF_ERROR(SetupOutputColumns(static_cast<LambdaIR*>(cols)));
-  PL_RETURN_IF_ERROR(SetupJoinType(static_cast<StringIR*>(join_type)));
+  if (join_type == nullptr) {
+    SetJoinType("inner");
+  }
+  SetJoinType(static_cast<StringIR*>(join_type)->str());
   return Status::OK();
 }
 
@@ -1431,29 +1454,6 @@ Status JoinIR::SetupOutputColumns(LambdaIR* output_columns_lambda) {
   return graph_ptr()->DeleteNode(output_columns_lambda->id());
 }
 
-Status JoinIR::SetupJoinType(StringIR* join_type) {
-  if (join_type == nullptr) {
-    join_type_ = planpb::JoinOperator_JoinType_INNER;
-    return Status::OK();
-  }
-  std::string join_type_str = join_type->str();
-  std::vector<std::string> valid_join_keys = {"inner", "left", "right", "outer"};
-  if (join_type_str == "inner") {
-    join_type_ = planpb::JoinOperator_JoinType_INNER;
-  } else if (join_type_str == "left") {
-    join_type_ = planpb::JoinOperator_JoinType_LEFT_OUTER;
-  } else if (join_type_str == "right") {
-    PL_RETURN_IF_ERROR(FlipParents());
-    join_type_ = planpb::JoinOperator_JoinType_LEFT_OUTER;
-  } else if (join_type_str == "outer") {
-    join_type_ = planpb::JoinOperator_JoinType_FULL_OUTER;
-  } else {
-    return CreateIRNodeError("'$0' join type not supported. Only {$1} are available join types.",
-                             join_type_str, absl::StrJoin(valid_join_keys, ","));
-  }
-  return Status::OK();
-}
-
 StatusOr<IRNode*> JoinIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(JoinIR * join_node, graph->MakeNode<JoinIR>(id()));
   join_node->join_type_ = join_type_;
@@ -1472,44 +1472,6 @@ StatusOr<IRNode*> JoinIR::DeepCloneIntoImpl(IR* graph) const {
   join_node->condition_expr_ = static_cast<FuncIR*>(new_node);
 
   return join_node;
-}
-Status JoinIR::FlipParents() {
-  DCHECK_EQ(parents().size(), 2UL) << "There should be exactly two parents.";
-  DCHECK_EQ(equality_conditions_.size(), 0UL) << "This is only supported in INIT";
-
-  std::vector<OperatorIR*> old_parents = parents();
-  for (OperatorIR* parent : old_parents) {
-    PL_RETURN_IF_ERROR(RemoveParent(parent));
-  }
-
-  PL_RETURN_IF_ERROR(AddParent(old_parents[1]));
-  PL_RETURN_IF_ERROR(AddParent(old_parents[0]));
-
-  // Update the columns in the output_columns
-  for (ColumnIR* col : output_columns_) {
-    DCHECK_LT(col->container_op_parent_idx(), 2);
-    col->SetContainingOperatorParentIdx(1 - col->container_op_parent_idx());
-  }
-
-  // Update the columns in the expression.
-  std::vector<ColumnIR*> child_columns;
-  std::queue<int64_t> nodes_to_visit({condition_expr_->id()});
-  IR* graph = graph_ptr();
-  const plan::DAG& dag = graph_ptr()->dag();
-  while (!nodes_to_visit.empty()) {
-    int64_t cur_node = nodes_to_visit.front();
-    nodes_to_visit.pop();
-    if (Match(graph->Get(cur_node), ColumnNode())) {
-      ColumnIR* col = static_cast<ColumnIR*>(graph->Get(cur_node));
-      DCHECK_LT(col->container_op_parent_idx(), 2);
-      col->SetContainingOperatorParentIdx(1 - col->container_op_parent_idx());
-    }
-    for (int64_t dep : dag.DependenciesOf(cur_node)) {
-      nodes_to_visit.push(dep);
-    }
-  }
-
-  return Status::OK();
 }
 
 }  // namespace compiler

@@ -1492,21 +1492,24 @@ class JoinIR : public OperatorIR {
   bool HasEqualityConditions() const { return equality_conditions_.size() != 0; }
 
   FuncIR* condition_expr() const { return condition_expr_; }
-  planpb::JoinOperator::JoinType join_type() const { return join_type_; }
+  std::string join_type() const { return join_type_; }
   const std::vector<ColumnIR*>& output_columns() const { return output_columns_; }
   const std::vector<std::string>& column_names() const { return column_names_; }
+  void SetJoinType(const std::string& join_type) { join_type_ = join_type; }
 
  private:
   Status SetupConditionFromLambda(LambdaIR* condition);
   Status SetupOutputColumns(LambdaIR* output_columns);
-  Status SetupJoinType(StringIR* join_type);
-  /**
-   * @brief Swaps the parents in the case. Used in the case this is a right join.
-   *
-   */
-  Status FlipParents();
 
-  planpb::JoinOperator::JoinType join_type_;
+  /**
+   * @brief Converts the string type to the enum used in the proto.
+   *
+   * @param join_type string representation of the join.
+   * @return StatusOr<planpb::JoinOperator::JoinType> the join enum or an error if not found.
+   */
+  StatusOr<planpb::JoinOperator::JoinType> GetJoinEnum(const std::string& join_type) const;
+
+  std::string join_type_;
   // The condition expression that is eventually translated into equality_conditions_.
   FuncIR* condition_expr_;
   std::vector<EqualityCondition> equality_conditions_;

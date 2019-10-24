@@ -300,29 +300,29 @@ StatusOr<JoinIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
 
 StatusOr<OperatorIR*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(std::string func_name, GetFuncName(node));
-  OperatorIR* ir_node;
+  OperatorIR* op_node;
   if (func_name == kFromOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MemorySourceIR>(node));
+    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<MemorySourceIR>(node));
   } else if (func_name == kRangeOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<RangeIR>(node));
+    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<RangeIR>(node));
   } else if (func_name == kMapOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MapIR>(node));
+    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<MapIR>(node));
   } else if (func_name == kFilterOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<FilterIR>(node));
+    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<FilterIR>(node));
   } else if (func_name == kLimitOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<LimitIR>(node));
+    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<LimitIR>(node));
   } else if (func_name == kBlockingAggOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<BlockingAggIR>(node));
+    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<BlockingAggIR>(node));
   } else if (func_name == kSinkOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MemorySinkIR>(node));
+    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<MemorySinkIR>(node));
   } else if (func_name == kJoinOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<JoinIR>(node));
+    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<JoinIR>(node));
   } else if (func_name == kRangeAggOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeAggOp(node));
+    PL_ASSIGN_OR_RETURN(op_node, ProcessRangeAggOp(node));
   } else {
     return CreateAstError(node, "No function named '$0'", func_name);
   }
-  return ir_node;
+  return op_node;
 }
 
 StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {

@@ -1092,75 +1092,6 @@ TEST_F(ToProtoTests, left_join) {
   EXPECT_THAT(pb, EqualsProto(kExpectedLeftJoinOpPb));
 }
 
-const char* kExpectedRightJoinOpPb = R"proto(
-op_type: JOIN_OPERATOR
-join_op {
-  type: LEFT_OUTER
-  equality_conditions {
-    left_column_index: 2
-    right_column_index: 1
-  }
-  equality_conditions {
-    left_column_index: 4
-    right_column_index: 3
-  }
-  output_columns {
-    parent_index: 1
-    column_index: 0
-  }
-  output_columns {
-    parent_index: 0
-    column_index: 4
-  }
-  output_columns {
-    parent_index: 1
-    column_index: 1
-  }
-  output_columns {
-    parent_index: 0
-    column_index: 0
-  }
-  column_names: "left_only"
-  column_names: "col4"
-  column_names: "col1"
-  column_names: "right_only"
-}
-)proto";
-
-TEST_F(ToProtoTests, right_join) {
-  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
-                      types::DataType::INT64},
-                     {"left_only", "col1", "col2", "col3"});
-  auto mem_src1 = MakeMemSource(relation0);
-
-  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
-                      types::DataType::INT64, types::DataType::INT64},
-                     {"right_only", "col1", "col2", "col3", "col4"});
-  auto mem_src2 = MakeMemSource(relation1);
-
-  auto join_op = MakeJoin(
-      {mem_src1, mem_src2}, "right",
-      MakeAndFunc(
-          MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
-          MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
-      {{{"left_only", MakeColumn("left_only", 0, relation0)},
-        {"col4", MakeColumn("col4", 1, relation1)},
-        {"col1", MakeColumn("col1", 0, relation0)},
-        {"right_only", MakeColumn("right_only", 1, relation1)}},
-       {}});
-
-  join_op->AddEqualityCondition(2, 1);
-  join_op->AddEqualityCondition(4, 3);
-
-  planpb::Operator pb;
-  EXPECT_OK(join_op->ToProto(&pb));
-
-  EXPECT_EQ(join_op->parents()[0], mem_src2);
-  EXPECT_EQ(join_op->parents()[1], mem_src1);
-
-  EXPECT_THAT(pb, EqualsProto(kExpectedRightJoinOpPb));
-}
-
 const char* kExpectedOuterJoinOpPb = R"proto(
 op_type: JOIN_OPERATOR
 join_op {
@@ -1225,6 +1156,35 @@ TEST_F(ToProtoTests, full_outer) {
   EXPECT_OK(join_op->ToProto(&pb));
 
   EXPECT_THAT(pb, EqualsProto(kExpectedOuterJoinOpPb));
+}
+TEST_F(ToProtoTests, join_wrong_join_type) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  std::string join_type_name = "bad_join_type";
+
+  auto join_op =
+      MakeJoin({mem_src1, mem_src2}, join_type_name,
+               MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
+               {{{"left_only", MakeColumn("left_only", 0, relation0)},
+                 {"right_only", MakeColumn("right_only", 1, relation1)}},
+                {}});
+
+  join_op->AddEqualityCondition(1, 2);
+
+  planpb::Operator pb;
+  auto to_proto_status = join_op->ToProto(&pb);
+  EXPECT_NOT_OK(to_proto_status);
+  EXPECT_THAT(to_proto_status, HasCompilerError("'$0' join type not supported. Only .* "
+                                                "are available join types.",
+                                                join_type_name));
 }
 
 TEST_F(OperatorTests, op_children) {

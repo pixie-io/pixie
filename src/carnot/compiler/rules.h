@@ -258,6 +258,22 @@ class JoinEqualityConditionRule : public Rule {
   Status ProcessExpression(JoinIR* join_node, ExpressionIR* expr);
 };
 
+class SetupJoinTypeRule : public Rule {
+  /**
+   * @brief Converts a right join into a left join.
+   *
+   */
+ public:
+  SetupJoinTypeRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+  /**
+   * @brief Swaps the parents and updates any parent references within Join's children nodes.
+   */
+  Status ConvertRightJoinToLeftJoin(JoinIR* join_ir);
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -312,7 +312,7 @@ class OperatorTests : public ::testing::Test {
     // "col1", a.col1,
     // "col2", b.col2})
 
-    JoinIR* join_node = graph->MakeNode<JoinIR>().ValueOrDie();
+    JoinIR* join_node = graph->MakeNode<JoinIR>().ConsumeValueOrDie();
     LambdaIR* equality_condition_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
     PL_CHECK_OK(equality_condition_lambda->Init({}, equality_condition, ast));
 
