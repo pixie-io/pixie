@@ -9,7 +9,7 @@
 namespace pl {
 namespace stirling {
 namespace mysql {
-namespace testutils {
+namespace testdata {
 
 /**
  * A StmtPrepare and StmtExecute pair extracted from SockShop to test parsing and stitching
@@ -106,7 +106,7 @@ const std::vector<ResultsetRow> kQueryResultsetRows = {
 
 const Resultset kQueryResultset(1, kQueryColDefs, kQueryResultsetRows);
 
-}  // namespace testutils
+}  // namespace testdata
 }  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

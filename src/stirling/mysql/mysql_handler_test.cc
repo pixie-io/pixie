@@ -101,27 +101,27 @@ TEST(HandleOKMessage, Basic) {
 
 TEST(HandleResultsetResponse, ValidWithEOF) {
   // Test without CLIENT_DEPRECATE_EOF.
-  std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
+  std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset);
   auto s = HandleResultsetResponse(resp_packets);
   EXPECT_TRUE(s.ok());
   std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
   ASSERT_NE(nullptr, result);
-  EXPECT_EQ(testutils::kStmtExecuteResultset, *result);
+  EXPECT_EQ(testdata::kStmtExecuteResultset, *result);
 }
 
 TEST(HandleResultsetResponse, ValidNoEOF) {
   // Test with CLIENT_DEPRECATE_EOF.
-  std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset, true);
+  std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset, true);
   auto s = HandleResultsetResponse(resp_packets);
   EXPECT_TRUE(s.ok());
   std::unique_ptr<Resultset> result = s.ConsumeValueOrDie();
   ASSERT_NE(nullptr, result);
-  EXPECT_EQ(testutils::kStmtExecuteResultset, *result);
+  EXPECT_EQ(testdata::kStmtExecuteResultset, *result);
 }
 
 TEST(HandleResultsetResponse, NeedsMoreData) {
   // Test for incomplete response.
-  std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
+  std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset);
   resp_packets.pop_back();
   auto s = HandleResultsetResponse(resp_packets);
   EXPECT_TRUE(s.ok());
@@ -131,23 +131,23 @@ TEST(HandleResultsetResponse, NeedsMoreData) {
 
 TEST(HandleResultsetResponse, InvalidResponse) {
   // Test for invalid response by changing first packet.
-  std::deque<Packet> resp_packets = testutils::GenResultset(testutils::kStmtExecuteResultset);
+  std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset);
   resp_packets.front() = testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This is an error."));
   auto s = HandleResultsetResponse(resp_packets);
   EXPECT_FALSE(s.ok());
 }
 
 TEST(HandleStmtPrepareOKResponse, Valid) {
-  std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
+  std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testdata::kStmtPrepareResponse);
   auto s = HandleStmtPrepareOKResponse(packets);
   EXPECT_TRUE(s.ok());
   std::unique_ptr<StmtPrepareOKResponse> result_response = s.ConsumeValueOrDie();
   ASSERT_NE(nullptr, result_response);
-  EXPECT_EQ(testutils::kStmtPrepareResponse, *result_response);
+  EXPECT_EQ(testdata::kStmtPrepareResponse, *result_response);
 }
 
 TEST(HandleStmtPrepareOKResponse, NeedsMoreData) {
-  std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
+  std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testdata::kStmtPrepareResponse);
   packets.pop_back();
   auto s = HandleStmtPrepareOKResponse(packets);
   EXPECT_TRUE(s.ok());
@@ -156,15 +156,15 @@ TEST(HandleStmtPrepareOKResponse, NeedsMoreData) {
 }
 
 TEST(HandleStmtPrepareOKResponse, Invalid) {
-  std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
+  std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testdata::kStmtPrepareResponse);
   packets.front() = testutils::GenErr(/* seq_id */ 1, ErrResponse(1096, "This is an error."));
   auto s = HandleStmtPrepareOKResponse(packets);
   EXPECT_FALSE(s.ok());
 }
 
 TEST(HandleStmtExecuteRequest, Basic) {
-  Packet req_packet = testutils::GenStmtExecuteRequest(testutils::kStmtExecuteRequest);
-  PreparedStatement prepared_stmt = testutils::InitStmtPrepare();
+  Packet req_packet = testutils::GenStmtExecuteRequest(testdata::kStmtExecuteRequest);
+  PreparedStatement prepared_stmt = testdata::InitStmtPrepare();
   int stmt_id = prepared_stmt.response->resp_header().stmt_id;
   std::map<int, PreparedStatement> prepare_map;
   prepare_map.emplace(stmt_id, std::move(prepared_stmt));
@@ -180,7 +180,7 @@ TEST(HandleStmtExecuteRequest, Basic) {
 
 TEST(HandleStringRequest, Basic) {
   Packet req_packet =
-      testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
+      testutils::GenStringRequest(testdata::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
 
   Entry entry;
   HandleStringRequest(req_packet, &entry);

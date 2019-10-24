@@ -107,7 +107,7 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
 }
 
 TEST_F(MySQLParserTest, ParseComStmtClose) {
-  Packet expected_packet = testutils::GenStmtCloseRequest(testutils::kStmtCloseRequest);
+  Packet expected_packet = testutils::GenStmtCloseRequest(testdata::kStmtCloseRequest);
   std::string msg = testutils::GenRawPacket(expected_packet);
 
   parser_.Append(msg, 0);
@@ -189,9 +189,9 @@ TEST_F(MySQLParserTest, ParseResponse) {
 
 TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
   std::deque<Packet> prepare_resp_packets =
-      testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
+      testutils::GenStmtPrepareOKResponse(testdata::kStmtPrepareResponse);
   std::deque<Packet> execute_resp_packets =
-      testutils::GenResultset(testutils::kStmtExecuteResultset);
+      testutils::GenResultset(testdata::kStmtExecuteResultset);
 
   // Splitting packets from 2 responses into 3 different raw packet chunks.
   std::vector<std::string> packets1;

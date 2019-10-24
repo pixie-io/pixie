@@ -116,19 +116,19 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
 
   void InitMySQLData() {
     mySQLStmtPrepareReq = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
-        mysql::testutils::kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare));
+        mysql::testdata::kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare));
 
     std::deque<mysql::Packet> prepare_packets =
-        mysql::testutils::GenStmtPrepareOKResponse(mysql::testutils::kStmtPrepareResponse);
+        mysql::testutils::GenStmtPrepareOKResponse(mysql::testdata::kStmtPrepareResponse);
     for (const auto& prepare_packet : prepare_packets) {
       mySQLStmtPrepareResp.push_back(mysql::testutils::GenRawPacket(prepare_packet));
     }
 
     mySQLStmtExecuteReq = mysql::testutils::GenRawPacket(
-        mysql::testutils::GenStmtExecuteRequest(mysql::testutils::kStmtExecuteRequest));
+        mysql::testutils::GenStmtExecuteRequest(mysql::testdata::kStmtExecuteRequest));
 
     std::deque<mysql::Packet> execute_packets =
-        mysql::testutils::GenResultset(mysql::testutils::kStmtExecuteResultset);
+        mysql::testutils::GenResultset(mysql::testdata::kStmtExecuteResultset);
     for (const auto& execute_packet : execute_packets) {
       mySQLStmtExecuteResp.push_back(mysql::testutils::GenRawPacket(execute_packet));
     }
@@ -137,12 +137,12 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
         mysql::testutils::GenErr(1, mysql::ErrResponse(1096, "This is an error.")));
 
     mySQLStmtCloseReq = mysql::testutils::GenRawPacket(
-        mysql::testutils::GenStmtCloseRequest(mysql::testutils::kStmtCloseRequest));
+        mysql::testutils::GenStmtCloseRequest(mysql::testdata::kStmtCloseRequest));
 
     mySQLQueryReq = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
-        mysql::testutils::kQueryRequest, mysql::MySQLEventType::kQuery));
+        mysql::testdata::kQueryRequest, mysql::MySQLEventType::kQuery));
     std::deque<mysql::Packet> query_packets =
-        mysql::testutils::GenResultset(mysql::testutils::kQueryResultset);
+        mysql::testutils::GenResultset(mysql::testdata::kQueryResultset);
     for (const auto& query_packet : query_packets) {
       mySQLQueryResp.push_back(mysql::testutils::GenRawPacket(query_packet));
     }
