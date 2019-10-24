@@ -13,7 +13,8 @@ static constexpr DataElement kMySQLElements[] = {
         {"req_cmd", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
         {"req_body", types::DataType::STRING, types::PatternType::GENERAL},
         {"resp_status", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
-        {"resp_body", types::DataType::STRING, types::PatternType::GENERAL}
+        {"resp_body", types::DataType::STRING, types::PatternType::GENERAL},
+        {"latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
 };
 // clang-format on
 static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);

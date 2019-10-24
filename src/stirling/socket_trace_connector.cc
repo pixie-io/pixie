@@ -561,6 +561,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("req_body")>(std::move(entry.req.msg));
   r.Append<r.ColIndex("resp_status")>(static_cast<uint64_t>(entry.resp.status));
   r.Append<r.ColIndex("resp_body")>(std::move(entry.resp.msg));
+  r.Append<r.ColIndex("latency_ns")>(
+      CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 }
 
 }  // namespace stirling

@@ -104,48 +104,49 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
   static constexpr int kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");
   static constexpr int kMySQLRespBodyIdx = kMySQLTable.ColIndex("resp_body");
+  static constexpr int kMySQLLatencyIdx = kMySQLTable.ColIndex("latency_ns");
 
-  std::string mySQLStmtPrepareReq;
-  std::vector<std::string> mySQLStmtPrepareResp;
-  std::string mySQLStmtExecuteReq;
-  std::vector<std::string> mySQLStmtExecuteResp;
-  std::string mySQLStmtCloseReq;
-  std::string mySQLErrResp;
+  std::string mysql_stmt_prepare_req;
+  std::vector<std::string> mysql_stmt_prepare_resp;
+  std::string mysql_stmt_execute_req;
+  std::vector<std::string> mysql_stmt_execute_resp;
+  std::string mysql_stmt_close_req;
+  std::string mysql_err_resp;
 
-  std::string mySQLQueryReq;
-  std::vector<std::string> mySQLQueryResp;
+  std::string mysql_query_req;
+  std::vector<std::string> mysql_query_resp;
 
   void InitMySQLData() {
-    mySQLStmtPrepareReq = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
+    mysql_stmt_prepare_req = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
         mysql::testdata::kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare));
 
     std::deque<mysql::Packet> prepare_packets =
         mysql::testutils::GenStmtPrepareOKResponse(mysql::testdata::kStmtPrepareResponse);
     for (const auto& prepare_packet : prepare_packets) {
-      mySQLStmtPrepareResp.push_back(mysql::testutils::GenRawPacket(prepare_packet));
+      mysql_stmt_prepare_resp.push_back(mysql::testutils::GenRawPacket(prepare_packet));
     }
 
-    mySQLStmtExecuteReq = mysql::testutils::GenRawPacket(
+    mysql_stmt_execute_req = mysql::testutils::GenRawPacket(
         mysql::testutils::GenStmtExecuteRequest(mysql::testdata::kStmtExecuteRequest));
 
     std::deque<mysql::Packet> execute_packets =
         mysql::testutils::GenResultset(mysql::testdata::kStmtExecuteResultset);
     for (const auto& execute_packet : execute_packets) {
-      mySQLStmtExecuteResp.push_back(mysql::testutils::GenRawPacket(execute_packet));
+      mysql_stmt_execute_resp.push_back(mysql::testutils::GenRawPacket(execute_packet));
     }
 
     mysql::ErrResponse err_resp = {.error_code = 1096, .error_message = "This is an error."};
-    mySQLErrResp = mysql::testutils::GenRawPacket(mysql::testutils::GenErr(1, err_resp));
+    mysql_err_resp = mysql::testutils::GenRawPacket(mysql::testutils::GenErr(1, err_resp));
 
-    mySQLStmtCloseReq = mysql::testutils::GenRawPacket(
+    mysql_stmt_close_req = mysql::testutils::GenRawPacket(
         mysql::testutils::GenStmtCloseRequest(mysql::testdata::kStmtCloseRequest));
 
-    mySQLQueryReq = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
+    mysql_query_req = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
         mysql::testdata::kQueryRequest, mysql::MySQLEventType::kQuery));
     std::deque<mysql::Packet> query_packets =
         mysql::testutils::GenResultset(mysql::testdata::kQueryResultset);
     for (const auto& query_packet : query_packets) {
-      mySQLQueryResp.push_back(mysql::testutils::GenRawPacket(query_packet));
+      mysql_query_resp.push_back(mysql::testutils::GenRawPacket(query_packet));
     }
   }
 };
@@ -674,27 +675,27 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   FLAGS_stirling_enable_mysql_tracing = true;
 
   struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
-  std::unique_ptr<SocketDataEvent> prepare_req_event = InitSendEvent(mySQLStmtPrepareReq);
+  std::unique_ptr<SocketDataEvent> prepare_req_event = InitSendEvent(mysql_stmt_prepare_req);
   std::vector<std::unique_ptr<SocketDataEvent>> prepare_resp_events;
-  for (std::string resp_packet : mySQLStmtPrepareResp) {
+  for (std::string resp_packet : mysql_stmt_prepare_resp) {
     prepare_resp_events.push_back(InitRecvEvent(resp_packet));
   }
 
-  std::unique_ptr<SocketDataEvent> execute_req_event = InitSendEvent(mySQLStmtExecuteReq);
+  std::unique_ptr<SocketDataEvent> execute_req_event = InitSendEvent(mysql_stmt_execute_req);
   std::vector<std::unique_ptr<SocketDataEvent>> execute_resp_events;
-  for (std::string resp_packet : mySQLStmtExecuteResp) {
+  for (std::string resp_packet : mysql_stmt_execute_resp) {
     execute_resp_events.push_back(InitRecvEvent(resp_packet));
   }
 
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(prepare_req_event));
-  for (size_t i = 0; i < prepare_resp_events.size(); ++i) {
-    source_->AcceptDataEvent(std::move(prepare_resp_events[i]));
+  for (auto& prepare_resp_event : prepare_resp_events) {
+    source_->AcceptDataEvent(std::move(prepare_resp_event));
   }
 
   source_->AcceptDataEvent(std::move(execute_req_event));
-  for (size_t i = 0; i < execute_resp_events.size(); ++i) {
-    source_->AcceptDataEvent(std::move(execute_resp_events[i]));
+  for (auto& execute_resp_event : execute_resp_events) {
+    source_->AcceptDataEvent(std::move(execute_resp_event));
   }
 
   DataTable data_table(kMySQLTable);
@@ -724,9 +725,9 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
               ElementsAre("", "Resultset rows = 2"));
 
   // Test execute fail after close. It should create an entry with the Error.
-  std::unique_ptr<SocketDataEvent> close_req_event = InitSendEvent(mySQLStmtCloseReq);
-  std::unique_ptr<SocketDataEvent> execute_req_event2 = InitSendEvent(mySQLStmtExecuteReq);
-  std::unique_ptr<SocketDataEvent> execute_resp_event2 = InitRecvEvent(mySQLErrResp);
+  std::unique_ptr<SocketDataEvent> close_req_event = InitSendEvent(mysql_stmt_close_req);
+  std::unique_ptr<SocketDataEvent> execute_req_event2 = InitSendEvent(mysql_stmt_execute_req);
+  std::unique_ptr<SocketDataEvent> execute_resp_event2 = InitRecvEvent(mysql_err_resp);
 
   source_->AcceptDataEvent(std::move(close_req_event));
   source_->AcceptDataEvent(std::move(execute_req_event2));
@@ -740,22 +741,29 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
               ElementsAre(expected_entry0, expected_entry1, "", ""));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
               ElementsAre("", "Resultset rows = 2", "", "This is an error."));
+  // In test environment, latencies are simply the number of packets in the response.
+  // StmtPrepare resp has 7 response packets: 1 header + 2 col defs + 1 EOF + 2 param defs + 1 EOF.
+  // StmtExecute resp has 7 response packets: 1 header + 2 col defs + 1 EOF + 2 rows + 1 EOF.
+  // StmtClose resp has 0 response packets.
+  // StmtExecute resp has 1 response packet: 1 error.
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMySQLLatencyIdx]),
+              ElementsAre(7, 7, 0, 1));
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {
   FLAGS_stirling_enable_mysql_tracing = true;
 
   struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
-  std::unique_ptr<SocketDataEvent> query_req_event = InitSendEvent(mySQLQueryReq);
+  std::unique_ptr<SocketDataEvent> query_req_event = InitSendEvent(mysql_query_req);
   std::vector<std::unique_ptr<SocketDataEvent>> query_resp_events;
-  for (std::string resp_packet : mySQLQueryResp) {
+  for (std::string resp_packet : mysql_query_resp) {
     query_resp_events.push_back(InitRecvEvent(resp_packet));
   }
 
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(query_req_event));
-  for (size_t i = 0; i < query_resp_events.size(); ++i) {
-    source_->AcceptDataEvent(std::move(query_resp_events[i]));
+  for (auto& query_resp_event : query_resp_events) {
+    source_->AcceptDataEvent(std::move(query_resp_event));
   }
 
   DataTable data_table(kMySQLTable);
@@ -768,6 +776,9 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
 
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]), ElementsAre("SELECT name FROM tag;"));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre("Resultset rows = 3"));
+  // In test environment, latencies are simply the number of packets in the response.
+  // In this case 7 response packets: 1 header + 1 col defs + 1 EOF + 3 rows + 1 EOF.
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMySQLLatencyIdx]), ElementsAre(7));
 }
 
 }  // namespace stirling

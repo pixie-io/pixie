@@ -265,7 +265,7 @@ struct EntryRequest {
   // The body of the request, if request has a single string parameter. Otherwise empty for now.
   std::string msg;
 
-  // Timestamp of the entry is considered to be the timestamp of the request packet.
+  // Timestamp of the request packet.
   uint64_t timestamp_ns;
 };
 
@@ -276,7 +276,7 @@ struct EntryResponse {
   // Any relevant response message.
   std::string msg;
 
-  // Timestamp of the entry is considered to be the timestamp of the request packet.
+  // Timestamp of the last response packet.
   uint64_t timestamp_ns;
 };
 
