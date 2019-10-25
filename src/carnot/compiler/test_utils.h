@@ -138,7 +138,8 @@ class OperatorTests : public ::testing::Test {
 
   MemorySourceIR* MakeMemSource(const std::string& name) {
     MemorySourceIR* mem_source = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-    PL_CHECK_OK(mem_source->Init(nullptr, {{"table", MakeString(name)}, {"select", nullptr}}, ast));
+    PL_CHECK_OK(
+        mem_source->Init(nullptr, {{{"table", MakeString(name)}, {"select", nullptr}}, {}}, ast));
     return mem_source;
   }
 
@@ -161,13 +162,13 @@ class OperatorTests : public ::testing::Test {
     MapIR* map = graph->MakeNode<MapIR>().ConsumeValueOrDie();
     LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
     PL_CHECK_OK(lambda->Init({}, col_map, ast));
-    PL_CHECK_OK(map->Init(parent, {{"fn", lambda}}, ast));
+    PL_CHECK_OK(map->Init(parent, {{{"fn", lambda}}, {}}, ast));
     return map;
   }
 
   MemorySinkIR* MakeMemSink(OperatorIR* parent, std::string name) {
     auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-    PL_CHECK_OK(sink->Init(parent, {{"name", MakeString(name)}}, ast));
+    PL_CHECK_OK(sink->Init(parent, {{{"name", MakeString(name)}}, {}}, ast));
     return sink;
   }
 
@@ -176,14 +177,14 @@ class OperatorTests : public ::testing::Test {
     EXPECT_OK(filter_func_lambda->Init({}, filter_expr, ast));
 
     FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{"fn", filter_func_lambda}});
+    ArgMap amap({{{"fn", filter_func_lambda}}, {}});
     EXPECT_OK(filter->Init(parent, amap, ast));
     return filter;
   }
 
   LimitIR* MakeLimit(OperatorIR* parent, int64_t limit_value) {
     LimitIR* limit = graph->MakeNode<LimitIR>().ValueOrDie();
-    ArgMap amap({{"rows", MakeInt(limit_value)}});
+    ArgMap amap({{{"rows", MakeInt(limit_value)}}, {}});
     EXPECT_OK(limit->Init(parent, amap, ast));
     return limit;
   }
@@ -201,7 +202,7 @@ class OperatorTests : public ::testing::Test {
     PL_CHECK_OK(list_ir->Init(ast, exprs));
     LambdaIR* by_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
     PL_CHECK_OK(by_lambda->Init({}, list_ir, ast));
-    PL_CHECK_OK(agg->Init(parent, {{"by", by_lambda}, {"fn", fn_lambda}}, ast));
+    PL_CHECK_OK(agg->Init(parent, {{{"by", by_lambda}, {"fn", fn_lambda}}, {}}, ast));
     return agg;
   }
 
@@ -298,7 +299,7 @@ class OperatorTests : public ::testing::Test {
 
   UnionIR* MakeUnion(std::vector<OperatorIR*> parents) {
     UnionIR* union_node = graph->MakeNode<UnionIR>().ValueOrDie();
-    EXPECT_OK(union_node->Init(parents, {{}}, ast));
+    EXPECT_OK(union_node->Init(parents, {{}, {}}, ast));
     return union_node;
   }
 
@@ -316,9 +317,10 @@ class OperatorTests : public ::testing::Test {
     PL_CHECK_OK(output_columns_lambda->Init({}, output_columns, ast));
 
     PL_CHECK_OK(join_node->Init(parents,
-                                {{"type", MakeString(join_type)},
-                                 {"cond", equality_condition_lambda},
-                                 {"cols", output_columns_lambda}},
+                                {{{"type", MakeString(join_type)},
+                                  {"cond", equality_condition_lambda},
+                                  {"cols", output_columns_lambda}},
+                                 {}},
                                 ast));
     return join_node;
   }

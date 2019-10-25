@@ -49,7 +49,7 @@ TEST(IRTest, check_connection) {
   EXPECT_OK(table_str_node->Init(table_str, ast));
   EXPECT_OK(select_col->Init("testCol", ast));
   EXPECT_OK(select_list->Init(ast, {select_col}));
-  ArgMap memsrc_argmap({{"table", table_str_node}, {"select", select_list}});
+  ArgMap memsrc_argmap({{{"table", table_str_node}, {"select", select_list}}, {}});
   EXPECT_OK(src->Init(nullptr, memsrc_argmap, ast));
   EXPECT_OK(range->Init(src, start_rng_str, stop_rng_str, ast));
   EXPECT_EQ(range->parents()[0], src);
@@ -88,7 +88,7 @@ TEST(ToProto, memory_source_ir) {
   auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
   auto table_node = graph->MakeNode<StringIR>().ValueOrDie();
   EXPECT_OK(table_node->Init("test_table", ast));
-  ArgMap memsrc_argmap({{"table", table_node}, {"select", select_list}});
+  ArgMap memsrc_argmap({{{"table", table_node}, {"select", select_list}}, {}});
   EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
 
   EXPECT_OK(mem_src->SetRelation(
@@ -132,7 +132,7 @@ TEST(ToProto, memory_source_ir_with_tablet) {
   auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
   auto table_node = graph->MakeNode<StringIR>().ValueOrDie();
   EXPECT_OK(table_node->Init("test_table", ast));
-  ArgMap memsrc_argmap({{"table", table_node}, {"select", select_list}});
+  ArgMap memsrc_argmap({{{"table", table_node}, {"select", select_list}}, {}});
   EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
 
   EXPECT_OK(mem_src->SetRelation(
@@ -176,7 +176,7 @@ TEST(ToProto, memory_sink_ir) {
       std::vector<std::string>({"output1", "output2"}));
   EXPECT_OK(mem_sink->SetRelation(rel));
   EXPECT_OK(name_ir->Init("output_table", ast));
-  ArgMap amap({{"name", name_ir}});
+  ArgMap amap({{{"name", name_ir}}, {}});
   EXPECT_OK(mem_sink->Init(mem_source, amap, ast));
 
   planpb::Operator pb;
@@ -228,7 +228,7 @@ TEST(ToProto, map_ir) {
                        std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
   func->set_func_id(1);
   EXPECT_OK(lambda->Init({"col_name"}, {{"col_name", func}}, ast));
-  ArgMap amap({{"fn", lambda}});
+  ArgMap amap({{{"fn", lambda}}, {}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
   planpb::Operator pb;
@@ -284,14 +284,14 @@ TEST(ToProto, agg_ir) {
   EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
                            std::vector<ExpressionIR*>({constant, col}), false /* compile_time */,
                            ast));
-  EXPECT_OK(agg_func_lambda->Init({"meaned_column"}, {{"mean", agg_func}}, ast));
+  EXPECT_OK(agg_func_lambda->Init({"meaned_column"}, {{{"mean", agg_func}}, {}}, ast));
 
   auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto group1 = graph->MakeNode<ColumnIR>().ValueOrDie();
   EXPECT_OK(group1->Init("group1", /*parent_op_idx*/ 0, ast));
   group1->ResolveColumn(1, types::INT64);
   EXPECT_OK(by_func_lambda->Init({"group1"}, group1, ast));
-  ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
+  ArgMap amap({{{"by", by_func_lambda}, {"fn", agg_func_lambda}}, {}});
 
   ASSERT_OK(agg->Init(mem_src, amap, ast));
   ColExpressionVector exprs;
@@ -319,7 +319,7 @@ class MetadataTests : public ::testing::Test {
 
 TEST_F(MetadataTests, metadata_resolver) {
   MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-  EXPECT_OK(metadata_resolver->Init(MakeMemSource(), {{}}, ast));
+  EXPECT_OK(metadata_resolver->Init(MakeMemSource(), {{}, {}}, ast));
   MetadataProperty* md_property = md_handler->GetProperty("pod_name").ValueOrDie();
   EXPECT_FALSE(metadata_resolver->HasMetadataColumn("pod_name"));
   EXPECT_OK(metadata_resolver->AddMetadata(md_property));
@@ -335,7 +335,7 @@ TEST_F(MetadataTests, metadata_ir) {
   EXPECT_TRUE(metadata_ir->IsColumn());
   EXPECT_FALSE(metadata_ir->HasMetadataResolver());
   EXPECT_EQ(metadata_ir->name(), "pod_name");
-  EXPECT_OK(metadata_resolver->Init(MakeMemSource(), {{}}, ast));
+  EXPECT_OK(metadata_resolver->Init(MakeMemSource(), {{}, {}}, ast));
   auto property = std::make_unique<NameMetadataProperty>(
       MetadataType::POD_NAME, std::vector<MetadataType>({MetadataType::POD_ID}));
   EXPECT_OK(metadata_ir->ResolveMetadataColumn(metadata_resolver, property.get()));
@@ -349,15 +349,17 @@ TEST_F(OperatorTests, swap_parent) {
   ColumnIR* col2 = MakeColumn("test2", /*parent_op_idx*/ 0);
   ColumnIR* col3 = MakeColumn("test3", /*parent_op_idx*/ 0);
   FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
-  MapIR* child_map = MakeMap(mem_source, {{"out11", col1}, {"out2", col2}, {"out3", add_func}});
+  MapIR* child_map =
+      MakeMap(mem_source, {{{"out11", col1}, {"out2", col2}, {"out3", add_func}}, {}});
   EXPECT_EQ(col1->ReferenceID().ConsumeValueOrDie(), mem_source->id());
   EXPECT_EQ(col2->ReferenceID().ConsumeValueOrDie(), mem_source->id());
   EXPECT_EQ(col3->ReferenceID().ConsumeValueOrDie(), mem_source->id());
 
   // Insert a map as if we are copying from the parent. These columns are distinact from col1-3.
-  MapIR* parent_map = MakeMap(mem_source, {{"test1", MakeColumn("test1", /*parent_op_idx*/ 0)},
-                                           {"test2", MakeColumn("test2", /*parent_op_idx*/ 0)},
-                                           {"test3", MakeColumn("test3", /*parent_op_idx*/ 0)}});
+  MapIR* parent_map = MakeMap(mem_source, {{{"test1", MakeColumn("test1", /*parent_op_idx*/ 0)},
+                                            {"test2", MakeColumn("test2", /*parent_op_idx*/ 0)},
+                                            {"test3", MakeColumn("test3", /*parent_op_idx*/ 0)}},
+                                           {}});
 
   EXPECT_NE(parent_map->id(), child_map->id());  // Sanity check.
   // Now swap the parent, and expect the children to point to the new parent.
@@ -633,7 +635,7 @@ TEST_F(CloneTests, simple_clone) {
   ColumnIR* col2 = MakeColumn("test2", 0);
   ColumnIR* col3 = MakeColumn("test3", 0);
   FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
-  MapIR* map = MakeMap(mem_source, {{"out1", col1}, {"out2", col2}, {"out3", add_func}});
+  MapIR* map = MakeMap(mem_source, {{{"out1", col1}, {"out2", col2}, {"out3", add_func}}, {}});
   MakeMemSink(map, "out");
 
   auto out = graph->Clone();
@@ -656,9 +658,10 @@ TEST_F(CloneTests, all_op_clone) {
   auto limit = MakeLimit(filter, 10);
 
   auto agg = MakeBlockingAgg(limit, {MakeMetadataIR("service", 0)},
-                             {{"mean", MakeMeanFunc(MakeColumn("equals_column", 0))}});
-  auto map = MakeMap(agg, {{"mean_deux", MakeAddFunc(MakeColumn("mean", 0), MakeInt(3))},
-                           {"mean", MakeColumn("mean", 0)}});
+                             {{{"mean", MakeMeanFunc(MakeColumn("equals_column", 0))}}, {}});
+  auto map = MakeMap(agg, {{{"mean_deux", MakeAddFunc(MakeColumn("mean", 0), MakeInt(3))},
+                            {"mean", MakeColumn("mean", 0)}},
+                           {}});
   MakeMemSink(map, "sup");
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -743,10 +746,11 @@ TEST_F(CloneTests, join_clone) {
       MakeAndFunc(
           MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
           MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
-      {{"left_only", MakeColumn("left_only", 0, relation0)},
-       {"col4", MakeColumn("col4", 1, relation1)},
-       {"col1", MakeColumn("col1", 0, relation0)},
-       {"right_only", MakeColumn("right_only", 1, relation1)}});
+      {{{"left_only", MakeColumn("left_only", 0, relation0)},
+        {"col4", MakeColumn("col4", 1, relation1)},
+        {"col1", MakeColumn("col1", 0, relation0)},
+        {"right_only", MakeColumn("right_only", 1, relation1)}},
+       {}});
 
   join_op->AddEqualityCondition(1, 2);
   join_op->AddEqualityCondition(3, 4);
@@ -1008,10 +1012,11 @@ TEST_F(ToProtoTests, inner_join) {
       MakeAndFunc(
           MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
           MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
-      {{"left_only", MakeColumn("left_only", 0, relation0)},
-       {"col4", MakeColumn("col4", 1, relation1)},
-       {"col1", MakeColumn("col1", 0, relation0)},
-       {"right_only", MakeColumn("right_only", 1, relation1)}});
+      {{{"left_only", MakeColumn("left_only", 0, relation0)},
+        {"col4", MakeColumn("col4", 1, relation1)},
+        {"col1", MakeColumn("col1", 0, relation0)},
+        {"right_only", MakeColumn("right_only", 1, relation1)}},
+       {}});
 
   join_op->AddEqualityCondition(1, 2);
   join_op->AddEqualityCondition(3, 4);
@@ -1072,10 +1077,11 @@ TEST_F(ToProtoTests, left_join) {
       MakeAndFunc(
           MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
           MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
-      {{"left_only", MakeColumn("left_only", 0, relation0)},
-       {"col4", MakeColumn("col4", 1, relation1)},
-       {"col1", MakeColumn("col1", 0, relation0)},
-       {"right_only", MakeColumn("right_only", 1, relation1)}});
+      {{{"left_only", MakeColumn("left_only", 0, relation0)},
+        {"col4", MakeColumn("col4", 1, relation1)},
+        {"col1", MakeColumn("col1", 0, relation0)},
+        {"right_only", MakeColumn("right_only", 1, relation1)}},
+       {}});
 
   join_op->AddEqualityCondition(1, 2);
   join_op->AddEqualityCondition(3, 4);
@@ -1137,10 +1143,11 @@ TEST_F(ToProtoTests, right_join) {
       MakeAndFunc(
           MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
           MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
-      {{"left_only", MakeColumn("left_only", 0, relation0)},
-       {"col4", MakeColumn("col4", 1, relation1)},
-       {"col1", MakeColumn("col1", 0, relation0)},
-       {"right_only", MakeColumn("right_only", 1, relation1)}});
+      {{{"left_only", MakeColumn("left_only", 0, relation0)},
+        {"col4", MakeColumn("col4", 1, relation1)},
+        {"col1", MakeColumn("col1", 0, relation0)},
+        {"right_only", MakeColumn("right_only", 1, relation1)}},
+       {}});
 
   join_op->AddEqualityCondition(2, 1);
   join_op->AddEqualityCondition(4, 3);
@@ -1205,10 +1212,11 @@ TEST_F(ToProtoTests, full_outer) {
       MakeAndFunc(
           MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
           MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
-      {{"left_only", MakeColumn("left_only", 0, relation0)},
-       {"col4", MakeColumn("col4", 1, relation1)},
-       {"col1", MakeColumn("col1", 0, relation0)},
-       {"right_only", MakeColumn("right_only", 1, relation1)}});
+      {{{"left_only", MakeColumn("left_only", 0, relation0)},
+        {"col4", MakeColumn("col4", 1, relation1)},
+        {"col1", MakeColumn("col1", 0, relation0)},
+        {"right_only", MakeColumn("right_only", 1, relation1)}},
+       {}});
 
   join_op->AddEqualityCondition(1, 2);
   join_op->AddEqualityCondition(3, 4);
@@ -1225,7 +1233,7 @@ TEST_F(OperatorTests, op_children) {
   ColumnIR* col2 = MakeColumn("test2", 0);
   ColumnIR* col3 = MakeColumn("test3", 0);
   FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
-  MapIR* map = MakeMap(mem_source, {{"out1", col1}, {"out2", col2}, {"out3", add_func}});
+  MapIR* map = MakeMap(mem_source, {{{"out1", col1}, {"out2", col2}, {"out3", add_func}}, {}});
   auto mem_sink = MakeMemSink(map, "out");
 
   auto mem_source_children = mem_source->Children();
@@ -1247,7 +1255,7 @@ TEST_F(IRPruneTests, prune_test) {
   ColumnIR* col2 = MakeColumn("test2", 0);
   ColumnIR* col3 = MakeColumn("test3", 0);
   FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
-  MapIR* map = MakeMap(mem_source, {{"out1", col1}, {"out2", col2}, {"out3", add_func}});
+  MapIR* map = MakeMap(mem_source, {{{"out1", col1}, {"out2", col2}, {"out3", add_func}}, {}});
   auto mem_sink = MakeMemSink(map, "out");
 
   EXPECT_THAT(graph->dag().nodes(), UnorderedElementsAre(0, 2, 3, 4, 5, 6, 7, 9));

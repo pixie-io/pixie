@@ -135,25 +135,27 @@ StatusOr<std::string> ASTWalker::GetFuncName(const pypa::AstCallPtr& node) {
 
 StatusOr<ArgMap> ASTWalker::ProcessArgs(const pypa::AstCallPtr& call_ast,
                                         const OperatorContext& op_context,
-                                        const std::vector<std::string>& expected_args,
-                                        bool kwargs_only) {
-  return ProcessArgs(call_ast, op_context, expected_args, kwargs_only, {{}});
+                                        const std::vector<std::string>& expected_args) {
+  return ProcessArgs(call_ast, op_context, expected_args, {{}});
 }
 
 StatusOr<ArgMap> ASTWalker::ProcessArgs(
     const pypa::AstCallPtr& call_ast, const OperatorContext& op_context,
-    const std::vector<std::string>& expected_args, bool kwargs_only,
+    const std::vector<std::string>& expected_args,
     const std::unordered_map<std::string, IRNode*>& default_args) {
   auto arg_ast = call_ast->arglist;
-  if (!kwargs_only) {
-    return error::Unimplemented("Only supporting kwargs for now.");
-  }
   ArgMap arg_map;
   // Set to keep track of args that are not yet found.
   std::unordered_set<std::string> missing_or_default_args;
   missing_or_default_args.insert(expected_args.begin(), expected_args.end());
 
   std::vector<Status> errors;
+
+  for (const auto arg : arg_ast.arguments) {
+    PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(arg, op_context));
+    arg_map.args.push_back(value);
+  }
+
   // Iterate through the keywords
   for (auto& k : arg_ast.keywords) {
     pypa::AstKeywordPtr kw_ptr = PYPA_PTR_CAST(Keyword, k);
@@ -164,7 +166,7 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
     }
     missing_or_default_args.erase(missing_or_default_args.find(key));
     PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(kw_ptr->value, op_context));
-    arg_map[key] = value;
+    arg_map.kwargs[key] = value;
   }
 
   for (const auto& ma : missing_or_default_args) {
@@ -176,8 +178,9 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
           CreateAstError(call_ast, "You must set '$0' directly. No default value found.", ma));
       continue;
     }
-    arg_map[ma] = find_ma->second;
+    arg_map.kwargs[ma] = find_ma->second;
   }
+
   PL_RETURN_IF_ERROR(MergeStatuses(errors));
   return arg_map;
 }
@@ -227,7 +230,7 @@ StatusOr<TOpIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
   }
   PL_ASSIGN_OR_RETURN(ArgMap args,
                       ProcessArgs(node, OperatorContext({parent_op}, ir_node), ir_node->ArgKeys(),
-                                  true, ir_node->DefaultArgValues(node)));
+                                  ir_node->DefaultArgValues(node)));
 
   PL_RETURN_IF_ERROR(ir_node->Init(parent_op, args, node));
   return ir_node;
@@ -246,10 +249,9 @@ StatusOr<RangeIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(OperatorIR * parent_op,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
 
-  PL_ASSIGN_OR_RETURN(
-      ArgMap args, ProcessArgs(node, OperatorContext({parent_op}, ir_node), {"start", "stop"}, true,
-                               {{"stop", default_stop_node}}));
-  PL_RETURN_IF_ERROR(ir_node->Init(parent_op, args["start"], args["stop"], node));
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, OperatorContext({parent_op}, ir_node),
+                                               {"start", "stop"}, {{"stop", default_stop_node}}));
+  PL_RETURN_IF_ERROR(ir_node->Init(parent_op, args.kwargs["start"], args.kwargs["stop"], node));
   return ir_node;
 }
 
@@ -278,6 +280,8 @@ StatusOr<JoinIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
     return CreateAstError(node, "$0. Got more than one argument.", expected_first_arg_string);
   }
 
+  // TODO(nserrino): Simply get this from ArgMap from ProcessArgs once ProcessArgs no longer
+  // has a dependency on parent_op2 (op_context)
   auto parent_arg = arg_list.arguments[0];
   if (parent_arg->type != AstType::Name) {
     return CreateAstError(parent_arg, "$0. Got $1 instead.", expected_first_arg_string,
@@ -288,7 +292,7 @@ StatusOr<JoinIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
 
   PL_ASSIGN_OR_RETURN(ArgMap args,
                       ProcessArgs(node, OperatorContext({parent_op1, parent_op2}, ir_node),
-                                  ir_node->ArgKeys(), true, ir_node->DefaultArgValues(node)));
+                                  ir_node->ArgKeys(), ir_node->DefaultArgValues(node)));
 
   PL_RETURN_IF_ERROR(ir_node->Init({parent_op1, parent_op2}, args, node));
   return ir_node;
@@ -331,14 +335,14 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
 
   PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, OperatorContext({parent_op}, kRangeAggOpId),
-                                               {"fn", "by", "size"}, true));
+                                               {"fn", "by", "size"}));
 
   // Create Map IR.
   PL_ASSIGN_OR_RETURN(MapIR * map_ir_node, ir_graph_->MakeNode<MapIR>());
 
   // pl.mod(by_col, size).
-  DCHECK(args["by"]->type() == IRNodeType::kLambda);
-  LambdaIR* by_lambda = static_cast<LambdaIR*>(args["by"]);
+  DCHECK(args.kwargs["by"]->type() == IRNodeType::kLambda);
+  LambdaIR* by_lambda = static_cast<LambdaIR*>(args.kwargs["by"]);
   if (by_lambda->col_exprs().size() > 1) {
     return by_lambda->CreateIRNodeError(
         "Too many arguments for by argument of RangeAgg, only 1 is supported. ");
@@ -372,10 +376,10 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
   PL_RETURN_IF_ERROR(ir_graph_->DeleteEdge(by_lambda->id(), by_col->id()));
   PL_ASSIGN_OR_RETURN(FuncIR * mod_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_ASSIGN_OR_RETURN(FuncIR::Op mod_op, GetOp("%", node));
-  DCHECK(args["size"]->IsExpression());
+  DCHECK(args.kwargs["size"]->IsExpression());
   PL_RETURN_IF_ERROR(mod_ir_node->Init(
       mod_op, kRunTimeFuncPrefix,
-      std::vector<ExpressionIR*>({by_col, static_cast<ExpressionIR*>(args["size"])}),
+      std::vector<ExpressionIR*>({by_col, static_cast<ExpressionIR*>(args.kwargs["size"])}),
       false /*compile_time */, node));
 
   PL_ASSIGN_OR_RETURN(ColumnIR * by_col_copy, ir_graph_->MakeNode<ColumnIR>());
@@ -392,14 +396,14 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
   PL_ASSIGN_OR_RETURN(LambdaIR * map_lambda_ir_node, ir_graph_->MakeNode<LambdaIR>());
   // Pull in all columns needed in fn.
   ColExpressionVector map_exprs = ColExpressionVector({ColumnExpression{"group", sub_ir_node}});
-  for (const auto& name : static_cast<LambdaIR*>(args["fn"])->expected_column_names()) {
+  for (const auto& name : static_cast<LambdaIR*>(args.kwargs["fn"])->expected_column_names()) {
     PL_ASSIGN_OR_RETURN(ColumnIR * col_node, ir_graph_->MakeNode<ColumnIR>());
     PL_RETURN_IF_ERROR(col_node->Init(name, /* parent_op_idx */ 0, node));
     map_exprs.push_back(ColumnExpression{name, col_node});
   }
   PL_RETURN_IF_ERROR(map_lambda_ir_node->Init(std::unordered_set<std::string>({by_col->col_name()}),
                                               map_exprs, node));
-  ArgMap map_args{{"fn", map_lambda_ir_node}};
+  ArgMap map_args{{{"fn", map_lambda_ir_node}}, {}};
   PL_RETURN_IF_ERROR(map_ir_node->Init(parent_op, map_args, node));
 
   // Create BlockingAggIR
@@ -413,8 +417,8 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
       agg_by_ir_node->Init(std::unordered_set<std::string>({"group"}), agg_col_ir_node, node));
 
   // Agg(fn = fn, by = lambda r: r.group).
-  IRNode* fn_node = args["fn"];
-  ArgMap agg_args{{"by", agg_by_ir_node}, {"fn", fn_node}};
+  IRNode* fn_node = args.kwargs["fn"];
+  ArgMap agg_args{{{"by", agg_by_ir_node}, {"fn", fn_node}}, {}};
   PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_args, node));
   return agg_ir_node;
 }
@@ -958,6 +962,10 @@ StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast,
     }
     case AstType::BinOp: {
       PL_ASSIGN_OR_RETURN(ir_node, ProcessDataBinOp(PYPA_PTR_CAST(BinOp, ast), op_context));
+      break;
+    }
+    case AstType::Name: {
+      PL_ASSIGN_OR_RETURN(ir_node, LookupName(PYPA_PTR_CAST(Name, ast)));
       break;
     }
     default: {

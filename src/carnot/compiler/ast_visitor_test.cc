@@ -73,6 +73,11 @@ TEST(ASTVisitor, from_select_default_arg) {
   EXPECT_OK(ParseQuery(no_select_arg));
 }
 
+TEST(ASTVisitor, positional_args) {
+  std::string positional_arg = "From('123', 456, table='cpu').Result(name='out')";
+  EXPECT_OK(ParseQuery(positional_arg));
+}
+
 // Checks to make sure the parser identifies bad syntax
 TEST(ASTVisitor, bad_syntax) {
   std::string early_paranetheses_close = "From";

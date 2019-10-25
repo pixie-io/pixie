@@ -40,7 +40,7 @@ class RulesTest : public OperatorTests {
   }
   MetadataResolverIR* MakeMetadataResolver(OperatorIR* parent) {
     MetadataResolverIR* md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-    EXPECT_OK(md_resolver->Init(parent, {{}}, ast));
+    EXPECT_OK(md_resolver->Init(parent, {{}, {}}, ast));
     return md_resolver;
   }
   FilterIR* MakeFilter(OperatorIR* parent) {
@@ -62,7 +62,7 @@ class RulesTest : public OperatorTests {
     EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
 
     FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{"fn", filter_func_lambda}});
+    ArgMap amap({{{"fn", filter_func_lambda}}, {}});
     EXPECT_OK(filter->Init(parent, amap, ast));
     return filter;
   }
@@ -79,7 +79,7 @@ class RulesTest : public OperatorTests {
     EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
 
     FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{"fn", filter_func_lambda}});
+    ArgMap amap({{{"fn", filter_func_lambda}}, {}});
     EXPECT_OK(filter->Init(parent, amap, ast));
     return filter;
   }
@@ -90,13 +90,13 @@ class RulesTest : public OperatorTests {
                              ast));
 
     auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(agg_func_lambda->Init({}, {{"agg_fn", agg_func}}, ast));
+    EXPECT_OK(agg_func_lambda->Init({}, {{{"agg_fn", agg_func}}, {}}, ast));
 
     auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(by_func_lambda->Init({"group"}, by_column, ast));
 
     BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
-    ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
+    ArgMap amap({{{"by", by_func_lambda}, {"fn", agg_func_lambda}}, {}});
     EXPECT_OK(agg->Init(parent, amap, ast));
     return agg;
   }
@@ -127,8 +127,8 @@ TEST_F(DataTypeRuleTest, map_function) {
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
-  EXPECT_OK(lambda->Init({"col_name"}, {{"func", func}}, ast));
-  ArgMap amap({{"fn", lambda}});
+  EXPECT_OK(lambda->Init({"col_name"}, {{{"func", func}}, {}}, ast));
+  ArgMap amap({{{"fn", lambda}}, {}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
   // No rule has been run, don't expect any of these to be evaluated.
@@ -207,8 +207,8 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "gobeldy"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
-  EXPECT_OK(lambda->Init({"col_name"}, {{"func", func}}, ast));
-  ArgMap amap({{"fn", lambda}});
+  EXPECT_OK(lambda->Init({"col_name"}, {{{"func", func}}, {}}, ast));
+  ArgMap amap({{{"fn", lambda}}, {}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
   // Expect the data_rule to successfully change columnir.
@@ -233,8 +233,8 @@ TEST_F(DataTypeRuleTest, function_in_agg) {
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({col}), false /* compile_time */, ast));
-  EXPECT_OK(lambda->Init({col->col_name()}, {{"func", func}}, ast));
-  ArgMap amap({{"fn", lambda}, {"by", nullptr}});
+  EXPECT_OK(lambda->Init({col->col_name()}, {{{"func", func}}, {}}, ast));
+  ArgMap amap({{{"fn", lambda}, {"by", nullptr}}, {}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
   // Expect the data_rule to successfully evaluate the column.
@@ -273,8 +273,8 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   EXPECT_OK(func2->Init({FuncIR::Opcode::add, "-", "subtract"}, ASTWalker::kRunTimeFuncPrefix,
                         std::vector<ExpressionIR*>({constant2, func}), false /* compile_time */,
                         ast));
-  EXPECT_OK(lambda->Init({"col_name"}, {{"col_name", func2}}, ast));
-  ArgMap amap({{"fn", lambda}});
+  EXPECT_OK(lambda->Init({"col_name"}, {{{"col_name", func2}}, {}}, ast));
+  ArgMap amap({{{"fn", lambda}}, {}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
   // No rule has been run, don't expect any of these to be evaluated.
@@ -355,7 +355,7 @@ TEST_F(SourceRelationTest, set_source_select_all) {
   ASSERT_OK(table_str_node->Init("cpu", ast));
 
   MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  ArgMap memsrc_argmap({{"table", table_str_node}, {"select", nullptr}});
+  ArgMap memsrc_argmap({{{"table", table_str_node}, {"select", nullptr}}, {}});
   EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
 
   EXPECT_FALSE(mem_src->IsRelationInit());
@@ -385,7 +385,7 @@ TEST_F(SourceRelationTest, set_source_variable_columns) {
   ASSERT_OK(table_str_node->Init("cpu", ast));
 
   MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  ArgMap memsrc_argmap({{"table", table_str_node}, {"select", select_list}});
+  ArgMap memsrc_argmap({{{"table", table_str_node}, {"select", select_list}}, {}});
   EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
 
   EXPECT_FALSE(mem_src->IsRelationInit());
@@ -410,7 +410,7 @@ TEST_F(SourceRelationTest, missing_table_name) {
   ASSERT_OK(table_str_node->Init(table_name, ast));
 
   MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  ArgMap memsrc_argmap({{"table", table_str_node}, {"select", nullptr}});
+  ArgMap memsrc_argmap({{{"table", table_str_node}, {"select", nullptr}}, {}});
   EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
 
   EXPECT_FALSE(mem_src->IsRelationInit());
@@ -437,7 +437,7 @@ TEST_F(SourceRelationTest, missing_columns) {
   ASSERT_OK(table_str_node->Init("cpu", ast));
 
   MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  ArgMap memsrc_argmap({{"table", table_str_node}, {"select", select_list}});
+  ArgMap memsrc_argmap({{{"table", table_str_node}, {"select", select_list}}, {}});
   EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
 
   EXPECT_FALSE(mem_src->IsRelationInit());
@@ -469,7 +469,7 @@ class BlockingAggRuleTest : public RulesTest {
     }
 
     auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(agg_func_lambda->Init({}, {{agg_func_col, agg_func}}, ast));
+    EXPECT_OK(agg_func_lambda->Init({}, {{{agg_func_col, agg_func}}, {}}, ast));
 
     auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
     auto group = MakeColumn(group_name, /* parent_op_idx */ 0);
@@ -480,7 +480,7 @@ class BlockingAggRuleTest : public RulesTest {
     EXPECT_OK(by_func_lambda->Init({group_name}, group, ast));
 
     agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
-    ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
+    ArgMap amap({{{"by", by_func_lambda}, {"fn", agg_func_lambda}}, {}});
     ASSERT_OK(agg->Init(mem_src, amap, ast));
   }
   MemorySourceIR* mem_src;
@@ -549,10 +549,10 @@ class MapRuleTest : public RulesTest {
     }
 
     auto map_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(map_func_lambda->Init({}, {{map_func_col, map_func}}, ast));
+    EXPECT_OK(map_func_lambda->Init({}, {{{map_func_col, map_func}}, {}}, ast));
 
     map = graph->MakeNode<MapIR>().ValueOrDie();
-    ArgMap amap({{"fn", map_func_lambda}});
+    ArgMap amap({{{"fn", map_func_lambda}}, {}});
     ASSERT_OK(map->Init(mem_src, amap, ast));
   }
   MemorySourceIR* mem_src;
@@ -601,7 +601,7 @@ class MetadataResolverRuleTest : public RulesTest {
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
 
     md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-    ArgMap amap({{}});
+    ArgMap amap({{}, {}});
     PL_CHECK_OK(md_resolver->Init(mem_src, amap, ast));
   }
   MemorySourceIR* mem_src;
@@ -724,7 +724,7 @@ class OperatorRelationTest : public RulesTest {
     auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
     EXPECT_OK(constant1->Init(10, ast));
     LimitIR* limit = graph->MakeNode<LimitIR>().ValueOrDie();
-    ArgMap amap({{"rows", constant1}});
+    ArgMap amap({{{"rows", constant1}}, {}});
     EXPECT_OK(limit->Init(parent, amap, ast));
     return limit;
   }
@@ -997,7 +997,7 @@ class VerifyFilterExpressionTest : public RulesTest {
     EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
 
     FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{"fn", filter_func_lambda}});
+    ArgMap amap({{{"fn", filter_func_lambda}}, {}});
     EXPECT_OK(filter->Init(mem_src, amap, ast));
     return filter_func;
   }
@@ -1050,14 +1050,14 @@ class ResolveMetadataTest : public RulesTest {
     EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
 
     FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{"fn", filter_func_lambda}});
+    ArgMap amap({{{"fn", filter_func_lambda}}, {}});
     EXPECT_OK(filter->Init(parent, amap, ast));
     return filter;
   }
 
   MetadataResolverIR* MakeMetadataResolver(OperatorIR* parent) {
     md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-    EXPECT_OK(md_resolver->Init(parent, {{}}, ast));
+    EXPECT_OK(md_resolver->Init(parent, {{}, {}}, ast));
     return md_resolver;
   }
   BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
@@ -1067,13 +1067,13 @@ class ResolveMetadataTest : public RulesTest {
                              ast));
 
     auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(agg_func_lambda->Init({}, {{"agg_fn", agg_func}}, ast));
+    EXPECT_OK(agg_func_lambda->Init({}, {{{"agg_fn", agg_func}}, {}}, ast));
 
     auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(by_func_lambda->Init({"group"}, by_column, ast));
 
     BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
-    ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
+    ArgMap amap({{{"by", by_func_lambda}, {"fn", agg_func_lambda}}, {}});
     EXPECT_OK(agg->Init(parent, amap, ast));
     return agg;
   }
@@ -1195,7 +1195,7 @@ class FormatMetadataTest : public RulesTest {
     mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
     md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-    PL_CHECK_OK(md_resolver->Init(mem_src, {{}}, ast));
+    PL_CHECK_OK(md_resolver->Init(mem_src, {{}, {}}, ast));
   }
 
   MetadataIR* MakeMetadataIR(const std::string& name, int64_t parent_op_idx) {
@@ -1295,10 +1295,10 @@ class CheckRelationRule : public RulesTest {
                              false /* compile_time */, ast));
 
     auto map_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(map_func_lambda->Init({}, {{column_name, map_func}}, ast));
+    EXPECT_OK(map_func_lambda->Init({}, {{{column_name, map_func}}, {}}, ast));
 
     MapIR* map = graph->MakeNode<MapIR>().ValueOrDie();
-    ArgMap amap({{"fn", map_func_lambda}});
+    ArgMap amap({{{"fn", map_func_lambda}}, {}});
     EXPECT_OK(map->Init(parent, amap, ast));
     return map;
   }
@@ -1377,10 +1377,10 @@ class MetadataResolverConversionTest : public RulesTest {
                              false /* compile_time */, ast));
 
     auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(agg_func_lambda->Init({}, {{"agg_fn", agg_func}}, ast));
+    EXPECT_OK(agg_func_lambda->Init({}, {{{"agg_fn", agg_func}}, {}}, ast));
 
     MapIR* agg = graph->MakeNode<MapIR>().ValueOrDie();
-    ArgMap amap({{"fn", agg_func_lambda}});
+    ArgMap amap({{{"fn", agg_func_lambda}}, {}});
     EXPECT_OK(agg->Init(parent, amap, ast));
     return agg;
   }
@@ -1717,7 +1717,7 @@ TEST_F(RulesTest, simple_remove_range) {
   EXPECT_OK(range->Init(mem_src, start_time, stop_time, ast));
 
   ArgMap amap;
-  amap["name"] = sink_name;
+  amap.kwargs["name"] = sink_name;
   EXPECT_OK(sink->Init(range, amap, ast));
   EXPECT_FALSE(mem_src->IsTimeSet());
   EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2, 3, 4));
@@ -1759,12 +1759,12 @@ TEST_F(RulesTest, references_transfer) {
   EXPECT_OK(range->Init(mem_src, start_time, stop_time, ast));
 
   ArgMap map_arg_map;
-  EXPECT_OK(lambda->Init({}, {{"test", column}}, ast));
-  map_arg_map["fn"] = lambda;
+  EXPECT_OK(lambda->Init({}, {{{"test", column}}, {}}, ast));
+  map_arg_map.kwargs["fn"] = lambda;
   EXPECT_OK(map->Init(range, map_arg_map, ast));
 
   ArgMap sink_arg_map;
-  sink_arg_map["name"] = sink_name;
+  sink_arg_map.kwargs["name"] = sink_name;
   EXPECT_OK(sink->Init(map, sink_arg_map, ast));
   EXPECT_FALSE(mem_src->IsTimeSet());
   EXPECT_EQ(column->ReferenceID().ConsumeValueOrDie(), range->id());

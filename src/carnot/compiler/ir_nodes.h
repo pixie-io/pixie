@@ -25,8 +25,12 @@ namespace compiler {
 class IR;
 class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
-using ArgMap = std::unordered_map<std::string, IRNode*>;
 using table_store::schema::Relation;
+
+struct ArgMap {
+  std::unordered_map<std::string, IRNode*> kwargs;
+  std::vector<IRNode*> args;
+};
 
 enum class IRNodeType {
   kAny = -1,
@@ -1251,7 +1255,7 @@ class GRPCSinkIR : public OperatorIR {
   Status InitImpl(const ArgMap&) override { return Status::OK(); }
   Status Init(OperatorIR* parent, int64_t destination_id, pypa::AstPtr ast_node) {
     destination_id_ = destination_id;
-    return OperatorIR::Init(parent, {{}}, ast_node);
+    return OperatorIR::Init(parent, {{}, {}}, ast_node);
   }
   Status ToProto(planpb::Operator* op_pb) const override;
 
@@ -1322,7 +1326,7 @@ class GRPCSourceIR : public OperatorIR {
               pypa::AstPtr ast_node) {
     remote_source_id_ = remote_source_id;
     PL_RETURN_IF_ERROR(SetRelation(relation));
-    return OperatorIR::Init(nullptr, {{}}, ast_node);
+    return OperatorIR::Init(nullptr, {{}, {}}, ast_node);
   }
 
   const std::string& remote_source_id() const { return remote_source_id_; }
@@ -1361,7 +1365,7 @@ class GRPCSourceGroupIR : public OperatorIR {
   Status Init(int64_t source_id, const Relation& relation, pypa::AstPtr ast_node) {
     source_id_ = source_id;
     PL_RETURN_IF_ERROR(SetRelation(relation));
-    return OperatorIR::Init(nullptr, {{}}, ast_node);
+    return OperatorIR::Init(nullptr, {{}, {}}, ast_node);
   }
 
   void SetGRPCAddress(const std::string& grpc_address) { grpc_address_ = grpc_address; }
@@ -1509,7 +1513,7 @@ class TabletSourceGroupIR : public OperatorIR {
     PL_RETURN_IF_ERROR(SetRelation(memory_source_ir->relation()));
     DCHECK(relation().HasColumn(tablet_key));
     tablet_key_ = tablet_key;
-    return OperatorIR::Init(nullptr, {{}}, memory_source_ir->ast_node());
+    return OperatorIR::Init(nullptr, {{}, {}}, memory_source_ir->ast_node());
   }
 
   explicit TabletSourceGroupIR(int64_t id)

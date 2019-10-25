@@ -46,7 +46,7 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
   }
   IR* graph = group_ir->graph_ptr();
   PL_ASSIGN_OR_RETURN(UnionIR * union_op, graph->MakeNode<UnionIR>());
-  PL_RETURN_IF_ERROR(union_op->Init(grpc_sources, {{}}, group_ir->ast_node()));
+  PL_RETURN_IF_ERROR(union_op->Init(grpc_sources, {{}, {}}, group_ir->ast_node()));
   PL_RETURN_IF_ERROR(union_op->SetRelationFromParents());
   return union_op;
 }

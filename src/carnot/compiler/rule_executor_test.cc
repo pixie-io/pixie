@@ -56,7 +56,7 @@ class RuleExecutorTest : public ::testing::Test {
                             std::vector<ExpressionIR*>({int_constant2, func}),
                             false /* compile_time */, ast));
     PL_CHECK_OK(lambda->Init({"count"}, {{"func", func2}}, ast));
-    ArgMap amap({{"fn", lambda}});
+    ArgMap amap({{{"fn", lambda}}, {}});
     PL_CHECK_OK(map->Init(mem_src, amap, ast));
   }
   std::unique_ptr<CompilerState> compiler_state_;

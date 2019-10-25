@@ -150,17 +150,17 @@ class ASTWalker {
    * @param arg_ast The arglist ast
    * @param op_context: The context of the operator which this is contained within.
    * @param expected_args The string args are expect. Should be ordered if kwargs_only is false.
-   * @param kwargs_only Whether to only allow keyword args.
    * @param default_args A map from the arg name to a defualt node. Every arg is optionally default
    * and doesn't need a specification
-   * @return StatusOr<ArgMap> a mapping of argument name to the resulting IRNode.
+   * @return StatusOr<ArgMap> a mapping of arguments (positional and kwargs) to the resulting
+   * IRNode.
    */
   StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast, const OperatorContext& op_context,
-                               const std::vector<std::string>& expected_args, bool kwargs_only,
+                               const std::vector<std::string>& expected_args,
                                const std::unordered_map<std::string, IRNode*>& default_args);
 
   StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast, const OperatorContext& op_context,
-                               const std::vector<std::string>& expected_args, bool kwargs_only);
+                               const std::vector<std::string>& expected_args);
   /**
    * @brief ProcessExprStmtNode handles full lines that are expression statements.
    * ie in the following lines

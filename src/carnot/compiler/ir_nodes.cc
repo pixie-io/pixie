@@ -124,7 +124,7 @@ std::string OperatorIR::ParentsDebugString() {
 Status OperatorIR::ArgMapContainsKeys(const ArgMap& args) {
   std::vector<std::string> missing_keys;
   for (const auto& arg : ArgKeys()) {
-    if (args.find(arg) == args.end()) {
+    if (args.kwargs.find(arg) == args.kwargs.end()) {
       missing_keys.push_back(arg);
     }
   }
@@ -205,8 +205,8 @@ std::string DebugStringFmt(int64_t depth, std::string name,
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
 
 Status MemorySinkIR::InitImpl(const ArgMap& args) {
-  DCHECK(args.find("name") != args.end());
-  IRNode* name_node = args.find("name")->second;
+  DCHECK(args.kwargs.find("name") != args.kwargs.end());
+  IRNode* name_node = args.kwargs.find("name")->second;
   if (name_node->type() != IRNodeType::kString) {
     return name_node->CreateIRNodeError("Expected string. Got $0", name_node->type_string());
   }
@@ -216,11 +216,11 @@ Status MemorySinkIR::InitImpl(const ArgMap& args) {
 }
 
 Status MemorySourceIR::InitImpl(const ArgMap& args) {
-  DCHECK(args.find("table") != args.end());
-  DCHECK(args.find("select") != args.end());
+  DCHECK(args.kwargs.find("table") != args.kwargs.end());
+  DCHECK(args.kwargs.find("select") != args.kwargs.end());
 
-  IRNode* table_node = args.find("table")->second;
-  IRNode* select_node = args.find("select")->second;
+  IRNode* table_node = args.kwargs.find("table")->second;
+  IRNode* select_node = args.kwargs.find("select")->second;
   if (table_node->type() != IRNodeType::kString) {
     return CreateIRNodeError("Expected table argument to be a string, not a $0",
                              table_node->type_string());
@@ -308,8 +308,8 @@ Status RangeIR::ToProto(planpb::Operator*) const {
 }
 
 Status MapIR::InitImpl(const ArgMap& args) {
-  DCHECK(args.find("fn") != args.end());
-  IRNode* lambda_func_node = args.find("fn")->second;
+  DCHECK(args.kwargs.find("fn") != args.kwargs.end());
+  IRNode* lambda_func_node = args.kwargs.find("fn")->second;
   if (lambda_func_node->type() != IRNodeType::kLambda) {
     return CreateIRNodeError("Expected 'fn' argument of Agg to be a lambda, got '$0'",
                              lambda_func_node->type_string());
@@ -421,8 +421,8 @@ Status MapIR::ToProto(planpb::Operator* op) const {
 }
 
 Status FilterIR::InitImpl(const ArgMap& args) {
-  DCHECK(args.find("fn") != args.end());
-  IRNode* filter_func_node = args.find("fn")->second;
+  DCHECK(args.kwargs.find("fn") != args.kwargs.end());
+  IRNode* filter_func_node = args.kwargs.find("fn")->second;
   if (filter_func_node->type() != IRNodeType::kLambda) {
     return CreateIRNodeError("Expected 'fn' argument of Filter to be a 'lambda', got '$0'",
                              filter_func_node->type_string());
@@ -464,8 +464,8 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
 }
 
 Status LimitIR::InitImpl(const ArgMap& args) {
-  DCHECK(args.find("rows") != args.end());
-  IRNode* limit_node = args.find("rows")->second;
+  DCHECK(args.kwargs.find("rows") != args.kwargs.end());
+  IRNode* limit_node = args.kwargs.find("rows")->second;
   if (limit_node->type() != IRNodeType::kInt) {
     return CreateIRNodeError("Expected 'int', got $0", limit_node->type_string());
   }
@@ -498,8 +498,8 @@ Status LimitIR::ToProto(planpb::Operator* op) const {
 
 // TODO(philkuz) fix up the initimpl to make this less hardcoded
 Status BlockingAggIR::InitImpl(const ArgMap& args) {
-  IRNode* by_func = args.find("by")->second;
-  IRNode* agg_func = args.find("fn")->second;
+  IRNode* by_func = args.kwargs.find("by")->second;
+  IRNode* agg_func = args.kwargs.find("fn")->second;
   if (agg_func->type() != IRNodeType::kLambda) {
     return CreateIRNodeError("Expected 'agg' argument of Agg to be 'Lambda', got '$0'",
                              agg_func->type_string());
@@ -1356,9 +1356,9 @@ Status JoinIR::ToProto(planpb::Operator* op) const {
 }
 
 Status JoinIR::InitImpl(const ArgMap& args) {
-  IRNode* join_type = args.find("type")->second;
-  IRNode* cond = args.find("cond")->second;
-  IRNode* cols = args.find("cols")->second;
+  IRNode* join_type = args.kwargs.find("type")->second;
+  IRNode* cond = args.kwargs.find("cond")->second;
+  IRNode* cols = args.kwargs.find("cols")->second;
   if (cond->type() != IRNodeType::kLambda) {
     return join_type->CreateIRNodeError("Expected 'cond' argument of Join to be 'Lambda', got '$0'",
                                         cond->type_string());
