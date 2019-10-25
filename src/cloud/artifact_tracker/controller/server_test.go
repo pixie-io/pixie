@@ -92,7 +92,7 @@ func mustSetupFakeBucket(t *testing.T) stiface.Client {
 		"test-bucket": &fakeBucket{
 			attrs: nil,
 			objects: map[string][]byte{
-				"cli/2019.6.22.1/cli_linux_amd64.sha256": []byte("the-sha256"),
+				"cli/1.2.1-pre.3/cli_linux_amd64.sha256": []byte("the-sha256"),
 			},
 		},
 	}}
@@ -106,21 +106,21 @@ func mustLoadTestData(t *testing.T, db *sqlx.DB) {
           ($1, $2, $3, $4, $5, $6)`
 	db.MustExec(insertArtifactQuery, "123e4567-e89b-12d3-a456-426655440000",
 		"cli", "2019-06-22 19:10:25-07", "bda4ac2f4c979e81f5d95a2b550a08fb041e985c",
-		"2019.6.22.2", "{LINUX_AMD64, DARWIN_AMD64}")
+		"1.2.3", "{LINUX_AMD64, DARWIN_AMD64}")
 	db.MustExec(insertArtifactQuery, "123e4567-e89b-12d3-a456-426655440001",
 		"cli", "2019-06-22 18:10:25-07", "ada4ac2f4c979e81f5d95a2b550a08fb041e985c",
-		"2019.6.22.1", "{LINUX_AMD64}")
+		"1.2.1-pre.3", "{LINUX_AMD64}")
 	db.MustExec(insertArtifactQuery, "123e4567-e89b-12d3-a456-426655440002",
 		"cli", "2019-06-21 19:10:25-07", "cda4ac2f4c979e81f5d95a2b550a08fb041e985c",
-		"2019.6.21.1", "{LINUX_AMD64, DARWIN_AMD64}")
+		"1.1.5", "{LINUX_AMD64, DARWIN_AMD64}")
 
 	db.MustExec(insertArtifactQuery, "223e4567-e89b-12d3-a456-426655440000",
 		"vizier", "2019-06-21 19:10:25-07", "cda4ac2f4c979e81f5d95a2b550a08fb041e985c",
-		"2019.6.21.2", "{CONTAINER_SET_LINUX_AMD64}")
+		"1.2.0", "{CONTAINER_SET_LINUX_AMD64}")
 
 	db.MustExec(insertArtifactQuery, "223e4567-e89b-12d3-a456-426655440001",
 		"vizier", "2019-06-21 17:10:25-07", "cda4ac2f4c979e81f5d95a2b550a08fb041e985c",
-		"2019.6.21.1", "{CONTAINER_SET_LINUX_AMD64}")
+		"1.1.5", "{CONTAINER_SET_LINUX_AMD64}")
 
 	insertChangelogQuery := `
         INSERT INTO artifact_changelogs 
@@ -169,7 +169,7 @@ func TestServer_GetArtifactList(t *testing.T) {
 					{
 						Timestamp:          &types.Timestamp{Seconds: 1561230625},
 						CommitHash:         "bda4ac2f4c979e81f5d95a2b550a08fb041e985c",
-						VersionStr:         "2019.6.22.2",
+						VersionStr:         "1.2.3",
 						AvailableArtifacts: []vpb.ArtifactType{vpb.AT_LINUX_AMD64, vpb.AT_DARWIN_AMD64},
 						Changelog:          "cl 0",
 					},
@@ -190,16 +190,16 @@ func TestServer_GetArtifactList(t *testing.T) {
 					{
 						Timestamp:          &types.Timestamp{Seconds: 1561230625},
 						CommitHash:         "bda4ac2f4c979e81f5d95a2b550a08fb041e985c",
-						VersionStr:         "2019.6.22.2",
+						VersionStr:         "1.2.3",
 						AvailableArtifacts: []vpb.ArtifactType{vpb.AT_LINUX_AMD64, vpb.AT_DARWIN_AMD64},
 						Changelog:          "cl 0",
 					},
 					{
-						Timestamp:          &types.Timestamp{Seconds: 1561227025},
-						CommitHash:         "ada4ac2f4c979e81f5d95a2b550a08fb041e985c",
-						VersionStr:         "2019.6.22.1",
-						AvailableArtifacts: []vpb.ArtifactType{vpb.AT_LINUX_AMD64},
-						Changelog:          "cl 1",
+						Timestamp:          &types.Timestamp{Seconds: 1561144225},
+						CommitHash:         "cda4ac2f4c979e81f5d95a2b550a08fb041e985c",
+						VersionStr:         "1.1.5",
+						AvailableArtifacts: []vpb.ArtifactType{vpb.AT_LINUX_AMD64, vpb.AT_DARWIN_AMD64},
+						Changelog:          "cl 2",
 					},
 				},
 			},
@@ -296,7 +296,7 @@ func TestServer_GetDownloadLink(t *testing.T) {
 			name: "Linux CLI fetch",
 			req: apb.GetDownloadLinkRequest{
 				ArtifactName: "cli",
-				VersionStr:   "2019.6.22.1",
+				VersionStr:   "1.2.1-pre.3",
 				ArtifactType: vpb.AT_LINUX_AMD64,
 			},
 			expectedResp: &apb.GetDownloadLinkResponse{
@@ -318,7 +318,7 @@ func TestServer_GetDownloadLink(t *testing.T) {
 				assert.Equal(t, status.Code(err), tc.errCode)
 				assert.Nil(t, resp)
 			} else {
-				assert.Nil(t, err)
+				require.Nil(t, err)
 				assert.Equal(t, resp.Url, "the-url")
 
 				ts, err := types.TimestampFromProto(resp.ValidUntil)

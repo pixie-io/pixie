@@ -81,7 +81,10 @@ func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListReq
               FROM artifacts, artifact_changelogs 
               WHERE artifact_name=$1 
                     AND artifact_changelogs.artifacts_id=artifacts.id 
-                    AND $2=ANY(available_artifacts) 
+                    AND $2=ANY(available_artifacts)
+                    -- Pre release builds contain a '-', so we filter those (but still make them available for download)
+                    -- The permissions of this should eventually be controlled using an RBAC rule.
+                    AND version_str NOT LIKE '%-%'
               ORDER BY create_time DESC LIMIT $3;`
 
 	rows, err := s.db.Queryx(query, name, at, limit)

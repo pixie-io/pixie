@@ -62,7 +62,10 @@ genrule(
 
 pl_cc_library(
     name = "cc_library",
-    srcs = ["version.cc", "gen_version_linkstamp.cc"],
+    srcs = [
+        "version.cc",
+        "gen_version_linkstamp.cc",
+    ],
     hdrs = ["version.h"],
     deps = [
         "//src/shared/types/proto:types_pl_cc_proto",
