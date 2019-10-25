@@ -23,6 +23,12 @@ class VersionInfo {
    * @return string
    */
   static std::string VersionString();
+
+  /**
+   * Returns the build number if present (or 0).
+   * @return int build number
+   */
+  static int BuildNumber();
 };
 
 }  // namespace pl
