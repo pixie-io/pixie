@@ -45,7 +45,7 @@ func parseTagsIntoVersionFile(repoPath string, artifactName string, outputFile s
 	as := vpb.ArtifactSet{}
 	as.Name = artifactName
 
-	releaseTagPrefix := fmt.Sprintf("release/%s-v", artifactName)
+	releaseTagPrefix := fmt.Sprintf("release/%s/v", artifactName)
 	tags, err := r.TagObjects()
 	// This only gets annotated tags, which is what we use in the release process.
 	err = tags.ForEach(func(tag *object.Tag) error {

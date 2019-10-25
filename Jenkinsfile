@@ -106,7 +106,7 @@ stashList = [];
 isMasterRun =  (env.JOB_NAME == "pixielabs-master")
 isNightlyTestRegressionRun = (env.JOB_NAME == "pixielabs-master-nightly-test-regression")
 isCLIBuildRun =  env.JOB_NAME.startsWith("pixielabs-master-cli-release-build/")
-
+isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-master-vizier-release-build/")
 
 runCoverageJob = isMasterRun
 
@@ -706,12 +706,48 @@ def  buildScriptForCLIRelease = {
   }
 }
 
+def  buildScriptForVizierRelease = {
+  node {
+    currentBuild.result = 'SUCCESS'
+    deleteDir()
+    try {
+      stage('Checkout code') {
+        checkoutAndInitialize()
+      }
+      stage('Build & Push Artifacts') {
+        WithSourceCodeFatalError {
+          dockerStep('', devDockerImageExtrasWithTag) {
+            sh './ci/vizier_build_release.sh'
+            stash name: "versions", includes: "src/utils/artifacts/artifact_db_updater/VERSIONS.json"
+          }
+        }
+      }
+      stage('Update versions database (prod)') {
+        updateVersionsDB("pixie-cloud-prod", K8S_PROD_CLUSTER, "plc")
+      }
+      stage('Update versions database (staging)') {
+        updateVersionsDB("pixie-cloud-staging", K8S_STAGING_CLUSTER, "plc-staging")
+      }
+    }
+    catch(err) {
+      currentBuild.result = 'FAILURE'
+      echo "Exception thrown:\n ${err}"
+      echo "Stacktrace:"
+      err.printStackTrace()
+    }
+
+    postBuildActions()
+  }
+}
+
 if(isNightlyTestRegressionRun) {
   // Disable retries for regression run.
   JENKINS_RETRIES=1
   buildScriptForNightlyTestRegression()
 } else if(isCLIBuildRun) {
   buildScriptForCLIRelease()
+} else if(isVizierBuildRun) {
+  buildScriptForVizierRelease()
 } else {
   buildScriptForCommits()
 }

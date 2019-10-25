@@ -1,0 +1,50 @@
+package(default_visibility = ["//visibility:public"])
+
+load(":images.bzl", "generate_vizier_yamls", "image_map_with_bundle_version")
+load("@io_bazel_rules_docker//container:container.bzl", "container_bundle", "container_image", "container_pull")
+load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
+VIZIER_IMAGE_MAP = {
+    "gcr.io/pl-dev-infra/vizier/agent_image": "//src/vizier/services/agent:agent_image",
+    "gcr.io/pl-dev-infra/vizier/cloud_connector_server_image": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
+    "gcr.io/pl-dev-infra/vizier/metadata_server_image": "//src/vizier/services/metadata:metadata_server_image",
+    "gcr.io/pl-dev-infra/vizier/query_broker_server_image": "//src/vizier/services/query_broker:query_broker_server_image",
+    "gcr.io/pl-dev-infra/vizier/api_server_image": "//src/vizier/services/api:api_server_image",
+    "gcr.io/pl-dev-infra/vizier/proxy_server_image": "//src/vizier/services/proxy:proxy_server_prod_image",
+    "gcr.io/pl-dev-infra/vizier/certmgr_server_image": "//src/vizier/services/certmgr:certmgr_server_image",
+}
+
+generate_vizier_yamls(
+    name = "vizier_prod",
+    srcs = glob(["**/*.yaml"]),
+    out = "vizier_prod.yaml",
+    cmd = """
+      T=`mktemp -d`
+      cp -aL k8s/vizier $$T
+      kustomize build $$T/vizier/base -o $@
+    """,
+    image_map = VIZIER_IMAGE_MAP,
+)
+
+container_bundle(
+    name = "vizier_images_bundle",
+    images = image_map_with_bundle_version(VIZIER_IMAGE_MAP),
+)
+
+container_push(
+    name = "vizier_images_push",
+    bundle = ":vizier_images_bundle",
+    format = "Docker",
+)
+
+pkg_tar(
+    name = "vizier_yamls",
+    srcs = [
+        "//k8s/vizier:vizier_prod.yaml",
+        "//k8s/vizier_deps:etcd_prod",
+        "//k8s/vizier_deps:nats_prod",
+    ],
+    package_dir = "/yamls",
+    strip_prefix = "/k8s",
+)

@@ -105,22 +105,3 @@ container_image(
     tars = ["@linux_headers_tar_gz//file:file"],
     visibility = ["//visibility:public"],
 )
-
-container_bundle(
-    name = "vizier_images_bundle",
-    images = {
-        "gcr.io/pl-dev-infra/vizier/agent_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent:agent_image",
-        "gcr.io/pl-dev-infra/vizier/cloud_connector_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
-        "gcr.io/pl-dev-infra/vizier/metadata_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/metadata:metadata_server_image",
-        "gcr.io/pl-dev-infra/vizier/query_broker_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/query_broker:query_broker_server_image",
-        "gcr.io/pl-dev-infra/vizier/api_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/api:api_server_image",
-        "gcr.io/pl-dev-infra/vizier/proxy_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/proxy:proxy_server_prod_image",
-        "gcr.io/pl-dev-infra/vizier/certmgr_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/certmgr:certmgr_server_image",
-    },
-)
-
-container_push(
-    name = "vizier_images_push",
-    bundle = ":vizier_images_bundle",
-    format = "Docker",
-)
