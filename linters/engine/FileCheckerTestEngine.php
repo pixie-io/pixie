@@ -13,7 +13,7 @@ final class FileCheckerTest {
         $this->files = $files;
     }
 
-    private function checkFile($file, $fileToCheck, $res) {
+    private function checkFile($file, $fileToCheck, $res, $fileExt, $instructions) {
         # Check that $fileToCheck exists.
         $existRes = new ArcanistUnitTestResult();
 
@@ -24,12 +24,11 @@ final class FileCheckerTest {
 
             # Check that .pb.go is up-to-date.
             $updatedRes = new ArcanistUnitTestResult();
-            $updatedRes->setName($fileToCheck . ' is older than the .proto file from which it was generated');
+            $updatedRes->setName($fileToCheck . ' is older than the ' . $fileExt . ' file from which it was generated');
             if (filemtime($this->project_root . '/' . $fileToCheck) >= filemtime($this->project_root . '/' . $file)) {
                 $updatedRes->setResult(ArcanistUnitTestResult::RESULT_PASS);
             } else {
-                print('To regenerate, run this command:' .
-                    'python $(bazel info workspace)/scripts/update_go_protos.py -r <.pb.go bazel directive>');
+                $updatedRes->setUserData($instructions);
                 $updatedRes->setResult(ArcanistUnitTestResult::RESULT_FAIL);
             }
             $res[] = $updatedRes;
@@ -60,9 +59,21 @@ final class FileCheckerTest {
             return substr($f, -6) == '.proto';
         });
 
+        # Check that .graphql files have corresponding .schema.d.ts files.
+        $gqlFiles = array_filter($this->files, function($f) {
+            return substr($f, -8) == '.graphql';
+        });        
+
         foreach ($protoFiles as &$file) {
             $pbFilename = substr($file,0,-6) . '.pb.go';
-            $test_results = $this->checkFile($file, $pbFilename, $test_results);
+            $test_results = $this->checkFile($file, $pbFilename, $test_results, '.proto', 'To regenerate, run this command:' .
+                    'python $(bazel info workspace)/scripts/update_go_protos.py -r <.pb.go bazel directive>');
+        }
+
+        foreach ($gqlFiles as &$file) {
+            $schemaFilename = substr($file,0,-8) . '.d.ts';
+            $test_results = $this->checkFile($file, $schemaFilename, $test_results, '.graphql', 'To regenerate, run this command in the directory:' .
+                    'graphql-schema-typescript generate-ts schema.graphql --output schema.d.ts');
         }
 
         # Check .go files that may need a .gen.go file.
@@ -93,7 +104,7 @@ final class FileCheckerTest {
                 }
             }
             if ($genGoFile) {
-                $test_results = $this->checkFile($file, $genGoFilename, $test_results);
+                $test_results = $this->checkFile($file, $genGoFilename, $test_results, '.go', 'To regenerate, run "go generate" in the appropriate directory.');
             }
         }
 
