@@ -35,6 +35,7 @@ require (
 	github.com/flynn-archive/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/gernest/wow v0.1.0
+	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/groupcache v0.0.0-20160516000752-02826c3e7903 // indirect

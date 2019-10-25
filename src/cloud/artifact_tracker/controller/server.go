@@ -76,11 +76,11 @@ func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListReq
 		return pb
 	}
 
-	query := `SELECT 
-                artifact_name, create_time, commit_hash, version_str, available_artifacts, changelog 
-              FROM artifacts, artifact_changelogs 
-              WHERE artifact_name=$1 
-                    AND artifact_changelogs.artifacts_id=artifacts.id 
+	query := `SELECT
+                artifact_name, create_time, commit_hash, version_str, available_artifacts, changelog
+              FROM artifacts, artifact_changelogs
+              WHERE artifact_name=$1
+                    AND artifact_changelogs.artifacts_id=artifacts.id
                     AND $2=ANY(available_artifacts)
                     -- Pre release builds contain a '-', so we filter those (but still make them available for download)
                     -- The permissions of this should eventually be controlled using an RBAC rule.
@@ -115,6 +115,8 @@ func downloadSuffix(at vpb.ArtifactType) string {
 		return "linux_amd64"
 	case vpb.AT_DARWIN_AMD64:
 		return "darwin_amd64"
+	case vpb.AT_CONTAINER_SET_YAMLS:
+		return "yamls.tar"
 	}
 	return "unknown"
 }
@@ -137,14 +139,14 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be unknown")
 	}
 
-	if !(at == vpb.AT_DARWIN_AMD64 || at == vpb.AT_LINUX_AMD64) {
+	if !(at == vpb.AT_DARWIN_AMD64 || at == vpb.AT_LINUX_AMD64 || at == vpb.AT_CONTAINER_SET_YAMLS) {
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be downloaded")
 	}
 
-	query := `SELECT 
+	query := `SELECT
                 1
-              FROM artifacts 
-              WHERE artifact_name=$1 
+              FROM artifacts
+              WHERE artifact_name=$1
                     AND $2=ANY(available_artifacts)
                     AND version_str=$3
 	          LIMIT 1;`

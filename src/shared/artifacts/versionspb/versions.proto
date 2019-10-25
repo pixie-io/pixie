@@ -13,6 +13,7 @@ enum ArtifactType {
     AT_LINUX_AMD64 = 1;
     AT_DARWIN_AMD64 = 2;
 
+    AT_CONTAINER_SET_YAMLS = 50;
     AT_CONTAINER_SET_LINUX_AMD64 = 100;
 }
 

@@ -13,6 +13,7 @@ const (
 	ATUnknown                ArtifactTypeDB = "UNKNOWN"
 	ATLinuxAMD64             ArtifactTypeDB = "LINUX_AMD64"
 	ATDarwinAMD64            ArtifactTypeDB = "DARWIN_AMD64"
+	ATContainerSetYAMLs      ArtifactTypeDB = "CONTAINER_SET_YAMLS"
 	ATContainerSetLinuxAMD64 ArtifactTypeDB = "CONTAINER_SET_LINUX_AMD64"
 )
 
@@ -41,6 +42,8 @@ func ToArtifactTypeDB(a versionspb.ArtifactType) ArtifactTypeDB {
 		return ATLinuxAMD64
 	case versionspb.AT_DARWIN_AMD64:
 		return ATDarwinAMD64
+	case versionspb.AT_CONTAINER_SET_YAMLS:
+		return ATContainerSetYAMLs
 	case versionspb.AT_CONTAINER_SET_LINUX_AMD64:
 		return ATContainerSetLinuxAMD64
 	default:
@@ -55,6 +58,9 @@ func ToProtoArtifactType(a ArtifactTypeDB) versionspb.ArtifactType {
 		return versionspb.AT_LINUX_AMD64
 	case ATDarwinAMD64:
 		return versionspb.AT_DARWIN_AMD64
+
+	case ATContainerSetYAMLs:
+		return versionspb.AT_CONTAINER_SET_YAMLS
 	case ATContainerSetLinuxAMD64:
 		return versionspb.AT_CONTAINER_SET_LINUX_AMD64
 	default:

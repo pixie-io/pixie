@@ -24,6 +24,8 @@ func artifactTypeToProto(a *string) versionspb.ArtifactType {
 		return versionspb.AT_LINUX_AMD64
 	case "AT_DARWIN_AMD64":
 		return versionspb.AT_DARWIN_AMD64
+	case "AT_CONTAINER_SET_YAMLS":
+		return versionspb.AT_CONTAINER_SET_YAMLS
 	case "AT_CONTAINER_SET_LINUX_AMD64":
 		return versionspb.AT_CONTAINER_SET_LINUX_AMD64
 	default:
