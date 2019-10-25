@@ -8,15 +8,9 @@ import (
 	"github.com/blang/semver"
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Contains utilities to check the K8s cluster.
-
-const (
-	k8sMinVersion    = "1.8.0"
-	kernelMinVersion = "4.14.0"
-)
 
 // Checker is a named check.
 type Checker interface {
@@ -59,47 +53,6 @@ func versionCompatible(version string, minVersion string) (bool, error) {
 	return v.GE(vMin), nil
 }
 
-var defaultChecks = []Checker{
-	NamedCheck(fmt.Sprintf("Kernel version > %s", kernelMinVersion), func() error {
-		kubeConfig := GetConfig()
-		clientset := GetClientset(kubeConfig)
-		nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
-		if err != nil {
-			return err
-		}
-
-		for _, node := range nodes.Items {
-			compatible, err := versionCompatible(node.Status.NodeInfo.KernelVersion, kernelMinVersion)
-			if err != nil {
-				return err
-			}
-			if !compatible {
-				return fmt.Errorf("kernel version for node %s not supported. Must have minimum kernel version of %s", node.Name, kernelMinVersion)
-			}
-		}
-		return nil
-	}),
-	NamedCheck(fmt.Sprintf("K8s version > %s", k8sMinVersion), func() error {
-		kubeConfig := GetConfig()
-
-		discoveryClient := GetDiscoveryClient(kubeConfig)
-		version, err := discoveryClient.ServerVersion()
-		if err != nil {
-			return err
-		}
-
-		compatible, err := versionCompatible(version.GitVersion, k8sMinVersion)
-		if err != nil {
-			return err
-		}
-		if !compatible {
-			return fmt.Errorf("k8s version not supported. Must have minimum k8s version of %s", version.GitVersion, k8sMinVersion)
-		}
-
-		return nil
-	}),
-}
-
 // RunClusterChecks will run a list of checks and print out their results.
 // The first error is returned, but we continue to run all checks.
 func RunClusterChecks(checks []Checker) error {
@@ -131,5 +84,5 @@ func RunClusterChecks(checks []Checker) error {
 
 // RunDefaultClusterChecks runs the default configured checks.
 func RunDefaultClusterChecks() error {
-	return RunClusterChecks(defaultChecks)
+	return RunClusterChecks(DefaultClusterChecks)
 }
