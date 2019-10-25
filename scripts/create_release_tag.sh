@@ -1,7 +1,6 @@
 #!/bin/bash -ex
 
 # This creates a new tag in git for the current commit.
-read -r CHANGELOG
 
 usage() {
     echo "Usage: echo <changelog message> | $0 <artifact_type> [-p] [-r] [-m] [-n]"
@@ -105,6 +104,12 @@ function update_pre {
 parse_args "$@"
 check_args
 get_bazel_target
+
+# Get input from stdin.
+CHANGELOG=''
+while IFS= read -r line; do
+    CHANGELOG="${CHANGELOG}${line}\n"
+done
 
 # Get the latest release tag.
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
