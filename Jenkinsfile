@@ -369,17 +369,7 @@ def postBuildActions = {
 
 
 def InitializeRepoState(String stashName = SRC_STASH_NAME) {
-  sh '''
-    printenv
-
-    # Store the GIT commit in a file, since the git plugin has issues with
-    # the Jenkins pipeline system.
-    git rev-parse HEAD > GIT_COMMIT
-    echo ${BUILD_NUMBER} > SOURCE_VERSION
-
-    git diff -U0 origin/master > diff_origin_master
-    git diff -U0 origin/master -- '***.cc' '***.h' '***.c' > diff_origin_master_cc
-  '''
+  sh './ci/save_version_info.sh'
   writeBazelRCFile()
 
   // Get docker image tag.

@@ -20,7 +20,8 @@ if [[ -f "SOURCE_VERSION" && -f "GIT_COMMIT" ]];
 then
     echo "BUILD_SCM_REVISION $(cat GIT_COMMIT)"
     echo "STABLE_BUILD_SCM_REVISION $(cat GIT_COMMIT)"
-    echo "STABLE_BUILD_TAG $(cat SOURCE_VERSION)"
+    echo "STABLE_BUILD_TAG $(cat VERSION)"
+    echo "STABLE_BUILD_NUMBER ${BUILD_NUMBER}"
     echo "BUILD_SCM_STATUS Distribution"
     exit 0
 fi
@@ -43,8 +44,11 @@ then
 else
     tree_status="Modified"
 fi
+
 echo "BUILD_SCM_STATUS ${tree_status}"
 echo "STABLE_BUILD_SCM_STATUS ${tree_status}"
 
-echo "BUILD_TAG ${git_rev}-${tree_status}"
-echo "STABLE_BUILD_TAG ${git_rev}-${tree_status}"
+# Use 0.0.0-dev for all dev build versions. We don't have a version number that is
+# shared accross all our binaries which makes it hard to semantically version.
+echo "BUILD_TAG 0.0.0-dev"
+echo "STABLE_BUILD_TAG 0.0.0-dev"
