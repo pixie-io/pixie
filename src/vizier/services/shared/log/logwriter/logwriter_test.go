@@ -9,7 +9,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb/mock"
-	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/logwriter"
+	logwriter "pixielabs.ai/pixielabs/src/vizier/services/shared/log/logwriter"
 )
 
 func TestLogwriter_MaxInterval(t *testing.T) {

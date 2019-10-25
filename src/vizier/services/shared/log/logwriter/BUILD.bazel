@@ -5,7 +5,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 go_library(
     name = "go_default_library",
     srcs = ["logwriter.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/logwriter",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/services/shared/log/logwriter",
     visibility = ["//visibility:private"],
     deps = [
         "//src/vizier/services/cloud_connector/cloud_connectorpb:service_pl_go_proto",
