@@ -19,6 +19,6 @@ bazel build --stamp -c opt --define BUNDLE_VERSION="${release_tag}" --stamp //k8
 output_path="gs://pixie-prod-artifacts/vizier/${release_tag}"
 yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"
 
-sha256sum "${yamls_tar}" > sha
+sha256sum "${yamls_tar}" | awk '{print $1}' > sha
 gsutil cp "${yamls_tar}" "${output_path}/yamls.tar"
 gsutil cp sha "${output_path}/yamls.tar.sha256"
