@@ -4,6 +4,7 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/gogo/protobuf/types"
 	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils"
 
 	// This must be GOGO variant or the ENUMs won't work.
@@ -87,7 +88,7 @@ func mustUpdateDatabase(db *sqlx.DB, artifacts *vpb.ArtifactSet) {
 	query := `
     WITH ins AS (
       INSERT INTO artifacts (artifact_name, create_time, commit_hash, version_str, available_artifacts)
-      VALUES($1, NOW(), $2, $3, $4)
+      VALUES($1, $2, $3, $4, $5)
       ON CONFLICT(artifact_name, version_str) DO UPDATE set commit_hash=artifacts.commit_hash
       RETURNING id as artifacts_id
     )
@@ -100,7 +101,10 @@ func mustUpdateDatabase(db *sqlx.DB, artifacts *vpb.ArtifactSet) {
 	}
 
 	for _, artifact := range artifacts.Artifact {
-		_, err := stmt.Exec(name, artifact.CommitHash,
+		t, _ := types.TimestampFromProto(artifact.Timestamp)
+		_, err := stmt.Exec(name,
+			t,
+			artifact.CommitHash,
 			artifact.VersionStr,
 			utils.ToArtifactArray(artifact.AvailableArtifacts),
 			artifact.Changelog)
