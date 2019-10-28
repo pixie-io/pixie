@@ -92,7 +92,7 @@ func mustUpdateDatabase(db *sqlx.DB, artifacts *vpb.ArtifactSet) {
       ON CONFLICT(artifact_name, version_str) DO UPDATE set commit_hash=artifacts.commit_hash
       RETURNING id as artifacts_id
     )
-    INSERT INTO artifact_changelogs(artifacts_id, changelog) SELECT artifacts_id, $5 FROM ins
+    INSERT INTO artifact_changelogs(artifacts_id, changelog) SELECT artifacts_id, $6 FROM ins
     ON CONFLICT (artifacts_id) DO UPDATE set changelog=EXCLUDED.changelog;
     `
 	stmt, err := txn.Prepare(query)
