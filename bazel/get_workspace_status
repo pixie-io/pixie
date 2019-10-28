@@ -13,15 +13,16 @@
 # If the script exits with non-zero code, it's considered as a failure
 # and the output will be discarded.
 
-# If this SOURCE_VERSION file exists then it must have been placed here by a
+# If this VERSION file exists then it must have been placed here by a
 # distribution doing a non-git, source build.
 # Distributions would be expected to echo the commit/tag as BUILD_SCM_REVISION.
-if [[ -f "SOURCE_VERSION" && -f "GIT_COMMIT" ]];
+if [[ -f "VERSION" && -f "GIT_COMMIT" ]];
 then
     echo "BUILD_SCM_REVISION $(cat GIT_COMMIT)"
     echo "STABLE_BUILD_SCM_REVISION $(cat GIT_COMMIT)"
     echo "STABLE_BUILD_TAG $(cat VERSION)"
     echo "STABLE_BUILD_NUMBER ${BUILD_NUMBER}"
+    echo "STABLE_BUILD_SCM_STATUS Distribution"
 
     echo "BUILD_TAG $(cat VERSION)"
     echo "BUILD_NUMBER ${BUILD_NUMBER}"
