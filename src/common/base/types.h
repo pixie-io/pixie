@@ -81,8 +81,8 @@ template <typename T, template <typename, typename = std::allocator<T>> class TC
 class ContainerView {
  private:
   const TContainer<T>& vec_;
-  const size_t start_;
-  const size_t size_;
+  size_t start_;
+  size_t size_;
 
  public:
   // NOLINTNEXTLINE: runtime/explicit
@@ -94,6 +94,10 @@ class ContainerView {
   typename TContainer<T>::const_iterator begin() const { return vec_.cbegin() + start_; }
   typename TContainer<T>::const_iterator end() const { return vec_.cbegin() + (start_ + size_); }
   const T& front() { return vec_[start_]; }
+  void pop_front() {
+    ++start_;
+    --size_;
+  }
   bool empty() { return size_ == 0; }
 };
 
