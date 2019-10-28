@@ -53,7 +53,7 @@ func parseTagsIntoVersionFile(repoPath string, artifactName string, outputFile s
 			return nil
 		}
 
-		versionStr := fmt.Sprintf("v%s", strings.TrimPrefix(tag.Name, releaseTagPrefix))
+		versionStr := strings.TrimPrefix(tag.Name, releaseTagPrefix)
 		tpb, err := types.TimestampProto(tag.Tagger.When)
 		if err != nil {
 			return err

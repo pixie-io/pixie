@@ -5,7 +5,7 @@ set -ex
 printenv
 
 repo_path=$(pwd)
-release_tag=$(echo $TAG_NAME | sed 's|release/cli-\(v.*\)|\1|')
+release_tag=${TAG_NAME##*/v}
 versions_file="$(pwd)/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 
 echo "The release tag is: ${release_tag}"
