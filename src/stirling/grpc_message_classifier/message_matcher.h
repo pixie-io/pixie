@@ -10,7 +10,7 @@
 #include "src/common/base/status.h"
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/stirling/grpc_message_classifier/trial_parser.h"
-#include "src/stirling/http2.h"
+#include "src/stirling/http2/http2.h"
 
 namespace pl {
 namespace stirling {

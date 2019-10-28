@@ -14,7 +14,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/grpcutils:cc_library",
-        "//src/stirling:cc_library",
+        "//src/stirling/http2:cc_library",
     ],
 )
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "src/stirling/http2.h"
-#include "src/stirling/http_parse.h"
-#include "src/stirling/mysql_parse.h"
+#include "src/stirling/http/http_parse.h"
+#include "src/stirling/http2/http2.h"
+#include "src/stirling/mysql/mysql_parse.h"
 
 namespace pl {
 namespace stirling {

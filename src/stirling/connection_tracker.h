@@ -11,10 +11,7 @@
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/data_stream.h"
-#include "src/stirling/http2.h"
-#include "src/stirling/http_parse.h"
-#include "src/stirling/mysql/mysql.h"
-#include "src/stirling/mysql_parse.h"
+#include "src/stirling/mysql/mysql_parse.h"
 #include "src/stirling/socket_resolver.h"
 #include "src/stirling/socket_trace.h"
 

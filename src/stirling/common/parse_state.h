@@ -1,5 +1,11 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
+namespace pl {
+namespace stirling {
+
 enum class ParseState {
   kUnknown,
 
@@ -25,3 +31,6 @@ enum class ParseState {
   // Input buffer is consumed, and the parsed output element is valid.
   kSuccess,
 };
+
+}  // namespace stirling
+}  // namespace pl

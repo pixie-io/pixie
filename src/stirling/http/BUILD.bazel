@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -20,23 +20,17 @@ pl_cc_library(
     deps = [
         "//src/stirling/utils:cc_library",
         "//src/stirling/common:cc_library",
+        "@com_github_h2o_picohttpparser//:picohttpparser",
+        "//src/common/zlib:cc_library",
     ],
 )
 
 pl_cc_test(
-    name = "mysql_handler_test",
-    srcs = ["mysql_handler_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "mysql_stitcher_test",
-    srcs = ["mysql_stitcher_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "mysql_parse_test",
-    srcs = ["mysql_parse_test.cc"],
-    deps = [":cc_library"],
+    name = "http_parse_test",
+    srcs = ["http_parse_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
 )

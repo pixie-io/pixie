@@ -16,9 +16,7 @@
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
-#include "src/stirling/http2.h"
 #include "src/stirling/message_types.h"
-#include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
@@ -269,12 +267,10 @@ std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
 
 template <>
 std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
-  std::vector<mysql::Record> entries;
-
   Status s = ExtractReqResp<mysql::Packet>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
-    return entries;
+    return {};
   }
 
   InitState<mysql::Packet>();

@@ -17,9 +17,6 @@ extern "C" {
 namespace pl {
 namespace stirling {
 
-// The direction of traffic expected on a probe.
-enum class MessageType { kUnknown, kRequest, kResponse };
-
 /**
  * @brief A C++ friendly counterpart to socket_data_event_t. The memory buffer is managed through a
  * std::string, instead of the "struct hack" in C: http://c-faq.com/struct/structhack.html.

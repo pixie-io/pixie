@@ -1,5 +1,6 @@
 package(default_visibility = [
     "//src/stirling:__pkg__",
+    "//src/stirling/http2:__pkg__",
     "//src/stirling/bcc_bpf:__pkg__",
 ])
 

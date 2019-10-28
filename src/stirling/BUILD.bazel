@@ -29,12 +29,10 @@ pl_cc_library(
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
-        "//third_party:arrow",
-        "@com_github_h2o_picohttpparser//:picohttpparser",
-        "//src/common/zlib:cc_library",
-        "//external:nghttp2",
         "//demos/applications/hipster_shop:cc_library",
         "//src/stirling/mysql:cc_library",
+        "//src/stirling/http:cc_library",
+        "//src/stirling/http2:cc_library",
         "//src/shared/metadata:cc_library",
         "//src/stirling/proto:sock_event_pl_cc_proto",
         "//src/stirling/bcc_bpf_interface:cc_library",
@@ -107,18 +105,6 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
-pl_cc_test(
-    name = "http_parse_test",
-    srcs = ["http_parse_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "mysql_parse_test",
-    srcs = ["mysql_parse_test.cc"],
-    deps = [":cc_library"],
-)
-
 cc_image(
     name = "stirling_wrapper_image",
     base = "//:pl_cc_bpf_debug_image",
@@ -177,43 +163,17 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["grpc_trace_bpf_test.cc"],
     data = [
-        "//src/stirling/testing:go_greeter_client",
-        "//src/stirling/testing:go_greeter_server",
+        "//src/stirling/http2/testing:go_greeter_client",
+        "//src/stirling/http2/testing:go_greeter_server",
     ],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
         "//src/common/subprocess:cc_library",
         "//src/common/testing:cc_library",
-        "//src/stirling/testing:cc_library",
-        "//src/stirling/testing/proto:greet_pl_cc_proto",
+        "//src/stirling/http2/testing:cc_library",
+        "//src/stirling/http2/testing/proto:greet_pl_cc_proto",
     ],
-)
-
-pl_cc_test(
-    name = "grpc_test",
-    srcs = ["grpc_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing/proto:greet_pl_cc_proto",
-    ],
-)
-
-pl_cc_test(
-    name = "http2_test",
-    srcs = ["http2_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/common/testing:cc_library",
-        "//src/stirling/testing:cc_library",
-        "//src/stirling/testing/proto:greet_pl_cc_proto",
-    ],
-)
-
-pl_cc_test(
-    name = "event_parser_test",
-    srcs = ["event_parser_test.cc"],
-    deps = [":cc_library"],
 )
 
 pl_cc_test(

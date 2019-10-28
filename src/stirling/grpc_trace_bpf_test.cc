@@ -15,28 +15,28 @@ extern "C" {
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/data_table.h"
-#include "src/stirling/grpc.h"
+#include "src/stirling/http2/grpc.h"
+#include "src/stirling/http2/testing/greeter_server.h"
+#include "src/stirling/http2/testing/grpc_stub.h"
+#include "src/stirling/http2/testing/proto/greet.grpc.pb.h"
 #include "src/stirling/socket_trace_connector.h"
-#include "src/stirling/testing/greeter_server.h"
-#include "src/stirling/testing/grpc_stub.h"
-#include "src/stirling/testing/proto/greet.grpc.pb.h"
 
 namespace pl {
 namespace stirling {
-namespace grpc {
 
 using ::grpc::Channel;
+using ::pl::stirling::grpc::kGRPCMessageHeaderSizeInBytes;
+using ::pl::stirling::http2::testing::Greeter;
+using ::pl::stirling::http2::testing::Greeter2;
+using ::pl::stirling::http2::testing::Greeter2Service;
+using ::pl::stirling::http2::testing::GreeterService;
+using ::pl::stirling::http2::testing::HelloReply;
+using ::pl::stirling::http2::testing::HelloRequest;
+using ::pl::stirling::http2::testing::ServiceRunner;
+using ::pl::stirling::http2::testing::StreamingGreeter;
+using ::pl::stirling::http2::testing::StreamingGreeterService;
 using ::pl::stirling::testing::CreateInsecureGRPCChannel;
-using ::pl::stirling::testing::Greeter;
-using ::pl::stirling::testing::Greeter2;
-using ::pl::stirling::testing::Greeter2Service;
-using ::pl::stirling::testing::GreeterService;
 using ::pl::stirling::testing::GRPCStub;
-using ::pl::stirling::testing::HelloReply;
-using ::pl::stirling::testing::HelloRequest;
-using ::pl::stirling::testing::ServiceRunner;
-using ::pl::stirling::testing::StreamingGreeter;
-using ::pl::stirling::testing::StreamingGreeterService;
 using ::pl::testing::proto::EqualsProto;
 using ::pl::types::ColumnWrapperRecordBatch;
 using ::testing::AllOf;
@@ -86,7 +86,7 @@ class GRPCTraceGoTest : public ::testing::Test {
         ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
 
   void SetUp() override {
-    static constexpr char kBaseDir[] = "src/stirling/testing";
+    static constexpr char kBaseDir[] = "src/stirling/http2/testing";
     server_path_ =
         TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_server"));
     client_path_ =
@@ -487,6 +487,5 @@ TEST_F(GRPCCppCallingNonRegisteredServiceTest, ResultsAreAsExpected) {
   }
 }
 
-}  // namespace grpc
 }  // namespace stirling
 }  // namespace pl

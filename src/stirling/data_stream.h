@@ -5,8 +5,8 @@
 #include <memory>
 #include <string>
 
-#include "src/stirling/http2.h"
-#include "src/stirling/http_parse.h"
+#include "src/stirling/http/http_parse.h"
+#include "src/stirling/http2/http2.h"
 #include "src/stirling/mysql/mysql.h"
 #include "src/stirling/socket_trace.h"
 
