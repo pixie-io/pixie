@@ -20,5 +20,5 @@ output_path="gs://pixie-prod-artifacts/vizier/${release_tag}"
 yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"
 
 sha256sum "${yamls_tar}" | awk '{print $1}' > sha
-gsutil cp "${yamls_tar}" "${output_path}/yamls.tar"
-gsutil cp sha "${output_path}/yamls.tar.sha256"
+gsutil cp "${yamls_tar}" "${output_path}/vizier_yamls.tar"
+gsutil cp sha "${output_path}/vizier_yamls.tar.sha256"
