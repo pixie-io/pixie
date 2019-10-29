@@ -7,7 +7,6 @@ import (
 
 	"github.com/nats-io/go-nats"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner"
@@ -18,20 +17,23 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/shared/log/logwriter"
 )
 
 const plMDSAddr = "vizier-metadata.pl.svc:50400"
 
 func main() {
-	log.WithField("service", "query-broker").Info("Starting service")
-	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
-
 	services.SetupService("query-broker", 50300)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
 	services.CheckSSLClientFlags()
-	services.SetupServiceLogging()
+
+	err := logwriter.SetupLogger(viper.GetString("cloud_connector_addr"), viper.GetString("pod_name"), "query-broker")
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect to cloud connector for log forwarding")
+	}
+	log.WithField("service", "query-broker").Info("Starting service")
 
 	env, err := querybrokerenv.New()
 	if err != nil {

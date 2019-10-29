@@ -3,29 +3,34 @@ package main
 import (
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller"
 
-	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/vizier/services/shared/log/logwriter"
 )
 
 func main() {
 	pflag.String("namespace", "pl", "The namespace of Vizier")
-	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
-
-	log.WithField("service", "certmgr-service").Info("Starting service")
 
 	services.SetupService("certmgr-service", 50900)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
 	services.CheckSSLClientFlags()
-	services.SetupServiceLogging()
+
+	err := logwriter.SetupLogger(viper.GetString("cloud_connector_addr"), viper.GetString("pod_name"), "certmgr-service")
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect to cloud connector for log forwarding")
+	}
+
+	log.WithField("service", "certmgr-service").Info("Starting service")
 
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)

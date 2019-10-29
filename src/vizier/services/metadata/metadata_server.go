@@ -20,6 +20,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	"pixielabs.ai/pixielabs/src/vizier/services/shared/log/logwriter"
 )
 
 func etcdTLSConfig() (*tls.Config, error) {
@@ -37,17 +38,20 @@ func etcdTLSConfig() (*tls.Config, error) {
 }
 
 func main() {
-	log.WithField("service", "metadata").Info("Starting service")
-
 	pflag.String("md_etcd_server", "https://pl-etcd-client.pl.svc:2379", "The address to metadata etcd server.")
-	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
 
 	services.SetupService("metadata", 50400)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
 	services.CheckSSLClientFlags()
-	services.SetupServiceLogging()
+
+	err := logwriter.SetupLogger(viper.GetString("cloud_connector_addr"), viper.GetString("pod_name"), "metadata")
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect to cloud connector for log forwarding")
+	}
+
+	log.WithField("service", "metadata").Info("Starting service")
 
 	var tlsConfig *tls.Config
 	if !viper.GetBool("disable_ssl") {
