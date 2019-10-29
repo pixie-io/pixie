@@ -178,6 +178,34 @@ func TestServer_GetArtifactList(t *testing.T) {
 			err: nil,
 		},
 		{
+			name: "cli linux limit 0 should return 2 linux artifacts",
+			req: apb.GetArtifactListRequest{
+				ArtifactName: "cli",
+				ArtifactType: vpb.AT_LINUX_AMD64,
+				Limit:        0,
+			},
+			expectedResp: &vpb.ArtifactSet{
+				Name: "cli",
+				Artifact: []*vpb.Artifact{
+					{
+						Timestamp:          &types.Timestamp{Seconds: 1561230625},
+						CommitHash:         "bda4ac2f4c979e81f5d95a2b550a08fb041e985c",
+						VersionStr:         "1.2.3",
+						AvailableArtifacts: []vpb.ArtifactType{vpb.AT_LINUX_AMD64, vpb.AT_DARWIN_AMD64},
+						Changelog:          "cl 0",
+					},
+					{
+						Timestamp:          &types.Timestamp{Seconds: 1561144225},
+						CommitHash:         "cda4ac2f4c979e81f5d95a2b550a08fb041e985c",
+						VersionStr:         "1.1.5",
+						AvailableArtifacts: []vpb.ArtifactType{vpb.AT_LINUX_AMD64, vpb.AT_DARWIN_AMD64},
+						Changelog:          "cl 2",
+					},
+				},
+			},
+			err: nil,
+		},
+		{
 			name: "cli linux limit 2 should return 2 linux artifacts",
 			req: apb.GetArtifactListRequest{
 				ArtifactName: "cli",

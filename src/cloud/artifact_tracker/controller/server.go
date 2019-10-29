@@ -50,11 +50,6 @@ func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListReq
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be unknown")
 	}
 
-	// Limit was not specified, show the latest.
-	if limit == 0 {
-		limit = 1
-	}
-
 	type dbResult struct {
 		ArtifactName       string         `db:"artifact_name"`
 		CreateTime         time.Time      `db:"create_time"`
@@ -85,9 +80,18 @@ func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListReq
                     -- Pre release builds contain a '-', so we filter those (but still make them available for download)
                     -- The permissions of this should eventually be controlled using an RBAC rule.
                     AND version_str NOT LIKE '%-%'
-              ORDER BY create_time DESC LIMIT $3;`
+              ORDER BY create_time DESC`
 
-	rows, err := s.db.Queryx(query, name, at, limit)
+	var rows *sqlx.Rows
+	var err error
+	if limit != 0 && limit != -1 {
+		query = query + " LIMIT $3;"
+		rows, err = s.db.Queryx(query, name, at, limit)
+	} else {
+		query = query + ";"
+		rows, err = s.db.Queryx(query, name, at)
+	}
+
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to query database")
 	}
