@@ -110,8 +110,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_sys",
     importpath = "golang.org/x/sys",
-    sum = "h1:I7efaDQAsIQmkTF+WSdcydwVWzK07Yuz8IFF8rNkDe0=",
-    version = "v0.0.0-20191023151326-f89234f9a2c2",
+    sum = "h1:zSqWKgm/o7HAnlAzBQ+aetp9fpuyytsXnKA8eiLHYQM=",
+    version = "v0.0.0-20191025090151-53bf42e6b339",
 )
 
 go_repository(
@@ -1740,4 +1740,39 @@ go_repository(
     importpath = "github.com/gernest/wow",
     sum = "h1:g9xdwCwP0+xgVYlA2sopI0gZHqXe7HjI/7/LykG4fks=",
     version = "v0.1.0",
+)
+
+go_repository(
+    name = "com_github_cheggaaa_pb_v3",
+    importpath = "github.com/cheggaaa/pb/v3",
+    sum = "h1:/u+zw5RBzW1CxRpVIqrZv4PpZpN+yaRPdsRORKyDjv4=",
+    version = "v3.0.2",
+)
+
+go_repository(
+    name = "com_github_inconshreveable_go_update",
+    importpath = "github.com/inconshreveable/go-update",
+    sum = "h1:WfD7VjIE6z8dIvMsI4/s+1qr5EL+zoIGev1BQj1eoJ8=",
+    version = "v0.0.0-20160112193335-8152e7eb6ccf",
+)
+
+go_repository(
+    name = "com_github_kardianos_osext",
+    importpath = "github.com/kardianos/osext",
+    sum = "h1:iQTw/8FWTuc7uiaSepXwyf3o52HaUYcV+Tu66S3F5GA=",
+    version = "v0.0.0-20190222173326-2bc1f35cddc0",
+)
+
+go_repository(
+    name = "com_github_vbauerster_mpb_v4",
+    importpath = "github.com/vbauerster/mpb/v4",
+    sum = "h1:QdSmlc4dUap9XugHWx84yi7ABstYHW1rC5slzDwfXnw=",
+    version = "v4.11.0",
+)
+
+go_repository(
+    name = "com_github_vividcortex_ewma",
+    importpath = "github.com/VividCortex/ewma",
+    sum = "h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdcM=",
+    version = "v1.1.1",
 )

@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/update"
 )
 
 func init() {
@@ -22,6 +24,7 @@ func init() {
 	RootCmd.AddCommand(DeployCmd)
 	RootCmd.AddCommand(DeleteCmd)
 	RootCmd.AddCommand(LoadClusterSecretsCmd)
+	RootCmd.AddCommand(UpdateCmd)
 }
 
 // RootCmd is the base command for Cobra.
@@ -30,6 +33,20 @@ var RootCmd = &cobra.Command{
 	Short: "Pixie admin cli",
 	// TODO(zasgar): Add description and update this.
 	Long: `Pixie Description (TBD)`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		p := cmd
+		for p != nil && p != UpdateCmd {
+			p = p.Parent()
+		}
+		if p == UpdateCmd {
+			return
+		}
+		versionStr := update.UpdatesAvailable(viper.GetString("cloud_addr"))
+		if versionStr != "" {
+			c := color.New(color.Bold, color.FgGreen)
+			_, _ = c.Printf("Update to version \"%s\" available. Run \"pixie update cli\" to update.\n", versionStr)
+		}
+	},
 }
 
 // Execute is the main function for the Cobra CLI.

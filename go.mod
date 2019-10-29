@@ -17,6 +17,7 @@ require (
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
 	github.com/briandowns/spinner v1.7.0
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
+	github.com/cheggaaa/pb/v3 v3.0.2
 	github.com/chzyer/logex v1.1.10 // indirect
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
@@ -54,14 +55,15 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20190818114111-108c894c2c0e // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
+	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.5.0+incompatible
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
+	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/lib/pq v1.2.0
 	github.com/magiconair/properties v1.8.0
-	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
@@ -92,6 +94,7 @@ require (
 	github.com/stretchr/testify v1.3.0
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
 	github.com/txn2/txeh v1.2.1
+	github.com/vbauerster/mpb/v4 v4.11.0
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5
@@ -100,12 +103,11 @@ require (
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0 // indirect
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
 	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f // indirect
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/sys v0.0.0-20191023151326-f89234f9a2c2 // indirect
+	golang.org/x/sys v0.0.0-20191025090151-53bf42e6b339
 	gonum.org/v1/gonum v0.0.0-20190413104459-5d695651a1d5 // indirect
 	gonum.org/v1/plot v0.0.0-20190410204940-3a5f52653745
 	google.golang.org/api v0.9.0
