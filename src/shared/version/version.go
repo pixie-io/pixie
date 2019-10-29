@@ -1,7 +1,6 @@
 package version
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -29,7 +28,6 @@ type Version struct {
 }
 
 func init() {
-	fmt.Printf("SM: %s\n", buildSemver)
 	tUnix, err := strconv.ParseInt(buildTimeStamp, 10, 64)
 	if err != nil {
 		tUnix = 0
