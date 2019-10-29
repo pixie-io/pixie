@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -28,11 +31,18 @@ import (
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/certs"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 const (
 	k8sMinVersion    = "1.8"
 	kernelMinVersion = "4.14"
+)
+
+const (
+	etcdYAMLPath   = "./yamls/vizier_deps/etcd_prod.yaml"
+	natsYAMLPath   = "./yamls/vizier_deps/nats_prod.yaml"
+	vizierYAMLPath = "./yamls/vizier/vizier_prod.yaml"
 )
 
 // DeployCmd is the "deploy" command.
@@ -71,7 +81,15 @@ func init() {
 	viper.BindPFlag("deps_only", DeployCmd.Flags().Lookup("deps_only"))
 }
 
-func newVizAuthClient(cloudAddr string) (cloudapipb.VizierImageAuthorizationClient, error) {
+func newVizAuthClient(conn *grpc.ClientConn) cloudapipb.VizierImageAuthorizationClient {
+	return cloudapipb.NewVizierImageAuthorizationClient(conn)
+}
+
+func newArtifactTrackerClient(conn *grpc.ClientConn) cloudapipb.ArtifactTrackerClient {
+	return cloudapipb.NewArtifactTrackerClient(conn)
+}
+
+func getCloudClientConnection(cloudAddr string) (*grpc.ClientConn, error) {
 	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
@@ -84,15 +102,12 @@ func newVizAuthClient(cloudAddr string) (cloudapipb.VizierImageAuthorizationClie
 		return nil, err
 	}
 
-	return cloudapipb.NewVizierImageAuthorizationClient(c), nil
+	return c, nil
 }
 
-func mustGetImagePullSecret(cloudAddr string) string {
+func mustGetImagePullSecret(conn *grpc.ClientConn) string {
 	// Make rpc request to the cloud to get creds.
-	client, err := newVizAuthClient(cloudAddr)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to connect to Pixie cloud service")
-	}
+	client := newVizAuthClient(conn)
 	creds, err := auth.LoadDefaultCredentials()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get creds")
@@ -114,6 +129,86 @@ func mustReadCredsFile(credsFile string) string {
 		log.WithError(err).Fatal(fmt.Sprintf("Could not read file: %s", credsFile))
 	}
 	return string(credsData)
+}
+
+func downloadFile(url string) (io.ReadCloser, error) {
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Body, nil
+}
+
+func downloadVizierYAMLs(conn *grpc.ClientConn, version string) (io.ReadCloser, error) {
+	client := newArtifactTrackerClient(conn)
+
+	creds, err := auth.LoadDefaultCredentials()
+	if err != nil {
+		return nil, err
+	}
+
+	req := &cloudapipb.GetDownloadLinkRequest{
+		ArtifactName: "vizier",
+		VersionStr:   version,
+		ArtifactType: cloudapipb.AT_CONTAINER_SET_YAMLS,
+	}
+	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", creds.Token))
+
+	resp, err := client.GetDownloadLink(ctxWithCreds, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return downloadFile(resp.Url)
+}
+
+func writeToFile(filepath string, filename string, reader io.ReadCloser) error {
+	// Create directory for the files.
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		os.Mkdir(filepath, 0777)
+	}
+
+	out, err := os.Create(path.Join(filepath, filename))
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, reader)
+
+	reader.Close()
+	return err
+}
+
+func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
+	client := newArtifactTrackerClient(conn)
+
+	creds, err := auth.LoadDefaultCredentials()
+	if err != nil {
+		return "", err
+	}
+
+	req := &cloudapipb.GetArtifactListRequest{
+		ArtifactName: "vizier",
+		ArtifactType: cloudapipb.AT_CONTAINER_SET_YAMLS,
+		Limit:        1,
+	}
+	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", creds.Token))
+
+	resp, err := client.GetArtifactList(ctxWithCreds, req)
+	if err != nil {
+		return "", err
+	}
+
+	if len(resp.Artifact) != 1 {
+		return "", errors.New("Could not find Vizier artifact")
+	}
+
+	return resp.Artifact[0].VersionStr, nil
 }
 
 func runDeployCmd(cmd *cobra.Command, args []string) {
@@ -142,9 +237,15 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
 	clusterID, _ := cmd.Flags().GetString("cluster_id")
 
+	// Get grpc connection to cloud.
+	cloudConn, err := getCloudClientConnection(cloudAddr)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	var credsData string
 	if credsFile == "" {
-		credsData = mustGetImagePullSecret(cloudAddr)
+		credsData = mustGetImagePullSecret(cloudConn)
 	} else {
 		credsData = mustReadCredsFile(credsFile)
 	}
@@ -158,22 +259,47 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace)
 
-	path, _ := cmd.Flags().GetString("extract_yaml")
-	extractYAMLs(path)
-
 	versionString, err := cmd.Flags().GetString("use_version")
-	if err != nil || len(versionString) == 0 {
+	if err != nil {
 		log.Fatal("Version string is invalid")
+	}
+
+	if len(versionString) == 0 {
+		// Fetch latest version.
+		versionString, err = getLatestVizierVersion(cloudConn)
+		if err != nil {
+			log.Fatal("Failed to get Vizier version")
+		}
+	}
+
+	reader, err := downloadVizierYAMLs(cloudConn, versionString)
+	if err != nil {
+		log.WithError(err).Fatal("Could not download Vizier YAMLs")
+	}
+	defer reader.Close()
+
+	extractPath, _ := cmd.Flags().GetString("extract_yaml")
+	// If extract_path is specified, write out yamls to file.
+	if extractPath != "" {
+		err := writeToFile(extractPath, "yamls.tar", reader)
+		if err != nil {
+			log.WithError(err).Fatal("Could not extract yamls to file")
+		}
+		reader, err = os.OpenFile(path.Join(extractPath, "yamls.tar"), os.O_RDWR, 0755)
+		if err != nil {
+			log.WithError(err).Fatal("Could not read yaml file")
+		}
+		defer reader.Close()
+	}
+
+	yamlMap, err := utils.ReadTarFileFromReader(reader)
+	if err != nil {
+		log.WithError(err).Fatal("Could not get YAMLs from tar")
 	}
 
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
-	err = updateYAMLsImageTag(path, versionString)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to update image tags for YAML files.")
-	}
-
-	deploy(path, depsOnly)
+	deploy(yamlMap, depsOnly)
 
 	waitForProxy(clientset, namespace)
 }
@@ -227,33 +353,43 @@ func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string
 	log.Infof("Created namespace %s", namespace)
 }
 
-func deploy(extractPath string, depsOnly bool) {
+func deploy(yamlMap map[string]string, depsOnly bool) {
 	// NATS and etcd deploys depend on timing, so may sometimes fail. Include some retry behavior.
 	// TODO(zasgar/michelle): This logic is flaky and we should make smarter to actually detect and wait
 	// based on the message.
 	log.Info("Deploying NATS")
-	retryDeploy(path.Join(extractPath, "nats.yaml"))
+	retryDeploy(yamlMap[natsYAMLPath])
 	log.Info("Deploying etcd")
-	retryDeploy(path.Join(extractPath, "etcd.yaml"))
+	retryDeploy(yamlMap[etcdYAMLPath])
 
 	if depsOnly {
 		return
 	}
 
 	log.Info("Deploying Vizier")
-	deployFile(path.Join(extractPath, "vizier.yaml"))
+	deployYAML(yamlMap[vizierYAMLPath])
 }
 
-func deployFile(filePath string) error {
-	kcmd := exec.Command("kubectl", "apply", "-f", filePath)
+func deployYAML(yamlContents string) error {
+	kcmd := exec.Command("kubectl", "apply", "-f", "-")
+	stdin, err := kcmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		defer stdin.Close()
+		io.WriteString(stdin, yamlContents)
+	}()
+
 	return kcmd.Run()
 }
 
-func retryDeploy(filePath string) {
+func retryDeploy(yamlContents string) {
 	tries := 5
 	var err error
 	for tries > 0 {
-		err = deployFile(filePath)
+		err = deployYAML(yamlContents)
 		if err == nil {
 			break
 		}
@@ -261,38 +397,8 @@ func retryDeploy(filePath string) {
 		tries--
 	}
 	if tries == 0 {
-		log.WithError(err).Fatal(fmt.Sprintf("Could not deploy %s", filePath))
+		log.WithError(err).Fatal(fmt.Sprintf("Could not deploy YAML: %s", yamlContents))
 	}
-}
-
-// extractYAMLs extracts the yamls from the packaged bindata into the specified directory.
-func extractYAMLs(extractPath string) {
-	// Create directory for the yaml files.
-	if _, err := os.Stat(extractPath); os.IsNotExist(err) {
-		os.Mkdir(extractPath, 0777)
-	}
-
-	// Create a file for each asset, and write the asset's contents to the file.
-	for _, asset := range AssetNames() {
-		contents, err := Asset(asset)
-		if err != nil {
-			log.WithError(err).Fatal("Could not load asset")
-		}
-		fname := path.Join(extractPath, path.Base(asset))
-		f, err := os.Create(fname)
-		defer f.Close()
-		err = ioutil.WriteFile(fname, contents, 0644)
-		if err != nil {
-			log.WithError(err).Fatal("Could not write to file")
-		}
-	}
-}
-
-func updateYAMLsImageTag(extractPath, versionString string) error {
-	vizierYAMLPath := path.Join(extractPath, "vizier.yaml")
-	c := exec.Command("sed", "-i", fmt.Sprintf(`s/\(image\:.*\:\)latest/\1%s/`, versionString),
-		vizierYAMLPath)
-	return c.Run()
 }
 
 // waitForProxy waits for the Vizier's Proxy service to be ready with an external IP.
