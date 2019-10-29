@@ -73,6 +73,7 @@ profiles:
     value:
       envTemplate:
         template: "{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}"
+      dateTime: null
 
 # Set path to be nightly yamls.
   - op: replace
