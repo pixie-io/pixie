@@ -12,7 +12,7 @@ PL_SUPPRESS_WARNINGS_START()
 #include "src/vizier/services/cloud_connector/cloud_connectorpb/service_mock.grpc.pb.h"
 PL_SUPPRESS_WARNINGS_END()
 
-#include "src/vizier/services/shared/log/cpp/grpc_log_sink.h"
+#include "src/vizier/services/shared/log/grpc_log_sink/grpc_log_sink.h"
 
 namespace pl {
 namespace vizier {

@@ -39,6 +39,17 @@ class GRPCLogSink : public google::LogSink {
     network_thread_ = std::thread([this] { this->PeriodicallyTransferLogs(); });
   }
 
+  static std::unique_ptr<GRPCLogSink> CreateGRPCLogSink(
+      const std::string_view& remote_addr, std::shared_ptr<grpc::ChannelCredentials> creds,
+      const std::string_view& pod, const std::string_view& svc) {
+    std::unique_ptr<cloud_connector::CloudConnectorService::StubInterface> stub =
+        cloud_connector::CloudConnectorService::NewStub(
+            grpc::CreateChannel(remote_addr.data(), creds));
+    return std::make_unique<GRPCLogSink>(
+        std::move(stub), pod, svc, 10 /* max queue size before flush */,
+        std::chrono::milliseconds(10 * 1000) /* max time between flushes */);
+  }
+
   virtual ~GRPCLogSink() {
     request_writer_->WritesDone();
     grpc::Status status = request_writer_->Finish();

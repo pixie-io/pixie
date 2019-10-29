@@ -11,6 +11,7 @@ pl_cc_binary(
         "//src/common/nats:cc_library",
         "//src/shared/version:cc_library",
         "//src/vizier/services/agent/controller:cc_library",
+        "//src/vizier/services/shared/log/grpc_log_sink:cc_library",
     ],
 )
 

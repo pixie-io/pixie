@@ -5,6 +5,7 @@
 #include <sole.hpp>
 
 #include "src/vizier/services/agent/controller/controller.h"
+#include "src/vizier/services/shared/log/grpc_log_sink/grpc_log_sink.h"
 
 #include "absl/strings/str_format.h"
 #include "src/common/base/base.h"
@@ -40,9 +41,12 @@ DEFINE_string(tls_ca_crt, gflags::StringFromEnv("PL_TLS_CA_CERT", "../../service
 
 DEFINE_bool(disable_SSL, gflags::BoolFromEnv("PL_DISABLE_SSL", false), "Disable GRPC SSL");
 
+DEFINE_string(pod_name, gflags::StringFromEnv("PL_POD_NAME", ""), "The name of this pod");
+
 using ::pl::stirling::Stirling;
 using ::pl::vizier::agent::Controller;
 using ::pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService;
+using ::pl::vizier::services::shared::log::GRPCLogSink;
 
 Stirling* g_stirling = nullptr;
 Controller* g_controller = nullptr;
@@ -83,6 +87,10 @@ int main(int argc, char** argv) {
     ssl_opts.pem_private_key = pl::FileContentsOrDie(FLAGS_client_tls_key);
     channel_creds = grpc::SslCredentials(ssl_opts);
   }
+
+  auto grpc_log_sink = GRPCLogSink::CreateGRPCLogSink(FLAGS_cloud_connector_addr, channel_creds,
+                                                      FLAGS_pod_name, "agent");
+  google::AddLogSink(grpc_log_sink.get());
 
   auto table_store = std::make_shared<pl::table_store::TableStore>();
   auto stub_generator = [channel_creds](const std::string& remote_addr)
@@ -146,4 +154,5 @@ int main(int argc, char** argv) {
   PL_CHECK_OK(controller->Run());
 
   pl::ShutdownEnvironmentOrDie();
+  google::RemoveLogSink(grpc_log_sink.get());
 }
