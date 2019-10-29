@@ -149,6 +149,17 @@ def _com_github_cameron314_concurrentqueue():
         build_file = "//third_party:concurrentqueue.BUILD",
     )
 
+def _com_github_serge1_elfio():
+    name = "com_github_serge1_elfio"
+    location = REPOSITORY_LOCATIONS[name]
+    http_archive(
+        name = name,
+        urls = location["urls"],
+        sha256 = location["sha256"],
+        strip_prefix = location.get("strip_prefix", ""),
+        build_file = "//third_party:elfio.BUILD",
+    )
+
 def _cc_deps():
     _repository_impl(name = "com_google_benchmark")
     _repository_impl(

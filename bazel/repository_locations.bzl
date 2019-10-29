@@ -162,4 +162,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "nghttp2-ee4431344511886efc66395a38b9bf5dddd7151b",
         urls = ["https://github.com/nghttp2/nghttp2/archive/ee4431344511886efc66395a38b9bf5dddd7151b.tar.gz"],
     ),
+    com_github_serge1_elfio = dict(
+        sha256 = "4b8cf12a48e8ea0b6fba0c49c91fc5152171f9de72930c3dbb8a1f8d55475e55",
+        strip_prefix = "ELFIO-580da2467b3d7da4c817d45a99a367e4b0d6d326",
+        urls = ["https://github.com/serge1/ELFIO/archive/580da2467b3d7da4c817d45a99a367e4b0d6d326.tar.gz"],
+    ),
 )
