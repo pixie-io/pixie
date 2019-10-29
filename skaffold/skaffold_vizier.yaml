@@ -1,3 +1,4 @@
+---
 apiVersion: skaffold/v1beta13
 kind: Config
 build:
@@ -37,44 +38,44 @@ build:
       target: //src/vizier/services/certmgr:certmgr_server_image.tar
   local:
     push: true
+  tagPolicy:
+    dateTime: {}
 deploy:
   kustomize:
     path: k8s/vizier/dev
 profiles:
-  - name: dev
-    activation:
-      - command: dev
-    patches:
-      # Set compilation to debug so we get symbols.
-      - op: add
-        path: /build/artifacts/context=./bazel/args
-        value: ["--compilation_mode=dbg"]
+- name: dev
+  activation:
+  - command: dev
+  patches:
+  # Set compilation to debug so we get symbols.
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value: ["--compilation_mode=dbg"]
 
-      # Use default tag policy (hash) for dev builds.
-      # Don't push images in the dev build.
-      - op: replace
-        path: /build/local
-        value:
-          push: false
+  # Use default tag policy (hash) for dev builds.
+  # Don't push images in the dev build.
+  - op: replace
+    path: /build/local
+    value:
+      push: false
+- name: nightly
+  activation:
+  - env: PL_BUILD_TYPE=nightly
+  patches:
+  # Set compilation to be opt build.
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value: ["--compilation_mode=opt"]
 
-
-  - name: nightly
-    activation:
-      - env: PL_BUILD_TYPE=nightly
-    patches:
-      # Set compilation to be opt build.
-      - op: add
-        path: /build/artifacts/context=./bazel/args
-        value: ["--compilation_mode=opt"]
-
-      - op: add
-        path: /build/tagPolicy
-        value:
-          envTemplate:
-            template: "{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}"
+  - op: add
+    path: /build/tagPolicy
+    value:
+      envTemplate:
+        template: "{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}"
 
 # Set path to be nightly yamls.
-      - op: replace
-        path: /deploy/kustomize
-        value:
-          path: k8s/vizier/nightly
+  - op: replace
+    path: /deploy/kustomize
+    value:
+      path: k8s/vizier/nightly

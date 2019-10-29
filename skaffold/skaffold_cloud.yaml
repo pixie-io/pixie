@@ -1,3 +1,4 @@
+---
 apiVersion: skaffold/v1beta13
 kind: Config
 build:
@@ -52,104 +53,105 @@ build:
       target: //src/cloud/artifact_tracker:artifact_tracker_server_image.tar
   local:
     push: true
+  tagPolicy:
+    dateTime: {}
 deploy:
   kustomize:
     path: k8s/cloud/dev
 profiles:
-  - name: dev
-    activation:
-      - command: dev
-    patches:
-      # Set compilation to debug so we get symbols.
-      - op: add
-        path: /build/artifacts/context=./bazel/args
-        value: ["--compilation_mode=dbg"]
+- name: dev
+  activation:
+  - command: dev
+  patches:
+  # Set compilation to debug so we get symbols.
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value: ["--compilation_mode=dbg"]
 
-      # Use default tag policy (hash) for dev builds.
-      # Don't push images in the dev build.
-      - op: replace
-        path: /build/local
-        value:
-          push: false
+  # Use default tag policy (hash) for dev builds.
+  # Don't push images in the dev build.
+  - op: replace
+    path: /build/local
+    value:
+      push: false
+- name: nightly
+  activation:
+  - env: PL_BUILD_TYPE=nightly
+  patches:
+  # Set compilation to be opt build.
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value: ["--compilation_mode=opt"]
 
-  - name: nightly
-    activation:
-      - env: PL_BUILD_TYPE=nightly
-    patches:
-      # Set compilation to be opt build.
-      - op: add
-        path: /build/artifacts/context=./bazel/args
-        value: ["--compilation_mode=opt"]
+  - op: add
+    path: /build/tagPolicy
+    value:
+      envTemplate:
+        template: "{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}"
 
-      - op: add
-        path: /build/tagPolicy
-        value:
-          envTemplate:
-            template: "{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}"
+  - op: replace
+    path: /deploy/kustomize
+    value:
+      path: k8s/cloud/nightly
 
-      - op: replace
-        path: /deploy/kustomize
-        value:
-          path: k8s/cloud/nightly
+- name: staging
+  activation:
+  - env: PL_BUILD_TYPE=staging
+  patches:
+  # Set compilation to be opt build.
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value: ["--compilation_mode=opt"]
 
-  - name: staging
-    activation:
-      - env: PL_BUILD_TYPE=staging
-    patches:
-      # Set compilation to be opt build.
-      - op: add
-        path: /build/artifacts/context=./bazel/args
-        value: ["--compilation_mode=opt"]
+  - op: replace
+    path: /deploy/kustomize
+    value:
+      path: k8s/cloud/staging
 
-      - op: replace
-        path: /deploy/kustomize
-        value:
-          path: k8s/cloud/staging
+- name: prod_old
+  activation:
+  - env: PL_BUILD_TYPE=prod_old
+  patches:
+  # Set compilation to be opt build.
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value: ["--compilation_mode=opt"]
 
-  - name: prod_old
-    activation:
-      - env: PL_BUILD_TYPE=prod_old
-    patches:
-      # Set compilation to be opt build.
-      - op: add
-        path: /build/artifacts/context=./bazel/args
-        value: ["--compilation_mode=opt"]
+  - op: replace
+    path: /deploy/kustomize
+    value:
+      path: k8s/cloud/prod
 
-      - op: replace
-        path: /deploy/kustomize
-        value:
-          path: k8s/cloud/prod
+- name: prod
+  activation:
+  - env: PL_BUILD_TYPE=prod
+  patches:
+  # Set compilation to be opt build.
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value: ["--stamp", "--compilation_mode=opt"]
 
-  - name: prod
-    activation:
-      - env: PL_BUILD_TYPE=prod
-    patches:
-      # Set compilation to be opt build.
-      - op: add
-        path: /build/artifacts/context=./bazel/args
-        value: ["--stamp", "--compilation_mode=opt"]
+  - op: replace
+    path: /deploy/kustomize
+    value:
+      path: k8s/cloud/prod
 
-      - op: replace
-        path: /deploy/kustomize
-        value:
-          path: k8s/cloud/prod
+  - op: add
+    path: /build/tagPolicy
+    value:
+      envTemplate:
+        template: "{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}"
 
-      - op: add
-        path: /build/tagPolicy
-        value:
-          envTemplate:
-            template: "{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}"
+- name: testing
+  activation:
+  - env: PL_BUILD_TYPE=testing
+  patches:
+  # Set compilation to be dbg build.
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value: ["--compilation_mode=dbg"]
 
-  - name: testing
-    activation:
-      - env: PL_BUILD_TYPE=testing
-    patches:
-      # Set compilation to be dbg build.
-      - op: add
-        path: /build/artifacts/context=./bazel/args
-        value: ["--compilation_mode=dbg"]
-
-      - op: replace
-        path: /deploy/kustomize
-        value:
-          path: k8s/cloud/testing
+  - op: replace
+    path: /deploy/kustomize
+    value:
+      path: k8s/cloud/testing
