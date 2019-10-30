@@ -1,10 +1,11 @@
 import Axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import {mount} from 'enzyme';
+import { mount } from 'enzyme';
 import * as React from 'react';
-import {Button, InputGroup} from 'react-bootstrap';
+import { Button, InputGroup } from 'react-bootstrap';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
-import {CompanyCreate, CompanyLogin} from './company-login';
+
+import { CompanyCreate, CompanyLogin } from './company-login';
 
 jest.mock('containers/constants', () => ({ DOMAIN_NAME: 'dev.withpixie.dev' }));
 // Mock out window.location because jsdom doesn't handle redirects.
@@ -65,7 +66,30 @@ describe('<CompanyCreate/> test', () => {
       app.update();
       expect(app.find('.company-login-content--error')
         .at(0).text()).toEqual('Sorry, the site already exists. Try a different name.');
-      expect(app.find(Button).get(0).props.disabled).toBe(true);
+      done();
+    });
+  });
+
+  it('should disable the submit button when requests are inflight', (done) => {
+    const mock = new MockAdapter(Axios);
+
+    let resolve: () => void;
+    mock.onGet('/api/site/check').reply(() => new Promise((res, rej) => {
+      resolve = () => {
+        res([200, {available: false}]);
+      };
+    }));
+    const app = mount(<Router><CompanyCreate/></Router>);
+
+    const button = app.find(Button);
+    expect(button.get(0).props.disabled).toBe(false);
+    button.at(0).simulate('click');
+
+    setImmediate( () => {
+      app.update();
+      expect(app.find('.company-login-content--submit').first().prop('disabled')).toBe(true);
+      expect(app.find('.company-login-content--input').first().prop('disabled')).toBe(true);
+      resolve();
       done();
     });
   });
@@ -100,7 +124,6 @@ describe('<CompanyLogin/> test', () => {
       app.update();
       expect(app.find('.company-login-content--error')
         .at(0).text()).toEqual('The site doesn\'t exist. Please check the name and try again.');
-      expect(app.find(Button).get(0).props.disabled).toBe(true);
       done();
     });
   });
@@ -122,6 +145,30 @@ describe('<CompanyLogin/> test', () => {
       expect(app.find('.company-login-content--error')
         .at(0).text()).toEqual('');
       expect(app.find(Button).get(0).props.disabled).toBe(false);
+      done();
+    });
+  });
+
+  it('should disable the submit button when requests are inflight', (done) => {
+    const mock = new MockAdapter(Axios);
+
+    let resolve: () => void;
+    mock.onGet('/api/site/check').reply(() => new Promise((res, rej) => {
+      resolve = () => {
+        res([200, {available: false}]);
+      };
+    }));
+    const app = mount(<Router><CompanyLogin/></Router>);
+
+    const button = app.find(Button);
+    expect(button.get(0).props.disabled).toBe(false);
+    button.at(0).simulate('click');
+
+    setImmediate( () => {
+      app.update();
+      expect(app.find('.company-login-content--submit').first().prop('disabled')).toBe(true);
+      expect(app.find('.company-login-content--input').first().prop('disabled')).toBe(true);
+      resolve();
       done();
     });
   });

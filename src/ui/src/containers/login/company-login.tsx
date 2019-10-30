@@ -1,11 +1,25 @@
 import Axios from 'axios';
-import {DialogBox} from 'components/dialog-box/dialog-box';
-import {DOMAIN_NAME} from 'containers/constants';
+import { DialogBox } from 'components/dialog-box/dialog-box';
+import { DOMAIN_NAME } from 'containers/constants';
 import * as React from 'react';
-import {Button, Form, FormControl, InputGroup} from 'react-bootstrap';
+import { Button, Form, FormControl, InputGroup } from 'react-bootstrap';
 import { HotKeys } from 'react-hotkeys';
 import { Link } from 'react-router-dom';
 import * as RedirectUtils from 'utils/redirect-utils';
+
+function checkSiteAvailability(siteName: string): Promise<boolean> {
+  return Axios({
+    method: 'get',
+    url: '/api/site/check',
+    params: {
+      site_name: siteName,
+    },
+  }).then((response) => {
+    return response.data.available;
+  }).catch((err) => {
+    throw new Error('Failed to check site name availability. Please try again later.');
+  });
+}
 
 const HOT_KEY_MAP = {
   CLICK_CONTINUE: ['enter'],
@@ -16,53 +30,7 @@ interface CompanyDialogProps {
   footerText: string;
   footerLink: string;
   footerLinkText: string;
-  onClick: (e) => void;
-}
-
-function companyLoginOnClick(e) {
-  const siteName = this.inputRef.current.value;
-  Axios({
-    method: 'get',
-    url: '/api/site/check',
-    params: {
-      site_name: siteName,
-    },
-  }).then((response) => {
-    if (response.data.available) {
-      this.setState({
-        error: 'The site doesn\'t exist. Please check the name and try again.',
-      });
-    } else {
-      RedirectUtils.redirect('id', '/login', {['site_name']: siteName });
-    }
-  }).catch((error) => {
-    this.setState({
-      error: 'Could not check site availability: ' + error,
-    });
-  });
-}
-
-function companyCreateOnClick(e) {
-  const siteName = this.inputRef.current.value;
-  Axios({
-    method: 'get',
-    url: '/api/site/check',
-    params: {
-      site_name: siteName,
-    },
-  }).then((response) => {
-    if (!response.data.available) {
-      this.setState({
-        error: 'Sorry, the site already exists. Try a different name.',
-      });
-    } else {
-      RedirectUtils.redirect('id', '/create-site', {['site_name']: siteName});
-    }
-  }).catch((error) => {
-    this.setState({
-      error: 'Could not check site availability: ' + error,
-    });
-  });
+  onSiteCheck: (siteName: string, available: boolean) => void;
 }
 
 export const CompanyLogin = () => {
@@ -71,7 +39,12 @@ export const CompanyLogin = () => {
     footerText='Don&apos;t have a company site yet?'
     footerLink='/create'
     footerLinkText='Claim your site here'
-    onClick={companyLoginOnClick}
+    onSiteCheck={(siteName, available) => {
+      if (available) {
+        throw new Error('The site doesn\'t exist. Please check the name and try again.');
+      }
+      RedirectUtils.redirect('id', '/login', {['site_name']: siteName });
+    }}
   />);
 };
 
@@ -81,12 +54,18 @@ export const CompanyCreate = () => {
     footerText='Already have a site?'
     footerLink='/'
     footerLinkText='Click here to log in'
-    onClick={companyCreateOnClick}
+    onSiteCheck={(siteName, available) => {
+      if (!available) {
+        throw new Error('Sorry, the site already exists. Try a different name.');
+      }
+      RedirectUtils.redirect('id', '/create-site', {['site_name']: siteName});
+    }}
   />);
 };
 
 interface CompanyDialogState {
   error: string;
+  loading: boolean;
 }
 
 class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogState> {
@@ -96,6 +75,7 @@ class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogSta
     super(props);
     this.state = {
       error: '',
+      loading: false,
     };
   }
 
@@ -105,6 +85,24 @@ class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogSta
         error: '',
       });
     }
+  }
+
+  onSubmit = () => {
+    this.setState({
+      loading: true,
+    });
+    const siteName = this.inputRef.current.value;
+    checkSiteAvailability(siteName).then((availability) => {
+      this.props.onSiteCheck(siteName, availability);
+    }).catch((err) => {
+      this.setState({
+        error: err.message,
+      });
+    }).then(() => {
+      this.setState({
+        loading: false,
+      });
+    });
   }
 
   render() {
@@ -118,16 +116,14 @@ class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogSta
               className='hotkey-container'
               focused={true}
               keyMap={HOT_KEY_MAP}
-              handlers={{ CLICK_CONTINUE: () => {
-                if (this.state.error === '') {
-                  this.props.onClick.bind(this)();
-                }
-              } }}
+              handlers={{ CLICK_CONTINUE: this.onSubmit }}
             >
               <InputGroup size='sm'>
                 <FormControl
+                  className='company-login-content--input'
                   ref={this.inputRef}
                   placeholder='yourcompanyname'
+                  disabled={this.state.loading}
                   onChange={this.inputOnChange}
                 />
                 <InputGroup.Append>
@@ -138,7 +134,12 @@ class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogSta
             <div className='company-login-content--error'>
               {this.state.error}
             </div>
-            <Button onClick={this.props.onClick.bind(this)} variant='info' disabled={this.state.error !== ''}>
+            <Button
+              className='company-login-content--submit'
+              onClick={this.onSubmit}
+              variant='info'
+              disabled={this.state.loading}
+            >
               Continue
             </Button>
             <div className='company-login-content--footer-text'>
