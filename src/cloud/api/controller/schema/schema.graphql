@@ -31,6 +31,7 @@ type Query {
   cluster: ClusterInfo!
   clusterConnection: ClusterConnectionInfo!
   cliArtifact(artifactType: ArtifactType): CLIArtifact!
+  artifacts(artifactName: String): ArtifactsInfo!
 }
 
 enum ClusterStatus {
@@ -62,4 +63,14 @@ type Mutation {
 type CLIArtifact {
     url: String!
     sha256: String!
+}
+
+type ArtifactsInfo {
+  items: [Artifact]
+}
+
+type Artifact {
+  version: String!
+  changelog: String!
+  timestampMs: Float!
 }

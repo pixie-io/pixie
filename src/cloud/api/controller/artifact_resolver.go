@@ -67,3 +67,50 @@ func (q *QueryResolver) CLIArtifact(ctx context.Context, args *cliArtifactArgs) 
 		linkResp.Url, linkResp.SHA256,
 	}, nil
 }
+
+type artifactsArgs struct {
+	ArtifactName *string
+}
+
+// ArtifactResolver is a resolver for a single artifact.
+type ArtifactResolver struct {
+	TimestampMs float64
+	Version     string
+	Changelog   string
+}
+
+// ArtifactsInfoResolver is a resolver for a list of artifacts.
+type ArtifactsInfoResolver struct {
+	Items *[]*ArtifactResolver
+}
+
+// Artifacts is the resolver responsible for fetching all artifacts.
+func (q *QueryResolver) Artifacts(ctx context.Context, args *artifactsArgs) (*ArtifactsInfoResolver, error) {
+	artifactType := versionspb.AT_LINUX_AMD64
+	if *args.ArtifactName == "vizier" {
+		artifactType = versionspb.AT_CONTAINER_SET_LINUX_AMD64
+	}
+
+	artifactReq := &artifacttrackerpb.GetArtifactListRequest{
+		ArtifactType: artifactType,
+		ArtifactName: *args.ArtifactName,
+	}
+
+	resp, err := q.Env.ArtifactTrackerClient().GetArtifactList(ctx, artifactReq)
+	if err != nil {
+		return nil, err
+	}
+
+	artifacts := make([]*ArtifactResolver, len(resp.Artifact))
+	for i, a := range resp.Artifact {
+		ts := a.Timestamp.Seconds * 1000
+		artifacts[i] = &ArtifactResolver{
+			Version:     a.VersionStr,
+			Changelog:   a.Changelog,
+			TimestampMs: float64(ts),
+		}
+	}
+	return &ArtifactsInfoResolver{
+		Items: &artifacts,
+	}, nil
+}
