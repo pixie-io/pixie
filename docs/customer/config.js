@@ -36,6 +36,7 @@ const config = {
       '/misc/product-updates',
       '/misc/privacy-policy',
       '/misc/terms-conditions',
+      '/releases',
     ],
     links : [
       {text : '', link : ''},

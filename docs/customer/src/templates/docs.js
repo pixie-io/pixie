@@ -7,6 +7,9 @@ import { Layout, Link } from '$components';
 import NextPrevious from '../components/NextPrevious';
 import '../components/styles.css';
 import config from '../../config';
+import { ApolloProvider } from '@apollo/react-hooks';
+import { cloudClient } from '../apollo/client';
+
 
 const forcedNavOrder = config.sidebar.forcedNavOrder;
 
@@ -125,27 +128,29 @@ export default class MDXRuntimeTest extends Component {
 
     return (
       <Layout {...this.props}>
-        <Helmet>
-          {metaTitle ? <title>{metaTitle}</title> : null }
-          {metaTitle ? <meta name='title' content={metaTitle} /> : null}
-          {metaDescription ? <meta name='description' content={metaDescription} /> : null}
-          {metaTitle ? <meta property='og:title' content={metaTitle} /> : null}
-          {metaDescription ? <meta property='og:description' content={metaDescription} /> : null}
-          {metaTitle ? <meta property='twitter:title' content={metaTitle} /> : null}
-          {metaDescription ? <meta property='twitter:description' content={metaDescription} /> : null}
-          <link rel='canonical' href={canonicalUrl} />
-        </Helmet>
-        <div className={'titleWrapper'}>
-          <h1 className={'title'}>
-            {mdx.fields.title}
-          </h1>
-        </div>
-            <div className={'mainWrapper'}>
-          <MDXRenderer>{mdx.body}</MDXRenderer>
-        </div>
-        <div className={'addPaddTopBottom'}>
-          <NextPrevious mdx={mdx} nav={nav} />
-        </div>
+        <ApolloProvider client={cloudClient} >
+          <Helmet>
+            {metaTitle ? <title>{metaTitle}</title> : null }
+            {metaTitle ? <meta name='title' content={metaTitle} /> : null}
+            {metaDescription ? <meta name='description' content={metaDescription} /> : null}
+            {metaTitle ? <meta property='og:title' content={metaTitle} /> : null}
+            {metaDescription ? <meta property='og:description' content={metaDescription} /> : null}
+            {metaTitle ? <meta property='twitter:title' content={metaTitle} /> : null}
+            {metaDescription ? <meta property='twitter:description' content={metaDescription} /> : null}
+            <link rel='canonical' href={canonicalUrl} />
+          </Helmet>
+          <div className={'titleWrapper'}>
+            <h1 className={'title'}>
+              {mdx.fields.title}
+            </h1>
+          </div>
+              <div className={'mainWrapper'}>
+            <MDXRenderer>{mdx.body}</MDXRenderer>
+          </div>
+          <div className={'addPaddTopBottom'}>
+            <NextPrevious mdx={mdx} nav={nav} />
+          </div>
+         </ApolloProvider>
       </Layout>
     );
   }

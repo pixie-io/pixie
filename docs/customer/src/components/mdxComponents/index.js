@@ -4,10 +4,11 @@ import Code from './code';
 import CodeBlock from './codeBlock';
 import Pre from './pre';
 import AnchorTag from './anchor';
+import Releases from './releases';
 
 /* eslint-disable react/display-name */
 export default {
-  h1: (props) => <Heading id={props.children} {...props} is='h1' fontSize={[5, 6]} />,
+  h1: (props) => <Heading id={props.children} {...props} is='h1' fontSize={[5]} />,
   h2: (props) => <Heading id={props.children} {...props} is='h2' fontSize={[4]} />,
   h3: (props) => <Heading id={props.children} {...props} is='h3' fontSize={3} />,
   h4: (props) => <Heading id={props.children} {...props} is='h4' fontSize={2} />,
@@ -18,6 +19,7 @@ export default {
   code: CodeBlock,
   inlineCode: (props) => <Code {...props} />,
   a: (props) => <AnchorTag {...props} />,
+  releases: (props) => <Releases {...props} />,
   // TODO add `img`
   // TODO add `blockquote`
   // TODO add `ul`
