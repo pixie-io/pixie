@@ -1,3 +1,4 @@
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -17,37 +18,47 @@ spec:
       - name: dnsmgr-server
         image: gcr.io/pl-dev-infra/cloud/dnsmgr_server_image
         ports:
-          - containerPort: 51900
+        - containerPort: 51900
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
             port: 51900
         envFrom:
-          - configMapRef:
-              name: pl-db-config
-          - configMapRef:
-              name: pl-tls-config
-          - configMapRef:
-              name: pl-dns-config
-          - configMapRef:
-              name: pl-domain-config
+        - configMapRef:
+            name: pl-db-config
+        - configMapRef:
+            name: pl-tls-config
+        - configMapRef:
+            name: pl-dns-config
+        - configMapRef:
+            name: pl-domain-config
         env:
-          - name: PL_JWT_SIGNING_KEY
-            valueFrom:
-              secretKeyRef:
-                name: cloud-auth-secrets
-                key: jwt-signing-key
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
         volumeMounts:
-            - name: certs
-              mountPath: /certs
-            - name: cloud-dns-secrets
-              mountPath: /secrets/clouddns
-              readOnly: true
-      volumes:
         - name: certs
-          secret:
-            secretName: service-tls-certs
+          mountPath: /certs
         - name: cloud-dns-secrets
-          secret:
-            secretName: cloud-dns-secrets
+          mountPath: /secrets/clouddns
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - name: cloud-dns-secrets
+        secret:
+          secretName: cloud-dns-secrets

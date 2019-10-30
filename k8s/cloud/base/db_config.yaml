@@ -8,5 +8,3 @@ data:
   PL_POSTGRES_HOSTNAME: postgres.plc.svc.cluster.local
   PL_POSTGRES_PORT: "5432"
   PL_POSTGRES_DB: pl
-  PL_POSTGRES_USERNAME: pl
-  PL_POSTGRES_PASSWORD: pl

@@ -1,3 +1,4 @@
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -17,35 +18,45 @@ spec:
       - name: artifact-tracker-server
         image: gcr.io/pl-dev-infra/cloud/artifact_tracker_server_image
         ports:
-          - containerPort: 50750
+        - containerPort: 50750
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
             port: 50750
         envFrom:
-          - configMapRef:
-              name: pl-db-config
-          - configMapRef:
-              name: pl-tls-config
-          - configMapRef:
-              name: pl-artifact-config
+        - configMapRef:
+            name: pl-db-config
+        - configMapRef:
+            name: pl-tls-config
+        - configMapRef:
+            name: pl-artifact-config
         env:
-          - name: PL_JWT_SIGNING_KEY
-            valueFrom:
-              secretKeyRef:
-                name: cloud-auth-secrets
-                key: jwt-signing-key
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
         volumeMounts:
-            - name: certs
-              mountPath: /certs
-            - name: artifact-access-sa
-              mountPath: /creds
-              readOnly: true
-      volumes:
         - name: certs
-          secret:
-            secretName: service-tls-certs
+          mountPath: /certs
         - name: artifact-access-sa
-          secret:
-            secretName: artifact-access-sa
+          mountPath: /creds
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - name: artifact-access-sa
+        secret:
+          secretName: artifact-access-sa

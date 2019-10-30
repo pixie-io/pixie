@@ -1,3 +1,4 @@
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -15,41 +16,51 @@ spec:
       - name: vzconn-server
         image: gcr.io/pl-dev-infra/cloud/vzconn_server_image
         ports:
-          - containerPort: 51600
+        - containerPort: 51600
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
             port: 51600
         envFrom:
-          - configMapRef:
-              name: pl-db-config
-          - configMapRef:
-              name: pl-tls-config
+        - configMapRef:
+            name: pl-db-config
+        - configMapRef:
+            name: pl-tls-config
         env:
-          - name: PL_SERVER_TLS_CERT
-            value: /proxycerts/tls.crt
-          - name: PL_SERVER_TLS_KEY
-            value: /proxycerts/tls.key
-          - name: PL_JWT_SIGNING_KEY
-            valueFrom:
-              secretKeyRef:
-                name: cloud-auth-secrets
-                key: jwt-signing-key
-          - name: PL_VZMGR_SERVICE
-            valueFrom:
-              configMapKeyRef:
-                name: pl-service-config
-                key: PL_VZMGR_SERVICE
+        - name: PL_SERVER_TLS_CERT
+          value: /proxycerts/tls.crt
+        - name: PL_SERVER_TLS_KEY
+          value: /proxycerts/tls.key
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_VZMGR_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_VZMGR_SERVICE
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
         volumeMounts:
-            - name: certs
-              mountPath: /certs
-            - name: proxycerts
-              mountPath: /proxycerts
-      volumes:
         - name: certs
-          secret:
-            secretName: service-tls-certs
+          mountPath: /certs
         - name: proxycerts
-          secret:
-            secretName: cloud-proxy-tls-certs
+          mountPath: /proxycerts
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - name: proxycerts
+        secret:
+          secretName: cloud-proxy-tls-certs

@@ -1,3 +1,4 @@
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -17,28 +18,37 @@ spec:
       - name: profile-server
         image: gcr.io/pl-dev-infra/cloud/profile_server_image
         ports:
-          - containerPort: 51500
+        - containerPort: 51500
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
             port: 51500
         envFrom:
-          - configMapRef:
-              name: pl-db-config
-          - configMapRef:
-              name: pl-tls-config
+        - configMapRef:
+            name: pl-db-config
+        - configMapRef:
+            name: pl-tls-config
         env:
-          - name: PL_JWT_SIGNING_KEY
-            valueFrom:
-              secretKeyRef:
-                name: cloud-auth-secrets
-                key: jwt-signing-key
-
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
         volumeMounts:
-            - name: certs
-              mountPath: /certs
-      volumes:
         - name: certs
-          secret:
-            secretName: service-tls-certs
+          mountPath: /certs
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
