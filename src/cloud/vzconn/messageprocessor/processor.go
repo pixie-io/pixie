@@ -132,7 +132,7 @@ func (m *MessageProcessor) handleVizierHeartbeat(msg *cloudpb.VizierHeartbeat) e
 
 func (m *MessageProcessor) handleLogMessage(msg *cloud_connectorpb.TransferLogRequest) error {
 	for _, logMsg := range msg.GetBatchedLogs() {
-		m.streamLog.WithField("pod", logMsg.GetPod()).WithField("service", logMsg.GetSvc()).Info(logMsg.GetLog())
+		m.streamLog.WithField("vizier-pod", logMsg.GetPod()).WithField("vizier-service", logMsg.GetSvc()).Info(logMsg.GetLog())
 	}
 	return nil
 }
