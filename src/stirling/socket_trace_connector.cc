@@ -86,7 +86,7 @@ Status SocketTraceConnector::InitImpl() {
     cflags.emplace_back("-DENABLE_BPF_LOGGING");
   }
   PL_RETURN_IF_ERROR(InitBPFCode(cflags));
-  PL_RETURN_IF_ERROR(AttachProbes(kProbeSpecs));
+  PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   if (FLAGS_stirling_enable_http_tracing) {
     PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
@@ -112,8 +112,7 @@ Status SocketTraceConnector::InitImpl() {
 }
 
 Status SocketTraceConnector::StopImpl() {
-  DetachProbes();
-  ClosePerfBuffers();
+  BCCWrapper::Stop();
   return Status::OK();
 }
 

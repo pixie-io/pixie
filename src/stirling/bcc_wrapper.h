@@ -5,6 +5,7 @@
 #include <bcc/BPF.h>
 #include <linux/perf_event.h>
 
+#include <experimental/filesystem>
 #include <map>
 #include <memory>
 #include <string>
@@ -23,6 +24,8 @@ DECLARE_bool(stirling_bpf_enable_logging);
 namespace pl {
 namespace stirling {
 
+namespace fs = std::experimental::filesystem;
+
 /**
  * Describes a kernel probe (kprobe).
  * Currently only works for syscalls.
@@ -35,6 +38,17 @@ struct KProbeSpec {
   std::string_view trace_fn_name;
 
   // Whether this is an ENTRY or RETURN probe.
+  bpf_probe_attach_type attach_type;
+};
+
+/**
+ * Describes a userspace probe (uprobe).
+ */
+struct UProbeSpec {
+  // The canonical path to the binary to which this uprobe is attached.
+  fs::path binary_path;
+  std::string symbol;
+  std::string probe_fn;
   bpf_probe_attach_type attach_type;
 };
 
@@ -97,9 +111,14 @@ class BCCWrapper {
   ~BCCWrapper() {
     // Not really required, because BPF destructor handles these.
     // But we do it anyways.
+    Stop();
+  }
+
+  void Stop() {
     DetachPerfEvents();
     ClosePerfBuffers();
-    DetachProbes();
+    DetachKProbes();
+    DetachUProbes();
   }
 
   /**
@@ -115,13 +134,15 @@ class BCCWrapper {
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
-  Status AttachProbes(const ArrayView<KProbeSpec>& probes);
+  Status AttachKProbes(const ArrayView<KProbeSpec>& probes);
+  Status AttachUProbes(const ArrayView<UProbeSpec>& uprobes);
 
   /**
    * @brief Detaches all probes that were attached by the wrapper.
    * If any probe fails to detach, an error is logged, and the function continues.
    */
-  void DetachProbes();
+  void DetachKProbes();
+  void DetachUProbes();
 
   /**
    * @brief Convenience function that opens multiple perf buffers.
@@ -173,21 +194,24 @@ class BCCWrapper {
 
   // These are static counters of attached/open probes across all instances.
   // It is meant for verification that we have cleaned-up all resources in tests.
-  static size_t num_attached_probes() { return num_attached_probes_; }
+  static size_t num_attached_probes() { return num_attached_kprobes_ + num_attached_uprobes_; }
   static size_t num_open_perf_buffers() { return num_open_perf_buffers_; }
   static size_t num_attached_perf_events() { return num_attached_perf_events_; }
 
  private:
   Status InitLogging();
-  Status AttachProbe(const KProbeSpec& probe);
-  Status DetachProbe(const KProbeSpec& probe);
+  Status AttachKProbe(const KProbeSpec& probe);
+  Status DetachKProbe(const KProbeSpec& probe);
+  Status AttachUProbe(const UProbeSpec& probe);
+  Status DetachUProbe(const UProbeSpec& probe);
   Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie);
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
   Status AttachPerfEvent(const PerfEventSpec& perf_event);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
 
   std::string_view bpf_program_;
-  std::vector<KProbeSpec> probes_;
+  std::vector<KProbeSpec> kprobes_;
+  std::vector<UProbeSpec> uprobes_;
   std::vector<PerfBufferSpec> perf_buffers_;
   std::vector<PerfEventSpec> perf_events_;
   bool logging_enabled_ = false;
@@ -198,7 +222,8 @@ class BCCWrapper {
   // 1) We want to ensure we have cleaned all BPF resources up across *all* instances (no leaks).
   // 2) It is for verification only, and it doesn't make sense to create accessors from stirling to
   // here.
-  inline static size_t num_attached_probes_;
+  inline static size_t num_attached_kprobes_;
+  inline static size_t num_attached_uprobes_;
   inline static size_t num_open_perf_buffers_;
   inline static size_t num_attached_perf_events_;
 };

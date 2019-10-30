@@ -55,7 +55,7 @@ Status BCCWrapper::InitBPFCode(const std::vector<std::string>& cflags) {
   return Status::OK();
 }
 
-Status BCCWrapper::AttachProbe(const KProbeSpec& probe) {
+Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
   ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
       bpf_.get_syscall_fnname(std::string(probe.kernel_fn_short_name)),
       std::string(probe.trace_fn_name), 0 /* offset */, probe.attach_type, kKprobeMaxActive);
@@ -63,37 +63,78 @@ Status BCCWrapper::AttachProbe(const KProbeSpec& probe) {
     return error::Internal("Failed to attach kprobe to kernel function: $0, error message: $1",
                            probe.kernel_fn_short_name, attach_status.msg());
   }
-  probes_.push_back(probe);
-  ++num_attached_probes_;
+  kprobes_.push_back(probe);
+  ++num_attached_kprobes_;
   return Status::OK();
 }
 
-Status BCCWrapper::AttachProbes(const ArrayView<KProbeSpec>& probes) {
-  // TODO(yzhao): We need to clean the already attached probes after encountering a failure.
+// We only provide symbol to BPF::attach_uprobe, which makes the symbol address always 0.
+constexpr uint64_t kIgnoredSymbolAddr = 0;
+
+Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
+  ebpf::StatusTuple attach_status = bpf().attach_uprobe(
+      probe.binary_path, probe.symbol, probe.probe_fn, kIgnoredSymbolAddr, probe.attach_type);
+  if (attach_status.code() != 0) {
+    return error::Internal("Failed to attach uprobe to binary $0 at symbol $1, error message: $2",
+                           probe.binary_path.string(), probe.symbol, attach_status.msg());
+  }
+  uprobes_.push_back(probe);
+  ++num_attached_uprobes_;
+  return Status::OK();
+}
+
+Status BCCWrapper::AttachKProbes(const ArrayView<KProbeSpec>& probes) {
   for (const KProbeSpec& p : probes) {
-    PL_RETURN_IF_ERROR(AttachProbe(p));
+    PL_RETURN_IF_ERROR(AttachKProbe(p));
   }
   return Status::OK();
 }
 
-Status BCCWrapper::DetachProbe(const KProbeSpec& probe) {
-  ebpf::StatusTuple detach_status = bpf_.detach_kprobe(
+Status BCCWrapper::AttachUProbes(const ArrayView<UProbeSpec>& probes) {
+  for (const UProbeSpec& p : probes) {
+    PL_RETURN_IF_ERROR(AttachUProbe(p));
+  }
+  return Status::OK();
+}
+
+Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
+  ebpf::StatusTuple detach_status = bpf().detach_kprobe(
       bpf_.get_syscall_fnname(std::string(probe.kernel_fn_short_name)), probe.attach_type);
 
   if (detach_status.code() != 0) {
     return error::Internal("Failed to detach kprobe to kernel function: $0, error message: $1",
                            probe.kernel_fn_short_name, detach_status.msg());
   }
-  --num_attached_probes_;
+  --num_attached_kprobes_;
   return Status::OK();
 }
 
-void BCCWrapper::DetachProbes() {
-  for (const KProbeSpec& p : probes_) {
-    auto res = DetachProbe(p);
+Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
+  ebpf::StatusTuple detach_status =
+      bpf().detach_uprobe(probe.binary_path, probe.symbol, kIgnoredSymbolAddr, probe.attach_type);
+
+  if (detach_status.code() != 0) {
+    return error::Internal("Failed to detach uprobe from binary $0 on symbol $1, error message: $2",
+                           probe.binary_path.string(), probe.symbol, detach_status.msg());
+  }
+  --num_attached_uprobes_;
+  return Status::OK();
+}
+
+void BCCWrapper::DetachKProbes() {
+  for (const auto& p : kprobes_) {
+    auto res = DetachKProbe(p);
     LOG_IF(ERROR, !res.ok()) << res.msg();
   }
-  probes_.clear();
+  kprobes_.clear();
+}
+
+void BCCWrapper::DetachUProbes() {
+  for (const auto& p : uprobes_) {
+    auto res = DetachUProbe(p);
+    LOG_IF(ERROR, !res.ok()) << res.msg();
+  }
+  uprobes_.clear();
 }
 
 Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
