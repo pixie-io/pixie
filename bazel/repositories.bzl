@@ -179,6 +179,7 @@ def _cc_deps():
     _com_github_nats_io_natsc()
     _com_github_nghttp2_nghttp2()
     _com_github_cameron314_concurrentqueue()
+    _com_github_serge1_elfio()
 
 def _go_deps():
     # Add go specific imports here when necessary.
