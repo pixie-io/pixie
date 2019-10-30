@@ -10,6 +10,7 @@ go_library(
         "delete_pixie.go",
         "deploy.go",
         "load_cluster_secrets.go",
+        "proxy.go",
         "root.go",
         "update.go",
         "version.go",
