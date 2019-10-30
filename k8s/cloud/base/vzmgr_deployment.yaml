@@ -38,7 +38,7 @@ spec:
         - name: PL_DATABASE_KEY
           valueFrom:
             secretKeyRef:
-              name: cloud-db-secrets
+              name: pl-db-secrets
               key: database-key
         - name: PL_DNSMGR_SERVICE
           valueFrom:
