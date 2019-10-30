@@ -228,6 +228,22 @@ class ASTWalker {
   StatusOr<TOpIR*> ProcessOp(const pypa::AstCallPtr& node);
 
   /**
+   * @brief Create a MemorySource Operator declared by a From statement.
+   *
+   * @param node the node that creates the From op.
+   * @return StatusOr<MemorySourceIR*> the memory source op or an error.
+   */
+  StatusOr<MemorySourceIR*> ProcessFromOp(const pypa::AstCallPtr& node);
+
+  /**
+   * @brief Parses a list as a string list. If any elements are not strings then it will fail.
+   *
+   * @param list_ir
+   * @return StatusOr<std::vector<std::string>>
+   */
+  StatusOr<std::vector<std::string>> ParseStringListIR(const ListIR* list_ir);
+
+  /**
    * @brief Processes the RangeAgg operator.
    *
    * @param node

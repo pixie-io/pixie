@@ -225,18 +225,28 @@ Status MemorySourceIR::InitImpl(const ArgMap& args) {
     return CreateIRNodeError("Expected table argument to be a string, not a $0",
                              table_node->type_string());
   }
-  table_name_ = static_cast<StringIR*>(table_node)->str();
+
+  std::string table_name = static_cast<StringIR*>(table_node)->str();
   PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(table_node->id()));
 
   if (select_node == nullptr) {
-    return Status::OK();
+    return Init(table_name, {});
   }
+
   if (select_node->type() != IRNodeType::kList) {
     return CreateIRNodeError("Expected select argument to be a list, not a $0",
-                             table_node->type_string());
+                             select_node->type_string());
   }
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> select_columns,
+                      ParseStringListIR(*static_cast<ListIR*>(select_node)));
   PL_RETURN_IF_ERROR(graph_ptr()->DeleteNodeAndChildren(select_node->id()));
-  PL_ASSIGN_OR_RETURN(column_names_, ParseStringListIR(*static_cast<ListIR*>(select_node)));
+  return Init(table_name, select_columns);
+}
+
+Status MemorySourceIR::Init(const std::string& table_name,
+                            const std::vector<std::string>& select_columns) {
+  table_name_ = table_name;
+  column_names_ = select_columns;
   return Status::OK();
 }
 

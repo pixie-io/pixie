@@ -116,7 +116,11 @@ class IRNode {
   virtual bool IsExpression() const = 0;
   bool is_source() const { return is_source_; }
   IRNodeType type() const { return type_; }
-  std::string type_string() const { return kIRNodeStrings[static_cast<int64_t>(type())]; }
+  std::string type_string() const { return TypeString(type()); }
+  static std::string TypeString(const IRNodeType& node_type) {
+    return kIRNodeStrings[static_cast<int64_t>(node_type)];
+  }
+
   /**
    * @brief Set the pointer to the graph.
    * The pointer is passed in by the Node factory of the graph
@@ -164,12 +168,12 @@ class IRNode {
    * @return StatusOr<IRNode*>
    */
   virtual StatusOr<IRNode*> DeepCloneInto(IR* graph) const;
+  void SetLineCol(int64_t line, int64_t col);
+  void SetLineCol(const pypa::AstPtr& ast_node);
 
  protected:
   explicit IRNode(int64_t id, IRNodeType type, bool is_source)
       : type_(type), id_(id), is_source_(is_source) {}
-  void SetLineCol(int64_t line, int64_t col);
-  void SetLineCol(const pypa::AstPtr& ast_node);
   /**
    * @brief The implementation of DeepCloneInto to be overridden by children of this class.
    *
@@ -985,6 +989,16 @@ class MemorySourceIR : public OperatorIR {
   MemorySourceIR() = delete;
   explicit MemorySourceIR(int64_t id)
       : OperatorIR(id, IRNodeType::kMemorySource, /* has_parents */ false, /* is_source */ true) {}
+
+  /**
+   * @brief Initialize the memory source.
+   *
+   * @param table_name the table to load.
+   * @param select_columns the columns to select. If vector is empty, then select all columns
+   * @return Status
+   */
+  Status Init(const std::string& table_name, const std::vector<std::string>& select_columns);
+
   bool HasLogicalRepr() const override;
 
   std::string table_name() const { return table_name_; }
@@ -1010,6 +1024,7 @@ class MemorySourceIR : public OperatorIR {
     return std::unordered_map<std::string, IRNode*>{{"select", nullptr}};
   }
   Status InitImpl(const ArgMap& args) override;
+
   bool select_all() const { return column_names_.size() == 0; }
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;

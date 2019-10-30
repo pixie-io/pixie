@@ -302,7 +302,9 @@ StatusOr<OperatorIR*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node)
   PL_ASSIGN_OR_RETURN(std::string func_name, GetFuncName(node));
   OperatorIR* op_node;
   if (func_name == kFromOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<MemorySourceIR>(node));
+    PL_ASSIGN_OR_RETURN(op_node, ProcessFromOp(node));
+    op_node->SetLineCol(node);
+
   } else if (func_name == kRangeOpId) {
     PL_ASSIGN_OR_RETURN(op_node, ProcessOp<RangeIR>(node));
   } else if (func_name == kMapOpId) {
@@ -323,6 +325,66 @@ StatusOr<OperatorIR*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node)
     return CreateAstError(node, "No function named '$0'", func_name);
   }
   return op_node;
+}
+
+IRNode* GetArgument(const ArgMap& args, const std::string& arg_name) {
+  auto iter = args.kwargs.find(arg_name);
+  if (iter == args.kwargs.end()) {
+    return nullptr;
+  }
+  return iter->second;
+}
+
+StatusOr<std::vector<std::string>> ASTWalker::ParseStringListIR(const ListIR* list_ir) {
+  std::vector<std::string> out_vector;
+  for (size_t idx = 0; idx < list_ir->children().size(); ++idx) {
+    IRNode* child_ir = list_ir->children()[idx];
+    if (child_ir->type() != IRNodeType::kString) {
+      return child_ir->CreateIRNodeError("The elements of the list must be Strings, not '$0'.",
+                                         child_ir->type_string());
+    }
+    StringIR* string_node = static_cast<StringIR*>(child_ir);
+    out_vector.push_back(string_node->str());
+  }
+  return out_vector;
+}
+
+StatusOr<MemorySourceIR*> ASTWalker::ProcessFromOp(const pypa::AstCallPtr& node) {
+  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op, ir_graph_->MakeNode<MemorySourceIR>());
+  if (node->function->type == AstType::Attribute) {
+    return CreateAstError(node->function, "$0 must be called by itself, not as a Dataframe method",
+                          kFromOpId);
+  }
+  PL_ASSIGN_OR_RETURN(
+      ArgMap args, ProcessArgs(node, OperatorContext({}, mem_source_op), mem_source_op->ArgKeys(),
+                               mem_source_op->DefaultArgValues(node)));
+
+  IRNode* table = GetArgument(args, "table");
+  IRNode* select_list = GetArgument(args, "select");
+  if (table == nullptr) {
+    return CreateAstError(node, "Missing table argument.");
+  }
+
+  if (table->type() != IRNodeType::kString) {
+    return table->CreateIRNodeError("Expected String not '$0'.", table->type_string());
+  }
+  StringIR* table_str_ir = static_cast<StringIR*>(table);
+  std::string table_name = table_str_ir->str();
+  PL_RETURN_IF_ERROR(ir_graph_->DeleteNode(table_str_ir->id()));
+
+  if (select_list == nullptr) {
+    PL_RETURN_IF_ERROR(mem_source_op->Init(table_name, {}));
+    return mem_source_op;
+  }
+
+  if (select_list->type() != IRNodeType::kList) {
+    return select_list->CreateIRNodeError("Expected List not '$0'.", select_list->type_string());
+  }
+  ListIR* columns_list = static_cast<ListIR*>(select_list);
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns, ParseStringListIR(columns_list));
+  PL_RETURN_IF_ERROR(ir_graph_->DeleteNodeAndChildren(select_list->id()));
+  PL_RETURN_IF_ERROR(mem_source_op->Init(table_name, columns));
+  return mem_source_op;
 }
 
 StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
@@ -362,8 +424,6 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
     ir->dag().DeleteEdge(by_list->id(), by_expr->id());
     ir->dag().DeleteNode(by_list->id());
     PL_RETURN_IF_ERROR(ir->AddEdge(by_lambda, by_expr));
-    LOG(INFO) << by_lambda->DebugString();
-    LOG(INFO) << by_expr->DebugString();
   }
 
   if (!Match(by_expr, ColumnNode())) {

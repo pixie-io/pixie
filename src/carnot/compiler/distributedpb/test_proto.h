@@ -103,7 +103,6 @@ distributedpb::LogicalPlannerState LoadLogicalPlannerStatePB(
   *(logical_planner_state_pb.mutable_distributed_state()) =
       LoadDistributedStatePb(distributed_state_str);
   *(logical_planner_state_pb.mutable_schema()) = LoadSchemaPb(schema_str);
-  LOG(INFO) << logical_planner_state_pb.DebugString();
   return logical_planner_state_pb;
 }
 
