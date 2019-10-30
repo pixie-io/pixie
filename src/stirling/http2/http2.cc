@@ -453,9 +453,9 @@ ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames,
   return ParseState::kSuccess;
 }
 
-std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, HTTP2Message> reqs,
-                                          std::map<uint32_t, HTTP2Message> resps) {
-  std::vector<GRPCReqResp> res;
+std::vector<Record> MatchGRPCReqResp(std::map<uint32_t, HTTP2Message> reqs,
+                                     std::map<uint32_t, HTTP2Message> resps) {
+  std::vector<Record> res;
 
   // Treat 2 maps as 2 lists ordered according to stream ID, then merge on common stream IDs.
   // It probably will be faster than naive iteration and search.
@@ -470,7 +470,7 @@ std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, HTTP2Message> reqs,
       LOG_IF(DFATAL, stream_req.type == stream_resp.type)
           << "gRPC messages from two streams should be different, got the same type: "
           << static_cast<int>(stream_req.type);
-      res.push_back(GRPCReqResp{std::move(stream_req), std::move(stream_resp)});
+      res.push_back(Record{std::move(stream_req), std::move(stream_resp)});
       ++req_iter;
       ++resp_iter;
     } else if (req_stream_id < resp_stream_id) {

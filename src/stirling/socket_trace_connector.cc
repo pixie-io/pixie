@@ -65,10 +65,7 @@ using ::pl::stirling::kHTTPTable;
 using ::pl::stirling::kMySQLTable;
 using ::pl::stirling::grpc::PBTextFormat;
 using ::pl::stirling::grpc::PBWireToText;
-using ::pl::stirling::http2::Frame;
-using ::pl::stirling::http2::GRPCReqResp;
 using ::pl::stirling::http2::HTTP2Message;
-using ::pl::stirling::http2::MatchGRPCReqResp;
 using ::pl::stirling::utils::WriteMapAsJSON;
 
 Status SocketTraceConnector::InitImpl() {

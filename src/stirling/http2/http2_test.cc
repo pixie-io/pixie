@@ -135,7 +135,7 @@ TEST(MatchGRPCReqRespTest, InputsAreMoved) {
       {0u, GRPCMsg(MessageType::kResponse, "c", {{"h3", "v3"}})},
       {1u, GRPCMsg(MessageType::kResponse, "d", {{"h4", "v4"}})}};
 
-  std::vector<GRPCReqResp> matched_msgs = MatchGRPCReqResp(std::move(reqs), std::move(resps));
+  std::vector<Record> matched_msgs = MatchGRPCReqResp(std::move(reqs), std::move(resps));
   ASSERT_THAT(matched_msgs, SizeIs(1));
   const HTTP2Message& req = matched_msgs.begin()->req;
   const HTTP2Message& resp = matched_msgs.begin()->resp;

@@ -226,7 +226,7 @@ std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
   ParseState req_stitch_state = StitchFramesToGRPCMessages(req_messages, &reqs);
   ParseState resp_stitch_state = StitchFramesToGRPCMessages(resp_messages, &resps);
 
-  std::vector<http2::GRPCReqResp> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
+  std::vector<http2::Record> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
 
   std::vector<http2::Record> trace_records;
   for (auto& r : records) {

@@ -23,6 +23,7 @@ extern "C" {
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/parse_state.h"
 #include "src/stirling/http2/frame.h"
+#include "src/stirling/http2/message.h"
 #include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
@@ -62,39 +63,10 @@ std::string_view FrameTypeName(uint8_t type);
  */
 ParseState InflateHeaderBlock(nghttp2_hd_inflater* inflater, u8string_view buf, NVMap* nv_map);
 
-// TODO(yzhao): Move ParseState inside http_parse.h to utils/parse_state.h; and then use it as
-// return type for UnpackFrame{s}.
 /**
  * @brief Extract HTTP2 frame from the input buffer, and removes the consumed data from the buffer.
  */
 ParseState UnpackFrame(std::string_view* buf, Frame* frame);
-
-struct HTTP2Message {
-  // TODO(yzhao): We keep this field for easier testing. Update tests to not rely on input invalid
-  // data.
-  ParseState parse_state = ParseState::kUnknown;
-  ParseState headers_parse_state = ParseState::kUnknown;
-  MessageType type = MessageType::kUnknown;
-  uint64_t timestamp_ns = 0;
-
-  NVMap headers;
-  std::string message;
-  std::vector<const Frame*> frames;
-
-  void MarkFramesConsumed() const {
-    for (const auto* f : frames) {
-      f->consumed = true;
-    }
-  }
-
-  std::string HeaderValue(const std::string& key, const std::string& default_value = "") {
-    auto iter = headers.find(key);
-    if (iter != headers.end()) {
-      return iter->second;
-    }
-    return default_value;
-  }
-};
 
 using Record = ReqRespPair<HTTP2Message, HTTP2Message>;
 
@@ -125,14 +97,12 @@ ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
 ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames,
                                       std::map<uint32_t, HTTP2Message>* stream_msgs);
 
-using GRPCReqResp = ReqRespPair<HTTP2Message, HTTP2Message>;
-
 /**
  * @brief Matchs req & resp HTTP2Message of the same streams. The input arguments are moved to the
  * returned result.
  */
-std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, HTTP2Message> reqs,
-                                          std::map<uint32_t, HTTP2Message> resps);
+std::vector<Record> MatchGRPCReqResp(std::map<uint32_t, HTTP2Message> reqs,
+                                     std::map<uint32_t, HTTP2Message> resps);
 
 inline void EraseConsumedFrames(std::deque<Frame>* frames) {
   frames->erase(
