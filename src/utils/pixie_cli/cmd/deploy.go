@@ -110,7 +110,7 @@ func mustGetImagePullSecret(conn *grpc.ClientConn) string {
 	client := newVizAuthClient(conn)
 	creds, err := auth.LoadDefaultCredentials()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to get creds")
+		log.WithError(err).Fatal("Failed to get creds. You might have to run: 'pixie auth login'")
 	}
 	req := &cloudapipb.GetImageCredentialsRequest{}
 	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",

@@ -86,7 +86,7 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 	}
 	f, err := os.Open(pixieAuthFilePath)
 	if err != nil {
-		log.Fatal("Cannot open auth file. Please run 'auth login'")
+		return nil, err
 	}
 	defer f.Close()
 
