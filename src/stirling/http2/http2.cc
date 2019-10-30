@@ -177,15 +177,6 @@ std::string_view FrameTypeName(uint8_t type) {
   }
 }
 
-// frame{} zero initialize the member, which is needed to make sure default value is sensible.
-Frame::Frame() : frame{} {}
-Frame::~Frame() {
-  if (frame.hd.type == NGHTTP2_HEADERS) {
-    DCHECK(frame.headers.nva == nullptr);
-    DCHECK_EQ(frame.headers.nvlen, 0u);
-  }
-}
-
 ParseState UnpackFrame(std::string_view* buf, Frame* frame) {
   if (buf->size() < kFrameHeaderSizeInBytes) {
     return ParseState::kNeedsMoreData;

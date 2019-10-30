@@ -22,21 +22,14 @@ extern "C" {
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/parse_state.h"
+#include "src/stirling/http2/frame.h"
 #include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {
 namespace http2 {
 
-using u8string = std::basic_string<uint8_t>;
 using u8string_view = std::basic_string_view<uint8_t>;
-
-// Note that NVMap keys (HTTP2 header field names) are assumed to be lowercase to match spec:
-//
-// From https://http2.github.io/http2-spec/#HttpHeaders:
-// ... header field names MUST be converted to lowercase prior to their encoding in HTTP/2.
-// A request or response containing uppercase header field names MUST be treated as malformed.
-using NVMap = std::multimap<std::string, std::string>;
 
 // HTTP2 frame header size, see https://http2.github.io/http2-spec/#FrameHeader.
 constexpr size_t kFrameHeaderSizeInBytes = 9;
@@ -68,41 +61,6 @@ std::string_view FrameTypeName(uint8_t type);
  * @brief Inflates a complete header block in the input buf, writes the header field to nv_map.
  */
 ParseState InflateHeaderBlock(nghttp2_hd_inflater* inflater, u8string_view buf, NVMap* nv_map);
-
-/**
- * @brief A wrapper around  nghttp2_frame. nghttp2_frame misses some fields, for example, it has no
- * data body field in nghttp2_data. The payload is a name meant to be generic enough so that it can
- * be used to store such fields for different message types.
- */
-struct Frame {
-  Frame();
-  ~Frame();
-
-  // TODO(yzhao): Consider use std::unique_ptr<nghttp2_frame> to avoid copy.
-  nghttp2_frame frame;
-  u8string u8payload;
-  uint64_t timestamp_ns;
-  // The time stamp when this frame was created by socket tracer.
-  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
-
-  // If true, means this frame is processed and can be destroyed.
-  mutable bool consumed = false;
-
-  // Only meaningful for HEADERS frame, indicates if a frame syncing error is detected.
-  ParseState frame_sync_state = ParseState::kUnknown;
-  // Only meaningful for HEADERS frame, indicates if a header block is already processed.
-  ParseState headers_parse_state = ParseState::kUnknown;
-  NVMap headers;
-
-  size_t ByteSize() const {
-    size_t res = sizeof(Frame) + u8payload.size();
-    for (const auto& [header, value] : headers) {
-      res += header.size();
-      res += value.size();
-    }
-    return res;
-  }
-};
 
 // TODO(yzhao): Move ParseState inside http_parse.h to utils/parse_state.h; and then use it as
 // return type for UnpackFrame{s}.
