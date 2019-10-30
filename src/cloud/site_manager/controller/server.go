@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
@@ -12,6 +14,8 @@ import (
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 )
+
+var subdomainRegex = regexp.MustCompile("^([a-z0-9])+(-[a-z0-9]+)*$")
 
 // SiteDatastore is the required interface for the backing data model.
 type SiteDatastore interface {
@@ -38,16 +42,24 @@ var siteNameBlacklist = map[string]bool{
 	"id":    true,
 }
 
+func validSubdomain(s string) bool {
+	return subdomainRegex.MatchString(s)
+}
+
 // IsSiteAvailable checks to see if a site is available.
 func (s *Server) IsSiteAvailable(ctx context.Context, req *sitemanagerpb.IsSiteAvailableRequest) (*sitemanagerpb.IsSiteAvailableResponse, error) {
 	resp := &sitemanagerpb.IsSiteAvailableResponse{}
-
-	if _, exists := siteNameBlacklist[req.SiteName]; exists {
+	sn := strings.ToLower(req.SiteName)
+	if _, exists := siteNameBlacklist[sn]; exists {
 		resp.Available = false
 		return resp, nil
 	}
 
-	isAvailable, err := s.datastore.CheckAvailability(req.SiteName)
+	if !validSubdomain(sn) {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("site name must consist of only a-z and 0-9"))
+	}
+
+	isAvailable, err := s.datastore.CheckAvailability(sn)
 	if err != nil {
 		return nil, err
 	}
@@ -59,9 +71,14 @@ func (s *Server) IsSiteAvailable(ctx context.Context, req *sitemanagerpb.IsSiteA
 // RegisterSite registers a new site..
 func (s *Server) RegisterSite(ctx context.Context, req *sitemanagerpb.RegisterSiteRequest) (*sitemanagerpb.RegisterSiteResponse, error) {
 	resp := &sitemanagerpb.RegisterSiteResponse{}
+	sn := strings.ToLower(req.SiteName)
 
-	if _, exists := siteNameBlacklist[req.SiteName]; exists {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("cannot register site with name: %s", req.SiteName))
+	if _, exists := siteNameBlacklist[sn]; exists {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("cannot register site with name: %s", sn))
+	}
+
+	if !validSubdomain(sn) {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("site name must consist of only a-z and 0-9"))
 	}
 
 	parsedOrgID, err := utils.UUIDFromProto(req.OrgID)
@@ -69,7 +86,7 @@ func (s *Server) RegisterSite(ctx context.Context, req *sitemanagerpb.RegisterSi
 		return nil, err
 	}
 	// TODO(zasgar/michelle): We need to maybe have different error types.
-	err = s.datastore.RegisterSite(parsedOrgID, req.SiteName)
+	err = s.datastore.RegisterSite(parsedOrgID, sn)
 	if err != nil {
 		resp.SiteRegistered = false
 		return resp, err
@@ -104,11 +121,13 @@ func (s *Server) GetSiteForOrg(ctx context.Context, req *uuidpb.UUID) (*sitemana
 
 // GetSiteByName gets the site information based on the passed in site name.
 func (s *Server) GetSiteByName(ctx context.Context, req *sitemanagerpb.GetSiteByNameRequest) (*sitemanagerpb.SiteInfo, error) {
-	if len(req.SiteName) <= 0 {
+	sn := strings.ToLower(req.SiteName)
+
+	if len(sn) <= 0 {
 		return nil, status.Error(codes.InvalidArgument, "site name is a required argument")
 	}
 	var err error
-	siteInfo, err := s.datastore.GetSiteByName(req.SiteName)
+	siteInfo, err := s.datastore.GetSiteByName(sn)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

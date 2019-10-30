@@ -24,11 +24,11 @@ func (d *fakeDatastore) RegisterSite(orgID uuid.UUID, siteName string) error {
 }
 
 func (d *fakeDatastore) CheckAvailability(siteName string) (bool, error) {
-	if siteName == "is_available" {
+	if siteName == "is-available" {
 		return true, nil
 	}
 
-	if siteName == "should_error" {
+	if siteName == "should-error" {
 		return false, errors.New("something bad happened")
 	}
 
@@ -71,57 +71,76 @@ func SetupServerTest(t *testing.T) *controllers.Server {
 func TestServer_IsSiteAvailable(t *testing.T) {
 	server := SetupServerTest(t)
 
-	req := &sitemanagerpb.IsSiteAvailableRequest{
-		SiteName: "is_available",
+	tests := []struct {
+		name        string
+		siteName    string
+		isAvailable bool
+		expectError bool
+	}{
+		{
+			name:        "Valid site should return available",
+			siteName:    "is-available",
+			isAvailable: true,
+			expectError: false,
+		},
+		{
+			name:        "Should ignore case on site check",
+			siteName:    "iS-Available",
+			isAvailable: true,
+			expectError: false,
+		},
+		{
+			name:        "Error on DB lookup should return error",
+			siteName:    "should-error",
+			isAvailable: false,
+			expectError: true,
+		},
+		{
+			name:        "Used site should return not-available",
+			siteName:    "already-used",
+			isAvailable: false,
+			expectError: false,
+		},
+		{
+			name:        "Blacklisted sites are not available",
+			siteName:    "cloud",
+			isAvailable: false,
+			expectError: false,
+		},
+		{
+			name:        "invalid domain name should be an error",
+			siteName:    "-abc",
+			isAvailable: false,
+			expectError: true,
+		},
+		{
+			name:        "invalid domain name should be an error",
+			siteName:    "A--abc",
+			isAvailable: false,
+			expectError: true,
+		},
+		{
+			name:        "invalid domain name should be an error",
+			siteName:    "a_b",
+			isAvailable: false,
+			expectError: true,
+		},
 	}
-	resp, err := server.IsSiteAvailable(context.Background(), req)
 
-	assert.Nil(t, err)
-	assert.NotNil(t, resp)
-
-	assert.True(t, resp.Available)
-}
-
-func TestServer_IsSiteAvailableNotAvailable(t *testing.T) {
-	server := SetupServerTest(t)
-
-	req := &sitemanagerpb.IsSiteAvailableRequest{
-		SiteName: "asdsad",
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req := &sitemanagerpb.IsSiteAvailableRequest{
+				SiteName: test.siteName,
+			}
+			resp, err := server.IsSiteAvailable(context.Background(), req)
+			if test.expectError {
+				assert.NotNil(t, err)
+			} else {
+				require.Nil(t, err)
+				assert.Equal(t, resp.Available, test.isAvailable)
+			}
+		})
 	}
-	resp, err := server.IsSiteAvailable(context.Background(), req)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, resp)
-
-	assert.False(t, resp.Available)
-}
-
-func TestServer_IsSiteAvailableError(t *testing.T) {
-	server := SetupServerTest(t)
-
-	req := &sitemanagerpb.IsSiteAvailableRequest{
-		SiteName: "should_error",
-	}
-	resp, err := server.IsSiteAvailable(context.Background(), req)
-
-	assert.NotNil(t, err)
-	assert.Nil(t, resp)
-
-	assert.Equal(t, err.Error(), "something bad happened")
-}
-
-func TestServer_IsSiteAvailableBlacklist(t *testing.T) {
-	server := SetupServerTest(t)
-
-	req := &sitemanagerpb.IsSiteAvailableRequest{
-		SiteName: "cloud",
-	}
-	resp, err := server.IsSiteAvailable(context.Background(), req)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, resp)
-
-	assert.Equal(t, false, resp.Available)
 }
 
 func TestServer_RegisterSiteBlacklist(t *testing.T) {
