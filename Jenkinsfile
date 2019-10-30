@@ -688,11 +688,11 @@ def  buildScriptForCLIRelease = {
           }
         }
       }
-      stage('Update versions database (prod)') {
-        updateVersionsDB("pixie-cloud-prod", K8S_PROD_CLUSTER, "plc")
-      }
       stage('Update versions database (staging)') {
         updateVersionsDB("pixie-cloud-staging", K8S_STAGING_CLUSTER, "plc-staging")
+      }
+      stage('Update versions database (prod)') {
+        updateVersionsDB("pixie-cloud-prod", K8S_PROD_CLUSTER, "plc")
       }
     }
     catch(err) {
@@ -722,11 +722,11 @@ def  buildScriptForVizierRelease = {
           }
         }
       }
-      stage('Update versions database (prod)') {
-        updateVersionsDB("pixie-cloud-prod", K8S_PROD_CLUSTER, "plc")
-      }
       stage('Update versions database (staging)') {
         updateVersionsDB("pixie-cloud-staging", K8S_STAGING_CLUSTER, "plc-staging")
+      }
+      stage('Update versions database (prod)') {
+        updateVersionsDB("pixie-cloud-prod", K8S_PROD_CLUSTER, "plc")
       }
     }
     catch(err) {
