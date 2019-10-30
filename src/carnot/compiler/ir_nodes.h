@@ -47,6 +47,7 @@ enum class IRNodeType {
   kBool,
   kFunc,
   kList,
+  kTuple,
   kLambda,
   kColumn,
   kTime,
@@ -75,6 +76,7 @@ static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "Bool",
                                                  "Func",
                                                  "List",
+                                                 "Tuple",
                                                  "Lambda",
                                                  "Column",
                                                  "Time",
@@ -165,7 +167,7 @@ class IRNode {
 
  protected:
   explicit IRNode(int64_t id, IRNodeType type, bool is_source)
-      : id_(id), type_(type), is_source_(is_source) {}
+      : type_(type), id_(id), is_source_(is_source) {}
   void SetLineCol(int64_t line, int64_t col);
   void SetLineCol(const pypa::AstPtr& ast_node);
   /**
@@ -176,6 +178,8 @@ class IRNode {
    */
   virtual StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const = 0;
 
+  IRNodeType type_;
+
  private:
   int64_t id_;
   // line and column where the parser read the data for this node.
@@ -183,7 +187,6 @@ class IRNode {
   int64_t line_;
   int64_t col_;
   IR* graph_ptr_;
-  IRNodeType type_;
   bool line_col_set_ = false;
   bool is_source_ = false;
   pypa::AstPtr ast_node_;
@@ -688,25 +691,41 @@ class StringIR : public DataIR {
 };
 
 /**
- * @brief ListIR wraps around lists. Will maintain a
- * vector of pointers to the contained nodes in the
- * list.
+ * @brief CollectionIR wraps around collections (lists, tuples). Will maintain a
+ * vector of pointers to the contained nodes in the collection.
  *
  */
-class ListIR : public DataIR {
+class CollectionIR : public DataIR {
  public:
-  ListIR() = delete;
-  explicit ListIR(int64_t id) : DataIR(id, IRNodeType::kList, types::DataType::DATA_TYPE_UNKNOWN) {}
+  CollectionIR() = delete;
+  CollectionIR(int64_t id, IRNodeType type)
+      : DataIR(id, type, types::DataType::DATA_TYPE_UNKNOWN) {}
   bool HasLogicalRepr() const override;
   Status Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> children);
 
   std::vector<ExpressionIR*> children() const { return children_; }
   bool IsOperator() const override { return false; }
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override = 0;
 
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+ protected:
+  StatusOr<IRNode*> DeepCloneIntoCollection(IR* graph, CollectionIR* collection) const;
 
  private:
   std::vector<ExpressionIR*> children_;
+};
+
+class ListIR : public CollectionIR {
+ public:
+  ListIR() = delete;
+  explicit ListIR(int64_t id) : CollectionIR(id, IRNodeType::kList) {}
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+};
+
+class TupleIR : public CollectionIR {
+ public:
+  TupleIR() = delete;
+  explicit TupleIR(int64_t id) : CollectionIR(id, IRNodeType::kTuple) {}
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 };
 
 struct ColumnExpression {

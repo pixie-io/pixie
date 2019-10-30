@@ -721,11 +721,12 @@ Status StringIR::Init(std::string str, const pypa::AstPtr& ast_node) {
   return Status::OK();
 }
 
-bool ListIR::HasLogicalRepr() const { return false; }
+bool CollectionIR::HasLogicalRepr() const { return false; }
 
-Status ListIR::Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> children) {
+Status CollectionIR::Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> children) {
   if (!children_.empty()) {
-    return error::AlreadyExists("ListIR already has children and likely has been created already.");
+    return error::AlreadyExists(
+        "CollectionIR already has children and likely has been created already.");
   }
   SetLineCol(ast_node);
   for (auto child : children) {
@@ -949,14 +950,23 @@ StatusOr<IRNode*> StringIR::DeepCloneIntoImpl(IR* graph) const {
   return string_ir;
 }
 
-StatusOr<IRNode*> ListIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(ListIR * list, graph->MakeNode<ListIR>(id()));
-  for (ExpressionIR* child : list->children()) {
+StatusOr<IRNode*> CollectionIR::DeepCloneIntoCollection(IR* graph, CollectionIR* collection) const {
+  for (ExpressionIR* child : collection->children()) {
     PL_ASSIGN_OR_RETURN(IRNode * new_child, child->DeepCloneInto(graph));
     DCHECK(Match(new_child, Expression()));
-    list->children_.push_back(static_cast<ExpressionIR*>(new_child));
+    collection->children_.push_back(static_cast<ExpressionIR*>(new_child));
   }
-  return list;
+  return collection;
+}
+
+StatusOr<IRNode*> ListIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(CollectionIR * collection, graph->MakeNode<ListIR>(id()));
+  return DeepCloneIntoCollection(graph, collection);
+}
+
+StatusOr<IRNode*> TupleIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(CollectionIR * collection, graph->MakeNode<TupleIR>(id()));
+  return DeepCloneIntoCollection(graph, collection);
 }
 
 StatusOr<IRNode*> LambdaIR::DeepCloneIntoImpl(IR* graph) const {
