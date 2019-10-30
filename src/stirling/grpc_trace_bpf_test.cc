@@ -11,7 +11,7 @@ extern "C" {
 
 #include <thread>
 
-#include "src/common/subprocess/subprocess.h"
+#include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/data_table.h"
