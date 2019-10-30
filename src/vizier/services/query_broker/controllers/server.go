@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/go-nats"
@@ -187,6 +188,13 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 
 	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
 	queryID := uuid.NewV4()
+
+	log.WithField("query_id", queryID).Infof("Running query: %s", req.QueryStr)
+	start := time.Now()
+	defer func(t time.Time) {
+		duration := time.Now().Sub(t)
+		log.WithField("query_id", queryID).WithField("duration", duration).Info("Executed query")
+	}(start)
 
 	// Compile the query plan.
 	plannerResultPB, err := s.planner.Plan(plannerState, req.QueryStr)
