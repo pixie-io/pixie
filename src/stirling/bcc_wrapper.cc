@@ -55,7 +55,7 @@ Status BCCWrapper::InitBPFCode(const std::vector<std::string>& cflags) {
   return Status::OK();
 }
 
-Status BCCWrapper::AttachProbe(const ProbeSpec& probe) {
+Status BCCWrapper::AttachProbe(const KProbeSpec& probe) {
   ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
       bpf_.get_syscall_fnname(std::string(probe.kernel_fn_short_name)),
       std::string(probe.trace_fn_name), 0 /* offset */, probe.attach_type, kKprobeMaxActive);
@@ -68,15 +68,15 @@ Status BCCWrapper::AttachProbe(const ProbeSpec& probe) {
   return Status::OK();
 }
 
-Status BCCWrapper::AttachProbes(const ArrayView<ProbeSpec>& probes) {
+Status BCCWrapper::AttachProbes(const ArrayView<KProbeSpec>& probes) {
   // TODO(yzhao): We need to clean the already attached probes after encountering a failure.
-  for (const ProbeSpec& p : probes) {
+  for (const KProbeSpec& p : probes) {
     PL_RETURN_IF_ERROR(AttachProbe(p));
   }
   return Status::OK();
 }
 
-Status BCCWrapper::DetachProbe(const ProbeSpec& probe) {
+Status BCCWrapper::DetachProbe(const KProbeSpec& probe) {
   ebpf::StatusTuple detach_status = bpf_.detach_kprobe(
       bpf_.get_syscall_fnname(std::string(probe.kernel_fn_short_name)), probe.attach_type);
 
@@ -89,7 +89,7 @@ Status BCCWrapper::DetachProbe(const ProbeSpec& probe) {
 }
 
 void BCCWrapper::DetachProbes() {
-  for (const ProbeSpec& p : probes_) {
+  for (const KProbeSpec& p : probes_) {
     auto res = DetachProbe(p);
     LOG_IF(ERROR, !res.ok()) << res.msg();
   }

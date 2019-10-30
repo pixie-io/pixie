@@ -27,7 +27,7 @@ namespace stirling {
  * Describes a kernel probe (kprobe).
  * Currently only works for syscalls.
  */
-struct ProbeSpec {
+struct KProbeSpec {
   // Name of kernel function to probe (currently must be syscall).
   std::string_view kernel_fn_short_name;
 
@@ -115,7 +115,7 @@ class BCCWrapper {
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
-  Status AttachProbes(const ArrayView<ProbeSpec>& probes);
+  Status AttachProbes(const ArrayView<KProbeSpec>& probes);
 
   /**
    * @brief Detaches all probes that were attached by the wrapper.
@@ -179,15 +179,15 @@ class BCCWrapper {
 
  private:
   Status InitLogging();
-  Status AttachProbe(const ProbeSpec& probe);
-  Status DetachProbe(const ProbeSpec& probe);
+  Status AttachProbe(const KProbeSpec& probe);
+  Status DetachProbe(const KProbeSpec& probe);
   Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie);
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
   Status AttachPerfEvent(const PerfEventSpec& perf_event);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
 
   std::string_view bpf_program_;
-  std::vector<ProbeSpec> probes_;
+  std::vector<KProbeSpec> probes_;
   std::vector<PerfBufferSpec> perf_buffers_;
   std::vector<PerfEventSpec> perf_events_;
   bool logging_enabled_ = false;

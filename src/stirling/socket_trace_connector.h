@@ -138,7 +138,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   static void HandleControlEvent(void* cb_cookie, void* data, int data_size);
   static void HandleControlEventsLoss(void* cb_cookie, uint64_t lost);
 
-  static constexpr ProbeSpec kProbeSpecsArray[] = {
+  static constexpr KProbeSpec kProbeSpecsArray[] = {
       {"connect", "syscall__probe_entry_connect", bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"connect", "syscall__probe_ret_connect", bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"accept", "syscall__probe_entry_accept", bpf_probe_attach_type::BPF_PROBE_ENTRY},
@@ -171,7 +171,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
       {"close", "syscall__probe_entry_close", bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"close", "syscall__probe_ret_close", bpf_probe_attach_type::BPF_PROBE_RETURN},
   };
-  static constexpr auto kProbeSpecs = ArrayView<ProbeSpec>(kProbeSpecsArray);
+  static constexpr auto kProbeSpecs = ArrayView<KProbeSpec>(kProbeSpecsArray);
 
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
