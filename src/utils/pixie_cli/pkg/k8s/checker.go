@@ -3,11 +3,9 @@ package k8s
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/blang/semver"
-	"github.com/briandowns/spinner"
-	"github.com/fatih/color"
+	cliutils "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 // Contains utilities to check the K8s cluster.
@@ -53,33 +51,28 @@ func versionCompatible(version string, minVersion string) (bool, error) {
 	return v.GE(vMin), nil
 }
 
+type jobAdapter struct {
+	Checker
+}
+
+func checkWrapper(check Checker) jobAdapter {
+	return jobAdapter{check}
+}
+
+func (j jobAdapter) Run() error {
+	return j.Check()
+}
+
 // RunClusterChecks will run a list of checks and print out their results.
 // The first error is returned, but we continue to run all checks.
 func RunClusterChecks(checks []Checker) error {
 	fmt.Printf("\nRunning Cluster Checks:\n")
-	var finalErr error
-	for _, check := range checks {
-		err := func() error {
-			s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-			defer s.Stop()
-			s.Prefix = "\t"
-			s.Suffix = fmt.Sprintf(" : %s", check.Name())
-			s.FinalMSG = fmt.Sprintf("\t%s : %s\n", color.GreenString("\u2713"), check.Name())
-			s.Start()
-
-			err := check.Check()
-			if err != nil {
-				s.FinalMSG = fmt.Sprintf("\t%s : %s, error=%s\n", color.RedString("\u2715"), check.Name(), err.Error())
-			}
-
-			return nil
-		}()
-		if err != nil && finalErr == nil {
-			// Return the first error, but keep running the checks.
-			finalErr = err
-		}
+	jobs := make([]cliutils.Task, len(checks))
+	for i, check := range checks {
+		jobs[i] = checkWrapper(check)
 	}
-	return finalErr
+	jr := cliutils.NewSerialTaskRunner(jobs)
+	return jr.RunAndMonitor()
 }
 
 // RunDefaultClusterChecks runs the default configured checks.

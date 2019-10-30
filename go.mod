@@ -106,8 +106,9 @@ require (
 	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f // indirect
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20191025090151-53bf42e6b339
+	golang.org/x/tools v0.0.0-20190729092621-ff9f1409240a
 	gonum.org/v1/gonum v0.0.0-20190413104459-5d695651a1d5 // indirect
 	gonum.org/v1/plot v0.0.0-20190410204940-3a5f52653745
 	google.golang.org/api v0.9.0
