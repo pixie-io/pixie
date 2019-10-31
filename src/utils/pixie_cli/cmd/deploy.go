@@ -243,7 +243,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	currentCluster := getCurrentCluster()
 	fmt.Printf("Deploying Pixie to the following cluster: %s\n", currentCluster)
-	clusterOk := components.YNPrompt("Is the cluster correct?", false)
+	clusterOk := components.YNPrompt("Is the cluster correct?", true)
 	if !clusterOk {
 		fmt.Printf("Cluster is not correct. Aborting.")
 		return
