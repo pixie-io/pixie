@@ -102,7 +102,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
              "[pid=$0 fd=$1 gen=$2].",
              event->attr.conn_id.pid, event->attr.conn_id.fd, event->attr.conn_id.generation);
 
-  UpdateTimestamps(event->attr.timestamp_ns);
+  UpdateTimestamps(event->attr.return_timestamp_ns);
   SetPID(event->attr.conn_id);
   SetTrafficClass(event->attr.traffic_class);
 

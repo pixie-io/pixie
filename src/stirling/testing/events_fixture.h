@@ -64,7 +64,7 @@ class EventsFixture : public ::testing::Test {
     event.attr.direction = direction;
     event.attr.traffic_class.protocol = protocol;
     event.attr.traffic_class.role = kRoleRequestor;
-    event.attr.timestamp_ns = ++current_ts_ns_;
+    event.attr.return_timestamp_ns = ++current_ts_ns_;
     event.attr.conn_id.pid = kPID;
     event.attr.conn_id.fd = kFD;
     event.attr.conn_id.generation = generation_;

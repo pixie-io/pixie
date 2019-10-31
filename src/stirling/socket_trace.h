@@ -48,7 +48,7 @@ struct SocketDataEvent {
 
 struct TimestampedData {
   explicit TimestampedData(std::unique_ptr<SocketDataEvent> event) {
-    timestamp_ns = event->attr.timestamp_ns;
+    timestamp_ns = event->attr.return_timestamp_ns;
     msg = std::move(event->msg);
   }
   uint64_t timestamp_ns;

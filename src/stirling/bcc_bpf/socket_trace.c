@@ -63,6 +63,8 @@ struct accept_info_t {
 } __attribute__((__packed__, aligned(8)));
 
 struct data_info_t {
+  // The timestamp of the read/write syscall entry.
+  uint64_t timestamp_ns;
   u32 fd;
   const char* buf;
   // For sendmsg()/recvmsg()/writev()/readv().
@@ -231,14 +233,16 @@ static __inline bool should_trace_tgid(const u32 tgid) {
 }
 
 static __inline struct socket_data_event_t* fill_event(TrafficDirection direction,
+                                                       const struct data_info_t* data_info,
                                                        const struct conn_info_t* conn_info) {
   u32 kZero = 0;
   struct socket_data_event_t* event = data_buffer_heap.lookup(&kZero);
   if (event == NULL) {
     return NULL;
   }
+  event->attr.entry_timestamp_ns = data_info->timestamp_ns;
+  event->attr.return_timestamp_ns = bpf_ktime_get_ns();
   event->attr.direction = direction;
-  event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.conn_id.tgid = conn_info->conn_id.tgid;
   event->attr.conn_id.tgid_start_time_ticks = conn_info->conn_id.tgid_start_time_ticks;
   event->attr.conn_id.fd = conn_info->conn_id.fd;
@@ -707,6 +711,7 @@ static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd,
 
   struct data_info_t write_info;
   memset(&write_info, 0, sizeof(struct data_info_t));
+  write_info.timestamp_ns = bpf_ktime_get_ns();
   write_info.fd = fd;
   write_info.buf = buf;
   write_info.iov = iov;
@@ -749,7 +754,7 @@ static __inline void probe_ret_write_send(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  struct socket_data_event_t* event = fill_event(kEgress, conn_info);
+  struct socket_data_event_t* event = fill_event(kEgress, write_info, conn_info);
   if (event == NULL) {
     return;
   }
@@ -777,6 +782,7 @@ static __inline void probe_entry_read_recv(struct pt_regs* ctx, u64 id, int fd, 
 
   struct data_info_t read_info;
   memset(&read_info, 0, sizeof(struct data_info_t));
+  read_info.timestamp_ns = bpf_ktime_get_ns();
   read_info.fd = fd;
   read_info.buf = buf;
   read_info.iov = iov;
@@ -822,7 +828,7 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  struct socket_data_event_t* event = fill_event(kIngress, conn_info);
+  struct socket_data_event_t* event = fill_event(kIngress, read_info, conn_info);
   if (event == NULL) {
     return;
   }
