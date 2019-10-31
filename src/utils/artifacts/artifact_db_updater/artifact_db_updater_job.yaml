@@ -30,6 +30,16 @@ spec:
         env:
         - name: PL_VERSIONS_FILE
           value: /changelogs/VERSIONS.json
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
       - image: b.gcr.io/cloudsql-docker/gce-proxy:1.14
         name: cloudsql-proxy
         command: ["/bin/sh", "-c"]
@@ -47,7 +57,7 @@ spec:
             wait $CHILD_PID
             if [[ -f "/tmp/pod/terminated" ]]; then exit 0; echo "Job completed. Exiting..."; fi
         volumeMounts:
-        - name: cloud-db-secrets
+        - name: pl-db-secrets
           mountPath: /secrets/cloudsql
           readOnly: true
         - mountPath: /tmp/pod
@@ -58,9 +68,9 @@ spec:
           allowPrivilegeEscalation: false
       restartPolicy: Never
       volumes:
-      - name: cloud-db-secrets
+      - name: pl-db-secrets
         secret:
-          secretName: cloud-db-secrets
+          secretName: pl-db-secrets
       - name: tmp-pod
         emptyDir: {}
   backoffLimit: 1
