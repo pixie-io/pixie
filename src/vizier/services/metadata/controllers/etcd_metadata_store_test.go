@@ -215,6 +215,31 @@ func TestUpdateContainersFromPod(t *testing.T) {
 	assert.Equal(t, "ijkl", containerPb.PodUID)
 }
 
+func TestUpdateContainersFromPendingPod(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	podInfo := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PendingPodPb, podInfo); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	err = mds.UpdateContainersFromPod(podInfo)
+	assert.Nil(t, err)
+
+	containerResp, err := etcdClient.Get(context.Background(), "/containers/", clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal("Unable to get container from etcd")
+	}
+
+	assert.Equal(t, 0, len(containerResp.Kvs))
+}
+
 func TestUpdateSchemas(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()

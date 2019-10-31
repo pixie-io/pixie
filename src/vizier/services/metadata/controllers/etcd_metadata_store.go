@@ -292,8 +292,16 @@ func (mds *EtcdMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod) error
 	mu.Lock(context.Background())
 	defer mu.Unlock(context.Background())
 
-	cOps := make([]clientv3.Op, len(pod.Status.ContainerStatuses))
-	for i, container := range pod.Status.ContainerStatuses {
+	containers := make([]*metadatapb.ContainerStatus, 0)
+	for _, status := range pod.Status.ContainerStatuses {
+		log.Info(status)
+		if status.ContainerID != "" {
+			containers = append(containers, status)
+		}
+	}
+
+	cOps := make([]clientv3.Op, len(containers))
+	for i, container := range containers {
 		cid := formatContainerID(container.ContainerID)
 		key := getContainerKeyFromStrings(cid)
 		cInfo := metadatapb.ContainerInfo{
