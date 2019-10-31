@@ -16,7 +16,7 @@ pl_cc_binary(
 
 cc_image(
     name = "agent_image",
-    base = "//:pl_cc_base_image",
+    base = "//:pl_cc_bpf_image",
     binary = ":agent",
 )
 
