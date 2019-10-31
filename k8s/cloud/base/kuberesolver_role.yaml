@@ -2,7 +2,7 @@
 # This role is use for kuberesolver to watch for changes to services
 # so we can do client side GRPC load balancing.
 apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRole
+kind: Role
 metadata:
   name: kuberesolver-role
 rules:
@@ -16,12 +16,12 @@ rules:
   - "*"
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   name: kuberesolver-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
+  kind: Role
   name: kuberesolver-role
 subjects:
 - kind: ServiceAccount
