@@ -95,8 +95,13 @@ struct LambdaBodyReturn {
 struct OperatorContext {
   const std::vector<OperatorIR*> parent_ops;
   std::string operator_name;
+  // A list of the names of dataframes that can be accessed in this operator.
+  const std::vector<std::string> referenceable_dataframes;
   OperatorContext(const std::vector<OperatorIR*>& parents, std::string op_name)
-      : parent_ops(parents), operator_name(op_name) {}
+      : OperatorContext(parents, op_name, {}) {}
+  OperatorContext(const std::vector<OperatorIR*>& parents, std::string op_name,
+                  const std::vector<std::string>& dfs)
+      : parent_ops(parents), operator_name(op_name), referenceable_dataframes(dfs) {}
   OperatorContext(const std::vector<OperatorIR*>& parents, OperatorIR* op)
       : parent_ops(parents), operator_name(op->type_string()) {}
 };
@@ -243,9 +248,19 @@ class ASTWalker {
    *
    * @param ast
    * @param op_context: The context of the operator which this is contained within.
-   * @return StatusOr<IRNode*> the IR representation of the liset.
+   * @return StatusOr<IRNode*> the IR representation of the list.
    */
   StatusOr<IRNode*> ProcessList(const pypa::AstListPtr& ast, const OperatorContext& op_context);
+
+  /**
+   * @brief Processes a column subscript ptr into a column IR node.
+   *
+   * @param ast
+   * @param op_context: The context of the operator which this is contained within.
+   * @return StatusOr<ColumnIR*> the IR representation of the column.
+   */
+  StatusOr<ColumnIR*> ProcessSubscriptColumn(const pypa::AstSubscriptPtr& ast,
+                                             const OperatorContext& op_context);
 
   /**
    * @brief Processes a number into an IR Node.

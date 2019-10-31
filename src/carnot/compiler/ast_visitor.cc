@@ -909,6 +909,43 @@ StatusOr<ExpressionIR*> ASTWalker::ProcessDataBinOp(const pypa::AstBinOpPtr& nod
 
   return ir_node;
 }
+
+StatusOr<ColumnIR*> ASTWalker::ProcessSubscriptColumn(const pypa::AstSubscriptPtr& subscript,
+                                                      const OperatorContext& op_context) {
+  auto value_ir = ProcessData(subscript->value, op_context);
+
+  // TODO(nserrino) support indexing into lists and other things like that.
+  if (subscript->value->type != AstType::Name) {
+    return CreateAstError(subscript->value,
+                          "Subscript is only currently supported on dataframes, received $0.",
+                          GetAstTypeName(subscript->value->type));
+  }
+
+  auto name = PYPA_PTR_CAST(Name, subscript->value);
+  if (std::find(op_context.referenceable_dataframes.begin(),
+                op_context.referenceable_dataframes.end(),
+                name->id) == op_context.referenceable_dataframes.end()) {
+    return CreateAstError(name, "Name $0 is not available in this context", name->id);
+  }
+
+  if (subscript->slice->type != AstType::Index) {
+    return CreateAstError(subscript->slice,
+                          "Expected to receive index as subscript slice, received $0.",
+                          GetAstTypeName(subscript->slice->type));
+  }
+  auto index = PYPA_PTR_CAST(Index, subscript->slice);
+  if (index->value->type != AstType::Str) {
+    return CreateAstError(index->value,
+                          "Expected to receive string as subscript index value, received $0.",
+                          GetAstTypeName(index->value->type));
+  }
+  auto col_name = PYPA_PTR_CAST(Str, index->value)->value;
+
+  PL_ASSIGN_OR_RETURN(ColumnIR * subscript_col, ir_graph_->MakeNode<ColumnIR>());
+  PL_RETURN_IF_ERROR(subscript_col->Init(col_name, /* parent_op_idx */ 0, subscript));
+  return subscript_col;
+}
+
 StatusOr<ExpressionIR*> ASTWalker::ProcessDataCall(const pypa::AstCallPtr& node) {
   auto fn = node->function;
   if (fn->type != AstType::Attribute) {
@@ -938,41 +975,35 @@ StatusOr<ExpressionIR*> ASTWalker::ProcessDataCall(const pypa::AstCallPtr& node)
 
 StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast,
                                          const OperatorContext& op_context) {
-  IRNode* ir_node;
   switch (ast->type) {
     case AstType::Str: {
-      PL_ASSIGN_OR_RETURN(ir_node, ProcessStr(PYPA_PTR_CAST(Str, ast)));
-      break;
+      return ProcessStr(PYPA_PTR_CAST(Str, ast));
     }
     case AstType::Number: {
-      PL_ASSIGN_OR_RETURN(ir_node, ProcessNumber(PYPA_PTR_CAST(Number, ast)));
-      break;
+      return ProcessNumber(PYPA_PTR_CAST(Number, ast));
     }
     case AstType::List: {
-      PL_ASSIGN_OR_RETURN(ir_node, ProcessList(PYPA_PTR_CAST(List, ast), op_context));
-      break;
+      return ProcessList(PYPA_PTR_CAST(List, ast), op_context);
     }
     case AstType::Lambda: {
-      PL_ASSIGN_OR_RETURN(ir_node, ProcessLambda(PYPA_PTR_CAST(Lambda, ast), op_context));
-      break;
+      return ProcessLambda(PYPA_PTR_CAST(Lambda, ast), op_context);
     }
     case AstType::Call: {
-      PL_ASSIGN_OR_RETURN(ir_node, ProcessDataCall(PYPA_PTR_CAST(Call, ast)));
-      break;
+      return ProcessDataCall(PYPA_PTR_CAST(Call, ast));
     }
     case AstType::BinOp: {
-      PL_ASSIGN_OR_RETURN(ir_node, ProcessDataBinOp(PYPA_PTR_CAST(BinOp, ast), op_context));
-      break;
+      return ProcessDataBinOp(PYPA_PTR_CAST(BinOp, ast), op_context);
     }
     case AstType::Name: {
-      PL_ASSIGN_OR_RETURN(ir_node, LookupName(PYPA_PTR_CAST(Name, ast)));
-      break;
+      return LookupName(PYPA_PTR_CAST(Name, ast));
+    }
+    case AstType::Subscript: {
+      return ProcessSubscriptColumn(PYPA_PTR_CAST(Subscript, ast), op_context);
     }
     default: {
       return CreateAstError(ast, "Couldn't find $0 in ProcessData", GetAstTypeName(ast->type));
     }
   }
-  return ir_node;
 }
 }  // namespace compiler
 }  // namespace carnot
