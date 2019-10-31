@@ -15,13 +15,12 @@ import (
 	"path"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
 )
 
-func generateCA(certPath string, bitsize int) (*x509.Certificate, crypto.PrivateKey) {
+func generateCA(certPath string, bitsize int) (*x509.Certificate, crypto.PrivateKey, error) {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(1653),
 		Subject: pkix.Name{
@@ -40,28 +39,31 @@ func generateCA(certPath string, bitsize int) (*x509.Certificate, crypto.Private
 
 	caKey, err := rsa.GenerateKey(rand.Reader, bitsize)
 	if err != nil {
-		log.WithError(err).Fatal("Could not generate key for certificate")
+		return nil, nil, err
 	}
 
-	signCertificate(certPath, "ca", ca, ca, caKey, caKey)
+	err = signCertificate(certPath, "ca", ca, ca, caKey, caKey)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return ca, caKey
+	return ca, caKey, nil
 }
 
-func loadCA(caCert string, caKey string) (*x509.Certificate, crypto.PrivateKey) {
+func loadCA(caCert string, caKey string) (*x509.Certificate, crypto.PrivateKey, error) {
 	caPair, err := tls.LoadX509KeyPair(caCert, caKey)
 	if err != nil {
-		log.WithError(err).Fatal("Could not load CA.")
+		return nil, nil, err
 	}
 	ca, err := x509.ParseCertificate(caPair.Certificate[0])
 	if err != nil {
-		log.WithError(err).Fatal("Could not parse CA cert.")
+		return nil, nil, err
 	}
 
-	return ca, caPair.PrivateKey
+	return ca, caPair.PrivateKey, nil
 }
 
-func generateCertificate(certPath string, certName string, caCert *x509.Certificate, caKey crypto.PrivateKey, bitsize int) {
+func generateCertificate(certPath string, certName string, caCert *x509.Certificate, caKey crypto.PrivateKey, bitsize int) error {
 	// Prepare certificate.
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(1658),
@@ -87,66 +89,86 @@ func generateCertificate(certPath string, certName string, caCert *x509.Certific
 	}
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitsize)
 	if err != nil {
-		log.WithError(err).Fatal("Could not generate key for certificate")
+		return err
 	}
 
-	signCertificate(certPath, certName, cert, caCert, caKey, privateKey)
+	err = signCertificate(certPath, certName, cert, caCert, caKey, privateKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func signCertificate(certPath string, certName string, cert *x509.Certificate, ca *x509.Certificate, caKey crypto.PrivateKey, privateKey *rsa.PrivateKey) {
+func signCertificate(certPath string, certName string, cert *x509.Certificate, ca *x509.Certificate, caKey crypto.PrivateKey, privateKey *rsa.PrivateKey) error {
 	// Self-sign certificate.
 	certB, err := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, caKey)
 
 	certOut, err := os.Create(path.Join(certPath, fmt.Sprintf("%s.crt", certName)))
 	if err != nil {
-		log.WithError(err).Fatal(fmt.Sprintf("Could not create %s.crt", certName))
+		return err
 	}
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certB})
 	certOut.Close()
-	log.Info(fmt.Sprintf("Created %s.crt", certName))
 
 	// Generate key.
 	keyOut, err := os.OpenFile(path.Join(certPath, fmt.Sprintf("%s.key", certName)), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		log.WithError(err).Fatal(fmt.Sprintf("Could not create %s.key", certName))
+		return err
 	}
 	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
 	keyOut.Close()
-	log.Info(fmt.Sprintf("Created %s.key", certName))
+	return nil
 }
 
-func generateCerts(certPath string, caCertPath string, caKeyPath string, bitsize int) {
+func generateCerts(certPath string, caCertPath string, caKeyPath string, bitsize int) error {
 	var ca *x509.Certificate
 	var caKey crypto.PrivateKey
+	var err error
 
 	if caCertPath == "" {
-		log.Info("Generating new CA.")
-		ca, caKey = generateCA(certPath, bitsize)
+		ca, caKey, err = generateCA(certPath, bitsize)
+		if err != nil {
+			return err
+		}
 	} else {
-		log.Info("Using existing CA.")
-		ca, caKey = loadCA(caCertPath, caKeyPath)
+		ca, caKey, err = loadCA(caCertPath, caKeyPath)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Generate server certificate.
-	generateCertificate(certPath, "server", ca, caKey, bitsize)
+	err = generateCertificate(certPath, "server", ca, caKey, bitsize)
+	if err != nil {
+		return err
+	}
 
 	// Generate client certificate.
-	generateCertificate(certPath, "client", ca, caKey, bitsize)
+	err = generateCertificate(certPath, "client", ca, caKey, bitsize)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DefaultInstallCerts installs certs using the default options.
 func DefaultInstallCerts(namespace string, clientset *kubernetes.Clientset) {
-	installCertsUsingClientset("", "", "", namespace, 4096, clientset)
+	err := installCertsUsingClientset("", "", "", namespace, 4096, clientset)
+	if err != nil {
+		fmt.Printf("Failed to install certs")
+	}
 }
 
-func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath string, namespace string, bitsize int, clientset *kubernetes.Clientset) {
+func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath string, namespace string, bitsize int, clientset *kubernetes.Clientset) error {
 	var err error
 
 	deleteCerts := false
 	if certPath == "" {
 		certPath, err = ioutil.TempDir("", "certs")
 		if err != nil {
-			log.WithError(err).Fatal("Could not create temp directory")
+			return err
 		}
 		deleteCerts = true
 	}
@@ -154,12 +176,14 @@ func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath st
 	// Delete generated certs.
 	defer func() {
 		if deleteCerts {
-			log.Info("Deleting generated certs")
 			os.RemoveAll(certPath)
 		}
 	}()
 
-	generateCerts(certPath, caCertPath, caKeyPath, bitsize)
+	err = generateCerts(certPath, caCertPath, caKeyPath, bitsize)
+	if err != nil {
+		return err
+	}
 
 	serverKey := path.Join(certPath, "server.key")
 	serverCert := path.Join(certPath, "server.crt")
@@ -178,33 +202,50 @@ func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath st
 	k8s.DeleteSecret(clientset, namespace, "etcd-server-tls-certs")
 
 	// Create secrets in k8s.
-	k8s.CreateTLSSecret(clientset, namespace, "proxy-tls-certs", serverKey, serverCert)
+	err = k8s.CreateTLSSecret(clientset, namespace, "proxy-tls-certs", serverKey, serverCert)
+	if err != nil {
+		return err
+	}
 
-	k8s.CreateGenericSecret(clientset, namespace, "service-tls-certs", map[string]string{
+	err = k8s.CreateGenericSecret(clientset, namespace, "service-tls-certs", map[string]string{
 		"server.key": serverKey,
 		"server.crt": serverCert,
 		"ca.crt":     caCert,
 		"client.key": clientKey,
 		"client.crt": clientCert,
 	})
+	if err != nil {
+		return err
+	}
 
-	k8s.CreateGenericSecret(clientset, namespace, "etcd-peer-tls-certs", map[string]string{
+	err = k8s.CreateGenericSecret(clientset, namespace, "etcd-peer-tls-certs", map[string]string{
 		"peer.key":    serverKey,
 		"peer.crt":    serverCert,
 		"peer-ca.crt": caCert,
 	})
+	if err != nil {
+		return err
+	}
 
-	k8s.CreateGenericSecret(clientset, namespace, "etcd-client-tls-certs", map[string]string{
+	err = k8s.CreateGenericSecret(clientset, namespace, "etcd-client-tls-certs", map[string]string{
 		"etcd-client.key":    clientKey,
 		"etcd-client.crt":    clientCert,
 		"etcd-client-ca.crt": caCert,
 	})
+	if err != nil {
+		return err
+	}
 
-	k8s.CreateGenericSecret(clientset, namespace, "etcd-server-tls-certs", map[string]string{
+	err = k8s.CreateGenericSecret(clientset, namespace, "etcd-server-tls-certs", map[string]string{
 		"server.key":    serverKey,
 		"server.crt":    serverCert,
 		"server-ca.crt": caCert,
 	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // InstallCerts generates the necessary certs and installs them in kubernetes.
@@ -213,5 +254,8 @@ func InstallCerts(certPath string, caCertPath string, caKeyPath string, namespac
 	config := k8s.GetConfig()
 	clientset := k8s.GetClientset(config)
 
-	installCertsUsingClientset(certPath, caCertPath, caKeyPath, namespace, bitsize, clientset)
+	err := installCertsUsingClientset(certPath, caCertPath, caKeyPath, namespace, bitsize, clientset)
+	if err != nil {
+		fmt.Printf("Failed to install certs")
+	}
 }

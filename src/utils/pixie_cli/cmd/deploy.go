@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/certs"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
@@ -50,6 +50,26 @@ var DeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploys Pixie on the current K8s cluster",
 	Run:   runDeployCmd,
+}
+
+type taskWrapper struct {
+	name string
+	run  func() error
+}
+
+func newTaskWrapper(name string, run func() error) *taskWrapper {
+	return &taskWrapper{
+		name,
+		run,
+	}
+}
+
+func (t *taskWrapper) Name() string {
+	return t.name
+}
+
+func (t *taskWrapper) Run() error {
+	return t.run()
 }
 
 func init() {
@@ -222,11 +242,10 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	currentCluster := getCurrentCluster()
-	log.Info(fmt.Sprintf("Deploying Pixie to the following cluster: %s", currentCluster))
-	log.Info("Is the cluster correct? (y/n)")
-	clusterOk := acceptUserInput()
+	fmt.Printf("Deploying Pixie to the following cluster: %s\n", currentCluster)
+	clusterOk := components.YNPrompt("Is the cluster correct?", false)
 	if !clusterOk {
-		log.Info("Cluster is not correct. Aborting.")
+		fmt.Printf("Cluster is not correct. Aborting.")
 		return
 	}
 
@@ -243,82 +262,88 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		log.Fatalln(err)
 	}
 
-	var credsData string
-	if credsFile == "" {
-		credsData = mustGetImagePullSecret(cloudConn)
-	} else {
-		credsData = mustReadCredsFile(credsFile)
-	}
-	optionallyCreateNamespace(clientset, namespace)
+	namespaceJob := newTaskWrapper("Creating namespace", func() error {
+		return optionallyCreateNamespace(clientset, namespace)
+	})
 
-	// Install certs.
-	optionallyInstallCerts(clientset, namespace)
+	certJob := newTaskWrapper("Installing certs", func() error {
+		return optionallyInstallCerts(clientset, namespace)
+	})
 
-	secretName, _ := cmd.Flags().GetString("secret_name")
-	k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsData)
-
-	LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace)
-
-	versionString, err := cmd.Flags().GetString("use_version")
-	if err != nil {
-		log.Fatal("Version string is invalid")
-	}
-
-	if len(versionString) == 0 {
-		// Fetch latest version.
-		versionString, err = getLatestVizierVersion(cloudConn)
-		if err != nil {
-			log.Fatal("Failed to get Vizier version")
+	secretJob := newTaskWrapper("Loading secrets", func() error {
+		var credsData string
+		if credsFile == "" {
+			credsData = mustGetImagePullSecret(cloudConn)
+		} else {
+			credsData = mustReadCredsFile(credsFile)
 		}
-	}
 
-	reader, err := downloadVizierYAMLs(cloudConn, versionString)
-	if err != nil {
-		log.WithError(err).Fatal("Could not download Vizier YAMLs")
-	}
-	defer reader.Close()
-
-	extractPath, _ := cmd.Flags().GetString("extract_yaml")
-	// If extract_path is specified, write out yamls to file.
-	if extractPath != "" {
-		err := writeToFile(extractPath, "yamls.tar", reader)
+		secretName, _ := cmd.Flags().GetString("secret_name")
+		err := k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsData)
 		if err != nil {
-			log.WithError(err).Fatal("Could not extract yamls to file")
+			return err
 		}
-		reader, err = os.OpenFile(path.Join(extractPath, "yamls.tar"), os.O_RDWR, 0755)
+		return LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace)
+	})
+
+	var yamlMap map[string]string
+	yamlJob := newTaskWrapper("Downloading Vizier YAMLs", func() error {
+		versionString, err := cmd.Flags().GetString("use_version")
 		if err != nil {
-			log.WithError(err).Fatal("Could not read yaml file")
+			return errors.New("Version string is invalid")
+		}
+		if len(versionString) == 0 {
+			// Fetch latest version.
+			versionString, err = getLatestVizierVersion(cloudConn)
+			if err != nil {
+				return err
+			}
+		}
+
+		reader, err := downloadVizierYAMLs(cloudConn, versionString)
+		if err != nil {
+			return err
 		}
 		defer reader.Close()
-	}
 
-	yamlMap, err := utils.ReadTarFileFromReader(reader)
+		extractPath, _ := cmd.Flags().GetString("extract_yaml")
+		// If extract_path is specified, write out yamls to file.
+		if extractPath != "" {
+			err := writeToFile(extractPath, "yamls.tar", reader)
+			if err != nil {
+				return err
+			}
+			reader, err = os.OpenFile(path.Join(extractPath, "yamls.tar"), os.O_RDWR, 0755)
+			if err != nil {
+				return err
+			}
+			defer reader.Close()
+		}
+
+		yamlMap, err = utils.ReadTarFileFromReader(reader)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	setupJobs := []utils.Task{
+		namespaceJob, certJob, secretJob, yamlJob,
+	}
+	jr := utils.NewSerialTaskRunner(setupJobs)
+	err = jr.RunAndMonitor()
 	if err != nil {
-		log.WithError(err).Fatal("Could not get YAMLs from tar")
+		log.Fatal("Failed to deploy Vizier")
 	}
 
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
 	deploy(yamlMap, depsOnly)
 
-	waitForProxy(clientset, namespace)
-}
-
-func acceptUserInput() bool {
-	if viper.GetBool("y") {
-		return true
+	err = waitForProxy(clientset, namespace)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
-	for true {
-		reader := bufio.NewReader(os.Stdin)
-		text, _ := reader.ReadString('\n')
-		if text == "y\n" || text == "yes\n" {
-			return true
-		} else if text == "n\n" || text == "no\n" {
-			return false
-		}
-		log.Info("Please enter (y/n)")
-	}
-	return false
 }
 
 func getCurrentCluster() string {
@@ -333,41 +358,62 @@ func getCurrentCluster() string {
 	return out.String()
 }
 
-func optionallyInstallCerts(clientset *kubernetes.Clientset, namespace string) {
+func optionallyInstallCerts(clientset *kubernetes.Clientset, namespace string) error {
 	secret := k8s.GetSecret(clientset, namespace, "service-tls-certs")
 	// Check if secrets already exist. If not, then create them.
 	if secret == nil {
 		certs.DefaultInstallCerts(namespace, clientset)
 	}
+	return nil
 }
 
-func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string) {
+func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string) error {
 	_, err := clientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 	if err == nil {
-		return
+		return nil
 	}
 	_, err = clientset.CoreV1().Namespaces().Create(&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
 	if err != nil {
-		log.WithError(err).Fatalf("Error creating namespace %s", namespace)
+		return err
 	}
-	log.Infof("Created namespace %s", namespace)
+	return nil
 }
 
 func deploy(yamlMap map[string]string, depsOnly bool) {
 	// NATS and etcd deploys depend on timing, so may sometimes fail. Include some retry behavior.
 	// TODO(zasgar/michelle): This logic is flaky and we should make smarter to actually detect and wait
 	// based on the message.
-	log.Info("Deploying NATS")
-	retryDeploy(yamlMap[natsYAMLPath])
-	log.Info("Deploying etcd")
-	retryDeploy(yamlMap[etcdYAMLPath])
+	natsJob := newTaskWrapper("Deploying NATS", func() error {
+		return retryDeploy(yamlMap[natsYAMLPath])
+	})
+
+	etcdJob := newTaskWrapper("Deploying etcd", func() error {
+		return retryDeploy(yamlMap[etcdYAMLPath])
+	})
+
+	deployDepsJobs := []utils.Task{natsJob, etcdJob}
+
+	jr := utils.NewParallelTaskRunner(deployDepsJobs)
+	err := jr.RunAndMonitor()
+	if err != nil {
+		log.Fatal("Failed to deploy Vizier deps")
+	}
 
 	if depsOnly {
 		return
 	}
 
-	log.Info("Deploying Vizier")
-	deployYAML(yamlMap[vizierYAMLPath])
+	deployJob := []utils.Task{
+		newTaskWrapper("Deploying Vizier", func() error {
+			return deployYAML(yamlMap[vizierYAMLPath])
+		}),
+	}
+
+	vzJr := utils.NewSerialTaskRunner(deployJob)
+	err = vzJr.RunAndMonitor()
+	if err != nil {
+		log.Fatal("Failed to deploy Vizier")
+	}
 }
 
 func deployYAML(yamlContents string) error {
@@ -385,30 +431,31 @@ func deployYAML(yamlContents string) error {
 	return kcmd.Run()
 }
 
-func retryDeploy(yamlContents string) {
+func retryDeploy(yamlContents string) error {
 	tries := 5
 	var err error
 	for tries > 0 {
 		err = deployYAML(yamlContents)
 		if err == nil {
-			break
+			return nil
 		}
 		time.Sleep(5 * time.Second)
 		tries--
 	}
 	if tries == 0 {
-		log.WithError(err).Fatal(fmt.Sprintf("Could not deploy YAML: %s", yamlContents))
+		return err
 	}
+	return nil
 }
 
 // waitForProxy waits for the Vizier's Proxy service to be ready with an external IP.
-func waitForProxy(clientset *kubernetes.Clientset, namespace string) {
-	log.Info("Waiting for services and pods to start...")
+func waitForProxy(clientset *kubernetes.Clientset, namespace string) error {
+	fmt.Printf("Waiting for services and pods to start...\n")
 
 	// Watch for service updates.
 	watcher, err := k8s.WatchK8sResource(clientset, "services", namespace)
 	if err != nil {
-		log.WithError(err).Fatal("Could not watch k8s services")
+		return err
 	}
 	for c := range watcher.ResultChan() {
 		service := c.Object.(*v1.Service)
@@ -418,17 +465,18 @@ func waitForProxy(clientset *kubernetes.Clientset, namespace string) {
 				{
 					// TODO(zasgar): NodePorts get ready right away, we need to make sure
 					// that the service is actually healthy.
-					log.Info("Setup complete.")
+					fmt.Printf("Setup complete.\n")
 					watcher.Stop()
 				}
 			case v1.ServiceTypeLoadBalancer:
 				{
 					if len(service.Status.LoadBalancer.Ingress) > 0 && service.Status.LoadBalancer.Ingress[0].IP != "" {
-						log.Info("Setup complete.")
+						fmt.Printf("Setup complete.\n")
 						watcher.Stop()
 					}
 				}
 			}
 		}
 	}
+	return nil
 }

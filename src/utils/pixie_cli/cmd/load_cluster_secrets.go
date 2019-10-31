@@ -79,10 +79,13 @@ func createClusterSecrets(clientset *kubernetes.Clientset, clusterID string, nam
 
 	// Load clusterID and JWT signing key as a secret.
 	k8s.DeleteSecret(clientset, namespace, "pl-cluster-secrets")
-	k8s.CreateGenericSecretFromLiterals(clientset, namespace, "pl-cluster-secrets", map[string]string{
+	err = k8s.CreateGenericSecretFromLiterals(clientset, namespace, "pl-cluster-secrets", map[string]string{
 		"cluster-id":      clusterID,
 		"jwt-signing-key": fmt.Sprintf("%x", jwtSigningKey),
 	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
