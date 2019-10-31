@@ -13,6 +13,7 @@
 #include "absl/base/macros.h"
 #include "src/common/base/base.h"
 #include "src/stirling/common/event_parser.h"
+#include "src/stirling/http/message.h"
 #include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
@@ -24,41 +25,6 @@ inline constexpr char kContentLength[] = "Content-Length";
 inline constexpr char kContentType[] = "Content-Type";
 inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 inline constexpr char kUpgrade[] = "Upgrade";
-
-// TODO(yzhao): The repetitions of information among HTTPMessage + ConnectionTraceRecord,
-// DataElementsIndexes, and kTables should be eliminated. It might make sense to use proto file
-// to define data schema and generate kTables array during runtime, based on proto schema.
-
-using HTTPHeadersMap = std::map<std::string, std::string, CaseInsensitiveLess>;
-
-struct HTTPMessage {
-  uint64_t timestamp_ns;
-  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
-  MessageType type = MessageType::kUnknown;
-
-  int http_minor_version = -1;
-  HTTPHeadersMap http_headers = {};
-
-  std::string http_req_method = "-";
-  std::string http_req_path = "-";
-
-  int http_resp_status = -1;
-  std::string http_resp_message = "-";
-
-  std::string http_msg_body = "-";
-
-  // TODO(yzhao): We should enforce that HTTPMessage size does not change after certain point,
-  // so that we can cache this value.
-  size_t ByteSize() const {
-    size_t headers_size = 0;
-    for (const auto& [name, val] : http_headers) {
-      headers_size += name.size();
-      headers_size += val.size();
-    }
-    return sizeof(HTTPMessage) + headers_size + http_req_method.size() + http_req_path.size() +
-           http_resp_message.size() + http_msg_body.size();
-  }
-};
 
 using Record = ReqRespPair<HTTPMessage, HTTPMessage>;
 

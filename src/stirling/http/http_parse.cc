@@ -36,7 +36,7 @@ HTTPHeadersMap GetHTTPHeadersMap(const phr_header* headers, size_t num_headers) 
   for (size_t i = 0; i < num_headers; i++) {
     std::string name(headers[i].name, headers[i].name_len);
     std::string value(headers[i].value, headers[i].value_len);
-    result[name] = value;
+    result.insert({name, value});
   }
   return result;
 }

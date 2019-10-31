@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include "src/common/base/base.h"
+#include "src/stirling/mysql/packet.h"
 #include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
@@ -112,20 +113,6 @@ constexpr int kIterationCountBytes = 4;
 //-----------------------------------------------------------------------------
 // Packet Level Structs
 //-----------------------------------------------------------------------------
-
-/**
- * Raw MySQLPacket from MySQL Parser
- */
-struct Packet {
-  uint64_t timestamp_ns;
-  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
-
-  uint8_t sequence_id;
-  // TODO(oazizi): Convert to std::basic_string<uint8_t>.
-  std::string msg;
-
-  size_t ByteSize() const { return sizeof(Packet) + msg.size(); }
-};
 
 /**
  * Column definition is not parsed right now, but may be further parsed in the future.
