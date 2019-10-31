@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"os"
 	"os/exec"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 // DeleteCmd is the "delete" command.
@@ -28,20 +30,30 @@ func init() {
 }
 
 func deletePixie(ns string, clobberAll bool) {
+	var deleteJob utils.Task
+
 	if clobberAll {
-		log.WithField("namespace", ns).Info("Deleting Pixie Namespace")
-		kcmd := exec.Command("kubectl", "delete", "namespace", ns)
-		if err := kcmd.Run(); err != nil {
-			log.WithError(err).Fatal("failed to delete pixie")
-		}
-		log.Info("Pixie Deleted")
-		return
+		deleteJob = newTaskWrapper("Deleting namespace", func() error {
+			kcmd := exec.Command("kubectl", "delete", "namespace", ns)
+			if err := kcmd.Run(); err != nil {
+				return err
+			}
+			return nil
+		})
+	} else {
+		deleteJob = newTaskWrapper("Deleting Vizier pods/services", func() error {
+			err := deleteVizier(ns)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 	}
 
-	log.Info("Deleting Vizier pods/services")
-	err := deleteVizier(ns)
+	delJr := utils.NewSerialTaskRunner([]utils.Task{deleteJob})
+	err := delJr.RunAndMonitor()
 	if err != nil {
-		log.WithError(err).Error("Could not delete Vizier")
+		os.Exit(1)
 	}
 }
 
