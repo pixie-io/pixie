@@ -3,49 +3,11 @@ package logwriter
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
-	"google.golang.org/grpc"
-
-	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb"
 )
-
-func init() {
-	pflag.String("pod_name", "", "The name of the current pod")
-	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
-}
-
-const (
-	maxQueueSize     int           = 20               // Max queue size before invoking a flush
-	maxRetentionTime time.Duration = 10 * time.Second // Max time interval between flushes
-)
-
-// SetupLogger Used to set up a logger that writes to both standard out and the cloud connector
-// so that logs can be forwarded to Pixie cloud.
-func SetupLogger(cloudConnAddr, pod, svc string) error {
-	log.SetLevel(log.InfoLevel)
-
-	dialOpts, err := services.GetGRPCClientDialOpts()
-	if err != nil {
-		return err
-	}
-
-	conn, err := grpc.Dial(cloudConnAddr, dialOpts...)
-	if err != nil {
-		return err
-	}
-	client := cloud_connectorpb.NewCloudConnectorServiceClient(conn)
-	cloudconnwriter := NewCloudLogWriter(client, cloudConnAddr, pod, svc, maxQueueSize, maxRetentionTime)
-
-	log.SetOutput(io.MultiWriter(cloudconnwriter, os.Stdout))
-	return nil
-}
 
 // CloudLogWriter implements io.Writer, and is used by Vizier services to forward their logs to Pixie Cloud.
 type CloudLogWriter struct {

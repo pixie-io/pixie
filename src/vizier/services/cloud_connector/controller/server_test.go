@@ -17,8 +17,6 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	mock_certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb/mock"
-	cloud_connectorpb "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb"
-	mock_cloud_connectorpb "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb/mock"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller"
 	mock_controller "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller/mock"
 )
@@ -200,56 +198,4 @@ func TestServer_RequestAndHandleSSLCerts(t *testing.T) {
 	clock := testingutils.NewTestClock(time.Unix(10, 0))
 	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, mockCertMgr, mockVzInfo, clock)
 	server.RequestAndHandleSSLCerts(mockStream)
-}
-
-func TestServer_HandleLog(t *testing.T) {
-	vizierID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	vizierUUID, err := uuid.FromString(vizierID)
-	assert.Nil(t, err)
-
-	logMessage := &cloud_connectorpb.TransferLogRequest{
-		BatchedLogs: []*cloud_connectorpb.LogMessage{
-			&cloud_connectorpb.LogMessage{
-				Pod: "bar",
-				Svc: "xyz",
-				Log: "log msg",
-			},
-		},
-	}
-	anyMsg, err := types.MarshalAny(logMessage)
-	assert.Nil(t, err)
-	wrappedReq := &vzconnpb.CloudConnectRequest{
-		Topic: "logs",
-		Msg:   anyMsg,
-	}
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockVZConn := mock_vzconnpb.NewMockVZConnServiceClient(ctrl)
-	mockCertMgr := mock_certmgrpb.NewMockCertMgrServiceClient(ctrl)
-
-	// Set up streams to vzconn
-	mockVZConnStream := mock_vzconnpb.NewMockVZConnService_CloudConnectClient(ctrl)
-	// Expect that the VZConn stream will forward the request
-	mockVZConnStream.EXPECT().Send(wrappedReq).Return(nil)
-
-	mockVzInfo := mock_controller.NewMockVizierInfo(ctrl)
-	clock := testingutils.NewTestClock(time.Unix(10, 0))
-	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, mockCertMgr, mockVzInfo, clock)
-
-	// Set up streams from other vizier services to the cloud connector
-	mockLogStream := mock_cloud_connectorpb.NewMockCloudConnectorService_TransferLogServer(ctrl)
-	mockLogStream.EXPECT().Recv().Return(logMessage, nil)
-
-	finished := make(chan bool)
-	go func(finished chan bool) {
-		err := server.DoHeartbeatsAndLogTransfer(mockVZConnStream)
-		assert.Nil(t, err)
-		finished <- true
-	}(finished)
-
-	err = server.TransferLog(mockLogStream)
-	assert.Nil(t, err)
-	server.Stop()
-	<-finished
 }

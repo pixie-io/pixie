@@ -5,28 +5,22 @@ import (
 
 	"github.com/gorilla/handlers"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	"pixielabs.ai/pixielabs/src/vizier/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/vizier/services/api/controller"
-	"pixielabs.ai/pixielabs/src/vizier/services/shared/log/logwriter"
 )
 
 func main() {
+	log.WithField("service", "api-service").Info("Starting service")
+
 	services.SetupService("api-service", 50200)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
 	services.CheckSSLClientFlags()
-
-	err := logwriter.SetupLogger(viper.GetString("cloud_connector_addr"), viper.GetString("pod_name"), "api-service")
-	if err != nil {
-		log.WithError(err).Fatal("Could not connect to cloud connector for log forwarding")
-	}
-	log.WithField("service", "api-service").Info("Starting service")
+	services.SetupServiceLogging()
 
 	env, err := apienv.New()
 	if err != nil {

@@ -14,7 +14,6 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
-	cloud_connectorpb "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller"
 )
 
@@ -91,9 +90,6 @@ func main() {
 	e := env.New()
 	s := services.NewPLServer(e,
 		httpmiddleware.WithBearerAuthMiddleware(e, mux))
-
-	cloud_connectorpb.RegisterCloudConnectorServiceServer(s.GRPCServer(), server)
-
 	s.Start()
 	s.StopOnInterrupt()
 }
