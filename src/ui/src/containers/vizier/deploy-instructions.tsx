@@ -42,7 +42,6 @@ const DEPLOY_METHODS = ['a', 'b'];
 // DeployInstructions is a wrapper around DeployInstructionsContent, which queries
 // for the CLI artifact information.
 export const DeployInstructions = (props: DeployInstructionsProps) => {
-  // TODO(michelle): Pull --use_version tag from backend.
   return (<Query query={GET_LINUX_CLI_BINARY}>
     {
       ({ loading, error, data }) => {
@@ -106,7 +105,7 @@ export class DeployInstructionsContent extends React.Component<DeployInstruction
               {' ./pixie auth login --site="' + this.props.sitename + '"'}
             </CodeSnippet>
             <CodeSnippet showCopy={true} language='bash'>
-              {' ./pixie deploy --cluster_id "' + this.props.clusterID + '"\n \\ --use_version v0.1.4'}
+              {' ./pixie deploy --cluster_id "' + this.props.clusterID + '"'}
             </CodeSnippet>
             <br/>
             <br/>
