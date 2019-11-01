@@ -26,6 +26,7 @@ type MetadataStore interface {
 	UpdateContainersFromPod(*metadatapb.Pod) error
 	UpdateSchemas(uuid.UUID, []*metadatapb.SchemaInfo) error
 	UpdateProcesses([]*metadatapb.ProcessInfo) error
+	UpdateIPMap(string, string) error
 	GetAgentsForHostnames(*[]string) (*[]string, error)
 	AddToAgentUpdateQueue(string, string) error
 	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
@@ -145,6 +146,8 @@ func (mh *MetadataHandler) MetadataListener() {
 			mh.handleServiceMetadata(msg.Object)
 		case "pods":
 			mh.handlePodMetadata(msg.Object)
+		case "nodes":
+			mh.handleNodeMetadata(msg.Object)
 		default:
 			log.Error("Received unknown metadata message with type: " + msg.ObjectType)
 		}
@@ -265,6 +268,32 @@ func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object) {
 	err = mh.mds.UpdateService(pb)
 	if err != nil {
 		log.WithError(err).Fatal("Could not write service protobuf to metadata store.")
+	}
+}
+
+func (mh *MetadataHandler) handleNodeMetadata(o runtime.Object) {
+	n := o.(*v1.Node)
+
+	// For now, we only use the node update to update our IP -> Hostname
+	// map. In the future, we may want to add all of the node data into etcd
+	// and send the data to our agents.
+	internalIP := ""
+	hostname := ""
+	for _, addr := range n.Status.Addresses {
+		if addr.Type == v1.NodeHostName {
+			hostname = addr.Address
+		} else if addr.Type == v1.NodeInternalIP {
+			internalIP = addr.Address
+		}
+	}
+
+	if internalIP == "" || hostname == "" {
+		return
+	}
+
+	err := mh.mds.UpdateIPMap(internalIP, hostname)
+	if err != nil {
+		log.WithError(err).Info("Could not update IP map with node update")
 	}
 }
 

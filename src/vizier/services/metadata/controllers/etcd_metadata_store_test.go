@@ -909,3 +909,26 @@ func TestGetComputedSchemas(t *testing.T) {
 	assert.Equal(t, "table1", (*schemas[0]).Name)
 	assert.Equal(t, "table2", (*schemas[1]).Name)
 }
+
+func TestUpdateIPMap(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	err = mds.UpdateIPMap("127.0.0.1", "localhost")
+	if err != nil {
+		t.Fatal("Could not update IP map.")
+	}
+
+	// Check that correct IP map is in etcd.
+	resp, err := etcdClient.Get(context.Background(), "/ip/127.0.0.1/hostname")
+	if err != nil {
+		t.Fatal("Failed to get IP map.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, "localhost", string(resp.Kvs[0].Value))
+}

@@ -663,6 +663,17 @@ func (mds *EtcdMetadataStore) UpdateProcesses(processes []*metadatapb.ProcessInf
 	return err
 }
 
+func getIPMapKey(ip string) string {
+	return path.Join("/", "ip", ip, "hostname")
+}
+
+// UpdateIPMap updates mapping from IP to hostname in the metadata store.
+func (mds *EtcdMetadataStore) UpdateIPMap(ip string, hostname string) error {
+	key := getIPMapKey(ip)
+
+	return mds.updateValue(key, hostname, false /*expire*/)
+}
+
 // Close cleans up the etcd metadata store, such as its etcd session.
 func (mds *EtcdMetadataStore) Close() {
 	mds.sess.Close()

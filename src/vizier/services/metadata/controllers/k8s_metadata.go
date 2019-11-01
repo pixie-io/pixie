@@ -58,6 +58,7 @@ func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, err
 	go mc.startWatcher("pods")
 	go mc.startWatcher("endpoints")
 	go mc.startWatcher("services")
+	go mc.startWatcher("nodes")
 
 	return mc, nil
 }
