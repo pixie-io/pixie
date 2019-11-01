@@ -5,15 +5,8 @@
 ## Bazel command to use.
 BAZEL     := bazel
 
-## Dep command to use.
-DEP       := dep
-
 ## Minikube command to use.
 MINIKUBE  := minikube
-
-## Kubectl command to use.
-KUBECTL := kubectl
-KUBECTL_FLAGS := -n pl
 
 WORKSPACE := $$(bazel info workspace)
 
@@ -21,15 +14,6 @@ WORKSPACE := $$(bazel info workspace)
 SKAFFOLD := skaffold
 
 SKAFFOLD_DIR := $(WORKSPACE)/skaffold
-
-## Active operating system (Linux vs MacOS).
-UNAME_S := $(shell uname -s)
-
-# Minikube flags to select vm-driver under MacOS
-ifeq ($(UNAME_S),Darwin)
-    MINIKUBE_START_FLAGS += --vm-driver hyperkit
-endif
-
 
 .PHONY: clean
 clean:
@@ -63,13 +47,16 @@ test-tsan: ## Run all the tests (except UI),  with thread sanitizer.
 go-mod-ensure: ## Ensure that go dependencies exist.
 	go mod download
 
+.PHONY: gazelle-repos
 gazelle-repos: go.mod
 	$(BAZEL) run //:gazelle -- update-repos -from_file=go.mod
 
-gazelle: gazelle-repos ## Run gazelle to update go build rules.
+.PHONY: gazelle
+gazelle: gazelle-repos
 	$(BAZEL) run //:gazelle
 
-go-setup: go-mod-ensure gazelle
+.PHONY: go-setup
+go-setup: go-mod-ensure gazelle ## Run go setup to regenrate modules/build files.
 
 dev-env-start: ## Start K8s dev environment.
 	$(WORKSPACE)/scripts/setup_dev_k8s.sh
@@ -79,19 +66,6 @@ dev-env-stop: ## Stop dev environment.
 
 dev-env-teardown: dev-env-stop ## Clean up dev environment.
 	$(MINIKUBE) delete
-
-deploy-vizier-nightly: ## Deploy vizier in nightly environment.
-	PL_BUILD_TYPE=nightly $(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold_vizier.yaml
-
-deploy-customer-docs-nightly: ## Deploy customer docs in nightly environment.
-	PL_BUILD_TYPE=nightly $(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold_customer_docs.yaml
-
-gen-jwt: ## Generate a JWT for our demo cluster.
-	@JWT=$$(PL_JWT_SIGNING_KEY=ABCDEFG $(BAZEL) run //src/utils/gen_test_key); \
-        echo ""; \
-	echo "Paste the following into your browser console:"; \
-	echo "pltoken='$$JWT';"; \
-	echo "localStorage.setItem('auth', JSON.stringify({'idToken':pltoken}));"
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"
@@ -109,5 +83,6 @@ help: ## Print help for targets with comments.
 	@echo ""
 	@echo "Typical usage:"
 	@printf "  $(cyan)%s$(term-reset)\n    %s\n\n" \
-		"make build" "Run a clean build and update all the GO deps." \
+		"make build" "Run a clean build." \
+		"make go-setup" "Update go deps by re-generating go modules and build files." \
 		"make pristine" "Delete all cached builds." \
