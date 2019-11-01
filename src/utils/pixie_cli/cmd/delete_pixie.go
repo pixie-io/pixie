@@ -58,6 +58,6 @@ func deletePixie(ns string, clobberAll bool) {
 }
 
 func deleteVizier(ns string) error {
-	kcmd := exec.Command("kubectl", "-n", ns, "delete", "pods,deployments,services", "-l", "component=vizier")
+	kcmd := exec.Command("kubectl", "-n", ns, "delete", "pods,deployments,services,daemonsets", "-l", "component=vizier")
 	return kcmd.Run()
 }
