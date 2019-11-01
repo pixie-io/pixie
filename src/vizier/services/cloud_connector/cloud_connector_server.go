@@ -81,12 +81,6 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	// Connect to metadata service.
-	dialOpts, err := services.GetGRPCClientDialOpts()
-	if err != nil {
-		log.WithError(err).Fatal("Could not get dial opts.")
-	}
-	dialOpts = append(dialOpts, grpc.WithBlock())
 	e := env.New()
 	s := services.NewPLServer(e,
 		httpmiddleware.WithBearerAuthMiddleware(e, mux))
