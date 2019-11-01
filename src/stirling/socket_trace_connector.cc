@@ -109,7 +109,7 @@ Status SocketTraceConnector::InitImpl() {
 }
 
 Status SocketTraceConnector::StopImpl() {
-  BCCWrapper::Stop();
+  bpf_tools::BCCWrapper::Stop();
   return Status::OK();
 }
 
@@ -175,7 +175,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
 
 template <typename TValueType>
 Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable<TValueType>* arr) {
-  std::vector<TValueType> values(BCCWrapper::kCPUCount, val);
+  std::vector<TValueType> values(bpf_tools::BCCWrapper::kCPUCount, val);
   auto update_res = arr->update_value(idx, values);
   if (update_res.code() != 0) {
     return error::Internal(absl::Substitute("Failed to set value on index: $0, error message: $1",

@@ -1,7 +1,8 @@
 package(default_visibility = [
     "//src/stirling:__pkg__",
-    "//src/stirling/http2:__pkg__",
     "//src/stirling/bcc_bpf:__pkg__",
+    "//src/stirling/bpf_tools:__pkg__",
+    "//src/stirling/http2:__pkg__",
 ])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")

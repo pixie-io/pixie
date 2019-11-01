@@ -22,7 +22,7 @@ DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
 DECLARE_bool(stirling_bpf_enable_logging);
 
 namespace pl {
-namespace stirling {
+namespace bpf_tools {
 
 namespace fs = std::experimental::filesystem;
 
@@ -228,7 +228,7 @@ class BCCWrapper {
   inline static size_t num_attached_perf_events_;
 };
 
-}  // namespace stirling
+}  // namespace bpf_tools
 }  // namespace pl
 
 #endif

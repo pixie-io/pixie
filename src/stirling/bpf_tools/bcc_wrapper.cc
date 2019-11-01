@@ -1,5 +1,7 @@
 #ifdef __linux__
 
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
+
 #include <linux/perf_event.h>
 #include <linux/sched.h>
 
@@ -11,7 +13,6 @@
 #include <string>
 
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_wrapper.h"
 
 // TODO(yzhao): Do we need make this flag able to specify size for individual perf buffers?
 // At least, we should have different values for ones used for transferring data, and metadata.
@@ -27,7 +28,7 @@ DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 256,
 DEFINE_bool(stirling_bpf_enable_logging, false, "If true, BPF logging facilities are enabled.");
 
 namespace pl {
-namespace stirling {
+namespace bpf_tools {
 
 // TODO(yzhao): Read CPU count during runtime and set maxactive to Multiplier * N_CPU. That way, we
 // can be relatively more secure against increase of CPU count. Note the default multiplier is 2,
@@ -248,7 +249,7 @@ void BCCWrapper::DumpBPFLog() {
   }
 }
 
-}  // namespace stirling
+}  // namespace bpf_tools
 }  // namespace pl
 
 #endif

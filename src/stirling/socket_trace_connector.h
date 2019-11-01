@@ -28,7 +28,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "demos/applications/hipster_shop/reflection.h"
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/system/socket_info.h"
-#include "src/stirling/bcc_wrapper.h"
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
@@ -56,7 +56,7 @@ enum class HTTPContentType {
   kGRPC = 2,
 };
 
-class SocketTraceConnector : public SourceConnector, public BCCWrapper {
+class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
@@ -138,7 +138,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   static void HandleControlEvent(void* cb_cookie, void* data, int data_size);
   static void HandleControlEventsLoss(void* cb_cookie, uint64_t lost);
 
-  static constexpr KProbeSpec kProbeSpecsArray[] = {
+  static constexpr bpf_tools::KProbeSpec kProbeSpecsArray[] = {
       {"connect", "syscall__probe_entry_connect", bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"connect", "syscall__probe_ret_connect", bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"accept", "syscall__probe_entry_accept", bpf_probe_attach_type::BPF_PROBE_ENTRY},
@@ -171,14 +171,14 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
       {"close", "syscall__probe_entry_close", bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"close", "syscall__probe_ret_close", bpf_probe_attach_type::BPF_PROBE_RETURN},
   };
-  static constexpr auto kProbeSpecs = ArrayView<KProbeSpec>(kProbeSpecsArray);
+  static constexpr auto kProbeSpecs = ArrayView<bpf_tools::KProbeSpec>(kProbeSpecsArray);
 
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
   //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
 
-  static constexpr PerfBufferSpec kPerfBufferSpecsArray[] = {
+  static constexpr bpf_tools::PerfBufferSpec kPerfBufferSpecsArray[] = {
       // For data events. The order must be consistent with output tables.
       {"socket_data_events", &SocketTraceConnector::HandleDataEvent,
        &SocketTraceConnector::HandleDataEventsLoss},
@@ -186,7 +186,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
       {"socket_control_events", &SocketTraceConnector::HandleControlEvent,
        &SocketTraceConnector::HandleControlEventsLoss},
   };
-  static constexpr auto kPerfBufferSpecs = ArrayView<PerfBufferSpec>(kPerfBufferSpecsArray);
+  static constexpr auto kPerfBufferSpecs =
+      ArrayView<bpf_tools::PerfBufferSpec>(kPerfBufferSpecsArray);
 
   inline static http::HTTPHeaderFilter http_response_header_filter_;
   // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.
@@ -198,7 +199,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
             source_name, kTables,
             std::chrono::milliseconds(FLAGS_stirling_socket_trace_sampling_period_millis),
             kDefaultPushPeriod),
-        BCCWrapper(kBCCScript) {
+        bpf_tools::BCCWrapper(kBCCScript) {
     // TODO(yzhao): Is there a better place/time to grab the flags?
     http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
     proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());

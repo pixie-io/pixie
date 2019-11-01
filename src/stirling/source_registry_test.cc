@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "src/shared/types/proto/types.pb.h"
-#include "src/stirling/bcc_wrapper.h"
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/proc_stat_connector.h"
 #include "src/stirling/source_registry.h"
 

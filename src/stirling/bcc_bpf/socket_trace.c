@@ -6,7 +6,6 @@
 
 #include "src/stirling/bcc_bpf_interface/grpc.h"
 #include "src/stirling/bcc_bpf_interface/http2.h"
-#include "src/stirling/bcc_bpf_interface/log_event.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
 #include "src/stirling/bcc_bpf/logging.h"

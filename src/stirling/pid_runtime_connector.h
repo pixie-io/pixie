@@ -21,7 +21,7 @@ DUMMY_SOURCE_CONNECTOR(PIDRuntimeConnector);
 
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf_interface/pidruntime.h"
-#include "src/stirling/bcc_wrapper.h"
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/source_connector.h"
 
 OBJ_STRVIEW(pidruntime_bcc_script, _binary_pidruntime_bpf_src);
@@ -29,7 +29,7 @@ OBJ_STRVIEW(pidruntime_bcc_script, _binary_pidruntime_bpf_src);
 namespace pl {
 namespace stirling {
 
-class PIDRuntimeConnector : public SourceConnector, public BCCWrapper {
+class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
   inline static const std::string_view kBCCScript = pidruntime_bcc_script;
 
@@ -61,7 +61,7 @@ class PIDRuntimeConnector : public SourceConnector, public BCCWrapper {
  protected:
   explicit PIDRuntimeConnector(std::string_view name)
       : SourceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod),
-        BCCWrapper(kBCCScript) {}
+        bpf_tools::BCCWrapper(kBCCScript) {}
 
  private:
   static constexpr perf_type_id kEventType = perf_type_id::PERF_TYPE_SOFTWARE;
@@ -69,9 +69,9 @@ class PIDRuntimeConnector : public SourceConnector, public BCCWrapper {
   static constexpr char kFunctionName[] = "trace_pid_runtime";
   static constexpr uint64_t kSamplingFreq = 99;  // Freq. (in Hz) at which to trigger bpf func.
 
-  static constexpr PerfEventSpec kPerfEventsArray[] = {
+  static constexpr bpf_tools::PerfEventSpec kPerfEventsArray[] = {
       {kEventType, kEventConfig, kFunctionName, 0, kSamplingFreq}};
-  static constexpr auto kPerfEvents = ArrayView<PerfEventSpec>(kPerfEventsArray);
+  static constexpr auto kPerfEvents = ArrayView<bpf_tools::PerfEventSpec>(kPerfEventsArray);
 
   std::map<uint16_t, uint64_t> prev_run_time_map_;
   std::vector<std::pair<uint16_t, pidruntime_val_t> > table_;
