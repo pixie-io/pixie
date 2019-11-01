@@ -6,15 +6,17 @@ package profile
 import (
 	context "context"
 	fmt "fmt"
-	io "io"
-	math "math"
-	reflect "reflect"
-	strings "strings"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	io "io"
+	math "math"
+	math_bits "math/bits"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	reflect "reflect"
+	strings "strings"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -26,7 +28,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type UserInfo struct {
 	ID        *proto1.UUID `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -50,7 +52,7 @@ func (m *UserInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_UserInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +132,7 @@ func (m *OrgInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_OrgInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -191,7 +193,7 @@ func (m *CreateUserRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_CreateUserRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -263,7 +265,7 @@ func (m *CreateOrgAndUserRequest) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return xxx_messageInfo_CreateOrgAndUserRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -314,7 +316,7 @@ func (m *CreateOrgAndUserRequest_Org) XXX_Marshal(b []byte, deterministic bool) 
 		return xxx_messageInfo_CreateOrgAndUserRequest_Org.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -367,7 +369,7 @@ func (m *CreateOrgAndUserRequest_User) XXX_Marshal(b []byte, deterministic bool)
 		return xxx_messageInfo_CreateOrgAndUserRequest_User.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -432,7 +434,7 @@ func (m *CreateOrgAndUserResponse) XXX_Marshal(b []byte, deterministic bool) ([]
 		return xxx_messageInfo_CreateOrgAndUserResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -482,7 +484,7 @@ func (m *GetOrgByDomainRequest) XXX_Marshal(b []byte, deterministic bool) ([]byt
 		return xxx_messageInfo_GetOrgByDomainRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -841,7 +843,7 @@ func (this *OrgInfo) GoString() string {
 		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
 	}
 	s = append(s, "OrgName: "+fmt.Sprintf("%#v", this.OrgName)+",\n")
-	s = append(s, "SiteName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
+	s = append(s, "DomainName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -883,7 +885,7 @@ func (this *CreateOrgAndUserRequest_Org) GoString() string {
 	s := make([]string, 0, 6)
 	s = append(s, "&profile.CreateOrgAndUserRequest_Org{")
 	s = append(s, "OrgName: "+fmt.Sprintf("%#v", this.OrgName)+",\n")
-	s = append(s, "SiteName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
+	s = append(s, "DomainName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -921,7 +923,7 @@ func (this *GetOrgByDomainRequest) GoString() string {
 	}
 	s := make([]string, 0, 5)
 	s = append(s, "&profile.GetOrgByDomainRequest{")
-	s = append(s, "SiteName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
+	s = append(s, "DomainName: "+fmt.Sprintf("%#v", this.DomainName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1013,6 +1015,26 @@ type ProfileServiceServer interface {
 	CreateOrgAndUser(context.Context, *CreateOrgAndUserRequest) (*CreateOrgAndUserResponse, error)
 	GetOrg(context.Context, *proto1.UUID) (*OrgInfo, error)
 	GetOrgByDomain(context.Context, *GetOrgByDomainRequest) (*OrgInfo, error)
+}
+
+// UnimplementedProfileServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedProfileServiceServer struct {
+}
+
+func (*UnimplementedProfileServiceServer) CreateUser(ctx context.Context, req *CreateUserRequest) (*proto1.UUID, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
+}
+func (*UnimplementedProfileServiceServer) GetUser(ctx context.Context, req *proto1.UUID) (*UserInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
+func (*UnimplementedProfileServiceServer) CreateOrgAndUser(ctx context.Context, req *CreateOrgAndUserRequest) (*CreateOrgAndUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateOrgAndUser not implemented")
+}
+func (*UnimplementedProfileServiceServer) GetOrg(ctx context.Context, req *proto1.UUID) (*OrgInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrg not implemented")
+}
+func (*UnimplementedProfileServiceServer) GetOrgByDomain(ctx context.Context, req *GetOrgByDomainRequest) (*OrgInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrgByDomain not implemented")
 }
 
 func RegisterProfileServiceServer(s *grpc.Server, srv ProfileServiceServer) {
@@ -1141,7 +1163,7 @@ var _ProfileService_serviceDesc = grpc.ServiceDesc{
 func (m *UserInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1149,61 +1171,74 @@ func (m *UserInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *UserInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UserInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.ID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.ID.Size()))
-		n1, err := m.ID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if m.OrgID != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.OrgID.Size()))
-		n2, err := m.OrgID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
-	}
-	if len(m.Username) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Username)))
-		i += copy(dAtA[i:], m.Username)
-	}
-	if len(m.FirstName) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.FirstName)))
-		i += copy(dAtA[i:], m.FirstName)
+	if len(m.Email) > 0 {
+		i -= len(m.Email)
+		copy(dAtA[i:], m.Email)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Email)))
+		i--
+		dAtA[i] = 0x32
 	}
 	if len(m.LastName) > 0 {
-		dAtA[i] = 0x2a
-		i++
+		i -= len(m.LastName)
+		copy(dAtA[i:], m.LastName)
 		i = encodeVarintService(dAtA, i, uint64(len(m.LastName)))
-		i += copy(dAtA[i:], m.LastName)
+		i--
+		dAtA[i] = 0x2a
 	}
-	if len(m.Email) > 0 {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Email)))
-		i += copy(dAtA[i:], m.Email)
+	if len(m.FirstName) > 0 {
+		i -= len(m.FirstName)
+		copy(dAtA[i:], m.FirstName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.FirstName)))
+		i--
+		dAtA[i] = 0x22
 	}
-	return i, nil
+	if len(m.Username) > 0 {
+		i -= len(m.Username)
+		copy(dAtA[i:], m.Username)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Username)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.OrgID != nil {
+		{
+			size, err := m.OrgID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *OrgInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1211,39 +1246,48 @@ func (m *OrgInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *OrgInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OrgInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.ID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.ID.Size()))
-		n3, err := m.ID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
+	if len(m.DomainName) > 0 {
+		i -= len(m.DomainName)
+		copy(dAtA[i:], m.DomainName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.DomainName)))
+		i--
+		dAtA[i] = 0x1a
 	}
 	if len(m.OrgName) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.OrgName)
+		copy(dAtA[i:], m.OrgName)
 		i = encodeVarintService(dAtA, i, uint64(len(m.OrgName)))
-		i += copy(dAtA[i:], m.OrgName)
+		i--
+		dAtA[i] = 0x12
 	}
-	if len(m.DomainName) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.DomainName)))
-		i += copy(dAtA[i:], m.DomainName)
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *CreateUserRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1251,51 +1295,62 @@ func (m *CreateUserRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CreateUserRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateUserRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.OrgID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.OrgID.Size()))
-		n4, err := m.OrgID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n4
-	}
-	if len(m.Username) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Username)))
-		i += copy(dAtA[i:], m.Username)
-	}
-	if len(m.FirstName) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.FirstName)))
-		i += copy(dAtA[i:], m.FirstName)
+	if len(m.Email) > 0 {
+		i -= len(m.Email)
+		copy(dAtA[i:], m.Email)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Email)))
+		i--
+		dAtA[i] = 0x2a
 	}
 	if len(m.LastName) > 0 {
-		dAtA[i] = 0x22
-		i++
+		i -= len(m.LastName)
+		copy(dAtA[i:], m.LastName)
 		i = encodeVarintService(dAtA, i, uint64(len(m.LastName)))
-		i += copy(dAtA[i:], m.LastName)
+		i--
+		dAtA[i] = 0x22
 	}
-	if len(m.Email) > 0 {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Email)))
-		i += copy(dAtA[i:], m.Email)
+	if len(m.FirstName) > 0 {
+		i -= len(m.FirstName)
+		copy(dAtA[i:], m.FirstName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.FirstName)))
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	if len(m.Username) > 0 {
+		i -= len(m.Username)
+		copy(dAtA[i:], m.Username)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Username)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.OrgID != nil {
+		{
+			size, err := m.OrgID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *CreateOrgAndUserRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1303,37 +1358,46 @@ func (m *CreateOrgAndUserRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CreateOrgAndUserRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateOrgAndUserRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Org != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Org.Size()))
-		n5, err := m.Org.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n5
-	}
 	if m.User != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.User.Size()))
-		n6, err := m.User.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.User.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n6
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Org != nil {
+		{
+			size, err := m.Org.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *CreateOrgAndUserRequest_Org) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1341,29 +1405,36 @@ func (m *CreateOrgAndUserRequest_Org) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CreateOrgAndUserRequest_Org) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateOrgAndUserRequest_Org) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.OrgName) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.OrgName)))
-		i += copy(dAtA[i:], m.OrgName)
-	}
 	if len(m.DomainName) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.DomainName)
+		copy(dAtA[i:], m.DomainName)
 		i = encodeVarintService(dAtA, i, uint64(len(m.DomainName)))
-		i += copy(dAtA[i:], m.DomainName)
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.OrgName) > 0 {
+		i -= len(m.OrgName)
+		copy(dAtA[i:], m.OrgName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.OrgName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *CreateOrgAndUserRequest_User) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1371,41 +1442,50 @@ func (m *CreateOrgAndUserRequest_User) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CreateOrgAndUserRequest_User) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateOrgAndUserRequest_User) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Username) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Username)))
-		i += copy(dAtA[i:], m.Username)
-	}
-	if len(m.FirstName) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.FirstName)))
-		i += copy(dAtA[i:], m.FirstName)
+	if len(m.Email) > 0 {
+		i -= len(m.Email)
+		copy(dAtA[i:], m.Email)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Email)))
+		i--
+		dAtA[i] = 0x22
 	}
 	if len(m.LastName) > 0 {
-		dAtA[i] = 0x1a
-		i++
+		i -= len(m.LastName)
+		copy(dAtA[i:], m.LastName)
 		i = encodeVarintService(dAtA, i, uint64(len(m.LastName)))
-		i += copy(dAtA[i:], m.LastName)
+		i--
+		dAtA[i] = 0x1a
 	}
-	if len(m.Email) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Email)))
-		i += copy(dAtA[i:], m.Email)
+	if len(m.FirstName) > 0 {
+		i -= len(m.FirstName)
+		copy(dAtA[i:], m.FirstName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.FirstName)))
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.Username) > 0 {
+		i -= len(m.Username)
+		copy(dAtA[i:], m.Username)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Username)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *CreateOrgAndUserResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1413,37 +1493,46 @@ func (m *CreateOrgAndUserResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CreateOrgAndUserResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateOrgAndUserResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.OrgID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.OrgID.Size()))
-		n7, err := m.OrgID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n7
-	}
 	if m.UserID != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.UserID.Size()))
-		n8, err := m.UserID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.UserID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n8
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.OrgID != nil {
+		{
+			size, err := m.OrgID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *GetOrgByDomainRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1451,27 +1540,35 @@ func (m *GetOrgByDomainRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetOrgByDomainRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetOrgByDomainRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.DomainName) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.DomainName)
+		copy(dAtA[i:], m.DomainName)
 		i = encodeVarintService(dAtA, i, uint64(len(m.DomainName)))
-		i += copy(dAtA[i:], m.DomainName)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
+	offset -= sovService(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *UserInfo) Size() (n int) {
 	if m == nil {
@@ -1646,14 +1743,7 @@ func (m *GetOrgByDomainRequest) Size() (n int) {
 }
 
 func sovService(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozService(x uint64) (n int) {
 	return sovService(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -1680,7 +1770,7 @@ func (this *OrgInfo) String() string {
 	s := strings.Join([]string{`&OrgInfo{`,
 		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
 		`OrgName:` + fmt.Sprintf("%v", this.OrgName) + `,`,
-		`SiteName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
+		`DomainName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1716,7 +1806,7 @@ func (this *CreateOrgAndUserRequest_Org) String() string {
 	}
 	s := strings.Join([]string{`&CreateOrgAndUserRequest_Org{`,
 		`OrgName:` + fmt.Sprintf("%v", this.OrgName) + `,`,
-		`SiteName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
+		`DomainName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1750,7 +1840,7 @@ func (this *GetOrgByDomainRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&GetOrgByDomainRequest{`,
-		`SiteName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
+		`DomainName:` + fmt.Sprintf("%v", this.DomainName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2115,7 +2205,7 @@ func (m *OrgInfo) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SiteName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DomainName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2574,7 +2664,7 @@ func (m *CreateOrgAndUserRequest_Org) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SiteName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DomainName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2965,7 +3055,7 @@ func (m *GetOrgByDomainRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SiteName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DomainName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {

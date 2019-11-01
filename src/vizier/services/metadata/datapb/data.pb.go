@@ -9,6 +9,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	reflect "reflect"
 	strings "strings"
@@ -23,7 +24,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type AgentData struct {
 	AgentID         *proto1.UUID `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
@@ -45,7 +46,7 @@ func (m *AgentData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_AgentData.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +110,7 @@ func (m *HostInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_HostInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -269,7 +270,7 @@ func valueToGoStringData(v interface{}, typ string) string {
 func (m *AgentData) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -277,47 +278,56 @@ func (m *AgentData) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AgentData) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.AgentID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintData(dAtA, i, uint64(m.AgentID.Size()))
-		n1, err := m.AgentID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if m.HostInfo != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintData(dAtA, i, uint64(m.HostInfo.Size()))
-		n2, err := m.HostInfo.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
+	if m.LastHeartbeatNS != 0 {
+		i = encodeVarintData(dAtA, i, uint64(m.LastHeartbeatNS))
+		i--
+		dAtA[i] = 0x20
 	}
 	if m.CreateTimeNS != 0 {
-		dAtA[i] = 0x18
-		i++
 		i = encodeVarintData(dAtA, i, uint64(m.CreateTimeNS))
+		i--
+		dAtA[i] = 0x18
 	}
-	if m.LastHeartbeatNS != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintData(dAtA, i, uint64(m.LastHeartbeatNS))
+	if m.HostInfo != nil {
+		{
+			size, err := m.HostInfo.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintData(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.AgentID != nil {
+		{
+			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintData(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *HostInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -325,27 +335,35 @@ func (m *HostInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HostInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HostInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Hostname) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.Hostname)
+		copy(dAtA[i:], m.Hostname)
 		i = encodeVarintData(dAtA, i, uint64(len(m.Hostname)))
-		i += copy(dAtA[i:], m.Hostname)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintData(dAtA []byte, offset int, v uint64) int {
+	offset -= sovData(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *AgentData) Size() (n int) {
 	if m == nil {
@@ -384,14 +402,7 @@ func (m *HostInfo) Size() (n int) {
 }
 
 func sovData(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozData(x uint64) (n int) {
 	return sovData(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -402,7 +413,7 @@ func (this *AgentData) String() string {
 	}
 	s := strings.Join([]string{`&AgentData{`,
 		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
-		`HostInfo:` + strings.Replace(fmt.Sprintf("%v", this.HostInfo), "HostInfo", "HostInfo", 1) + `,`,
+		`HostInfo:` + strings.Replace(this.HostInfo.String(), "HostInfo", "HostInfo", 1) + `,`,
 		`CreateTimeNS:` + fmt.Sprintf("%v", this.CreateTimeNS) + `,`,
 		`LastHeartbeatNS:` + fmt.Sprintf("%v", this.LastHeartbeatNS) + `,`,
 		`}`,

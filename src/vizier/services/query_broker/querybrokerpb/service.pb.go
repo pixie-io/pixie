@@ -9,8 +9,11 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	queryresultspb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	proto3 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto2 "pixielabs.ai/pixielabs/src/common/uuid/proto"
@@ -29,7 +32,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type AgentState int32
 
@@ -75,7 +78,7 @@ func (m *Schema) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Schema.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +120,7 @@ func (m *SchemaRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_SchemaRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +156,7 @@ func (m *SchemaResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_SchemaResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -197,7 +200,7 @@ func (m *SchemaResponse_SchemaByAgent) XXX_Marshal(b []byte, deterministic bool)
 		return xxx_messageInfo_SchemaResponse_SchemaByAgent.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +249,7 @@ func (m *AgentInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_AgentInfoRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -282,7 +285,7 @@ func (m *AgentInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_AgentInfoResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -328,7 +331,7 @@ func (m *AgentStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_AgentStatus.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -393,7 +396,7 @@ func (m *AgentInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_AgentInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -443,7 +446,7 @@ func (m *HostInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_HostInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -486,7 +489,7 @@ func (m *QueryRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_QueryRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -531,7 +534,7 @@ func (m *AgentQueryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_AgentQueryResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -589,7 +592,7 @@ func (m *AgentQueryResultRequest) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return xxx_messageInfo_AgentQueryResultRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -638,7 +641,7 @@ func (m *AgentQueryResultResponse) XXX_Marshal(b []byte, deterministic bool) ([]
 		return xxx_messageInfo_AgentQueryResultResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -676,7 +679,7 @@ func (m *VizierQueryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_VizierQueryResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -734,7 +737,7 @@ func (m *VizierQueryResponse_ResponseByAgent) XXX_Marshal(b []byte, deterministi
 		return xxx_messageInfo_VizierQueryResponse_ResponseByAgent.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1541,6 +1544,23 @@ type QueryBrokerServiceServer interface {
 	ReceiveAgentQueryResult(context.Context, *AgentQueryResultRequest) (*AgentQueryResultResponse, error)
 }
 
+// UnimplementedQueryBrokerServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedQueryBrokerServiceServer struct {
+}
+
+func (*UnimplementedQueryBrokerServiceServer) GetAgentInfo(ctx context.Context, req *AgentInfoRequest) (*AgentInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAgentInfo not implemented")
+}
+func (*UnimplementedQueryBrokerServiceServer) ExecuteQuery(ctx context.Context, req *QueryRequest) (*VizierQueryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExecuteQuery not implemented")
+}
+func (*UnimplementedQueryBrokerServiceServer) GetSchemas(ctx context.Context, req *SchemaRequest) (*SchemaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSchemas not implemented")
+}
+func (*UnimplementedQueryBrokerServiceServer) ReceiveAgentQueryResult(ctx context.Context, req *AgentQueryResultRequest) (*AgentQueryResultResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReceiveAgentQueryResult not implemented")
+}
+
 func RegisterQueryBrokerServiceServer(s *grpc.Server, srv QueryBrokerServiceServer) {
 	s.RegisterService(&_QueryBrokerService_serviceDesc, srv)
 }
@@ -1645,7 +1665,7 @@ var _QueryBrokerService_serviceDesc = grpc.ServiceDesc{
 func (m *Schema) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1653,29 +1673,36 @@ func (m *Schema) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Schema) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Schema) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Relations) > 0 {
-		for _, msg := range m.Relations {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Relations) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Relations[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *SchemaRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1683,17 +1710,22 @@ func (m *SchemaRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SchemaRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SchemaRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *SchemaResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1701,29 +1733,36 @@ func (m *SchemaResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SchemaResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SchemaResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.SchemaByAgent) > 0 {
-		for _, msg := range m.SchemaByAgent {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.SchemaByAgent) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.SchemaByAgent[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *SchemaResponse_SchemaByAgent) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1731,37 +1770,46 @@ func (m *SchemaResponse_SchemaByAgent) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SchemaResponse_SchemaByAgent) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SchemaResponse_SchemaByAgent) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.AgentID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
-		n1, err := m.AgentID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
 	if m.Schema != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Schema.Size()))
-		n2, err := m.Schema.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Schema.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n2
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.AgentID != nil {
+		{
+			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *AgentInfoRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1769,17 +1817,22 @@ func (m *AgentInfoRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AgentInfoRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *AgentInfoResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1787,29 +1840,36 @@ func (m *AgentInfoResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AgentInfoResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Info) > 0 {
-		for _, msg := range m.Info {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Info) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Info[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *AgentStatus) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1817,42 +1877,49 @@ func (m *AgentStatus) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AgentStatus) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Info != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Info.Size()))
-		n3, err := m.Info.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
-	if m.LastHeartbeatNs != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.LastHeartbeatNs))
+	if m.State != 0 {
+		i = encodeVarintService(dAtA, i, uint64(m.State))
+		i--
+		dAtA[i] = 0x20
 	}
 	if m.CreateTimeNs != 0 {
-		dAtA[i] = 0x18
-		i++
 		i = encodeVarintService(dAtA, i, uint64(m.CreateTimeNs))
+		i--
+		dAtA[i] = 0x18
 	}
-	if m.State != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.State))
+	if m.LastHeartbeatNs != 0 {
+		i = encodeVarintService(dAtA, i, uint64(m.LastHeartbeatNs))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if m.Info != nil {
+		{
+			size, err := m.Info.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *AgentInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1860,37 +1927,46 @@ func (m *AgentInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AgentInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.AgentID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
-		n4, err := m.AgentID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n4
-	}
 	if m.HostInfo != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.HostInfo.Size()))
-		n5, err := m.HostInfo.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.HostInfo.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n5
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.AgentID != nil {
+		{
+			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *HostInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1898,23 +1974,29 @@ func (m *HostInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HostInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HostInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Hostname) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.Hostname)
+		copy(dAtA[i:], m.Hostname)
 		i = encodeVarintService(dAtA, i, uint64(len(m.Hostname)))
-		i += copy(dAtA[i:], m.Hostname)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *QueryRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1922,23 +2004,29 @@ func (m *QueryRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *QueryRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.QueryStr) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.QueryStr)
+		copy(dAtA[i:], m.QueryStr)
 		i = encodeVarintService(dAtA, i, uint64(len(m.QueryStr)))
-		i += copy(dAtA[i:], m.QueryStr)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *AgentQueryResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1946,47 +2034,58 @@ func (m *AgentQueryResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AgentQueryResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentQueryResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Status != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Status.Size()))
-		n6, err := m.Status.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+	if m.QueryResult != nil {
+		{
+			size, err := m.QueryResult.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n6
+		i--
+		dAtA[i] = 0x1a
 	}
 	if m.QueryID != nil {
+		{
+			size, err := m.QueryID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.QueryID.Size()))
-		n7, err := m.QueryID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n7
 	}
-	if m.QueryResult != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.QueryResult.Size()))
-		n8, err := m.QueryResult.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+	if m.Status != nil {
+		{
+			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n8
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *AgentQueryResultRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1994,37 +2093,46 @@ func (m *AgentQueryResultRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AgentQueryResultRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentQueryResultRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.AgentID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
-		n9, err := m.AgentID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n9
-	}
 	if m.Result != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Result.Size()))
-		n10, err := m.Result.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Result.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n10
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.AgentID != nil {
+		{
+			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *AgentQueryResultResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2032,17 +2140,22 @@ func (m *AgentQueryResultResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AgentQueryResultResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentQueryResultResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *VizierQueryResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2050,49 +2163,60 @@ func (m *VizierQueryResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *VizierQueryResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierQueryResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Responses) > 0 {
-		for _, msg := range m.Responses {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+	if m.QueryID != nil {
+		{
+			size, err := m.QueryID.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0x1a
 	}
 	if m.Status != nil {
+		{
+			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Status.Size()))
-		n11, err := m.Status.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n11
 	}
-	if m.QueryID != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.QueryID.Size()))
-		n12, err := m.QueryID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+	if len(m.Responses) > 0 {
+		for iNdEx := len(m.Responses) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Responses[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
 		}
-		i += n12
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *VizierQueryResponse_ResponseByAgent) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2100,41 +2224,52 @@ func (m *VizierQueryResponse_ResponseByAgent) Marshal() (dAtA []byte, err error)
 }
 
 func (m *VizierQueryResponse_ResponseByAgent) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierQueryResponse_ResponseByAgent) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.AgentID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
-		n13, err := m.AgentID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n13
-	}
 	if m.Response != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Response.Size()))
-		n14, err := m.Response.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Response.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n14
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.AgentID != nil {
+		{
+			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
+	offset -= sovService(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *Schema) Size() (n int) {
 	if m == nil {
@@ -2369,14 +2504,7 @@ func (m *VizierQueryResponse_ResponseByAgent) Size() (n int) {
 }
 
 func sovService(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozService(x uint64) (n int) {
 	return sovService(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -2385,8 +2513,13 @@ func (this *Schema) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForRelations := "[]*Relation{"
+	for _, f := range this.Relations {
+		repeatedStringForRelations += strings.Replace(fmt.Sprintf("%v", f), "Relation", "proto1.Relation", 1) + ","
+	}
+	repeatedStringForRelations += "}"
 	s := strings.Join([]string{`&Schema{`,
-		`Relations:` + strings.Replace(fmt.Sprintf("%v", this.Relations), "Relation", "proto1.Relation", 1) + `,`,
+		`Relations:` + repeatedStringForRelations + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2404,8 +2537,13 @@ func (this *SchemaResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForSchemaByAgent := "[]*SchemaResponse_SchemaByAgent{"
+	for _, f := range this.SchemaByAgent {
+		repeatedStringForSchemaByAgent += strings.Replace(fmt.Sprintf("%v", f), "SchemaResponse_SchemaByAgent", "SchemaResponse_SchemaByAgent", 1) + ","
+	}
+	repeatedStringForSchemaByAgent += "}"
 	s := strings.Join([]string{`&SchemaResponse{`,
-		`SchemaByAgent:` + strings.Replace(fmt.Sprintf("%v", this.SchemaByAgent), "SchemaResponse_SchemaByAgent", "SchemaResponse_SchemaByAgent", 1) + `,`,
+		`SchemaByAgent:` + repeatedStringForSchemaByAgent + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2416,7 +2554,7 @@ func (this *SchemaResponse_SchemaByAgent) String() string {
 	}
 	s := strings.Join([]string{`&SchemaResponse_SchemaByAgent{`,
 		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
-		`Schema:` + strings.Replace(fmt.Sprintf("%v", this.Schema), "Schema", "Schema", 1) + `,`,
+		`Schema:` + strings.Replace(this.Schema.String(), "Schema", "Schema", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2434,8 +2572,13 @@ func (this *AgentInfoResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForInfo := "[]*AgentStatus{"
+	for _, f := range this.Info {
+		repeatedStringForInfo += strings.Replace(f.String(), "AgentStatus", "AgentStatus", 1) + ","
+	}
+	repeatedStringForInfo += "}"
 	s := strings.Join([]string{`&AgentInfoResponse{`,
-		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "AgentStatus", "AgentStatus", 1) + `,`,
+		`Info:` + repeatedStringForInfo + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2445,7 +2588,7 @@ func (this *AgentStatus) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&AgentStatus{`,
-		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "AgentInfo", "AgentInfo", 1) + `,`,
+		`Info:` + strings.Replace(this.Info.String(), "AgentInfo", "AgentInfo", 1) + `,`,
 		`LastHeartbeatNs:` + fmt.Sprintf("%v", this.LastHeartbeatNs) + `,`,
 		`CreateTimeNs:` + fmt.Sprintf("%v", this.CreateTimeNs) + `,`,
 		`State:` + fmt.Sprintf("%v", this.State) + `,`,
@@ -2459,7 +2602,7 @@ func (this *AgentInfo) String() string {
 	}
 	s := strings.Join([]string{`&AgentInfo{`,
 		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
-		`HostInfo:` + strings.Replace(fmt.Sprintf("%v", this.HostInfo), "HostInfo", "HostInfo", 1) + `,`,
+		`HostInfo:` + strings.Replace(this.HostInfo.String(), "HostInfo", "HostInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2502,7 +2645,7 @@ func (this *AgentQueryResultRequest) String() string {
 	}
 	s := strings.Join([]string{`&AgentQueryResultRequest{`,
 		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
-		`Result:` + strings.Replace(fmt.Sprintf("%v", this.Result), "AgentQueryResponse", "AgentQueryResponse", 1) + `,`,
+		`Result:` + strings.Replace(this.Result.String(), "AgentQueryResponse", "AgentQueryResponse", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2520,8 +2663,13 @@ func (this *VizierQueryResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForResponses := "[]*VizierQueryResponse_ResponseByAgent{"
+	for _, f := range this.Responses {
+		repeatedStringForResponses += strings.Replace(fmt.Sprintf("%v", f), "VizierQueryResponse_ResponseByAgent", "VizierQueryResponse_ResponseByAgent", 1) + ","
+	}
+	repeatedStringForResponses += "}"
 	s := strings.Join([]string{`&VizierQueryResponse{`,
-		`Responses:` + strings.Replace(fmt.Sprintf("%v", this.Responses), "VizierQueryResponse_ResponseByAgent", "VizierQueryResponse_ResponseByAgent", 1) + `,`,
+		`Responses:` + repeatedStringForResponses + `,`,
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto3.Status", 1) + `,`,
 		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto2.UUID", 1) + `,`,
 		`}`,
@@ -2534,7 +2682,7 @@ func (this *VizierQueryResponse_ResponseByAgent) String() string {
 	}
 	s := strings.Join([]string{`&VizierQueryResponse_ResponseByAgent{`,
 		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
-		`Response:` + strings.Replace(fmt.Sprintf("%v", this.Response), "AgentQueryResponse", "AgentQueryResponse", 1) + `,`,
+		`Response:` + strings.Replace(this.Response.String(), "AgentQueryResponse", "AgentQueryResponse", 1) + `,`,
 		`}`,
 	}, "")
 	return s

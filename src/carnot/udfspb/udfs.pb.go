@@ -3,15 +3,16 @@
 
 package udfspb
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
-
-import strings "strings"
-import reflect "reflect"
-
-import io "io"
+import (
+	fmt "fmt"
+	proto "github.com/gogo/protobuf/proto"
+	io "io"
+	math "math"
+	math_bits "math/bits"
+	proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
+	reflect "reflect"
+	strings "strings"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -22,7 +23,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type UDASpec struct {
 	Name           string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -34,7 +35,7 @@ type UDASpec struct {
 func (m *UDASpec) Reset()      { *m = UDASpec{} }
 func (*UDASpec) ProtoMessage() {}
 func (*UDASpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_udfs_f38506d101b62a71, []int{0}
+	return fileDescriptor_870a8b723557d52e, []int{0}
 }
 func (m *UDASpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -44,15 +45,15 @@ func (m *UDASpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_UDASpec.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *UDASpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UDASpec.Merge(dst, src)
+func (m *UDASpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UDASpec.Merge(m, src)
 }
 func (m *UDASpec) XXX_Size() int {
 	return m.Size()
@@ -101,7 +102,7 @@ type ScalarUDFSpec struct {
 func (m *ScalarUDFSpec) Reset()      { *m = ScalarUDFSpec{} }
 func (*ScalarUDFSpec) ProtoMessage() {}
 func (*ScalarUDFSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_udfs_f38506d101b62a71, []int{1}
+	return fileDescriptor_870a8b723557d52e, []int{1}
 }
 func (m *ScalarUDFSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -111,15 +112,15 @@ func (m *ScalarUDFSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_ScalarUDFSpec.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *ScalarUDFSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ScalarUDFSpec.Merge(dst, src)
+func (m *ScalarUDFSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScalarUDFSpec.Merge(m, src)
 }
 func (m *ScalarUDFSpec) XXX_Size() int {
 	return m.Size()
@@ -166,7 +167,7 @@ type UDFInfo struct {
 func (m *UDFInfo) Reset()      { *m = UDFInfo{} }
 func (*UDFInfo) ProtoMessage() {}
 func (*UDFInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_udfs_f38506d101b62a71, []int{2}
+	return fileDescriptor_870a8b723557d52e, []int{2}
 }
 func (m *UDFInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -176,15 +177,15 @@ func (m *UDFInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_UDFInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *UDFInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UDFInfo.Merge(dst, src)
+func (m *UDFInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UDFInfo.Merge(m, src)
 }
 func (m *UDFInfo) XXX_Size() int {
 	return m.Size()
@@ -214,6 +215,37 @@ func init() {
 	proto.RegisterType((*ScalarUDFSpec)(nil), "pl.carnot.udfspb.ScalarUDFSpec")
 	proto.RegisterType((*UDFInfo)(nil), "pl.carnot.udfspb.UDFInfo")
 }
+
+func init() { proto.RegisterFile("src/carnot/udfspb/udfs.proto", fileDescriptor_870a8b723557d52e) }
+
+var fileDescriptor_870a8b723557d52e = []byte{
+	// 374 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x92, 0x3f, 0x4f, 0xfa, 0x40,
+	0x18, 0xc7, 0x7b, 0x3f, 0x08, 0xbf, 0x78, 0x85, 0x86, 0xdc, 0x54, 0x8d, 0x39, 0x1b, 0x26, 0x16,
+	0xdb, 0x04, 0x06, 0x19, 0x18, 0xc4, 0x10, 0x12, 0xd7, 0x22, 0x8b, 0x0b, 0x39, 0xda, 0x2b, 0x36,
+	0xa9, 0xed, 0xe5, 0xae, 0x4d, 0x84, 0xc9, 0x97, 0xe0, 0xcb, 0xf0, 0xa5, 0x38, 0x18, 0xc3, 0xc8,
+	0x28, 0x65, 0x71, 0xe4, 0x25, 0x98, 0xde, 0x29, 0xf1, 0x4f, 0x88, 0x2e, 0x4e, 0xbd, 0xcb, 0xf3,
+	0xf9, 0x3c, 0xcd, 0xf7, 0x79, 0x0e, 0x1e, 0x0a, 0xee, 0x39, 0x1e, 0xe1, 0x71, 0x92, 0x3a, 0x99,
+	0x1f, 0x08, 0x36, 0x91, 0x1f, 0x9b, 0xf1, 0x24, 0x4d, 0x50, 0x9d, 0x45, 0xb6, 0x2a, 0xda, 0xaa,
+	0x78, 0xd0, 0x28, 0x78, 0x71, 0x45, 0x38, 0xf5, 0x9d, 0x74, 0xc6, 0xa8, 0x70, 0x24, 0xa9, 0xce,
+	0xca, 0x6a, 0x3c, 0x01, 0xf8, 0x7f, 0xd4, 0xef, 0x0d, 0x19, 0xf5, 0x10, 0x82, 0xe5, 0x98, 0x5c,
+	0x53, 0x13, 0x58, 0xa0, 0xb9, 0xe7, 0xca, 0x33, 0xea, 0x40, 0x23, 0x8c, 0xc3, 0x74, 0x4c, 0xf8,
+	0x74, 0x2c, 0x3d, 0xf3, 0x9f, 0x55, 0x6a, 0x1a, 0x2d, 0x64, 0xb3, 0xc8, 0x56, 0x8d, 0xfa, 0x24,
+	0x25, 0x17, 0x33, 0x46, 0xdd, 0x6a, 0x41, 0xf6, 0xf8, 0xb4, 0xb8, 0x08, 0xd4, 0x85, 0xf5, 0x8c,
+	0xf9, 0x24, 0xa5, 0x1f, 0xdc, 0xd2, 0x4e, 0xd7, 0x50, 0xec, 0xd6, 0x3e, 0x81, 0xb5, 0x20, 0x8c,
+	0x49, 0x14, 0xce, 0xa9, 0x74, 0xcd, 0xb2, 0x05, 0x76, 0xfd, 0xf6, 0x1d, 0x2c, 0x6e, 0x8d, 0x47,
+	0x00, 0x6b, 0x43, 0x8f, 0x44, 0x84, 0x8f, 0xfa, 0x83, 0x3f, 0x88, 0xd5, 0x81, 0x06, 0xbd, 0xa1,
+	0xde, 0xaf, 0x42, 0x55, 0x0b, 0x72, 0x6b, 0xb6, 0xa1, 0xce, 0x69, 0x9a, 0xf1, 0xf8, 0xa7, 0x40,
+	0x50, 0x61, 0x32, 0xce, 0xbc, 0x58, 0xcf, 0xe0, 0x3c, 0x0e, 0x12, 0x74, 0x0c, 0xcb, 0x99, 0x4f,
+	0x84, 0x09, 0xac, 0x52, 0x53, 0x6f, 0xed, 0xdb, 0x5f, 0xf7, 0x6d, 0xbf, 0xed, 0xd1, 0x95, 0x18,
+	0x3a, 0x85, 0xba, 0x90, 0x73, 0x18, 0x17, 0x65, 0x99, 0x4f, 0x6f, 0x1d, 0x7d, 0xb7, 0x3e, 0x0d,
+	0xcb, 0x85, 0xca, 0x19, 0xf9, 0x81, 0x38, 0xeb, 0x2e, 0x56, 0x58, 0x5b, 0xae, 0xb0, 0xb6, 0x59,
+	0x61, 0x70, 0x9b, 0x63, 0x70, 0x9f, 0x63, 0xf0, 0x90, 0x63, 0xb0, 0xc8, 0x31, 0x78, 0xce, 0x31,
+	0x78, 0xc9, 0xb1, 0xb6, 0xc9, 0x31, 0xb8, 0x5b, 0x63, 0x6d, 0xb1, 0xc6, 0xda, 0x72, 0x8d, 0xb5,
+	0xcb, 0x8a, 0xea, 0x3b, 0xa9, 0xc8, 0x07, 0xd6, 0x7e, 0x0d, 0x00, 0x00, 0xff, 0xff, 0x8b, 0x92,
+	0x7a, 0x72, 0xb6, 0x02, 0x00, 0x00,
+}
+
 func (this *UDASpec) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -389,7 +421,7 @@ func valueToGoStringUdfs(v interface{}, typ string) string {
 func (m *UDASpec) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -397,20 +429,24 @@ func (m *UDASpec) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *UDASpec) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UDASpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
+	if m.FinalizeType != 0 {
+		i = encodeVarintUdfs(dAtA, i, uint64(m.FinalizeType))
+		i--
+		dAtA[i] = 0x20
 	}
-	if len(m.InitArgTypes) > 0 {
-		dAtA2 := make([]byte, len(m.InitArgTypes)*10)
+	if len(m.UpdateArgTypes) > 0 {
+		dAtA2 := make([]byte, len(m.UpdateArgTypes)*10)
 		var j1 int
-		for _, num := range m.InitArgTypes {
+		for _, num := range m.UpdateArgTypes {
 			for num >= 1<<7 {
 				dAtA2[j1] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
@@ -419,15 +455,16 @@ func (m *UDASpec) MarshalTo(dAtA []byte) (int, error) {
 			dAtA2[j1] = uint8(num)
 			j1++
 		}
-		dAtA[i] = 0x12
-		i++
+		i -= j1
+		copy(dAtA[i:], dAtA2[:j1])
 		i = encodeVarintUdfs(dAtA, i, uint64(j1))
-		i += copy(dAtA[i:], dAtA2[:j1])
+		i--
+		dAtA[i] = 0x1a
 	}
-	if len(m.UpdateArgTypes) > 0 {
-		dAtA4 := make([]byte, len(m.UpdateArgTypes)*10)
+	if len(m.InitArgTypes) > 0 {
+		dAtA4 := make([]byte, len(m.InitArgTypes)*10)
 		var j3 int
-		for _, num := range m.UpdateArgTypes {
+		for _, num := range m.InitArgTypes {
 			for num >= 1<<7 {
 				dAtA4[j3] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
@@ -436,23 +473,26 @@ func (m *UDASpec) MarshalTo(dAtA []byte) (int, error) {
 			dAtA4[j3] = uint8(num)
 			j3++
 		}
-		dAtA[i] = 0x1a
-		i++
+		i -= j3
+		copy(dAtA[i:], dAtA4[:j3])
 		i = encodeVarintUdfs(dAtA, i, uint64(j3))
-		i += copy(dAtA[i:], dAtA4[:j3])
+		i--
+		dAtA[i] = 0x12
 	}
-	if m.FinalizeType != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintUdfs(dAtA, i, uint64(m.FinalizeType))
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *ScalarUDFSpec) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -460,20 +500,24 @@ func (m *ScalarUDFSpec) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ScalarUDFSpec) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ScalarUDFSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
+	if m.ReturnType != 0 {
+		i = encodeVarintUdfs(dAtA, i, uint64(m.ReturnType))
+		i--
+		dAtA[i] = 0x20
 	}
-	if len(m.InitArgTypes) > 0 {
-		dAtA6 := make([]byte, len(m.InitArgTypes)*10)
+	if len(m.ExecArgTypes) > 0 {
+		dAtA6 := make([]byte, len(m.ExecArgTypes)*10)
 		var j5 int
-		for _, num := range m.InitArgTypes {
+		for _, num := range m.ExecArgTypes {
 			for num >= 1<<7 {
 				dAtA6[j5] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
@@ -482,15 +526,16 @@ func (m *ScalarUDFSpec) MarshalTo(dAtA []byte) (int, error) {
 			dAtA6[j5] = uint8(num)
 			j5++
 		}
-		dAtA[i] = 0x12
-		i++
+		i -= j5
+		copy(dAtA[i:], dAtA6[:j5])
 		i = encodeVarintUdfs(dAtA, i, uint64(j5))
-		i += copy(dAtA[i:], dAtA6[:j5])
+		i--
+		dAtA[i] = 0x1a
 	}
-	if len(m.ExecArgTypes) > 0 {
-		dAtA8 := make([]byte, len(m.ExecArgTypes)*10)
+	if len(m.InitArgTypes) > 0 {
+		dAtA8 := make([]byte, len(m.InitArgTypes)*10)
 		var j7 int
-		for _, num := range m.ExecArgTypes {
+		for _, num := range m.InitArgTypes {
 			for num >= 1<<7 {
 				dAtA8[j7] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
@@ -499,23 +544,26 @@ func (m *ScalarUDFSpec) MarshalTo(dAtA []byte) (int, error) {
 			dAtA8[j7] = uint8(num)
 			j7++
 		}
-		dAtA[i] = 0x1a
-		i++
+		i -= j7
+		copy(dAtA[i:], dAtA8[:j7])
 		i = encodeVarintUdfs(dAtA, i, uint64(j7))
-		i += copy(dAtA[i:], dAtA8[:j7])
+		i--
+		dAtA[i] = 0x12
 	}
-	if m.ReturnType != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintUdfs(dAtA, i, uint64(m.ReturnType))
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *UDFInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -523,45 +571,56 @@ func (m *UDFInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *UDFInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UDFInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Udas) > 0 {
-		for _, msg := range m.Udas {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintUdfs(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
 	if len(m.ScalarUdfs) > 0 {
-		for _, msg := range m.ScalarUdfs {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintUdfs(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.ScalarUdfs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ScalarUdfs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintUdfs(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if len(m.Udas) > 0 {
+		for iNdEx := len(m.Udas) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Udas[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintUdfs(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintUdfs(dAtA []byte, offset int, v uint64) int {
+	offset -= sovUdfs(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *UDASpec) Size() (n int) {
 	if m == nil {
@@ -645,14 +704,7 @@ func (m *UDFInfo) Size() (n int) {
 }
 
 func sovUdfs(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozUdfs(x uint64) (n int) {
 	return sovUdfs(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -687,9 +739,19 @@ func (this *UDFInfo) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForUdas := "[]*UDASpec{"
+	for _, f := range this.Udas {
+		repeatedStringForUdas += strings.Replace(f.String(), "UDASpec", "UDASpec", 1) + ","
+	}
+	repeatedStringForUdas += "}"
+	repeatedStringForScalarUdfs := "[]*ScalarUDFSpec{"
+	for _, f := range this.ScalarUdfs {
+		repeatedStringForScalarUdfs += strings.Replace(f.String(), "ScalarUDFSpec", "ScalarUDFSpec", 1) + ","
+	}
+	repeatedStringForScalarUdfs += "}"
 	s := strings.Join([]string{`&UDFInfo{`,
-		`Udas:` + strings.Replace(fmt.Sprintf("%v", this.Udas), "UDASpec", "UDASpec", 1) + `,`,
-		`ScalarUdfs:` + strings.Replace(fmt.Sprintf("%v", this.ScalarUdfs), "ScalarUDFSpec", "ScalarUDFSpec", 1) + `,`,
+		`Udas:` + repeatedStringForUdas + `,`,
+		`ScalarUdfs:` + repeatedStringForScalarUdfs + `,`,
 		`}`,
 	}, "")
 	return s
@@ -717,7 +779,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -745,7 +807,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -755,6 +817,9 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthUdfs
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -772,7 +837,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (proto1.DataType(b) & 0x7F) << shift
+					v |= proto1.DataType(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -789,7 +854,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
+					packedLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -798,6 +863,9 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthUdfs
 				}
 				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthUdfs
+				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
@@ -816,7 +884,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (proto1.DataType(b) & 0x7F) << shift
+						v |= proto1.DataType(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -838,7 +906,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (proto1.DataType(b) & 0x7F) << shift
+					v |= proto1.DataType(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -855,7 +923,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
+					packedLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -864,6 +932,9 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthUdfs
 				}
 				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthUdfs
+				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
@@ -882,7 +953,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (proto1.DataType(b) & 0x7F) << shift
+						v |= proto1.DataType(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -906,7 +977,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FinalizeType |= (proto1.DataType(b) & 0x7F) << shift
+				m.FinalizeType |= proto1.DataType(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -918,6 +989,9 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthUdfs
 			}
 			if (iNdEx + skippy) > l {
@@ -947,7 +1021,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -975,7 +1049,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -985,6 +1059,9 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthUdfs
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1002,7 +1079,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (proto1.DataType(b) & 0x7F) << shift
+					v |= proto1.DataType(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -1019,7 +1096,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
+					packedLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -1028,6 +1105,9 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthUdfs
 				}
 				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthUdfs
+				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
@@ -1046,7 +1126,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (proto1.DataType(b) & 0x7F) << shift
+						v |= proto1.DataType(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -1068,7 +1148,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (proto1.DataType(b) & 0x7F) << shift
+					v |= proto1.DataType(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -1085,7 +1165,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
+					packedLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -1094,6 +1174,9 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthUdfs
 				}
 				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthUdfs
+				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
@@ -1112,7 +1195,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (proto1.DataType(b) & 0x7F) << shift
+						v |= proto1.DataType(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -1136,7 +1219,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReturnType |= (proto1.DataType(b) & 0x7F) << shift
+				m.ReturnType |= proto1.DataType(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1148,6 +1231,9 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthUdfs
 			}
 			if (iNdEx + skippy) > l {
@@ -1177,7 +1263,7 @@ func (m *UDFInfo) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1205,7 +1291,7 @@ func (m *UDFInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1214,6 +1300,9 @@ func (m *UDFInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthUdfs
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1236,7 +1325,7 @@ func (m *UDFInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1245,6 +1334,9 @@ func (m *UDFInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthUdfs
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1260,6 +1352,9 @@ func (m *UDFInfo) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthUdfs
 			}
 			if (iNdEx + skippy) > l {
@@ -1328,8 +1423,11 @@ func skipUdfs(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthUdfs
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthUdfs
 			}
 			return iNdEx, nil
@@ -1360,6 +1458,9 @@ func skipUdfs(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthUdfs
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -1378,33 +1479,3 @@ var (
 	ErrInvalidLengthUdfs = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowUdfs   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() { proto.RegisterFile("src/carnot/udfspb/udfs.proto", fileDescriptor_udfs_f38506d101b62a71) }
-
-var fileDescriptor_udfs_f38506d101b62a71 = []byte{
-	// 374 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x92, 0x3f, 0x4f, 0xfa, 0x40,
-	0x18, 0xc7, 0x7b, 0x3f, 0x08, 0xbf, 0x78, 0x85, 0x86, 0xdc, 0x54, 0x8d, 0x39, 0x1b, 0x26, 0x16,
-	0xdb, 0x04, 0x06, 0x19, 0x18, 0xc4, 0x10, 0x12, 0xd7, 0x22, 0x8b, 0x0b, 0x39, 0xda, 0x2b, 0x36,
-	0xa9, 0xed, 0xe5, 0xae, 0x4d, 0x84, 0xc9, 0x97, 0xe0, 0xcb, 0xf0, 0xa5, 0x38, 0x18, 0xc3, 0xc8,
-	0x28, 0x65, 0x71, 0xe4, 0x25, 0x98, 0xde, 0x29, 0xf1, 0x4f, 0x88, 0x2e, 0x4e, 0xbd, 0xcb, 0xf3,
-	0xf9, 0x3c, 0xcd, 0xf7, 0x79, 0x0e, 0x1e, 0x0a, 0xee, 0x39, 0x1e, 0xe1, 0x71, 0x92, 0x3a, 0x99,
-	0x1f, 0x08, 0x36, 0x91, 0x1f, 0x9b, 0xf1, 0x24, 0x4d, 0x50, 0x9d, 0x45, 0xb6, 0x2a, 0xda, 0xaa,
-	0x78, 0xd0, 0x28, 0x78, 0x71, 0x45, 0x38, 0xf5, 0x9d, 0x74, 0xc6, 0xa8, 0x70, 0x24, 0xa9, 0xce,
-	0xca, 0x6a, 0x3c, 0x01, 0xf8, 0x7f, 0xd4, 0xef, 0x0d, 0x19, 0xf5, 0x10, 0x82, 0xe5, 0x98, 0x5c,
-	0x53, 0x13, 0x58, 0xa0, 0xb9, 0xe7, 0xca, 0x33, 0xea, 0x40, 0x23, 0x8c, 0xc3, 0x74, 0x4c, 0xf8,
-	0x74, 0x2c, 0x3d, 0xf3, 0x9f, 0x55, 0x6a, 0x1a, 0x2d, 0x64, 0xb3, 0xc8, 0x56, 0x8d, 0xfa, 0x24,
-	0x25, 0x17, 0x33, 0x46, 0xdd, 0x6a, 0x41, 0xf6, 0xf8, 0xb4, 0xb8, 0x08, 0xd4, 0x85, 0xf5, 0x8c,
-	0xf9, 0x24, 0xa5, 0x1f, 0xdc, 0xd2, 0x4e, 0xd7, 0x50, 0xec, 0xd6, 0x3e, 0x81, 0xb5, 0x20, 0x8c,
-	0x49, 0x14, 0xce, 0xa9, 0x74, 0xcd, 0xb2, 0x05, 0x76, 0xfd, 0xf6, 0x1d, 0x2c, 0x6e, 0x8d, 0x47,
-	0x00, 0x6b, 0x43, 0x8f, 0x44, 0x84, 0x8f, 0xfa, 0x83, 0x3f, 0x88, 0xd5, 0x81, 0x06, 0xbd, 0xa1,
-	0xde, 0xaf, 0x42, 0x55, 0x0b, 0x72, 0x6b, 0xb6, 0xa1, 0xce, 0x69, 0x9a, 0xf1, 0xf8, 0xa7, 0x40,
-	0x50, 0x61, 0x32, 0xce, 0xbc, 0x58, 0xcf, 0xe0, 0x3c, 0x0e, 0x12, 0x74, 0x0c, 0xcb, 0x99, 0x4f,
-	0x84, 0x09, 0xac, 0x52, 0x53, 0x6f, 0xed, 0xdb, 0x5f, 0xf7, 0x6d, 0xbf, 0xed, 0xd1, 0x95, 0x18,
-	0x3a, 0x85, 0xba, 0x90, 0x73, 0x18, 0x17, 0x65, 0x99, 0x4f, 0x6f, 0x1d, 0x7d, 0xb7, 0x3e, 0x0d,
-	0xcb, 0x85, 0xca, 0x19, 0xf9, 0x81, 0x38, 0xeb, 0x2e, 0x56, 0x58, 0x5b, 0xae, 0xb0, 0xb6, 0x59,
-	0x61, 0x70, 0x9b, 0x63, 0x70, 0x9f, 0x63, 0xf0, 0x90, 0x63, 0xb0, 0xc8, 0x31, 0x78, 0xce, 0x31,
-	0x78, 0xc9, 0xb1, 0xb6, 0xc9, 0x31, 0xb8, 0x5b, 0x63, 0x6d, 0xb1, 0xc6, 0xda, 0x72, 0x8d, 0xb5,
-	0xcb, 0x8a, 0xea, 0x3b, 0xa9, 0xc8, 0x07, 0xd6, 0x7e, 0x0d, 0x00, 0x00, 0xff, 0xff, 0x8b, 0x92,
-	0x7a, 0x72, 0xb6, 0x02, 0x00, 0x00,
-}

@@ -11,6 +11,7 @@ import (
 	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
 	pixielabs_ai_pixielabs_src_table_store_proto_types "pixielabs.ai/pixielabs/src/table_store/proto/types"
 	reflect "reflect"
@@ -26,7 +27,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type BooleanColumn struct {
 	Data []bool `protobuf:"varint,1,rep,packed,name=data,proto3" json:"data,omitempty"`
@@ -45,7 +46,7 @@ func (m *BooleanColumn) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_BooleanColumn.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +89,7 @@ func (m *Int64Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_Int64Column.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +132,7 @@ func (m *UInt128Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_UInt128Column.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +175,7 @@ func (m *Float64Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_Float64Column.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -217,7 +218,7 @@ func (m *Time64NSColumn) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_Time64NSColumn.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -260,7 +261,7 @@ func (m *StringColumn) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_StringColumn.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -303,7 +304,7 @@ func (m *Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Column.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -404,9 +405,9 @@ func (m *Column) GetStringData() *StringColumn {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Column) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Column_OneofMarshaler, _Column_OneofUnmarshaler, _Column_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Column) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Column_BooleanData)(nil),
 		(*Column_Int64Data)(nil),
 		(*Column_Uint128Data)(nil),
@@ -414,144 +415,6 @@ func (*Column) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error,
 		(*Column_Float64Data)(nil),
 		(*Column_StringData)(nil),
 	}
-}
-
-func _Column_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Column)
-	// col_data
-	switch x := m.ColData.(type) {
-	case *Column_BooleanData:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.BooleanData); err != nil {
-			return err
-		}
-	case *Column_Int64Data:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Int64Data); err != nil {
-			return err
-		}
-	case *Column_Uint128Data:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Uint128Data); err != nil {
-			return err
-		}
-	case *Column_Time64NsData:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Time64NsData); err != nil {
-			return err
-		}
-	case *Column_Float64Data:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Float64Data); err != nil {
-			return err
-		}
-	case *Column_StringData:
-		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.StringData); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Column.ColData has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Column_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Column)
-	switch tag {
-	case 1: // col_data.boolean_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(BooleanColumn)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_BooleanData{msg}
-		return true, err
-	case 2: // col_data.int64_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Int64Column)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_Int64Data{msg}
-		return true, err
-	case 3: // col_data.uint128_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(UInt128Column)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_Uint128Data{msg}
-		return true, err
-	case 4: // col_data.time64ns_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Time64NSColumn)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_Time64NsData{msg}
-		return true, err
-	case 5: // col_data.float64_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Float64Column)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_Float64Data{msg}
-		return true, err
-	case 6: // col_data.string_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(StringColumn)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_StringData{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Column_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Column)
-	// col_data
-	switch x := m.ColData.(type) {
-	case *Column_BooleanData:
-		s := proto.Size(x.BooleanData)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Column_Int64Data:
-		s := proto.Size(x.Int64Data)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Column_Uint128Data:
-		s := proto.Size(x.Uint128Data)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Column_Time64NsData:
-		s := proto.Size(x.Time64NsData)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Column_Float64Data:
-		s := proto.Size(x.Float64Data)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Column_StringData:
-		s := proto.Size(x.StringData)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type RowBatchData struct {
@@ -574,7 +437,7 @@ func (m *RowBatchData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_RowBatchData.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -638,7 +501,7 @@ func (m *Relation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Relation.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -682,7 +545,7 @@ func (m *Relation_ColumnInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_Relation_ColumnInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -733,7 +596,7 @@ func (m *Table) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Table.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -783,7 +646,7 @@ func (m *Schema) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Schema.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1589,7 +1452,7 @@ func valueToGoStringSchema(v interface{}, typ string) string {
 func (m *BooleanColumn) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1597,30 +1460,35 @@ func (m *BooleanColumn) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *BooleanColumn) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *BooleanColumn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Data) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(len(m.Data)))
-		for _, b := range m.Data {
-			if b {
+		for iNdEx := len(m.Data) - 1; iNdEx >= 0; iNdEx-- {
+			i--
+			if m.Data[iNdEx] {
 				dAtA[i] = 1
 			} else {
 				dAtA[i] = 0
 			}
-			i++
 		}
+		i = encodeVarintSchema(dAtA, i, uint64(len(m.Data)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Int64Column) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1628,7 +1496,12 @@ func (m *Int64Column) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Int64Column) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Int64Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
@@ -1645,18 +1518,19 @@ func (m *Int64Column) MarshalTo(dAtA []byte) (int, error) {
 			dAtA2[j1] = uint8(num)
 			j1++
 		}
-		dAtA[i] = 0xa
-		i++
+		i -= j1
+		copy(dAtA[i:], dAtA2[:j1])
 		i = encodeVarintSchema(dAtA, i, uint64(j1))
-		i += copy(dAtA[i:], dAtA2[:j1])
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *UInt128Column) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1664,29 +1538,36 @@ func (m *UInt128Column) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *UInt128Column) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UInt128Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Data) > 0 {
-		for _, msg := range m.Data {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintSchema(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Data) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Data[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintSchema(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Float64Column) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1694,27 +1575,32 @@ func (m *Float64Column) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Float64Column) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Float64Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Data) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(len(m.Data)*8))
-		for _, num := range m.Data {
-			f3 := math.Float64bits(float64(num))
+		for iNdEx := len(m.Data) - 1; iNdEx >= 0; iNdEx-- {
+			f3 := math.Float64bits(float64(m.Data[iNdEx]))
+			i -= 8
 			encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(f3))
-			i += 8
 		}
+		i = encodeVarintSchema(dAtA, i, uint64(len(m.Data)*8))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Time64NSColumn) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1722,7 +1608,12 @@ func (m *Time64NSColumn) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Time64NSColumn) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Time64NSColumn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
@@ -1739,18 +1630,19 @@ func (m *Time64NSColumn) MarshalTo(dAtA []byte) (int, error) {
 			dAtA5[j4] = uint8(num)
 			j4++
 		}
-		dAtA[i] = 0xa
-		i++
+		i -= j4
+		copy(dAtA[i:], dAtA5[:j4])
 		i = encodeVarintSchema(dAtA, i, uint64(j4))
-		i += copy(dAtA[i:], dAtA5[:j4])
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *StringColumn) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1758,29 +1650,36 @@ func (m *StringColumn) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *StringColumn) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StringColumn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Data) > 0 {
-		for _, msg := range m.Data {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintSchema(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Data) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size := m.Data[iNdEx].Size()
+				i -= size
+				if _, err := m.Data[iNdEx].MarshalTo(dAtA[i:]); err != nil {
+					return 0, err
+				}
+				i = encodeVarintSchema(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Column) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1788,108 +1687,151 @@ func (m *Column) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Column) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.ColData != nil {
-		nn6, err := m.ColData.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size := m.ColData.Size()
+			i -= size
+			if _, err := m.ColData.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
 		}
-		i += nn6
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Column_BooleanData) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Column_BooleanData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.BooleanData != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.BooleanData.Size()))
-		n7, err := m.BooleanData.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.BooleanData.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSchema(dAtA, i, uint64(size))
 		}
-		i += n7
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Column_Int64Data) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Column_Int64Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.Int64Data != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.Int64Data.Size()))
-		n8, err := m.Int64Data.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Int64Data.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSchema(dAtA, i, uint64(size))
 		}
-		i += n8
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Column_Uint128Data) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Column_Uint128Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.Uint128Data != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.Uint128Data.Size()))
-		n9, err := m.Uint128Data.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Uint128Data.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSchema(dAtA, i, uint64(size))
 		}
-		i += n9
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Column_Time64NsData) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Column_Time64NsData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.Time64NsData != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.Time64NsData.Size()))
-		n10, err := m.Time64NsData.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Time64NsData.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSchema(dAtA, i, uint64(size))
 		}
-		i += n10
+		i--
+		dAtA[i] = 0x22
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Column_Float64Data) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Column_Float64Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.Float64Data != nil {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.Float64Data.Size()))
-		n11, err := m.Float64Data.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Float64Data.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSchema(dAtA, i, uint64(size))
 		}
-		i += n11
+		i--
+		dAtA[i] = 0x2a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Column_StringData) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Column_StringData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.StringData != nil {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.StringData.Size()))
-		n12, err := m.StringData.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.StringData.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSchema(dAtA, i, uint64(size))
 		}
-		i += n12
+		i--
+		dAtA[i] = 0x32
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *RowBatchData) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1897,54 +1839,61 @@ func (m *RowBatchData) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *RowBatchData) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RowBatchData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Cols) > 0 {
-		for _, msg := range m.Cols {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintSchema(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if m.NumRows != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.NumRows))
-	}
-	if m.Eow {
-		dAtA[i] = 0x18
-		i++
-		if m.Eow {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i++
-	}
 	if m.Eos {
-		dAtA[i] = 0x20
-		i++
+		i--
 		if m.Eos {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x20
 	}
-	return i, nil
+	if m.Eow {
+		i--
+		if m.Eow {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.NumRows != 0 {
+		i = encodeVarintSchema(dAtA, i, uint64(m.NumRows))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Cols) > 0 {
+		for iNdEx := len(m.Cols) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Cols[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintSchema(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Relation) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1952,29 +1901,36 @@ func (m *Relation) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Relation) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Relation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Columns) > 0 {
-		for _, msg := range m.Columns {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintSchema(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Columns) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Columns[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintSchema(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Relation_ColumnInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1982,28 +1938,34 @@ func (m *Relation_ColumnInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Relation_ColumnInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Relation_ColumnInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.ColumnName) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(len(m.ColumnName)))
-		i += copy(dAtA[i:], m.ColumnName)
-	}
 	if m.ColumnType != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintSchema(dAtA, i, uint64(m.ColumnType))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if len(m.ColumnName) > 0 {
+		i -= len(m.ColumnName)
+		copy(dAtA[i:], m.ColumnName)
+		i = encodeVarintSchema(dAtA, i, uint64(len(m.ColumnName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Table) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2011,39 +1973,48 @@ func (m *Table) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Table) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Table) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Relation != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.Relation.Size()))
-		n13, err := m.Relation.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n13
-	}
 	if len(m.RowBatches) > 0 {
-		for _, msg := range m.RowBatches {
+		for iNdEx := len(m.RowBatches) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.RowBatches[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintSchema(dAtA, i, uint64(size))
+			}
+			i--
 			dAtA[i] = 0x2a
-			i++
-			i = encodeVarintSchema(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+		}
+	}
+	if m.Relation != nil {
+		{
+			size, err := m.Relation.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintSchema(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0x22
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Schema) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2051,49 +2022,54 @@ func (m *Schema) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Schema) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Schema) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.RelationMap) > 0 {
-		for k, _ := range m.RelationMap {
-			dAtA[i] = 0xa
-			i++
+		for k := range m.RelationMap {
 			v := m.RelationMap[k]
-			msgSize := 0
+			baseI := i
 			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovSchema(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovSchema(uint64(len(k))) + msgSize
-			i = encodeVarintSchema(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintSchema(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintSchema(dAtA, i, uint64(v.Size()))
-				n14, err := v.MarshalTo(dAtA[i:])
-				if err != nil {
-					return 0, err
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintSchema(dAtA, i, uint64(size))
 				}
-				i += n14
+				i--
+				dAtA[i] = 0x12
 			}
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintSchema(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintSchema(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintSchema(dAtA []byte, offset int, v uint64) int {
+	offset -= sovSchema(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *BooleanColumn) Size() (n int) {
 	if m == nil {
@@ -2362,14 +2338,7 @@ func (m *Schema) Size() (n int) {
 }
 
 func sovSchema(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozSchema(x uint64) (n int) {
 	return sovSchema(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -2398,8 +2367,13 @@ func (this *UInt128Column) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForData := "[]*UInt128{"
+	for _, f := range this.Data {
+		repeatedStringForData += strings.Replace(fmt.Sprintf("%v", f), "UInt128", "proto1.UInt128", 1) + ","
+	}
+	repeatedStringForData += "}"
 	s := strings.Join([]string{`&UInt128Column{`,
-		`Data:` + strings.Replace(fmt.Sprintf("%v", this.Data), "UInt128", "proto1.UInt128", 1) + `,`,
+		`Data:` + repeatedStringForData + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2508,8 +2482,13 @@ func (this *RowBatchData) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForCols := "[]*Column{"
+	for _, f := range this.Cols {
+		repeatedStringForCols += strings.Replace(f.String(), "Column", "Column", 1) + ","
+	}
+	repeatedStringForCols += "}"
 	s := strings.Join([]string{`&RowBatchData{`,
-		`Cols:` + strings.Replace(fmt.Sprintf("%v", this.Cols), "Column", "Column", 1) + `,`,
+		`Cols:` + repeatedStringForCols + `,`,
 		`NumRows:` + fmt.Sprintf("%v", this.NumRows) + `,`,
 		`Eow:` + fmt.Sprintf("%v", this.Eow) + `,`,
 		`Eos:` + fmt.Sprintf("%v", this.Eos) + `,`,
@@ -2521,8 +2500,13 @@ func (this *Relation) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForColumns := "[]*Relation_ColumnInfo{"
+	for _, f := range this.Columns {
+		repeatedStringForColumns += strings.Replace(fmt.Sprintf("%v", f), "Relation_ColumnInfo", "Relation_ColumnInfo", 1) + ","
+	}
+	repeatedStringForColumns += "}"
 	s := strings.Join([]string{`&Relation{`,
-		`Columns:` + strings.Replace(fmt.Sprintf("%v", this.Columns), "Relation_ColumnInfo", "Relation_ColumnInfo", 1) + `,`,
+		`Columns:` + repeatedStringForColumns + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2542,9 +2526,14 @@ func (this *Table) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForRowBatches := "[]*RowBatchData{"
+	for _, f := range this.RowBatches {
+		repeatedStringForRowBatches += strings.Replace(f.String(), "RowBatchData", "RowBatchData", 1) + ","
+	}
+	repeatedStringForRowBatches += "}"
 	s := strings.Join([]string{`&Table{`,
-		`Relation:` + strings.Replace(fmt.Sprintf("%v", this.Relation), "Relation", "Relation", 1) + `,`,
-		`RowBatches:` + strings.Replace(fmt.Sprintf("%v", this.RowBatches), "RowBatchData", "RowBatchData", 1) + `,`,
+		`Relation:` + strings.Replace(this.Relation.String(), "Relation", "Relation", 1) + `,`,
+		`RowBatches:` + repeatedStringForRowBatches + `,`,
 		`}`,
 	}, "")
 	return s

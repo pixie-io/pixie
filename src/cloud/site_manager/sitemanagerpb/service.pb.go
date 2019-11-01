@@ -9,8 +9,11 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	reflect "reflect"
 	strings "strings"
@@ -25,7 +28,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type SiteInfo struct {
 	SiteName string       `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
@@ -45,7 +48,7 @@ func (m *SiteInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_SiteInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -95,7 +98,7 @@ func (m *GetSiteByNameRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return xxx_messageInfo_GetSiteByNameRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +141,7 @@ func (m *IsSiteAvailableRequest) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return xxx_messageInfo_IsSiteAvailableRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +184,7 @@ func (m *IsSiteAvailableResponse) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return xxx_messageInfo_IsSiteAvailableResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +228,7 @@ func (m *RegisterSiteRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_RegisterSiteRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -275,7 +278,7 @@ func (m *RegisterSiteResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return xxx_messageInfo_RegisterSiteResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -644,6 +647,23 @@ type SiteManagerServiceServer interface {
 	GetSiteByName(context.Context, *GetSiteByNameRequest) (*SiteInfo, error)
 }
 
+// UnimplementedSiteManagerServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedSiteManagerServiceServer struct {
+}
+
+func (*UnimplementedSiteManagerServiceServer) IsSiteAvailable(ctx context.Context, req *IsSiteAvailableRequest) (*IsSiteAvailableResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsSiteAvailable not implemented")
+}
+func (*UnimplementedSiteManagerServiceServer) RegisterSite(ctx context.Context, req *RegisterSiteRequest) (*RegisterSiteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterSite not implemented")
+}
+func (*UnimplementedSiteManagerServiceServer) GetSiteForOrg(ctx context.Context, req *proto1.UUID) (*SiteInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSiteForOrg not implemented")
+}
+func (*UnimplementedSiteManagerServiceServer) GetSiteByName(ctx context.Context, req *GetSiteByNameRequest) (*SiteInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSiteByName not implemented")
+}
+
 func RegisterSiteManagerServiceServer(s *grpc.Server, srv SiteManagerServiceServer) {
 	s.RegisterService(&_SiteManagerService_serviceDesc, srv)
 }
@@ -748,7 +768,7 @@ var _SiteManagerService_serviceDesc = grpc.ServiceDesc{
 func (m *SiteInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -756,33 +776,41 @@ func (m *SiteInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SiteInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SiteInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.SiteName) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.SiteName)))
-		i += copy(dAtA[i:], m.SiteName)
-	}
 	if m.OrgID != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.OrgID.Size()))
-		n1, err := m.OrgID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.OrgID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n1
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.SiteName) > 0 {
+		i -= len(m.SiteName)
+		copy(dAtA[i:], m.SiteName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.SiteName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *GetSiteByNameRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -790,23 +818,29 @@ func (m *GetSiteByNameRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetSiteByNameRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetSiteByNameRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.SiteName) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.SiteName)
+		copy(dAtA[i:], m.SiteName)
 		i = encodeVarintService(dAtA, i, uint64(len(m.SiteName)))
-		i += copy(dAtA[i:], m.SiteName)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *IsSiteAvailableRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -814,23 +848,29 @@ func (m *IsSiteAvailableRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IsSiteAvailableRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *IsSiteAvailableRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.SiteName) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.SiteName)
+		copy(dAtA[i:], m.SiteName)
 		i = encodeVarintService(dAtA, i, uint64(len(m.SiteName)))
-		i += copy(dAtA[i:], m.SiteName)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *IsSiteAvailableResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -838,27 +878,32 @@ func (m *IsSiteAvailableResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *IsSiteAvailableResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *IsSiteAvailableResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.Available {
-		dAtA[i] = 0x8
-		i++
+		i--
 		if m.Available {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x8
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *RegisterSiteRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -866,33 +911,41 @@ func (m *RegisterSiteRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *RegisterSiteRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterSiteRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.SiteName) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.SiteName)))
-		i += copy(dAtA[i:], m.SiteName)
-	}
 	if m.OrgID != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.OrgID.Size()))
-		n2, err := m.OrgID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.OrgID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n2
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.SiteName) > 0 {
+		i -= len(m.SiteName)
+		copy(dAtA[i:], m.SiteName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.SiteName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *RegisterSiteResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -900,31 +953,38 @@ func (m *RegisterSiteResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *RegisterSiteResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterSiteResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.SiteRegistered {
-		dAtA[i] = 0x8
-		i++
+		i--
 		if m.SiteRegistered {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x8
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
+	offset -= sovService(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *SiteInfo) Size() (n int) {
 	if m == nil {
@@ -1011,14 +1071,7 @@ func (m *RegisterSiteResponse) Size() (n int) {
 }
 
 func sovService(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozService(x uint64) (n int) {
 	return sovService(uint64((x << 1) ^ uint64((int64(x) >> 63))))

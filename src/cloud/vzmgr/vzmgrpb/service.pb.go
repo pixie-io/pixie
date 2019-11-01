@@ -9,8 +9,11 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	cloudpb "pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	reflect "reflect"
@@ -26,7 +29,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type CreateVizierClusterRequest struct {
 	OrgID *proto1.UUID `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
@@ -45,7 +48,7 @@ func (m *CreateVizierClusterRequest) XXX_Marshal(b []byte, deterministic bool) (
 		return xxx_messageInfo_CreateVizierClusterRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +91,7 @@ func (m *GetViziersByOrgResponse) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return xxx_messageInfo_GetViziersByOrgResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +134,7 @@ func (m *GetSSLCertsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_GetSSLCertsRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +178,7 @@ func (m *GetSSLCertsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_GetSSLCertsResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -522,6 +525,32 @@ type VZMgrServiceServer interface {
 	HandleVizierHeartbeat(context.Context, *cloudpb.VizierHeartbeat) (*cloudpb.VizierHeartbeatAck, error)
 }
 
+// UnimplementedVZMgrServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedVZMgrServiceServer struct {
+}
+
+func (*UnimplementedVZMgrServiceServer) CreateVizierCluster(ctx context.Context, req *CreateVizierClusterRequest) (*proto1.UUID, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateVizierCluster not implemented")
+}
+func (*UnimplementedVZMgrServiceServer) GetSSLCerts(ctx context.Context, req *GetSSLCertsRequest) (*GetSSLCertsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSSLCerts not implemented")
+}
+func (*UnimplementedVZMgrServiceServer) GetViziersByOrg(ctx context.Context, req *proto1.UUID) (*GetViziersByOrgResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetViziersByOrg not implemented")
+}
+func (*UnimplementedVZMgrServiceServer) GetVizierInfo(ctx context.Context, req *proto1.UUID) (*cloudpb.VizierInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetVizierInfo not implemented")
+}
+func (*UnimplementedVZMgrServiceServer) GetVizierConnectionInfo(ctx context.Context, req *proto1.UUID) (*cloudpb.VizierConnectionInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetVizierConnectionInfo not implemented")
+}
+func (*UnimplementedVZMgrServiceServer) VizierConnected(ctx context.Context, req *cloudpb.RegisterVizierRequest) (*cloudpb.RegisterVizierAck, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VizierConnected not implemented")
+}
+func (*UnimplementedVZMgrServiceServer) HandleVizierHeartbeat(ctx context.Context, req *cloudpb.VizierHeartbeat) (*cloudpb.VizierHeartbeatAck, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleVizierHeartbeat not implemented")
+}
+
 func RegisterVZMgrServiceServer(s *grpc.Server, srv VZMgrServiceServer) {
 	s.RegisterService(&_VZMgrService_serviceDesc, srv)
 }
@@ -692,7 +721,7 @@ var _VZMgrService_serviceDesc = grpc.ServiceDesc{
 func (m *CreateVizierClusterRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -700,27 +729,34 @@ func (m *CreateVizierClusterRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CreateVizierClusterRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateVizierClusterRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.OrgID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.OrgID.Size()))
-		n1, err := m.OrgID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.OrgID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n1
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GetViziersByOrgResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -728,29 +764,36 @@ func (m *GetViziersByOrgResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetViziersByOrgResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetViziersByOrgResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.VizierIDs) > 0 {
-		for _, msg := range m.VizierIDs {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.VizierIDs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.VizierIDs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GetSSLCertsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -758,27 +801,34 @@ func (m *GetSSLCertsRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetSSLCertsRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetSSLCertsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.ClusterID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.ClusterID.Size()))
-		n2, err := m.ClusterID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.ClusterID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i += n2
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GetSSLCertsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -786,33 +836,42 @@ func (m *GetSSLCertsResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetSSLCertsResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetSSLCertsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Key) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Key)))
-		i += copy(dAtA[i:], m.Key)
-	}
 	if len(m.Cert) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.Cert)
+		copy(dAtA[i:], m.Cert)
 		i = encodeVarintService(dAtA, i, uint64(len(m.Cert)))
-		i += copy(dAtA[i:], m.Cert)
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Key)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
+	offset -= sovService(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *CreateVizierClusterRequest) Size() (n int) {
 	if m == nil {
@@ -873,14 +932,7 @@ func (m *GetSSLCertsResponse) Size() (n int) {
 }
 
 func sovService(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozService(x uint64) (n int) {
 	return sovService(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -899,8 +951,13 @@ func (this *GetViziersByOrgResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForVizierIDs := "[]*UUID{"
+	for _, f := range this.VizierIDs {
+		repeatedStringForVizierIDs += strings.Replace(fmt.Sprintf("%v", f), "UUID", "proto1.UUID", 1) + ","
+	}
+	repeatedStringForVizierIDs += "}"
 	s := strings.Join([]string{`&GetViziersByOrgResponse{`,
-		`VizierIDs:` + strings.Replace(fmt.Sprintf("%v", this.VizierIDs), "UUID", "proto1.UUID", 1) + `,`,
+		`VizierIDs:` + repeatedStringForVizierIDs + `,`,
 		`}`,
 	}, "")
 	return s

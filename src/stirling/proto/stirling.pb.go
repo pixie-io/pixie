@@ -8,6 +8,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
 	reflect "reflect"
 	strings "strings"
@@ -22,7 +23,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Element struct {
 	Name  string             `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -43,7 +44,7 @@ func (m *Element) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Element.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +104,7 @@ func (m *TableSchema) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_TableSchema.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -172,7 +173,7 @@ func (m *InfoClass) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_InfoClass.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -250,7 +251,7 @@ func (m *Publish) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Publish.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -293,7 +294,7 @@ func (m *Subscribe) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Subscribe.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -608,7 +609,7 @@ func valueToGoStringStirling(v interface{}, typ string) string {
 func (m *Element) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -616,33 +617,39 @@ func (m *Element) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Element) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Element) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintStirling(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
+	if m.Ptype != 0 {
+		i = encodeVarintStirling(dAtA, i, uint64(m.Ptype))
+		i--
+		dAtA[i] = 0x18
 	}
 	if m.Type != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintStirling(dAtA, i, uint64(m.Type))
+		i--
+		dAtA[i] = 0x10
 	}
-	if m.Ptype != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintStirling(dAtA, i, uint64(m.Ptype))
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintStirling(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *TableSchema) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -650,50 +657,58 @@ func (m *TableSchema) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *TableSchema) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TableSchema) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintStirling(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	if len(m.Elements) > 0 {
-		for _, msg := range m.Elements {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintStirling(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+	if m.TabletizationKey != 0 {
+		i = encodeVarintStirling(dAtA, i, uint64(m.TabletizationKey))
+		i--
+		dAtA[i] = 0x20
 	}
 	if m.Tabletized {
-		dAtA[i] = 0x18
-		i++
+		i--
 		if m.Tabletized {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x18
 	}
-	if m.TabletizationKey != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintStirling(dAtA, i, uint64(m.TabletizationKey))
+	if len(m.Elements) > 0 {
+		for iNdEx := len(m.Elements) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Elements[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintStirling(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
 	}
-	return i, nil
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintStirling(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *InfoClass) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -701,58 +716,66 @@ func (m *InfoClass) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InfoClass) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InfoClass) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintStirling(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
+	if m.PushPeriodMillis != 0 {
+		i = encodeVarintStirling(dAtA, i, uint64(m.PushPeriodMillis))
+		i--
+		dAtA[i] = 0x30
 	}
-	if m.Id != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintStirling(dAtA, i, uint64(m.Id))
-	}
-	if m.Schema != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintStirling(dAtA, i, uint64(m.Schema.Size()))
-		n1, err := m.Schema.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
+	if m.SamplingPeriodMillis != 0 {
+		i = encodeVarintStirling(dAtA, i, uint64(m.SamplingPeriodMillis))
+		i--
+		dAtA[i] = 0x28
 	}
 	if m.Subscribed {
-		dAtA[i] = 0x20
-		i++
+		i--
 		if m.Subscribed {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x20
 	}
-	if m.SamplingPeriodMillis != 0 {
-		dAtA[i] = 0x28
-		i++
-		i = encodeVarintStirling(dAtA, i, uint64(m.SamplingPeriodMillis))
+	if m.Schema != nil {
+		{
+			size, err := m.Schema.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintStirling(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
 	}
-	if m.PushPeriodMillis != 0 {
-		dAtA[i] = 0x30
-		i++
-		i = encodeVarintStirling(dAtA, i, uint64(m.PushPeriodMillis))
+	if m.Id != 0 {
+		i = encodeVarintStirling(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintStirling(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Publish) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -760,29 +783,36 @@ func (m *Publish) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Publish) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Publish) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.PublishedInfoClasses) > 0 {
-		for _, msg := range m.PublishedInfoClasses {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintStirling(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.PublishedInfoClasses) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.PublishedInfoClasses[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintStirling(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Subscribe) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -790,33 +820,42 @@ func (m *Subscribe) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Subscribe) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Subscribe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.SubscribedInfoClasses) > 0 {
-		for _, msg := range m.SubscribedInfoClasses {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintStirling(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.SubscribedInfoClasses) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.SubscribedInfoClasses[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintStirling(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintStirling(dAtA []byte, offset int, v uint64) int {
+	offset -= sovStirling(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *Element) Size() (n int) {
 	if m == nil {
@@ -922,14 +961,7 @@ func (m *Subscribe) Size() (n int) {
 }
 
 func sovStirling(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozStirling(x uint64) (n int) {
 	return sovStirling(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -950,9 +982,14 @@ func (this *TableSchema) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForElements := "[]*Element{"
+	for _, f := range this.Elements {
+		repeatedStringForElements += strings.Replace(f.String(), "Element", "Element", 1) + ","
+	}
+	repeatedStringForElements += "}"
 	s := strings.Join([]string{`&TableSchema{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Elements:` + strings.Replace(fmt.Sprintf("%v", this.Elements), "Element", "Element", 1) + `,`,
+		`Elements:` + repeatedStringForElements + `,`,
 		`Tabletized:` + fmt.Sprintf("%v", this.Tabletized) + `,`,
 		`TabletizationKey:` + fmt.Sprintf("%v", this.TabletizationKey) + `,`,
 		`}`,
@@ -966,7 +1003,7 @@ func (this *InfoClass) String() string {
 	s := strings.Join([]string{`&InfoClass{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Id:` + fmt.Sprintf("%v", this.Id) + `,`,
-		`Schema:` + strings.Replace(fmt.Sprintf("%v", this.Schema), "TableSchema", "TableSchema", 1) + `,`,
+		`Schema:` + strings.Replace(this.Schema.String(), "TableSchema", "TableSchema", 1) + `,`,
 		`Subscribed:` + fmt.Sprintf("%v", this.Subscribed) + `,`,
 		`SamplingPeriodMillis:` + fmt.Sprintf("%v", this.SamplingPeriodMillis) + `,`,
 		`PushPeriodMillis:` + fmt.Sprintf("%v", this.PushPeriodMillis) + `,`,
@@ -978,8 +1015,13 @@ func (this *Publish) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForPublishedInfoClasses := "[]*InfoClass{"
+	for _, f := range this.PublishedInfoClasses {
+		repeatedStringForPublishedInfoClasses += strings.Replace(f.String(), "InfoClass", "InfoClass", 1) + ","
+	}
+	repeatedStringForPublishedInfoClasses += "}"
 	s := strings.Join([]string{`&Publish{`,
-		`PublishedInfoClasses:` + strings.Replace(fmt.Sprintf("%v", this.PublishedInfoClasses), "InfoClass", "InfoClass", 1) + `,`,
+		`PublishedInfoClasses:` + repeatedStringForPublishedInfoClasses + `,`,
 		`}`,
 	}, "")
 	return s
@@ -988,8 +1030,13 @@ func (this *Subscribe) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForSubscribedInfoClasses := "[]*InfoClass{"
+	for _, f := range this.SubscribedInfoClasses {
+		repeatedStringForSubscribedInfoClasses += strings.Replace(f.String(), "InfoClass", "InfoClass", 1) + ","
+	}
+	repeatedStringForSubscribedInfoClasses += "}"
 	s := strings.Join([]string{`&Subscribe{`,
-		`SubscribedInfoClasses:` + strings.Replace(fmt.Sprintf("%v", this.SubscribedInfoClasses), "InfoClass", "InfoClass", 1) + `,`,
+		`SubscribedInfoClasses:` + repeatedStringForSubscribedInfoClasses + `,`,
 		`}`,
 	}, "")
 	return s

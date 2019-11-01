@@ -8,8 +8,11 @@ import (
 	fmt "fmt"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
 )
@@ -23,7 +26,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type LogMessage struct {
 	Pod string `protobuf:"bytes,1,opt,name=pod,proto3" json:"pod,omitempty"`
@@ -44,7 +47,7 @@ func (m *LogMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_LogMessage.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +104,7 @@ func (m *TransferLogRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_TransferLogRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +148,7 @@ func (m *TransferLogResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_TransferLogResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -407,6 +410,14 @@ type CloudConnectorServiceServer interface {
 	TransferLog(CloudConnectorService_TransferLogServer) error
 }
 
+// UnimplementedCloudConnectorServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedCloudConnectorServiceServer struct {
+}
+
+func (*UnimplementedCloudConnectorServiceServer) TransferLog(srv CloudConnectorService_TransferLogServer) error {
+	return status.Errorf(codes.Unimplemented, "method TransferLog not implemented")
+}
+
 func RegisterCloudConnectorServiceServer(s *grpc.Server, srv CloudConnectorServiceServer) {
 	s.RegisterService(&_CloudConnectorService_serviceDesc, srv)
 }
@@ -454,7 +465,7 @@ var _CloudConnectorService_serviceDesc = grpc.ServiceDesc{
 func (m *LogMessage) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -462,35 +473,43 @@ func (m *LogMessage) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LogMessage) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LogMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Pod) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Pod)))
-		i += copy(dAtA[i:], m.Pod)
+	if len(m.Log) > 0 {
+		i -= len(m.Log)
+		copy(dAtA[i:], m.Log)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Log)))
+		i--
+		dAtA[i] = 0x1a
 	}
 	if len(m.Svc) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.Svc)
+		copy(dAtA[i:], m.Svc)
 		i = encodeVarintService(dAtA, i, uint64(len(m.Svc)))
-		i += copy(dAtA[i:], m.Svc)
+		i--
+		dAtA[i] = 0x12
 	}
-	if len(m.Log) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Log)))
-		i += copy(dAtA[i:], m.Log)
+	if len(m.Pod) > 0 {
+		i -= len(m.Pod)
+		copy(dAtA[i:], m.Pod)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Pod)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *TransferLogRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -498,29 +517,36 @@ func (m *TransferLogRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *TransferLogRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TransferLogRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.BatchedLogs) > 0 {
-		for _, msg := range m.BatchedLogs {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.BatchedLogs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.BatchedLogs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *TransferLogResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -528,37 +554,45 @@ func (m *TransferLogResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *TransferLogResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TransferLogResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+	if len(m.Msg) > 0 {
+		i -= len(m.Msg)
+		copy(dAtA[i:], m.Msg)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Msg)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.Ok {
-		dAtA[i] = 0x8
-		i++
+		i--
 		if m.Ok {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x8
 	}
-	if len(m.Msg) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Msg)))
-		i += copy(dAtA[i:], m.Msg)
-	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
+	offset -= sovService(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *LogMessage) Size() (n int) {
 	if m == nil {
@@ -613,14 +647,7 @@ func (m *TransferLogResponse) Size() (n int) {
 }
 
 func sovService(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozService(x uint64) (n int) {
 	return sovService(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -641,8 +668,13 @@ func (this *TransferLogRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForBatchedLogs := "[]*LogMessage{"
+	for _, f := range this.BatchedLogs {
+		repeatedStringForBatchedLogs += strings.Replace(f.String(), "LogMessage", "LogMessage", 1) + ","
+	}
+	repeatedStringForBatchedLogs += "}"
 	s := strings.Join([]string{`&TransferLogRequest{`,
-		`BatchedLogs:` + strings.Replace(fmt.Sprintf("%v", this.BatchedLogs), "LogMessage", "LogMessage", 1) + `,`,
+		`BatchedLogs:` + repeatedStringForBatchedLogs + `,`,
 		`}`,
 	}, "")
 	return s

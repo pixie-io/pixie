@@ -9,6 +9,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
 )
@@ -22,7 +23,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Canonical struct {
 	TimeStamp int64   `protobuf:"varint,1,opt,name=time_stamp,json=timeStamp,proto3" json:"time_stamp,omitempty"`
@@ -43,7 +44,7 @@ func (m *Canonical) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Canonical.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +103,7 @@ func (m *CanonicalRepeatedColumn) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return xxx_messageInfo_CanonicalRepeatedColumn.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +160,7 @@ func (m *CanonicalStream) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return xxx_messageInfo_CanonicalStream.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -368,7 +369,7 @@ func valueToGoStringCanonicalMessage(v interface{}, typ string) string {
 func (m *Canonical) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -376,33 +377,38 @@ func (m *Canonical) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Canonical) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Canonical) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.TimeStamp != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintCanonicalMessage(dAtA, i, uint64(m.TimeStamp))
+	if m.Data2 != 0 {
+		i = encodeVarintCanonicalMessage(dAtA, i, uint64(m.Data2))
+		i--
+		dAtA[i] = 0x18
 	}
 	if m.Data1 != 0 {
-		dAtA[i] = 0x11
-		i++
+		i -= 8
 		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.Data1))))
-		i += 8
+		i--
+		dAtA[i] = 0x11
 	}
-	if m.Data2 != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintCanonicalMessage(dAtA, i, uint64(m.Data2))
+	if m.TimeStamp != 0 {
+		i = encodeVarintCanonicalMessage(dAtA, i, uint64(m.TimeStamp))
+		i--
+		dAtA[i] = 0x8
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *CanonicalRepeatedColumn) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -410,14 +416,19 @@ func (m *CanonicalRepeatedColumn) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CanonicalRepeatedColumn) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CanonicalRepeatedColumn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.TimeStamp) > 0 {
-		dAtA2 := make([]byte, len(m.TimeStamp)*10)
+	if len(m.Data2) > 0 {
+		dAtA2 := make([]byte, len(m.Data2)*10)
 		var j1 int
-		for _, num1 := range m.TimeStamp {
+		for _, num1 := range m.Data2 {
 			num := uint64(num1)
 			for num >= 1<<7 {
 				dAtA2[j1] = uint8(uint64(num)&0x7f | 0x80)
@@ -427,25 +438,26 @@ func (m *CanonicalRepeatedColumn) MarshalTo(dAtA []byte) (int, error) {
 			dAtA2[j1] = uint8(num)
 			j1++
 		}
-		dAtA[i] = 0xa
-		i++
+		i -= j1
+		copy(dAtA[i:], dAtA2[:j1])
 		i = encodeVarintCanonicalMessage(dAtA, i, uint64(j1))
-		i += copy(dAtA[i:], dAtA2[:j1])
+		i--
+		dAtA[i] = 0x1a
 	}
 	if len(m.Data1) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintCanonicalMessage(dAtA, i, uint64(len(m.Data1)*8))
-		for _, num := range m.Data1 {
-			f3 := math.Float64bits(float64(num))
+		for iNdEx := len(m.Data1) - 1; iNdEx >= 0; iNdEx-- {
+			f3 := math.Float64bits(float64(m.Data1[iNdEx]))
+			i -= 8
 			encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(f3))
-			i += 8
 		}
+		i = encodeVarintCanonicalMessage(dAtA, i, uint64(len(m.Data1)*8))
+		i--
+		dAtA[i] = 0x12
 	}
-	if len(m.Data2) > 0 {
-		dAtA5 := make([]byte, len(m.Data2)*10)
+	if len(m.TimeStamp) > 0 {
+		dAtA5 := make([]byte, len(m.TimeStamp)*10)
 		var j4 int
-		for _, num1 := range m.Data2 {
+		for _, num1 := range m.TimeStamp {
 			num := uint64(num1)
 			for num >= 1<<7 {
 				dAtA5[j4] = uint8(uint64(num)&0x7f | 0x80)
@@ -455,18 +467,19 @@ func (m *CanonicalRepeatedColumn) MarshalTo(dAtA []byte) (int, error) {
 			dAtA5[j4] = uint8(num)
 			j4++
 		}
-		dAtA[i] = 0x1a
-		i++
+		i -= j4
+		copy(dAtA[i:], dAtA5[:j4])
 		i = encodeVarintCanonicalMessage(dAtA, i, uint64(j4))
-		i += copy(dAtA[i:], dAtA5[:j4])
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *CanonicalStream) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -474,33 +487,42 @@ func (m *CanonicalStream) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CanonicalStream) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CanonicalStream) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.DataStream) > 0 {
-		for _, msg := range m.DataStream {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintCanonicalMessage(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.DataStream) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.DataStream[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCanonicalMessage(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintCanonicalMessage(dAtA []byte, offset int, v uint64) int {
+	offset -= sovCanonicalMessage(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *Canonical) Size() (n int) {
 	if m == nil {
@@ -562,14 +584,7 @@ func (m *CanonicalStream) Size() (n int) {
 }
 
 func sovCanonicalMessage(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozCanonicalMessage(x uint64) (n int) {
 	return sovCanonicalMessage(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -602,8 +617,13 @@ func (this *CanonicalStream) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForDataStream := "[]*Canonical{"
+	for _, f := range this.DataStream {
+		repeatedStringForDataStream += strings.Replace(f.String(), "Canonical", "Canonical", 1) + ","
+	}
+	repeatedStringForDataStream += "}"
 	s := strings.Join([]string{`&CanonicalStream{`,
-		`DataStream:` + strings.Replace(fmt.Sprintf("%v", this.DataStream), "Canonical", "Canonical", 1) + `,`,
+		`DataStream:` + repeatedStringForDataStream + `,`,
 		`}`,
 	}, "")
 	return s

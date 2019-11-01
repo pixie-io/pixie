@@ -10,6 +10,7 @@ import (
 	types "github.com/gogo/protobuf/types"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
 	reflect "reflect"
 	strconv "strconv"
@@ -25,7 +26,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type OperatorType int32
 
@@ -117,7 +118,7 @@ func (m *Plan) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Plan.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -169,7 +170,7 @@ func (m *PlanFragment) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_PlanFragment.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -226,7 +227,7 @@ func (m *DAG) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_DAG.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -271,7 +272,7 @@ func (m *DAG_DAGNode) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_DAG_DAGNode.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -329,7 +330,7 @@ func (m *PlanNode) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_PlanNode.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -391,7 +392,7 @@ func (m *Operator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Operator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -543,9 +544,9 @@ func (m *Operator) GetJoinOp() *JoinOperator {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Operator) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Operator_OneofMarshaler, _Operator_OneofUnmarshaler, _Operator_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Operator) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*Operator_MemSourceOp)(nil),
 		(*Operator_MapOp)(nil),
 		(*Operator_AggOp)(nil),
@@ -559,216 +560,6 @@ func (*Operator) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) erro
 	}
 }
 
-func _Operator_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Operator)
-	// op
-	switch x := m.Op.(type) {
-	case *Operator_MemSourceOp:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.MemSourceOp); err != nil {
-			return err
-		}
-	case *Operator_MapOp:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.MapOp); err != nil {
-			return err
-		}
-	case *Operator_AggOp:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.AggOp); err != nil {
-			return err
-		}
-	case *Operator_MemSinkOp:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.MemSinkOp); err != nil {
-			return err
-		}
-	case *Operator_FilterOp:
-		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.FilterOp); err != nil {
-			return err
-		}
-	case *Operator_LimitOp:
-		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.LimitOp); err != nil {
-			return err
-		}
-	case *Operator_UnionOp:
-		_ = b.EncodeVarint(8<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.UnionOp); err != nil {
-			return err
-		}
-	case *Operator_GrpcSourceOp:
-		_ = b.EncodeVarint(9<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.GrpcSourceOp); err != nil {
-			return err
-		}
-	case *Operator_GrpcSinkOp:
-		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.GrpcSinkOp); err != nil {
-			return err
-		}
-	case *Operator_JoinOp:
-		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.JoinOp); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Operator.Op has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Operator_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Operator)
-	switch tag {
-	case 2: // op.mem_source_op
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(MemorySourceOperator)
-		err := b.DecodeMessage(msg)
-		m.Op = &Operator_MemSourceOp{msg}
-		return true, err
-	case 3: // op.map_op
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(MapOperator)
-		err := b.DecodeMessage(msg)
-		m.Op = &Operator_MapOp{msg}
-		return true, err
-	case 4: // op.agg_op
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(AggregateOperator)
-		err := b.DecodeMessage(msg)
-		m.Op = &Operator_AggOp{msg}
-		return true, err
-	case 5: // op.mem_sink_op
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(MemorySinkOperator)
-		err := b.DecodeMessage(msg)
-		m.Op = &Operator_MemSinkOp{msg}
-		return true, err
-	case 6: // op.filter_op
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(FilterOperator)
-		err := b.DecodeMessage(msg)
-		m.Op = &Operator_FilterOp{msg}
-		return true, err
-	case 7: // op.limit_op
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(LimitOperator)
-		err := b.DecodeMessage(msg)
-		m.Op = &Operator_LimitOp{msg}
-		return true, err
-	case 8: // op.union_op
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(UnionOperator)
-		err := b.DecodeMessage(msg)
-		m.Op = &Operator_UnionOp{msg}
-		return true, err
-	case 9: // op.grpc_source_op
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(GrpcSourceOperator)
-		err := b.DecodeMessage(msg)
-		m.Op = &Operator_GrpcSourceOp{msg}
-		return true, err
-	case 10: // op.grpc_sink_op
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(GrpcSinkOperator)
-		err := b.DecodeMessage(msg)
-		m.Op = &Operator_GrpcSinkOp{msg}
-		return true, err
-	case 11: // op.join_op
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(JoinOperator)
-		err := b.DecodeMessage(msg)
-		m.Op = &Operator_JoinOp{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Operator_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Operator)
-	// op
-	switch x := m.Op.(type) {
-	case *Operator_MemSourceOp:
-		s := proto.Size(x.MemSourceOp)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Operator_MapOp:
-		s := proto.Size(x.MapOp)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Operator_AggOp:
-		s := proto.Size(x.AggOp)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Operator_MemSinkOp:
-		s := proto.Size(x.MemSinkOp)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Operator_FilterOp:
-		s := proto.Size(x.FilterOp)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Operator_LimitOp:
-		s := proto.Size(x.LimitOp)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Operator_UnionOp:
-		s := proto.Size(x.UnionOp)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Operator_GrpcSourceOp:
-		s := proto.Size(x.GrpcSourceOp)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Operator_GrpcSinkOp:
-		s := proto.Size(x.GrpcSinkOp)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Operator_JoinOp:
-		s := proto.Size(x.JoinOp)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
-}
-
 type MemorySourceOperator struct {
 	Name        string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	ColumnIdxs  []int64           `protobuf:"varint,2,rep,packed,name=column_idxs,json=columnIdxs,proto3" json:"column_idxs,omitempty"`
@@ -776,7 +567,7 @@ type MemorySourceOperator struct {
 	ColumnTypes []proto1.DataType `protobuf:"varint,4,rep,packed,name=column_types,json=columnTypes,proto3,enum=pl.types.DataType" json:"column_types,omitempty"`
 	StartTime   *types.Int64Value `protobuf:"bytes,5,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	StopTime    *types.Int64Value `protobuf:"bytes,6,opt,name=stop_time,json=stopTime,proto3" json:"stop_time,omitempty"`
-	Tablet      uint64            `protobuf:"varint,7,opt,name=tablet,proto3" json:"tablet,omitempty"`
+	Tablet      string            `protobuf:"bytes,7,opt,name=tablet,proto3" json:"tablet,omitempty"`
 }
 
 func (m *MemorySourceOperator) Reset()      { *m = MemorySourceOperator{} }
@@ -792,7 +583,7 @@ func (m *MemorySourceOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return xxx_messageInfo_MemorySourceOperator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -853,11 +644,11 @@ func (m *MemorySourceOperator) GetStopTime() *types.Int64Value {
 	return nil
 }
 
-func (m *MemorySourceOperator) GetTablet() uint64 {
+func (m *MemorySourceOperator) GetTablet() string {
 	if m != nil {
 		return m.Tablet
 	}
-	return 0
+	return ""
 }
 
 type MemorySinkOperator struct {
@@ -879,7 +670,7 @@ func (m *MemorySinkOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_MemorySinkOperator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -938,7 +729,7 @@ func (m *GrpcSourceOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_GrpcSourceOperator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -996,7 +787,7 @@ func (m *GrpcSinkOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_GrpcSinkOperator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1047,7 +838,7 @@ func (m *MapOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_MapOperator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1101,7 +892,7 @@ func (m *AggregateOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_AggregateOperator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1173,7 +964,7 @@ func (m *FilterOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_FilterOperator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1224,7 +1015,7 @@ func (m *LimitOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_LimitOperator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1276,7 +1067,7 @@ func (m *UnionOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_UnionOperator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1333,7 +1124,7 @@ func (m *UnionOperator_ColumnMapping) XXX_Marshal(b []byte, deterministic bool) 
 		return xxx_messageInfo_UnionOperator_ColumnMapping.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1380,7 +1171,7 @@ func (m *JoinOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_JoinOperator.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1452,7 +1243,7 @@ func (m *JoinOperator_EqualityCondition) XXX_Marshal(b []byte, deterministic boo
 		return xxx_messageInfo_JoinOperator_EqualityCondition.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1503,7 +1294,7 @@ func (m *JoinOperator_ParentColumn) XXX_Marshal(b []byte, deterministic bool) ([
 		return xxx_messageInfo_JoinOperator_ParentColumn.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1557,7 +1348,7 @@ func (m *ScalarExpression) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_ScalarExpression.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1625,97 +1416,13 @@ func (m *ScalarExpression) GetFunc() *ScalarFunc {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*ScalarExpression) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _ScalarExpression_OneofMarshaler, _ScalarExpression_OneofUnmarshaler, _ScalarExpression_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*ScalarExpression) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*ScalarExpression_Constant)(nil),
 		(*ScalarExpression_Column)(nil),
 		(*ScalarExpression_Func)(nil),
 	}
-}
-
-func _ScalarExpression_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*ScalarExpression)
-	// value
-	switch x := m.Value.(type) {
-	case *ScalarExpression_Constant:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Constant); err != nil {
-			return err
-		}
-	case *ScalarExpression_Column:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Column); err != nil {
-			return err
-		}
-	case *ScalarExpression_Func:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Func); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("ScalarExpression.Value has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _ScalarExpression_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*ScalarExpression)
-	switch tag {
-	case 1: // value.constant
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ScalarValue)
-		err := b.DecodeMessage(msg)
-		m.Value = &ScalarExpression_Constant{msg}
-		return true, err
-	case 2: // value.column
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Column)
-		err := b.DecodeMessage(msg)
-		m.Value = &ScalarExpression_Column{msg}
-		return true, err
-	case 3: // value.func
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ScalarFunc)
-		err := b.DecodeMessage(msg)
-		m.Value = &ScalarExpression_Func{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _ScalarExpression_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*ScalarExpression)
-	// value
-	switch x := m.Value.(type) {
-	case *ScalarExpression_Constant:
-		s := proto.Size(x.Constant)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *ScalarExpression_Column:
-		s := proto.Size(x.Column)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *ScalarExpression_Func:
-		s := proto.Size(x.Func)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type ScalarValue struct {
@@ -1742,7 +1449,7 @@ func (m *ScalarValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_ScalarValue.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1839,115 +1546,15 @@ func (m *ScalarValue) GetTime64NsValue() int64 {
 	return 0
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*ScalarValue) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _ScalarValue_OneofMarshaler, _ScalarValue_OneofUnmarshaler, _ScalarValue_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*ScalarValue) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*ScalarValue_BoolValue)(nil),
 		(*ScalarValue_Int64Value)(nil),
 		(*ScalarValue_Float64Value)(nil),
 		(*ScalarValue_StringValue)(nil),
 		(*ScalarValue_Time64NsValue)(nil),
 	}
-}
-
-func _ScalarValue_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*ScalarValue)
-	// value
-	switch x := m.Value.(type) {
-	case *ScalarValue_BoolValue:
-		t := uint64(0)
-		if x.BoolValue {
-			t = 1
-		}
-		_ = b.EncodeVarint(2<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(t)
-	case *ScalarValue_Int64Value:
-		_ = b.EncodeVarint(3<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(uint64(x.Int64Value))
-	case *ScalarValue_Float64Value:
-		_ = b.EncodeVarint(4<<3 | proto.WireFixed64)
-		_ = b.EncodeFixed64(math.Float64bits(x.Float64Value))
-	case *ScalarValue_StringValue:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.StringValue)
-	case *ScalarValue_Time64NsValue:
-		_ = b.EncodeVarint(6<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(uint64(x.Time64NsValue))
-	case nil:
-	default:
-		return fmt.Errorf("ScalarValue.Value has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _ScalarValue_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*ScalarValue)
-	switch tag {
-	case 2: // value.bool_value
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Value = &ScalarValue_BoolValue{x != 0}
-		return true, err
-	case 3: // value.int64_value
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Value = &ScalarValue_Int64Value{int64(x)}
-		return true, err
-	case 4: // value.float64_value
-		if wire != proto.WireFixed64 {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeFixed64()
-		m.Value = &ScalarValue_Float64Value{math.Float64frombits(x)}
-		return true, err
-	case 5: // value.string_value
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Value = &ScalarValue_StringValue{x}
-		return true, err
-	case 6: // value.time64_ns_value
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Value = &ScalarValue_Time64NsValue{int64(x)}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _ScalarValue_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*ScalarValue)
-	// value
-	switch x := m.Value.(type) {
-	case *ScalarValue_BoolValue:
-		n += 1 // tag and wire
-		n += 1
-	case *ScalarValue_Int64Value:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.Int64Value))
-	case *ScalarValue_Float64Value:
-		n += 1 // tag and wire
-		n += 8
-	case *ScalarValue_StringValue:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.StringValue)))
-		n += len(x.StringValue)
-	case *ScalarValue_Time64NsValue:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.Time64NsValue))
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type ScalarFunc struct {
@@ -1971,7 +1578,7 @@ func (m *ScalarFunc) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_ScalarFunc.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2046,7 +1653,7 @@ func (m *AggregateExpression) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_AggregateExpression.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2120,7 +1727,7 @@ func (m *AggregateExpression_Arg) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return xxx_messageInfo_AggregateExpression_Arg.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2177,78 +1784,12 @@ func (m *AggregateExpression_Arg) GetColumn() *Column {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*AggregateExpression_Arg) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _AggregateExpression_Arg_OneofMarshaler, _AggregateExpression_Arg_OneofUnmarshaler, _AggregateExpression_Arg_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*AggregateExpression_Arg) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*AggregateExpression_Arg_Constant)(nil),
 		(*AggregateExpression_Arg_Column)(nil),
 	}
-}
-
-func _AggregateExpression_Arg_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*AggregateExpression_Arg)
-	// value
-	switch x := m.Value.(type) {
-	case *AggregateExpression_Arg_Constant:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Constant); err != nil {
-			return err
-		}
-	case *AggregateExpression_Arg_Column:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Column); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("AggregateExpression_Arg.Value has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _AggregateExpression_Arg_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*AggregateExpression_Arg)
-	switch tag {
-	case 1: // value.constant
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ScalarValue)
-		err := b.DecodeMessage(msg)
-		m.Value = &AggregateExpression_Arg_Constant{msg}
-		return true, err
-	case 2: // value.column
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Column)
-		err := b.DecodeMessage(msg)
-		m.Value = &AggregateExpression_Arg_Column{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _AggregateExpression_Arg_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*AggregateExpression_Arg)
-	// value
-	switch x := m.Value.(type) {
-	case *AggregateExpression_Arg_Constant:
-		s := proto.Size(x.Constant)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AggregateExpression_Arg_Column:
-		s := proto.Size(x.Column)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type Column struct {
@@ -2269,7 +1810,7 @@ func (m *Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Column.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -2382,72 +1923,72 @@ var fileDescriptor_e5dcfc8666ec3f33 = []byte{
 	0x8c, 0x7d, 0x07, 0xe8, 0x2e, 0x40, 0x10, 0x12, 0x3f, 0xd4, 0x43, 0x6b, 0x42, 0xe5, 0x11, 0xbc,
 	0xd2, 0x14, 0x85, 0xbb, 0x19, 0x15, 0xee, 0x66, 0xcf, 0x09, 0x77, 0xef, 0x7c, 0x4e, 0xec, 0x29,
 	0xc5, 0x45, 0x4e, 0x1f, 0x59, 0x13, 0x8a, 0x7e, 0x08, 0xc5, 0x20, 0x64, 0xd7, 0x97, 0x49, 0x73,
-	0xe7, 0x4b, 0x0b, 0x8c, 0xcd, 0x95, 0x6f, 0x42, 0x2e, 0x24, 0xc7, 0x36, 0x0d, 0xf9, 0x71, 0x53,
-	0xb1, 0x1c, 0x69, 0xbf, 0x52, 0x00, 0x25, 0x4f, 0xfb, 0xca, 0x35, 0x3b, 0x9b, 0x6f, 0xfa, 0x62,
-	0xf9, 0x9e, 0xbf, 0x92, 0xda, 0x6f, 0x14, 0x40, 0xc9, 0xa3, 0x86, 0xae, 0x40, 0x51, 0x9e, 0x51,
-	0x59, 0xfa, 0x8a, 0xb8, 0x20, 0x80, 0x9e, 0xf1, 0x3f, 0x8c, 0xe6, 0x01, 0xd4, 0xce, 0x9e, 0x55,
-	0xb4, 0x05, 0x79, 0x62, 0x18, 0x3e, 0x0d, 0x02, 0x19, 0x48, 0x34, 0x64, 0x45, 0xdf, 0xa0, 0x41,
-	0x68, 0x39, 0x24, 0x64, 0x37, 0xd2, 0x32, 0x78, 0x5d, 0x2c, 0xe2, 0x4a, 0x0c, 0xed, 0x19, 0xda,
-	0x57, 0x50, 0x8a, 0xd5, 0x33, 0x74, 0x1f, 0x4a, 0xf4, 0x89, 0xc7, 0x0c, 0x58, 0xae, 0x13, 0x3d,
-	0x40, 0x2b, 0x2e, 0xcd, 0x83, 0x31, 0xb1, 0x89, 0xdf, 0x9e, 0x53, 0x71, 0x5c, 0x96, 0x48, 0x26,
-	0x9d, 0x4c, 0x66, 0xa6, 0xc0, 0x66, 0xa2, 0x20, 0xa2, 0x8f, 0x21, 0xf7, 0x15, 0x3b, 0x20, 0x91,
-	0xe7, 0xeb, 0xaf, 0xa9, 0xa2, 0x31, 0xe7, 0x52, 0x84, 0x6e, 0x43, 0xce, 0xf4, 0xdd, 0xa9, 0x17,
-	0x3d, 0xf9, 0x5b, 0x49, 0xf9, 0x3e, 0x8f, 0x01, 0x4b, 0x1e, 0xbb, 0x6f, 0xfc, 0x6b, 0x69, 0xd5,
-	0x81, 0x43, 0xe2, 0x32, 0x5d, 0x85, 0x12, 0x37, 0x2e, 0x09, 0xaa, 0x20, 0x70, 0x48, 0x10, 0xea,
-	0x50, 0x78, 0x6c, 0x39, 0x86, 0xfb, 0x98, 0x1a, 0xfc, 0xd2, 0x14, 0xf0, 0x7c, 0xac, 0xfd, 0x5a,
-	0x81, 0xea, 0x72, 0xb1, 0x45, 0x7b, 0x00, 0x8b, 0x95, 0x92, 0x4d, 0xcc, 0x45, 0xd6, 0x37, 0xa6,
-	0x42, 0x3b, 0x90, 0x17, 0x4b, 0x79, 0x7e, 0x9e, 0x11, 0x51, 0x7b, 0x08, 0x95, 0xa5, 0xb2, 0x8d,
-	0x2e, 0x43, 0x96, 0x97, 0x6d, 0x1e, 0x43, 0x06, 0x8b, 0xc1, 0x7f, 0x65, 0xfa, 0xa5, 0x02, 0x95,
-	0xa5, 0xa2, 0x9e, 0xd8, 0x7f, 0x25, 0x59, 0xa4, 0x3e, 0x87, 0x0d, 0x49, 0x99, 0x10, 0xcf, 0xb3,
-	0x1c, 0x33, 0x72, 0xf8, 0xfd, 0x73, 0x5e, 0x0c, 0xe9, 0xfe, 0x40, 0xa8, 0x70, 0x75, 0x1c, 0x1f,
-	0x06, 0xe8, 0x7d, 0xa8, 0xfa, 0xee, 0xe3, 0x40, 0xf7, 0xa8, 0xaf, 0x1f, 0x93, 0x70, 0xfc, 0x88,
-	0xbf, 0xe3, 0x2a, 0x2e, 0x33, 0xf4, 0x90, 0xfa, 0x7b, 0x0c, 0xab, 0xef, 0x42, 0x65, 0xc9, 0x0c,
-	0xbb, 0x2d, 0x51, 0xdd, 0x75, 0x0c, 0xfa, 0x44, 0xc6, 0x9c, 0xc1, 0x15, 0x59, 0x7a, 0x05, 0xa8,
-	0xfd, 0x4d, 0x85, 0x72, 0xbc, 0xd8, 0xa3, 0x8f, 0x40, 0x8d, 0xb5, 0x2c, 0x37, 0x5e, 0xff, 0x34,
-	0xf0, 0x01, 0xbf, 0xfa, 0x5c, 0x84, 0x08, 0x5c, 0xa2, 0x3f, 0x9b, 0x12, 0xdb, 0x0a, 0x4f, 0xf5,
-	0xb1, 0xeb, 0x18, 0x56, 0xc8, 0x2f, 0x9d, 0x58, 0x87, 0xdb, 0xe7, 0xd8, 0x6a, 0x4b, 0xe5, 0x7e,
-	0x24, 0xc4, 0x88, 0x9e, 0x85, 0x02, 0x84, 0xa1, 0xea, 0x4e, 0x43, 0x6f, 0x1a, 0xea, 0xd1, 0xb6,
-	0x8a, 0x6e, 0xf4, 0xbb, 0xe7, 0x58, 0x17, 0x3d, 0xa1, 0xdc, 0xe9, 0x8a, 0x30, 0x21, 0x46, 0xc9,
-	0xdb, 0xad, 0x26, 0x77, 0x37, 0xb9, 0x0b, 0xd9, 0x15, 0xbb, 0x30, 0x81, 0xcd, 0x44, 0x16, 0xe8,
-	0x16, 0x6c, 0xda, 0xf4, 0x24, 0x8a, 0x57, 0x6c, 0x87, 0xec, 0x2f, 0x37, 0xd8, 0xc4, 0xfe, 0x62,
-	0x43, 0xd0, 0xf7, 0x00, 0xf9, 0x96, 0xf9, 0xe8, 0x0c, 0x39, 0xcd, 0xc9, 0x35, 0x3e, 0x13, 0x63,
-	0xd7, 0x47, 0x50, 0x8e, 0xa7, 0xc5, 0xf2, 0x10, 0xfd, 0xf0, 0x92, 0x93, 0x92, 0xc0, 0x84, 0x83,
-	0x45, 0xaa, 0x71, 0xd3, 0xa5, 0xd8, 0xa1, 0xd0, 0x3e, 0x84, 0x42, 0xb4, 0xad, 0xa8, 0x08, 0xd9,
-	0xde, 0x60, 0xd0, 0xc6, 0xb5, 0x14, 0xaa, 0x02, 0xf4, 0xdb, 0x9d, 0x91, 0x3e, 0x3c, 0x1a, 0xb5,
-	0x71, 0x4d, 0x61, 0xe3, 0xce, 0x51, 0xbf, 0x2f, 0xc7, 0x19, 0xed, 0x2f, 0x0a, 0xd4, 0xce, 0x5e,
-	0x72, 0xf4, 0x11, 0x14, 0xc6, 0xae, 0x13, 0x84, 0xc4, 0x09, 0x65, 0x69, 0x78, 0x67, 0x5d, 0x69,
-	0xe0, 0xef, 0x28, 0x6b, 0xdd, 0x22, 0x01, 0xda, 0x81, 0x9c, 0x88, 0x4b, 0x36, 0xc0, 0x6b, 0x6f,
-	0x2e, 0xeb, 0x50, 0x04, 0x13, 0xed, 0x80, 0x7a, 0x32, 0x75, 0xc6, 0xb2, 0xd7, 0x7d, 0x7b, 0x9d,
-	0xb3, 0xce, 0xd4, 0x19, 0x7f, 0x92, 0xc2, 0x9c, 0xbb, 0x97, 0x87, 0x2c, 0x2f, 0x7f, 0xda, 0x2f,
-	0xd3, 0x50, 0x8a, 0x05, 0x83, 0xb6, 0xa1, 0x68, 0x90, 0x90, 0xc4, 0x7b, 0xf8, 0x55, 0xcf, 0x5e,
-	0xc1, 0x90, 0x5f, 0xe8, 0x2a, 0xc0, 0xb1, 0xeb, 0xda, 0x3a, 0x37, 0xc7, 0xa3, 0x2e, 0xb0, 0x76,
-	0x96, 0x61, 0xc2, 0xe2, 0xbb, 0x50, 0xb2, 0x58, 0xd3, 0x20, 0x19, 0x2c, 0xca, 0x0c, 0x6b, 0xcf,
-	0xac, 0x79, 0x27, 0x81, 0xae, 0x43, 0xe5, 0xc4, 0x76, 0xc9, 0x82, 0xc4, 0xda, 0x6f, 0x85, 0x75,
-	0x83, 0x12, 0x16, 0xb4, 0xf7, 0xa0, 0x1c, 0x84, 0xbe, 0xe5, 0x98, 0x92, 0xc5, 0x8e, 0x63, 0x91,
-	0xf5, 0xfe, 0x02, 0x15, 0xa4, 0x9b, 0xb0, 0xc1, 0x1a, 0x98, 0xdd, 0x3b, 0xba, 0x13, 0x48, 0x5e,
-	0x4e, 0xba, 0xac, 0x88, 0x89, 0x41, 0xc0, 0x99, 0x8b, 0x35, 0x78, 0xa6, 0x00, 0x2c, 0xd6, 0x68,
-	0x65, 0x7b, 0x72, 0x17, 0x8a, 0x96, 0x63, 0x85, 0x3a, 0xf1, 0xe7, 0x35, 0xee, 0xf5, 0xbb, 0x8a,
-	0x0b, 0x8c, 0xdf, 0xf2, 0xcd, 0x00, 0xed, 0x82, 0xca, 0x65, 0x99, 0x0b, 0xbf, 0xc3, 0x9c, 0x2f,
-	0x7f, 0x95, 0xa9, 0xbc, 0xb2, 0xb3, 0x5f, 0x65, 0x77, 0x61, 0x83, 0xe1, 0xfa, 0x7c, 0x7f, 0x82,
-	0xad, 0xec, 0xda, 0xbe, 0xa4, 0xc2, 0xa8, 0xd1, 0x28, 0xd0, 0xfe, 0x99, 0x86, 0x4b, 0x2b, 0x1e,
-	0xdd, 0x79, 0xae, 0x99, 0x75, 0xb9, 0xaa, 0xff, 0x59, 0xae, 0x1f, 0xcb, 0x5c, 0xb3, 0x5c, 0xf6,
-	0x9d, 0x0b, 0xbd, 0xfc, 0xcd, 0x96, 0x6f, 0x2e, 0xa5, 0x9c, 0x7b, 0x5d, 0xca, 0xf9, 0x0b, 0xa6,
-	0x5c, 0xff, 0x39, 0x64, 0x5a, 0xbe, 0xf9, 0x7f, 0xbf, 0x8e, 0x8b, 0x63, 0xb5, 0x03, 0x39, 0x59,
-	0xa4, 0xd8, 0x2a, 0xbb, 0x06, 0x95, 0xc5, 0x89, 0x7f, 0xb3, 0xa7, 0x3b, 0x5e, 0x8e, 0xc4, 0xe0,
-	0xd6, 0xef, 0xd3, 0x50, 0x8e, 0xff, 0x40, 0x46, 0x6f, 0xc1, 0x1b, 0xc3, 0xc3, 0x36, 0x6e, 0x8d,
-	0x86, 0x58, 0x1f, 0x3d, 0x3c, 0x6c, 0xeb, 0x47, 0x83, 0xcf, 0x06, 0xc3, 0x9f, 0x0c, 0x6a, 0x29,
-	0x74, 0x05, 0xde, 0x3c, 0x68, 0x1f, 0x0c, 0xf1, 0x43, 0xfd, 0xc1, 0xf0, 0x08, 0xef, 0xb7, 0xf5,
-	0x88, 0x58, 0x7b, 0x99, 0x47, 0x6f, 0xc1, 0xe5, 0x2e, 0x3e, 0xdc, 0x4f, 0x4c, 0xfd, 0xa3, 0x80,
-	0x36, 0xa1, 0x7c, 0xd0, 0x3a, 0x5c, 0x40, 0x4f, 0x37, 0xd0, 0xb7, 0x00, 0xb5, 0xba, 0x5d, 0xdc,
-	0xee, 0xb6, 0x46, 0x31, 0xee, 0x9f, 0x6b, 0xe8, 0x32, 0x6c, 0x74, 0x7a, 0xfd, 0x51, 0x1b, 0x2f,
-	0xd0, 0x3f, 0x6c, 0xa2, 0x4b, 0x50, 0xed, 0xf7, 0x0e, 0x7a, 0xa3, 0x05, 0xf8, 0x2f, 0x0e, 0x1e,
-	0x0d, 0x7a, 0xc3, 0xc1, 0x02, 0x7c, 0x86, 0x10, 0x82, 0xca, 0xa7, 0xc3, 0x5e, 0x0c, 0xfb, 0xeb,
-	0x25, 0x16, 0x5a, 0x14, 0x77, 0x6f, 0xf0, 0xd9, 0x62, 0xea, 0xeb, 0x0e, 0x8b, 0x43, 0x44, 0xbd,
-	0x34, 0xf1, 0xdb, 0xee, 0xde, 0xbd, 0xa7, 0xcf, 0x1b, 0xa9, 0x6f, 0x9e, 0x37, 0x52, 0xaf, 0x9e,
-	0x37, 0x94, 0x5f, 0xcc, 0x1a, 0xca, 0xd7, 0xb3, 0x86, 0xf2, 0xf7, 0x59, 0x43, 0x79, 0x3a, 0x6b,
-	0x28, 0xcf, 0x66, 0x0d, 0xe5, 0xe5, 0xac, 0x91, 0x7a, 0x35, 0x6b, 0x28, 0xbf, 0x7b, 0xd1, 0x48,
-	0x3d, 0x7d, 0xd1, 0x48, 0x7d, 0xf3, 0xa2, 0x91, 0xfa, 0x69, 0x4e, 0xec, 0xd1, 0x71, 0x8e, 0xff,
-	0x7c, 0xf9, 0xe0, 0xdf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x8e, 0xa7, 0xaa, 0xe2, 0xf2, 0x12, 0x00,
+	0xe7, 0x4b, 0x0b, 0x8c, 0xcd, 0x95, 0x6f, 0x42, 0x2e, 0x24, 0xc7, 0x36, 0x0d, 0xf9, 0x71, 0x2b,
+	0x62, 0x39, 0xd2, 0x7e, 0xa5, 0x00, 0x4a, 0x9e, 0xf6, 0x95, 0x6b, 0x76, 0x36, 0xdf, 0xf4, 0xc5,
+	0xf2, 0x3d, 0x7f, 0x25, 0xb5, 0xdf, 0x28, 0x80, 0x92, 0x47, 0x0d, 0x5d, 0x81, 0xa2, 0x3c, 0xa3,
+	0xb2, 0xf4, 0x15, 0x71, 0x41, 0x00, 0x3d, 0xe3, 0x7f, 0x18, 0xcd, 0x03, 0xa8, 0x9d, 0x3d, 0xab,
+	0x68, 0x0b, 0xf2, 0xc4, 0x30, 0x7c, 0x1a, 0x04, 0x32, 0x90, 0x68, 0xc8, 0x8a, 0xbe, 0x41, 0x83,
+	0xd0, 0x72, 0x48, 0xc8, 0x6e, 0xa4, 0x65, 0xf0, 0xba, 0x58, 0xc4, 0x95, 0x18, 0xda, 0x33, 0xb4,
+	0xaf, 0xa0, 0x14, 0xab, 0x67, 0xe8, 0x3e, 0x94, 0xe8, 0x13, 0x8f, 0x19, 0xb0, 0x5c, 0x27, 0x7a,
+	0x80, 0x56, 0x5c, 0x9a, 0x07, 0x63, 0x62, 0x13, 0xbf, 0x3d, 0xa7, 0xe2, 0xb8, 0x2c, 0x91, 0x4c,
+	0x3a, 0x99, 0xcc, 0x4c, 0x81, 0xcd, 0x44, 0x41, 0x44, 0x1f, 0x43, 0xee, 0x2b, 0x76, 0x40, 0x22,
+	0xcf, 0xd7, 0x5f, 0x53, 0x45, 0x63, 0xce, 0xa5, 0x08, 0xdd, 0x86, 0x9c, 0xe9, 0xbb, 0x53, 0x2f,
+	0x7a, 0xf2, 0xb7, 0x92, 0xf2, 0x7d, 0x1e, 0x03, 0x96, 0x3c, 0x76, 0xdf, 0xf8, 0xd7, 0xd2, 0xaa,
+	0x03, 0x87, 0xc4, 0x65, 0xba, 0x0a, 0x25, 0x6e, 0x5c, 0x12, 0x54, 0x41, 0xe0, 0x90, 0x20, 0xd4,
+	0xa1, 0xf0, 0xd8, 0x72, 0x0c, 0xf7, 0x31, 0x35, 0xf8, 0xa5, 0x29, 0xe0, 0xf9, 0x58, 0xfb, 0xb5,
+	0x02, 0xd5, 0xe5, 0x62, 0x8b, 0xf6, 0x00, 0x16, 0x2b, 0x25, 0x9b, 0x98, 0x8b, 0xac, 0x6f, 0x4c,
+	0x85, 0x76, 0x20, 0x2f, 0x96, 0xf2, 0xfc, 0x3c, 0x23, 0xa2, 0xf6, 0x10, 0x2a, 0x4b, 0x65, 0x1b,
+	0x5d, 0x86, 0x2c, 0x2f, 0xdb, 0x3c, 0x86, 0x0c, 0x16, 0x83, 0xff, 0xca, 0xf4, 0x4b, 0x05, 0x2a,
+	0x4b, 0x45, 0x3d, 0xb1, 0xff, 0x4a, 0xb2, 0x48, 0x7d, 0x0e, 0x1b, 0x92, 0x32, 0x21, 0x9e, 0x67,
+	0x39, 0x66, 0xe4, 0xf0, 0xfb, 0xe7, 0xbc, 0x18, 0xd2, 0xfd, 0x81, 0x50, 0xe1, 0xea, 0x38, 0x3e,
+	0x0c, 0xd0, 0xfb, 0x50, 0xf5, 0xdd, 0xc7, 0x81, 0xee, 0x51, 0x5f, 0x3f, 0x26, 0xe1, 0xf8, 0x11,
+	0x7f, 0xc7, 0x55, 0x5c, 0x66, 0xe8, 0x21, 0xf5, 0xf7, 0x18, 0x56, 0xdf, 0x85, 0xca, 0x92, 0x19,
+	0x76, 0x5b, 0xa2, 0xba, 0xeb, 0x18, 0xf4, 0x89, 0x8c, 0x39, 0x83, 0x2b, 0xb2, 0xf4, 0x0a, 0x50,
+	0xfb, 0x9b, 0x0a, 0xe5, 0x78, 0xb1, 0x47, 0x1f, 0x81, 0x1a, 0x6b, 0x59, 0x6e, 0xbc, 0xfe, 0x69,
+	0xe0, 0x03, 0x7e, 0xf5, 0xb9, 0x08, 0x11, 0xb8, 0x44, 0x7f, 0x36, 0x25, 0xb6, 0x15, 0x9e, 0xea,
+	0x63, 0xd7, 0x31, 0xac, 0x90, 0x5f, 0x3a, 0xb1, 0x0e, 0xb7, 0xcf, 0xb1, 0xd5, 0x96, 0xca, 0xfd,
+	0x48, 0x88, 0x11, 0x3d, 0x0b, 0x05, 0x08, 0x43, 0xd5, 0x9d, 0x86, 0xde, 0x34, 0xd4, 0xa3, 0x6d,
+	0x15, 0xdd, 0xe8, 0x77, 0xcf, 0xb1, 0x2e, 0x7a, 0x42, 0xb9, 0xd3, 0x15, 0x61, 0x42, 0x8c, 0x92,
+	0xb7, 0x5b, 0x4d, 0xee, 0x6e, 0x72, 0x17, 0xb2, 0x2b, 0x76, 0x61, 0x02, 0x9b, 0x89, 0x2c, 0xd0,
+	0x2d, 0xd8, 0xb4, 0xe9, 0x49, 0x14, 0xaf, 0xd8, 0x0e, 0xd9, 0x5f, 0x6e, 0xb0, 0x89, 0xfd, 0xc5,
+	0x86, 0xa0, 0xef, 0x01, 0xf2, 0x2d, 0xf3, 0xd1, 0x19, 0x72, 0x9a, 0x93, 0x6b, 0x7c, 0x26, 0xc6,
+	0xae, 0x8f, 0xa0, 0x1c, 0x4f, 0x8b, 0xe5, 0x21, 0xfa, 0xe1, 0x25, 0x27, 0x25, 0x81, 0x09, 0x07,
+	0x8b, 0x54, 0xe3, 0xa6, 0x4b, 0xb1, 0x43, 0xa1, 0x7d, 0x08, 0x85, 0x68, 0x5b, 0x51, 0x11, 0xb2,
+	0xbd, 0xc1, 0xa0, 0x8d, 0x6b, 0x29, 0x54, 0x05, 0xe8, 0xb7, 0x3b, 0x23, 0x7d, 0x78, 0x34, 0x6a,
+	0xe3, 0x9a, 0xc2, 0xc6, 0x9d, 0xa3, 0x7e, 0x5f, 0x8e, 0x33, 0xda, 0x5f, 0x14, 0xa8, 0x9d, 0xbd,
+	0xe4, 0xe8, 0x23, 0x28, 0x8c, 0x5d, 0x27, 0x08, 0x89, 0x13, 0xca, 0xd2, 0xf0, 0xce, 0xba, 0xd2,
+	0xc0, 0xdf, 0x51, 0xd6, 0xba, 0x45, 0x02, 0xb4, 0x03, 0x39, 0x11, 0x97, 0x6c, 0x80, 0xd7, 0xde,
+	0x5c, 0xd6, 0xa1, 0x08, 0x26, 0xda, 0x01, 0xf5, 0x64, 0xea, 0x8c, 0x65, 0xaf, 0xfb, 0xf6, 0x3a,
+	0x67, 0x9d, 0xa9, 0x33, 0xfe, 0x24, 0x85, 0x39, 0x77, 0x2f, 0x0f, 0x59, 0x5e, 0xfe, 0xb4, 0x5f,
+	0xa6, 0xa1, 0x14, 0x0b, 0x06, 0x6d, 0x43, 0xd1, 0x20, 0x21, 0x89, 0xf7, 0xf0, 0xab, 0x9e, 0xbd,
+	0x82, 0x21, 0xbf, 0xd0, 0x55, 0x80, 0x63, 0xd7, 0xb5, 0x75, 0x6e, 0x8e, 0x47, 0x5d, 0x60, 0xed,
+	0x2c, 0xc3, 0x84, 0xc5, 0x77, 0xa1, 0x64, 0xb1, 0xa6, 0x41, 0x32, 0x58, 0x94, 0x19, 0xd6, 0x9e,
+	0x59, 0xf3, 0x4e, 0x02, 0x5d, 0x87, 0xca, 0x89, 0xed, 0x92, 0x05, 0x89, 0xb5, 0xdf, 0x0a, 0xeb,
+	0x06, 0x25, 0x2c, 0x68, 0xef, 0x41, 0x39, 0x08, 0x7d, 0xcb, 0x31, 0x25, 0x8b, 0x1d, 0xc7, 0x22,
+	0xeb, 0xfd, 0x05, 0x2a, 0x48, 0x37, 0x61, 0x83, 0x35, 0x30, 0xbb, 0x77, 0x74, 0x27, 0x90, 0xbc,
+	0x9c, 0x74, 0x59, 0x11, 0x13, 0x83, 0x80, 0x33, 0x17, 0x6b, 0xf0, 0x4c, 0x01, 0x58, 0xac, 0xd1,
+	0xca, 0xf6, 0xe4, 0x2e, 0x14, 0x2d, 0xc7, 0x0a, 0x75, 0xe2, 0xcf, 0x6b, 0xdc, 0xeb, 0x77, 0x15,
+	0x17, 0x18, 0xbf, 0xe5, 0x9b, 0x01, 0xda, 0x05, 0x95, 0xcb, 0x32, 0x17, 0x7e, 0x87, 0x39, 0x5f,
+	0xfe, 0x2a, 0x53, 0x79, 0x65, 0x67, 0xbf, 0xca, 0xee, 0xc2, 0x06, 0xc3, 0xf5, 0xf9, 0xfe, 0x04,
+	0x5b, 0xd9, 0xb5, 0x7d, 0x49, 0x85, 0x51, 0xa3, 0x51, 0xa0, 0xfd, 0x33, 0x0d, 0x97, 0x56, 0x3c,
+	0xba, 0xf3, 0x5c, 0x33, 0xeb, 0x72, 0x55, 0xff, 0xb3, 0x5c, 0x3f, 0x96, 0xb9, 0x66, 0xb9, 0xec,
+	0x3b, 0x17, 0x7a, 0xf9, 0x9b, 0x2d, 0xdf, 0x5c, 0x4a, 0x39, 0xf7, 0xba, 0x94, 0xf3, 0x17, 0x4c,
+	0xb9, 0xfe, 0x73, 0xc8, 0xb4, 0x7c, 0xf3, 0xff, 0x7e, 0x1d, 0x17, 0xc7, 0x6a, 0x07, 0x72, 0xb2,
+	0x48, 0xb1, 0x55, 0x76, 0x0d, 0x2a, 0x8b, 0x13, 0xff, 0x66, 0x4f, 0x77, 0xbc, 0x1c, 0x89, 0xc1,
+	0xad, 0xdf, 0xa7, 0xa1, 0x1c, 0xff, 0x81, 0x8c, 0xde, 0x82, 0x37, 0x86, 0x87, 0x6d, 0xdc, 0x1a,
+	0x0d, 0xb1, 0x3e, 0x7a, 0x78, 0xd8, 0xd6, 0x8f, 0x06, 0x9f, 0x0d, 0x86, 0x3f, 0x19, 0xd4, 0x52,
+	0xe8, 0x0a, 0xbc, 0x79, 0xd0, 0x3e, 0x18, 0xe2, 0x87, 0xfa, 0x83, 0xe1, 0x11, 0xde, 0x6f, 0xeb,
+	0x11, 0xb1, 0xf6, 0x32, 0x8f, 0xde, 0x82, 0xcb, 0x5d, 0x7c, 0xb8, 0x9f, 0x98, 0xfa, 0x47, 0x01,
+	0x6d, 0x42, 0xf9, 0xa0, 0x75, 0xb8, 0x80, 0x9e, 0x6e, 0xa0, 0x6f, 0x01, 0x6a, 0x75, 0xbb, 0xb8,
+	0xdd, 0x6d, 0x8d, 0x62, 0xdc, 0x3f, 0xd7, 0xd0, 0x65, 0xd8, 0xe8, 0xf4, 0xfa, 0xa3, 0x36, 0x5e,
+	0xa0, 0x7f, 0xd8, 0x44, 0x97, 0xa0, 0xda, 0xef, 0x1d, 0xf4, 0x46, 0x0b, 0xf0, 0x5f, 0x1c, 0x3c,
+	0x1a, 0xf4, 0x86, 0x83, 0x05, 0xf8, 0x0c, 0x21, 0x04, 0x95, 0x4f, 0x87, 0xbd, 0x18, 0xf6, 0xd7,
+	0x4b, 0x2c, 0xb4, 0x28, 0xee, 0xde, 0xe0, 0xb3, 0xc5, 0xd4, 0xd7, 0x1d, 0x16, 0x87, 0x88, 0x7a,
+	0x69, 0xe2, 0xb7, 0xdd, 0xbd, 0x7b, 0x4f, 0x9f, 0x37, 0x52, 0xdf, 0x3c, 0x6f, 0xa4, 0x5e, 0x3d,
+	0x6f, 0x28, 0xbf, 0x98, 0x35, 0x94, 0xaf, 0x67, 0x0d, 0xe5, 0xef, 0xb3, 0x86, 0xf2, 0x74, 0xd6,
+	0x50, 0x9e, 0xcd, 0x1a, 0xca, 0xcb, 0x59, 0x23, 0xf5, 0x6a, 0xd6, 0x50, 0x7e, 0xf7, 0xa2, 0x91,
+	0x7a, 0xfa, 0xa2, 0x91, 0xfa, 0xe6, 0x45, 0x23, 0xf5, 0xd3, 0x9c, 0xd8, 0xa3, 0xe3, 0x1c, 0xff,
+	0xf9, 0xf2, 0xc1, 0xbf, 0x03, 0x00, 0x00, 0xff, 0xff, 0xbd, 0x74, 0xb9, 0xbc, 0xf2, 0x12, 0x00,
 	0x00,
 }
 
@@ -4372,7 +3913,7 @@ func valueToGoStringPlan(v interface{}, typ string) string {
 func (m *Plan) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4380,39 +3921,48 @@ func (m *Plan) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Plan) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Plan) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Dag != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Dag.Size()))
-		n1, err := m.Dag.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
 	if len(m.Nodes) > 0 {
-		for _, msg := range m.Nodes {
+		for iNdEx := len(m.Nodes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Nodes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
 			dAtA[i] = 0x12
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+		}
+	}
+	if m.Dag != nil {
+		{
+			size, err := m.Dag.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *PlanFragment) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4420,44 +3970,53 @@ func (m *PlanFragment) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *PlanFragment) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PlanFragment) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Id != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Id))
+	if len(m.Nodes) > 0 {
+		for iNdEx := len(m.Nodes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Nodes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
 	}
 	if m.Dag != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Dag.Size()))
-		n2, err := m.Dag.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
-	}
-	if len(m.Nodes) > 0 {
-		for _, msg := range m.Nodes {
-			dAtA[i] = 0x1a
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+		{
+			size, err := m.Dag.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Id != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *DAG) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4465,29 +4024,36 @@ func (m *DAG) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DAG) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DAG) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Nodes) > 0 {
-		for _, msg := range m.Nodes {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Nodes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Nodes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *DAG_DAGNode) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4495,19 +4061,19 @@ func (m *DAG_DAGNode) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *DAG_DAGNode) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DAG_DAGNode) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Id != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Id))
-	}
-	if len(m.SortedChildren) > 0 {
-		dAtA4 := make([]byte, len(m.SortedChildren)*10)
+	if len(m.SortedParents) > 0 {
+		dAtA4 := make([]byte, len(m.SortedParents)*10)
 		var j3 int
-		for _, num := range m.SortedChildren {
+		for _, num := range m.SortedParents {
 			for num >= 1<<7 {
 				dAtA4[j3] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
@@ -4516,15 +4082,16 @@ func (m *DAG_DAGNode) MarshalTo(dAtA []byte) (int, error) {
 			dAtA4[j3] = uint8(num)
 			j3++
 		}
-		dAtA[i] = 0x1a
-		i++
+		i -= j3
+		copy(dAtA[i:], dAtA4[:j3])
 		i = encodeVarintPlan(dAtA, i, uint64(j3))
-		i += copy(dAtA[i:], dAtA4[:j3])
+		i--
+		dAtA[i] = 0x22
 	}
-	if len(m.SortedParents) > 0 {
-		dAtA6 := make([]byte, len(m.SortedParents)*10)
+	if len(m.SortedChildren) > 0 {
+		dAtA6 := make([]byte, len(m.SortedChildren)*10)
 		var j5 int
-		for _, num := range m.SortedParents {
+		for _, num := range m.SortedChildren {
 			for num >= 1<<7 {
 				dAtA6[j5] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
@@ -4533,18 +4100,24 @@ func (m *DAG_DAGNode) MarshalTo(dAtA []byte) (int, error) {
 			dAtA6[j5] = uint8(num)
 			j5++
 		}
-		dAtA[i] = 0x22
-		i++
+		i -= j5
+		copy(dAtA[i:], dAtA6[:j5])
 		i = encodeVarintPlan(dAtA, i, uint64(j5))
-		i += copy(dAtA[i:], dAtA6[:j5])
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	if m.Id != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *PlanNode) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4552,32 +4125,39 @@ func (m *PlanNode) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *PlanNode) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PlanNode) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Id != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Id))
-	}
 	if m.Op != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Op.Size()))
-		n7, err := m.Op.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Op.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n7
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Id != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Operator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4585,169 +4165,236 @@ func (m *Operator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Operator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Operator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.OpType != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.OpType))
-	}
 	if m.Op != nil {
-		nn8, err := m.Op.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size := m.Op.Size()
+			i -= size
+			if _, err := m.Op.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
 		}
-		i += nn8
 	}
-	return i, nil
+	if m.OpType != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.OpType))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Operator_MemSourceOp) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Operator_MemSourceOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.MemSourceOp != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.MemSourceOp.Size()))
-		n9, err := m.MemSourceOp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.MemSourceOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n9
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Operator_MapOp) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Operator_MapOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.MapOp != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.MapOp.Size()))
-		n10, err := m.MapOp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.MapOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n10
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Operator_AggOp) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Operator_AggOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.AggOp != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.AggOp.Size()))
-		n11, err := m.AggOp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.AggOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n11
+		i--
+		dAtA[i] = 0x22
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Operator_MemSinkOp) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Operator_MemSinkOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.MemSinkOp != nil {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.MemSinkOp.Size()))
-		n12, err := m.MemSinkOp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.MemSinkOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n12
+		i--
+		dAtA[i] = 0x2a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Operator_FilterOp) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Operator_FilterOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.FilterOp != nil {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.FilterOp.Size()))
-		n13, err := m.FilterOp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.FilterOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n13
+		i--
+		dAtA[i] = 0x32
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Operator_LimitOp) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Operator_LimitOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.LimitOp != nil {
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.LimitOp.Size()))
-		n14, err := m.LimitOp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.LimitOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n14
+		i--
+		dAtA[i] = 0x3a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Operator_UnionOp) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Operator_UnionOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.UnionOp != nil {
-		dAtA[i] = 0x42
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.UnionOp.Size()))
-		n15, err := m.UnionOp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.UnionOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n15
+		i--
+		dAtA[i] = 0x42
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Operator_GrpcSourceOp) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Operator_GrpcSourceOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.GrpcSourceOp != nil {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.GrpcSourceOp.Size()))
-		n16, err := m.GrpcSourceOp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.GrpcSourceOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n16
+		i--
+		dAtA[i] = 0x4a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Operator_GrpcSinkOp) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Operator_GrpcSinkOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.GrpcSinkOp != nil {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.GrpcSinkOp.Size()))
-		n17, err := m.GrpcSinkOp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.GrpcSinkOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n17
+		i--
+		dAtA[i] = 0x52
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Operator_JoinOp) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *Operator_JoinOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.JoinOp != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.JoinOp.Size()))
-		n18, err := m.JoinOp.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.JoinOp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n18
+		i--
+		dAtA[i] = 0x5a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *MemorySourceOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4755,98 +4402,106 @@ func (m *MemorySourceOperator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MemorySourceOperator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MemorySourceOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
+	if len(m.Tablet) > 0 {
+		i -= len(m.Tablet)
+		copy(dAtA[i:], m.Tablet)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.Tablet)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.StopTime != nil {
+		{
+			size, err := m.StopTime.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.StartTime != nil {
+		{
+			size, err := m.StartTime.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.ColumnTypes) > 0 {
+		dAtA21 := make([]byte, len(m.ColumnTypes)*10)
+		var j20 int
+		for _, num := range m.ColumnTypes {
+			for num >= 1<<7 {
+				dAtA21[j20] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j20++
+			}
+			dAtA21[j20] = uint8(num)
+			j20++
+		}
+		i -= j20
+		copy(dAtA[i:], dAtA21[:j20])
+		i = encodeVarintPlan(dAtA, i, uint64(j20))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.ColumnNames) > 0 {
+		for iNdEx := len(m.ColumnNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ColumnNames[iNdEx])
+			copy(dAtA[i:], m.ColumnNames[iNdEx])
+			i = encodeVarintPlan(dAtA, i, uint64(len(m.ColumnNames[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
 	}
 	if len(m.ColumnIdxs) > 0 {
-		dAtA20 := make([]byte, len(m.ColumnIdxs)*10)
-		var j19 int
+		dAtA23 := make([]byte, len(m.ColumnIdxs)*10)
+		var j22 int
 		for _, num1 := range m.ColumnIdxs {
 			num := uint64(num1)
 			for num >= 1<<7 {
-				dAtA20[j19] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA23[j22] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j19++
+				j22++
 			}
-			dAtA20[j19] = uint8(num)
-			j19++
+			dAtA23[j22] = uint8(num)
+			j22++
 		}
+		i -= j22
+		copy(dAtA[i:], dAtA23[:j22])
+		i = encodeVarintPlan(dAtA, i, uint64(j22))
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(j19))
-		i += copy(dAtA[i:], dAtA20[:j19])
 	}
-	if len(m.ColumnNames) > 0 {
-		for _, s := range m.ColumnNames {
-			dAtA[i] = 0x1a
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
-		}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
 	}
-	if len(m.ColumnTypes) > 0 {
-		dAtA22 := make([]byte, len(m.ColumnTypes)*10)
-		var j21 int
-		for _, num := range m.ColumnTypes {
-			for num >= 1<<7 {
-				dAtA22[j21] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j21++
-			}
-			dAtA22[j21] = uint8(num)
-			j21++
-		}
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(j21))
-		i += copy(dAtA[i:], dAtA22[:j21])
-	}
-	if m.StartTime != nil {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.StartTime.Size()))
-		n23, err := m.StartTime.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n23
-	}
-	if m.StopTime != nil {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.StopTime.Size()))
-		n24, err := m.StopTime.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n24
-	}
-	if m.Tablet != 0 {
-		dAtA[i] = 0x38
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Tablet))
-	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *MemorySinkOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4854,55 +4509,56 @@ func (m *MemorySinkOperator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MemorySinkOperator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MemorySinkOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
+	if len(m.ColumnNames) > 0 {
+		for iNdEx := len(m.ColumnNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ColumnNames[iNdEx])
+			copy(dAtA[i:], m.ColumnNames[iNdEx])
+			i = encodeVarintPlan(dAtA, i, uint64(len(m.ColumnNames[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
 	}
 	if len(m.ColumnTypes) > 0 {
-		dAtA26 := make([]byte, len(m.ColumnTypes)*10)
-		var j25 int
+		dAtA25 := make([]byte, len(m.ColumnTypes)*10)
+		var j24 int
 		for _, num := range m.ColumnTypes {
 			for num >= 1<<7 {
-				dAtA26[j25] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA25[j24] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j25++
+				j24++
 			}
-			dAtA26[j25] = uint8(num)
-			j25++
+			dAtA25[j24] = uint8(num)
+			j24++
 		}
+		i -= j24
+		copy(dAtA[i:], dAtA25[:j24])
+		i = encodeVarintPlan(dAtA, i, uint64(j24))
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(j25))
-		i += copy(dAtA[i:], dAtA26[:j25])
 	}
-	if len(m.ColumnNames) > 0 {
-		for _, s := range m.ColumnNames {
-			dAtA[i] = 0x1a
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
-		}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GrpcSourceOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4910,55 +4566,56 @@ func (m *GrpcSourceOperator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GrpcSourceOperator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GrpcSourceOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.SourceId) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(len(m.SourceId)))
-		i += copy(dAtA[i:], m.SourceId)
+	if len(m.ColumnNames) > 0 {
+		for iNdEx := len(m.ColumnNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ColumnNames[iNdEx])
+			copy(dAtA[i:], m.ColumnNames[iNdEx])
+			i = encodeVarintPlan(dAtA, i, uint64(len(m.ColumnNames[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
 	}
 	if len(m.ColumnTypes) > 0 {
-		dAtA28 := make([]byte, len(m.ColumnTypes)*10)
-		var j27 int
+		dAtA27 := make([]byte, len(m.ColumnTypes)*10)
+		var j26 int
 		for _, num := range m.ColumnTypes {
 			for num >= 1<<7 {
-				dAtA28[j27] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA27[j26] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j27++
+				j26++
 			}
-			dAtA28[j27] = uint8(num)
-			j27++
+			dAtA27[j26] = uint8(num)
+			j26++
 		}
+		i -= j26
+		copy(dAtA[i:], dAtA27[:j26])
+		i = encodeVarintPlan(dAtA, i, uint64(j26))
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(j27))
-		i += copy(dAtA[i:], dAtA28[:j27])
 	}
-	if len(m.ColumnNames) > 0 {
-		for _, s := range m.ColumnNames {
-			dAtA[i] = 0x1a
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
-		}
+	if len(m.SourceId) > 0 {
+		i -= len(m.SourceId)
+		copy(dAtA[i:], m.SourceId)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.SourceId)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GrpcSinkOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4966,29 +4623,36 @@ func (m *GrpcSinkOperator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GrpcSinkOperator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GrpcSinkOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Address) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(len(m.Address)))
-		i += copy(dAtA[i:], m.Address)
-	}
 	if len(m.DestinationId) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.DestinationId)
+		copy(dAtA[i:], m.DestinationId)
 		i = encodeVarintPlan(dAtA, i, uint64(len(m.DestinationId)))
-		i += copy(dAtA[i:], m.DestinationId)
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.Address) > 0 {
+		i -= len(m.Address)
+		copy(dAtA[i:], m.Address)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.Address)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *MapOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4996,44 +4660,45 @@ func (m *MapOperator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MapOperator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MapOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Expressions) > 0 {
-		for _, msg := range m.Expressions {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
 	if len(m.ColumnNames) > 0 {
-		for _, s := range m.ColumnNames {
+		for iNdEx := len(m.ColumnNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ColumnNames[iNdEx])
+			copy(dAtA[i:], m.ColumnNames[iNdEx])
+			i = encodeVarintPlan(dAtA, i, uint64(len(m.ColumnNames[iNdEx])))
+			i--
 			dAtA[i] = 0x12
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
 		}
 	}
-	return i, nil
+	if len(m.Expressions) > 0 {
+		for iNdEx := len(m.Expressions) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Expressions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *AggregateOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5041,81 +4706,78 @@ func (m *AggregateOperator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AggregateOperator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AggregateOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Values) > 0 {
-		for _, msg := range m.Values {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.Groups) > 0 {
-		for _, msg := range m.Groups {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.GroupNames) > 0 {
-		for _, s := range m.GroupNames {
-			dAtA[i] = 0x1a
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
-		}
-	}
-	if len(m.ValueNames) > 0 {
-		for _, s := range m.ValueNames {
-			dAtA[i] = 0x22
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
-		}
-	}
 	if m.Windowed {
-		dAtA[i] = 0x28
-		i++
+		i--
 		if m.Windowed {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x28
 	}
-	return i, nil
+	if len(m.ValueNames) > 0 {
+		for iNdEx := len(m.ValueNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ValueNames[iNdEx])
+			copy(dAtA[i:], m.ValueNames[iNdEx])
+			i = encodeVarintPlan(dAtA, i, uint64(len(m.ValueNames[iNdEx])))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.GroupNames) > 0 {
+		for iNdEx := len(m.GroupNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.GroupNames[iNdEx])
+			copy(dAtA[i:], m.GroupNames[iNdEx])
+			i = encodeVarintPlan(dAtA, i, uint64(len(m.GroupNames[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Groups) > 0 {
+		for iNdEx := len(m.Groups) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Groups[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Values) > 0 {
+		for iNdEx := len(m.Values) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Values[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *FilterOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5123,39 +4785,48 @@ func (m *FilterOperator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *FilterOperator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *FilterOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Expression != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Expression.Size()))
-		n29, err := m.Expression.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n29
-	}
 	if len(m.Columns) > 0 {
-		for _, msg := range m.Columns {
+		for iNdEx := len(m.Columns) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Columns[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
 			dAtA[i] = 0x12
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+		}
+	}
+	if m.Expression != nil {
+		{
+			size, err := m.Expression.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *LimitOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5163,34 +4834,41 @@ func (m *LimitOperator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LimitOperator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LimitOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Limit != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Limit))
-	}
 	if len(m.Columns) > 0 {
-		for _, msg := range m.Columns {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Columns) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Columns[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if m.Limit != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.Limit))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *UnionOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5198,49 +4876,50 @@ func (m *UnionOperator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *UnionOperator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UnionOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.ColumnNames) > 0 {
-		for _, s := range m.ColumnNames {
-			dAtA[i] = 0xa
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
-		}
+	if m.RowsPerBatch != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.RowsPerBatch))
+		i--
+		dAtA[i] = 0x18
 	}
 	if len(m.ColumnMappings) > 0 {
-		for _, msg := range m.ColumnMappings {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.ColumnMappings) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ColumnMappings[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	if m.RowsPerBatch != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.RowsPerBatch))
+	if len(m.ColumnNames) > 0 {
+		for iNdEx := len(m.ColumnNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ColumnNames[iNdEx])
+			copy(dAtA[i:], m.ColumnNames[iNdEx])
+			i = encodeVarintPlan(dAtA, i, uint64(len(m.ColumnNames[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *UnionOperator_ColumnMapping) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5248,35 +4927,41 @@ func (m *UnionOperator_ColumnMapping) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *UnionOperator_ColumnMapping) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UnionOperator_ColumnMapping) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.ColumnIndexes) > 0 {
-		dAtA31 := make([]byte, len(m.ColumnIndexes)*10)
-		var j30 int
+		dAtA30 := make([]byte, len(m.ColumnIndexes)*10)
+		var j29 int
 		for _, num1 := range m.ColumnIndexes {
 			num := uint64(num1)
 			for num >= 1<<7 {
-				dAtA31[j30] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA30[j29] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j30++
+				j29++
 			}
-			dAtA31[j30] = uint8(num)
-			j30++
+			dAtA30[j29] = uint8(num)
+			j29++
 		}
+		i -= j29
+		copy(dAtA[i:], dAtA30[:j29])
+		i = encodeVarintPlan(dAtA, i, uint64(j29))
+		i--
 		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(j30))
-		i += copy(dAtA[i:], dAtA31[:j30])
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *JoinOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5284,66 +4969,69 @@ func (m *JoinOperator) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *JoinOperator) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *JoinOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Type != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Type))
+	if m.RowsPerBatch != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.RowsPerBatch))
+		i--
+		dAtA[i] = 0x28
 	}
-	if len(m.EqualityConditions) > 0 {
-		for _, msg := range m.EqualityConditions {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
+	if len(m.ColumnNames) > 0 {
+		for iNdEx := len(m.ColumnNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ColumnNames[iNdEx])
+			copy(dAtA[i:], m.ColumnNames[iNdEx])
+			i = encodeVarintPlan(dAtA, i, uint64(len(m.ColumnNames[iNdEx])))
+			i--
+			dAtA[i] = 0x22
 		}
 	}
 	if len(m.OutputColumns) > 0 {
-		for _, msg := range m.OutputColumns {
+		for iNdEx := len(m.OutputColumns) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.OutputColumns[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
 			dAtA[i] = 0x1a
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
 		}
 	}
-	if len(m.ColumnNames) > 0 {
-		for _, s := range m.ColumnNames {
-			dAtA[i] = 0x22
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
+	if len(m.EqualityConditions) > 0 {
+		for iNdEx := len(m.EqualityConditions) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.EqualityConditions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
 			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	if m.RowsPerBatch != 0 {
-		dAtA[i] = 0x28
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.RowsPerBatch))
+	if m.Type != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.Type))
+		i--
+		dAtA[i] = 0x8
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *JoinOperator_EqualityCondition) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5351,27 +5039,32 @@ func (m *JoinOperator_EqualityCondition) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *JoinOperator_EqualityCondition) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *JoinOperator_EqualityCondition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.LeftColumnIndex != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.LeftColumnIndex))
-	}
 	if m.RightColumnIndex != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintPlan(dAtA, i, uint64(m.RightColumnIndex))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if m.LeftColumnIndex != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.LeftColumnIndex))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *JoinOperator_ParentColumn) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5379,27 +5072,32 @@ func (m *JoinOperator_ParentColumn) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *JoinOperator_ParentColumn) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *JoinOperator_ParentColumn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.ParentIndex != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.ParentIndex))
-	}
 	if m.ColumnIndex != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintPlan(dAtA, i, uint64(m.ColumnIndex))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if m.ParentIndex != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.ParentIndex))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ScalarExpression) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5407,66 +5105,91 @@ func (m *ScalarExpression) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ScalarExpression) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ScalarExpression) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.Value != nil {
-		nn32, err := m.Value.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size := m.Value.Size()
+			i -= size
+			if _, err := m.Value.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
 		}
-		i += nn32
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *ScalarExpression_Constant) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *ScalarExpression_Constant) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.Constant != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Constant.Size()))
-		n33, err := m.Constant.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Constant.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n33
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *ScalarExpression_Column) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *ScalarExpression_Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.Column != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Column.Size()))
-		n34, err := m.Column.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Column.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n34
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *ScalarExpression_Func) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *ScalarExpression_Func) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.Func != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Func.Size()))
-		n35, err := m.Func.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Func.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n35
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *ScalarValue) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5474,71 +5197,99 @@ func (m *ScalarValue) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ScalarValue) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ScalarValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.DataType != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.DataType))
-	}
 	if m.Value != nil {
-		nn36, err := m.Value.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size := m.Value.Size()
+			i -= size
+			if _, err := m.Value.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
 		}
-		i += nn36
 	}
-	return i, nil
+	if m.DataType != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.DataType))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ScalarValue_BoolValue) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	dAtA[i] = 0x10
-	i++
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *ScalarValue_BoolValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i--
 	if m.BoolValue {
 		dAtA[i] = 1
 	} else {
 		dAtA[i] = 0
 	}
-	i++
-	return i, nil
+	i--
+	dAtA[i] = 0x10
+	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Int64Value) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	dAtA[i] = 0x18
-	i++
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *ScalarValue_Int64Value) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	i = encodeVarintPlan(dAtA, i, uint64(m.Int64Value))
-	return i, nil
+	i--
+	dAtA[i] = 0x18
+	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Float64Value) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	dAtA[i] = 0x21
-	i++
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *ScalarValue_Float64Value) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i -= 8
 	encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.Float64Value))))
-	i += 8
-	return i, nil
+	i--
+	dAtA[i] = 0x21
+	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_StringValue) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	dAtA[i] = 0x2a
-	i++
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *ScalarValue_StringValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i -= len(m.StringValue)
+	copy(dAtA[i:], m.StringValue)
 	i = encodeVarintPlan(dAtA, i, uint64(len(m.StringValue)))
-	i += copy(dAtA[i:], m.StringValue)
-	return i, nil
+	i--
+	dAtA[i] = 0x2a
+	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Time64NsValue) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	dAtA[i] = 0x30
-	i++
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *ScalarValue_Time64NsValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	i = encodeVarintPlan(dAtA, i, uint64(m.Time64NsValue))
-	return i, nil
+	i--
+	dAtA[i] = 0x30
+	return len(dAtA) - i, nil
 }
 func (m *ScalarFunc) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5546,69 +5297,80 @@ func (m *ScalarFunc) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ScalarFunc) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ScalarFunc) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	if len(m.InitArgs) > 0 {
-		for _, msg := range m.InitArgs {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.Args) > 0 {
-		for _, msg := range m.Args {
-			dAtA[i] = 0x1a
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if m.Id != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Id))
-	}
 	if len(m.ArgsDataTypes) > 0 {
-		dAtA38 := make([]byte, len(m.ArgsDataTypes)*10)
-		var j37 int
+		dAtA35 := make([]byte, len(m.ArgsDataTypes)*10)
+		var j34 int
 		for _, num := range m.ArgsDataTypes {
 			for num >= 1<<7 {
-				dAtA38[j37] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA35[j34] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j37++
+				j34++
 			}
-			dAtA38[j37] = uint8(num)
-			j37++
+			dAtA35[j34] = uint8(num)
+			j34++
 		}
+		i -= j34
+		copy(dAtA[i:], dAtA35[:j34])
+		i = encodeVarintPlan(dAtA, i, uint64(j34))
+		i--
 		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(j37))
-		i += copy(dAtA[i:], dAtA38[:j37])
 	}
-	return i, nil
+	if m.Id != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Args) > 0 {
+		for iNdEx := len(m.Args) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Args[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.InitArgs) > 0 {
+		for iNdEx := len(m.InitArgs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.InitArgs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *AggregateExpression) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5616,69 +5378,80 @@ func (m *AggregateExpression) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AggregateExpression) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AggregateExpression) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	if len(m.InitArgs) > 0 {
-		for _, msg := range m.InitArgs {
-			dAtA[i] = 0x22
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.Args) > 0 {
-		for _, msg := range m.Args {
-			dAtA[i] = 0x2a
-			i++
-			i = encodeVarintPlan(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if m.Id != 0 {
-		dAtA[i] = 0x30
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Id))
-	}
 	if len(m.ArgsDataTypes) > 0 {
-		dAtA40 := make([]byte, len(m.ArgsDataTypes)*10)
-		var j39 int
+		dAtA37 := make([]byte, len(m.ArgsDataTypes)*10)
+		var j36 int
 		for _, num := range m.ArgsDataTypes {
 			for num >= 1<<7 {
-				dAtA40[j39] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA37[j36] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j39++
+				j36++
 			}
-			dAtA40[j39] = uint8(num)
-			j39++
+			dAtA37[j36] = uint8(num)
+			j36++
 		}
+		i -= j36
+		copy(dAtA[i:], dAtA37[:j36])
+		i = encodeVarintPlan(dAtA, i, uint64(j36))
+		i--
 		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(j39))
-		i += copy(dAtA[i:], dAtA40[:j39])
 	}
-	return i, nil
+	if m.Id != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x30
+	}
+	if len(m.Args) > 0 {
+		for iNdEx := len(m.Args) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Args[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.InitArgs) > 0 {
+		for iNdEx := len(m.InitArgs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.InitArgs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPlan(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPlan(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *AggregateExpression_Arg) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5686,52 +5459,71 @@ func (m *AggregateExpression_Arg) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AggregateExpression_Arg) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AggregateExpression_Arg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.Value != nil {
-		nn41, err := m.Value.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size := m.Value.Size()
+			i -= size
+			if _, err := m.Value.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
 		}
-		i += nn41
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *AggregateExpression_Arg_Constant) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *AggregateExpression_Arg_Constant) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.Constant != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Constant.Size()))
-		n42, err := m.Constant.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Constant.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n42
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *AggregateExpression_Arg_Column) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *AggregateExpression_Arg_Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.Column != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Column.Size()))
-		n43, err := m.Column.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Column.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPlan(dAtA, i, uint64(size))
 		}
-		i += n43
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *Column) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -5739,31 +5531,38 @@ func (m *Column) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Column) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Node != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Node))
-	}
 	if m.Index != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintPlan(dAtA, i, uint64(m.Index))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if m.Node != 0 {
+		i = encodeVarintPlan(dAtA, i, uint64(m.Node))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintPlan(dAtA []byte, offset int, v uint64) int {
+	offset -= sovPlan(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *Plan) Size() (n int) {
 	if m == nil {
@@ -6036,8 +5835,9 @@ func (m *MemorySourceOperator) Size() (n int) {
 		l = m.StopTime.Size()
 		n += 1 + l + sovPlan(uint64(l))
 	}
-	if m.Tablet != 0 {
-		n += 1 + sovPlan(uint64(m.Tablet))
+	l = len(m.Tablet)
+	if l > 0 {
+		n += 1 + l + sovPlan(uint64(l))
 	}
 	return n
 }
@@ -6539,14 +6339,7 @@ func (m *Column) Size() (n int) {
 }
 
 func sovPlan(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozPlan(x uint64) (n int) {
 	return sovPlan(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -6555,9 +6348,14 @@ func (this *Plan) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForNodes := "[]*PlanFragment{"
+	for _, f := range this.Nodes {
+		repeatedStringForNodes += strings.Replace(f.String(), "PlanFragment", "PlanFragment", 1) + ","
+	}
+	repeatedStringForNodes += "}"
 	s := strings.Join([]string{`&Plan{`,
-		`Dag:` + strings.Replace(fmt.Sprintf("%v", this.Dag), "DAG", "DAG", 1) + `,`,
-		`Nodes:` + strings.Replace(fmt.Sprintf("%v", this.Nodes), "PlanFragment", "PlanFragment", 1) + `,`,
+		`Dag:` + strings.Replace(this.Dag.String(), "DAG", "DAG", 1) + `,`,
+		`Nodes:` + repeatedStringForNodes + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6566,10 +6364,15 @@ func (this *PlanFragment) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForNodes := "[]*PlanNode{"
+	for _, f := range this.Nodes {
+		repeatedStringForNodes += strings.Replace(f.String(), "PlanNode", "PlanNode", 1) + ","
+	}
+	repeatedStringForNodes += "}"
 	s := strings.Join([]string{`&PlanFragment{`,
 		`Id:` + fmt.Sprintf("%v", this.Id) + `,`,
-		`Dag:` + strings.Replace(fmt.Sprintf("%v", this.Dag), "DAG", "DAG", 1) + `,`,
-		`Nodes:` + strings.Replace(fmt.Sprintf("%v", this.Nodes), "PlanNode", "PlanNode", 1) + `,`,
+		`Dag:` + strings.Replace(this.Dag.String(), "DAG", "DAG", 1) + `,`,
+		`Nodes:` + repeatedStringForNodes + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6578,8 +6381,13 @@ func (this *DAG) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForNodes := "[]*DAG_DAGNode{"
+	for _, f := range this.Nodes {
+		repeatedStringForNodes += strings.Replace(fmt.Sprintf("%v", f), "DAG_DAGNode", "DAG_DAGNode", 1) + ","
+	}
+	repeatedStringForNodes += "}"
 	s := strings.Join([]string{`&DAG{`,
-		`Nodes:` + strings.Replace(fmt.Sprintf("%v", this.Nodes), "DAG_DAGNode", "DAG_DAGNode", 1) + `,`,
+		`Nodes:` + repeatedStringForNodes + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6602,7 +6410,7 @@ func (this *PlanNode) String() string {
 	}
 	s := strings.Join([]string{`&PlanNode{`,
 		`Id:` + fmt.Sprintf("%v", this.Id) + `,`,
-		`Op:` + strings.Replace(fmt.Sprintf("%v", this.Op), "Operator", "Operator", 1) + `,`,
+		`Op:` + strings.Replace(this.Op.String(), "Operator", "Operator", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6773,8 +6581,13 @@ func (this *MapOperator) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForExpressions := "[]*ScalarExpression{"
+	for _, f := range this.Expressions {
+		repeatedStringForExpressions += strings.Replace(f.String(), "ScalarExpression", "ScalarExpression", 1) + ","
+	}
+	repeatedStringForExpressions += "}"
 	s := strings.Join([]string{`&MapOperator{`,
-		`Expressions:` + strings.Replace(fmt.Sprintf("%v", this.Expressions), "ScalarExpression", "ScalarExpression", 1) + `,`,
+		`Expressions:` + repeatedStringForExpressions + `,`,
 		`ColumnNames:` + fmt.Sprintf("%v", this.ColumnNames) + `,`,
 		`}`,
 	}, "")
@@ -6784,9 +6597,19 @@ func (this *AggregateOperator) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForValues := "[]*AggregateExpression{"
+	for _, f := range this.Values {
+		repeatedStringForValues += strings.Replace(f.String(), "AggregateExpression", "AggregateExpression", 1) + ","
+	}
+	repeatedStringForValues += "}"
+	repeatedStringForGroups := "[]*Column{"
+	for _, f := range this.Groups {
+		repeatedStringForGroups += strings.Replace(f.String(), "Column", "Column", 1) + ","
+	}
+	repeatedStringForGroups += "}"
 	s := strings.Join([]string{`&AggregateOperator{`,
-		`Values:` + strings.Replace(fmt.Sprintf("%v", this.Values), "AggregateExpression", "AggregateExpression", 1) + `,`,
-		`Groups:` + strings.Replace(fmt.Sprintf("%v", this.Groups), "Column", "Column", 1) + `,`,
+		`Values:` + repeatedStringForValues + `,`,
+		`Groups:` + repeatedStringForGroups + `,`,
 		`GroupNames:` + fmt.Sprintf("%v", this.GroupNames) + `,`,
 		`ValueNames:` + fmt.Sprintf("%v", this.ValueNames) + `,`,
 		`Windowed:` + fmt.Sprintf("%v", this.Windowed) + `,`,
@@ -6798,9 +6621,14 @@ func (this *FilterOperator) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForColumns := "[]*Column{"
+	for _, f := range this.Columns {
+		repeatedStringForColumns += strings.Replace(f.String(), "Column", "Column", 1) + ","
+	}
+	repeatedStringForColumns += "}"
 	s := strings.Join([]string{`&FilterOperator{`,
-		`Expression:` + strings.Replace(fmt.Sprintf("%v", this.Expression), "ScalarExpression", "ScalarExpression", 1) + `,`,
-		`Columns:` + strings.Replace(fmt.Sprintf("%v", this.Columns), "Column", "Column", 1) + `,`,
+		`Expression:` + strings.Replace(this.Expression.String(), "ScalarExpression", "ScalarExpression", 1) + `,`,
+		`Columns:` + repeatedStringForColumns + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6809,9 +6637,14 @@ func (this *LimitOperator) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForColumns := "[]*Column{"
+	for _, f := range this.Columns {
+		repeatedStringForColumns += strings.Replace(f.String(), "Column", "Column", 1) + ","
+	}
+	repeatedStringForColumns += "}"
 	s := strings.Join([]string{`&LimitOperator{`,
 		`Limit:` + fmt.Sprintf("%v", this.Limit) + `,`,
-		`Columns:` + strings.Replace(fmt.Sprintf("%v", this.Columns), "Column", "Column", 1) + `,`,
+		`Columns:` + repeatedStringForColumns + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6820,9 +6653,14 @@ func (this *UnionOperator) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForColumnMappings := "[]*UnionOperator_ColumnMapping{"
+	for _, f := range this.ColumnMappings {
+		repeatedStringForColumnMappings += strings.Replace(fmt.Sprintf("%v", f), "UnionOperator_ColumnMapping", "UnionOperator_ColumnMapping", 1) + ","
+	}
+	repeatedStringForColumnMappings += "}"
 	s := strings.Join([]string{`&UnionOperator{`,
 		`ColumnNames:` + fmt.Sprintf("%v", this.ColumnNames) + `,`,
-		`ColumnMappings:` + strings.Replace(fmt.Sprintf("%v", this.ColumnMappings), "UnionOperator_ColumnMapping", "UnionOperator_ColumnMapping", 1) + `,`,
+		`ColumnMappings:` + repeatedStringForColumnMappings + `,`,
 		`RowsPerBatch:` + fmt.Sprintf("%v", this.RowsPerBatch) + `,`,
 		`}`,
 	}, "")
@@ -6842,10 +6680,20 @@ func (this *JoinOperator) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForEqualityConditions := "[]*JoinOperator_EqualityCondition{"
+	for _, f := range this.EqualityConditions {
+		repeatedStringForEqualityConditions += strings.Replace(fmt.Sprintf("%v", f), "JoinOperator_EqualityCondition", "JoinOperator_EqualityCondition", 1) + ","
+	}
+	repeatedStringForEqualityConditions += "}"
+	repeatedStringForOutputColumns := "[]*JoinOperator_ParentColumn{"
+	for _, f := range this.OutputColumns {
+		repeatedStringForOutputColumns += strings.Replace(fmt.Sprintf("%v", f), "JoinOperator_ParentColumn", "JoinOperator_ParentColumn", 1) + ","
+	}
+	repeatedStringForOutputColumns += "}"
 	s := strings.Join([]string{`&JoinOperator{`,
 		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
-		`EqualityConditions:` + strings.Replace(fmt.Sprintf("%v", this.EqualityConditions), "JoinOperator_EqualityCondition", "JoinOperator_EqualityCondition", 1) + `,`,
-		`OutputColumns:` + strings.Replace(fmt.Sprintf("%v", this.OutputColumns), "JoinOperator_ParentColumn", "JoinOperator_ParentColumn", 1) + `,`,
+		`EqualityConditions:` + repeatedStringForEqualityConditions + `,`,
+		`OutputColumns:` + repeatedStringForOutputColumns + `,`,
 		`ColumnNames:` + fmt.Sprintf("%v", this.ColumnNames) + `,`,
 		`RowsPerBatch:` + fmt.Sprintf("%v", this.RowsPerBatch) + `,`,
 		`}`,
@@ -6979,10 +6827,20 @@ func (this *ScalarFunc) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForInitArgs := "[]*ScalarValue{"
+	for _, f := range this.InitArgs {
+		repeatedStringForInitArgs += strings.Replace(f.String(), "ScalarValue", "ScalarValue", 1) + ","
+	}
+	repeatedStringForInitArgs += "}"
+	repeatedStringForArgs := "[]*ScalarExpression{"
+	for _, f := range this.Args {
+		repeatedStringForArgs += strings.Replace(f.String(), "ScalarExpression", "ScalarExpression", 1) + ","
+	}
+	repeatedStringForArgs += "}"
 	s := strings.Join([]string{`&ScalarFunc{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`InitArgs:` + strings.Replace(fmt.Sprintf("%v", this.InitArgs), "ScalarValue", "ScalarValue", 1) + `,`,
-		`Args:` + strings.Replace(fmt.Sprintf("%v", this.Args), "ScalarExpression", "ScalarExpression", 1) + `,`,
+		`InitArgs:` + repeatedStringForInitArgs + `,`,
+		`Args:` + repeatedStringForArgs + `,`,
 		`Id:` + fmt.Sprintf("%v", this.Id) + `,`,
 		`ArgsDataTypes:` + fmt.Sprintf("%v", this.ArgsDataTypes) + `,`,
 		`}`,
@@ -6993,10 +6851,20 @@ func (this *AggregateExpression) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForInitArgs := "[]*ScalarValue{"
+	for _, f := range this.InitArgs {
+		repeatedStringForInitArgs += strings.Replace(f.String(), "ScalarValue", "ScalarValue", 1) + ","
+	}
+	repeatedStringForInitArgs += "}"
+	repeatedStringForArgs := "[]*AggregateExpression_Arg{"
+	for _, f := range this.Args {
+		repeatedStringForArgs += strings.Replace(fmt.Sprintf("%v", f), "AggregateExpression_Arg", "AggregateExpression_Arg", 1) + ","
+	}
+	repeatedStringForArgs += "}"
 	s := strings.Join([]string{`&AggregateExpression{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`InitArgs:` + strings.Replace(fmt.Sprintf("%v", this.InitArgs), "ScalarValue", "ScalarValue", 1) + `,`,
-		`Args:` + strings.Replace(fmt.Sprintf("%v", this.Args), "AggregateExpression_Arg", "AggregateExpression_Arg", 1) + `,`,
+		`InitArgs:` + repeatedStringForInitArgs + `,`,
+		`Args:` + repeatedStringForArgs + `,`,
 		`Id:` + fmt.Sprintf("%v", this.Id) + `,`,
 		`ArgsDataTypes:` + fmt.Sprintf("%v", this.ArgsDataTypes) + `,`,
 		`}`,
@@ -8469,10 +8337,10 @@ func (m *MemorySourceOperator) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 7:
-			if wireType != 0 {
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Tablet", wireType)
 			}
-			m.Tablet = 0
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowPlan
@@ -8482,11 +8350,24 @@ func (m *MemorySourceOperator) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Tablet |= uint64(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPlan
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Tablet = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipPlan(dAtA[iNdEx:])

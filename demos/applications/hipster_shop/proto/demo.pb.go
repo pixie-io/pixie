@@ -8,8 +8,11 @@ import (
 	fmt "fmt"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
 )
@@ -23,7 +26,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type CartItem struct {
 	ProductId string `protobuf:"bytes,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
@@ -43,7 +46,7 @@ func (m *CartItem) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_CartItem.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +97,7 @@ func (m *AddItemRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_AddItemRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +147,7 @@ func (m *EmptyCartRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_EmptyCartRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -187,7 +190,7 @@ func (m *GetCartRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_GetCartRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -231,7 +234,7 @@ func (m *Cart) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Cart.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -280,7 +283,7 @@ func (m *Empty) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Empty.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -317,7 +320,7 @@ func (m *ListRecommendationsRequest) XXX_Marshal(b []byte, deterministic bool) (
 		return xxx_messageInfo_ListRecommendationsRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -367,7 +370,7 @@ func (m *ListRecommendationsResponse) XXX_Marshal(b []byte, deterministic bool) 
 		return xxx_messageInfo_ListRecommendationsResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -415,7 +418,7 @@ func (m *Product) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Product.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -493,7 +496,7 @@ func (m *ListProductsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return xxx_messageInfo_ListProductsResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -536,7 +539,7 @@ func (m *GetProductRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_GetProductRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -579,7 +582,7 @@ func (m *SearchProductsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byt
 		return xxx_messageInfo_SearchProductsRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -622,7 +625,7 @@ func (m *SearchProductsResponse) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return xxx_messageInfo_SearchProductsResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -666,7 +669,7 @@ func (m *GetQuoteRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return xxx_messageInfo_GetQuoteRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -716,7 +719,7 @@ func (m *GetQuoteResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_GetQuoteResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -760,7 +763,7 @@ func (m *ShipOrderRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_ShipOrderRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -810,7 +813,7 @@ func (m *ShipOrderResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_ShipOrderResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -857,7 +860,7 @@ func (m *Address) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Address.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -930,7 +933,7 @@ func (m *Money) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Money.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -987,7 +990,7 @@ func (m *GetSupportedCurrenciesResponse) XXX_Marshal(b []byte, deterministic boo
 		return xxx_messageInfo_GetSupportedCurrenciesResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1031,7 +1034,7 @@ func (m *CurrencyConversionRequest) XXX_Marshal(b []byte, deterministic bool) ([
 		return xxx_messageInfo_CurrencyConversionRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1084,7 +1087,7 @@ func (m *CreditCardInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_CreditCardInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1149,7 +1152,7 @@ func (m *ChargeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_ChargeRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1199,7 +1202,7 @@ func (m *ChargeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_ChargeResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1243,7 +1246,7 @@ func (m *OrderItem) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_OrderItem.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1297,7 +1300,7 @@ func (m *OrderResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_OrderResult.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1369,7 +1372,7 @@ func (m *SendOrderConfirmationRequest) XXX_Marshal(b []byte, deterministic bool)
 		return xxx_messageInfo_SendOrderConfirmationRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1423,7 +1426,7 @@ func (m *PlaceOrderRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_PlaceOrderRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1494,7 +1497,7 @@ func (m *PlaceOrderResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_PlaceOrderResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1537,7 +1540,7 @@ func (m *AdRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_AdRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1580,7 +1583,7 @@ func (m *AdResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_AdResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1624,7 +1627,7 @@ func (m *Ad) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Ad.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -3191,6 +3194,20 @@ type CartServiceServer interface {
 	EmptyCart(context.Context, *EmptyCartRequest) (*Empty, error)
 }
 
+// UnimplementedCartServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedCartServiceServer struct {
+}
+
+func (*UnimplementedCartServiceServer) AddItem(ctx context.Context, req *AddItemRequest) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddItem not implemented")
+}
+func (*UnimplementedCartServiceServer) GetCart(ctx context.Context, req *GetCartRequest) (*Cart, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCart not implemented")
+}
+func (*UnimplementedCartServiceServer) EmptyCart(ctx context.Context, req *EmptyCartRequest) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EmptyCart not implemented")
+}
+
 func RegisterCartServiceServer(s *grpc.Server, srv CartServiceServer) {
 	s.RegisterService(&_CartService_serviceDesc, srv)
 }
@@ -3299,6 +3316,14 @@ type RecommendationServiceServer interface {
 	ListRecommendations(context.Context, *ListRecommendationsRequest) (*ListRecommendationsResponse, error)
 }
 
+// UnimplementedRecommendationServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedRecommendationServiceServer struct {
+}
+
+func (*UnimplementedRecommendationServiceServer) ListRecommendations(ctx context.Context, req *ListRecommendationsRequest) (*ListRecommendationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRecommendations not implemented")
+}
+
 func RegisterRecommendationServiceServer(s *grpc.Server, srv RecommendationServiceServer) {
 	s.RegisterService(&_RecommendationService_serviceDesc, srv)
 }
@@ -3383,6 +3408,20 @@ type ProductCatalogServiceServer interface {
 	ListProducts(context.Context, *Empty) (*ListProductsResponse, error)
 	GetProduct(context.Context, *GetProductRequest) (*Product, error)
 	SearchProducts(context.Context, *SearchProductsRequest) (*SearchProductsResponse, error)
+}
+
+// UnimplementedProductCatalogServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedProductCatalogServiceServer struct {
+}
+
+func (*UnimplementedProductCatalogServiceServer) ListProducts(ctx context.Context, req *Empty) (*ListProductsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProducts not implemented")
+}
+func (*UnimplementedProductCatalogServiceServer) GetProduct(ctx context.Context, req *GetProductRequest) (*Product, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProduct not implemented")
+}
+func (*UnimplementedProductCatalogServiceServer) SearchProducts(ctx context.Context, req *SearchProductsRequest) (*SearchProductsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchProducts not implemented")
 }
 
 func RegisterProductCatalogServiceServer(s *grpc.Server, srv ProductCatalogServiceServer) {
@@ -3504,6 +3543,17 @@ type ShippingServiceServer interface {
 	ShipOrder(context.Context, *ShipOrderRequest) (*ShipOrderResponse, error)
 }
 
+// UnimplementedShippingServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedShippingServiceServer struct {
+}
+
+func (*UnimplementedShippingServiceServer) GetQuote(ctx context.Context, req *GetQuoteRequest) (*GetQuoteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetQuote not implemented")
+}
+func (*UnimplementedShippingServiceServer) ShipOrder(ctx context.Context, req *ShipOrderRequest) (*ShipOrderResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ShipOrder not implemented")
+}
+
 func RegisterShippingServiceServer(s *grpc.Server, srv ShippingServiceServer) {
 	s.RegisterService(&_ShippingService_serviceDesc, srv)
 }
@@ -3601,6 +3651,17 @@ type CurrencyServiceServer interface {
 	Convert(context.Context, *CurrencyConversionRequest) (*Money, error)
 }
 
+// UnimplementedCurrencyServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedCurrencyServiceServer struct {
+}
+
+func (*UnimplementedCurrencyServiceServer) GetSupportedCurrencies(ctx context.Context, req *Empty) (*GetSupportedCurrenciesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSupportedCurrencies not implemented")
+}
+func (*UnimplementedCurrencyServiceServer) Convert(ctx context.Context, req *CurrencyConversionRequest) (*Money, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Convert not implemented")
+}
+
 func RegisterCurrencyServiceServer(s *grpc.Server, srv CurrencyServiceServer) {
 	s.RegisterService(&_CurrencyService_serviceDesc, srv)
 }
@@ -3687,6 +3748,14 @@ type PaymentServiceServer interface {
 	Charge(context.Context, *ChargeRequest) (*ChargeResponse, error)
 }
 
+// UnimplementedPaymentServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedPaymentServiceServer struct {
+}
+
+func (*UnimplementedPaymentServiceServer) Charge(ctx context.Context, req *ChargeRequest) (*ChargeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Charge not implemented")
+}
+
 func RegisterPaymentServiceServer(s *grpc.Server, srv PaymentServiceServer) {
 	s.RegisterService(&_PaymentService_serviceDesc, srv)
 }
@@ -3749,6 +3818,14 @@ func (c *emailServiceClient) SendOrderConfirmation(ctx context.Context, in *Send
 // EmailServiceServer is the server API for EmailService service.
 type EmailServiceServer interface {
 	SendOrderConfirmation(context.Context, *SendOrderConfirmationRequest) (*Empty, error)
+}
+
+// UnimplementedEmailServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedEmailServiceServer struct {
+}
+
+func (*UnimplementedEmailServiceServer) SendOrderConfirmation(ctx context.Context, req *SendOrderConfirmationRequest) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendOrderConfirmation not implemented")
 }
 
 func RegisterEmailServiceServer(s *grpc.Server, srv EmailServiceServer) {
@@ -3815,6 +3892,14 @@ type CheckoutServiceServer interface {
 	PlaceOrder(context.Context, *PlaceOrderRequest) (*PlaceOrderResponse, error)
 }
 
+// UnimplementedCheckoutServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedCheckoutServiceServer struct {
+}
+
+func (*UnimplementedCheckoutServiceServer) PlaceOrder(ctx context.Context, req *PlaceOrderRequest) (*PlaceOrderResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PlaceOrder not implemented")
+}
+
 func RegisterCheckoutServiceServer(s *grpc.Server, srv CheckoutServiceServer) {
 	s.RegisterService(&_CheckoutService_serviceDesc, srv)
 }
@@ -3879,6 +3964,14 @@ type AdServiceServer interface {
 	GetAds(context.Context, *AdRequest) (*AdResponse, error)
 }
 
+// UnimplementedAdServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedAdServiceServer struct {
+}
+
+func (*UnimplementedAdServiceServer) GetAds(ctx context.Context, req *AdRequest) (*AdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAds not implemented")
+}
+
 func RegisterAdServiceServer(s *grpc.Server, srv AdServiceServer) {
 	s.RegisterService(&_AdService_serviceDesc, srv)
 }
@@ -3917,7 +4010,7 @@ var _AdService_serviceDesc = grpc.ServiceDesc{
 func (m *CartItem) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -3925,28 +4018,34 @@ func (m *CartItem) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CartItem) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CartItem) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.ProductId) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.ProductId)))
-		i += copy(dAtA[i:], m.ProductId)
-	}
 	if m.Quantity != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintDemo(dAtA, i, uint64(m.Quantity))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if len(m.ProductId) > 0 {
+		i -= len(m.ProductId)
+		copy(dAtA[i:], m.ProductId)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.ProductId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *AddItemRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -3954,33 +4053,41 @@ func (m *AddItemRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AddItemRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AddItemRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.UserId) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserId)))
-		i += copy(dAtA[i:], m.UserId)
-	}
 	if m.Item != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.Item.Size()))
-		n1, err := m.Item.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Item.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
-		i += n1
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.UserId) > 0 {
+		i -= len(m.UserId)
+		copy(dAtA[i:], m.UserId)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *EmptyCartRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -3988,23 +4095,29 @@ func (m *EmptyCartRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *EmptyCartRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EmptyCartRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.UserId) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.UserId)
+		copy(dAtA[i:], m.UserId)
 		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserId)))
-		i += copy(dAtA[i:], m.UserId)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GetCartRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4012,23 +4125,29 @@ func (m *GetCartRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetCartRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetCartRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.UserId) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.UserId)
+		copy(dAtA[i:], m.UserId)
 		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserId)))
-		i += copy(dAtA[i:], m.UserId)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Cart) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4036,35 +4155,43 @@ func (m *Cart) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Cart) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Cart) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.UserId) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserId)))
-		i += copy(dAtA[i:], m.UserId)
-	}
 	if len(m.Items) > 0 {
-		for _, msg := range m.Items {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintDemo(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Items[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintDemo(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if len(m.UserId) > 0 {
+		i -= len(m.UserId)
+		copy(dAtA[i:], m.UserId)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Empty) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4072,17 +4199,22 @@ func (m *Empty) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Empty) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Empty) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *ListRecommendationsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4090,38 +4222,38 @@ func (m *ListRecommendationsRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ListRecommendationsRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListRecommendationsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.UserId) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserId)))
-		i += copy(dAtA[i:], m.UserId)
-	}
 	if len(m.ProductIds) > 0 {
-		for _, s := range m.ProductIds {
+		for iNdEx := len(m.ProductIds) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ProductIds[iNdEx])
+			copy(dAtA[i:], m.ProductIds[iNdEx])
+			i = encodeVarintDemo(dAtA, i, uint64(len(m.ProductIds[iNdEx])))
+			i--
 			dAtA[i] = 0x12
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
 		}
 	}
-	return i, nil
+	if len(m.UserId) > 0 {
+		i -= len(m.UserId)
+		copy(dAtA[i:], m.UserId)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ListRecommendationsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4129,32 +4261,31 @@ func (m *ListRecommendationsResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ListRecommendationsResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListRecommendationsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.ProductIds) > 0 {
-		for _, s := range m.ProductIds {
+		for iNdEx := len(m.ProductIds) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ProductIds[iNdEx])
+			copy(dAtA[i:], m.ProductIds[iNdEx])
+			i = encodeVarintDemo(dAtA, i, uint64(len(m.ProductIds[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Product) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4162,66 +4293,71 @@ func (m *Product) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Product) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Product) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Id) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.Id)))
-		i += copy(dAtA[i:], m.Id)
-	}
-	if len(m.Name) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	if len(m.Description) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.Description)))
-		i += copy(dAtA[i:], m.Description)
-	}
-	if len(m.Picture) > 0 {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.Picture)))
-		i += copy(dAtA[i:], m.Picture)
+	if len(m.Categories) > 0 {
+		for iNdEx := len(m.Categories) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Categories[iNdEx])
+			copy(dAtA[i:], m.Categories[iNdEx])
+			i = encodeVarintDemo(dAtA, i, uint64(len(m.Categories[iNdEx])))
+			i--
+			dAtA[i] = 0x32
+		}
 	}
 	if m.PriceUsd != nil {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.PriceUsd.Size()))
-		n2, err := m.PriceUsd.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
-	}
-	if len(m.Categories) > 0 {
-		for _, s := range m.Categories {
-			dAtA[i] = 0x32
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
+		{
+			size, err := m.PriceUsd.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
 			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0x2a
 	}
-	return i, nil
+	if len(m.Picture) > 0 {
+		i -= len(m.Picture)
+		copy(dAtA[i:], m.Picture)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.Picture)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Description) > 0 {
+		i -= len(m.Description)
+		copy(dAtA[i:], m.Description)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.Description)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Id) > 0 {
+		i -= len(m.Id)
+		copy(dAtA[i:], m.Id)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.Id)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ListProductsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4229,29 +4365,36 @@ func (m *ListProductsResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ListProductsResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListProductsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Products) > 0 {
-		for _, msg := range m.Products {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintDemo(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Products) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Products[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintDemo(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GetProductRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4259,23 +4402,29 @@ func (m *GetProductRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetProductRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetProductRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Id) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.Id)
+		copy(dAtA[i:], m.Id)
 		i = encodeVarintDemo(dAtA, i, uint64(len(m.Id)))
-		i += copy(dAtA[i:], m.Id)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *SearchProductsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4283,23 +4432,29 @@ func (m *SearchProductsRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SearchProductsRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SearchProductsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Query) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.Query)
+		copy(dAtA[i:], m.Query)
 		i = encodeVarintDemo(dAtA, i, uint64(len(m.Query)))
-		i += copy(dAtA[i:], m.Query)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *SearchProductsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4307,29 +4462,36 @@ func (m *SearchProductsResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SearchProductsResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SearchProductsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Results) > 0 {
-		for _, msg := range m.Results {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintDemo(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Results) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Results[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintDemo(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GetQuoteRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4337,39 +4499,48 @@ func (m *GetQuoteRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetQuoteRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetQuoteRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Address != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.Address.Size()))
-		n3, err := m.Address.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
 	if len(m.Items) > 0 {
-		for _, msg := range m.Items {
+		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Items[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintDemo(dAtA, i, uint64(size))
+			}
+			i--
 			dAtA[i] = 0x12
-			i++
-			i = encodeVarintDemo(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+		}
+	}
+	if m.Address != nil {
+		{
+			size, err := m.Address.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GetQuoteResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4377,27 +4548,34 @@ func (m *GetQuoteResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetQuoteResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetQuoteResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.CostUsd != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.CostUsd.Size()))
-		n4, err := m.CostUsd.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.CostUsd.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
-		i += n4
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *ShipOrderRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4405,39 +4583,48 @@ func (m *ShipOrderRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ShipOrderRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ShipOrderRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Address != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.Address.Size()))
-		n5, err := m.Address.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n5
-	}
 	if len(m.Items) > 0 {
-		for _, msg := range m.Items {
+		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Items[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintDemo(dAtA, i, uint64(size))
+			}
+			i--
 			dAtA[i] = 0x12
-			i++
-			i = encodeVarintDemo(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+		}
+	}
+	if m.Address != nil {
+		{
+			size, err := m.Address.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *ShipOrderResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4445,23 +4632,29 @@ func (m *ShipOrderResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ShipOrderResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ShipOrderResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.TrackingId) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.TrackingId)
+		copy(dAtA[i:], m.TrackingId)
 		i = encodeVarintDemo(dAtA, i, uint64(len(m.TrackingId)))
-		i += copy(dAtA[i:], m.TrackingId)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Address) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4469,46 +4662,55 @@ func (m *Address) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Address) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Address) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.StreetAddress) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.StreetAddress)))
-		i += copy(dAtA[i:], m.StreetAddress)
-	}
-	if len(m.City) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.City)))
-		i += copy(dAtA[i:], m.City)
-	}
-	if len(m.State) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.State)))
-		i += copy(dAtA[i:], m.State)
+	if m.ZipCode != 0 {
+		i = encodeVarintDemo(dAtA, i, uint64(m.ZipCode))
+		i--
+		dAtA[i] = 0x28
 	}
 	if len(m.Country) > 0 {
-		dAtA[i] = 0x22
-		i++
+		i -= len(m.Country)
+		copy(dAtA[i:], m.Country)
 		i = encodeVarintDemo(dAtA, i, uint64(len(m.Country)))
-		i += copy(dAtA[i:], m.Country)
+		i--
+		dAtA[i] = 0x22
 	}
-	if m.ZipCode != 0 {
-		dAtA[i] = 0x28
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.ZipCode))
+	if len(m.State) > 0 {
+		i -= len(m.State)
+		copy(dAtA[i:], m.State)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.State)))
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	if len(m.City) > 0 {
+		i -= len(m.City)
+		copy(dAtA[i:], m.City)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.City)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.StreetAddress) > 0 {
+		i -= len(m.StreetAddress)
+		copy(dAtA[i:], m.StreetAddress)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.StreetAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Money) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4516,33 +4718,39 @@ func (m *Money) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Money) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Money) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.CurrencyCode) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.CurrencyCode)))
-		i += copy(dAtA[i:], m.CurrencyCode)
+	if m.Nanos != 0 {
+		i = encodeVarintDemo(dAtA, i, uint64(m.Nanos))
+		i--
+		dAtA[i] = 0x18
 	}
 	if m.Units != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintDemo(dAtA, i, uint64(m.Units))
+		i--
+		dAtA[i] = 0x10
 	}
-	if m.Nanos != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.Nanos))
+	if len(m.CurrencyCode) > 0 {
+		i -= len(m.CurrencyCode)
+		copy(dAtA[i:], m.CurrencyCode)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.CurrencyCode)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GetSupportedCurrenciesResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4550,32 +4758,31 @@ func (m *GetSupportedCurrenciesResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GetSupportedCurrenciesResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetSupportedCurrenciesResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.CurrencyCodes) > 0 {
-		for _, s := range m.CurrencyCodes {
+		for iNdEx := len(m.CurrencyCodes) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.CurrencyCodes[iNdEx])
+			copy(dAtA[i:], m.CurrencyCodes[iNdEx])
+			i = encodeVarintDemo(dAtA, i, uint64(len(m.CurrencyCodes[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *CurrencyConversionRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4583,33 +4790,41 @@ func (m *CurrencyConversionRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CurrencyConversionRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CurrencyConversionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.From != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.From.Size()))
-		n6, err := m.From.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n6
-	}
 	if len(m.ToCode) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.ToCode)
+		copy(dAtA[i:], m.ToCode)
 		i = encodeVarintDemo(dAtA, i, uint64(len(m.ToCode)))
-		i += copy(dAtA[i:], m.ToCode)
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.From != nil {
+		{
+			size, err := m.From.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *CreditCardInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4617,38 +4832,44 @@ func (m *CreditCardInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CreditCardInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreditCardInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.CreditCardNumber) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.CreditCardNumber)))
-		i += copy(dAtA[i:], m.CreditCardNumber)
-	}
-	if m.CreditCardCvv != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.CreditCardCvv))
+	if m.CreditCardExpirationMonth != 0 {
+		i = encodeVarintDemo(dAtA, i, uint64(m.CreditCardExpirationMonth))
+		i--
+		dAtA[i] = 0x20
 	}
 	if m.CreditCardExpirationYear != 0 {
-		dAtA[i] = 0x18
-		i++
 		i = encodeVarintDemo(dAtA, i, uint64(m.CreditCardExpirationYear))
+		i--
+		dAtA[i] = 0x18
 	}
-	if m.CreditCardExpirationMonth != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.CreditCardExpirationMonth))
+	if m.CreditCardCvv != 0 {
+		i = encodeVarintDemo(dAtA, i, uint64(m.CreditCardCvv))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if len(m.CreditCardNumber) > 0 {
+		i -= len(m.CreditCardNumber)
+		copy(dAtA[i:], m.CreditCardNumber)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.CreditCardNumber)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ChargeRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4656,37 +4877,46 @@ func (m *ChargeRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ChargeRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ChargeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Amount != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.Amount.Size()))
-		n7, err := m.Amount.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n7
-	}
 	if m.CreditCard != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.CreditCard.Size()))
-		n8, err := m.CreditCard.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.CreditCard.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
-		i += n8
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Amount != nil {
+		{
+			size, err := m.Amount.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ChargeResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4694,23 +4924,29 @@ func (m *ChargeResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ChargeResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ChargeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.TransactionId) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.TransactionId)
+		copy(dAtA[i:], m.TransactionId)
 		i = encodeVarintDemo(dAtA, i, uint64(len(m.TransactionId)))
-		i += copy(dAtA[i:], m.TransactionId)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *OrderItem) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4718,37 +4954,46 @@ func (m *OrderItem) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *OrderItem) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OrderItem) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Item != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.Item.Size()))
-		n9, err := m.Item.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n9
-	}
 	if m.Cost != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.Cost.Size()))
-		n10, err := m.Cost.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Cost.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
-		i += n10
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Item != nil {
+		{
+			size, err := m.Item.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *OrderResult) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4756,61 +5001,74 @@ func (m *OrderResult) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *OrderResult) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OrderResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.OrderId) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.OrderId)))
-		i += copy(dAtA[i:], m.OrderId)
-	}
-	if len(m.ShippingTrackingId) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.ShippingTrackingId)))
-		i += copy(dAtA[i:], m.ShippingTrackingId)
-	}
-	if m.ShippingCost != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.ShippingCost.Size()))
-		n11, err := m.ShippingCost.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+	if len(m.Items) > 0 {
+		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Items[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintDemo(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2a
 		}
-		i += n11
 	}
 	if m.ShippingAddress != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.ShippingAddress.Size()))
-		n12, err := m.ShippingAddress.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n12
-	}
-	if len(m.Items) > 0 {
-		for _, msg := range m.Items {
-			dAtA[i] = 0x2a
-			i++
-			i = encodeVarintDemo(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+		{
+			size, err := m.ShippingAddress.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0x22
 	}
-	return i, nil
+	if m.ShippingCost != nil {
+		{
+			size, err := m.ShippingCost.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.ShippingTrackingId) > 0 {
+		i -= len(m.ShippingTrackingId)
+		copy(dAtA[i:], m.ShippingTrackingId)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.ShippingTrackingId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.OrderId) > 0 {
+		i -= len(m.OrderId)
+		copy(dAtA[i:], m.OrderId)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.OrderId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *SendOrderConfirmationRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4818,33 +5076,41 @@ func (m *SendOrderConfirmationRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SendOrderConfirmationRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SendOrderConfirmationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Email) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.Email)))
-		i += copy(dAtA[i:], m.Email)
-	}
 	if m.Order != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.Order.Size()))
-		n13, err := m.Order.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Order.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
-		i += n13
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.Email) > 0 {
+		i -= len(m.Email)
+		copy(dAtA[i:], m.Email)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.Email)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *PlaceOrderRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4852,55 +5118,67 @@ func (m *PlaceOrderRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *PlaceOrderRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PlaceOrderRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.UserId) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserId)))
-		i += copy(dAtA[i:], m.UserId)
-	}
-	if len(m.UserCurrency) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserCurrency)))
-		i += copy(dAtA[i:], m.UserCurrency)
-	}
-	if m.Address != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.Address.Size()))
-		n14, err := m.Address.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+	if m.CreditCard != nil {
+		{
+			size, err := m.CreditCard.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
-		i += n14
+		i--
+		dAtA[i] = 0x32
 	}
 	if len(m.Email) > 0 {
-		dAtA[i] = 0x2a
-		i++
+		i -= len(m.Email)
+		copy(dAtA[i:], m.Email)
 		i = encodeVarintDemo(dAtA, i, uint64(len(m.Email)))
-		i += copy(dAtA[i:], m.Email)
+		i--
+		dAtA[i] = 0x2a
 	}
-	if m.CreditCard != nil {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.CreditCard.Size()))
-		n15, err := m.CreditCard.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+	if m.Address != nil {
+		{
+			size, err := m.Address.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
-		i += n15
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	if len(m.UserCurrency) > 0 {
+		i -= len(m.UserCurrency)
+		copy(dAtA[i:], m.UserCurrency)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserCurrency)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.UserId) > 0 {
+		i -= len(m.UserId)
+		copy(dAtA[i:], m.UserId)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.UserId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *PlaceOrderResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4908,27 +5186,34 @@ func (m *PlaceOrderResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *PlaceOrderResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PlaceOrderResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.Order != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(m.Order.Size()))
-		n16, err := m.Order.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Order.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintDemo(dAtA, i, uint64(size))
 		}
-		i += n16
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *AdRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4936,32 +5221,31 @@ func (m *AdRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AdRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AdRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.ContextKeys) > 0 {
-		for _, s := range m.ContextKeys {
+		for iNdEx := len(m.ContextKeys) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ContextKeys[iNdEx])
+			copy(dAtA[i:], m.ContextKeys[iNdEx])
+			i = encodeVarintDemo(dAtA, i, uint64(len(m.ContextKeys[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *AdResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4969,29 +5253,36 @@ func (m *AdResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AdResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AdResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Ads) > 0 {
-		for _, msg := range m.Ads {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintDemo(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Ads) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Ads[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintDemo(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *Ad) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -4999,33 +5290,42 @@ func (m *Ad) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Ad) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Ad) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.RedirectUrl) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintDemo(dAtA, i, uint64(len(m.RedirectUrl)))
-		i += copy(dAtA[i:], m.RedirectUrl)
-	}
 	if len(m.Text) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.Text)
+		copy(dAtA[i:], m.Text)
 		i = encodeVarintDemo(dAtA, i, uint64(len(m.Text)))
-		i += copy(dAtA[i:], m.Text)
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.RedirectUrl) > 0 {
+		i -= len(m.RedirectUrl)
+		copy(dAtA[i:], m.RedirectUrl)
+		i = encodeVarintDemo(dAtA, i, uint64(len(m.RedirectUrl)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintDemo(dAtA []byte, offset int, v uint64) int {
+	offset -= sovDemo(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *CartItem) Size() (n int) {
 	if m == nil {
@@ -5589,14 +5889,7 @@ func (m *Ad) Size() (n int) {
 }
 
 func sovDemo(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozDemo(x uint64) (n int) {
 	return sovDemo(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -5618,7 +5911,7 @@ func (this *AddItemRequest) String() string {
 	}
 	s := strings.Join([]string{`&AddItemRequest{`,
 		`UserId:` + fmt.Sprintf("%v", this.UserId) + `,`,
-		`Item:` + strings.Replace(fmt.Sprintf("%v", this.Item), "CartItem", "CartItem", 1) + `,`,
+		`Item:` + strings.Replace(this.Item.String(), "CartItem", "CartItem", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5647,9 +5940,14 @@ func (this *Cart) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForItems := "[]*CartItem{"
+	for _, f := range this.Items {
+		repeatedStringForItems += strings.Replace(f.String(), "CartItem", "CartItem", 1) + ","
+	}
+	repeatedStringForItems += "}"
 	s := strings.Join([]string{`&Cart{`,
 		`UserId:` + fmt.Sprintf("%v", this.UserId) + `,`,
-		`Items:` + strings.Replace(fmt.Sprintf("%v", this.Items), "CartItem", "CartItem", 1) + `,`,
+		`Items:` + repeatedStringForItems + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5693,7 +5991,7 @@ func (this *Product) String() string {
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Description:` + fmt.Sprintf("%v", this.Description) + `,`,
 		`Picture:` + fmt.Sprintf("%v", this.Picture) + `,`,
-		`PriceUsd:` + strings.Replace(fmt.Sprintf("%v", this.PriceUsd), "Money", "Money", 1) + `,`,
+		`PriceUsd:` + strings.Replace(this.PriceUsd.String(), "Money", "Money", 1) + `,`,
 		`Categories:` + fmt.Sprintf("%v", this.Categories) + `,`,
 		`}`,
 	}, "")
@@ -5703,8 +6001,13 @@ func (this *ListProductsResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForProducts := "[]*Product{"
+	for _, f := range this.Products {
+		repeatedStringForProducts += strings.Replace(f.String(), "Product", "Product", 1) + ","
+	}
+	repeatedStringForProducts += "}"
 	s := strings.Join([]string{`&ListProductsResponse{`,
-		`Products:` + strings.Replace(fmt.Sprintf("%v", this.Products), "Product", "Product", 1) + `,`,
+		`Products:` + repeatedStringForProducts + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5733,8 +6036,13 @@ func (this *SearchProductsResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForResults := "[]*Product{"
+	for _, f := range this.Results {
+		repeatedStringForResults += strings.Replace(f.String(), "Product", "Product", 1) + ","
+	}
+	repeatedStringForResults += "}"
 	s := strings.Join([]string{`&SearchProductsResponse{`,
-		`Results:` + strings.Replace(fmt.Sprintf("%v", this.Results), "Product", "Product", 1) + `,`,
+		`Results:` + repeatedStringForResults + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5743,9 +6051,14 @@ func (this *GetQuoteRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForItems := "[]*CartItem{"
+	for _, f := range this.Items {
+		repeatedStringForItems += strings.Replace(f.String(), "CartItem", "CartItem", 1) + ","
+	}
+	repeatedStringForItems += "}"
 	s := strings.Join([]string{`&GetQuoteRequest{`,
-		`Address:` + strings.Replace(fmt.Sprintf("%v", this.Address), "Address", "Address", 1) + `,`,
-		`Items:` + strings.Replace(fmt.Sprintf("%v", this.Items), "CartItem", "CartItem", 1) + `,`,
+		`Address:` + strings.Replace(this.Address.String(), "Address", "Address", 1) + `,`,
+		`Items:` + repeatedStringForItems + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5755,7 +6068,7 @@ func (this *GetQuoteResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&GetQuoteResponse{`,
-		`CostUsd:` + strings.Replace(fmt.Sprintf("%v", this.CostUsd), "Money", "Money", 1) + `,`,
+		`CostUsd:` + strings.Replace(this.CostUsd.String(), "Money", "Money", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5764,9 +6077,14 @@ func (this *ShipOrderRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForItems := "[]*CartItem{"
+	for _, f := range this.Items {
+		repeatedStringForItems += strings.Replace(f.String(), "CartItem", "CartItem", 1) + ","
+	}
+	repeatedStringForItems += "}"
 	s := strings.Join([]string{`&ShipOrderRequest{`,
-		`Address:` + strings.Replace(fmt.Sprintf("%v", this.Address), "Address", "Address", 1) + `,`,
-		`Items:` + strings.Replace(fmt.Sprintf("%v", this.Items), "CartItem", "CartItem", 1) + `,`,
+		`Address:` + strings.Replace(this.Address.String(), "Address", "Address", 1) + `,`,
+		`Items:` + repeatedStringForItems + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5822,7 +6140,7 @@ func (this *CurrencyConversionRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&CurrencyConversionRequest{`,
-		`From:` + strings.Replace(fmt.Sprintf("%v", this.From), "Money", "Money", 1) + `,`,
+		`From:` + strings.Replace(this.From.String(), "Money", "Money", 1) + `,`,
 		`ToCode:` + fmt.Sprintf("%v", this.ToCode) + `,`,
 		`}`,
 	}, "")
@@ -5846,8 +6164,8 @@ func (this *ChargeRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ChargeRequest{`,
-		`Amount:` + strings.Replace(fmt.Sprintf("%v", this.Amount), "Money", "Money", 1) + `,`,
-		`CreditCard:` + strings.Replace(fmt.Sprintf("%v", this.CreditCard), "CreditCardInfo", "CreditCardInfo", 1) + `,`,
+		`Amount:` + strings.Replace(this.Amount.String(), "Money", "Money", 1) + `,`,
+		`CreditCard:` + strings.Replace(this.CreditCard.String(), "CreditCardInfo", "CreditCardInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5867,8 +6185,8 @@ func (this *OrderItem) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&OrderItem{`,
-		`Item:` + strings.Replace(fmt.Sprintf("%v", this.Item), "CartItem", "CartItem", 1) + `,`,
-		`Cost:` + strings.Replace(fmt.Sprintf("%v", this.Cost), "Money", "Money", 1) + `,`,
+		`Item:` + strings.Replace(this.Item.String(), "CartItem", "CartItem", 1) + `,`,
+		`Cost:` + strings.Replace(this.Cost.String(), "Money", "Money", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5877,12 +6195,17 @@ func (this *OrderResult) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForItems := "[]*OrderItem{"
+	for _, f := range this.Items {
+		repeatedStringForItems += strings.Replace(f.String(), "OrderItem", "OrderItem", 1) + ","
+	}
+	repeatedStringForItems += "}"
 	s := strings.Join([]string{`&OrderResult{`,
 		`OrderId:` + fmt.Sprintf("%v", this.OrderId) + `,`,
 		`ShippingTrackingId:` + fmt.Sprintf("%v", this.ShippingTrackingId) + `,`,
-		`ShippingCost:` + strings.Replace(fmt.Sprintf("%v", this.ShippingCost), "Money", "Money", 1) + `,`,
-		`ShippingAddress:` + strings.Replace(fmt.Sprintf("%v", this.ShippingAddress), "Address", "Address", 1) + `,`,
-		`Items:` + strings.Replace(fmt.Sprintf("%v", this.Items), "OrderItem", "OrderItem", 1) + `,`,
+		`ShippingCost:` + strings.Replace(this.ShippingCost.String(), "Money", "Money", 1) + `,`,
+		`ShippingAddress:` + strings.Replace(this.ShippingAddress.String(), "Address", "Address", 1) + `,`,
+		`Items:` + repeatedStringForItems + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5893,7 +6216,7 @@ func (this *SendOrderConfirmationRequest) String() string {
 	}
 	s := strings.Join([]string{`&SendOrderConfirmationRequest{`,
 		`Email:` + fmt.Sprintf("%v", this.Email) + `,`,
-		`Order:` + strings.Replace(fmt.Sprintf("%v", this.Order), "OrderResult", "OrderResult", 1) + `,`,
+		`Order:` + strings.Replace(this.Order.String(), "OrderResult", "OrderResult", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5905,9 +6228,9 @@ func (this *PlaceOrderRequest) String() string {
 	s := strings.Join([]string{`&PlaceOrderRequest{`,
 		`UserId:` + fmt.Sprintf("%v", this.UserId) + `,`,
 		`UserCurrency:` + fmt.Sprintf("%v", this.UserCurrency) + `,`,
-		`Address:` + strings.Replace(fmt.Sprintf("%v", this.Address), "Address", "Address", 1) + `,`,
+		`Address:` + strings.Replace(this.Address.String(), "Address", "Address", 1) + `,`,
 		`Email:` + fmt.Sprintf("%v", this.Email) + `,`,
-		`CreditCard:` + strings.Replace(fmt.Sprintf("%v", this.CreditCard), "CreditCardInfo", "CreditCardInfo", 1) + `,`,
+		`CreditCard:` + strings.Replace(this.CreditCard.String(), "CreditCardInfo", "CreditCardInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5917,7 +6240,7 @@ func (this *PlaceOrderResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&PlaceOrderResponse{`,
-		`Order:` + strings.Replace(fmt.Sprintf("%v", this.Order), "OrderResult", "OrderResult", 1) + `,`,
+		`Order:` + strings.Replace(this.Order.String(), "OrderResult", "OrderResult", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5936,8 +6259,13 @@ func (this *AdResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForAds := "[]*Ad{"
+	for _, f := range this.Ads {
+		repeatedStringForAds += strings.Replace(f.String(), "Ad", "Ad", 1) + ","
+	}
+	repeatedStringForAds += "}"
 	s := strings.Join([]string{`&AdResponse{`,
-		`Ads:` + strings.Replace(fmt.Sprintf("%v", this.Ads), "Ad", "Ad", 1) + `,`,
+		`Ads:` + repeatedStringForAds + `,`,
 		`}`,
 	}, "")
 	return s

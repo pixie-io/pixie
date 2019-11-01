@@ -9,8 +9,11 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
 )
@@ -24,7 +27,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type PingRequest struct {
 	Req string `protobuf:"bytes,1,opt,name=req,proto3" json:"req,omitempty"`
@@ -43,7 +46,7 @@ func (m *PingRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return xxx_messageInfo_PingRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -86,7 +89,7 @@ func (m *PingReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_PingReply.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -256,6 +259,14 @@ type PingServiceServer interface {
 	Ping(context.Context, *PingRequest) (*PingReply, error)
 }
 
+// UnimplementedPingServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedPingServiceServer struct {
+}
+
+func (*UnimplementedPingServiceServer) Ping(ctx context.Context, req *PingRequest) (*PingReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+
 func RegisterPingServiceServer(s *grpc.Server, srv PingServiceServer) {
 	s.RegisterService(&_PingService_serviceDesc, srv)
 }
@@ -294,7 +305,7 @@ var _PingService_serviceDesc = grpc.ServiceDesc{
 func (m *PingRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -302,23 +313,29 @@ func (m *PingRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *PingRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PingRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Req) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.Req)
+		copy(dAtA[i:], m.Req)
 		i = encodeVarintPing(dAtA, i, uint64(len(m.Req)))
-		i += copy(dAtA[i:], m.Req)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *PingReply) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -326,27 +343,35 @@ func (m *PingReply) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *PingReply) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PingReply) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Reply) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.Reply)
+		copy(dAtA[i:], m.Reply)
 		i = encodeVarintPing(dAtA, i, uint64(len(m.Reply)))
-		i += copy(dAtA[i:], m.Reply)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintPing(dAtA []byte, offset int, v uint64) int {
+	offset -= sovPing(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *PingRequest) Size() (n int) {
 	if m == nil {
@@ -375,14 +400,7 @@ func (m *PingReply) Size() (n int) {
 }
 
 func sovPing(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozPing(x uint64) (n int) {
 	return sovPing(uint64((x << 1) ^ uint64((int64(x) >> 63))))

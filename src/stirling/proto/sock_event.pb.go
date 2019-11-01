@@ -9,6 +9,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
 )
@@ -22,7 +23,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type TrafficClass struct {
 	Protocol uint32 `protobuf:"varint,1,opt,name=protocol,proto3" json:"protocol,omitempty"`
@@ -42,7 +43,7 @@ func (m *TrafficClass) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_TrafficClass.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -95,7 +96,7 @@ func (m *ConnID) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_ConnID.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +161,7 @@ func (m *SocketDataEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return xxx_messageInfo_SocketDataEvent.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -215,7 +216,7 @@ func (m *SocketDataEvent_Attribute) XXX_Marshal(b []byte, deterministic bool) ([
 		return xxx_messageInfo_SocketDataEvent_Attribute.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -512,7 +513,7 @@ func valueToGoStringSockEvent(v interface{}, typ string) string {
 func (m *TrafficClass) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -520,27 +521,32 @@ func (m *TrafficClass) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *TrafficClass) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TrafficClass) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Protocol != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintSockEvent(dAtA, i, uint64(m.Protocol))
-	}
 	if m.Role != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintSockEvent(dAtA, i, uint64(m.Role))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if m.Protocol != 0 {
+		i = encodeVarintSockEvent(dAtA, i, uint64(m.Protocol))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ConnID) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -548,37 +554,42 @@ func (m *ConnID) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ConnID) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ConnID) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Pid != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintSockEvent(dAtA, i, uint64(m.Pid))
-	}
-	if m.StartTimeNs != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintSockEvent(dAtA, i, uint64(m.StartTimeNs))
+	if m.Generation != 0 {
+		i = encodeVarintSockEvent(dAtA, i, uint64(m.Generation))
+		i--
+		dAtA[i] = 0x20
 	}
 	if m.Fd != 0 {
-		dAtA[i] = 0x18
-		i++
 		i = encodeVarintSockEvent(dAtA, i, uint64(m.Fd))
+		i--
+		dAtA[i] = 0x18
 	}
-	if m.Generation != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintSockEvent(dAtA, i, uint64(m.Generation))
+	if m.StartTimeNs != 0 {
+		i = encodeVarintSockEvent(dAtA, i, uint64(m.StartTimeNs))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if m.Pid != 0 {
+		i = encodeVarintSockEvent(dAtA, i, uint64(m.Pid))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *SocketDataEvent) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -586,33 +597,41 @@ func (m *SocketDataEvent) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SocketDataEvent) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SocketDataEvent) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Attr != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintSockEvent(dAtA, i, uint64(m.Attr.Size()))
-		n1, err := m.Attr.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
 	if len(m.Msg) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.Msg)
+		copy(dAtA[i:], m.Msg)
 		i = encodeVarintSockEvent(dAtA, i, uint64(len(m.Msg)))
-		i += copy(dAtA[i:], m.Msg)
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Attr != nil {
+		{
+			size, err := m.Attr.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSockEvent(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *SocketDataEvent_Attribute) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -620,61 +639,72 @@ func (m *SocketDataEvent_Attribute) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *SocketDataEvent_Attribute) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SocketDataEvent_Attribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.TimestampNs != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintSockEvent(dAtA, i, uint64(m.TimestampNs))
-	}
-	if m.ConnId != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintSockEvent(dAtA, i, uint64(m.ConnId.Size()))
-		n2, err := m.ConnId.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
-	}
-	if m.TrafficClass != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintSockEvent(dAtA, i, uint64(m.TrafficClass.Size()))
-		n3, err := m.TrafficClass.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
-	if m.Direction != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintSockEvent(dAtA, i, uint64(m.Direction))
+	if m.MsgSize != 0 {
+		i = encodeVarintSockEvent(dAtA, i, uint64(m.MsgSize))
+		i--
+		dAtA[i] = 0x30
 	}
 	if m.SeqNum != 0 {
-		dAtA[i] = 0x28
-		i++
 		i = encodeVarintSockEvent(dAtA, i, uint64(m.SeqNum))
+		i--
+		dAtA[i] = 0x28
 	}
-	if m.MsgSize != 0 {
-		dAtA[i] = 0x30
-		i++
-		i = encodeVarintSockEvent(dAtA, i, uint64(m.MsgSize))
+	if m.Direction != 0 {
+		i = encodeVarintSockEvent(dAtA, i, uint64(m.Direction))
+		i--
+		dAtA[i] = 0x20
 	}
-	return i, nil
+	if m.TrafficClass != nil {
+		{
+			size, err := m.TrafficClass.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSockEvent(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.ConnId != nil {
+		{
+			size, err := m.ConnId.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSockEvent(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.TimestampNs != 0 {
+		i = encodeVarintSockEvent(dAtA, i, uint64(m.TimestampNs))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintSockEvent(dAtA []byte, offset int, v uint64) int {
+	offset -= sovSockEvent(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *TrafficClass) Size() (n int) {
 	if m == nil {
@@ -759,14 +789,7 @@ func (m *SocketDataEvent_Attribute) Size() (n int) {
 }
 
 func sovSockEvent(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozSockEvent(x uint64) (n int) {
 	return sovSockEvent(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -812,8 +835,8 @@ func (this *SocketDataEvent_Attribute) String() string {
 	}
 	s := strings.Join([]string{`&SocketDataEvent_Attribute{`,
 		`TimestampNs:` + fmt.Sprintf("%v", this.TimestampNs) + `,`,
-		`ConnId:` + strings.Replace(fmt.Sprintf("%v", this.ConnId), "ConnID", "ConnID", 1) + `,`,
-		`TrafficClass:` + strings.Replace(fmt.Sprintf("%v", this.TrafficClass), "TrafficClass", "TrafficClass", 1) + `,`,
+		`ConnId:` + strings.Replace(this.ConnId.String(), "ConnID", "ConnID", 1) + `,`,
+		`TrafficClass:` + strings.Replace(this.TrafficClass.String(), "TrafficClass", "TrafficClass", 1) + `,`,
 		`Direction:` + fmt.Sprintf("%v", this.Direction) + `,`,
 		`SeqNum:` + fmt.Sprintf("%v", this.SeqNum) + `,`,
 		`MsgSize:` + fmt.Sprintf("%v", this.MsgSize) + `,`,

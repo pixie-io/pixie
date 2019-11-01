@@ -5,16 +5,16 @@ package messages
 
 import (
 	fmt "fmt"
-	io "io"
-	math "math"
-	reflect "reflect"
-	strings "strings"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	io "io"
+	math "math"
+	math_bits "math/bits"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	reflect "reflect"
+	strings "strings"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -26,10 +26,10 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type VizierMessage struct {
-	// Types that are valid to be assigned to msg:
+	// Types that are valid to be assigned to Msg:
 	//	*VizierMessage_RegisterAgentRequest
 	//	*VizierMessage_RegisterAgentResponse
 	//	*VizierMessage_UpdateAgentRequest
@@ -54,7 +54,7 @@ func (m *VizierMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_VizierMessage.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -177,9 +177,9 @@ func (m *VizierMessage) GetExecuteQueryRequest() *ExecuteQueryRequest {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*VizierMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _VizierMessage_OneofMarshaler, _VizierMessage_OneofUnmarshaler, _VizierMessage_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*VizierMessage) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*VizierMessage_RegisterAgentRequest)(nil),
 		(*VizierMessage_RegisterAgentResponse)(nil),
 		(*VizierMessage_UpdateAgentRequest)(nil),
@@ -189,180 +189,6 @@ func (*VizierMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer)
 		(*VizierMessage_HeartbeatNack)(nil),
 		(*VizierMessage_ExecuteQueryRequest)(nil),
 	}
-}
-
-func _VizierMessage_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*VizierMessage)
-	// msg
-	switch x := m.Msg.(type) {
-	case *VizierMessage_RegisterAgentRequest:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RegisterAgentRequest); err != nil {
-			return err
-		}
-	case *VizierMessage_RegisterAgentResponse:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RegisterAgentResponse); err != nil {
-			return err
-		}
-	case *VizierMessage_UpdateAgentRequest:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.UpdateAgentRequest); err != nil {
-			return err
-		}
-	case *VizierMessage_UpdateAgentResponse:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.UpdateAgentResponse); err != nil {
-			return err
-		}
-	case *VizierMessage_Heartbeat:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Heartbeat); err != nil {
-			return err
-		}
-	case *VizierMessage_HeartbeatAck:
-		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.HeartbeatAck); err != nil {
-			return err
-		}
-	case *VizierMessage_HeartbeatNack:
-		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.HeartbeatNack); err != nil {
-			return err
-		}
-	case *VizierMessage_ExecuteQueryRequest:
-		_ = b.EncodeVarint(8<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ExecuteQueryRequest); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("VizierMessage.msg has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _VizierMessage_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*VizierMessage)
-	switch tag {
-	case 1: // msg.register_agent_request
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(RegisterAgentRequest)
-		err := b.DecodeMessage(msg)
-		m.Msg = &VizierMessage_RegisterAgentRequest{msg}
-		return true, err
-	case 2: // msg.register_agent_response
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(RegisterAgentResponse)
-		err := b.DecodeMessage(msg)
-		m.Msg = &VizierMessage_RegisterAgentResponse{msg}
-		return true, err
-	case 3: // msg.update_agent_request
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(UpdateAgentRequest)
-		err := b.DecodeMessage(msg)
-		m.Msg = &VizierMessage_UpdateAgentRequest{msg}
-		return true, err
-	case 4: // msg.update_agent_response
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(UpdateAgentResponse)
-		err := b.DecodeMessage(msg)
-		m.Msg = &VizierMessage_UpdateAgentResponse{msg}
-		return true, err
-	case 5: // msg.heartbeat
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Heartbeat)
-		err := b.DecodeMessage(msg)
-		m.Msg = &VizierMessage_Heartbeat{msg}
-		return true, err
-	case 6: // msg.heartbeat_ack
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(HeartbeatAck)
-		err := b.DecodeMessage(msg)
-		m.Msg = &VizierMessage_HeartbeatAck{msg}
-		return true, err
-	case 7: // msg.heartbeat_nack
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(HeartbeatNack)
-		err := b.DecodeMessage(msg)
-		m.Msg = &VizierMessage_HeartbeatNack{msg}
-		return true, err
-	case 8: // msg.execute_query_request
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ExecuteQueryRequest)
-		err := b.DecodeMessage(msg)
-		m.Msg = &VizierMessage_ExecuteQueryRequest{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _VizierMessage_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*VizierMessage)
-	// msg
-	switch x := m.Msg.(type) {
-	case *VizierMessage_RegisterAgentRequest:
-		s := proto.Size(x.RegisterAgentRequest)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VizierMessage_RegisterAgentResponse:
-		s := proto.Size(x.RegisterAgentResponse)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VizierMessage_UpdateAgentRequest:
-		s := proto.Size(x.UpdateAgentRequest)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VizierMessage_UpdateAgentResponse:
-		s := proto.Size(x.UpdateAgentResponse)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VizierMessage_Heartbeat:
-		s := proto.Size(x.Heartbeat)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VizierMessage_HeartbeatAck:
-		s := proto.Size(x.HeartbeatAck)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VizierMessage_HeartbeatNack:
-		s := proto.Size(x.HeartbeatNack)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *VizierMessage_ExecuteQueryRequest:
-		s := proto.Size(x.ExecuteQueryRequest)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type AgentInfo struct {
@@ -383,7 +209,7 @@ func (m *AgentInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_AgentInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -433,7 +259,7 @@ func (m *HostInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_HostInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -477,7 +303,7 @@ func (m *RegisterAgentRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return xxx_messageInfo_RegisterAgentRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -527,7 +353,7 @@ func (m *RegisterAgentResponse) XXX_Marshal(b []byte, deterministic bool) ([]byt
 		return xxx_messageInfo_RegisterAgentResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -571,7 +397,7 @@ func (m *UpdateAgentRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_UpdateAgentRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -620,7 +446,7 @@ func (m *UpdateAgentResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_UpdateAgentResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -659,7 +485,7 @@ func (m *AgentUpdateInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return xxx_messageInfo_AgentUpdateInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -726,7 +552,7 @@ func (m *Heartbeat) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Heartbeat.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -790,7 +616,7 @@ func (m *MetadataUpdateInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_MetadataUpdateInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -835,7 +661,7 @@ func (m *HeartbeatAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_HeartbeatAck.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -891,7 +717,7 @@ func (m *HeartbeatNack) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_HeartbeatNack.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -929,7 +755,7 @@ func (m *ExecuteQueryRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_ExecuteQueryRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -1628,7 +1454,7 @@ func (this *VizierMessage) GoString() string {
 	s := make([]string, 0, 12)
 	s = append(s, "&messages.VizierMessage{")
 	if this.Msg != nil {
-		s = append(s, "msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
+		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1871,7 +1697,7 @@ func valueToGoStringMessages(v interface{}, typ string) string {
 func (m *VizierMessage) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1879,136 +1705,191 @@ func (m *VizierMessage) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *VizierMessage) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.Msg != nil {
-		nn1, err := m.Msg.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size := m.Msg.Size()
+			i -= size
+			if _, err := m.Msg.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
 		}
-		i += nn1
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *VizierMessage_RegisterAgentRequest) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *VizierMessage_RegisterAgentRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.RegisterAgentRequest != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.RegisterAgentRequest.Size()))
-		n2, err := m.RegisterAgentRequest.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.RegisterAgentRequest.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n2
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_RegisterAgentResponse) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *VizierMessage_RegisterAgentResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.RegisterAgentResponse != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.RegisterAgentResponse.Size()))
-		n3, err := m.RegisterAgentResponse.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.RegisterAgentResponse.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n3
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_UpdateAgentRequest) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *VizierMessage_UpdateAgentRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.UpdateAgentRequest != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.UpdateAgentRequest.Size()))
-		n4, err := m.UpdateAgentRequest.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.UpdateAgentRequest.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n4
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_UpdateAgentResponse) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *VizierMessage_UpdateAgentResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.UpdateAgentResponse != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.UpdateAgentResponse.Size()))
-		n5, err := m.UpdateAgentResponse.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.UpdateAgentResponse.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n5
+		i--
+		dAtA[i] = 0x22
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_Heartbeat) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *VizierMessage_Heartbeat) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.Heartbeat != nil {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.Heartbeat.Size()))
-		n6, err := m.Heartbeat.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Heartbeat.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n6
+		i--
+		dAtA[i] = 0x2a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_HeartbeatAck) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *VizierMessage_HeartbeatAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.HeartbeatAck != nil {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.HeartbeatAck.Size()))
-		n7, err := m.HeartbeatAck.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.HeartbeatAck.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n7
+		i--
+		dAtA[i] = 0x32
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_HeartbeatNack) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *VizierMessage_HeartbeatNack) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.HeartbeatNack != nil {
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.HeartbeatNack.Size()))
-		n8, err := m.HeartbeatNack.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.HeartbeatNack.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n8
+		i--
+		dAtA[i] = 0x3a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_ExecuteQueryRequest) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *VizierMessage_ExecuteQueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.ExecuteQueryRequest != nil {
-		dAtA[i] = 0x42
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.ExecuteQueryRequest.Size()))
-		n9, err := m.ExecuteQueryRequest.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.ExecuteQueryRequest.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n9
+		i--
+		dAtA[i] = 0x42
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *AgentInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2016,37 +1897,46 @@ func (m *AgentInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AgentInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.AgentID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.AgentID.Size()))
-		n10, err := m.AgentID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n10
-	}
 	if m.HostInfo != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.HostInfo.Size()))
-		n11, err := m.HostInfo.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.HostInfo.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n11
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.AgentID != nil {
+		{
+			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *HostInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2054,23 +1944,29 @@ func (m *HostInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HostInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HostInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Hostname) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.Hostname)
+		copy(dAtA[i:], m.Hostname)
 		i = encodeVarintMessages(dAtA, i, uint64(len(m.Hostname)))
-		i += copy(dAtA[i:], m.Hostname)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *RegisterAgentRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2078,37 +1974,46 @@ func (m *RegisterAgentRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *RegisterAgentRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterAgentRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Info != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.Info.Size()))
-		n12, err := m.Info.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n12
-	}
 	if m.UpdateInfo != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.UpdateInfo.Size()))
-		n13, err := m.UpdateInfo.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.UpdateInfo.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n13
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Info != nil {
+		{
+			size, err := m.Info.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *RegisterAgentResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2116,22 +2021,27 @@ func (m *RegisterAgentResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *RegisterAgentResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterAgentResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.ASID != 0 {
-		dAtA[i] = 0x8
-		i++
 		i = encodeVarintMessages(dAtA, i, uint64(m.ASID))
+		i--
+		dAtA[i] = 0x8
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *UpdateAgentRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2139,37 +2049,46 @@ func (m *UpdateAgentRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *UpdateAgentRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UpdateAgentRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Info != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.Info.Size()))
-		n14, err := m.Info.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n14
-	}
 	if m.UpdateInfo != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.UpdateInfo.Size()))
-		n15, err := m.UpdateInfo.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.UpdateInfo.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n15
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Info != nil {
+		{
+			size, err := m.Info.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *UpdateAgentResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2177,17 +2096,22 @@ func (m *UpdateAgentResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *UpdateAgentResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UpdateAgentResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *AgentUpdateInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2195,65 +2119,78 @@ func (m *AgentUpdateInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *AgentUpdateInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentUpdateInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Schema) > 0 {
-		for _, msg := range m.Schema {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintMessages(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+	if len(m.ProcessTerminated) > 0 {
+		for iNdEx := len(m.ProcessTerminated) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ProcessTerminated[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintMessages(dAtA, i, uint64(size))
 			}
-			i += n
-		}
-	}
-	if len(m.Process) > 0 {
-		for _, msg := range m.Process {
-			dAtA[i] = 0x1a
-			i++
-			i = encodeVarintMessages(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
+			i--
+			dAtA[i] = 0x2a
 		}
 	}
 	if len(m.ProcessCreated) > 0 {
-		for _, msg := range m.ProcessCreated {
+		for iNdEx := len(m.ProcessCreated) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ProcessCreated[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintMessages(dAtA, i, uint64(size))
+			}
+			i--
 			dAtA[i] = 0x22
-			i++
-			i = encodeVarintMessages(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
 		}
 	}
-	if len(m.ProcessTerminated) > 0 {
-		for _, msg := range m.ProcessTerminated {
-			dAtA[i] = 0x2a
-			i++
-			i = encodeVarintMessages(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+	if len(m.Process) > 0 {
+		for iNdEx := len(m.Process) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Process[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintMessages(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0x1a
 		}
 	}
-	return i, nil
+	if len(m.Schema) > 0 {
+		for iNdEx := len(m.Schema) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Schema[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintMessages(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Heartbeat) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2261,47 +2198,56 @@ func (m *Heartbeat) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Heartbeat) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Heartbeat) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.AgentID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.AgentID.Size()))
-		n16, err := m.AgentID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n16
-	}
-	if m.Time != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.Time))
+	if m.SequenceNumber != 0 {
+		i = encodeVarintMessages(dAtA, i, uint64(m.SequenceNumber))
+		i--
+		dAtA[i] = 0x20
 	}
 	if m.UpdateInfo != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.UpdateInfo.Size()))
-		n17, err := m.UpdateInfo.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.UpdateInfo.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n17
+		i--
+		dAtA[i] = 0x1a
 	}
-	if m.SequenceNumber != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.SequenceNumber))
+	if m.Time != 0 {
+		i = encodeVarintMessages(dAtA, i, uint64(m.Time))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if m.AgentID != nil {
+		{
+			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *MetadataUpdateInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2309,29 +2255,36 @@ func (m *MetadataUpdateInfo) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MetadataUpdateInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MetadataUpdateInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Updates) > 0 {
-		for _, msg := range m.Updates {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintMessages(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Updates) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Updates[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintMessages(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *HeartbeatAck) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2339,37 +2292,44 @@ func (m *HeartbeatAck) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HeartbeatAck) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HeartbeatAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Time != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.Time))
+	if m.UpdateInfo != nil {
+		{
+			size, err := m.UpdateInfo.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
 	}
 	if m.SequenceNumber != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintMessages(dAtA, i, uint64(m.SequenceNumber))
+		i--
+		dAtA[i] = 0x10
 	}
-	if m.UpdateInfo != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.UpdateInfo.Size()))
-		n18, err := m.UpdateInfo.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n18
+	if m.Time != 0 {
+		i = encodeVarintMessages(dAtA, i, uint64(m.Time))
+		i--
+		dAtA[i] = 0x8
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *HeartbeatNack) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2377,17 +2337,22 @@ func (m *HeartbeatNack) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *HeartbeatNack) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HeartbeatNack) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *ExecuteQueryRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -2395,47 +2360,59 @@ func (m *ExecuteQueryRequest) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ExecuteQueryRequest) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExecuteQueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.QueryID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.QueryID.Size()))
-		n19, err := m.QueryID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+	if m.Plan != nil {
+		{
+			size, err := m.Plan.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n19
+		i--
+		dAtA[i] = 0x1a
 	}
 	if len(m.QueryStr) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.QueryStr)
+		copy(dAtA[i:], m.QueryStr)
 		i = encodeVarintMessages(dAtA, i, uint64(len(m.QueryStr)))
-		i += copy(dAtA[i:], m.QueryStr)
+		i--
+		dAtA[i] = 0x12
 	}
-	if m.Plan != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintMessages(dAtA, i, uint64(m.Plan.Size()))
-		n20, err := m.Plan.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+	if m.QueryID != nil {
+		{
+			size, err := m.QueryID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
 		}
-		i += n20
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintMessages(dAtA []byte, offset int, v uint64) int {
+	offset -= sovMessages(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *VizierMessage) Size() (n int) {
 	if m == nil {
@@ -2751,14 +2728,7 @@ func (m *ExecuteQueryRequest) Size() (n int) {
 }
 
 func sovMessages(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozMessages(x uint64) (n int) {
 	return sovMessages(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -2768,7 +2738,7 @@ func (this *VizierMessage) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&VizierMessage{`,
-		`msg:` + fmt.Sprintf("%v", this.Msg) + `,`,
+		`Msg:` + fmt.Sprintf("%v", this.Msg) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2859,7 +2829,7 @@ func (this *AgentInfo) String() string {
 	}
 	s := strings.Join([]string{`&AgentInfo{`,
 		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
-		`HostInfo:` + strings.Replace(fmt.Sprintf("%v", this.HostInfo), "HostInfo", "HostInfo", 1) + `,`,
+		`HostInfo:` + strings.Replace(this.HostInfo.String(), "HostInfo", "HostInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2879,8 +2849,8 @@ func (this *RegisterAgentRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&RegisterAgentRequest{`,
-		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "AgentInfo", "AgentInfo", 1) + `,`,
-		`UpdateInfo:` + strings.Replace(fmt.Sprintf("%v", this.UpdateInfo), "AgentUpdateInfo", "AgentUpdateInfo", 1) + `,`,
+		`Info:` + strings.Replace(this.Info.String(), "AgentInfo", "AgentInfo", 1) + `,`,
+		`UpdateInfo:` + strings.Replace(this.UpdateInfo.String(), "AgentUpdateInfo", "AgentUpdateInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2900,8 +2870,8 @@ func (this *UpdateAgentRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&UpdateAgentRequest{`,
-		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "AgentInfo", "AgentInfo", 1) + `,`,
-		`UpdateInfo:` + strings.Replace(fmt.Sprintf("%v", this.UpdateInfo), "AgentUpdateInfo", "AgentUpdateInfo", 1) + `,`,
+		`Info:` + strings.Replace(this.Info.String(), "AgentInfo", "AgentInfo", 1) + `,`,
+		`UpdateInfo:` + strings.Replace(this.UpdateInfo.String(), "AgentUpdateInfo", "AgentUpdateInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2919,11 +2889,31 @@ func (this *AgentUpdateInfo) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForSchema := "[]*SchemaInfo{"
+	for _, f := range this.Schema {
+		repeatedStringForSchema += strings.Replace(fmt.Sprintf("%v", f), "SchemaInfo", "metadatapb.SchemaInfo", 1) + ","
+	}
+	repeatedStringForSchema += "}"
+	repeatedStringForProcess := "[]*ProcessInfo{"
+	for _, f := range this.Process {
+		repeatedStringForProcess += strings.Replace(fmt.Sprintf("%v", f), "ProcessInfo", "metadatapb.ProcessInfo", 1) + ","
+	}
+	repeatedStringForProcess += "}"
+	repeatedStringForProcessCreated := "[]*ProcessCreated{"
+	for _, f := range this.ProcessCreated {
+		repeatedStringForProcessCreated += strings.Replace(fmt.Sprintf("%v", f), "ProcessCreated", "metadatapb.ProcessCreated", 1) + ","
+	}
+	repeatedStringForProcessCreated += "}"
+	repeatedStringForProcessTerminated := "[]*ProcessTerminated{"
+	for _, f := range this.ProcessTerminated {
+		repeatedStringForProcessTerminated += strings.Replace(fmt.Sprintf("%v", f), "ProcessTerminated", "metadatapb.ProcessTerminated", 1) + ","
+	}
+	repeatedStringForProcessTerminated += "}"
 	s := strings.Join([]string{`&AgentUpdateInfo{`,
-		`Schema:` + strings.Replace(fmt.Sprintf("%v", this.Schema), "SchemaInfo", "metadatapb.SchemaInfo", 1) + `,`,
-		`Process:` + strings.Replace(fmt.Sprintf("%v", this.Process), "ProcessInfo", "metadatapb.ProcessInfo", 1) + `,`,
-		`ProcessCreated:` + strings.Replace(fmt.Sprintf("%v", this.ProcessCreated), "ProcessCreated", "metadatapb.ProcessCreated", 1) + `,`,
-		`ProcessTerminated:` + strings.Replace(fmt.Sprintf("%v", this.ProcessTerminated), "ProcessTerminated", "metadatapb.ProcessTerminated", 1) + `,`,
+		`Schema:` + repeatedStringForSchema + `,`,
+		`Process:` + repeatedStringForProcess + `,`,
+		`ProcessCreated:` + repeatedStringForProcessCreated + `,`,
+		`ProcessTerminated:` + repeatedStringForProcessTerminated + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2935,7 +2925,7 @@ func (this *Heartbeat) String() string {
 	s := strings.Join([]string{`&Heartbeat{`,
 		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
 		`Time:` + fmt.Sprintf("%v", this.Time) + `,`,
-		`UpdateInfo:` + strings.Replace(fmt.Sprintf("%v", this.UpdateInfo), "AgentUpdateInfo", "AgentUpdateInfo", 1) + `,`,
+		`UpdateInfo:` + strings.Replace(this.UpdateInfo.String(), "AgentUpdateInfo", "AgentUpdateInfo", 1) + `,`,
 		`SequenceNumber:` + fmt.Sprintf("%v", this.SequenceNumber) + `,`,
 		`}`,
 	}, "")
@@ -2945,8 +2935,13 @@ func (this *MetadataUpdateInfo) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForUpdates := "[]*ResourceUpdate{"
+	for _, f := range this.Updates {
+		repeatedStringForUpdates += strings.Replace(fmt.Sprintf("%v", f), "ResourceUpdate", "metadatapb.ResourceUpdate", 1) + ","
+	}
+	repeatedStringForUpdates += "}"
 	s := strings.Join([]string{`&MetadataUpdateInfo{`,
-		`Updates:` + strings.Replace(fmt.Sprintf("%v", this.Updates), "ResourceUpdate", "metadatapb.ResourceUpdate", 1) + `,`,
+		`Updates:` + repeatedStringForUpdates + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2958,7 +2953,7 @@ func (this *HeartbeatAck) String() string {
 	s := strings.Join([]string{`&HeartbeatAck{`,
 		`Time:` + fmt.Sprintf("%v", this.Time) + `,`,
 		`SequenceNumber:` + fmt.Sprintf("%v", this.SequenceNumber) + `,`,
-		`UpdateInfo:` + strings.Replace(fmt.Sprintf("%v", this.UpdateInfo), "MetadataUpdateInfo", "MetadataUpdateInfo", 1) + `,`,
+		`UpdateInfo:` + strings.Replace(this.UpdateInfo.String(), "MetadataUpdateInfo", "MetadataUpdateInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s

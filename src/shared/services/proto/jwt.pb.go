@@ -9,6 +9,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	_ "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	reflect "reflect"
 	strings "strings"
@@ -23,7 +24,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type JWTClaims struct {
 	Audience  string   `protobuf:"bytes,1,opt,name=audience,proto3" json:"aud"`
@@ -54,7 +55,7 @@ func (m *JWTClaims) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_JWTClaims.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -178,97 +179,13 @@ func (m *JWTClaims) GetClusterClaims() *ClusterJWTClaims {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*JWTClaims) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _JWTClaims_OneofMarshaler, _JWTClaims_OneofUnmarshaler, _JWTClaims_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*JWTClaims) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*JWTClaims_UserClaims)(nil),
 		(*JWTClaims_ServiceClaims)(nil),
 		(*JWTClaims_ClusterClaims)(nil),
 	}
-}
-
-func _JWTClaims_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*JWTClaims)
-	// custom_claims
-	switch x := m.CustomClaims.(type) {
-	case *JWTClaims_UserClaims:
-		_ = b.EncodeVarint(9<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.UserClaims); err != nil {
-			return err
-		}
-	case *JWTClaims_ServiceClaims:
-		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ServiceClaims); err != nil {
-			return err
-		}
-	case *JWTClaims_ClusterClaims:
-		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ClusterClaims); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("JWTClaims.CustomClaims has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _JWTClaims_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*JWTClaims)
-	switch tag {
-	case 9: // custom_claims.user_claims
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(UserJWTClaims)
-		err := b.DecodeMessage(msg)
-		m.CustomClaims = &JWTClaims_UserClaims{msg}
-		return true, err
-	case 10: // custom_claims.service_claims
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ServiceJWTClaims)
-		err := b.DecodeMessage(msg)
-		m.CustomClaims = &JWTClaims_ServiceClaims{msg}
-		return true, err
-	case 11: // custom_claims.cluster_claims
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ClusterJWTClaims)
-		err := b.DecodeMessage(msg)
-		m.CustomClaims = &JWTClaims_ClusterClaims{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _JWTClaims_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*JWTClaims)
-	// custom_claims
-	switch x := m.CustomClaims.(type) {
-	case *JWTClaims_UserClaims:
-		s := proto.Size(x.UserClaims)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *JWTClaims_ServiceClaims:
-		s := proto.Size(x.ServiceClaims)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *JWTClaims_ClusterClaims:
-		s := proto.Size(x.ClusterClaims)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type UserJWTClaims struct {
@@ -290,7 +207,7 @@ func (m *UserJWTClaims) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_UserJWTClaims.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -347,7 +264,7 @@ func (m *ServiceJWTClaims) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_ServiceJWTClaims.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -390,7 +307,7 @@ func (m *ClusterJWTClaims) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return xxx_messageInfo_ClusterJWTClaims.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -764,7 +681,7 @@ func valueToGoStringJwt(v interface{}, typ string) string {
 func (m *JWTClaims) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -772,120 +689,143 @@ func (m *JWTClaims) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *JWTClaims) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *JWTClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Audience) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(len(m.Audience)))
-		i += copy(dAtA[i:], m.Audience)
-	}
-	if m.ExpiresAt != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(m.ExpiresAt))
-	}
-	if len(m.JTI) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(len(m.JTI)))
-		i += copy(dAtA[i:], m.JTI)
-	}
-	if m.IssuedAt != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(m.IssuedAt))
-	}
-	if len(m.Issuer) > 0 {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(len(m.Issuer)))
-		i += copy(dAtA[i:], m.Issuer)
-	}
-	if m.NotBefore != 0 {
-		dAtA[i] = 0x30
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(m.NotBefore))
-	}
-	if len(m.Subject) > 0 {
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(len(m.Subject)))
-		i += copy(dAtA[i:], m.Subject)
+	if m.CustomClaims != nil {
+		{
+			size := m.CustomClaims.Size()
+			i -= size
+			if _, err := m.CustomClaims.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
 	}
 	if len(m.Scopes) > 0 {
-		for _, s := range m.Scopes {
+		for iNdEx := len(m.Scopes) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Scopes[iNdEx])
+			copy(dAtA[i:], m.Scopes[iNdEx])
+			i = encodeVarintJwt(dAtA, i, uint64(len(m.Scopes[iNdEx])))
+			i--
 			dAtA[i] = 0x42
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
 		}
 	}
-	if m.CustomClaims != nil {
-		nn1, err := m.CustomClaims.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += nn1
+	if len(m.Subject) > 0 {
+		i -= len(m.Subject)
+		copy(dAtA[i:], m.Subject)
+		i = encodeVarintJwt(dAtA, i, uint64(len(m.Subject)))
+		i--
+		dAtA[i] = 0x3a
 	}
-	return i, nil
+	if m.NotBefore != 0 {
+		i = encodeVarintJwt(dAtA, i, uint64(m.NotBefore))
+		i--
+		dAtA[i] = 0x30
+	}
+	if len(m.Issuer) > 0 {
+		i -= len(m.Issuer)
+		copy(dAtA[i:], m.Issuer)
+		i = encodeVarintJwt(dAtA, i, uint64(len(m.Issuer)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.IssuedAt != 0 {
+		i = encodeVarintJwt(dAtA, i, uint64(m.IssuedAt))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.JTI) > 0 {
+		i -= len(m.JTI)
+		copy(dAtA[i:], m.JTI)
+		i = encodeVarintJwt(dAtA, i, uint64(len(m.JTI)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.ExpiresAt != 0 {
+		i = encodeVarintJwt(dAtA, i, uint64(m.ExpiresAt))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Audience) > 0 {
+		i -= len(m.Audience)
+		copy(dAtA[i:], m.Audience)
+		i = encodeVarintJwt(dAtA, i, uint64(len(m.Audience)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *JWTClaims_UserClaims) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *JWTClaims_UserClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.UserClaims != nil {
-		dAtA[i] = 0x4a
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(m.UserClaims.Size()))
-		n2, err := m.UserClaims.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.UserClaims.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintJwt(dAtA, i, uint64(size))
 		}
-		i += n2
+		i--
+		dAtA[i] = 0x4a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *JWTClaims_ServiceClaims) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *JWTClaims_ServiceClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.ServiceClaims != nil {
-		dAtA[i] = 0x52
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(m.ServiceClaims.Size()))
-		n3, err := m.ServiceClaims.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.ServiceClaims.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintJwt(dAtA, i, uint64(size))
 		}
-		i += n3
+		i--
+		dAtA[i] = 0x52
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *JWTClaims_ClusterClaims) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *JWTClaims_ClusterClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.ClusterClaims != nil {
-		dAtA[i] = 0x5a
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(m.ClusterClaims.Size()))
-		n4, err := m.ClusterClaims.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.ClusterClaims.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintJwt(dAtA, i, uint64(size))
 		}
-		i += n4
+		i--
+		dAtA[i] = 0x5a
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *UserJWTClaims) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -893,35 +833,43 @@ func (m *UserJWTClaims) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *UserJWTClaims) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UserJWTClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.UserID) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(len(m.UserID)))
-		i += copy(dAtA[i:], m.UserID)
+	if len(m.Email) > 0 {
+		i -= len(m.Email)
+		copy(dAtA[i:], m.Email)
+		i = encodeVarintJwt(dAtA, i, uint64(len(m.Email)))
+		i--
+		dAtA[i] = 0x1a
 	}
 	if len(m.OrgID) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.OrgID)
+		copy(dAtA[i:], m.OrgID)
 		i = encodeVarintJwt(dAtA, i, uint64(len(m.OrgID)))
-		i += copy(dAtA[i:], m.OrgID)
+		i--
+		dAtA[i] = 0x12
 	}
-	if len(m.Email) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintJwt(dAtA, i, uint64(len(m.Email)))
-		i += copy(dAtA[i:], m.Email)
+	if len(m.UserID) > 0 {
+		i -= len(m.UserID)
+		copy(dAtA[i:], m.UserID)
+		i = encodeVarintJwt(dAtA, i, uint64(len(m.UserID)))
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *ServiceJWTClaims) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -929,23 +877,29 @@ func (m *ServiceJWTClaims) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ServiceJWTClaims) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ServiceJWTClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.ServiceID) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.ServiceID)
+		copy(dAtA[i:], m.ServiceID)
 		i = encodeVarintJwt(dAtA, i, uint64(len(m.ServiceID)))
-		i += copy(dAtA[i:], m.ServiceID)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *ClusterJWTClaims) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -953,27 +907,35 @@ func (m *ClusterJWTClaims) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ClusterJWTClaims) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ClusterJWTClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.ClusterID) > 0 {
-		dAtA[i] = 0xa
-		i++
+		i -= len(m.ClusterID)
+		copy(dAtA[i:], m.ClusterID)
 		i = encodeVarintJwt(dAtA, i, uint64(len(m.ClusterID)))
-		i += copy(dAtA[i:], m.ClusterID)
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintJwt(dAtA []byte, offset int, v uint64) int {
+	offset -= sovJwt(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *JWTClaims) Size() (n int) {
 	if m == nil {
@@ -1102,14 +1064,7 @@ func (m *ClusterJWTClaims) Size() (n int) {
 }
 
 func sovJwt(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozJwt(x uint64) (n int) {
 	return sovJwt(uint64((x << 1) ^ uint64((int64(x) >> 63))))

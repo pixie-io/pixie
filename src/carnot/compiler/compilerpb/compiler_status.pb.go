@@ -3,16 +3,17 @@
 
 package compilerpb
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
-import proto1 "pixielabs.ai/pixielabs/src/common/base/proto"
-
-import strings "strings"
-import reflect "reflect"
-
-import io "io"
+import (
+	fmt "fmt"
+	proto "github.com/gogo/protobuf/proto"
+	io "io"
+	math "math"
+	math_bits "math/bits"
+	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
+	proto1 "pixielabs.ai/pixielabs/src/common/base/proto"
+	reflect "reflect"
+	strings "strings"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -23,7 +24,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type LineColError struct {
 	Line    uint64 `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
@@ -34,7 +35,7 @@ type LineColError struct {
 func (m *LineColError) Reset()      { *m = LineColError{} }
 func (*LineColError) ProtoMessage() {}
 func (*LineColError) Descriptor() ([]byte, []int) {
-	return fileDescriptor_compiler_status_c9a3017f8e29e1ca, []int{0}
+	return fileDescriptor_a4c1275f17b08e12, []int{0}
 }
 func (m *LineColError) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -44,15 +45,15 @@ func (m *LineColError) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_LineColError.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *LineColError) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LineColError.Merge(dst, src)
+func (m *LineColError) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LineColError.Merge(m, src)
 }
 func (m *LineColError) XXX_Size() int {
 	return m.Size()
@@ -93,7 +94,7 @@ type CompilerError struct {
 func (m *CompilerError) Reset()      { *m = CompilerError{} }
 func (*CompilerError) ProtoMessage() {}
 func (*CompilerError) Descriptor() ([]byte, []int) {
-	return fileDescriptor_compiler_status_c9a3017f8e29e1ca, []int{1}
+	return fileDescriptor_a4c1275f17b08e12, []int{1}
 }
 func (m *CompilerError) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -103,15 +104,15 @@ func (m *CompilerError) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_CompilerError.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *CompilerError) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompilerError.Merge(dst, src)
+func (m *CompilerError) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompilerError.Merge(m, src)
 }
 func (m *CompilerError) XXX_Size() int {
 	return m.Size()
@@ -149,59 +150,11 @@ func (m *CompilerError) GetLineColError() *LineColError {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*CompilerError) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _CompilerError_OneofMarshaler, _CompilerError_OneofUnmarshaler, _CompilerError_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*CompilerError) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*CompilerError_LineColError)(nil),
 	}
-}
-
-func _CompilerError_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*CompilerError)
-	// error
-	switch x := m.Error.(type) {
-	case *CompilerError_LineColError:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.LineColError); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("CompilerError.Error has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _CompilerError_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*CompilerError)
-	switch tag {
-	case 1: // error.line_col_error
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(LineColError)
-		err := b.DecodeMessage(msg)
-		m.Error = &CompilerError_LineColError{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _CompilerError_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*CompilerError)
-	// error
-	switch x := m.Error.(type) {
-	case *CompilerError_LineColError:
-		s := proto.Size(x.LineColError)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type CompilerResult struct {
@@ -212,7 +165,7 @@ type CompilerResult struct {
 func (m *CompilerResult) Reset()      { *m = CompilerResult{} }
 func (*CompilerResult) ProtoMessage() {}
 func (*CompilerResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_compiler_status_c9a3017f8e29e1ca, []int{2}
+	return fileDescriptor_a4c1275f17b08e12, []int{2}
 }
 func (m *CompilerResult) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -222,15 +175,15 @@ func (m *CompilerResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return xxx_messageInfo_CompilerResult.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *CompilerResult) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompilerResult.Merge(dst, src)
+func (m *CompilerResult) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompilerResult.Merge(m, src)
 }
 func (m *CompilerResult) XXX_Size() int {
 	return m.Size()
@@ -262,7 +215,7 @@ type CompilerErrorGroup struct {
 func (m *CompilerErrorGroup) Reset()      { *m = CompilerErrorGroup{} }
 func (*CompilerErrorGroup) ProtoMessage() {}
 func (*CompilerErrorGroup) Descriptor() ([]byte, []int) {
-	return fileDescriptor_compiler_status_c9a3017f8e29e1ca, []int{3}
+	return fileDescriptor_a4c1275f17b08e12, []int{3}
 }
 func (m *CompilerErrorGroup) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -272,15 +225,15 @@ func (m *CompilerErrorGroup) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_CompilerErrorGroup.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *CompilerErrorGroup) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompilerErrorGroup.Merge(dst, src)
+func (m *CompilerErrorGroup) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompilerErrorGroup.Merge(m, src)
 }
 func (m *CompilerErrorGroup) XXX_Size() int {
 	return m.Size()
@@ -304,6 +257,39 @@ func init() {
 	proto.RegisterType((*CompilerResult)(nil), "pl.carnot.compiler.compilerpb.CompilerResult")
 	proto.RegisterType((*CompilerErrorGroup)(nil), "pl.carnot.compiler.compilerpb.CompilerErrorGroup")
 }
+
+func init() {
+	proto.RegisterFile("src/carnot/compiler/compilerpb/compiler_status.proto", fileDescriptor_a4c1275f17b08e12)
+}
+
+var fileDescriptor_a4c1275f17b08e12 = []byte{
+	// 381 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x51, 0x3f, 0x6b, 0xe3, 0x30,
+	0x14, 0xb7, 0x2e, 0x39, 0x87, 0x93, 0x73, 0x19, 0x74, 0x10, 0x4c, 0xb8, 0x8a, 0xe0, 0x29, 0x90,
+	0x22, 0x43, 0xda, 0xa5, 0x5b, 0x49, 0x5a, 0xda, 0xa1, 0x43, 0x71, 0x3a, 0x65, 0x31, 0xb6, 0x11,
+	0xc1, 0x20, 0x5b, 0x42, 0xb6, 0xa1, 0x63, 0x3f, 0x42, 0x3f, 0x46, 0x3f, 0x4a, 0xc7, 0x8c, 0x19,
+	0x1b, 0x65, 0xe9, 0x98, 0x8f, 0x50, 0x2c, 0x3b, 0x89, 0xb3, 0xb4, 0x93, 0xdf, 0x7b, 0x7e, 0xbf,
+	0x7f, 0x4f, 0xf0, 0x32, 0x93, 0x91, 0x1b, 0x05, 0x32, 0xe5, 0xb9, 0x1b, 0xf1, 0x44, 0xc4, 0x8c,
+	0xca, 0x43, 0x21, 0xc2, 0x43, 0xe9, 0x67, 0x79, 0x90, 0x17, 0x19, 0x11, 0x92, 0xe7, 0x1c, 0x9d,
+	0x09, 0x46, 0x2a, 0x10, 0xd9, 0x2f, 0x90, 0x23, 0x68, 0xe0, 0x68, 0x52, 0x9e, 0x24, 0x3c, 0x75,
+	0xc3, 0x20, 0xa3, 0xae, 0x46, 0xb9, 0x4d, 0x8a, 0xc1, 0xff, 0x86, 0xb0, 0x60, 0x41, 0x2a, 0x42,
+	0xfd, 0xa9, 0xfe, 0x3a, 0x4f, 0xb0, 0xfb, 0x10, 0xa7, 0x74, 0xc6, 0xd9, 0xad, 0x94, 0x5c, 0x22,
+	0x04, 0xdb, 0x2c, 0x4e, 0xa9, 0x0d, 0x86, 0x60, 0xd4, 0xf6, 0x74, 0x8d, 0xfa, 0xd0, 0x8c, 0x38,
+	0x2b, 0x92, 0xd4, 0xfe, 0xa5, 0xa7, 0x75, 0x87, 0x6c, 0xd8, 0x49, 0x68, 0x96, 0x05, 0x4b, 0x6a,
+	0xb7, 0x86, 0x60, 0xf4, 0xc7, 0xdb, 0xb7, 0x4e, 0x02, 0xff, 0xce, 0x6a, 0x97, 0x15, 0xed, 0x1c,
+	0xf6, 0x4a, 0x2a, 0x3f, 0xe2, 0xcc, 0xa7, 0xe5, 0x44, 0x0b, 0x58, 0x93, 0x31, 0xf9, 0x36, 0x20,
+	0x69, 0x7a, 0xbb, 0x37, 0xbc, 0x2e, 0x6b, 0xf4, 0xd3, 0x0e, 0xfc, 0xad, 0xb9, 0x9c, 0x67, 0xd8,
+	0xdb, 0xcb, 0x79, 0x34, 0x2b, 0x58, 0x8e, 0xc6, 0xd0, 0xac, 0x8e, 0x50, 0xeb, 0xfc, 0x2b, 0x75,
+	0xaa, 0x89, 0x08, 0xc9, 0x5c, 0x17, 0x5e, 0xbd, 0x82, 0xae, 0x60, 0x97, 0xf1, 0x65, 0x1c, 0x05,
+	0xcc, 0x2f, 0x2f, 0xa3, 0x53, 0x5a, 0x93, 0x7e, 0xc3, 0x5a, 0x75, 0x37, 0xf2, 0xc8, 0x82, 0xd4,
+	0xb3, 0xea, 0xdd, 0xb2, 0x71, 0x16, 0x10, 0x9d, 0x04, 0xbd, 0x93, 0xbc, 0x10, 0xe8, 0x06, 0x9a,
+	0xda, 0x58, 0xa9, 0xde, 0x1a, 0x59, 0x93, 0xf3, 0x1f, 0x52, 0x9e, 0x50, 0x78, 0x35, 0x76, 0x7a,
+	0xbd, 0xda, 0x60, 0x63, 0xbd, 0xc1, 0xc6, 0x6e, 0x83, 0xc1, 0x8b, 0xc2, 0xe0, 0x4d, 0x61, 0xf0,
+	0xae, 0x30, 0x58, 0x29, 0x0c, 0x3e, 0x14, 0x06, 0x9f, 0x0a, 0x1b, 0x3b, 0x85, 0xc1, 0xeb, 0x16,
+	0x1b, 0xab, 0x2d, 0x36, 0xd6, 0x5b, 0x6c, 0x2c, 0xe0, 0x91, 0x37, 0x34, 0xf5, 0x1b, 0x5f, 0x7c,
+	0x05, 0x00, 0x00, 0xff, 0xff, 0x4e, 0x72, 0x4d, 0xc6, 0x7c, 0x02, 0x00, 0x00,
+}
+
 func (this *LineColError) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -514,7 +500,7 @@ func valueToGoStringCompilerStatus(v interface{}, typ string) string {
 func (m *LineColError) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -522,33 +508,39 @@ func (m *LineColError) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *LineColError) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LineColError) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Line != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintCompilerStatus(dAtA, i, uint64(m.Line))
+	if len(m.Message) > 0 {
+		i -= len(m.Message)
+		copy(dAtA[i:], m.Message)
+		i = encodeVarintCompilerStatus(dAtA, i, uint64(len(m.Message)))
+		i--
+		dAtA[i] = 0x1a
 	}
 	if m.Column != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintCompilerStatus(dAtA, i, uint64(m.Column))
+		i--
+		dAtA[i] = 0x10
 	}
-	if len(m.Message) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintCompilerStatus(dAtA, i, uint64(len(m.Message)))
-		i += copy(dAtA[i:], m.Message)
+	if m.Line != 0 {
+		i = encodeVarintCompilerStatus(dAtA, i, uint64(m.Line))
+		i--
+		dAtA[i] = 0x8
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *CompilerError) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -556,38 +548,51 @@ func (m *CompilerError) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CompilerError) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CompilerError) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if m.Error != nil {
-		nn1, err := m.Error.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size := m.Error.Size()
+			i -= size
+			if _, err := m.Error.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
 		}
-		i += nn1
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *CompilerError_LineColError) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *CompilerError_LineColError) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	if m.LineColError != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintCompilerStatus(dAtA, i, uint64(m.LineColError.Size()))
-		n2, err := m.LineColError.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.LineColError.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCompilerStatus(dAtA, i, uint64(size))
 		}
-		i += n2
+		i--
+		dAtA[i] = 0xa
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 func (m *CompilerResult) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -595,37 +600,46 @@ func (m *CompilerResult) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CompilerResult) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CompilerResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Status != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintCompilerStatus(dAtA, i, uint64(m.Status.Size()))
-		n3, err := m.Status.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n3
-	}
 	if m.LogicalPlan != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintCompilerStatus(dAtA, i, uint64(m.LogicalPlan.Size()))
-		n4, err := m.LogicalPlan.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.LogicalPlan.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCompilerStatus(dAtA, i, uint64(size))
 		}
-		i += n4
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Status != nil {
+		{
+			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCompilerStatus(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *CompilerErrorGroup) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -633,33 +647,42 @@ func (m *CompilerErrorGroup) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *CompilerErrorGroup) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CompilerErrorGroup) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Errors) > 0 {
-		for _, msg := range m.Errors {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintCompilerStatus(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Errors) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Errors[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCompilerStatus(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintCompilerStatus(dAtA []byte, offset int, v uint64) int {
+	offset -= sovCompilerStatus(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *LineColError) Size() (n int) {
 	if m == nil {
@@ -737,14 +760,7 @@ func (m *CompilerErrorGroup) Size() (n int) {
 }
 
 func sovCompilerStatus(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozCompilerStatus(x uint64) (n int) {
 	return sovCompilerStatus(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -796,8 +812,13 @@ func (this *CompilerErrorGroup) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForErrors := "[]*CompilerError{"
+	for _, f := range this.Errors {
+		repeatedStringForErrors += strings.Replace(f.String(), "CompilerError", "CompilerError", 1) + ","
+	}
+	repeatedStringForErrors += "}"
 	s := strings.Join([]string{`&CompilerErrorGroup{`,
-		`Errors:` + strings.Replace(fmt.Sprintf("%v", this.Errors), "CompilerError", "CompilerError", 1) + `,`,
+		`Errors:` + repeatedStringForErrors + `,`,
 		`}`,
 	}, "")
 	return s
@@ -825,7 +846,7 @@ func (m *LineColError) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -853,7 +874,7 @@ func (m *LineColError) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Line |= (uint64(b) & 0x7F) << shift
+				m.Line |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -872,7 +893,7 @@ func (m *LineColError) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Column |= (uint64(b) & 0x7F) << shift
+				m.Column |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -891,7 +912,7 @@ func (m *LineColError) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -901,6 +922,9 @@ func (m *LineColError) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCompilerStatus
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCompilerStatus
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -913,6 +937,9 @@ func (m *LineColError) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCompilerStatus
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCompilerStatus
 			}
 			if (iNdEx + skippy) > l {
@@ -942,7 +969,7 @@ func (m *CompilerError) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -970,7 +997,7 @@ func (m *CompilerError) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -979,6 +1006,9 @@ func (m *CompilerError) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCompilerStatus
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCompilerStatus
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -995,6 +1025,9 @@ func (m *CompilerError) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCompilerStatus
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCompilerStatus
 			}
 			if (iNdEx + skippy) > l {
@@ -1024,7 +1057,7 @@ func (m *CompilerResult) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1052,7 +1085,7 @@ func (m *CompilerResult) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1061,6 +1094,9 @@ func (m *CompilerResult) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCompilerStatus
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCompilerStatus
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1085,7 +1121,7 @@ func (m *CompilerResult) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1094,6 +1130,9 @@ func (m *CompilerResult) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCompilerStatus
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCompilerStatus
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1111,6 +1150,9 @@ func (m *CompilerResult) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCompilerStatus
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCompilerStatus
 			}
 			if (iNdEx + skippy) > l {
@@ -1140,7 +1182,7 @@ func (m *CompilerErrorGroup) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -1168,7 +1210,7 @@ func (m *CompilerErrorGroup) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1177,6 +1219,9 @@ func (m *CompilerErrorGroup) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCompilerStatus
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCompilerStatus
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -1192,6 +1237,9 @@ func (m *CompilerErrorGroup) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthCompilerStatus
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthCompilerStatus
 			}
 			if (iNdEx + skippy) > l {
@@ -1260,8 +1308,11 @@ func skipCompilerStatus(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthCompilerStatus
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthCompilerStatus
 			}
 			return iNdEx, nil
@@ -1292,6 +1343,9 @@ func skipCompilerStatus(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthCompilerStatus
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -1310,35 +1364,3 @@ var (
 	ErrInvalidLengthCompilerStatus = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowCompilerStatus   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() {
-	proto.RegisterFile("src/carnot/compiler/compilerpb/compiler_status.proto", fileDescriptor_compiler_status_c9a3017f8e29e1ca)
-}
-
-var fileDescriptor_compiler_status_c9a3017f8e29e1ca = []byte{
-	// 381 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x51, 0x3f, 0x6b, 0xe3, 0x30,
-	0x14, 0xb7, 0x2e, 0x39, 0x87, 0x93, 0x73, 0x19, 0x74, 0x10, 0x4c, 0xb8, 0x8a, 0xe0, 0x29, 0x90,
-	0x22, 0x43, 0xda, 0xa5, 0x5b, 0x49, 0x5a, 0xda, 0xa1, 0x43, 0x71, 0x3a, 0x65, 0x31, 0xb6, 0x11,
-	0xc1, 0x20, 0x5b, 0x42, 0xb6, 0xa1, 0x63, 0x3f, 0x42, 0x3f, 0x46, 0x3f, 0x4a, 0xc7, 0x8c, 0x19,
-	0x1b, 0x65, 0xe9, 0x98, 0x8f, 0x50, 0x2c, 0x3b, 0x89, 0xb3, 0xb4, 0x93, 0xdf, 0x7b, 0x7e, 0xbf,
-	0x7f, 0x4f, 0xf0, 0x32, 0x93, 0x91, 0x1b, 0x05, 0x32, 0xe5, 0xb9, 0x1b, 0xf1, 0x44, 0xc4, 0x8c,
-	0xca, 0x43, 0x21, 0xc2, 0x43, 0xe9, 0x67, 0x79, 0x90, 0x17, 0x19, 0x11, 0x92, 0xe7, 0x1c, 0x9d,
-	0x09, 0x46, 0x2a, 0x10, 0xd9, 0x2f, 0x90, 0x23, 0x68, 0xe0, 0x68, 0x52, 0x9e, 0x24, 0x3c, 0x75,
-	0xc3, 0x20, 0xa3, 0xae, 0x46, 0xb9, 0x4d, 0x8a, 0xc1, 0xff, 0x86, 0xb0, 0x60, 0x41, 0x2a, 0x42,
-	0xfd, 0xa9, 0xfe, 0x3a, 0x4f, 0xb0, 0xfb, 0x10, 0xa7, 0x74, 0xc6, 0xd9, 0xad, 0x94, 0x5c, 0x22,
-	0x04, 0xdb, 0x2c, 0x4e, 0xa9, 0x0d, 0x86, 0x60, 0xd4, 0xf6, 0x74, 0x8d, 0xfa, 0xd0, 0x8c, 0x38,
-	0x2b, 0x92, 0xd4, 0xfe, 0xa5, 0xa7, 0x75, 0x87, 0x6c, 0xd8, 0x49, 0x68, 0x96, 0x05, 0x4b, 0x6a,
-	0xb7, 0x86, 0x60, 0xf4, 0xc7, 0xdb, 0xb7, 0x4e, 0x02, 0xff, 0xce, 0x6a, 0x97, 0x15, 0xed, 0x1c,
-	0xf6, 0x4a, 0x2a, 0x3f, 0xe2, 0xcc, 0xa7, 0xe5, 0x44, 0x0b, 0x58, 0x93, 0x31, 0xf9, 0x36, 0x20,
-	0x69, 0x7a, 0xbb, 0x37, 0xbc, 0x2e, 0x6b, 0xf4, 0xd3, 0x0e, 0xfc, 0xad, 0xb9, 0x9c, 0x67, 0xd8,
-	0xdb, 0xcb, 0x79, 0x34, 0x2b, 0x58, 0x8e, 0xc6, 0xd0, 0xac, 0x8e, 0x50, 0xeb, 0xfc, 0x2b, 0x75,
-	0xaa, 0x89, 0x08, 0xc9, 0x5c, 0x17, 0x5e, 0xbd, 0x82, 0xae, 0x60, 0x97, 0xf1, 0x65, 0x1c, 0x05,
-	0xcc, 0x2f, 0x2f, 0xa3, 0x53, 0x5a, 0x93, 0x7e, 0xc3, 0x5a, 0x75, 0x37, 0xf2, 0xc8, 0x82, 0xd4,
-	0xb3, 0xea, 0xdd, 0xb2, 0x71, 0x16, 0x10, 0x9d, 0x04, 0xbd, 0x93, 0xbc, 0x10, 0xe8, 0x06, 0x9a,
-	0xda, 0x58, 0xa9, 0xde, 0x1a, 0x59, 0x93, 0xf3, 0x1f, 0x52, 0x9e, 0x50, 0x78, 0x35, 0x76, 0x7a,
-	0xbd, 0xda, 0x60, 0x63, 0xbd, 0xc1, 0xc6, 0x6e, 0x83, 0xc1, 0x8b, 0xc2, 0xe0, 0x4d, 0x61, 0xf0,
-	0xae, 0x30, 0x58, 0x29, 0x0c, 0x3e, 0x14, 0x06, 0x9f, 0x0a, 0x1b, 0x3b, 0x85, 0xc1, 0xeb, 0x16,
-	0x1b, 0xab, 0x2d, 0x36, 0xd6, 0x5b, 0x6c, 0x2c, 0xe0, 0x91, 0x37, 0x34, 0xf5, 0x1b, 0x5f, 0x7c,
-	0x05, 0x00, 0x00, 0xff, 0xff, 0x4e, 0x72, 0x4d, 0xc6, 0x7c, 0x02, 0x00, 0x00,
-}
