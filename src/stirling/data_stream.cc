@@ -72,7 +72,7 @@ size_t DataStream::AppendEvents(EventParser<TMessageType>* parser) const {
       msg = msg.substr(next_offset, event.msg.size() - next_offset);
     }
 
-    parser->Append(msg, event.timestamp_ns);
+    parser->Append(msg, {event.entry_timestamp_ns, event.return_timestamp_ns});
 
     next_offset = 0;
     ++next_seq_num;

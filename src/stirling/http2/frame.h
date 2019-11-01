@@ -4,6 +4,7 @@
 #include <string>
 
 #include "src/stirling/common/parse_state.h"
+#include "src/stirling/common/utils.h"
 
 namespace pl {
 namespace stirling {
@@ -35,12 +36,17 @@ struct Frame {
     }
   }
 
+  TimeSpan time_span;
+  // TODO(yzhao): Remove this, as it's value is included in time_span already.
+  uint64_t timestamp_ns;
+  // The time stamp when this frame was created by socket tracer.
+  // TODO(yzhao): Consider removing this, as it's value can be replaced by time_span, although not
+  // exactly the same.
+  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
+
   // TODO(yzhao): Consider use std::unique_ptr<nghttp2_frame> to avoid copy.
   nghttp2_frame frame;
   u8string u8payload;
-  uint64_t timestamp_ns;
-  // The time stamp when this frame was created by socket tracer.
-  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
 
   // If true, means this frame is processed and can be destroyed.
   mutable bool consumed = false;

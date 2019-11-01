@@ -43,8 +43,8 @@ TEST_F(MySQLParserTest, ParseRaw) {
   std::string packet0 = testutils::GenRawPacket(0, "\x03SELECT foo");
   std::string packet1 = testutils::GenRawPacket(1, "\x03SELECT bar");
 
-  parser_.Append(packet0, 0);
-  parser_.Append(packet1, 0);
+  parser_.Append(packet0, {0, 0});
+  parser_.Append(packet1, {0, 0});
 
   std::deque<Packet> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
@@ -77,8 +77,8 @@ TEST_F(MySQLParserTest, ParseComStmtPrepare) {
                                        "SELECT age FROM users WHERE id = ?");
   expected_message2.sequence_id = 0;
 
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
+  parser_.Append(msg1, {0, 0});
+  parser_.Append(msg2, {0, 1});
 
   std::deque<Packet> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
@@ -98,7 +98,7 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   expected_message1.msg = absl::StrCat(CommandToString(MySQLEventType::kStmtExecute), body);
   expected_message1.sequence_id = 0;
 
-  parser_.Append(msg1, 0);
+  parser_.Append(msg1, {0, 0});
 
   std::deque<Packet> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
@@ -111,7 +111,7 @@ TEST_F(MySQLParserTest, ParseComStmtClose) {
   Packet expected_packet = testutils::GenStmtCloseRequest(testdata::kStmtCloseRequest);
   std::string msg = testutils::GenRawPacket(expected_packet);
 
-  parser_.Append(msg, 0);
+  parser_.Append(msg, {0, 0});
 
   std::deque<Packet> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
@@ -134,8 +134,8 @@ TEST_F(MySQLParserTest, ParseComQuery) {
       absl::StrCat(CommandToString(MySQLEventType::kQuery), "SELECT age FROM users");
   expected_message2.sequence_id = 0;
 
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
+  parser_.Append(msg1, {0, 0});
+  parser_.Append(msg2, {0, 1});
 
   std::deque<Packet> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
@@ -164,7 +164,7 @@ TEST_F(MySQLParserTest, ParseResponse) {
           ConstStringView("\x05\x00\x00\x03\xfe\x00\x00\x02\x00")),
       MySQLEventType::kStmtPrepare};
 
-  parser_.Append(kMySQLStmtPrepareMessage.response, 0);
+  parser_.Append(kMySQLStmtPrepareMessage.response, {0, 0});
 
   std::deque<Packet> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -217,9 +217,9 @@ TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
   std::string chunk2 = absl::StrJoin(packets2, "");
   std::string chunk3 = absl::StrJoin(packets3, "");
 
-  parser_.Append(chunk1, 0);
-  parser_.Append(chunk2, 1);
-  parser_.Append(chunk3, 2);
+  parser_.Append(chunk1, {0, 0});
+  parser_.Append(chunk2, {0, 1});
+  parser_.Append(chunk3, {1, 2});
 
   std::deque<Packet> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -242,7 +242,7 @@ TEST_F(MySQLParserTest, ParseIncompleteRequest) {
   // Change the length of the request so that it isn't complete.
   msg1[0] = '\x24';
 
-  parser_.Append(msg1, 0);
+  parser_.Append(msg1, {0, 0});
   std::deque<Packet> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
 
@@ -253,7 +253,7 @@ TEST_F(MySQLParserTest, ParseIncompleteRequest) {
 TEST_F(MySQLParserTest, ParseInvalidInput) {
   std::string msg1 = "hello world";
 
-  parser_.Append(msg1, 0);
+  parser_.Append(msg1, {0, 0});
   std::deque<Packet> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
   EXPECT_EQ(ParseState::kInvalid, result.state);

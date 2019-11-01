@@ -258,7 +258,8 @@ uint64_t GetConnMapKey(struct conn_id_t conn_id) {
 }
 
 void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEvent* pb) {
-  pb->mutable_attr()->set_timestamp_ns(event.attr.return_timestamp_ns);
+  pb->mutable_attr()->set_entry_timestamp_ns(event.attr.entry_timestamp_ns);
+  pb->mutable_attr()->set_return_timestamp_ns(event.attr.return_timestamp_ns);
   pb->mutable_attr()->mutable_conn_id()->set_pid(event.attr.conn_id.pid);
   pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(event.attr.conn_id.pid_start_time_ticks);
   pb->mutable_attr()->mutable_conn_id()->set_fd(event.attr.conn_id.fd);

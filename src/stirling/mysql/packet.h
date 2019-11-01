@@ -3,6 +3,8 @@
 #include <chrono>
 #include <string>
 
+#include "src/stirling/common/utils.h"
+
 namespace pl {
 namespace stirling {
 namespace mysql {
@@ -11,10 +13,12 @@ namespace mysql {
  * Raw MySQLPacket from MySQL Parser
  */
 struct Packet {
-  uint64_t timestamp_ns;
-  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
+  TimeSpan time_span;
+  uint64_t timestamp_ns = 0;
+  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp =
+      std::chrono::steady_clock::now();
 
-  uint8_t sequence_id;
+  uint8_t sequence_id = 0;
   // TODO(oazizi): Convert to std::basic_string<uint8_t>.
   std::string msg;
 

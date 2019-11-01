@@ -445,8 +445,8 @@ TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
   expected_message2.http_resp_message = "OK";
   expected_message2.http_msg_body = "pixielabs!";
 
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
+  parser_.Append(msg1, {0, 0});
+  parser_.Append(msg2, {1, 1});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -473,9 +473,9 @@ TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
   expected_message1.http_resp_message = "OK";
   expected_message1.http_msg_body = "pixielabs is awesome!";
 
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
-  parser_.Append(msg3, 2);
+  parser_.Append(msg1, {0, 0});
+  parser_.Append(msg2, {0, 1});
+  parser_.Append(msg3, {1, 2});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -487,7 +487,7 @@ TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
 TEST_F(HTTPParserTest, InvalidInput) {
   const std::string_view msg = " is awesome";
 
-  parser_.Append(msg, 0);
+  parser_.Append(msg, {0, 0});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -517,7 +517,7 @@ TEST_F(HTTPParserTest, ParseCompleteChunkEncodedMessage) {
   HTTPMessage expected_message = EmptyChunkedHTTPResp();
   expected_message.http_msg_body = "pixielabs is awesome!";
 
-  parser_.Append(msg, 0);
+  parser_.Append(msg, {0, 0});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -539,9 +539,9 @@ TEST_F(HTTPParserTest, ParseMultipleChunks) {
   HTTPMessage expected_message = EmptyChunkedHTTPResp();
   expected_message.http_msg_body = "pixielabs is awesome!";
 
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
-  parser_.Append(msg3, 2);
+  parser_.Append(msg1, {0, 0});
+  parser_.Append(msg2, {1, 0});
+  parser_.Append(msg3, {1, 2});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -563,9 +563,9 @@ TEST_F(HTTPParserTest, ParseIncompleteChunks) {
   HTTPMessage expected_message = EmptyChunkedHTTPResp();
   expected_message.http_msg_body = "pixielabs";
 
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
-  parser_.Append(msg3, 2);
+  parser_.Append(msg1, {0, 0});
+  parser_.Append(msg2, {0, 1});
+  parser_.Append(msg3, {1, 2});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -584,7 +584,7 @@ TEST_F(HTTPParserTest, ParseRequestWithoutLengthOrChunking) {
       "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
       "\r\n";
 
-  parser_.Append(msg1, 0);
+  parser_.Append(msg1, {0, 0});
 
   HTTPMessage expected_message;
   expected_message.type = MessageType::kRequest;
@@ -615,7 +615,7 @@ TEST_F(HTTPParserTest, ParseResponseWithoutLengthOrChunking) {
   HTTPMessage expected_message = EmptyHTTPResp();
   expected_message.http_msg_body = "pixielabs is aweso";
 
-  parser_.Append(msg1, 0);
+  parser_.Append(msg1, {0, 0});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -629,7 +629,7 @@ TEST_F(HTTPParserTest, MessagePartialHeaders) {
       "HTTP/1.1 200 OK\r\n"
       "Content-Type: text/plain";
 
-  parser_.Append(msg1, 0);
+  parser_.Append(msg1, {0, 0});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -645,11 +645,11 @@ TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
   std::string msg3 = HTTPChunk("rocks!");
   std::string msg4 = HTTPChunk("");
 
-  parser_.Append(msg0, 0);
-  parser_.Append(msg1, 1);
-  parser_.Append(msg2, 2);
-  parser_.Append(msg3, 3);
-  parser_.Append(msg4, 4);
+  parser_.Append(msg0, {0, 0});
+  parser_.Append(msg1, {0, 1});
+  parser_.Append(msg2, {0, 2});
+  parser_.Append(msg3, {0, 3});
+  parser_.Append(msg4, {0, 4});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -663,7 +663,7 @@ TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
 //=============================================================================
 
 TEST_F(HTTPParserTest, ParseHTTPRequestSingle) {
-  parser_.Append(kHTTPGetReq0, 0);
+  parser_.Append(kHTTPGetReq0, {0, 0});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
@@ -673,8 +673,8 @@ TEST_F(HTTPParserTest, ParseHTTPRequestSingle) {
 }
 
 TEST_F(HTTPParserTest, ParseHTTPRequestMultiple) {
-  parser_.Append(kHTTPGetReq0, 0);
-  parser_.Append(kHTTPPostReq0, 1);
+  parser_.Append(kHTTPGetReq0, {0, 0});
+  parser_.Append(kHTTPPostReq0, {1, 0});
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
 
@@ -700,9 +700,9 @@ TEST_P(HTTPParserTest, ParseHTTPRequestsRepeatedly) {
 
     ASSERT_EQ(msg, absl::StrCat(msg_splits[0], msg_splits[1], msg_splits[2]));
 
-    parser_.Append(msg_splits[0], i * 3 + 0);
-    parser_.Append(msg_splits[1], i * 3 + 1);
-    parser_.Append(msg_splits[2], i * 3 + 2);
+    parser_.Append(msg_splits[0], {0, i * 3 + 0});
+    parser_.Append(msg_splits[1], {i * 3 + 0, i * 3 + 1});
+    parser_.Append(msg_splits[2], {i * 3 + 1, i * 3 + 2});
 
     std::deque<HTTPMessage> parsed_messages;
     ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
@@ -730,9 +730,9 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesRepeatedly) {
 
     ASSERT_EQ(msg, absl::StrCat(msg_splits[0], msg_splits[1], msg_splits[2]));
 
-    parser_.Append(msg_splits[0], i * 3 + 0);
-    parser_.Append(msg_splits[1], i * 3 + 1);
-    parser_.Append(msg_splits[2], i * 3 + 2);
+    parser_.Append(msg_splits[0], {0, i * 3 + 0});
+    parser_.Append(msg_splits[1], {i * 3 + 0, i * 3 + 1});
+    parser_.Append(msg_splits[2], {i * 3 + 1, i * 3 + 2});
 
     std::deque<HTTPMessage> parsed_messages;
     ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -759,8 +759,8 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
 
   std::deque<HTTPMessage> parsed_messages;
 
-  parser_.Append(msg_splits[0], 0);
-  parser_.Append(msg_splits[1], 1);
+  parser_.Append(msg_splits[0], {0, 0});
+  parser_.Append(msg_splits[1], {0, 1});
   // Don't append last split, yet.
 
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -774,7 +774,7 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
   // Now append the unprocessed remainder, including msg_splits[2].
   for (size_t i = position.seq_num; i < msg_splits.size(); ++i) {
     std::string_view t = msg_splits[i].substr(offset);
-    parser_.Append(t, 1);
+    parser_.Append(t, {0, 1});
     offset = 0;
   }
 
@@ -806,8 +806,8 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
     std::deque<HTTPMessage> parsed_messages;
 
     // Append and parse some--but not all--splits.
-    parser_.Append(msg_splits[0], 0);
-    parser_.Append(msg_splits[1], 0);
+    parser_.Append(msg_splits[0], {0, 0});
+    parser_.Append(msg_splits[1], {0, 0});
     ParseResult result1 = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
 
     // Now append the unprocessed remainder, including msg_splits[2].
@@ -815,7 +815,7 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
     size_t offset = position.offset;
     for (size_t i = position.seq_num; i < msg_splits.size(); ++i) {
       std::string_view t = msg_splits[i].substr(offset);
-      parser_.Append(t, 0);
+      parser_.Append(t, {0, 0});
       offset = 0;
     }
     ParseResult result2 = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
@@ -943,9 +943,9 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
     size_t t = 0;
 
     std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
-    parser_.Append(partial_http_get_req0, ++t);
-    parser_.Append(kHTTPPostReq0, ++t);
-    parser_.Append(kHTTPGetReq1, ++t);
+    parser_.Append(partial_http_get_req0, {++t, ++t});
+    parser_.Append(kHTTPPostReq0, {++t, ++t});
+    parser_.Append(kHTTPGetReq1, {++t, ++t});
 
     std::deque<HTTPMessage> parsed_messages;
     ParseResult result =
@@ -963,9 +963,9 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
     size_t t = 0;
 
     std::string partial_http_resp0(kHTTPResp0.substr(offset, kHTTPResp0.length()));
-    parser_.Append(partial_http_resp0, ++t);
-    parser_.Append(kHTTPResp1, ++t);
-    parser_.Append(kHTTPResp2, ++t);
+    parser_.Append(partial_http_resp0, {++t, ++t});
+    parser_.Append(kHTTPResp1, {++t, ++t});
+    parser_.Append(kHTTPResp2, {++t, ++t});
 
     std::deque<HTTPMessage> parsed_messages;
     ParseResult result =
@@ -982,9 +982,9 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
   size_t offset = 4;
 
   std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
-  parser_.Append(partial_http_get_req0, ++t);
-  parser_.Append(kHTTPPostReq0, ++t);
-  parser_.Append(kHTTPGetReq1, ++t);
+  parser_.Append(partial_http_get_req0, {++t, ++t});
+  parser_.Append(kHTTPPostReq0, {++t, ++t});
+  parser_.Append(kHTTPGetReq1, {++t, ++t});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result =
@@ -999,9 +999,9 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
   size_t offset = 1;
 
   std::string partial_http_resp0(kHTTPResp0.substr(offset, kHTTPResp0.length()));
-  parser_.Append(partial_http_resp0, ++t);
-  parser_.Append(kHTTPResp1, ++t);
-  parser_.Append(kHTTPResp2, ++t);
+  parser_.Append(partial_http_resp0, {++t, ++t});
+  parser_.Append(kHTTPResp1, {++t, ++t});
+  parser_.Append(kHTTPResp2, {++t, ++t});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result =
@@ -1014,9 +1014,9 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
 TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageAggressiveSync) {
   size_t t = 0;
 
-  parser_.Append(kHTTPGetReq0, ++t);
-  parser_.Append(kHTTPPostReq0, ++t);
-  parser_.Append(kHTTPGetReq1, ++t);
+  parser_.Append(kHTTPGetReq0, {++t, ++t});
+  parser_.Append(kHTTPPostReq0, {++t, ++t});
+  parser_.Append(kHTTPGetReq1, {++t, ++t});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result =
@@ -1030,9 +1030,9 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageAggressiveSync) {
 TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageAggressiveSync) {
   size_t t = 0;
 
-  parser_.Append(kHTTPResp0, ++t);
-  parser_.Append(kHTTPResp1, ++t);
-  parser_.Append(kHTTPResp2, ++t);
+  parser_.Append(kHTTPResp0, {++t, ++t});
+  parser_.Append(kHTTPResp1, {++t, ++t});
+  parser_.Append(kHTTPResp2, {++t, ++t});
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result =

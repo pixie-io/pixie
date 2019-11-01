@@ -5,10 +5,13 @@
 
 #include <deque>
 
+#include "src/stirling/common/utils.h"
+
 namespace pl {
 namespace stirling {
 
 using ::testing::ElementsAre;
+using ::testing::Pair;
 
 //-----------------------------------------------------------------------------
 // A dummy protocol and parser.
@@ -18,6 +21,7 @@ using ::testing::ElementsAre;
 
 struct TestFrame {
   std::string msg;
+  TimeSpan time_span;
   uint64_t timestamp_ns;
 };
 
@@ -63,14 +67,25 @@ bool operator==(const BufferPosition& lhs, const BufferPosition& rhs) {
 TEST(EventParserTest, BasicPositionConversions) {
   EventParser<TestFrame> parser;
   std::deque<TestFrame> word_frames;
-  parser.Append("jupiter,satu", 0u);
-  parser.Append("rn,neptune,plu", 0u);
+  parser.Append("jupiter,satu", {0, 1});
+  parser.Append("rn,neptune,plu", {2, 3});
+  parser.Append(",", {3, 4});
+  parser.Append("aaa,", {4, 5});
+  parser.Append("bbb,", {6, 7});
   ParseResult<BufferPosition> res = parser.ParseMessages(MessageType::kRequest, &word_frames);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, res.state);
   EXPECT_THAT(res.start_positions,
-              ElementsAre(BufferPosition{0, 0}, BufferPosition{0, 8}, BufferPosition{1, 3}));
-  EXPECT_EQ((BufferPosition{1, 11}), res.end_position);
+              ElementsAre(BufferPosition{0, 0}, BufferPosition{0, 8}, BufferPosition{1, 3},
+                          BufferPosition{1, 11}, BufferPosition{3, 0}, BufferPosition{4, 0}));
+  EXPECT_EQ((BufferPosition{5, 0}), res.end_position);
+
+  std::vector<std::pair<uint64_t, uint64_t>> time_spans;
+  for (const auto& frame : word_frames) {
+    time_spans.push_back({frame.time_span.begin_ns, frame.time_span.end_ns});
+  }
+  EXPECT_THAT(time_spans,
+              ElementsAre(Pair(0, 1), Pair(0, 3), Pair(2, 3), Pair(2, 4), Pair(4, 5), Pair(6, 7)));
 }
 
 }  // namespace stirling

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "src/common/base/utils.h"
+#include "src/stirling/common/utils.h"
 
 namespace pl {
 namespace stirling {
@@ -15,6 +16,7 @@ namespace http {
 using HTTPHeadersMap = std::multimap<std::string, std::string, CaseInsensitiveLess>;
 
 struct HTTPMessage {
+  TimeSpan time_span;
   uint64_t timestamp_ns;
   std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
   MessageType type = MessageType::kUnknown;

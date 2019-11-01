@@ -10,6 +10,7 @@
 #include "absl/base/macros.h"
 #include "src/common/base/base.h"
 #include "src/stirling/common/parse_state.h"
+#include "src/stirling/common/utils.h"
 
 namespace pl {
 namespace stirling {
@@ -93,9 +94,10 @@ class EventParser {
    * @brief Append a sequence message to the internal buffer, ts_ns stands for time stamp in
    * nanosecond.
    */
-  void Append(std::string_view msg, uint64_t ts_ns) {
+  void Append(std::string_view msg, TimeSpan time_span) {
     msgs_.push_back(msg);
-    ts_nses_.push_back(ts_ns);
+    ts_nses_.push_back(time_span.end_ns);
+    time_spans_.push_back(time_span);
     msgs_size_ += msg.size();
   }
 
@@ -150,6 +152,13 @@ class EventParser {
 
       auto& msg = (*messages)[prev_size + i];
       msg.timestamp_ns = ts_nses_[position.seq_num];
+      msg.time_span.begin_ns = time_spans_[position.seq_num].begin_ns;
+
+      size_t last_byte_pos = (i == result.start_positions.size() - 1)
+                                 ? result.end_position - 1
+                                 : result.start_positions[i + 1] - 1;
+      BufferPosition end_position = ConvertPosition(msgs_, start_pos + last_byte_pos);
+      msg.time_span.end_ns = time_spans_[end_position.seq_num].end_ns;
     }
 
     BufferPosition end_position = ConvertPosition(msgs_, result.end_position);
@@ -157,6 +166,7 @@ class EventParser {
     // Reset all state. Call to ParseMessages() is destructive of Append() state.
     msgs_.clear();
     ts_nses_.clear();
+    time_spans_.clear();
     msgs_size_ = 0;
 
     return {std::move(positions), end_position, result.state};
@@ -194,7 +204,9 @@ class EventParser {
   }
 
   // ts_nses_ is the time stamp in nanosecond for the message in msgs_ with the same indexes.
+  // TODO(yzhao): Remove this, as time_spans_ has the same information.
   std::vector<uint64_t> ts_nses_;
+  std::vector<TimeSpan> time_spans_;
   std::vector<std::string_view> msgs_;
 
   // The total size of all strings in msgs_. Used to reserve memory space for concatenation.
