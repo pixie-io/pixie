@@ -98,7 +98,8 @@ function bump_minor {
 function update_pre {
     read -r major minor patch pre <<< "$(parse "$1")"
     commits=$2
-    echo "$major.$minor.$patch-pre.$commits"
+    branch=$3
+    echo "$major.$minor.$((patch +1))-pre-$branch.$commits"
 }
 
 parse_args "$@"
@@ -152,7 +153,10 @@ else
         done
     done
 
-    new_version_str=$(update_pre "$version_str" "$commit_count")
+    branch_name=$(git rev-parse --abbrev-ref HEAD)
+    sanitized_branch=$(echo "$branch_name" | sed -r 's/[._\/]+/-/g')
+
+    new_version_str=$(update_pre "$version_str" "$commit_count" "$sanitized_branch")
 fi
 
 new_tag="release/$ARTIFACT_TYPE/v"$new_version_str
