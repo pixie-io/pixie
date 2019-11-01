@@ -6,7 +6,12 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
+	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
+	pbutils "pixielabs.ai/pixielabs/src/utils"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -153,4 +158,83 @@ func (a ArtifactTrackerServer) GetDownloadLink(ctx context.Context, req *cloudap
 		SHA256:     resp.SHA256,
 		ValidUntil: resp.ValidUntil,
 	}, nil
+}
+
+// VizierClusterInfoServer is the server that implements the VizierClusterInfo gRPC service.
+type VizierClusterInfoServer struct {
+	VzMgr vzmgrpb.VZMgrServiceClient
+}
+
+// GetClusterInfo returns information about Vizier clusters.
+func (v *VizierClusterInfoServer) GetClusterInfo(ctx context.Context, request *cloudapipb.GetClusterInfoRequest) (*cloudapipb.GetClusterInfoResponse, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+	orgID, err := uuid.FromString(orgIDstr)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	viziers, err := v.VzMgr.GetViziersByOrg(ctx, pbutils.ProtoFromUUID(&orgID))
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &cloudapipb.GetClusterInfoResponse{}
+	for _, id := range viziers.VizierIDs {
+		// TODO(zasgar/michelle): Make these requests parallel
+		vzInfo, err := v.VzMgr.GetVizierInfo(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		s := vzStatusToClusterStatus(vzInfo.Status)
+		resp.Clusters = append(resp.Clusters, &cloudapipb.ClusterInfo{
+			ID:              id,
+			Status:          s,
+			LastHeartbeatNs: vzInfo.LastHeartbeatNs,
+		})
+	}
+	return resp, nil
+}
+
+// GetClusterConnectionInfo returns information about connections to Vizier cluster.
+func (v *VizierClusterInfoServer) GetClusterConnectionInfo(ctx context.Context, request *cloudapipb.GetClusterConnectionInfoRequest) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
+	id := request.ID
+
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	ci, err := v.VzMgr.GetVizierConnectionInfo(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudapipb.GetClusterConnectionInfoResponse{
+		IPAddress: ci.IPAddress,
+		Token:     ci.Token,
+	}, nil
+}
+
+func vzStatusToClusterStatus(s cloudpb.VizierInfo_Status) cloudapipb.ClusterStatus {
+	switch s {
+	case cloudpb.VZ_ST_HEALTHY:
+		return cloudapipb.CS_HEALTHY
+	case cloudpb.VZ_ST_UNHEALTHY:
+		return cloudapipb.CS_UNHEALTHY
+	case cloudpb.VZ_ST_DISCONNECTED:
+		return cloudapipb.CS_DISCONNECTED
+	default:
+		return cloudapipb.CS_UNKNOWN
+	}
 }

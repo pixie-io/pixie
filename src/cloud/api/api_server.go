@@ -87,6 +87,9 @@ func main() {
 	}
 	cloudapipb.RegisterArtifactTrackerServer(s.GRPCServer(), artifactTrackerServer)
 
+	cis := &controller.VizierClusterInfoServer{VzMgr: vc}
+	cloudapipb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
+
 	s.Start()
 	s.StopOnInterrupt()
 }

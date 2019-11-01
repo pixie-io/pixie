@@ -15,7 +15,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	_ "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	reflect "reflect"
 	strconv "strconv"
 	strings "strings"
@@ -60,6 +60,33 @@ var ArtifactType_value = map[string]int32{
 
 func (ArtifactType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_c309ce7890afda1a, []int{0}
+}
+
+type ClusterStatus int32
+
+const (
+	CS_UNKNOWN      ClusterStatus = 0
+	CS_HEALTHY      ClusterStatus = 1
+	CS_UNHEALTHY    ClusterStatus = 2
+	CS_DISCONNECTED ClusterStatus = 3
+)
+
+var ClusterStatus_name = map[int32]string{
+	0: "CS_UNKNOWN",
+	1: "CS_HEALTHY",
+	2: "CS_UNHEALTHY",
+	3: "CS_DISCONNECTED",
+}
+
+var ClusterStatus_value = map[string]int32{
+	"CS_UNKNOWN":      0,
+	"CS_HEALTHY":      1,
+	"CS_UNHEALTHY":    2,
+	"CS_DISCONNECTED": 3,
+}
+
+func (ClusterStatus) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{1}
 }
 
 type LoginRequest struct {
@@ -545,8 +572,240 @@ func (m *GetDownloadLinkResponse) GetValidUntil() *types.Timestamp {
 	return nil
 }
 
+type GetClusterInfoRequest struct {
+}
+
+func (m *GetClusterInfoRequest) Reset()      { *m = GetClusterInfoRequest{} }
+func (*GetClusterInfoRequest) ProtoMessage() {}
+func (*GetClusterInfoRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{9}
+}
+func (m *GetClusterInfoRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetClusterInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetClusterInfoRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetClusterInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetClusterInfoRequest.Merge(m, src)
+}
+func (m *GetClusterInfoRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetClusterInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetClusterInfoRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetClusterInfoRequest proto.InternalMessageInfo
+
+type ClusterInfo struct {
+	ID              *proto1.UUID  `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Status          ClusterStatus `protobuf:"varint,2,opt,name=status,proto3,enum=pl.cloudapi.ClusterStatus" json:"status,omitempty"`
+	LastHeartbeatNs int64         `protobuf:"varint,3,opt,name=lastHeartbeatNs,proto3" json:"lastHeartbeatNs,omitempty"`
+}
+
+func (m *ClusterInfo) Reset()      { *m = ClusterInfo{} }
+func (*ClusterInfo) ProtoMessage() {}
+func (*ClusterInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{10}
+}
+func (m *ClusterInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ClusterInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ClusterInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ClusterInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClusterInfo.Merge(m, src)
+}
+func (m *ClusterInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *ClusterInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_ClusterInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ClusterInfo proto.InternalMessageInfo
+
+func (m *ClusterInfo) GetID() *proto1.UUID {
+	if m != nil {
+		return m.ID
+	}
+	return nil
+}
+
+func (m *ClusterInfo) GetStatus() ClusterStatus {
+	if m != nil {
+		return m.Status
+	}
+	return CS_UNKNOWN
+}
+
+func (m *ClusterInfo) GetLastHeartbeatNs() int64 {
+	if m != nil {
+		return m.LastHeartbeatNs
+	}
+	return 0
+}
+
+type GetClusterInfoResponse struct {
+	Clusters []*ClusterInfo `protobuf:"bytes,1,rep,name=clusters,proto3" json:"clusters,omitempty"`
+}
+
+func (m *GetClusterInfoResponse) Reset()      { *m = GetClusterInfoResponse{} }
+func (*GetClusterInfoResponse) ProtoMessage() {}
+func (*GetClusterInfoResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{11}
+}
+func (m *GetClusterInfoResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetClusterInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetClusterInfoResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetClusterInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetClusterInfoResponse.Merge(m, src)
+}
+func (m *GetClusterInfoResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetClusterInfoResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetClusterInfoResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetClusterInfoResponse proto.InternalMessageInfo
+
+func (m *GetClusterInfoResponse) GetClusters() []*ClusterInfo {
+	if m != nil {
+		return m.Clusters
+	}
+	return nil
+}
+
+type GetClusterConnectionInfoRequest struct {
+	ID *proto1.UUID `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *GetClusterConnectionInfoRequest) Reset()      { *m = GetClusterConnectionInfoRequest{} }
+func (*GetClusterConnectionInfoRequest) ProtoMessage() {}
+func (*GetClusterConnectionInfoRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{12}
+}
+func (m *GetClusterConnectionInfoRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetClusterConnectionInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetClusterConnectionInfoRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetClusterConnectionInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetClusterConnectionInfoRequest.Merge(m, src)
+}
+func (m *GetClusterConnectionInfoRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetClusterConnectionInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetClusterConnectionInfoRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetClusterConnectionInfoRequest proto.InternalMessageInfo
+
+func (m *GetClusterConnectionInfoRequest) GetID() *proto1.UUID {
+	if m != nil {
+		return m.ID
+	}
+	return nil
+}
+
+type GetClusterConnectionInfoResponse struct {
+	IPAddress string `protobuf:"bytes,1,opt,name=ipAddress,proto3" json:"ipAddress,omitempty"`
+	Token     string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (m *GetClusterConnectionInfoResponse) Reset()      { *m = GetClusterConnectionInfoResponse{} }
+func (*GetClusterConnectionInfoResponse) ProtoMessage() {}
+func (*GetClusterConnectionInfoResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{13}
+}
+func (m *GetClusterConnectionInfoResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetClusterConnectionInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetClusterConnectionInfoResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetClusterConnectionInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetClusterConnectionInfoResponse.Merge(m, src)
+}
+func (m *GetClusterConnectionInfoResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetClusterConnectionInfoResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetClusterConnectionInfoResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetClusterConnectionInfoResponse proto.InternalMessageInfo
+
+func (m *GetClusterConnectionInfoResponse) GetIPAddress() string {
+	if m != nil {
+		return m.IPAddress
+	}
+	return ""
+}
+
+func (m *GetClusterConnectionInfoResponse) GetToken() string {
+	if m != nil {
+		return m.Token
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterEnum("pl.cloudapi.ArtifactType", ArtifactType_name, ArtifactType_value)
+	proto.RegisterEnum("pl.cloudapi.ClusterStatus", ClusterStatus_name, ClusterStatus_value)
 	proto.RegisterType((*LoginRequest)(nil), "pl.cloudapi.LoginRequest")
 	proto.RegisterType((*LoginReply)(nil), "pl.cloudapi.LoginReply")
 	proto.RegisterType((*GetImageCredentialsRequest)(nil), "pl.cloudapi.GetImageCredentialsRequest")
@@ -556,6 +815,11 @@ func init() {
 	proto.RegisterType((*GetArtifactListRequest)(nil), "pl.cloudapi.GetArtifactListRequest")
 	proto.RegisterType((*GetDownloadLinkRequest)(nil), "pl.cloudapi.GetDownloadLinkRequest")
 	proto.RegisterType((*GetDownloadLinkResponse)(nil), "pl.cloudapi.GetDownloadLinkResponse")
+	proto.RegisterType((*GetClusterInfoRequest)(nil), "pl.cloudapi.GetClusterInfoRequest")
+	proto.RegisterType((*ClusterInfo)(nil), "pl.cloudapi.ClusterInfo")
+	proto.RegisterType((*GetClusterInfoResponse)(nil), "pl.cloudapi.GetClusterInfoResponse")
+	proto.RegisterType((*GetClusterConnectionInfoRequest)(nil), "pl.cloudapi.GetClusterConnectionInfoRequest")
+	proto.RegisterType((*GetClusterConnectionInfoResponse)(nil), "pl.cloudapi.GetClusterConnectionInfoResponse")
 }
 
 func init() {
@@ -563,67 +827,90 @@ func init() {
 }
 
 var fileDescriptor_c309ce7890afda1a = []byte{
-	// 882 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0x41, 0x6f, 0xdc, 0x44,
-	0x14, 0xb6, 0xb3, 0x4d, 0x94, 0x7d, 0x1b, 0x92, 0x68, 0x02, 0xed, 0xe2, 0x06, 0x67, 0x71, 0x90,
-	0x88, 0x90, 0xf0, 0x0a, 0x97, 0x46, 0x48, 0x15, 0x48, 0x6e, 0x53, 0xb5, 0x81, 0xad, 0x2b, 0x79,
-	0x1d, 0x0a, 0x1c, 0xb0, 0x66, 0xbd, 0x53, 0xef, 0x10, 0xdb, 0x63, 0x3c, 0xe3, 0xd0, 0xf4, 0xc4,
-	0x05, 0x4e, 0x1c, 0x90, 0xb8, 0x73, 0xe6, 0x8f, 0x20, 0x71, 0xcc, 0xb1, 0x27, 0x44, 0x36, 0x17,
-	0x8e, 0xf9, 0x09, 0xc8, 0x63, 0x7b, 0xb3, 0xcd, 0x2e, 0xa9, 0x7a, 0x59, 0xbd, 0xf7, 0xcd, 0x37,
-	0x6f, 0x3e, 0x7f, 0xf3, 0xe6, 0x2d, 0x6c, 0xf3, 0x2c, 0xe8, 0x06, 0x11, 0xcb, 0x87, 0xe5, 0x2f,
-	0x4e, 0x69, 0x3a, 0x98, 0x84, 0x66, 0x9a, 0x31, 0xc1, 0x50, 0x2b, 0x8d, 0xcc, 0x1a, 0xd2, 0x3e,
-	0x0c, 0xa9, 0x18, 0xe5, 0x03, 0x33, 0x60, 0x71, 0x37, 0x64, 0x21, 0xeb, 0x4a, 0xce, 0x20, 0x7f,
-	0x2a, 0x33, 0x99, 0xc8, 0xa8, 0xdc, 0xab, 0x75, 0xe4, 0x01, 0x2c, 0x8e, 0x59, 0xd2, 0xcd, 0x73,
-	0x3a, 0x2c, 0xe9, 0x32, 0xac, 0x18, 0x5b, 0x21, 0x63, 0x61, 0x44, 0x2e, 0xea, 0x08, 0x1a, 0x13,
-	0x2e, 0x70, 0x9c, 0x96, 0x04, 0xc3, 0x81, 0x95, 0x1e, 0x0b, 0x69, 0xe2, 0x92, 0xef, 0x73, 0xc2,
-	0x05, 0x7a, 0x17, 0x56, 0x70, 0x10, 0x10, 0xce, 0x7d, 0xc1, 0x0e, 0x49, 0xd2, 0x56, 0x3b, 0xea,
-	0x4e, 0xd3, 0x6d, 0x95, 0x98, 0x57, 0x40, 0xe8, 0x26, 0x34, 0x39, 0x15, 0xc4, 0x4f, 0x70, 0x4c,
-	0xda, 0x0d, 0xb9, 0xbe, 0x5c, 0x00, 0x0e, 0x8e, 0x89, 0x61, 0x03, 0x54, 0xf5, 0xd2, 0xe8, 0x18,
-	0xbd, 0x09, 0x8b, 0xd3, 0x65, 0xca, 0x04, 0xbd, 0x03, 0x40, 0x9e, 0xa5, 0x34, 0x23, 0xdc, 0xc7,
-	0xa2, 0xbd, 0xd0, 0x51, 0x77, 0x1a, 0x6e, 0xb3, 0x42, 0x6c, 0x61, 0x6c, 0x82, 0xf6, 0x80, 0x88,
-	0xfd, 0x18, 0x87, 0xe4, 0x5e, 0x46, 0x86, 0x24, 0x11, 0x14, 0x47, 0xbc, 0x12, 0x68, 0xdc, 0x82,
-	0x9b, 0x73, 0x57, 0x79, 0xca, 0x12, 0x4e, 0x8a, 0x13, 0x83, 0x8c, 0x0c, 0x79, 0x7d, 0xa2, 0x4c,
-	0x0c, 0x0f, 0x5a, 0x76, 0x26, 0xe8, 0x53, 0x1c, 0x88, 0x3e, 0x11, 0x08, 0xc1, 0x35, 0x29, 0xbe,
-	0xe4, 0xc8, 0x18, 0x7d, 0x04, 0xcb, 0xb8, 0xa2, 0xb4, 0x17, 0x3a, 0x8d, 0x9d, 0x96, 0xf5, 0x96,
-	0x39, 0x75, 0x35, 0x66, 0xbd, 0xdf, 0x9d, 0xd0, 0x8c, 0x73, 0x15, 0x96, 0x6b, 0x18, 0x7d, 0x02,
-	0xcd, 0x89, 0xb7, 0xb2, 0x70, 0xcb, 0xd2, 0xcc, 0xd2, 0x7d, 0xb3, 0x76, 0xdf, 0xf4, 0x6a, 0x86,
-	0x7b, 0x41, 0x46, 0x5b, 0xd0, 0x2a, 0xee, 0x90, 0x0a, 0x7f, 0x84, 0xf9, 0x48, 0xfa, 0xd1, 0x74,
-	0xa1, 0x84, 0x1e, 0x62, 0x3e, 0x2a, 0x08, 0x47, 0x24, 0xe3, 0x94, 0x25, 0x3e, 0x17, 0x59, 0x65,
-	0x39, 0x54, 0x50, 0x5f, 0x64, 0xe8, 0x73, 0xd8, 0xc0, 0x47, 0x98, 0x46, 0x78, 0x10, 0x11, 0xbf,
-	0x96, 0xc7, 0xdb, 0xd7, 0x3a, 0x8d, 0x9d, 0x55, 0xeb, 0xed, 0xb9, 0x9f, 0xe1, 0x1d, 0xa7, 0xc4,
-	0x45, 0x93, 0x5d, 0x35, 0xcc, 0xd1, 0x26, 0x34, 0x83, 0x11, 0x4e, 0x42, 0x12, 0xb1, 0xb0, 0xbd,
-	0x28, 0x8f, 0xba, 0x00, 0x8c, 0xdf, 0x54, 0xb8, 0xfe, 0x80, 0x88, 0x9a, 0xde, 0xa3, 0x5c, 0xd4,
-	0x9d, 0xb3, 0x0d, 0x6f, 0xd4, 0x47, 0xfb, 0x53, 0xee, 0xae, 0xd4, 0x60, 0xd1, 0x1e, 0xe8, 0xb3,
-	0x29, 0x92, 0x38, 0x4e, 0x89, 0xfc, 0xda, 0x2b, 0x35, 0x4e, 0xf6, 0x17, 0x59, 0x71, 0xbd, 0x11,
-	0x8d, 0xa9, 0x90, 0x26, 0x34, 0xdc, 0x32, 0x31, 0x7e, 0x2f, 0x55, 0xed, 0xb1, 0x1f, 0x92, 0x88,
-	0xe1, 0x61, 0x8f, 0x26, 0x87, 0xaf, 0xa5, 0xea, 0x92, 0xc1, 0x0b, 0x33, 0x06, 0xcf, 0xc8, 0x6e,
-	0xbc, 0x96, 0x6c, 0xe3, 0x17, 0x15, 0x6e, 0xcc, 0x08, 0xac, 0x3a, 0x76, 0x1d, 0x1a, 0x79, 0x16,
-	0x55, 0xba, 0x8a, 0x10, 0x19, 0xb0, 0xc4, 0x47, 0xd8, 0xba, 0xbd, 0x5b, 0x2a, 0xb9, 0x0b, 0xe3,
-	0xbf, 0xb7, 0x96, 0xfa, 0x0f, 0x6d, 0xeb, 0xf6, 0xae, 0x5b, 0xad, 0xa0, 0x3b, 0xd0, 0x3a, 0xc2,
-	0x11, 0x1d, 0xfa, 0x79, 0x22, 0x68, 0x24, 0xf5, 0x5c, 0xdd, 0x70, 0x20, 0xe9, 0x07, 0x05, 0xfb,
-	0x83, 0x9f, 0x54, 0x58, 0x99, 0x56, 0x8b, 0x56, 0x01, 0x6c, 0xcf, 0x3f, 0x70, 0xbe, 0x70, 0x1e,
-	0x3f, 0x71, 0xd6, 0x15, 0x84, 0x60, 0xd5, 0xf6, 0xfc, 0xde, 0xbe, 0x73, 0xf0, 0x95, 0x6f, 0x3f,
-	0xda, 0xdb, 0xfd, 0x78, 0x5d, 0x45, 0x1b, 0xb0, 0x66, 0x7b, 0xfe, 0x9e, 0xed, 0x3e, 0xd9, 0x77,
-	0x2a, 0x70, 0x01, 0x69, 0x70, 0xdd, 0xf6, 0xfc, 0x7b, 0x8f, 0x1d, 0xcf, 0xde, 0x77, 0xee, 0xbb,
-	0x7e, 0xff, 0xbe, 0xe7, 0x7f, 0x6d, 0x3f, 0xea, 0xf5, 0xd7, 0x2d, 0xd4, 0x81, 0xcd, 0x99, 0xb5,
-	0xe9, 0x92, 0x43, 0xab, 0x07, 0x2d, 0x3b, 0x17, 0xa3, 0x3e, 0xc9, 0x8e, 0x68, 0x40, 0xd0, 0xa7,
-	0xb0, 0x28, 0x67, 0x07, 0x7a, 0xd9, 0xd7, 0xe9, 0xf9, 0xa4, 0xdd, 0x98, 0xb7, 0x94, 0x46, 0xc7,
-	0x86, 0x62, 0xfd, 0xac, 0x42, 0xfb, 0x4b, 0xfa, 0x9c, 0x92, 0x4c, 0x4e, 0x87, 0xa2, 0x32, 0xcb,
-	0xe8, 0x73, 0x2c, 0x28, 0x4b, 0xd0, 0x77, 0xb0, 0x31, 0x67, 0x6c, 0xa0, 0xf7, 0x5f, 0x2a, 0xf7,
-	0xff, 0x63, 0x47, 0xdb, 0x79, 0x35, 0xb1, 0xbc, 0x4f, 0x43, 0xb1, 0xfe, 0x54, 0x61, 0x6d, 0x62,
-	0x6f, 0x86, 0x83, 0x43, 0x92, 0x21, 0x17, 0xd6, 0x2e, 0xbd, 0x1b, 0xb4, 0x7d, 0xb9, 0xe4, 0x9c,
-	0x57, 0xa5, 0xb5, 0xe7, 0xb6, 0x58, 0x9f, 0x08, 0x43, 0x41, 0xdf, 0xca, 0x9a, 0xd3, 0x4d, 0x35,
-	0x5b, 0x73, 0xce, 0x9b, 0xd0, 0xde, 0xbb, 0x9a, 0x54, 0x7f, 0xc7, 0xdd, 0xe8, 0xe4, 0x54, 0x57,
-	0x5e, 0x9c, 0xea, 0xca, 0xf9, 0xa9, 0xae, 0xfe, 0x38, 0xd6, 0xd5, 0x3f, 0xc6, 0xba, 0xfa, 0xd7,
-	0x58, 0x57, 0x4f, 0xc6, 0xba, 0xfa, 0xcf, 0x58, 0x57, 0xff, 0x1d, 0xeb, 0xca, 0xf9, 0x58, 0x57,
-	0x7f, 0x3d, 0xd3, 0x95, 0x93, 0x33, 0x5d, 0x79, 0x71, 0xa6, 0x2b, 0xdf, 0xec, 0xa6, 0xf4, 0x19,
-	0x25, 0x11, 0x1e, 0x70, 0x13, 0xd3, 0xee, 0x24, 0xe9, 0xce, 0xfb, 0x33, 0xbc, 0x73, 0x11, 0x0e,
-	0x96, 0x64, 0xd3, 0xde, 0xfa, 0x2f, 0x00, 0x00, 0xff, 0xff, 0xe0, 0xe3, 0x4c, 0xd8, 0x36, 0x07,
-	0x00, 0x00,
+	// 1148 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x56, 0xc1, 0x8f, 0xdb, 0xc4,
+	0x17, 0x8e, 0x93, 0x76, 0xb5, 0x79, 0xd9, 0xee, 0xe6, 0x37, 0xfd, 0xb5, 0x0d, 0x6e, 0x71, 0x82,
+	0x17, 0xa9, 0x51, 0xa1, 0x89, 0x48, 0xdb, 0x15, 0x52, 0x05, 0x92, 0x37, 0x59, 0x75, 0x53, 0x52,
+	0x17, 0x39, 0xde, 0x96, 0x82, 0x84, 0x35, 0x71, 0xa6, 0xc9, 0x50, 0xc7, 0x36, 0x9e, 0xc9, 0xd2,
+	0xed, 0x89, 0x0b, 0x9c, 0x38, 0x20, 0xc1, 0x99, 0x33, 0xff, 0x08, 0x12, 0xc7, 0x1e, 0x7b, 0xaa,
+	0xd8, 0xec, 0x05, 0x89, 0xcb, 0xfe, 0x09, 0xc8, 0x63, 0x3b, 0x71, 0x36, 0xd9, 0xa5, 0xbd, 0x44,
+	0x33, 0xdf, 0x7c, 0xfe, 0xde, 0x37, 0xef, 0xcd, 0xbc, 0x09, 0x6c, 0xb2, 0xc0, 0xae, 0xdb, 0x8e,
+	0x37, 0xee, 0x47, 0xbf, 0xd8, 0xa7, 0x7e, 0x6f, 0x3a, 0xac, 0xf9, 0x81, 0xc7, 0x3d, 0x54, 0xf0,
+	0x9d, 0x5a, 0x02, 0xc9, 0x37, 0x07, 0x94, 0x0f, 0xc7, 0xbd, 0x9a, 0xed, 0x8d, 0xea, 0x03, 0x6f,
+	0xe0, 0xd5, 0x05, 0xa7, 0x37, 0x7e, 0x2a, 0x66, 0x62, 0x22, 0x46, 0xd1, 0xb7, 0x72, 0x45, 0x04,
+	0xf0, 0x46, 0x23, 0xcf, 0xad, 0x8f, 0xc7, 0xb4, 0x1f, 0xd1, 0xc5, 0x30, 0x66, 0x94, 0x07, 0x9e,
+	0x37, 0x70, 0xc8, 0x4c, 0x87, 0xd3, 0x11, 0x61, 0x1c, 0x8f, 0xfc, 0x88, 0xa0, 0xea, 0xb0, 0xd6,
+	0xf1, 0x06, 0xd4, 0x35, 0xc8, 0xb7, 0x63, 0xc2, 0x38, 0x7a, 0x0f, 0xd6, 0xb0, 0x6d, 0x13, 0xc6,
+	0x2c, 0xee, 0x3d, 0x23, 0x6e, 0x49, 0xaa, 0x48, 0xd5, 0xbc, 0x51, 0x88, 0x30, 0x33, 0x84, 0xd0,
+	0x55, 0xc8, 0x33, 0xca, 0x89, 0xe5, 0xe2, 0x11, 0x29, 0xe5, 0xc4, 0xfa, 0x6a, 0x08, 0xe8, 0x78,
+	0x44, 0x54, 0x0d, 0x20, 0xd6, 0xf3, 0x9d, 0x03, 0xf4, 0x7f, 0x38, 0x9f, 0x96, 0x89, 0x26, 0xe8,
+	0x5d, 0x00, 0xf2, 0xdc, 0xa7, 0x01, 0x61, 0x16, 0xe6, 0xa5, 0x6c, 0x45, 0xaa, 0xe6, 0x8c, 0x7c,
+	0x8c, 0x68, 0x5c, 0xbd, 0x06, 0xf2, 0x3d, 0xc2, 0xdb, 0x23, 0x3c, 0x20, 0xcd, 0x80, 0xf4, 0x89,
+	0xcb, 0x29, 0x76, 0x58, 0x6c, 0x50, 0xbd, 0x05, 0x57, 0x97, 0xae, 0x32, 0xdf, 0x73, 0x19, 0x09,
+	0x23, 0xda, 0x01, 0xe9, 0xb3, 0x24, 0xa2, 0x98, 0xa8, 0x26, 0x14, 0xb4, 0x80, 0xd3, 0xa7, 0xd8,
+	0xe6, 0x5d, 0xc2, 0x11, 0x82, 0x73, 0xc2, 0x7c, 0xc4, 0x11, 0x63, 0xf4, 0x11, 0xac, 0xe2, 0x98,
+	0x52, 0xca, 0x56, 0x72, 0xd5, 0x42, 0xe3, 0x52, 0x2d, 0x55, 0x9a, 0x5a, 0xf2, 0xbd, 0x31, 0xa5,
+	0xa9, 0xc7, 0x12, 0xac, 0x26, 0x30, 0xfa, 0x18, 0xf2, 0xd3, 0xdc, 0x0a, 0xe1, 0x42, 0x43, 0xae,
+	0x45, 0xd9, 0xaf, 0x25, 0xd9, 0xaf, 0x99, 0x09, 0xc3, 0x98, 0x91, 0x51, 0x19, 0x0a, 0x61, 0x0d,
+	0x29, 0xb7, 0x86, 0x98, 0x0d, 0x45, 0x3e, 0xf2, 0x06, 0x44, 0xd0, 0x2e, 0x66, 0xc3, 0x90, 0xb0,
+	0x4f, 0x02, 0x46, 0x3d, 0xd7, 0x62, 0x3c, 0x88, 0x53, 0x0e, 0x31, 0xd4, 0xe5, 0x01, 0xba, 0x0f,
+	0x17, 0xf1, 0x3e, 0xa6, 0x0e, 0xee, 0x39, 0xc4, 0x4a, 0xec, 0xb1, 0xd2, 0xb9, 0x4a, 0xae, 0xba,
+	0xde, 0x78, 0x67, 0xe9, 0x36, 0xcc, 0x03, 0x9f, 0x18, 0x68, 0xfa, 0x55, 0x02, 0x33, 0x74, 0x0d,
+	0xf2, 0xf6, 0x10, 0xbb, 0x03, 0xe2, 0x78, 0x83, 0xd2, 0x79, 0x11, 0x6a, 0x06, 0xa8, 0xbf, 0x48,
+	0x70, 0xf9, 0x1e, 0xe1, 0x09, 0xbd, 0x43, 0x19, 0x4f, 0x4e, 0xce, 0x26, 0x5c, 0x48, 0x42, 0x5b,
+	0xa9, 0xec, 0xae, 0x25, 0x60, 0x78, 0x3c, 0xd0, 0xa7, 0x29, 0x12, 0x3f, 0xf0, 0x89, 0xd8, 0xed,
+	0x99, 0x1e, 0xa7, 0xdf, 0x87, 0xb3, 0xb0, 0xbc, 0x0e, 0x1d, 0x51, 0x2e, 0x92, 0x90, 0x33, 0xa2,
+	0x89, 0xfa, 0x5b, 0xe4, 0xaa, 0xe5, 0x7d, 0xe7, 0x3a, 0x1e, 0xee, 0x77, 0xa8, 0xfb, 0xec, 0xad,
+	0x5c, 0x9d, 0x48, 0x70, 0x76, 0x21, 0xc1, 0x0b, 0xb6, 0x73, 0x6f, 0x65, 0x5b, 0xfd, 0x49, 0x82,
+	0x2b, 0x0b, 0x06, 0xe3, 0x13, 0x5b, 0x84, 0xdc, 0x38, 0x70, 0x62, 0x5f, 0xe1, 0x10, 0xa9, 0xb0,
+	0xc2, 0x86, 0xb8, 0x71, 0x67, 0x2b, 0x72, 0xb2, 0x0d, 0x93, 0xd7, 0xe5, 0x95, 0xee, 0xae, 0xd6,
+	0xb8, 0xb3, 0x65, 0xc4, 0x2b, 0xe8, 0x2e, 0x14, 0xf6, 0xb1, 0x43, 0xfb, 0xd6, 0xd8, 0xe5, 0xd4,
+	0x11, 0x7e, 0xce, 0x3e, 0x70, 0x20, 0xe8, 0x7b, 0x21, 0x5b, 0xbd, 0x02, 0x97, 0xee, 0x11, 0xde,
+	0x74, 0xc6, 0x8c, 0x93, 0xa0, 0xed, 0x3e, 0xf5, 0x92, 0xcb, 0xf5, 0xab, 0x04, 0x85, 0x14, 0x8c,
+	0xae, 0x43, 0x96, 0xf6, 0xe3, 0xd3, 0xbc, 0x11, 0x6e, 0x36, 0x6c, 0x2d, 0x7e, 0xaf, 0xb6, 0xb7,
+	0xd7, 0x6e, 0x6d, 0xaf, 0x4c, 0x5e, 0x97, 0xb3, 0xed, 0x96, 0x91, 0xa5, 0x7d, 0xd4, 0x80, 0x15,
+	0xc6, 0x31, 0x1f, 0xb3, 0xb8, 0xa0, 0xf2, 0x5c, 0x66, 0x62, 0xc9, 0xae, 0x60, 0x18, 0x31, 0x13,
+	0x55, 0x61, 0xc3, 0xc1, 0x8c, 0xef, 0x12, 0x1c, 0xf0, 0x1e, 0xc1, 0x5c, 0x67, 0x71, 0x55, 0x4f,
+	0xc2, 0xaa, 0x2e, 0xca, 0x3b, 0xe7, 0x37, 0x4e, 0xde, 0x6d, 0x58, 0xb5, 0x23, 0x38, 0xbc, 0xf1,
+	0xe1, 0xad, 0x2d, 0x2d, 0x8b, 0x2c, 0xbe, 0x99, 0x32, 0xd5, 0xfb, 0x50, 0x9e, 0xe9, 0x35, 0x3d,
+	0xd7, 0x25, 0x36, 0xa7, 0x9e, 0x9b, 0xca, 0xc4, 0x1b, 0xef, 0x5c, 0x25, 0x50, 0x39, 0x5d, 0x2b,
+	0x76, 0xf9, 0x01, 0xe4, 0xa9, 0xaf, 0xf5, 0xfb, 0x01, 0x61, 0x71, 0x63, 0xda, 0xbe, 0x30, 0x79,
+	0x5d, 0xce, 0xb7, 0x3f, 0x8f, 0x41, 0x63, 0xb6, 0x3e, 0xeb, 0x99, 0xd9, 0x54, 0xcf, 0xbc, 0xf1,
+	0x83, 0x04, 0x6b, 0xe9, 0x03, 0x86, 0xd6, 0x01, 0x34, 0xd3, 0xda, 0xd3, 0x3f, 0xd3, 0x1f, 0x3e,
+	0xd6, 0x8b, 0x19, 0x84, 0x60, 0x5d, 0x33, 0xad, 0x4e, 0x5b, 0xdf, 0xfb, 0xc2, 0xd2, 0x1e, 0xb4,
+	0xb6, 0x6e, 0x17, 0x25, 0x74, 0x11, 0x36, 0x34, 0xd3, 0x6a, 0x69, 0xc6, 0xe3, 0xb6, 0x1e, 0x83,
+	0x59, 0x24, 0xc3, 0x65, 0xcd, 0xb4, 0x9a, 0x0f, 0x75, 0x53, 0x6b, 0xeb, 0x3b, 0x86, 0xd5, 0xdd,
+	0x31, 0xad, 0x27, 0xda, 0x83, 0x4e, 0xb7, 0xd8, 0x40, 0x15, 0xb8, 0xb6, 0xb0, 0x96, 0x96, 0xec,
+	0xdf, 0x78, 0x04, 0x17, 0xe6, 0xaa, 0x19, 0xfa, 0x68, 0x76, 0x53, 0x3e, 0xa2, 0xf9, 0xee, 0x8e,
+	0xd6, 0x31, 0x77, 0x9f, 0x14, 0x25, 0x54, 0x84, 0x35, 0xb1, 0x9e, 0x20, 0xd9, 0xd0, 0x55, 0xb3,
+	0x6b, 0xb5, 0xda, 0xdd, 0xe6, 0x43, 0x5d, 0xdf, 0x69, 0x9a, 0x3b, 0xad, 0x62, 0xae, 0xd1, 0x81,
+	0x82, 0x36, 0xe6, 0xc3, 0x2e, 0x09, 0xf6, 0xa9, 0x4d, 0xd0, 0x27, 0x70, 0x5e, 0x3c, 0x23, 0x68,
+	0xfe, 0x8a, 0xa5, 0x9f, 0x2a, 0xf9, 0xca, 0xb2, 0x25, 0xdf, 0x39, 0x50, 0x33, 0x8d, 0x1f, 0x25,
+	0x28, 0x3d, 0xa2, 0x2f, 0x28, 0x09, 0xc4, 0x43, 0x11, 0x2a, 0x7b, 0x01, 0x7d, 0x81, 0xc3, 0xca,
+	0xa0, 0x6f, 0xe0, 0xe2, 0x92, 0x17, 0x04, 0x5d, 0x9f, 0x93, 0x3b, 0xfd, 0x05, 0x92, 0xab, 0xff,
+	0x4d, 0x8c, 0xea, 0xae, 0x66, 0x1a, 0x7f, 0x48, 0xb0, 0x31, 0x2d, 0x5b, 0x80, 0xed, 0x67, 0x24,
+	0x40, 0x06, 0x6c, 0x9c, 0x68, 0xa1, 0x68, 0xf3, 0xa4, 0xe4, 0x92, 0x06, 0x2b, 0x97, 0x96, 0x76,
+	0x9b, 0x2e, 0xe1, 0x6a, 0x06, 0x7d, 0x2d, 0x34, 0xd3, 0xfd, 0x65, 0x51, 0x73, 0x49, 0x7b, 0x94,
+	0xdf, 0x3f, 0x9b, 0x34, 0xdd, 0xc7, 0x3f, 0x12, 0xfc, 0x2f, 0x4a, 0x68, 0xba, 0x3d, 0x7c, 0x05,
+	0xeb, 0xf3, 0xf7, 0x12, 0xa9, 0x27, 0xf5, 0x16, 0x9b, 0x8c, 0xbc, 0x79, 0x26, 0x27, 0x09, 0x89,
+	0x0e, 0xa0, 0x74, 0xda, 0xc5, 0x42, 0x1f, 0x9e, 0x22, 0xb1, 0xf4, 0x2e, 0xcb, 0x37, 0xdf, 0x90,
+	0x9d, 0x84, 0xde, 0x76, 0x5e, 0x1e, 0x2a, 0x99, 0x57, 0x87, 0x4a, 0xe6, 0xf8, 0x50, 0x91, 0xbe,
+	0x9f, 0x28, 0xd2, 0xef, 0x13, 0x45, 0xfa, 0x73, 0xa2, 0x48, 0x2f, 0x27, 0x8a, 0xf4, 0xd7, 0x44,
+	0x91, 0xfe, 0x9e, 0x28, 0x99, 0xe3, 0x89, 0x22, 0xfd, 0x7c, 0xa4, 0x64, 0x5e, 0x1e, 0x29, 0x99,
+	0x57, 0x47, 0x4a, 0xe6, 0xcb, 0x2d, 0x9f, 0x3e, 0xa7, 0xc4, 0xc1, 0x3d, 0x56, 0xc3, 0xb4, 0x3e,
+	0x9d, 0xd4, 0x97, 0xfd, 0x0b, 0xbc, 0x3b, 0x1b, 0xf6, 0x56, 0x44, 0xb7, 0xbe, 0xf5, 0x6f, 0x00,
+	0x00, 0x00, 0xff, 0xff, 0xeb, 0xa1, 0x1d, 0xc2, 0x2f, 0x0a, 0x00, 0x00,
 }
 
 func (x ArtifactType) String() string {
 	s, ok := ArtifactType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x ClusterStatus) String() string {
+	s, ok := ClusterStatus_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -891,6 +1178,137 @@ func (this *GetDownloadLinkResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *GetClusterInfoRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetClusterInfoRequest)
+	if !ok {
+		that2, ok := that.(GetClusterInfoRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *ClusterInfo) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ClusterInfo)
+	if !ok {
+		that2, ok := that.(ClusterInfo)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ID.Equal(that1.ID) {
+		return false
+	}
+	if this.Status != that1.Status {
+		return false
+	}
+	if this.LastHeartbeatNs != that1.LastHeartbeatNs {
+		return false
+	}
+	return true
+}
+func (this *GetClusterInfoResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetClusterInfoResponse)
+	if !ok {
+		that2, ok := that.(GetClusterInfoResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Clusters) != len(that1.Clusters) {
+		return false
+	}
+	for i := range this.Clusters {
+		if !this.Clusters[i].Equal(that1.Clusters[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *GetClusterConnectionInfoRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetClusterConnectionInfoRequest)
+	if !ok {
+		that2, ok := that.(GetClusterConnectionInfoRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ID.Equal(that1.ID) {
+		return false
+	}
+	return true
+}
+func (this *GetClusterConnectionInfoResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetClusterConnectionInfoResponse)
+	if !ok {
+		that2, ok := that.(GetClusterConnectionInfoResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.IPAddress != that1.IPAddress {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	return true
+}
 func (this *LoginRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -996,6 +1414,64 @@ func (this *GetDownloadLinkResponse) GoString() string {
 	if this.ValidUntil != nil {
 		s = append(s, "ValidUntil: "+fmt.Sprintf("%#v", this.ValidUntil)+",\n")
 	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetClusterInfoRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&cloudapipb.GetClusterInfoRequest{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ClusterInfo) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&cloudapipb.ClusterInfo{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
+	s = append(s, "LastHeartbeatNs: "+fmt.Sprintf("%#v", this.LastHeartbeatNs)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetClusterInfoResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cloudapipb.GetClusterInfoResponse{")
+	if this.Clusters != nil {
+		s = append(s, "Clusters: "+fmt.Sprintf("%#v", this.Clusters)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetClusterConnectionInfoRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cloudapipb.GetClusterConnectionInfoRequest{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetClusterConnectionInfoResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&cloudapipb.GetClusterConnectionInfoResponse{")
+	s = append(s, "IPAddress: "+fmt.Sprintf("%#v", this.IPAddress)+",\n")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1262,6 +1738,114 @@ var _ArtifactTracker_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDownloadLink",
 			Handler:    _ArtifactTracker_GetDownloadLink_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "src/cloud/cloudapipb/cloudapi.proto",
+}
+
+// VizierClusterInfoClient is the client API for VizierClusterInfo service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type VizierClusterInfoClient interface {
+	GetClusterInfo(ctx context.Context, in *GetClusterInfoRequest, opts ...grpc.CallOption) (*GetClusterInfoResponse, error)
+	GetClusterConnectionInfo(ctx context.Context, in *GetClusterConnectionInfoRequest, opts ...grpc.CallOption) (*GetClusterConnectionInfoResponse, error)
+}
+
+type vizierClusterInfoClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewVizierClusterInfoClient(cc *grpc.ClientConn) VizierClusterInfoClient {
+	return &vizierClusterInfoClient{cc}
+}
+
+func (c *vizierClusterInfoClient) GetClusterInfo(ctx context.Context, in *GetClusterInfoRequest, opts ...grpc.CallOption) (*GetClusterInfoResponse, error) {
+	out := new(GetClusterInfoResponse)
+	err := c.cc.Invoke(ctx, "/pl.cloudapi.VizierClusterInfo/GetClusterInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vizierClusterInfoClient) GetClusterConnectionInfo(ctx context.Context, in *GetClusterConnectionInfoRequest, opts ...grpc.CallOption) (*GetClusterConnectionInfoResponse, error) {
+	out := new(GetClusterConnectionInfoResponse)
+	err := c.cc.Invoke(ctx, "/pl.cloudapi.VizierClusterInfo/GetClusterConnectionInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// VizierClusterInfoServer is the server API for VizierClusterInfo service.
+type VizierClusterInfoServer interface {
+	GetClusterInfo(context.Context, *GetClusterInfoRequest) (*GetClusterInfoResponse, error)
+	GetClusterConnectionInfo(context.Context, *GetClusterConnectionInfoRequest) (*GetClusterConnectionInfoResponse, error)
+}
+
+// UnimplementedVizierClusterInfoServer can be embedded to have forward compatible implementations.
+type UnimplementedVizierClusterInfoServer struct {
+}
+
+func (*UnimplementedVizierClusterInfoServer) GetClusterInfo(ctx context.Context, req *GetClusterInfoRequest) (*GetClusterInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClusterInfo not implemented")
+}
+func (*UnimplementedVizierClusterInfoServer) GetClusterConnectionInfo(ctx context.Context, req *GetClusterConnectionInfoRequest) (*GetClusterConnectionInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClusterConnectionInfo not implemented")
+}
+
+func RegisterVizierClusterInfoServer(s *grpc.Server, srv VizierClusterInfoServer) {
+	s.RegisterService(&_VizierClusterInfo_serviceDesc, srv)
+}
+
+func _VizierClusterInfo_GetClusterInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClusterInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VizierClusterInfoServer).GetClusterInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.cloudapi.VizierClusterInfo/GetClusterInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VizierClusterInfoServer).GetClusterInfo(ctx, req.(*GetClusterInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VizierClusterInfo_GetClusterConnectionInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClusterConnectionInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VizierClusterInfoServer).GetClusterConnectionInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.cloudapi.VizierClusterInfo/GetClusterConnectionInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VizierClusterInfoServer).GetClusterConnectionInfo(ctx, req.(*GetClusterConnectionInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _VizierClusterInfo_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "pl.cloudapi.VizierClusterInfo",
+	HandlerType: (*VizierClusterInfoServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetClusterInfo",
+			Handler:    _VizierClusterInfo_GetClusterInfo_Handler,
+		},
+		{
+			MethodName: "GetClusterConnectionInfo",
+			Handler:    _VizierClusterInfo_GetClusterConnectionInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1642,6 +2226,183 @@ func (m *GetDownloadLinkResponse) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 
+func (m *GetClusterInfoRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetClusterInfoRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetClusterInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *ClusterInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ClusterInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ClusterInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.LastHeartbeatNs != 0 {
+		i = encodeVarintCloudapi(dAtA, i, uint64(m.LastHeartbeatNs))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.Status != 0 {
+		i = encodeVarintCloudapi(dAtA, i, uint64(m.Status))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCloudapi(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetClusterInfoResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetClusterInfoResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetClusterInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Clusters) > 0 {
+		for iNdEx := len(m.Clusters) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Clusters[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCloudapi(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetClusterConnectionInfoRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetClusterConnectionInfoRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetClusterConnectionInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCloudapi(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetClusterConnectionInfoResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetClusterConnectionInfoResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetClusterConnectionInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		i -= len(m.Token)
+		copy(dAtA[i:], m.Token)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.Token)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.IPAddress) > 0 {
+		i -= len(m.IPAddress)
+		copy(dAtA[i:], m.IPAddress)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.IPAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintCloudapi(dAtA []byte, offset int, v uint64) int {
 	offset -= sovCloudapi(v)
 	base := offset
@@ -1819,6 +2580,79 @@ func (m *GetDownloadLinkResponse) Size() (n int) {
 	return n
 }
 
+func (m *GetClusterInfoRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *ClusterInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	if m.Status != 0 {
+		n += 1 + sovCloudapi(uint64(m.Status))
+	}
+	if m.LastHeartbeatNs != 0 {
+		n += 1 + sovCloudapi(uint64(m.LastHeartbeatNs))
+	}
+	return n
+}
+
+func (m *GetClusterInfoResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Clusters) > 0 {
+		for _, e := range m.Clusters {
+			l = e.Size()
+			n += 1 + l + sovCloudapi(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetClusterConnectionInfoRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	return n
+}
+
+func (m *GetClusterConnectionInfoResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.IPAddress)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	return n
+}
+
 func sovCloudapi(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -1928,6 +2762,63 @@ func (this *GetDownloadLinkResponse) String() string {
 		`Url:` + fmt.Sprintf("%v", this.Url) + `,`,
 		`SHA256:` + fmt.Sprintf("%v", this.SHA256) + `,`,
 		`ValidUntil:` + strings.Replace(fmt.Sprintf("%v", this.ValidUntil), "Timestamp", "types.Timestamp", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetClusterInfoRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetClusterInfoRequest{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ClusterInfo) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ClusterInfo{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
+		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
+		`LastHeartbeatNs:` + fmt.Sprintf("%v", this.LastHeartbeatNs) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetClusterInfoResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForClusters := "[]*ClusterInfo{"
+	for _, f := range this.Clusters {
+		repeatedStringForClusters += strings.Replace(f.String(), "ClusterInfo", "ClusterInfo", 1) + ","
+	}
+	repeatedStringForClusters += "}"
+	s := strings.Join([]string{`&GetClusterInfoResponse{`,
+		`Clusters:` + repeatedStringForClusters + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetClusterConnectionInfoRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetClusterConnectionInfoRequest{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetClusterConnectionInfoResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetClusterConnectionInfoResponse{`,
+		`IPAddress:` + fmt.Sprintf("%v", this.IPAddress) + `,`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3059,6 +3950,479 @@ func (m *GetDownloadLinkResponse) Unmarshal(dAtA []byte) error {
 			if err := m.ValidUntil.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetClusterInfoRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetClusterInfoRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetClusterInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ClusterInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ClusterInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ClusterInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ID == nil {
+				m.ID = &proto1.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			m.Status = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Status |= ClusterStatus(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastHeartbeatNs", wireType)
+			}
+			m.LastHeartbeatNs = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LastHeartbeatNs |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetClusterInfoResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetClusterInfoResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetClusterInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Clusters", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Clusters = append(m.Clusters, &ClusterInfo{})
+			if err := m.Clusters[len(m.Clusters)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetClusterConnectionInfoRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetClusterConnectionInfoRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetClusterConnectionInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ID == nil {
+				m.ID = &proto1.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetClusterConnectionInfoResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetClusterConnectionInfoResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetClusterConnectionInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IPAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IPAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

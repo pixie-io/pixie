@@ -121,3 +121,42 @@ message GetDownloadLinkResponse {
 
     google.protobuf.Timestamp valid_until = 3;
 }
+
+service VizierClusterInfo {
+    rpc GetClusterInfo(GetClusterInfoRequest) returns(GetClusterInfoResponse) {}
+    rpc GetClusterConnectionInfo(GetClusterConnectionInfoRequest) returns(GetClusterConnectionInfoResponse) {}
+}
+
+message GetClusterInfoRequest {}
+
+enum ClusterStatus {
+    CS_UNKNOWN = 0;
+    CS_HEALTHY = 1;
+    CS_UNHEALTHY = 2;
+    CS_DISCONNECTED = 3;
+}
+
+message ClusterInfo {
+    pl.uuidpb.UUID id = 1 [
+                          (gogoproto.customname) = "ID"
+                          ];
+    ClusterStatus status = 2;
+    int64 lastHeartbeatNs = 3;
+}
+
+message GetClusterInfoResponse {
+    repeated ClusterInfo clusters = 1;
+}
+
+message GetClusterConnectionInfoRequest {
+     pl.uuidpb.UUID id = 1 [
+                           (gogoproto.customname) = "ID"
+                           ];
+}
+
+message GetClusterConnectionInfoResponse {
+    string ipAddress = 1 [
+                         (gogoproto.customname) = "IPAddress"
+                         ];
+    string token = 2;
+}
