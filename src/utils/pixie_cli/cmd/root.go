@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -47,7 +49,7 @@ var RootCmd = &cobra.Command{
 		versionStr := update.UpdatesAvailable(viper.GetString("cloud_addr"))
 		if versionStr != "" {
 			c := color.New(color.Bold, color.FgGreen)
-			_, _ = c.Printf("Update to version \"%s\" available. Run \"pixie update cli\" to update.\n", versionStr)
+			_, _ = c.Fprintf(os.Stderr, "Update to version \"%s\" available. Run \"pixie update cli\" to update.\n", versionStr)
 		}
 	},
 }

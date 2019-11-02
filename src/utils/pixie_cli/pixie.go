@@ -4,7 +4,7 @@ package main
 // It will be responsible for managing and deploy Pixie on a cluster.
 
 import (
-	"fmt"
+	"os"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
@@ -18,10 +18,10 @@ func main() {
  |  _/| |\ \ /| |/ -_)
  |_|  |_|/_\_\|_|\___|
 `
-	color.Set(color.FgHiGreen)
-	fmt.Println(pixie)
-	color.Unset()
+	c := color.New(color.FgHiGreen)
+	c.Fprintln(os.Stderr, pixie)
 
+	log.SetOutput(os.Stderr)
 	log.Info("Pixie Admin CLI")
 	cmd.Execute()
 }
