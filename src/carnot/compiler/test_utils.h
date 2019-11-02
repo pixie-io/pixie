@@ -351,6 +351,13 @@ class OperatorTests : public ::testing::Test {
     return group;
   }
 
+  template <typename... Args>
+  ListIR* MakeList(Args... args) {
+    ListIR* list = graph->MakeNode<ListIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(list->Init(ast, std::vector<ExpressionIR*>{args...}));
+    return list;
+  }
+
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
 };

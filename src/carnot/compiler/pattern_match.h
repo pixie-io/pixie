@@ -49,7 +49,7 @@ namespace compiler {
  * @brief Match function that aliases the match function attribute of a pattern.
  */
 template <typename Val, typename Pattern>
-bool Match(Val* node, const Pattern& P) {
+bool Match(const Val* node, const Pattern& P) {
   return const_cast<Pattern&>(P).Match(node);
 }
 
@@ -66,7 +66,7 @@ struct ParentMatch {
    * @brief Match returns true if the node passed in fits the pattern defined by the struct.
    * @param node: IRNode argument to examine.
    */
-  virtual bool Match(IRNode* node) const = 0;
+  virtual bool Match(const IRNode* node) const = 0;
 
   IRNodeType type;
 };
@@ -77,7 +77,7 @@ struct ParentMatch {
  */
 struct AllMatch : public ParentMatch {
   AllMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool Match(IRNode*) const override { return true; }
+  bool Match(const IRNode*) const override { return true; }
 };
 
 /**
@@ -93,7 +93,7 @@ inline AllMatch Value() { return AllMatch(); }
 template <IRNodeType t>
 struct ClassMatch : public ParentMatch {
   ClassMatch() : ParentMatch(t) {}
-  bool Match(IRNode* node) const override { return node->type() == type; }
+  bool Match(const IRNode* node) const override { return node->type() == type; }
 };
 
 // Match an arbitrary Int value.
@@ -146,9 +146,9 @@ inline ClassMatch<IRNodeType::kList> List() { return ClassMatch<IRNodeType::kLis
 struct IntMatch : public ParentMatch {
   explicit IntMatch(const int64_t v) : ParentMatch(IRNodeType::kInt), val(v) {}
 
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->type() == type) {
-      auto iVal = static_cast<IntIR*>(node);
+      auto iVal = static_cast<const IntIR*>(node);
       return iVal->val() == val;
     }
     return false;
@@ -182,9 +182,9 @@ struct BinaryOpMatch : public ParentMatch {
   BinaryOpMatch(const LHS_t& LHS, const RHS_t& RHS)
       : ParentMatch(IRNodeType::kFunc), L(LHS), R(RHS) {}
 
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->type() == IRNodeType::kFunc) {
-      auto* F = static_cast<FuncIR*>(node);
+      auto* F = static_cast<const FuncIR*>(node);
       if (F->opcode() == op && F->args().size() == 2) {
         return (L.Match(F->args()[0]) && R.Match(F->args()[1])) ||
                (Commutable && L.Match(F->args()[1]) && R.Match(F->args()[0]));
@@ -228,9 +228,9 @@ struct AnyBinaryOpMatch : public ParentMatch {
   AnyBinaryOpMatch(const LHS_t& LHS, const RHS_t& RHS)
       : ParentMatch(IRNodeType::kFunc), L(LHS), R(RHS) {}
 
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->type() == type) {
-      auto* F = static_cast<FuncIR*>(node);
+      auto* F = static_cast<const FuncIR*>(node);
       if (F->args().size() == 2) {
         return (L.Match(F->args()[0]) && R.Match(F->args()[1])) ||
                (Commutable && L.Match(F->args()[1]) && R.Match(F->args()[0]));
@@ -263,9 +263,9 @@ inline AnyBinaryOpMatch<AllMatch, AllMatch, false> BinOp() { return BinOp(Value(
 template <bool resolved>
 struct ExpressionMatch : public ParentMatch {
   ExpressionMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->IsExpression()) {
-      return resolved == static_cast<ExpressionIR*>(node)->IsDataTypeEvaluated();
+      return resolved == static_cast<const ExpressionIR*>(node)->IsDataTypeEvaluated();
     }
     return false;
   }
@@ -289,9 +289,9 @@ inline ExpressionMatch<false> UnresolvedExpression() { return ExpressionMatch<fa
 template <IRNodeType expression_type, bool Resolved>
 struct SpecificExpressionMatch : public ParentMatch {
   SpecificExpressionMatch() : ParentMatch(expression_type) {}
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->IsExpression() && node->type() == expression_type) {
-      return Resolved == static_cast<ExpressionIR*>(node)->IsDataTypeEvaluated();
+      return Resolved == static_cast<const ExpressionIR*>(node)->IsDataTypeEvaluated();
     }
     return false;
   }
@@ -341,9 +341,9 @@ inline SpecificExpressionMatch<IRNodeType::kMetadata, false> UnresolvedMetadataT
 template <bool Resolved>
 struct MetadataIRMatch : public ParentMatch {
   MetadataIRMatch() : ParentMatch(IRNodeType::kMetadata) {}
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->type() == IRNodeType::kMetadata) {
-      return Resolved == static_cast<MetadataIR*>(node)->HasMetadataResolver();
+      return Resolved == static_cast<const MetadataIR*>(node)->HasMetadataResolver();
     }
     return false;
   }
@@ -367,9 +367,9 @@ struct AnyFuncAllArgsMatch : public ParentMatch {
   explicit AnyFuncAllArgsMatch(const Arg_t& argMatcher)
       : ParentMatch(IRNodeType::kFunc), argMatcher_(argMatcher) {}
 
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->type() == type) {
-      auto* F = static_cast<FuncIR*>(node);
+      auto* F = static_cast<const FuncIR*>(node);
       if (Resolved == F->IsDataTypeEvaluated() && CompileTime == F->is_compile_time()) {
         for (const auto a : F->args()) {
           if (!argMatcher_.Match(a)) {
@@ -408,9 +408,9 @@ struct AnyFuncAnyArgsMatch : public ParentMatch {
   explicit AnyFuncAnyArgsMatch(const Arg_t& argMatcher)
       : ParentMatch(IRNodeType::kFunc), argMatcher_(argMatcher) {}
 
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->type() == type) {
-      auto* F = static_cast<FuncIR*>(node);
+      auto* F = static_cast<const FuncIR*>(node);
       if (CompileTime == F->is_compile_time()) {
         for (const auto a : F->args()) {
           if (argMatcher_.Match(a)) {
@@ -448,9 +448,9 @@ struct FuncAllArgsMatch : public ParentMatch {
   explicit FuncAllArgsMatch(const ArgMatcherType& arg_matcher)
       : ParentMatch(IRNodeType::kFunc), arg_matcher_(arg_matcher) {}
 
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->type() == type) {
-      auto* func = static_cast<FuncIR*>(node);
+      auto* func = static_cast<const FuncIR*>(node);
       if (func->opcode() == op) {
         for (const auto a : func->args()) {
           if (!arg_matcher_.Match(a)) {
@@ -477,7 +477,7 @@ inline FuncAllArgsMatch<ArgMatcherType, FuncIR::Opcode::logand> AndFnMatchAll(
  */
 struct AnyExpressionMatch : public ParentMatch {
   AnyExpressionMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool Match(IRNode* node) const override { return node->IsExpression(); }
+  bool Match(const IRNode* node) const override { return node->IsExpression(); }
 };
 
 /**
@@ -493,9 +493,9 @@ inline AnyExpressionMatch Expression() { return AnyExpressionMatch(); }
 template <bool HasRelation = false>
 struct SourceHasRelationMatch : public ParentMatch {
   SourceHasRelationMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->is_source()) {
-      return static_cast<OperatorIR*>(node)->IsRelationInit() == HasRelation;
+      return static_cast<const OperatorIR*>(node)->IsRelationInit() == HasRelation;
     }
     return false;
   }
@@ -514,9 +514,9 @@ inline SourceHasRelationMatch<true> ResolvedSource() { return SourceHasRelationM
 template <bool ResolvedRelation = false, bool ParentOpResolved = false>
 struct AnyRelationResolvedOpMatch : public ParentMatch {
   AnyRelationResolvedOpMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->IsOperator()) {
-      OperatorIR* op_ir = static_cast<OperatorIR*>(node);
+      const OperatorIR* op_ir = static_cast<const OperatorIR*>(node);
       if (op_ir->HasParents() && op_ir->IsRelationInit() == ResolvedRelation) {
         for (OperatorIR* parent : op_ir->parents()) {
           if (parent->IsRelationInit() != ParentOpResolved) {
@@ -541,7 +541,7 @@ struct AnyRelationResolvedOpMatch : public ParentMatch {
 template <IRNodeType op, bool ResolvedRelation = false, bool ParentOpResolved = false>
 struct RelationResolvedOpMatch : public ParentMatch {
   RelationResolvedOpMatch() : ParentMatch(op) {}
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->type() == op) {
       return AnyRelationResolvedOpMatch<ResolvedRelation, ParentOpResolved>().Match(node);
     }
@@ -596,7 +596,7 @@ struct MatchAnyOp : public ParentMatch {
   // The LHS is always matched first.
   MatchAnyOp() : ParentMatch(IRNodeType::kAny) {}
 
-  bool Match(IRNode* node) const override { return node->IsOperator(); }
+  bool Match(const IRNode* node) const override { return node->IsOperator(); }
 };
 
 inline MatchAnyOp Operator() { return MatchAnyOp(); }
@@ -615,9 +615,9 @@ struct RangeArgMatch : public ParentMatch {
   RangeArgMatch(const LHS_t& LHS, const RHS_t& RHS)
       : ParentMatch(IRNodeType::kRange), L(LHS), R(RHS) {}
 
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->type() == IRNodeType::kRange) {
-      auto* r = static_cast<RangeIR*>(node);
+      auto* r = static_cast<const RangeIR*>(node);
       return (L.Match(r->start_repr()) && R.Match(r->stop_repr())) ||
              (Commutable && L.Match(r->start_repr()) && R.Match(r->stop_repr()));
     }
@@ -667,9 +667,9 @@ struct FuncMatch : public ParentMatch {
   // The LHS is always matched first.
   FuncMatch() : ParentMatch(IRNodeType::kFunc) {}
 
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (node->type() == IRNodeType::kFunc) {
-      auto* f = static_cast<FuncIR*>(node);
+      auto* f = static_cast<const FuncIR*>(node);
       return f->is_compile_time() == compile_time;
     }
     return false;
@@ -693,28 +693,42 @@ inline ClassMatch<IRNodeType::kFilter> Filter() { return ClassMatch<IRNodeType::
 
 struct ColumnMatch : public ParentMatch {
   ColumnMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool Match(IRNode* node) const override {
-    return node->IsExpression() && static_cast<ExpressionIR*>(node)->IsColumn();
+  bool Match(const IRNode* node) const override {
+    return node->IsExpression() && static_cast<const ExpressionIR*>(node)->IsColumn();
   }
 };
 
 inline ColumnMatch ColumnNode() { return ColumnMatch(); }
 
-struct ColumnNameMatch : public ParentMatch {
-  explicit ColumnNameMatch(const std::string& name)
-      : ParentMatch(IRNodeType::kColumn), name_(name) {}
-  bool Match(IRNode* node) const override {
-    return ColumnNode().Match(node) && static_cast<ColumnIR*>(node)->col_name() == name_;
+template <bool MatchName, bool MatchIdx>
+struct ColumnPropMatch : public ParentMatch {
+  explicit ColumnPropMatch(const std::string& name, int64_t idx)
+      : ParentMatch(IRNodeType::kColumn), name_(name), idx_(idx) {}
+  bool Match(const IRNode* node) const override {
+    if (ColumnNode().Match(node)) {
+      const ColumnIR* col_node = static_cast<const ColumnIR*>(node);
+      // If matchName, check match name.
+      // If MatchIdx, then check the idx.
+      return (!MatchName || col_node->col_name() == name_) &&
+             (!MatchIdx || col_node->container_op_parent_idx() == idx_);
+    }
+    return false;
   }
   const std::string& name_;
+  int64_t idx_;
 };
 
-inline ColumnNameMatch ColumnNode(const std::string& name) { return ColumnNameMatch(name); }
+inline ColumnPropMatch<true, false> ColumnNode(const std::string& name) {
+  return ColumnPropMatch<true, false>(name, 0);
+}
+inline ColumnPropMatch<true, true> ColumnNode(const std::string& name, int64_t parent_idx) {
+  return ColumnPropMatch<true, true>(name, parent_idx);
+}
 
 struct DataMatch : public ParentMatch {
   DataMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool Match(IRNode* node) const override {
-    return node->IsExpression() && static_cast<ExpressionIR*>(node)->IsData();
+  bool Match(const IRNode* node) const override {
+    return node->IsExpression() && static_cast<const ExpressionIR*>(node)->IsData();
   }
 };
 
@@ -722,8 +736,8 @@ inline DataMatch DataNode() { return DataMatch(); }
 
 struct BlockingOperatorMatch : public ParentMatch {
   BlockingOperatorMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool Match(IRNode* node) const override {
-    return node->IsOperator() && static_cast<OperatorIR*>(node)->IsBlocking();
+  bool Match(const IRNode* node) const override {
+    return node->IsOperator() && static_cast<const OperatorIR*>(node)->IsBlocking();
   }
 };
 
@@ -732,9 +746,9 @@ inline BlockingOperatorMatch BlockingOperator() { return BlockingOperatorMatch()
 template <bool ConditionSet = true>
 struct JoinOperatorConditionSetMatch : public ParentMatch {
   JoinOperatorConditionSetMatch() : ParentMatch(IRNodeType::kJoin) {}
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (Join().Match(node)) {
-      return static_cast<JoinIR*>(node)->HasEqualityConditions() == ConditionSet;
+      return static_cast<const JoinIR*>(node)->HasEqualityConditions() == ConditionSet;
     }
     return false;
   }
@@ -752,11 +766,12 @@ template <typename ParentType, typename ChildType>
 struct OperatorChainMatch : public ParentMatch {
   OperatorChainMatch(ParentType parent, ChildType child)
       : ParentMatch(IRNodeType::kAny), parent_(parent), child_(child) {}
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (!node->IsOperator()) {
       return false;
     }
-    OperatorIR* op_node = static_cast<OperatorIR*>(node);
+    auto op_node = static_cast<const OperatorIR*>(node);
+    DCHECK_LE(op_node->Children().size(), 1UL);
     if (op_node->Children().size() != 1 || !parent_.Match(op_node)) {
       return false;
     }
@@ -776,11 +791,11 @@ inline OperatorChainMatch<ParentType, ChildType> OperatorChain(ParentType parent
 struct JoinMatch : public ParentMatch {
   explicit JoinMatch(const std::string& join_type)
       : ParentMatch(IRNodeType::kJoin), join_type_(join_type) {}
-  bool Match(IRNode* node) const override {
+  bool Match(const IRNode* node) const override {
     if (!Join().Match(node)) {
       return false;
     }
-    JoinIR* join = static_cast<JoinIR*>(node);
+    auto join = static_cast<const JoinIR*>(node);
     return join->join_type() == join_type_;
   }
 
@@ -790,6 +805,37 @@ struct JoinMatch : public ParentMatch {
 
 inline JoinMatch RightJoin() { return JoinMatch("right"); }
 
+template <typename ChildType>
+struct ListChildMatch : public ParentMatch {
+  explicit ListChildMatch(ChildType child_matcher)
+      : ParentMatch(IRNodeType::kList), child_matcher_(child_matcher) {}
+  bool Match(const IRNode* node) const override {
+    if (!List().Match(node)) {
+      return false;
+    }
+    auto list = static_cast<const ListIR*>(node);
+    for (const IRNode* child : list->children()) {
+      if (!child_matcher_.Match(child)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  ChildType child_matcher_;
+};
+
+/**
+ * @brief Matches a list where all elements satisfy the passed in matcher.
+ *
+ * @tparam ChildType
+ * @param child_matcher: the matching function
+ * @return matcher to find lists with elements that satisfy the matcher argument.
+ */
+template <typename ChildType>
+inline ListChildMatch<ChildType> ListWithChildren(ChildType child_matcher) {
+  return ListChildMatch<ChildType>(child_matcher);
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
