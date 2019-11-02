@@ -27,6 +27,7 @@ func init() {
 	RootCmd.AddCommand(UpdateCmd)
 	RootCmd.AddCommand(ProxyCmd)
 	RootCmd.AddCommand(QueryCmd)
+	RootCmd.AddCommand(GetCmd)
 }
 
 // RootCmd is the base command for Cobra.
