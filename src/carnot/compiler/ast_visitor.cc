@@ -27,19 +27,6 @@ ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph, CompilerState* compiler_state
   compiler_state_ = compiler_state;
 }
 
-template <typename... Args>
-Status ASTWalker::CreateAstError(const pypa::AstPtr& ast, Args... args) {
-  compilerpb::CompilerErrorGroup context =
-      LineColErrorPb(ast->line, ast->column, absl::Substitute(args...));
-  return Status(statuspb::INVALID_ARGUMENT, "",
-                std::make_unique<compilerpb::CompilerErrorGroup>(context));
-}
-
-template <typename... Args>
-Status ASTWalker::CreateAstError(const pypa::Ast& ast, Args... args) {
-  return CreateAstError(std::make_shared<pypa::Ast>(ast), args...);
-}
-
 std::string ASTWalker::GetAstTypeName(pypa::AstType type) {
   std::vector<std::string> type_names = {
 #undef PYPA_AST_TYPE
@@ -102,10 +89,16 @@ Status ASTWalker::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   }
   std::string assign_name = GetNameID(expr_node);
   // Get the object that we want to assign.
-  if (node->value->type != AstType::Call) {
-    return CreateAstError(node->value, "Assign value must be a function call.");
+  switch (node->value->type) {
+    case AstType::Call: {
+      PL_ASSIGN_OR_RETURN(var_table_[assign_name],
+                          ProcessOpCallNode(PYPA_PTR_CAST(Call, node->value)));
+      break;
+    }
+    default: {
+      return CreateAstError(node->value, "Assign value must be a function call.");
+    }
   }
-  PL_ASSIGN_OR_RETURN(var_table_[assign_name], ProcessOpCallNode(PYPA_PTR_CAST(Call, node->value)));
   return Status::OK();
 }
 
@@ -339,7 +332,7 @@ StatusOr<std::vector<std::string>> ASTWalker::ParseStringListIR(const ListIR* li
   std::vector<std::string> out_vector;
   for (size_t idx = 0; idx < list_ir->children().size(); ++idx) {
     IRNode* child_ir = list_ir->children()[idx];
-    if (child_ir->type() != IRNodeType::kString) {
+    if (!Match(child_ir, String())) {
       return child_ir->CreateIRNodeError("The elements of the list must be Strings, not '$0'.",
                                          child_ir->type_string());
     }
