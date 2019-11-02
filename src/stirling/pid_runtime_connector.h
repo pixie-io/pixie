@@ -22,9 +22,10 @@ DUMMY_SOURCE_CONNECTOR(PIDRuntimeConnector);
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf_interface/pidruntime.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/common/utils.h"
 #include "src/stirling/source_connector.h"
 
-OBJ_STRVIEW(pidruntime_bcc_script, _binary_pidruntime_bpf_src);
+BCC_SRC_STRVIEW(pidruntime_bcc_script, pidruntime);
 
 namespace pl {
 namespace stirling {
