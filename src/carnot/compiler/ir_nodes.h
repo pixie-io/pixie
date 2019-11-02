@@ -832,8 +832,8 @@ class FuncIR : public ExpressionIR {
   }
   int64_t func_id() const { return func_id_; }
   void set_func_id(int64_t func_id) { func_id_ = func_id; }
-  const std::vector<ExpressionIR*>& args() { return args_; }
-  const std::vector<types::DataType>& args_types() { return args_types_; }
+  const std::vector<ExpressionIR*>& args() const { return args_; }
+  const std::vector<types::DataType>& args_types() const { return args_types_; }
   void SetArgsTypes(std::vector<types::DataType> args_types) { args_types_ = args_types; }
   // TODO(philkuz) figure out how to combine this with set_func_id.
   void SetOutputDataType(types::DataType type) {
@@ -1101,8 +1101,8 @@ class RangeIR : public OperatorIR {
               const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
 
-  IRNode* start_repr() { return start_repr_; }
-  IRNode* stop_repr() { return stop_repr_; }
+  IRNode* start_repr() const { return start_repr_; }
+  IRNode* stop_repr() const { return stop_repr_; }
   Status SetStartStop(IRNode* start_repr, IRNode* stop_repr);
   Status ToProto(planpb::Operator*) const override;
 
@@ -1473,6 +1473,8 @@ class UnionIR : public OperatorIR {
  */
 class JoinIR : public OperatorIR {
  public:
+  // TODO(philkuz) delete when we get rid of the old Operator API.
+  using OperatorIR::Init;
   JoinIR() = delete;
   explicit JoinIR(int64_t id)
       : OperatorIR(id, IRNodeType::kJoin, /* has_parents */ true, /* is_source */ false) {}
@@ -1488,6 +1490,20 @@ class JoinIR : public OperatorIR {
 
   Status ToProto(planpb::Operator*) const override;
   Status InitImpl(const ArgMap&) override;
+  /**
+   * @brief JoinIR init to directly initialize the operator.
+   *
+   * @param parents
+   * @param how_type
+   * @param left_on_cols
+   * @param right_on_cols
+   * @param suffix_strs
+   * @return Status
+   */
+  Status Init(std::vector<OperatorIR*> parents, const std::string& how_type,
+              const std::vector<ColumnIR*> left_on_cols,
+              const std::vector<ColumnIR*>& right_on_cols,
+              const std::vector<std::string>& suffix_strs);
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
   struct EqualityCondition {
@@ -1512,6 +1528,10 @@ class JoinIR : public OperatorIR {
   const std::vector<std::string>& column_names() const { return column_names_; }
   void SetJoinType(const std::string& join_type) { join_type_ = join_type; }
 
+  const std::vector<ColumnIR*>& left_on_columns() const { return left_on_columns_; }
+  const std::vector<ColumnIR*>& right_on_columns() const { return right_on_columns_; }
+  const std::vector<std::string>& suffix_strs() const { return suffix_strs_; }
+
  private:
   Status SetupConditionFromLambda(LambdaIR* condition);
   Status SetupOutputColumns(LambdaIR* output_columns);
@@ -1524,11 +1544,20 @@ class JoinIR : public OperatorIR {
    */
   StatusOr<planpb::JoinOperator::JoinType> GetJoinEnum(const std::string& join_type) const;
 
+  // Join type
   std::string join_type_;
+  // The columns that are output by this join operator.
+  std::vector<ColumnIR*> output_columns_;
+  // The columns we join from the left parent.
+  std::vector<ColumnIR*> left_on_columns_;
+  // The columns we join from the right parent.
+  std::vector<ColumnIR*> right_on_columns_;
+  // The suffixes to add to the left columns and to the right columns.
+  std::vector<std::string> suffix_strs_;
+  // TODO(philkuz) delete the following when the api changes.
   // The condition expression that is eventually translated into equality_conditions_.
   FuncIR* condition_expr_;
   std::vector<EqualityCondition> equality_conditions_;
-  std::vector<ColumnIR*> output_columns_;
   std::vector<std::string> column_names_;
 };
 

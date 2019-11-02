@@ -1395,6 +1395,20 @@ Status JoinIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
+Status JoinIR::Init(std::vector<OperatorIR*> parents, const std::string& how_type,
+                    const std::vector<ColumnIR*> left_on_cols,
+                    const std::vector<ColumnIR*>& right_on_cols,
+                    const std::vector<std::string>& suffix_strs) {
+  for (auto* p : parents) {
+    PL_RETURN_IF_ERROR(AddParent(p));
+  }
+  left_on_columns_ = left_on_cols;
+  right_on_columns_ = right_on_cols;
+  suffix_strs_ = suffix_strs;
+  join_type_ = how_type;
+  return Status::OK();
+}
+
 Status JoinIR::InitImpl(const ArgMap& args) {
   IRNode* join_type = args.kwargs.find("type")->second;
   IRNode* cond = args.kwargs.find("cond")->second;
@@ -1480,6 +1494,20 @@ StatusOr<IRNode*> JoinIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(IRNode * new_node, condition_expr_->DeepCloneInto(graph));
   DCHECK(Match(new_node, Func()));
   join_node->condition_expr_ = static_cast<FuncIR*>(new_node);
+
+  // Clone the new attributes.
+  join_node->suffix_strs_ = suffix_strs_;
+  for (ColumnIR* col_expr : left_on_columns_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr->DeepCloneInto(graph));
+    DCHECK(Match(new_node, ColumnNode()));
+    join_node->left_on_columns_.push_back(static_cast<ColumnIR*>(new_node));
+  }
+
+  for (ColumnIR* col_expr : right_on_columns_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr->DeepCloneInto(graph));
+    DCHECK(Match(new_node, ColumnNode()));
+    join_node->right_on_columns_.push_back(static_cast<ColumnIR*>(new_node));
+  }
 
   return join_node;
 }

@@ -529,6 +529,23 @@ class CloneTests : public OperatorTests {
                               absl::Substitute("$0; in Join operator.", err_string));
     }
 
+    EXPECT_THAT(new_ir->suffix_strs(), ElementsAreArray(old_ir->suffix_strs())) << err_string;
+
+    auto left_on_columns_new = new_ir->left_on_columns();
+    auto left_on_columns_old = old_ir->left_on_columns();
+    for (size_t i = 0; i < left_on_columns_new.size(); ++i) {
+      CompareClonedExpression(left_on_columns_new[i], left_on_columns_old[i],
+                              absl::Substitute("$0; in Join operator.", err_string));
+    }
+
+    auto right_on_columns_new = new_ir->right_on_columns();
+    auto right_on_columns_old = old_ir->right_on_columns();
+    for (size_t i = 0; i < right_on_columns_new.size(); ++i) {
+      CompareClonedExpression(right_on_columns_new[i], right_on_columns_old[i],
+                              absl::Substitute("$0; in Join operator.", err_string));
+    }
+
+    // TODO(philkuz) delete when the api changes.
     auto old_equality_conditions = old_ir->equality_conditions();
     auto new_equality_conditions = new_ir->equality_conditions();
     ASSERT_EQ(old_equality_conditions.size(), new_equality_conditions.size()) << err_string;
@@ -538,14 +555,6 @@ class CloneTests : public OperatorTests {
                 new_equality_conditions[i].left_column_idx);
       EXPECT_EQ(old_equality_conditions[i].right_column_idx,
                 new_equality_conditions[i].right_column_idx);
-    }
-
-    auto old_column_names = old_ir->column_names();
-    auto new_column_names = new_ir->column_names();
-    ASSERT_EQ(old_column_names.size(), new_column_names.size()) << err_string;
-
-    for (size_t i = 0; i < old_column_names.size(); ++i) {
-      EXPECT_EQ(old_column_names[i], new_column_names[i]);
     }
   }
 
