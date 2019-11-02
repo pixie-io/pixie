@@ -30,3 +30,12 @@ pl_cc_test(
         "//src/carnot/compiler:test_utils",
     ],
 )
+
+pl_cc_test(
+    name = "dataframe_test",
+    srcs = ["dataframe_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/compiler:test_utils",
+    ],
+)
