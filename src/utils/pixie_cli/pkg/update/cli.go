@@ -57,7 +57,7 @@ func ctxWithCreds(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+	ctxWithCreds := metadata.AppendToOutgoingContext(ctx, "authorization",
 		fmt.Sprintf("bearer %s", creds.Token))
 	return ctxWithCreds, nil
 }
