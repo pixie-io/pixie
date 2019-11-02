@@ -140,6 +140,7 @@ inline ClassMatch<IRNodeType::kTabletSourceGroup> TabletSourceGroup() {
 }
 
 inline ClassMatch<IRNodeType::kList> List() { return ClassMatch<IRNodeType::kList>(); }
+inline ClassMatch<IRNodeType::kTuple> Tuple() { return ClassMatch<IRNodeType::kTuple>(); }
 
 /**
  * @brief Match a specific integer value.

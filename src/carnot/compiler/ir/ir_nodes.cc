@@ -538,6 +538,14 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
   return Status::OK();
 }
 
+Status BlockingAggIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
+                           const ColExpressionVector& agg_expr) {
+  PL_RETURN_IF_ERROR(AddParent(parent));
+  groups_ = groups;
+  aggregate_expressions_ = agg_expr;
+  return Status::OK();
+}
+
 Status BlockingAggIR::SetupGroupBy(LambdaIR* by_lambda) {
   // Make sure default expr
   // Convert to list of groups.
@@ -815,14 +823,18 @@ bool FuncIR::HasLogicalRepr() const { return false; }
 Status FuncIR::Init(Op op, const std::vector<ExpressionIR*>& args, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   op_ = op;
-  args_ = args;
-  for (auto a : args_) {
-    if (a == nullptr) {
-      return error::Internal("Argument for FuncIR is null.");
-    }
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, a));
+  for (auto a : args) {
+    PL_RETURN_IF_ERROR(AddArg(a));
   }
   return Status::OK();
+}
+
+Status FuncIR::AddArg(ExpressionIR* arg) {
+  if (arg == nullptr) {
+    return error::Internal("Argument for FuncIR is null.");
+  }
+  args_.push_back(arg);
+  return graph_ptr()->AddEdge(this, arg);
 }
 
 /* Float IR */

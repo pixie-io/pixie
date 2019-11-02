@@ -71,6 +71,26 @@ class JoinHandler {
                                                       int64_t parent_index);
 };
 
+/**
+ * @brief Implements the agg operator logic
+ *
+ */
+class AggHandler {
+ public:
+  /**
+   * @brief Evaluates the aggregate function. This only adds an aggregate by all node. If this
+   * follows a groupby, then the analyzer will push the groupby into this node.
+   *
+   * @param df the dataframe to operate on
+   * @param ast the ast node that signifies where the query was written
+   * @param args the arguments for agg()
+   * @return StatusOr<QLObjectPtr>
+   */
+  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
+
+ private:
+  static StatusOr<FuncIR*> ParseNameTuple(IR* ir, TupleIR* tuple);
+};
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

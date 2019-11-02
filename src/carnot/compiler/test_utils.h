@@ -286,6 +286,11 @@ class OperatorTests : public ::testing::Test {
         func->Init({FuncIR::Opcode::non_op, "", "mean"}, std::vector<ExpressionIR*>({value}), ast));
     return func;
   }
+  FuncIR* MakeMeanFunc() {
+    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::non_op, "", "mean"}, {}, ast));
+    return func;
+  }
 
   std::shared_ptr<IR> SwapGraphBeingBuilt(std::shared_ptr<IR> new_graph) {
     std::shared_ptr<IR> old_graph = graph;
@@ -369,6 +374,13 @@ class OperatorTests : public ::testing::Test {
     ListIR* list = graph->MakeNode<ListIR>().ConsumeValueOrDie();
     PL_CHECK_OK(list->Init(ast, std::vector<ExpressionIR*>{args...}));
     return list;
+  }
+
+  template <typename... Args>
+  TupleIR* MakeTuple(Args... args) {
+    TupleIR* tuple = graph->MakeNode<TupleIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(tuple->Init(ast, std::vector<ExpressionIR*>{args...}));
+    return tuple;
   }
 
   pypa::AstPtr ast;

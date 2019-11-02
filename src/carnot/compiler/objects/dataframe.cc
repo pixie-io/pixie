@@ -19,6 +19,17 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       /* has_kwargs */ false,
       std::bind(&JoinHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kMergeOpId, mergefn);
+
+  /**
+   * # Equivalent to the python method method syntax:
+   * def agg(self, **kwargs):
+   *     ...
+   */
+  std::shared_ptr<FuncObject> aggfn(new FuncObject(
+      kBlockingAggOpId, {}, {},
+      /* has_kwargs */ true,
+      std::bind(&AggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kBlockingAggOpId, aggfn);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
@@ -85,6 +96,54 @@ StatusOr<std::vector<ColumnIR*>> JoinHandler::ProcessCols(IRNode* node, std::str
   PL_ASSIGN_OR_RETURN(ColumnIR * col, graph->MakeNode<ColumnIR>());
   PL_RETURN_IF_ERROR(col->Init(str->str(), parent_index, str->ast_node()));
   return std::vector<ColumnIR*>{col};
+}
+
+StatusOr<QLObjectPtr> AggHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                       const ParsedArgs& args) {
+  // converts the mapping of args.kwargs into ColExpressionvector
+  ColExpressionVector aggregate_expressions;
+  for (const auto& [name, expr] : args.kwargs()) {
+    if (!Match(expr, Tuple())) {
+      return expr->CreateIRNodeError("Expected '$0' kwarg argument to be a tuple, not $1",
+                                     Dataframe::kBlockingAggOpId, expr->type_string());
+    }
+    PL_ASSIGN_OR_RETURN(FuncIR * parsed_expr,
+                        ParseNameTuple(df->graph(), static_cast<TupleIR*>(expr)));
+    aggregate_expressions.push_back({name, parsed_expr});
+  }
+
+  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_op, df->graph()->MakeNode<BlockingAggIR>(ast));
+  PL_RETURN_IF_ERROR(agg_op->Init(df->op(), {}, aggregate_expressions));
+  return StatusOr(std::make_shared<Dataframe>(agg_op));
+}
+
+StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, TupleIR* tuple) {
+  DCHECK_EQ(tuple->children().size(), 2UL);
+  IRNode* childone = tuple->children()[0];
+  IRNode* childtwo = tuple->children()[1];
+  if (!Match(childone, String())) {
+    return childone->CreateIRNodeError("Expected 'str' for first tuple argument. Received '$0'",
+                                       childone->type_string());
+  }
+
+  if (!Match(childtwo, Func())) {
+    return childtwo->CreateIRNodeError("Expected 'func' for second tuple argument. Received '$0'",
+                                       childtwo->type_string());
+  }
+
+  std::string argcol_name = static_cast<StringIR*>(childone)->str();
+  FuncIR* func = static_cast<FuncIR*>(childtwo);
+  // The function should be specified as a single function by itself.
+  // This could change in the future.
+  if (func->args().size() != 0) {
+    return func->CreateIRNodeError("Expected function to not have specified arguments");
+  }
+  PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->MakeNode<ColumnIR>(childone->ast_node()));
+  // TODO(philkuz) remove ast_node init arguemnt upon refactoring ast node placement.
+  // parent_op_idx is 0 because we only have one parent for an aggregate.
+  PL_RETURN_IF_ERROR(argcol->Init(argcol_name, /* parent_op_idx */ 0, childone->ast_node()));
+  PL_RETURN_IF_ERROR(func->AddArg(argcol));
+  return func;
 }
 
 }  // namespace compiler

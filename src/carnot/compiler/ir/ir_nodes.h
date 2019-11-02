@@ -863,6 +863,9 @@ class FuncIR : public ExpressionIR {
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(id(), old_arg->id()));
     return Status::OK();
   }
+
+  Status AddArg(ExpressionIR* arg);
+
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
 
@@ -1206,6 +1209,8 @@ class MapIR : public OperatorIR {
  */
 class BlockingAggIR : public OperatorIR {
  public:
+  // TODO(philkuz) delete when we rebase init.
+  using OperatorIR::Init;
   BlockingAggIR() = delete;
   explicit BlockingAggIR(int64_t id) : OperatorIR(id, IRNodeType::kBlockingAgg, true, false) {}
   bool HasLogicalRepr() const override;
@@ -1223,11 +1228,14 @@ class BlockingAggIR : public OperatorIR {
     return std::unordered_map<std::string, IRNode*>{{"by", nullptr}};
   }
   Status InitImpl(const ArgMap& args) override;
+  Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
+              const ColExpressionVector& agg_expr);
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   inline bool IsBlocking() const override { return true; }
 
  private:
+  // TODO(philkuz) (PL-1081) remove this on removing the init stuff.
   Status SetupGroupBy(LambdaIR* by_lambda);
   Status SetupAggFunctions(LambdaIR* agg_lambda);
 
