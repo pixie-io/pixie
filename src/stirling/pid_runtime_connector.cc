@@ -15,7 +15,7 @@ Status PIDRuntimeConnector::InitImpl() {
 }
 
 Status PIDRuntimeConnector::StopImpl() {
-  DetachPerfEvents();
+  BCCWrapper::Stop();
   return Status::OK();
 }
 

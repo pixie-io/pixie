@@ -110,15 +110,8 @@ class BCCWrapper {
 
   ~BCCWrapper() {
     // Not really required, because BPF destructor handles these.
-    // But we do it anyways.
+    // But we do it anyways out of paranoia.
     Stop();
-  }
-
-  void Stop() {
-    DetachPerfEvents();
-    ClosePerfBuffers();
-    DetachKProbes();
-    DetachUProbes();
   }
 
   /**
@@ -126,23 +119,52 @@ class BCCWrapper {
    * @param cflags compiler flags.
    * @return error if no root access, or code could not be compiled.
    */
-  Status InitBPFCode(const std::vector<std::string>& cflags);
-  Status InitBPFCode() { return InitBPFCode(std::vector<std::string>()); }
+  Status InitBPFCode(const std::vector<std::string>& cflags = {});
 
   /**
-   * @brief Convenience function that attaches multiple probes.
+   * @brief Attach a single kprobe.
+   * @param probe Specifications of the kprobe (attach point, trace function, etc.).
+   * @return Error if probe fails to attach.
+   */
+  Status AttachKProbe(const KProbeSpec& probe);
+
+  /**
+   * @brief Attach a single uprobe.
+   * @param probe Specifications of the uprobe (attach point, trace function, etc.).
+   * @return Error if probe fails to attach.
+   */
+  Status AttachUProbe(const UProbeSpec& probe);
+
+  /**
+   * @brief Open a perf buffer for reading events.
+   * @param perf_buff Specifications of the perf buffer (name, callback function, etc.).
+   * @param cb_cookie A pointer that is sent to the callback function when triggered by
+   * PollPerfBuffer().
+   * @return Error if perf buffer cannot be opened (e.g. perf buffer does not exist).
+   */
+  Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie = nullptr);
+
+  /**
+   * @brief Attach a perf event, which runs a probe every time a perf counter reaches a threshold
+   * condition.
+   * @param perf_event Specification of the perf event and its sampling frequency.
+   * @return Error if the perf event could not be attached.
+   */
+  Status AttachPerfEvent(const PerfEventSpec& perf_event);
+
+  /**
+   * @brief Convenience function that attaches multiple kprobes.
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
   Status AttachKProbes(const ArrayView<KProbeSpec>& probes);
-  Status AttachUProbes(const ArrayView<UProbeSpec>& uprobes);
 
   /**
-   * @brief Detaches all probes that were attached by the wrapper.
-   * If any probe fails to detach, an error is logged, and the function continues.
+   * @brief Convenience function that attaches multiple uprobes.
+   * @param probes Vector of probes.
+   * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
-  void DetachKProbes();
-  void DetachUProbes();
+  Status AttachUProbes(const ArrayView<UProbeSpec>& uprobes);
 
   /**
    * @brief Convenience function that opens multiple perf buffers.
@@ -153,23 +175,11 @@ class BCCWrapper {
   Status OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers, void* cb_cookie);
 
   /**
-   * @brief Detaches all perf buffers that were opened by the wrapper.
-   * If any perf buffer fails to close, an error is logged, and the function continues.
-   */
-  void ClosePerfBuffers();
-
-  /**
    * @brief Convenience function that opens multiple perf events.
    * @param probes Vector of perf event descriptors.
    * @return Error of first failure (remaining perf event attaches are not attempted).
    */
   Status AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events);
-
-  /**
-   * @brief Detaches all perf buffers that were opened by the wrapper.
-   * If any perf buffer fails to close, an error is logged, and the function continues.
-   */
-  void DetachPerfEvents();
 
   /**
    * @brief Dumps BPF logging events through GLOG logging facility.
@@ -181,6 +191,16 @@ class BCCWrapper {
    * specified in the PerfBufferSpec when OpenPerfBuffer was called.
    */
   void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms = 1);
+
+  /**
+   * @brief Detaches all probes, and closes all perf buffers that are open.
+   */
+  void Stop() {
+    DetachPerfEvents();
+    ClosePerfBuffers();
+    DetachKProbes();
+    DetachUProbes();
+  }
 
   /**
    * Provide access to the BPF instance, for direct access.
@@ -200,14 +220,17 @@ class BCCWrapper {
 
  private:
   Status InitLogging();
-  Status AttachKProbe(const KProbeSpec& probe);
   Status DetachKProbe(const KProbeSpec& probe);
-  Status AttachUProbe(const UProbeSpec& probe);
   Status DetachUProbe(const UProbeSpec& probe);
-  Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie);
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
-  Status AttachPerfEvent(const PerfEventSpec& perf_event);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
+
+  // Detaches all kprobes/uprobes/perf buffers/perf events that were attached by the wrapper.
+  // If any fails to detach, an error is logged, and the function continues.
+  void DetachKProbes();
+  void DetachUProbes();
+  void ClosePerfBuffers();
+  void DetachPerfEvents();
 
   std::string_view bpf_program_;
   std::vector<KProbeSpec> kprobes_;
