@@ -22,9 +22,9 @@ linux_binary=bazel-bin/src/utils/pixie_cli/linux_amd64_stripped/pixie
 output_path="gs://pixie-prod-artifacts/cli/${release_tag}"
 
 sha256sum ${mac_binary} | awk '{print $1}' > sha
-gsutil cp ${mac_binary} "${output_path}/cli_darwin_amd64"
+gsutil -h 'Content-Disposition:filename=pixie' cp ${mac_binary} "${output_path}/cli_darwin_amd64"
 gsutil cp sha "${output_path}/cli_darwin_amd64.sha256"
 
 sha256sum ${linux_binary} | awk '{print $1}' > sha
-gsutil cp ${linux_binary} "${output_path}/cli_linux_amd64"
+gsutil -h 'Content-Disposition:filename=pixie' cp ${linux_binary} "${output_path}/cli_linux_amd64"
 gsutil cp sha "${output_path}/cli_linux_amd64.sha256"
