@@ -21,11 +21,12 @@ var LoadClusterSecretsCmd = &cobra.Command{
 		cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
 		clusterID, _ := cmd.Flags().GetString("cluster_id")
 		namespace, _ := cmd.Flags().GetString("namespace")
+		devCloudNamespace, _ := cmd.Flags().GetString("dev_cloud_namespace")
 
 		kubeConfig := k8s.GetConfig()
 		clientset := k8s.GetClientset(kubeConfig)
 
-		err := LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace)
+		err := LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace, devCloudNamespace)
 		if err != nil {
 			log.WithError(err).Fatal("Could not load cluster secrets")
 		}
@@ -38,15 +39,18 @@ func init() {
 
 	LoadClusterSecretsCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
 	viper.BindPFlag("namespace", LoadClusterSecretsCmd.Flags().Lookup("namespace"))
+
+	LoadClusterSecretsCmd.Flags().StringP("dev_cloud_namespace", "m", "", "The namespace of Pixie Cloud, if running Cloud on minikube")
+	viper.BindPFlag("dev_cloud_namespace", LoadClusterSecretsCmd.Flags().Lookup("dev_cloud_namespace"))
 }
 
 // LoadClusterSecrets loads Vizier's secrets and configmap to the given namespace.
-func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clusterID string, namespace string) error {
+func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clusterID string, namespace string, devCloudNamespace string) error {
 	if clusterID == "" {
 		return errors.New("cluster_id is required")
 	}
 
-	err := createCloudConfig(cloudAddr, namespace)
+	err := createCloudConfig(cloudAddr, namespace, devCloudNamespace)
 	if err != nil {
 		return err
 	}
@@ -60,13 +64,16 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clust
 
 }
 
-func createCloudConfig(cloudAddr string, namespace string) error {
+func createCloudConfig(cloudAddr string, namespace string, devCloudNamespace string) error {
 	// Attempt to delete an existing pl-cloud-config configmap.
 	delCmd := exec.Command("kubectl", "delete", "configmap", "pl-cloud-config", "-n", namespace)
 	_ = delCmd.Run()
 
 	// Create a new pl-cloud-config configmap.
-	createCmd := exec.Command("kubectl", "create", "configmap", "pl-cloud-config", fmt.Sprintf("--from-literal=PL_CLOUD_ADDR=%s", cloudAddr), "-n", namespace)
+	cloudAddrConf := fmt.Sprintf("--from-literal=PL_CLOUD_ADDR=%s", cloudAddr)
+	devNSConf := fmt.Sprintf("--from-literal=PL_DEV_CLOUD_NAMESPACE=%s", devCloudNamespace)
+
+	createCmd := exec.Command("kubectl", "create", "configmap", "pl-cloud-config", cloudAddrConf, devNSConf, "-n", namespace)
 	return createCmd.Run()
 }
 

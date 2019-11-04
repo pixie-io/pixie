@@ -99,6 +99,9 @@ func init() {
 
 	DeployCmd.Flags().BoolP("deps_only", "d", false, "Deploy only the cluster dependencies, not the agents")
 	viper.BindPFlag("deps_only", DeployCmd.Flags().Lookup("deps_only"))
+
+	DeployCmd.Flags().StringP("dev_cloud_namespace", "m", "", "The namespace of Pixie Cloud, if running Cloud on minikube")
+	viper.BindPFlag("dev_cloud_namespace", DeployCmd.Flags().Lookup("dev_cloud_namespace"))
 }
 
 func newVizAuthClient(conn *grpc.ClientConn) cloudapipb.VizierImageAuthorizationClient {
@@ -255,6 +258,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	credsFile, _ := cmd.Flags().GetString("credentials_file")
 	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
 	clusterID, _ := cmd.Flags().GetString("cluster_id")
+	devCloudNS, _ := cmd.Flags().GetString("dev_cloud_namespace")
 
 	// Get grpc connection to cloud.
 	cloudConn, err := getCloudClientConnection(cloudAddr)
@@ -283,7 +287,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		return LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace)
+		return LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace, devCloudNS)
 	})
 
 	var yamlMap map[string]string
