@@ -27,6 +27,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/certs"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
@@ -342,7 +343,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
-	deploy(yamlMap, depsOnly)
+	deploy(clientset, kubeConfig, yamlMap, namespace, depsOnly)
 
 	err = waitForProxy(clientset, namespace)
 	if err != nil {
@@ -383,16 +384,16 @@ func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string
 	return nil
 }
 
-func deploy(yamlMap map[string]string, depsOnly bool) {
+func deploy(clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[string]string, namespace string, depsOnly bool) {
 	// NATS and etcd deploys depend on timing, so may sometimes fail. Include some retry behavior.
 	// TODO(zasgar/michelle): This logic is flaky and we should make smarter to actually detect and wait
 	// based on the message.
 	natsJob := newTaskWrapper("Deploying NATS", func() error {
-		return retryDeploy(yamlMap[natsYAMLPath])
+		return retryDeploy(clientset, config, namespace, yamlMap[natsYAMLPath])
 	})
 
 	etcdJob := newTaskWrapper("Deploying etcd", func() error {
-		return retryDeploy(yamlMap[etcdYAMLPath])
+		return retryDeploy(clientset, config, namespace, yamlMap[etcdYAMLPath])
 	})
 
 	deployDepsJobs := []utils.Task{natsJob, etcdJob}
@@ -409,7 +410,7 @@ func deploy(yamlMap map[string]string, depsOnly bool) {
 
 	deployJob := []utils.Task{
 		newTaskWrapper("Deploying Vizier", func() error {
-			return deployYAML(yamlMap[vizierYAMLPath])
+			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlMap[vizierYAMLPath]))
 		}),
 	}
 
@@ -420,26 +421,11 @@ func deploy(yamlMap map[string]string, depsOnly bool) {
 	}
 }
 
-func deployYAML(yamlContents string) error {
-	kcmd := exec.Command("kubectl", "apply", "-f", "-")
-	stdin, err := kcmd.StdinPipe()
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		defer stdin.Close()
-		io.WriteString(stdin, yamlContents)
-	}()
-
-	return kcmd.Run()
-}
-
-func retryDeploy(yamlContents string) error {
+func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlContents string) error {
 	tries := 5
 	var err error
 	for tries > 0 {
-		err = deployYAML(yamlContents)
+		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents))
 		if err == nil {
 			return nil
 		}
