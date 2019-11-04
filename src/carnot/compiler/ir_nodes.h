@@ -215,14 +215,27 @@ class IR {
    */
   template <typename TOperator>
   StatusOr<TOperator*> MakeNode() {
-    return MakeNode<TOperator>(id_node_counter);
+    return MakeNode<TOperator>(id_node_counter, nullptr);
+  }
+
+  // TODO(philkuz) refactor as much as possible to support the ast method instead.
+  template <typename TOperator>
+  StatusOr<TOperator*> MakeNode(const pypa::AstPtr& ast) {
+    return MakeNode<TOperator>(id_node_counter, ast);
   }
   template <typename TOperator>
   StatusOr<TOperator*> MakeNode(int64_t id) {
+    return MakeNode<TOperator>(id, nullptr);
+  }
+  template <typename TOperator>
+  StatusOr<TOperator*> MakeNode(int64_t id, const pypa::AstPtr& ast) {
     id_node_counter = std::max(id + 1, id_node_counter);
     auto node = std::make_unique<TOperator>(id);
     dag_.AddNode(node->id());
     node->SetGraphPtr(this);
+    if (ast != nullptr) {
+      node->SetLineCol(ast);
+    }
     TOperator* raw = node.get();
     id_node_map_.emplace(node->id(), std::move(node));
     return raw;
@@ -1064,6 +1077,7 @@ class MemorySourceIR : public OperatorIR {
  */
 class MemorySinkIR : public OperatorIR {
  public:
+  using OperatorIR::Init;
   MemorySinkIR() = delete;
   explicit MemorySinkIR(int64_t id)
       : OperatorIR(id, IRNodeType::kMemorySink, /* has_parents */ true, /* is_source */ false) {}
@@ -1075,6 +1089,8 @@ class MemorySinkIR : public OperatorIR {
 
   std::vector<std::string> ArgKeys() override { return {"name"}; }
   Status InitImpl(const ArgMap& args) override;
+  Status Init(OperatorIR* parent, const std::string& name,
+              const std::vector<std::string> out_columns);
 
   std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
     return std::unordered_map<std::string, IRNode*>();
@@ -1085,6 +1101,7 @@ class MemorySinkIR : public OperatorIR {
  private:
   std::string name_;
   bool name_set_ = false;
+  std::vector<std::string> out_columns_;
 };
 
 /**

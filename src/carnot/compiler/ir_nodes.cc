@@ -215,6 +215,15 @@ Status MemorySinkIR::InitImpl(const ArgMap& args) {
   return graph_ptr()->DeleteNode(name_node->id());
 }
 
+Status MemorySinkIR::Init(OperatorIR* parent, const std::string& name,
+                          const std::vector<std::string> out_columns) {
+  PL_RETURN_IF_ERROR(AddParent(parent));
+  name_ = name;
+  name_set_ = true;
+  out_columns_ = out_columns;
+  return Status::OK();
+}
+
 Status MemorySourceIR::InitImpl(const ArgMap& args) {
   DCHECK(args.kwargs.find("table") != args.kwargs.end());
   DCHECK(args.kwargs.find("select") != args.kwargs.end());
