@@ -61,20 +61,16 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
   static constexpr std::string_view kHTTPPerfBufferNames[] = {
-      "socket_open_conns",
       "socket_control_events",
       "socket_data_events",
-      "socket_close_conns",
   };
 
   // Used in ReadPerfBuffer to drain the relevant perf buffers.
   static constexpr auto kHTTPPerfBuffers = ArrayView<std::string_view>(kHTTPPerfBufferNames);
 
   static constexpr std::string_view kMySQLPerfBufferNames[] = {
-      "socket_open_conns",
       "socket_control_events",
       "socket_data_events",
-      "socket_close_conns",
   };
 
   static constexpr auto kMySQLPerfBuffers = ArrayView<std::string_view>(kMySQLPerfBufferNames);
