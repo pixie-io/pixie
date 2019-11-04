@@ -8,8 +8,8 @@
 #include "src/carnot/compiler/distributed_coordinator.h"
 #include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/distributed_splitter.h"
-#include "src/carnot/compiler/ir_nodes.h"
-#include "src/carnot/compiler/pattern_match.h"
+#include "src/carnot/compiler/ir/ir_nodes.h"
+#include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/rules.h"
 
 namespace pl {

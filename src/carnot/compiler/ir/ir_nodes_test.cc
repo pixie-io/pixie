@@ -3,10 +3,9 @@
 #include <gtest/gtest.h>
 #include <pypa/ast/ast.hh>
 
-#include "src/carnot/compiler/ir_nodes.h"
-#include "src/carnot/compiler/ir_test_utils.h"
+#include "src/carnot/compiler/ir/ir_nodes.h"
+#include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/metadata_handler.h"
-#include "src/carnot/compiler/pattern_match.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/common/testing/protobuf.h"
 #include "src/table_store/table_store.h"
@@ -59,7 +58,6 @@ TEST(IRTest, check_connection) {
   EXPECT_THAT(src->column_names(), ElementsAre("testCol"));
   EXPECT_EQ(select_list->children()[0], select_col);
   EXPECT_EQ(select_col->str(), "testCol");
-  VerifyGraphConnections(ig.get());
 }
 const char* kExpectedMemSrcPb = R"(
   op_type: MEMORY_SOURCE_OPERATOR

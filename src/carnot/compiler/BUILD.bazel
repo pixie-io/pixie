@@ -27,6 +27,8 @@ pl_cc_library(
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",
         "//third_party:libpypa",
+        "//src/carnot/compiler/ir:cc_library",
+        "//src/carnot/compiler/compiler_error_context:cc_library",
     ],
 )
 
@@ -35,25 +37,6 @@ pl_cc_test_library(
     hdrs = glob(["*_test_utils.h"]),
     deps = [
         ":cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "ir_nodes_test",
-    srcs = ["ir_nodes_test.cc"],
-    deps = [
-        ":cc_library",
-        ":test_utils",
-        "//src/common/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "pattern_match_test",
-    srcs = ["pattern_match_test.cc"],
-    deps = [
-        ":cc_library",
-        ":test_utils",
     ],
 )
 
@@ -100,15 +83,6 @@ pl_cc_test(
     name = "analyzer_test",
     srcs = ["analyzer_test.cc"],
     deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "compiler_error_context_test",
-    srcs = ["compiler_error_context_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
-    ],
 )
 
 pl_cc_test(

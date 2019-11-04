@@ -11,7 +11,7 @@
 #include "src/carnot/compiler/analyzer.h"
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"
-#include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir_verifier.h"
 #include "src/carnot/compiler/string_reader.h"
 #include "src/carnot/planpb/plan.pb.h"

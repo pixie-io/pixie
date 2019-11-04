@@ -7,8 +7,6 @@
 #include <utility>
 #include <vector>
 
-#include <pypa/ast/ast.hh>
-
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/common/base/status.h"
 #include "src/common/base/statusor.h"

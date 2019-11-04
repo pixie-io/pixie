@@ -5,8 +5,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
-#include "src/carnot/compiler/ir_test_utils.h"
-#include "src/carnot/compiler/pattern_match.h"
+#include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/common/base/base.h"
 
@@ -24,7 +23,6 @@ TEST(ASTVisitor, compilation_test) {
   auto ig_status = ParseQuery(from_expr);
   EXPECT_OK(ig_status);
   auto ig = ig_status.ValueOrDie();
-  VerifyGraphConnections(ig.get());
   // check the connection of ig
   std::string from_range_expr = "dataframe(table='cpu', select=['cpu0']).range(start=0,stop=10)";
   EXPECT_OK(ParseQuery(from_range_expr));

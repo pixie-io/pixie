@@ -7,7 +7,7 @@
 
 #include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/compiler_state.h"
-#include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/planpb/plan.pb.h"
 
 namespace pl {

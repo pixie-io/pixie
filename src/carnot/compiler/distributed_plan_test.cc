@@ -8,7 +8,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/distributed_plan.h"
-#include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/common/testing/protobuf.h"

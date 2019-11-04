@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/compiler/compiler_error_context.h"
-#include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/compiler_error_context/compiler_error_context.h"
+#include "src/carnot/compiler/ir/ir_nodes.h"
 
 namespace pl {
 namespace carnot {

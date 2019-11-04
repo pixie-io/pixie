@@ -40,7 +40,7 @@
 #pragma once
 #include <string>
 
-#include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/ir/ir_nodes.h"
 namespace pl {
 namespace carnot {
 namespace compiler {

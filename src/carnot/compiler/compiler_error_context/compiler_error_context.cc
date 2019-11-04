@@ -1,4 +1,4 @@
-#include "src/carnot/compiler/compiler_error_context.h"
+#include "src/carnot/compiler/compiler_error_context/compiler_error_context.h"
 
 #include <map>
 #include <memory>

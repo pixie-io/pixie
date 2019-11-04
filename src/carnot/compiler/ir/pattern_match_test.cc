@@ -3,9 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "src/carnot/compiler/ir_nodes.h"
-#include "src/carnot/compiler/ir_test_utils.h"
-#include "src/carnot/compiler/pattern_match.h"
+#include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/test_utils.h"
 
 namespace pl {

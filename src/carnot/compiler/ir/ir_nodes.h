@@ -10,7 +10,7 @@
 
 #include <pypa/ast/ast.hh>
 
-#include "src/carnot/compiler/compiler_error_context.h"
+#include "src/carnot/compiler/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/carnot/metadatapb/metadata.pb.h"
 #include "src/carnot/plan/dag.h"

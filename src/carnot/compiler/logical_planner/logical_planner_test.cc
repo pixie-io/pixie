@@ -9,7 +9,7 @@
 
 #include "src/carnot/compiler/distributed_planner.h"
 #include "src/carnot/compiler/distributedpb/test_proto.h"
-#include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/rule_mock.h"
 #include "src/carnot/compiler/rules.h"

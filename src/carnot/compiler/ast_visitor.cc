@@ -1,7 +1,7 @@
 #include "src/carnot/compiler/ast_visitor.h"
 
-#include "src/carnot/compiler/compiler_error_context.h"
-#include "src/carnot/compiler/pattern_match.h"
+#include "src/carnot/compiler/compiler_error_context/compiler_error_context.h"
+#include "src/carnot/compiler/ir/pattern_match.h"
 
 namespace pl {
 namespace carnot {
@@ -325,20 +325,6 @@ IRNode* GetArgument(const ArgMap& args, const std::string& arg_name) {
     return nullptr;
   }
   return iter->second;
-}
-
-StatusOr<std::vector<std::string>> ASTWalker::ParseStringListIR(const ListIR* list_ir) {
-  std::vector<std::string> out_vector;
-  for (size_t idx = 0; idx < list_ir->children().size(); ++idx) {
-    IRNode* child_ir = list_ir->children()[idx];
-    if (!Match(child_ir, String())) {
-      return child_ir->CreateIRNodeError("The elements of the list must be Strings, not '$0'.",
-                                         child_ir->type_string());
-    }
-    StringIR* string_node = static_cast<StringIR*>(child_ir);
-    out_vector.push_back(string_node->str());
-  }
-  return out_vector;
 }
 
 StatusOr<MemorySourceIR*> ASTWalker::ProcessDataframeOp(const pypa::AstCallPtr& node) {
