@@ -371,6 +371,7 @@ StatusOr<IntIR*> EvaluateCompileTimeExprRule::EvalArithmetic(std::vector<Express
     return func_ir->CreateIRNodeError("eval arithm Only allowing [multiply, add, subtract], not $0",
                                       func_ir->carnot_op_name());
   }
+
   PL_ASSIGN_OR_RETURN(IntIR * ir_result, func_ir->graph_ptr()->MakeNode<IntIR>());
   PL_RETURN_IF_ERROR(ir_result->Init(result, func_ir->ast_node()));
   return ir_result;
@@ -427,57 +428,48 @@ StatusOr<bool> RangeArgExpressionRule::Apply(IRNode* ir_node) {
   return false;
 }
 
-StatusOr<IntIR*> RangeArgExpressionRule::EvalExpression(IRNode* node) const {
-  if (Match(node, Int())) {
-    return static_cast<IntIR*>(node);
-  } else if (Match(node, CompileTimeFunc())) {
-    auto func_node = static_cast<FuncIR*>(node);
-    std::vector<IntIR*> evaled_args;
-    for (const auto ag : func_node->args()) {
-      PL_ASSIGN_OR_RETURN(auto eval_result, EvalExpression(ag));
-      evaled_args.push_back(eval_result);
-    }
-    PL_ASSIGN_OR_RETURN(auto node_result, EvalFunc(func_node->func_name(), evaled_args, func_node));
-    return node_result;
-  } else if (Match(node, String())) {
-    // Do the string processing
+// Support taking strings like "-2m" into a range
+// TODO(nserrino, philkuz) Generalize this so that it can work in other operators
+// without polluting our approach to types.
+StatusOr<ExpressionIR*> RangeArgExpressionRule::EvalStringTimes(ExpressionIR* node) {
+  if (Match(node, String())) {
     auto str_node = static_cast<StringIR*>(node);
-    // TODO(philkuz) (PL-708) make StringToTimeInt also take time_now as an argument.
     PL_ASSIGN_OR_RETURN(int64_t int_val, StringToTimeInt(str_node->str()));
     int64_t time_repr = compiler_state_->time_now().val + int_val;
     PL_ASSIGN_OR_RETURN(auto out_node, node->graph_ptr()->MakeNode<IntIR>());
     PL_RETURN_IF_ERROR(out_node->Init(time_repr, node->ast_node()));
+    DeferNodeDeletion(node->id());
     return out_node;
+  } else if (Match(node, Func())) {
+    auto func_node = static_cast<FuncIR*>(node);
+    std::vector<ExpressionIR*> evaled_args;
+    for (const auto arg : func_node->args()) {
+      PL_ASSIGN_OR_RETURN(auto eval_result, EvalStringTimes(arg));
+      evaled_args.push_back(eval_result);
+    }
+    PL_ASSIGN_OR_RETURN(FuncIR * converted_func, node->graph_ptr()->MakeNode<FuncIR>());
+    PL_RETURN_IF_ERROR(converted_func->Init(func_node->op(), func_node->func_prefix(), evaled_args,
+                                            func_node->is_compile_time(), node->ast_node()));
+    DeferNodeDeletion(node->id());
+    return converted_func;
   }
-  return node->CreateIRNodeError(
-      "Expected integer, time expression, or a string representation of time, not $0",
-      node->type_string());
+  return node;
 }
-StatusOr<IntIR*> RangeArgExpressionRule::EvalFunc(std::string name, std::vector<IntIR*> evaled_args,
-                                                  FuncIR* func) const {
-  if (evaled_args.size() != 2) {
-    return func->CreateIRNodeError("Expected 2 argument to $0 call, got $1.", name,
-                                   evaled_args.size());
+
+StatusOr<IntIR*> RangeArgExpressionRule::EvalExpression(IRNode* node) {
+  if (!node->IsExpression()) {
+    return node->CreateIRNodeError("Expected expression, not $0", node->type_string());
   }
-  int64_t result = 0;
-  // TODO(philkuz) (PL-709) Make a UDCF (C := CompileTime) to combine these together.
-  if (name == "plc.multiply") {
-    result = 1;
-    for (auto a : evaled_args) {
-      result *= a->val();
-    }
-  } else if (name == "plc.add") {
-    for (auto a : evaled_args) {
-      result += a->val();
-    }
-  } else if (name == "plc.subtract") {
-    result = evaled_args[0]->val() - evaled_args[1]->val();
-  } else {
-    return func->CreateIRNodeError("Only allowing [multiply, add, subtract], not $0", name);
+  PL_ASSIGN_OR_RETURN(auto updated_node, EvalStringTimes(static_cast<ExpressionIR*>(node)));
+
+  EvaluateCompileTimeExprRule evaluator(compiler_state_);
+  PL_ASSIGN_OR_RETURN(ExpressionIR * evaluated, evaluator.Evaluate(updated_node));
+
+  if (Match(evaluated, Int())) {
+    return static_cast<IntIR*>(evaluated);
   }
-  PL_ASSIGN_OR_RETURN(IntIR * ir_result, func->graph_ptr()->MakeNode<IntIR>());
-  PL_RETURN_IF_ERROR(ir_result->Init(result, func->ast_node()));
-  return ir_result;
+  return evaluated->CreateIRNodeError("Expected integer expression, not $0",
+                                      evaluated->type_string());
 }
 
 StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) {

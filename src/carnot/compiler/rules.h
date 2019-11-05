@@ -153,8 +153,9 @@ class RangeArgExpressionRule : public Rule {
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
-  StatusOr<IntIR*> EvalExpression(IRNode* ir_node) const;
-  StatusOr<IntIR*> EvalFunc(std::string name, std::vector<IntIR*> evaled_args, FuncIR* func) const;
+  // Used to support taking strings like "-2m" into a range
+  StatusOr<ExpressionIR*> EvalStringTimes(ExpressionIR* ir_node);
+  StatusOr<IntIR*> EvalExpression(IRNode* ir_node);
 };
 
 class VerifyFilterExpressionRule : public Rule {
