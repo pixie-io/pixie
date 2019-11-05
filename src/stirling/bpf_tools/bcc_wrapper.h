@@ -47,8 +47,8 @@ struct KProbeSpec {
 struct UProbeSpec {
   // The canonical path to the binary to which this uprobe is attached.
   fs::path binary_path;
-  std::string symbol;
-  std::string probe_fn;
+  std::string_view symbol;
+  std::string_view probe_fn;
   bpf_probe_attach_type attach_type;
 };
 

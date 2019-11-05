@@ -73,8 +73,9 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
 constexpr uint64_t kIgnoredSymbolAddr = 0;
 
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
-  ebpf::StatusTuple attach_status = bpf().attach_uprobe(
-      probe.binary_path, probe.symbol, probe.probe_fn, kIgnoredSymbolAddr, probe.attach_type);
+  ebpf::StatusTuple attach_status =
+      bpf().attach_uprobe(probe.binary_path, std::string(probe.symbol), std::string(probe.probe_fn),
+                          kIgnoredSymbolAddr, probe.attach_type);
   if (attach_status.code() != 0) {
     return error::Internal("Failed to attach uprobe to binary $0 at symbol $1, error message: $2",
                            probe.binary_path.string(), probe.symbol, attach_status.msg());
@@ -111,8 +112,8 @@ Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
 }
 
 Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
-  ebpf::StatusTuple detach_status =
-      bpf().detach_uprobe(probe.binary_path, probe.symbol, kIgnoredSymbolAddr, probe.attach_type);
+  ebpf::StatusTuple detach_status = bpf().detach_uprobe(
+      probe.binary_path, std::string(probe.symbol), kIgnoredSymbolAddr, probe.attach_type);
 
   if (detach_status.code() != 0) {
     return error::Internal("Failed to detach uprobe from binary $0 on symbol $1, error message: $2",
