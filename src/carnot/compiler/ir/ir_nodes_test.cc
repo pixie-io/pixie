@@ -222,8 +222,8 @@ TEST(ToProto, map_ir) {
   col->ResolveColumn(4, types::INT64);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                       std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
+  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
+                       std::vector<ExpressionIR*>({constant, col}), ast));
   func->set_func_id(1);
   EXPECT_OK(lambda->Init({"col_name"}, {{"col_name", func}}, ast));
   ArgMap amap({{{"fn", lambda}}, {}});
@@ -279,9 +279,8 @@ TEST(ToProto, agg_ir) {
 
   auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({constant, col}), false /* compile_time */,
-                           ast));
+  EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"},
+                           std::vector<ExpressionIR*>({constant, col}), ast));
   EXPECT_OK(agg_func_lambda->Init({"meaned_column"}, {{{"mean", agg_func}}, {}}, ast));
 
   auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();

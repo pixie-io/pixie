@@ -93,6 +93,8 @@ inline std::ostream& operator<<(std::ostream& out, IRNodeType node_type) {
   return out << kIRNodeStrings[static_cast<int64_t>(node_type)];
 }
 
+inline static constexpr char kPLFuncPrefix[] = "pl";
+
 /**
  * @brief Node class for the IR.
  *
@@ -828,8 +830,7 @@ class FuncIR : public ExpressionIR {
   Opcode opcode() const { return op_.op_code; }
   const Op& op() const { return op_; }
   explicit FuncIR(int64_t id) : ExpressionIR(id, IRNodeType::kFunc) {}
-  Status Init(Op op, std::string func_prefix, const std::vector<ExpressionIR*>& args,
-              bool compile_time, const pypa::AstPtr& ast_node);
+  Status Init(Op op, const std::vector<ExpressionIR*>& args, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
 
   // NOLINTNEXTLINE(readability/inheritance)
@@ -840,7 +841,6 @@ class FuncIR : public ExpressionIR {
                             }));
   }
 
-  std::string func_prefix() const { return func_prefix_; }
   std::string func_name() const {
     return absl::Substitute("$0.$1", func_prefix_, op_.carnot_op_name);
   }
@@ -867,12 +867,10 @@ class FuncIR : public ExpressionIR {
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
 
-  bool is_compile_time() const { return is_compile_time_; }
-
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
-  std::string func_prefix_;
+  std::string func_prefix_ = kPLFuncPrefix;
   Op op_;
   std::string func_name_;
   std::vector<ExpressionIR*> args_;
@@ -880,7 +878,6 @@ class FuncIR : public ExpressionIR {
   int64_t func_id_ = 0;
   types::DataType evaluated_data_type_ = types::DataType::DATA_TYPE_UNKNOWN;
   bool is_data_type_evaluated_ = false;
-  bool is_compile_time_ = false;
 };
 
 /**

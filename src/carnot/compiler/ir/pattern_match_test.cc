@@ -17,8 +17,8 @@ TEST_F(PatternMatchTest, equals_test) {
   auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
 
   auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(agg_func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({c1, c2}), false /* compile_time */, ast));
+  EXPECT_OK(agg_func->Init({FuncIR::Opcode::eq, "==", "equals"},
+                           std::vector<ExpressionIR*>({c1, c2}), ast));
 
   EXPECT_TRUE(Match(agg_func, Equals(Int(10), Value())));
   EXPECT_TRUE(Match(agg_func, Equals(Value(), Int())));
@@ -34,40 +34,33 @@ TEST_F(PatternMatchTest, compile_time_func_test) {
   // now()
   auto time_now_func = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(time_now_func->Init({FuncIR::Opcode::non_op, "", kTimeNowFnStr},
-                                ASTWalker::kCompileTimeFuncPrefix, std::vector<ExpressionIR*>({}),
-                                true /* compile_time */, ast));
+                                std::vector<ExpressionIR*>({}), ast));
 
   auto not_now_func = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(not_now_func->Init({FuncIR::Opcode::non_op, "", "not_time_now"},
-                               ASTWalker::kCompileTimeFuncPrefix, std::vector<ExpressionIR*>({}),
-                               true /* compile_time */, ast));
+                               std::vector<ExpressionIR*>({}), ast));
 
   EXPECT_TRUE(Match(time_now_func, CompileTimeNow()));
   EXPECT_FALSE(Match(not_now_func, CompileTimeNow()));
 
   // 10 * (10 + 9)
   auto add_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(add_func->Init(FuncIR::op_map["+"], ASTWalker::kCompileTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({c1, c2}), true /* compile_time */, ast));
+  EXPECT_OK(add_func->Init(FuncIR::op_map["+"], std::vector<ExpressionIR*>({c1, c2}), ast));
   auto mult_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], ASTWalker::kCompileTimeFuncPrefix,
-                            std::vector<ExpressionIR*>({c1, add_func}), true /* compile_time */,
-                            ast));
+  EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], std::vector<ExpressionIR*>({c1, add_func}), ast));
 
   auto add_func_no_args = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(add_func_no_args->Init({FuncIR::Opcode::add, "+", "add"},
-                                   ASTWalker::kCompileTimeFuncPrefix,
-                                   std::vector<ExpressionIR*>({}), true /* compile_time */, ast));
+                                   std::vector<ExpressionIR*>({}), ast));
+
   // hours(10 + 9)
   auto hours_func = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(hours_func->Init({FuncIR::Opcode::non_op, "", "hours"},
-                             ASTWalker::kCompileTimeFuncPrefix,
-                             std::vector<ExpressionIR*>({add_func}), true /* compile_time */, ast));
+                             std::vector<ExpressionIR*>({add_func}), ast));
 
   auto no_arg_hours_func = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(no_arg_hours_func->Init({FuncIR::Opcode::non_op, "", "hours"},
-                                    ASTWalker::kCompileTimeFuncPrefix,
-                                    std::vector<ExpressionIR*>({}), true /* compile_time */, ast));
+                                    std::vector<ExpressionIR*>({}), ast));
 
   EXPECT_TRUE(Match(hours_func, CompileTimeUnitTime()));
   EXPECT_FALSE(Match(no_arg_hours_func, CompileTimeUnitTime()));
@@ -92,8 +85,8 @@ TEST_F(PatternMatchTest, arbitrary_bin_op_test) {
   auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
 
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, ASTWalker::kRunTimeFuncPrefix,
-                       std::vector<ExpressionIR*>({c1, c2}), false /* compile_time */, ast));
+  EXPECT_OK(
+      func->Init({FuncIR::Opcode::non_op, "", "op"}, std::vector<ExpressionIR*>({c1, c2}), ast));
 
   EXPECT_FALSE(Match(func, Equals(Int(10), Value())));
   EXPECT_TRUE(Match(func, BinOp(Value(), Value())));
@@ -106,8 +99,8 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   auto col1 = graph->MakeNode<ColumnIR>().ValueOrDie();
   EXPECT_OK(col1->Init("col1", /* parent_op_idx */ 0, ast));
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, ASTWalker::kRunTimeFuncPrefix,
-                       std::vector<ExpressionIR*>({int1, col1}), false /* compile_time */, ast));
+  EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, std::vector<ExpressionIR*>({int1, col1}),
+                       ast));
 
   // Make sure expression works.
   EXPECT_TRUE(Match(int1, Expression()));

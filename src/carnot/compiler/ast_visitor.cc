@@ -411,9 +411,8 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
   PL_ASSIGN_OR_RETURN(FuncIR::Op mod_op, GetOp("%", node));
   DCHECK(args.kwargs["size"]->IsExpression());
   PL_RETURN_IF_ERROR(mod_ir_node->Init(
-      mod_op, kRunTimeFuncPrefix,
-      std::vector<ExpressionIR*>({by_col, static_cast<ExpressionIR*>(args.kwargs["size"])}),
-      false /*compile_time */, node));
+      mod_op, std::vector<ExpressionIR*>({by_col, static_cast<ExpressionIR*>(args.kwargs["size"])}),
+      node));
 
   PL_ASSIGN_OR_RETURN(ColumnIR * by_col_copy, ir_graph_->MakeNode<ColumnIR>());
   PL_RETURN_IF_ERROR(
@@ -421,9 +420,8 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
   // pl.subtract(by_col, pl.mod(by_col, size)).
   PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_ASSIGN_OR_RETURN(FuncIR::Op sub_op, GetOp("-", node));
-  PL_RETURN_IF_ERROR(sub_ir_node->Init(sub_op, kRunTimeFuncPrefix,
-                                       std::vector<ExpressionIR*>({by_col_copy, mod_ir_node}),
-                                       false /*compile_time */, node));
+  PL_RETURN_IF_ERROR(
+      sub_ir_node->Init(sub_op, std::vector<ExpressionIR*>({by_col_copy, mod_ir_node}), node));
 
   // Map(lambda r: {'group': pl.subtract(by_col, pl.modulo(by_col, size))}.
   PL_ASSIGN_OR_RETURN(LambdaIR * map_lambda_ir_node, ir_graph_->MakeNode<LambdaIR>());
@@ -619,8 +617,8 @@ StatusOr<ExpressionIR*> ASTWalker::ProcessNumber(const pypa::AstNumberPtr& node)
 }
 
 StatusOr<LambdaExprReturn> ASTWalker::BuildLambdaFunc(
-    const FuncIR::Op& op, const std::string& prefix,
-    const std::vector<LambdaExprReturn>& children_ret_expr, const pypa::AstPtr& parent_node) {
+    const FuncIR::Op& op, const std::vector<LambdaExprReturn>& children_ret_expr,
+    const pypa::AstPtr& parent_node) {
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->MakeNode<FuncIR>());
   std::vector<ExpressionIR*> expressions;
   auto ret = LambdaExprReturn(ir_node);
@@ -633,7 +631,7 @@ StatusOr<LambdaExprReturn> ASTWalker::BuildLambdaFunc(
       ret.MergeColumns(expr_ret);
     }
   }
-  PL_RETURN_IF_ERROR(ir_node->Init(op, prefix, expressions, false /*compile_time */, parent_node));
+  PL_RETURN_IF_ERROR(ir_node->Init(op, expressions, parent_node));
   return ret;
 }
 
@@ -646,7 +644,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBinOp(const LambdaOperatorMap
   PL_ASSIGN_OR_RETURN(auto right_expr_ret, ProcessLambdaExpr(arg_op_map, node->right));
   children_ret_expr.push_back(left_expr_ret);
   children_ret_expr.push_back(right_expr_ret);
-  return BuildLambdaFunc(op, kRunTimeFuncPrefix, children_ret_expr, node);
+  return BuildLambdaFunc(op, children_ret_expr, node);
 }
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBoolOp(const LambdaOperatorMap& arg_op_map,
@@ -658,7 +656,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBoolOp(const LambdaOperatorMa
     PL_ASSIGN_OR_RETURN(auto rt, ProcessLambdaExpr(arg_op_map, comp));
     children_ret_expr.push_back(rt);
   }
-  return BuildLambdaFunc(op, kRunTimeFuncPrefix, children_ret_expr, node);
+  return BuildLambdaFunc(op, children_ret_expr, node);
 }
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCompare(const LambdaOperatorMap& arg_op_map,
@@ -676,7 +674,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCompare(const LambdaOperatorM
     PL_ASSIGN_OR_RETURN(auto rt, ProcessLambdaExpr(arg_op_map, comp));
     children_ret_expr.push_back(rt);
   }
-  return BuildLambdaFunc(op, kRunTimeFuncPrefix, children_ret_expr, node);
+  return BuildLambdaFunc(op, children_ret_expr, node);
 }
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const LambdaOperatorMap& arg_op_map,
@@ -697,7 +695,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const LambdaOperatorMap&
     children_ret_expr.push_back(rt);
   }
   FuncIR::Op op{FuncIR::Opcode::non_op, "", fn_name};
-  return BuildLambdaFunc(op, kRunTimeFuncPrefix, children_ret_expr, node);
+  return BuildLambdaFunc(op, children_ret_expr, node);
 }
 
 /**
@@ -820,8 +818,8 @@ StatusOr<LambdaBodyReturn> ASTWalker::ProcessLambdaDict(const LambdaOperatorMap&
     PL_ASSIGN_OR_RETURN(auto key_string, GetStrAstValue(key_str_ast));
     PL_ASSIGN_OR_RETURN(auto expr_ret, ProcessLambdaExpr(arg_op_map, value_ast));
     if (expr_ret.is_pixie_attr_) {
-      PL_ASSIGN_OR_RETURN(expr_ret, BuildLambdaFunc({FuncIR::Opcode::non_op, "", expr_ret.str_},
-                                                    kRunTimeFuncPrefix, {}, body_dict));
+      PL_ASSIGN_OR_RETURN(
+          expr_ret, BuildLambdaFunc({FuncIR::Opcode::non_op, "", expr_ret.str_}, {}, body_dict));
     }
     PL_RETURN_IF_ERROR(return_val.AddExprResult(key_string, expr_ret));
   }
@@ -952,8 +950,7 @@ StatusOr<ExpressionIR*> ASTWalker::ProcessDataBinOp(const pypa::AstBinOpPtr& nod
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->MakeNode<FuncIR>());
   std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
                                             static_cast<ExpressionIR*>(right)};
-  PL_RETURN_IF_ERROR(
-      ir_node->Init(op, kCompileTimeFuncPrefix, expressions, true /* compile_time */, node));
+  PL_RETURN_IF_ERROR(ir_node->Init(op, expressions, node));
 
   return ir_node;
 }

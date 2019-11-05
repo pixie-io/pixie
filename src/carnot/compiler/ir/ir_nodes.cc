@@ -810,11 +810,9 @@ std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
     {"or", {FuncIR::Opcode::logor, "or", "logicalOr"}}};
 bool FuncIR::HasLogicalRepr() const { return false; }
 
-Status FuncIR::Init(Op op, std::string func_prefix, const std::vector<ExpressionIR*>& args,
-                    bool /*compile_time*/, const pypa::AstPtr& ast_node) {
+Status FuncIR::Init(Op op, const std::vector<ExpressionIR*>& args, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   op_ = op;
-  func_prefix_ = func_prefix;
   args_ = args;
   for (auto a : args_) {
     if (a == nullptr) {

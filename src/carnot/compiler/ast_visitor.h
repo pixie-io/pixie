@@ -128,6 +128,7 @@ class ASTWalker {
   Status ProcessModuleNode(const pypa::AstModulePtr& m);
 
   // Constants for the run-time (UDF) and compile-time fn prefixes.
+  // TODO(nserrino, philkuz) remove these once the lambda stuff in ast_visitor gets refactored.
   inline static constexpr char kRunTimeFuncPrefix[] = "pl";
   inline static constexpr char kCompileTimeFuncPrefix[] = "plc";
 
@@ -377,7 +378,7 @@ class ASTWalker {
    * @param parent_node
    * @return StatusOr<LambdaExprReturn>
    */
-  StatusOr<LambdaExprReturn> BuildLambdaFunc(const FuncIR::Op& op, const std::string& prefix,
+  StatusOr<LambdaExprReturn> BuildLambdaFunc(const FuncIR::Op& op,
                                              const std::vector<LambdaExprReturn>& children_ret_expr,
                                              const pypa::AstPtr& parent_node);
 

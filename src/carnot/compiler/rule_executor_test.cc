@@ -49,12 +49,10 @@ class RuleExecutorTest : public ::testing::Test {
     func = graph->MakeNode<FuncIR>().ValueOrDie();
     func2 = graph->MakeNode<FuncIR>().ValueOrDie();
     lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({int_constant, col}),
-                           false /* compile_time */, ast));
-    PL_CHECK_OK(func2->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                            std::vector<ExpressionIR*>({int_constant2, func}),
-                            false /* compile_time */, ast));
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
+                           std::vector<ExpressionIR*>({int_constant, col}), ast));
+    PL_CHECK_OK(func2->Init({FuncIR::Opcode::add, "+", "add"},
+                            std::vector<ExpressionIR*>({int_constant2, func}), ast));
     PL_CHECK_OK(lambda->Init({"count"}, {{"func", func2}}, ast));
     ArgMap amap({{{"fn", lambda}}, {}});
     PL_CHECK_OK(map->Init(mem_src, amap, ast));

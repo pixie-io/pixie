@@ -332,9 +332,7 @@ StatusOr<ExpressionIR*> EvaluateCompileTimeExprRule::EvaluateExpr(ExpressionIR* 
   // Walk the tree of all functions to evaluate subtrees that are able to be evaluated at compile
   // time, even if this function is not able to be evaluated at this point.
   PL_ASSIGN_OR_RETURN(FuncIR * new_func, func_ir->graph_ptr()->MakeNode<FuncIR>());
-  // TODO(nserrino): Remove unused compile time bool below after FuncIR's Init() is refactored.
-  PL_RETURN_IF_ERROR(new_func->Init(func_ir->op(), func_ir->func_prefix(), evaled_args, false,
-                                    ir_node->ast_node()));
+  PL_RETURN_IF_ERROR(new_func->Init(func_ir->op(), evaled_args, ir_node->ast_node()));
   return new_func;
 }
 
@@ -449,9 +447,7 @@ StatusOr<ExpressionIR*> RangeArgExpressionRule::EvalStringTimes(ExpressionIR* no
       evaled_args.push_back(eval_result);
     }
     PL_ASSIGN_OR_RETURN(FuncIR * converted_func, node->graph_ptr()->MakeNode<FuncIR>());
-    // TODO(nserrino): Remove unused compile time bool below after FuncIR's Init() is refactored.
-    PL_RETURN_IF_ERROR(converted_func->Init(func_node->op(), func_node->func_prefix(), evaled_args,
-                                            false /*unused*/, node->ast_node()));
+    PL_RETURN_IF_ERROR(converted_func->Init(func_node->op(), evaled_args, node->ast_node()));
     DeferNodeDeletion(node->id());
     return converted_func;
   }
@@ -755,8 +751,7 @@ Status MetadataResolverConversionRule::AddMetadataConversionFns(
 
     std::vector<types::DataType> children_data_types = {
         parent_relation.GetColumnType(parent_relation_idx)};
-    PL_RETURN_IF_ERROR(conversion_func->Init({FuncIR::Opcode::non_op, "", func_name},
-                                             ASTWalker::kRunTimeFuncPrefix, {column_ir}, false,
+    PL_RETURN_IF_ERROR(conversion_func->Init({FuncIR::Opcode::non_op, "", func_name}, {column_ir},
                                              md_resolver->ast_node()));
     PL_ASSIGN_OR_RETURN(types::DataType out_type,
                         compiler_state_->registry_info()->GetUDF(conversion_func->func_name(),

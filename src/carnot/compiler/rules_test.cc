@@ -53,9 +53,8 @@ class RulesTest : public OperatorTests {
     auto column = MakeColumn("column", 0);
 
     auto filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
-                                std::vector<ExpressionIR*>({constant1, column}),
-                                false /* compile_time */, ast));
+    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"},
+                                std::vector<ExpressionIR*>({constant1, column}), ast));
     filter_func->SetOutputDataType(types::DataType::BOOLEAN);
 
     auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
@@ -71,9 +70,8 @@ class RulesTest : public OperatorTests {
     EXPECT_OK(constant1->Init("value", ast));
 
     FuncIR* filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
-                                std::vector<ExpressionIR*>({constant1, filter_value}),
-                                false /* compile_time */, ast));
+    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"},
+                                std::vector<ExpressionIR*>({constant1, filter_value}), ast));
 
     auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
@@ -85,9 +83,8 @@ class RulesTest : public OperatorTests {
   }
   BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
     auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
-                             std::vector<ExpressionIR*>({fn_column}), false /* compile_time */,
-                             ast));
+    EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"},
+                             std::vector<ExpressionIR*>({fn_column}), ast));
 
     auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(agg_func_lambda->Init({}, {{{"agg_fn", agg_func}}, {}}, ast));
@@ -125,8 +122,8 @@ TEST_F(DataTypeRuleTest, map_function) {
   auto col = MakeColumn("count", /* parent_op_idx */ 0);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                       std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
+  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
+                       std::vector<ExpressionIR*>({constant, col}), ast));
   EXPECT_OK(lambda->Init({"col_name"}, {{{"func", func}}, {}}, ast));
   ArgMap amap({{{"fn", lambda}}, {}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
@@ -181,9 +178,8 @@ TEST_F(DataTypeRuleTest, compiler_function_no_match) {
   auto constant3 = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant3->Init(24, ast));
   auto func2 = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(func2->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kCompileTimeFuncPrefix,
-                        std::vector<ExpressionIR*>({constant1, constant2}), true /* compile_time */,
-                        ast));
+  EXPECT_OK(func2->Init({FuncIR::Opcode::add, "+", "add"},
+                        std::vector<ExpressionIR*>({constant1, constant2}), ast));
   EXPECT_OK(range->Init(mem_src, func2, constant3, ast));
 
   // No rule has been run, don't expect any of these to be evaluated.
@@ -205,8 +201,8 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
   auto col = MakeColumn("count", /* parent_op_idx */ 0);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "gobeldy"}, ASTWalker::kRunTimeFuncPrefix,
-                       std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
+  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "gobeldy"},
+                       std::vector<ExpressionIR*>({constant, col}), ast));
   EXPECT_OK(lambda->Init({"col_name"}, {{{"func", func}}, {}}, ast));
   ArgMap amap({{{"fn", lambda}}, {}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
@@ -231,8 +227,8 @@ TEST_F(DataTypeRuleTest, function_in_agg) {
   auto col = MakeColumn("count", /* parent_op_idx */ 0);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
-                       std::vector<ExpressionIR*>({col}), false /* compile_time */, ast));
+  EXPECT_OK(
+      func->Init({FuncIR::Opcode::non_op, "", "mean"}, std::vector<ExpressionIR*>({col}), ast));
   EXPECT_OK(lambda->Init({col->col_name()}, {{{"func", func}}, {}}, ast));
   ArgMap amap({{{"fn", lambda}, {"by", nullptr}}, {}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
@@ -267,12 +263,11 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto func2 = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                       std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
+  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
+                       std::vector<ExpressionIR*>({constant, col}), ast));
 
-  EXPECT_OK(func2->Init({FuncIR::Opcode::add, "-", "subtract"}, ASTWalker::kRunTimeFuncPrefix,
-                        std::vector<ExpressionIR*>({constant2, func}), false /* compile_time */,
-                        ast));
+  EXPECT_OK(func2->Init({FuncIR::Opcode::add, "-", "subtract"},
+                        std::vector<ExpressionIR*>({constant2, func}), ast));
   EXPECT_OK(lambda->Init({"col_name"}, {{{"col_name", func2}}, {}}, ast));
   ArgMap amap({{{"fn", lambda}}, {}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
@@ -460,9 +455,8 @@ class BlockingAggRuleTest : public RulesTest {
     EXPECT_OK(constant->Init(10, ast));
 
     auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
-                             std::vector<ExpressionIR*>({constant}), false /* compile_time */,
-                             ast));
+    EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"},
+                             std::vector<ExpressionIR*>({constant}), ast));
     if (resolve_agg_func) {
       agg_func->SetOutputDataType(func_data_type);
     }
@@ -540,9 +534,8 @@ class MapRuleTest : public RulesTest {
     EXPECT_OK(constant2->Init(10, ast));
 
     auto map_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(map_func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                             std::vector<ExpressionIR*>({constant1, constant2}),
-                             false /* compile_time */, ast));
+    EXPECT_OK(map_func->Init({FuncIR::Opcode::add, "+", "add"},
+                             std::vector<ExpressionIR*>({constant1, constant2}), ast));
     if (resolve_map_func) {
       map_func->SetOutputDataType(func_data_type);
     }
@@ -765,9 +758,8 @@ class CompilerTimeExpressionTest : public RulesTest {
     auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
     EXPECT_OK(constant2->Init(r, ast));
     auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kCompileTimeFuncPrefix,
-                         std::vector<ExpressionIR*>({constant1, constant2}),
-                         true /* compile_time */, ast));
+    EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
+                         std::vector<ExpressionIR*>({constant1, constant2}), ast));
     return func;
   }
   RangeIR* MakeRange(IRNode* start, IRNode* stop) {
@@ -881,9 +873,9 @@ TEST_F(CompilerTimeExpressionTest, nested_function) {
   IntIR* start = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(start->Init(10, ast));
   FuncIR* stop = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(stop->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kCompileTimeFuncPrefix,
+  EXPECT_OK(stop->Init({FuncIR::Opcode::add, "+", "add"},
                        std::vector<ExpressionIR*>({MakeConstantAddition(123, 321), constant}),
-                       true /* compile_time */, ast));
+                       ast));
 
   RangeIR* range = MakeRange(start, stop);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
@@ -908,9 +900,8 @@ TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
   IntIR* start = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(start->Init(10, ast));
   FuncIR* stop = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(stop->Init({FuncIR::Opcode::sub, "-", "subtract"}, ASTWalker::kCompileTimeFuncPrefix,
-                       std::vector<ExpressionIR*>({constant1, constant2}), true /* compile_time */,
-                       ast));
+  EXPECT_OK(stop->Init({FuncIR::Opcode::sub, "-", "subtract"},
+                       std::vector<ExpressionIR*>({constant1, constant2}), ast));
 
   RangeIR* range = MakeRange(start, stop);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
@@ -935,9 +926,8 @@ TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
   IntIR* start = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(start->Init(10, ast));
   FuncIR* stop = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(stop->Init({FuncIR::Opcode::mult, "*", "multiply"}, ASTWalker::kCompileTimeFuncPrefix,
-                       std::vector<ExpressionIR*>({constant1, constant2}), true /* compile_time */,
-                       ast));
+  EXPECT_OK(stop->Init({FuncIR::Opcode::mult, "*", "multiply"},
+                       std::vector<ExpressionIR*>({constant1, constant2}), ast));
 
   RangeIR* range = MakeRange(start, stop);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
@@ -989,9 +979,8 @@ class VerifyFilterExpressionTest : public RulesTest {
     EXPECT_OK(constant2->Init(10, ast));
 
     filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
-                                std::vector<ExpressionIR*>({constant1, constant2}),
-                                false /* compile_time */, ast));
+    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"},
+                                std::vector<ExpressionIR*>({constant1, constant2}), ast));
 
     auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
@@ -1042,9 +1031,8 @@ class ResolveMetadataTest : public RulesTest {
     EXPECT_OK(constant1->Init("value", ast));
 
     FuncIR* filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
-                                std::vector<ExpressionIR*>({constant1, filter_value}),
-                                false /* compile_time */, ast));
+    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"},
+                                std::vector<ExpressionIR*>({constant1, filter_value}), ast));
 
     auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
@@ -1062,9 +1050,8 @@ class ResolveMetadataTest : public RulesTest {
   }
   BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
     auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
-                             std::vector<ExpressionIR*>({fn_column}), false /* compile_time */,
-                             ast));
+    EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"},
+                             std::vector<ExpressionIR*>({fn_column}), ast));
 
     auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(agg_func_lambda->Init({}, {{{"agg_fn", agg_func}}, {}}, ast));
@@ -1292,9 +1279,8 @@ class CheckRelationRule : public RulesTest {
 
   MapIR* MakeMap(OperatorIR* parent, std::string column_name) {
     auto map_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(map_func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                             std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)}),
-                             false /* compile_time */, ast));
+    EXPECT_OK(map_func->Init({FuncIR::Opcode::add, "+", "add"},
+                             std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)}), ast));
 
     auto map_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(map_func_lambda->Init({}, {{{column_name, map_func}}, {}}, ast));
@@ -1374,9 +1360,8 @@ class MetadataResolverConversionTest : public RulesTest {
 
   MapIR* MakeMap(OperatorIR* parent) {
     auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(agg_func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                             std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)}),
-                             false /* compile_time */, ast));
+    EXPECT_OK(agg_func->Init({FuncIR::Opcode::add, "+", "add"},
+                             std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)}), ast));
 
     auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(agg_func_lambda->Init({}, {{{"agg_fn", agg_func}}, {}}, ast));
@@ -1851,18 +1836,14 @@ TEST_F(RulesTest, eval_compile_time_test) {
   EXPECT_OK(c2->Init(9, ast));
 
   auto add_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(add_func->Init(FuncIR::op_map["+"], ASTWalker::kCompileTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({c1, c2}), true /*compile time*/, ast));
+  EXPECT_OK(add_func->Init(FuncIR::op_map["+"], std::vector<ExpressionIR*>({c1, c2}), ast));
   auto mult_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], ASTWalker::kCompileTimeFuncPrefix,
-                            std::vector<ExpressionIR*>({c1, add_func}), true /*compile time*/,
-                            ast));
+  EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], std::vector<ExpressionIR*>({c1, add_func}), ast));
 
   // hours(10*(10 + 9))
   auto hours_func = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(hours_func->Init({FuncIR::Opcode::non_op, "", "hours"},
-                             ASTWalker::kCompileTimeFuncPrefix,
-                             std::vector<ExpressionIR*>({mult_func}), true /*compile time*/, ast));
+                             std::vector<ExpressionIR*>({mult_func}), ast));
 
   EvaluateCompileTimeExprRule rule(compiler_state_.get());
   auto evaluted = rule.Evaluate(hours_func).ValueOrDie();
@@ -1879,18 +1860,14 @@ TEST_F(RulesTest, eval_partial_compile_time_test) {
   EXPECT_OK(c2->Init(9, ast));
 
   auto add_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(add_func->Init(FuncIR::op_map["+"], ASTWalker::kCompileTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({c1, c2}), true /*compile time*/, ast));
+  EXPECT_OK(add_func->Init(FuncIR::op_map["+"], std::vector<ExpressionIR*>({c1, c2}), ast));
   auto mult_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], ASTWalker::kCompileTimeFuncPrefix,
-                            std::vector<ExpressionIR*>({c1, add_func}), true /*compile time*/,
-                            ast));
+  EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], std::vector<ExpressionIR*>({c1, add_func}), ast));
 
   // not_hours(10*(10 + 9))
   auto not_hours_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(not_hours_func->Init(
-      {FuncIR::Opcode::non_op, "", "not_hours"}, ASTWalker::kCompileTimeFuncPrefix,
-      std::vector<ExpressionIR*>({mult_func}), true /*compile time*/, ast));
+  EXPECT_OK(not_hours_func->Init({FuncIR::Opcode::non_op, "", "not_hours"},
+                                 std::vector<ExpressionIR*>({mult_func}), ast));
 
   EvaluateCompileTimeExprRule rule(compiler_state_.get());
   auto evaluted = rule.Evaluate(not_hours_func).ValueOrDie();

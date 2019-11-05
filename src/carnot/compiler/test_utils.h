@@ -247,25 +247,22 @@ class OperatorTests : public ::testing::Test {
 
   FuncIR* MakeAddFunc(ExpressionIR* left, ExpressionIR* right) {
     FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
-                           ast));
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
+                           std::vector<ExpressionIR*>({left, right}), ast));
     return func;
   }
 
   FuncIR* MakeEqualsFunc(ExpressionIR* left, ExpressionIR* right) {
     FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
-                           ast));
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::eq, "==", "equals"},
+                           std::vector<ExpressionIR*>({left, right}), ast));
     return func;
   }
 
   FuncIR* MakeAndFunc(ExpressionIR* left, ExpressionIR* right) {
     FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
-    PL_CHECK_OK(func->Init(FuncIR::op_map.find("and")->second, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
-                           ast));
+    PL_CHECK_OK(func->Init(FuncIR::op_map.find("and")->second,
+                           std::vector<ExpressionIR*>({left, right}), ast));
     return func;
   }
 
@@ -283,8 +280,8 @@ class OperatorTests : public ::testing::Test {
 
   FuncIR* MakeMeanFunc(ExpressionIR* value) {
     FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({value}), false /* compile_time */, ast));
+    PL_CHECK_OK(
+        func->Init({FuncIR::Opcode::non_op, "", "mean"}, std::vector<ExpressionIR*>({value}), ast));
     return func;
   }
 
