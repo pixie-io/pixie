@@ -18,12 +18,12 @@ namespace http2 {
 
 using ::pl::grpc::MethodInputOutput;
 using ::pl::grpc::ServiceDescriptorDatabase;
+using ::pl::stirling::http2::testing::GreetServiceFDSet;
 using ::pl::testing::proto::EqualsProto;
 using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::Eq;
-using testing::GreetServiceFDSet;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::Pair;
@@ -89,7 +89,18 @@ u8string_view ToU8(std::string_view buf) {
   return u8string_view(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
 }
 
-MATCHER_P2(MatchesTypePayload, t, p, "") {
+std::string_view ToChar(u8string_view buf) {
+  return std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size());
+}
+
+void PrintTo(const Frame& frame, std::ostream* os) {
+  *os << "frame type: " << static_cast<int>(frame.frame.hd.type);
+  *os << " payload: " << BytesToAsciiHex(ToChar(frame.u8payload));
+}
+
+MATCHER_P2(MatchesTypePayload, t, p,
+           absl::Substitute("Matches type $0 with payload $1", ::testing::PrintToString(t),
+                            ::testing::PrintToString(p))) {
   return arg.frame.hd.type == t && arg.u8payload == ToU8(p);
 }
 
@@ -590,6 +601,39 @@ TEST(StitchAndInflateHeaderBlocksTest, IncompleteHeaderBlock) {
   std::map<uint32_t, HTTP2Message> stream_msgs;
   EXPECT_EQ(ParseState::kSuccess, StitchFramesToGRPCMessages(frames, &stream_msgs));
   EXPECT_THAT(stream_msgs, IsEmpty());
+}
+
+// TODO(yzhao): It's quite complicated to stitch the whole function calls to simulate the whole
+// process of processing gRPC/HTTP2 events. This process is part of SocketTraceConnector's data
+// transferring, but that process involves way more complexity. These facts signal misalignment
+// between testability and higher-level logic structure.
+//
+// Tests that stitching and inflation specify time span correctly.
+TEST(EventsTimeSpanTest, FromEventsToHTTP2Message) {
+  EventParser<Frame> parser;
+  constexpr uint8_t flags = 0;
+  constexpr uint32_t stream_id = 1;
+  const std::string frame0 = PackHeadersFrame("\x86\x83", flags, stream_id);
+  const std::string frame1 = PackContinuationFrame("\x88", NGHTTP2_FLAG_END_HEADERS, stream_id);
+  const std::string frame2 = PackDataFrame("abc", NGHTTP2_FLAG_END_STREAM, stream_id);
+  parser.Append(frame0, {0, 1});
+  parser.Append(frame1, {2, 3});
+  parser.Append(frame2, {4, 5});
+
+  std::deque<Frame> frames;
+  ParseResult<BufferPosition> res = parser.ParseMessages(MessageType::kUnknown, &frames);
+  EXPECT_EQ(ParseState::kSuccess, res.state);
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "\x86\x83"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "\x88"),
+                                  MatchesTypePayload(NGHTTP2_DATA, "abc")));
+  Inflater inflater;
+  StitchAndInflateHeaderBlocks(inflater.inflater(), &frames);
+
+  std::map<uint32_t, HTTP2Message> stream_msgs;
+  EXPECT_EQ(ParseState::kSuccess, StitchFramesToGRPCMessages(frames, &stream_msgs));
+  ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, _)));
+  EXPECT_EQ(0, stream_msgs[1].time_span.begin_ns);
+  EXPECT_EQ(5, stream_msgs[1].time_span.end_ns);
 }
 
 }  // namespace http2

@@ -338,8 +338,8 @@ void StitchAndInflateHeaderBlocks(nghttp2_hd_inflater* inflater, std::deque<Fram
 }
 
 /**
- * @brief Given a list of frames for one stream, stitches them together into gRPC request and
- * response messages. Also mark consumed frames, so the caller can destroy them afterwards.
+ * @brief Given a list of frames of one stream, stitches them together into gRPC request or
+ * response messages. Also mark the frames as consumed, so the caller can destroy them afterwards.
  */
 // TODO(yzhao): Turn this into a class that parse frames one by one.
 ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
@@ -384,6 +384,7 @@ ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
         if (IsEndStream(f->frame.hd)) {
           msg.type = MessageType::kRequest;
           msg.timestamp_ns = f->timestamp_ns;
+          msg.time_span.end_ns = f->time_span.end_ns;
           handle_end_stream();
         }
         break;
@@ -407,7 +408,12 @@ ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
         if (IsEndStream(f->frame.hd)) {
           msg.type = MessageType::kResponse;
           msg.timestamp_ns = f->timestamp_ns;
+          msg.time_span.end_ns = f->time_span.end_ns;
           handle_end_stream();
+        } else {
+          // gRPC request & response all start with HEADERS frame without END_STREAM flag. So set
+          // message time span begin if this HEADERS frame does not have END_STREAM flag.
+          msg.time_span.begin_ns = f->time_span.begin_ns;
         }
         break;
       default:
