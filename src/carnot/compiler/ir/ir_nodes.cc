@@ -811,12 +811,11 @@ std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
 bool FuncIR::HasLogicalRepr() const { return false; }
 
 Status FuncIR::Init(Op op, std::string func_prefix, const std::vector<ExpressionIR*>& args,
-                    bool compile_time, const pypa::AstPtr& ast_node) {
+                    bool /*compile_time*/, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   op_ = op;
   func_prefix_ = func_prefix;
   args_ = args;
-  is_compile_time_ = compile_time;
   for (auto a : args_) {
     if (a == nullptr) {
       return error::Internal("Argument for FuncIR is null.");
@@ -1002,7 +1001,6 @@ StatusOr<IRNode*> FuncIR::DeepCloneIntoImpl(IR* graph) const {
   func->func_id_ = func_id_;
   func->evaluated_data_type_ = evaluated_data_type_;
   func->is_data_type_evaluated_ = is_data_type_evaluated_;
-  func->is_compile_time_ = is_compile_time_;
 
   for (ExpressionIR* arg : args_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_arg, arg->DeepCloneInto(graph));

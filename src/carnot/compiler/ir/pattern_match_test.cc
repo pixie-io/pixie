@@ -75,14 +75,13 @@ TEST_F(PatternMatchTest, compile_time_func_test) {
   EXPECT_TRUE(Match(mult_func, CompileTimeIntegerArithmetic()));
   EXPECT_FALSE(Match(add_func_no_args, CompileTimeIntegerArithmetic()));
 
-  // TODO(nserrino): Uncomment these once CompileTimeFunc is ported over.
-  // EXPECT_TRUE(Match(time_now_func, CompileTimeFunc()));
-  // EXPECT_TRUE(Match(hours_func, CompileTimeFunc()));
-  // EXPECT_TRUE(Match(mult_func, CompileTimeFunc()));
+  EXPECT_TRUE(Match(time_now_func, CompileTimeFunc()));
+  EXPECT_TRUE(Match(hours_func, CompileTimeFunc()));
+  EXPECT_TRUE(Match(mult_func, CompileTimeFunc()));
 
-  // EXPECT_FALSE(Match(not_now_func, CompileTimeFunc()));
-  // EXPECT_FALSE(Match(no_arg_hours_func, CompileTimeFunc()));
-  // EXPECT_FALSE(Match(add_func_no_args, CompileTimeFunc()));
+  EXPECT_FALSE(Match(not_now_func, CompileTimeFunc()));
+  EXPECT_FALSE(Match(no_arg_hours_func, CompileTimeFunc()));
+  EXPECT_FALSE(Match(add_func_no_args, CompileTimeFunc()));
 }
 
 // This bin op test makes sure that non_op doesn't throw errors

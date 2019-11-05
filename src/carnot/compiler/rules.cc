@@ -324,17 +324,17 @@ StatusOr<ExpressionIR*> EvaluateCompileTimeExprRule::EvaluateExpr(ExpressionIR* 
     return EvalUnitTime(evaled_args, func_ir);
   }
 
-  // TODO(nserrino): Uncomment once CompileTimeFunc is ported over.
-  // if (Match(func_ir, CompileTimeFunc())) {
-  //   return ir_node->CreateIRNodeError(
-  //       "Node is a compile time func but it did not match any known compile time funcs");
-  // }
+  if (Match(func_ir, CompileTimeFunc())) {
+    return ir_node->CreateIRNodeError(
+        "Node is a compile time func but it did not match any known compile time funcs");
+  }
 
   // Walk the tree of all functions to evaluate subtrees that are able to be evaluated at compile
   // time, even if this function is not able to be evaluated at this point.
   PL_ASSIGN_OR_RETURN(FuncIR * new_func, func_ir->graph_ptr()->MakeNode<FuncIR>());
-  PL_RETURN_IF_ERROR(new_func->Init(func_ir->op(), func_ir->func_prefix(), evaled_args,
-                                    func_ir->is_compile_time(), ir_node->ast_node()));
+  // TODO(nserrino): Remove unused compile time bool below after FuncIR's Init() is refactored.
+  PL_RETURN_IF_ERROR(new_func->Init(func_ir->op(), func_ir->func_prefix(), evaled_args, false,
+                                    ir_node->ast_node()));
   return new_func;
 }
 
@@ -408,6 +408,7 @@ StatusOr<IntIR*> EvaluateCompileTimeExprRule::EvalUnitTime(std::vector<Expressio
   std::chrono::nanoseconds time_output;
   auto time_unit = fn_type_iter->second;
   time_output = time_unit * time_val;
+
   PL_RETURN_IF_ERROR(time_node->Init(time_output.count(), func_ir->ast_node()));
   return time_node;
 }
@@ -448,8 +449,9 @@ StatusOr<ExpressionIR*> RangeArgExpressionRule::EvalStringTimes(ExpressionIR* no
       evaled_args.push_back(eval_result);
     }
     PL_ASSIGN_OR_RETURN(FuncIR * converted_func, node->graph_ptr()->MakeNode<FuncIR>());
+    // TODO(nserrino): Remove unused compile time bool below after FuncIR's Init() is refactored.
     PL_RETURN_IF_ERROR(converted_func->Init(func_node->op(), func_node->func_prefix(), evaled_args,
-                                            func_node->is_compile_time(), node->ast_node()));
+                                            false /*unused*/, node->ast_node()));
     DeferNodeDeletion(node->id());
     return converted_func;
   }

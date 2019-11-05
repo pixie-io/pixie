@@ -452,7 +452,7 @@ struct CompileTimeFuncMatch : public ParentMatch {
   }
 
  private:
-  bool MatchCompileTimeFunc(FuncIR* func) const {
+  bool MatchCompileTimeFunc(const FuncIR* func) const {
     // TODO(nserrino): This selection of compile time evaluation is extremely limited.
     // We should add in more generalized constant folding at compile time.
     if (CompileTimeNow().Match(func)) {
@@ -471,14 +471,12 @@ struct CompileTimeFuncMatch : public ParentMatch {
 /**
  * @brief Match compile-time function.
  */
-// TODO(nserrino) Uncomment this once the previous matchers are removed.
-// inline CompileTimeFuncMatch<true> CompileTimeFunc() { return CompileTimeFuncMatch<true>(); }
+inline CompileTimeFuncMatch<true> CompileTimeFunc() { return CompileTimeFuncMatch<true>(); }
 
 /**
  * @brief Match run-time function.
  */
-// TODO(nserrino) Uncomment this once the previous matchers are removed.
-// inline CompileTimeFuncMatch<false> RunTimeFunc() { return CompileTimeFuncMatch<false>(); }
+inline CompileTimeFuncMatch<false> RunTimeFunc() { return CompileTimeFuncMatch<false>(); }
 
 /**
  * @brief Match any function with arguments that satisfy argMatcher and matches the specified
@@ -496,7 +494,8 @@ struct AnyFuncAllArgsMatch : public ParentMatch {
   bool Match(const IRNode* node) const override {
     if (node->type() == type) {
       auto* F = static_cast<const FuncIR*>(node);
-      if (Resolved == F->IsDataTypeEvaluated() && CompileTime == F->is_compile_time()) {
+      CompileTimeFuncMatch<CompileTime> compile_or_rt_matcher;
+      if (Resolved == F->IsDataTypeEvaluated() && compile_or_rt_matcher.Match(F)) {
         for (const auto a : F->args()) {
           if (!argMatcher_.Match(a)) {
             return false;
@@ -519,8 +518,7 @@ struct AnyFuncAllArgsMatch : public ParentMatch {
  * @param argMatcher: The pattern that must be satisfied for all arguments.
  */
 template <typename Arg_t>
-inline AnyFuncAllArgsMatch<Arg_t, false, false> UnresolvedRTFuncMatchAllArgs(
-    const Arg_t& argMatcher) {
+inline AnyFuncAllArgsMatch<Arg_t, false> UnresolvedRTFuncMatchAllArgs(const Arg_t& argMatcher) {
   return AnyFuncAllArgsMatch<Arg_t, false, false>(argMatcher);
 }
 
@@ -537,7 +535,8 @@ struct AnyFuncAnyArgsMatch : public ParentMatch {
   bool Match(const IRNode* node) const override {
     if (node->type() == type) {
       auto* F = static_cast<const FuncIR*>(node);
-      if (CompileTime == F->is_compile_time()) {
+      CompileTimeFuncMatch<CompileTime> compile_or_rt_matcher;
+      if (compile_or_rt_matcher.Match(F)) {
         for (const auto a : F->args()) {
           if (argMatcher_.Match(a)) {
             return true;
@@ -777,40 +776,6 @@ inline ClassMatch<IRNodeType::kMap> Map() { return ClassMatch<IRNodeType::kMap>(
 inline ClassMatch<IRNodeType::kBlockingAgg> BlockingAgg() {
   return ClassMatch<IRNodeType::kBlockingAgg>();
 }
-
-/**
- * @brief Match Range based on the start stop arguments.
- *
- * @tparam LHS_t: the matcher of the lhs side.
- * @tparam RHS_t: the matcher of the rhs side.
- * @tparam Commutable: whether we can swap lhs and rhs.
- */
-template <bool CompileTime = false>
-struct FuncMatch : public ParentMatch {
-  bool compile_time = CompileTime;
-
-  // The evaluation order is always stable, regardless of Commutability.
-  // The LHS is always matched first.
-  FuncMatch() : ParentMatch(IRNodeType::kFunc) {}
-
-  bool Match(const IRNode* node) const override {
-    if (node->type() == IRNodeType::kFunc) {
-      auto* f = static_cast<const FuncIR*>(node);
-      return f->is_compile_time() == compile_time;
-    }
-    return false;
-  }
-};
-
-/**
- * @brief Match compile-time function.
- */
-inline FuncMatch<true> CompileTimeFunc() { return FuncMatch<true>(); }
-
-/**
- * @brief Match run-time function.
- */
-inline FuncMatch<false> RunTimeFunc() { return FuncMatch<false>(); }
 
 /**
  * @brief Match Filter operator.

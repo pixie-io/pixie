@@ -481,7 +481,6 @@ class CloneTests : public OperatorTests {
     EXPECT_EQ(new_ir->op().python_op, old_ir->op().python_op) << err_string;
     EXPECT_EQ(new_ir->op().carnot_op_name, old_ir->op().carnot_op_name) << err_string;
     EXPECT_EQ(new_ir->func_id(), old_ir->func_id()) << err_string;
-    EXPECT_EQ(new_ir->is_compile_time(), old_ir->is_compile_time()) << err_string;
     EXPECT_EQ(new_ir->IsDataTypeEvaluated(), old_ir->IsDataTypeEvaluated()) << err_string;
     EXPECT_EQ(new_ir->EvaluatedDataType(), old_ir->EvaluatedDataType()) << err_string;
 
