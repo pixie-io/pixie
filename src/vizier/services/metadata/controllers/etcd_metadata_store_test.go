@@ -932,3 +932,121 @@ func TestUpdateIPMap(t *testing.T) {
 	assert.Equal(t, 1, len(resp.Kvs))
 	assert.Equal(t, "localhost", string(resp.Kvs[0].Value))
 }
+
+func TestGetNodePods(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	// Create pods.
+	pod1 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "abcd",
+			Namespace: "test",
+			UID:       "abcd-pod",
+		},
+		Status: &metadatapb.PodStatus{
+			HostIP: "127.0.0.1",
+		},
+	}
+	pod1Text, err := pod1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal pod pb")
+	}
+
+	pod2 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "efgh",
+			Namespace: "test",
+			UID:       "efgh-pod",
+		},
+		Status: &metadatapb.PodStatus{
+			HostIP: "127.0.0.7",
+		},
+	}
+	pod2Text, err := pod2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal pod pb")
+	}
+
+	pod3 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "xyz",
+			Namespace: "test",
+			UID:       "xyz-pod",
+		},
+		Status: &metadatapb.PodStatus{
+			HostIP: "127.0.0.1",
+		},
+	}
+	pod3Text, err := pod3.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal pod pb")
+	}
+
+	// This pod does not have a corresponding entry in the IP map... Which should never
+	// happen since nodes are always created before pods. But, in the case that
+	// something weird like this happens, we should handle it gracefully.
+	pod4 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "qwerty",
+			Namespace: "test",
+			UID:       "qwerty-pod",
+		},
+		Status: &metadatapb.PodStatus{
+			HostIP: "127.0.0.6",
+		},
+	}
+	pod4Text, err := pod4.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal pod pb")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/pod/test/abcd-pod", string(pod1Text))
+	if err != nil {
+		t.Fatal("Unable to add pod to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/pod/test/efgh-pod", string(pod2Text))
+	if err != nil {
+		t.Fatal("Unable to add pod to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/pod/test/xyz-pod", string(pod3Text))
+	if err != nil {
+		t.Fatal("Unable to add pod to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/pod/test/qwerty-pod", string(pod4Text))
+	if err != nil {
+		t.Fatal("Unable to add pod to etcd.")
+	}
+
+	// Add IP maps.
+	_, err = etcdClient.Put(context.Background(), "/ip/127.0.0.1/hostname", "localhost")
+	if err != nil {
+		t.Fatal("Unable to add IP map to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/ip/127.0.0.7/hostname", "minikube")
+	if err != nil {
+		t.Fatal("Unable to add IP map to etcd.")
+	}
+
+	pods, err := mds.GetNodePods("localhost")
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods))
+
+	assert.Equal(t, pod1.Metadata.Name, (*pods[0]).Metadata.Name)
+	assert.Equal(t, pod3.Metadata.Name, (*pods[1]).Metadata.Name)
+
+	pods, err = mds.GetNodePods("minikube")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(pods))
+
+	assert.Equal(t, pod2.Metadata.Name, (*pods[0]).Metadata.Name)
+}
