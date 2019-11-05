@@ -843,6 +843,8 @@ class FuncIR : public ExpressionIR {
   std::string func_name() const {
     return absl::Substitute("$0.$1", func_prefix_, op_.carnot_op_name);
   }
+  std::string carnot_op_name() const { return op_.carnot_op_name; }
+
   int64_t func_id() const { return func_id_; }
   void set_func_id(int64_t func_id) { func_id_ = func_id; }
   const std::vector<ExpressionIR*>& args() const { return args_; }

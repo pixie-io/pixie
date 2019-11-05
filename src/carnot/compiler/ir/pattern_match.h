@@ -39,6 +39,7 @@
  */
 #pragma once
 #include <string>
+#include <unordered_map>
 
 #include "src/carnot/compiler/ir/ir_nodes.h"
 namespace pl {
@@ -353,6 +354,131 @@ struct MetadataIRMatch : public ParentMatch {
  * @brief Match a MetadataIR that doesn't have an associated MetadataResolver node.
  */
 inline MetadataIRMatch<false> UnresolvedMetadataIR() { return MetadataIRMatch<false>(); }
+
+/**
+ * @brief Match Compile Time integer arithmetic
+ * TODO(nserrino, philkuz) Generalize this better, currently just a special case for Range.
+ */
+struct CompileTimeIntegerArithmetic : public ParentMatch {
+  CompileTimeIntegerArithmetic() : ParentMatch(IRNodeType::kFunc) {}
+
+  bool Match(const IRNode* node) const override {
+    if (!Func().Match(node)) {
+      return false;
+    }
+    auto func = static_cast<const FuncIR*>(node);
+    switch (func->opcode()) {
+      case FuncIR::Opcode::add:
+      case FuncIR::Opcode::mult:
+      case FuncIR::Opcode::sub:
+        break;
+      default:
+        return false;
+    }
+    if (func->args().size() < 2) {
+      return false;
+    }
+    for (const auto& arg : func->args()) {
+      if (Int().Match(arg) || Match(arg)) {
+        continue;
+      }
+      return false;
+    }
+    return true;
+  }
+};
+
+const std::unordered_map<std::string, std::chrono::nanoseconds> kUnitTimeFnStr = {
+    {"minutes", std::chrono::minutes(1)},           {"hours", std::chrono::hours(1)},
+    {"seconds", std::chrono::seconds(1)},           {"days", std::chrono::hours(24)},
+    {"microseconds", std::chrono::microseconds(1)}, {"milliseconds", std::chrono::milliseconds(1)}};
+
+const char kTimeNowFnStr[] = "now";
+
+/**
+ * @brief Match Compile Time now() function
+ */
+struct CompileTimeNow : public ParentMatch {
+  CompileTimeNow() : ParentMatch(IRNodeType::kFunc) {}
+
+  bool Match(const IRNode* node) const override {
+    if (!Func().Match(node)) {
+      return false;
+    }
+    auto func = static_cast<const FuncIR*>(node);
+    return func->carnot_op_name() == kTimeNowFnStr && func->args().size() == 0;
+  }
+};
+
+/**
+ * @brief Match Compile Time minutes(2), etc functions
+ */
+struct CompileTimeUnitTime : public ParentMatch {
+  CompileTimeUnitTime() : ParentMatch(IRNodeType::kFunc) {}
+
+  bool Match(const IRNode* node) const override {
+    if (!Func().Match(node)) {
+      return false;
+    }
+    auto func = static_cast<const FuncIR*>(node);
+    if (kUnitTimeFnStr.find(func->carnot_op_name()) == kUnitTimeFnStr.end()) {
+      return false;
+    }
+    if (func->args().size() != 1) {
+      return false;
+    }
+    auto arg = func->args()[0];
+    return Int().Match(arg) || CompileTimeIntegerArithmetic().Match(arg);
+  }
+};
+
+/**
+ * @brief Matches funcs we can execute at compile time.
+ * TODO(nserrino, philkuz) Implement more robust constant-folding rather than just a few one-offs.
+ */
+template <bool CompileTime = false>
+struct CompileTimeFuncMatch : public ParentMatch {
+  bool match_compile_time = CompileTime;
+
+  // The evaluation order is always stable, regardless of Commutability.
+  // The LHS is always matched first.
+  CompileTimeFuncMatch() : ParentMatch(IRNodeType::kFunc) {}
+
+  bool Match(const IRNode* node) const override {
+    if (!Func().Match(node)) {
+      return false;
+    }
+    return match_compile_time == MatchCompileTimeFunc(static_cast<const FuncIR*>(node));
+  }
+
+ private:
+  bool MatchCompileTimeFunc(FuncIR* func) const {
+    // TODO(nserrino): This selection of compile time evaluation is extremely limited.
+    // We should add in more generalized constant folding at compile time.
+    if (CompileTimeNow().Match(func)) {
+      return true;
+    }
+    if (CompileTimeUnitTime().Match(func)) {
+      return true;
+    }
+    if (CompileTimeIntegerArithmetic().Match(func)) {
+      return true;
+    }
+    return false;
+  }
+};
+
+/**
+ * @brief Match compile-time function.
+ */
+// TODO(nserrino) Uncomment this once the previous matchers are removed.
+// inline CompileTimeFuncMatch<true> CompileTimeFunc() { return CompileTimeFuncMatch<true>(); }
+
+/**
+ * @brief Match run-time function.
+ */
+// TODO(nserrino) Uncomment this once the previous matchers are removed.
+// inline CompileTimeFuncMatch<false> RunTimeFunc() { return CompileTimeFuncMatch<false>(); }
 
 /**
  * @brief Match any function with arguments that satisfy argMatcher and matches the specified

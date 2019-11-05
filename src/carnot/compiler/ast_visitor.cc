@@ -8,11 +8,6 @@ namespace carnot {
 namespace compiler {
 using pypa::AstType;
 
-const std::unordered_map<std::string, std::chrono::nanoseconds> kUnitTimeFnStr = {
-    {"minutes", std::chrono::minutes(1)},           {"hours", std::chrono::hours(1)},
-    {"seconds", std::chrono::seconds(1)},           {"days", std::chrono::hours(24)},
-    {"microseconds", std::chrono::microseconds(1)}, {"milliseconds", std::chrono::milliseconds(1)}};
-
 StatusOr<FuncIR::Op> ASTWalker::GetOp(const std::string& python_op, const pypa::AstPtr node) {
   auto op_find = FuncIR::op_map.find(python_op);
   if (op_find == FuncIR::op_map.end()) {
