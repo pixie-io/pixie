@@ -84,6 +84,59 @@ enum class ParseSyncType {
 };
 
 /**
+ * Utility to convert positions from a position within a set of combined buffers,
+ * to the position within a set of matching content in disjoint buffers.
+ */
+class PositionConverter {
+ public:
+  PositionConverter() { Reset(); }
+
+  void Reset() {
+    curr_seq_ = 0;
+    size_ = 0;
+  }
+
+  /**
+   * @brief Convert position within a set of combined buffers
+   * to the position within a set of matching content in disjoint buffers.
+   *
+   * @param msgs The original set of disjoint buffers.
+   * @param pos The position within the combined buffer to convert.
+   * @return Position within disjoint buffers, as buffer number and offset within the buffer.
+   */
+  BufferPosition Convert(const std::vector<std::string_view>& msgs, size_t pos) {
+    DCHECK_GE(pos, last_query_pos_)
+        << "Position converter cannot go backwards (enforced for performance reasons).";
+    // If we ever want to remove the restriction above, the following would do the trick:
+    //   if (pos <= last_query_pos_) { Reset(); }
+
+    // Record position of this call, to enforce that we never go backwards.
+    last_query_pos_ = pos;
+
+    while (curr_seq_ < msgs.size()) {
+      const auto& msg = msgs[curr_seq_];
+
+      // If next message would cause the crossover,
+      // then we have found the point we're looking for.
+      if (pos < size_ + msg.size()) {
+        return {curr_seq_, pos - size_};
+      }
+
+      ++curr_seq_;
+      size_ += msg.size();
+    }
+    return {curr_seq_, 0};
+  }
+
+ private:
+  // Optimization: keep track of last state, so we can efficiently resume search,
+  // so long as the next position to Convert() is after the last one.
+  size_t curr_seq_ = 0;
+  size_t size_ = 0;
+  size_t last_query_pos_ = 0;
+};
+
+/**
  * @brief Parses a stream of events traced from write/send/read/recv syscalls,
  * and emits as many complete parsed messages as it can.
  */
@@ -141,11 +194,11 @@ class EventParser {
 
     std::vector<BufferPosition> positions;
 
+    PositionConverter converter;
+
     // Match timestamps with the parsed messages.
     for (size_t i = 0; i < result.start_positions.size(); ++i) {
-      // TODO(oazizi): ConvertPosition is inefficient, because it starts searching from scratch
-      // everytime. Could do better if ConvertPosition took a starting seq and size.
-      BufferPosition position = ConvertPosition(msgs_, start_pos + result.start_positions[i]);
+      BufferPosition position = converter.Convert(msgs_, start_pos + result.start_positions[i]);
       DCHECK(position.seq_num < msgs_.size()) << absl::Substitute(
           "The sequence number must be in valid range of [0, $0)", msgs_.size());
       positions.push_back(position);
@@ -157,11 +210,11 @@ class EventParser {
       size_t last_byte_pos = (i == result.start_positions.size() - 1)
                                  ? result.end_position - 1
                                  : result.start_positions[i + 1] - 1;
-      BufferPosition end_position = ConvertPosition(msgs_, start_pos + last_byte_pos);
+      BufferPosition end_position = converter.Convert(msgs_, start_pos + last_byte_pos);
       msg.time_span.end_ns = time_spans_[end_position.seq_num].end_ns;
     }
 
-    BufferPosition end_position = ConvertPosition(msgs_, result.end_position);
+    BufferPosition end_position = converter.Convert(msgs_, start_pos + result.end_position);
 
     // Reset all state. Call to ParseMessages() is destructive of Append() state.
     msgs_.clear();
@@ -180,27 +233,6 @@ class EventParser {
       result.append(msg);
     }
     return result;
-  }
-
-  /**
-   * @brief Utility to convert positions from a position within a set of combined buffers,
-   * to the position within a set of matching content in disjoint buffers.
-   *
-   * @param msgs The original set of disjoint buffers.
-   * @param pos The position within the combined buffer.
-   * @return Position within disjoint buffers, as buffer number and offset within the buffer.
-   */
-  BufferPosition ConvertPosition(const std::vector<std::string_view>& msgs, size_t pos) {
-    size_t curr_seq = 0;
-    size_t size = 0;
-    for (auto msg : msgs) {
-      size += msg.size();
-      if (pos < size) {
-        return {curr_seq, pos - (size - msg.size())};
-      }
-      ++curr_seq;
-    }
-    return {curr_seq, 0};
   }
 
   // ts_nses_ is the time stamp in nanosecond for the message in msgs_ with the same indexes.

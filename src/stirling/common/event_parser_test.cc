@@ -63,6 +63,33 @@ bool operator==(const BufferPosition& lhs, const BufferPosition& rhs) {
   return lhs.seq_num == rhs.seq_num && lhs.offset == rhs.offset;
 }
 
+TEST(PositionConverterTest, Basic) {
+  PositionConverter converter;
+
+  std::vector<std::string_view> msgs = {"0", "12", "345", "6", "789"};
+
+  BufferPosition bp;
+  bp = converter.Convert(msgs, 0);
+  EXPECT_EQ(bp, (BufferPosition{0, 0}));
+
+  bp = converter.Convert(msgs, 6);
+  EXPECT_EQ(bp, (BufferPosition{3, 0}));
+
+  bp = converter.Convert(msgs, 6);
+  EXPECT_EQ(bp, (BufferPosition{3, 0}));
+
+  bp = converter.Convert(msgs, 8);
+  EXPECT_EQ(bp, (BufferPosition{4, 1}));
+
+  bp = converter.Convert(msgs, 8);
+  EXPECT_EQ(bp, (BufferPosition{4, 1}));
+
+#if DCHECK_IS_ON()
+  // Cannot go backwards.
+  EXPECT_DEATH(converter.Convert(msgs, 7), "");
+#endif
+}
+
 // Use dummy protocol to test basics of EventParser and its position conversions.
 TEST(EventParserTest, BasicPositionConversions) {
   EventParser<TestFrame> parser;
