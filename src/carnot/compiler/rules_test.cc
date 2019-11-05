@@ -1844,6 +1844,64 @@ TEST_F(RulesTest, setup_join_type_rule) {
   EXPECT_EQ(right_only_col->container_op_parent_idx(), 0);
 }
 
+TEST_F(RulesTest, eval_compile_time_test) {
+  auto c1 = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(c1->Init(10, ast));
+  auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(c2->Init(9, ast));
+
+  auto add_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  EXPECT_OK(add_func->Init(FuncIR::op_map["+"], ASTWalker::kCompileTimeFuncPrefix,
+                           std::vector<ExpressionIR*>({c1, c2}), true /*compile time*/, ast));
+  auto mult_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], ASTWalker::kCompileTimeFuncPrefix,
+                            std::vector<ExpressionIR*>({c1, add_func}), true /*compile time*/,
+                            ast));
+
+  // hours(10*(10 + 9))
+  auto hours_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  EXPECT_OK(hours_func->Init({FuncIR::Opcode::non_op, "", "hours"},
+                             ASTWalker::kCompileTimeFuncPrefix,
+                             std::vector<ExpressionIR*>({mult_func}), true /*compile time*/, ast));
+
+  EvaluateCompileTimeExprRule rule(compiler_state_.get());
+  auto evaluted = rule.Evaluate(hours_func).ValueOrDie();
+  EXPECT_EQ(IRNodeType::kInt, evaluted->type());
+  auto casted_int = static_cast<IntIR*>(evaluted);
+  std::chrono::nanoseconds time_output = 190 * std::chrono::hours(1);
+  EXPECT_EQ(time_output.count(), casted_int->val());
+}
+
+TEST_F(RulesTest, eval_partial_compile_time_test) {
+  auto c1 = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(c1->Init(10, ast));
+  auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(c2->Init(9, ast));
+
+  auto add_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  EXPECT_OK(add_func->Init(FuncIR::op_map["+"], ASTWalker::kCompileTimeFuncPrefix,
+                           std::vector<ExpressionIR*>({c1, c2}), true /*compile time*/, ast));
+  auto mult_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], ASTWalker::kCompileTimeFuncPrefix,
+                            std::vector<ExpressionIR*>({c1, add_func}), true /*compile time*/,
+                            ast));
+
+  // not_hours(10*(10 + 9))
+  auto not_hours_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  EXPECT_OK(not_hours_func->Init(
+      {FuncIR::Opcode::non_op, "", "not_hours"}, ASTWalker::kCompileTimeFuncPrefix,
+      std::vector<ExpressionIR*>({mult_func}), true /*compile time*/, ast));
+
+  EvaluateCompileTimeExprRule rule(compiler_state_.get());
+  auto evaluted = rule.Evaluate(not_hours_func).ValueOrDie();
+  EXPECT_EQ(IRNodeType::kFunc, evaluted->type());
+  auto casted = static_cast<FuncIR*>(evaluted);
+  EXPECT_EQ(1, casted->args().size());
+  EXPECT_EQ(IRNodeType::kInt, casted->args()[0]->type());
+  auto casted_int_arg = static_cast<IntIR*>(casted->args()[0]);
+  EXPECT_EQ(190, casted_int_arg->val());
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

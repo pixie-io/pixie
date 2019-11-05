@@ -45,6 +45,7 @@ class Rule {
 
   virtual StatusOr<bool> Apply(IRNode* ir_node) = 0;
   void DeferNodeDeletion(int64_t);
+  Status EmptyDeleteQueue(IR* ir_graph);
 
   CompilerState* compiler_state_;
 
@@ -107,6 +108,33 @@ class OperatorRelationRule : public Rule {
   StatusOr<bool> SetUnion(UnionIR* union_ir) const;
   StatusOr<bool> SetJoin(JoinIR* join_op) const;
   StatusOr<bool> SetOther(OperatorIR* op) const;
+};
+
+class EvaluateCompileTimeExprRule : public Rule {
+  /**
+   * @brief Takes an ExpressionIR node and traverses it to evaluate certain expressions at compile
+   * time.
+   * TODO(nserrino, philkuz) Generalize this beyond a few special cases.
+   */
+
+ public:
+  explicit EvaluateCompileTimeExprRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  // This rule needs to expose a different method than most rules, because its callers need
+  // to be able to update their pointer to the new object returned by this rule.
+  // TODO(nserrino,philkuz) Refactor rules to be ID-based, not pointer-based, to improve
+  // composability with rules and make this exception unnecessary.
+  StatusOr<ExpressionIR*> Evaluate(ExpressionIR* ir_node) {
+    PL_ASSIGN_OR_RETURN(auto res, EvaluateExpr(ir_node));
+    PL_RETURN_IF_ERROR(EmptyDeleteQueue(ir_node->graph_ptr()));
+    return res;
+  }
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+  StatusOr<ExpressionIR*> EvaluateExpr(ExpressionIR* ir_node);
+  StatusOr<IntIR*> EvalArithmetic(std::vector<ExpressionIR*> args, FuncIR* ir_node);
+  StatusOr<IntIR*> EvalTimeNow(std::vector<ExpressionIR*> args, FuncIR* ir_node);
+  StatusOr<IntIR*> EvalUnitTime(std::vector<ExpressionIR*> evaled_args, FuncIR* ir_node);
 };
 
 class RangeArgExpressionRule : public Rule {

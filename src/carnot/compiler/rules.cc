@@ -9,6 +9,14 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+Status Rule::EmptyDeleteQueue(IR* ir_graph) {
+  while (!node_delete_q.empty()) {
+    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(node_delete_q.front()));
+    node_delete_q.pop();
+  }
+  return Status::OK();
+}
+
 StatusOr<bool> Rule::Execute(IR* ir_graph) {
   std::vector<int64_t> topo_graph = ir_graph->dag().TopologicalSort();
   bool any_changed = false;
@@ -16,10 +24,7 @@ StatusOr<bool> Rule::Execute(IR* ir_graph) {
     PL_ASSIGN_OR_RETURN(bool node_is_changed, Apply(ir_graph->Get(node_i)));
     any_changed = any_changed || node_is_changed;
   }
-  while (!node_delete_q.empty()) {
-    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(node_delete_q.front()));
-    node_delete_q.pop();
-  }
+  PL_RETURN_IF_ERROR(EmptyDeleteQueue(ir_graph));
   return any_changed;
 }
 
@@ -284,6 +289,126 @@ StatusOr<bool> OperatorRelationRule::SetOther(OperatorIR* operator_ir) const {
   CHECK_EQ(operator_ir->parents().size(), 1UL);
   PL_RETURN_IF_ERROR(operator_ir->SetRelation(operator_ir->parents()[0]->relation()));
   return true;
+}
+
+// EvaluateCompileTimeExprRule currently needs to be treated as a special case until we move to
+// ID-based rule application rather than pointer-based rule applications. It shouldn't be invoked
+// with Apply() until that happens, because the caller needs to be able to overwrite its input
+// with the result of Evaluate().
+StatusOr<bool> EvaluateCompileTimeExprRule::Apply(IRNode* ir_node) {
+  return ir_node->CreateIRNodeError("Unexpected invocation of EvaluateCompileTimeExprRule.");
+}
+
+StatusOr<ExpressionIR*> EvaluateCompileTimeExprRule::EvaluateExpr(ExpressionIR* ir_node) {
+  if (!Match(ir_node, Func())) {
+    return ir_node;
+  }
+
+  auto func_ir = static_cast<FuncIR*>(ir_node);
+
+  std::vector<ExpressionIR*> evaled_args;
+  for (const auto& arg : func_ir->args()) {
+    PL_ASSIGN_OR_RETURN(auto new_arg, EvaluateExpr(arg));
+    evaled_args.push_back(new_arg);
+  }
+
+  DeferNodeDeletion(func_ir->id());
+
+  if (Match(func_ir, CompileTimeIntegerArithmetic())) {
+    return EvalArithmetic(evaled_args, func_ir);
+  }
+  if (Match(func_ir, CompileTimeNow())) {
+    return EvalTimeNow(evaled_args, func_ir);
+  }
+  if (Match(func_ir, CompileTimeUnitTime())) {
+    return EvalUnitTime(evaled_args, func_ir);
+  }
+
+  // TODO(nserrino): Uncomment once CompileTimeFunc is ported over.
+  // if (Match(func_ir, CompileTimeFunc())) {
+  //   return ir_node->CreateIRNodeError(
+  //       "Node is a compile time func but it did not match any known compile time funcs");
+  // }
+
+  // Walk the tree of all functions to evaluate subtrees that are able to be evaluated at compile
+  // time, even if this function is not able to be evaluated at this point.
+  PL_ASSIGN_OR_RETURN(FuncIR * new_func, func_ir->graph_ptr()->MakeNode<FuncIR>());
+  PL_RETURN_IF_ERROR(new_func->Init(func_ir->op(), func_ir->func_prefix(), evaled_args,
+                                    func_ir->is_compile_time(), ir_node->ast_node()));
+  return new_func;
+}
+
+StatusOr<IntIR*> EvaluateCompileTimeExprRule::EvalArithmetic(std::vector<ExpressionIR*> args,
+                                                             FuncIR* func_ir) {
+  if (args.size() != 2) {
+    return func_ir->CreateIRNodeError("Expected 2 argument to $0 call, got $1.",
+                                      func_ir->carnot_op_name(), args.size());
+  }
+
+  std::vector<IntIR*> casted;
+  for (const auto& arg : args) {
+    if (arg->type() != IRNodeType::kInt) {
+      return func_ir->CreateIRNodeError("Expected integer arguments only to function $0",
+                                        func_ir->carnot_op_name());
+    }
+    casted.push_back(static_cast<IntIR*>(arg));
+  }
+
+  int64_t result = 0;
+  // TODO(philkuz) (PL-709) Make a UDCF (C := CompileTime) to combine these together.
+  if (func_ir->opcode() == FuncIR::Opcode::mult) {
+    result = 1;
+    for (auto a : casted) {
+      result *= a->val();
+    }
+  } else if (func_ir->opcode() == FuncIR::Opcode::add) {
+    for (auto a : casted) {
+      result += a->val();
+    }
+  } else if (func_ir->opcode() == FuncIR::Opcode::sub) {
+    result = casted[0]->val() - casted[1]->val();
+  } else {
+    return func_ir->CreateIRNodeError("eval arithm Only allowing [multiply, add, subtract], not $0",
+                                      func_ir->carnot_op_name());
+  }
+  PL_ASSIGN_OR_RETURN(IntIR * ir_result, func_ir->graph_ptr()->MakeNode<IntIR>());
+  PL_RETURN_IF_ERROR(ir_result->Init(result, func_ir->ast_node()));
+  return ir_result;
+}
+
+StatusOr<IntIR*> EvaluateCompileTimeExprRule::EvalTimeNow(std::vector<ExpressionIR*> args,
+                                                          FuncIR* func_ir) {
+  CHECK_EQ(args.size(), 0U) << "Received unexpected args for " << func_ir->carnot_op_name()
+                            << " function";
+  PL_ASSIGN_OR_RETURN(IntIR * ir_node, func_ir->graph_ptr()->MakeNode<IntIR>());
+  PL_RETURN_IF_ERROR(ir_node->Init(compiler_state_->time_now().val, func_ir->ast_node()));
+  return ir_node;
+}
+
+StatusOr<IntIR*> EvaluateCompileTimeExprRule::EvalUnitTime(std::vector<ExpressionIR*> args,
+                                                           FuncIR* func_ir) {
+  CHECK_EQ(args.size(), 1U) << "Expected exactly 1 arg for " << func_ir->carnot_op_name()
+                            << " function";
+  auto fn_type_iter = kUnitTimeFnStr.find(func_ir->carnot_op_name());
+  if (fn_type_iter == kUnitTimeFnStr.end()) {
+    return func_ir->CreateIRNodeError("Time unit function '$0' not found",
+                                      func_ir->carnot_op_name());
+  }
+
+  auto arg = args[0];
+  if (!Match(arg, Int())) {
+    return func_ir->CreateIRNodeError("Expected integer for argument in ",
+                                      func_ir->carnot_op_name());
+  }
+  int64_t time_val = static_cast<IntIR*>(arg)->val();
+
+  // create the ir_node;
+  PL_ASSIGN_OR_RETURN(auto time_node, func_ir->graph_ptr()->MakeNode<IntIR>());
+  std::chrono::nanoseconds time_output;
+  auto time_unit = fn_type_iter->second;
+  time_output = time_unit * time_val;
+  PL_RETURN_IF_ERROR(time_node->Init(time_output.count(), func_ir->ast_node()));
+  return time_node;
 }
 
 StatusOr<bool> RangeArgExpressionRule::Apply(IRNode* ir_node) {
