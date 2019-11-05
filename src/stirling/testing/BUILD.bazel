@@ -11,5 +11,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/system/testing:cc_library",
+        "//src/stirling/mysql:cc_library",
+        "//src/stirling:cc_library",
     ],
 )

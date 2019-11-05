@@ -160,6 +160,17 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "mysql_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["mysql_trace_bpf_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "grpc_trace_bpf_test",
     timeout = "moderate",
     srcs = ["grpc_trace_bpf_test.cc"],

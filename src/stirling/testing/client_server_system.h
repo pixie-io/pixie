@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "src/common/system/testing/tcp_socket.h"
