@@ -103,6 +103,7 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
   // MySQL test inputs
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
   static constexpr int kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");
+  static constexpr int kMySQLReqCmdIdx = kMySQLTable.ColIndex("req_cmd");
   static constexpr int kMySQLRespBodyIdx = kMySQLTable.ColIndex("resp_body");
   static constexpr int kMySQLLatencyIdx = kMySQLTable.ColIndex("latency_ns");
 
@@ -779,6 +780,179 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
   // In test environment, latencies are simply the number of packets in the response.
   // In this case 7 response packets: 1 header + 1 col defs + 1 EOF + 3 rows + 1 EOF.
   EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMySQLLatencyIdx]), ElementsAre(7));
+}
+
+TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
+  FLAGS_stirling_enable_mysql_tracing = true;
+
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
+
+  // The following is a captured trace while running a script on a real instance of MySQL.
+  std::vector<std::unique_ptr<SocketDataEvent>> events;
+  events.push_back(
+      InitSendEvent({ConstStringView("\x21\x00\x00\x00"
+                                     "\x03"
+                                     "select @@version_comment limit 1")}));
+  events.push_back(InitRecvEvent({ConstStringView(
+      "\x01\x00\x00\x01"
+      "\x01\x27\x00\x00\x02\x03"
+      "def"
+      "\x00\x00\x00\x11"
+      "@@version_comment"
+      "\x00\x0C\x21\x00\x18\x00\x00\x00\xFD\x00\x00\x1F\x00\x00\x09\x00\x00\x03\x08"
+      "(Ubuntu)"
+      "\x07\x00\x00\x04\xFE\x00\x00\x02\x00\x00\x00")}));
+  events.push_back(
+      InitSendEvent({ConstStringView("\x22\x00\x00\x00"
+                                     "\x03"
+                                     "DROP DATABASE IF EXISTS employees")}));
+  events.push_back(
+      InitRecvEvent({ConstStringView("\x07\x00\x00\x01"
+                                     "\x00\x00\x00\x02\x01\x00\x00")}));
+  events.push_back(
+      InitSendEvent({ConstStringView("\x28\x00\x00\x00"
+                                     "\x03"
+                                     "CREATE DATABASE IF NOT EXISTS employees")}));
+  events.push_back(
+      InitRecvEvent({ConstStringView("\x07\x00\x00\x01"
+                                     "\x00\x01\x00\x02\x00\x00\x00")}));
+  events.push_back(
+      InitSendEvent({ConstStringView("\x12\x00\x00\x00"
+                                     "\x03"
+                                     "SELECT DATABASE()")}));
+  events.push_back(InitRecvEvent(
+      {ConstStringView("\x01\x00\x00\x01"
+                       "\x01\x20\x00\x00\x02\x03"
+                       "def"
+                       "\x00\x00\x00\x0A"
+                       "DATABASE()"
+                       "\x00\x0C\x21\x00\x66\x00\x00\x00\xFD\x00\x00\x1F\x00\x00\x01\x00\x00\x03"
+                       "\xFB\x07\x00\x00\x04\xFE\x00\x00\x02\x00\x00\x00")}));
+  events.push_back(
+      InitSendEvent({ConstStringView("\x0A\x00\x00\x00"
+                                     "\x02"
+                                     "employees")}));
+  events.push_back(
+      InitRecvEvent({ConstStringView("\x15\x00\x00\x01"
+                                     "\x00\x00\x00\x02\x40\x00\x00\x00\x0C\x01\x0A\x09"
+                                     "employees")}));
+  events.push_back(
+      InitSendEvent({ConstStringView("\x2f\x00\x00\x00"
+                                     "\x03"
+                                     "SELECT 'CREATING DATABASE STRUCTURE' as 'INFO'")}));
+  events.push_back(InitRecvEvent({ConstStringView(
+      "\x01\x00\x00\x01"
+      "\x01\x1A\x00\x00\x02\x03"
+      "def"
+      "\x00\x00\x00\x04"
+      "INFO"
+      "\x00\x0C\x21\x00\x51\x00\x00\x00\xFD\x01\x00\x1F\x00\x00\x1C\x00\x00\x03\x1B"
+      "CREATING DATABASE STRUCTURE"
+      "\x07\x00\x00\x04\xFE\x00\x00\x02\x00\x00\x00")}));
+  events.push_back(
+      InitSendEvent({ConstStringView("\xC1\x00\x00\x00"
+                                     "\x03"
+                                     "DROP TABLE IF EXISTS dept_emp,\n"
+                                     "                     dept_manager,\n"
+                                     "                     titles,\n"
+                                     "                     salaries, \n"
+                                     "                     employees, \n"
+                                     "                     departments")}));
+  events.push_back(
+      InitRecvEvent({ConstStringView("\x07\x00\x00\x01"
+                                     "\x00\x00\x00\x02\x00\x06\x00")}));
+  events.push_back(
+      InitSendEvent({ConstStringView("\x1C\x00\x00\x00"
+                                     "\x03"
+                                     "set storage_engine = InnoDB")}));
+  events.push_back(
+      InitRecvEvent({ConstStringView("\x31\x00\x00\x01"
+                                     "\xFF\xA9\x04\x23"
+                                     "HY000"
+                                     "Unknown system variable 'storage_engine'")}));
+  events.push_back(
+      InitSendEvent({ConstStringView("\x01\x00\x00\x00"
+                                     "\x01")}));
+
+  source_->AcceptControlEvent(conn);
+  for (auto& event : events) {
+    source_->AcceptDataEvent(std::move(event));
+  }
+
+  DataTable data_table(kMySQLTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+  source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
+  for (const auto& column : record_batch) {
+    EXPECT_EQ(8, column->Size());
+  }
+
+  // In this test environment, latencies are the number of events.
+
+  int idx = 0;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
+            "select @@version_comment limit 1");
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 1");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kQuery));
+  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+
+  ++idx;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
+            "DROP DATABASE IF EXISTS employees");
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kQuery));
+  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+
+  ++idx;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
+            "CREATE DATABASE IF NOT EXISTS employees");
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kQuery));
+  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+
+  ++idx;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "SELECT DATABASE()");
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 1");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kQuery));
+  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+
+  ++idx;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "employees");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kInitDB));
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
+  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+
+  ++idx;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
+            "SELECT 'CREATING DATABASE STRUCTURE' as 'INFO'");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kQuery));
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 1");
+  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+
+  ++idx;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
+            "DROP TABLE IF EXISTS dept_emp,\n                     dept_manager,\n                  "
+            "   titles,\n                     salaries, \n                     employees, \n       "
+            "              departments");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kQuery));
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
+  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+
+  ++idx;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
+            "set storage_engine = InnoDB");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kQuery));
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx),
+            "Unknown system variable 'storage_engine'");
+  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 }
 
 }  // namespace stirling

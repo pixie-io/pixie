@@ -10,11 +10,9 @@ namespace mysql {
  */
 bool IsEOFPacket(const Packet& packet) {
   // '\xfe' + warnings[2] + status_flags[2](If CLIENT_PROTOCOL_41).
-  if (packet.msg.size() != 1 && packet.msg.size() != 5) {
-    return false;
-  }
   // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
-  return packet.msg[0] == static_cast<char>(kRespHeaderEOF);
+  return (packet.msg[0] == static_cast<char>(kRespHeaderEOF)) &&
+         ((packet.msg.size() == 1 || packet.msg.size() == 5));
 }
 
 /**
@@ -22,23 +20,31 @@ bool IsEOFPacket(const Packet& packet) {
  */
 bool IsErrPacket(const Packet& packet) {
   // It's at least 3 bytes, '\xff' + error_code.
-  if (packet.msg.size() < 3) {
-    return false;
-  }
   // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
-  return packet.msg[0] == static_cast<char>(kRespHeaderErr);
+  return packet.msg[0] == static_cast<char>(kRespHeaderErr) && (packet.msg.size() > 3);
 }
 
 /**
  * https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html
  */
 bool IsOKPacket(const Packet& packet) {
-  // 7 bytes is the minimum size for an OK packet. Read doc linked above for details.
-  if (packet.msg.size() < 7) {
-    return false;
-  }
   // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
-  return packet.msg[0] == static_cast<char>(kRespHeaderOK);
+
+  // 3 bytes is the minimum size for an OK packet. Read doc linked above for details.
+  if (packet.msg[0] == static_cast<char>(kRespHeaderOK) && packet.msg.size() >= 3) {
+    return true;
+  }
+
+  // Some servers appear to still use the EOF marker in the OK response, even with
+  // CLIENT_DEPRECATE_EOF.
+  if (packet.msg[0] == static_cast<char>(kRespHeaderEOF) && packet.msg.size() < 9) {
+    if (IsEOFPacket(packet)) {
+      return false;
+    }
+    return true;
+  }
+
+  return false;
 }
 
 bool IsLengthEncodedIntPacket(const Packet& packet) {

@@ -55,8 +55,8 @@ class SocketTraceBPFTest : public ::testing::Test {
   std::string stmt_execute_req;
   std::vector<std::string> stmt_execute_resp;
   std::string stmt_close_req;
-  std::string kQueryReq;
-  std::vector<std::string> QueryResp;
+  std::string query_req;
+  std::vector<std::string> query_resp;
 
   testing::SendRecvScript GetPrepareExecuteScript() {
     testing::SendRecvScript prepare_execute_script;
@@ -101,17 +101,17 @@ class SocketTraceBPFTest : public ::testing::Test {
   testing::SendRecvScript GetQueryScript() {
     testing::SendRecvScript query_script;
 
-    kQueryReq = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
+    query_req = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
         mysql::testdata::kQueryRequest, mysql::MySQLEventType::kQuery));
-    query_script.push_back({kQueryReq});
+    query_script.push_back({query_req});
     query_script.push_back({});
     std::deque<mysql::Packet> query_packets =
         mysql::testutils::GenResultset(mysql::testdata::kQueryResultset);
     for (const auto& query_packet : query_packets) {
-      QueryResp.push_back(mysql::testutils::GenRawPacket(query_packet));
+      query_resp.push_back(mysql::testutils::GenRawPacket(query_packet));
     }
-    for (size_t i = 0; i < QueryResp.size(); ++i) {
-      query_script[1].push_back(QueryResp[i]);
+    for (size_t i = 0; i < query_resp.size(); ++i) {
+      query_script[1].push_back(query_resp[i]);
     }
     return query_script;
   }
