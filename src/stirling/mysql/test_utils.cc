@@ -40,7 +40,7 @@ std::string GenRawPacket(const Packet& packet) {
 /**
  * Generates a raw packet with a string request.
  */
-std::string GenRequest(MySQLEventType command, std::string_view msg) {
+std::string GenRequestPacket(MySQLEventType command, std::string_view msg) {
   return GenRawPacket(0, absl::StrCat(CommandToString(command), msg));
 }
 

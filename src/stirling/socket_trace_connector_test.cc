@@ -895,7 +895,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 1");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
             static_cast<int>(mysql::MySQLEventType::kQuery));
-  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+  EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
@@ -903,7 +903,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
             static_cast<int>(mysql::MySQLEventType::kQuery));
-  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+  EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
@@ -911,21 +911,21 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
             static_cast<int>(mysql::MySQLEventType::kQuery));
-  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+  EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "SELECT DATABASE()");
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 1");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
             static_cast<int>(mysql::MySQLEventType::kQuery));
-  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+  EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "employees");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
             static_cast<int>(mysql::MySQLEventType::kInitDB));
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
-  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+  EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
@@ -933,7 +933,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
             static_cast<int>(mysql::MySQLEventType::kQuery));
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 1");
-  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+  EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
@@ -943,7 +943,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
             static_cast<int>(mysql::MySQLEventType::kQuery));
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
-  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+  EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
@@ -952,7 +952,72 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
             static_cast<int>(mysql::MySQLEventType::kQuery));
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx),
             "Unknown system variable 'storage_engine'");
-  EXPECT_THAT(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
+  EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx).val, 1);
+}
+
+// Inspired from real traced query.
+// Number of resultset rows is large enough to cause a sequence ID rollover.
+TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
+  FLAGS_stirling_enable_mysql_tracing = true;
+
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
+
+  // The following is a captured trace while running a script on a real instance of MySQL.
+  std::vector<std::unique_ptr<SocketDataEvent>> events;
+  events.push_back(InitSendEvent(mysql::testutils::GenRequestPacket(
+      mysql::MySQLEventType::kQuery, "SELECT emp_no FROM employees WHERE emp_no < 15000;")));
+
+  // Sequence ID of zero is the request.
+  int seq_id = 1;
+
+  // First packet: number of columns in the query.
+  events.push_back(InitRecvEvent(
+      mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::GenLengthEncodedInt(1))));
+  // The column def packet (a bunch of length-encoded strings).
+  events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(
+      seq_id++, ConstStringView("\x03"
+                                "def"
+                                "\x09"
+                                "employees"
+                                "\x09"
+                                "employees"
+                                "\x09"
+                                "employees"
+                                "\x06"
+                                "emp_no"
+                                "\x06"
+                                "emp_no"
+                                "\x0C"
+                                "\x3F\x00\x0B\x00\x00\x00\x03\x03\x50\x00\x00\x00"))));
+  // A bunch of resultset rows.
+  for (int id = 10001; id < 19999; ++id) {
+    events.push_back(InitRecvEvent(
+        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::GenLengthEncodedInt(id))));
+  }
+  // Final OK/EOF packet.
+  events.push_back(InitRecvEvent(
+      mysql::testutils::GenRawPacket(seq_id++, ConstStringView("\xFE\x00\x00\x02\x00\x00\x00"))));
+
+  source_->AcceptControlEvent(conn);
+  for (auto& event : events) {
+    source_->AcceptDataEvent(std::move(event));
+  }
+
+  DataTable data_table(kMySQLTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+  source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
+  for (const auto& column : record_batch) {
+    ASSERT_EQ(1, column->Size());
+  }
+
+  int idx = 0;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
+            "SELECT emp_no FROM employees WHERE emp_no < 15000;");
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 9998");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kQuery));
+  EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx).val, 10001);
 }
 
 }  // namespace stirling

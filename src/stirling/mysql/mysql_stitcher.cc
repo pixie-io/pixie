@@ -30,7 +30,7 @@ void SyncRespQueue(const Packet& req_packet, std::deque<Packet>* resp_packets) {
     }
 
     LOG(WARNING) << absl::Substitute(
-        "Ignoring response packet that pre-dates request. Size=$0 [OK=$1 ERR=$2 EOF=$3]",
+        "Dropping response packet that pre-dates request. Size=$0 [OK=$1 ERR=$2 EOF=$3]",
         resp_packet.msg.size(), IsOKPacket(resp_packet), IsErrPacket(resp_packet),
         IsEOFPacket(resp_packet));
     resp_packets->pop_front();
@@ -60,9 +60,11 @@ DequeView<Packet> GetRespView(const std::deque<Packet>& req_packets,
     if (req_packets.size() > 1 && resp_packet.timestamp_ns > req_packets[1].timestamp_ns) {
       break;
     }
-    if (resp_packet.sequence_id != count + 1) {
+
+    uint8_t expected_seq_id = count + 1;
+    if (resp_packet.sequence_id != expected_seq_id) {
       LOG(WARNING) << absl::Substitute(
-          "Found packet with unexpected sequence ID [expected=$0 actual=$1]", count + 1,
+          "Found packet with unexpected sequence ID [expected=$0 actual=$1]", expected_seq_id,
           resp_packet.sequence_id);
       break;
     }
@@ -91,12 +93,16 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
     // Command is the first byte.
     char command = req_packet.msg[0];
 
-    VLOG(2) << absl::StrFormat("command=%x %s", command, req_packet.msg.substr(1));
+    VLOG(2) << absl::StrFormat("command=%x msg=%s", command, req_packet.msg.substr(1));
 
     // For safety, make sure we have no stale response packets.
     SyncRespQueue(req_packet, resp_packets);
 
     DequeView<Packet> resp_packets_view = GetRespView(*req_packets, *resp_packets);
+
+    VLOG(2) << absl::Substitute("req_packets=$0 resp_packets=$1 resp_view_size=$2",
+                                req_packets->size(), resp_packets->size(),
+                                resp_packets_view.size());
 
     // TODO(oazizi): Also try to sync if responses appear to be for the second request in the queue.
     // (i.e. dropped responses).
@@ -211,9 +217,11 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
       ParseState result = s.ValueOrDie();
       DCHECK(result == ParseState::kSuccess || result == ParseState::kNeedsMoreData);
 
-      bool is_last_req = req_packets->size() == 1;
       if (result == ParseState::kNeedsMoreData) {
-        if (is_last_req) {
+        bool is_last_req = req_packets->size() == 1;
+        bool resp_looks_healthy = resp_packets_view.size() == resp_packets->size();
+        if (is_last_req && resp_looks_healthy) {
+          VLOG(3) << "Appears to be an incomplete message. Waiting for more data";
           // More response data will probably be captured in next iteration, so stop.
           // Also, undo the entry we started.
           entries.pop_back();

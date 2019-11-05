@@ -231,7 +231,7 @@ void DataStream::Reset() {
   messages_ = std::monostate();
   offset_ = 0;
   stuck_count_ = 0;
-  // TODO(yzhao): It's likely the case that we'll want to preserve the infalter under the situations
+  // TODO(yzhao): It's likely the case that we'll want to preserve the inflater under the situations
   // where the HEADERS frames have not been lost. Detecting and responding to them probably will
   // change the semantic of Reset(), such that it will means different thing for different
   // protocols.

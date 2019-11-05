@@ -62,10 +62,10 @@ TEST_F(MySQLParserTest, ParseRaw) {
 }
 
 TEST_F(MySQLParserTest, ParseComStmtPrepare) {
-  std::string msg1 =
-      testutils::GenRequest(MySQLEventType::kStmtPrepare, "SELECT name FROM users WHERE id = ?");
-  std::string msg2 =
-      testutils::GenRequest(MySQLEventType::kStmtPrepare, "SELECT age FROM users WHERE id = ?");
+  std::string msg1 = testutils::GenRequestPacket(MySQLEventType::kStmtPrepare,
+                                                 "SELECT name FROM users WHERE id = ?");
+  std::string msg2 = testutils::GenRequestPacket(MySQLEventType::kStmtPrepare,
+                                                 "SELECT age FROM users WHERE id = ?");
 
   Packet expected_message1;
   expected_message1.msg = absl::StrCat(CommandToString(MySQLEventType::kStmtPrepare),
@@ -92,7 +92,7 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   // https://dev.mysql.com/doc/internals/en/com-stmt-execute.html.
   const std::string body(
       ConstStringView("\x01\x00\x00\x00\x00\x01\x00\x00\x00\x00\x01\x0f\x00\x03\x66\x6f\x6f"));
-  std::string msg1 = testutils::GenRequest(MySQLEventType::kStmtExecute, body);
+  std::string msg1 = testutils::GenRequestPacket(MySQLEventType::kStmtExecute, body);
 
   Packet expected_message1;
   expected_message1.msg = absl::StrCat(CommandToString(MySQLEventType::kStmtExecute), body);
@@ -121,8 +121,8 @@ TEST_F(MySQLParserTest, ParseComStmtClose) {
 }
 
 TEST_F(MySQLParserTest, ParseComQuery) {
-  std::string msg1 = testutils::GenRequest(MySQLEventType::kQuery, "SELECT name FROM users");
-  std::string msg2 = testutils::GenRequest(MySQLEventType::kQuery, "SELECT age FROM users");
+  std::string msg1 = testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT name FROM users");
+  std::string msg2 = testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT age FROM users");
 
   Packet expected_message1;
   expected_message1.msg =
@@ -147,7 +147,7 @@ TEST_F(MySQLParserTest, ParseComQuery) {
 TEST_F(MySQLParserTest, ParseResponse) {
   // TODO(chengruizhe): Define GenResponse to generate responses.
   MySQLReqResp kMySQLStmtPrepareMessage = {
-      testutils::GenRequest(
+      testutils::GenRequestPacket(
           MySQLEventType::kStmtPrepare,
           "SELECT COUNT(DISTINCT sock.sock_id) FROM sock JOIN sock_tag ON "
           "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id;"),
@@ -238,7 +238,7 @@ TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
 
 TEST_F(MySQLParserTest, ParseIncompleteRequest) {
   std::string msg1 =
-      testutils::GenRequest(MySQLEventType::kStmtPrepare, "SELECT name FROM users WHERE");
+      testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "SELECT name FROM users WHERE");
   // Change the length of the request so that it isn't complete.
   msg1[0] = '\x24';
 

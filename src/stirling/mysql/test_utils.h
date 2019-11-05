@@ -11,11 +11,13 @@ namespace stirling {
 namespace mysql {
 namespace testutils {
 
+std::string GenLengthEncodedInt(int num);
+
 std::string GenRawPacket(uint8_t packet_num, std::string_view msg);
 
 std::string GenRawPacket(const Packet& packet);
 
-std::string GenRequest(MySQLEventType command, std::string_view msg);
+std::string GenRequestPacket(MySQLEventType command, std::string_view msg);
 
 Packet GenCountPacket(uint8_t seq_id, int num_col);
 

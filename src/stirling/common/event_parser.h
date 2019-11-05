@@ -173,6 +173,7 @@ class EventParser {
 
     size_t start_pos = 0;
     if (sync_type != ParseSyncType::None) {
+      VLOG(3) << "Finding message boundary";
       const bool force_movement = sync_type == ParseSyncType::Aggressive;
       start_pos = FindMessageBoundary<TMessageType>(type, buf, force_movement);
 
@@ -191,6 +192,8 @@ class EventParser {
     buf_view.remove_prefix(start_pos);
     ParseResult<size_t> result = Parse(type, buf_view, messages);
     DCHECK(messages->size() >= prev_size);
+
+    VLOG(3) << absl::Substitute("Parsed $0 new messages", messages->size() - prev_size);
 
     std::vector<BufferPosition> positions;
 
