@@ -366,7 +366,7 @@ StatusOr<IntIR*> EvaluateCompileTimeExprRule::EvalArithmetic(std::vector<Express
   } else if (func_ir->opcode() == FuncIR::Opcode::sub) {
     result = casted[0]->val() - casted[1]->val();
   } else {
-    return func_ir->CreateIRNodeError("eval arithm Only allowing [multiply, add, subtract], not $0",
+    return func_ir->CreateIRNodeError("Only allowing [multiply, add, subtract], not $0",
                                       func_ir->carnot_op_name());
   }
 

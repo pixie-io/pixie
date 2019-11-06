@@ -153,6 +153,7 @@ class RangeArgExpressionRule : public Rule {
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
+
   // Used to support taking strings like "-2m" into a range
   StatusOr<ExpressionIR*> EvalStringTimes(ExpressionIR* ir_node);
   StatusOr<IntIR*> EvalExpression(IRNode* ir_node);

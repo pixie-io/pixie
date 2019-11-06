@@ -286,25 +286,6 @@ TEST(OptionalArgs, DISABLED_map_copy_relation) {
   EXPECT_OK(ParseQuery(map_query));
 }
 
-TEST(RangeValueTests, now_should_compile_without_args) {
-  std::string plc_now_test = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=plc.now())",
-       "queryDF.result(name='mapped')"},
-      "\n");
-  EXPECT_OK(ParseQuery(plc_now_test));
-}
-
-TEST(RangeValueTests, now_should_fail_with_args) {
-  // now doesn't accept args.
-  std::string now_with_args = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=plc.now(1))",
-       "queryDF.result(name='mapped')"},
-      "\n");
-  auto status = ParseQuery(now_with_args);
-  VLOG(2) << status.ToString();
-  EXPECT_FALSE(status.ok());
-}
-
 TEST(RangeValueTests, time_range_compilation) {
   // now doesn't accept args.
   std::string stop_expr = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
@@ -319,31 +300,6 @@ TEST(RangeValueTests, time_range_compilation) {
        "queryDF.result(name='mapped')"},
       "\n");
   EXPECT_OK(ParseQuery(start_and_stop_expr));
-}
-
-TEST(RangeValueTests, nonexistant_time_variables) {
-  // now doesn't accept args.
-  std::string start_expr = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                          "'cpu1']).range(start=0,stop=plc.now()-plc.nevers(2))",
-                                          "queryDF.result(name='mapped')"},
-                                         "\n");
-  EXPECT_NOT_OK(ParseQuery(start_expr));
-
-  std::string start_and_stop_expr =
-      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                     "'cpu1']).range(start=plc.notnow(),stop=plc.now()-plc.nevers(2))",
-                     "queryDF.result(name='mapped')"},
-                    "\n");
-  EXPECT_NOT_OK(ParseQuery(start_and_stop_expr));
-}
-
-TEST(RangeValueTests, namespace_mismatch) {
-  std::string start_and_stop_expr =
-      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                     "'cpu1']).range(start=pl.now() - pl.minutes(2),stop=pl.now()-pl.seconds(2))",
-                     "queryDF.result(name='mapped')"},
-                    "\n");
-  EXPECT_NOT_OK(ParseQuery(start_and_stop_expr));
 }
 
 TEST(RangeValueTests, implied_stop_params) {

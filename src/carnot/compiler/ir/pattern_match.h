@@ -362,32 +362,11 @@ inline MetadataIRMatch<false> UnresolvedMetadataIR() { return MetadataIRMatch<fa
 struct CompileTimeIntegerArithmetic : public ParentMatch {
   CompileTimeIntegerArithmetic() : ParentMatch(IRNodeType::kFunc) {}
 
-  bool Match(const IRNode* node) const override {
-    if (!Func().Match(node)) {
-      return false;
-    }
-    auto func = static_cast<const FuncIR*>(node);
-    switch (func->opcode()) {
-      case FuncIR::Opcode::add:
-      case FuncIR::Opcode::mult:
-      case FuncIR::Opcode::sub:
-        break;
-      default:
-        return false;
-    }
-    if (func->args().size() < 2) {
-      return false;
-    }
-    for (const auto& arg : func->args()) {
-      if (Int().Match(arg) || Match(arg)) {
-        continue;
-      }
-      return false;
-    }
-    return true;
-  }
+  bool Match(const IRNode* node) const override;
+  bool ArgMatches(const IRNode* arg) const;
 };
 
+// TODO(nserrino,philkuz) Move UDF function names into a centralized place.
 const std::unordered_map<std::string, std::chrono::nanoseconds> kUnitTimeFnStr = {
     {"minutes", std::chrono::minutes(1)},           {"hours", std::chrono::hours(1)},
     {"seconds", std::chrono::seconds(1)},           {"days", std::chrono::hours(24)},
@@ -401,13 +380,7 @@ const char kTimeNowFnStr[] = "now";
 struct CompileTimeNow : public ParentMatch {
   CompileTimeNow() : ParentMatch(IRNodeType::kFunc) {}
 
-  bool Match(const IRNode* node) const override {
-    if (!Func().Match(node)) {
-      return false;
-    }
-    auto func = static_cast<const FuncIR*>(node);
-    return func->carnot_op_name() == kTimeNowFnStr && func->args().size() == 0;
-  }
+  bool Match(const IRNode* node) const override;
 };
 
 /**
@@ -416,20 +389,7 @@ struct CompileTimeNow : public ParentMatch {
 struct CompileTimeUnitTime : public ParentMatch {
   CompileTimeUnitTime() : ParentMatch(IRNodeType::kFunc) {}
 
-  bool Match(const IRNode* node) const override {
-    if (!Func().Match(node)) {
-      return false;
-    }
-    auto func = static_cast<const FuncIR*>(node);
-    if (kUnitTimeFnStr.find(func->carnot_op_name()) == kUnitTimeFnStr.end()) {
-      return false;
-    }
-    if (func->args().size() != 1) {
-      return false;
-    }
-    auto arg = func->args()[0];
-    return Int().Match(arg) || CompileTimeIntegerArithmetic().Match(arg);
-  }
+  bool Match(const IRNode* node) const override;
 };
 
 /**

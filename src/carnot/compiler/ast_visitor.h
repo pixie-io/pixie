@@ -128,7 +128,6 @@ class ASTWalker {
   Status ProcessModuleNode(const pypa::AstModulePtr& m);
 
   // Constants for the run-time (UDF) and compile-time fn prefixes.
-  // TODO(nserrino, philkuz) remove these once the lambda stuff in ast_visitor gets refactored.
   inline static constexpr char kRunTimeFuncPrefix[] = "pl";
   inline static constexpr char kCompileTimeFuncPrefix[] = "plc";
 
@@ -459,46 +458,6 @@ class ASTWalker {
                                     const OperatorContext& op_context);
 
   /**
-   * @brief Make the time now node.
-   *
-   * @param ast_node
-   * @return StatusOr<IntIR*>
-   */
-  StatusOr<IntIR*> MakeTimeNow(const pypa::AstPtr& ast_node);
-
-  /**
-   * @brief Evaluates a now argument as the now time that carnot has.
-   *
-   * @param arglist The args that are fed tinto this function.
-   * @param arglist_parent The parent node used for error reporting.
-   * @return StatusOr<IntIR*>
-   */
-  StatusOr<IntIR*> EvalCompileTimeNow(const pypa::AstArguments& arglist,
-                                      const pypa::AstPtr& arglist_parent);
-
-  /**
-   * @brief Evaluates the time functions like minutes, seconds, etc.
-   *
-   * @param attr_fn_name  The time function.
-   * @param arglist The args that are fed tinto this function.
-   * @param arglist_parent The parent node used for error reporting.
-   * @return StatusOr<IntIR*>
-   */
-  StatusOr<IntIR*> EvalUnitTimeFn(const std::string& attr_fn_name,
-                                  const pypa::AstArguments& arglist,
-                                  const pypa::AstPtr& arglist_parent);
-  /**
-   * @brief Evaluates a compile time fn.
-   *
-   * @param attr_fn_name The fn name.
-   * @param arglist The args that are fed tinto this function.
-   * @param arglist_parent The parent node used for error reporting.
-   * @return StatusOr<IntIR*>
-   */
-  StatusOr<IntIR*> EvalCompileTimeFn(const std::string& attr_fn_name,
-                                     const pypa::AstArguments& arglist,
-                                     const pypa::AstPtr& arglist_parent);
-  /**
    * @brief Returns the FuncIR::Op struct that corresponds to a python_op
    * representation. This includes the operator code and the full carnot-udf name.
    *
@@ -524,7 +483,8 @@ class ASTWalker {
    * @param ast
    * @return StatusOr<ExpressionIR*> the ir representation of the data processed by the AST.
    */
-  StatusOr<ExpressionIR*> ProcessDataCall(const pypa::AstCallPtr& node);
+  StatusOr<ExpressionIR*> ProcessDataCall(const pypa::AstCallPtr& node,
+                                          const OperatorContext& op_context);
 
   /**
    * @brief Processes nested attributes in the lambda function. For now this is just metadata
@@ -544,12 +504,10 @@ class ASTWalker {
   /**
    * @brief Processes functions that are argless.
    *
-   * @param function_prefix: the prefix of the calling function.
    * @param function_name: the string representation of the function.
    * @return StatusOr<LambdaExprReturn> container of the function expression.
    */
-  StatusOr<LambdaExprReturn> ProcessArglessFunction(const std::string& function_prefix,
-                                                    const std::string& function_name);
+  StatusOr<LambdaExprReturn> ProcessArglessFunction(const std::string& function_name);
 
   /**
    * @brief Creates and returns an IR representation of a column given a column name.
