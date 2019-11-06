@@ -34,7 +34,7 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
     }
   }
 
-  int packet_length = utils::LEStrToInt(buf->substr(0, kPacketHeaderLength - 1));
+  int packet_length = utils::LittleEndianByteStrToInt(buf->substr(0, kPacketHeaderLength - 1));
   int buffer_length = buf->length();
 
   // 3 bytes of packet length and 1 byte of packet number.

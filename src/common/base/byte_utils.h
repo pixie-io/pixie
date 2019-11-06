@@ -1,12 +1,22 @@
 #pragma once
+#include <glog/logging.h>
 #include <string>
 #include <utility>
+
 #include "src/common/base/base.h"
 
 namespace pl {
 namespace utils {
 
-int LEStrToInt(const std::string_view str);
+template <typename TIntType = uint32_t>
+TIntType LittleEndianByteStrToInt(std::string_view str) {
+  DCHECK(str.size() <= sizeof(TIntType));
+  TIntType result = 0;
+  for (size_t i = 0; i < str.size(); i++) {
+    result = static_cast<uint8_t>(str[str.size() - 1 - i]) + (result << 8);
+  }
+  return result;
+}
 
 template <typename TCharType, size_t N>
 void ReverseBytes(const TCharType (&bytes)[N], TCharType (&result)[N]) {
@@ -16,7 +26,7 @@ void ReverseBytes(const TCharType (&bytes)[N], TCharType (&result)[N]) {
 }
 
 template <typename TCharType, size_t N>
-void IntToLEBytes(int num, TCharType (&result)[N]) {
+void IntToLittleEndianByteStr(int num, TCharType (&result)[N]) {
   for (size_t i = 0; i < N; i++) {
     result[i] = (num >> (i * 8));
   }

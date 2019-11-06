@@ -14,58 +14,18 @@ namespace mysql {
 namespace {
 
 /**
- * Converts a length encoded int from string to int.
- * https://dev.mysql.com/doc/internals/en/integer.html#packet-Protocol::LengthEncodedInteger
- *
- * If it is < 0xfb, treat it as a 1-byte integer.
- * If it is 0xfc, it is followed by a 2-byte integer.
- * If it is 0xfd, it is followed by a 3-byte integer.
- * If it is 0xfe, it is followed by a 8-byte integer.
- */
-int ProcessLengthEncodedInt(const std::string_view s, int* param_offset) {
-  constexpr uint8_t kLencIntPrefix2b = 0xfc;
-  constexpr uint8_t kLencIntPrefix3b = 0xfd;
-  constexpr uint8_t kLencIntPrefix8b = 0xfe;
-
-  int result;
-  switch (static_cast<uint8_t>(s[*param_offset])) {
-    case kLencIntPrefix2b:
-      *param_offset += 1;
-      result = utils::LEStrToInt(s.substr(*param_offset, 2));
-      *param_offset += 2;
-      break;
-    case kLencIntPrefix3b:
-      *param_offset += 1;
-      result = utils::LEStrToInt(s.substr(*param_offset, 3));
-      *param_offset += 3;
-      break;
-    case kLencIntPrefix8b:
-      LOG_IF(DFATAL, s.size() >= 8) << "Input buffer size must be at least 8.";
-      *param_offset += 1;
-      result = utils::LEStrToInt(s.substr(*param_offset, 8));
-      *param_offset += 8;
-      break;
-    default:
-      result = utils::LEStrToInt(s.substr(*param_offset, 1));
-      *param_offset += 1;
-      break;
-  }
-  return result;
-}
-
-/**
  * Dissects String parameters
- *
  */
-void DissectStringParam(const std::string_view msg, int* param_offset, ParamPacket* packet) {
-  int param_length = ProcessLengthEncodedInt(msg, param_offset);
+Status DissectStringParam(const std::string_view msg, size_t* param_offset, ParamPacket* packet) {
+  PL_ASSIGN_OR_RETURN(int param_length, ProcessLengthEncodedInt(msg, param_offset));
   packet->type = StmtExecuteParamType::kString;
   packet->value = msg.substr(*param_offset, param_length);
   *param_offset += param_length;
+  return Status::OK();
 }
 
-void DissectIntParam(const std::string_view msg, const char prefix, int* param_offset,
-                     ParamPacket* packet) {
+Status DissectIntParam(const std::string_view msg, const char prefix, size_t* param_offset,
+                       ParamPacket* packet) {
   StmtExecuteParamType type;
   size_t length;
   switch (prefix) {
@@ -91,14 +51,22 @@ void DissectIntParam(const std::string_view msg, const char prefix, int* param_o
       length = 1;
       break;
   }
-  packet->value = std::to_string(utils::LEStrToInt(msg.substr(*param_offset, length)));
+
+  if (msg.size() < *param_offset + length) {
+    return error::Internal("Not enough bytes to dissect int param.");
+  }
+
+  packet->value =
+      std::to_string(utils::LittleEndianByteStrToInt(msg.substr(*param_offset, length)));
   packet->type = type;
   *param_offset += length;
+
+  return Status::OK();
 }
 
 // TODO(chengruizhe): Currently dissecting unknown param as if it's a string. Make it more robust.
-void DissectUnknownParam(const std::string_view msg, int* param_offset, ParamPacket* packet) {
-  DissectStringParam(msg, param_offset, packet);
+Status DissectUnknownParam(const std::string_view msg, size_t* param_offset, ParamPacket* packet) {
+  return DissectStringParam(msg, param_offset, packet);
 }
 
 }  // namespace
@@ -116,7 +84,7 @@ void HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
   // https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html
   entry->resp.msg = packet.msg.substr(9);
 
-  int error_code = utils::LEStrToInt(packet.msg.substr(1, 2));
+  int error_code = utils::LittleEndianByteStrToInt(packet.msg.substr(1, 2));
   // TODO(oazizi): Add error code into resp msg.
   PL_UNUSED(error_code);
 
@@ -149,8 +117,8 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
     return error::Internal("First packet should be length-encoded integer.");
   }
 
-  int param_offset = 0;
-  int num_col = ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset);
+  size_t param_offset = 0;
+  PL_ASSIGN_OR_RETURN(int num_col, ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset));
   if (num_col == 0) {
     return error::Internal("HandleResultsetResponse(): num columns should never be 0.");
   }
@@ -247,10 +215,10 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
     return error::Internal("Expected StmtPrepareOK packet");
   }
 
-  int stmt_id = utils::LEStrToInt(first_resp_packet.msg.substr(1, 4));
-  size_t num_col = utils::LEStrToInt(first_resp_packet.msg.substr(5, 2));
-  size_t num_param = utils::LEStrToInt(first_resp_packet.msg.substr(7, 2));
-  size_t warning_count = utils::LEStrToInt(first_resp_packet.msg.substr(10, 2));
+  int stmt_id = utils::LittleEndianByteStrToInt(first_resp_packet.msg.substr(1, 4));
+  size_t num_col = utils::LittleEndianByteStrToInt(first_resp_packet.msg.substr(5, 2));
+  size_t num_param = utils::LittleEndianByteStrToInt(first_resp_packet.msg.substr(7, 2));
+  size_t warning_count = utils::LittleEndianByteStrToInt(first_resp_packet.msg.substr(10, 2));
 
   // TODO(chengruizhe): Handle missing packets more robustly. Assuming no missing packet.
   // If num_col or num_param is non-zero, they will be followed by EOF.
@@ -369,7 +337,8 @@ void HandleStmtExecuteRequest(const Packet& req_packet,
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.timestamp_ns = req_packet.timestamp_ns;
 
-  int stmt_id = utils::LEStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
+  int stmt_id =
+      utils::LittleEndianByteStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
 
   auto iter = prepare_map->find(stmt_id);
   if (iter == prepare_map->end()) {
@@ -393,13 +362,14 @@ void HandleStmtExecuteRequest(const Packet& req_packet,
 
   std::vector<ParamPacket> params;
   if (stmt_bound == 1) {
-    int param_offset = offset + 2 * num_params;
+    size_t param_offset = offset + 2 * num_params;
 
     for (int i = 0; i < num_params; ++i) {
       uint8_t param_type = req_packet.msg[offset];
       offset += 2;
 
       ParamPacket param;
+      Status s;
       switch (param_type) {
         // TODO(chengruizhe): Add more exec param types (short, long, float, double, datetime etc.)
         // https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
@@ -407,18 +377,19 @@ void HandleStmtExecuteRequest(const Packet& req_packet,
         case kColTypeBlob:
         case kColTypeVarString:
         case kColTypeString:
-          DissectStringParam(req_packet.msg, &param_offset, &param);
+          s = DissectStringParam(req_packet.msg, &param_offset, &param);
           break;
         case kColTypeTiny:
         case kColTypeShort:
         case kColTypeLong:
         case kColTypeLongLong:
-          DissectIntParam(req_packet.msg, param_type, &param_offset, &param);
+          s = DissectIntParam(req_packet.msg, param_type, &param_offset, &param);
           break;
         default:
-          DissectUnknownParam(req_packet.msg, &param_offset, &param);
+          s = DissectUnknownParam(req_packet.msg, &param_offset, &param);
           break;
       }
+      LOG_IF(ERROR, !s.ok()) << s.msg();
       params.emplace_back(param);
     }
   }
@@ -434,7 +405,8 @@ void HandleStmtCloseRequest(const Packet& req_packet, std::map<int, PreparedStat
   entry->req.msg = "";
   entry->req.timestamp_ns = req_packet.timestamp_ns;
 
-  int stmt_id = utils::LEStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
+  int stmt_id =
+      utils::LittleEndianByteStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
   auto iter = prepare_map->find(stmt_id);
   if (iter == prepare_map->end()) {
     // We may have missed the prepare statement (e.g. due to the missing start of connection

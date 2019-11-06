@@ -23,7 +23,7 @@ namespace testutils {
  */
 std::string GenRawPacket(uint8_t packet_num, std::string_view msg) {
   char header[4];
-  utils::IntToLEBytes(msg.size(), header);
+  utils::IntToLittleEndianByteStr(msg.size(), header);
   header[3] = packet_num;
   return absl::StrCat(CharArrayStringView(header), msg);
 }
@@ -52,19 +52,19 @@ std::string GenLengthEncodedInt(int num) {
   DCHECK(num < pow(2, 64));
   if (num < 251) {
     char count_bytes[1];
-    utils::IntToLEBytes(num, count_bytes);
+    utils::IntToLittleEndianByteStr(num, count_bytes);
     return std::string(CharArrayStringView(count_bytes));
   } else if (num < pow(2, 16)) {
     char count_bytes[2];
-    utils::IntToLEBytes(num, count_bytes);
+    utils::IntToLittleEndianByteStr(num, count_bytes);
     return absl::StrCat("fc", CharArrayStringView(count_bytes));
   } else if (num < pow(2, 24)) {
     char count_bytes[3];
-    utils::IntToLEBytes(num, count_bytes);
+    utils::IntToLittleEndianByteStr(num, count_bytes);
     return absl::StrCat("fd", CharArrayStringView(count_bytes));
   } else {
     char count_bytes[8];
-    utils::IntToLEBytes(num, count_bytes);
+    utils::IntToLittleEndianByteStr(num, count_bytes);
     return absl::StrCat("fe", CharArrayStringView(count_bytes));
   }
 }
@@ -107,10 +107,10 @@ Packet GenStmtPrepareRespHeader(uint8_t seq_id, const StmtPrepareRespHeader& hea
   char num_columns[2];
   char num_params[2];
   char warning_count[2];
-  utils::IntToLEBytes(header.stmt_id, statement_id);
-  utils::IntToLEBytes(header.num_columns, num_columns);
-  utils::IntToLEBytes(header.num_params, num_params);
-  utils::IntToLEBytes(header.warning_count, warning_count);
+  utils::IntToLittleEndianByteStr(header.stmt_id, statement_id);
+  utils::IntToLittleEndianByteStr(header.num_columns, num_columns);
+  utils::IntToLittleEndianByteStr(header.num_params, num_params);
+  utils::IntToLittleEndianByteStr(header.warning_count, warning_count);
   std::string msg = absl::StrCat(ConstStringView("\x00"), CharArrayStringView(statement_id),
                                  CharArrayStringView(num_columns), CharArrayStringView(num_params),
                                  ConstStringView("\x00"), CharArrayStringView(warning_count));
@@ -171,7 +171,7 @@ std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
 
 Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
   char statement_id[4];
-  utils::IntToLEBytes(req.stmt_id, statement_id);
+  utils::IntToLittleEndianByteStr(req.stmt_id, statement_id);
   std::string msg =
       absl::StrCat(CommandToString(MySQLEventType::kStmtExecute), CharArrayStringView(statement_id),
                    ConstStringView("\x00\x01\x00\x00\x00"));
@@ -204,7 +204,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
 
 Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
   char statement_id[4];
-  utils::IntToLEBytes(req.stmt_id, statement_id);
+  utils::IntToLittleEndianByteStr(req.stmt_id, statement_id);
   std::string msg =
       absl::StrCat(CommandToString(MySQLEventType::kStmtClose), CharArrayStringView(statement_id));
   Packet p;
@@ -227,7 +227,7 @@ Packet GenStringRequest(const StringRequest& req, MySQLEventType command) {
  */
 Packet GenErr(uint8_t seq_id, const ErrResponse& err) {
   char error_code[2];
-  utils::IntToLEBytes(err.error_code, error_code);
+  utils::IntToLittleEndianByteStr(err.error_code, error_code);
   std::string msg = absl::StrCat("\xff", CharArrayStringView(error_code),
                                  "\x23\x48\x59\x30\x30\x30", err.error_message);
   Packet p;
