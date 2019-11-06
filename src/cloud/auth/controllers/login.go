@@ -20,7 +20,7 @@ import (
 
 const (
 	// RefreshTokenValidDuration is duration that the refresh token is valid from current time.
-	RefreshTokenValidDuration = 5 * 24 * time.Hour
+	RefreshTokenValidDuration = 90 * 24 * time.Hour
 	// AugmentedTokenValidDuration is the duration that the augmented token is valid from the current time.
 	AugmentedTokenValidDuration = 30 * time.Minute
 )

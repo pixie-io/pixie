@@ -105,7 +105,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
+	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
@@ -348,7 +348,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
+	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
 	verifyToken(t, resp.Token, "pluserid", "plorgid", resp.ExpiresAt, "jwtkey")
@@ -440,7 +440,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
+	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
 	verifyToken(t, resp.Token, userID, orgID, resp.ExpiresAt, "jwtkey")
@@ -605,7 +605,7 @@ func TestServer_CreateUserOrg(t *testing.T) {
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
+	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
@@ -717,7 +717,7 @@ func TestServer_CreateUserOrg_AccountExists(t *testing.T) {
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
+	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
