@@ -8,6 +8,16 @@
 namespace pl {
 namespace utils {
 
+/**
+ * Convert a string of bytes to an integer, assuming little-endian ordering.
+ *
+ * The string must not be longer than the int type, otherwise behavior is undefined,
+ * although a DCHECK will fire in debug mode.
+ *
+ * @tparam TIntType The receiver int type. Signed vs unsigned decode to the same raw bytes.
+ * @param str The sequence of bytes.
+ * @return The decoded int value.
+ */
 template <typename TIntType = uint32_t>
 TIntType LittleEndianByteStrToInt(std::string_view str) {
   DCHECK(str.size() <= sizeof(TIntType));
@@ -25,8 +35,16 @@ void ReverseBytes(const TCharType (&bytes)[N], TCharType (&result)[N]) {
   }
 }
 
+/**
+ * Convert an int to a string of bytes, assuming little-endian ordering.
+ *
+ * @tparam TCharType The char type to use in the string (e.g. char vs uint8_t).
+ * @param num The number to convert.
+ * @param result the destination buffer.
+ */
 template <typename TCharType, size_t N>
-void IntToLittleEndianByteStr(int num, TCharType (&result)[N]) {
+void IntToLittleEndianByteStr(int64_t num, TCharType (&result)[N]) {
+  static_assert(N <= sizeof(int64_t));
   for (size_t i = 0; i < N; i++) {
     result[i] = (num >> (i * 8));
   }
