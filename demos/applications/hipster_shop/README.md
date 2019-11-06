@@ -1,9 +1,13 @@
 # Docker Container
-Location: gcr.io/pl-dev-infra/demos/microservices-demo-app/*
+Location: `gcr.io/pl-dev-infra/demos/microservices-demo-app/*`
 All the docker images for the individual components are in the above location
 https://github.com/GoogleCloudPlatform/microservices-demo
 
 # Deploy Hipster-Shop
+NOTE: There is `kubernetes_manifests` directory with the yaml files. But there is no load generator,
+and we did not manage to pull it in from the original repo. The instruction below will deploy
+Hipster Shop with load generator.
+
 You can deploy Hipster-Shop with `skaffold` from inside the original Hipster-Shop repo.
 Make sure that you've created a GKE cluster.
 
@@ -13,7 +17,7 @@ Make sure that you've created a GKE cluster.
     ```
 2.  Create a namespace `hipster-shop`:
     ```
-    kubectl create namespace hipster_shop
+    kubectl create namespace hipster-shop
     ```
 3.  Build and deploy Hipster-Shop:
     ```
