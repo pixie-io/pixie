@@ -30,7 +30,7 @@ TEST(IRTypes, types_enum_test) {
 /**
  * Creates IR Graph that is the following query compiled
  *
- * `From(table="tableName", select=["testCol"]).Range("-2m")`
+ * `dataframe(table="tableName", select=["testCol"]).Range("-2m")`
  */
 
 TEST(IRTest, check_connection) {

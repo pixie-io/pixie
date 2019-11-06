@@ -10,7 +10,7 @@ metaDescription: "Query language documentation, examples, and use cases."
 Dataframes are made available in a query using the `From` operator. 
 
 ```python
-table = From(table="http_events")
+table = dataframe(table="http_events")
 ```
 
 #### Operating on the Data
@@ -20,15 +20,15 @@ or chained on directly to a previous Operation call.
 
 ```python
 # Call aggregate on assigned variable
-table = From(table="http_events")
-aggop = table.Agg(by=r.upid, fn=lambda r:{
+table = dataframe(table="http_events")
+aggop = table.agg(by=r.upid, fn=lambda r:{
   'resp_latency_mean': pl.mean(r.http_resp_latency_ns)
 }) 
 ```
 
 ```python
 # Call aggregate directly on the output of the `From` Operator.
-aggop = From(table="http_events").Agg(by=lambda r: r.upid, fn=lambda r:{
+aggop = dataframe(table="http_events").agg(by=lambda r: r.upid, fn=lambda r:{
   'resp_latency_mean': pl.mean(r.http_resp_latency)
 }) 
 ```
@@ -39,12 +39,12 @@ Every operator produces a Dataframe that can then be passed to a new Operator, a
 operations together
 
 ```python 
-table = From(table="http_events")
-mapop = table.Map(fn=lambda r: {
+table = dataframe(table="http_events")
+mapop = table.map(fn=lambda r: {
   'upid': r.upid,
   'http_resp_latency_ms': r.http_resp_latency_ns/1.0E6,
 })
-aggop = mapop.Agg(by=lambda r: r.upid, fn=lambda r:{
+aggop = mapop.agg(by=lambda r: r.upid, fn=lambda r:{
   'resp_latency_mean': pl.mean(r.http_resp_latency_ms)
 }) 
 ```
@@ -53,12 +53,12 @@ Finally, to view the computed data in your data window, you must append a `Resul
 
 ```python
 # Data created will now be passed up to the UI.
-table = From(table="http_events")
-mapop = table.Map(fn=lambda r: {
+table = dataframe(table="http_events")
+mapop = table.map(fn=lambda r: {
   'upid': r.upid,
   'http_resp_latency_ms': r.http_resp_latency_ns/1.0E6,
 })
-aggop = mapop.Agg(by=lambda r: r.upid, fn=lambda r:{
+aggop = mapop.agg(by=lambda r: r.upid, fn=lambda r:{
   'resp_latency_mean': pl.mean(r.http_resp_latency_ms)
-}).Result(name="table_name")
+}).result(name="table_name")
 ```

@@ -82,7 +82,7 @@ const char* kTabletValueTpl = R"proto(
 tablets: "$0"
 )proto";
 
-const char* kQueryForTwoAgents = "From(table = 'table1').Result(name = 'out')";
+const char* kQueryForTwoAgents = "dataframe(table = 'table1').result(name = 'out')";
 
 distributedpb::DistributedState LoadDistributedStatePb(const std::string& distributed_state_str) {
   distributedpb::DistributedState distributed_state_pb;

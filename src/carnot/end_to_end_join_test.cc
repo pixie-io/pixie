@@ -38,12 +38,12 @@ class JoinTest : public ::testing::Test {
 
 TEST_F(JoinTest, basic) {
   std::string queryString =
-      "src1 = From(table='left_table', select=['col1', 'col2'])\n"
-      "src2 = From(table='right_table', select=['col1', 'col2'])\n"
-      "join = src1.Join(src2, type='inner', "
+      "src1 = dataframe(table='left_table', select=['col1', 'col2'])\n"
+      "src2 = dataframe(table='right_table', select=['col1', 'col2'])\n"
+      "join = src1.merge(src2, type='inner', "
       "cond=lambda r1, r2: r1.col1 == r2.col1, "
       "cols=lambda r1, r2: {'left_col1': r1.col1, 'right_col2': r2.col2})\n"
-      "join.Result(name='unused_param')";
+      "join.result(name='unused_param')";
 
   auto query = absl::StrJoin({queryString}, "\n");
   auto query_id = sole::uuid4();

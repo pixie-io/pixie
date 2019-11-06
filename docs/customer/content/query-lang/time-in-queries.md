@@ -21,7 +21,7 @@ Strings are the most compact way to specify a time in the query.  Each string re
 
 To filter all http requests from the past 30 seconds, you would specify the time with `-30s`:
 ```python
-From(table='http_events').Range(start='-30s').Result(name='out')
+dataframe(table='http_events').range(start='-30s').result(name='out')
 ```
 
 
@@ -56,5 +56,5 @@ Additionally, you can access the current time with `plc.now()`
 
 To filter all http requests from the past 30 seconds, you would specify the time with `plc.now() - plc.minutes(30)`:
 ```python
-From(table='http_events').Range(start=plc.now() - plc.minutes(30)).Result(name='out')
+dataframe(table='http_events').range(start=plc.now() - plc.minutes(30)).result(name='out')
 ```

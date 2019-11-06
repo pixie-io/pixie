@@ -7,7 +7,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"pixielabs.ai/pixielabs/src/carnot/compiler"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner"
@@ -75,7 +74,7 @@ func TestPlanner_Simple(t *testing.T) {
 	c := logicalplanner.New()
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
-	query := "From(table='table1').Result(name='out')"
+	query := "dataframe(table='table1').result(name='out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
 	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
 	plannerResultPB, err := c.Plan(plannerStatePB, query)
@@ -145,7 +144,7 @@ func TestPlanner_MissingTable(t *testing.T) {
 	c := logicalplanner.New()
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
-	query := "From(table='bad_table').Result(name='out')"
+	query := "dataframe(table='bad_table').result(name='out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
 	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
 	plannerResultPB, err := c.Plan(plannerStatePB, query)
@@ -158,7 +157,8 @@ func TestPlanner_MissingTable(t *testing.T) {
 	status := plannerResultPB.Status
 	assert.NotEqual(t, status.ErrCode, statuspb.OK)
 	var errorPB compilerpb.CompilerErrorGroup
-	err = compiler.GetCompilerErrorContext(status, &errorPB)
+	err = logicalplanner.GetCompilerErrorContext(status, &errorPB)
+
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}

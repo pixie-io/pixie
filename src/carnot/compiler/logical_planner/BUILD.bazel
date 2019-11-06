@@ -73,6 +73,8 @@ pl_cgo_library(
     importpath = "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner",
     deps = [
         "//src/carnot/compiler/distributedpb:distributed_plan_pl_go_proto",
+        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
+        "//src/carnot/compiler:go_default_library",
         "//src/common/base/proto:status_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
         "@com_github_gogo_protobuf//proto:go_default_library",
@@ -85,7 +87,6 @@ go_test(
     srcs = ["logical_planner_test.go"],
     deps = [
         ":go_default_library",
-        "//src/carnot/compiler:go_default_library",
         "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/compiler/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",

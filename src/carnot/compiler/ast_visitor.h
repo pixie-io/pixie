@@ -160,15 +160,15 @@ class ASTWalker {
   inline static constexpr char kMDKeyword[] = "attr";
 
   // Constants for operators in the query language.
-  inline static constexpr char kFromOpId[] = "From";
-  inline static constexpr char kRangeOpId[] = "Range";
-  inline static constexpr char kMapOpId[] = "Map";
-  inline static constexpr char kBlockingAggOpId[] = "Agg";
-  inline static constexpr char kRangeAggOpId[] = "RangeAgg";
-  inline static constexpr char kSinkOpId[] = "Result";
-  inline static constexpr char kFilterOpId[] = "Filter";
-  inline static constexpr char kLimitOpId[] = "Limit";
-  inline static constexpr char kJoinOpId[] = "Join";
+  inline static constexpr char kDataframeOpId[] = "dataframe";
+  inline static constexpr char kRangeOpId[] = "range";
+  inline static constexpr char kMapOpId[] = "map";
+  inline static constexpr char kBlockingAggOpId[] = "agg";
+  inline static constexpr char kRangeAggOpId[] = "range_agg";
+  inline static constexpr char kSinkOpId[] = "result";
+  inline static constexpr char kFilterOpId[] = "filter";
+  inline static constexpr char kLimitOpId[] = "limit";
+  inline static constexpr char kJoinOpId[] = "merge";
 
   // Reserved column names.
   inline static constexpr char kTimeConstantColumnName[] = "time_";
@@ -254,12 +254,12 @@ class ASTWalker {
   StatusOr<TOpIR*> ProcessOp(const pypa::AstCallPtr& node);
 
   /**
-   * @brief Create a MemorySource Operator declared by a From statement.
+   * @brief Create a MemorySource Operator declared by a dataframe() statement.
    *
    * @param node the node that creates the From op.
    * @return StatusOr<MemorySourceIR*> the memory source op or an error.
    */
-  StatusOr<MemorySourceIR*> ProcessFromOp(const pypa::AstCallPtr& node);
+  StatusOr<MemorySourceIR*> ProcessDataframeOp(const pypa::AstCallPtr& node);
 
   /**
    * @brief Processes the RangeAgg operator.

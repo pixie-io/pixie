@@ -131,11 +131,11 @@ response {
 `
 
 const testQuery = `
-queryDF = From(table='perf_and_http', select=['_time']).Result(name='out')
+queryDF = dataframe(table='perf_and_http', select=['_time']).result(name='out')
 `
 
 const badQuery = `
-queryDF = From(table='', select=['_time']).Result(name='out')
+queryDF = dataframe(table='', select=['_time']).result(name='out')
 `
 
 const testLogicalPlan = `

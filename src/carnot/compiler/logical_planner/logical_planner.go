@@ -26,7 +26,10 @@ import (
 	"unsafe"
 
 	"github.com/gogo/protobuf/proto"
+	"pixielabs.ai/pixielabs/src/carnot/compiler"
+	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 )
 
 // GoPlanner wraps the C Planner.
@@ -63,4 +66,10 @@ func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, query str
 // Free the memory used by the planner.
 func (cm GoPlanner) Free() {
 	C.PlannerFree(cm.planner)
+}
+
+// GetCompilerErrorContext is used in logical_planner_test, which cannot directly call
+// compiler since it is a CGO library.
+func GetCompilerErrorContext(status *statuspb.Status, errorPB *compilerpb.CompilerErrorGroup) error {
+	return compiler.GetCompilerErrorContext(status, errorPB)
 }

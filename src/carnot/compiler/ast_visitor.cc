@@ -294,10 +294,9 @@ StatusOr<JoinIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
 StatusOr<OperatorIR*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(std::string func_name, GetFuncName(node));
   OperatorIR* op_node;
-  if (func_name == kFromOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessFromOp(node));
+  if (func_name == kDataframeOpId) {
+    PL_ASSIGN_OR_RETURN(op_node, ProcessDataframeOp(node));
     op_node->SetLineCol(node);
-
   } else if (func_name == kRangeOpId) {
     PL_ASSIGN_OR_RETURN(op_node, ProcessOp<RangeIR>(node));
   } else if (func_name == kMapOpId) {
@@ -342,11 +341,11 @@ StatusOr<std::vector<std::string>> ASTWalker::ParseStringListIR(const ListIR* li
   return out_vector;
 }
 
-StatusOr<MemorySourceIR*> ASTWalker::ProcessFromOp(const pypa::AstCallPtr& node) {
+StatusOr<MemorySourceIR*> ASTWalker::ProcessDataframeOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op, ir_graph_->MakeNode<MemorySourceIR>());
   if (node->function->type == AstType::Attribute) {
     return CreateAstError(node->function, "$0 must be called by itself, not as a Dataframe method",
-                          kFromOpId);
+                          kDataframeOpId);
   }
   PL_ASSIGN_OR_RETURN(
       ArgMap args, ProcessArgs(node, OperatorContext({}, mem_source_op), mem_source_op->ArgKeys(),
