@@ -169,6 +169,18 @@ class OperatorTests : public ::testing::Test {
     return map;
   }
 
+  LambdaIR* MakeLambda(ExpressionIR* expr) {
+    LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(lambda->Init({}, expr, ast));
+    return lambda;
+  }
+
+  LambdaIR* MakeLambda(const ColExpressionVector& expr) {
+    LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(lambda->Init({}, expr, ast));
+    return lambda;
+  }
+
   MemorySinkIR* MakeMemSink(OperatorIR* parent, std::string name) {
     auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
     PL_CHECK_OK(sink->Init(parent, {{{"name", MakeString(name)}}, {}}, ast));

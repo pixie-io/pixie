@@ -1352,13 +1352,13 @@ Status UnionIR::SetRelationFromParents() {
   return Status::OK();
 }
 
-StatusOr<planpb::JoinOperator::JoinType> JoinIR::GetJoinEnum(const std::string& join_type) const {
-  DCHECK_NE(join_type, "right");
-  absl::flat_hash_map<std::string, planpb::JoinOperator::JoinType> join_key_mapping = {
-      {"inner", planpb::JoinOperator_JoinType_INNER},
-      {"left", planpb::JoinOperator_JoinType_LEFT_OUTER},
-      {"outer", planpb::JoinOperator_JoinType_FULL_OUTER}};
-  auto iter = join_key_mapping.find(join_type);
+StatusOr<JoinIR::JoinType> JoinIR::GetJoinEnum(const std::string& join_type_str) const {
+  // TODO(philkuz) (PL-1136) convert to enum library friendly version.
+  absl::flat_hash_map<std::string, JoinType> join_key_mapping = {{"inner", JoinType::kInner},
+                                                                 {"left", JoinType::kLeft},
+                                                                 {"outer", JoinType::kOuter},
+                                                                 {"right", JoinType::kRight}};
+  auto iter = join_key_mapping.find(join_type_str);
 
   // If the join type is not found, then return an error.
   if (iter == join_key_mapping.end()) {
@@ -1366,15 +1366,24 @@ StatusOr<planpb::JoinOperator::JoinType> JoinIR::GetJoinEnum(const std::string& 
     for (auto kv : join_key_mapping) {
       valid_join_keys.push_back(kv.first);
     }
-
-    return CreateIRNodeError("'$0' join type not supported. Only {$1} are available join types.",
-                             join_type, absl::StrJoin(valid_join_keys, ","));
+    return CreateIRNodeError("'$0' join type not supported. Only {$1} are available.",
+                             join_type_str, absl::StrJoin(valid_join_keys, ","));
   }
   return iter->second;
 }
 
+planpb::JoinOperator::JoinType JoinIR::GetPbJoinEnum(JoinType join_type) {
+  absl::flat_hash_map<JoinType, planpb::JoinOperator::JoinType> join_key_mapping = {
+      {JoinType::kInner, planpb::JoinOperator_JoinType_INNER},
+      {JoinType::kLeft, planpb::JoinOperator_JoinType_LEFT_OUTER},
+      {JoinType::kOuter, planpb::JoinOperator_JoinType_FULL_OUTER}};
+  auto join_key_iter = join_key_mapping.find(join_type);
+  CHECK(join_key_iter != join_key_mapping.end()) << "Received an unexpected enum value.";
+  return join_key_iter->second;
+}
+
 Status JoinIR::ToProto(planpb::Operator* op) const {
-  PL_ASSIGN_OR_RETURN(planpb::JoinOperator::JoinType join_enum_type, GetJoinEnum(join_type_));
+  planpb::JoinOperator::JoinType join_enum_type = GetPbJoinEnum(join_type_);
   auto pb = new planpb::JoinOperator();
   pb->set_type(join_enum_type);
   for (const auto& cond : equality_conditions()) {
@@ -1414,8 +1423,7 @@ Status JoinIR::Init(std::vector<OperatorIR*> parents, const std::string& how_typ
   left_on_columns_ = left_on_cols;
   right_on_columns_ = right_on_cols;
   suffix_strs_ = suffix_strs;
-  join_type_ = how_type;
-  return Status::OK();
+  return SetJoinType(how_type);
 }
 
 Status JoinIR::InitImpl(const ArgMap& args) {
@@ -1440,9 +1448,10 @@ Status JoinIR::InitImpl(const ArgMap& args) {
   PL_RETURN_IF_ERROR(SetupConditionFromLambda(static_cast<LambdaIR*>(cond)));
   PL_RETURN_IF_ERROR(SetupOutputColumns(static_cast<LambdaIR*>(cols)));
   if (join_type == nullptr) {
-    SetJoinType("inner");
+    PL_RETURN_IF_ERROR(SetJoinType(JoinType::kInner));
+  } else {
+    PL_RETURN_IF_ERROR(SetJoinType(static_cast<StringIR*>(join_type)->str()));
   }
-  SetJoinType(static_cast<StringIR*>(join_type)->str());
   return Status::OK();
 }
 

@@ -720,7 +720,7 @@ TEST(JoinTest, test_inner_join) {
   EXPECT_THAT(column_ir_names, ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
   EXPECT_THAT(column_ir_parent_idx, ElementsAre(0, 1, 1, 0, 0));
 
-  EXPECT_EQ(join->join_type(), "inner");
+  EXPECT_EQ(join->join_type(), JoinIR::JoinType::kInner);
   EXPECT_THAT(graph->dag().ParentsOf(join->id()), ElementsAre(mem_src1->id(), mem_src2->id()));
 }
 

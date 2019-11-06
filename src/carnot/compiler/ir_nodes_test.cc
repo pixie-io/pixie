@@ -1179,21 +1179,14 @@ TEST_F(ToProtoTests, join_wrong_join_type) {
 
   std::string join_type_name = "bad_join_type";
 
-  auto join_op =
-      MakeJoin({mem_src1, mem_src2}, join_type_name,
-               MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
-               {{{"left_only", MakeColumn("left_only", 0, relation0)},
-                 {"right_only", MakeColumn("right_only", 1, relation1)}},
-                {}});
+  JoinIR* join = graph->MakeNode<JoinIR>(ast).ConsumeValueOrDie();
+  auto join_init_status =
+      join->Init({mem_src1, mem_src2}, join_type_name, {MakeColumn("col1", 0, relation0)},
+                 {MakeColumn("col2", 1, relation1)}, {"", ""});
 
-  join_op->AddEqualityCondition(1, 2);
-
-  planpb::Operator pb;
-  auto to_proto_status = join_op->ToProto(&pb);
-  EXPECT_NOT_OK(to_proto_status);
-  EXPECT_THAT(to_proto_status, HasCompilerError("'$0' join type not supported. Only .* "
-                                                "are available join types.",
-                                                join_type_name));
+  EXPECT_THAT(join_init_status, HasCompilerError("'$0' join type not supported. Only .* "
+                                                 "are available",
+                                                 join_type_name));
 }
 
 TEST_F(OperatorTests, op_children) {

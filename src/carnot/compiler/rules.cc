@@ -819,7 +819,7 @@ StatusOr<bool> SetupJoinTypeRule::Apply(IRNode* ir_node) {
 
 Status SetupJoinTypeRule::ConvertRightJoinToLeftJoin(JoinIR* join_ir) {
   DCHECK_EQ(join_ir->parents().size(), 2UL) << "There should be exactly two parents.";
-  DCHECK_EQ(join_ir->join_type(), "right");
+  DCHECK(join_ir->join_type() == JoinIR::JoinType::kRight);
 
   std::vector<OperatorIR*> old_parents = join_ir->parents();
   for (OperatorIR* parent : old_parents) {
@@ -855,9 +855,7 @@ Status SetupJoinTypeRule::ConvertRightJoinToLeftJoin(JoinIR* join_ir) {
       nodes_to_visit.push(dep);
     }
   }
-  join_ir->SetJoinType("left");
-
-  return Status::OK();
+  return join_ir->SetJoinType(JoinIR::JoinType::kLeft);
 }
 }  // namespace compiler
 }  // namespace carnot

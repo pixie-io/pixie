@@ -788,22 +788,24 @@ inline OperatorChainMatch<ParentType, ChildType> OperatorChain(ParentType parent
   return OperatorChainMatch(parent, child);
 }
 
+template <JoinIR::JoinType Type>
 struct JoinMatch : public ParentMatch {
-  explicit JoinMatch(const std::string& join_type)
-      : ParentMatch(IRNodeType::kJoin), join_type_(join_type) {}
+  JoinMatch() : ParentMatch(IRNodeType::kJoin) {}
   bool Match(const IRNode* node) const override {
     if (!Join().Match(node)) {
       return false;
     }
     auto join = static_cast<const JoinIR*>(node);
-    return join->join_type() == join_type_;
+    return join->join_type() == Type;
   }
 
  private:
   std::string join_type_;
 };
 
-inline JoinMatch RightJoin() { return JoinMatch("right"); }
+inline JoinMatch<JoinIR::JoinType::kRight> RightJoin() {
+  return JoinMatch<JoinIR::JoinType::kRight>();
+}
 
 template <typename ChildType>
 struct ListChildMatch : public ParentMatch {

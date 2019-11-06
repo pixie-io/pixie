@@ -1492,6 +1492,9 @@ class JoinIR : public OperatorIR {
  public:
   // TODO(philkuz) delete when we get rid of the old Operator API.
   using OperatorIR::Init;
+
+  enum class JoinType { kLeft, kRight, kOuter, kInner };
+
   JoinIR() = delete;
   explicit JoinIR(int64_t id)
       : OperatorIR(id, IRNodeType::kJoin, /* has_parents */ true, /* is_source */ false) {}
@@ -1540,10 +1543,17 @@ class JoinIR : public OperatorIR {
   bool HasEqualityConditions() const { return equality_conditions_.size() != 0; }
 
   FuncIR* condition_expr() const { return condition_expr_; }
-  std::string join_type() const { return join_type_; }
+  JoinType join_type() const { return join_type_; }
   const std::vector<ColumnIR*>& output_columns() const { return output_columns_; }
   const std::vector<std::string>& column_names() const { return column_names_; }
-  void SetJoinType(const std::string& join_type) { join_type_ = join_type; }
+  Status SetJoinType(JoinType join_type) {
+    join_type_ = join_type;
+    return Status::OK();
+  }
+  Status SetJoinType(const std::string& join_type) {
+    PL_ASSIGN_OR_RETURN(join_type_, GetJoinEnum(join_type));
+    return Status::OK();
+  }
 
   const std::vector<ColumnIR*>& left_on_columns() const { return left_on_columns_; }
   const std::vector<ColumnIR*>& right_on_columns() const { return right_on_columns_; }
@@ -1554,15 +1564,23 @@ class JoinIR : public OperatorIR {
   Status SetupOutputColumns(LambdaIR* output_columns);
 
   /**
-   * @brief Converts the string type to the enum used in the proto.
+   * @brief Converts the string type to JoinIR::JoinType or errors out if it doesn't exist.
    *
    * @param join_type string representation of the join.
    * @return StatusOr<planpb::JoinOperator::JoinType> the join enum or an error if not found.
    */
-  StatusOr<planpb::JoinOperator::JoinType> GetJoinEnum(const std::string& join_type) const;
+  StatusOr<JoinType> GetJoinEnum(const std::string& join_type) const;
+
+  /**
+   * @brief Get the Protobuf JoinType for the JoinIR::JoinType
+   *
+   * @param join_type
+   * @return planpb::JoinOperator::JoinType
+   */
+  static planpb::JoinOperator::JoinType GetPbJoinEnum(JoinType join_type);
 
   // Join type
-  std::string join_type_;
+  JoinType join_type_;
   // The columns that are output by this join operator.
   std::vector<ColumnIR*> output_columns_;
   // The columns we join from the left parent.
