@@ -1,5 +1,7 @@
 #pragma once
 
+#include <nghttp2/nghttp2_frame.h>
+
 #include <map>
 #include <string>
 
