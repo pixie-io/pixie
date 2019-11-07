@@ -254,6 +254,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   FRIEND_TEST(SocketTraceConnectorTest, MySQLQuery);
   FRIEND_TEST(SocketTraceConnectorTest, MySQLMultipleCommands);
   FRIEND_TEST(SocketTraceConnectorTest, MySQLQueryWithLargeResultset);
+  FRIEND_TEST(SocketTraceConnectorTest, MySQLMultiResultset);
 };
 
 }  // namespace stirling

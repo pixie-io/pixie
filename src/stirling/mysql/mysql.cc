@@ -54,11 +54,17 @@ StatusOr<int64_t> ProcessLengthEncodedInt(std::string_view s, size_t* offset) {
 /**
  * https://dev.mysql.com/doc/internals/en/packet-EOF_Packet.html
  */
-bool IsEOFPacket(const Packet& packet) {
+bool IsEOFPacket(const Packet& packet, bool protocol_41) {
   // '\xfe' + warnings[2] + status_flags[2](If CLIENT_PROTOCOL_41).
+  size_t expected_size = protocol_41 ? 5 : 1;
+
   // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
-  return (packet.msg[0] == static_cast<char>(kRespHeaderEOF)) &&
-         ((packet.msg.size() == 1 || packet.msg.size() == 5));
+  uint8_t header = packet.msg[0];
+  return ((header == kRespHeaderEOF) && (packet.msg.size() == expected_size));
+}
+
+bool IsEOFPacket(const Packet& packet) {
+  return IsEOFPacket(packet, true) || IsEOFPacket(packet, false);
 }
 
 /**
@@ -73,24 +79,34 @@ bool IsErrPacket(const Packet& packet) {
 /**
  * https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html
  */
-bool IsOKPacket(const Packet& packet) {
+bool IsOKPacket(const Packet& packet, bool protocol_41) {
   // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
 
-  // 3 bytes is the minimum size for an OK packet. Read doc linked above for details.
-  if (packet.msg[0] == static_cast<char>(kRespHeaderOK) && packet.msg.size() >= 3) {
+  uint8_t header = packet.msg[0];
+
+  if (!protocol_41) {
+    // 3 byte minimum packet size prior to protocol 4.1.
+    return ((header == kRespHeaderOK) && (packet.msg.size() >= 3));
+  }
+
+  // Protocol 4.1 is more complicated.
+
+  // 7 byte minimum packet size in protocol 4.1.
+  if ((header == kRespHeaderOK) && (packet.msg.size() >= 7)) {
     return true;
   }
 
   // Some servers appear to still use the EOF marker in the OK response, even with
   // CLIENT_DEPRECATE_EOF.
-  if (packet.msg[0] == static_cast<char>(kRespHeaderEOF) && packet.msg.size() < 9) {
-    if (IsEOFPacket(packet)) {
-      return false;
-    }
+  if ((header == kRespHeaderEOF) && (packet.msg.size() < 9) && !IsEOFPacket(packet)) {
     return true;
   }
 
   return false;
+}
+
+bool IsOKPacket(const Packet& packet) {
+  return IsOKPacket(packet, true) || IsOKPacket(packet, false);
 }
 
 bool IsLengthEncodedIntPacket(const Packet& packet) {
@@ -130,6 +146,32 @@ bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof) {
 bool IsStmtPrepareOKPacket(const Packet& packet) {
   // https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html#packet-COM_STMT_PREPARE_OK
   return (packet.msg.size() == 12U && packet.msg[0] == 0 && packet.msg[9] == 0);
+}
+
+// Look for SERVER_MORE_RESULTS_EXIST in Status field OK or EOF packet.
+// Multi-resultsets only exist in protocol 4.1 and above.
+bool MoreResultsExists(const Packet& last_packet) {
+  constexpr uint8_t kServerMoreResultsExistsFlag = 0x8;
+
+  if (IsOKPacket(last_packet, /* protocol_41 */ true)) {
+    size_t pos = 1;
+
+    StatusOr<int> s1 = ProcessLengthEncodedInt(last_packet.msg, &pos);
+    StatusOr<int> s2 = ProcessLengthEncodedInt(last_packet.msg, &pos);
+    if (!s1.ok() || !s2.ok()) {
+      LOG(ERROR) << "Error parsing OK packet for SERVER_MORE_RESULTS_EXIST_FLAG";
+      return false;
+    }
+
+    return last_packet.msg[pos] & kServerMoreResultsExistsFlag;
+  }
+
+  if (IsEOFPacket(last_packet, /* protocol_41 */ true)) {
+    constexpr int kEOFPacketStatusPos = 3;
+    return (last_packet.msg[kEOFPacketStatusPos] & kServerMoreResultsExistsFlag);
+  }
+
+  return false;
 }
 
 }  // namespace mysql

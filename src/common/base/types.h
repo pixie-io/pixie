@@ -94,9 +94,12 @@ class ContainerView {
   typename TContainer<T>::const_iterator begin() const { return vec_.cbegin() + start_; }
   typename TContainer<T>::const_iterator end() const { return vec_.cbegin() + (start_ + size_); }
   const T& front() { return vec_[start_]; }
-  void pop_front() {
-    ++start_;
-    --size_;
+  void pop_front(size_t n = 1) {
+    if (n > size_) {
+      n = size_;
+    }
+    start_ += n;
+    size_ -= n;
   }
   bool empty() { return size_ == 0; }
 };

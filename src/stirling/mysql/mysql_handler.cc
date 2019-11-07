@@ -104,14 +104,25 @@ void HandleOKMessage(DequeView<Packet> resp_packets, Record* entry) {
     return ParseState::kNeedsMoreData;                    \
   }
 
-StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry) {
+StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry,
+                                             bool multi_resultset) {
   auto iter = resp_packets.begin();
 
   VLOG(3) << absl::Substitute("HandleResultsetResponse with $0 packets", resp_packets.size());
 
-  // Process header packet.
   RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
   const Packet& first_resp_packet = *iter;
+
+  // The last resultset of a multi-resultset is just an OK packet.
+  if (multi_resultset && IsOKPacket(first_resp_packet)) {
+    entry->resp.status = MySQLRespStatus::kOK;
+    entry->resp.timestamp_ns = first_resp_packet.timestamp_ns;
+    LOG_IF(ERROR, resp_packets.size() != 1)
+        << absl::Substitute("Found $0 extra packets", resp_packets.size() - 1);
+    return ParseState::kSuccess;
+  }
+
+  // Process header packet.
   if (!IsLengthEncodedIntPacket(first_resp_packet)) {
     entry->resp.status = MySQLRespStatus::kUnknown;
     return error::Internal("First packet should be length-encoded integer.");
@@ -187,20 +198,30 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
 
   const Packet& last_packet = *iter;
+  DCHECK(isLastPacket(last_packet));
   if (IsErrPacket(last_packet)) {
     // TODO(chengruizhe/oazizi): If it ends with err packet, propagate up error_message.
     PL_UNUSED(last_packet);
   }
 
-  ++iter;
-  if (iter != resp_packets.end()) {
-    LOG(ERROR) << absl::Substitute("Found $0 extra packets",
-                                   std::distance(iter, resp_packets.end()));
+  if (multi_resultset) {
+    absl::StrAppend(&entry->resp.msg, ", ");
   }
+  absl::StrAppend(&entry->resp.msg, "Resultset rows = ", results.size());
+
+  // Check for another resultset in case this is a multi-resultset.
+  if (MoreResultsExists(last_packet)) {
+    DequeView<Packet> remaining_packets(resp_packets);
+    remaining_packets.pop_front(iter - resp_packets.begin() + 1);
+    return HandleResultsetResponse(remaining_packets, entry, true);
+  }
+
+  ++iter;
+  LOG_IF(ERROR, iter != resp_packets.end())
+      << absl::Substitute("Found $0 extra packets", std::distance(iter, resp_packets.end()));
 
   entry->resp.status = MySQLRespStatus::kOK;
   entry->resp.timestamp_ns = last_packet.timestamp_ns;
-  entry->resp.msg = absl::Substitute("Resultset rows = $0", results.size());
   return ParseState::kSuccess;
 }
 

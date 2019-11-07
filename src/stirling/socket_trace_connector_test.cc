@@ -1020,5 +1020,100 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx).val, 10001);
 }
 
+// Inspired from real traced query that produces a multi-resultset:
+//    CREATE TEMPORARY TABLE ins ( id INT );
+//    DROP PROCEDURE IF EXISTS multi;
+//    DELIMITER $$
+//    CREATE PROCEDURE multi() BEGIN
+//      SELECT 1;
+//      SELECT 1;
+//      INSERT INTO ins VALUES (1);
+//      INSERT INTO ins VALUES (2);
+//    END$$
+//    DELIMITER ;
+//
+//    CALL multi();
+//    DROP TABLE ins;
+TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
+  FLAGS_stirling_enable_mysql_tracing = true;
+
+  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
+
+  // The following is a captured trace while running a script on a real instance of MySQL.
+  std::vector<std::unique_ptr<SocketDataEvent>> events;
+  events.push_back(InitSendEvent(
+      mysql::testutils::GenRequestPacket(mysql::MySQLEventType::kQuery, "CALL multi()")));
+
+  // Sequence ID of zero is the request.
+  int seq_id = 1;
+
+  // First resultset.
+  {
+    // First packet: number of columns in the query.
+    events.push_back(InitRecvEvent(
+        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::GenLengthEncodedInt(1))));
+    // The column def packet (a bunch of length-encoded strings).
+    events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(
+        seq_id++,
+        ConstStringView(
+            "\x03"
+            "def"
+            "\x00\x00\x00\x01\x31\x00\x0C\x3F\x00\x01\x00\x00\x00\x08\x81\x00\x00\x00\x00"))));
+    // A resultset row.
+    events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(seq_id++,
+                                                                  "\x01"
+                                                                  "1")));
+    // OK/EOF packet with SERVER_MORE_RESULTS_EXISTS flag set.
+    events.push_back(InitRecvEvent(
+        mysql::testutils::GenRawPacket(seq_id++, ConstStringView("\xFE\x00\x00\x0A\x00\x00\x00"))));
+  }
+
+  // Second resultset.
+  {
+    // First packet: number of columns in the query.
+    events.push_back(InitRecvEvent(
+        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::GenLengthEncodedInt(1))));
+    // The column def packet (a bunch of length-encoded strings).
+    events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(
+        seq_id++,
+        ConstStringView(
+            "\x03"
+            "def"
+            "\x00\x00\x00\x01\x31\x00\x0C\x3F\x00\x01\x00\x00\x00\x08\x81\x00\x00\x00\x00"))));
+    // A resultset row.
+    events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(seq_id++,
+                                                                  "\x01"
+                                                                  "1")));
+    // OK/EOF packet with SERVER_MORE_RESULTS_EXISTS flag set.
+    events.push_back(InitRecvEvent(
+        mysql::testutils::GenRawPacket(seq_id++, ConstStringView("\xFE\x00\x00\x0A\x00\x00\x00"))));
+  }
+
+  // Final OK packet, signaling end of multi-resultset.
+  events.push_back(InitRecvEvent(
+      mysql::testutils::GenRawPacket(seq_id++, ConstStringView("\x00\x01\x00\x02\x00\x00\x00"))));
+
+  source_->AcceptControlEvent(conn);
+  for (auto& event : events) {
+    source_->AcceptDataEvent(std::move(event));
+  }
+
+  DataTable data_table(kMySQLTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+  source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
+  for (const auto& column : record_batch) {
+    ASSERT_EQ(1, column->Size());
+  }
+
+  int idx = 0;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "CALL multi()");
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx),
+            "Resultset rows = 1, Resultset rows = 1");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kQuery));
+  EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx).val, 9);
+}
+
 }  // namespace stirling
 }  // namespace pl

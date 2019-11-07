@@ -20,7 +20,8 @@ void HandleErrMessage(DequeView<Packet> resp_packets, Record* entry);
 
 void HandleOKMessage(DequeView<Packet> resp_packets, Record* entry);
 
-StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry);
+StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry,
+                                             bool multiresultset = false);
 
 StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* state,
                                                  Record* entry);

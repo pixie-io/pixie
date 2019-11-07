@@ -285,6 +285,7 @@ bool IsLengthEncodedIntPacket(const Packet& packet);
 bool IsColumnDefPacket(const Packet& packet);
 bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof);
 bool IsStmtPrepareOKPacket(const Packet& packet);
+bool MoreResultsExists(const Packet& last_packet);
 
 /**
  * Converts a length encoded int from string to int.
