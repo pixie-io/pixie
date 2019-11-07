@@ -174,9 +174,15 @@ pl_cc_test(
     name = "grpc_trace_bpf_test",
     timeout = "moderate",
     srcs = ["grpc_trace_bpf_test.cc"],
+    args = [
+        "--go_greeter_client_path=$(location //src/stirling/http2/testing/go_grpc_service" +
+        "/greeter_client:greeter_client)",
+        "--go_greeter_server_path=$(location //src/stirling/http2/testing/go_grpc_service" +
+        "/greeter_server:greeter_server)",
+    ],
     data = [
-        "//src/stirling/http2/testing:go_greeter_client",
-        "//src/stirling/http2/testing:go_greeter_server",
+        "//src/stirling/http2/testing/go_grpc_service/greeter_client:greeter_client",
+        "//src/stirling/http2/testing/go_grpc_service/greeter_server:greeter_server",
     ],
     tags = ["requires_bpf"],
     deps = [

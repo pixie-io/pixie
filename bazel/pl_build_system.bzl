@@ -195,6 +195,7 @@ def pl_cc_test(
             repository + "//src/common/testing:test_main",
         ] + _default_external_deps(),
         args = args,
+        data = data,
         tags = tags + ["coverage_test"],
         size = size,
         timeout = timeout,

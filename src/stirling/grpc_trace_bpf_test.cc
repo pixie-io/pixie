@@ -9,6 +9,7 @@ extern "C" {
 #include <nghttp2/nghttp2_frame.h>
 }
 
+#include <experimental/filesystem>
 #include <thread>
 
 #include "src/common/exec/subprocess.h"
@@ -20,6 +21,9 @@ extern "C" {
 #include "src/stirling/http2/testing/grpc_stub.h"
 #include "src/stirling/http2/testing/proto/greet.grpc.pb.h"
 #include "src/stirling/socket_trace_connector.h"
+
+DEFINE_string(go_greeter_client_path, "", "The path to the go greeter client executable.");
+DEFINE_string(go_greeter_server_path, "", "The path to the go greeter server executable.");
 
 namespace pl {
 namespace stirling {
@@ -47,6 +51,8 @@ using ::testing::IsEmpty;
 using ::testing::MatchesRegex;
 using ::testing::SizeIs;
 using ::testing::StrEq;
+
+namespace fs = std::experimental::filesystem;
 
 constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 
@@ -86,13 +92,18 @@ class GRPCTraceGoTest : public ::testing::Test {
         ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
 
   void SetUp() override {
-    static constexpr char kBaseDir[] = "src/stirling/http2/testing";
-    server_path_ =
-        TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_server"));
-    client_path_ =
-        TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_client"));
+    CHECK(!FLAGS_go_greeter_client_path.empty())
+        << "--go_greeter_client_path cannot be empty. You should run this test with bazel.";
+    CHECK(fs::exists(fs::path(FLAGS_go_greeter_client_path))) << FLAGS_go_greeter_client_path;
 
-    CHECK(s_.Start({server_path_}).ok());
+    CHECK(!FLAGS_go_greeter_server_path.empty())
+        << "--go_greeter_server_path cannot be empty. You should run this test with bazel.";
+    CHECK(fs::exists(fs::path(FLAGS_go_greeter_server_path))) << FLAGS_go_greeter_server_path;
+
+    server_path_ = FLAGS_go_greeter_server_path;
+    client_path_ = FLAGS_go_greeter_client_path;
+
+    PL_CHECK_OK(s_.Start({server_path_}));
 
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
@@ -152,7 +163,7 @@ TEST_F(GRPCTraceGoTest, TestGolangGrpcService) {
       std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(target_record_idx)),
       AllOf(HasSubstr(R"({":authority":"localhost:50051",)"
                       R"(":method":"POST",)"
-                      R"(":path":"/pl.stirling.testing.Greeter/SayHello",)"
+                      R"(":path":"/pl.stirling.http2.testing.Greeter/SayHello",)"
                       R"(":scheme":"http",)"
                       R"("content-type":"application/grpc")"),
             HasSubstr(R"("grpc-timeout")"), HasSubstr(R"("te":"trailers","user-agent")")));
