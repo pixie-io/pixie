@@ -933,7 +933,7 @@ func TestUpdateIPMap(t *testing.T) {
 	assert.Equal(t, "localhost", string(resp.Kvs[0].Value))
 }
 
-func TestGetNodePods(t *testing.T) {
+func TestGetNodeEndpoints(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
@@ -942,111 +942,89 @@ func TestGetNodePods(t *testing.T) {
 		t.Fatal("Failed to create metadata store.")
 	}
 
-	// Create pods.
-	pod1 := &metadatapb.Pod{
+	// Create endpoints.
+	e1 := &metadatapb.Endpoints{
 		Metadata: &metadatapb.ObjectMetadata{
 			Name:      "abcd",
 			Namespace: "test",
-			UID:       "abcd-pod",
+			UID:       "abcd",
 		},
-		Status: &metadatapb.PodStatus{
-			HostIP: "127.0.0.1",
+		Subsets: []*metadatapb.EndpointSubset{
+			&metadatapb.EndpointSubset{
+				Addresses: []*metadatapb.EndpointAddress{
+					&metadatapb.EndpointAddress{
+						NodeName: "test",
+					},
+				},
+			},
 		},
 	}
-	pod1Text, err := pod1.Marshal()
+	e1Text, err := e1.Marshal()
 	if err != nil {
-		t.Fatal("Unable to marshal pod pb")
+		t.Fatal("Unable to marshal endpoint pb")
 	}
 
-	pod2 := &metadatapb.Pod{
+	e2 := &metadatapb.Endpoints{
 		Metadata: &metadatapb.ObjectMetadata{
 			Name:      "efgh",
 			Namespace: "test",
-			UID:       "efgh-pod",
+			UID:       "efgh",
 		},
-		Status: &metadatapb.PodStatus{
-			HostIP: "127.0.0.7",
+		Subsets: []*metadatapb.EndpointSubset{
+			&metadatapb.EndpointSubset{
+				Addresses: []*metadatapb.EndpointAddress{
+					&metadatapb.EndpointAddress{
+						NodeName: "localhost",
+					},
+				},
+			},
 		},
 	}
-	pod2Text, err := pod2.Marshal()
+	e2Text, err := e2.Marshal()
 	if err != nil {
-		t.Fatal("Unable to marshal pod pb")
+		t.Fatal("Unable to marshal endpoint pb")
 	}
 
-	pod3 := &metadatapb.Pod{
+	e3 := &metadatapb.Endpoints{
 		Metadata: &metadatapb.ObjectMetadata{
-			Name:      "xyz",
-			Namespace: "test",
-			UID:       "xyz-pod",
+			Name:                "xyz",
+			Namespace:           "test",
+			UID:                 "xyz",
+			DeletionTimestampNS: 10,
 		},
-		Status: &metadatapb.PodStatus{
-			HostIP: "127.0.0.1",
-		},
-	}
-	pod3Text, err := pod3.Marshal()
-	if err != nil {
-		t.Fatal("Unable to marshal pod pb")
-	}
-
-	// This pod does not have a corresponding entry in the IP map... Which should never
-	// happen since nodes are always created before pods. But, in the case that
-	// something weird like this happens, we should handle it gracefully.
-	pod4 := &metadatapb.Pod{
-		Metadata: &metadatapb.ObjectMetadata{
-			Name:      "qwerty",
-			Namespace: "test",
-			UID:       "qwerty-pod",
-		},
-		Status: &metadatapb.PodStatus{
-			HostIP: "127.0.0.6",
+		Subsets: []*metadatapb.EndpointSubset{
+			&metadatapb.EndpointSubset{
+				Addresses: []*metadatapb.EndpointAddress{
+					&metadatapb.EndpointAddress{
+						NodeName: "localhost",
+					},
+				},
+			},
 		},
 	}
-	pod4Text, err := pod4.Marshal()
+	e3Text, err := e3.Marshal()
 	if err != nil {
-		t.Fatal("Unable to marshal pod pb")
+		t.Fatal("Unable to marshal endpoint pb")
 	}
 
-	_, err = etcdClient.Put(context.Background(), "/pod/test/abcd-pod", string(pod1Text))
+	_, err = etcdClient.Put(context.Background(), "/endpoints/test/abcd", string(e1Text))
 	if err != nil {
-		t.Fatal("Unable to add pod to etcd.")
+		t.Fatal("Unable to add endpoint to etcd.")
 	}
 
-	_, err = etcdClient.Put(context.Background(), "/pod/test/efgh-pod", string(pod2Text))
+	_, err = etcdClient.Put(context.Background(), "/endpoints/test/efgh", string(e2Text))
 	if err != nil {
-		t.Fatal("Unable to add pod to etcd.")
+		t.Fatal("Unable to add endpoint to etcd.")
 	}
 
-	_, err = etcdClient.Put(context.Background(), "/pod/test/xyz-pod", string(pod3Text))
+	_, err = etcdClient.Put(context.Background(), "/endpoints/test/xyz", string(e3Text))
 	if err != nil {
-		t.Fatal("Unable to add pod to etcd.")
+		t.Fatal("Unable to add endpoint to etcd.")
 	}
 
-	_, err = etcdClient.Put(context.Background(), "/pod/test/qwerty-pod", string(pod4Text))
-	if err != nil {
-		t.Fatal("Unable to add pod to etcd.")
-	}
-
-	// Add IP maps.
-	_, err = etcdClient.Put(context.Background(), "/ip/127.0.0.1/hostname", "localhost")
-	if err != nil {
-		t.Fatal("Unable to add IP map to etcd.")
-	}
-
-	_, err = etcdClient.Put(context.Background(), "/ip/127.0.0.7/hostname", "minikube")
-	if err != nil {
-		t.Fatal("Unable to add IP map to etcd.")
-	}
-
-	pods, err := mds.GetNodePods("localhost")
+	eps, err := mds.GetNodeEndpoints("localhost")
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(pods))
+	assert.Equal(t, 1, len(eps))
 
-	assert.Equal(t, pod1.Metadata.Name, (*pods[0]).Metadata.Name)
-	assert.Equal(t, pod3.Metadata.Name, (*pods[1]).Metadata.Name)
-
-	pods, err = mds.GetNodePods("minikube")
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(pods))
-
-	assert.Equal(t, pod2.Metadata.Name, (*pods[0]).Metadata.Name)
+	assert.Equal(t, e2.Metadata.Name, (*eps[0]).Metadata.Name)
 }

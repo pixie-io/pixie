@@ -87,8 +87,14 @@ func main() {
 	}
 	defer session.Close()
 
-	isLeader := false
 	leaderElection := etcd.NewLeaderElection(session)
+	isLeader := false
+	// MDS should block on its first attempt to become leader, so that it won't
+	// skip syncing if it is supposed to be the leader.
+	err = leaderElection.Campaign()
+	if err != nil {
+		isLeader = true
+	}
 	go leaderElection.RunElection(&isLeader)
 	defer leaderElection.Stop()
 

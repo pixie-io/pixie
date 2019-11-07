@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"path"
 	"strconv"
 	"strings"
@@ -110,7 +111,7 @@ func (mds *EtcdMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.E
 
 		for _, subset := range pb.Subsets {
 			for _, address := range subset.Addresses {
-				if address.NodeName == hostname {
+				if address.NodeName == hostname && pb.Metadata.DeletionTimestampNS == 0 {
 					endpoints = append(endpoints, pb)
 				}
 			}
@@ -169,41 +170,28 @@ func (mds *EtcdMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
 
 // GetNodePods gets all pods belonging to a node in the metadata store.
 func (mds *EtcdMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, error) {
-	// Get all pods.
 	resp, err := mds.client.Get(context.Background(), getPodsKey(), clientv3.WithPrefix())
 	if err != nil {
 		log.WithError(err).Error("Failed to execute etcd Get")
 		return nil, err
 	}
-	pods := make([]*metadatapb.Pod, len(resp.Kvs))
-	for i, kv := range resp.Kvs {
+
+	ip, _ := net.LookupIP(hostname)
+	ipStr := ""
+
+	if len(ip) > 0 {
+		ipStr = ip[0].String()
+	}
+
+	var pods []*metadatapb.Pod
+	for _, kv := range resp.Kvs {
 		pb := &metadatapb.Pod{}
 		proto.Unmarshal(kv.Value, pb)
-		pods[i] = pb
-	}
-
-	// Get hostnames of all pods.
-	podHostnameOp := make([]clientv3.Op, len(pods))
-	for i, pod := range pods {
-		podHostnameOp[i] = clientv3.OpGet(getIPMapKey(pod.Status.HostIP))
-	}
-
-	hostnames, err := etcd.BatchOps(mds.client, podHostnameOp)
-
-	var nodePods []*metadatapb.Pod
-	for i, hResp := range hostnames {
-		if len(hResp.GetResponseRange().Kvs) == 0 {
-			// This should never happen, but if it does, we should make sure we don't crash.
-			log.Info("Could not find hostname in IP map")
-			continue
-		}
-		h := string(hResp.GetResponseRange().Kvs[0].Value)
-		if h == hostname {
-			nodePods = append(nodePods, pods[i])
+		if pb.Status.HostIP == ipStr && pb.Metadata.DeletionTimestampNS == 0 {
+			pods = append(pods, pb)
 		}
 	}
-
-	return nodePods, nil
+	return pods, nil
 }
 
 // GetContainers gets all containers in the metadata store.
