@@ -286,19 +286,6 @@ bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof);
 bool IsStmtPrepareOKPacket(const Packet& packet);
 bool MoreResultsExists(const Packet& last_packet);
 
-/**
- * Converts a length encoded int from string to int.
- * https://dev.mysql.com/doc/internals/en/integer.html#packet-Protocol::LengthEncodedInteger
- *
- * @param s the source bytes from which to extract the length-encoded int
- * @param offset the position at which to parse the length-encoded int.
- * The offset will be updated to point to the end position on a successful parse.
- * On an unsuccessful parse, the offset will be in an undefined state.
- *
- * @return int value if parsed, or error if there are not enough bytes to parse the int.
- */
-StatusOr<int64_t> ProcessLengthEncodedInt(std::string_view s, size_t* offset);
-
 }  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

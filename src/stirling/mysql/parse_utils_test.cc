@@ -1,9 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <utility>
 
-#include "src/stirling/mysql/mysql.h"
-#include "src/stirling/mysql/mysql_handler.h"
+#include "src/stirling/mysql/parse_utils.h"
 
 namespace pl {
 namespace stirling {

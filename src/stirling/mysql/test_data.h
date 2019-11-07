@@ -67,20 +67,38 @@ PreparedStatement kPreparedStatement{
 /**
  * Statement Execute Event with 2 params, 2 col definitions, and 2 resultset rows.
  */
-const std::vector<ParamPacket> kStmtExecuteParams = {
-    {MySQLColType::kString, "\x62\x72\x6f\x77\x6e"}, {MySQLColType::kString, "\x69\x64"}};
+const std::vector<ParamPacket> kStmtExecuteParams = {{MySQLColType::kString, "brown"},
+                                                     {MySQLColType::kString, "id"}};
 
 const StmtExecuteRequest kStmtExecuteRequest{.stmt_id = kStmtID, .params = kStmtExecuteParams};
 
 const std::vector<ColDefinition> kStmtExecuteColDefs = {
-    ColDefinition{ConstString("\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62"
-                              "\x04\x73\x6f\x63\x6b\x04\x73\x6f\x63\x6b\x02\x69\x64\x07\x73\x6f"
-                              "\x63\x6b\x5f\x69\x64\x0c\x21\x00\x78\x00\x00\x00\xfd\x01\x10\x00"
-                              "\x00\x00")},
-    ColDefinition{ConstString("\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62\n"
-                              "\x04\x73\x6f\x63\x6b\x04\x73\x6f\x63\x6b\x04\x6e\x61\x6d\x65\x04\n"
-                              "\x6e\x61\x6d\x65\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\n"
-                              "\x00")}};
+    ColDefinition{ConstString("\x03"
+                              "def"
+                              "\x07"
+                              "socksdb"
+                              "\x04"
+                              "sock"
+                              "\x04"
+                              "sock"
+                              "\x02"
+                              "id"
+                              "\x07"
+                              "sock_id"
+                              "\x0c\x21\x00\x78\x00\x00\x00\xfd\x01\x10\x00\x00\x00")},
+    ColDefinition{ConstString("\x03"
+                              "def"
+                              "\x07"
+                              "socksdb\n"
+                              "\x04"
+                              "sock"
+                              "\x04"
+                              "sock"
+                              "\x04"
+                              "name"
+                              "\x04"
+                              "name"
+                              "\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00")}};
 
 const std::vector<ResultsetRow> kStmtExecuteResultsetRows = {ResultsetRow{ConstString("\x03id1")},
                                                              ResultsetRow{ConstString("\x03id2")}};

@@ -2,55 +2,11 @@
 
 #include "src/common/base/byte_utils.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
+#include "src/stirling/mysql/parse_utils.h"
 
 namespace pl {
 namespace stirling {
 namespace mysql {
-
-// TODO(oazizi): Move out to parse_utils.cc.
-StatusOr<int64_t> ProcessLengthEncodedInt(std::string_view s, size_t* offset) {
-  // If it is < 0xfb, treat it as a 1-byte integer.
-  // If it is 0xfc, it is followed by a 2-byte integer.
-  // If it is 0xfd, it is followed by a 3-byte integer.
-  // If it is 0xfe, it is followed by a 8-byte integer.
-
-  constexpr uint8_t kLencIntPrefix2b = 0xfc;
-  constexpr uint8_t kLencIntPrefix3b = 0xfd;
-  constexpr uint8_t kLencIntPrefix8b = 0xfe;
-
-  if (*offset >= s.size()) {
-    return error::Internal("Not enough bytes to extract length-encoded int");
-  }
-
-  int64_t result;
-  int len;
-  switch (static_cast<uint8_t>(s[*offset])) {
-    case kLencIntPrefix2b:
-      len = 2;
-      ++*offset;
-      break;
-    case kLencIntPrefix3b:
-      len = 3;
-      ++*offset;
-      break;
-    case kLencIntPrefix8b:
-      len = 8;
-      ++*offset;
-      break;
-    default:
-      len = 1;
-      break;
-  }
-
-  if (*offset + len > s.size()) {
-    return error::Internal("Not enough bytes to extract length-encoded int");
-  }
-
-  result = utils::LittleEndianByteStrToInt<uint64_t>(s.substr(*offset, len));
-  *offset += len;
-
-  return result;
-}
 
 /**
  * https://dev.mysql.com/doc/internals/en/packet-EOF_Packet.html
