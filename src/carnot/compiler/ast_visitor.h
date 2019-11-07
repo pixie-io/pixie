@@ -253,13 +253,25 @@ class ASTWalker {
   StatusOr<OperatorIR*> ProcessAttribute(const pypa::AstAttributePtr& node);
 
   /**
+   * @brief Helper function for processing lists and tuples into IR nodes.
+   *
+   * @param collection the collection to put the results in
+   * @param ast
+   * @param elements elements of the input collection
+   * @param op_context: The context of the operator which this is contained within.
+   * @return StatusOr<IRNode*> the IR representation of the liset.
+   */
+  Status InitCollectionData(CollectionIR* collection, const pypa::AstPtr& ast,
+                            const pypa::AstExprList& elements, const OperatorContext& op_context);
+
+  /**
    * @brief Processes a list ptr into an IR node.
    *
    * @param ast
    * @param op_context: The context of the operator which this is contained within.
    * @return StatusOr<IRNode*> the IR representation of the list.
    */
-  StatusOr<IRNode*> ProcessList(const pypa::AstListPtr& ast, const OperatorContext& op_context);
+  StatusOr<ListIR*> ProcessList(const pypa::AstListPtr& ast, const OperatorContext& op_context);
 
   /**
    * @brief Processes a column subscript ptr into a column IR node.
@@ -270,6 +282,15 @@ class ASTWalker {
    */
   StatusOr<ColumnIR*> ProcessSubscriptColumn(const pypa::AstSubscriptPtr& ast,
                                              const OperatorContext& op_context);
+
+  /**
+   * @brief Processes a tuple ptr into an IR node.
+   *
+   * @param ast
+   * @param op_context: The context of the operator which this is contained within.
+   * @return StatusOr<IRNode*> the IR representation of the liset.
+   */
+  StatusOr<TupleIR*> ProcessTuple(const pypa::AstTuplePtr& ast, const OperatorContext& op_context);
 
   /**
    * @brief Processes a number into an IR Node.

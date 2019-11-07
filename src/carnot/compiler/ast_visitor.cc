@@ -463,18 +463,33 @@ StatusOr<ExpressionIR*> ASTWalker::ProcessStr(const pypa::AstStrPtr& ast) {
   return ir_node;
 }
 
-StatusOr<IRNode*> ASTWalker::ProcessList(const pypa::AstListPtr& ast,
-                                         const OperatorContext& op_context) {
-  ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
+Status ASTWalker::InitCollectionData(CollectionIR* collection, const pypa::AstPtr& ast,
+                                     const pypa::AstExprList& elements,
+                                     const OperatorContext& op_context) {
   std::vector<ExpressionIR*> children;
-  for (auto& child : ast->elements) {
+  for (auto& child : elements) {
     PL_ASSIGN_OR_RETURN(IRNode * child_node, ProcessData(child, op_context));
     if (!child_node->IsExpression()) {
-      return CreateAstError(ast, "Can't support '$0' as a List member.", child_node->type_string());
+      return CreateAstError(ast, "Can't support '$0' as a Collection member.",
+                            child_node->type_string());
     }
     children.push_back(static_cast<ExpressionIR*>(child_node));
   }
-  PL_RETURN_IF_ERROR(ir_node->Init(ast, children));
+  PL_RETURN_IF_ERROR(collection->Init(ast, children));
+  return Status::OK();
+}
+
+StatusOr<ListIR*> ASTWalker::ProcessList(const pypa::AstListPtr& ast,
+                                         const OperatorContext& op_context) {
+  ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
+  PL_RETURN_IF_ERROR(InitCollectionData(ir_node, ast, ast->elements, op_context));
+  return ir_node;
+}
+
+StatusOr<TupleIR*> ASTWalker::ProcessTuple(const pypa::AstTuplePtr& ast,
+                                           const OperatorContext& op_context) {
+  TupleIR* ir_node = ir_graph_->MakeNode<TupleIR>().ValueOrDie();
+  PL_RETURN_IF_ERROR(InitCollectionData(ir_node, ast, ast->elements, op_context));
   return ir_node;
 }
 
@@ -1017,6 +1032,9 @@ StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast,
     }
     case AstType::List: {
       return ProcessList(PYPA_PTR_CAST(List, ast), op_context);
+    }
+    case AstType::Tuple: {
+      return ProcessTuple(PYPA_PTR_CAST(Tuple, ast), op_context);
     }
     case AstType::Lambda: {
       return ProcessLambda(PYPA_PTR_CAST(Lambda, ast), op_context);
