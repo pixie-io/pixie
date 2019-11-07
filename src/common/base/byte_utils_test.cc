@@ -98,5 +98,11 @@ TEST(UtilsTest, TestLittleEndianByteStrToInt) {
             0x123456789abcdef0);
 }
 
+TEST(UtilsTest, TestLittleEndianByteStrToFloat) {
+  EXPECT_FLOAT_EQ(LittleEndianByteStrToFloat<float>(ConstString("\x33\x33\x23\x41")), 10.2f);
+  EXPECT_DOUBLE_EQ(
+      LittleEndianByteStrToFloat<double>(ConstString("\x66\x66\x66\x66\x66\x66\x24\x40")), 10.2);
+}
+
 }  // namespace utils
 }  // namespace pl

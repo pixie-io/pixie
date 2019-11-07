@@ -28,6 +28,12 @@ TIntType LittleEndianByteStrToInt(std::string_view str) {
   return result;
 }
 
+template <typename TFloatType>
+TFloatType LittleEndianByteStrToFloat(std::string_view str) {
+  DCHECK(str.size() == sizeof(TFloatType));
+  return *reinterpret_cast<const TFloatType*>(str.data());
+}
+
 template <typename TCharType, size_t N>
 void ReverseBytes(const TCharType (&bytes)[N], TCharType (&result)[N]) {
   for (size_t k = 0; k < N; k++) {

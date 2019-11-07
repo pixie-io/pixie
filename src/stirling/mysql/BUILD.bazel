@@ -24,6 +24,12 @@ pl_cc_library(
 )
 
 pl_cc_test(
+    name = "parse_utils_test",
+    srcs = ["parse_utils_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "mysql_handler_test",
     srcs = ["mysql_handler_test.cc"],
     deps = [":cc_library"],

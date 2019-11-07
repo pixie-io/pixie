@@ -83,19 +83,34 @@ constexpr uint8_t kRespHeaderOK = 0x00;
 
 // Column Types
 // https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
-constexpr uint8_t kColTypeTiny = 0x01;
-constexpr uint8_t kColTypeShort = 0x02;
-constexpr uint8_t kColTypeLong = 0x03;
-constexpr uint8_t kColTypeFloat = 0x04;
-constexpr uint8_t kColTypeDouble = 0x05;
-constexpr uint8_t kColTypeTimeStamp = 0x07;
-constexpr uint8_t kColTypeLongLong = 0x08;
-constexpr uint8_t kColTypeDate = 0x0a;
-constexpr uint8_t kColTypeDateTime = 0x0c;
-constexpr uint8_t kColTypeNewDecimal = 0xf6;
-constexpr uint8_t kColTypeBlob = 0xfc;
-constexpr uint8_t kColTypeVarString = 0xfd;
-constexpr uint8_t kColTypeString = 0xfe;
+enum class MySQLColType : uint8_t {
+  kDecimal = 0x00,
+  kTiny = 0x01,
+  kShort = 0x02,
+  kLong = 0x03,
+  kFloat = 0x04,
+  kDouble = 0x05,
+  kNull = 0x06,
+  kTimestamp = 0x07,
+  kLongLong = 0x08,
+  kInt24 = 0x09,
+  kDate = 0x0a,
+  kTime = 0x0b,
+  kDateTime = 0x0c,
+  kYear = 0x0d,
+  kVarChar = 0x0f,
+  kBit = 0x10,
+  kNewDecimal = 0xf6,
+  kEnum = 0xf7,
+  kSet = 0xf8,
+  kTinyBlob = 0xf9,
+  kMediumBlob = 0xfa,
+  kLongBlob = 0xfb,
+  kBlob = 0xfc,
+  kVarString = 0xfd,
+  kString = 0xfe,
+  kGeometry = 0xff,
+};
 
 constexpr int kPacketHeaderLength = 4;
 
@@ -143,26 +158,10 @@ struct ResultsetRow {
 };
 
 /**
- * https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
- */
-enum class StmtExecuteParamType {
-  kUnknown = 0,
-  kString,
-  kTiny,
-  kShort,
-  kLong,
-  kLongLong,
-  kFloat,
-  kDouble,
-  kNull,
-  kDateTime,
-};
-
-/**
  * A parameter in StmtExecuteRequest.
  */
 struct ParamPacket {
-  StmtExecuteParamType type;
+  MySQLColType type;
   std::string value;
 };
 

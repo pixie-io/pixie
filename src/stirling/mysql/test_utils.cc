@@ -185,7 +185,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
   for (const ParamPacket& param : req.params) {
     switch (param.type) {
       // TODO(chengruizhe): Add more types.
-      case StmtExecuteParamType::kString:
+      case MySQLColType::kString:
         msg += ConstStringView("\xfe\x00");
         break;
       default:

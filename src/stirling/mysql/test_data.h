@@ -68,8 +68,7 @@ PreparedStatement kPreparedStatement{
  * Statement Execute Event with 2 params, 2 col definitions, and 2 resultset rows.
  */
 const std::vector<ParamPacket> kStmtExecuteParams = {
-    {StmtExecuteParamType::kString, "\x62\x72\x6f\x77\x6e"},
-    {StmtExecuteParamType::kString, "\x69\x64"}};
+    {MySQLColType::kString, "\x62\x72\x6f\x77\x6e"}, {MySQLColType::kString, "\x69\x64"}};
 
 const StmtExecuteRequest kStmtExecuteRequest{.stmt_id = kStmtID, .params = kStmtExecuteParams};
 

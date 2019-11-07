@@ -11,65 +11,134 @@
 namespace pl {
 namespace stirling {
 namespace mysql {
-namespace {
 
-/**
- * Dissects String parameters
- */
-Status DissectStringParam(const std::string_view msg, size_t* param_offset, ParamPacket* packet) {
+// TODO(oazizi): Move dissectors out to parse_utils.cc.
+
+Status DissectStringParam(std::string_view msg, size_t* param_offset, ParamPacket* packet) {
   PL_ASSIGN_OR_RETURN(int param_length, ProcessLengthEncodedInt(msg, param_offset));
-  packet->type = StmtExecuteParamType::kString;
+  if (msg.size() < *param_offset + param_length) {
+    return error::Internal("Not enough bytes to dissect string param.");
+  }
   packet->value = msg.substr(*param_offset, param_length);
   *param_offset += param_length;
   return Status::OK();
 }
 
-Status DissectIntParam(const std::string_view msg, const char prefix, size_t* param_offset,
-                       ParamPacket* packet) {
-  StmtExecuteParamType type;
-  size_t length;
-  switch (prefix) {
-    case kColTypeTiny:
-      type = StmtExecuteParamType::kTiny;
-      length = 1;
-      break;
-    case kColTypeShort:
-      type = StmtExecuteParamType::kShort;
-      length = 2;
-      break;
-    case kColTypeLong:
-      type = StmtExecuteParamType::kLong;
-      length = 4;
-      break;
-    case kColTypeLongLong:
-      type = StmtExecuteParamType::kLongLong;
-      length = 8;
-      break;
-    default:
-      LOG(WARNING) << "DissectIntParam: Unknown param type";
-      type = StmtExecuteParamType::kUnknown;
-      length = 1;
-      break;
-  }
-
-  if (msg.size() < *param_offset + length) {
+template <size_t length>
+Status DissectIntParam(std::string_view msg, size_t* offset, ParamPacket* packet) {
+  if (msg.size() < *offset + length) {
     return error::Internal("Not enough bytes to dissect int param.");
   }
-
   packet->value =
-      std::to_string(utils::LittleEndianByteStrToInt(msg.substr(*param_offset, length)));
-  packet->type = type;
-  *param_offset += length;
-
+      std::to_string(utils::LittleEndianByteStrToInt<int64_t>(msg.substr(*offset, length)));
+  *offset += length;
   return Status::OK();
 }
 
-// TODO(chengruizhe): Currently dissecting unknown param as if it's a string. Make it more robust.
-Status DissectUnknownParam(const std::string_view msg, size_t* param_offset, ParamPacket* packet) {
-  return DissectStringParam(msg, param_offset, packet);
+// Template instantiations to include in the object file.
+// TODO(oazizi): Consider moving the definition into the header file to avoid these.
+// On the other hand, benefit of keeping it this way is that these have specifically been tested.
+template Status DissectIntParam<1>(std::string_view msg, size_t* offset, ParamPacket* packet);
+template Status DissectIntParam<2>(std::string_view msg, size_t* offset, ParamPacket* packet);
+template Status DissectIntParam<4>(std::string_view msg, size_t* offset, ParamPacket* packet);
+template Status DissectIntParam<8>(std::string_view msg, size_t* offset, ParamPacket* packet);
+
+template <typename TFloatType>
+Status DissectFloatParam(std::string_view msg, size_t* offset, ParamPacket* packet) {
+  size_t length = sizeof(TFloatType);
+  if (msg.size() < *offset + length) {
+    return error::Internal("Not enough bytes to dissect float param.");
+  }
+  packet->value =
+      std::to_string(utils::LittleEndianByteStrToFloat<TFloatType>(msg.substr(*offset, length)));
+  *offset += length;
+  return Status::OK();
 }
 
-}  // namespace
+// Template instantiations to include in the object file.
+template Status DissectFloatParam<float>(std::string_view msg, size_t* offset, ParamPacket* packet);
+template Status DissectFloatParam<double>(std::string_view msg, size_t* offset,
+                                          ParamPacket* packet);
+
+Status DissectDateTimeParam(std::string_view msg, size_t* offset, ParamPacket* packet) {
+  if (msg.size() < *offset + 1) {
+    return error::Internal("Not enough bytes to dissect date/time param.");
+  }
+
+  uint8_t length = static_cast<uint8_t>(msg[*offset]);
+  ++*offset;
+
+  if (msg.size() < *offset + length) {
+    return error::Internal("Not enough bytes to dissect date/time param.");
+  }
+  packet->value = "MySQL DateTime rendering not implemented yet";
+  *offset += length;
+  return Status::OK();
+}
+
+// Spec on how to dissect params is here:
+// https://dev.mysql.com/doc/internals/en/binary-protocol-value.html
+//
+// List of parameter types is followed by list of parameter values,
+// so we have two offset pointers, one that points to current type position,
+// and one that points to current value position
+Status DissectParam(std::string_view msg, size_t* type_offset, size_t* val_offset,
+                    ParamPacket* param) {
+  param->type = static_cast<MySQLColType>(msg[*type_offset]);
+  type_offset += 2;
+
+  switch (param->type) {
+    case MySQLColType::kString:
+    case MySQLColType::kVarChar:
+    case MySQLColType::kVarString:
+    case MySQLColType::kEnum:
+    case MySQLColType::kSet:
+    case MySQLColType::kLongBlob:
+    case MySQLColType::kMediumBlob:
+    case MySQLColType::kBlob:
+    case MySQLColType::kTinyBlob:
+    case MySQLColType::kGeometry:
+    case MySQLColType::kBit:
+    case MySQLColType::kDecimal:
+    case MySQLColType::kNewDecimal:
+      PL_RETURN_IF_ERROR(DissectStringParam(msg, val_offset, param));
+      break;
+    case MySQLColType::kTiny:
+      PL_RETURN_IF_ERROR(DissectIntParam<1>(msg, val_offset, param));
+      break;
+    case MySQLColType::kShort:
+    case MySQLColType::kYear:
+      PL_RETURN_IF_ERROR(DissectIntParam<2>(msg, val_offset, param));
+      break;
+    case MySQLColType::kLong:
+    case MySQLColType::kInt24:
+      PL_RETURN_IF_ERROR(DissectIntParam<4>(msg, val_offset, param));
+      break;
+    case MySQLColType::kLongLong:
+      PL_RETURN_IF_ERROR(DissectIntParam<8>(msg, val_offset, param));
+      break;
+    case MySQLColType::kFloat:
+      PL_RETURN_IF_ERROR(DissectFloatParam<float>(msg, val_offset, param));
+      break;
+    case MySQLColType::kDouble:
+      PL_RETURN_IF_ERROR(DissectFloatParam<double>(msg, val_offset, param));
+      break;
+    case MySQLColType::kDate:
+    case MySQLColType::kDateTime:
+    case MySQLColType::kTimestamp:
+      PL_RETURN_IF_ERROR(DissectDateTimeParam(msg, val_offset, param));
+      break;
+    case MySQLColType::kTime:
+      PL_RETURN_IF_ERROR(DissectDateTimeParam(msg, val_offset, param));
+      break;
+    case MySQLColType::kNull:
+      break;
+    default:
+      LOG(DFATAL) << absl::Substitute("Unexpected/unhandled column type $0", msg[*type_offset]);
+  }
+
+  return Status::OK();
+}
 
 //-----------------------------------------------------------------------------
 // Message Level Functions
@@ -383,33 +452,14 @@ void HandleStmtExecuteRequest(const Packet& req_packet,
 
   std::vector<ParamPacket> params;
   if (stmt_bound == 1) {
-    size_t param_offset = offset + 2 * num_params;
+    // Offset to first param type and first param value respectively.
+    // Each call to DissectParam will advance the two offsets to their next positions.
+    size_t param_type_offset = offset;
+    size_t param_val_offset = offset + 2 * num_params;
 
     for (int i = 0; i < num_params; ++i) {
-      uint8_t param_type = req_packet.msg[offset];
-      offset += 2;
-
       ParamPacket param;
-      Status s;
-      switch (param_type) {
-        // TODO(chengruizhe): Add more exec param types (short, long, float, double, datetime etc.)
-        // https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
-        case kColTypeNewDecimal:
-        case kColTypeBlob:
-        case kColTypeVarString:
-        case kColTypeString:
-          s = DissectStringParam(req_packet.msg, &param_offset, &param);
-          break;
-        case kColTypeTiny:
-        case kColTypeShort:
-        case kColTypeLong:
-        case kColTypeLongLong:
-          s = DissectIntParam(req_packet.msg, param_type, &param_offset, &param);
-          break;
-        default:
-          s = DissectUnknownParam(req_packet.msg, &param_offset, &param);
-          break;
-      }
+      Status s = DissectParam(req_packet.msg, &param_type_offset, &param_val_offset, &param);
       LOG_IF(ERROR, !s.ok()) << s.msg();
       params.emplace_back(param);
     }

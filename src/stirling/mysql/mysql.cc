@@ -7,6 +7,7 @@ namespace pl {
 namespace stirling {
 namespace mysql {
 
+// TODO(oazizi): Move out to parse_utils.cc.
 StatusOr<int64_t> ProcessLengthEncodedInt(std::string_view s, size_t* offset) {
   // If it is < 0xfb, treat it as a 1-byte integer.
   // If it is 0xfc, it is followed by a 2-byte integer.
