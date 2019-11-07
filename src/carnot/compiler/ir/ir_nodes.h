@@ -59,6 +59,7 @@ enum class IRNodeType {
   kUnion,
   kJoin,
   kTabletSourceGroup,
+  kGroupBy,
   number_of_types  // This is not a real type, but is used to verify strings are inline
                    // with enums.
 };
@@ -87,7 +88,8 @@ static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "GRPCSink",
                                                  "Union",
                                                  "Join",
-                                                 "TabletSourceGroup"};
+                                                 "TabletSourceGroup",
+                                                 "GroupBy"};
 inline std::ostream& operator<<(std::ostream& out, IRNodeType node_type) {
   return out << kIRNodeStrings[static_cast<int64_t>(node_type)];
 }
@@ -1243,6 +1245,32 @@ class BlockingAggIR : public OperatorIR {
   std::vector<ColumnIR*> groups_;
   // The map from value_names to values
   ColExpressionVector aggregate_expressions_;
+};
+
+class GroupByIR : public OperatorIR {
+ public:
+  GroupByIR() = delete;
+  explicit GroupByIR(int64_t id) : OperatorIR(id, IRNodeType::kGroupBy, true, false) {}
+  Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups);
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  std::vector<ColumnIR*> groups() const { return groups_; }
+
+  // GroupBy does not exist as a protobuf object.
+  Status ToProto(planpb::Operator*) const override {
+    return error::Unimplemented("ToProto not implemented.");
+  }
+  // GroupBy does not exist as a protobuf object.
+  bool HasLogicalRepr() const override { return false; }
+
+  // TODO(philkuz) (PL-1081) remove the following public methods.
+  std::vector<std::string> ArgKeys() override { return {}; }
+  Status InitImpl(const ArgMap&) override {
+    return error::Unimplemented("GroupBy::InitImpl not implementeed");
+  }
+
+ private:
+  // contains group_names and groups columns.
+  std::vector<ColumnIR*> groups_;
 };
 
 class FilterIR : public OperatorIR {

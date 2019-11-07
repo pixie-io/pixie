@@ -546,6 +546,22 @@ Status BlockingAggIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& gro
   return Status::OK();
 }
 
+Status GroupByIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups) {
+  PL_RETURN_IF_ERROR(AddParent(parent));
+  groups_ = groups;
+  return Status::OK();
+}
+
+StatusOr<IRNode*> GroupByIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(GroupByIR * group_by, graph->MakeNode<GroupByIR>(id()));
+  for (const ColumnIR* column : groups_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_column, column->DeepCloneInto(graph));
+    DCHECK(Match(new_column, ColumnNode()));
+    group_by->groups_.push_back(static_cast<ColumnIR*>(new_column));
+  }
+  return group_by;
+}
+
 Status BlockingAggIR::SetupGroupBy(LambdaIR* by_lambda) {
   // Make sure default expr
   // Convert to list of groups.

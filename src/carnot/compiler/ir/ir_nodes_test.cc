@@ -439,6 +439,17 @@ class CloneTests : public OperatorTests {
       CompareClonedColumn(new_groups[i], old_groups[i], failure_string);
     }
   }
+
+  void CompareClonedGroupBy(GroupByIR* new_ir, GroupByIR* old_ir,
+                            const std::string& failure_string) {
+    std::vector<ColumnIR*> new_groups = new_ir->groups();
+    std::vector<ColumnIR*> old_groups = old_ir->groups();
+    ASSERT_EQ(new_groups.size(), old_groups.size()) << failure_string;
+    for (size_t i = 0; i < new_groups.size(); ++i) {
+      CompareClonedColumn(new_groups[i], old_groups[i], failure_string);
+    }
+  }
+
   void CompareClonedMetadata(MetadataIR* new_ir, MetadataIR* old_ir,
                              const std::string& err_string) {
     CompareClonedColumn(new_ir, old_ir, err_string);
@@ -1236,6 +1247,20 @@ TEST_F(OperatorTests, tablet_source_group) {
 
   EXPECT_THAT(tablet_source->tablets(), ElementsAreArray(tablet_values));
   EXPECT_EQ(tablet_source->ReplacedMemorySource(), mem_source);
+}
+
+TEST_F(OperatorTests, GroupByNode) {
+  auto mem_source = MakeMemSource();
+  auto groupby_status = graph->MakeNode<GroupByIR>(ast);
+  ASSERT_OK(groupby_status);
+  GroupByIR* groupby = groupby_status.ConsumeValueOrDie();
+  ASSERT_OK(groupby->Init(mem_source, {MakeColumn("col1", 0), MakeColumn("col2", 0)}));
+  std::vector<ColumnIR*> groups = groupby->groups();
+  std::vector<std::string> col_names;
+  for (auto g : groups) {
+    col_names.push_back(g->col_name());
+  }
+  EXPECT_THAT(col_names, ElementsAre("col1", "col2"));
 }
 
 }  // namespace compiler
