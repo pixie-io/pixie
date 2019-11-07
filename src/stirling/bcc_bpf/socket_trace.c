@@ -242,10 +242,7 @@ static __inline struct socket_data_event_t* fill_event(TrafficDirection directio
   event->attr.entry_timestamp_ns = data_info->timestamp_ns;
   event->attr.return_timestamp_ns = bpf_ktime_get_ns();
   event->attr.direction = direction;
-  event->attr.conn_id.tgid = conn_info->conn_id.tgid;
-  event->attr.conn_id.tgid_start_time_ticks = conn_info->conn_id.tgid_start_time_ticks;
-  event->attr.conn_id.fd = conn_info->conn_id.fd;
-  event->attr.conn_id.generation = conn_info->conn_id.generation;
+  event->attr.conn_id = conn_info->conn_id;
   event->attr.traffic_class = conn_info->traffic_class;
   return event;
 }
