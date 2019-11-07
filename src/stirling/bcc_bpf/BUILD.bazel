@@ -8,7 +8,7 @@ filegroup(
     srcs = glob([
         "system-headers/**",
     ]),
-    visibility = ["//experimental/bpf/http_trace:__pkg__"],
+    visibility = ["//experimental/bpf:__subpackages__"],
 )
 
 # TODO(oazizi): Ideally, we would use pl_bpf_preprocess and feed it to pl_cc_resource
