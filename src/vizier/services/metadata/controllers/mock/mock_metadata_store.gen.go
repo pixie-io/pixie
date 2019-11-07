@@ -120,18 +120,6 @@ func (mr *MockMetadataStoreMockRecorder) UpdateProcesses(arg0 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProcesses", reflect.TypeOf((*MockMetadataStore)(nil).UpdateProcesses), arg0)
 }
 
-// UpdateIPMap mocks base method
-func (m *MockMetadataStore) UpdateIPMap(arg0, arg1 string) error {
-	ret := m.ctrl.Call(m, "UpdateIPMap", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateIPMap indicates an expected call of UpdateIPMap
-func (mr *MockMetadataStoreMockRecorder) UpdateIPMap(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIPMap", reflect.TypeOf((*MockMetadataStore)(nil).UpdateIPMap), arg0, arg1)
-}
-
 // GetAgentsForHostnames mocks base method
 func (m *MockMetadataStore) GetAgentsForHostnames(arg0 *[]string) (*[]string, error) {
 	ret := m.ctrl.Call(m, "GetAgentsForHostnames", arg0)
