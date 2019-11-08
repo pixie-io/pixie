@@ -4,6 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
@@ -92,11 +95,16 @@ func main() {
 	// MDS should block on its first attempt to become leader, so that it won't
 	// skip syncing if it is supposed to be the leader.
 	err = leaderElection.Campaign()
-	if err != nil {
+	if err == nil {
 		isLeader = true
 	}
 	go leaderElection.RunElection(&isLeader)
-	defer leaderElection.Stop()
+	go func() {
+		ch := make(chan os.Signal)
+		signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+		<-ch
+		leaderElection.Stop()
+	}()
 
 	agtMgr := controllers.NewAgentManager(etcdClient, etcdMds)
 	keepAlive := true
