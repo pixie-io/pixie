@@ -233,6 +233,16 @@ TEST_F(PatternMatchTest, JoinOperatorConditionSetMatch) {
   EXPECT_FALSE(Match(join_op, JoinOperatorEqCondNotSet()));
 }
 
+TEST_F(PatternMatchTest, OpWithParentMatch) {
+  auto mem_src1 = MakeMemSource();
+  auto group = MakeGroupBy(mem_src1, {MakeColumn("c", 0)});
+  auto agg = MakeBlockingAgg(group, {}, {{"a", MakeMeanFunc(MakeColumn("b", 0))}});
+
+  EXPECT_TRUE(Match(agg, OperatorWithParent(BlockingAgg(), GroupBy())));
+  EXPECT_TRUE(Match(group, OperatorWithParent(GroupBy(), MemorySource())));
+  EXPECT_FALSE(Match(group, OperatorWithParent(BlockingAgg(), GroupBy())));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

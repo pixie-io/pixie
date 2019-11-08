@@ -610,6 +610,8 @@ class ColumnIR : public ExpressionIR {
  public:
   ColumnIR() = delete;
   explicit ColumnIR(int64_t id) : ExpressionIR(id, IRNodeType::kColumn) {}
+
+  // TODO(philkuz) (PL-1152) Remove ast
   /**
    * @brief Creates a new column that references the passed in operator.
    *
@@ -619,6 +621,15 @@ class ColumnIR : public ExpressionIR {
    * @return Status: error container.
    */
   Status Init(const std::string& col_name, int64_t parent_op_idx, const pypa::AstPtr& ast_node);
+
+  /**
+   * @brief Initializes a new column to reference an operator
+   *
+   * @param col_name
+   * @param parent_op_idx
+   * @return Status
+   */
+  Status Init(const std::string& col_name, int64_t parent_op_idx);
   bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
 
@@ -1235,6 +1246,8 @@ class BlockingAggIR : public OperatorIR {
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   inline bool IsBlocking() const override { return true; }
+
+  void AddGroup(ColumnIR* new_group) { groups_.push_back(new_group); }
 
  private:
   // TODO(philkuz) (PL-1081) remove this on removing the init stuff.

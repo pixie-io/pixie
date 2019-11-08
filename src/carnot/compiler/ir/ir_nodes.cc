@@ -738,6 +738,12 @@ Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx,
   return Status::OK();
 }
 
+Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {
+  SetColumnName(col_name);
+  SetContainingOperatorParentIdx(parent_idx);
+  return Status::OK();
+}
+
 std::string ColumnIR::DebugString() const {
   return absl::Substitute("$0(id=$1, name=$2)", type_string(), id(), col_name());
 }

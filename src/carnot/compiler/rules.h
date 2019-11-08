@@ -304,6 +304,47 @@ class SetupJoinTypeRule : public Rule {
   Status ConvertRightJoinToLeftJoin(JoinIR* join_ir);
 };
 
+/**
+ * @brief This rule finds every agg that follows a groupby and then copies the attributes
+ * it contains into the aggregate.
+ *
+ * This rule is not responsible for removing groupbys that satisfy this condition - instead
+ * RemoveGroupByRule handles this. There are cases where a groupby might be used by multiple aggs so
+ * we can't remove them from the graph.
+ *
+ */
+class MergeGroupByIntoAggRule : public Rule {
+ public:
+  MergeGroupByIntoAggRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  StatusOr<bool> AddGroupByDataIntoAgg(BlockingAggIR* ir_node);
+};
+
+/**
+ * @brief This rule removes groupbys after the aggregate merging step.
+ *
+ * We can't remove the groupby in the aggregate merging step because it's possible
+ * that mutliple aggregates branch off of a single groupby. We need to do that here.
+ *
+ * This rule succeeds if it finds that GroupBy has no more children. If it does, this
+ * rule will throw an error.
+ *
+ */
+class RemoveGroupByRule : public Rule {
+ public:
+  RemoveGroupByRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  StatusOr<bool> RemoveGroupBy(GroupByIR* ir_node);
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

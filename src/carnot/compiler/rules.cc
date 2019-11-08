@@ -973,6 +973,51 @@ Status SetupJoinTypeRule::ConvertRightJoinToLeftJoin(JoinIR* join_ir) {
   }
   return join_ir->SetJoinType(JoinIR::JoinType::kLeft);
 }
+
+StatusOr<bool> MergeGroupByIntoAggRule::Apply(IRNode* ir_node) {
+  if (Match(ir_node, OperatorWithParent(BlockingAgg(), GroupBy()))) {
+    return AddGroupByDataIntoAgg(static_cast<BlockingAggIR*>(ir_node));
+  }
+  return false;
+}
+
+StatusOr<bool> MergeGroupByIntoAggRule::AddGroupByDataIntoAgg(BlockingAggIR* agg_node) {
+  DCHECK_EQ(agg_node->parents().size(), 1UL);
+  OperatorIR* parent = agg_node->parents()[0];
+  DCHECK(Match(parent, GroupBy()));
+  GroupByIR* groupby = static_cast<GroupByIR*>(parent);
+  IR* graph = groupby->graph_ptr();
+  for (ColumnIR* g : groupby->groups()) {
+    // TODO(philkuz) can this properly handle metadata Columns.
+    PL_ASSIGN_OR_RETURN(ColumnIR * col, graph->MakeNode<ColumnIR>(g->ast_node()));
+    PL_RETURN_IF_ERROR(col->Init(g->col_name(), g->container_op_parent_idx()));
+    agg_node->AddGroup(col);
+  }
+
+  DCHECK_EQ(groupby->parents().size(), 1UL);
+  OperatorIR* groupby_parent = groupby->parents()[0];
+
+  PL_RETURN_IF_ERROR(agg_node->ReplaceParent(groupby, groupby_parent));
+
+  return true;
+}
+
+StatusOr<bool> RemoveGroupByRule::Apply(IRNode* ir_node) {
+  if (Match(ir_node, GroupBy())) {
+    return RemoveGroupBy(static_cast<GroupByIR*>(ir_node));
+  }
+  return false;
+}
+
+StatusOr<bool> RemoveGroupByRule::RemoveGroupBy(GroupByIR* groupby) {
+  if (groupby->Children().size() != 0) {
+    return groupby->CreateIRNodeError("'groupby()' should be followed by an 'agg()' not a $0",
+                                      groupby->Children()[0]->type_string());
+  }
+  DeferNodeDeletion(groupby->id());
+  return true;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

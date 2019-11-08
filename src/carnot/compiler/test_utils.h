@@ -369,6 +369,12 @@ class OperatorTests : public ::testing::Test {
     return group;
   }
 
+  GroupByIR* MakeGroupBy(OperatorIR* parent, const std::vector<ColumnIR*>& groups) {
+    GroupByIR* groupby = graph->MakeNode<GroupByIR>(ast).ConsumeValueOrDie();
+    PL_CHECK_OK(groupby->Init(parent, groups));
+    return groupby;
+  }
+
   template <typename... Args>
   ListIR* MakeList(Args... args) {
     ListIR* list = graph->MakeNode<ListIR>().ConsumeValueOrDie();

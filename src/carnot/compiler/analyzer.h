@@ -63,15 +63,17 @@ class Analyzer : public RuleExecutor {
     resolution_verification_batch->AddRule<VerifyFilterExpressionRule>(compiler_state_);
   }
 
-  void CreateJoinEqualityConditionBatch() {
-    RuleBatch* join_equality_condition_setting = CreateRuleBatch<FailOnMax>("post_resolution", 2);
-    join_equality_condition_setting->AddRule<JoinEqualityConditionRule>(compiler_state_);
+  void CreatePostResolutionBatch() {
+    RuleBatch* post_resolution = CreateRuleBatch<FailOnMax>("PostResolution", 2);
+    post_resolution->AddRule<JoinEqualityConditionRule>(compiler_state_);
+    post_resolution->AddRule<MergeGroupByIntoAggRule>();
   }
 
   void CreateRemoveIROnlyNodesBatch() {
     RuleBatch* remove_ir_only_nodes_batch = CreateRuleBatch<FailOnMax>("RemoveIROnlyNodes", 2);
     remove_ir_only_nodes_batch->AddRule<MetadataResolverConversionRule>(compiler_state_);
     remove_ir_only_nodes_batch->AddRule<MergeRangeOperatorRule>(compiler_state_);
+    remove_ir_only_nodes_batch->AddRule<RemoveGroupByRule>();
   }
 
   Status Init() {
@@ -81,7 +83,7 @@ class Analyzer : public RuleExecutor {
     CreateRangeArgExpressionBatch();
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();
-    CreateJoinEqualityConditionBatch();
+    CreatePostResolutionBatch();
     CreateRemoveIROnlyNodesBatch();
     return Status::OK();
   }

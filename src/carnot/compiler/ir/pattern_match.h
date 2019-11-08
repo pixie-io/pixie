@@ -141,6 +141,7 @@ inline ClassMatch<IRNodeType::kTabletSourceGroup> TabletSourceGroup() {
 
 inline ClassMatch<IRNodeType::kList> List() { return ClassMatch<IRNodeType::kList>(); }
 inline ClassMatch<IRNodeType::kTuple> Tuple() { return ClassMatch<IRNodeType::kTuple>(); }
+inline ClassMatch<IRNodeType::kGroupBy> GroupBy() { return ClassMatch<IRNodeType::kGroupBy>(); }
 
 /**
  * @brief Match a specific integer value.
@@ -889,6 +890,35 @@ template <typename ChildType>
 inline ListChildMatch<ChildType> ListWithChildren(ChildType child_matcher) {
   return ListChildMatch<ChildType>(child_matcher);
 }
+
+template <typename OpType, typename ParentType>
+struct ParentOfOpMatcher : public ParentMatch {
+  explicit ParentOfOpMatcher(OpType op_matcher, ParentType parent_matcher)
+      : ParentMatch(IRNodeType::kAny), op_matcher_(op_matcher), parent_matcher_(parent_matcher) {}
+  bool Match(const IRNode* node) const override {
+    if (!op_matcher_.Match(node)) {
+      return false;
+    }
+    // Make sure that we can cast into operator.
+    DCHECK(Operator().Match(node));
+    auto op = static_cast<const OperatorIR*>(node);
+    for (const auto& p : op->parents()) {
+      if (!parent_matcher_.Match(p)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  OpType op_matcher_;
+  ParentType parent_matcher_;
+};
+template <typename OpType, typename ParentType>
+inline ParentOfOpMatcher<OpType, ParentType> OperatorWithParent(OpType op_matcher,
+                                                                ParentType parent_matcher) {
+  return ParentOfOpMatcher<OpType, ParentType>(op_matcher, parent_matcher);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
