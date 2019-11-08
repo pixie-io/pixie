@@ -1,3 +1,5 @@
+#include "src/stirling/mysql/mysql_stitcher.h"
+
 #include <deque>
 #include <memory>
 #include <string>
@@ -5,7 +7,7 @@
 
 #include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql/mysql_handler.h"
-#include "src/stirling/mysql/mysql_stitcher.h"
+#include "src/stirling/mysql/packet_utils.h"
 
 namespace pl {
 namespace stirling {

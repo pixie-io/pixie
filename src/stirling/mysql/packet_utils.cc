@@ -1,7 +1,6 @@
 #include "src/stirling/mysql/mysql.h"
 
 #include "src/common/base/byte_utils.h"
-#include "src/stirling/mysql/mysql_stitcher.h"
 #include "src/stirling/mysql/parse_utils.h"
 
 namespace pl {

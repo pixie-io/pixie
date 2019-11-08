@@ -7,6 +7,7 @@
 
 #include "src/common/base/byte_utils.h"
 #include "src/stirling/mysql/mysql.h"
+#include "src/stirling/mysql/packet_utils.h"
 #include "src/stirling/mysql/parse_utils.h"
 
 namespace pl {

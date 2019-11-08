@@ -269,23 +269,6 @@ struct MySQLResponse {
  */
 using Record = ReqRespPair<MySQLRequest, MySQLResponse>;
 
-//-----------------------------------------------------------------------------
-// Packet identification functions
-//-----------------------------------------------------------------------------
-
-/**
- * The following functions check whether a Packet is of a certain type, based on the prefixed
- * defined in mysql.h.
- */
-bool IsEOFPacket(const Packet& packet);
-bool IsErrPacket(const Packet& packet);
-bool IsOKPacket(const Packet& packet);
-bool IsLengthEncodedIntPacket(const Packet& packet);
-bool IsColumnDefPacket(const Packet& packet);
-bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof);
-bool IsStmtPrepareOKPacket(const Packet& packet);
-bool MoreResultsExists(const Packet& last_packet);
-
 }  // namespace mysql
 }  // namespace stirling
 }  // namespace pl
