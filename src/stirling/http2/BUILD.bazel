@@ -33,6 +33,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/testing:cc_library",
         "//src/stirling/http2/testing:cc_library",
+        "//src/stirling/testing:cc_library",
     ],
 )
 

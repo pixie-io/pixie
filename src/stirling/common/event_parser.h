@@ -10,6 +10,7 @@
 #include "absl/base/macros.h"
 #include "src/common/base/base.h"
 #include "src/stirling/common/parse_state.h"
+#include "src/stirling/common/socket_trace.h"
 #include "src/stirling/common/utils.h"
 
 namespace pl {
@@ -144,14 +145,13 @@ template <typename TMessageType>
 class EventParser {
  public:
   /**
-   * @brief Append a sequence message to the internal buffer, ts_ns stands for time stamp in
-   * nanosecond.
+   * @brief Append a sequence message to the internal buffer.
    */
-  void Append(std::string_view msg, TimeSpan time_span) {
-    msgs_.push_back(msg);
-    ts_nses_.push_back(time_span.end_ns);
-    time_spans_.push_back(time_span);
-    msgs_size_ += msg.size();
+  void Append(const SocketDataEvent& event) {
+    msgs_.push_back(event.msg);
+    ts_nses_.push_back(event.attr.return_timestamp_ns);
+    time_spans_.push_back({event.attr.entry_timestamp_ns, event.attr.return_timestamp_ns});
+    msgs_size_ += event.msg.size();
   }
 
   /**

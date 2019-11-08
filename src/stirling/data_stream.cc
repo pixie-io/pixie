@@ -28,7 +28,7 @@ void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
     return;
   }
 
-  auto res = events_.emplace(seq_num, TimestampedData(std::move(event)));
+  auto res = events_.emplace(seq_num, std::move(event));
   LOG_IF(ERROR, !res.second) << absl::Substitute("Clobbering data event [pid=$0 fd=$1 gen=$2].",
                                                  event->attr.conn_id.pid, event->attr.conn_id.fd,
                                                  event->attr.conn_id.generation);
@@ -61,18 +61,16 @@ size_t DataStream::AppendEvents(EventParser<TMessageType>* parser) const {
     if (seq_num != next_seq_num) {
       break;
     }
-
-    // The main message to submit to parser.
-    std::string_view msg = event.msg;
-
     // First message may have been partially processed by a previous call to this function.
     // In such cases, the offset will be non-zero, and we need a sub-string of the first event.
     if (next_offset != 0) {
-      ECHECK_LT(next_offset, event.msg.size());
-      msg = msg.substr(next_offset, event.msg.size() - next_offset);
+      ECHECK_LT(next_offset, event->msg.size());
+      // TODO(yzhao): We should figure out a structure that eliminates this operation. For now we'd
+      // accept this minor inefficiency in favor of minimal disruption to the current code
+      // structure, before we start a full-blown research.
+      event->msg.erase(0, next_offset);
     }
-
-    parser->Append(msg, {event.entry_timestamp_ns, event.return_timestamp_ns});
+    parser->Append(*event);
 
     next_offset = 0;
     ++next_seq_num;

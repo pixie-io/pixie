@@ -11,6 +11,7 @@ extern "C" {
 #include "src/common/base/status.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/http2/testing/utils.h"
+#include "src/stirling/testing/events_fixture.h"
 
 namespace pl {
 namespace stirling {
@@ -19,6 +20,7 @@ namespace http2 {
 using ::pl::grpc::MethodInputOutput;
 using ::pl::grpc::ServiceDescriptorDatabase;
 using ::pl::stirling::http2::testing::GreetServiceFDSet;
+using ::pl::stirling::testing::DataEventWithTimeSpan;
 using ::pl::testing::proto::EqualsProto;
 using ::testing::_;
 using ::testing::ElementsAre;
@@ -616,9 +618,14 @@ TEST(EventsTimeSpanTest, FromEventsToHTTP2Message) {
   const std::string frame0 = PackHeadersFrame("\x86\x83", flags, stream_id);
   const std::string frame1 = PackContinuationFrame("\x88", NGHTTP2_FLAG_END_HEADERS, stream_id);
   const std::string frame2 = PackDataFrame("abc", NGHTTP2_FLAG_END_STREAM, stream_id);
-  parser.Append(frame0, {0, 1});
-  parser.Append(frame1, {2, 3});
-  parser.Append(frame2, {4, 5});
+
+  SocketDataEvent event0 = DataEventWithTimeSpan(frame0, {0, 1});
+  SocketDataEvent event1 = DataEventWithTimeSpan(frame1, {2, 3});
+  SocketDataEvent event2 = DataEventWithTimeSpan(frame2, {4, 5});
+
+  parser.Append(event0);
+  parser.Append(event1);
+  parser.Append(event2);
 
   std::deque<Frame> frames;
   ParseResult<BufferPosition> res = parser.ParseMessages(MessageType::kUnknown, &frames);

@@ -10,10 +10,10 @@
 
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
+#include "src/stirling/common/socket_trace.h"
 #include "src/stirling/data_stream.h"
 #include "src/stirling/mysql/mysql_parse.h"
 #include "src/stirling/socket_resolver.h"
-#include "src/stirling/socket_trace.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
 

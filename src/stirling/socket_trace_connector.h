@@ -29,10 +29,10 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/common/socket_trace.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
-#include "src/stirling/socket_trace.h"
 #include "src/stirling/source_connector.h"
 
 DECLARE_string(http_response_header_filters);

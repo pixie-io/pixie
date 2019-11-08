@@ -5,10 +5,10 @@
 #include <memory>
 #include <string>
 
+#include "src/stirling/common/socket_trace.h"
 #include "src/stirling/http/http_parse.h"
 #include "src/stirling/http2/http2.h"
 #include "src/stirling/mysql/mysql.h"
-#include "src/stirling/socket_trace.h"
 
 DECLARE_uint32(messages_expiration_duration_secs);
 DECLARE_uint32(messages_size_limit_bytes);
@@ -165,7 +165,7 @@ class DataStream {
 
   // Raw data events from BPF.
   // TODO(oazizi/yzhao): Convert this to vector or deque.
-  std::map<size_t, TimestampedData> events_;
+  std::map<size_t, std::unique_ptr<SocketDataEvent>> events_;
 
   // Keep track of the sequence number of the stream.
   // This is used to identify missing events.

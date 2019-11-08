@@ -6,10 +6,12 @@
 #include <deque>
 
 #include "src/stirling/common/utils.h"
+#include "src/stirling/testing/events_fixture.h"
 
 namespace pl {
 namespace stirling {
 
+using ::pl::stirling::testing::DataEventWithTimeSpan;
 using ::testing::ElementsAre;
 using ::testing::Pair;
 
@@ -94,11 +96,18 @@ TEST(PositionConverterTest, Basic) {
 TEST(EventParserTest, BasicPositionConversions) {
   EventParser<TestFrame> parser;
   std::deque<TestFrame> word_frames;
-  parser.Append("jupiter,satu", {0, 1});
-  parser.Append("rn,neptune,plu", {2, 3});
-  parser.Append(",", {3, 4});
-  parser.Append("aaa,", {4, 5});
-  parser.Append("bbb,", {6, 7});
+
+  SocketDataEvent event0 = DataEventWithTimeSpan("jupiter,satu", {0, 1});
+  SocketDataEvent event1 = DataEventWithTimeSpan("rn,neptune,plu", {2, 3});
+  SocketDataEvent event2 = DataEventWithTimeSpan(",", {3, 4});
+  SocketDataEvent event3 = DataEventWithTimeSpan("aaa,", {4, 5});
+  SocketDataEvent event4 = DataEventWithTimeSpan("bbb,", {6, 7});
+
+  parser.Append(event0);
+  parser.Append(event1);
+  parser.Append(event2);
+  parser.Append(event3);
+  parser.Append(event4);
   ParseResult<BufferPosition> res = parser.ParseMessages(MessageType::kRequest, &word_frames);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, res.state);
