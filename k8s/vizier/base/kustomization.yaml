@@ -6,9 +6,9 @@ commonLabels:
 kind: Kustomization
 namespace: pl
 patchesStrategicMerge:
-- patch_agent_daemonset.yaml
+- patch_pem_daemonset.yaml
 resources:
-- agent
+- pem
 - api_deployment.yaml
 - api_service.yaml
 - certmgr_role.yaml

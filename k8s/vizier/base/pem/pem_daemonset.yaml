@@ -2,15 +2,15 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: agent
+  name: vizier-pem
 spec:
   selector:
     matchLabels:
-      name: agent
+      name: vizier-pem
   template:
     metadata:
       labels:
-        name: agent
+        name: vizier-pem
     spec:
       tolerations:
       - key: node-role.kubernetes.io/master
@@ -18,7 +18,7 @@ spec:
       imagePullSecrets:
       - name: pl-image-secret
       containers:
-      - name: agent
+      - name: pem
         image: gcr.io/pl-dev-infra/vizier/agent_image:latest
         args: ["--stirling_enable_parsing_protobufs=true"]
         env:
