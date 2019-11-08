@@ -1129,6 +1129,7 @@ class RangeIR : public OperatorIR {
  public:
   RangeIR() = delete;
   explicit RangeIR(int64_t id) : OperatorIR(id, IRNodeType::kRange, true, false) {}
+  Status Init(OperatorIR* parent, IRNode* start_repr, IRNode* stop_repr);
   Status Init(OperatorIR* parent, IRNode* start_repr, IRNode* stop_repr,
               const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;

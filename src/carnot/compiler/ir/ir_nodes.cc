@@ -298,9 +298,14 @@ Status MemorySinkIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
+Status RangeIR::Init(OperatorIR* parent_node, IRNode* start_repr, IRNode* stop_repr) {
+  return Init(parent_node, start_repr, stop_repr, nullptr);
+}
 Status RangeIR::Init(OperatorIR* parent_node, IRNode* start_repr, IRNode* stop_repr,
                      const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+  if (ast_node != nullptr) {
+    SetLineCol(ast_node);
+  }
   if (parent_node->type() != IRNodeType::kMemorySource) {
     return CreateIRNodeError("Expected parent of Range to be a Memory Source, not a $0.",
                              parent_node->type_string());
@@ -594,7 +599,8 @@ Status BlockingAggIR::SetupGroupBy(LambdaIR* by_lambda) {
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(by_lambda->id(), by_expr->id()));
   } else {
     return CreateIRNodeError(
-        "Expected `by` argument lambda body of Agg to be a single column or a list of columns, not "
+        "Expected `by` argument lambda body of Agg to be a single column or a list of columns, "
+        "not "
         "a '$0'.",
         by_expr->type_string());
   }
@@ -1494,8 +1500,8 @@ Status JoinIR::SetupConditionFromLambda(LambdaIR* condition) {
 
   PL_ASSIGN_OR_RETURN(ExpressionIR * expr, condition->GetDefaultExpr());
 
-  // TODO(philkuz) (PL-858) in the future allow more complicated functions by removing the following
-  // checks.
+  // TODO(philkuz) (PL-858) in the future allow more complicated functions by removing the
+  // following checks.
   if (expr->type() != IRNodeType::kFunc) {
     return CreateIRNodeError(
         "Expected the expression of Join condition to be an equality function, got a $0 instead.",

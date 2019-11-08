@@ -253,11 +253,23 @@ class OperatorTests : public ::testing::Test {
                            std::vector<ExpressionIR*>({left, right}), ast));
     return func;
   }
+  FuncIR* MakeSubFunc(ExpressionIR* left, ExpressionIR* right) {
+    FuncIR* func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+    PL_CHECK_OK(func->Init(FuncIR::op_map.find("-")->second,
+                           std::vector<ExpressionIR*>({left, right}), ast));
+    return func;
+  }
 
   FuncIR* MakeEqualsFunc(ExpressionIR* left, ExpressionIR* right) {
     FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
     PL_CHECK_OK(func->Init({FuncIR::Opcode::eq, "==", "equals"},
                            std::vector<ExpressionIR*>({left, right}), ast));
+    return func;
+  }
+
+  FuncIR* MakeFunc(const std::string& name, const std::vector<ExpressionIR*>& args) {
+    FuncIR* func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::non_op, "", name}, args, ast));
     return func;
   }
 

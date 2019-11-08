@@ -91,6 +91,24 @@ class AggHandler {
  private:
   static StatusOr<FuncIR*> ParseNameTuple(IR* ir, TupleIR* tuple);
 };
+
+/**
+ * @brief Implements the range operator logic
+ *
+ */
+class RangeHandler {
+ public:
+  /**
+   * @brief Evaluates the range function by adding Range as a child of the df. The analyzer will
+   * remove the Range function afterwards.
+   *
+   * @param df the dataframe to operate on
+   * @param ast the ast node that signifies where the query was written
+   * @param args the arguments for range()
+   * @return StatusOr<QLObjectPtr>
+   */
+  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
+};
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

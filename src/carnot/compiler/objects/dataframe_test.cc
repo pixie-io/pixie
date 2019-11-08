@@ -145,6 +145,171 @@ TEST_F(AggHandlerTest, NonZeroArgFuncKwarg) {
   EXPECT_THAT(status.status(),
               HasCompilerError("Expected function to not have specified arguments"));
 }
+using RangeHandlerTest = DataframeTest;
+
+TEST_F(RangeHandlerTest, IntArgs) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  ParsedArgs args;
+  args.AddArg("start", MakeInt(12));
+  args.AddArg("stop", MakeInt(24));
+
+  auto status = RangeHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto range_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(range_obj->op(), Range()));
+  RangeIR* range = static_cast<RangeIR*>(range_obj->op());
+  EXPECT_EQ(range->parents()[0], src);
+
+  ASSERT_TRUE(Match(range->start_repr(), Int()));
+  ASSERT_TRUE(Match(range->stop_repr(), Int()));
+  EXPECT_EQ(static_cast<IntIR*>(range->start_repr())->val(), 12);
+  EXPECT_EQ(static_cast<IntIR*>(range->stop_repr())->val(), 24);
+}
+
+TEST_F(RangeHandlerTest, CompileTimeFuncArgs) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto start = MakeSubFunc(MakeFunc("now", {}), MakeFunc("hours", {MakeInt(8)}));
+  auto stop = MakeFunc("now", {});
+
+  ParsedArgs args;
+  args.AddArg("start", start);
+  args.AddArg("stop", stop);
+
+  auto status = RangeHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto range_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(range_obj->op(), Range()));
+  RangeIR* range = static_cast<RangeIR*>(range_obj->op());
+  EXPECT_EQ(range->parents()[0], src);
+
+  ASSERT_TRUE(Match(range->start_repr(), Func()));
+  ASSERT_TRUE(Match(range->stop_repr(), Func()));
+  EXPECT_EQ(static_cast<FuncIR*>(range->start_repr())->carnot_op_name(), "subtract");
+  EXPECT_EQ(static_cast<FuncIR*>(range->stop_repr())->carnot_op_name(), "now");
+}
+
+TEST_F(RangeHandlerTest, StringArgs) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto start = MakeString("-2m");
+  auto stop = MakeString("-1m");
+
+  ParsedArgs args;
+  args.AddArg("start", start);
+  args.AddArg("stop", stop);
+
+  auto status = RangeHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto range_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(range_obj->op(), Range()));
+  RangeIR* range = static_cast<RangeIR*>(range_obj->op());
+
+  ASSERT_TRUE(Match(range->start_repr(), String()));
+  ASSERT_TRUE(Match(range->stop_repr(), String()));
+
+  EXPECT_EQ(range->parents()[0], src);
+  EXPECT_EQ(static_cast<StringIR*>(range->start_repr())->str(), "-2m");
+  EXPECT_EQ(static_cast<StringIR*>(range->stop_repr())->str(), "-1m");
+}
+
+TEST_F(RangeHandlerTest, OpArgumentCausesErrorEnd) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto start = MakeString("-2m");
+  auto stop = MakeMap(src, {});
+
+  ParsedArgs args;
+  args.AddArg("start", start);
+  args.AddArg("stop", stop);
+
+  auto status = RangeHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'stop' must be an expression"));
+}
+
+TEST_F(RangeHandlerTest, OpArgumentCausesErrorStart) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto stop = MakeString("-2m");
+  auto start = MakeMap(src, {});
+
+  ParsedArgs args;
+  args.AddArg("start", start);
+  args.AddArg("stop", stop);
+
+  auto status = RangeHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'start' must be an expression"));
+}
+
+TEST_F(DataframeTest, RangeCall) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto get_method_status = srcdf->GetMethod("range");
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  ArgMap args({{}, {MakeString("-2m"), MakeString("-1m")}});
+
+  std::shared_ptr<QLObject> ql_object = func_obj->Call(args, ast).ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+
+  auto range_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(range_obj->op(), Range()));
+  RangeIR* range = static_cast<RangeIR*>(range_obj->op());
+
+  ASSERT_TRUE(Match(range->start_repr(), String()));
+  ASSERT_TRUE(Match(range->stop_repr(), String()));
+
+  EXPECT_EQ(range->parents()[0], src);
+  EXPECT_EQ(static_cast<StringIR*>(range->start_repr())->str(), "-2m");
+  EXPECT_EQ(static_cast<StringIR*>(range->stop_repr())->str(), "-1m");
+}
+
+// TODO(philkuz) (PL-1129) figure out default arguments.
+TEST_F(DataframeTest, DISABLED_NoEndArgDefault) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto get_method_status = srcdf->GetMethod("range");
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  ArgMap args({{{"start", MakeString("-2m")}}, {}});
+
+  std::shared_ptr<QLObject> ql_object = func_obj->Call(args, ast).ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+
+  auto range_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(range_obj->op(), Range()));
+  RangeIR* range = static_cast<RangeIR*>(range_obj->op());
+
+  ASSERT_TRUE(Match(range->start_repr(), String()));
+  ASSERT_TRUE(Match(range->stop_repr(), Func()));
+
+  EXPECT_EQ(range->parents()[0], src);
+  EXPECT_EQ(static_cast<StringIR*>(range->start_repr())->str(), "-2m");
+  EXPECT_EQ(static_cast<FuncIR*>(range->stop_repr())->carnot_op_name(), "now");
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
