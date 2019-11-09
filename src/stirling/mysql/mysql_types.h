@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 #include "src/common/base/base.h"
-#include "src/stirling/mysql/packet.h"
+#include "src/stirling/common/utils.h"
 #include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
@@ -23,6 +23,26 @@ namespace mysql {
  * parsed out fields based on the type of request/response.
  * 3. MySQL Event, containing a request and response pair.
  */
+
+// TODO(oazizi): Move relevant public types to mysql_parse.h and mysql_stitcher.h,
+//               as appropriate.
+
+//-----------------------------------------------------------------------------
+// Raw MySQLPacket from MySQL Parser
+//-----------------------------------------------------------------------------
+
+struct Packet {
+  TimeSpan time_span;
+  uint64_t timestamp_ns = 0;
+  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp =
+      std::chrono::steady_clock::now();
+
+  uint8_t sequence_id = 0;
+  // TODO(oazizi): Convert to std::basic_string<uint8_t>.
+  std::string msg;
+
+  size_t ByteSize() const { return sizeof(Packet) + msg.size(); }
+};
 
 //-----------------------------------------------------------------------------
 // Packet Level Definitions
@@ -160,7 +180,7 @@ struct ResultsetRow {
 /**
  * A parameter in StmtExecuteRequest.
  */
-struct ParamPacket {
+struct StmtExecuteParam {
   MySQLColType type;
   std::string value;
 };
@@ -207,7 +227,7 @@ struct StringRequest {
 
 struct StmtExecuteRequest {
   int stmt_id;
-  std::vector<ParamPacket> params;
+  std::vector<StmtExecuteParam> params;
 };
 
 struct StmtCloseRequest {

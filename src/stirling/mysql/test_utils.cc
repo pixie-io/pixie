@@ -5,7 +5,7 @@
 #include <string>
 
 #include "src/common/base/byte_utils.h"
-#include "src/stirling/mysql/mysql.h"
+#include "src/stirling/mysql/mysql_types.h"
 
 namespace pl {
 namespace stirling {
@@ -182,7 +182,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
     }
     msg += "\x01";
   }
-  for (const ParamPacket& param : req.params) {
+  for (const StmtExecuteParam& param : req.params) {
     switch (param.type) {
       // TODO(chengruizhe): Add more types.
       case MySQLColType::kString:
@@ -193,7 +193,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
         break;
     }
   }
-  for (const ParamPacket& param : req.params) {
+  for (const StmtExecuteParam& param : req.params) {
     msg += GenLengthEncodedInt(param.value.size());
     msg += param.value;
   }

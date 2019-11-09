@@ -5,8 +5,8 @@
 #include <string>
 #include <utility>
 
-#include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql/mysql_handler.h"
+#include "src/stirling/mysql/mysql_types.h"
 #include "src/stirling/mysql/packet_utils.h"
 
 namespace pl {

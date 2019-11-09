@@ -2,8 +2,8 @@
 #include <gtest/gtest.h>
 #include <utility>
 
-#include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql/mysql_handler.h"
+#include "src/stirling/mysql/mysql_types.h"
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
 

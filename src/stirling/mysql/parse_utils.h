@@ -2,7 +2,7 @@
 #include <string>
 
 #include "src/common/base/base.h"
-#include "src/stirling/mysql/mysql.h"
+#include "src/stirling/mysql/mysql_types.h"
 
 namespace pl {
 namespace stirling {
@@ -21,18 +21,23 @@ namespace mysql {
  */
 StatusOr<int64_t> ProcessLengthEncodedInt(std::string_view s, size_t* offset);
 
-Status DissectStringParam(std::string_view msg, size_t* param_offset, ParamPacket* packet);
+/**
+ * These dissectors are helper functions that parse out a parameter from a packet's raw contents.
+ * The offset identifies where to begin the parsing, and the offset is updated to reflect where
+ * the parsing ends. The parsed result in placed in the StmtExecuteParam.
+ */
+// TODO(oazizi): Convert Dissectors to use std::string_view*, and use remove_prefix().
+// Then param_offset is no longer needed.
+
+Status DissectStringParam(std::string_view msg, size_t* param_offset, std::string* packet);
 
 template <size_t length>
-Status DissectIntParam(std::string_view msg, size_t* param_offset, ParamPacket* packet);
+Status DissectIntParam(std::string_view msg, size_t* param_offset, std::string* packet);
 
 template <typename TFloatType>
-Status DissectFloatParam(std::string_view msg, size_t* offset, ParamPacket* packet);
+Status DissectFloatParam(std::string_view msg, size_t* offset, std::string* packet);
 
-Status DissectDateTimeParam(std::string_view msg, size_t* offset, ParamPacket* packet);
-
-Status DissectParam(std::string_view msg, size_t* type_offset, size_t* val_offset,
-                    ParamPacket* param);
+Status DissectDateTimeParam(std::string_view msg, size_t* offset, std::string* packet);
 
 }  // namespace mysql
 }  // namespace stirling

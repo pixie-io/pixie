@@ -8,7 +8,7 @@
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/http/http_parse.h"
 #include "src/stirling/http2/http2.h"
-#include "src/stirling/mysql/mysql.h"
+#include "src/stirling/mysql/mysql_types.h"
 
 DECLARE_uint32(messages_expiration_duration_secs);
 DECLARE_uint32(messages_size_limit_bytes);

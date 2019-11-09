@@ -4,7 +4,7 @@
 #include <utility>
 #include "src/common/base/base.h"
 #include "src/common/base/status.h"
-#include "src/stirling/mysql/mysql.h"
+#include "src/stirling/mysql/mysql_types.h"
 
 namespace pl {
 namespace stirling {

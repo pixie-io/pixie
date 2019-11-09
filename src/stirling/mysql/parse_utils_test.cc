@@ -7,8 +7,6 @@ namespace pl {
 namespace stirling {
 namespace mysql {
 
-// TODO(oazizi): Move ProcessLengthEncodedInt tests to a different file.
-
 TEST(ProcessLengthEncodedInt, Basic) {
   int64_t num;
   size_t offset;
@@ -83,8 +81,8 @@ TEST(ProcessLengthEncodedInt, NotEnoughBytes) {
   EXPECT_NOT_OK(s);
 }
 
-TEST(DissectParams, Basics) {
-  ParamPacket p;
+TEST(ProcessStmtExecuteParams, Basics) {
+  std::string value;
   Status s;
   size_t offset;
 
@@ -93,64 +91,65 @@ TEST(DissectParams, Basics) {
   offset = 0;
   s = DissectStringParam(ConstStringView("\x05"
                                          "mysql"),
-                         &offset, &p);
+                         &offset, &value);
   EXPECT_OK(s);
-  EXPECT_EQ(p.value, "mysql");
+  EXPECT_EQ(value, "mysql");
   EXPECT_EQ(offset, 6);
 
   // Fixed-length integers:
 
   offset = 0;
-  s = DissectIntParam<1>(ConstStringView("\x05"), &offset, &p);
+  s = DissectIntParam<1>(ConstStringView("\x05"), &offset, &value);
   EXPECT_OK(s);
-  EXPECT_EQ(p.value, "5");
+  EXPECT_EQ(value, "5");
   EXPECT_EQ(offset, 1);
 
   offset = 0;
-  s = DissectIntParam<2>(ConstStringView("\x01\x23"), &offset, &p);
+  s = DissectIntParam<2>(ConstStringView("\x01\x23"), &offset, &value);
   EXPECT_OK(s);
-  EXPECT_EQ(p.value, "8961");
+  EXPECT_EQ(value, "8961");
   EXPECT_EQ(offset, 2);
 
   offset = 0;
-  s = DissectIntParam<4>(ConstStringView("\x01\x23\x45\x67"), &offset, &p);
+  s = DissectIntParam<4>(ConstStringView("\x01\x23\x45\x67"), &offset, &value);
   EXPECT_OK(s);
-  EXPECT_EQ(p.value, "1732584193");
+  EXPECT_EQ(value, "1732584193");
   EXPECT_EQ(offset, 4);
 
   offset = 0;
-  s = DissectIntParam<8>(ConstStringView("\x01\x23\x45\x67\x89\xab\xcd\xef"), &offset, &p);
+  s = DissectIntParam<8>(ConstStringView("\x01\x23\x45\x67\x89\xab\xcd\xef"), &offset, &value);
   EXPECT_OK(s);
-  EXPECT_EQ(p.value, "-1167088121787636991");
+  EXPECT_EQ(value, "-1167088121787636991");
   EXPECT_EQ(offset, 8);
 
   // Floats and Doubles:
 
   offset = 0;
-  s = DissectFloatParam<float>(ConstStringView("\x33\x33\x23\x41"), &offset, &p);
+  s = DissectFloatParam<float>(ConstStringView("\x33\x33\x23\x41"), &offset, &value);
   EXPECT_OK(s);
-  EXPECT_EQ(p.value, "10.200000");
+  EXPECT_EQ(value, "10.200000");
   EXPECT_EQ(offset, 4);
 
   offset = 0;
-  s = DissectFloatParam<double>(ConstStringView("\x66\x66\x66\x66\x66\x66\x24\x40"), &offset, &p);
+  s = DissectFloatParam<double>(ConstStringView("\x66\x66\x66\x66\x66\x66\x24\x40"), &offset,
+                                &value);
   EXPECT_OK(s);
-  EXPECT_EQ(p.value, "10.200000");
+  EXPECT_EQ(value, "10.200000");
   EXPECT_EQ(offset, 8);
 
   // Dates and times (length byte prefix):
 
   offset = 0;
   s = DissectDateTimeParam(ConstStringView("\x0b\xda\x07\x0a\x11\x13\x1b\x1e\x01\x00\x00\x00"),
-                           &offset, &p);
+                           &offset, &value);
   EXPECT_OK(s);
-  EXPECT_EQ(p.value, "MySQL DateTime rendering not implemented yet");
+  EXPECT_EQ(value, "MySQL DateTime rendering not implemented yet");
   EXPECT_EQ(offset, 12);
 
   offset = 0;
-  s = DissectDateTimeParam(ConstStringView("\x04\xda\x07\x0a\x11"), &offset, &p);
+  s = DissectDateTimeParam(ConstStringView("\x04\xda\x07\x0a\x11"), &offset, &value);
   EXPECT_OK(s);
-  EXPECT_EQ(p.value, "MySQL DateTime rendering not implemented yet");
+  EXPECT_EQ(value, "MySQL DateTime rendering not implemented yet");
   EXPECT_EQ(offset, 5);
 }
 

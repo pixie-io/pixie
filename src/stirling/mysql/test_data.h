@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 #include "src/common/base/base.h"
-#include "src/stirling/mysql/mysql.h"
+#include "src/stirling/mysql/mysql_types.h"
 
 namespace pl {
 namespace stirling {
@@ -84,8 +84,8 @@ PreparedStatement kPreparedStatement{
 /**
  * Statement Execute Event with 2 params, 2 col definitions, and 2 resultset rows.
  */
-const std::vector<ParamPacket> kStmtExecuteParams = {{MySQLColType::kString, "brown"},
-                                                     {MySQLColType::kString, "id"}};
+const std::vector<StmtExecuteParam> kStmtExecuteParams = {{MySQLColType::kString, "brown"},
+                                                          {MySQLColType::kString, "id"}};
 
 const StmtExecuteRequest kStmtExecuteRequest{.stmt_id = kStmtID, .params = kStmtExecuteParams};
 

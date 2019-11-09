@@ -8,7 +8,7 @@
 
 #include "src/common/base/byte_utils.h"
 #include "src/stirling/common/parse_state.h"
-#include "src/stirling/mysql/mysql.h"
+#include "src/stirling/mysql/mysql_types.h"
 
 namespace pl {
 namespace stirling {

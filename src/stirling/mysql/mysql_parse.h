@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "src/stirling/common/event_parser.h"
-#include "src/stirling/mysql/mysql.h"
+#include "src/stirling/mysql/mysql_types.h"
 
 namespace pl {
 namespace stirling {
