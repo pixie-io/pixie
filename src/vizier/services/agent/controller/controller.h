@@ -87,15 +87,6 @@ class Controller : public NotCopyable {
   Status Init();
 
  private:
-  /**
-   * StartMessageReader intialized the nats subscription.
-   *
-   * @return Status of nats subscription.
-   */
-  Status StartMessageReader();
-
-  // TODO(zasgar): Remove me. Throwaway code for demo.
-  Status AddDummyTable(const std::string& name, std::shared_ptr<table_store::Table> table);
   Status ExecuteQuery(const messages::ExecuteQueryRequest& req,
                       pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse* resp);
 

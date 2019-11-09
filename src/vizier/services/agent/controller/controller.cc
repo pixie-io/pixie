@@ -379,18 +379,8 @@ Status Controller::Run() {
   return Status::OK();
 }
 
-// Temporary and to be replaced by data table from Stirling and Executor
-Status Controller::AddDummyTable(const std::string& name,
-                                 std::shared_ptr<table_store::Table> table) {
-  table_store_->AddTable(name, table);
-  return Status::OK();
-}
 
 Status Controller::InitThrowaway() {
-  // Add Dummy test data.
-  PL_RETURN_IF_ERROR(
-      AddDummyTable("hipster_data", pl::agent::FakeHipsterTable().ConsumeValueOrDie()));
-
   pl::stirling::stirlingpb::Publish publish_pb;
   stirling_->GetPublishProto(&publish_pb);
   auto subscribe_pb = stirling::SubscribeToAllInfoClasses(publish_pb);
