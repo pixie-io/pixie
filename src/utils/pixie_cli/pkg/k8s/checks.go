@@ -45,8 +45,6 @@ var (
 		if err != nil {
 			return err
 		}
-		// Minor version can sometime contain a "+", we remove it so it parses properly with semver.
-		version.Minor = strings.TrimSuffix(version.Minor, "+")
 		compatible, err := versionCompatible(version.GitVersion, k8sMinVersion)
 		if err != nil {
 			return err

@@ -38,6 +38,8 @@ func NamedCheck(name string, check func() error) Checker {
 
 func versionCompatible(version string, minVersion string) (bool, error) {
 	version = strings.TrimPrefix(version, "v")
+	// Minor version can sometime contain a "+", we remove it so it parses properly with semver.
+	version = strings.TrimSuffix(version, "+")
 	minVersion = strings.TrimPrefix(minVersion, "v")
 	v, err := semver.Make(version)
 	if err != nil {
