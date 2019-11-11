@@ -18,6 +18,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+using table_store::schema::Relation;
 using testing::_;
 using testing::ElementsAre;
 using testing::ElementsAreArray;

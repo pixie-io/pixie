@@ -25,7 +25,6 @@ namespace compiler {
 class IR;
 class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
-using table_store::schema::Relation;
 
 struct ArgMap {
   std::unordered_map<std::string, IRNode*> kwargs;
@@ -1373,7 +1372,7 @@ class GRPCSourceIR : public OperatorIR {
    * @param ast_node
    * @return Status
    */
-  Status Init(const std::string& remote_source_id, const Relation& relation,
+  Status Init(const std::string& remote_source_id, const table_store::schema::Relation& relation,
               pypa::AstPtr ast_node) {
     remote_source_id_ = remote_source_id;
     PL_RETURN_IF_ERROR(SetRelation(relation));
@@ -1413,7 +1412,8 @@ class GRPCSourceGroupIR : public OperatorIR {
    * @param ast_node
    * @return Status
    */
-  Status Init(int64_t source_id, const Relation& relation, pypa::AstPtr ast_node) {
+  Status Init(int64_t source_id, const table_store::schema::Relation& relation,
+              pypa::AstPtr ast_node) {
     source_id_ = source_id;
     PL_RETURN_IF_ERROR(SetRelation(relation));
     return OperatorIR::Init(nullptr, {{}, {}}, ast_node);

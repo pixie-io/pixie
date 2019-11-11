@@ -34,14 +34,13 @@ namespace exec {
  * The purpose of this class is to keep track of resources required for the query
  * and provide common resources (UDFs, UDA, etc) the operators within the query.
  */
-using table_store::TableStore;
 using KelvinStubGenerator = std::function<std::unique_ptr<carnotpb::KelvinService::StubInterface>(
     const std::string& address)>;
 
 class ExecState {
  public:
   explicit ExecState(udf::ScalarUDFRegistry* scalar_udf_registry, udf::UDARegistry* uda_registry,
-                     std::shared_ptr<TableStore> table_store,
+                     std::shared_ptr<table_store::TableStore> table_store,
                      const KelvinStubGenerator& stub_generator, const sole::uuid& query_id)
       : scalar_udf_registry_(scalar_udf_registry),
         uda_registry_(uda_registry),
@@ -56,7 +55,7 @@ class ExecState {
   udf::ScalarUDFRegistry* scalar_udf_registry() { return scalar_udf_registry_; }
   udf::UDARegistry* uda_registry() { return uda_registry_; }
 
-  TableStore* table_store() { return table_store_.get(); }
+  table_store::TableStore* table_store() { return table_store_.get(); }
 
   const sole::uuid& query_id() const { return query_id_; }
 
@@ -105,7 +104,7 @@ class ExecState {
  private:
   udf::ScalarUDFRegistry* scalar_udf_registry_;
   udf::UDARegistry* uda_registry_;
-  std::shared_ptr<TableStore> table_store_;
+  std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<const md::AgentMetadataState> metadata_state_;
   const KelvinStubGenerator stub_generator_;
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;

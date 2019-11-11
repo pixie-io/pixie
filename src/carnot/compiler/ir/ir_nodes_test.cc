@@ -14,6 +14,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 using ::pl::testing::proto::EqualsProto;
+using table_store::schema::Relation;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::IsEmpty;

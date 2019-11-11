@@ -18,7 +18,6 @@ namespace carnot {
 namespace compiler {
 namespace distributed {
 
-using distributedpb::CarnotInfo;
 /**
  * @brief The planner takes in a logical plan and knowledge about the Machines available for
  * exeuction to create a plan that is close to what is actually executed on the nodes.

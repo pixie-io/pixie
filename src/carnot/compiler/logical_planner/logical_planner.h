@@ -13,7 +13,6 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 namespace logical_planner {
-using table_store::schemapb::Schema;
 /**
  * @brief The logical planner takes in queries and a Logical Planner State and
  *
@@ -43,7 +42,8 @@ class LogicalPlanner : public NotCopyable {
   Status Init();
 
  private:
-  StatusOr<std::unique_ptr<RelationMap>> MakeRelationMap(const Schema& schema_pb);
+  StatusOr<std::unique_ptr<RelationMap>> MakeRelationMap(
+      const table_store::schemapb::Schema& schema_pb);
 
   StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
       const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* reg_info);

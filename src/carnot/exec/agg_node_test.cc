@@ -167,7 +167,7 @@ agg_op {
 
 std::unique_ptr<ExecState> MakeTestExecState(udf::ScalarUDFRegistry* udf_registry,
                                              udf::UDARegistry* uda_registry) {
-  auto table_store = std::make_shared<TableStore>();
+  auto table_store = std::make_shared<table_store::TableStore>();
   return std::make_unique<ExecState>(udf_registry, uda_registry, table_store,
                                      MockKelvinStubGenerator, sole::uuid4());
 }

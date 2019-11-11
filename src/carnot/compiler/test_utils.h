@@ -146,11 +146,12 @@ class OperatorTests : public ::testing::Test {
     return mem_source;
   }
 
-  MemorySourceIR* MakeMemSource(const Relation& relation) {
+  MemorySourceIR* MakeMemSource(const table_store::schema::Relation& relation) {
     return MakeMemSource("table", relation);
   }
 
-  MemorySourceIR* MakeMemSource(const std::string& table_name, const Relation& relation) {
+  MemorySourceIR* MakeMemSource(const std::string& table_name,
+                                const table_store::schema::Relation& relation) {
     MemorySourceIR* mem_source = MakeMemSource(table_name);
     EXPECT_OK(mem_source->SetRelation(relation));
     std::vector<int64_t> column_index_map;
@@ -227,7 +228,8 @@ class OperatorTests : public ::testing::Test {
     return column;
   }
 
-  ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx, const Relation& relation) {
+  ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx,
+                       const table_store::schema::Relation& relation) {
     ColumnIR* column = MakeColumn(name, parent_op_idx);
     column->ResolveColumn(relation.GetColumnIndex(name), relation.GetColumnType(name));
     return column;
@@ -291,7 +293,8 @@ class OperatorTests : public ::testing::Test {
     return old_graph;
   }
 
-  GRPCSourceGroupIR* MakeGRPCSourceGroup(int64_t source_id, const Relation& relation) {
+  GRPCSourceGroupIR* MakeGRPCSourceGroup(int64_t source_id,
+                                         const table_store::schema::Relation& relation) {
     GRPCSourceGroupIR* grpc_src_group = graph->MakeNode<GRPCSourceGroupIR>().ValueOrDie();
     EXPECT_OK(grpc_src_group->Init(source_id, relation, ast));
     return grpc_src_group;
@@ -303,7 +306,8 @@ class OperatorTests : public ::testing::Test {
     return grpc_sink;
   }
 
-  GRPCSourceIR* MakeGRPCSource(const std::string& source_id, const Relation& relation) {
+  GRPCSourceIR* MakeGRPCSource(const std::string& source_id,
+                               const table_store::schema::Relation& relation) {
     GRPCSourceIR* grpc_src_group = graph->MakeNode<GRPCSourceIR>().ValueOrDie();
     EXPECT_OK(grpc_src_group->Init(source_id, relation, ast));
     return grpc_src_group;
@@ -338,14 +342,14 @@ class OperatorTests : public ::testing::Test {
   }
 
   // Use this if you need a relation but don't care about the contents.
-  Relation MakeRelation() {
+  table_store::schema::Relation MakeRelation() {
     return table_store::schema::Relation(
         std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
                                       types::DataType::FLOAT64, types::DataType::FLOAT64}),
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
   }
   // Same as MakeRelation, but has a time column.
-  Relation MakeTimeRelation() {
+  table_store::schema::Relation MakeTimeRelation() {
     return table_store::schema::Relation(
         std::vector<types::DataType>({types::DataType::TIME64NS, types::DataType::FLOAT64,
                                       types::DataType::FLOAT64, types::DataType::FLOAT64}),

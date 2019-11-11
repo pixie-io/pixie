@@ -63,7 +63,7 @@ class CarnotImpl final : public Carnot {
   /**
    * Returns the Table Store.
    */
-  exec::TableStore* table_store() { return engine_state_->table_store(); }
+  table_store::TableStore* table_store() { return engine_state_->table_store(); }
 
   std::shared_ptr<const md::AgentMetadataState> GetMetadataState() {
     if (!agent_md_callback_) {

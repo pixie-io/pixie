@@ -9,6 +9,8 @@ namespace carnot {
 namespace compiler {
 namespace logical_planner {
 
+using table_store::schemapb::Schema;
+
 StatusOr<std::unique_ptr<RelationMap>> LogicalPlanner::MakeRelationMap(const Schema& schema_pb) {
   auto rel_map = std::make_unique<pl::carnot::compiler::RelationMap>();
   for (auto& relation_pair : schema_pb.relation_map()) {

@@ -52,7 +52,7 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
 
   auto udf_registry = std::make_unique<ScalarUDFRegistry>("test_registry");
   auto uda_registry = std::make_unique<UDARegistry>("test_registry");
-  auto table_store = std::make_shared<pl::carnot::exec::TableStore>();
+  auto table_store = std::make_shared<pl::table_store::TableStore>();
   PL_CHECK_OK(udf_registry->Register<AddUDF>("add"));
   auto exec_state = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store,
                                                 MockKelvinStubGenerator, sole::uuid4());

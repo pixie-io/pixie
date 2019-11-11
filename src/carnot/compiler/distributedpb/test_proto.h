@@ -20,8 +20,6 @@ namespace compiler {
 namespace distributedpb {
 namespace testutils {
 
-using google::protobuf::Descriptor;
-using google::protobuf::FieldDescriptor;
 /**
  * This files provides canonical test protos that
  * other parts of the project can use to provide "fakes" for the

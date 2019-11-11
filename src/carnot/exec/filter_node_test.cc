@@ -39,7 +39,7 @@ class FilterNodeTest : public ::testing::Test {
     uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
     EXPECT_OK(udf_registry_->Register<EqUDF>("eq"));
     EXPECT_OK(udf_registry_->Register<StrEqUDF>("eq"));
-    auto table_store = std::make_shared<TableStore>();
+    auto table_store = std::make_shared<table_store::TableStore>();
 
     exec_state_ = std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,
                                               MockKelvinStubGenerator, sole::uuid4());

@@ -13,7 +13,6 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-using table_store::schema::Relation;
 class Rule {
  public:
   Rule() = delete;
@@ -82,13 +81,14 @@ class SourceRelationRule : public Rule {
 
  private:
   StatusOr<bool> GetSourceRelation(OperatorIR* source_op) const;
-  StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(OperatorIR* node,
-                                                          std::vector<std::string> col_names,
-                                                          const Relation& relation) const;
+  StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(
+      OperatorIR* node, std::vector<std::string> col_names,
+      const table_store::schema::Relation& relation) const;
   std::vector<int64_t> GetColumnIndexMap(const std::vector<std::string>& col_names,
-                                         const Relation& relation) const;
-  StatusOr<Relation> GetSelectRelation(IRNode* node, const Relation& relation,
-                                       const std::vector<std::string>& columns) const;
+                                         const table_store::schema::Relation& relation) const;
+  StatusOr<table_store::schema::Relation> GetSelectRelation(
+      IRNode* node, const table_store::schema::Relation& relation,
+      const std::vector<std::string>& columns) const;
 };
 
 class OperatorRelationRule : public Rule {
@@ -230,8 +230,8 @@ class MetadataResolverConversionRule : public Rule {
 
   StatusOr<MapIR*> MakeMap(MetadataResolverIR* md_resolver) const;
   Status SwapInMap(MetadataResolverIR* md_resolver, MapIR* map) const;
-  StatusOr<std::string> FindKeyColumn(const Relation& parent_relation, MetadataProperty* property,
-                                      IRNode* node_for_error) const;
+  StatusOr<std::string> FindKeyColumn(const table_store::schema::Relation& parent_relation,
+                                      MetadataProperty* property, IRNode* node_for_error) const;
   Status CopyParentColumns(IR* graph, OperatorIR* parent_op, ColExpressionVector* col_exprs,
                            pypa::AstPtr ast_node) const;
 

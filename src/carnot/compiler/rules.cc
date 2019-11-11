@@ -9,6 +9,8 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+using table_store::schema::Relation;
+
 Status Rule::EmptyDeleteQueue(IR* ir_graph) {
   while (!node_delete_q.empty()) {
     PL_RETURN_IF_ERROR(ir_graph->DeleteNode(node_delete_q.front()));

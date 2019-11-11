@@ -7,6 +7,8 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+using table_store::schema::Relation;
+
 Status IR::AddEdge(int64_t from_node, int64_t to_node) {
   dag_.AddEdge(from_node, to_node);
   return Status::OK();

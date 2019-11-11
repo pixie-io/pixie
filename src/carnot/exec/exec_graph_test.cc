@@ -49,7 +49,7 @@ class ExecGraphTest : public ::testing::Test {
 
     auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
     auto uda_registry = std::make_unique<udf::UDARegistry>("test_registry");
-    auto table_store = std::make_shared<TableStore>();
+    auto table_store = std::make_shared<table_store::TableStore>();
 
     exec_state_ = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store,
                                               MockKelvinStubGenerator, sole::uuid4());
@@ -133,7 +133,7 @@ TEST_F(ExecGraphTest, execute) {
   EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
   EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
 
-  auto table_store = std::make_shared<TableStore>();
+  auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
   auto exec_state_ = std::make_unique<ExecState>(
       udf_registry.get(), uda_registry.get(), table_store, MockKelvinStubGenerator, sole::uuid4());
@@ -209,7 +209,7 @@ TEST_F(ExecGraphTest, execute_time) {
   EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
   EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
 
-  auto table_store = std::make_shared<TableStore>();
+  auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
 
   auto exec_state_ = std::make_unique<ExecState>(

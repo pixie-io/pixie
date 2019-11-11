@@ -26,7 +26,7 @@ class EngineState : public NotCopyable {
  public:
   EngineState(std::unique_ptr<udf::ScalarUDFRegistry> udf_registry,
               std::unique_ptr<udf::UDARegistry> uda_registry,
-              std::shared_ptr<exec::TableStore> table_store,
+              std::shared_ptr<table_store::TableStore> table_store,
               std::shared_ptr<table_store::schema::Schema> schema,
               std::unique_ptr<compiler::RegistryInfo> registry_info,
               const exec::KelvinStubGenerator& stub_generator)
@@ -63,7 +63,7 @@ class EngineState : public NotCopyable {
 
   std::shared_ptr<table_store::schema::Schema> schema() { return schema_; }
 
-  exec::TableStore* table_store() { return table_store_.get(); }
+  table_store::TableStore* table_store() { return table_store_.get(); }
 
   std::unique_ptr<exec::ExecState> CreateExecState(const sole::uuid& query_id) {
     return std::make_unique<exec::ExecState>(scalar_udf_registry_.get(), uda_registry_.get(),
@@ -83,7 +83,7 @@ class EngineState : public NotCopyable {
  private:
   std::unique_ptr<udf::UDARegistry> uda_registry_;
   std::unique_ptr<udf::ScalarUDFRegistry> scalar_udf_registry_;
-  std::shared_ptr<exec::TableStore> table_store_;
+  std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<table_store::schema::Schema> schema_;
   std::unique_ptr<compiler::RegistryInfo> registry_info_;
   const exec::KelvinStubGenerator stub_generator_;

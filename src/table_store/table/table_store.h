@@ -16,7 +16,6 @@
 
 namespace pl {
 namespace table_store {
-using schema::Relation;
 
 // NameTablet used as a key containing a Table name and Tablet ID.
 struct NameTablet {
@@ -51,7 +50,7 @@ struct TableIDTablet {
 // TableNameAndRelation contains a string name and a relation for a table.
 struct NameRelationPair {
   std::string table_name;
-  Relation relation;
+  schema::Relation relation;
 };
 
 /**
@@ -59,7 +58,7 @@ struct NameRelationPair {
  */
 class TableStore {
  public:
-  using RelationMap = std::unordered_map<std::string, table_store::schema::Relation>;
+  using RelationMap = std::unordered_map<std::string, schema::Relation>;
 
   TableStore() = default;
 
@@ -150,7 +149,7 @@ class TableStore {
    * @param table_name: the name of the table to set.
    * @param relation: the relation to set for the table_name.
    */
-  void AddRelation(const std::string& table_name, const Relation& relation);
+  void AddRelation(const std::string& table_name, const schema::Relation& relation);
 
   /**
    * @brief Map the table_id to the table_name and relation. It's important to note that this does
@@ -160,7 +159,8 @@ class TableStore {
    * @param table_name: the name of the table to set for the table_id.
    * @param relation: the relation to set for the table_id.
    */
-  void AddRelation(uint64_t table_id, const std::string& table_name, const Relation& relation);
+  void AddRelation(uint64_t table_id, const std::string& table_name,
+                   const schema::Relation& relation);
 
   /**
    * @brief Create a New Tablet inside of the table with table_id
@@ -178,7 +178,7 @@ class TableStore {
   // Map an id to a table.
   absl::flat_hash_map<TableIDTablet, std::shared_ptr<Table>> id_to_table_map_;
   // Mapping from name to relation for adding new tablets.
-  absl::flat_hash_map<std::string, Relation> name_to_relation_map_;
+  absl::flat_hash_map<std::string, schema::Relation> name_to_relation_map_;
   // Mapping from id to name and relation pair for adding new tablets.
   absl::flat_hash_map<uint64_t, NameRelationPair> id_to_name_relation_pair_map_;
 };

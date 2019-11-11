@@ -68,7 +68,7 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
   void SetUp() override {
     uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
     udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
-    auto table_store = std::make_shared<TableStore>();
+    auto table_store = std::make_shared<table_store::TableStore>();
 
     EXPECT_TRUE(udf_registry_->Register<AddUDF>("add").ok());
     exec_state_ = std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,

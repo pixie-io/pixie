@@ -7,8 +7,7 @@
 namespace pl {
 namespace table_store {
 
-std::unique_ptr<std::unordered_map<std::string, table_store::schema::Relation>>
-TableStore::GetRelationMap() {
+std::unique_ptr<std::unordered_map<std::string, schema::Relation>> TableStore::GetRelationMap() {
   auto map = std::make_unique<RelationMap>();
   map->reserve(name_to_relation_map_.size());
   for (auto& [table_name, relation] : name_to_relation_map_) {
@@ -24,7 +23,7 @@ StatusOr<Table*> TableStore::CreateNewTable(uint64_t table_id, const types::Tabl
   }
 
   const NameRelationPair& name_relation_pair = id_to_name_relation_pair_map_iter->second;
-  const Relation& relation = name_relation_pair.relation;
+  const schema::Relation& relation = name_relation_pair.relation;
   std::shared_ptr<Table> new_tablet = Table::Create(relation);
 
   TableIDTablet id_key = {table_id, tablet_id};
@@ -115,11 +114,11 @@ Status TableStore::SchemaAsProto(schemapb::Schema* schema) const {
 }
 
 void TableStore::AddRelation(uint64_t table_id, const std::string& table_name,
-                             const Relation& relation) {
+                             const schema::Relation& relation) {
   id_to_name_relation_pair_map_[table_id] = NameRelationPair({table_name, relation});
 }
 
-void TableStore::AddRelation(const std::string& table_name, const Relation& relation) {
+void TableStore::AddRelation(const std::string& table_name, const schema::Relation& relation) {
   name_to_relation_map_[table_name] = relation;
 }
 

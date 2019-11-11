@@ -13,6 +13,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 namespace distributed {
+using table_store::schema::Relation;
 using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
