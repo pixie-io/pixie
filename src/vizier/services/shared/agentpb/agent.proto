@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package pl.vizier.services.shared.agent;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
+
+// AgentCapabilities describes functions that the agent has available.
+message AgentCapabilities {
+    bool collects_data = 1;
+}
+
+// AgentInfo contains information about host and agent running on a given machine.
+message AgentInfo {
+    uuidpb.UUID agent_id      = 1 [
+                                  (gogoproto.customname) = "AgentID"
+                                  ];
+    HostInfo host_info = 2;
+    string ip_address = 3[
+                         (gogoproto.customname) = "IPAddress"
+                         ];
+    AgentCapabilities capabilities = 4;
+}
+
+// HostInfo contains the details for the host (OS, kernel, CPU, etc).
+message HostInfo {
+    string hostname = 1;
+}
+
+// Agent contains information about a specific agent instance.
+message Agent {
+    AgentInfo info = 1;
+    int64 create_time_ns = 2 [ (gogoproto.customname) = "CreateTimeNS" ];
+    int64 last_heartbeat_ns = 3 [
+                                  (gogoproto.customname) = "LastHeartbeatNS"
+                                ];
+}
+
+enum AgentState {
+  // The default state if nothing is known.
+  AGENT_STATE_UNKNOWN = 0;
+  // The state is healthy if heartbeats are received on regular intervals and the
+  // agent is responding to requests.
+  AGENT_STATE_HEALTHY = 1;
+  // The state will go to unresponsive if the agent hasn't sent a heartbeat for a while
+  // or is unresponsive to messages from Vizier.
+  AGENT_STATE_UNRESPONSIVE = 2;
+  // The state will go to disconnected if the GRPC connection breaks. The hope is that the agent
+  // will come back online and resume in HEALTHY state.
+  AGENT_STATE_DISCONNECTED = 3;
+}
+
+// AgentStatus contains information about the status of an agent.
+message AgentStatus {
+  int64 ns_since_last_heartbeat = 1 [
+                                (gogoproto.customname) = "NSSinceLastHeartbeat"
+                              ];
+  // The state of the Agent.
+  AgentState state = 2;
+}
