@@ -30,6 +30,30 @@ using ::testing::Pair;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
+constexpr std::string_view kHTTPReqMsg1 = R"(GET /endpoint1 HTTP/1.1
+User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0
+
+)";
+
+constexpr std::string_view kHTTPReqMsg2 = R"(GET /endpoint2 HTTP/1.1
+User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0
+
+)";
+
+constexpr std::string_view kHTTPRespMsg1 = R"(HTTP/1.1 200 OK
+Content-Type: application/json; msg1
+Content-Length: 0
+
+)";
+
+constexpr std::string_view kHTTPRespMsg2 = R"(HTTP/1.1 200 OK
+Content-Type: application/json; msg2
+Content-Length: 0
+
+)";
+
+constexpr std::string_view kNoProtocolMsg = R"(This is not an HTTP message)";
+
 // TODO(yzhao): We'd better rewrite the test to use BCCWrapper directly, instead of
 // SocketTraceConnector, to avoid triggering the userland parsing code, so these tests do not need
 // change if we alter output format.

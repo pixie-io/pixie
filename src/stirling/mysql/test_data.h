@@ -119,6 +119,76 @@ const std::vector<ResultsetRow> kQueryResultsetRows = {
 const Resultset kQueryResultset{
     .num_col = 1, .col_defs = kQueryColDefs, .results = kQueryResultsetRows};
 
+//----------------------------------------------------------------------------
+// Raw Packet Data
+//----------------------------------------------------------------------------
+
+using mysql::testutils::GenRawPacket;
+
+namespace impl {
+
+std::vector<std::string> InitRawStmtPrepareReq() {
+  std::vector<std::string> req;
+  req.push_back(GenRawPacket(mysql::testutils::GenStringRequest(
+      kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare)));
+  return req;
+}
+
+std::vector<std::string> InitRawStmtPrepareResp() {
+  std::vector<std::string> resp;
+  for (const auto& prepare_packet :
+       mysql::testutils::GenStmtPrepareOKResponse(kStmtPrepareResponse)) {
+    resp.push_back(GenRawPacket(prepare_packet));
+  }
+  return resp;
+}
+
+std::vector<std::string> InitRawStmtExecuteReq() {
+  std::vector<std::string> req;
+  req.push_back(
+      mysql::testutils::GenRawPacket(mysql::testutils::GenStmtExecuteRequest(kStmtExecuteRequest)));
+  return req;
+}
+
+std::vector<std::string> InitRawStmtExecuteResp() {
+  std::vector<std::string> resp;
+  for (const auto& execute_packet : mysql::testutils::GenResultset(kStmtExecuteResultset)) {
+    resp.push_back(GenRawPacket(execute_packet));
+  }
+  return resp;
+}
+
+std::vector<std::string> InitRawStmtCloseReq() {
+  std::vector<std::string> req;
+  req.push_back(GenRawPacket(mysql::testutils::GenStmtCloseRequest(kStmtCloseRequest)));
+  return req;
+}
+
+std::vector<std::string> InitRawQueryReq() {
+  std::vector<std::string> req;
+  req.push_back(GenRawPacket(
+      mysql::testutils::GenStringRequest(kQueryRequest, mysql::MySQLEventType::kQuery)));
+  return req;
+}
+
+std::vector<std::string> InitRawQueryResp() {
+  std::vector<std::string> resp;
+  for (const auto& execute_packet : mysql::testutils::GenResultset(kStmtExecuteResultset)) {
+    resp.push_back(GenRawPacket(execute_packet));
+  }
+  return resp;
+}
+
+}  // namespace impl
+
+const std::vector<std::string> kRawStmtPrepareReq = impl::InitRawStmtPrepareReq();
+const std::vector<std::string> kRawStmtPrepareResp = impl::InitRawStmtPrepareResp();
+const std::vector<std::string> kRawStmtExecuteReq = impl::InitRawStmtExecuteReq();
+const std::vector<std::string> kRawStmtExecuteResp = impl::InitRawStmtExecuteResp();
+const std::vector<std::string> kRawStmtCloseReq = impl::InitRawStmtCloseReq();
+const std::vector<std::string> kRawQueryReq = impl::InitRawQueryReq();
+const std::vector<std::string> kRawQueryResp = impl::InitRawQueryResp();
+
 }  // namespace testdata
 }  // namespace mysql
 }  // namespace stirling

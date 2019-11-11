@@ -7,6 +7,32 @@ using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::stirling::testing::TCPSocket;
 using ::pl::types::ColumnWrapper;
 
+testing::SendRecvScript GetPrepareExecuteScript() {
+  testing::SendRecvScript script;
+  script.push_back(std::vector<std::string_view>(mysql::testdata::kRawStmtPrepareReq.begin(),
+                                                 mysql::testdata::kRawStmtPrepareReq.end()));
+  script.push_back(std::vector<std::string_view>(mysql::testdata::kRawStmtPrepareResp.begin(),
+                                                 mysql::testdata::kRawStmtPrepareResp.end()));
+  script.push_back(std::vector<std::string_view>(mysql::testdata::kRawStmtExecuteReq.begin(),
+                                                 mysql::testdata::kRawStmtExecuteReq.end()));
+  script.push_back(std::vector<std::string_view>(mysql::testdata::kRawStmtExecuteResp.begin(),
+                                                 mysql::testdata::kRawStmtExecuteResp.end()));
+  script.push_back(std::vector<std::string_view>(mysql::testdata::kRawStmtCloseReq.begin(),
+                                                 mysql::testdata::kRawStmtCloseReq.end()));
+  return script;
+}
+
+testing::SendRecvScript GetQueryScript() {
+  testing::SendRecvScript script;
+  script.push_back(std::vector<std::string_view>(mysql::testdata::kRawQueryReq.begin(),
+                                                 mysql::testdata::kRawQueryReq.end()));
+  script.push_back(std::vector<std::string_view>(mysql::testdata::kRawQueryResp.begin(),
+                                                 mysql::testdata::kRawQueryResp.end()));
+  return script;
+}
+
+constexpr uint32_t kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");
+
 TEST_F(SocketTraceBPFTest, MySQLStmtPrepareExecuteClose) {
   FLAGS_stirling_enable_mysql_tracing = true;
 
