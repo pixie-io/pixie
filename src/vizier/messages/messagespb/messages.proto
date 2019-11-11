@@ -6,6 +6,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/carnot/planpb/plan.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
+import "src/vizier/services/shared/agentpb/agent.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/messages/messagespb;messages";
 
@@ -23,21 +24,8 @@ message VizierMessage {
     }
 }
 
-// AgentInfo contains information about host and agent running on a given machine.
-message AgentInfo {
-    uuidpb.UUID agent_id      = 1 [
-                                  (gogoproto.customname) = "AgentID"
-                                  ];
-    HostInfo host_info = 2;
-}
-
-// HostInfo contains the details for the host (OS, kernel, CPU, etc).
-message HostInfo {
-    string hostname = 1;
-}
-
 message RegisterAgentRequest {
-    AgentInfo info = 1;
+    pl.vizier.services.shared.agent.AgentInfo info = 1;
     AgentUpdateInfo update_info = 2;
 }
 
@@ -49,7 +37,7 @@ message RegisterAgentResponse {
 }
 
 message UpdateAgentRequest {
-    AgentInfo info = 1;
+    pl.vizier.services.shared.agent.AgentInfo info = 1;
     AgentUpdateInfo update_info = 2;
 }
 
