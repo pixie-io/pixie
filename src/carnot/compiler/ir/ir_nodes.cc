@@ -516,6 +516,12 @@ Status LimitIR::InitImpl(const ArgMap& args) {
   return graph_ptr()->DeleteNode(limit_node->id());
 }
 
+Status LimitIR::Init(OperatorIR* parent, int64_t limit_value) {
+  PL_RETURN_IF_ERROR(AddParent(parent));
+  SetLimitValue(limit_value);
+  return Status::OK();
+}
+
 bool LimitIR::HasLogicalRepr() const { return true; }
 
 Status LimitIR::ToProto(planpb::Operator* op) const {

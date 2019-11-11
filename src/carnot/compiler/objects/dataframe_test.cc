@@ -489,6 +489,70 @@ TEST_F(DataframeTest, OldFilterCall) {
   EXPECT_FALSE(graph->HasNode(lambda_id));
 }
 
+using LimitTest = DataframeTest;
+
+TEST_F(LimitTest, CreateLimit) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto limit_value = MakeInt(1234);
+
+  int64_t limit_int_node_id = limit_value->id();
+  ParsedArgs args;
+  args.AddArg("rows", limit_value);
+
+  auto status = LimitHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto limit_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(limit_obj->op(), Limit()));
+  LimitIR* limit = static_cast<LimitIR*>(limit_obj->op());
+  EXPECT_EQ(limit->limit_value(), 1234);
+
+  EXPECT_FALSE(graph->HasNode(limit_int_node_id));
+}
+
+TEST_F(LimitTest, LimitNonIntArgument) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto limit_value = MakeString("1234");
+
+  ParsedArgs args;
+  args.AddArg("rows", limit_value);
+
+  auto status = LimitHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'rows' must be an int"));
+}
+
+TEST_F(DataframeTest, LimitCall) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto limit_value = MakeInt(1234);
+
+  int64_t limit_int_node_id = limit_value->id();
+  ArgMap args{{{"rows", limit_value}}, {}};
+
+  auto get_method_status = srcdf->GetMethod("limit");
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  auto status = func_obj->Call(args, ast);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto limit_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(limit_obj->op(), Limit()));
+  LimitIR* limit = static_cast<LimitIR*>(limit_obj->op());
+  EXPECT_EQ(limit->limit_value(), 1234);
+
+  EXPECT_FALSE(graph->HasNode(limit_int_node_id));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

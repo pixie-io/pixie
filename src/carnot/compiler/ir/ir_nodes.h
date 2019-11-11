@@ -1315,6 +1315,7 @@ class FilterIR : public OperatorIR {
 
 class LimitIR : public OperatorIR {
  public:
+  using OperatorIR::Init;
   LimitIR() = delete;
   explicit LimitIR(int64_t id) : OperatorIR(id, IRNodeType::kLimit, true, false) {}
   bool HasLogicalRepr() const override;
@@ -1333,6 +1334,7 @@ class LimitIR : public OperatorIR {
     return std::unordered_map<std::string, IRNode*>();
   }
   Status InitImpl(const ArgMap& args) override;
+  Status Init(OperatorIR* parent, int64_t limit_value);
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 

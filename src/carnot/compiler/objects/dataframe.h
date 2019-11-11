@@ -152,6 +152,24 @@ class OldFilterHandler {
   static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
 };
 
+/**
+ * @brief Implements the limit operator logic.
+ *
+ */
+class LimitHandler {
+ public:
+  /**
+   * @brief Evaluates the limit method.
+   *
+   * @param df the dataframe that's a parent to the limit method.
+   * @param ast the ast node that signifies where the query was written
+   * @param args the arguments for limit()
+   * @return StatusOr<QLObjectPtr>
+   */
+
+  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

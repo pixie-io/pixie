@@ -63,6 +63,16 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       kFilterOpId, {"fn"}, {}, /* has_kwargs */ false,
       std::bind(&OldFilterHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kFilterOpId, filterfn);
+
+  /**
+   * # Equivalent to the python method method syntax:
+   * def limit(self, rows):
+   *     ...
+   */
+  std::shared_ptr<FuncObject> limitfn(new FuncObject(
+      kLimitOpId, {"rows"}, {}, /* has_kwargs */ false,
+      std::bind(&LimitHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kLimitOpId, limitfn);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
@@ -237,6 +247,22 @@ StatusOr<QLObjectPtr> OldFilterHandler::Eval(Dataframe* df, const pypa::AstPtr& 
   // Delete the lambda.
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(lambda->id()));
   return StatusOr(std::make_shared<Dataframe>(filter_op));
+}
+
+StatusOr<QLObjectPtr> LimitHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                         const ParsedArgs& args) {
+  // TODO(philkuz) (PL-1161) Add support for compile time evaluation of Limit argument.
+  IRNode* rows_node = args.GetArg("rows");
+  if (!Match(rows_node, Int())) {
+    return rows_node->CreateIRNodeError("'rows' must be an int");
+  }
+  int64_t limit_value = static_cast<IntIR*>(rows_node)->val();
+
+  PL_ASSIGN_OR_RETURN(LimitIR * limit_op, df->graph()->MakeNode<LimitIR>(ast));
+  PL_RETURN_IF_ERROR(limit_op->Init(df->op(), limit_value));
+  // Delete the integer node.
+  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(rows_node->id()));
+  return StatusOr(std::make_shared<Dataframe>(limit_op));
 }
 
 }  // namespace compiler
