@@ -79,12 +79,6 @@ def _default_internal_deps():
         "//src/common/perf:cc_library",
     ]
 
-def _default_link_deps():
-    return select({
-        "@bazel_tools//tools/osx:darwin": [],
-        "//conditions:default": ["//src/common/glibc_compat:cc_library"],
-    })
-
 # PL C++ library targets should be specified with this function.
 def pl_cc_library_internal(
         name,
@@ -156,7 +150,7 @@ def pl_cc_binary(
         malloc = tcmalloc_external_dep(repository),
         stamp = 1,
         tags = tags,
-        deps = deps + _default_link_deps() + _default_external_deps() + _default_internal_deps(),
+        deps = deps + _default_external_deps() + _default_internal_deps(),
     )
 
 # PL C++ test targets should be specified with this function.
@@ -179,7 +173,7 @@ def pl_cc_test(
         name = name + "_lib",
         srcs = srcs,
         data = data,
-        deps = deps + _default_link_deps(),
+        deps = deps,
         repository = repository,
         tags = test_lib_tags,
     )
