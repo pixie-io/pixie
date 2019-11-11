@@ -52,6 +52,17 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       kMapOpId, {"fn"}, {}, /* has_kwargs */ false,
       std::bind(&OldMapHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kMapOpId, mapfn);
+
+  // TODO(philkuz) (PL-1038) remove this upon availability of new syntax.
+  /**
+   * # Equivalent to the python method method syntax:
+   * def filter(self, fn):
+   *     ...
+   */
+  std::shared_ptr<FuncObject> filterfn(new FuncObject(
+      kFilterOpId, {"fn"}, {}, /* has_kwargs */ false,
+      std::bind(&OldFilterHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kFilterOpId, filterfn);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
@@ -204,6 +215,28 @@ StatusOr<QLObjectPtr> OldMapHandler::Eval(Dataframe* df, const pypa::AstPtr& ast
   // Delete the lambda.
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(lambda->id()));
   return StatusOr(std::make_shared<Dataframe>(map_op));
+}
+
+StatusOr<QLObjectPtr> OldFilterHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                             const ParsedArgs& args) {
+  IRNode* lambda_func = args.GetArg("fn");
+  if (!Match(lambda_func, Lambda())) {
+    return lambda_func->CreateIRNodeError("'fn' must be a lambda");
+  }
+
+  LambdaIR* lambda = static_cast<LambdaIR*>(lambda_func);
+  if (lambda->HasDictBody()) {
+    return lambda->CreateIRNodeError("'fn' argument error, lambda cannot have a dictionary body");
+  }
+
+  // Have to remove the edges from the Lambda
+  PL_ASSIGN_OR_RETURN(ExpressionIR * expr, lambda->GetDefaultExpr());
+
+  PL_ASSIGN_OR_RETURN(FilterIR * filter_op, df->graph()->MakeNode<FilterIR>(ast));
+  PL_RETURN_IF_ERROR(filter_op->Init(df->op(), expr));
+  // Delete the lambda.
+  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(lambda->id()));
+  return StatusOr(std::make_shared<Dataframe>(filter_op));
 }
 
 }  // namespace compiler

@@ -1291,6 +1291,7 @@ class GroupByIR : public OperatorIR {
 
 class FilterIR : public OperatorIR {
  public:
+  using OperatorIR::Init;
   FilterIR() = delete;
   explicit FilterIR(int64_t id) : OperatorIR(id, IRNodeType::kFilter, true, false) {}
   bool HasLogicalRepr() const override;
@@ -1304,6 +1305,7 @@ class FilterIR : public OperatorIR {
     return std::unordered_map<std::string, IRNode*>();
   }
   Status InitImpl(const ArgMap& args) override;
+  Status Init(OperatorIR* parent, ExpressionIR* expr);
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 

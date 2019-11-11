@@ -401,6 +401,94 @@ TEST_F(DataframeTest, OldMapCall) {
   EXPECT_FALSE(graph->HasNode(lambda_id));
 }
 
+using OldFilterTest = DataframeTest;
+
+TEST_F(OldFilterTest, CreateOldFilter) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto status_400 = MakeEqualsFunc(MakeColumn("status_code", 0), MakeInt(400));
+  auto fn = MakeLambda(status_400);
+
+  int64_t lambda_id = fn->id();
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+
+  auto status = OldFilterHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto filter_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(filter_obj->op(), Filter()));
+  FilterIR* filter = static_cast<FilterIR*>(filter_obj->op());
+
+  EXPECT_EQ(filter->parents()[0], src);
+
+  EXPECT_EQ(filter->filter_expr(), status_400);
+
+  EXPECT_FALSE(graph->HasNode(lambda_id));
+}
+
+TEST_F(OldFilterTest, OldFilterWithNonLambda) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto status_400 = MakeEqualsFunc(MakeColumn("status_code", 0), MakeInt(400));
+
+  ParsedArgs args;
+  args.AddArg("fn", status_400);
+
+  auto status = OldFilterHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'fn' must be a lambda"));
+}
+
+TEST_F(OldFilterTest, OldFilterWithLambdaDictBody) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto status_400 = MakeEqualsFunc(MakeColumn("status_code", 0), MakeInt(400));
+  auto fn = MakeLambda({{"status", status_400}});
+
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+
+  auto status = OldFilterHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(),
+              HasCompilerError("'fn' argument error, lambda cannot have a dictionary body"));
+}
+
+TEST_F(DataframeTest, OldFilterCall) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto status_400 = MakeEqualsFunc(MakeColumn("status_code", 0), MakeInt(400));
+  auto fn = MakeLambda(status_400);
+
+  int64_t lambda_id = fn->id();
+  ArgMap args({{}, {fn}});
+
+  auto get_method_status = srcdf->GetMethod("filter");
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  auto status = func_obj->Call(args, ast);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto filter_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(filter_obj->op(), Filter()));
+  FilterIR* filter = static_cast<FilterIR*>(filter_obj->op());
+
+  EXPECT_EQ(filter->parents()[0], src);
+
+  EXPECT_EQ(filter->filter_expr(), status_400);
+
+  EXPECT_FALSE(graph->HasNode(lambda_id));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

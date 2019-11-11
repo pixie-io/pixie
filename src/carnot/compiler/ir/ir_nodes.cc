@@ -456,6 +456,12 @@ Status MapIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
+Status FilterIR::Init(OperatorIR* parent, ExpressionIR* expr) {
+  PL_RETURN_IF_ERROR(AddParent(parent));
+  filter_expr_ = expr;
+  return graph_ptr()->AddEdge(this, filter_expr_);
+}
+
 Status FilterIR::InitImpl(const ArgMap& args) {
   DCHECK(args.kwargs.find("fn") != args.kwargs.end());
   IRNode* filter_func_node = args.kwargs.find("fn")->second;
