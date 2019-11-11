@@ -1195,6 +1195,7 @@ class MetadataResolverIR : public OperatorIR {
  */
 class MapIR : public OperatorIR {
  public:
+  using OperatorIR::Init;
   MapIR() = delete;
   explicit MapIR(int64_t id) : OperatorIR(id, IRNodeType::kMap, true, false) {}
   std::vector<std::string> ArgKeys() override { return {"fn"}; }
@@ -1203,6 +1204,7 @@ class MapIR : public OperatorIR {
     return std::unordered_map<std::string, IRNode*>();
   }
   Status InitImpl(const ArgMap& args) override;
+  Status Init(OperatorIR* parent, const ColExpressionVector& col_exprs);
 
   bool HasLogicalRepr() const override;
 

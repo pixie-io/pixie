@@ -356,6 +356,16 @@ Status MapIR::SetupMapExpressions(LambdaIR* map_func) {
   return graph_ptr()->DeleteNode(map_func->id());
 }
 
+Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs) {
+  PL_RETURN_IF_ERROR(AddParent(parent));
+  col_exprs_ = col_exprs;
+  for (const ColumnExpression& mapped_expression : col_exprs_) {
+    ExpressionIR* expr = mapped_expression.node;
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
+  }
+  return Status::OK();
+}
+
 bool MapIR::HasLogicalRepr() const { return true; }
 
 Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const {

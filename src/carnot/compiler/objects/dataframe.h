@@ -41,6 +41,7 @@ class Dataframe : public QLObject {
   IR* graph() const { return op_->graph_ptr(); }
 
   inline static constexpr char kRangeOpId[] = "range";
+  inline static constexpr char kMapOpId[] = "map";
   inline static constexpr char kBlockingAggOpId[] = "agg";
   inline static constexpr char kRangeAggOpId[] = "range_agg";
   inline static constexpr char kLimitOpId[] = "limit";
@@ -109,6 +110,27 @@ class RangeHandler {
    */
   static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
 };
+
+// TODO(philkuz) (PL-1036) remove this upon availability of new syntax.
+/**
+ * @brief Implements the old map operator logic. This will be deprecated soon - but to reduce the
+ * amount of changes for a pyobject switch over this makes it easier.
+ *
+ */
+class OldMapHandler {
+ public:
+  /**
+   * @brief Evaluates the old map function.
+   *
+   * @param df the dataframe that's a parent to the map function.
+   * @param ast the ast node that signifies where the query was written
+   * @param args the arguments for map()
+   * @return StatusOr<QLObjectPtr>
+   */
+
+  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

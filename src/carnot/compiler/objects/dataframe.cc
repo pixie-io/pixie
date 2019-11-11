@@ -41,6 +41,17 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       /* has_kwargs */ false,
       std::bind(&RangeHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kRangeOpId, rangefn);
+
+  // TODO(philkuz) (PL-1036) remove this upon availability of new syntax.
+  /**
+   * # Equivalent to the python method method syntax:
+   * def map(self, fn):
+   *     ...
+   */
+  std::shared_ptr<FuncObject> mapfn(new FuncObject(
+      kMapOpId, {"fn"}, {}, /* has_kwargs */ false,
+      std::bind(&OldMapHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kMapOpId, mapfn);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
@@ -175,6 +186,24 @@ StatusOr<QLObjectPtr> RangeHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
   PL_ASSIGN_OR_RETURN(RangeIR * range_op, df->graph()->MakeNode<RangeIR>(ast));
   PL_RETURN_IF_ERROR(range_op->Init(df->op(), start_expr, stop_expr));
   return StatusOr(std::make_shared<Dataframe>(range_op));
+}
+
+StatusOr<QLObjectPtr> OldMapHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                          const ParsedArgs& args) {
+  IRNode* lambda_func = args.GetArg("fn");
+  if (!Match(lambda_func, Lambda())) {
+    return lambda_func->CreateIRNodeError("'fn' must be a lambda");
+  }
+  LambdaIR* lambda = static_cast<LambdaIR*>(lambda_func);
+  if (!lambda->HasDictBody()) {
+    return lambda->CreateIRNodeError("'fn' argument error, lambda must have a dictionary body");
+  }
+
+  PL_ASSIGN_OR_RETURN(MapIR * map_op, df->graph()->MakeNode<MapIR>(ast));
+  PL_RETURN_IF_ERROR(map_op->Init(df->op(), lambda->col_exprs()));
+  // Delete the lambda.
+  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(lambda->id()));
+  return StatusOr(std::make_shared<Dataframe>(map_op));
 }
 
 }  // namespace compiler
