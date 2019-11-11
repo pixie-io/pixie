@@ -1,0 +1,23 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library_internal", "pl_cc_test")
+
+pl_cc_library_internal(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.h",
+            "*.cc",
+        ],
+        exclude = ["**/*_test.cc"],
+    ),
+    deps = [
+        "//src/common/base:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "thread_pool_test",
+    srcs = ["thread_pool_test.cc"],
+    deps = [":cc_library"],
+)
