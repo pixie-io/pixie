@@ -25,11 +25,12 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
    * def agg(self, **kwargs):
    *     ...
    */
-  std::shared_ptr<FuncObject> aggfn(new FuncObject(
-      kBlockingAggOpId, {}, {},
-      /* has_kwargs */ true,
-      std::bind(&AggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  AddMethod(kBlockingAggOpId, aggfn);
+  // TODO(philkuz) (PL-1128) re-enable this when new agg syntax is supported.
+  // std::shared_ptr<FuncObject> aggfn(new FuncObject(
+  //     kBlockingAggOpId, {}, {},
+  //     /* has_kwargs */ true,
+  //     std::bind(&AggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  // AddMethod(kBlockingAggOpId, aggfn);
 
   /**
    * # Equivalent to the python method method syntax:
@@ -73,6 +74,18 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       kLimitOpId, {"rows"}, {}, /* has_kwargs */ false,
       std::bind(&LimitHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kLimitOpId, limitfn);
+
+  // TODO(philkuz) (PL-1128) disable this when new agg syntax is supported.
+  /**
+   * # Equivalent to the python method method syntax:
+   * def agg(self, by, fn):
+   *     ...
+   */
+  std::shared_ptr<FuncObject> aggfn(new FuncObject(
+      kBlockingAggOpId, {"by", "fn"}, {{"by", "lambda x : []"}},
+      /* has_kwargs */ false,
+      std::bind(&OldAggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kBlockingAggOpId, aggfn);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
@@ -263,6 +276,54 @@ StatusOr<QLObjectPtr> LimitHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
   // Delete the integer node.
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(rows_node->id()));
   return StatusOr(std::make_shared<Dataframe>(limit_op));
+}
+
+StatusOr<QLObjectPtr> OldAggHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                          const ParsedArgs& args) {
+  IRNode* by_func = args.GetArg("by");
+  IRNode* fn_func = args.GetArg("fn");
+  if (!Match(by_func, Lambda())) {
+    return by_func->CreateIRNodeError("'by' must be a lambda");
+  }
+  if (!Match(fn_func, Lambda())) {
+    return fn_func->CreateIRNodeError("'fn' must be a lambda");
+  }
+  LambdaIR* fn = static_cast<LambdaIR*>(fn_func);
+  if (!fn->HasDictBody()) {
+    return fn->CreateIRNodeError("'fn' argument error, lambda must have a dictionary body");
+  }
+
+  LambdaIR* by = static_cast<LambdaIR*>(by_func);
+  if (by->HasDictBody()) {
+    return by->CreateIRNodeError("'by' argument error, lambda cannot have a dictionary body");
+  }
+
+  // Have to remove the edges from the by lambda.
+  PL_ASSIGN_OR_RETURN(ExpressionIR * by_expr, by->GetDefaultExpr());
+  PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> groups, SetupGroups(by_expr));
+
+  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_op, df->graph()->MakeNode<BlockingAggIR>(ast));
+  PL_RETURN_IF_ERROR(agg_op->Init(df->op(), groups, fn->col_exprs()));
+  // Delete the by.
+  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(by->id()));
+  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(fn->id()));
+  return StatusOr(std::make_shared<Dataframe>(agg_op));
+}
+
+StatusOr<std::vector<ColumnIR*>> OldAggHandler::SetupGroups(ExpressionIR* group_by_expr) {
+  std::vector<ColumnIR*> groups;
+  if (Match(group_by_expr, ListWithChildren(ColumnNode()))) {
+    for (ExpressionIR* child : static_cast<ListIR*>(group_by_expr)->children()) {
+      groups.push_back(static_cast<ColumnIR*>(child));
+    }
+    PL_RETURN_IF_ERROR(group_by_expr->graph_ptr()->DeleteNode(group_by_expr->id()));
+  } else if (Match(group_by_expr, ColumnNode())) {
+    groups.push_back(static_cast<ColumnIR*>(group_by_expr));
+  } else {
+    return group_by_expr->CreateIRNodeError(
+        "'by' lambda must contain a column or a list of columns");
+  }
+  return groups;
 }
 
 }  // namespace compiler

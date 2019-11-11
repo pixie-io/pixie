@@ -48,7 +48,8 @@ TEST_F(DataframeTest, MergeTest) {
   EXPECT_THAT(join->suffix_strs(), ElementsAre("_x", "_y"));
 }
 
-TEST_F(DataframeTest, AggTest) {
+// TODO(philkuz) (PL-1128) re-enable when we switch from old agg to new agg.
+TEST_F(DataframeTest, DISABLED_AggTest) {
   MemorySourceIR* src = MakeMemSource();
   std::shared_ptr<QLObject> srcdf = std::make_shared<Dataframe>(src);
   auto get_method_status = srcdf->GetMethod("agg");
@@ -87,7 +88,7 @@ TEST_F(DataframeTest, AggTest) {
   ASSERT_THAT(col_names, UnorderedElementsAre("col1", "col2"));
 }
 
-TEST_F(DataframeTest, AggFailsWithPosArgs) {
+TEST_F(DataframeTest, DISABLED_AggFailsWithPosArgs) {
   MemorySourceIR* src = MakeMemSource();
   std::shared_ptr<QLObject> srcdf = std::make_shared<Dataframe>(src);
   auto get_method_status = srcdf->GetMethod("agg");
@@ -551,6 +552,236 @@ TEST_F(DataframeTest, LimitCall) {
   EXPECT_EQ(limit->limit_value(), 1234);
 
   EXPECT_FALSE(graph->HasNode(limit_int_node_id));
+}
+
+using OldAggTest = DataframeTest;
+
+TEST_F(OldAggTest, CreateOldAggSingleGroupByColumn) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
+  auto status_column = MakeColumn("http_status", 0);
+
+  auto fn = MakeLambda({{"latency", latency_mean}});
+  auto by = MakeLambda(status_column);
+
+  // Save ids of nodes that should be removed
+  int64_t fn_lambda_id = fn->id();
+  int64_t by_lambda_id = by->id();
+
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+  args.AddArg("by", by);
+
+  auto status = OldAggHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto agg_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(agg_obj->op(), BlockingAgg()));
+  BlockingAggIR* agg = static_cast<BlockingAggIR*>(agg_obj->op());
+
+  EXPECT_EQ(agg->parents()[0], src);
+  EXPECT_THAT(agg->groups(), ElementsAre(status_column));
+
+  EXPECT_FALSE(graph->HasNode(fn_lambda_id));
+  EXPECT_FALSE(graph->HasNode(by_lambda_id));
+  ASSERT_EQ(agg->aggregate_expressions().size(), 1UL);
+  EXPECT_EQ(agg->aggregate_expressions()[0].node, latency_mean);
+}
+
+TEST_F(OldAggTest, CreateOldAggMultipleGroupByColumns) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
+  auto status_column = MakeColumn("http_status", 0);
+  auto service_column = MakeColumn("service", 0);
+  auto group_by_columns = MakeList(service_column, status_column);
+
+  auto fn = MakeLambda({{"latency", latency_mean}});
+  auto by = MakeLambda(group_by_columns);
+
+  // Save ids of nodes that should be removed
+  int64_t fn_lambda_id = fn->id();
+  int64_t by_lambda_id = by->id();
+  int64_t group_by_list_id = group_by_columns->id();
+
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+  args.AddArg("by", by);
+
+  auto status = OldAggHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto agg_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(agg_obj->op(), BlockingAgg()));
+  BlockingAggIR* agg = static_cast<BlockingAggIR*>(agg_obj->op());
+
+  EXPECT_EQ(agg->parents()[0], src);
+  EXPECT_EQ(agg->aggregate_expressions()[0].node, latency_mean);
+  EXPECT_THAT(agg->groups(), ElementsAre(service_column, status_column));
+
+  EXPECT_FALSE(graph->HasNode(fn_lambda_id));
+  EXPECT_FALSE(graph->HasNode(by_lambda_id));
+  EXPECT_FALSE(graph->HasNode(group_by_list_id));
+}
+
+TEST_F(OldAggTest, OldAggGroupByArgNotAColumn) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
+
+  auto fn = MakeLambda({{"latency", latency_mean}});
+  auto by = MakeLambda(MakeInt(10));
+
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+  args.AddArg("by", by);
+
+  auto status = OldAggHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(),
+              HasCompilerError("'by' lambda must contain a column or a list of columns"));
+}
+
+TEST_F(OldAggTest, OldAggGroupByArgListChildNotAColumn) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
+
+  auto fn = MakeLambda({{"latency", latency_mean}});
+  auto by = MakeLambda(MakeList(MakeInt(10)));
+
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+  args.AddArg("by", by);
+
+  auto status = OldAggHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(),
+              HasCompilerError("'by' lambda must contain a column or a list of columns"));
+}
+
+TEST_F(OldAggTest, OldAggWithNonLambdaAggFn) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
+  auto status_column = MakeColumn("http_status", 0);
+
+  auto by = MakeLambda(status_column);
+
+  ParsedArgs args;
+  args.AddArg("fn", latency_mean);
+  args.AddArg("by", by);
+
+  auto status = OldAggHandler::Eval(srcdf.get(), ast, args);
+
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'fn' must be a lambda"));
+}
+
+TEST_F(OldAggTest, OldAggWithNonLambdaByFn) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
+  auto status_column = MakeColumn("http_status", 0);
+
+  auto fn = MakeLambda({{"latency", latency_mean}});
+
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+  args.AddArg("by", status_column);
+
+  auto status = OldAggHandler::Eval(srcdf.get(), ast, args);
+
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'by' must be a lambda"));
+}
+
+TEST_F(OldAggTest, OldAggFnArgWithLambdaNonDictBody) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
+  auto status_column = MakeColumn("http_status", 0);
+
+  auto fn = MakeLambda(latency_mean);
+  auto by = MakeLambda(status_column);
+
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+  args.AddArg("by", by);
+
+  auto status = OldAggHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(),
+              HasCompilerError("'fn' argument error, lambda must have a dictionary body"));
+}
+
+TEST_F(OldAggTest, OldAggByArgWithLambdaDictBody) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
+  auto status_column = MakeColumn("http_status", 0);
+
+  auto fn = MakeLambda({{"latency", latency_mean}});
+  auto by = MakeLambda({{"status", status_column}});
+
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+  args.AddArg("by", by);
+
+  auto status = OldAggHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(),
+              HasCompilerError("'by' argument error, lambda cannot have a dictionary body"));
+}
+
+TEST_F(DataframeTest, OldAggCall) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
+  auto status_column = MakeColumn("http_status", 0);
+
+  auto fn = MakeLambda({{"latency", latency_mean}});
+  auto by = MakeLambda(status_column);
+
+  // Save ids of nodes that should be removed
+  int64_t fn_lambda_id = fn->id();
+  int64_t by_lambda_id = by->id();
+
+  ArgMap args{{}, {by, fn}};
+
+  auto get_method_status = srcdf->GetMethod("agg");
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  auto status = func_obj->Call(args, ast);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto agg_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(agg_obj->op(), BlockingAgg()));
+  BlockingAggIR* agg = static_cast<BlockingAggIR*>(agg_obj->op());
+
+  EXPECT_EQ(agg->parents()[0], src);
+  EXPECT_THAT(agg->groups(), ElementsAre(status_column));
+  EXPECT_FALSE(graph->HasNode(fn_lambda_id));
+  EXPECT_FALSE(graph->HasNode(by_lambda_id));
+
+  ASSERT_EQ(agg->aggregate_expressions().size(), 1);
+  EXPECT_EQ(agg->aggregate_expressions()[0].node, latency_mean);
 }
 
 }  // namespace compiler
