@@ -972,27 +972,21 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
 
   // First packet: number of columns in the query.
   events.push_back(InitRecvEvent(
-      mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::GenLengthEncodedInt(1))));
+      mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedInt(1))));
   // The column def packet (a bunch of length-encoded strings).
   events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(
-      seq_id++, ConstStringView("\x03"
-                                "def"
-                                "\x09"
-                                "employees"
-                                "\x09"
-                                "employees"
-                                "\x09"
-                                "employees"
-                                "\x06"
-                                "emp_no"
-                                "\x06"
-                                "emp_no"
-                                "\x0C"
-                                "\x3F\x00\x0B\x00\x00\x00\x03\x03\x50\x00\x00\x00"))));
+      seq_id++, mysql::testutils::LengthEncodedString("def") +
+                    mysql::testutils::LengthEncodedString("employees") +
+                    mysql::testutils::LengthEncodedString("employees") +
+                    mysql::testutils::LengthEncodedString("employees") +
+                    mysql::testutils::LengthEncodedString("emp_no") +
+                    mysql::testutils::LengthEncodedString("emp_no") +
+                    mysql::testutils::LengthEncodedString(
+                        ConstStringView("\x3F\x00\x0B\x00\x00\x00\x03\x03\x50\x00\x00\x00")))));
   // A bunch of resultset rows.
   for (int id = 10001; id < 19999; ++id) {
     events.push_back(InitRecvEvent(
-        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::GenLengthEncodedInt(id))));
+        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedInt(id))));
   }
   // Final OK/EOF packet.
   events.push_back(InitRecvEvent(
@@ -1051,18 +1045,16 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
   {
     // First packet: number of columns in the query.
     events.push_back(InitRecvEvent(
-        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::GenLengthEncodedInt(1))));
+        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedInt(1))));
     // The column def packet (a bunch of length-encoded strings).
     events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(
         seq_id++,
-        ConstStringView(
-            "\x03"
-            "def"
-            "\x00\x00\x00\x01\x31\x00\x0C\x3F\x00\x01\x00\x00\x00\x08\x81\x00\x00\x00\x00"))));
+        mysql::testutils::LengthEncodedString("def") +
+            ConstString(
+                "\x00\x00\x00\x01\x31\x00\x0C\x3F\x00\x01\x00\x00\x00\x08\x81\x00\x00\x00\x00"))));
     // A resultset row.
-    events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(seq_id++,
-                                                                  "\x01"
-                                                                  "1")));
+    events.push_back(InitRecvEvent(
+        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedString("1"))));
     // OK/EOF packet with SERVER_MORE_RESULTS_EXISTS flag set.
     events.push_back(InitRecvEvent(
         mysql::testutils::GenRawPacket(seq_id++, ConstStringView("\xFE\x00\x00\x0A\x00\x00\x00"))));
@@ -1072,18 +1064,16 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
   {
     // First packet: number of columns in the query.
     events.push_back(InitRecvEvent(
-        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::GenLengthEncodedInt(1))));
+        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedInt(1))));
     // The column def packet (a bunch of length-encoded strings).
     events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(
         seq_id++,
-        ConstStringView(
-            "\x03"
-            "def"
-            "\x00\x00\x00\x01\x31\x00\x0C\x3F\x00\x01\x00\x00\x00\x08\x81\x00\x00\x00\x00"))));
+        mysql::testutils::LengthEncodedString("def") +
+            ConstString(
+                "\x00\x00\x00\x01\x31\x00\x0C\x3F\x00\x01\x00\x00\x00\x08\x81\x00\x00\x00\x00"))));
     // A resultset row.
-    events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(seq_id++,
-                                                                  "\x01"
-                                                                  "1")));
+    events.push_back(InitRecvEvent(
+        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedString("1"))));
     // OK/EOF packet with SERVER_MORE_RESULTS_EXISTS flag set.
     events.push_back(InitRecvEvent(
         mysql::testutils::GenRawPacket(seq_id++, ConstStringView("\xFE\x00\x00\x0A\x00\x00\x00"))));

@@ -11,7 +11,18 @@ namespace stirling {
 namespace mysql {
 namespace testutils {
 
-std::string GenLengthEncodedInt(int num);
+/**
+ * Generates the bytes of a length-encoded integer.
+ * https://dev.mysql.com/doc/internals/en/integer.html#length-encoded-integer
+ */
+std::string LengthEncodedInt(int num);
+
+/**
+ * Generates the bytes of a length-encoded string, which consists of a
+ * length-encoded-integer representing the size of the string, followed by the string contents.
+ * https://dev.mysql.com/doc/internals/en/string.html
+ */
+std::string LengthEncodedString(std::string_view s);
 
 std::string GenRawPacket(uint8_t packet_num, std::string_view msg);
 

@@ -12,6 +12,32 @@ namespace stirling {
 namespace mysql {
 namespace testutils {
 
+std::string LengthEncodedInt(int num) {
+  DCHECK(num < pow(2, 64));
+  std::string s;
+  if (num < 251) {
+    char count_bytes[1];
+    utils::IntToLittleEndianByteStr(num, count_bytes);
+    return std::string(CharArrayStringView(count_bytes));
+  } else if (num < pow(2, 16)) {
+    char count_bytes[2];
+    utils::IntToLittleEndianByteStr(num, count_bytes);
+    return absl::StrCat("\xfc", CharArrayStringView(count_bytes));
+  } else if (num < pow(2, 24)) {
+    char count_bytes[3];
+    utils::IntToLittleEndianByteStr(num, count_bytes);
+    return absl::StrCat("\xfd", CharArrayStringView(count_bytes));
+  } else {
+    char count_bytes[8];
+    utils::IntToLittleEndianByteStr(num, count_bytes);
+    return absl::StrCat("\xfe", CharArrayStringView(count_bytes));
+  }
+}
+
+std::string LengthEncodedString(std::string_view s) {
+  return absl::StrCat(LengthEncodedInt(s.size()), s);
+}
+
 /**
  * These Gen functions help generate raw string or Packet needed for testing the MySQL parser
  * or stitcher, respectively. The caller are expected to use structured events in test_data.h
@@ -45,37 +71,12 @@ std::string GenRequestPacket(MySQLEventType command, std::string_view msg) {
 }
 
 /**
- * Generates the bytes of a length-encoded integer.
- * https://dev.mysql.com/doc/internals/en/integer.html#length-encoded-integer
- */
-std::string GenLengthEncodedInt(int num) {
-  DCHECK(num < pow(2, 64));
-  if (num < 251) {
-    char count_bytes[1];
-    utils::IntToLittleEndianByteStr(num, count_bytes);
-    return std::string(CharArrayStringView(count_bytes));
-  } else if (num < pow(2, 16)) {
-    char count_bytes[2];
-    utils::IntToLittleEndianByteStr(num, count_bytes);
-    return absl::StrCat("fc", CharArrayStringView(count_bytes));
-  } else if (num < pow(2, 24)) {
-    char count_bytes[3];
-    utils::IntToLittleEndianByteStr(num, count_bytes);
-    return absl::StrCat("fd", CharArrayStringView(count_bytes));
-  } else {
-    char count_bytes[8];
-    utils::IntToLittleEndianByteStr(num, count_bytes);
-    return absl::StrCat("fe", CharArrayStringView(count_bytes));
-  }
-}
-
-/**
  * Generates the header packet of Resultset response. It contains num of cols.
  */
 Packet GenCountPacket(uint8_t seq_id, int num_col) {
   Packet p;
   p.sequence_id = seq_id;
-  p.msg = GenLengthEncodedInt(num_col);
+  p.msg = LengthEncodedInt(num_col);
   return p;
 }
 
@@ -194,7 +195,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
     }
   }
   for (const StmtExecuteParam& param : req.params) {
-    msg += GenLengthEncodedInt(param.value.size());
+    msg += LengthEncodedInt(param.value.size());
     msg += param.value;
   }
   Packet p;

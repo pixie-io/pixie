@@ -5,6 +5,7 @@
 #include <vector>
 #include "src/common/base/base.h"
 #include "src/stirling/mysql/mysql_types.h"
+#include "src/stirling/mysql/test_utils.h"
 
 namespace pl {
 namespace stirling {
@@ -35,48 +36,32 @@ const StmtPrepareRespHeader kStmtPrepareRespHeader{
 // The following columns definitions and resultset rows are from real packet capture, but the
 // contents don't really matter to the functionality of the test.
 const std::vector<ColDefinition> kStmtPrepareParamDefs{
-    ColDefinition{ConstString(
-        "\x03"
-        "def"
-        "\x00\x00\x00\x01\x3f\x00\x0c\x3f\x00\x00\x00\x00\x00\xfd\x80\x00\x00\x00\x00")},
-    ColDefinition{ConstString(
-        "\x03"
-        "def"
-        "\x00\x00\x00\x01\x3f\x00\x0c\x3f\x00\x00\x00\x00\x00\xfd\x80\x00\x00\x00\x00")}};
+    ColDefinition{
+        testutils::LengthEncodedString("def") +
+        ConstString(
+            "\x00\x00\x00\x01\x3f\x00\x0c\x3f\x00\x00\x00\x00\x00\xfd\x80\x00\x00\x00\x00")},
+    ColDefinition{
+        testutils::LengthEncodedString("def") +
+        ConstString(
+            "\x00\x00\x00\x01\x3f\x00\x0c\x3f\x00\x00\x00\x00\x00\xfd\x80\x00\x00\x00\x00")}};
 
 const std::vector<ColDefinition> kStmtPrepareColDefs{
-    ColDefinition{ConstString("\x03"
-                              "def"
-                              "\x07"
-                              "socksdb"
-                              "\x04"
-                              "sock"
-                              "\x04"
-                              "sock"
-                              "\x02"
-                              "id"
-                              "\x07"
-                              "sock_id"
-                              "\x0c\x21\x00\x78\x00\x00\x00\xfd\x03\x50\x00\x00\x00")},
-    ColDefinition{ConstString("\x03"
-                              "def"
-                              "\x07"
-                              "socksdb"
-                              "\x04"
-                              "sock"
-                              "\x04"
-                              "sock"
-                              "\x04"
-                              "name"
-                              "\x04"
-                              "name"
-                              "\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00")}};
+    ColDefinition{testutils::LengthEncodedString("def") +
+                  testutils::LengthEncodedString("socksdb") +
+                  testutils::LengthEncodedString("sock") + testutils::LengthEncodedString("sock") +
+                  testutils::LengthEncodedString("id") + testutils::LengthEncodedString("sock_id") +
+                  ConstString("\x0c\x21\x00\x78\x00\x00\x00\xfd\x03\x50\x00\x00\x00")},
+    ColDefinition{testutils::LengthEncodedString("def") +
+                  testutils::LengthEncodedString("socksdb") +
+                  testutils::LengthEncodedString("sock") + testutils::LengthEncodedString("sock") +
+                  testutils::LengthEncodedString("name") + testutils::LengthEncodedString("name") +
+                  ConstString("\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00")}};
 
 const StmtPrepareOKResponse kStmtPrepareResponse{.header = kStmtPrepareRespHeader,
                                                  .col_defs = kStmtPrepareColDefs,
                                                  .param_defs = kStmtPrepareParamDefs};
 
-PreparedStatement kPreparedStatement{
+const PreparedStatement kPreparedStatement{
     .request = kStmtPrepareRequest.msg,
     .response = kStmtPrepareResponse,
 };
@@ -90,35 +75,20 @@ const std::vector<StmtExecuteParam> kStmtExecuteParams = {{MySQLColType::kString
 const StmtExecuteRequest kStmtExecuteRequest{.stmt_id = kStmtID, .params = kStmtExecuteParams};
 
 const std::vector<ColDefinition> kStmtExecuteColDefs = {
-    ColDefinition{ConstString("\x03"
-                              "def"
-                              "\x07"
-                              "socksdb"
-                              "\x04"
-                              "sock"
-                              "\x04"
-                              "sock"
-                              "\x02"
-                              "id"
-                              "\x07"
-                              "sock_id"
-                              "\x0c\x21\x00\x78\x00\x00\x00\xfd\x01\x10\x00\x00\x00")},
-    ColDefinition{ConstString("\x03"
-                              "def"
-                              "\x07"
-                              "socksdb\n"
-                              "\x04"
-                              "sock"
-                              "\x04"
-                              "sock"
-                              "\x04"
-                              "name"
-                              "\x04"
-                              "name"
-                              "\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00")}};
+    ColDefinition{testutils::LengthEncodedString("def") +
+                  testutils::LengthEncodedString("socksdb") +
+                  testutils::LengthEncodedString("sock") + testutils::LengthEncodedString("sock") +
+                  testutils::LengthEncodedString("id") + testutils::LengthEncodedString("sock_id") +
+                  ConstString("\x0c\x21\x00\x78\x00\x00\x00\xfd\x01\x10\x00\x00\x00")},
+    ColDefinition{testutils::LengthEncodedString("def") +
+                  testutils::LengthEncodedString("socksdb") +
+                  testutils::LengthEncodedString("sock") + testutils::LengthEncodedString("sock") +
+                  testutils::LengthEncodedString("name") + testutils::LengthEncodedString("name") +
+                  ConstString("\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00")}};
 
-const std::vector<ResultsetRow> kStmtExecuteResultsetRows = {ResultsetRow{ConstString("\x03id1")},
-                                                             ResultsetRow{ConstString("\x03id2")}};
+const std::vector<ResultsetRow> kStmtExecuteResultsetRows = {
+    ResultsetRow{testutils::LengthEncodedString("id1")},
+    ResultsetRow{testutils::LengthEncodedString("id2")}};
 
 const Resultset kStmtExecuteResultset{
     .num_col = 2, .col_defs = kStmtExecuteColDefs, .results = kStmtExecuteResultsetRows};
@@ -134,25 +104,16 @@ const StmtCloseRequest kStmtCloseRequest{.stmt_id = kStmtID};
 const StringRequest kQueryRequest{.msg = "SELECT name FROM tag;"};
 
 const std::vector<ColDefinition> kQueryColDefs = {
-    ColDefinition{ConstString("\x2b\x00\x00\x02"
-                              "\x03"
-                              "def"
-                              "\x07"
-                              "socksdb"
-                              "\x03"
-                              "tag"
-                              "\x03"
-                              "tag"
-                              "\x04"
-                              "name"
-                              "\x04"
-                              "name"
-                              "\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00")}};
+    ColDefinition{ConstString("\x2b\x00\x00\x02") + testutils::LengthEncodedString("def") +
+                  testutils::LengthEncodedString("socksdb") +
+                  testutils::LengthEncodedString("tag") + testutils::LengthEncodedString("tag") +
+                  testutils::LengthEncodedString("name") + testutils::LengthEncodedString("name") +
+                  ConstString("\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00")}};
 
 const std::vector<ResultsetRow> kQueryResultsetRows = {
-    ResultsetRow{ConstString("\x05brown")},
-    ResultsetRow{ConstString("\x04geek")},
-    ResultsetRow{ConstString("\x06formal")},
+    ResultsetRow{testutils::LengthEncodedString("brown")},
+    ResultsetRow{testutils::LengthEncodedString("geek")},
+    ResultsetRow{testutils::LengthEncodedString("formal")},
 };
 
 const Resultset kQueryResultset{
