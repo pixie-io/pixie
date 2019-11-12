@@ -379,7 +379,6 @@ Status Controller::Run() {
   return Status::OK();
 }
 
-
 Status Controller::InitThrowaway() {
   pl::stirling::stirlingpb::Publish publish_pb;
   stirling_->GetPublishProto(&publish_pb);
@@ -398,6 +397,9 @@ Status Controller::InitThrowaway() {
 
 Status Controller::Stop(std::chrono::milliseconds timeout) {
   keep_alive_ = false;
+  if (stirling_) {
+    stirling_->Stop();
+  }
 
   // Wait for a limited amount of time for main thread to stop processing.
   std::chrono::time_point expiration_time = std::chrono::steady_clock::now() + timeout;

@@ -1,6 +1,5 @@
 #include <grpcpp/grpcpp.h>
 #include <algorithm>
-#include <fstream>
 
 #include <sole.hpp>
 
@@ -11,10 +10,6 @@
 #include "src/common/base/base.h"
 #include "src/common/nats/nats.h"
 #include "src/shared/version/version.h"
-
-PL_SUPPRESS_WARNINGS_START()
-#include "src/carnotpb/carnot.grpc.pb.h"
-PL_SUPPRESS_WARNINGS_END();
 
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
               "The host address of the nats cluster");
@@ -33,14 +28,10 @@ using ::pl::vizier::agent::Controller;
 using ::pl::vizier::agent::SSL;
 using ::pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService;
 
-Stirling* g_stirling = nullptr;
 Controller* g_controller = nullptr;
 
 // Include any clean-up items after a signal.
 void SignalHandler(int signum) {
-  if (g_stirling != nullptr) {
-    g_stirling->Stop();
-  }
   if (g_controller != nullptr) {
     // Give a limited amount of time for the signal to stop,
     // since our death is imminent.
@@ -53,13 +44,33 @@ void SignalHandler(int signum) {
   exit(signum);
 }
 
-int main(int argc, char** argv) {
+void RegisterSignalHandlers() {
   signal(SIGINT, SignalHandler);
   signal(SIGQUIT, SignalHandler);
   signal(SIGTERM, SignalHandler);
   signal(SIGHUP, SignalHandler);
   // TODO(oazizi): Handle cases like SIGSEGV, and similar.
   // TODO(oazizi): Create a separate signal handler thread.
+}
+
+std::unique_ptr<QueryBrokerService::Stub> ConnectToQueryBroker(
+    const std::string query_broker_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
+  // We need to move the channel here since gRPC mocking is done by the stub.
+  auto chan = grpc::CreateChannel(query_broker_addr, channel_creds);
+  // Try to connect to the query broker.
+  grpc_connectivity_state state = chan->GetState(true);
+  while (state != grpc_connectivity_state::GRPC_CHANNEL_READY) {
+    LOG(ERROR) << "Failed to connect to query broker at: " << query_broker_addr;
+    // Do a small sleep to avoid busy loop.
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    state = chan->GetState(true);
+  }
+  LOG(INFO) << "Connected to query broker at: " << query_broker_addr;
+  return std::make_unique<QueryBrokerService::Stub>(chan);
+}
+
+int main(int argc, char** argv) {
+  RegisterSignalHandlers();
 
   pl::InitEnvironmentOrDie(&argc, argv);
   LOG(INFO) << "Pixie Lab Agent: " << pl::VersionInfo::VersionString();
@@ -78,9 +89,6 @@ int main(int argc, char** argv) {
   auto carnot = pl::carnot::Carnot::Create(table_store, stub_generator).ConsumeValueOrDie();
   auto stirling = pl::stirling::Stirling::Create(pl::stirling::CreateProdSourceRegistry());
 
-  // Assign global variable for signal handlers.
-  g_stirling = stirling.get();
-
   // Store the sirling ptr b/c we need a bit later to start the thread.
   auto stirling_ptr = stirling.get();
 
@@ -88,18 +96,7 @@ int main(int argc, char** argv) {
   if (FLAGS_query_broker_addr.empty()) {
     LOG(WARNING) << "--query_broker_addr is empty, skip connecting to query broker.";
   } else {
-    // We need to move the channel here since gRPC mocking is done by the stub.
-    auto chan = grpc::CreateChannel(FLAGS_query_broker_addr, channel_creds);
-    // Try to connect to vizier.
-    grpc_connectivity_state state = chan->GetState(true);
-    while (state != grpc_connectivity_state::GRPC_CHANNEL_READY) {
-      LOG(ERROR) << "Failed to connect to query broker at: " << FLAGS_query_broker_addr;
-      // Do a small sleep to avoid busy loop.
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-      state = chan->GetState(true);
-    }
-    LOG(INFO) << "Connected to query broker at: " << FLAGS_query_broker_addr;
-    query_broker_stub = std::make_unique<QueryBrokerService::Stub>(chan);
+    query_broker_stub = ConnectToQueryBroker(FLAGS_query_broker_addr, channel_creds);
   }
 
   sole::uuid agent_id = sole::uuid4();
