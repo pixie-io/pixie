@@ -18,7 +18,7 @@ namespace compiler {
 // are QLObjects themselves. Fully declared in "src/carnot/compiler/objects/funcobject.h".
 class FuncObject;
 
-enum class QLObjectType { kMisc = 0, kDataframe, kFunction };
+enum class QLObjectType { kMisc = 0, kDataframe, kFunction, kNone };
 
 class TypeDescriptor {
  public:
@@ -84,6 +84,8 @@ class QLObject {
    */
   bool HasNode() const { return node_ != nullptr; }
 
+  bool HasAstPtr() const { return ast_ != nullptr; }
+
   /**
    * @brief Creates an error for this objects. Packages checks to make sure you have an ir node for
    * line,col error resporting. Defaults to standard error in case an ir node is nonexistant..
@@ -94,6 +96,9 @@ class QLObject {
   Status CreateError(Args... args) const {
     if (HasNode()) {
       return node_->CreateIRNodeError(args...);
+    }
+    if (HasAstPtr()) {
+      return CreateAstError(ast_, args...);
     }
     return error::InvalidArgument(args...);
   }
@@ -108,9 +113,17 @@ class QLObject {
    * @param node the node to store in the QLObject. Can be null if not necessary for the
    * implementation of the QLObject.
    */
+  QLObject(const TypeDescriptor& type_descriptor, IRNode* node, pypa::AstPtr ast)
+      : type_descriptor_(type_descriptor), node_(node), ast_(ast) {}
+
+  explicit QLObject(const TypeDescriptor& type_descriptor)
+      : QLObject(type_descriptor, nullptr, nullptr) {}
+
   QLObject(const TypeDescriptor& type_descriptor, IRNode* node)
-      : type_descriptor_(type_descriptor), node_(node) {}
-  explicit QLObject(const TypeDescriptor& type_descriptor) : QLObject(type_descriptor, nullptr) {}
+      : QLObject(type_descriptor, node, nullptr) {}
+
+  QLObject(const TypeDescriptor& type_descriptor, pypa::AstPtr ast)
+      : QLObject(type_descriptor, nullptr, ast) {}
 
   /**
    * @brief Adds a method to the object. Used by QLObject derived classes to define methods.
@@ -139,6 +152,7 @@ class QLObject {
   absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> methods_;
   TypeDescriptor type_descriptor_;
   IRNode* node_ = nullptr;
+  pypa::AstPtr ast_ = nullptr;
 };
 
 // Alias for convenience.

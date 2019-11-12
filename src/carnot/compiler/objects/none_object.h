@@ -1,0 +1,39 @@
+#pragma once
+#include <string>
+#include <vector>
+
+#include <pypa/ast/ast.hh>
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+
+#include "src/carnot/compiler/objects/qlobject.h"
+
+namespace pl {
+namespace carnot {
+namespace compiler {
+
+/**
+ * @brief NoneObject represents None in python, the "null" object. This is used as a proxy for void
+ * return type in Python interpretation.
+ *
+ */
+class NoneObject : public QLObject {
+ public:
+  static constexpr TypeDescriptor NoneType = {
+      /* name */ "None",
+      /* type */ QLObjectType::kNone,
+  };
+
+  /**
+   * @brief Construct a None object that represents the null value in Python.
+   *
+   * @param ast the ast ptr for the
+   */
+  explicit NoneObject(pypa::AstPtr ast) : QLObject(NoneType, ast) {}
+
+  explicit NoneObject(IRNode* node) : QLObject(NoneType, node) {}
+};
+
+}  // namespace compiler
+}  // namespace carnot
+}  // namespace pl

@@ -39,3 +39,12 @@ pl_cc_test(
         "//src/carnot/compiler:test_utils",
     ],
 )
+
+pl_cc_test(
+    name = "none_object_test",
+    srcs = ["none_object_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/compiler:test_utils",
+    ],
+)
