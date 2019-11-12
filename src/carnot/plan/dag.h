@@ -79,6 +79,9 @@ class DAG {
   void AddForwardEdge(int64_t from_node, int64_t to_node);
   void AddReverseEdge(int64_t to_node, int64_t from_node);
 
+  void DeleteParentEdges(int64_t to_node);
+  void DeleteDependentEdges(int64_t from_node);
+
   // Store all the integer id's as nodes.
   std::unordered_set<int64_t> nodes_;
 

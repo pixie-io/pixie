@@ -47,8 +47,10 @@ TEST_F(DAGTest, orphans) { EXPECT_EQ(std::unordered_set<int64_t>({20}), dag_.Orp
 TEST_F(DAGTest, delete_node) {
   dag_.DeleteNode(8);
   EXPECT_EQ(std::vector<int64_t>({}), dag_.DependenciesOf(8));
+  EXPECT_EQ(std::vector<int64_t>({}), dag_.ParentsOf(8));
   EXPECT_EQ(std::vector<int64_t>({3}), dag_.DependenciesOf(5));
 }
+
 TEST_F(DAGTest, check_delete_add) {
   dag_.DeleteNode(8);
   EXPECT_FALSE(dag_.HasNode(8));
@@ -126,6 +128,20 @@ TEST_F(DAGTestMultipleSubGraphs, test_independent_graphs) {
   EXPECT_THAT(independent_graphs, UnorderedElementsAre(UnorderedElementsAre(1, 2, 3, 4, 5),
                                                        UnorderedElementsAre(6, 7, 8),
                                                        UnorderedElementsAre(9, 10, 11, 12, 13)));
+}
+
+TEST_F(DAGTestMultipleSubGraphs, delete_node_removes_all_deps) {
+  // When there were two elements as children, this used to fail.
+  dag_.AddEdge(10, 13);
+  EXPECT_EQ(dag_.DependenciesOf(10).size(), 3);
+  EXPECT_EQ(dag_.ParentsOf(10).size(), 1);
+  dag_.DeleteNode(10);
+  EXPECT_EQ(dag_.DependenciesOf(10).size(), 0);
+
+  EXPECT_EQ(dag_.ParentsOf(10).size(), 0);
+  EXPECT_EQ(dag_.ParentsOf(11).size(), 0);
+  EXPECT_EQ(dag_.ParentsOf(12).size(), 0);
+  EXPECT_EQ(dag_.ParentsOf(13).size(), 1);
 }
 
 TEST_F(DAGTest, replace_child_node_edges_test) {

@@ -85,12 +85,9 @@ void DAG::DeleteNode(int64_t node) {
     LOG(WARNING) << absl::StrCat("Node does not exist: ", node);
   }
 
-  for (auto to_node : forward_edges_by_node_[node]) {
-    DeleteEdge(node, to_node);
-  }
-  for (auto from_node : reverse_edges_by_node_[node]) {
-    DeleteEdge(from_node, node);
-  }
+  DeleteParentEdges(node);
+  DeleteDependentEdges(node);
+
   nodes_.erase(node);
 }
 
@@ -108,6 +105,44 @@ void DAG::AddForwardEdge(int64_t from_node, int64_t to_node) {
 
 void DAG::AddReverseEdge(int64_t to_node, int64_t from_node) {
   reverse_edges_by_node_[to_node].push_back(from_node);
+}
+
+void DAG::DeleteParentEdges(int64_t to_node) {
+  // Iterate through all of the parents of to_node and delete the edges.
+  auto& reverse_edges = reverse_edges_by_node_[to_node];
+  auto parent_iter = reverse_edges.begin();
+  while (parent_iter != reverse_edges.end()) {
+    // Find the forward edge for the specific parent of to_node.
+    auto& forward_edges = forward_edges_by_node_[*parent_iter];
+    const auto& node = std::find(begin(forward_edges), end(forward_edges), to_node);
+    if (node != end(forward_edges)) {
+      // Delete parent->to_node edge.
+      forward_edges.erase(node);
+    }
+
+    // Erase points to the next valid iterator.
+    // Delete to_node->parent edge.
+    parent_iter = reverse_edges.erase(parent_iter);
+  }
+}
+
+void DAG::DeleteDependentEdges(int64_t from_node) {
+  // Iterate through all of the dependents of from_node and delete the edges.
+  auto& forward_edges = forward_edges_by_node_[from_node];
+  auto child_iter = forward_edges.begin();
+  while (child_iter != forward_edges.end()) {
+    // Find the reverse edge for the specific dependent of from_node.
+    auto& reverse_edges = reverse_edges_by_node_[*child_iter];
+    const auto& node = std::find(begin(reverse_edges), end(reverse_edges), from_node);
+    if (node != end(reverse_edges)) {
+      // Delete dependent->from_node edge.
+      reverse_edges.erase(node);
+    }
+
+    // Erase points to the next valid iterator.
+    // Delete from_node->dependent edge.
+    child_iter = forward_edges.erase(child_iter);
+  }
 }
 
 void DAG::DeleteEdge(int64_t from_node, int64_t to_node) {
@@ -246,7 +281,7 @@ vector<int64_t> DAG::TopologicalSort() const {
     }
   }
 
-  CHECK(ordered.size() == nodes_.size()) << "Cycle detected in graph";
+  CHECK_EQ(ordered.size(), nodes_.size()) << "Cycle detected in graph";
   return ordered;
 }
 
