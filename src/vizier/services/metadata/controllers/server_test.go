@@ -12,12 +12,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	k8smetadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
+	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 func TestGetAgentInfo(t *testing.T) {
@@ -32,25 +34,35 @@ func TestGetAgentInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
+	u1pb := utils.ProtoFromUUID(&u1)
 
 	agent2IDStr := "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u2, err := uuid.FromString(agent2IDStr)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
+	u2pb := utils.ProtoFromUUID(&u2)
 
-	agents := []controllers.AgentInfo{
-		controllers.AgentInfo{
+	agents := []agentpb.Agent{
+		agentpb.Agent{
 			LastHeartbeatNS: 10,
 			CreateTimeNS:    5,
-			AgentID:         u1,
-			Hostname:        "test_host",
+			Info: &agentpb.AgentInfo{
+				AgentID: u1pb,
+				HostInfo: &agentpb.HostInfo{
+					Hostname: "test_host",
+				},
+			},
 		},
-		controllers.AgentInfo{
+		agentpb.Agent{
 			LastHeartbeatNS: 20,
 			CreateTimeNS:    0,
-			AgentID:         u2,
-			Hostname:        "another_host",
+			Info: &agentpb.AgentInfo{
+				AgentID: u2pb,
+				HostInfo: &agentpb.HostInfo{
+					Hostname: "another_host",
+				},
+			},
 		},
 	}
 

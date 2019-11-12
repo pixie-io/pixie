@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
@@ -83,16 +82,11 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 	// Populate AgentInfoResponse.
 	agentResponses := make([]*metadatapb.AgentStatus, 0)
 	for _, agent := range agents {
-		uuidPb := utils.ProtoFromUUID(&agent.AgentID)
-		if err != nil {
-			log.WithError(err).Error("Could not parse proto from UUID")
-			continue
-		}
 		resp := metadatapb.AgentStatus{
 			Info: &metadatapb.AgentInfo{
-				AgentID: uuidPb,
+				AgentID: agent.Info.AgentID,
 				HostInfo: &metadatapb.HostInfo{
-					Hostname: agent.Hostname,
+					Hostname: agent.Info.HostInfo.Hostname,
 				},
 			},
 			LastHeartbeatNs: currentTime - agent.LastHeartbeatNS,

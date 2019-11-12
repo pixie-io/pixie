@@ -9,7 +9,7 @@ import (
 	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 )
 
@@ -37,7 +37,7 @@ func (m *MockAgentManager) EXPECT() *MockAgentManagerMockRecorder {
 }
 
 // RegisterAgent mocks base method
-func (m *MockAgentManager) RegisterAgent(info *controllers.AgentInfo) (uint32, error) {
+func (m *MockAgentManager) RegisterAgent(info *agentpb.Agent) (uint32, error) {
 	ret := m.ctrl.Call(m, "RegisterAgent", info)
 	ret0, _ := ret[0].(uint32)
 	ret1, _ := ret[1].(error)
@@ -62,7 +62,7 @@ func (mr *MockAgentManagerMockRecorder) UpdateHeartbeat(agentID interface{}) *go
 }
 
 // UpdateAgent mocks base method
-func (m *MockAgentManager) UpdateAgent(info *controllers.AgentInfo) error {
+func (m *MockAgentManager) UpdateAgent(info *agentpb.Agent) error {
 	ret := m.ctrl.Call(m, "UpdateAgent", info)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -86,9 +86,9 @@ func (mr *MockAgentManagerMockRecorder) UpdateAgentState() *gomock.Call {
 }
 
 // GetActiveAgents mocks base method
-func (m *MockAgentManager) GetActiveAgents() ([]controllers.AgentInfo, error) {
+func (m *MockAgentManager) GetActiveAgents() ([]agentpb.Agent, error) {
 	ret := m.ctrl.Call(m, "GetActiveAgents")
-	ret0, _ := ret[0].([]controllers.AgentInfo)
+	ret0, _ := ret[0].([]agentpb.Agent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

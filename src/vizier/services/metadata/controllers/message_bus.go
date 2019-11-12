@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 // MessageBusController handles and responds to any incoming NATS messages.
@@ -176,12 +177,12 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 	}
 
 	// Create agent in agent manager.
-	agentInfo := &AgentInfo{
+	agentInfo := &agentpb.Agent{
+		Info:            m.Info,
 		LastHeartbeatNS: mc.clock.Now().UnixNano(),
 		CreateTimeNS:    mc.clock.Now().UnixNano(),
-		Hostname:        m.Info.HostInfo.Hostname,
-		AgentID:         agentID,
 	}
+
 	asid, err := mc.agentManager.RegisterAgent(agentInfo)
 	if err != nil {
 		log.WithError(err).Error("Could not create agent.")

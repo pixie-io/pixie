@@ -16,12 +16,14 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 var testOptions = server.Options{
@@ -94,11 +96,15 @@ func TestAgentRegisterRequest(t *testing.T) {
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
-	agentInfo := &controllers.AgentInfo{
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "test-host",
+			},
+			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
+		},
 		LastHeartbeatNS: 10,
 		CreateTimeNS:    10,
-		Hostname:        "test-host",
-		AgentID:         u,
 	}
 
 	updatePb := metadatapb.ResourceUpdate{
@@ -156,7 +162,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		RegisterAgent(agentInfo).
-		DoAndReturn(func(info *controllers.AgentInfo) (uint32, error) {
+		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
 			wg.Done()
 			return uint32(1), nil
 		})
@@ -178,27 +184,27 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	wg.Add(2)
 
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-	u, err := uuid.FromString(uuidStr)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
 
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
-	agentInfo := &controllers.AgentInfo{
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "test-host",
+			},
+			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
+		},
 		LastHeartbeatNS: 10,
 		CreateTimeNS:    10,
-		Hostname:        "test-host",
-		AgentID:         u,
 	}
 
 	mockAgtMgr.
 		EXPECT().
 		RegisterAgent(agentInfo).
-		DoAndReturn(func(info *controllers.AgentInfo) (uint32, error) {
+		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
 			wg.Done()
 			return uint32(1), nil
 		})
@@ -295,21 +301,20 @@ func TestAgentCreateFailed(t *testing.T) {
 	defer cleanup()
 
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-	u, err := uuid.FromString(uuidStr)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
 
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-
-	agentInfo := &controllers.AgentInfo{
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "test-host",
+			},
+			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
+		},
 		LastHeartbeatNS: 10,
 		CreateTimeNS:    10,
-		Hostname:        "test-host",
-		AgentID:         u,
 	}
 
 	// Create Metadata Service controller.
@@ -335,7 +340,7 @@ func TestAgentCreateFailed(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		RegisterAgent(agentInfo).
-		DoAndReturn(func(info *controllers.AgentInfo) (uint32, error) {
+		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
 			wg.Done()
 			return uint32(0), errors.New("could not create agent")
 		})

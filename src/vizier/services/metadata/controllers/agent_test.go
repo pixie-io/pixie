@@ -13,6 +13,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -21,6 +22,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, *mock_controllers.MockMetadataStore, func()) {
@@ -83,18 +85,24 @@ func TestRegisterAgent(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
+	upb := utils.ProtoFromUUID(&u)
 
 	mockMds.
 		EXPECT().
 		GetASID().
 		Return(uint32(1), nil)
 
-	agentInfo := &controllers.AgentInfo{
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "localhost",
+			},
+			AgentID: upb,
+		},
 		LastHeartbeatNS: 1,
 		CreateTimeNS:    4,
-		Hostname:        "localhost",
-		AgentID:         u,
 	}
+
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, uint32(1), id)
@@ -131,6 +139,7 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
+	upb := utils.ProtoFromUUID(&u)
 	u2, err := uuid.FromString(testutils.ExistingAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
@@ -141,12 +150,17 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 		GetASID().
 		Return(uint32(1), nil)
 
-	agentInfo := &controllers.AgentInfo{
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "testhost",
+			},
+			AgentID: upb,
+		},
 		LastHeartbeatNS: 1,
 		CreateTimeNS:    4,
-		Hostname:        "testhost",
-		AgentID:         u,
 	}
+
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, uint32(1), id)
@@ -187,12 +201,17 @@ func TestRegisterExistingAgent(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
+	upb := utils.ProtoFromUUID(&u)
 
-	agentInfo := &controllers.AgentInfo{
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "localhost",
+			},
+			AgentID: upb,
+		},
 		LastHeartbeatNS: 1,
 		CreateTimeNS:    4,
-		Hostname:        "localhost",
-		AgentID:         u,
 	}
 	_, err = agtMgr.RegisterAgent(agentInfo)
 	assert.NotNil(t, err)
@@ -349,29 +368,30 @@ func TestGetActiveAgents(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, 2, len(agents))
-	// Check agents contain correct info.
-	u1, err := uuid.FromString(testutils.ExistingAgentUUID)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-	agent1Info := &controllers.AgentInfo{
+
+	agent1Info := agentpb.Agent{
 		LastHeartbeatNS: testutils.HealthyAgentLastHeartbeatNS,
 		CreateTimeNS:    0,
-		AgentID:         u1,
-		Hostname:        "testhost",
+		Info: &agentpb.AgentInfo{
+			AgentID: &uuidpb.UUID{Data: []byte("7ba7b8109dad11d180b400c04fd430c8")},
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "testhost",
+			},
+		},
 	}
-	assert.Equal(t, *agent1Info, agents[0])
-	u2, err := uuid.FromString(testutils.UnhealthyAgentUUID)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-	agent2Info := &controllers.AgentInfo{
+	assert.Equal(t, agent1Info, agents[0])
+
+	agent2Info := agentpb.Agent{
 		LastHeartbeatNS: 0,
 		CreateTimeNS:    0,
-		AgentID:         u2,
-		Hostname:        "anotherhost",
+		Info: &agentpb.AgentInfo{
+			AgentID: &uuidpb.UUID{Data: []byte("8ba7b8109dad11d180b400c04fd430c8")},
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "anotherhost",
+			},
+		},
 	}
-	assert.Equal(t, *agent2Info, agents[1])
+	assert.Equal(t, agent2Info, agents[1])
 }
 
 func TestGetActiveAgentsGetAgentsFailed(t *testing.T) {

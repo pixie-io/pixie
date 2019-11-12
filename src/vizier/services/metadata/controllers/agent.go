@@ -16,20 +16,12 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 // AgentExpirationTimeout is the amount of time that we should wait to receive a heartbeat
 // from an agent before marking it as unhealthy.
 const AgentExpirationTimeout int64 = 1e9 * 60 // 60 seconds in nano-seconds.
-
-// AgentInfo describes information about an agent.
-type AgentInfo struct {
-	// Unix time of the last heart beat (current system clock)
-	LastHeartbeatNS int64
-	CreateTimeNS    int64
-	AgentID         uuid.UUID
-	Hostname        string
-}
 
 // AgentUpdate describes the update info for a given agent.
 type AgentUpdate struct {
@@ -40,20 +32,20 @@ type AgentUpdate struct {
 // AgentManager handles any agent updates and requests.
 type AgentManager interface {
 	// RegisterAgent registers a new agent.
-	RegisterAgent(info *AgentInfo) (uint32, error)
+	RegisterAgent(info *agentpb.Agent) (uint32, error)
 
 	// UpdateHeartbeat updates the agent heartbeat with the current time.
 	UpdateHeartbeat(agentID uuid.UUID) error
 
 	// UpdateAgent updates agent info, such as schema.
-	UpdateAgent(info *AgentInfo) error
+	UpdateAgent(info *agentpb.Agent) error
 
 	// UpdateAgentState will run through all agents and delete those
 	// that are dead.
 	UpdateAgentState() error
 
 	// GetActiveAgents gets all of the current active agents.
-	GetActiveAgents() ([]AgentInfo, error)
+	GetActiveAgents() ([]agentpb.Agent, error)
 
 	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
 	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
@@ -202,11 +194,13 @@ func updateAgentData(agentID uuid.UUID, data *data.AgentData, client *clientv3.C
 }
 
 // RegisterAgent creates a new agent.
-func (m *AgentManagerImpl) RegisterAgent(info *AgentInfo) (asid uint32, err error) {
+func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err error) {
 	ctx := context.Background()
+	info := agent.Info
 
 	// Check if agent already exists.
-	resp, err := m.client.Get(ctx, GetAgentKeyFromUUID(info.AgentID))
+	aUUID := utils.UUIDFromProtoOrNil(info.AgentID)
+	resp, err := m.client.Get(ctx, GetAgentKeyFromUUID(aUUID))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to execute etcd Get")
 	} else if len(resp.Kvs) != 0 {
@@ -214,22 +208,18 @@ func (m *AgentManagerImpl) RegisterAgent(info *AgentInfo) (asid uint32, err erro
 	}
 
 	// Check there's an existing agent for the hostname.
-	resp, err = m.client.Get(ctx, GetHostnameAgentKey(info.Hostname))
+	resp, err = m.client.Get(ctx, GetHostnameAgentKey(info.HostInfo.Hostname))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to execute etcd Get")
 	} else if len(resp.Kvs) != 0 {
 		// Another agent already exists for this hostname. Delete it.
-		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.Hostname)
+		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.HostInfo.Hostname)
 	}
 
-	idPb := utils.ProtoFromUUID(&info.AgentID)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to convert UUID to pb")
-	}
 	infoPb := &data.AgentData{
-		AgentID: idPb,
+		AgentID: info.AgentID,
 		HostInfo: &data.HostInfo{
-			Hostname: info.Hostname,
+			Hostname: info.HostInfo.Hostname,
 		},
 		CreateTimeNS:    m.clock.Now().UnixNano(),
 		LastHeartbeatNS: m.clock.Now().UnixNano(),
@@ -243,9 +233,9 @@ func (m *AgentManagerImpl) RegisterAgent(info *AgentInfo) (asid uint32, err erro
 	mu.Lock(ctx)
 	defer mu.Unlock(context.Background())
 
-	hostnameDNE := clientv3util.KeyMissing(GetHostnameAgentKey(info.Hostname))
-	createHostname := clientv3.OpPut(GetHostnameAgentKey(info.Hostname), info.AgentID.String())
-	createAgent := clientv3.OpPut(GetAgentKeyFromUUID(info.AgentID), string(i))
+	hostnameDNE := clientv3util.KeyMissing(GetHostnameAgentKey(info.HostInfo.Hostname))
+	createHostname := clientv3.OpPut(GetHostnameAgentKey(info.HostInfo.Hostname), aUUID.String())
+	createAgent := clientv3.OpPut(GetAgentKeyFromUUID(aUUID), string(i))
 
 	_, err = m.client.Txn(ctx).If(hostnameDNE).Then(createHostname, createAgent).Commit()
 	if err != nil {
@@ -292,7 +282,7 @@ func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 }
 
 // UpdateAgent updates agent info, such as schema.
-func (m *AgentManagerImpl) UpdateAgent(info *AgentInfo) error {
+func (m *AgentManagerImpl) UpdateAgent(info *agentpb.Agent) error {
 	// TODO(michelle): Implement once we figure out how the agent info (schemas, etc) looks.
 	return nil
 }
@@ -348,8 +338,8 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 }
 
 // GetActiveAgents gets all of the current active agents.
-func (m *AgentManagerImpl) GetActiveAgents() ([]AgentInfo, error) {
-	var agents []AgentInfo
+func (m *AgentManagerImpl) GetActiveAgents() ([]agentpb.Agent, error) {
+	var agents []agentpb.Agent
 
 	agentPbs, err := m.mds.GetAgents()
 	if err != nil {
@@ -357,17 +347,17 @@ func (m *AgentManagerImpl) GetActiveAgents() ([]AgentInfo, error) {
 	}
 
 	for _, agentPb := range *agentPbs {
-		uid, err := utils.UUIDFromProto(agentPb.AgentID)
-		if err != nil {
-			log.WithError(err).Fatal("Could not convert UUID to proto")
-		}
-		info := &AgentInfo{
+		info := agentpb.Agent{
+			Info: &agentpb.AgentInfo{
+				HostInfo: &agentpb.HostInfo{
+					Hostname: agentPb.HostInfo.Hostname,
+				},
+				AgentID: agentPb.AgentID,
+			},
 			LastHeartbeatNS: agentPb.LastHeartbeatNS,
 			CreateTimeNS:    agentPb.CreateTimeNS,
-			AgentID:         uid,
-			Hostname:        agentPb.HostInfo.Hostname,
 		}
-		agents = append(agents, *info)
+		agents = append(agents, info)
 	}
 
 	return agents, nil
