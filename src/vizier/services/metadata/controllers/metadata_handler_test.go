@@ -30,7 +30,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	updatePb := &metadatapb.ResourceUpdate{
+	ag1UpdatePb := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
 				UID:              "ijkl",
@@ -42,8 +42,21 @@ func TestObjectToEndpointsProto(t *testing.T) {
 			},
 		},
 	}
+	ag1Update, err := ag1UpdatePb.Marshal()
 
-	update, err := updatePb.Marshal()
+	ag2UpdatePb := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"efgh"},
+			},
+		},
+	}
+	ag2Update, err := ag2UpdatePb.Marshal()
 
 	mockMds.
 		EXPECT().
@@ -52,8 +65,13 @@ func TestObjectToEndpointsProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetAgentsForHostnames(&[]string{"this-is-a-node", "node-a"}).
-		Return(&[]string{"agent-1", "agent-2"}, nil)
+		GetAgentsForHostnames(&[]string{"this-is-a-node"}).
+		Return(&[]string{"agent-1"}, nil)
+
+	mockMds.
+		EXPECT().
+		GetAgentsForHostnames(&[]string{"node-a"}).
+		Return(&[]string{"agent-2"}, nil)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -61,7 +79,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-1", string(update)).
+		AddToAgentUpdateQueue("agent-1", string(ag1Update)).
 		DoAndReturn(func(agent string, update string) error {
 			wg.Done()
 			return nil
@@ -69,7 +87,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-2", string(update)).
+		AddToAgentUpdateQueue("agent-2", string(ag2Update)).
 		DoAndReturn(func(agent string, update string) error {
 			wg.Done()
 			return nil
@@ -80,6 +98,12 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		Kind:      "Pod",
 		Namespace: "pl",
 		UID:       "abcd",
+	}
+
+	or2 := v1.ObjectReference{
+		Kind:      "Pod",
+		Namespace: "pl",
+		UID:       "efgh",
 	}
 
 	addrs := make([]v1.EndpointAddress, 2)
@@ -93,9 +117,10 @@ func TestObjectToEndpointsProto(t *testing.T) {
 
 	nodeName2 := "node-a"
 	addrs[1] = v1.EndpointAddress{
-		IP:       "127.0.0.2",
-		Hostname: "host-2",
-		NodeName: &nodeName2,
+		IP:        "127.0.0.2",
+		Hostname:  "host-2",
+		NodeName:  &nodeName2,
+		TargetRef: &or2,
 	}
 
 	notReadyAddrs := make([]v1.EndpointAddress, 1)
@@ -160,6 +185,8 @@ func TestObjectToEndpointsProto(t *testing.T) {
 
 	more := mh.ProcessNextAgentUpdate()
 	assert.Equal(t, true, more)
+	more = mh.ProcessNextAgentUpdate()
+	assert.Equal(t, true, more)
 }
 
 func TestNoHostnameResolvedProto(t *testing.T) {
@@ -184,7 +211,7 @@ func TestNoHostnameResolvedProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetAgentsForHostnames(&[]string{"this-is-a-node", "node-a"}).
+		GetAgentsForHostnames(&[]string{"this-is-a-node"}).
 		DoAndReturn(func(hostnames *[]string) (*[]string, error) {
 			wg.Done()
 			return nil, nil
@@ -195,6 +222,12 @@ func TestNoHostnameResolvedProto(t *testing.T) {
 		Kind:      "Pod",
 		Namespace: "pl",
 		UID:       "abcd",
+	}
+
+	or2 := v1.ObjectReference{
+		Kind:      "Pod",
+		Namespace: "pl",
+		UID:       "efgh",
 	}
 
 	addrs := make([]v1.EndpointAddress, 2)
@@ -208,9 +241,10 @@ func TestNoHostnameResolvedProto(t *testing.T) {
 
 	nodeName2 := "node-a"
 	addrs[1] = v1.EndpointAddress{
-		IP:       "127.0.0.2",
-		Hostname: "host-2",
-		NodeName: &nodeName2,
+		IP:        "127.0.0.2",
+		Hostname:  "host-2",
+		NodeName:  &nodeName2,
+		TargetRef: &or2,
 	}
 
 	notReadyAddrs := make([]v1.EndpointAddress, 1)
@@ -295,7 +329,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 		UID:       "abcd",
 	}
 
-	updatePb := &metadatapb.ResourceUpdate{
+	ag1UpdatePb := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
 				UID:              "ijkl",
@@ -307,7 +341,21 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 			},
 		},
 	}
-	update, err := updatePb.Marshal()
+	ag1Update, err := ag1UpdatePb.Marshal()
+
+	ag2UpdatePb := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"efgh"},
+			},
+		},
+	}
+	ag2Update, err := ag2UpdatePb.Marshal()
 
 	mockMds.
 		EXPECT().
@@ -316,8 +364,13 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetAgentsForHostnames(&[]string{"this-is-a-node", "node-a"}).
-		Return(&[]string{"agent-1", "agent-2"}, nil)
+		GetAgentsForHostnames(&[]string{"this-is-a-node"}).
+		Return(&[]string{"agent-1"}, nil)
+
+	mockMds.
+		EXPECT().
+		GetAgentsForHostnames(&[]string{"node-a"}).
+		Return(&[]string{"agent-2"}, nil)
 
 	mockMds.
 		EXPECT().
@@ -330,7 +383,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-1", string(update)).
+		AddToAgentUpdateQueue("agent-1", string(ag1Update)).
 		DoAndReturn(func(agent string, update string) error {
 			wg.Done()
 			return nil
@@ -338,7 +391,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-2", string(update)).
+		AddToAgentUpdateQueue("agent-2", string(ag2Update)).
 		DoAndReturn(func(agent string, update string) error {
 			wg.Done()
 			return errors.New("Could not add to agent queue")
@@ -346,7 +399,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-3", string(update)).
+		AddToAgentUpdateQueue("agent-3", string(ag2Update)).
 		DoAndReturn(func(agent string, update string) error {
 			wg.Done()
 			return nil
@@ -357,6 +410,12 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 		Kind:      "Pod",
 		Namespace: "pl",
 		UID:       "abcd",
+	}
+
+	or2 := v1.ObjectReference{
+		Kind:      "Pod",
+		Namespace: "pl",
+		UID:       "efgh",
 	}
 
 	addrs := make([]v1.EndpointAddress, 2)
@@ -370,9 +429,10 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 
 	nodeName2 := "node-a"
 	addrs[1] = v1.EndpointAddress{
-		IP:       "127.0.0.2",
-		Hostname: "host-2",
-		NodeName: &nodeName2,
+		IP:        "127.0.0.2",
+		Hostname:  "host-2",
+		NodeName:  &nodeName2,
+		TargetRef: &or2,
 	}
 
 	notReadyAddrs := make([]v1.EndpointAddress, 1)
@@ -436,6 +496,9 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	ch <- msg
 
 	more := mh.ProcessNextAgentUpdate()
+	assert.Equal(t, true, more)
+
+	more = mh.ProcessNextAgentUpdate()
 	assert.Equal(t, true, more)
 
 	more = mh.ProcessNextAgentUpdate()
@@ -740,8 +803,9 @@ func TestGetResourceUpdateFromEndpoints(t *testing.T) {
 	assert.Equal(t, "ijkl", serviceUpdate.UID)
 	assert.Equal(t, int64(4), serviceUpdate.StartTimestampNS)
 	assert.Equal(t, int64(6), serviceUpdate.StopTimestampNS)
-	assert.Equal(t, 1, len(serviceUpdate.PodIDs))
+	assert.Equal(t, 2, len(serviceUpdate.PodIDs))
 	assert.Equal(t, "abcd", serviceUpdate.PodIDs[0])
+	assert.Equal(t, "efgh", serviceUpdate.PodIDs[1])
 }
 
 func TestGetContainerResourceUpdatesFromPod(t *testing.T) {

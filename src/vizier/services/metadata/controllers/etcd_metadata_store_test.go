@@ -89,7 +89,7 @@ func TestUpdateEndpoints(t *testing.T) {
 		t.Fatal("Failed to get service to pod mapping.")
 	}
 	assert.Equal(t, 1, len(mapResp.Kvs))
-	assert.Equal(t, "abcd", string(mapResp.Kvs[0].Value))
+	assert.Equal(t, "abcd,efgh", string(mapResp.Kvs[0].Value))
 }
 
 func TestUpdatePod(t *testing.T) {

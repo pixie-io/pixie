@@ -319,6 +319,11 @@ subsets {
     ip: "127.0.0.2"
     hostname: "host-2"
     node_name: "node-a"
+    target_ref {
+      kind: "Pod"
+      namespace: "pl"
+      uid: "efgh"
+    }
   }
   not_ready_addresses {
     ip: "127.0.0.3"

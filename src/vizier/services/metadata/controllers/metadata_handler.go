@@ -204,18 +204,15 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 	}
 
 	// Add endpoint update to agent update queues.
-	var hostnames []string
 	for _, subset := range pb.Subsets {
 		for _, addr := range subset.Addresses {
-			hostnames = append(hostnames, addr.NodeName)
+			hostnames := []string{addr.NodeName}
+			updatePb := GetNodeResourceUpdateFromEndpoints(pb, addr.NodeName)
+			mh.agentUpdateCh <- &UpdateMessage{
+				Hostnames: &hostnames,
+				Message:   updatePb,
+			}
 		}
-	}
-
-	updatePb := GetResourceUpdateFromEndpoints(pb)
-
-	mh.agentUpdateCh <- &UpdateMessage{
-		Hostnames: &hostnames,
-		Message:   updatePb,
 	}
 }
 
