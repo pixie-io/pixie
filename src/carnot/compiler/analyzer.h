@@ -65,7 +65,6 @@ class Analyzer : public RuleExecutor {
 
   void CreatePostResolutionBatch() {
     RuleBatch* post_resolution = CreateRuleBatch<FailOnMax>("PostResolution", 2);
-    post_resolution->AddRule<JoinEqualityConditionRule>(compiler_state_);
     post_resolution->AddRule<MergeGroupByIntoAggRule>();
   }
 

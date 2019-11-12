@@ -660,7 +660,10 @@ TEST(JoinTest, test_inner_join) {
   ASSERT_NE(join, nullptr);
   EXPECT_THAT(join->parents(), ElementsAre(mem_src1, mem_src2));
 
-  EXPECT_TRUE(Match(join->condition_expr(), Equals(ColumnNode(), ColumnNode())));
+  EXPECT_EQ(join->left_on_columns()[0]->col_name(), "upid");
+  EXPECT_EQ(join->right_on_columns()[0]->col_name(), "upid");
+  EXPECT_EQ(join->left_on_columns()[0]->container_op_parent_idx(), 0);
+  EXPECT_EQ(join->right_on_columns()[0]->container_op_parent_idx(), 1);
 
   EXPECT_THAT(join->column_names(), ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
 

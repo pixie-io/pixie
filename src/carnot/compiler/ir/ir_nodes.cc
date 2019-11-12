@@ -59,7 +59,8 @@ std::string IR::DebugString() {
 
 StatusOr<IRNode*> IRNode::DeepCloneInto(IR* graph) const {
   DCHECK(!graph->HasNode(id())) << absl::Substitute(
-      "Cannot clone $0. Target graph already has index $1.", DebugString(), id());
+      "Cannot clone $0. Target graph already has $1 with id $2", DebugString(),
+      graph->Get(id())->DebugString(), id());
   PL_ASSIGN_OR_RETURN(IRNode * other, DeepCloneIntoImpl(graph));
   DCHECK_EQ(other->id_, id_) << absl::Substitute(
       "ids disagree for $0. Use MakeNode(int) instead of MakeNode()", other->type_string());
@@ -570,12 +571,21 @@ Status BlockingAggIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& gro
   PL_RETURN_IF_ERROR(AddParent(parent));
   groups_ = groups;
   aggregate_expressions_ = agg_expr;
+  for (auto g : groups_) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
+  }
+  for (const auto& expr : aggregate_expressions_) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr.node));
+  }
   return Status::OK();
 }
 
 Status GroupByIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups) {
   PL_RETURN_IF_ERROR(AddParent(parent));
   groups_ = groups;
+  for (auto g : groups_) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
+  }
   return Status::OK();
 }
 
@@ -1444,12 +1454,13 @@ planpb::JoinOperator::JoinType JoinIR::GetPbJoinEnum(JoinType join_type) {
 
 Status JoinIR::ToProto(planpb::Operator* op) const {
   planpb::JoinOperator::JoinType join_enum_type = GetPbJoinEnum(join_type_);
+  DCHECK_EQ(left_on_columns_.size(), right_on_columns_.size());
   auto pb = new planpb::JoinOperator();
   pb->set_type(join_enum_type);
-  for (const auto& cond : equality_conditions()) {
+  for (int64_t i = 0; i < static_cast<int64_t>(left_on_columns_.size()); i++) {
     auto eq_condition = pb->add_equality_conditions();
-    eq_condition->set_left_column_index(cond.left_column_idx);
-    eq_condition->set_right_column_index(cond.right_column_idx);
+    eq_condition->set_left_column_index(left_on_columns_[i]->col_idx());
+    eq_condition->set_right_column_index(right_on_columns_[i]->col_idx());
   }
 
   for (ColumnIR* col : output_columns_) {
@@ -1483,6 +1494,13 @@ Status JoinIR::Init(std::vector<OperatorIR*> parents, const std::string& how_typ
   left_on_columns_ = left_on_cols;
   right_on_columns_ = right_on_cols;
   suffix_strs_ = suffix_strs;
+
+  for (auto g : left_on_columns_) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
+  }
+  for (auto g : right_on_columns_) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
+  }
   return SetJoinType(how_type);
 }
 
@@ -1512,7 +1530,55 @@ Status JoinIR::InitImpl(const ArgMap& args) {
   } else {
     PL_RETURN_IF_ERROR(SetJoinType(static_cast<StringIR*>(join_type)->str()));
   }
+  PL_RETURN_IF_ERROR(ConnectColumns(left_on_columns_));
+  PL_RETURN_IF_ERROR(ConnectColumns(output_columns_));
+  PL_RETURN_IF_ERROR(ConnectColumns(right_on_columns_));
   return Status::OK();
+}
+
+Status JoinIR::AddColumns(ColumnIR* arg0, ColumnIR* arg1, EqConditionColumns* eq_condition) {
+  int64_t arg0_parent_idx = arg0->container_op_parent_idx();
+  int64_t arg1_parent_idx = arg1->container_op_parent_idx();
+
+  if (arg0_parent_idx == 0 && arg1_parent_idx == 1) {
+    eq_condition->left_on_cols.push_back(arg0);
+    eq_condition->right_on_cols.push_back(arg1);
+  } else if (arg0_parent_idx == 1 && arg1_parent_idx == 0) {
+    eq_condition->left_on_cols.push_back(arg1);
+    eq_condition->right_on_cols.push_back(arg0);
+  } else {
+    return arg0->CreateIRNodeError("Equality condition must have an element from both sides");
+  }
+  return Status::OK();
+}
+
+Status JoinIR::ParseConditionImpl(ExpressionIR* expr, EqConditionColumns* eq_condition) {
+  if (Match(expr, Equals(ColumnNode(), ColumnNode()))) {
+    FuncIR* eq_func = static_cast<FuncIR*>(expr);
+    DCHECK_EQ(eq_func->args().size(), 2UL);
+    ColumnIR* arg0 = static_cast<ColumnIR*>(eq_func->args()[0]);
+    ColumnIR* arg1 = static_cast<ColumnIR*>(eq_func->args()[1]);
+
+    PL_RETURN_IF_ERROR(expr->graph_ptr()->DeleteNode(expr->id()));
+
+    return AddColumns(arg0, arg1, eq_condition);
+  } else if (Match(expr, LogicalAnd())) {
+    FuncIR* func = static_cast<FuncIR*>(expr);
+    DCHECK_EQ(func->args().size(), 2UL);
+    ExpressionIR* arg0 = func->args()[0];
+    ExpressionIR* arg1 = func->args()[1];
+    PL_RETURN_IF_ERROR(ParseConditionImpl(arg0, eq_condition));
+    PL_RETURN_IF_ERROR(ParseConditionImpl(arg1, eq_condition));
+    return expr->graph_ptr()->DeleteNode(expr->id());
+  }
+  return expr->CreateIRNodeError(
+      "'cond' must be equality condition or `and` of equality conditions");
+}
+
+StatusOr<JoinIR::EqConditionColumns> JoinIR::ParseCondition(ExpressionIR* expr) {
+  EqConditionColumns eq_condition;
+  PL_RETURN_IF_ERROR(ParseConditionImpl(expr, &eq_condition));
+  return eq_condition;
 }
 
 Status JoinIR::SetupConditionFromLambda(LambdaIR* condition) {
@@ -1530,9 +1596,10 @@ Status JoinIR::SetupConditionFromLambda(LambdaIR* condition) {
         expr->type_string());
   }
 
-  condition_expr_ = static_cast<FuncIR*>(expr);
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, condition_expr_));
-  PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(condition->id(), condition_expr_->id()));
+  PL_ASSIGN_OR_RETURN(EqConditionColumns eq_condition, ParseCondition(expr));
+  left_on_columns_ = eq_condition.left_on_cols;
+  right_on_columns_ = eq_condition.right_on_cols;
+
   return graph_ptr()->DeleteNode(condition->id());
 }
 
@@ -1549,11 +1616,15 @@ Status JoinIR::SetupOutputColumns(LambdaIR* output_columns_lambda) {
 
     output_columns_.push_back(static_cast<ColumnIR*>(expr));
     column_names_.push_back(mapped_expression.name);
-
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(output_columns_lambda->id(), expr->id()));
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
   }
   return graph_ptr()->DeleteNode(output_columns_lambda->id());
+}
+
+Status JoinIR::ConnectColumns(const std::vector<ColumnIR*>& columns) {
+  for (ColumnIR* col : columns) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, col));
+  }
+  return Status::OK();
 }
 
 StatusOr<IRNode*> JoinIR::DeepCloneIntoImpl(IR* graph) const {
@@ -1567,14 +1638,6 @@ StatusOr<IRNode*> JoinIR::DeepCloneIntoImpl(IR* graph) const {
     join_node->output_columns_.push_back(static_cast<ColumnIR*>(new_node));
   }
 
-  join_node->equality_conditions_ = equality_conditions_;
-
-  PL_ASSIGN_OR_RETURN(IRNode * new_node, condition_expr_->DeepCloneInto(graph));
-  DCHECK(Match(new_node, Func()));
-  join_node->condition_expr_ = static_cast<FuncIR*>(new_node);
-
-  // Clone the new attributes.
-  join_node->suffix_strs_ = suffix_strs_;
   for (ColumnIR* col_expr : left_on_columns_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr->DeepCloneInto(graph));
     DCHECK(Match(new_node, ColumnNode()));
@@ -1586,6 +1649,8 @@ StatusOr<IRNode*> JoinIR::DeepCloneIntoImpl(IR* graph) const {
     DCHECK(Match(new_node, ColumnNode()));
     join_node->right_on_columns_.push_back(static_cast<ColumnIR*>(new_node));
   }
+
+  join_node->suffix_strs_ = suffix_strs_;
 
   return join_node;
 }

@@ -1769,33 +1769,6 @@ TEST_F(RulesTest, references_transfer) {
   EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 4, 6, 7));
 }
 
-TEST_F(RulesTest, join_equality_condition_rule) {
-  auto mem_src1 = MakeMemSource(MakeRelation());
-  auto mem_src2 = MakeMemSource(MakeRelation());
-
-  auto relation1 = mem_src1->relation();
-  auto relation2 = mem_src2->relation();
-
-  auto join_op =
-      MakeJoin({mem_src1, mem_src2}, "outer",
-               MakeEqualsFunc(MakeColumn("cpu1", 0, relation1), MakeColumn("cpu2", 1, relation2)),
-               {
-                   {"cpu1", MakeColumn("cpu1", 0)},
-                   {"cpu2", MakeColumn("cpu2", 1)},
-               });
-
-  EXPECT_FALSE(join_op->HasEqualityConditions());
-
-  JoinEqualityConditionRule rule(compiler_state_.get());
-  rule.Execute(graph.get());
-
-  EXPECT_TRUE(join_op->HasEqualityConditions());
-
-  ASSERT_EQ(join_op->equality_conditions().size(), 1UL);
-  EXPECT_EQ(join_op->equality_conditions()[0].left_column_idx, 2);
-  EXPECT_EQ(join_op->equality_conditions()[0].right_column_idx, 3);
-}
-
 TEST_F(RulesTest, setup_join_type_rule) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},

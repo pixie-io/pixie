@@ -866,9 +866,9 @@ TEST_F(AnalyzerTest, join_test) {
   ASSERT_NE(join, nullptr);
 
   // check to make sure that equality conditions are properly processed.
-  ASSERT_EQ(join->equality_conditions().size(), 1UL);
-  EXPECT_EQ(join->equality_conditions()[0].left_column_idx, 0);
-  EXPECT_EQ(join->equality_conditions()[0].right_column_idx, 1);
+  ASSERT_EQ(join->left_on_columns().size(), join->right_on_columns().size());
+  EXPECT_EQ(join->left_on_columns()[0]->col_name(), "upid");
+  EXPECT_EQ(join->right_on_columns()[0]->col_name(), "upid");
 
   EXPECT_THAT(join->relation().col_names(),
               ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
@@ -971,9 +971,11 @@ TEST_F(AnalyzerTest, join_metadata_equality_condition_tests) {
   }
   ASSERT_NE(join, nullptr);
 
-  ASSERT_EQ(join->equality_conditions().size(), 1UL);
-  EXPECT_EQ(join->equality_conditions()[0].left_column_idx, 3);
-  EXPECT_EQ(join->equality_conditions()[0].right_column_idx, 3);
+  ASSERT_EQ(join->left_on_columns().size(), join->right_on_columns().size());
+  EXPECT_EQ(join->left_on_columns()[0]->col_idx(), 3);
+  EXPECT_EQ(join->right_on_columns()[0]->col_idx(), 3);
+  EXPECT_EQ(join->left_on_columns()[0]->col_name(), "_attr_service_name");
+  EXPECT_EQ(join->right_on_columns()[0]->col_name(), "_attr_service_name");
 
   // The parent should be the right one, as specified in the query.
   EXPECT_TRUE(Match(join->parents()[0], Map()))
@@ -1063,12 +1065,18 @@ TEST_F(AnalyzerTest, join_nested_equality_condition) {
   }
   ASSERT_NE(join, nullptr);
 
-  ASSERT_EQ(join->equality_conditions().size(), 2UL);
+  ASSERT_EQ(join->left_on_columns().size(), join->right_on_columns().size());
+  EXPECT_EQ(join->left_on_columns()[0]->col_idx(), 0);
+  EXPECT_EQ(join->right_on_columns()[0]->col_idx(), 0);
 
-  EXPECT_EQ(join->equality_conditions()[0].left_column_idx, 0);
-  EXPECT_EQ(join->equality_conditions()[0].right_column_idx, 0);
-  EXPECT_EQ(join->equality_conditions()[1].left_column_idx, 3);
-  EXPECT_EQ(join->equality_conditions()[1].right_column_idx, 3);
+  EXPECT_EQ(join->left_on_columns()[1]->col_idx(), 3);
+  EXPECT_EQ(join->right_on_columns()[1]->col_idx(), 3);
+
+  EXPECT_EQ(join->left_on_columns()[0]->col_name(), "upid");
+  EXPECT_EQ(join->right_on_columns()[0]->col_name(), "upid");
+
+  EXPECT_EQ(join->left_on_columns()[1]->col_name(), "agent_id");
+  EXPECT_EQ(join->right_on_columns()[1]->col_name(), "agent_id");
 }
 
 TEST_F(AnalyzerTest, join_nested_equality_condition_parens) {
@@ -1087,36 +1095,20 @@ TEST_F(AnalyzerTest, join_nested_equality_condition_parens) {
   }
   ASSERT_NE(join, nullptr);
 
-  ASSERT_EQ(join->equality_conditions().size(), 2UL);
-  EXPECT_EQ(join->equality_conditions()[0].left_column_idx, 0);
-  EXPECT_EQ(join->equality_conditions()[0].right_column_idx, 0);
-  EXPECT_EQ(join->equality_conditions()[1].left_column_idx, 3);
-  EXPECT_EQ(join->equality_conditions()[1].right_column_idx, 3);
+  ASSERT_EQ(join->left_on_columns().size(), join->right_on_columns().size());
+  EXPECT_EQ(join->left_on_columns()[0]->col_idx(), 0);
+  EXPECT_EQ(join->right_on_columns()[0]->col_idx(), 0);
+
+  EXPECT_EQ(join->left_on_columns()[1]->col_idx(), 3);
+  EXPECT_EQ(join->right_on_columns()[1]->col_idx(), 3);
+
+  EXPECT_EQ(join->left_on_columns()[0]->col_name(), "upid");
+  EXPECT_EQ(join->right_on_columns()[0]->col_name(), "upid");
+
+  EXPECT_EQ(join->left_on_columns()[1]->col_name(), "agent_id");
+  EXPECT_EQ(join->right_on_columns()[1]->col_name(), "agent_id");
 }
 
-TEST_F(AnalyzerTest, same_parent_equal_condition_fail) {
-  auto ir_graph_status = CompileGraph(absl::Substitute(kJoinCondTpl, "r1.upid == r1.upid"));
-  ASSERT_OK(ir_graph_status);
-  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  auto analyzer_status = HandleRelation(ir_graph);
-  ASSERT_NOT_OK(analyzer_status);
-  EXPECT_THAT(analyzer_status,
-              HasCompilerError("Both sides of an equality condition can't reference the same "
-                               "parent, you must reference the other parent."));
-}
-
-TEST_F(AnalyzerTest, join_equal_condition_expression) {
-  auto ir_graph_status =
-      CompileGraph(absl::Substitute(kJoinCondTpl, "r1.agent_id+ 1 == r1.agent_id"));
-  ASSERT_OK(ir_graph_status);
-  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  auto analyzer_status = HandleRelation(ir_graph);
-  ASSERT_NOT_OK(analyzer_status);
-  VLOG(1) << analyzer_status.ToString();
-  EXPECT_THAT(analyzer_status,
-              HasCompilerError(
-                  "Expression pl.equal\\(Func,Column\\) not supported as a condition in the Join"));
-}
 const char* kJoinMissingParentColumnOutCols = R"query(
 src1 = dataframe(table='cpu', select=['upid', 'cpu0','cpu1', 'agent_id'])
 src2 = dataframe(table='network', select=['upid', 'bytes_in', 'bytes_out', 'agent_id'])
@@ -1139,7 +1131,6 @@ TEST_F(AnalyzerTest, join_missing_parent_column_output_cols) {
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto analyzer_status = HandleRelation(ir_graph);
   ASSERT_NOT_OK(analyzer_status);
-  LOG(INFO) << analyzer_status.ToString();
   EXPECT_THAT(analyzer_status,
               HasCompilerError("Column 'thiscoldoesnotexist' not found in relation of Map."));
 }

@@ -420,17 +420,16 @@ class ExpressionIR : public IRNode {
         std::vector<std::string> parent_strs;
         for (const int64_t& p : parents) {
           IRNode* parent = graph->Get(p);
-          parent_strs.push_back(absl::Substitute("$0(id=$1)", parent->type_string(), p));
+          parent_strs.push_back(parent->DebugString());
         }
         return CreateIRNodeError(
-            "Found more than one parent for node(id=$0,type=$1) while searching for parent "
-            "operator. Parents:[$2]",
-            cur_id, graph->Get(cur_id)->type_string(), absl::StrJoin(parent_strs, ","));
+            "Found more than one parent for $0 while searching for parent "
+            "operator. Parents:[$1]",
+            graph->Get(cur_id)->DebugString(), absl::StrJoin(parent_strs, ","));
       }
       if (parents.size() == 0) {
-        return CreateIRNodeError(
-            "Got no parents for node(id=$0,type=$1) while searching for parent operator. ", cur_id,
-            graph->Get(cur_id)->type_string());
+        return CreateIRNodeError("Got no parents for $0 while searching for parent operator. ",
+                                 graph->Get(cur_id)->DebugString());
       }
       cur_id = parents[0];
     }
@@ -1582,23 +1581,6 @@ class JoinIR : public OperatorIR {
               const std::vector<std::string>& suffix_strs);
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
-  struct EqualityCondition {
-    int64_t left_column_idx;
-    int64_t right_column_idx;
-  };
-
-  void AddEqualityCondition(int64_t left_idx, int64_t right_idx) {
-    equality_conditions_.push_back(EqualityCondition({left_idx, right_idx}));
-  }
-
-  const std::vector<EqualityCondition>& equality_conditions() const {
-    DCHECK_GT(equality_conditions_.size(), 0UL) << "Equality conditions must be created";
-    return equality_conditions_;
-  }
-
-  bool HasEqualityConditions() const { return equality_conditions_.size() != 0; }
-
-  FuncIR* condition_expr() const { return condition_expr_; }
   JoinType join_type() const { return join_type_; }
   const std::vector<ColumnIR*>& output_columns() const { return output_columns_; }
   const std::vector<std::string>& column_names() const { return column_names_; }
@@ -1614,10 +1596,42 @@ class JoinIR : public OperatorIR {
   const std::vector<ColumnIR*>& left_on_columns() const { return left_on_columns_; }
   const std::vector<ColumnIR*>& right_on_columns() const { return right_on_columns_; }
   const std::vector<std::string>& suffix_strs() const { return suffix_strs_; }
+  void SetSuffixStrs(const std::vector<std::string>& suffix_strs) { suffix_strs_ = suffix_strs; }
+  Status SetOutputColumns(const std::vector<std::string>& column_names,
+                          const std::vector<ColumnIR*> columns) {
+    DCHECK_EQ(column_names.size(), columns.size());
+    output_columns_ = columns;
+    column_names_ = column_names;
+    for (auto g : output_columns_) {
+      PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
+    }
+    return Status::OK();
+  }
+
+  // The equality condition columns, used by Parse Condition.
+  struct EqConditionColumns {
+    std::vector<ColumnIR*> left_on_cols;
+    std::vector<ColumnIR*> right_on_cols;
+  };
+
+  // TODO(philkuz) (PL-1128) deprecate the api and remove the static methods used by this.
+  /**
+   *
+   * @brief Parses the expression into left and right columns. Eventually we will deprecate this API
+   * so I'm just putting it in JoinIR for convenience
+   *
+   * @param expr
+   * @return StatusOr<EqConditionColumns>
+   */
+  static StatusOr<EqConditionColumns> ParseCondition(ExpressionIR* expr);
 
  private:
+  static Status ParseConditionImpl(ExpressionIR* expr, EqConditionColumns* eq_condition);
+  static Status AddColumns(ColumnIR* arg0, ColumnIR* arg1, EqConditionColumns* eq_condition);
   Status SetupConditionFromLambda(LambdaIR* condition);
   Status SetupOutputColumns(LambdaIR* output_columns);
+
+  Status ConnectColumns(const std::vector<ColumnIR*>& columns);
 
   /**
    * @brief Converts the string type to JoinIR::JoinType or errors out if it doesn't exist.
@@ -1639,17 +1653,14 @@ class JoinIR : public OperatorIR {
   JoinType join_type_;
   // The columns that are output by this join operator.
   std::vector<ColumnIR*> output_columns_;
+  // The column names to set.
+  std::vector<std::string> column_names_;
   // The columns we join from the left parent.
   std::vector<ColumnIR*> left_on_columns_;
   // The columns we join from the right parent.
   std::vector<ColumnIR*> right_on_columns_;
   // The suffixes to add to the left columns and to the right columns.
   std::vector<std::string> suffix_strs_;
-  // TODO(philkuz) delete the following when the api changes.
-  // The condition expression that is eventually translated into equality_conditions_.
-  FuncIR* condition_expr_;
-  std::vector<EqualityCondition> equality_conditions_;
-  std::vector<std::string> column_names_;
 };
 
 /*

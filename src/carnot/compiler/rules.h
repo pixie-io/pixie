@@ -271,23 +271,6 @@ class MergeRangeOperatorRule : public Rule {
   StatusOr<bool> MergeRange(RangeIR* range_ir);
 };
 
-class JoinEqualityConditionRule : public Rule {
-  /**
-   * @brief Takes a Join node that has yet to initialize equality conditions and sets it up as
-   * appropriate. For now equality condition expressions are limited to simple equality and ANDs of
-   * equality. In the future we'll allow more complicated transactions.
-   */
-
- public:
-  explicit JoinEqualityConditionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
-
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-
-  StatusOr<bool> SetEqualityConditionJoin(JoinIR* join_node);
-  Status ProcessExpression(JoinIR* join_node, ExpressionIR* expr);
-};
-
 class SetupJoinTypeRule : public Rule {
   /**
    * @brief Converts a right join into a left join.
@@ -298,10 +281,13 @@ class SetupJoinTypeRule : public Rule {
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
   /**
    * @brief Swaps the parents and updates any parent references within Join's children nodes.
    */
   Status ConvertRightJoinToLeftJoin(JoinIR* join_ir);
+  void FlipColumns(const std::vector<ColumnIR*>& cols);
 };
 
 /**

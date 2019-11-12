@@ -871,66 +871,21 @@ StatusOr<bool> MergeRangeOperatorRule::MergeRange(RangeIR* range_ir) {
   return true;
 }
 
-StatusOr<bool> JoinEqualityConditionRule::Apply(IRNode* ir_node) {
-  if (Match(ir_node, JoinOperatorEqCondNotSet())) {
-    return SetEqualityConditionJoin(static_cast<JoinIR*>(ir_node));
-  }
-  return false;
-}
-
-StatusOr<bool> JoinEqualityConditionRule::SetEqualityConditionJoin(JoinIR* join_node) {
-  PL_RETURN_IF_ERROR(ProcessExpression(join_node, join_node->condition_expr()));
-  return true;
-}
-
-Status JoinEqualityConditionRule::ProcessExpression(JoinIR* join_node, ExpressionIR* expr) {
-  if (Match(expr, Equals(ColumnNode(), ColumnNode()))) {
-    FuncIR* eq_func = static_cast<FuncIR*>(expr);
-    DCHECK_EQ(eq_func->args().size(), 2UL);
-    ColumnIR* arg0 = static_cast<ColumnIR*>(eq_func->args()[0]);
-    ColumnIR* arg1 = static_cast<ColumnIR*>(eq_func->args()[1]);
-
-    int64_t arg0_parent_idx = arg0->container_op_parent_idx();
-    int64_t arg1_parent_idx = arg1->container_op_parent_idx();
-
-    if (arg0_parent_idx == arg1_parent_idx) {
-      return expr->CreateIRNodeError(
-          "Both sides of an equality condition can't reference the same parent, you must reference "
-          "the other parent.",
-          arg0_parent_idx);
-    }
-
-    int64_t arg0_idx = arg0->col_idx();
-    int64_t arg1_idx = arg1->col_idx();
-
-    if (arg0_parent_idx == 0 && arg1_parent_idx == 1) {
-      join_node->AddEqualityCondition(arg0_idx, arg1_idx);
-    } else if (arg0_parent_idx == 1 && arg1_parent_idx == 0) {
-      join_node->AddEqualityCondition(arg1_idx, arg0_idx);
-    } else {
-      return expr->CreateIRNodeError("Parents of columns in equality condition not set properly.");
-    }
-    return Status::OK();
-  } else if (Match(expr, LogicalAnd())) {
-    FuncIR* func = static_cast<FuncIR*>(expr);
-    DCHECK_EQ(func->args().size(), 2UL);
-    PL_RETURN_IF_ERROR(ProcessExpression(join_node, func->args()[0]));
-    PL_RETURN_IF_ERROR(ProcessExpression(join_node, func->args()[1]));
-    return Status::OK();
-  }
-
-  return expr->CreateIRNodeError(
-      "Expression $0 not supported as a condition in the Join. Only equality of columns and the "
-      "AND compositions of equality expressions are supported.",
-      expr->DebugString());
-}
-
 StatusOr<bool> SetupJoinTypeRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, RightJoin())) {
     PL_RETURN_IF_ERROR(ConvertRightJoinToLeftJoin(static_cast<JoinIR*>(ir_node)));
     return true;
   }
   return false;
+}
+
+void SetupJoinTypeRule::FlipColumns(const std::vector<ColumnIR*>& columns) {
+  // Update the columns in the output_columns
+  for (ColumnIR* col : columns) {
+    DCHECK_LT(col->container_op_parent_idx(), 2);
+    // 1 -> 0, 0 -> 1
+    col->SetContainingOperatorParentIdx(1 - col->container_op_parent_idx());
+  }
 }
 
 Status SetupJoinTypeRule::ConvertRightJoinToLeftJoin(JoinIR* join_ir) {
@@ -945,32 +900,18 @@ Status SetupJoinTypeRule::ConvertRightJoinToLeftJoin(JoinIR* join_ir) {
   PL_RETURN_IF_ERROR(join_ir->AddParent(old_parents[1]));
   PL_RETURN_IF_ERROR(join_ir->AddParent(old_parents[0]));
 
-  // Update the columns in the output_columns
-  for (ColumnIR* col : join_ir->output_columns()) {
-    DCHECK_LT(col->container_op_parent_idx(), 2);
-    // 1 -> 0, 0 -> 1
-    col->SetContainingOperatorParentIdx(1 - col->container_op_parent_idx());
+  FlipColumns(join_ir->left_on_columns());
+  FlipColumns(join_ir->right_on_columns());
+  FlipColumns(join_ir->output_columns());
+
+  // TODO(philkuz) dependent upon how we actually do anything with output columns, this might change
+  if (join_ir->suffix_strs().size() != 0) {
+    DCHECK_EQ(join_ir->suffix_strs().size(), 2UL);
+    std::string left = join_ir->suffix_strs()[0];
+    std::string right = join_ir->suffix_strs()[1];
+    join_ir->SetSuffixStrs({right, left});
   }
 
-  // Update the columns in the expression.
-  std::vector<ColumnIR*> child_columns;
-  std::queue<int64_t> nodes_to_visit({join_ir->condition_expr()->id()});
-  IR* graph = join_ir->graph_ptr();
-  const plan::DAG& dag = graph->dag();
-  while (!nodes_to_visit.empty()) {
-    int64_t cur_node = nodes_to_visit.front();
-    nodes_to_visit.pop();
-    if (Match(graph->Get(cur_node), ColumnNode())) {
-      ColumnIR* col = static_cast<ColumnIR*>(graph->Get(cur_node));
-
-      DCHECK_LT(col->container_op_parent_idx(), 2);
-      // 1 -> 0, 0 -> 1
-      col->SetContainingOperatorParentIdx(1 - col->container_op_parent_idx());
-    }
-    for (int64_t dep : dag.DependenciesOf(cur_node)) {
-      nodes_to_visit.push(dep);
-    }
-  }
   return join_ir->SetJoinType(JoinIR::JoinType::kLeft);
 }
 

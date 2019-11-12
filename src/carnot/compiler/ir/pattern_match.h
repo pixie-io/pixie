@@ -797,21 +797,6 @@ struct BlockingOperatorMatch : public ParentMatch {
 
 inline BlockingOperatorMatch BlockingOperator() { return BlockingOperatorMatch(); }
 
-template <bool ConditionSet = true>
-struct JoinOperatorConditionSetMatch : public ParentMatch {
-  JoinOperatorConditionSetMatch() : ParentMatch(IRNodeType::kJoin) {}
-  bool Match(const IRNode* node) const override {
-    if (Join().Match(node)) {
-      return static_cast<const JoinIR*>(node)->HasEqualityConditions() == ConditionSet;
-    }
-    return false;
-  }
-};
-
-inline JoinOperatorConditionSetMatch<false> JoinOperatorEqCondNotSet() {
-  return JoinOperatorConditionSetMatch<false>();
-}
-
 /**
  * @brief Matches two operators in sequence.
  *

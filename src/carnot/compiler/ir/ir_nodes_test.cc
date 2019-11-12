@@ -391,6 +391,7 @@ TEST_F(OperatorTests, grpc_ops) {
   EXPECT_EQ(grpc_src_group->remote_string_ids(),
             std::vector<std::string>({expected_physical_dest_id}));
 }
+
 class CloneTests : public OperatorTests {
  protected:
   void CompareClonedColumn(ColumnIR* new_ir, ColumnIR* old_ir, const std::string& failure_string) {
@@ -551,18 +552,6 @@ class CloneTests : public OperatorTests {
     for (size_t i = 0; i < right_on_columns_new.size(); ++i) {
       CompareClonedExpression(right_on_columns_new[i], right_on_columns_old[i],
                               absl::Substitute("$0; in Join operator.", err_string));
-    }
-
-    // TODO(philkuz) delete when the api changes.
-    auto old_equality_conditions = old_ir->equality_conditions();
-    auto new_equality_conditions = new_ir->equality_conditions();
-    ASSERT_EQ(old_equality_conditions.size(), new_equality_conditions.size()) << err_string;
-
-    for (size_t i = 0; i < old_equality_conditions.size(); ++i) {
-      EXPECT_EQ(old_equality_conditions[i].left_column_idx,
-                new_equality_conditions[i].left_column_idx);
-      EXPECT_EQ(old_equality_conditions[i].right_column_idx,
-                new_equality_conditions[i].right_column_idx);
     }
   }
 
@@ -768,9 +757,6 @@ TEST_F(CloneTests, join_clone) {
         {"col1", MakeColumn("col1", 0, relation0)},
         {"right_only", MakeColumn("right_only", 1, relation1)}},
        {}});
-
-  join_op->AddEqualityCondition(1, 2);
-  join_op->AddEqualityCondition(3, 4);
 
   auto out = graph->Clone();
 
@@ -1035,14 +1021,12 @@ TEST_F(ToProtoTests, inner_join) {
         {"right_only", MakeColumn("right_only", 1, relation1)}},
        {}});
 
-  join_op->AddEqualityCondition(1, 2);
-  join_op->AddEqualityCondition(3, 4);
-
   planpb::Operator pb;
   EXPECT_OK(join_op->ToProto(&pb));
 
   EXPECT_THAT(pb, EqualsProto(kExpectedInnerJoinOpPb));
 }
+
 const char* kExpectedLeftJoinOpPb = R"proto(
 op_type: JOIN_OPERATOR
 join_op {
@@ -1099,9 +1083,6 @@ TEST_F(ToProtoTests, left_join) {
         {"col1", MakeColumn("col1", 0, relation0)},
         {"right_only", MakeColumn("right_only", 1, relation1)}},
        {}});
-
-  join_op->AddEqualityCondition(1, 2);
-  join_op->AddEqualityCondition(3, 4);
 
   planpb::Operator pb;
   EXPECT_OK(join_op->ToProto(&pb));
@@ -1166,14 +1147,12 @@ TEST_F(ToProtoTests, full_outer) {
         {"right_only", MakeColumn("right_only", 1, relation1)}},
        {}});
 
-  join_op->AddEqualityCondition(1, 2);
-  join_op->AddEqualityCondition(3, 4);
-
   planpb::Operator pb;
   EXPECT_OK(join_op->ToProto(&pb));
 
   EXPECT_THAT(pb, EqualsProto(kExpectedOuterJoinOpPb));
 }
+
 TEST_F(ToProtoTests, join_wrong_join_type) {
   Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},
@@ -1261,6 +1240,63 @@ TEST_F(OperatorTests, GroupByNode) {
     col_names.push_back(g->col_name());
   }
   EXPECT_THAT(col_names, ElementsAre("col1", "col2"));
+}
+
+// TODO(philkuz) (PL-1128) Delete when we remove this part of the API.
+TEST_F(OperatorTests, JoinCondSameParent) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  std::string join_type_name = "inner";
+
+  JoinIR* join = graph->MakeNode<JoinIR>(ast).ConsumeValueOrDie();
+  auto join_init_status =
+      join->Init({mem_src1, mem_src2},
+                 {{{"type", MakeString(join_type_name)},
+                   {"cond", MakeLambda(MakeEqualsFunc(MakeColumn("col1", 0, relation0),
+                                                      MakeColumn("col2", 0, relation0)))},
+                   {"cols", MakeLambda({{"right_only", MakeColumn("right_only", 1, relation1)}})}},
+                  {}},
+                 ast);
+
+  EXPECT_THAT(join_init_status,
+              HasCompilerError("Equality condition must have an element from both sides"));
+}
+
+TEST_F(OperatorTests, JoinNonBoolCondition) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  std::string join_type_name = "inner";
+
+  JoinIR* join = graph->MakeNode<JoinIR>(ast).ConsumeValueOrDie();
+  auto join_init_status = join->Init(
+      {mem_src1, mem_src2},
+      {{{"type", MakeString(join_type_name)},
+        {"cond",
+         MakeLambda(MakeEqualsFunc(MakeAddFunc(MakeColumn("col1", 0, relation0), MakeInt(10)),
+                                   MakeColumn("col2", 0, relation0)))},
+        {"cols", MakeLambda({{"right_only", MakeColumn("right_only", 1, relation1)}})}},
+       {}},
+      ast);
+
+  EXPECT_THAT(
+      join_init_status,
+      HasCompilerError("'cond' must be equality condition or `and` of equality conditions"));
 }
 
 }  // namespace compiler
