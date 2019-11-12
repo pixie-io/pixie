@@ -15,7 +15,7 @@ using ::testing::UnorderedElementsAre;
 
 class DataframeTest : public OperatorTests {};
 
-TEST_F(DataframeTest, MergeTest) {
+TEST_F(DataframeTest, DISABLED_MergeTest) {
   MemorySourceIR* left = MakeMemSource();
   MemorySourceIR* right = MakeMemSource();
   std::shared_ptr<QLObject> test = std::make_shared<Dataframe>(left);
@@ -27,6 +27,43 @@ TEST_F(DataframeTest, MergeTest) {
                 MakeList(MakeString("b"), MakeString("c"))}});
 
   std::shared_ptr<QLObject> obj = func_obj->Call(args, ast).ConsumeValueOrDie();
+  // Add compartor for type() and Dataframe.
+  ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
+  auto df_obj = static_cast<Dataframe*>(obj.get());
+
+  // Check to make sure that the output is a Join operator.
+  OperatorIR* op = df_obj->op();
+  ASSERT_TRUE(Match(op, Join()));
+  JoinIR* join = static_cast<JoinIR*>(op);
+  // Verify that the operator does what we expect it to.
+  EXPECT_THAT(join->parents(), ElementsAre(left, right));
+  EXPECT_EQ(join->join_type(), JoinIR::JoinType::kInner);
+
+  EXPECT_TRUE(Match(join->left_on_columns()[0], ColumnNode("a", 0)));
+  EXPECT_TRUE(Match(join->left_on_columns()[1], ColumnNode("b", 0)));
+
+  EXPECT_TRUE(Match(join->right_on_columns()[0], ColumnNode("b", 1)));
+  EXPECT_TRUE(Match(join->right_on_columns()[1], ColumnNode("c", 1)));
+
+  EXPECT_THAT(join->suffix_strs(), ElementsAre("_x", "_y"));
+}
+
+using JoinHandlerTest = DataframeTest;
+TEST_F(JoinHandlerTest, MergeTest) {
+  MemorySourceIR* left = MakeMemSource();
+  MemorySourceIR* right = MakeMemSource();
+  std::shared_ptr<Dataframe> test = std::make_shared<Dataframe>(left);
+
+  ParsedArgs args;
+  args.AddArg("suffixes", MakeList(MakeString("_x"), MakeString("_y")));
+  args.AddArg("right", right);
+  args.AddArg("how", MakeString("inner"));
+  args.AddArg("left_on", MakeList(MakeString("a"), MakeString("b")));
+  args.AddArg("right_on", MakeList(MakeString("b"), MakeString("c")));
+
+  auto status = JoinHandler::Eval(test.get(), ast, args);
+  ASSERT_OK(status);
+  std::shared_ptr<QLObject> obj = status.ConsumeValueOrDie();
   // Add compartor for type() and Dataframe.
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
   auto df_obj = static_cast<Dataframe*>(obj.get());
@@ -146,8 +183,8 @@ TEST_F(AggHandlerTest, NonZeroArgFuncKwarg) {
   EXPECT_THAT(status.status(),
               HasCompilerError("Expected function to not have specified arguments"));
 }
-using RangeHandlerTest = DataframeTest;
 
+using RangeHandlerTest = DataframeTest;
 TEST_F(RangeHandlerTest, IntArgs) {
   MemorySourceIR* src = MakeMemSource();
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
@@ -782,6 +819,426 @@ TEST_F(DataframeTest, OldAggCall) {
 
   ASSERT_EQ(agg->aggregate_expressions().size(), 1);
   EXPECT_EQ(agg->aggregate_expressions()[0].node, latency_mean);
+}
+
+using OldJoinTest = DataframeTest;
+TEST_F(OldJoinTest, JoinCreate) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  // No df for the right because the compiler should remove it if possible.
+  MemorySourceIR* right = MakeMemSource();
+
+  auto join_type = MakeString("inner");
+
+  auto left_service_column = MakeColumn("service", 0);
+  auto right_latency_column = MakeColumn("latency", 1);
+  auto right_rps_column = MakeColumn("rps", 1);
+  auto output_cols_lambda = MakeLambda({{"service", left_service_column},
+                                        {"latency", right_latency_column},
+                                        {"rps", right_rps_column}});
+
+  auto left_column = MakeColumn("service", 0);
+  auto right_column = MakeColumn("service", 1);
+  auto cond_expr = MakeEqualsFunc(left_column, right_column);
+  auto cond_lambda = MakeLambda(cond_expr);
+
+  // Save ids of nodes that should be removed
+  int64_t cond_lambda_id = cond_lambda->id();
+  int64_t output_cols_lambda_id = output_cols_lambda->id();
+
+  ParsedArgs args;
+  args.AddArg("right", right);
+  args.AddArg("type", join_type);
+  args.AddArg("cond", cond_lambda);
+  args.AddArg("cols", output_cols_lambda);
+
+  auto status = OldJoinHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto join_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(join_obj->op(), Join()));
+  JoinIR* join = static_cast<JoinIR*>(join_obj->op());
+
+  EXPECT_THAT(join->parents(), ElementsAre(left, right));
+
+  EXPECT_TRUE(join->join_type() == JoinIR::JoinType::kInner);
+
+  EXPECT_THAT(join->output_columns(),
+              ElementsAre(left_service_column, right_latency_column, right_rps_column));
+  EXPECT_THAT(join->column_names(), ElementsAre("service", "latency", "rps"));
+
+  EXPECT_FALSE(graph->HasNode(cond_lambda_id));
+  EXPECT_FALSE(graph->HasNode(output_cols_lambda_id));
+
+  EXPECT_THAT(join->left_on_columns(), ElementsAre(left_column));
+  EXPECT_THAT(join->right_on_columns(), ElementsAre(right_column));
+}
+
+TEST_F(OldJoinTest, JoinCreateAndCond) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  // No df for the right because the compiler should remove it if possible.
+  MemorySourceIR* right = MakeMemSource();
+
+  auto join_type = MakeString("inner");
+
+  auto left_service_column = MakeColumn("service", 0);
+  auto right_latency_column = MakeColumn("latency", 1);
+  auto right_rps_column = MakeColumn("rps", 1);
+  auto output_cols_lambda = MakeLambda({{"service", left_service_column},
+                                        {"latency", right_latency_column},
+                                        {"rps", right_rps_column}});
+
+  auto left_column1 = MakeColumn("service", 0);
+  auto right_column1 = MakeColumn("service", 1);
+  auto cond_expr1 = MakeEqualsFunc(left_column1, right_column1);
+
+  auto left_column2 = MakeColumn("service", 0);
+  auto right_column2 = MakeColumn("service", 1);
+  auto cond_expr2 = MakeEqualsFunc(right_column2, left_column2);
+
+  auto cond_lambda = MakeLambda(MakeAndFunc(cond_expr1, cond_expr2));
+
+  // Save ids of nodes that should be removed
+  int64_t cond_lambda_id = cond_lambda->id();
+  int64_t output_cols_lambda_id = output_cols_lambda->id();
+
+  ParsedArgs args;
+  args.AddArg("right", right);
+  args.AddArg("type", join_type);
+  args.AddArg("cond", cond_lambda);
+  args.AddArg("cols", output_cols_lambda);
+
+  auto status = OldJoinHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto join_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(join_obj->op(), Join()));
+  JoinIR* join = static_cast<JoinIR*>(join_obj->op());
+
+  EXPECT_THAT(join->parents(), ElementsAre(left, right));
+
+  EXPECT_TRUE(join->join_type() == JoinIR::JoinType::kInner);
+
+  EXPECT_THAT(join->output_columns(),
+              ElementsAre(left_service_column, right_latency_column, right_rps_column));
+  EXPECT_THAT(join->column_names(), ElementsAre("service", "latency", "rps"));
+
+  EXPECT_FALSE(graph->HasNode(cond_lambda_id));
+  EXPECT_FALSE(graph->HasNode(output_cols_lambda_id));
+
+  EXPECT_THAT(join->left_on_columns(), ElementsAre(left_column1, left_column2));
+  EXPECT_THAT(join->right_on_columns(), ElementsAre(right_column1, right_column2));
+}
+
+TEST_F(OldJoinTest, OldJoinCondNotLambda) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  MemorySourceIR* right = MakeMemSource();
+
+  auto join_type = MakeString("inner");
+
+  auto left_service_column = MakeColumn("service", 0);
+  auto right_latency_column = MakeColumn("latency", 1);
+  auto right_rps_column = MakeColumn("rps", 1);
+  auto output_cols_lambda = MakeLambda({{"service", left_service_column},
+                                        {"latency", right_latency_column},
+                                        {"rps", right_rps_column}});
+
+  auto left_column = MakeColumn("service", 0);
+  auto right_column = MakeColumn("service", 1);
+  auto cond_expr = MakeEqualsFunc(left_column, right_column);
+
+  ParsedArgs args;
+  args.AddArg("right", right);
+  args.AddArg("type", join_type);
+  args.AddArg("cond", cond_expr);
+  args.AddArg("cols", output_cols_lambda);
+
+  auto status = OldJoinHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'cond' must be a lambda"));
+}
+
+TEST_F(OldJoinTest, OldJoinColsNotLambda) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  MemorySourceIR* right = MakeMemSource();
+
+  auto join_type = MakeString("inner");
+
+  auto left_service_column = MakeColumn("service", 0);
+
+  auto left_column = MakeColumn("service", 0);
+  auto right_column = MakeColumn("service", 1);
+  auto cond_expr = MakeEqualsFunc(left_column, right_column);
+  auto cond_lambda = MakeLambda(cond_expr);
+
+  ParsedArgs args;
+  args.AddArg("right", right);
+  args.AddArg("type", join_type);
+  args.AddArg("cond", cond_lambda);
+  args.AddArg("cols", left_service_column);
+
+  auto status = OldJoinHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'cols' must be a lambda"));
+}
+
+TEST_F(OldJoinTest, OldJoinTypeNotString) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  MemorySourceIR* right = MakeMemSource();
+
+  auto join_type = MakeInt(123);
+
+  auto left_service_column = MakeColumn("service", 0);
+  auto right_latency_column = MakeColumn("latency", 1);
+  auto right_rps_column = MakeColumn("rps", 1);
+  auto output_cols_lambda = MakeLambda({{"service", left_service_column},
+                                        {"latency", right_latency_column},
+                                        {"rps", right_rps_column}});
+
+  auto left_column = MakeColumn("service", 0);
+  auto right_column = MakeColumn("service", 1);
+  auto cond_expr = MakeEqualsFunc(left_column, right_column);
+  auto cond_lambda = MakeLambda(cond_expr);
+
+  // Save ids of nodes that should be removed
+  ParsedArgs args;
+  args.AddArg("right", right);
+  args.AddArg("type", join_type);
+  args.AddArg("cond", cond_lambda);
+  args.AddArg("cols", output_cols_lambda);
+
+  auto status = OldJoinHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'type' must be a str"));
+}
+
+TEST_F(OldJoinTest, OldJoinColsNotDictBody) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  MemorySourceIR* right = MakeMemSource();
+
+  auto join_type = MakeString("inner");
+
+  auto left_service_column = MakeColumn("service", 0);
+  auto output_cols_lambda = MakeLambda(left_service_column);
+
+  auto left_column = MakeColumn("service", 0);
+  auto right_column = MakeColumn("service", 1);
+  auto cond_expr = MakeEqualsFunc(left_column, right_column);
+  auto cond_lambda = MakeLambda(cond_expr);
+
+  ParsedArgs args;
+  args.AddArg("right", right);
+  args.AddArg("type", join_type);
+  args.AddArg("cond", cond_lambda);
+  args.AddArg("cols", output_cols_lambda);
+
+  auto status = OldJoinHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'cols'.*lambda must have a dictionary body"));
+}
+
+TEST_F(OldJoinTest, OldJoinCondWithDictBody) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  MemorySourceIR* right = MakeMemSource();
+
+  auto join_type = MakeString("inner");
+
+  auto left_service_column = MakeColumn("service", 0);
+  auto right_latency_column = MakeColumn("latency", 1);
+  auto right_rps_column = MakeColumn("rps", 1);
+  auto output_cols_lambda = MakeLambda({{"service", left_service_column},
+                                        {"latency", right_latency_column},
+                                        {"rps", right_rps_column}});
+
+  auto left_column = MakeColumn("service", 0);
+  auto right_column = MakeColumn("service", 1);
+  auto cond_expr = MakeEqualsFunc(left_column, right_column);
+  auto cond_lambda = MakeLambda({{"cond", cond_expr}});
+
+  ParsedArgs args;
+  args.AddArg("right", right);
+  args.AddArg("type", join_type);
+  args.AddArg("cond", cond_lambda);
+  args.AddArg("cols", output_cols_lambda);
+
+  auto status = OldJoinHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'cond'.*lambda cannot have a dictionary body"));
+}
+
+TEST_F(OldJoinTest, OldJoinOutputColsAreMiscExpressions) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  MemorySourceIR* right = MakeMemSource();
+
+  auto join_type = MakeString("inner");
+
+  auto left_service_column = MakeColumn("service", 0);
+  auto right_latency_column = MakeColumn("latency", 1);
+  auto output_cols_lambda =
+      MakeLambda({{"service", MakeEqualsFunc(left_service_column, right_latency_column)}});
+
+  auto left_column = MakeColumn("service", 0);
+  auto right_column = MakeColumn("service", 1);
+  auto cond_expr = MakeEqualsFunc(left_column, right_column);
+  auto cond_lambda = MakeLambda(cond_expr);
+
+  ParsedArgs args;
+  args.AddArg("right", right);
+  args.AddArg("type", join_type);
+  args.AddArg("cond", cond_lambda);
+  args.AddArg("cols", output_cols_lambda);
+
+  auto status = OldJoinHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("'cols' can only have columns"));
+}
+
+TEST_F(OldJoinTest, OldJoinCondNotAFunc) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  MemorySourceIR* right = MakeMemSource();
+
+  auto join_type = MakeString("inner");
+
+  auto left_service_column = MakeColumn("service", 0);
+  auto right_latency_column = MakeColumn("latency", 1);
+  auto right_rps_column = MakeColumn("rps", 1);
+  auto output_cols_lambda = MakeLambda({{"service", left_service_column},
+                                        {"latency", right_latency_column},
+                                        {"rps", right_rps_column}});
+
+  auto left_column = MakeColumn("service", 0);
+  auto cond_lambda = MakeLambda(left_column);
+
+  ParsedArgs args;
+  args.AddArg("right", right);
+  args.AddArg("type", join_type);
+  args.AddArg("cond", cond_lambda);
+  args.AddArg("cols", output_cols_lambda);
+
+  auto status = OldJoinHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(
+      status.status(),
+      HasCompilerError("'cond' must be equality condition or `and` of equality conditions"));
+}
+
+TEST_F(DataframeTest, JoinCall) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  // No df for the right because the compiler should remove it if possible.
+  MemorySourceIR* right = MakeMemSource();
+
+  auto join_type = MakeString("inner");
+
+  auto left_service_column = MakeColumn("service", 0);
+  auto right_latency_column = MakeColumn("latency", 1);
+  auto right_rps_column = MakeColumn("rps", 1);
+  auto output_cols_lambda = MakeLambda({{"service", left_service_column},
+                                        {"latency", right_latency_column},
+                                        {"rps", right_rps_column}});
+
+  auto left_column = MakeColumn("service", 0);
+  auto right_column = MakeColumn("service", 1);
+  auto cond_expr = MakeEqualsFunc(left_column, right_column);
+  auto cond_lambda = MakeLambda(cond_expr);
+
+  // Save ids of nodes that should be removed
+  int64_t cond_lambda_id = cond_lambda->id();
+  int64_t output_cols_lambda_id = output_cols_lambda->id();
+
+  ArgMap args{{}, {right, cond_lambda, output_cols_lambda, join_type}};
+
+  auto get_method_status = srcdf->GetMethod(Dataframe::kMergeOpId);
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  auto status = func_obj->Call(args, ast);
+  ASSERT_OK(status);
+
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto join_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(join_obj->op(), Join()));
+  JoinIR* join = static_cast<JoinIR*>(join_obj->op());
+
+  EXPECT_THAT(join->parents(), ElementsAre(left, right));
+
+  EXPECT_TRUE(join->join_type() == JoinIR::JoinType::kInner);
+
+  EXPECT_THAT(join->output_columns(),
+              ElementsAre(left_service_column, right_latency_column, right_rps_column));
+  EXPECT_THAT(join->column_names(), ElementsAre("service", "latency", "rps"));
+
+  EXPECT_FALSE(graph->HasNode(cond_lambda_id));
+  EXPECT_FALSE(graph->HasNode(output_cols_lambda_id));
+
+  EXPECT_THAT(join->left_on_columns(), ElementsAre(left_column));
+  EXPECT_THAT(join->right_on_columns(), ElementsAre(right_column));
+}
+
+// TODO(philkuz) (PL-1129) figure out default arguments.
+TEST_F(DataframeTest, DISABLED_JoinCallDefaultTypeArg) {
+  MemorySourceIR* left = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
+  // No df for the right because the compiler should remove it if possible.
+  MemorySourceIR* right = MakeMemSource();
+
+  auto left_service_column = MakeColumn("service", 0);
+  auto right_latency_column = MakeColumn("latency", 1);
+  auto right_rps_column = MakeColumn("rps", 1);
+  auto output_cols_lambda = MakeLambda({{"service", left_service_column},
+                                        {"latency", right_latency_column},
+                                        {"rps", right_rps_column}});
+
+  auto left_column = MakeColumn("service", 0);
+  auto right_column = MakeColumn("service", 1);
+  auto cond_expr = MakeEqualsFunc(left_column, right_column);
+  auto cond_lambda = MakeLambda(cond_expr);
+
+  // Save ids of nodes that should be removed
+  int64_t cond_lambda_id = cond_lambda->id();
+  int64_t output_cols_lambda_id = output_cols_lambda->id();
+
+  ArgMap args{{}, {right, cond_lambda, output_cols_lambda}};
+
+  auto get_method_status = srcdf->GetMethod(Dataframe::kMergeOpId);
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  auto status = func_obj->Call(args, ast);
+  ASSERT_OK(status);
+
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto join_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(join_obj->op(), Join()));
+  JoinIR* join = static_cast<JoinIR*>(join_obj->op());
+
+  EXPECT_THAT(join->parents(), ElementsAre(left, right));
+
+  EXPECT_TRUE(join->join_type() == JoinIR::JoinType::kInner);
+
+  EXPECT_THAT(join->output_columns(),
+              ElementsAre(left_service_column, right_latency_column, right_rps_column));
+  EXPECT_THAT(join->column_names(), ElementsAre("service", "latency", "rps"));
+
+  EXPECT_FALSE(graph->HasNode(cond_lambda_id));
+  EXPECT_FALSE(graph->HasNode(output_cols_lambda_id));
+
+  EXPECT_THAT(join->left_on_columns(), ElementsAre(left_column));
+  EXPECT_THAT(join->right_on_columns(), ElementsAre(right_column));
 }
 
 }  // namespace compiler

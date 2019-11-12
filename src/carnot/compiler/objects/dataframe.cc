@@ -5,6 +5,7 @@ namespace carnot {
 namespace compiler {
 Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
   CHECK(op != nullptr) << "Bad argument in Dataframe constructor.";
+  // TODO(philkuz) (PL-1128) re-enable this when new join syntax is supported.
   /**
    * # Equivalent to the python method method syntax:
    * def merge(self, right, how, left_on, right_on, suffixes=('_x', '_y')):
@@ -13,12 +14,12 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
   // TODO(philkuz) If there's a chance convert the internals of FuncObject to compile time
   // checking of the default arguments. Everytime we create a Dataframe object you have to make this
   // binding.
-  std::shared_ptr<FuncObject> mergefn(new FuncObject(
-      kMergeOpId, {"right", "how", "left_on", "right_on", "suffixes"},
-      {{"suffixes", "('_x', '_y')"}},
-      /* has_kwargs */ false,
-      std::bind(&JoinHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  AddMethod(kMergeOpId, mergefn);
+  // std::shared_ptr<FuncObject> mergefn(new FuncObject(
+  //     kMergeOpId, {"right", "how", "left_on", "right_on", "suffixes"},
+  //     {{"suffixes", "('_x', '_y')"}},
+  //     /* has_kwargs */ false,
+  //     std::bind(&JoinHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  // AddMethod(kMergeOpId, mergefn);
 
   /**
    * # Equivalent to the python method method syntax:
@@ -86,6 +87,17 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       /* has_kwargs */ false,
       std::bind(&OldAggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kBlockingAggOpId, aggfn);
+  // TODO(philkuz) (PL-1128) disable this when new join syntax is supported.
+  /**
+   * # Equivalent to the python method method syntax:
+   * def merge(self, right, cond, cols, type="inner"):
+   *     ...
+   */
+  std::shared_ptr<FuncObject> old_join_fn(new FuncObject(
+      kMergeOpId, {"right", "cond", "cols", "type"}, {{"type", "'inner'"}},
+      /* has_kwargs */ false,
+      std::bind(&OldJoinHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kMergeOpId, old_join_fn);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
@@ -324,6 +336,67 @@ StatusOr<std::vector<ColumnIR*>> OldAggHandler::SetupGroups(ExpressionIR* group_
         "'by' lambda must contain a column or a list of columns");
   }
   return groups;
+}
+
+StatusOr<QLObjectPtr> OldJoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                           const ParsedArgs& args) {
+  IRNode* right_node = args.GetArg("right");
+  IRNode* type_node = args.GetArg("type");
+  IRNode* cond_node = args.GetArg("cond");
+  IRNode* cols_node = args.GetArg("cols");
+
+  if (!Match(right_node, Operator())) {
+    return right_node->CreateIRNodeError("'right' must be a Dataframe");
+  }
+  if (!Match(cond_node, Lambda())) {
+    return cond_node->CreateIRNodeError("'cond' must be a lambda");
+  }
+  if (!Match(cols_node, Lambda())) {
+    return cols_node->CreateIRNodeError("'cols' must be a lambda");
+  }
+  if (!Match(type_node, String())) {
+    return type_node->CreateIRNodeError("'type' must be a str");
+  }
+
+  OperatorIR* right = static_cast<OperatorIR*>(right_node);
+
+  LambdaIR* cols = static_cast<LambdaIR*>(cols_node);
+  if (!cols->HasDictBody()) {
+    return cols->CreateIRNodeError("'cols' argument error, lambda must have a dictionary body");
+  }
+
+  LambdaIR* cond = static_cast<LambdaIR*>(cond_node);
+  if (cond->HasDictBody()) {
+    return cond->CreateIRNodeError("'cond' argument error, lambda cannot have a dictionary body");
+  }
+
+  std::string how_str = static_cast<StringIR*>(type_node)->str();
+  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(type_node->id()));
+
+  std::vector<ColumnIR*> columns;
+  std::vector<std::string> column_names;
+  // Have to remove the edges from the fn lambda.
+  for (const ColumnExpression& mapped_expression : cols->col_exprs()) {
+    ExpressionIR* expr = mapped_expression.node;
+    if (!Match(expr, ColumnNode())) {
+      return expr->CreateIRNodeError("'cols' can only have columns");
+    }
+    column_names.push_back(mapped_expression.name);
+    columns.push_back(static_cast<ColumnIR*>(expr));
+  }
+
+  // Have to remove the edges from the by lambda.
+  PL_ASSIGN_OR_RETURN(ExpressionIR * cond_expr, cond->GetDefaultExpr());
+  PL_ASSIGN_OR_RETURN(JoinIR::EqConditionColumns eq_condition, JoinIR::ParseCondition(cond_expr));
+
+  PL_ASSIGN_OR_RETURN(JoinIR * join_op, df->graph()->MakeNode<JoinIR>(ast));
+  PL_RETURN_IF_ERROR(join_op->Init({df->op(), right}, how_str, eq_condition.left_on_cols,
+                                   eq_condition.right_on_cols, {}));
+  PL_RETURN_IF_ERROR(join_op->SetOutputColumns(column_names, columns));
+  // Delete the lambdas.
+  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(cond_node->id()));
+  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(cols_node->id()));
+  return StatusOr(std::make_shared<Dataframe>(join_op));
 }
 
 }  // namespace compiler
