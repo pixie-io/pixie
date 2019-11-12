@@ -252,25 +252,26 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 5
-          sorted_children: 7
+          id: 8
+          sorted_children: 10
         }
         nodes {
-          id: 3
-          sorted_children: 7
+          id: 6
+          sorted_children: 10
         }
         nodes {
-          id: 7
-          sorted_children: 0
-          sorted_parents: 3
-          sorted_parents: 5
+          id: 10
+          sorted_children: 4
+          sorted_parents: 6
+          sorted_parents: 8
         }
         nodes {
-          sorted_parents: 7
+          id: 4
+          sorted_parents: 10
         }
       }
       nodes {
-        id: 5
+        id: 8
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -280,7 +281,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 3
+        id: 6
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -290,7 +291,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 7
+        id: 10
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -328,25 +329,25 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 5
-          sorted_children: 7
+          id: 8
+          sorted_children: 10
         }
         nodes {
-          id: 3
-          sorted_children: 7
+          id: 6
+          sorted_children: 10
         }
         nodes {
-          id: 7
-          sorted_children: 0
-          sorted_parents: 3
-          sorted_parents: 5
+          id: 10
+          sorted_children: 4
+          sorted_parents: 6
+          sorted_parents: 8
         }
         nodes {
-          sorted_parents: 7
+          sorted_parents: 10
         }
       }
       nodes {
-        id: 5
+        id: 8
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -356,7 +357,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 3
+        id: 6
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -366,7 +367,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 7
+        id: 10
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -414,6 +415,7 @@ dag {
 }
 )proto";
 
+// TODO(philkuz/zasgar/michelle) need to update these values.
 const char* kExpectedPlanTwoAgentOneKelvin = R"proto(
 qb_address_to_plan {
   key: "agent1"

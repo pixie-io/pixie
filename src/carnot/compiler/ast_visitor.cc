@@ -2,6 +2,7 @@
 
 #include "src/carnot/compiler/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
+#include "src/carnot/compiler/objects/none_object.h"
 
 namespace pl {
 namespace carnot {
@@ -16,22 +17,66 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const p
   return op_find->second;
 }
 
-ASTVisitorImpl::ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state) {
-  ir_graph_ = ir_graph;
+ASTVisitorImpl::ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state)
+    : ir_graph_(ir_graph), compiler_state_(compiler_state) {
   var_table_ = VarTable();
-  compiler_state_ = compiler_state;
+  var_table_[kDataframeOpId] = std::shared_ptr<FuncObject>(
+      new FuncObject(kDataframeOpId, {"table", "select"}, {{"select", "[]"}}, /*has_kwargs*/ false,
+                     std::bind(&ASTVisitorImpl::ProcessDataframeOp, this, std::placeholders::_1,
+                               std::placeholders::_2)));
+  // TODO(philkuz) (PL-1038) figure out naming for Print syntax to get around parser.
+  // var_table_[kPrintOpId] = std::shared_ptr<FuncObject>(new FuncObject(
+  //     kPrintOpId, {"out", "name", "cols"}, {{"name", ""}, {"cols", "[]"}}, /*has_kwargs*/ false,
+  //     std::bind(&ASTVisitorImpl::ProcessPrint, this, std::placeholders::_1,
+  //               std::placeholders::_2)));
 }
 
-std::string ASTVisitorImpl::GetAstTypeName(pypa::AstType type) {
-  std::vector<std::string> type_names = {
-#undef PYPA_AST_TYPE
-#define PYPA_AST_TYPE(X) #X,
-// NOLINTNEXTLINE(build/include_order).
-#include <pypa/ast/ast_type.inl>
-#undef PYPA_AST_TYPE
-  };
-  DCHECK(type_names.size() > static_cast<size_t>(type));
-  return absl::Substitute("$0", type_names[static_cast<int>(type)]);
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataframeOp(const pypa::AstPtr& ast,
+                                                         const ParsedArgs& args) {
+  IRNode* table = args.GetArg("table");
+  IRNode* select = args.GetArg("select");
+  if (!Match(table, String())) {
+    return table->CreateIRNodeError("'table' must be a string, got $0", table->type_string());
+  }
+
+  if (!Match(select, ListWithChildren(String()))) {
+    return select->CreateIRNodeError("'select' must be a list of strings.");
+  }
+
+  std::string table_name = static_cast<StringIR*>(table)->str();
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
+                      ParseStringListIR(static_cast<ListIR*>(select)));
+  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op, ir_graph_->MakeNode<MemorySourceIR>(ast));
+  PL_RETURN_IF_ERROR(mem_source_op->Init(table_name, columns));
+  return StatusOr(std::make_shared<Dataframe>(mem_source_op));
+}
+
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessPrint(const pypa::AstPtr& ast,
+                                                   const ParsedArgs& args) {
+  IRNode* out = args.GetArg("out");
+  IRNode* name = args.GetArg("name");
+  IRNode* cols = args.GetArg("cols");
+
+  if (!Match(out, Operator())) {
+    return out->CreateIRNodeError("'out' must be a dataframe", out->type_string());
+  }
+
+  if (!Match(name, String())) {
+    return name->CreateIRNodeError("'name' must be a string");
+  }
+
+  if (!Match(cols, ListWithChildren(String()))) {
+    return cols->CreateIRNodeError("'cols' must be a list of strings.");
+  }
+
+  OperatorIR* out_op = static_cast<OperatorIR*>(out);
+  std::string out_name = static_cast<StringIR*>(name)->str();
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
+                      ParseStringListIR(static_cast<ListIR*>(cols)));
+
+  PL_ASSIGN_OR_RETURN(MemorySinkIR * mem_sink_op, ir_graph_->MakeNode<MemorySinkIR>(ast));
+  PL_RETURN_IF_ERROR(mem_sink_op->Init(out_op, out_name, columns));
+  return StatusOr(std::make_shared<NoneObject>(mem_sink_op));
 }
 
 Status ASTVisitorImpl::ProcessExprStmtNode(const pypa::AstExpressionStatementPtr& e) {
@@ -98,7 +143,7 @@ Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr
                           GetAstTypeName(subscript->value->type));
   }
   auto assign_name = PYPA_PTR_CAST(Name, subscript->value);
-  auto assign_name_string = GetNameID(subscript->value);
+  auto assign_name_string = GetNameAsString(subscript->value);
 
   // Check to make sure this dataframe exists
   PL_ASSIGN_OR_RETURN(auto parent_op, LookupName(assign_name));
@@ -139,7 +184,7 @@ Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr
   PL_RETURN_IF_ERROR(ir_node->Init(parent_op, map_args, expr_node));
   ir_node->set_keep_input_columns(true);
 
-  var_table_[assign_name_string] = ir_node;
+  var_table_[assign_name_string] = std::make_shared<Dataframe>(ir_node);
 
   return Status::OK();
 }
@@ -147,7 +192,7 @@ Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr
 Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   // Check # nodes to assign.
   if (node->targets.size() != 1) {
-    return CreateAstError(node, "AssignNodes are only supported with one target.");
+    return CreateAstError(node, "We only support single target assignment.");
   }
   // Get the name that we are targeting.
   auto target_node = node->targets[0];
@@ -158,10 +203,10 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   }
 
   if (target_node->type != AstType::Name) {
-    return CreateAstError(target_node, "Assign target must be a Name node, received: $0",
-                          GetAstTypeName(target_node->type));
+    return CreateAstError(target_node, "Assignment target must be a Name");
   }
-  std::string assign_name = GetNameID(target_node);
+
+  std::string assign_name = GetNameAsString(target_node);
   // Get the object that we want to assign.
   switch (node->value->type) {
     case AstType::Call: {
@@ -180,7 +225,7 @@ StatusOr<std::string> ASTVisitorImpl::GetFuncName(const pypa::AstCallPtr& node) 
   std::string func_name;
   switch (node->function->type) {
     case AstType::Name: {
-      func_name = GetNameID(node->function);
+      func_name = GetNameAsString(node->function);
       break;
     }
     case AstType::Attribute: {
@@ -189,7 +234,7 @@ StatusOr<std::string> ASTVisitorImpl::GetFuncName(const pypa::AstCallPtr& node) 
         return CreateAstError(node->function, "Couldn't get string name out of node of type $0.",
                               GetAstTypeName(attr->attribute->type));
       }
-      func_name = GetNameID(attr->attribute);
+      func_name = GetNameAsString(attr->attribute);
       break;
     }
     default: {
@@ -200,23 +245,14 @@ StatusOr<std::string> ASTVisitorImpl::GetFuncName(const pypa::AstCallPtr& node) 
   return func_name;
 }
 
-StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast,
-                                             const OperatorContext& op_context,
-                                             const std::vector<std::string>& expected_args) {
-  return ProcessArgs(call_ast, op_context, expected_args, {{}});
+StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast) {
+  OperatorContext op_context({}, "");
+  return ProcessArgs(call_ast, op_context);
 }
-
-StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(
-    const pypa::AstCallPtr& call_ast, const OperatorContext& op_context,
-    const std::vector<std::string>& expected_args,
-    const std::unordered_map<std::string, IRNode*>& default_args) {
+StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast,
+                                             const OperatorContext& op_context) {
   auto arg_ast = call_ast->arglist;
   ArgMap arg_map;
-  // Set to keep track of args that are not yet found.
-  std::unordered_set<std::string> missing_or_default_args;
-  missing_or_default_args.insert(expected_args.begin(), expected_args.end());
-
-  std::vector<Status> errors;
 
   for (const auto arg : arg_ast.arguments) {
     PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(arg, op_context));
@@ -226,174 +262,56 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(
   // Iterate through the keywords
   for (auto& k : arg_ast.keywords) {
     pypa::AstKeywordPtr kw_ptr = PYPA_PTR_CAST(Keyword, k);
-    std::string key = GetNameID(kw_ptr->name);
-    if (missing_or_default_args.find(key) == missing_or_default_args.end()) {
-      errors.push_back(CreateAstError(call_ast, "Keyword '$0' not expected in function.", key));
-      continue;
-    }
-    missing_or_default_args.erase(missing_or_default_args.find(key));
+    std::string key = GetNameAsString(kw_ptr->name);
     PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(kw_ptr->value, op_context));
     arg_map.kwargs[key] = value;
   }
 
-  for (const auto& ma : missing_or_default_args) {
-    auto find_ma = default_args.find(ma);
-    if (find_ma == default_args.end()) {
-      // TODO(philkuz) look for places where ast error might exit prematurely in other parts of
-      // the code.
-      errors.push_back(
-          CreateAstError(call_ast, "You must set '$0' directly. No default value found.", ma));
-      continue;
-    }
-    arg_map.kwargs[ma] = find_ma->second;
-  }
-
-  PL_RETURN_IF_ERROR(MergeStatuses(errors));
   return arg_map;
+}  // namespace compiler
+
+StatusOr<QLObjectPtr> ASTVisitorImpl::LookupVariable(const pypa::AstPtr& ast,
+                                                     const std::string& name) {
+  auto find_name = var_table_.find(name);
+  if (find_name == var_table_.end()) {
+    return CreateAstError(ast, "Can't find variable '$0'.", name);
+  }
+  return find_name->second;
 }
 
 StatusOr<OperatorIR*> ASTVisitorImpl::LookupName(const pypa::AstNamePtr& name_node) {
-  // if doesn't exist, then
-  auto find_name = var_table_.find(name_node->id);
-  if (find_name == var_table_.end()) {
-    return CreateAstError(name_node, "Can't find variable '$0'.", name_node->id);
+  PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, LookupVariable(name_node));
+  if (!pyobject->HasNode()) {
+    return CreateAstError(name_node, "'$0' not accessible", name_node->id);
   }
-  IRNode* node = find_name->second;
+  IRNode* node = pyobject->node();
   if (!node->IsOperator()) {
-    return node->CreateIRNodeError(
-        "Can only have operators saved as variables for now. Can't handle $0.",
-        node->type_string());
+    return node->CreateIRNodeError("Only dataframes may be assigned variables, $0 not allowed",
+                                   node->type_string());
   }
   return static_cast<OperatorIR*>(node);
 }
 
-StatusOr<OperatorIR*> ASTVisitorImpl::ProcessAttribute(const pypa::AstAttributePtr& node) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessAttributeValue(const pypa::AstAttributePtr& node) {
   switch (node->value->type) {
     case AstType::Call: {
       return ProcessOpCallNode(PYPA_PTR_CAST(Call, node->value));
     }
     case AstType::Name: {
-      return LookupName(PYPA_PTR_CAST(Name, node->value));
+      return LookupVariable(PYPA_PTR_CAST(Name, node->value));
     }
     default: {
-      return CreateAstError(node->value, "Can't handle the attribute of this type");
+      return CreateAstError(node->value, "Can't handle the attribute of type $0",
+                            GetAstTypeName(node->type));
     }
   }
 }
 
-template <typename TOpIR>
-StatusOr<TOpIR*> ASTVisitorImpl::ProcessOp(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(TOpIR * ir_node, ir_graph_->MakeNode<TOpIR>());
-  if (!(ir_node->is_source()) && node->function->type != AstType::Attribute) {
-    return CreateAstError(
-        node->function,
-        "Only source operators can be called from outside a table reference. '$0' "
-        "needs to be called as an attribute of a table.",
-        ir_node->type_string());
+StatusOr<std::string> ASTVisitorImpl::GetAttribute(const pypa::AstAttributePtr& attr) {
+  if (attr->attribute->type != AstType::Name) {
+    return CreateAstError(attr, "$0 not a valid attribute", GetAstTypeName(attr->attribute->type));
   }
-  OperatorIR* parent_op = nullptr;
-  if (node->function->type == AstType::Attribute) {
-    PL_ASSIGN_OR_RETURN(parent_op, ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  }
-  PL_ASSIGN_OR_RETURN(ArgMap args,
-                      ProcessArgs(node, OperatorContext({parent_op}, ir_node), ir_node->ArgKeys(),
-                                  ir_node->DefaultArgValues(node)));
-
-  PL_RETURN_IF_ERROR(ir_node->Init(parent_op, args, node));
-  return ir_node;
-}
-
-template <>
-StatusOr<RangeIR*> ASTVisitorImpl::ProcessOp(const pypa::AstCallPtr& node) {
-  if (node->function->type != AstType::Attribute) {
-    return CreateAstError(node->function, "Expected Range to be an attribute, not a $0",
-                          GetAstTypeName(node->function->type));
-  }
-  PL_ASSIGN_OR_RETURN(RangeIR * ir_node, ir_graph_->MakeNode<RangeIR>());
-
-  // Setup the default arguments.
-  FuncIR::Op time_now_op{FuncIR::Opcode::non_op, "", kTimeNowFnStr};
-  PL_ASSIGN_OR_RETURN(FuncIR * default_time_now, ir_graph_->MakeNode<FuncIR>());
-  PL_RETURN_IF_ERROR(default_time_now->Init(time_now_op, {}, node));
-
-  PL_ASSIGN_OR_RETURN(OperatorIR * parent_op,
-                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, OperatorContext({parent_op}, ir_node),
-                                               {"start", "stop"}, {{"stop", default_time_now}}));
-  PL_RETURN_IF_ERROR(ir_node->Init(parent_op, args.kwargs["start"], args.kwargs["stop"], node));
-  return ir_node;
-}
-
-template <>
-StatusOr<JoinIR*> ASTVisitorImpl::ProcessOp(const pypa::AstCallPtr& node) {
-  if (node->function->type != AstType::Attribute) {
-    return CreateAstError(node->function, "Expected Join to be an attribute, not a $0",
-                          GetAstTypeName(node->function->type));
-  }
-  PL_ASSIGN_OR_RETURN(JoinIR * ir_node, ir_graph_->MakeNode<JoinIR>());
-
-  OperatorIR* parent_op1 = nullptr;
-  if (node->function->type == AstType::Attribute) {
-    PL_ASSIGN_OR_RETURN(parent_op1, ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  }
-  auto arg_list = node->arglist;
-
-  std::string expected_first_arg_string =
-      "Expected first argument of Join operator to be a Name referencing a "
-      "parent";
-  if (arg_list.arguments.size() < 1) {
-    return CreateAstError(node, "$0. No argument specified.", expected_first_arg_string);
-  }
-
-  if (arg_list.arguments.size() > 1) {
-    return CreateAstError(node, "$0. Got more than one argument.", expected_first_arg_string);
-  }
-
-  // TODO(nserrino): Simply get this from ArgMap from ProcessArgs once ProcessArgs no longer
-  // has a dependency on parent_op2 (op_context)
-  auto parent_arg = arg_list.arguments[0];
-  if (parent_arg->type != AstType::Name) {
-    return CreateAstError(parent_arg, "$0. Got $1 instead.", expected_first_arg_string,
-                          GetAstTypeName(parent_arg->type));
-  }
-
-  PL_ASSIGN_OR_RETURN(OperatorIR * parent_op2, LookupName(PYPA_PTR_CAST(Name, parent_arg)));
-
-  PL_ASSIGN_OR_RETURN(ArgMap args,
-                      ProcessArgs(node, OperatorContext({parent_op1, parent_op2}, ir_node),
-                                  ir_node->ArgKeys(), ir_node->DefaultArgValues(node)));
-
-  PL_RETURN_IF_ERROR(ir_node->Init({parent_op1, parent_op2}, args, node));
-  return ir_node;
-}
-
-StatusOr<OperatorIR*> ASTVisitorImpl::ProcessOpCallNode(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(std::string func_name, GetFuncName(node));
-  OperatorIR* op_node;
-  if (func_name == kDataframeOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessDataframeOp(node));
-    op_node->SetLineCol(node);
-  } else if (func_name == kRangeOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<RangeIR>(node));
-  } else if (func_name == kMapOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<MapIR>(node));
-  } else if (func_name == kFilterOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<FilterIR>(node));
-  } else if (func_name == kLimitOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<LimitIR>(node));
-  } else if (func_name == kBlockingAggOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<BlockingAggIR>(node));
-  } else if (func_name == kSinkOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<MemorySinkIR>(node));
-  } else if (func_name == kJoinOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessOp<JoinIR>(node));
-  } else if (func_name == kRangeAggOpId) {
-    PL_ASSIGN_OR_RETURN(op_node, ProcessRangeAggOp(node));
-  } else {
-    return CreateAstError(node, "No function named '$0'", func_name);
-  }
-  return op_node;
+  return GetNameAsString(attr->attribute);
 }
 
 IRNode* GetArgument(const ArgMap& args, const std::string& arg_name) {
@@ -404,136 +322,35 @@ IRNode* GetArgument(const ArgMap& args, const std::string& arg_name) {
   return iter->second;
 }
 
-StatusOr<MemorySourceIR*> ASTVisitorImpl::ProcessDataframeOp(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op, ir_graph_->MakeNode<MemorySourceIR>());
-  if (node->function->type == AstType::Attribute) {
-    return CreateAstError(node->function, "$0 must be called by itself, not as a Dataframe method",
-                          kDataframeOpId);
-  }
-  PL_ASSIGN_OR_RETURN(
-      ArgMap args, ProcessArgs(node, OperatorContext({}, mem_source_op), mem_source_op->ArgKeys(),
-                               mem_source_op->DefaultArgValues(node)));
-
-  IRNode* table = GetArgument(args, "table");
-  IRNode* select_list = GetArgument(args, "select");
-  if (table == nullptr) {
-    return CreateAstError(node, "Missing table argument.");
-  }
-
-  if (table->type() != IRNodeType::kString) {
-    return table->CreateIRNodeError("Expected String not '$0'.", table->type_string());
-  }
-  StringIR* table_str_ir = static_cast<StringIR*>(table);
-  std::string table_name = table_str_ir->str();
-  PL_RETURN_IF_ERROR(ir_graph_->DeleteNode(table_str_ir->id()));
-
-  if (select_list == nullptr) {
-    PL_RETURN_IF_ERROR(mem_source_op->Init(table_name, {}));
-    return mem_source_op;
-  }
-
-  if (select_list->type() != IRNodeType::kList) {
-    return select_list->CreateIRNodeError("Expected List not '$0'.", select_list->type_string());
-  }
-  ListIR* columns_list = static_cast<ListIR*>(select_list);
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns, ParseStringListIR(columns_list));
-  PL_RETURN_IF_ERROR(ir_graph_->DeleteNodeAndChildren(select_list->id()));
-  PL_RETURN_IF_ERROR(mem_source_op->Init(table_name, columns));
-  return mem_source_op;
-}
-
-StatusOr<OperatorIR*> ASTVisitorImpl::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
-  if (node->function->type != AstType::Attribute) {
-    return CreateAstError(node->function, "Expected RangeAgg to be an attribute, not a $0",
-                          GetAstTypeName(node->function->type));
-  }
-
-  PL_ASSIGN_OR_RETURN(OperatorIR * parent_op,
-                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, OperatorContext({parent_op}, kRangeAggOpId),
-                                               {"fn", "by", "size"}));
-
-  // Create Map IR.
-  PL_ASSIGN_OR_RETURN(MapIR * map_ir_node, ir_graph_->MakeNode<MapIR>());
-
-  // pl.mod(by_col, size).
-  DCHECK(args.kwargs["by"]->type() == IRNodeType::kLambda);
-  LambdaIR* by_lambda = static_cast<LambdaIR*>(args.kwargs["by"]);
-  if (by_lambda->col_exprs().size() > 1) {
-    return by_lambda->CreateIRNodeError(
-        "Too many arguments for by argument of RangeAgg, only 1 is supported. ");
-  }
-
-  IRNode* by_expr = by_lambda->col_exprs()[0].node;
-  if (Match(by_expr, List())) {
-    ListIR* by_list = static_cast<ListIR*>(by_expr);
-    if (by_list->children().size() != 1) {
-      return by_list->CreateIRNodeError(
-          "$0 supports a single group by column, please update the query.", kRangeAggOpId);
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessOpCallNode(const pypa::AstCallPtr& node) {
+  std::shared_ptr<FuncObject> func_object;
+  // pyobject declared up here because we need this object to be allocated when
+  // func_object->Call() is made.
+  QLObjectPtr pyobject;
+  switch (node->function->type) {
+    case AstType::Attribute: {
+      const pypa::AstAttributePtr& attr = PYPA_PTR_CAST(Attribute, node->function);
+      PL_ASSIGN_OR_RETURN(pyobject, ProcessAttributeValue(attr));
+      PL_ASSIGN_OR_RETURN(std::string attr_name, GetAttribute(attr));
+      PL_ASSIGN_OR_RETURN(func_object, pyobject->GetMethod(attr_name));
+      break;
     }
-
-    by_expr = by_list->children()[0];
-    IR* ir = by_expr->graph_ptr();
-    ir->dag().DeleteEdge(by_lambda->id(), by_list->id());
-    ir->dag().DeleteEdge(by_list->id(), by_expr->id());
-    ir->dag().DeleteNode(by_list->id());
-    PL_RETURN_IF_ERROR(ir->AddEdge(by_lambda, by_expr));
+    case AstType::Name: {
+      PL_ASSIGN_OR_RETURN(pyobject, LookupVariable(PYPA_PTR_CAST(Name, node->function)));
+      if (pyobject->type_descriptor().type() != QLObjectType::kFunction) {
+        PL_ASSIGN_OR_RETURN(func_object, pyobject->GetCallMethod());
+        break;
+      }
+      func_object = std::static_pointer_cast<FuncObject>(pyobject);
+      break;
+    }
+    default: {
+      return CreateAstError(node, "'$0' object is not callable.",
+                            GetAstTypeName(node->function->type));
+    }
   }
-
-  if (!Match(by_expr, ColumnNode())) {
-    return by_expr->CreateIRNodeError("Group-by argument must be a Column, not a %0",
-                                      by_expr->type_string());
-  }
-
-  ColumnIR* by_col = static_cast<ColumnIR*>(by_expr);
-
-  PL_RETURN_IF_ERROR(ir_graph_->DeleteEdge(by_lambda->id(), by_col->id()));
-  PL_ASSIGN_OR_RETURN(FuncIR * mod_ir_node, ir_graph_->MakeNode<FuncIR>());
-  PL_ASSIGN_OR_RETURN(FuncIR::Op mod_op, GetOp("%", node));
-  DCHECK(args.kwargs["size"]->IsExpression());
-  PL_RETURN_IF_ERROR(mod_ir_node->Init(
-      mod_op, std::vector<ExpressionIR*>({by_col, static_cast<ExpressionIR*>(args.kwargs["size"])}),
-      node));
-
-  PL_ASSIGN_OR_RETURN(ColumnIR * by_col_copy, ir_graph_->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(
-      by_col_copy->Init(by_col->col_name(), /* parent_op_idx */ 0, by_col->ast_node()));
-  // pl.subtract(by_col, pl.mod(by_col, size)).
-  PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, ir_graph_->MakeNode<FuncIR>());
-  PL_ASSIGN_OR_RETURN(FuncIR::Op sub_op, GetOp("-", node));
-  PL_RETURN_IF_ERROR(
-      sub_ir_node->Init(sub_op, std::vector<ExpressionIR*>({by_col_copy, mod_ir_node}), node));
-
-  // Map(lambda r: {'group': pl.subtract(by_col, pl.modulo(by_col, size))}.
-  PL_ASSIGN_OR_RETURN(LambdaIR * map_lambda_ir_node, ir_graph_->MakeNode<LambdaIR>());
-  // Pull in all columns needed in fn.
-  ColExpressionVector map_exprs = ColExpressionVector({ColumnExpression{"group", sub_ir_node}});
-  for (const auto& name : static_cast<LambdaIR*>(args.kwargs["fn"])->expected_column_names()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col_node, ir_graph_->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(col_node->Init(name, /* parent_op_idx */ 0, node));
-    map_exprs.push_back(ColumnExpression{name, col_node});
-  }
-  PL_RETURN_IF_ERROR(map_lambda_ir_node->Init(std::unordered_set<std::string>({by_col->col_name()}),
-                                              map_exprs, node));
-  ArgMap map_args{{{"fn", map_lambda_ir_node}}, {}};
-  PL_RETURN_IF_ERROR(map_ir_node->Init(parent_op, map_args, node));
-
-  // Create BlockingAggIR
-  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_ir_node, ir_graph_->MakeNode<BlockingAggIR>());
-
-  // by = lambda r: r.group.
-  PL_ASSIGN_OR_RETURN(ColumnIR * agg_col_ir_node, ir_graph_->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(agg_col_ir_node->Init("group", /* parent_op_idx*/ 0, node));
-  PL_ASSIGN_OR_RETURN(LambdaIR * agg_by_ir_node, ir_graph_->MakeNode<LambdaIR>());
-  PL_RETURN_IF_ERROR(
-      agg_by_ir_node->Init(std::unordered_set<std::string>({"group"}), agg_col_ir_node, node));
-
-  // Agg(fn = fn, by = lambda r: r.group).
-  IRNode* fn_node = args.kwargs["fn"];
-  ArgMap agg_args{{{"by", agg_by_ir_node}, {"fn", fn_node}}, {}};
-  PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_args, node));
-  return agg_ir_node;
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node));
+  return func_object->Call(args, node, this);
 }
 
 StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessStr(const pypa::AstStrPtr& ast) {
@@ -590,7 +407,7 @@ StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessLambdaNestedAttribute(
     return CreateAstError(attribute, "Expected a Name here, got a $0",
                           GetAstTypeName(attribute->type));
   }
-  std::string value_name = GetNameID(value);
+  std::string value_name = GetNameAsString(value);
   if (value_name != kCompileTimeFuncPrefix && value_name != kRunTimeFuncPrefix &&
       arg_op_map.find(value_name) == arg_op_map.end()) {
     return CreateAstError(value, "Name '$0' not defined.", value_name);
@@ -598,19 +415,19 @@ StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessLambdaNestedAttribute(
 
   std::vector<std::string> expected_attrs = {kMDKeyword};
   // Find handled attribute keywords.
-  if (GetNameID(attribute) == kMDKeyword) {
+  if (GetNameAsString(attribute) == kMDKeyword) {
     // If attribute is the metadata keyword, then we process the metadata attribute.
     return ProcessMetadataAttribute(arg_op_map, attribute_value, parent_attr);
   }
 
   return CreateAstError(attribute, "Nested attribute can only be one of [$0]. '$1' not supported",
-                        absl::StrJoin(expected_attrs, ","), GetNameID(attribute));
+                        absl::StrJoin(expected_attrs, ","), GetNameAsString(attribute));
 }
 
 StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessMetadataAttribute(
     const LambdaOperatorMap& arg_op_map, const std::string& attribute_value,
     const pypa::AstAttributePtr& val_attr) {
-  std::string value = GetNameID(val_attr->value);
+  std::string value = GetNameAsString(val_attr->value);
 
   auto arg_op_iter = arg_op_map.find(value);
   if (arg_op_iter == arg_op_map.end()) {
@@ -637,7 +454,7 @@ StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessLambdaAttribute(
   // Values of attributes (the parent of the attribute) can also be attributes themselves.
   // Nested attributes are handled here.
   if (node->value->type == AstType::Attribute) {
-    return ProcessLambdaNestedAttribute(arg_op_map, GetNameID(node->attribute),
+    return ProcessLambdaNestedAttribute(arg_op_map, GetNameAsString(node->attribute),
                                         PYPA_PTR_CAST(Attribute, node->value));
   }
 
@@ -647,18 +464,18 @@ StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessLambdaAttribute(
                           GetAstTypeName(node->value->type));
   }
 
-  std::string parent = GetNameID(node->value);
+  std::string parent = GetNameAsString(node->value);
   if (parent == kRunTimeFuncPrefix) {
     // If the value of the attribute is kRunTimeFuncPrefix, then we have a function without
     // arguments.
-    return ProcessArglessFunction(GetNameID(node->attribute));
+    return ProcessArglessFunction(GetNameAsString(node->attribute));
   } else if (parent == kCompileTimeFuncPrefix) {
     // TODO(philkuz) should spend time figuring out how to make this work, logically it should.
     return CreateAstError(node, "'$0' not supported in lambda functions.", kCompileTimeFuncPrefix);
   } else if (arg_op_map.find(parent) != arg_op_map.end()) {
     // If the value is equal to the arg_op_map, then the attribute is a column.
     int64_t parent_op_idx = arg_op_map.find(parent)->second;
-    return ProcessRecordColumn(GetNameID(node->attribute), node, parent_op_idx);
+    return ProcessRecordColumn(GetNameAsString(node->attribute), node, parent_op_idx);
   }
   return CreateAstError(node, "Name '$0' is not defined.", parent);
 }
@@ -858,8 +675,7 @@ StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessLambdaExpr(const LambdaOperato
   return expr_return;
 }
 
-StatusOr<LambdaOperatorMap> ASTVisitorImpl::ProcessLambdaArgs(const pypa::AstLambdaPtr& node,
-                                                              const OperatorContext& op_context) {
+StatusOr<LambdaOperatorMap> ASTVisitorImpl::ProcessLambdaArgs(const pypa::AstLambdaPtr& node) {
   auto arg_ast = node->arguments;
   if (!arg_ast.defaults.empty() && arg_ast.defaults[0]) {
     return CreateAstError(node, "No default arguments allowed for lambdas. Found $0 default args.",
@@ -868,24 +684,18 @@ StatusOr<LambdaOperatorMap> ASTVisitorImpl::ProcessLambdaArgs(const pypa::AstLam
   if (!arg_ast.keywords.empty()) {
     return CreateAstError(node, "No keyword arguments allowed for lambdas.");
   }
-  auto parent_ops = op_context.parent_ops;
 
-  if (arg_ast.arguments.size() != parent_ops.size()) {
-    return CreateAstError(node, "Got $0 lambda arguments, expected $1 for the $2 Operator.",
-                          arg_ast.arguments.size(), parent_ops.size(), op_context.operator_name);
-  }
   LambdaOperatorMap out_map;
-  for (size_t i = 0; i < parent_ops.size(); ++i) {
-    auto arg_node = arg_ast.arguments[i];
+  for (const auto& [idx, arg_node] : Enumerate(arg_ast.arguments)) {
     if (arg_node->type != AstType::Name) {
       return CreateAstError(node, "Argument must be a Name.");
     }
-    std::string arg_str = GetNameID(arg_node);
+    std::string arg_str = GetNameAsString(arg_node);
     if (out_map.find(arg_str) != out_map.end()) {
       return CreateAstError(node, "Duplicate argument '$0' in lambda definition.", arg_str);
     }
 
-    out_map.emplace(arg_str, /* parent_op_idx */ i);
+    out_map.emplace(arg_str, /* parent_op_idx */ idx);
   }
   return out_map;
 }
@@ -908,9 +718,9 @@ StatusOr<LambdaBodyReturn> ASTVisitorImpl::ProcessLambdaDict(const LambdaOperato
 }
 
 StatusOr<LambdaIR*> ASTVisitorImpl::ProcessLambda(const pypa::AstLambdaPtr& ast,
-                                                  const OperatorContext& op_context) {
+                                                  const OperatorContext&) {
   LambdaIR* lambda_node = ir_graph_->MakeNode<LambdaIR>().ValueOrDie();
-  PL_ASSIGN_OR_RETURN(LambdaOperatorMap arg_op_map, ProcessLambdaArgs(ast, op_context));
+  PL_ASSIGN_OR_RETURN(LambdaOperatorMap arg_op_map, ProcessLambdaArgs(ast));
   LambdaBodyReturn return_struct;
   switch (ast->body->type) {
     case AstType::Dict: {
@@ -1013,11 +823,11 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCall(const pypa::AstCallPtr& 
     return CreateAstError(attr_fn_name, "Expected Name attr not $0", GetAstTypeName(fn->type));
   }
   // attr parent must be plc.
-  auto attr_parent_str = GetNameID(attr_parent);
+  auto attr_parent_str = GetNameAsString(attr_parent);
   if (attr_parent_str != kCompileTimeFuncPrefix && attr_parent_str != kRunTimeFuncPrefix) {
     return CreateAstError(attr_parent, "Namespace '$0' not found.", attr_parent_str);
   }
-  auto attr_fn_str = GetNameID(attr_fn_name);
+  auto attr_fn_str = GetNameAsString(attr_fn_name);
 
   std::vector<ExpressionIR*> func_args;
   // TODO(nserrino,philkuz) support keyword args in data calls once PyObjects land.

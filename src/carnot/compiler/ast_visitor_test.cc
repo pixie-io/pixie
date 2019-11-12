@@ -44,8 +44,7 @@ TEST(ASTVisitor, extra_arguments) {
   ASSERT_EQ(s1_num_errors, 1);
   EXPECT_EQ(error_group.errors(0).line_col_error().line(), 1);
   EXPECT_EQ(error_group.errors(0).line_col_error().column(), 10);
-  EXPECT_EQ(error_group.errors(0).line_col_error().message(),
-            "Keyword \'fakeArg\' not expected in function.");
+  EXPECT_THAT(s1, HasCompilerError("dataframe.* got an unexpected keyword argument 'fakeArg'"));
 }
 
 TEST(ASTVisitor, missing_one_argument) {
@@ -62,8 +61,8 @@ TEST(ASTVisitor, missing_one_argument) {
   ASSERT_EQ(s2_num_errors, 1);
   EXPECT_EQ(error_group.errors(0).line_col_error().line(), 1);
   EXPECT_EQ(error_group.errors(0).line_col_error().column(), 10);
-  EXPECT_EQ(error_group.errors(0).line_col_error().message(),
-            "You must set \'table\' directly. No default value found.");
+  EXPECT_THAT(s2,
+              HasCompilerError("dataframe.* missing 1 required positional argument.*? 'table'"));
 }
 
 TEST(ASTVisitor, from_select_default_arg) {
@@ -72,7 +71,7 @@ TEST(ASTVisitor, from_select_default_arg) {
 }
 
 TEST(ASTVisitor, positional_args) {
-  std::string positional_arg = "dataframe('123', 456, table='cpu').result(name='out')";
+  std::string positional_arg = "dataframe('cpu').result(name='out')";
   EXPECT_OK(ParseQuery(positional_arg));
 }
 
@@ -571,7 +570,8 @@ TEST(AggTest, not_allowed_by_arguments) {
   ASSERT_NOT_OK(ir_graph_status);
 }
 
-TEST(AggTest, nested_agg_expression_should_fail) {
+// TODO(philkuz/nserrino) address in compile_test
+TEST(AggTest, DISABLED_nested_agg_expression_should_fail) {
   std::string nested_agg_fn = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0, stop=10)",
@@ -595,7 +595,8 @@ TEST(AggTest, nested_agg_expression_should_fail) {
   EXPECT_NOT_OK(ir_graph_status);
 }
 
-TEST(LambdaTest, test_wrong_number_of_arguments) {
+// TODO(philkuz) address in later diff.
+TEST(LambdaTest, DISABLED_test_wrong_number_of_arguments) {
   std::string add_combination = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",

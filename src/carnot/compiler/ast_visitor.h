@@ -1,5 +1,4 @@
 #pragma once
-
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -17,12 +16,13 @@
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/compiler/ir/ast_utils.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
+#include "src/carnot/compiler/objects/dataframe.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
 
-using VarTable = std::unordered_map<std::string, IRNode*>;
+using VarTable = std::unordered_map<std::string, QLObjectPtr>;
 using LambdaOperatorMap = std::unordered_map<std::string, int64_t>;
 
 #define PYPA_PTR_CAST(TYPE, VAL) \
@@ -156,29 +156,34 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kFilterOpId[] = "filter";
   inline static constexpr char kLimitOpId[] = "limit";
   inline static constexpr char kJoinOpId[] = "merge";
+  // TODO(philkuz) (PL-1038) figure out naming for Print syntax to get around special casing in the
+  // parser. inline static constexpr char kPrintOpId[] = "print";
 
   // Reserved column names.
   inline static constexpr char kTimeConstantColumnName[] = "time_";
 
  private:
   /**
-   * @brief ProcessArgs traverses an arg_ast tree, confirms that the expected_args are found in that
-   * tree, and then returns a map of those expected args to the nodes they point to.
+   * @brief ProcessArgs traverses an arg_ast tree, converts the expressions into IR and then returns
+   * a data structure of positional and keyword arguments representing the arguments in IR.
    *
-   * @param arg_ast The arglist ast
-   * @param op_context: The context of the operator which this is contained within.
-   * @param expected_args The string args are expect. Should be ordered if kwargs_only is false.
-   * @param default_args A map from the arg name to a defualt node. Every arg is optionally default
-   * and doesn't need a specification
+   * @param call_ast the ast node that calls the arguments.
+   * @param op_context the op context used to process args.
    * @return StatusOr<ArgMap> a mapping of arguments (positional and kwargs) to the resulting
    * IRNode.
    */
-  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast, const OperatorContext& op_context,
-                               const std::vector<std::string>& expected_args,
-                               const std::unordered_map<std::string, IRNode*>& default_args);
+  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast, const OperatorContext& op_context);
 
-  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast, const OperatorContext& op_context,
-                               const std::vector<std::string>& expected_args);
+  /**
+   * @brief ProcessArgs traverses an arg_ast tree, converts the expressions into IR and then returns
+   * a data structure of positional and keyword arguments representing the arguments in IR.
+   *
+   * @param call_ast the ast node that calls the arguments.
+   * @return StatusOr<ArgMap> a mapping of arguments (positional and kwargs) to the resulting
+   * IRNode.
+   */
+  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast);
+
   /**
    * @brief ProcessExprStmtNode handles full lines that are expression statements.
    * ie in the following lines
@@ -238,42 +243,45 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    *
    * @param node
-   * @return StatusOr<OperatorIR*> the op contained by the call ast.
+   * @return the op contained by the call ast.
    */
-  StatusOr<OperatorIR*> ProcessOpCallNode(const pypa::AstCallPtr& node);
-
-  /**
-   * @brief Processes arbitrary operations.
-   *
-   * @param node
-   * @return StatusOr<TOpIR*> The operator that was processed by this function.
-   */
-  template <typename TOpIR>
-  StatusOr<TOpIR*> ProcessOp(const pypa::AstCallPtr& node);
+  StatusOr<QLObjectPtr> ProcessOpCallNode(const pypa::AstCallPtr& node);
 
   /**
    * @brief Create a MemorySource Operator declared by a dataframe() statement.
    *
-   * @param node the node that creates the From op.
-   * @return StatusOr<MemorySourceIR*> the memory source op or an error.
+   * @param ast the ast node that creates the From op.
+   * @param args the arguments to create the from op.
+   * @return The object created by from() or an error.
    */
-  StatusOr<MemorySourceIR*> ProcessDataframeOp(const pypa::AstCallPtr& node);
+  StatusOr<QLObjectPtr> ProcessDataframeOp(const pypa::AstPtr& ast, const ParsedArgs& args);
 
   /**
-   * @brief Processes the RangeAgg operator.
+   * @brief Create a MemorySink Operator declared by a Print() statement.
    *
-   * @param node
-   * @return StatusOr<OperatorIR*> the rangeAgg op.
+   * @param ast the ast node that creates the print op.
+   * @param args the arguments to create the print op.
+   * @return The object created by print() or an error.
    */
-  StatusOr<OperatorIR*> ProcessRangeAggOp(const pypa::AstCallPtr& node);
+  StatusOr<QLObjectPtr> ProcessPrint(const pypa::AstPtr& ast, const ParsedArgs& args);
 
   /**
-   * @brief Processes an Attribute ast at the top level.
+   * @brief Processes an Attribute value, the left side of the attribute data structure.
+   * (AstAttribute := <value>.<attribute>; `abc.blah()` -> `abc` is the value of `abc.blah`)
    *
-   * @param node attribute node that is known to be a function.
-   * @return StatusOr<OperatorIR*> The operator represented by the attribute.
+   * @param node attribute node
+   * @return  The object of the attribute value or an error if one occurs.
    */
-  StatusOr<OperatorIR*> ProcessAttribute(const pypa::AstAttributePtr& node);
+  StatusOr<QLObjectPtr> ProcessAttributeValue(const pypa::AstAttributePtr& node);
+
+  /**
+   * @brief Gets the string name of the attribute in an attribute struvct.
+   * (AstAttribute := <value>.<attribute>; `abc.blah()` -> `blah` is the attribute of `abc.blah`)
+   *
+   * @param attr the attribute struct to grab the attribute field from as a string.
+   * @return the string representation of the attribute in the attribute structure.
+   */
+  StatusOr<std::string> GetAttribute(const pypa::AstAttributePtr& attr);
 
   /**
    * @brief Helper function for processing lists and tuples into IR nodes.
@@ -349,7 +357,8 @@ class ASTVisitorImpl : public ASTVisitor {
    * referenced by that name, or errors out with an undefined variable.
    *
    * @param name
-   * @return StatusOr<OperatorIR*> - The operator referenced by the name, or an error if not found.
+   * @return StatusOr<OperatorIR*> - The operator referenced by the name, or an error if not
+   * found.
    */
   StatusOr<OperatorIR*> LookupName(const pypa::AstNamePtr& name);
 
@@ -358,12 +367,10 @@ class ASTVisitorImpl : public ASTVisitor {
    * parent operator to make operator attribution for columns clear.
    *
    * @param node
-   * @param op_context: The context of the operator which this is contained within.
    * @return StatusOr<LambdaOperatorMap> A mapping of the lambda argument name to corresponding
    * parent operator.
    */
-  StatusOr<LambdaOperatorMap> ProcessLambdaArgs(const pypa::AstLambdaPtr& node,
-                                                const OperatorContext& op_context);
+  StatusOr<LambdaOperatorMap> ProcessLambdaArgs(const pypa::AstLambdaPtr& node);
 
   /**
    * @brief Splits apart the Dictionary contained in the lambda fn,
@@ -556,35 +563,16 @@ class ASTVisitorImpl : public ASTVisitor {
                                                       const pypa::AstAttributePtr& val_attr);
 
   /**
-   * @brief Returns the string repr of an Ast Type.
-   * @param The AstType type.
-   * @return std::string representation of the type.
+   * @brief  Returns the variable specified by the name pointer.
+   * @param node the ast node to run this on.
+   * @param name the string to lookup.
+   * @return StatusOr<QLObjectPtr>  The pyobject referenced by name, or an error if not found.
    */
-  static std::string GetAstTypeName(pypa::AstType type);
-
-  /**
-   * @brief Get the Id from the NameAST.
-   *
-   * @param node
-   * @return std::string
-   */
-  static const std::string GetNameID(const pypa::AstPtr& node) {
-    return PYPA_PTR_CAST(Name, node)->id;
+  StatusOr<QLObjectPtr> LookupVariable(const pypa::AstPtr& node, const std::string& name);
+  StatusOr<QLObjectPtr> LookupVariable(const pypa::AstNamePtr& name) {
+    return LookupVariable(name, name->id);
   }
 
-  /**
-   * @brief Gets the string out of what is suspected to be a strAst. Errors out if ast is not of
-   * type str.
-   *
-   * @param ast
-   * @return StatusOr<std::string>
-   */
-  static StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast) {
-    if (ast->type != pypa::AstType::Str) {
-      return CreateAstError(ast, "Expected string type. Got $0", GetAstTypeName(ast->type));
-    }
-    return PYPA_PTR_CAST(Str, ast)->value;
-  }
   static bool IsUnitTimeFn(const std::string& fn_name);
   IR* ir_graph_;
   VarTable var_table_;

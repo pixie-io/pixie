@@ -16,6 +16,12 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
+
+#define PYPA_PTR_CAST(TYPE, VAL) \
+  std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
+
+#define PYPA_CAST(TYPE, VAL) static_cast<AstTypeByID<AstType::TYPE>::Type&>(VAL)
+
 /**
  * @brief Create an error that incorporates line, column of ast node into the error message.
  * @param ast the ast value to use to create an error.
@@ -42,6 +48,31 @@ Status CreateAstError(const pypa::Ast& ast, Args... args) {
  * @return StatusOr<std::vector<std::string>>
  */
 StatusOr<std::vector<std::string>> ParseStringListIR(const ListIR* list_ir);
+
+/**
+ * @brief Get the string repr of the passed in type.
+ *
+ * @param type
+ * @return std::string
+ */
+std::string GetAstTypeName(pypa::AstType type);
+
+/**
+ * @brief Get the Id from the NameAST.
+ *
+ * @param node
+ * @return std::string
+ */
+std::string GetNameAsString(const pypa::AstPtr& node);
+
+/**
+ * @brief Gets the string out of what is suspected to be a strAst. Errors out if ast is not of
+ * type str.
+ *
+ * @param ast
+ * @return StatusOr<std::string>
+ */
+StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast);
 
 }  // namespace compiler
 }  // namespace carnot
