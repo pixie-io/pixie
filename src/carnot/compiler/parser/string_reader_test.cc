@@ -6,7 +6,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "absl/strings/str_join.h"
-#include "src/carnot/compiler/string_reader.h"
+#include "src/carnot/compiler/parser/string_reader.h"
 
 namespace pl {
 namespace carnot {

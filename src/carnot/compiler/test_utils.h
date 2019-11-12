@@ -14,7 +14,7 @@
 
 #include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/compiler_state.h"
-#include "src/carnot/compiler/string_reader.h"
+#include "src/carnot/compiler/parser/string_reader.h"
 #include "src/common/testing/testing.h"
 
 namespace pl {

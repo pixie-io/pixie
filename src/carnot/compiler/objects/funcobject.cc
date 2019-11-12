@@ -1,4 +1,5 @@
 #include "src/carnot/compiler/objects/funcobject.h"
+#include "src/carnot/compiler/parser/parser.h"
 
 namespace pl {
 namespace carnot {

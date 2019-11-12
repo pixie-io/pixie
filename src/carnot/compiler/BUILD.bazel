@@ -29,6 +29,7 @@ pl_cc_library(
         "//third_party:libpypa",
         "//src/carnot/compiler/ir:cc_library",
         "//src/carnot/compiler/compiler_error_context:cc_library",
+        "//src/carnot/compiler/parser:cc_library",
     ],
 )
 
@@ -47,12 +48,6 @@ pl_cc_test(
         ":cc_library",
         ":test_utils",
     ],
-)
-
-pl_cc_test(
-    name = "string_reader_test",
-    srcs = ["string_reader_test.cc"],
-    deps = [":cc_library"],
 )
 
 pl_cc_test(

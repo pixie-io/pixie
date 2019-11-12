@@ -19,6 +19,7 @@ pl_cc_library(
     deps = [
         "//third_party:libpypa",
         "//src/carnot/compiler/ir:cc_library",
+        "//src/carnot/compiler/parser:cc_library",
     ],
 )
 
