@@ -5,7 +5,7 @@
 
 #include "src/carnot/compiler/objects/dataframe.h"
 #include "src/carnot/compiler/objects/none_object.h"
-#include "src/carnot/compiler/test_utils.h"
+#include "src/carnot/compiler/objects/test_utils.h"
 
 namespace pl {
 namespace carnot {
@@ -14,7 +14,7 @@ namespace compiler {
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
 
-class DataframeTest : public OperatorTests {};
+using DataframeTest = QLObjectTest;
 
 TEST_F(DataframeTest, DISABLED_MergeTest) {
   MemorySourceIR* left = MakeMemSource();
@@ -27,7 +27,7 @@ TEST_F(DataframeTest, DISABLED_MergeTest) {
                {right, MakeString("inner"), MakeList(MakeString("a"), MakeString("b")),
                 MakeList(MakeString("b"), MakeString("c"))}});
 
-  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast).ConsumeValueOrDie();
+  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   // Add compartor for type() and Dataframe.
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
   auto df_obj = static_cast<Dataframe*>(obj.get());
@@ -97,7 +97,7 @@ TEST_F(DataframeTest, DISABLED_AggTest) {
                 {"out_col2", MakeTuple(MakeString("col2"), MakeMeanFunc())}},
                {}});
 
-  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast).ConsumeValueOrDie();
+  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   // Add compartor for type() and Dataframe.
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
   auto df_obj = static_cast<Dataframe*>(obj.get());
@@ -135,7 +135,7 @@ TEST_F(DataframeTest, DISABLED_AggFailsWithPosArgs) {
   // Only positional arguments
   ArgMap args({{}, {MakeTuple(MakeString("col1"), MakeMeanFunc())}});
 
-  auto call_status = func_obj->Call(args, ast);
+  auto call_status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_NOT_OK(call_status);
   EXPECT_THAT(call_status.status(), HasCompilerError("agg.* takes 0 arguments but 1 .* given"));
 }
@@ -308,7 +308,8 @@ TEST_F(DataframeTest, RangeCall) {
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
   ArgMap args({{}, {MakeString("-2m"), MakeString("-1m")}});
 
-  std::shared_ptr<QLObject> ql_object = func_obj->Call(args, ast).ConsumeValueOrDie();
+  std::shared_ptr<QLObject> ql_object =
+      func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
 
   auto range_obj = std::static_pointer_cast<Dataframe>(ql_object);
@@ -324,8 +325,7 @@ TEST_F(DataframeTest, RangeCall) {
   EXPECT_EQ(static_cast<StringIR*>(range->stop_repr())->str(), "-1m");
 }
 
-// TODO(philkuz) (PL-1129) figure out default arguments.
-TEST_F(DataframeTest, DISABLED_NoEndArgDefault) {
+TEST_F(DataframeTest, NoEndArgDefault) {
   MemorySourceIR* src = MakeMemSource();
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
@@ -334,7 +334,8 @@ TEST_F(DataframeTest, DISABLED_NoEndArgDefault) {
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
   ArgMap args({{{"start", MakeString("-2m")}}, {}});
 
-  std::shared_ptr<QLObject> ql_object = func_obj->Call(args, ast).ConsumeValueOrDie();
+  std::shared_ptr<QLObject> ql_object =
+      func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
 
   auto range_obj = std::static_pointer_cast<Dataframe>(ql_object);
@@ -424,7 +425,7 @@ TEST_F(DataframeTest, OldMapCall) {
   auto get_method_status = srcdf->GetMethod("map");
   ASSERT_OK(get_method_status);
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
-  auto status = func_obj->Call(args, ast);
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_OK(status);
   QLObjectPtr ql_object = status.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -512,7 +513,7 @@ TEST_F(DataframeTest, OldFilterCall) {
   auto get_method_status = srcdf->GetMethod("filter");
   ASSERT_OK(get_method_status);
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
-  auto status = func_obj->Call(args, ast);
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_OK(status);
   QLObjectPtr ql_object = status.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -579,7 +580,7 @@ TEST_F(DataframeTest, LimitCall) {
   auto get_method_status = srcdf->GetMethod("limit");
   ASSERT_OK(get_method_status);
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
-  auto status = func_obj->Call(args, ast);
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_OK(status);
   QLObjectPtr ql_object = status.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -804,7 +805,7 @@ TEST_F(DataframeTest, OldAggCall) {
   auto get_method_status = srcdf->GetMethod("agg");
   ASSERT_OK(get_method_status);
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
-  auto status = func_obj->Call(args, ast);
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_OK(status);
   QLObjectPtr ql_object = status.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -1164,7 +1165,7 @@ TEST_F(DataframeTest, JoinCall) {
   auto get_method_status = srcdf->GetMethod(Dataframe::kMergeOpId);
   ASSERT_OK(get_method_status);
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
-  auto status = func_obj->Call(args, ast);
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_OK(status);
 
   QLObjectPtr ql_object = status.ConsumeValueOrDie();
@@ -1189,8 +1190,7 @@ TEST_F(DataframeTest, JoinCall) {
   EXPECT_THAT(join->right_on_columns(), ElementsAre(right_column));
 }
 
-// TODO(philkuz) (PL-1129) figure out default arguments.
-TEST_F(DataframeTest, DISABLED_JoinCallDefaultTypeArg) {
+TEST_F(DataframeTest, JoinCallDefaultTypeArg) {
   MemorySourceIR* left = MakeMemSource();
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
   // No df for the right because the compiler should remove it if possible.
@@ -1217,7 +1217,7 @@ TEST_F(DataframeTest, DISABLED_JoinCallDefaultTypeArg) {
   auto get_method_status = srcdf->GetMethod(Dataframe::kMergeOpId);
   ASSERT_OK(get_method_status);
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
-  auto status = func_obj->Call(args, ast);
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_OK(status);
 
   QLObjectPtr ql_object = status.ConsumeValueOrDie();
@@ -1286,7 +1286,7 @@ TEST_F(DataframeTest, ResultCall) {
   auto get_method_status = srcdf->GetMethod(Dataframe::kSinkOpId);
   ASSERT_OK(get_method_status);
   auto func_obj = get_method_status.ConsumeValueOrDie();
-  auto status = func_obj->Call(args, ast);
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_OK(status);
 
   QLObjectPtr ql_object = status.ConsumeValueOrDie();

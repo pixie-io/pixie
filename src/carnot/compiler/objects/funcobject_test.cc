@@ -4,13 +4,13 @@
 #include "absl/container/flat_hash_map.h"
 
 #include "src/carnot/compiler/objects/funcobject.h"
-#include "src/carnot/compiler/test_utils.h"
+#include "src/carnot/compiler/objects/test_utils.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
 using ::testing::ElementsAre;
-class PyFuncTest : public OperatorTests {};
+using PyFuncTest = QLObjectTest;
 
 class TestQLObject : public QLObject {
  public:
@@ -57,7 +57,7 @@ TEST_F(PyFuncTest, PosArgsExecute) {
                      std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
 
   ArgMap args{{}, {MakeInt(123)}};
-  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast).ConsumeValueOrDie();
+  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kMisc);
   auto test_obj = static_cast<TestQLObject*>(obj.get());
   EXPECT_EQ(test_obj->value(), 123);
@@ -72,7 +72,7 @@ TEST_F(PyFuncTest, MissingArgument) {
                      std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
 
   ArgMap args;
-  auto status = func_obj->Call(args, ast);
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(),
               HasCompilerError("func.* missing 1 required positional arguments 'simple'"));
@@ -84,7 +84,7 @@ TEST_F(PyFuncTest, ExtraPosArg) {
                      std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
 
   ArgMap args{{}, {MakeInt(1), MakeInt(2)}};
-  auto status = func_obj->Call(args, ast);
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(), HasCompilerError("func.* takes 1 arguments but 2 were given."));
 
@@ -93,7 +93,7 @@ TEST_F(PyFuncTest, ExtraPosArg) {
       new FuncObject("func", {"simple"}, {}, /*has_kwargs*/ true,
                      std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
 
-  auto status2 = func_obj2->Call(args, ast);
+  auto status2 = func_obj2->Call(args, ast, ast_visitor.get());
   ASSERT_NOT_OK(status2);
   EXPECT_THAT(status2.status(), HasCompilerError("func.* takes 1 arguments but 2 were given."));
 }
@@ -104,7 +104,7 @@ TEST_F(PyFuncTest, ExtraKwargNoKwargsSupport) {
                      std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
 
   ArgMap args{{{"blah", MakeString("blah")}}, {MakeInt(1)}};
-  auto status = func_obj->Call(args, ast);
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(),
               HasCompilerError("func.* got an unexpected keyword argument 'blah'"));
@@ -116,7 +116,7 @@ TEST_F(PyFuncTest, ExtraKwargWithKwargsSupport) {
                      std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
 
   ArgMap args{{{"blah1", MakeString("blah2")}}, {MakeInt(123)}};
-  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast).ConsumeValueOrDie();
+  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kMisc);
   auto test_obj = static_cast<TestQLObject*>(obj.get());
   EXPECT_EQ(test_obj->value(), 123);
@@ -125,14 +125,13 @@ TEST_F(PyFuncTest, ExtraKwargWithKwargsSupport) {
   EXPECT_THAT(test_obj->kwarg_values(), ElementsAre("blah2"));
 }
 
-// TODO(philkuz) (PL-1129) figure out default arguments.
-TEST_F(PyFuncTest, DISABLED_DefaultArgsExecute) {
+TEST_F(PyFuncTest, DefaultArgsExecute) {
   std::shared_ptr<FuncObject> func_obj(
       new FuncObject("func", {"simple"}, {{"simple", "1234"}}, /*has_kwargs*/ false,
                      std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
 
   ArgMap args;
-  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast).ConsumeValueOrDie();
+  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kMisc);
   auto test_obj = static_cast<TestQLObject*>(obj.get());
   EXPECT_EQ(test_obj->value(), 1234);

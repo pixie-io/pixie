@@ -6,6 +6,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 
+#include "src/carnot/compiler/ast/ast_visitor.h"
 #include "src/carnot/compiler/objects/qlobject.h"
 
 namespace pl {
@@ -80,13 +81,15 @@ class FuncObject : public QLObject {
    * @return The return type of the object or an error if something goes wrong during function
    * processing.
    */
-  StatusOr<QLObjectPtr> Call(const ArgMap& args, const pypa::AstPtr& ast);
+  StatusOr<QLObjectPtr> Call(const ArgMap& args, const pypa::AstPtr& ast, ASTVisitor* ast_visitor);
   const std::string& name() const { return name_; }
 
  private:
-  StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast);
+  StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast,
+                                   ASTVisitor* ast_visitor);
 
-  IRNode* GetDefault(const std::string& arg);
+  StatusOr<IRNode*> GetDefault(std::string_view arg, ASTVisitor* ast_visitor);
+  bool HasDefault(const std::string& arg);
 
   std::string FormatArguments(const absl::flat_hash_set<std::string> args);
 

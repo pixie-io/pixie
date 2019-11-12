@@ -22,12 +22,14 @@ FuncObject::FuncObject(const std::string_view name, const std::vector<std::strin
 #endif
 }
 
-StatusOr<QLObjectPtr> FuncObject::Call(const ArgMap& args, const pypa::AstPtr& ast) {
-  PL_ASSIGN_OR_RETURN(ParsedArgs parsed_args, PrepareArgs(args, ast));
+StatusOr<QLObjectPtr> FuncObject::Call(const ArgMap& args, const pypa::AstPtr& ast,
+                                       ASTVisitor* ast_visitor) {
+  PL_ASSIGN_OR_RETURN(ParsedArgs parsed_args, PrepareArgs(args, ast, ast_visitor));
   return impl_(ast, parsed_args);
 }
 
-StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast) {
+StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast,
+                                             ASTVisitor* ast_visitor) {
   // Iterate through the arguments and place them in.
   ParsedArgs parsed_args;
 
@@ -68,10 +70,11 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
   // Substitute defaults for missing args. Anything else is a missing positional argument.
   absl::flat_hash_set<std::string> missing_pos_args;
   for (const std::string& arg : missing_args) {
-    IRNode* default_node = GetDefault(arg);
-    if (!default_node) {
+    if (!HasDefault(arg)) {
       missing_pos_args.emplace(arg);
+      continue;
     }
+    PL_ASSIGN_OR_RETURN(IRNode * default_node, GetDefault(arg, ast_visitor));
     parsed_args.AddArg(arg, default_node);
   }
 
@@ -85,15 +88,21 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
   return parsed_args;
 }
 
-// TODO(philkuz) (PL-1129) support default arguments.
-IRNode* FuncObject::GetDefault(const std::string& arg) {
-  PL_UNUSED(arg);
-  //  Get the graph ptr.
+bool FuncObject::HasDefault(const std::string& arg) {
+  return defaults_.find(arg) != defaults_.end();
+}
+
+StatusOr<IRNode*> FuncObject::GetDefault(std::string_view arg, ASTVisitor* ast_visitor) {
   //  Check if the argument exists among the defaults.
-  //  Parse the argument into an ast.
-  //  Parse the result into a node.
-  //  Figure out how to get the defaults in a proper format.
-  return nullptr;
+  if (!defaults_.contains(arg)) {
+    return error::InvalidArgument("");
+  }
+  const std::string& arg_str = defaults_.find(arg)->second;
+  Parser parser;
+  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(arg_str));
+
+  // TODO(philkuz) remove compiler state argument as it is no longer in use.
+  return ast_visitor->ProcessSingleExpressionModule(ast);
 }
 
 std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> args) {
