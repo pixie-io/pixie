@@ -47,6 +47,7 @@ class Dataframe : public QLObject {
   inline static constexpr char kRangeAggOpId[] = "range_agg";
   inline static constexpr char kLimitOpId[] = "limit";
   inline static constexpr char kMergeOpId[] = "merge";
+  inline static constexpr char kSinkOpId[] = "result";
 
  private:
   OperatorIR* op_;
@@ -210,6 +211,25 @@ class OldJoinHandler {
    * @return StatusOr<QLObjectPtr>
    */
 
+  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
+};
+
+// TODO(philkuz) (PL-1128) Remove this after successful integration with the rest of the compiler.
+/**
+ * @brief Implements the old result operator logic. This will be deprecated soon, but we have this
+ * to reduce the complexity of switching to the pyobject model.
+ *
+ */
+class OldResultHandler {
+ public:
+  /**
+   * @brief Evaluates the old result function.
+   *
+   * @param df the dataframe that's a parent to the result function.
+   * @param ast the ast node that signifies where the query was written.
+   * @param args the arguments for result()
+   * @return StatusOr<QLObjectPtr>
+   */
   static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
 };
 

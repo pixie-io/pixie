@@ -1,4 +1,5 @@
 #include "src/carnot/compiler/objects/dataframe.h"
+#include "src/carnot/compiler/objects/none_object.h"
 
 namespace pl {
 namespace carnot {
@@ -98,6 +99,18 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       /* has_kwargs */ false,
       std::bind(&OldJoinHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kMergeOpId, old_join_fn);
+
+  // TODO(philkuz) (PL-1128) disable this when new result syntax is supported.
+  /**
+   * # Equivalent to the python method method syntax:
+   * def result(self, name):
+   *     ...
+   */
+  std::shared_ptr<FuncObject> old_sink_fn(new FuncObject(
+      kSinkOpId, {"name"}, {},
+      /* has_kwargs */ false,
+      std::bind(&OldResultHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kSinkOpId, old_sink_fn);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
@@ -397,6 +410,18 @@ StatusOr<QLObjectPtr> OldJoinHandler::Eval(Dataframe* df, const pypa::AstPtr& as
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(cond_node->id()));
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(cols_node->id()));
   return StatusOr(std::make_shared<Dataframe>(join_op));
+}
+
+StatusOr<QLObjectPtr> OldResultHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                             const ParsedArgs& args) {
+  IRNode* name_node = args.GetArg("name");
+  if (!Match(name_node, String())) {
+    return name_node->CreateIRNodeError("'name' must be a str");
+  }
+  std::string name = static_cast<StringIR*>(name_node)->str();
+  PL_ASSIGN_OR_RETURN(MemorySinkIR * sink_op, df->graph()->MakeNode<MemorySinkIR>(ast));
+  PL_RETURN_IF_ERROR(sink_op->Init(df->op(), name, {}));
+  return StatusOr(std::make_shared<NoneObject>(sink_op));
 }
 
 }  // namespace compiler
