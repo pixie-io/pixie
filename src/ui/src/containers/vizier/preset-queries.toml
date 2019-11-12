@@ -199,6 +199,19 @@ t2 = t1.map(fn=lambda r: {'time_': r.time_,
                        'http_resp_latency_ms': r.http_resp_latency_ns / 1.0E6})
 t3 = t2.limit(rows=100).result(name='resp_table')
 """],
+["Sample MySQL Data",
+"""
+t1 = dataframe(table='mysql_events', select=['time_', 'remote_addr', 'remote_port', 'req_cmd', 'req_body', 'resp_status', 'resp_body', 'latency_ns']).range(start='-30s')
+t2 = t1.map(fn=lambda r: {'time_': r.time_,
+                       'remote_addr': r.remote_addr,
+                       'remote_port': r.remote_port,
+                       'req_cmd': r.req_cmd,
+                       'req_body': r.req_body,
+                       'resp_status': r.resp_status,
+                       'resp_body' : r.resp_body,
+                       'latency_ns': r.latency_ns / 1.0E6})
+t3 = t2.limit(rows=100).result(name='resp_table')
+"""],
 ["Network Stats",
 """
 t1 = dataframe(table='network_stats', select=['time_', 'pod_id', 'rx_bytes', 'rx_packets', 'rx_errors',
