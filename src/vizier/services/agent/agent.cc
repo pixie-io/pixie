@@ -5,6 +5,7 @@
 #include <sole.hpp>
 
 #include "src/vizier/services/agent/controller/controller.h"
+#include "src/vizier/services/agent/controller/ssl.h"
 
 #include "absl/strings/str_format.h"
 #include "src/common/base/base.h"
@@ -27,21 +28,9 @@ DEFINE_string(cloud_connector_addr,
                                     "vizier-cloud-connector.pl.svc:50800"),
               "The host address of the Cloud Connector");
 
-DEFINE_string(client_tls_cert,
-              gflags::StringFromEnv("PL_CLIENT_TLS_CERT", "../../services/certs/client.crt"),
-              "The GRPC client TLS cert");
-
-DEFINE_string(client_tls_key,
-              gflags::StringFromEnv("PL_CLIENT_TLS_KEY", "../../services/certs/client.key"),
-              "The GRPC client TLS key");
-
-DEFINE_string(tls_ca_crt, gflags::StringFromEnv("PL_TLS_CA_CERT", "../../services/certs/ca.crt"),
-              "The GRPC CA cert");
-
-DEFINE_bool(disable_SSL, gflags::BoolFromEnv("PL_DISABLE_SSL", false), "Disable GRPC SSL");
-
 using ::pl::stirling::Stirling;
 using ::pl::vizier::agent::Controller;
+using ::pl::vizier::agent::SSL;
 using ::pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService;
 
 Stirling* g_stirling = nullptr;
@@ -76,12 +65,8 @@ int main(int argc, char** argv) {
   LOG(INFO) << "Pixie Lab Agent: " << pl::VersionInfo::VersionString();
 
   auto channel_creds = grpc::InsecureChannelCredentials();
-  if (!FLAGS_disable_SSL) {
-    auto ssl_opts = grpc::SslCredentialsOptions();
-    ssl_opts.pem_root_certs = pl::FileContentsOrDie(FLAGS_tls_ca_crt);
-    ssl_opts.pem_cert_chain = pl::FileContentsOrDie(FLAGS_client_tls_cert);
-    ssl_opts.pem_private_key = pl::FileContentsOrDie(FLAGS_client_tls_key);
-    channel_creds = grpc::SslCredentials(ssl_opts);
+  if (SSL::Enabled()) {
+    channel_creds = grpc::SslCredentials(SSL::DefaultGRPCClientCreds());
   }
 
   auto table_store = std::make_shared<pl::table_store::TableStore>();
@@ -121,11 +106,8 @@ int main(int argc, char** argv) {
 
   auto agent_sub_topic = absl::StrFormat("/agent/%s", agent_id.str());
   std::unique_ptr<Controller::VizierNATSTLSConfig> tls_config;
-  if (!FLAGS_disable_SSL) {
-    tls_config = std::make_unique<Controller::VizierNATSTLSConfig>();
-    tls_config->ca_cert = FLAGS_tls_ca_crt;
-    tls_config->tls_cert = FLAGS_client_tls_cert;
-    tls_config->tls_key = FLAGS_client_tls_key;
+  if (SSL::Enabled()) {
+    tls_config = SSL::DefaultNATSCreds();
   }
 
   std::unique_ptr<Controller::VizierNATSConnector> nats_connector;
