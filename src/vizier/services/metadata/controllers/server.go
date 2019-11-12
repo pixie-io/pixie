@@ -9,6 +9,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 // Server defines an gRPC server type.
@@ -80,18 +81,14 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 	currentTime := s.clock.Now().UnixNano()
 
 	// Populate AgentInfoResponse.
-	agentResponses := make([]*metadatapb.AgentStatus, 0)
+	agentResponses := make([]*metadatapb.AgentMetadata, 0)
 	for _, agent := range agents {
-		resp := metadatapb.AgentStatus{
-			Info: &metadatapb.AgentInfo{
-				AgentID: agent.Info.AgentID,
-				HostInfo: &metadatapb.HostInfo{
-					Hostname: agent.Info.HostInfo.Hostname,
-				},
+		resp := metadatapb.AgentMetadata{
+			Agent: agent,
+			Status: &agentpb.AgentStatus{
+				NSSinceLastHeartbeat: currentTime - agent.LastHeartbeatNS,
+				State:                agentpb.AGENT_STATE_HEALTHY,
 			},
-			LastHeartbeatNs: currentTime - agent.LastHeartbeatNS,
-			State:           metadatapb.AGENT_STATE_HEALTHY,
-			CreateTimeNs:    agent.CreateTimeNS,
 		}
 		agentResponses = append(agentResponses, &resp)
 	}

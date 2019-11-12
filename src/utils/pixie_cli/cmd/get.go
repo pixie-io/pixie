@@ -69,14 +69,14 @@ func formatAgentResultsAsTable(r *querybrokerpb.AgentInfoResponse) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"AgentID", "Hostname", "Last Heartbeat (seconds)", "State"})
 	for _, agentInfo := range r.Info {
-		id := uuid.FromStringOrNil(string(agentInfo.Info.AgentID.Data))
-		hbTime := time.Unix(0, agentInfo.LastHeartbeatNs)
+		id := uuid.FromStringOrNil(string(agentInfo.Agent.Info.AgentID.Data))
+		hbTime := time.Unix(0, agentInfo.Status.NSSinceLastHeartbeat)
 		currentTime := time.Now()
 		hbInterval := currentTime.Sub(hbTime).Seconds()
 		table.Append([]string{id.String(),
-			agentInfo.Info.HostInfo.Hostname,
+			agentInfo.Agent.Info.HostInfo.Hostname,
 			fmt.Sprintf("%.2f", hbInterval),
-			agentInfo.State.String(),
+			agentInfo.Status.State.String(),
 		})
 	}
 	table.Render()

@@ -43,8 +43,8 @@ func TestGetAgentInfo(t *testing.T) {
 	}
 	u2pb := utils.ProtoFromUUID(&u2)
 
-	agents := []agentpb.Agent{
-		agentpb.Agent{
+	agents := []*agentpb.Agent{
+		&agentpb.Agent{
 			LastHeartbeatNS: 10,
 			CreateTimeNS:    5,
 			Info: &agentpb.AgentInfo{
@@ -54,7 +54,7 @@ func TestGetAgentInfo(t *testing.T) {
 				},
 			},
 		},
-		agentpb.Agent{
+		&agentpb.Agent{
 			LastHeartbeatNS: 20,
 			CreateTimeNS:    0,
 			Info: &agentpb.AgentInfo{
@@ -87,13 +87,13 @@ func TestGetAgentInfo(t *testing.T) {
 
 	assert.Equal(t, 2, len(resp.Info))
 
-	agentResp := new(metadatapb.AgentStatus)
+	agentResp := new(metadatapb.AgentMetadata)
 	if err := proto.UnmarshalText(testutils.Agent1StatusPB, agentResp); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	assert.Equal(t, agentResp, resp.Info[0])
 
-	agentResp = new(metadatapb.AgentStatus)
+	agentResp = new(metadatapb.AgentMetadata)
 	if err = proto.UnmarshalText(testutils.Agent2StatusPB, agentResp); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}

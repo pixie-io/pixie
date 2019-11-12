@@ -169,7 +169,7 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 	var agentList []uuid.UUID
 
 	for _, info := range mdsResp.Info {
-		agentIDPB := info.Info.AgentID
+		agentIDPB := info.Agent.Info.AgentID
 		agentID, err := utils.UUIDFromProto(agentIDPB)
 		if err != nil {
 			return nil, err
@@ -261,19 +261,12 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *querybrokerpb.AgentInfoR
 		return nil, err
 	}
 
-	var agentStatuses []*querybrokerpb.AgentStatus
+	var agentStatuses []*querybrokerpb.AgentMetadata
 
 	for _, agentInfo := range mdsResp.Info {
-		agentStatuses = append(agentStatuses, &querybrokerpb.AgentStatus{
-			Info: &querybrokerpb.AgentInfo{
-				AgentID: agentInfo.Info.AgentID,
-				HostInfo: &querybrokerpb.HostInfo{
-					Hostname: agentInfo.Info.HostInfo.Hostname,
-				},
-			},
-			CreateTimeNs:    agentInfo.CreateTimeNs,
-			LastHeartbeatNs: agentInfo.LastHeartbeatNs,
-			State:           querybrokerpb.AGENT_STATE_HEALTHY,
+		agentStatuses = append(agentStatuses, &querybrokerpb.AgentMetadata{
+			Agent:  agentInfo.Agent,
+			Status: agentInfo.Status,
 		})
 	}
 

@@ -20,7 +20,7 @@ import (
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
-	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 // EtcdMetadataStore is the implementation of our metadata store in etcd.
@@ -546,8 +546,8 @@ func (mds *EtcdMetadataStore) AddUpdatesToAgentQueue(agentID string, updates []*
 }
 
 // GetAgents gets all of the current active agents.
-func (mds *EtcdMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
-	var agents []datapb.AgentData
+func (mds *EtcdMetadataStore) GetAgents() ([]*agentpb.Agent, error) {
+	var agents []*agentpb.Agent
 
 	// Get all agents.
 	resp, err := mds.client.Get(context.Background(), GetAgentKey(""), clientv3.WithPrefix())
@@ -562,12 +562,14 @@ func (mds *EtcdMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
 			continue
 		}
 
-		pb := &datapb.AgentData{}
+		pb := &agentpb.Agent{}
 		proto.Unmarshal(kv.Value, pb)
-		agents = append(agents, *pb)
+		if len(pb.Info.AgentID.Data) > 0 {
+			agents = append(agents, pb)
+		}
 	}
 
-	return &agents, nil
+	return agents, nil
 }
 
 // GetASID gets the next assignable ASID.

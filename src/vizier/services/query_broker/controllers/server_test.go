@@ -22,15 +22,19 @@ import (
 
 const getAgentsResponse = `
 info {
-	info {
-		agent_id {
-			data: "21285cdd1de94ab1ae6a0ba08c8c676c"
-		}
-		host_info {
-			hostname: "test_host"
+	agent {
+		info {
+			agent_id {
+				data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+			}
+			host_info {
+				hostname: "test_host"
+			}
 		}
 	}
-	state: 1
+	status {
+		state: 1
+	}
 }
 `
 
@@ -93,26 +97,34 @@ distributed_state: {
 
 const getMultipleAgentsResponse = `
 info {
-	info {
-		agent_id {
-			data: "21285cdd1de94ab1ae6a0ba08c8c676c"
-		}
-		host_info {
-			hostname: "test_host"
+	agent {
+		info {
+			agent_id {
+				data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+			}
+			host_info {
+				hostname: "test_host"
+			}
 		}
 	}
-	state: 1
+	status {
+		state: 1
+	}
 }
 info {
-	info {
-		agent_id {
-			data: "31285cdd1de94ab1ae6a0ba08c8c676c"
-		}
-		host_info {
-			hostname: "another_host"
+	agent {
+		info {
+			agent_id {
+				data: "31285cdd1de94ab1ae6a0ba08c8c676c"
+			}
+			host_info {
+				hostname: "another_host"
+			}
 		}
 	}
-	state: 1
+	status {
+		state: 1
+	}
 }
 `
 

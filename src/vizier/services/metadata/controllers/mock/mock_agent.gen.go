@@ -86,9 +86,9 @@ func (mr *MockAgentManagerMockRecorder) UpdateAgentState() *gomock.Call {
 }
 
 // GetActiveAgents mocks base method
-func (m *MockAgentManager) GetActiveAgents() ([]agentpb.Agent, error) {
+func (m *MockAgentManager) GetActiveAgents() ([]*agentpb.Agent, error) {
 	ret := m.ctrl.Call(m, "GetActiveAgents")
-	ret0, _ := ret[0].([]agentpb.Agent)
+	ret0, _ := ret[0].([]*agentpb.Agent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

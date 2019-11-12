@@ -17,11 +17,11 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
-	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb string) {
-	info := new(data.AgentData)
+	info := new(agentpb.Agent)
 	if err := proto.UnmarshalText(agentPb, info); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -35,7 +35,7 @@ func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 		t.Fatal("Unable to add agentData to etcd.")
 	}
 
-	_, err = client.Put(context.Background(), controllers.GetHostnameAgentKey(info.HostInfo.Hostname), agentID)
+	_, err = client.Put(context.Background(), controllers.GetHostnameAgentKey(info.Info.HostInfo.Hostname), agentID)
 	if err != nil {
 		t.Fatal("Unable to add agentData to etcd.")
 	}
@@ -510,15 +510,15 @@ func TestGetAgents(t *testing.T) {
 
 	agents, err := mds.GetAgents()
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(*agents))
+	assert.Equal(t, 2, len(agents))
 
-	uid, err := utils.UUIDFromProto((*agents)[0].AgentID)
+	uid, err := utils.UUIDFromProto((agents)[0].Info.AgentID)
 	if err != nil {
 		t.Fatal("Could not convert UUID to proto")
 	}
 	assert.Equal(t, testutils.ExistingAgentUUID, uid.String())
 
-	uid, err = utils.UUIDFromProto((*agents)[1].AgentID)
+	uid, err = utils.UUIDFromProto((agents)[1].Info.AgentID)
 	if err != nil {
 		t.Fatal("Could not convert UUID to proto")
 	}

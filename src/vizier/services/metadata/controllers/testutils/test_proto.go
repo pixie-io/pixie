@@ -22,11 +22,13 @@ var UnhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
 // ExistingAgentInfo is the agent info for the healthy agent that already exists.
 var ExistingAgentInfo = `
-agent_id {
-  data: "7ba7b8109dad11d180b400c04fd430c8"
-}
-host_info {
-  hostname: "testhost"
+info {
+  agent_id {
+    data: "7ba7b8109dad11d180b400c04fd430c8"
+  }
+  host_info {
+    hostname: "testhost"
+  }
 }
 create_time_ns: 0
 last_heartbeat_ns: 65000000000
@@ -34,11 +36,13 @@ last_heartbeat_ns: 65000000000
 
 // UnhealthyAgentInfo is the agent info for the unhealthy agent.
 var UnhealthyAgentInfo = `
-agent_id {
-  data: "8ba7b8109dad11d180b400c04fd430c8"
-}
-host_info {
-  hostname: "anotherhost"
+info {
+  agent_id {
+    data: "8ba7b8109dad11d180b400c04fd430c8"
+  }
+  host_info {
+    hostname: "anotherhost"
+  }
 }
 create_time_ns: 0
 last_heartbeat_ns: 0
@@ -48,32 +52,42 @@ last_heartbeat_ns: 0
 
 // Agent1StatusPB is a protobuf for an agent status.
 const Agent1StatusPB = `
-info {
-  agent_id {
-    data: "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+agent {
+  info {
+    agent_id {
+      data: "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+    }
+    host_info {
+      hostname: "test_host"
+    }
   }
-  host_info {
-    hostname: "test_host"
-  }
+  last_heartbeat_ns: 10
+  create_time_ns: 5
 }
-last_heartbeat_ns: 60
-create_time_ns: 5
-state: 1
+status {
+  ns_since_last_heartbeat: 60
+  state: 1
+}
 `
 
 // Agent2StatusPB is the protobuf for another agent status.
 const Agent2StatusPB = `
-info {
-  agent_id {
-    data: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+agent {
+  info {
+    agent_id {
+      data: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+    }
+    host_info {
+      hostname: "another_host"
+    }
   }
-  host_info {
-    hostname: "another_host"
-  }
+  last_heartbeat_ns: 20
+  create_time_ns: 0
 }
-last_heartbeat_ns: 50
-create_time_ns: 0
-state: 1
+status {
+  ns_since_last_heartbeat: 50
+  state: 1
+}
 `
 
 // Processes

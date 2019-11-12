@@ -9,7 +9,7 @@ import (
 	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	types "pixielabs.ai/pixielabs/src/shared/types"
-	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 )
 
@@ -183,9 +183,9 @@ func (mr *MockMetadataStoreMockRecorder) GetFromAgentQueue(arg0 interface{}) *go
 }
 
 // GetAgents mocks base method
-func (m *MockMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
+func (m *MockMetadataStore) GetAgents() ([]*agentpb.Agent, error) {
 	ret := m.ctrl.Call(m, "GetAgents")
-	ret0, _ := ret[0].(*[]datapb.AgentData)
+	ret0, _ := ret[0].([]*agentpb.Agent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

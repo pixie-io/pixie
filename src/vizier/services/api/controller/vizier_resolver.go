@@ -22,6 +22,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/api/apienv"
 	qbpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 // GQLInt64Type stores 64-bit numbers as two int32, since JS does not support
@@ -144,7 +145,7 @@ func (v *VizierInfoResolver) Agents(ctx context.Context) (*[]*AgentStatusResolve
 	}
 	// Sort agents by hostname.
 	sort.Slice(resolvers, func(i, j int) bool {
-		return resolvers[i].Status.Info.HostInfo.Hostname < resolvers[j].Status.Info.HostInfo.Hostname
+		return resolvers[i].Metadata.Agent.Info.HostInfo.Hostname < resolvers[j].Metadata.Agent.Info.HostInfo.Hostname
 	})
 
 	return &resolvers, nil
@@ -152,12 +153,12 @@ func (v *VizierInfoResolver) Agents(ctx context.Context) (*[]*AgentStatusResolve
 
 // AgentStatusResolver resolves agent status information.
 type AgentStatusResolver struct {
-	Status *qbpb.AgentStatus
+	Metadata *qbpb.AgentMetadata
 }
 
 // LastHeartBeatMs returns the time since last heartbeat.
 func (a *AgentStatusResolver) LastHeartBeatMs() float64 {
-	hb := a.Status.LastHeartbeatNs
+	hb := a.Metadata.Status.NSSinceLastHeartbeat
 	return float64(hb / 1e6)
 }
 
@@ -165,23 +166,23 @@ func (a *AgentStatusResolver) LastHeartBeatMs() float64 {
 func (a *AgentStatusResolver) UptimeS() float64 {
 	// TOOD(zasgar): Consider having the metadata service return relative time.
 	// Remove negatives.
-	hb := math.Max(float64(time.Now().UnixNano()-a.Status.CreateTimeNs), 0.0)
+	hb := math.Max(float64(time.Now().UnixNano()-a.Metadata.Agent.CreateTimeNS), 0.0)
 	return hb / 1.0e9
 }
 
 // State returns the state of the given agent.
 func (a *AgentStatusResolver) State() string {
-	return a.Status.State.String()
+	return a.Metadata.Status.State.String()
 }
 
 // Info returns agent information.
 func (a *AgentStatusResolver) Info() *AgentInfoResolver {
-	return &AgentInfoResolver{a.Status.Info}
+	return &AgentInfoResolver{a.Metadata.Agent.Info}
 }
 
 // AgentInfoResolver resolves agent information.
 type AgentInfoResolver struct {
-	Info *qbpb.AgentInfo
+	Info *agentpb.AgentInfo
 }
 
 // ID returns agent ID.
@@ -197,7 +198,7 @@ func (a *AgentInfoResolver) HostInfo() *HostInfoResolver {
 
 // HostInfoResolver resolves agent host information.
 type HostInfoResolver struct {
-	HostInfo *qbpb.HostInfo
+	HostInfo *agentpb.HostInfo
 }
 
 // Hostname returns the hostname of the machine where the agent is running.

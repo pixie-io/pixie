@@ -31,6 +31,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/api/controller/schema"
 	service "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 	mock_proto "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb/mock"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 // Impl is an implementation of the APIEnv interface
@@ -75,17 +76,21 @@ func TestVizierResolverWorksOnGoodRequest(t *testing.T) {
 	resp := service.AgentInfoResponse{}
 
 	agentID := "1b975238-93f7-4c24-a442-a0abde89b8c2"
-	resp.Info = append(resp.Info, &service.AgentStatus{
-		Info: &service.AgentInfo{
-			AgentID: &uuidpb.UUID{
-				Data: []byte(agentID),
-			},
-			HostInfo: &service.HostInfo{
-				Hostname: "abcd",
+	resp.Info = append(resp.Info, &service.AgentMetadata{
+		Agent: &agentpb.Agent{
+			Info: &agentpb.AgentInfo{
+				AgentID: &uuidpb.UUID{
+					Data: []byte(agentID),
+				},
+				HostInfo: &agentpb.HostInfo{
+					Hostname: "abcd",
+				},
 			},
 		},
-		State:           service.AGENT_STATE_HEALTHY,
-		LastHeartbeatNs: 121312321321312,
+		Status: &agentpb.AgentStatus{
+			State:                agentpb.AGENT_STATE_HEALTHY,
+			NSSinceLastHeartbeat: 121312321321312,
+		},
 	})
 
 	env.client.EXPECT().

@@ -12,7 +12,7 @@ import (
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/utils"
-	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 const maxAgentUpdates = 10000
@@ -31,7 +31,7 @@ type MetadataStore interface {
 	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
 	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
 	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
-	GetAgents() (*[]datapb.AgentData, error)
+	GetAgents() ([]*agentpb.Agent, error)
 	GetNodePods(hostname string) ([]*metadatapb.Pod, error)
 	GetPods() ([]*metadatapb.Pod, error)
 	GetContainers() ([]*metadatapb.ContainerInfo, error)

@@ -15,7 +15,6 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -45,7 +44,7 @@ type AgentManager interface {
 	UpdateAgentState() error
 
 	// GetActiveAgents gets all of the current active agents.
-	GetActiveAgents() ([]agentpb.Agent, error)
+	GetActiveAgents() ([]*agentpb.Agent, error)
 
 	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
 	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
@@ -179,7 +178,7 @@ func NewAgentManager(client *clientv3.Client, mds MetadataStore) *AgentManagerIm
 	return NewAgentManagerWithClock(client, mds, clock)
 }
 
-func updateAgentData(agentID uuid.UUID, data *data.AgentData, client *clientv3.Client) error {
+func updateAgentData(agentID uuid.UUID, data *agentpb.Agent, client *clientv3.Client) error {
 	i, err := data.Marshal()
 	if err != nil {
 		return errors.New("Unable to marshal agentData pb")
@@ -216,11 +215,8 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.HostInfo.Hostname)
 	}
 
-	infoPb := &data.AgentData{
-		AgentID: info.AgentID,
-		HostInfo: &data.HostInfo{
-			Hostname: info.HostInfo.Hostname,
-		},
+	infoPb := &agentpb.Agent{
+		Info:            info,
 		CreateTimeNS:    m.clock.Now().UnixNano(),
 		LastHeartbeatNS: m.clock.Now().UnixNano(),
 	}
@@ -266,7 +262,7 @@ func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 	}
 
 	// Update LastHeartbeatNS in AgentData.
-	pb := &data.AgentData{}
+	pb := &agentpb.Agent{}
 	proto.Unmarshal(resp.Kvs[0].Value, pb)
 	pb.LastHeartbeatNS = m.clock.Now().UnixNano()
 
@@ -321,13 +317,13 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 		return err
 	}
 
-	for _, agentPb := range *agentPbs {
+	for _, agentPb := range agentPbs {
 		if currentTime-agentPb.LastHeartbeatNS > AgentExpirationTimeout {
-			uid, err := utils.UUIDFromProto(agentPb.AgentID)
+			uid, err := utils.UUIDFromProto(agentPb.Info.AgentID)
 			if err != nil {
 				log.WithError(err).Fatal("Could not convert UUID to proto")
 			}
-			err = m.deleteAgent(ctx, uid.String(), agentPb.HostInfo.Hostname)
+			err = m.deleteAgent(ctx, uid.String(), agentPb.Info.HostInfo.Hostname)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to delete agent from etcd")
 			}
@@ -338,29 +334,15 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 }
 
 // GetActiveAgents gets all of the current active agents.
-func (m *AgentManagerImpl) GetActiveAgents() ([]agentpb.Agent, error) {
-	var agents []agentpb.Agent
+func (m *AgentManagerImpl) GetActiveAgents() ([]*agentpb.Agent, error) {
+	var agents []*agentpb.Agent
 
 	agentPbs, err := m.mds.GetAgents()
 	if err != nil {
 		return agents, err
 	}
 
-	for _, agentPb := range *agentPbs {
-		info := agentpb.Agent{
-			Info: &agentpb.AgentInfo{
-				HostInfo: &agentpb.HostInfo{
-					Hostname: agentPb.HostInfo.Hostname,
-				},
-				AgentID: agentPb.AgentID,
-			},
-			LastHeartbeatNS: agentPb.LastHeartbeatNS,
-			CreateTimeNS:    agentPb.CreateTimeNS,
-		}
-		agents = append(agents, info)
-	}
-
-	return agents, nil
+	return agentPbs, nil
 }
 
 // AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.

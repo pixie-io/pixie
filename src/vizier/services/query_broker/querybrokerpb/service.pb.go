@@ -18,8 +18,8 @@ import (
 	proto3 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto2 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	proto1 "pixielabs.ai/pixielabs/src/table_store/proto"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
-	strconv "strconv"
 	strings "strings"
 )
 
@@ -33,33 +33,6 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
-
-type AgentState int32
-
-const (
-	AGENT_STATE_UNKNOWN      AgentState = 0
-	AGENT_STATE_HEALTHY      AgentState = 1
-	AGENT_STATE_UNRESPONSIVE AgentState = 2
-	AGENT_STATE_DISCONNECTED AgentState = 3
-)
-
-var AgentState_name = map[int32]string{
-	0: "AGENT_STATE_UNKNOWN",
-	1: "AGENT_STATE_HEALTHY",
-	2: "AGENT_STATE_UNRESPONSIVE",
-	3: "AGENT_STATE_DISCONNECTED",
-}
-
-var AgentState_value = map[string]int32{
-	"AGENT_STATE_UNKNOWN":      0,
-	"AGENT_STATE_HEALTHY":      1,
-	"AGENT_STATE_UNRESPONSIVE": 2,
-	"AGENT_STATE_DISCONNECTED": 3,
-}
-
-func (AgentState) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_564387781338a684, []int{0}
-}
 
 type Schema struct {
 	Relations []*proto1.Relation `protobuf:"bytes,1,rep,name=relations,proto3" json:"relations,omitempty"`
@@ -269,7 +242,7 @@ func (m *AgentInfoRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_AgentInfoRequest proto.InternalMessageInfo
 
 type AgentInfoResponse struct {
-	Info []*AgentStatus `protobuf:"bytes,1,rep,name=info,proto3" json:"info,omitempty"`
+	Info []*AgentMetadata `protobuf:"bytes,1,rep,name=info,proto3" json:"info,omitempty"`
 }
 
 func (m *AgentInfoResponse) Reset()      { *m = AgentInfoResponse{} }
@@ -304,31 +277,29 @@ func (m *AgentInfoResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_AgentInfoResponse proto.InternalMessageInfo
 
-func (m *AgentInfoResponse) GetInfo() []*AgentStatus {
+func (m *AgentInfoResponse) GetInfo() []*AgentMetadata {
 	if m != nil {
 		return m.Info
 	}
 	return nil
 }
 
-type AgentStatus struct {
-	Info            *AgentInfo `protobuf:"bytes,1,opt,name=info,proto3" json:"info,omitempty"`
-	LastHeartbeatNs int64      `protobuf:"varint,2,opt,name=last_heartbeat_ns,json=lastHeartbeatNs,proto3" json:"last_heartbeat_ns,omitempty"`
-	CreateTimeNs    int64      `protobuf:"varint,3,opt,name=create_time_ns,json=createTimeNs,proto3" json:"create_time_ns,omitempty"`
-	State           AgentState `protobuf:"varint,4,opt,name=state,proto3,enum=pl.vizier.services.query_broker.querybrokerpb.AgentState" json:"state,omitempty"`
+type AgentMetadata struct {
+	Agent  *agentpb.Agent       `protobuf:"bytes,1,opt,name=agent,proto3" json:"agent,omitempty"`
+	Status *agentpb.AgentStatus `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 }
 
-func (m *AgentStatus) Reset()      { *m = AgentStatus{} }
-func (*AgentStatus) ProtoMessage() {}
-func (*AgentStatus) Descriptor() ([]byte, []int) {
+func (m *AgentMetadata) Reset()      { *m = AgentMetadata{} }
+func (*AgentMetadata) ProtoMessage() {}
+func (*AgentMetadata) Descriptor() ([]byte, []int) {
 	return fileDescriptor_564387781338a684, []int{5}
 }
-func (m *AgentStatus) XXX_Unmarshal(b []byte) error {
+func (m *AgentMetadata) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *AgentStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *AgentMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_AgentStatus.Marshal(b, m, deterministic)
+		return xxx_messageInfo_AgentMetadata.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -338,138 +309,30 @@ func (m *AgentStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return b[:n], nil
 	}
 }
-func (m *AgentStatus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AgentStatus.Merge(m, src)
+func (m *AgentMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AgentMetadata.Merge(m, src)
 }
-func (m *AgentStatus) XXX_Size() int {
+func (m *AgentMetadata) XXX_Size() int {
 	return m.Size()
 }
-func (m *AgentStatus) XXX_DiscardUnknown() {
-	xxx_messageInfo_AgentStatus.DiscardUnknown(m)
+func (m *AgentMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_AgentMetadata.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_AgentStatus proto.InternalMessageInfo
+var xxx_messageInfo_AgentMetadata proto.InternalMessageInfo
 
-func (m *AgentStatus) GetInfo() *AgentInfo {
+func (m *AgentMetadata) GetAgent() *agentpb.Agent {
 	if m != nil {
-		return m.Info
+		return m.Agent
 	}
 	return nil
 }
 
-func (m *AgentStatus) GetLastHeartbeatNs() int64 {
+func (m *AgentMetadata) GetStatus() *agentpb.AgentStatus {
 	if m != nil {
-		return m.LastHeartbeatNs
-	}
-	return 0
-}
-
-func (m *AgentStatus) GetCreateTimeNs() int64 {
-	if m != nil {
-		return m.CreateTimeNs
-	}
-	return 0
-}
-
-func (m *AgentStatus) GetState() AgentState {
-	if m != nil {
-		return m.State
-	}
-	return AGENT_STATE_UNKNOWN
-}
-
-type AgentInfo struct {
-	AgentID  *proto2.UUID `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
-	HostInfo *HostInfo    `protobuf:"bytes,2,opt,name=host_info,json=hostInfo,proto3" json:"host_info,omitempty"`
-}
-
-func (m *AgentInfo) Reset()      { *m = AgentInfo{} }
-func (*AgentInfo) ProtoMessage() {}
-func (*AgentInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_564387781338a684, []int{6}
-}
-func (m *AgentInfo) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *AgentInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_AgentInfo.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *AgentInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AgentInfo.Merge(m, src)
-}
-func (m *AgentInfo) XXX_Size() int {
-	return m.Size()
-}
-func (m *AgentInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_AgentInfo.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AgentInfo proto.InternalMessageInfo
-
-func (m *AgentInfo) GetAgentID() *proto2.UUID {
-	if m != nil {
-		return m.AgentID
+		return m.Status
 	}
 	return nil
-}
-
-func (m *AgentInfo) GetHostInfo() *HostInfo {
-	if m != nil {
-		return m.HostInfo
-	}
-	return nil
-}
-
-type HostInfo struct {
-	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
-}
-
-func (m *HostInfo) Reset()      { *m = HostInfo{} }
-func (*HostInfo) ProtoMessage() {}
-func (*HostInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_564387781338a684, []int{7}
-}
-func (m *HostInfo) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *HostInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_HostInfo.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *HostInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HostInfo.Merge(m, src)
-}
-func (m *HostInfo) XXX_Size() int {
-	return m.Size()
-}
-func (m *HostInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_HostInfo.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_HostInfo proto.InternalMessageInfo
-
-func (m *HostInfo) GetHostname() string {
-	if m != nil {
-		return m.Hostname
-	}
-	return ""
 }
 
 type QueryRequest struct {
@@ -479,7 +342,7 @@ type QueryRequest struct {
 func (m *QueryRequest) Reset()      { *m = QueryRequest{} }
 func (*QueryRequest) ProtoMessage() {}
 func (*QueryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_564387781338a684, []int{8}
+	return fileDescriptor_564387781338a684, []int{6}
 }
 func (m *QueryRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -524,7 +387,7 @@ type AgentQueryResponse struct {
 func (m *AgentQueryResponse) Reset()      { *m = AgentQueryResponse{} }
 func (*AgentQueryResponse) ProtoMessage() {}
 func (*AgentQueryResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_564387781338a684, []int{9}
+	return fileDescriptor_564387781338a684, []int{7}
 }
 func (m *AgentQueryResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -582,7 +445,7 @@ type AgentQueryResultRequest struct {
 func (m *AgentQueryResultRequest) Reset()      { *m = AgentQueryResultRequest{} }
 func (*AgentQueryResultRequest) ProtoMessage() {}
 func (*AgentQueryResultRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_564387781338a684, []int{10}
+	return fileDescriptor_564387781338a684, []int{8}
 }
 func (m *AgentQueryResultRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -631,7 +494,7 @@ type AgentQueryResultResponse struct {
 func (m *AgentQueryResultResponse) Reset()      { *m = AgentQueryResultResponse{} }
 func (*AgentQueryResultResponse) ProtoMessage() {}
 func (*AgentQueryResultResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_564387781338a684, []int{11}
+	return fileDescriptor_564387781338a684, []int{9}
 }
 func (m *AgentQueryResultResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -669,7 +532,7 @@ type VizierQueryResponse struct {
 func (m *VizierQueryResponse) Reset()      { *m = VizierQueryResponse{} }
 func (*VizierQueryResponse) ProtoMessage() {}
 func (*VizierQueryResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_564387781338a684, []int{12}
+	return fileDescriptor_564387781338a684, []int{10}
 }
 func (m *VizierQueryResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -727,7 +590,7 @@ type VizierQueryResponse_ResponseByAgent struct {
 func (m *VizierQueryResponse_ResponseByAgent) Reset()      { *m = VizierQueryResponse_ResponseByAgent{} }
 func (*VizierQueryResponse_ResponseByAgent) ProtoMessage() {}
 func (*VizierQueryResponse_ResponseByAgent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_564387781338a684, []int{12, 0}
+	return fileDescriptor_564387781338a684, []int{10, 0}
 }
 func (m *VizierQueryResponse_ResponseByAgent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -771,16 +634,13 @@ func (m *VizierQueryResponse_ResponseByAgent) GetResponse() *AgentQueryResponse 
 }
 
 func init() {
-	proto.RegisterEnum("pl.vizier.services.query_broker.querybrokerpb.AgentState", AgentState_name, AgentState_value)
 	proto.RegisterType((*Schema)(nil), "pl.vizier.services.query_broker.querybrokerpb.Schema")
 	proto.RegisterType((*SchemaRequest)(nil), "pl.vizier.services.query_broker.querybrokerpb.SchemaRequest")
 	proto.RegisterType((*SchemaResponse)(nil), "pl.vizier.services.query_broker.querybrokerpb.SchemaResponse")
 	proto.RegisterType((*SchemaResponse_SchemaByAgent)(nil), "pl.vizier.services.query_broker.querybrokerpb.SchemaResponse.SchemaByAgent")
 	proto.RegisterType((*AgentInfoRequest)(nil), "pl.vizier.services.query_broker.querybrokerpb.AgentInfoRequest")
 	proto.RegisterType((*AgentInfoResponse)(nil), "pl.vizier.services.query_broker.querybrokerpb.AgentInfoResponse")
-	proto.RegisterType((*AgentStatus)(nil), "pl.vizier.services.query_broker.querybrokerpb.AgentStatus")
-	proto.RegisterType((*AgentInfo)(nil), "pl.vizier.services.query_broker.querybrokerpb.AgentInfo")
-	proto.RegisterType((*HostInfo)(nil), "pl.vizier.services.query_broker.querybrokerpb.HostInfo")
+	proto.RegisterType((*AgentMetadata)(nil), "pl.vizier.services.query_broker.querybrokerpb.AgentMetadata")
 	proto.RegisterType((*QueryRequest)(nil), "pl.vizier.services.query_broker.querybrokerpb.QueryRequest")
 	proto.RegisterType((*AgentQueryResponse)(nil), "pl.vizier.services.query_broker.querybrokerpb.AgentQueryResponse")
 	proto.RegisterType((*AgentQueryResultRequest)(nil), "pl.vizier.services.query_broker.querybrokerpb.AgentQueryResultRequest")
@@ -794,79 +654,63 @@ func init() {
 }
 
 var fileDescriptor_564387781338a684 = []byte{
-	// 1002 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0xc1, 0x6f, 0xe3, 0xc4,
-	0x17, 0xf6, 0x34, 0xfd, 0x65, 0x9b, 0x97, 0x6c, 0x93, 0x9d, 0x1e, 0x1a, 0xe5, 0x87, 0x4c, 0xb1,
-	0x00, 0x55, 0xbb, 0xaa, 0x23, 0x05, 0xa1, 0x05, 0x76, 0xd1, 0x92, 0x6c, 0x43, 0x13, 0xed, 0xe2,
-	0x82, 0x93, 0x2e, 0x5a, 0x24, 0x64, 0xd9, 0xc9, 0xb4, 0xb1, 0x48, 0x6c, 0xd7, 0x33, 0xae, 0xb6,
-	0x7b, 0xe2, 0x8a, 0xb8, 0x80, 0x38, 0x20, 0xb8, 0x70, 0x05, 0x09, 0xfe, 0x0b, 0x0e, 0x1c, 0x7b,
-	0xdc, 0x13, 0xa2, 0xe9, 0x85, 0xe3, 0xde, 0x91, 0x10, 0xf2, 0xcc, 0x38, 0x71, 0xca, 0x5e, 0xe2,
-	0x72, 0x9b, 0xf7, 0xfc, 0xbd, 0xef, 0x7d, 0xef, 0xcd, 0xcb, 0xcb, 0xc0, 0x5d, 0x1a, 0x0e, 0xea,
-	0x27, 0xee, 0x53, 0x97, 0x84, 0x75, 0x4a, 0xc2, 0x13, 0x77, 0x40, 0x68, 0xfd, 0x38, 0x22, 0xe1,
-	0xa9, 0xe5, 0x84, 0xfe, 0x67, 0x24, 0x14, 0x86, 0x38, 0x07, 0x4e, 0x82, 0xd1, 0x83, 0xd0, 0x67,
-	0x3e, 0xde, 0x09, 0xc6, 0xba, 0x08, 0xd6, 0x93, 0x60, 0x3d, 0x1d, 0xac, 0x2f, 0x04, 0xd7, 0x76,
-	0x8e, 0x5c, 0x36, 0x8a, 0x1c, 0x7d, 0xe0, 0x4f, 0xea, 0x47, 0xfe, 0x91, 0x5f, 0xe7, 0x2c, 0x4e,
-	0x74, 0xc8, 0x2d, 0x6e, 0xf0, 0x93, 0x60, 0xaf, 0xed, 0xc4, 0xda, 0x06, 0x76, 0xe8, 0xf9, 0x4c,
-	0xa8, 0x08, 0x09, 0x8d, 0xc6, 0x8c, 0x06, 0x8e, 0x54, 0x28, 0x6d, 0x09, 0xdf, 0xe2, 0x70, 0x7f,
-	0x32, 0xf1, 0xbd, 0x7a, 0x14, 0xb9, 0x43, 0xc1, 0xce, 0x8f, 0x12, 0xa1, 0xa5, 0x10, 0x8e, 0x4d,
-	0x89, 0x44, 0x50, 0x66, 0xb3, 0x88, 0xa6, 0x31, 0xcc, 0x76, 0xc6, 0xc4, 0xa2, 0xcc, 0x0f, 0x67,
-	0x98, 0xc1, 0x88, 0x4c, 0x6c, 0x81, 0xd1, 0xba, 0x90, 0xef, 0x71, 0x1b, 0xdf, 0x83, 0x42, 0x48,
-	0xc6, 0x36, 0x73, 0x7d, 0x8f, 0x56, 0xd1, 0x56, 0x6e, 0xbb, 0xd8, 0x78, 0x45, 0x0f, 0xc6, 0x7a,
-	0x8a, 0x40, 0x17, 0xa1, 0x81, 0xa3, 0x9b, 0x12, 0x69, 0xce, 0x63, 0xb4, 0x32, 0x5c, 0x17, 0x54,
-	0x26, 0x39, 0x8e, 0x08, 0x65, 0xda, 0x0f, 0x2b, 0xb0, 0x9e, 0x78, 0x68, 0xe0, 0x7b, 0x94, 0x60,
-	0x0a, 0x65, 0xc1, 0x61, 0x39, 0xa7, 0x96, 0x7d, 0x44, 0x3c, 0x26, 0x53, 0x3d, 0xd0, 0x97, 0xea,
-	0xbf, 0xbe, 0xc8, 0x2b, 0xcd, 0xd6, 0x69, 0x33, 0xa6, 0x34, 0xaf, 0xd3, 0xb4, 0x59, 0xfb, 0x16,
-	0x25, 0xca, 0xa4, 0x07, 0xdf, 0x86, 0x35, 0x9e, 0xdc, 0x72, 0x87, 0x55, 0xb4, 0x85, 0xb6, 0x8b,
-	0x8d, 0x72, 0x9c, 0x3f, 0xee, 0x6f, 0xe0, 0xe8, 0x07, 0x07, 0xdd, 0xdd, 0x56, 0x71, 0xfa, 0xfb,
-	0xcb, 0xd7, 0x38, 0xba, 0xbb, 0x6b, 0x5e, 0xe3, 0xe8, 0xee, 0x10, 0x7f, 0x00, 0x79, 0xc1, 0x5d,
-	0x5d, 0xe1, 0x61, 0x6f, 0x66, 0x93, 0x2d, 0x49, 0x34, 0x0c, 0x15, 0x91, 0xc2, 0x3b, 0xf4, 0x93,
-	0xae, 0x0d, 0xe0, 0x46, 0xca, 0x27, 0xfb, 0x66, 0xc0, 0xaa, 0xeb, 0x1d, 0xfa, 0xb2, 0x59, 0xef,
-	0x2c, 0x99, 0x95, 0xf3, 0xf5, 0xf8, 0x68, 0x98, 0x9c, 0x47, 0xfb, 0x1b, 0x41, 0x31, 0xe5, 0xc5,
-	0x0f, 0x67, 0xfc, 0x71, 0x55, 0x6f, 0x65, 0xe1, 0xe7, 0x7a, 0x39, 0x0b, 0xbe, 0x09, 0x37, 0xc6,
-	0x36, 0x65, 0xd6, 0x88, 0xd8, 0x21, 0x73, 0x88, 0xcd, 0x2c, 0x8f, 0xf2, 0x86, 0xe5, 0xcc, 0x72,
-	0xfc, 0xa1, 0x93, 0xf8, 0x0d, 0x8a, 0x5f, 0x85, 0xf5, 0x41, 0x48, 0x6c, 0x46, 0x2c, 0xe6, 0x4e,
-	0x48, 0x0c, 0xcc, 0x71, 0x60, 0x49, 0x78, 0xfb, 0xee, 0x84, 0x18, 0x14, 0xef, 0xc3, 0xff, 0xe2,
-	0xd1, 0x26, 0xd5, 0xd5, 0x2d, 0xb4, 0xbd, 0xde, 0x78, 0x3b, 0x6b, 0x03, 0x88, 0x29, 0x78, 0xb4,
-	0xef, 0x11, 0x14, 0x66, 0xb2, 0xb3, 0xcf, 0x43, 0x1f, 0x0a, 0x23, 0x9f, 0x32, 0x8b, 0x37, 0x4f,
-	0x8c, 0xc4, 0xed, 0x25, 0xb5, 0x75, 0x7c, 0x2a, 0x7a, 0xb7, 0x36, 0x92, 0x27, 0xed, 0x75, 0x58,
-	0x4b, 0xbc, 0xb8, 0x06, 0xdc, 0xef, 0xd9, 0x13, 0xc2, 0xa5, 0x15, 0xcc, 0x99, 0xad, 0xdd, 0x82,
-	0xd2, 0x47, 0x31, 0x97, 0x1c, 0x1d, 0xfc, 0x7f, 0x28, 0x88, 0x44, 0x94, 0x85, 0x09, 0x98, 0x3b,
-	0x7a, 0x2c, 0xd4, 0x7e, 0x45, 0x80, 0xb9, 0x7e, 0x19, 0x22, 0x27, 0xeb, 0x16, 0xe4, 0xc5, 0xd2,
-	0x90, 0x85, 0x6f, 0xc4, 0xf2, 0x85, 0x27, 0x9e, 0x57, 0x31, 0x34, 0x12, 0x12, 0xf7, 0x49, 0x24,
-	0x70, 0x87, 0xb2, 0xda, 0x17, 0xf7, 0x89, 0xa7, 0x88, 0xfb, 0xc4, 0xd1, 0xdd, 0x21, 0xee, 0x40,
-	0x29, 0xbd, 0xe7, 0xf8, 0x1d, 0x17, 0x1b, 0xaf, 0xc5, 0xc1, 0x62, 0x2b, 0xea, 0x8b, 0x5b, 0x51,
-	0x4f, 0x44, 0x46, 0x63, 0x66, 0x16, 0x8f, 0xe7, 0x86, 0xf6, 0x0b, 0x82, 0xcd, 0x85, 0x32, 0x62,
-	0x84, 0xac, 0x3f, 0xf3, 0x35, 0x3e, 0x86, 0xbc, 0x14, 0x26, 0xaa, 0x6a, 0x66, 0x99, 0xaf, 0x85,
-	0xbe, 0x9a, 0x92, 0x50, 0xab, 0x41, 0xf5, 0xdf, 0x72, 0x05, 0x46, 0xfb, 0x2e, 0x07, 0x1b, 0x8f,
-	0x78, 0x96, 0xc5, 0x3b, 0x09, 0xe2, 0x55, 0x2c, 0xce, 0xc9, 0x2a, 0x36, 0x97, 0x54, 0xf4, 0x02,
-	0x5a, 0x3d, 0x39, 0x24, 0x6b, 0x72, 0x9e, 0x24, 0x35, 0x05, 0x2b, 0xcb, 0x4d, 0x41, 0x6e, 0x89,
-	0x29, 0xa8, 0xfd, 0x84, 0xa0, 0x7c, 0x49, 0x44, 0xf6, 0x3b, 0xfb, 0x14, 0xd6, 0x12, 0xfd, 0xff,
-	0xdd, 0xad, 0xcd, 0x28, 0x6f, 0x3e, 0x05, 0x98, 0x6f, 0x0d, 0xbc, 0x09, 0x1b, 0xcd, 0xbd, 0xb6,
-	0xd1, 0xb7, 0x7a, 0xfd, 0x66, 0xbf, 0x6d, 0x1d, 0x18, 0x0f, 0x8c, 0xfd, 0x8f, 0x8d, 0x8a, 0x72,
-	0xf9, 0x43, 0xa7, 0xdd, 0x7c, 0xd8, 0xef, 0x3c, 0xae, 0x20, 0xfc, 0x12, 0x54, 0x17, 0x23, 0xcc,
-	0x76, 0xef, 0xc3, 0x7d, 0xa3, 0xd7, 0x7d, 0xd4, 0xae, 0xac, 0x5c, 0xfe, 0xba, 0xdb, 0xed, 0xdd,
-	0xdf, 0x37, 0x8c, 0xf6, 0xfd, 0x7e, 0x7b, 0xb7, 0x92, 0x6b, 0xfc, 0xb5, 0x0a, 0x98, 0xeb, 0x6a,
-	0x71, 0xa9, 0x3d, 0x51, 0x0b, 0xfe, 0x06, 0x41, 0x69, 0x8f, 0xb0, 0xf9, 0xda, 0xba, 0x97, 0x79,
-	0x4f, 0x8b, 0x1f, 0x4c, 0xed, 0xbd, 0xec, 0x04, 0x72, 0x84, 0x15, 0xfc, 0x35, 0x82, 0x52, 0xfb,
-	0x09, 0x19, 0x44, 0x8c, 0x70, 0xcd, 0xf8, 0xce, 0x92, 0xa4, 0xe9, 0x15, 0x56, 0x6b, 0x5d, 0x7d,
-	0xce, 0x35, 0x05, 0x7f, 0x89, 0x00, 0xf6, 0x08, 0x13, 0xff, 0xb6, 0x14, 0xdf, 0xcd, 0xf8, 0xb8,
-	0x10, 0x92, 0xde, 0xbd, 0xd2, 0xd3, 0x44, 0x53, 0xf0, 0xcf, 0x08, 0x36, 0x4d, 0x32, 0x20, 0xee,
-	0x09, 0xb9, 0xbc, 0x0a, 0xf0, 0xfb, 0x57, 0x99, 0xd9, 0xf9, 0xea, 0xab, 0xed, 0x5d, 0x99, 0x27,
-	0x91, 0xdb, 0xfa, 0x02, 0x9d, 0x9d, 0xab, 0xca, 0xb3, 0x73, 0x55, 0x79, 0x7e, 0xae, 0xa2, 0xcf,
-	0xa7, 0x2a, 0xfa, 0x71, 0xaa, 0xa2, 0xdf, 0xa6, 0x2a, 0x3a, 0x9b, 0xaa, 0xe8, 0x8f, 0xa9, 0x8a,
-	0xfe, 0x9c, 0xaa, 0xca, 0xf3, 0xa9, 0x8a, 0xbe, 0xba, 0x50, 0x95, 0xb3, 0x0b, 0x55, 0x79, 0x76,
-	0xa1, 0x2a, 0x9f, 0xf4, 0x02, 0xf7, 0x89, 0x4b, 0xc6, 0xb6, 0x43, 0x75, 0xdb, 0xad, 0xcf, 0x8c,
-	0xfa, 0x72, 0xaf, 0xf2, 0x3b, 0x0b, 0x96, 0x93, 0xe7, 0xaf, 0xd4, 0x37, 0xfe, 0x09, 0x00, 0x00,
-	0xff, 0xff, 0x03, 0x91, 0xa0, 0x70, 0xdc, 0x0b, 0x00, 0x00,
+	// 849 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0xb1, 0x6f, 0xd3, 0x4a,
+	0x18, 0xf7, 0x35, 0x7d, 0x69, 0x7b, 0x49, 0x5f, 0xde, 0xbb, 0x0e, 0x8d, 0xfc, 0x24, 0xbf, 0x62,
+	0x09, 0x54, 0xa9, 0xf4, 0x2c, 0x15, 0x21, 0x86, 0x06, 0x95, 0x46, 0x85, 0x12, 0xa1, 0x4a, 0xe0,
+	0xa8, 0x48, 0x20, 0xa1, 0xc8, 0x4e, 0xae, 0xa9, 0x45, 0x12, 0xbb, 0xbe, 0x73, 0xd5, 0x32, 0xb1,
+	0x22, 0x16, 0x50, 0x07, 0xc4, 0xc4, 0x0a, 0x12, 0xfc, 0x17, 0x0c, 0x8c, 0x1d, 0x3b, 0x21, 0xea,
+	0x2e, 0x8c, 0xdd, 0x59, 0x90, 0xef, 0xce, 0x89, 0x5d, 0x32, 0x10, 0x87, 0x29, 0xf7, 0x5d, 0x7e,
+	0xdf, 0xef, 0xfb, 0xdd, 0x77, 0x3f, 0x7f, 0x36, 0xac, 0x50, 0xbf, 0x69, 0xec, 0x3b, 0xcf, 0x1c,
+	0xe2, 0x1b, 0x94, 0xf8, 0xfb, 0x4e, 0x93, 0x50, 0x63, 0x2f, 0x20, 0xfe, 0x61, 0xc3, 0xf6, 0xdd,
+	0xa7, 0xc4, 0x17, 0x81, 0x58, 0x7b, 0x76, 0x8c, 0xc1, 0x9e, 0xef, 0x32, 0x17, 0x2d, 0x7b, 0x1d,
+	0x2c, 0x92, 0x71, 0x9c, 0x8c, 0x93, 0xc9, 0x38, 0x95, 0xac, 0x2e, 0xb7, 0x1d, 0xb6, 0x1b, 0xd8,
+	0xb8, 0xe9, 0x76, 0x8d, 0xb6, 0xdb, 0x76, 0x0d, 0xce, 0x62, 0x07, 0x3b, 0x3c, 0xe2, 0x01, 0x5f,
+	0x09, 0x76, 0x75, 0x39, 0xd2, 0xd6, 0xb4, 0xfc, 0x9e, 0xcb, 0x84, 0x0a, 0x9f, 0xd0, 0xa0, 0xc3,
+	0xa8, 0x67, 0x4b, 0x85, 0x32, 0x96, 0xf0, 0x05, 0x0e, 0x77, 0xbb, 0x5d, 0xb7, 0x67, 0x04, 0x81,
+	0xd3, 0x12, 0xec, 0x7c, 0x29, 0x11, 0x7a, 0x02, 0x61, 0x5b, 0x94, 0x48, 0x04, 0x65, 0x16, 0x0b,
+	0x68, 0x12, 0xc3, 0x2c, 0xbb, 0x43, 0x1a, 0x94, 0xb9, 0x7e, 0x1f, 0xd3, 0xdc, 0x25, 0x5d, 0x4b,
+	0x62, 0xf0, 0xb0, 0xa6, 0xd1, 0x5d, 0xcb, 0x27, 0x2d, 0xc3, 0x6a, 0x93, 0x1e, 0xf3, 0x6c, 0xf1,
+	0x2b, 0xf0, 0x7a, 0x0d, 0xe6, 0xeb, 0x3c, 0x1f, 0xad, 0xc1, 0x19, 0x9f, 0x74, 0x2c, 0xe6, 0xb8,
+	0x3d, 0x5a, 0x06, 0x0b, 0xb9, 0xc5, 0xc2, 0xca, 0x25, 0xec, 0x75, 0x70, 0xa2, 0x20, 0x16, 0xa5,
+	0x3c, 0x1b, 0x9b, 0x12, 0x69, 0x0e, 0x72, 0xf4, 0x12, 0x9c, 0x15, 0x54, 0x26, 0xd9, 0x0b, 0x08,
+	0x65, 0xfa, 0xbb, 0x09, 0xf8, 0x77, 0xbc, 0x43, 0x3d, 0xb7, 0x47, 0x09, 0xa2, 0xb0, 0x24, 0x38,
+	0x1a, 0xf6, 0x61, 0x83, 0xeb, 0x90, 0xa5, 0xee, 0xe1, 0x91, 0xee, 0x0b, 0xa7, 0x79, 0x65, 0x58,
+	0x3d, 0x5c, 0x8f, 0x28, 0xcd, 0x59, 0x9a, 0x0c, 0xd5, 0x37, 0x20, 0x56, 0x26, 0x77, 0xd0, 0x0d,
+	0x38, 0xcd, 0x8b, 0x37, 0x9c, 0x56, 0x19, 0x2c, 0x80, 0xc5, 0xc2, 0x4a, 0x29, 0xaa, 0x1f, 0xdd,
+	0x87, 0x67, 0xe3, 0xed, 0xed, 0xda, 0x46, 0xb5, 0x10, 0x7e, 0xfd, 0x7f, 0x8a, 0xa3, 0x6b, 0x1b,
+	0xe6, 0x14, 0x47, 0xd7, 0x5a, 0x68, 0x0b, 0xe6, 0x05, 0x77, 0x79, 0x82, 0xa7, 0x5d, 0xcf, 0x26,
+	0x5b, 0x92, 0xe8, 0x08, 0xfe, 0x23, 0x4a, 0xf4, 0x76, 0xdc, 0xb8, 0x6b, 0x04, 0xfe, 0x9b, 0xd8,
+	0x93, 0x7d, 0xbb, 0x0f, 0x27, 0x9d, 0xde, 0x8e, 0x2b, 0x9b, 0x55, 0x19, 0xb1, 0x2a, 0xe7, 0xdb,
+	0x22, 0xcc, 0x6a, 0x59, 0xcc, 0x32, 0x39, 0x93, 0x7e, 0x04, 0xe0, 0x6c, 0x6a, 0x1f, 0x55, 0xe0,
+	0x5f, 0xf1, 0x8d, 0x44, 0x47, 0xbb, 0x32, 0xac, 0x88, 0x70, 0x12, 0x16, 0x0e, 0x12, 0xcd, 0x16,
+	0x49, 0x68, 0x03, 0xe6, 0x85, 0x59, 0x65, 0x67, 0xae, 0xfe, 0x5e, 0x7a, 0x9d, 0xe7, 0x98, 0x32,
+	0x57, 0x5f, 0x82, 0xc5, 0x07, 0x91, 0x74, 0xd9, 0x0c, 0xf4, 0x1f, 0x9c, 0x11, 0xe7, 0xa2, 0xcc,
+	0xe7, 0xba, 0x66, 0xcc, 0x69, 0xbe, 0x51, 0x67, 0xbe, 0xfe, 0x19, 0x40, 0xc4, 0x49, 0x64, 0x8a,
+	0xec, 0xd5, 0x52, 0x5f, 0x89, 0x38, 0xc8, 0x5c, 0xa4, 0x44, 0xec, 0x44, 0x37, 0x90, 0x2a, 0x18,
+	0x39, 0x41, 0x14, 0x70, 0x5a, 0x52, 0xf8, 0x70, 0x27, 0xf0, 0x12, 0x91, 0x13, 0x38, 0xba, 0xd6,
+	0x42, 0x77, 0x61, 0x31, 0xf9, 0xa4, 0x97, 0x73, 0x3c, 0xf9, 0x72, 0x94, 0x2c, 0xe6, 0x02, 0x4e,
+	0xcf, 0x05, 0x1c, 0x8b, 0x0c, 0x3a, 0xcc, 0x2c, 0xec, 0x0d, 0x02, 0xfd, 0x13, 0x80, 0xf3, 0xa9,
+	0x63, 0x44, 0x08, 0x79, 0xfe, 0xcc, 0x46, 0x7d, 0x04, 0xf3, 0x52, 0x98, 0x38, 0xd5, 0x7a, 0x16,
+	0xcb, 0xa4, 0xfa, 0x6a, 0x4a, 0x42, 0x5d, 0x85, 0xe5, 0x5f, 0xe5, 0x0a, 0x8c, 0xfe, 0x36, 0x07,
+	0xe7, 0x1e, 0xf2, 0x2a, 0xe9, 0x3b, 0xf1, 0xa2, 0xe1, 0x22, 0xd6, 0xf1, 0x70, 0x31, 0x47, 0x54,
+	0x34, 0x84, 0x16, 0xc7, 0x8b, 0xf8, 0xc1, 0x1f, 0x14, 0x49, 0xb8, 0x60, 0x62, 0x34, 0x17, 0xe4,
+	0x46, 0x70, 0x81, 0xfa, 0x01, 0xc0, 0xd2, 0x05, 0x11, 0xd9, 0xef, 0xec, 0x09, 0x9c, 0x8e, 0xf5,
+	0xff, 0xb9, 0x5b, 0xeb, 0x53, 0xae, 0xfc, 0x98, 0x84, 0x88, 0xff, 0x57, 0xe5, 0xf0, 0xba, 0xe0,
+	0x43, 0x47, 0x00, 0x16, 0x37, 0x09, 0xeb, 0xcf, 0x1c, 0xb4, 0x96, 0xa5, 0x68, 0x62, 0x82, 0xa9,
+	0xb7, 0xb2, 0x13, 0x48, 0x1b, 0x29, 0xe8, 0x35, 0x80, 0xc5, 0xdb, 0x07, 0xa4, 0x19, 0x30, 0xc2,
+	0x35, 0xa3, 0xd5, 0x11, 0x49, 0x93, 0x63, 0x44, 0xad, 0x8e, 0xef, 0x35, 0x5d, 0x41, 0x2f, 0x01,
+	0x84, 0x9b, 0x84, 0x89, 0x19, 0x4e, 0x51, 0x25, 0xe3, 0x2b, 0x4b, 0x48, 0xba, 0x39, 0xd6, 0x0b,
+	0x4f, 0x57, 0xd0, 0x47, 0x00, 0xe7, 0x4d, 0xd2, 0x24, 0xce, 0x3e, 0xb9, 0xf8, 0x38, 0xa2, 0x3b,
+	0xe3, 0xf8, 0x66, 0x30, 0x7e, 0xd4, 0xcd, 0xb1, 0x79, 0x62, 0xb9, 0xd5, 0x17, 0xe0, 0xf8, 0x54,
+	0x53, 0x4e, 0x4e, 0x35, 0xe5, 0xfc, 0x54, 0x03, 0xcf, 0x43, 0x0d, 0xbc, 0x0f, 0x35, 0xf0, 0x25,
+	0xd4, 0xc0, 0x71, 0xa8, 0x81, 0x6f, 0xa1, 0x06, 0xbe, 0x87, 0x9a, 0x72, 0x1e, 0x6a, 0xe0, 0xd5,
+	0x99, 0xa6, 0x1c, 0x9f, 0x69, 0xca, 0xc9, 0x99, 0xa6, 0x3c, 0xae, 0x7b, 0xce, 0x81, 0x43, 0x3a,
+	0x96, 0x4d, 0xb1, 0xe5, 0x18, 0xfd, 0xc0, 0x18, 0xed, 0xdb, 0x70, 0x35, 0x15, 0xd9, 0x79, 0xfe,
+	0xed, 0x73, 0xed, 0x67, 0x00, 0x00, 0x00, 0xff, 0xff, 0xd5, 0x16, 0x14, 0x4a, 0x62, 0x0a, 0x00,
+	0x00,
 }
 
-func (x AgentState) String() string {
-	s, ok := AgentState_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
 func (this *Schema) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1023,14 +867,14 @@ func (this *AgentInfoResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *AgentStatus) Equal(that interface{}) bool {
+func (this *AgentMetadata) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*AgentStatus)
+	that1, ok := that.(*AgentMetadata)
 	if !ok {
-		that2, ok := that.(AgentStatus)
+		that2, ok := that.(AgentMetadata)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1042,67 +886,10 @@ func (this *AgentStatus) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.Info.Equal(that1.Info) {
+	if !this.Agent.Equal(that1.Agent) {
 		return false
 	}
-	if this.LastHeartbeatNs != that1.LastHeartbeatNs {
-		return false
-	}
-	if this.CreateTimeNs != that1.CreateTimeNs {
-		return false
-	}
-	if this.State != that1.State {
-		return false
-	}
-	return true
-}
-func (this *AgentInfo) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*AgentInfo)
-	if !ok {
-		that2, ok := that.(AgentInfo)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.AgentID.Equal(that1.AgentID) {
-		return false
-	}
-	if !this.HostInfo.Equal(that1.HostInfo) {
-		return false
-	}
-	return true
-}
-func (this *HostInfo) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*HostInfo)
-	if !ok {
-		that2, ok := that.(HostInfo)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Hostname != that1.Hostname {
+	if !this.Status.Equal(that1.Status) {
 		return false
 	}
 	return true
@@ -1340,43 +1127,18 @@ func (this *AgentInfoResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *AgentStatus) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 8)
-	s = append(s, "&querybrokerpb.AgentStatus{")
-	if this.Info != nil {
-		s = append(s, "Info: "+fmt.Sprintf("%#v", this.Info)+",\n")
-	}
-	s = append(s, "LastHeartbeatNs: "+fmt.Sprintf("%#v", this.LastHeartbeatNs)+",\n")
-	s = append(s, "CreateTimeNs: "+fmt.Sprintf("%#v", this.CreateTimeNs)+",\n")
-	s = append(s, "State: "+fmt.Sprintf("%#v", this.State)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *AgentInfo) GoString() string {
+func (this *AgentMetadata) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&querybrokerpb.AgentInfo{")
-	if this.AgentID != nil {
-		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
+	s = append(s, "&querybrokerpb.AgentMetadata{")
+	if this.Agent != nil {
+		s = append(s, "Agent: "+fmt.Sprintf("%#v", this.Agent)+",\n")
 	}
-	if this.HostInfo != nil {
-		s = append(s, "HostInfo: "+fmt.Sprintf("%#v", this.HostInfo)+",\n")
+	if this.Status != nil {
+		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *HostInfo) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&querybrokerpb.HostInfo{")
-	s = append(s, "Hostname: "+fmt.Sprintf("%#v", this.Hostname)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1866,7 +1628,7 @@ func (m *AgentInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *AgentStatus) Marshal() (dAtA []byte, err error) {
+func (m *AgentMetadata) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1876,69 +1638,19 @@ func (m *AgentStatus) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *AgentStatus) MarshalTo(dAtA []byte) (int, error) {
+func (m *AgentMetadata) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *AgentStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *AgentMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.State != 0 {
-		i = encodeVarintService(dAtA, i, uint64(m.State))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.CreateTimeNs != 0 {
-		i = encodeVarintService(dAtA, i, uint64(m.CreateTimeNs))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.LastHeartbeatNs != 0 {
-		i = encodeVarintService(dAtA, i, uint64(m.LastHeartbeatNs))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.Info != nil {
+	if m.Status != nil {
 		{
-			size, err := m.Info.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintService(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *AgentInfo) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *AgentInfo) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *AgentInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.HostInfo != nil {
-		{
-			size, err := m.HostInfo.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -1948,45 +1660,15 @@ func (m *AgentInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.AgentID != nil {
+	if m.Agent != nil {
 		{
-			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.Agent.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
 			i -= size
 			i = encodeVarintService(dAtA, i, uint64(size))
 		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *HostInfo) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *HostInfo) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *HostInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Hostname) > 0 {
-		i -= len(m.Hostname)
-		copy(dAtA[i:], m.Hostname)
-		i = encodeVarintService(dAtA, i, uint64(len(m.Hostname)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -2351,53 +2033,18 @@ func (m *AgentInfoResponse) Size() (n int) {
 	return n
 }
 
-func (m *AgentStatus) Size() (n int) {
+func (m *AgentMetadata) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Info != nil {
-		l = m.Info.Size()
+	if m.Agent != nil {
+		l = m.Agent.Size()
 		n += 1 + l + sovService(uint64(l))
 	}
-	if m.LastHeartbeatNs != 0 {
-		n += 1 + sovService(uint64(m.LastHeartbeatNs))
-	}
-	if m.CreateTimeNs != 0 {
-		n += 1 + sovService(uint64(m.CreateTimeNs))
-	}
-	if m.State != 0 {
-		n += 1 + sovService(uint64(m.State))
-	}
-	return n
-}
-
-func (m *AgentInfo) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.AgentID != nil {
-		l = m.AgentID.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	if m.HostInfo != nil {
-		l = m.HostInfo.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	return n
-}
-
-func (m *HostInfo) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Hostname)
-	if l > 0 {
+	if m.Status != nil {
+		l = m.Status.Size()
 		n += 1 + l + sovService(uint64(l))
 	}
 	return n
@@ -2572,9 +2219,9 @@ func (this *AgentInfoResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
-	repeatedStringForInfo := "[]*AgentStatus{"
+	repeatedStringForInfo := "[]*AgentMetadata{"
 	for _, f := range this.Info {
-		repeatedStringForInfo += strings.Replace(f.String(), "AgentStatus", "AgentStatus", 1) + ","
+		repeatedStringForInfo += strings.Replace(f.String(), "AgentMetadata", "AgentMetadata", 1) + ","
 	}
 	repeatedStringForInfo += "}"
 	s := strings.Join([]string{`&AgentInfoResponse{`,
@@ -2583,36 +2230,13 @@ func (this *AgentInfoResponse) String() string {
 	}, "")
 	return s
 }
-func (this *AgentStatus) String() string {
+func (this *AgentMetadata) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&AgentStatus{`,
-		`Info:` + strings.Replace(this.Info.String(), "AgentInfo", "AgentInfo", 1) + `,`,
-		`LastHeartbeatNs:` + fmt.Sprintf("%v", this.LastHeartbeatNs) + `,`,
-		`CreateTimeNs:` + fmt.Sprintf("%v", this.CreateTimeNs) + `,`,
-		`State:` + fmt.Sprintf("%v", this.State) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *AgentInfo) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&AgentInfo{`,
-		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
-		`HostInfo:` + strings.Replace(this.HostInfo.String(), "HostInfo", "HostInfo", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *HostInfo) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&HostInfo{`,
-		`Hostname:` + fmt.Sprintf("%v", this.Hostname) + `,`,
+	s := strings.Join([]string{`&AgentMetadata{`,
+		`Agent:` + strings.Replace(fmt.Sprintf("%v", this.Agent), "Agent", "agentpb.Agent", 1) + `,`,
+		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "AgentStatus", "agentpb.AgentStatus", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3158,7 +2782,7 @@ func (m *AgentInfoResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Info = append(m.Info, &AgentStatus{})
+			m.Info = append(m.Info, &AgentMetadata{})
 			if err := m.Info[len(m.Info)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -3187,7 +2811,7 @@ func (m *AgentInfoResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *AgentStatus) Unmarshal(dAtA []byte) error {
+func (m *AgentMetadata) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3210,15 +2834,15 @@ func (m *AgentStatus) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: AgentStatus: wiretype end group for non-group")
+			return fmt.Errorf("proto: AgentMetadata: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AgentStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AgentMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Info", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Agent", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -3245,162 +2869,16 @@ func (m *AgentStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Info == nil {
-				m.Info = &AgentInfo{}
+			if m.Agent == nil {
+				m.Agent = &agentpb.Agent{}
 			}
-			if err := m.Info.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastHeartbeatNs", wireType)
-			}
-			m.LastHeartbeatNs = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.LastHeartbeatNs |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CreateTimeNs", wireType)
-			}
-			m.CreateTimeNs = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.CreateTimeNs |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
-			}
-			m.State = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.State |= AgentState(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *AgentInfo) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: AgentInfo: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AgentInfo: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AgentID", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.AgentID == nil {
-				m.AgentID = &proto2.UUID{}
-			}
-			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Agent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field HostInfo", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -3427,97 +2905,12 @@ func (m *AgentInfo) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.HostInfo == nil {
-				m.HostInfo = &HostInfo{}
+			if m.Status == nil {
+				m.Status = &agentpb.AgentStatus{}
 			}
-			if err := m.HostInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *HostInfo) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: HostInfo: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: HostInfo: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Hostname", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthService
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Hostname = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
