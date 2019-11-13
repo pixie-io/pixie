@@ -4,7 +4,7 @@
 #include <memory>
 #include <utility>
 
-#include "src/carnot/compiler/compiler_state.h"
+#include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/funcs/builtins/builtins.h"
 #include "src/carnot/funcs/metadata/metadata_ops.h"

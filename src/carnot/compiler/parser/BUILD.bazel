@@ -18,6 +18,8 @@ pl_cc_library(
     hdrs = ["parser.h"],
     deps = [
         "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
+        "//src/carnot/compiler/compiler_state:cc_library",
+        "//src/carnot/compiler/ir:cc_library",
         "//third_party:libpypa",
     ],
 )

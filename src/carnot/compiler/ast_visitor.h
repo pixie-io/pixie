@@ -13,7 +13,7 @@
 #include <pypa/ast/ast.hh>
 #include <pypa/ast/tree_walker.hh>
 
-#include "src/carnot/compiler/compiler_state.h"
+#include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/compiler/ir/ast_utils.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 

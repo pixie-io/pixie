@@ -6,7 +6,8 @@
 #include <unordered_map>
 #include <utility>
 
-#include "src/carnot/compiler/registry_info.h"
+#include "src/carnot/compiler/compiler_state/registry_info.h"
+
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"

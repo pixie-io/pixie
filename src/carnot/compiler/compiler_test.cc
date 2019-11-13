@@ -10,7 +10,6 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/compiler.h"
-#include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/funcs/metadata/metadata_ops.h"
 #include "src/carnot/planpb/plan.pb.h"

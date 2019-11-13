@@ -3,7 +3,7 @@
 #include <type_traits>
 
 #include "absl/strings/match.h"
-#include "src/carnot/compiler/registry_info.h"
+#include "src/carnot/compiler/compiler_state/registry_info.h"
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/types.h"

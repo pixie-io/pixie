@@ -29,6 +29,7 @@ pl_cc_library(
         "//third_party:libpypa",
         "//src/carnot/compiler/ir:cc_library",
         "//src/carnot/compiler/compiler_error_context:cc_library",
+        "//src/carnot/compiler/compiler_state:cc_library",
         "//src/carnot/compiler/parser:cc_library",
     ],
 )

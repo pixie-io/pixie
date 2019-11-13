@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "src/carnot/compiler/compiler.h"
-#include "src/carnot/compiler/compiler_state.h"
+#include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/distributed_planner.h"
 #include "src/carnot/compiler/tablet_rules.h"

@@ -6,11 +6,11 @@
 #include <utility>
 
 #include "src/carnot/compiler/compiler.h"
-#include "src/carnot/compiler/compiler_state.h"
+#include "src/carnot/compiler/compiler_state/compiler_state.h"
+#include "src/carnot/compiler/compiler_state/registry_info.h"
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/logical_planner/logical_planner.h"
-#include "src/carnot/compiler/registry_info.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/base/time.h"
