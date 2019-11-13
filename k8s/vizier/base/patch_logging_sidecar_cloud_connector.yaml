@@ -1,0 +1,13 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vizier-cloud-connector
+spec:
+  template:
+    spec:
+      containers:
+      - name: vizier-logtailer
+        env:
+        - name: PL_CLOUD_CONNECTOR_ADDR
+          value: localhost:50800

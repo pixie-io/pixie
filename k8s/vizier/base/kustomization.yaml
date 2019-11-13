@@ -5,8 +5,13 @@ commonLabels:
   component: vizier
 kind: Kustomization
 namespace: pl
+patches:
+- path: patch_logging_sidecar_deployment.yaml
+  target:
+    kind: Deployment
 patchesStrategicMerge:
 - patch_pem_daemonset.yaml
+- patch_logging_sidecar_cloud_connector.yaml
 resources:
 - pem
 - api_deployment.yaml
@@ -15,6 +20,7 @@ resources:
 - certmgr_deployment.yaml
 - certmgr_service.yaml
 - cloud_connector_deployment.yaml
+- cloud_connector_service.yaml
 - metadata_deployment.yaml
 - metadata_service.yaml
 - metadata_role.yaml

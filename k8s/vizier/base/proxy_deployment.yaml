@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,34 +19,34 @@ spec:
       - name: dnsmasq
         image: "janeczku/go-dnsmasq:release-1.0.5"
         args:
-          - --listen
-          - "127.0.0.1:53"
-          - --default-resolver
-          - --append-search-domains
-          - --hostsfile=/etc/hosts
+        - --listen
+        - "127.0.0.1:53"
+        - --default-resolver
+        - --append-search-domains
+        - --hostsfile=/etc/hosts
       - name: vizier-proxy-server
         image: gcr.io/pl-dev-infra/vizier/proxy_server_image:latest
         ports:
-          - containerPort: 55000
+        - containerPort: 55000
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
             port: 55000
         env:
-          - name: PL_JWT_SIGNING_KEY
-            valueFrom:
-              secretKeyRef:
-                name: pl-cluster-secrets
-                key: jwt-signing-key
-          - name: PL_TLS_CERT
-            value: /certs/tls.crt
-          - name: PL_TLS_KEY
-            value: /certs/tls.key
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pl-cluster-secrets
+              key: jwt-signing-key
+        - name: PL_TLS_CERT
+          value: /certs/tls.crt
+        - name: PL_TLS_KEY
+          value: /certs/tls.key
         volumeMounts:
-            - name: certs
-              mountPath: /certs
+        - name: proxy-certs
+          mountPath: /certs
       volumes:
-        - name: certs
-          secret:
-            secretName: proxy-tls-certs
+      - name: proxy-certs
+        secret:
+          secretName: proxy-tls-certs

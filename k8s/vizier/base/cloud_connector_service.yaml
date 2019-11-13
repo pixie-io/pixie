@@ -5,9 +5,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - name: tcp-grpc
+  - name: tcp-http2
     port: 50800
     protocol: TCP
-    targetPort: 50400
+    targetPort: 50800
   selector:
     name: vizier-cloud-connector
