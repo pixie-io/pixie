@@ -9,7 +9,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb/mock"
-	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/logwriter"
+	logwriter "pixielabs.ai/pixielabs/src/vizier/utils/logtailer/logwriter"
 )
 
 func TestLogwriter_MaxInterval(t *testing.T) {
@@ -21,7 +21,8 @@ func TestLogwriter_MaxInterval(t *testing.T) {
 	client.EXPECT().TransferLog(gomock.Any()).Return(mockStream, nil)
 	pod := "pod-name-123"
 	svc := "svc-name"
-	writer := logwriter.NewCloudLogWriter(client, "localhost:1234", pod, svc, 100, 0*time.Nanosecond)
+	writer, err := logwriter.NewCloudLogWriter(client, "localhost:1234", pod, svc, 100, 0*time.Nanosecond)
+	assert.Nil(t, err)
 
 	expectedMsg := &cloud_connectorpb.LogMessage{
 		Pod: pod,
@@ -49,7 +50,8 @@ func TestLogwriter_MaxQueued(t *testing.T) {
 	client.EXPECT().TransferLog(gomock.Any()).Return(mockStream, nil)
 	pod := "pod-name-123"
 	svc := "svc-name"
-	writer := logwriter.NewCloudLogWriter(client, "localhost:1234", pod, svc, 2, 100*time.Hour)
+	writer, err := logwriter.NewCloudLogWriter(client, "localhost:1234", pod, svc, 2, 100*time.Hour)
+	assert.Nil(t, err)
 
 	batched := []*cloud_connectorpb.LogMessage{
 		&cloud_connectorpb.LogMessage{
@@ -96,7 +98,8 @@ func TestLogwriter_CloseAfterFatal(t *testing.T) {
 	client.EXPECT().TransferLog(gomock.Any()).Return(mockStream, nil)
 	pod := "pod-name-123"
 	svc := "svc-name"
-	writer := logwriter.NewCloudLogWriter(client, "localhost:1234", pod, svc, 100, 100*time.Hour)
+	writer, err := logwriter.NewCloudLogWriter(client, "localhost:1234", pod, svc, 100, 100*time.Hour)
+	assert.Nil(t, err)
 
 	expectedMsg := &cloud_connectorpb.LogMessage{
 		Pod: pod,

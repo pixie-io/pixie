@@ -2,12 +2,37 @@ package logwriter
 
 import (
 	"context"
-	"fmt"
+	log "github.com/sirupsen/logrus"
+	"io"
 	"sync"
 	"time"
 
+	"google.golang.org/grpc"
+
+	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb"
 )
+
+const (
+	maxQueueSize     int           = 20               // Max queue size before invoking a flush
+	maxRetentionTime time.Duration = 10 * time.Second // Max time interval between flushes
+)
+
+// SetupLogWriter Used to set up a logger that writes to both standard out and the cloud connector
+// so that logs can be forwarded to Pixie cloud.
+func SetupLogWriter(cloudConnAddr, pod, svc string) (io.Writer, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := grpc.Dial(cloudConnAddr, dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+	client := cloud_connectorpb.NewCloudConnectorServiceClient(conn)
+	return NewCloudLogWriter(client, cloudConnAddr, pod, svc, maxQueueSize, maxRetentionTime)
+}
 
 // CloudLogWriter implements io.Writer, and is used by Vizier services to forward their logs to Pixie Cloud.
 type CloudLogWriter struct {
@@ -22,11 +47,11 @@ type CloudLogWriter struct {
 }
 
 // NewCloudLogWriter constructs a CloudLogWriter and starts the log-forwarding goroutine.
-func NewCloudLogWriter(client cloud_connectorpb.CloudConnectorServiceClient, addr, pod, svc string, maxQueued int, maxRetentionTime time.Duration) *CloudLogWriter {
+func NewCloudLogWriter(client cloud_connectorpb.CloudConnectorServiceClient, addr, pod, svc string, maxQueued int, maxRetentionTime time.Duration) (*CloudLogWriter, error) {
 	stream, err := client.TransferLog(context.Background())
 	if err != nil {
-		// Use fmt here, because logrus is using this writer component.
-		fmt.Printf("Error opening TransferLog stream to CloudConnector %s: %s", addr, err.Error())
+		log.WithError(err).Errorf("Error opening TransferLog stream to CloudConnector %s", addr)
+		return nil, err
 	}
 
 	var wg sync.WaitGroup
@@ -42,7 +67,7 @@ func NewCloudLogWriter(client cloud_connectorpb.CloudConnectorServiceClient, add
 	}
 
 	go writer.forwardLogs()
-	return writer
+	return writer, nil
 }
 
 // Close When called, all queued log messages will be flushed.
@@ -72,8 +97,7 @@ func (w *CloudLogWriter) forwardLogs() {
 					BatchedLogs: msgs,
 				})
 				if err != nil {
-					// Use fmt here, because logrus is using this writer component.
-					fmt.Printf("Error forwarding logs to cloud connector at address %s: %s", w.cloudConnectorAddr, err.Error())
+					log.WithError(err).Errorf("Error forwarding logs to cloud connector at address %s", w.cloudConnectorAddr)
 				}
 			}
 

@@ -1776,3 +1776,9 @@ go_repository(
     sum = "h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdcM=",
     version = "v1.1.1",
 )
+
+go_repository(
+    name = "com_github_hpcloud_tail",
+    importpath = "github.com/hpcloud/tail",
+    commit = "a1dbeea552b7c8df4b542c66073e393de198a800",
+)

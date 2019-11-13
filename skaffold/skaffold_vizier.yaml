@@ -28,6 +28,11 @@ build:
     bazel:
       target: //src/vizier/services/proxy:proxy_server_prod_image.tar
 
+  - image: gcr.io/pl-dev-infra/vizier/logtailer_image
+    context: .
+    bazel:
+      target: //src/vizier/utils/logtailer:logtailer_image.tar
+
   - image: gcr.io/pl-dev-infra/vizier/cloud_connector_server_image
     context: .
     bazel:

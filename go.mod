@@ -54,6 +54,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20190818114111-108c894c2c0e // indirect
+	github.com/hpcloud/tail v1.0.0
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
