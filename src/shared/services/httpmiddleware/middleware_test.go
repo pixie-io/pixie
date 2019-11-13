@@ -70,3 +70,20 @@ func TestWithBearerAuthMiddleware_MissingAuthorization(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
+
+func TestWithBearerAuthMiddleware_BadToken(t *testing.T) {
+	viper.Set("jwt_signing_key", "jwt-key")
+	env := env2.New()
+	testHandler := func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("Should not get here")
+	}
+	req, err := http.NewRequest("GET", "/api/users", nil)
+	req.Header.Add("Authorization", "Bearer badtoken")
+	assert.Nil(t, err)
+	rr := httptest.NewRecorder()
+
+	handler := httpmiddleware.WithBearerAuthMiddleware(
+		env, http.HandlerFunc(testHandler))
+	handler.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
