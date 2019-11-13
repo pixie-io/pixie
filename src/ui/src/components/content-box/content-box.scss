@@ -1,7 +1,7 @@
 @import "../../theme.scss";
 
 .content-box {
-  margin: 0px 20px 20px 0;
+  margin: 0 20px 20px 20px;
   background-color: $content-bg;
   flex: 1;
   flex-direction: column;
@@ -70,7 +70,7 @@
 }
 
 .content-box[data-resizable] {
-  margin: 0 20px 0 0;
+  margin: 0 20px;
 }
 
 .content-box[data-resizable] .content-box--content {

@@ -2,14 +2,14 @@ jest.mock('./deploy-instructions', () => {
   return { DeployInstructions: () => <></> };
 });
 
-import { SidebarNav } from 'components/sidebar-nav/sidebar-nav';
-import { mount } from 'enzyme';
+import {mount} from 'enzyme';
 import * as React from 'react';
-import { MockedProvider } from 'react-apollo/test-utils';
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import {MockedProvider} from 'react-apollo/test-utils';
+import {Navbar} from 'react-bootstrap';
+import {BrowserRouter as Router, Route} from 'react-router-dom';
 
-import { DeployInstructions } from './deploy-instructions';
-import { CHECK_VIZIER, CREATE_CLUSTER, GET_CLUSTER, Vizier, VizierMain } from './vizier';
+import {DeployInstructions} from './deploy-instructions';
+import {CHECK_VIZIER, CREATE_CLUSTER, GET_CLUSTER, Vizier, VizierMain} from './vizier';
 
 // Mock CodeMirror component because it does not mount properly in Jest.
 jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
@@ -43,7 +43,7 @@ describe('<VizierMain/> test', () => {
 
     await wait(0);
     app.update();
-    expect(app.find(SidebarNav)).toHaveLength(1);
+    expect(app.find(Navbar)).toHaveLength(1);
   });
 
   it('should show instructions if Vizier is not connected', async () => {
@@ -71,7 +71,7 @@ describe('<VizierMain/> test', () => {
 
     await wait(0);
     app.update();
-    expect(app.find(SidebarNav)).toHaveLength(0);
+    expect(app.find(Navbar)).toHaveLength(0);
     expect(app.find('.cluster-instructions')).toHaveLength(1);
     expect(app.find('.cluster-instructions').text()).toEqual('Setting up DNS records for cluster...');
   });
