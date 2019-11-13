@@ -44,7 +44,7 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   PL_RETURN_IF_ERROR(info->Init(info_pb));
   auto compiler_state =
       std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
-  ASTWalker ast_walker(ir, compiler_state.get());
+  ASTVisitorImpl ast_walker(ir.get(), compiler_state.get());
 
   pypa::AstModulePtr ast;
   pypa::SymbolTablePtr symbols;

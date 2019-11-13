@@ -80,6 +80,7 @@ StatusOr<pypa::AstModulePtr> Parser::Parse(const std::string& query) {
   pypa::SymbolTablePtr symbols;
   pypa::ParserOptions options;
 
+  options.docstrings = false;
   options.error_handler =
       std::bind(&PypaErrorHandler::HandlerFunc, &pypa_error_handler, std::placeholders::_1);
   pypa::Lexer lexer(std::make_unique<StringReader>(query));

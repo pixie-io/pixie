@@ -13,6 +13,7 @@
 #include <pypa/ast/ast.hh>
 #include <pypa/ast/tree_walker.hh>
 
+#include "src/carnot/compiler/ast/ast_visitor.h"
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/compiler/ir/ast_utils.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
@@ -107,7 +108,7 @@ struct OperatorContext {
       : parent_ops(parents), operator_name(op->type_string()) {}
 };
 
-class ASTWalker {
+class ASTVisitorImpl : public ASTVisitor {
  public:
   /**
    * @brief Construct a new ASTWalker object.
@@ -115,9 +116,7 @@ class ASTWalker {
    *
    * @param ir_graph
    */
-  ASTWalker(std::shared_ptr<IR> ir_graph, CompilerState* compiler_state);
-
-  std::shared_ptr<IR> ir_graph() const { return ir_graph_; }
+  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state);
 
   /**
    * @brief The entry point into traversal as the root AST is a module.
@@ -125,7 +124,20 @@ class ASTWalker {
    * @param node: the ptr to the ast node.
    * @return Status
    */
-  Status ProcessModuleNode(const pypa::AstModulePtr& m);
+  Status ProcessModuleNode(const pypa::AstModulePtr& m) override;
+
+  /**
+   * @brief Processes a single expression into an IRNode. If the parameter has more than one
+   * line or contains a module we can't process, then it will error out.
+   *
+   * @param m the poitner to the parsed ast module.
+   * @param op_context the operator context to operate with.
+   * @return StatusOr<IRNode*> the graph representation of the expression, or an error if the
+   * operator fails.
+   */
+  StatusOr<IRNode*> ProcessSingleExpressionModule(const pypa::AstModulePtr& m) override;
+
+  IR* ir_graph() const { return ir_graph_; }
 
   // Constants for the run-time (UDF) and compile-time fn prefixes.
   inline static constexpr char kRunTimeFuncPrefix[] = "pl";
@@ -574,7 +586,7 @@ class ASTWalker {
     return PYPA_PTR_CAST(Str, ast)->value;
   }
   static bool IsUnitTimeFn(const std::string& fn_name);
-  std::shared_ptr<IR> ir_graph_;
+  IR* ir_graph_;
   VarTable var_table_;
   CompilerState* compiler_state_;
 };

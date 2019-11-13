@@ -21,6 +21,7 @@ pl_cc_library(
     hdrs = ["compiler.h"],
     deps = [
         "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
+        "//src/carnot/compiler/ast:cc_library",
         "//src/carnot/compiler/distributedpb:distributed_plan_pl_cc_proto",
         "//src/carnot/metadatapb:metadata_pl_cc_proto",
         "//src/carnot/plan:cc_library",
@@ -45,6 +46,15 @@ pl_cc_test_library(
 pl_cc_test(
     name = "ast_visitor_test",
     srcs = ["ast_visitor_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "ast_visitor_expression_test",
+    srcs = ["ast_visitor_expression_test.cc"],
     deps = [
         ":cc_library",
         ":test_utils",

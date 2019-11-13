@@ -47,7 +47,8 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  ASTWalker ast_walker(ir, compiler_state);
+  ASTVisitorImpl ast_walker(ir.get(), compiler_state);
+
   PL_RETURN_IF_ERROR(ast_walker.ProcessModuleNode(ast));
   return ir;
 }
