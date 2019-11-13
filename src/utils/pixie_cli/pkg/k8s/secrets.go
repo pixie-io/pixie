@@ -1,17 +1,16 @@
 package k8s
 
 import (
-	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
-	"os/exec"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 // DeleteSecret deletes the given secret in kubernetes.
@@ -109,17 +108,12 @@ func CreateDockerConfigJSONSecret(clientset *kubernetes.Clientset, namespace, na
 		DeleteSecret(clientset, namespace, name)
 	}
 
-	kcmd := exec.Command("kubectl", "create", "secret", "docker-registry", name, "-n", namespace,
+	args := []string{
+		"create", "secret", "docker-registry", name, "-n", namespace,
 		"--docker-server=gcr.io", "--docker-username=_json_key",
-		fmt.Sprintf("--docker-password=%s", credsData))
-
-	var stderr bytes.Buffer
-	kcmd.Stderr = &stderr
-	err = kcmd.Run()
-	if err != nil {
-		return err
+		fmt.Sprintf("--docker-password=%s", credsData),
 	}
-	return nil
+	return utils.ExecCommand("kubectl", args...)
 }
 
 // readFile just reads a file into a byte array.

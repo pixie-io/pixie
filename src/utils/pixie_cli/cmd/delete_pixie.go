@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"os"
-	"os/exec"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -34,11 +33,7 @@ func deletePixie(ns string, clobberAll bool) {
 
 	if clobberAll {
 		deleteJob = newTaskWrapper("Deleting namespace", func() error {
-			kcmd := exec.Command("kubectl", "delete", "namespace", ns)
-			if err := kcmd.Run(); err != nil {
-				return err
-			}
-			return nil
+			return utils.ExecCommand("kubectl", []string{"delete", "namespace", ns}...)
 		})
 	} else {
 		deleteJob = newTaskWrapper("Deleting Vizier pods/services", func() error {
@@ -58,6 +53,7 @@ func deletePixie(ns string, clobberAll bool) {
 }
 
 func deleteVizier(ns string) error {
-	kcmd := exec.Command("kubectl", "-n", ns, "delete", "pods,deployments,services,daemonsets", "-l", "component=vizier")
-	return kcmd.Run()
+	return utils.ExecCommand("kubectl", []string{
+		"-n", ns, "delete", "pods,deployments,services,daemonsets", "-l", "component=vizier",
+	}...)
 }
