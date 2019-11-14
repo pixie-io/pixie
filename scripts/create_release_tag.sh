@@ -60,7 +60,7 @@ check_args() {
 get_bazel_target() {
     case "$ARTIFACT_TYPE" in
         cli) BAZEL_TARGET=//src/utils/pixie_cli:pixie;;
-        vizier) BAZEL_TARGET=:vizier_images_bundle;;
+        vizier) BAZEL_TARGET=//k8s/vizier:vizier_images_bundle;;
     esac
 }
 
