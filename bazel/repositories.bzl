@@ -160,6 +160,12 @@ def _com_github_serge1_elfio():
         build_file = "//third_party:elfio.BUILD",
     )
 
+def _com_github_threadstacks():
+    native.local_repository(
+        name = "com_github_threadstacks",
+        path = "third_party/threadstacks",
+    )
+
 def _cc_deps():
     _repository_impl(name = "com_google_benchmark")
     _repository_impl(
@@ -180,6 +186,7 @@ def _cc_deps():
     _com_github_nghttp2_nghttp2()
     _com_github_cameron314_concurrentqueue()
     _com_github_serge1_elfio()
+    _com_github_threadstacks()
 
 def _go_deps():
     # Add go specific imports here when necessary.

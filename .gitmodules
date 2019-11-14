@@ -43,3 +43,6 @@
 [submodule "third_party/glice"]
 	path = third_party/glice
 	url = git@github.com:pixie-labs/glice.git
+[submodule "third_party/threadstacks"]
+	path = third_party/threadstacks
+	url = git@github.com:pixie-labs/threadstacks.git
