@@ -217,6 +217,7 @@ def pl_cc_test_library(
         testonly = 1,
         deps = deps + [
             "@com_google_googletest//:gtest",
+            repository + "//src/common/testing:cc_library",
         ] + _default_external_deps(),
         tags = tags,
         visibility = visibility,

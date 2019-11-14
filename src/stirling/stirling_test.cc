@@ -1,4 +1,3 @@
-#include <gtest/gtest.h>
 #include <ctime>
 #include <functional>
 #include <iomanip>
@@ -8,6 +7,7 @@
 #include "absl/strings/str_format.h"
 #include "src/common/base/base.h"
 #include "src/common/base/hash_utils.h"
+#include "src/common/testing/testing.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/sequence_generator.h"

@@ -7,5 +7,6 @@
 #include <gmock/gmock.h>  // IWYU pragma: export
 #include <gtest/gtest.h>  // IWYU pragma: export
 
+#include "src/common/base/test_utils.h"           // IWYU pragma: export
 #include "src/common/testing/protobuf.h"          // IWYU pragma: export
 #include "src/common/testing/test_environment.h"  // IWYU pragma: export

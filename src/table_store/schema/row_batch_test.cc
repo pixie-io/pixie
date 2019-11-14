@@ -1,9 +1,9 @@
 #include <arrow/array.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
-#include <gtest/gtest.h>
 #include <vector>
 
+#include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/shared/types/types.h"

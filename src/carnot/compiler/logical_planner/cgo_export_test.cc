@@ -1,9 +1,7 @@
 #include "src/carnot/compiler/logical_planner/cgo_export.h"
 
-#include <glog/logging.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
-#include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
@@ -17,6 +15,7 @@
 #include "src/common/base/macros.h"
 #include "src/common/base/statusor.h"
 #include "src/common/testing/protobuf.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace carnot {

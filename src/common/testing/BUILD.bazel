@@ -1,8 +1,8 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_test_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
-pl_cc_test_library(
+pl_cc_library(
     name = "cc_library",
     srcs = glob(
         [
@@ -15,13 +15,16 @@ pl_cc_test_library(
         ],
     ),
     hdrs = ["testing.h"],
-    deps = ["//src/common/base:cc_library"],
+    deps = [
+        "@com_google_googletest//:gtest",
+        "//src/common/base:cc_test_library",
+    ],
 )
 
-pl_cc_test_library(
+pl_cc_library(
     name = "test_main",
     srcs = ["test_main.cc"],
     deps = [
-        "//src/common/base:cc_library",
+        "@com_google_googletest//:gtest",
     ],
 )

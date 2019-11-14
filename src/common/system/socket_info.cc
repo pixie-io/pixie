@@ -17,6 +17,8 @@
 #include <linux/in6.h>
 #include <utility>
 
+#include "src/common/base/base.h"
+
 namespace pl {
 namespace system {
 

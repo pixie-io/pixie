@@ -32,7 +32,6 @@ pl_cc_test(
         ":cc_library",
         "//src/carnot/compiler/distributedpb:test_utils",
         "//src/carnot/udf_exporter:cc_library",
-        "//src/common/testing:cc_library",
     ],
 )
 
@@ -58,7 +57,6 @@ pl_cc_test(
         ":cgo_export",
         "//src/carnot/compiler:test_utils",
         "//src/carnot/compiler/distributedpb:test_utils",
-        "//src/common/testing:cc_library",
     ],
 )
 

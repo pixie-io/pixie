@@ -35,7 +35,6 @@ pl_cc_test(
     deps = [
         ":cc_library",
         ":cc_library_mock",
-        "//src/common/testing:cc_library",
     ],
 )
 

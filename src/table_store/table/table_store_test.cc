@@ -1,8 +1,8 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
-#include <gtest/gtest.h>
 #include <vector>
 
+#include "src/common/testing/testing.h"
 #include "src/table_store/schema/relation.h"
 #include "src/table_store/schema/row_descriptor.h"
 #include "src/table_store/table/table_store.h"

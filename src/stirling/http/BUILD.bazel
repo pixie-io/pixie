@@ -30,7 +30,6 @@ pl_cc_test(
     srcs = ["http_parse_test.cc"],
     deps = [
         ":cc_library",
-        "//src/common/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )

@@ -830,8 +830,8 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(Stressor, HTTPParserTest,
-                        ::testing::Values(TestParam{37337, 50}, TestParam{98237, 50}));
+INSTANTIATE_TEST_SUITE_P(Stressor, HTTPParserTest,
+                         ::testing::Values(TestParam{37337, 50}, TestParam{98237, 50}));
 
 //=============================================================================
 // HTTP FindMessageBoundary Tests

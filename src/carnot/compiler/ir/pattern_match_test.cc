@@ -1,10 +1,10 @@
 #include <google/protobuf/text_format.h>
-#include <gtest/gtest.h>
 #include <memory>
 #include <vector>
 
 #include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/test_utils.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace carnot {

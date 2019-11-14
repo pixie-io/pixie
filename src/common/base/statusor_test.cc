@@ -1,6 +1,5 @@
-#include <gtest/gtest.h>
-
 #include "src/common/base/statusor.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 

@@ -1,5 +1,3 @@
-#include <glog/logging.h>
-
 #include "src/common/base/base.h"
 #include "src/stirling/utils/kprobe_cleaner.h"
 

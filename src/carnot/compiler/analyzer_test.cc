@@ -18,7 +18,7 @@ namespace carnot {
 namespace compiler {
 
 using table_store::schema::Relation;
-using testing::_;
+using ::testing::_;
 
 using ::testing::Contains;
 using ::testing::ElementsAre;
@@ -787,8 +787,8 @@ std::vector<std::string> metadata_operators{
     "r: "
     "r.attr.service == 'pl/orders')"};
 
-INSTANTIATE_TEST_CASE_P(MetadataAttributesSuite, MetadataSingleOps,
-                        ::testing::ValuesIn(metadata_operators));
+INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
+                         ::testing::ValuesIn(metadata_operators));
 TEST_F(AnalyzerTest, metadata_fails_no_upid) {
   std::string op_call = "map(fn=lambda r: {'service': r.attr.service})";
   std::string valid_query = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0']) ",

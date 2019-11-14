@@ -1,4 +1,7 @@
+#include <gtest/gtest.h>
+
 #include "src/common/base/file.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 

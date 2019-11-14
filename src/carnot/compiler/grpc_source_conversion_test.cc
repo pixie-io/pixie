@@ -15,9 +15,9 @@ namespace carnot {
 namespace compiler {
 namespace distributed {
 
-using testing::_;
-using testing::ElementsAreArray;
-using testing::UnorderedElementsAreArray;
+using ::testing::_;
+using ::testing::ElementsAreArray;
+using ::testing::UnorderedElementsAreArray;
 
 class GRPCSourceConversionTest : public OperatorTests {};
 TEST_F(GRPCSourceConversionTest, construction_test) {

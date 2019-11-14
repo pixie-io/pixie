@@ -23,9 +23,9 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 namespace distributed {
+using ::pl::testing::proto::EqualsProto;
+using ::pl::testing::proto::Partially;
 using ::testing::ElementsAre;
-using testing::proto::EqualsProto;
-using testing::proto::Partially;
 
 class CoordinatorTest : public OperatorTests {
  protected:

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gtest/gtest_prod.h>
+
 #include <map>
 #include <set>
 #include <string>

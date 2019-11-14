@@ -22,7 +22,7 @@ namespace exec {
 using table_store::Column;
 using table_store::Table;
 using table_store::schema::RowDescriptor;
-using testing::_;
+using ::testing::_;
 
 class MemorySourceNodeTest : public ::testing::Test {
  protected:

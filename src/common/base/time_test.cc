@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "src/common/base/time.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 

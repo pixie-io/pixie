@@ -1,7 +1,8 @@
 #include "src/common/zlib/zlib_wrapper.h"
-#include <gtest/gtest.h>
 #include <zlib.h>
 #include <string>
+
+#include "src/common/testing/testing.h"
 
 namespace pl {
 

@@ -1,11 +1,11 @@
 #include <google/protobuf/util/message_differencer.h>
-#include <gtest/gtest.h>
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/compiler/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/common/base/proto/status.pb.h"
 #include "src/common/base/status.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace carnot {

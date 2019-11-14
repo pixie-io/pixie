@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "src/carnot/compiler/metadata_handler.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace carnot {
@@ -35,8 +36,8 @@ TEST_P(MetadataGetPropertyTests, has_property) {
 std::vector<std::string> metadata_strs = {"service_name", "service_id",   "pod_name",
                                           "pod_id",       "container_id", "deployment_id"};
 
-INSTANTIATE_TEST_CASE_P(GetPropertyTestSuites, MetadataGetPropertyTests,
-                        ::testing::ValuesIn(metadata_strs));
+INSTANTIATE_TEST_SUITE_P(GetPropertyTestSuites, MetadataGetPropertyTests,
+                         ::testing::ValuesIn(metadata_strs));
 
 class MetadataAliasPropertyTests
     : public MetadataHandlerTests,
@@ -57,8 +58,8 @@ TEST_P(MetadataAliasPropertyTests, has_property) {
 std::vector<std::tuple<std::string, std::string>> alias_to_original = {
     {"service", "service_name"}, {"pod", "pod_name"}, {"deployment", "deployment_name"}};
 
-INSTANTIATE_TEST_CASE_P(AliasPropertyTestSuites, MetadataAliasPropertyTests,
-                        ::testing::ValuesIn(alias_to_original));
+INSTANTIATE_TEST_SUITE_P(AliasPropertyTestSuites, MetadataAliasPropertyTests,
+                         ::testing::ValuesIn(alias_to_original));
 
 }  // namespace compiler
 }  // namespace carnot

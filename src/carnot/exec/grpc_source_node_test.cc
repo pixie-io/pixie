@@ -17,7 +17,7 @@ namespace exec {
 
 using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
-using testing::_;
+using ::testing::_;
 
 class GrpcSourceNodeTest : public ::testing::Test {
  public:

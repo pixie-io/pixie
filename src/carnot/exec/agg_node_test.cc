@@ -17,7 +17,7 @@ namespace carnot {
 namespace exec {
 
 using table_store::schema::RowDescriptor;
-using testing::_;
+using ::testing::_;
 using types::Int64Value;
 using udf::FunctionContext;
 

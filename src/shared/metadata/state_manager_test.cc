@@ -1,9 +1,8 @@
-#include <gmock/gmock.h>
 #include <google/protobuf/text_format.h>
-#include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
+#include "src/common/testing/testing.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/cgroup_metadata_reader_mock.h"
 #include "src/shared/metadata/state_manager.h"
@@ -14,8 +13,8 @@ namespace md {
 using pl::shared::k8s::metadatapb::MetadataResourceType;
 using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
 
-using testing::Pair;
-using testing::UnorderedElementsAre;
+using ::testing::Pair;
+using ::testing::UnorderedElementsAre;
 
 constexpr char kUpdate1_0Pbtxt[] = R"(
   container_update {
@@ -255,8 +254,7 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   PIDInfo pid2(UPID(kASID /*asid*/, 200 /*pid*/, 2000 /*ts*/), "cmdline200", "container_id1");
 
   EXPECT_EQ(2, pids_started.size());
-  EXPECT_THAT(pids_started,
-              testing::UnorderedElementsAre(PIDStartedEvent{pid1}, PIDStartedEvent{pid2}));
+  EXPECT_THAT(pids_started, UnorderedElementsAre(PIDStartedEvent{pid1}, PIDStartedEvent{pid2}));
 }
 
 }  // namespace md

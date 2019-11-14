@@ -1,6 +1,3 @@
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
@@ -10,10 +7,11 @@
 #include <string>
 
 #include "absl/strings/numbers.h"
-#include "src/common/base/inet_utils.h"
+#include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/system/testing/tcp_socket.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace system {

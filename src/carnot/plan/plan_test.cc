@@ -4,6 +4,7 @@
 #include "src/carnot/plan/plan.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace carnot {

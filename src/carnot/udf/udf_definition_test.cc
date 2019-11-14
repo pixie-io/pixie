@@ -1,10 +1,10 @@
 #include <arrow/builder.h>
 #include <arrow/pretty_print.h>
-#include <gtest/gtest.h>
 
 #include <algorithm>
 
 #include "src/carnot/udf/udf_definition.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/column_wrapper.h"
 
 namespace pl {

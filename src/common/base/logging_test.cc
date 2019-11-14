@@ -1,6 +1,5 @@
-#include <gtest/gtest.h>
-
 #include "src/common/base/logging.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 
@@ -27,7 +26,7 @@ TEST(ECheckTest, check_false) {
   // Behavior changes based on build type.
   // Rely on build system (Jenkins) to stress both cases.
 #if DCHECK_IS_ON()
-  EXPECT_DEATH(ECHECK(false), "");
+  EXPECT_DEATH((ECHECK(false)), "");
 
   EXPECT_DEATH(ECHECK_EQ(1, 2), "");
   EXPECT_DEATH(ECHECK_EQ(2, 1), "");

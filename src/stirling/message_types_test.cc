@@ -1,5 +1,6 @@
 #include <fstream>
 
+#include "src/common/testing/testing.h"
 #include "src/stirling/message_types.h"
 
 namespace pl {

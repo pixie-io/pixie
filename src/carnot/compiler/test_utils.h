@@ -1,6 +1,5 @@
 #pragma once
 
-#include <gmock/gmock.h>
 #include <utility>
 #include <vector>
 
@@ -16,6 +15,7 @@
 #include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/string_reader.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace carnot {

@@ -1,8 +1,6 @@
 #include "src/stirling/http2/grpc.h"
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
+#include "src/common/testing/testing.h"
 #include "src/stirling/http2/testing/proto/greet.pb.h"
 
 namespace pl {

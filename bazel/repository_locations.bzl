@@ -47,9 +47,9 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     com_google_googletest = dict(
-        sha256 = "9bf1fe5182a604b4135edc1a425ae356c9ad15e9b23f9f12a02e80184c3a249c",
-        strip_prefix = "googletest-release-1.8.1",
-        urls = ["https://github.com/google/googletest/archive/release-1.8.1.tar.gz"],
+        sha256 = "9dc9157a9a1551ec7a7e43daea9a694a0bb5fb8bec81235d8a1e6ef64c716dcb",
+        strip_prefix = "googletest-release-1.10.0",
+        urls = ["https://github.com/google/googletest/archive/release-1.10.0.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
         sha256 = "fd040f5238ff1e32b468d9d38e50f0d7f8da0828019948c9001e9a03093e1d8f",
@@ -68,9 +68,10 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/gflags/gflags/archive/524b83d0264cb9f1b2d134c564ef1aa23f207a41.tar.gz"],
     ),
     com_github_google_glog = dict(
-        sha256 = "eaabbfc16ecfacb36960ca9c8977f40172c51e4b03234331a1f84040a77ab12c",
-        strip_prefix = "glog-781096619d3dd368cfebd33889e417a168493ce7",
-        urls = ["https://github.com/google/glog/archive/781096619d3dd368cfebd33889e417a168493ce7.tar.gz"],
+        sha256 = "51992e76446e384643e474b15d11a3937d2eb9e82c3f546360dfa48e96a0684c",
+        # Nov 9, 2019.
+        strip_prefix = "glog-1863b4228c85dd88885695476e943a1d5758f8ab",
+        urls = ["https://github.com/google/glog/archive/1863b4228c85dd88885695476e943a1d5758f8ab.tar.gz"],
     ),
     com_github_rlyeh_sole = dict(
         sha256 = "0e2d2d280e6847b3301c7302b7924e2841f517985cb189ce0fb94aa9fb5a17c7",

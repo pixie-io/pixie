@@ -406,8 +406,8 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(IOVecSyscalls, SyscallPairBPFTest,
-                        ::testing::Values(SyscallPair::kSendRecvMsg, SyscallPair::kWriteReadv));
+INSTANTIATE_TEST_SUITE_P(IOVecSyscalls, SyscallPairBPFTest,
+                         ::testing::Values(SyscallPair::kSendRecvMsg, SyscallPair::kWriteReadv));
 
 }  // namespace stirling
 }  // namespace pl

@@ -1,5 +1,6 @@
 #include "src/common/uuid/uuid_utils.h"
-#include <gtest/gtest.h>
+
+#include "src/common/testing/testing.h"
 
 namespace pl {
 

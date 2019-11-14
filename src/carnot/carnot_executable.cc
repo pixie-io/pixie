@@ -12,10 +12,6 @@
 #include "src/shared/types/type_utils.h"
 #include "src/table_store/table_store.h"
 
-PL_SUPPRESS_WARNINGS_START()
-#include "src/carnotpb/carnot_mock.grpc.pb.h"
-PL_SUPPRESS_WARNINGS_END();
-
 DEFINE_string(input_file, gflags::StringFromEnv("INPUT_FILE", ""),
               "The csv containing data to run the query on.");
 
@@ -234,7 +230,7 @@ int main(int argc, char* argv[]) {
   auto carnot_or_s = pl::carnot::Carnot::Create(
       table_store,
       [](const std::string&) -> std::unique_ptr<pl::carnotpb::KelvinService::StubInterface> {
-        return std::make_unique<pl::carnotpb::MockKelvinServiceStub>();
+        return nullptr;
       });
   if (!carnot_or_s.ok()) {
     LOG(FATAL) << "Carnot failed to init.";

@@ -1,10 +1,8 @@
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
 #include <map>
 #include <vector>
 
 #include "src/common/base/utils.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 

@@ -17,8 +17,8 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 namespace distributed {
-using testing::proto::EqualsProto;
-using testing::proto::Partially;
+using ::pl::testing::proto::EqualsProto;
+using ::pl::testing::proto::Partially;
 
 const char* kOneAgentDistributedState = R"proto(
 carnot_info {

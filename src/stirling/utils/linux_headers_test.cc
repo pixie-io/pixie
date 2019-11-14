@@ -1,5 +1,6 @@
 #include <fstream>
 
+#include "src/common/testing/testing.h"
 #include "src/stirling/utils/linux_headers.h"
 
 namespace pl {

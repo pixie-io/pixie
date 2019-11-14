@@ -4,6 +4,7 @@
 
 #include <utility>
 
+#include "src/common/testing/testing.h"
 #include "src/stirling/testing/events_fixture.h"
 
 namespace pl {

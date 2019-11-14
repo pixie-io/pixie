@@ -1,5 +1,7 @@
 #include "src/common/exec/subprocess.h"
 
+#include <sys/wait.h>
+
 #include "src/common/base/error.h"
 
 namespace pl {

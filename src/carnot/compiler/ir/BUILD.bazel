@@ -34,7 +34,6 @@ pl_cc_test(
     srcs = ["ir_nodes_test.cc"],
     deps = [
         "//src/carnot/compiler:test_utils",
-        "//src/common/testing:cc_library",
     ],
 )
 

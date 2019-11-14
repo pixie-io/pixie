@@ -1,6 +1,5 @@
-#include <gtest/gtest.h>
-
 #include "absl/strings/str_split.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/proc_stat_connector.h"

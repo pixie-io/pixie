@@ -440,7 +440,7 @@ TEST_P(FindMessageBoundaryTest, CheckReturnValues) {
   EXPECT_EQ(param.exp_res, FindMessageBoundary<Frame>(param.msg_type, param.input, 0));
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     FindMessageBoundarySuite, FindMessageBoundaryTest,
     ::testing::Values(
         BoundaryTestCase{

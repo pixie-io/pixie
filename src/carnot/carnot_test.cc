@@ -1,6 +1,4 @@
-#include <gmock/gmock.h>
 #include <google/protobuf/text_format.h>
-#include <gtest/gtest.h>
 
 #include <algorithm>
 #include <map>
@@ -13,6 +11,7 @@
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
+#include "src/common/testing/testing.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {
@@ -458,7 +457,8 @@ TEST_P(CarnotRangeTest, range_now_keyword_test) {
   EXPECT_EQ(2, output_table->NumColumns());
 }
 
-INSTANTIATE_TEST_CASE_P(CarnotRangeVariants, CarnotRangeTest, ::testing::ValuesIn(range_test_vals));
+INSTANTIATE_TEST_SUITE_P(CarnotRangeVariants, CarnotRangeTest,
+                         ::testing::ValuesIn(range_test_vals));
 
 TEST_F(CarnotTest, group_by_all_agg_test) {
   auto agg_dict =
@@ -792,8 +792,8 @@ TEST_P(CarnotFilterTest, int_filter) {
     EXPECT_TRUE(rb->ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
   }
 }
-INSTANTIATE_TEST_CASE_P(CarnotFilterTestSuite, CarnotFilterTest,
-                        ::testing::ValuesIn(filter_test_values));
+INSTANTIATE_TEST_SUITE_P(CarnotFilterTestSuite, CarnotFilterTest,
+                         ::testing::ValuesIn(filter_test_values));
 
 TEST_F(CarnotTest, string_filter) {
   auto query = absl::StrJoin(
@@ -905,8 +905,8 @@ TEST_P(CarnotLimitTest, limit) {
 
 // {expected_num_batches, num_rows}
 std::vector<std::tuple<int64_t, int64_t>> limit_test_values = {{1, 2}, {2, 4}, {3, 7}};
-INSTANTIATE_TEST_CASE_P(CarnotLimitTestSuite, CarnotLimitTest,
-                        ::testing::ValuesIn(limit_test_values));
+INSTANTIATE_TEST_SUITE_P(CarnotLimitTestSuite, CarnotLimitTest,
+                         ::testing::ValuesIn(limit_test_values));
 
 TEST_F(CarnotTest, reused_result) {
   auto query = absl::StrJoin(

@@ -1,6 +1,4 @@
-#include <gmock/gmock.h>
 #include <google/protobuf/text_format.h>
-#include <gtest/gtest.h>
 
 #include <algorithm>
 #include <map>
@@ -13,6 +11,7 @@
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
+#include "src/common/testing/testing.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

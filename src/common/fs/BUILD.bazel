@@ -22,6 +22,5 @@ pl_cc_test(
     tags = ["linux_only"],
     deps = [
         ":cc_library",
-        "//src/common/testing:cc_library",
     ],
 )

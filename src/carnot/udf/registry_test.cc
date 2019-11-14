@@ -1,11 +1,11 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
-#include <gtest/gtest.h>
 #include <type_traits>
 
 #include "absl/strings/match.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/types.h"
 
 namespace pl {

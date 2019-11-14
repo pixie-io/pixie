@@ -1,9 +1,8 @@
-#include <gtest/gtest.h>
-
+#include "src/stirling/source_registry.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/proc_stat_connector.h"
-#include "src/stirling/source_registry.h"
 
 namespace pl {
 namespace stirling {

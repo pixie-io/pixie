@@ -1,4 +1,3 @@
-#include <gtest/gtest.h>
 #include <ctime>
 #include <functional>
 #include <iomanip>
@@ -6,6 +5,7 @@
 #include <utility>
 
 #include "src/common/base/base.h"
+#include "src/common/testing/testing.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/source_registry.h"

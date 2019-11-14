@@ -16,7 +16,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-using testing::_;
+using ::testing::_;
 
 class RuleExecutorTest : public ::testing::Test {
  protected:

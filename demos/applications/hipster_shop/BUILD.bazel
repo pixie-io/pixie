@@ -19,6 +19,5 @@ pl_cc_test(
     srcs = ["reflection_test.cc"],
     deps = [
         ":cc_library",
-        "//src/common/testing:cc_library",
     ],
 )

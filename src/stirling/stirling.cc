@@ -293,7 +293,7 @@ Status StirlingImpl::RunAsThread() {
 void StirlingImpl::WaitForThreadJoin() {
   if (run_thread_.joinable()) {
     run_thread_.join();
-    ASSERT_FALSE(running_);
+    CHECK_EQ(running_, false);
   }
 }
 

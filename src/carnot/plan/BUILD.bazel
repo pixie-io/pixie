@@ -21,7 +21,6 @@ pl_cc_test(
     srcs = ["dag_test.cc"],
     deps = [
         ":cc_library",
-        "//src/common/testing:cc_library",
     ],
 )
 

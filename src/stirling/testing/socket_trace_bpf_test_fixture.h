@@ -1,14 +1,12 @@
 #pragma once
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
 #include <deque>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "src/common/testing/testing.h"
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/socket_trace_connector.h"

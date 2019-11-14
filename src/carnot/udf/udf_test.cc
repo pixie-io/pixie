@@ -11,7 +11,7 @@ namespace pl {
 namespace carnot {
 namespace udf {
 
-using testing::ElementsAre;
+using ::testing::ElementsAre;
 
 class ScalarUDF1 : ScalarUDF {
  public:

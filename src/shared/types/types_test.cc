@@ -10,7 +10,7 @@ template <class T>
 class FixedSizedValueTypesOperatorTest : public ::testing::Test {};
 
 using TestedTypes = ::testing::Types<Int64Value, Float64Value, Time64NSValue>;
-TYPED_TEST_CASE(FixedSizedValueTypesOperatorTest, TestedTypes);
+TYPED_TEST_SUITE(FixedSizedValueTypesOperatorTest, TestedTypes);
 
 TYPED_TEST(FixedSizedValueTypesOperatorTest, lt_operator) {
   EXPECT_LT(TypeParam(999), Time64NSValue(1000));

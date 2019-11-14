@@ -1,5 +1,4 @@
 #include <google/protobuf/text_format.h>
-#include <gtest/gtest.h>
 
 #include <string>
 #include <vector>
@@ -10,6 +9,7 @@
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
+#include "src/common/testing/testing.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

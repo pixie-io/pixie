@@ -12,7 +12,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-using testing::_;
+using ::testing::_;
 
 TEST(StringReaderTest, basic) {
   std::unique_ptr<pypa::Reader> reader = std::make_unique<StringReader>(

@@ -24,11 +24,11 @@ using carnotpb::RowBatchRequest;
 using carnotpb::RowBatchResponse;
 using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
-using testing::_;
-using testing::DoAll;
-using testing::Return;
-using testing::SaveArg;
-using testing::SetArgPointee;
+using ::testing::_;
+using ::testing::DoAll;
+using ::testing::Return;
+using ::testing::SaveArg;
+using ::testing::SetArgPointee;
 
 class GrpcSinkNodeTest : public ::testing::Test {
  public:

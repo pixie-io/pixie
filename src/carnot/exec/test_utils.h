@@ -1,7 +1,5 @@
 #pragma once
 
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <memory>
 #include <queue>
@@ -14,6 +12,7 @@
 #include "src/carnot/exec/row_tuple.h"
 #include "src/carnot/plan/operators.h"
 #include "src/common/base/base.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/table_store/table_store.h"
 
@@ -253,10 +252,10 @@ class ExecNodeTester {
       current_row_batches_.push(std::make_unique<table_store::schema::RowBatch>(child_rb));
     };
 
-    EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_, testing::_))
+    EXPECT_CALL(mock_child_, ConsumeNextImpl(::testing::_, ::testing::_, ::testing::_))
         .Times(1)
-        .WillOnce(
-            testing::DoAll(testing::Invoke(check_result_batch), testing::Return(Status::OK())))
+        .WillOnce(::testing::DoAll(::testing::Invoke(check_result_batch),
+                                   ::testing::Return(Status::OK())))
         .RetiresOnSaturation();
     EXPECT_OK(exec_node_->GenerateNext(exec_state_));
 
@@ -271,9 +270,9 @@ class ExecNodeTester {
    */
   ExecNodeTester& ConsumeNextShouldFail(const table_store::schema::RowBatch& rb, int64_t parent_id,
                                         Status error) {
-    EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_, testing::_))
+    EXPECT_CALL(mock_child_, ConsumeNextImpl(::testing::_, ::testing::_, ::testing::_))
         .Times(1)
-        .WillRepeatedly(testing::Return(error));
+        .WillRepeatedly(::testing::Return(error));
 
     auto retval = exec_node_->ConsumeNext(exec_state_, rb, parent_id);
     EXPECT_FALSE(retval.ok());
@@ -295,10 +294,10 @@ class ExecNodeTester {
     };
 
     if (child_called_times > 0) {
-      EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_, testing::_))
+      EXPECT_CALL(mock_child_, ConsumeNextImpl(::testing::_, ::testing::_, ::testing::_))
           .Times(child_called_times)
-          .WillRepeatedly(
-              testing::DoAll(testing::Invoke(check_result_batch), testing::Return(Status::OK())));
+          .WillRepeatedly(::testing::DoAll(::testing::Invoke(check_result_batch),
+                                           ::testing::Return(Status::OK())));
     }
     auto s = exec_node_->ConsumeNext(exec_state_, rb, parent_id);
     EXPECT_OK(s) << s.msg();

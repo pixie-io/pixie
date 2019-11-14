@@ -1,7 +1,5 @@
-#include <gmock/gmock.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
-#include <gtest/gtest.h>
 
 #include <tuple>
 #include <unordered_map>
@@ -10,6 +8,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/udf_exporter/udf_exporter.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/proto/types.pb.h"
 
 namespace pl {

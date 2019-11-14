@@ -1,6 +1,6 @@
 #include <google/protobuf/text_format.h>
-#include <gtest/gtest.h>
 
+#include "src/common/testing/testing.h"
 #include "src/table_store/schema/relation.h"
 
 namespace pl {

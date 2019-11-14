@@ -1,5 +1,4 @@
 #include "src/carnot/compiler/ast_visitor.h"
-#include <gtest/gtest.h>
 
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
@@ -8,6 +7,7 @@
 #include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/common/base/base.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace carnot {
@@ -341,8 +341,8 @@ std::vector<std::string> comparison_functions = {">", "<", "==", ">=", "<="};
 
 TEST_P(FilterTestParam, filter_simple_ops_test) { EXPECT_OK(ParseQuery(query)); }
 
-INSTANTIATE_TEST_CASE_P(FilterTestSuites, FilterTestParam,
-                        ::testing::ValuesIn(comparison_functions));
+INSTANTIATE_TEST_SUITE_P(FilterTestSuites, FilterTestParam,
+                         ::testing::ValuesIn(comparison_functions));
 
 TEST(FilterExprTest, basic) {
   // Test for and
@@ -448,7 +448,7 @@ std::vector<std::string> operators{
     "agg(fn=lambda r : {'count': pl.count(r.bool_col)},by=lambda r : r.bool_col)",
     "limit(rows=1000)", "range(start=plc.now() - plc.minutes(2), stop=plc.now())"};
 
-INSTANTIATE_TEST_CASE_P(OpsAsAttributesSuite, OpsAsAttributes, ::testing::ValuesIn(operators));
+INSTANTIATE_TEST_SUITE_P(OpsAsAttributesSuite, OpsAsAttributes, ::testing::ValuesIn(operators));
 
 class MetadataAttributes : public ::testing::TestWithParam<std::string> {};
 TEST_P(MetadataAttributes, valid_metadata_calls) {
@@ -468,8 +468,8 @@ std::vector<std::string> metadata_operators{
     "agg(fn=lambda r : {'count': pl.count(r.bool_col)},by=lambda r : [r.not_bool_col, "
     "r.attr.services])"};
 
-INSTANTIATE_TEST_CASE_P(MetadataAttributesSuite, MetadataAttributes,
-                        ::testing::ValuesIn(metadata_operators));
+INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataAttributes,
+                         ::testing::ValuesIn(metadata_operators));
 
 TEST(MetadataAttributes, metadata_columns_added) {
   std::string valid_query =

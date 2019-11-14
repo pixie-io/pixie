@@ -1,5 +1,3 @@
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
 #include <memory>
 #include <numeric>
 #include <type_traits>
@@ -9,6 +7,7 @@
 #include "src/carnot/funcs/metadata/metadata_ops.h"
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/k8s/metadatapb/test_proto.h"
 #include "src/shared/metadata/base_types.h"
 #include "src/shared/metadata/pids.h"

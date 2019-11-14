@@ -22,7 +22,6 @@ pl_cc_test(
     srcs = ["utils_test.cc"],
     deps = [
         ":cc_library",
-        "//src/common/testing:cc_library",
     ],
 )
 
@@ -31,6 +30,5 @@ pl_cc_test(
     srcs = ["service_descriptor_database_test.cc"],
     deps = [
         ":cc_library",
-        "//src/common/testing:cc_library",
     ],
 )

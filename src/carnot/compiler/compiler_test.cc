@@ -455,8 +455,8 @@ TEST_P(CompilerTimeFnTest, range_now_keyword_test) {
   EXPECT_TRUE(CompareLogicalPlans(expected_plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
 }
 
-INSTANTIATE_TEST_CASE_P(CompilerTimeFnTestSuites, CompilerTimeFnTest,
-                        ::testing::ValuesIn(compiler_time_data));
+INSTANTIATE_TEST_SUITE_P(CompilerTimeFnTestSuites, CompilerTimeFnTest,
+                         ::testing::ValuesIn(compiler_time_data));
 
 const char* kGroupByAllPlan = R"(
 dag {
@@ -1079,7 +1079,7 @@ TEST_P(FilterTest, basic) {
   EXPECT_TRUE(CompareLogicalPlans(expected_plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
 }
 
-INSTANTIATE_TEST_CASE_P(FilterTestSuite, FilterTest, ::testing::ValuesIn(comparison_fns));
+INSTANTIATE_TEST_SUITE_P(FilterTestSuite, FilterTest, ::testing::ValuesIn(comparison_fns));
 
 TEST_F(CompilerTest, filter_errors) {
   std::string non_bool_filter = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
@@ -2291,8 +2291,8 @@ std::vector<std::tuple<std::string, std::string>> metadata_operators{
      "r.attr.service_id]).filter(fn=lambda r : r.attr.service == 'pl/orders')",
      kExpectedAliasingMetadataPlan}};
 
-INSTANTIATE_TEST_CASE_P(MetadataAttributesSuite, MetadataSingleOps,
-                        ::testing::ValuesIn(metadata_operators));
+INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
+                         ::testing::ValuesIn(metadata_operators));
 
 TEST_F(CompilerTest, cgroups_pod_id) {
   std::string query =

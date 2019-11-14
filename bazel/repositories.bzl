@@ -77,9 +77,6 @@ def _com_github_google_glog():
         urls = location["urls"],
         sha256 = location["sha256"],
         strip_prefix = location.get("strip_prefix", ""),
-        # TODO(zasgar): We can consider removing the stack trace patch when this lands:
-        # https://github.com/google/glog/pull/347
-        patches = ["//third_party:glog_stacktrace.patch"],
     )
 
 def _com_github_tencent_rapidjson():

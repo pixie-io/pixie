@@ -106,9 +106,9 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
   std::unique_ptr<udf::FunctionContext> function_ctx_;
 };
 
-INSTANTIATE_TEST_CASE_P(TestVecAndArrow, ScalarExpressionTest,
-                        ::testing::Values(ScalarExpressionEvaluatorType::kVectorNative,
-                                          ScalarExpressionEvaluatorType::kArrowNative));
+INSTANTIATE_TEST_SUITE_P(TestVecAndArrow, ScalarExpressionTest,
+                         ::testing::Values(ScalarExpressionEvaluatorType::kVectorNative,
+                                           ScalarExpressionEvaluatorType::kArrowNative));
 
 TEST_P(ScalarExpressionTest, basic_tests) {
   RowDescriptor rd_output({types::DataType::INT64});

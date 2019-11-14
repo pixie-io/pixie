@@ -1,9 +1,13 @@
 #pragma once
+#include "src/common/base/macros.h"  // NOLINT(build/include_order).
 // This header file should be used for all logging.
 
 // Include gflags before glog so flags get set correctly.
-#include <gflags/gflags.h>
-#include <glog/logging.h>
+PL_SUPPRESS_WARNINGS_START()
+#include <gflags/gflags.h>     // NOLINT(build/include_order).
+#include <glog/logging.h>      // NOLINT(build/include_order).
+#include <glog/stl_logging.h>  // NOLINT(build/include_order).
+PL_SUPPRESS_WARNINGS_END()
 
 #include <string>
 
