@@ -8,6 +8,7 @@
 #include <memory>
 #include <regex>
 #include <string>
+#include <unordered_set>
 
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
@@ -170,17 +171,21 @@ class OperatorTests : public ::testing::Test {
     return map;
   }
 
+  // TODO(philkuz) deprecate this when we remove Lambda support.
   LambdaIR* MakeLambda(ExpressionIR* expr) {
     LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
     PL_CHECK_OK(lambda->Init({}, expr, ast));
     return lambda;
   }
 
-  LambdaIR* MakeLambda(const ColExpressionVector& expr) {
+  LambdaIR* MakeLambda(const ColExpressionVector& expr,
+                       const std::unordered_set<std::string>& expected_cols) {
     LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(lambda->Init({}, expr, ast));
+    PL_CHECK_OK(lambda->Init(expected_cols, expr, ast));
     return lambda;
   }
+
+  LambdaIR* MakeLambda(const ColExpressionVector& expr) { return MakeLambda(expr, {}); }
 
   MemorySinkIR* MakeMemSink(OperatorIR* parent, std::string name) {
     auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();

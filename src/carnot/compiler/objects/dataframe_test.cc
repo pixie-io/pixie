@@ -1300,6 +1300,148 @@ TEST_F(DataframeTest, ResultCall) {
   EXPECT_EQ(sink->name(), "foo");
 }
 
+class OldRangeAggTest : public DataframeTest {
+ protected:
+  void SetUp() override {
+    DataframeTest::SetUp();
+    src = MakeMemSource();
+    srcdf = std::make_shared<Dataframe>(src);
+
+    latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
+    status_column = MakeColumn("http_status", 0);
+    size = MakeInt(123);
+
+    fn = MakeLambda({{"latency", latency_mean}}, {"latency_ns"});
+    by = MakeLambda(status_column);
+
+    // Save ids of nodes that should be removed
+    fn_lambda_id = fn->id();
+    by_lambda_id = by->id();
+  }
+
+  void TestAgg(BlockingAggIR* agg) {
+    // Check that we group by the group column used by range agg.
+    ASSERT_EQ(agg->groups().size(), 1);
+    EXPECT_EQ(agg->groups()[0]->col_name(), "group");
+
+    EXPECT_FALSE(graph->HasNode(fn_lambda_id));
+    EXPECT_FALSE(graph->HasNode(by_lambda_id));
+    ASSERT_EQ(agg->aggregate_expressions().size(), 1UL);
+    EXPECT_EQ(agg->aggregate_expressions()[0].node, latency_mean);
+
+    // Check that the parent of the agg is a Map.
+    ASSERT_EQ(agg->parents().size(), 1);
+  }
+  void TestMap(MapIR* map) {
+    EXPECT_EQ(map->parents()[0], src);
+
+    // Read the expression that creates the group in the map.
+    ASSERT_EQ(map->col_exprs()[0].name, "group");
+    // by_col - (by_col % size)
+    ASSERT_TRUE(
+        Match(map->col_exprs()[0].node, Subtract(ColumnNode(), Modulo(ColumnNode(), Int()))));
+
+    FuncIR* sub_func = static_cast<FuncIR*>(map->col_exprs()[0].node);
+
+    ColumnIR* by_col1 = static_cast<ColumnIR*>(sub_func->args()[0]);
+    EXPECT_EQ(by_col1->col_name(), status_column->col_name());
+
+    ASSERT_TRUE(Match(sub_func->args()[1], Modulo(ColumnNode(), Int())));
+    FuncIR* modulo_func = static_cast<FuncIR*>(sub_func->args()[1]);
+
+    ASSERT_TRUE(Match(modulo_func->args()[0], ColumnNode()));
+    ColumnIR* by_col2 = static_cast<ColumnIR*>(modulo_func->args()[0]);
+    EXPECT_EQ(by_col2->col_name(), status_column->col_name());
+
+    IntIR* modulo_base = static_cast<IntIR*>(modulo_func->args()[1]);
+    EXPECT_EQ(modulo_base->val(), size->val());
+
+    ASSERT_EQ(map->col_exprs().size(), 2);
+    // Check that columns are copied.
+    absl::flat_hash_set<std::string> column_names;
+    for (int64_t i = 1; i < static_cast<int64_t>(map->col_exprs().size()); ++i) {
+      const auto& expr = map->col_exprs()[i];
+
+      ASSERT_TRUE(Match(expr.node, ColumnNode()))
+          << absl::Substitute("map expr $0 not column: $1", i, expr.node->DebugString());
+
+      ColumnIR* col = static_cast<ColumnIR*>(expr.node);
+      EXPECT_EQ(col->col_name(), expr.name);
+      column_names.insert(expr.name);
+    }
+  }
+
+  void TestResults(std::shared_ptr<Dataframe> agg_obj) {
+    ASSERT_TRUE(Match(agg_obj->op(), BlockingAgg()));
+    BlockingAggIR* agg = static_cast<BlockingAggIR*>(agg_obj->op());
+    TestAgg(agg);
+
+    ASSERT_TRUE(Match(agg->parents()[0], Map()));
+    MapIR* map = static_cast<MapIR*>(agg->parents()[0]);
+    TestMap(map);
+  }
+
+  std::shared_ptr<Dataframe> srcdf;
+  MemorySourceIR* src;
+  FuncIR* latency_mean;
+  ColumnIR* status_column;
+
+  LambdaIR* fn;
+  LambdaIR* by;
+  IntIR* size;
+  int64_t fn_lambda_id;
+  int64_t by_lambda_id;
+};
+
+TEST_F(OldRangeAggTest, CreateOldRangeAggSingleGroupByColumn) {
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+  args.AddArg("by", by);
+  args.AddArg("size", size);
+
+  auto status = OldRangeAggHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto agg_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  {
+    SCOPED_TRACE("RangeAggSingleGroupBycolumn");
+    TestResults(agg_obj);
+  }
+}
+
+TEST_F(OldRangeAggTest, DataframeRangeAggCall) {
+  ArgMap args{{}, {by, fn, size}};
+
+  auto get_method_status = srcdf->GetMethod("range_agg");
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  auto status = func_obj->Call(args, ast, ast_visitor.get());
+
+  ASSERT_OK(status);
+  QLObjectPtr ql_object = status.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto agg_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  {
+    SCOPED_TRACE("DataframeRangeAggCall");
+    TestResults(agg_obj);
+  }
+}
+
+TEST_F(OldRangeAggTest, ByArgHasMoreThan1Parent) {
+  LambdaIR* custom_by = MakeLambda(MakeList(MakeColumn("col1", 0), MakeColumn("col2", 0)));
+  ParsedArgs args;
+  args.AddArg("fn", fn);
+  args.AddArg("by", custom_by);
+  args.AddArg("size", size);
+
+  auto status = OldRangeAggHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("expected 1 column to group by, received 2"));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

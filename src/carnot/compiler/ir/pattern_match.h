@@ -223,6 +223,22 @@ inline BinaryOpMatch<AllMatch, AllMatch, FuncIR::Opcode::logand, true> LogicalAn
 }
 
 /**
+ * @brief Match subtract functions that match the left and right operators. It is notcommutative.
+ */
+template <typename LHS, typename RHS>
+inline BinaryOpMatch<LHS, RHS, FuncIR::Opcode::sub, false> Subtract(const LHS& L, const RHS& R) {
+  return BinaryOpMatch<LHS, RHS, FuncIR::Opcode::sub, false>(L, R);
+}
+
+/**
+ * @brief Match modulo functions that match the left and right operators. It is notcommutative.
+ */
+template <typename LHS, typename RHS>
+inline BinaryOpMatch<LHS, RHS, FuncIR::Opcode::mod, false> Modulo(const LHS& L, const RHS& R) {
+  return BinaryOpMatch<LHS, RHS, FuncIR::Opcode::mod, false>(L, R);
+}
+
+/**
  * @brief Match any binary function.
  */
 template <typename LHS_t, typename RHS_t, bool Commutable = false>

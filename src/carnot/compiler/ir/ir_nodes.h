@@ -852,7 +852,7 @@ class FuncIR : public ExpressionIR {
   virtual std::string DebugString() const override {
     return absl::Substitute("$0($1)", func_name(),
                             absl::StrJoin(args_, ",", [](std::string* out, IRNode* in) {
-                              absl::StrAppend(out, in->type_string());
+                              absl::StrAppend(out, in->DebugString());
                             }));
   }
 
