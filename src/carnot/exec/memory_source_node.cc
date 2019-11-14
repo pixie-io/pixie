@@ -66,14 +66,19 @@ Status MemorySourceNode::GenerateNextImpl(ExecState* exec_state) {
   rows_processed_ += row_batch->num_rows();
   bytes_processed_ += row_batch->NumBytes();
   current_batch_++;
-  row_batch->set_eow(!HasBatchesRemaining());
-  row_batch->set_eos(!HasBatchesRemaining());
+
+  if (!HasBatchesRemaining()) {
+    row_batch->set_eow(true);
+    row_batch->set_eos(true);
+    eos_set_ = true;
+  }
+
   PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *row_batch));
   return Status::OK();
 }
 
 bool MemorySourceNode::HasBatchesRemaining() {
-  if (current_batch_ >= table_->NumBatches()) {
+  if (current_batch_ >= table_->NumBatches() || eos_set_) {
     return false;
   }
   // TODO(michelle): PL-388 Fix our table store to correctly support hot/cold data. For now, do not

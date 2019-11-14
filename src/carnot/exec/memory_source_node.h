@@ -31,6 +31,7 @@ class MemorySourceNode : public SourceNode {
  private:
   int64_t num_batches_;
   int64_t current_batch_ = 0;
+  bool eos_set_ = false;
   table_store::BatchPosition start_batch_info_;
 
   std::unique_ptr<plan::MemorySourceOperator> plan_node_;
