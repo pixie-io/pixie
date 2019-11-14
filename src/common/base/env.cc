@@ -1,7 +1,7 @@
 #include "src/common/base/env.h"
 
 #include <mutex>  // NOLINT
-#include <string>
+#include "absl/debugging/symbolize.h"
 
 namespace pl {
 
@@ -12,8 +12,10 @@ void InitEnvironmentOrDieImpl(int* argc, char** argv) {
   FLAGS_logtostderr = true;
   FLAGS_colorlogtostderr = true;
 
+  absl::InitializeSymbolizer(argv[0]);
   google::ParseCommandLineFlags(argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
+
   LOG(INFO) << "Started: " << argv[0];
 }
 

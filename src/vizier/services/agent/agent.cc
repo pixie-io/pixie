@@ -9,6 +9,7 @@
 #include "absl/strings/str_format.h"
 #include "src/common/base/base.h"
 #include "src/common/nats/nats.h"
+#include "src/common/signal/signal.h"
 #include "src/shared/version/version.h"
 
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
@@ -23,35 +24,32 @@ DEFINE_string(cloud_connector_addr,
                                     "vizier-cloud-connector.pl.svc:50800"),
               "The host address of the Cloud Connector");
 
+using ::pl::SignalAction;
 using ::pl::stirling::Stirling;
 using ::pl::vizier::agent::Controller;
 using ::pl::vizier::agent::SSL;
 using ::pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService;
 
-Controller* g_controller = nullptr;
+std::unique_ptr<SignalAction> signal_action;
 
-// Include any clean-up items after a signal.
-void SignalHandler(int signum) {
-  if (g_controller != nullptr) {
+class AgentDeathHandler : public pl::FatalErrorHandlerInterface {
+ public:
+  AgentDeathHandler() = delete;
+  explicit AgentDeathHandler(Controller* controller) : controller_(controller) {}
+
+  void OnFatalError() const override {
     // Give a limited amount of time for the signal to stop,
     // since our death is imminent.
     static const std::chrono::milliseconds kTimeout{1000};
-    pl::Status s = g_controller->Stop(kTimeout);
+    pl::Status s = controller_->Stop(kTimeout);
 
     // Log and forge on, since our death is imminent.
     LOG_IF(ERROR, !s.ok()) << s.msg();
   }
-  exit(signum);
-}
 
-void RegisterSignalHandlers() {
-  signal(SIGINT, SignalHandler);
-  signal(SIGQUIT, SignalHandler);
-  signal(SIGTERM, SignalHandler);
-  signal(SIGHUP, SignalHandler);
-  // TODO(oazizi): Handle cases like SIGSEGV, and similar.
-  // TODO(oazizi): Create a separate signal handler thread.
-}
+ private:
+  Controller* controller_;
+};
 
 std::unique_ptr<QueryBrokerService::Stub> ConnectToQueryBroker(
     const std::string query_broker_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
@@ -70,9 +68,9 @@ std::unique_ptr<QueryBrokerService::Stub> ConnectToQueryBroker(
 }
 
 int main(int argc, char** argv) {
-  RegisterSignalHandlers();
-
   pl::InitEnvironmentOrDie(&argc, argv);
+  signal_action = std::make_unique<SignalAction>();
+
   LOG(INFO) << "Pixie Lab Agent: " << pl::VersionInfo::VersionString();
 
   auto channel_creds = grpc::InsecureChannelCredentials();
@@ -118,7 +116,10 @@ int main(int argc, char** argv) {
   auto controller = Controller::Create(agent_id, std::move(query_broker_stub), std::move(carnot),
                                        std::move(stirling), table_store, std::move(nats_connector))
                         .ConsumeValueOrDie();
-  g_controller = controller.get();
+
+  // TODO(zasgar): When we clean this up make sure we better handle object lifetimes.
+  AgentDeathHandler death_handler(controller.get());
+  signal_action->RegisterFatalErrorHandler(death_handler);
 
   PL_CHECK_OK(controller->InitThrowaway());
   PL_CHECK_OK(stirling_ptr->RunAsThread());
