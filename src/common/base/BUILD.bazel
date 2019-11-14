@@ -8,7 +8,10 @@ pl_cc_library_internal(
         ["*.cc"],
         exclude = ["**/*_test.cc"],
     ),
-    hdrs = glob(["*.h"], exclude = ["test_utils.h"]),
+    hdrs = glob(
+        ["*.h"],
+        exclude = ["test_utils.h"],
+    ),
     deps = [
         "//src/common/base/proto:status_pl_cc_proto",
         "@com_google_googletest//:gtest_prod",

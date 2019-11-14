@@ -142,6 +142,7 @@ func (s *Server) GetViziersByOrg(ctx context.Context, orgID *uuidpb.UUID) (*vzmg
 		}
 		return nil, status.Errorf(codes.Internal, "failed to fetch viziers by org: %s", err.Error())
 	}
+	defer rows.Close()
 
 	ids := []*uuidpb.UUID{}
 	for rows.Next() {

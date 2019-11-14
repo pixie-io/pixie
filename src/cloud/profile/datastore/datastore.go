@@ -58,6 +58,7 @@ func (d *Datastore) GetUser(id uuid.UUID) (*UserInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	if rows.Next() {
 		var userInfo UserInfo

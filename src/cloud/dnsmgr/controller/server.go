@@ -47,6 +47,7 @@ func (s *Server) createSSLCert(clusterID uuid.UUID) (*SSLCert, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	if rows.Next() {
 		err := rows.StructScan(&val)

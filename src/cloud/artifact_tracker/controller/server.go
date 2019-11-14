@@ -96,6 +96,8 @@ func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListReq
 		return nil, status.Error(codes.Internal, "failed to query database")
 	}
 
+	defer rows.Close()
+
 	response := &vpb.ArtifactSet{
 		Name:     name,
 		Artifact: make([]*vpb.Artifact, 0),
