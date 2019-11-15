@@ -19,6 +19,18 @@ namespace compiler {
 namespace distributed {
 
 /**
+ * Planner is the base interface for all types of query planners.
+ */
+class Planner {
+ public:
+  Planner() = default;
+  virtual ~Planner() = default;
+  virtual StatusOr<std::unique_ptr<DistributedPlan>> Plan(
+      const distributedpb::DistributedState& distributed_state, CompilerState* compiler_state,
+      const IR* logical_plan) = 0;
+};
+
+/**
  * @brief The planner takes in a logical plan and knowledge about the Machines available for
  * exeuction to create a plan that is close to what is actually executed on the nodes.
  *
@@ -33,7 +45,7 @@ namespace distributed {
  * 5. Return the mapping from distributed_node_id to the distributed plan for that node.
  *
  */
-class DistributedPlanner : public NotCopyable {
+class DistributedPlanner : public NotCopyable, public Planner {
  public:
   /**
    * @brief The Creation function for the planner.
@@ -53,7 +65,7 @@ class DistributedPlanner : public NotCopyable {
    */
   StatusOr<std::unique_ptr<DistributedPlan>> Plan(
       const distributedpb::DistributedState& distributed_state, CompilerState* compiler_state,
-      const IR* logical_plan);
+      const IR* logical_plan) override;
 
  private:
   DistributedPlanner() {}
@@ -61,7 +73,7 @@ class DistributedPlanner : public NotCopyable {
   Status Init();
 };
 
-class NoKelvinPlanner : public NotCopyable {
+class NoKelvinPlanner : public NotCopyable, public Planner {
  public:
   /**
    * @brief The Creation function for the planner.
@@ -81,7 +93,7 @@ class NoKelvinPlanner : public NotCopyable {
    */
   StatusOr<std::unique_ptr<DistributedPlan>> Plan(
       const distributedpb::DistributedState& distributed_state, CompilerState* compiler_state,
-      const IR* logical_plan);
+      const IR* logical_plan) override;
 
  private:
   NoKelvinPlanner() {}

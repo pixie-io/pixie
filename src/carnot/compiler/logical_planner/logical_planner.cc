@@ -36,7 +36,6 @@ StatusOr<std::unique_ptr<CompilerState>> LogicalPlanner::CreateCompilerState(
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create() {
   auto planner = std::unique_ptr<LogicalPlanner>(new LogicalPlanner());
   PL_RETURN_IF_ERROR(planner->Init());
-  // TODO(philkuz) make the pieces
   return planner;
 }
 

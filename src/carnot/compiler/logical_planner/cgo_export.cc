@@ -58,9 +58,13 @@ char* ExitEarly(const std::string& err, int* result_len) {
 }  // namespace
 
 PlannerPtr PlannerNew() {
-  auto planner = new pl::carnot::compiler::logical_planner::LogicalPlanner();
-  PL_CHECK_OK(planner->Init());
-  return reinterpret_cast<PlannerPtr>(planner);
+  auto planner_or_s = pl::carnot::compiler::logical_planner::LogicalPlanner::Create();
+  if (!planner_or_s.ok()) {
+    return nullptr;
+  }
+  auto planner = planner_or_s.ConsumeValueOrDie();
+  // We release the pointer b/c we are moving out of unique_ptr managed memory to Go.
+  return reinterpret_cast<PlannerPtr>(planner.release());
 }
 
 char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,

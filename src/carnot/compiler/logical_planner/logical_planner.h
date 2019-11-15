@@ -38,8 +38,10 @@ class LogicalPlanner : public NotCopyable {
   StatusOr<std::unique_ptr<distributed::DistributedPlan>> Plan(
       const distributedpb::LogicalPlannerState& logical_state, const std::string& query);
 
-  LogicalPlanner() {}
   Status Init();
+
+ protected:
+  LogicalPlanner() {}
 
  private:
   StatusOr<std::unique_ptr<RelationMap>> MakeRelationMap(
@@ -50,10 +52,7 @@ class LogicalPlanner : public NotCopyable {
   Status ApplyTabletizer(distributed::DistributedPlan* distributed_plan);
 
   Compiler compiler_;
-  // TODO(philkuz) (PL-873) uncomment the following line.
-  //   std::unique_ptr<distributed::DistributedPlanner> distributed_planner_;
-  // TODO(philkuz) (PL-873) remove the following line.
-  std::unique_ptr<distributed::NoKelvinPlanner> distributed_planner_;
+  std::unique_ptr<distributed::Planner> distributed_planner_;
 };
 
 }  // namespace logical_planner
