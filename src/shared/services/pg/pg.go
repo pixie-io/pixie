@@ -52,6 +52,11 @@ func MustCreateDefaultPostgresDB() *sqlx.DB {
 	if err != nil {
 		log.WithError(err).Fatalf("failed to setup database connection")
 	}
+
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(2 * time.Minute)
+	db.SetMaxOpenConns(10)
+
 	return db
 }
 
