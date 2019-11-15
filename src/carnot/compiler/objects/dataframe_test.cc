@@ -359,7 +359,8 @@ TEST_F(OldMapTest, CreateOldMap) {
 
   auto latency_add = MakeAddFunc(MakeColumn("latency_ns", 0), MakeInt(10));
   auto copy_status_column = MakeColumn("http_status", 0);
-  auto fn = MakeLambda({{"latency", latency_add}, {"status", copy_status_column}});
+  auto fn =
+      MakeLambda({{"latency", latency_add}, {"status", copy_status_column}}, /* num_parents */ 1);
 
   int64_t lambda_id = fn->id();
   ParsedArgs args;
@@ -400,7 +401,7 @@ TEST_F(OldMapTest, OldMapWithLambdaNonDictBody) {
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   auto latency_add = MakeAddFunc(MakeColumn("latency_ns", 0), MakeInt(10));
-  auto fn = MakeLambda(latency_add);
+  auto fn = MakeLambda(latency_add, /* num_parents */ 1);
 
   ParsedArgs args;
   args.AddArg("fn", fn);
@@ -417,7 +418,8 @@ TEST_F(DataframeTest, OldMapCall) {
 
   auto latency_add = MakeAddFunc(MakeColumn("latency_ns", 0), MakeInt(10));
   auto copy_status_column = MakeColumn("http_status", 0);
-  auto fn = MakeLambda({{"latency", latency_add}, {"status", copy_status_column}});
+  auto fn =
+      MakeLambda({{"latency", latency_add}, {"status", copy_status_column}}, /* num_parents */ 1);
 
   int64_t lambda_id = fn->id();
   ArgMap args({{}, {fn}});
@@ -448,7 +450,7 @@ TEST_F(OldFilterTest, CreateOldFilter) {
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   auto status_400 = MakeEqualsFunc(MakeColumn("status_code", 0), MakeInt(400));
-  auto fn = MakeLambda(status_400);
+  auto fn = MakeLambda(status_400, /* num_parents */ 1);
 
   int64_t lambda_id = fn->id();
   ParsedArgs args;
@@ -489,7 +491,7 @@ TEST_F(OldFilterTest, OldFilterWithLambdaDictBody) {
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   auto status_400 = MakeEqualsFunc(MakeColumn("status_code", 0), MakeInt(400));
-  auto fn = MakeLambda({{"status", status_400}});
+  auto fn = MakeLambda({{"status", status_400}}, /* num_parents */ 1);
 
   ParsedArgs args;
   args.AddArg("fn", fn);
@@ -505,7 +507,7 @@ TEST_F(DataframeTest, OldFilterCall) {
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   auto status_400 = MakeEqualsFunc(MakeColumn("status_code", 0), MakeInt(400));
-  auto fn = MakeLambda(status_400);
+  auto fn = MakeLambda(status_400, /* num_parents */ 1);
 
   int64_t lambda_id = fn->id();
   ArgMap args({{}, {fn}});
@@ -602,8 +604,8 @@ TEST_F(OldAggTest, CreateOldAggSingleGroupByColumn) {
   auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
   auto status_column = MakeColumn("http_status", 0);
 
-  auto fn = MakeLambda({{"latency", latency_mean}});
-  auto by = MakeLambda(status_column);
+  auto fn = MakeLambda({{"latency", latency_mean}}, /* num_parents */ 1);
+  auto by = MakeLambda(status_column, /* num_parents */ 1);
 
   // Save ids of nodes that should be removed
   int64_t fn_lambda_id = fn->id();
@@ -640,8 +642,8 @@ TEST_F(OldAggTest, CreateOldAggMultipleGroupByColumns) {
   auto service_column = MakeColumn("service", 0);
   auto group_by_columns = MakeList(service_column, status_column);
 
-  auto fn = MakeLambda({{"latency", latency_mean}});
-  auto by = MakeLambda(group_by_columns);
+  auto fn = MakeLambda({{"latency", latency_mean}}, /* num_parents */ 1);
+  auto by = MakeLambda(group_by_columns, /* num_parents */ 1);
 
   // Save ids of nodes that should be removed
   int64_t fn_lambda_id = fn->id();
@@ -676,8 +678,8 @@ TEST_F(OldAggTest, OldAggGroupByArgNotAColumn) {
 
   auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
 
-  auto fn = MakeLambda({{"latency", latency_mean}});
-  auto by = MakeLambda(MakeInt(10));
+  auto fn = MakeLambda({{"latency", latency_mean}}, /* num_parents */ 1);
+  auto by = MakeLambda(MakeInt(10), /* num_parents */ 1);
 
   ParsedArgs args;
   args.AddArg("fn", fn);
@@ -695,8 +697,8 @@ TEST_F(OldAggTest, OldAggGroupByArgListChildNotAColumn) {
 
   auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
 
-  auto fn = MakeLambda({{"latency", latency_mean}});
-  auto by = MakeLambda(MakeList(MakeInt(10)));
+  auto fn = MakeLambda({{"latency", latency_mean}}, /* num_parents */ 1);
+  auto by = MakeLambda(MakeList(MakeInt(10)), /* num_parents */ 1);
 
   ParsedArgs args;
   args.AddArg("fn", fn);
@@ -715,7 +717,7 @@ TEST_F(OldAggTest, OldAggWithNonLambdaAggFn) {
   auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
   auto status_column = MakeColumn("http_status", 0);
 
-  auto by = MakeLambda(status_column);
+  auto by = MakeLambda(status_column, /* num_parents */ 1);
 
   ParsedArgs args;
   args.AddArg("fn", latency_mean);
@@ -734,7 +736,7 @@ TEST_F(OldAggTest, OldAggWithNonLambdaByFn) {
   auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
   auto status_column = MakeColumn("http_status", 0);
 
-  auto fn = MakeLambda({{"latency", latency_mean}});
+  auto fn = MakeLambda({{"latency", latency_mean}}, /* num_parents */ 1);
 
   ParsedArgs args;
   args.AddArg("fn", fn);
@@ -753,8 +755,8 @@ TEST_F(OldAggTest, OldAggFnArgWithLambdaNonDictBody) {
   auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
   auto status_column = MakeColumn("http_status", 0);
 
-  auto fn = MakeLambda(latency_mean);
-  auto by = MakeLambda(status_column);
+  auto fn = MakeLambda(latency_mean, /* num_parents */ 1);
+  auto by = MakeLambda(status_column, /* num_parents */ 1);
 
   ParsedArgs args;
   args.AddArg("fn", fn);
@@ -773,8 +775,8 @@ TEST_F(OldAggTest, OldAggByArgWithLambdaDictBody) {
   auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
   auto status_column = MakeColumn("http_status", 0);
 
-  auto fn = MakeLambda({{"latency", latency_mean}});
-  auto by = MakeLambda({{"status", status_column}});
+  auto fn = MakeLambda({{"latency", latency_mean}}, /* num_parents */ 1);
+  auto by = MakeLambda({{"status", status_column}}, /* num_parents */ 1);
 
   ParsedArgs args;
   args.AddArg("fn", fn);
@@ -793,8 +795,8 @@ TEST_F(DataframeTest, OldAggCall) {
   auto latency_mean = MakeMeanFunc(MakeColumn("latency_ns", 0));
   auto status_column = MakeColumn("http_status", 0);
 
-  auto fn = MakeLambda({{"latency", latency_mean}});
-  auto by = MakeLambda(status_column);
+  auto fn = MakeLambda({{"latency", latency_mean}}, /* num_parents */ 1);
+  auto by = MakeLambda(status_column, /* num_parents */ 1);
 
   // Save ids of nodes that should be removed
   int64_t fn_lambda_id = fn->id();
@@ -837,12 +839,13 @@ TEST_F(OldJoinTest, JoinCreate) {
   auto right_rps_column = MakeColumn("rps", 1);
   auto output_cols_lambda = MakeLambda({{"service", left_service_column},
                                         {"latency", right_latency_column},
-                                        {"rps", right_rps_column}});
+                                        {"rps", right_rps_column}},
+                                       /* num_parents */ 2);
 
   auto left_column = MakeColumn("service", 0);
   auto right_column = MakeColumn("service", 1);
   auto cond_expr = MakeEqualsFunc(left_column, right_column);
-  auto cond_lambda = MakeLambda(cond_expr);
+  auto cond_lambda = MakeLambda(cond_expr, /* num_parents */ 2);
 
   // Save ids of nodes that should be removed
   int64_t cond_lambda_id = cond_lambda->id();
@@ -891,7 +894,8 @@ TEST_F(OldJoinTest, JoinCreateAndCond) {
   auto right_rps_column = MakeColumn("rps", 1);
   auto output_cols_lambda = MakeLambda({{"service", left_service_column},
                                         {"latency", right_latency_column},
-                                        {"rps", right_rps_column}});
+                                        {"rps", right_rps_column}},
+                                       /* num_parents */ 2);
 
   auto left_column1 = MakeColumn("service", 0);
   auto right_column1 = MakeColumn("service", 1);
@@ -901,7 +905,7 @@ TEST_F(OldJoinTest, JoinCreateAndCond) {
   auto right_column2 = MakeColumn("service", 1);
   auto cond_expr2 = MakeEqualsFunc(right_column2, left_column2);
 
-  auto cond_lambda = MakeLambda(MakeAndFunc(cond_expr1, cond_expr2));
+  auto cond_lambda = MakeLambda(MakeAndFunc(cond_expr1, cond_expr2), /* num_parents */ 2);
 
   // Save ids of nodes that should be removed
   int64_t cond_lambda_id = cond_lambda->id();
@@ -949,7 +953,8 @@ TEST_F(OldJoinTest, OldJoinCondNotLambda) {
   auto right_rps_column = MakeColumn("rps", 1);
   auto output_cols_lambda = MakeLambda({{"service", left_service_column},
                                         {"latency", right_latency_column},
-                                        {"rps", right_rps_column}});
+                                        {"rps", right_rps_column}},
+                                       /* num_parents */ 2);
 
   auto left_column = MakeColumn("service", 0);
   auto right_column = MakeColumn("service", 1);
@@ -978,7 +983,7 @@ TEST_F(OldJoinTest, OldJoinColsNotLambda) {
   auto left_column = MakeColumn("service", 0);
   auto right_column = MakeColumn("service", 1);
   auto cond_expr = MakeEqualsFunc(left_column, right_column);
-  auto cond_lambda = MakeLambda(cond_expr);
+  auto cond_lambda = MakeLambda(cond_expr, /* num_parents */ 2);
 
   ParsedArgs args;
   args.AddArg("right", right);
@@ -1003,12 +1008,13 @@ TEST_F(OldJoinTest, OldJoinTypeNotString) {
   auto right_rps_column = MakeColumn("rps", 1);
   auto output_cols_lambda = MakeLambda({{"service", left_service_column},
                                         {"latency", right_latency_column},
-                                        {"rps", right_rps_column}});
+                                        {"rps", right_rps_column}},
+                                       /* num_parents */ 2);
 
   auto left_column = MakeColumn("service", 0);
   auto right_column = MakeColumn("service", 1);
   auto cond_expr = MakeEqualsFunc(left_column, right_column);
-  auto cond_lambda = MakeLambda(cond_expr);
+  auto cond_lambda = MakeLambda(cond_expr, /* num_parents */ 2);
 
   // Save ids of nodes that should be removed
   ParsedArgs args;
@@ -1030,12 +1036,12 @@ TEST_F(OldJoinTest, OldJoinColsNotDictBody) {
   auto join_type = MakeString("inner");
 
   auto left_service_column = MakeColumn("service", 0);
-  auto output_cols_lambda = MakeLambda(left_service_column);
+  auto output_cols_lambda = MakeLambda(left_service_column, /* num_parents */ 2);
 
   auto left_column = MakeColumn("service", 0);
   auto right_column = MakeColumn("service", 1);
   auto cond_expr = MakeEqualsFunc(left_column, right_column);
-  auto cond_lambda = MakeLambda(cond_expr);
+  auto cond_lambda = MakeLambda(cond_expr, /* num_parents */ 2);
 
   ParsedArgs args;
   args.AddArg("right", right);
@@ -1060,12 +1066,13 @@ TEST_F(OldJoinTest, OldJoinCondWithDictBody) {
   auto right_rps_column = MakeColumn("rps", 1);
   auto output_cols_lambda = MakeLambda({{"service", left_service_column},
                                         {"latency", right_latency_column},
-                                        {"rps", right_rps_column}});
+                                        {"rps", right_rps_column}},
+                                       /* num_parents */ 2);
 
   auto left_column = MakeColumn("service", 0);
   auto right_column = MakeColumn("service", 1);
   auto cond_expr = MakeEqualsFunc(left_column, right_column);
-  auto cond_lambda = MakeLambda({{"cond", cond_expr}});
+  auto cond_lambda = MakeLambda({{"cond", cond_expr}}, /* num_parents */ 2);
 
   ParsedArgs args;
   args.AddArg("right", right);
@@ -1088,12 +1095,13 @@ TEST_F(OldJoinTest, OldJoinOutputColsAreMiscExpressions) {
   auto left_service_column = MakeColumn("service", 0);
   auto right_latency_column = MakeColumn("latency", 1);
   auto output_cols_lambda =
-      MakeLambda({{"service", MakeEqualsFunc(left_service_column, right_latency_column)}});
+      MakeLambda({{"service", MakeEqualsFunc(left_service_column, right_latency_column)}},
+                 /* num_parents */ 2);
 
   auto left_column = MakeColumn("service", 0);
   auto right_column = MakeColumn("service", 1);
   auto cond_expr = MakeEqualsFunc(left_column, right_column);
-  auto cond_lambda = MakeLambda(cond_expr);
+  auto cond_lambda = MakeLambda(cond_expr, /* num_parents */ 2);
 
   ParsedArgs args;
   args.AddArg("right", right);
@@ -1118,10 +1126,11 @@ TEST_F(OldJoinTest, OldJoinCondNotAFunc) {
   auto right_rps_column = MakeColumn("rps", 1);
   auto output_cols_lambda = MakeLambda({{"service", left_service_column},
                                         {"latency", right_latency_column},
-                                        {"rps", right_rps_column}});
+                                        {"rps", right_rps_column}},
+                                       /* num_parents */ 2);
 
   auto left_column = MakeColumn("service", 0);
-  auto cond_lambda = MakeLambda(left_column);
+  auto cond_lambda = MakeLambda(left_column, /* num_parents */ 2);
 
   ParsedArgs args;
   args.AddArg("right", right);
@@ -1149,12 +1158,13 @@ TEST_F(DataframeTest, JoinCall) {
   auto right_rps_column = MakeColumn("rps", 1);
   auto output_cols_lambda = MakeLambda({{"service", left_service_column},
                                         {"latency", right_latency_column},
-                                        {"rps", right_rps_column}});
+                                        {"rps", right_rps_column}},
+                                       /* num_parents */ 2);
 
   auto left_column = MakeColumn("service", 0);
   auto right_column = MakeColumn("service", 1);
   auto cond_expr = MakeEqualsFunc(left_column, right_column);
-  auto cond_lambda = MakeLambda(cond_expr);
+  auto cond_lambda = MakeLambda(cond_expr, /* num_parents */ 2);
 
   // Save ids of nodes that should be removed
   int64_t cond_lambda_id = cond_lambda->id();
@@ -1201,12 +1211,13 @@ TEST_F(DataframeTest, JoinCallDefaultTypeArg) {
   auto right_rps_column = MakeColumn("rps", 1);
   auto output_cols_lambda = MakeLambda({{"service", left_service_column},
                                         {"latency", right_latency_column},
-                                        {"rps", right_rps_column}});
+                                        {"rps", right_rps_column}},
+                                       /* num_parents */ 2);
 
   auto left_column = MakeColumn("service", 0);
   auto right_column = MakeColumn("service", 1);
   auto cond_expr = MakeEqualsFunc(left_column, right_column);
-  auto cond_lambda = MakeLambda(cond_expr);
+  auto cond_lambda = MakeLambda(cond_expr, /* num_parents */ 2);
 
   // Save ids of nodes that should be removed
   int64_t cond_lambda_id = cond_lambda->id();
@@ -1311,8 +1322,8 @@ class OldRangeAggTest : public DataframeTest {
     status_column = MakeColumn("http_status", 0);
     size = MakeInt(123);
 
-    fn = MakeLambda({{"latency", latency_mean}}, {"latency_ns"});
-    by = MakeLambda(status_column);
+    fn = MakeLambda({{"latency", latency_mean}}, {"latency_ns"}, /* num_parents */ 1);
+    by = MakeLambda(status_column, /* num_parents */ 1);
 
     // Save ids of nodes that should be removed
     fn_lambda_id = fn->id();
@@ -1431,7 +1442,8 @@ TEST_F(OldRangeAggTest, DataframeRangeAggCall) {
 }
 
 TEST_F(OldRangeAggTest, ByArgHasMoreThan1Parent) {
-  LambdaIR* custom_by = MakeLambda(MakeList(MakeColumn("col1", 0), MakeColumn("col2", 0)));
+  LambdaIR* custom_by =
+      MakeLambda(MakeList(MakeColumn("col1", 0), MakeColumn("col2", 0)), /* num_parents */ 1);
   ParsedArgs args;
   args.AddArg("fn", fn);
   args.AddArg("by", custom_by);

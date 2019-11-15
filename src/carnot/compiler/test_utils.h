@@ -165,27 +165,34 @@ class OperatorTests : public ::testing::Test {
 
   MapIR* MakeMap(OperatorIR* parent, const ColExpressionVector& col_map) {
     MapIR* map = graph->MakeNode<MapIR>().ConsumeValueOrDie();
-    LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(lambda->Init({}, col_map, ast));
+    LambdaIR* lambda = graph->MakeNode<LambdaIR>(ast).ConsumeValueOrDie();
+    PL_CHECK_OK(lambda->Init({}, col_map, /* num_parents */ 1));
     PL_CHECK_OK(map->Init(parent, {{{"fn", lambda}}, {}}, ast));
     return map;
   }
 
   // TODO(philkuz) deprecate this when we remove Lambda support.
-  LambdaIR* MakeLambda(ExpressionIR* expr) {
-    LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(lambda->Init({}, expr, ast));
+  LambdaIR* MakeLambda(ExpressionIR* expr, int64_t num_parents) {
+    return MakeLambda(expr, {}, num_parents);
+  }
+
+  LambdaIR* MakeLambda(ExpressionIR* expr, const std::unordered_set<std::string>& expected_cols,
+                       int64_t num_parents) {
+    LambdaIR* lambda = graph->MakeNode<LambdaIR>(ast).ConsumeValueOrDie();
+    PL_CHECK_OK(lambda->Init(expected_cols, expr, num_parents));
     return lambda;
   }
 
   LambdaIR* MakeLambda(const ColExpressionVector& expr,
-                       const std::unordered_set<std::string>& expected_cols) {
-    LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(lambda->Init(expected_cols, expr, ast));
+                       const std::unordered_set<std::string>& expected_cols, int64_t num_parents) {
+    LambdaIR* lambda = graph->MakeNode<LambdaIR>(ast).ConsumeValueOrDie();
+    PL_CHECK_OK(lambda->Init(expected_cols, expr, num_parents));
     return lambda;
   }
 
-  LambdaIR* MakeLambda(const ColExpressionVector& expr) { return MakeLambda(expr, {}); }
+  LambdaIR* MakeLambda(const ColExpressionVector& expr, int64_t num_parents) {
+    return MakeLambda(expr, {}, num_parents);
+  }
 
   MemorySinkIR* MakeMemSink(OperatorIR* parent, std::string name) {
     auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
@@ -194,8 +201,8 @@ class OperatorTests : public ::testing::Test {
   }
 
   FilterIR* MakeFilter(OperatorIR* parent, ExpressionIR* filter_expr) {
-    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(filter_func_lambda->Init({}, filter_expr, ast));
+    auto filter_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
+    EXPECT_OK(filter_func_lambda->Init({}, filter_expr, /* num_parents */ 1));
 
     FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
     ArgMap amap({{{"fn", filter_func_lambda}}, {}});
@@ -213,16 +220,16 @@ class OperatorTests : public ::testing::Test {
   BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, const std::vector<ColumnIR*>& columns,
                                  const ColExpressionVector& col_agg) {
     BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>().ConsumeValueOrDie();
-    LambdaIR* fn_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(fn_lambda->Init({}, col_agg, ast));
+    LambdaIR* fn_lambda = graph->MakeNode<LambdaIR>(ast).ConsumeValueOrDie();
+    PL_CHECK_OK(fn_lambda->Init({}, col_agg, /* num_parents */ 1));
     ListIR* list_ir = graph->MakeNode<ListIR>().ConsumeValueOrDie();
     std::vector<ExpressionIR*> exprs;
     for (auto c : columns) {
       exprs.push_back(c);
     }
     PL_CHECK_OK(list_ir->Init(ast, exprs));
-    LambdaIR* by_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(by_lambda->Init({}, list_ir, ast));
+    LambdaIR* by_lambda = graph->MakeNode<LambdaIR>(ast).ConsumeValueOrDie();
+    PL_CHECK_OK(by_lambda->Init({}, list_ir, /* num_parents */ 1));
     PL_CHECK_OK(agg->Init(parent, {{{"by", by_lambda}, {"fn", fn_lambda}}, {}}, ast));
     return agg;
   }
@@ -348,11 +355,12 @@ class OperatorTests : public ::testing::Test {
     // "col2", b.col2})
 
     JoinIR* join_node = graph->MakeNode<JoinIR>().ConsumeValueOrDie();
-    LambdaIR* equality_condition_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(equality_condition_lambda->Init({}, equality_condition, ast));
+    LambdaIR* equality_condition_lambda = graph->MakeNode<LambdaIR>(ast).ConsumeValueOrDie();
+    PL_CHECK_OK(
+        equality_condition_lambda->Init({}, equality_condition, /* num_parents */ parents.size()));
 
-    LambdaIR* output_columns_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(output_columns_lambda->Init({}, output_columns, ast));
+    LambdaIR* output_columns_lambda = graph->MakeNode<LambdaIR>(ast).ConsumeValueOrDie();
+    PL_CHECK_OK(output_columns_lambda->Init({}, output_columns, /* num_parents */ parents.size()));
 
     PL_CHECK_OK(join_node->Init(parents,
                                 {{{"type", MakeString(join_type)},

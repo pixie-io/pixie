@@ -277,7 +277,7 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
   if (map_ir->keep_input_columns()) {
     ColExpressionVector output_expressions;
 
-    absl::flat_hash_set<std::string> new_columns;  
+    absl::flat_hash_set<std::string> new_columns;
     for (ColumnExpression expr : expressions) {
       new_columns.insert(expr.name);
     }
@@ -827,8 +827,8 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
                                             std::make_move_iterator(relation.col_names().end()));
   DCHECK_EQ(col_exprs.size(), md_resolver->relation().NumColumns());
   PL_ASSIGN_OR_RETURN(MapIR * map, graph->MakeNode<MapIR>());
-  PL_ASSIGN_OR_RETURN(LambdaIR * lambda, graph->MakeNode<LambdaIR>());
-  PL_RETURN_IF_ERROR(lambda->Init(col_names, col_exprs, md_resolver->ast_node()));
+  PL_ASSIGN_OR_RETURN(LambdaIR * lambda, graph->MakeNode<LambdaIR>(md_resolver->ast_node()));
+  PL_RETURN_IF_ERROR(lambda->Init(col_names, col_exprs, /* num_parents */ 0));
   PL_RETURN_IF_ERROR(map->Init(parent_op, {{{"fn", lambda}}, {}}, md_resolver->ast_node()));
   return map;
 }
@@ -930,7 +930,6 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
     dropped_columns.insert(name);
   }
 
-  PL_ASSIGN_OR_RETURN(MapIR * map_ir, ir_graph->MakeNode<MapIR>());
   ColExpressionVector col_exprs;
   std::unordered_set<std::string> col_names;
 
@@ -942,18 +941,16 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
       continue;
     }
     col_names.insert(input_col_name);
-    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, ir_graph->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(column_ir->Init(input_col_name, /*parent_op_idx*/ 0, drop_ir->ast_node()));
+    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, ir_graph->MakeNode<ColumnIR>(drop_ir->ast_node()));
+    PL_RETURN_IF_ERROR(column_ir->Init(input_col_name, /*parent_op_idx*/ 0));
     column_ir->ResolveColumn(i, parent_relation.GetColumnType(i));
     col_exprs.emplace_back(input_col_name, column_ir);
   }
 
   // Init the map from the drop.
-  // TODO(nserrino): After lambda maps are deprecated, refactor MapIR to not need
-  // to wrap these with lambdas.
-  PL_ASSIGN_OR_RETURN(LambdaIR * lambda, ir_graph->MakeNode<LambdaIR>());
-  PL_RETURN_IF_ERROR(lambda->Init(col_names, col_exprs, drop_ir->ast_node()));
-  PL_RETURN_IF_ERROR(map_ir->Init(parent_op, {{{"fn", lambda}}, {}}, drop_ir->ast_node()));
+  // TODO(philkuz) Make into Create with the CreateNode diff.
+  PL_ASSIGN_OR_RETURN(MapIR * map_ir, ir_graph->MakeNode<MapIR>(drop_ir->ast_node()));
+  PL_RETURN_IF_ERROR(map_ir->Init(parent_op, col_exprs));
 
   // Update all of drop's dependencies to point to src.
   for (const auto& dep : drop_ir->Children()) {

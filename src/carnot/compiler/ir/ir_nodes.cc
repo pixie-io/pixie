@@ -165,7 +165,8 @@ Status OperatorIR::Init(std::vector<OperatorIR*> parents, const ArgMap& args,
 bool MemorySourceIR::HasLogicalRepr() const { return true; }
 
 Status MemorySourceIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::MemorySourceOperator();
+  auto pb = op->mutable_mem_source_op();
+  op->set_op_type(planpb::MEMORY_SOURCE_OPERATOR);
   pb->set_name(table_name_);
 
   if (!column_index_map_set()) {
@@ -192,8 +193,6 @@ Status MemorySourceIR::ToProto(planpb::Operator* op) const {
     pb->set_tablet(tablet_value());
   }
 
-  op->set_op_type(planpb::MEMORY_SOURCE_OPERATOR);
-  op->set_allocated_mem_source_op(pb);
   return Status::OK();
 }
 
@@ -289,8 +288,9 @@ Status RangeIR::InitImpl(const ArgMap& args) {
 }
 
 Status MemorySinkIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::MemorySinkOperator();
+  auto pb = op->mutable_mem_sink_op();
   pb->set_name(name_);
+  op->set_op_type(planpb::MEMORY_SINK_OPERATOR);
 
   auto types = relation().col_types();
   auto names = relation().col_names();
@@ -300,8 +300,6 @@ Status MemorySinkIR::ToProto(planpb::Operator* op) const {
     pb->add_column_names(names[i]);
   }
 
-  op->set_op_type(planpb::MEMORY_SINK_OPERATOR);
-  op->set_allocated_mem_sink_op(pb);
   return Status::OK();
 }
 
@@ -374,7 +372,7 @@ Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
     }
   }
   return Status::OK();
-}    
+}
 
 // TODO(nserrino): Have keep_input_columns as an argument here once InitImpl is deprecated.
 Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs) {
@@ -470,15 +468,16 @@ Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNo
       break;
     }
     default: {
-      return error::InvalidArgument("Didn't expect $0 in expression evaluator.",
-                                    ir_node.type_string());
+      return ir_node.CreateIRNodeError("Didn't expect $0 in expression evaluator",
+                                       ir_node.type_string());
     }
   }
   return Status::OK();
 }
 
 Status MapIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::MapOperator();
+  auto pb = op->mutable_map_op();
+  op->set_op_type(planpb::MAP_OPERATOR);
 
   for (const auto& col_expr : col_exprs_) {
     auto expr = pb->add_expressions();
@@ -486,8 +485,6 @@ Status MapIR::ToProto(planpb::Operator* op) const {
     pb->add_column_names(col_expr.name);
   }
 
-  op->set_op_type(planpb::MAP_OPERATOR);
-  op->set_allocated_map_op(pb);
   return Status::OK();
 }
 
@@ -522,7 +519,8 @@ Status FilterIR::InitImpl(const ArgMap& args) {
 bool FilterIR::HasLogicalRepr() const { return true; }
 
 Status FilterIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::FilterOperator();
+  auto pb = op->mutable_filter_op();
+  op->set_op_type(planpb::FILTER_OPERATOR);
   DCHECK_EQ(parents().size(), 1UL);
 
   for (size_t i = 0; i < relation().NumColumns(); ++i) {
@@ -531,12 +529,8 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
     col_pb->set_index(i);
   }
 
-  auto expr = new planpb::ScalarExpression();
+  auto expr = pb->mutable_expression();
   PL_RETURN_IF_ERROR(EvaluateExpression(expr, *filter_expr_));
-  pb->set_allocated_expression(expr);
-
-  op->set_op_type(planpb::FILTER_OPERATOR);
-  op->set_allocated_filter_op(pb);
   return Status::OK();
 }
 
@@ -560,7 +554,8 @@ Status LimitIR::Init(OperatorIR* parent, int64_t limit_value) {
 bool LimitIR::HasLogicalRepr() const { return true; }
 
 Status LimitIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::LimitOperator();
+  auto pb = op->mutable_limit_op();
+  op->set_op_type(planpb::LIMIT_OPERATOR);
   DCHECK_EQ(parents().size(), 1UL);
 
   for (size_t i = 0; i < relation().NumColumns(); ++i) {
@@ -573,9 +568,6 @@ Status LimitIR::ToProto(planpb::Operator* op) const {
   }
 
   pb->set_limit(limit_value_);
-
-  op->set_op_type(planpb::LIMIT_OPERATOR);
-  op->set_allocated_limit_op(pb);
   return Status::OK();
 }
 
@@ -767,9 +759,12 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
         value->set_time64_ns_value(static_cast<::google::protobuf::int64>(casted_ir.val()));
         break;
       }
+      case IRNodeType::kFunc: {
+        return ir_node.CreateIRNodeError("agg expressions cannot be nested", ir_node.type_string());
+      }
       default: {
-        return error::InvalidArgument("Didn't expect node of type $0 in expression evaluator.",
-                                      ir_node.type_string());
+        return ir_node.CreateIRNodeError("Didn't expect node of type $0 in expression evaluator.",
+                                         ir_node.type_string());
       }
     }
   }
@@ -777,7 +772,7 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
 }
 
 Status BlockingAggIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::AggregateOperator();
+  auto pb = op->mutable_agg_op();
 
   for (const auto& agg_expr : aggregate_expressions_) {
     auto expr = pb->add_values();
@@ -797,7 +792,6 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
   pb->set_windowed(false);
 
   op->set_op_type(planpb::AGGREGATE_OPERATOR);
-  op->set_allocated_agg_op(pb);
   return Status::OK();
 }
 
@@ -862,8 +856,8 @@ bool LambdaIR::HasLogicalRepr() const { return false; }
 bool LambdaIR::HasDictBody() const { return has_dict_body_; }
 
 Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
-                      const ColExpressionVector& col_exprs, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+                      const ColExpressionVector& col_exprs, int64_t number_of_parents) {
+  number_of_parents_ = number_of_parents;
   expected_column_names_ = expected_column_names;
   col_exprs_ = col_exprs;
   for (const ColumnExpression& col_expr : col_exprs) {
@@ -874,11 +868,11 @@ Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
 }
 
 Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, ExpressionIR* node,
-                      const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+                      int64_t number_of_parents) {
   expected_column_names_ = expected_column_names;
   col_exprs_.push_back(ColumnExpression{default_key, node});
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, node));
+  number_of_parents_ = number_of_parents;
   has_dict_body_ = false;
   return Status::OK();
 }
@@ -1271,7 +1265,8 @@ StatusOr<IRNode*> GRPCSourceIR::DeepCloneIntoImpl(IR* graph) const {
 
 Status GRPCSourceGroupIR::ToProto(planpb::Operator* op) const {
   // Note this is more for testing.
-  auto pb = new planpb::GRPCSourceOperator();
+  auto pb = op->mutable_grpc_source_op();
+  op->set_op_type(planpb::GRPC_SOURCE_OPERATOR);
 
   pb->set_source_id(absl::StrCat(source_id_));
   auto types = relation().col_types();
@@ -1282,23 +1277,22 @@ Status GRPCSourceGroupIR::ToProto(planpb::Operator* op) const {
     pb->add_column_names(names[i]);
   }
 
-  op->set_op_type(planpb::GRPC_SOURCE_OPERATOR);
-  op->set_allocated_grpc_source_op(pb);
   return Status::OK();
 }
 
 Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::GRPCSinkOperator();
+  auto pb = op->mutable_grpc_sink_op();
+  op->set_op_type(planpb::GRPC_SINK_OPERATOR);
+
   pb->set_address(destination_address());
   pb->set_destination_id(DistributedDestinationID());
-
-  op->set_op_type(planpb::GRPC_SINK_OPERATOR);
-  op->set_allocated_grpc_sink_op(pb);
   return Status::OK();
 }
 
 Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::GRPCSourceOperator();
+  auto pb = op->mutable_grpc_source_op();
+  op->set_op_type(planpb::GRPC_SOURCE_OPERATOR);
+
   pb->set_source_id(remote_source_id_);
   auto types = relation().col_types();
   auto names = relation().col_names();
@@ -1307,9 +1301,6 @@ Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
     pb->add_column_types(types[i]);
     pb->add_column_names(names[i]);
   }
-
-  op->set_op_type(planpb::GRPC_SOURCE_OPERATOR);
-  op->set_allocated_grpc_source_op(pb);
   return Status::OK();
 }
 
@@ -1386,7 +1377,9 @@ Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
 }
 
 Status UnionIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::UnionOperator();
+  auto pb = op->mutable_union_op();
+  op->set_op_type(planpb::UNION_OPERATOR);
+
   auto types = relation().col_types();
   auto names = relation().col_names();
   DCHECK_EQ(parents().size(), column_mappings_.size()) << "parents and column_mappings disagree.";
@@ -1406,8 +1399,6 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
   // needs to be modified in the future.
   // pb->set_rows_per_batch(1024);
 
-  op->set_op_type(planpb::UNION_OPERATOR);
-  op->set_allocated_union_op(pb);
   return Status::OK();
 }
 
@@ -1495,7 +1486,8 @@ planpb::JoinOperator::JoinType JoinIR::GetPbJoinEnum(JoinType join_type) {
 Status JoinIR::ToProto(planpb::Operator* op) const {
   planpb::JoinOperator::JoinType join_enum_type = GetPbJoinEnum(join_type_);
   DCHECK_EQ(left_on_columns_.size(), right_on_columns_.size());
-  auto pb = new planpb::JoinOperator();
+  auto pb = op->mutable_join_op();
+  op->set_op_type(planpb::JOIN_OPERATOR);
   pb->set_type(join_enum_type);
   for (int64_t i = 0; i < static_cast<int64_t>(left_on_columns_.size()); i++) {
     auto eq_condition = pb->add_equality_conditions();
@@ -1519,8 +1511,6 @@ Status JoinIR::ToProto(planpb::Operator* op) const {
   // needs to be modified in the future.
   // pb->set_rows_per_batch(1024);
 
-  op->set_op_type(planpb::JOIN_OPERATOR);
-  op->set_allocated_join_op(pb);
   return Status::OK();
 }
 

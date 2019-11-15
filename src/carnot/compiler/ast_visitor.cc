@@ -172,16 +172,12 @@ Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr
   }
   auto expr = static_cast<ExpressionIR*>(result);
 
-  // TODO(nserrino): Remove this conversion into lambdas once lambdas are fully removed for maps.
-  PL_ASSIGN_OR_RETURN(LambdaIR * map_lambda_ir_node, ir_graph_->MakeNode<LambdaIR>());
   // Pull in all columns needed in fn.
-  ColExpressionVector map_exprs{ColumnExpression{col_name, expr}};
-  PL_RETURN_IF_ERROR(
-      map_lambda_ir_node->Init(std::unordered_set<std::string>({col_name}), map_exprs, expr_node));
+  ColExpressionVector map_exprs{{col_name, expr}};
 
-  PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->MakeNode<MapIR>());
-  ArgMap map_args{{{"fn", map_lambda_ir_node}}, {}};
-  PL_RETURN_IF_ERROR(ir_node->Init(parent_op, map_args, expr_node));
+  // TODO(philkuz) Make to Create in the updated diff.
+  PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->MakeNode<MapIR>(expr_node));
+  PL_RETURN_IF_ERROR(ir_node->Init(parent_op, map_exprs));
   ir_node->set_keep_input_columns(true);
 
   var_table_[assign_name_string] = std::make_shared<Dataframe>(ir_node);
@@ -719,22 +715,23 @@ StatusOr<LambdaBodyReturn> ASTVisitorImpl::ProcessLambdaDict(const LambdaOperato
 
 StatusOr<LambdaIR*> ASTVisitorImpl::ProcessLambda(const pypa::AstLambdaPtr& ast,
                                                   const OperatorContext&) {
-  LambdaIR* lambda_node = ir_graph_->MakeNode<LambdaIR>().ValueOrDie();
+  LambdaIR* lambda_node = ir_graph_->MakeNode<LambdaIR>(ast->body).ValueOrDie();
   PL_ASSIGN_OR_RETURN(LambdaOperatorMap arg_op_map, ProcessLambdaArgs(ast));
+  int64_t number_of_parents = arg_op_map.size();
   LambdaBodyReturn return_struct;
   switch (ast->body->type) {
     case AstType::Dict: {
       PL_ASSIGN_OR_RETURN(return_struct,
                           ProcessLambdaDict(arg_op_map, PYPA_PTR_CAST(Dict, ast->body)));
       PL_RETURN_IF_ERROR(lambda_node->Init(return_struct.input_relation_columns_,
-                                           return_struct.col_exprs_, ast->body));
+                                           return_struct.col_exprs_, number_of_parents));
       return lambda_node;
     }
 
     default: {
       PL_ASSIGN_OR_RETURN(LambdaExprReturn return_val, ProcessLambdaExpr(arg_op_map, ast->body));
-      PL_RETURN_IF_ERROR(
-          lambda_node->Init(return_val.input_relation_columns_, return_val.expr_, ast->body));
+      PL_RETURN_IF_ERROR(lambda_node->Init(return_val.input_relation_columns_, return_val.expr_,
+                                           number_of_parents));
       return lambda_node;
     }
   }

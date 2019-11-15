@@ -781,13 +781,13 @@ class LambdaIR : public IRNode {
   LambdaIR() = delete;
   explicit LambdaIR(int64_t id) : IRNode(id, IRNodeType::kLambda, false) {}
   Status Init(std::unordered_set<std::string> column_names, const ColExpressionVector& col_exprs,
-              const pypa::AstPtr& ast_node);
+              int64_t number_of_parents);
   /**
    * @brief Init for the Lambda called elsewhere. Uses a default value for the key to the
    * expression map.
    */
   Status Init(std::unordered_set<std::string> expected_column_names, ExpressionIR* node,
-              const pypa::AstPtr& ast_node);
+              int64_t number_of_parents);
   /**
    * @brief Returns the one_expr_ if it has only one expr in the col_expr_map, otherwise returns
    * an error.
@@ -804,12 +804,14 @@ class LambdaIR : public IRNode {
   ColExpressionVector col_exprs() const { return col_exprs_; }
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  int64_t number_of_parents() const { return number_of_parents_; }
 
  private:
   static constexpr const char* default_key = "_default";
   std::unordered_set<std::string> expected_column_names_;
   ColExpressionVector col_exprs_;
   bool has_dict_body_;
+  int64_t number_of_parents_ = 0;
 };
 
 /**

@@ -570,33 +570,7 @@ TEST(AggTest, not_allowed_by_arguments) {
   ASSERT_NOT_OK(ir_graph_status);
 }
 
-// TODO(philkuz/nserrino) address in compile_test
-TEST(AggTest, DISABLED_nested_agg_expression_should_fail) {
-  std::string nested_agg_fn = absl::StrJoin(
-      {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0, stop=10)",
-          "rangeDF = queryDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
-          "pl.sum(pl.mean(r.cpu0))}).result(name='cpu2')",
-      },
-      "\n");
-  auto ir_graph_status = ParseQuery(nested_agg_fn);
-  VLOG(1) << ir_graph_status.ToString();
-  EXPECT_NOT_OK(ir_graph_status);
-
-  std::string add_combination = absl::StrJoin(
-      {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0, stop=10)",
-          "rangeDF = queryDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
-          "pl.mean(r.cpu0)+2}).result(name='cpu2')",
-      },
-      "\n");
-  ir_graph_status = ParseQuery(add_combination);
-  VLOG(1) << ir_graph_status.ToString();
-  EXPECT_NOT_OK(ir_graph_status);
-}
-
-// TODO(philkuz) address in later diff.
-TEST(LambdaTest, DISABLED_test_wrong_number_of_arguments) {
+TEST(LambdaTest, test_wrong_number_of_arguments) {
   std::string add_combination = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
@@ -606,8 +580,7 @@ TEST(LambdaTest, DISABLED_test_wrong_number_of_arguments) {
   auto ir_graph_status = ParseQuery(add_combination);
   VLOG(1) << ir_graph_status.ToString();
   EXPECT_NOT_OK(ir_graph_status);
-  EXPECT_THAT(ir_graph_status.status(),
-              HasCompilerError("Got 2 lambda arguments, expected 1 for the Map Operator."));
+  EXPECT_THAT(ir_graph_status.status(), HasCompilerError("operator expects 1 parent, received 2"));
 }
 
 const char* kJoinDuplicatedLambdaQuery = R"query(
@@ -704,6 +677,7 @@ TEST(JoinTest, test_inner_join) {
     column_ir_names.push_back(col->col_name());
     column_ir_parent_idx.push_back(col->container_op_parent_idx());
   }
+
   EXPECT_THAT(column_ir_names, ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
   EXPECT_THAT(column_ir_parent_idx, ElementsAre(0, 1, 1, 0, 0));
 

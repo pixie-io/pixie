@@ -39,21 +39,21 @@ class RuleExecutorTest : public ::testing::Test {
     SetupGraph();
   }
   void SetupGraph() {
-    map = graph->MakeNode<MapIR>().ValueOrDie();
-    int_constant = graph->MakeNode<IntIR>().ValueOrDie();
+    map = graph->MakeNode<MapIR>(ast).ValueOrDie();
+    int_constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
     PL_CHECK_OK(int_constant->Init(10, ast));
-    int_constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+    int_constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
     PL_CHECK_OK(int_constant2->Init(12, ast));
-    col = graph->MakeNode<ColumnIR>().ValueOrDie();
+    col = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
     PL_CHECK_OK(col->Init("count", /* parent_op_idx */ 0, ast));
-    func = graph->MakeNode<FuncIR>().ValueOrDie();
-    func2 = graph->MakeNode<FuncIR>().ValueOrDie();
-    lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+    func2 = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+    lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
     PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
                            std::vector<ExpressionIR*>({int_constant, col}), ast));
     PL_CHECK_OK(func2->Init({FuncIR::Opcode::add, "+", "add"},
                             std::vector<ExpressionIR*>({int_constant2, func}), ast));
-    PL_CHECK_OK(lambda->Init({"count"}, {{"func", func2}}, ast));
+    PL_CHECK_OK(lambda->Init({"count"}, {{"func", func2}}, /* num_parents */ 1));
     ArgMap amap({{{"fn", lambda}}, {}});
     PL_CHECK_OK(map->Init(mem_src, amap, ast));
   }

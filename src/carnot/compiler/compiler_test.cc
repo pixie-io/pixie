@@ -2510,6 +2510,34 @@ TEST_F(CompilerTest, indentation_error_test) {
   EXPECT_THAT(plan_status.status(), HasCompilerError("SyntaxError: invalid syntax"));
 }
 
+// Test to make sure that nested aggregate functions fail.
+TEST_F(CompilerTest, nested_agg_fn_fails) {
+  std::string nested_agg_fn = absl::StrJoin(
+      {
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0, stop=10)",
+          "rangeDF = queryDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
+          "pl.sum(pl.mean(r.cpu0))}).result(name='cpu2')",
+      },
+      "\n");
+  auto plan_status = compiler_.Compile(nested_agg_fn, compiler_state_.get());
+  ASSERT_NOT_OK(plan_status);
+  EXPECT_THAT(plan_status.status(), HasCompilerError("agg expressions cannot be nested"));
+}
+
+TEST_F(CompilerTest, DISABLED_agg_and_expression_fails) {
+  std::string add_combination = absl::StrJoin(
+      {
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0, stop=10)",
+          "rangeDF = queryDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
+          "pl.mean(r.cpu0)+2}).result(name='cpu2')",
+      },
+      "\n");
+  auto plan_status = compiler_.Compile(add_combination, compiler_state_.get());
+  ASSERT_NOT_OK(plan_status);
+  LOG(INFO) << plan_status.ToString();
+  EXPECT_THAT(plan_status.status(), HasCompilerError("agg expressions cannot be nested"));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -214,19 +214,19 @@ const char* kExpectedMapPb = R"(
 TEST(ToProto, map_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
-  auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto map = graph->MakeNode<MapIR>().ValueOrDie();
-  auto constant = graph->MakeNode<IntIR>().ValueOrDie();
+  auto mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+  auto map = graph->MakeNode<MapIR>(ast).ValueOrDie();
+  auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
-  auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
+  auto col = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
   EXPECT_OK(col->Init("col_name", /*parent_op_idx*/ 0, ast));
   col->ResolveColumn(4, types::INT64);
-  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+  auto lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
                        std::vector<ExpressionIR*>({constant, col}), ast));
   func->set_func_id(1);
-  EXPECT_OK(lambda->Init({"col_name"}, {{"col_name", func}}, ast));
+  EXPECT_OK(lambda->Init({"col_name"}, {{"col_name", func}}, /* num_parents */ 1));
   ArgMap amap({{{"fn", lambda}}, {}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
@@ -270,25 +270,26 @@ const char* kExpectedAggPb = R"(
 TEST(ToProto, agg_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
-  auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
-  auto constant = graph->MakeNode<IntIR>().ValueOrDie();
+  auto mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+  auto agg = graph->MakeNode<BlockingAggIR>(ast).ValueOrDie();
+  auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
-  auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
+  auto col = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
   EXPECT_OK(col->Init("column", /*parent_op_idx*/ 0, ast));
   col->ResolveColumn(4, types::INT64);
 
-  auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto agg_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
+  auto agg_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"},
                            std::vector<ExpressionIR*>({constant, col}), ast));
-  EXPECT_OK(agg_func_lambda->Init({"meaned_column"}, {{{"mean", agg_func}}, {}}, ast));
+  EXPECT_OK(
+      agg_func_lambda->Init({"meaned_column"}, {{{"mean", agg_func}}, {}}, /* num_parents */ 1));
 
-  auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  auto group1 = graph->MakeNode<ColumnIR>().ValueOrDie();
+  auto by_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
+  auto group1 = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
   EXPECT_OK(group1->Init("group1", /*parent_op_idx*/ 0, ast));
   group1->ResolveColumn(1, types::INT64);
-  EXPECT_OK(by_func_lambda->Init({"group1"}, group1, ast));
+  EXPECT_OK(by_func_lambda->Init({"group1"}, group1, /* num_parents */ 1));
   ArgMap amap({{{"by", by_func_lambda}, {"fn", agg_func_lambda}}, {}});
 
   ASSERT_OK(agg->Init(mem_src, amap, ast));
@@ -1261,8 +1262,10 @@ TEST_F(OperatorTests, JoinCondSameParent) {
       join->Init({mem_src1, mem_src2},
                  {{{"type", MakeString(join_type_name)},
                    {"cond", MakeLambda(MakeEqualsFunc(MakeColumn("col1", 0, relation0),
-                                                      MakeColumn("col2", 0, relation0)))},
-                   {"cols", MakeLambda({{"right_only", MakeColumn("right_only", 1, relation1)}})}},
+                                                      MakeColumn("col2", 0, relation0)),
+                                       /* num_parents */ 2)},
+                   {"cols", MakeLambda({{"right_only", MakeColumn("right_only", 1, relation1)}},
+                                       /* num_parents */ 2)}},
                   {}},
                  ast);
 
@@ -1289,8 +1292,10 @@ TEST_F(OperatorTests, JoinNonBoolCondition) {
       {{{"type", MakeString(join_type_name)},
         {"cond",
          MakeLambda(MakeEqualsFunc(MakeAddFunc(MakeColumn("col1", 0, relation0), MakeInt(10)),
-                                   MakeColumn("col2", 0, relation0)))},
-        {"cols", MakeLambda({{"right_only", MakeColumn("right_only", 1, relation1)}})}},
+                                   MakeColumn("col2", 0, relation0)),
+                    /* num_parents */ 2)},
+        {"cols", MakeLambda({{"right_only", MakeColumn("right_only", 1, relation1)}},
+                            /* num_parents */ 2)}},
        {}},
       ast);
 

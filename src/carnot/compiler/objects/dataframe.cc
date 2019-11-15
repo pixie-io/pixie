@@ -259,6 +259,37 @@ StatusOr<QLObjectPtr> RangeHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
   return StatusOr(std::make_shared<Dataframe>(range_op));
 }
 
+/**
+ * @brief Returns error if the lambda doens't have the number of parents specified.
+ *
+ * @param lambda
+ * @return Status
+ */
+Status VerifyLambda(LambdaIR* lambda, const std::string& arg_name, int64_t num_parents,
+                    bool should_have_dict_body) {
+  // Check to see if expectations matches the lambda reality.
+  if (should_have_dict_body != lambda->HasDictBody()) {
+    if (should_have_dict_body) {
+      return lambda->CreateIRNodeError("'$0' argument error, lambda must have a dictionary body",
+                                       arg_name);
+    }
+
+    return lambda->CreateIRNodeError("'$0' argument error, lambda cannot have a dictionary body",
+                                     arg_name);
+  }
+
+  if (lambda->number_of_parents() != num_parents) {
+    std::string parent_name = "parents";
+    if (num_parents == 1) {
+      parent_name = "parent";
+    }
+    return lambda->CreateIRNodeError("'$0' operator expects $0 $2, received $1", num_parents,
+                                     lambda->number_of_parents(), parent_name);
+  }
+
+  return Status::OK();
+}
+
 StatusOr<QLObjectPtr> OldMapHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
                                           const ParsedArgs& args) {
   IRNode* lambda_func = args.GetArg("fn");
@@ -266,9 +297,7 @@ StatusOr<QLObjectPtr> OldMapHandler::Eval(Dataframe* df, const pypa::AstPtr& ast
     return lambda_func->CreateIRNodeError("'fn' must be a lambda");
   }
   LambdaIR* lambda = static_cast<LambdaIR*>(lambda_func);
-  if (!lambda->HasDictBody()) {
-    return lambda->CreateIRNodeError("'fn' argument error, lambda must have a dictionary body");
-  }
+  PL_RETURN_IF_ERROR(VerifyLambda(lambda, "fn", 1, /* should_have_dict_body */ true));
 
   PL_ASSIGN_OR_RETURN(MapIR * map_op, df->graph()->MakeNode<MapIR>(ast));
   PL_RETURN_IF_ERROR(map_op->Init(df->op(), lambda->col_exprs()));
@@ -285,9 +314,7 @@ StatusOr<QLObjectPtr> OldFilterHandler::Eval(Dataframe* df, const pypa::AstPtr& 
   }
 
   LambdaIR* lambda = static_cast<LambdaIR*>(lambda_func);
-  if (lambda->HasDictBody()) {
-    return lambda->CreateIRNodeError("'fn' argument error, lambda cannot have a dictionary body");
-  }
+  PL_RETURN_IF_ERROR(VerifyLambda(lambda, "fn", 1, /* should_have_dict_body */ false));
 
   // Have to remove the edges from the Lambda
   PL_ASSIGN_OR_RETURN(ExpressionIR * expr, lambda->GetDefaultExpr());
@@ -326,14 +353,10 @@ StatusOr<QLObjectPtr> OldAggHandler::Eval(Dataframe* df, const pypa::AstPtr& ast
     return fn_func->CreateIRNodeError("'fn' must be a lambda");
   }
   LambdaIR* fn = static_cast<LambdaIR*>(fn_func);
-  if (!fn->HasDictBody()) {
-    return fn->CreateIRNodeError("'fn' argument error, lambda must have a dictionary body");
-  }
+  PL_RETURN_IF_ERROR(VerifyLambda(fn, "fn", 1, /* should_have_dict_body */ true));
 
   LambdaIR* by = static_cast<LambdaIR*>(by_func);
-  if (by->HasDictBody()) {
-    return by->CreateIRNodeError("'by' argument error, lambda cannot have a dictionary body");
-  }
+  PL_RETURN_IF_ERROR(VerifyLambda(by, "by", 1, /* should_have_dict_body */ false));
 
   // Have to remove the edges from the by lambda.
   PL_ASSIGN_OR_RETURN(ExpressionIR * by_expr, by->GetDefaultExpr());
@@ -386,14 +409,10 @@ StatusOr<QLObjectPtr> OldJoinHandler::Eval(Dataframe* df, const pypa::AstPtr& as
   OperatorIR* right = static_cast<OperatorIR*>(right_node);
 
   LambdaIR* cols = static_cast<LambdaIR*>(cols_node);
-  if (!cols->HasDictBody()) {
-    return cols->CreateIRNodeError("'cols' argument error, lambda must have a dictionary body");
-  }
+  PL_RETURN_IF_ERROR(VerifyLambda(cols, "cols", 2, /* should_have_dict_body */ true));
 
   LambdaIR* cond = static_cast<LambdaIR*>(cond_node);
-  if (cond->HasDictBody()) {
-    return cond->CreateIRNodeError("'cond' argument error, lambda cannot have a dictionary body");
-  }
+  PL_RETURN_IF_ERROR(VerifyLambda(cond, "cond", 2, /* should_have_dict_body */ false));
 
   std::string how_str = static_cast<StringIR*>(type_node)->str();
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(type_node->id()));
@@ -454,13 +473,10 @@ StatusOr<QLObjectPtr> OldRangeAggHandler::Eval(Dataframe* df, const pypa::AstPtr
   }
 
   LambdaIR* fn = static_cast<LambdaIR*>(fn_func);
-  if (!fn->HasDictBody()) {
-    return fn->CreateIRNodeError("'fn' argument error, lambda must have a dictionary body");
-  }
+  PL_RETURN_IF_ERROR(VerifyLambda(fn, "fn", 1, /* should_have_dict_body */ true));
+
   LambdaIR* by = static_cast<LambdaIR*>(by_func);
-  if (by->HasDictBody()) {
-    return by->CreateIRNodeError("'by' argument error, lambda cannot have a dictionary body");
-  }
+  PL_RETURN_IF_ERROR(VerifyLambda(by, "by", 1, /* should_have_dict_body */ false));
 
   IntIR* size = static_cast<IntIR*>(size_node);
 
