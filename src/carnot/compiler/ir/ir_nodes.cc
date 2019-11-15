@@ -130,38 +130,6 @@ std::string OperatorIR::ParentsDebugString() {
   });
 }
 
-Status OperatorIR::ArgMapContainsKeys(const ArgMap& args) {
-  std::vector<std::string> missing_keys;
-  for (const auto& arg : ArgKeys()) {
-    if (args.kwargs.find(arg) == args.kwargs.end()) {
-      missing_keys.push_back(arg);
-    }
-  }
-  if (missing_keys.size() != 0) {
-    return CreateIRNodeError("Missing args [$0] in call. ", absl::StrJoin(missing_keys, ","));
-  }
-  return Status::OK();
-}
-
-Status OperatorIR::Init(OperatorIR* parent, const ArgMap& args, const pypa::AstPtr& ast_node) {
-  if (parent) {
-    return Init(std::vector<OperatorIR*>({parent}), args, ast_node);
-  }
-  return Init(std::vector<OperatorIR*>({}), args, ast_node);
-}
-
-Status OperatorIR::Init(std::vector<OperatorIR*> parents, const ArgMap& args,
-                        const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
-  PL_RETURN_IF_ERROR(ArgMapContainsKeys(args));
-  CHECK_EQ(parents.size() > 0, can_have_parents_);
-  for (auto p : parents) {
-    PL_RETURN_IF_ERROR(AddParent(p));
-  }
-  PL_RETURN_IF_ERROR(InitImpl(args));
-  return Status::OK();
-}
-
 bool MemorySourceIR::HasLogicalRepr() const { return true; }
 
 Status MemorySourceIR::ToProto(planpb::Operator* op) const {
@@ -212,17 +180,6 @@ std::string DebugStringFmt(int64_t depth, std::string name,
 
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
 
-Status MemorySinkIR::InitImpl(const ArgMap& args) {
-  DCHECK(args.kwargs.find("name") != args.kwargs.end());
-  IRNode* name_node = args.kwargs.find("name")->second;
-  if (name_node->type() != IRNodeType::kString) {
-    return name_node->CreateIRNodeError("Expected string. Got $0", name_node->type_string());
-  }
-  name_ = static_cast<StringIR*>(name_node)->str();
-  name_set_ = true;
-  return graph_ptr()->DeleteNode(name_node->id());
-}
-
 Status MemorySinkIR::Init(OperatorIR* parent, const std::string& name,
                           const std::vector<std::string> out_columns) {
   PL_RETURN_IF_ERROR(AddParent(parent));
@@ -232,58 +189,10 @@ Status MemorySinkIR::Init(OperatorIR* parent, const std::string& name,
   return Status::OK();
 }
 
-Status MemorySourceIR::InitImpl(const ArgMap& args) {
-  DCHECK(args.kwargs.find("table") != args.kwargs.end());
-  DCHECK(args.kwargs.find("select") != args.kwargs.end());
-
-  IRNode* table_node = args.kwargs.find("table")->second;
-  IRNode* select_node = args.kwargs.find("select")->second;
-  if (table_node->type() != IRNodeType::kString) {
-    return CreateIRNodeError("Expected table argument to be a string, not a $0",
-                             table_node->type_string());
-  }
-
-  std::string table_name = static_cast<StringIR*>(table_node)->str();
-  PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(table_node->id()));
-
-  if (select_node == nullptr) {
-    return Init(table_name, {});
-  }
-
-  if (select_node->type() != IRNodeType::kList) {
-    return CreateIRNodeError("Expected select argument to be a list, not a $0",
-                             select_node->type_string());
-  }
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> select_columns,
-                      ParseStringListIR(*static_cast<ListIR*>(select_node)));
-  PL_RETURN_IF_ERROR(graph_ptr()->DeleteNodeAndChildren(select_node->id()));
-  return Init(table_name, select_columns);
-}
-
 Status MemorySourceIR::Init(const std::string& table_name,
                             const std::vector<std::string>& select_columns) {
   table_name_ = table_name;
   column_names_ = select_columns;
-  return Status::OK();
-}
-
-StatusOr<std::vector<std::string>> MemorySourceIR::ParseStringListIR(const ListIR& list_ir) {
-  std::vector<std::string> out_vector;
-  for (size_t idx = 0; idx < list_ir.children().size(); ++idx) {
-    IRNode* string_node = list_ir.children()[idx];
-    if (string_node->type() != IRNodeType::kString) {
-      return string_node->CreateIRNodeError(
-          "The elements of the select list must be Strings. Found a '$0'.",
-          string_node->type_string());
-    }
-    out_vector.push_back(static_cast<StringIR*>(string_node)->str());
-  }
-  return out_vector;
-}
-
-// TODO(philkuz) impl
-Status RangeIR::InitImpl(const ArgMap& args) {
-  PL_UNUSED(args);
   return Status::OK();
 }
 
@@ -304,13 +213,6 @@ Status MemorySinkIR::ToProto(planpb::Operator* op) const {
 }
 
 Status RangeIR::Init(OperatorIR* parent_node, IRNode* start_repr, IRNode* stop_repr) {
-  return Init(parent_node, start_repr, stop_repr, nullptr);
-}
-Status RangeIR::Init(OperatorIR* parent_node, IRNode* start_repr, IRNode* stop_repr,
-                     const pypa::AstPtr& ast_node) {
-  if (ast_node != nullptr) {
-    SetLineCol(ast_node);
-  }
   if (parent_node->type() != IRNodeType::kMemorySource) {
     return CreateIRNodeError("Expected parent of Range to be a Memory Source, not a $0.",
                              parent_node->type_string());
@@ -336,17 +238,6 @@ bool RangeIR::HasLogicalRepr() const { return false; }
 
 Status RangeIR::ToProto(planpb::Operator*) const {
   return error::Unimplemented("$0 does not have a protobuf.", type_string());
-}
-
-Status MapIR::InitImpl(const ArgMap& args) {
-  // TODO(nserrino): Refactor this when lambdas passed to maps are fully deprecated.
-  DCHECK(args.kwargs.find("fn") != args.kwargs.end());
-  IRNode* lambda_func_node = args.kwargs.find("fn")->second;
-  if (lambda_func_node->type() != IRNodeType::kLambda) {
-    return CreateIRNodeError("Expected 'fn' argument of Agg to be a lambda, got '$0'",
-                             lambda_func_node->type_string());
-  }
-  return SetupMapExpressions(static_cast<LambdaIR*>(lambda_func_node));
 }
 
 Status MapIR::SetupMapExpressions(LambdaIR* map_func) {
@@ -385,13 +276,7 @@ Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs) {
 // representation.
 bool MapIR::HasLogicalRepr() const { return !keep_input_columns_; }
 
-Status DropIR::InitImpl(const ArgMap&) {
-  return error::Unimplemented("$0 does not implement deprecated InitImpl API.", type_string());
-}
-
-Status DropIR::Init(OperatorIR* parent, const std::vector<std::string>& drop_cols,
-                    const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+Status DropIR::Init(OperatorIR* parent, const std::vector<std::string>& drop_cols) {
   PL_RETURN_IF_ERROR(AddParent(parent));
   col_names_ = drop_cols;
   return Status::OK();
@@ -494,28 +379,6 @@ Status FilterIR::Init(OperatorIR* parent, ExpressionIR* expr) {
   return graph_ptr()->AddEdge(this, filter_expr_);
 }
 
-Status FilterIR::InitImpl(const ArgMap& args) {
-  DCHECK(args.kwargs.find("fn") != args.kwargs.end());
-  IRNode* filter_func_node = args.kwargs.find("fn")->second;
-  if (filter_func_node->type() != IRNodeType::kLambda) {
-    return CreateIRNodeError("Expected 'fn' argument of Filter to be a 'lambda', got '$0'",
-                             filter_func_node->type_string());
-  }
-  LambdaIR* filter_func = static_cast<LambdaIR*>(filter_func_node);
-
-  if (filter_func->HasDictBody()) {
-    return CreateIRNodeError(
-        "Expected lambda of the Filter to contain a single expression, not a dictionary.");
-  }
-
-  PL_ASSIGN_OR_RETURN(filter_expr_, filter_func->GetDefaultExpr());
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, filter_expr_));
-
-  // Clean up the lambda.
-  PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(filter_func->id(), filter_expr_->id()));
-  return graph_ptr()->DeleteNode(filter_func->id());
-}
-
 bool FilterIR::HasLogicalRepr() const { return true; }
 
 Status FilterIR::ToProto(planpb::Operator* op) const {
@@ -532,17 +395,6 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
   auto expr = pb->mutable_expression();
   PL_RETURN_IF_ERROR(EvaluateExpression(expr, *filter_expr_));
   return Status::OK();
-}
-
-Status LimitIR::InitImpl(const ArgMap& args) {
-  DCHECK(args.kwargs.find("rows") != args.kwargs.end());
-  IRNode* limit_node = args.kwargs.find("rows")->second;
-  if (limit_node->type() != IRNodeType::kInt) {
-    return CreateIRNodeError("Expected 'int', got $0", limit_node->type_string());
-  }
-
-  SetLimitValue(static_cast<IntIR*>(limit_node)->val());
-  return graph_ptr()->DeleteNode(limit_node->id());
 }
 
 Status LimitIR::Init(OperatorIR* parent, int64_t limit_value) {
@@ -568,27 +420,6 @@ Status LimitIR::ToProto(planpb::Operator* op) const {
   }
 
   pb->set_limit(limit_value_);
-  return Status::OK();
-}
-
-Status BlockingAggIR::InitImpl(const ArgMap& args) {
-  IRNode* by_func = args.kwargs.find("by")->second;
-  IRNode* agg_func = args.kwargs.find("fn")->second;
-  if (agg_func->type() != IRNodeType::kLambda) {
-    return CreateIRNodeError("Expected 'agg' argument of Agg to be 'Lambda', got '$0'",
-                             agg_func->type_string());
-  }
-
-  // By_func is either nullptr or a lambda.
-  if (by_func != nullptr && by_func->type() != IRNodeType::kLambda) {
-    return CreateIRNodeError("Expected 'by' argument of Agg to be 'Lambda', got '$0'",
-                             by_func->type_string());
-  } else if (by_func != nullptr) {
-    PL_RETURN_IF_ERROR(SetupGroupBy(static_cast<LambdaIR*>(by_func)));
-  }
-
-  PL_RETURN_IF_ERROR(SetupAggFunctions(static_cast<LambdaIR*>(agg_func)));
-
   return Status::OK();
 }
 
@@ -1002,8 +833,6 @@ Status MetadataResolverIR::AddMetadata(MetadataProperty* md_property) {
   metadata_columns_.emplace(md_property->name(), md_property);
   return Status::OK();
 }
-
-Status MetadataResolverIR::InitImpl(const ArgMap&) { return Status::OK(); }
 
 // Clone Functions
 StatusOr<std::unique_ptr<IR>> IR::Clone() const {
@@ -1532,38 +1361,6 @@ Status JoinIR::Init(std::vector<OperatorIR*> parents, const std::string& how_typ
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
   }
   return SetJoinType(how_type);
-}
-
-Status JoinIR::InitImpl(const ArgMap& args) {
-  IRNode* join_type = args.kwargs.find("type")->second;
-  IRNode* cond = args.kwargs.find("cond")->second;
-  IRNode* cols = args.kwargs.find("cols")->second;
-  if (cond->type() != IRNodeType::kLambda) {
-    return join_type->CreateIRNodeError("Expected 'cond' argument of Join to be 'Lambda', got '$0'",
-                                        cond->type_string());
-  }
-
-  if (cols->type() != IRNodeType::kLambda) {
-    return cond->CreateIRNodeError("Expected 'cols' argument of Join to be 'Lambda', got '$0'",
-                                   cols->type_string());
-  }
-
-  if (join_type != nullptr && join_type->type() != IRNodeType::kString) {
-    return join_type->CreateIRNodeError(
-        "Expected 'type' argument of Join to be 'String', got '$0'");
-  }
-
-  PL_RETURN_IF_ERROR(SetupConditionFromLambda(static_cast<LambdaIR*>(cond)));
-  PL_RETURN_IF_ERROR(SetupOutputColumns(static_cast<LambdaIR*>(cols)));
-  if (join_type == nullptr) {
-    PL_RETURN_IF_ERROR(SetJoinType(JoinType::kInner));
-  } else {
-    PL_RETURN_IF_ERROR(SetJoinType(static_cast<StringIR*>(join_type)->str()));
-  }
-  PL_RETURN_IF_ERROR(ConnectColumns(left_on_columns_));
-  PL_RETURN_IF_ERROR(ConnectColumns(output_columns_));
-  PL_RETURN_IF_ERROR(ConnectColumns(right_on_columns_));
-  return Status::OK();
 }
 
 Status JoinIR::AddColumns(ColumnIR* arg0, ColumnIR* arg1, EqConditionColumns* eq_condition) {

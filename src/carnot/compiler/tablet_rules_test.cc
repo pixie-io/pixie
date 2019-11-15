@@ -183,18 +183,32 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
   int64_t tablet_source_group_id = tablet_source_group->id();
   int64_t filter_id = filter->id();
 
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(2, 0, 7, 5, 8, 3, 4));
+  EXPECT_THAT(graph, HasEdge(tablet_source_group, filter));
+  EXPECT_THAT(graph, HasEdge(filter, filter_expr));
+  EXPECT_THAT(graph, HasEdge(filter_expr, column));
+  EXPECT_THAT(graph, HasEdge(filter_expr, tablet));
+  EXPECT_THAT(graph, HasEdge(filter, mem_sink));
+  EXPECT_THAT(graph, Not(HasEdge(tablet_source_group, mem_src)));
+  EXPECT_THAT(graph, Not(HasEdge(mem_src, mem_sink)));
 
   MemorySourceTabletRule rule;
   auto result = rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
 
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(10, 8));
+  // Graph is cleaned up.
+  EXPECT_THAT(graph, Not(HasEdge(tablet_source_group, filter)));
+  EXPECT_THAT(graph, Not(HasEdge(filter, filter_expr)));
+  EXPECT_THAT(graph, Not(HasEdge(filter_expr, column)));
+  EXPECT_THAT(graph, Not(HasEdge(filter_expr, tablet)));
+  EXPECT_THAT(graph, Not(HasEdge(filter, mem_sink)));
 
   // Check to see that the group is no longer available
   EXPECT_FALSE(graph->HasNode(tablet_source_group_id));
   EXPECT_FALSE(graph->HasNode(filter_id));
+  // Tablet source group produces a new memory source.
+  EXPECT_FALSE(graph->HasNode(mem_src->id()));
+  EXPECT_TRUE(graph->HasNode(mem_sink->id()));
 
   // Check to see that mem_sink1 has a new parent that is a union.
   ASSERT_EQ(mem_sink->parents().size(), 1UL);
@@ -207,6 +221,9 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
   EXPECT_TRUE(new_mem_src->IsRelationInit());
   EXPECT_FALSE(new_mem_src->IsTimeSet());
   EXPECT_EQ(new_mem_src->tablet_value(), "tablet2");
+
+  // Confirm these are the only two elements left in the graph.
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(new_mem_src->id(), mem_sink->id()));
 }
 
 TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_filter_and) {
@@ -230,22 +247,20 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
 
   MemorySinkIR* mem_sink = MakeMemSink(filter, "out");
 
+  int64_t mem_src_id = mem_src->id();
   int64_t tablet_source_group_id = tablet_source_group->id();
   int64_t filter_id = filter->id();
 
-  IR* graph_raw = graph.get();
-  auto str =
-      absl::StrJoin(graph->dag().TopologicalSort(), ",", [graph_raw](std::string* out, int64_t in) {
-        IRNode* node = graph_raw->Get(in);
-        if (Match(node, Func())) {
-          absl::StrAppend(out, absl::Substitute("$0:$1", node->DebugString(),
-                                                static_cast<FuncIR*>(node)->op().python_op));
-        } else {
-          absl::StrAppend(out, node->DebugString());
-        }
-      });
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(2, 0, 11, 9, 12, 7, 8, 5, 3, 6, 4))
-      << str;
+  EXPECT_THAT(graph, HasEdge(tablet_source_group, filter));
+  EXPECT_THAT(graph, HasEdge(filter, mem_sink));
+  EXPECT_THAT(graph, HasEdge(filter, filter_expr));
+  EXPECT_THAT(graph, HasEdge(filter_expr, equals1));
+  EXPECT_THAT(graph, HasEdge(filter_expr, equals2));
+  EXPECT_THAT(graph, HasEdge(equals1, column1));
+  EXPECT_THAT(graph, HasEdge(equals1, tablet1));
+  EXPECT_THAT(graph, HasEdge(equals2, column2));
+  EXPECT_THAT(graph, HasEdge(equals2, tablet2));
+  EXPECT_THAT(graph, Not(HasEdge(mem_src, mem_sink)));
 
   MemorySourceTabletRule rule;
   auto result = rule.Execute(graph.get());
@@ -255,8 +270,7 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
   // Check to see that the group is no longer available
   EXPECT_FALSE(graph->HasNode(tablet_source_group_id));
   EXPECT_FALSE(graph->HasNode(filter_id));
-
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(16, 14, 18, 12));
+  EXPECT_FALSE(graph->HasNode(mem_src_id));
 
   // Check to see that mem_sink1 has a new parent that is a union.
   ASSERT_EQ(mem_sink->parents().size(), 1UL);
@@ -300,7 +314,14 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_filter_does_nothing) {
   int64_t tablet_source_group_id = tablet_source_group->id();
   int64_t filter_id = filter->id();
 
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(2, 0, 7, 5, 8, 3, 4));
+  EXPECT_THAT(graph, HasEdge(tablet_source_group, filter));
+  EXPECT_THAT(graph, HasEdge(filter, mem_sink));
+  EXPECT_THAT(graph, HasEdge(filter, filter_expr));
+  EXPECT_THAT(graph, Not(HasEdge(mem_src, mem_sink)));
+
+  EXPECT_THAT(graph->dag().nodes(),
+              UnorderedElementsAre(mem_src->id(), tablet_source_group_id, filter_id, mem_sink->id(),
+                                   filter_expr->id(), column->id(), tablet_value->id()));
 
   MemorySourceTabletRule rule;
   auto result = rule.Execute(graph.get());
@@ -310,7 +331,6 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_filter_does_nothing) {
   // Check to see that the group is no longer available
   EXPECT_FALSE(graph->HasNode(tablet_source_group_id));
   EXPECT_TRUE(graph->HasNode(filter_id));
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(14, 12, 10, 16, 7, 5, 8, 3, 4));
 
   // Check to see that mem_sink1 has a new parent that is a union.
   ASSERT_EQ(mem_sink->parents().size(), 1UL);

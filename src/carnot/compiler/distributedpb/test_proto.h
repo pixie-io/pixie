@@ -252,26 +252,26 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 8
-          sorted_children: 10
+          id: 7
+          sorted_children: 8
         }
         nodes {
           id: 6
-          sorted_children: 10
+          sorted_children: 8
         }
         nodes {
-          id: 10
+          id: 8
           sorted_children: 4
           sorted_parents: 6
-          sorted_parents: 8
+          sorted_parents: 7
         }
         nodes {
           id: 4
-          sorted_parents: 10
+          sorted_parents: 8
         }
       }
       nodes {
-        id: 8
+        id: 7
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -291,7 +291,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 10
+        id: 8
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -329,25 +329,25 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 8
-          sorted_children: 10
+          id: 7
+          sorted_children: 8
         }
         nodes {
           id: 6
-          sorted_children: 10
+          sorted_children: 8
         }
         nodes {
-          id: 10
+          id: 8
           sorted_children: 4
           sorted_parents: 6
-          sorted_parents: 8
+          sorted_parents: 7
         }
         nodes {
-          sorted_parents: 10
+          sorted_parents: 8
         }
       }
       nodes {
-        id: 8
+        id: 7
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -367,7 +367,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 10
+        id: 8
         op {
           op_type: UNION_OPERATOR
           union_op {

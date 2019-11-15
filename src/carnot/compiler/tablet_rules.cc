@@ -87,8 +87,9 @@ StatusOr<OperatorIR*> MemorySourceTabletRule::MakeNewSources(
   }
 
   IR* graph = tablet_source_group->graph_ptr();
-  PL_ASSIGN_OR_RETURN(UnionIR * union_op, graph->MakeNode<UnionIR>());
-  PL_RETURN_IF_ERROR(union_op->Init(sources, {{}, {}}, tablet_source_group->ast_node()));
+  PL_ASSIGN_OR_RETURN(UnionIR * union_op,
+                      graph->MakeNode<UnionIR>(tablet_source_group->ast_node()));
+  PL_RETURN_IF_ERROR(union_op->Init(sources));
   PL_RETURN_IF_ERROR(union_op->SetRelationFromParents());
   return union_op;
 }
@@ -208,13 +209,9 @@ StatusOr<MemorySourceIR*> MemorySourceTabletRule::CreateMemorySource(
   DCHECK(original_memory_source->column_index_map_set());
   IR* graph = original_memory_source->graph_ptr();
   // Create the Memory Source.
-  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_ir, graph->MakeNode<MemorySourceIR>());
-  PL_ASSIGN_OR_RETURN(StringIR * table_node, graph->MakeNode<StringIR>());
-  PL_RETURN_IF_ERROR(
-      table_node->Init(original_memory_source->table_name(), original_memory_source->ast_node()));
-  PL_RETURN_IF_ERROR(mem_source_ir->Init(nullptr,
-                                         {{{"table", table_node}, {"select", nullptr}}, {}},
-                                         original_memory_source->ast_node()));
+  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_ir,
+                      graph->MakeNode<MemorySourceIR>(original_memory_source->ast_node()));
+  PL_RETURN_IF_ERROR(mem_source_ir->Init(original_memory_source->table_name(), {}));
   PL_RETURN_IF_ERROR(mem_source_ir->SetRelation(original_memory_source->relation()));
   if (mem_source_ir->IsTimeSet()) {
     mem_source_ir->SetTime(original_memory_source->time_start_ns(),

@@ -36,36 +36,31 @@ TEST(IRTypes, types_enum_test) {
 TEST(IRTest, check_connection) {
   auto ast = MakeTestAstPtr();
   auto ig = std::make_shared<IR>();
-  auto src = ig->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto range = ig->MakeNode<RangeIR>().ValueOrDie();
+  auto src = ig->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+  auto range = ig->MakeNode<RangeIR>(ast).ValueOrDie();
   auto start_rng_str = ig->MakeNode<IntIR>().ValueOrDie();
   auto stop_rng_str = ig->MakeNode<IntIR>().ValueOrDie();
-  auto table_str_node = ig->MakeNode<StringIR>().ValueOrDie();
-  auto select_col = ig->MakeNode<StringIR>().ValueOrDie();
-  auto select_list = ig->MakeNode<ListIR>().ValueOrDie();
+
   EXPECT_OK(start_rng_str->Init(0, ast));
   EXPECT_OK(stop_rng_str->Init(10, ast));
   std::string table_str = "tableName";
-  EXPECT_OK(table_str_node->Init(table_str, ast));
-  EXPECT_OK(select_col->Init("testCol", ast));
-  EXPECT_OK(select_list->Init(ast, {select_col}));
-  ArgMap memsrc_argmap({{{"table", table_str_node}, {"select", select_list}}, {}});
-  EXPECT_OK(src->Init(nullptr, memsrc_argmap, ast));
-  EXPECT_OK(range->Init(src, start_rng_str, stop_rng_str, ast));
+
+  EXPECT_OK(src->Init(table_str, {"testCol"}));
+
+  EXPECT_OK(range->Init(src, start_rng_str, stop_rng_str));
   EXPECT_EQ(range->parents()[0], src);
   EXPECT_EQ(range->start_repr(), start_rng_str);
   EXPECT_EQ(range->stop_repr(), stop_rng_str);
+
   EXPECT_EQ(src->table_name(), table_str);
   EXPECT_THAT(src->column_names(), ElementsAre("testCol"));
-  EXPECT_EQ(select_list->children()[0], select_col);
-  EXPECT_EQ(select_col->str(), "testCol");
 }
 const char* kExpectedMemSrcPb = R"(
   op_type: MEMORY_SOURCE_OPERATOR
   mem_source_op {
     name: "test_table"
     column_idxs: 0
-    column_idxs: 2
+    column_idxs: 1
     column_names: "cpu0"
     column_names: "cpu1"
     column_types: INT64
@@ -84,16 +79,12 @@ TEST(ToProto, memory_source_ir) {
   auto graph = std::make_shared<IR>();
 
   auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
-  auto table_node = graph->MakeNode<StringIR>().ValueOrDie();
-  EXPECT_OK(table_node->Init("test_table", ast));
-  ArgMap memsrc_argmap({{{"table", table_node}, {"select", select_list}}, {}});
-  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
+  EXPECT_OK(mem_src->Init("test_table", {}));
 
   EXPECT_OK(mem_src->SetRelation(
       Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"})));
 
-  mem_src->SetColumnIndexMap({0, 2});
+  mem_src->SetColumnIndexMap({0, 1});
   mem_src->SetTime(10, 20);
 
   planpb::Operator pb;
@@ -127,12 +118,8 @@ TEST(ToProto, memory_source_ir_with_tablet) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
 
-  auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
-  auto table_node = graph->MakeNode<StringIR>().ValueOrDie();
-  EXPECT_OK(table_node->Init("test_table", ast));
-  ArgMap memsrc_argmap({{{"table", table_node}, {"select", select_list}}, {}});
-  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
+  auto mem_src = graph->MakeNode<MemorySourceIR>(ast).ConsumeValueOrDie();
+  EXPECT_OK(mem_src->Init("test_table", {"cpu0", "cpu1"}));
 
   EXPECT_OK(mem_src->SetRelation(
       Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"})));
@@ -168,15 +155,12 @@ TEST(ToProto, memory_sink_ir) {
 
   auto mem_sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
   auto mem_source = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto name_ir = graph->MakeNode<StringIR>().ValueOrDie();
 
   auto rel = table_store::schema::Relation(
       std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}),
       std::vector<std::string>({"output1", "output2"}));
+  EXPECT_OK(mem_sink->Init(mem_source, "output_table", {"output1", "output2"}));
   EXPECT_OK(mem_sink->SetRelation(rel));
-  EXPECT_OK(name_ir->Init("output_table", ast));
-  ArgMap amap({{{"name", name_ir}}, {}});
-  EXPECT_OK(mem_sink->Init(mem_source, amap, ast));
 
   planpb::Operator pb;
   EXPECT_OK(mem_sink->ToProto(&pb));
@@ -222,13 +206,11 @@ TEST(ToProto, map_ir) {
   EXPECT_OK(col->Init("col_name", /*parent_op_idx*/ 0, ast));
   col->ResolveColumn(4, types::INT64);
   auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-  auto lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
                        std::vector<ExpressionIR*>({constant, col}), ast));
   func->set_func_id(1);
-  EXPECT_OK(lambda->Init({"col_name"}, {{"col_name", func}}, /* num_parents */ 1));
-  ArgMap amap({{{"fn", lambda}}, {}});
-  EXPECT_OK(map->Init(mem_src, amap, ast));
+
+  EXPECT_OK(map->Init(mem_src, {{"col_name", func}}));
 
   planpb::Operator pb;
   EXPECT_OK(map->ToProto(&pb));
@@ -278,23 +260,15 @@ TEST(ToProto, agg_ir) {
   EXPECT_OK(col->Init("column", /*parent_op_idx*/ 0, ast));
   col->ResolveColumn(4, types::INT64);
 
-  auto agg_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
   auto agg_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"},
                            std::vector<ExpressionIR*>({constant, col}), ast));
-  EXPECT_OK(
-      agg_func_lambda->Init({"meaned_column"}, {{{"mean", agg_func}}, {}}, /* num_parents */ 1));
 
-  auto by_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
   auto group1 = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
   EXPECT_OK(group1->Init("group1", /*parent_op_idx*/ 0, ast));
   group1->ResolveColumn(1, types::INT64);
-  EXPECT_OK(by_func_lambda->Init({"group1"}, group1, /* num_parents */ 1));
-  ArgMap amap({{{"by", by_func_lambda}, {"fn", agg_func_lambda}}, {}});
 
-  ASSERT_OK(agg->Init(mem_src, amap, ast));
-  ColExpressionVector exprs;
-  exprs.push_back(ColumnExpression({"value1", agg_func}));
+  ASSERT_OK(agg->Init(mem_src, {group1}, {{"mean", agg_func}}));
 
   planpb::Operator pb;
   ASSERT_OK(agg->ToProto(&pb));
@@ -318,7 +292,7 @@ class MetadataTests : public ::testing::Test {
 
 TEST_F(MetadataTests, metadata_resolver) {
   MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-  EXPECT_OK(metadata_resolver->Init(MakeMemSource(), {{}, {}}, ast));
+  EXPECT_OK(metadata_resolver->Init(MakeMemSource()));
   MetadataProperty* md_property = md_handler->GetProperty("pod_name").ValueOrDie();
   EXPECT_FALSE(metadata_resolver->HasMetadataColumn("pod_name"));
   EXPECT_OK(metadata_resolver->AddMetadata(md_property));
@@ -328,13 +302,13 @@ TEST_F(MetadataTests, metadata_resolver) {
 }
 
 TEST_F(MetadataTests, metadata_ir) {
-  MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-  MetadataIR* metadata_ir = graph->MakeNode<MetadataIR>().ValueOrDie();
+  MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>(ast).ValueOrDie();
+  MetadataIR* metadata_ir = graph->MakeNode<MetadataIR>(ast).ValueOrDie();
   EXPECT_OK(metadata_ir->Init("pod_name", /*parent_op_idx*/ 0, ast));
   EXPECT_TRUE(metadata_ir->IsColumn());
   EXPECT_FALSE(metadata_ir->HasMetadataResolver());
   EXPECT_EQ(metadata_ir->name(), "pod_name");
-  EXPECT_OK(metadata_resolver->Init(MakeMemSource(), {{}, {}}, ast));
+  EXPECT_OK(metadata_resolver->Init(MakeMemSource()));
   auto property = std::make_unique<NameMetadataProperty>(
       MetadataType::POD_NAME, std::vector<MetadataType>({MetadataType::POD_ID}));
   EXPECT_OK(metadata_ir->ResolveMetadataColumn(metadata_resolver, property.get()));
@@ -835,14 +809,16 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_children: 2
+      id: 0
+      sorted_children: 1
     }
     nodes {
-      id: 2
+      id: 1
       sorted_parents: 0
     }
   }
   nodes {
+    id: 0
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -863,7 +839,7 @@ nodes {
     }
   }
   nodes {
-    id: 2
+    id: 1
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1208,12 +1184,12 @@ TEST_F(IRPruneTests, prune_test) {
   MapIR* map = MakeMap(mem_source, {{{"out1", col1}, {"out2", col2}, {"out3", add_func}}, {}});
   auto mem_sink = MakeMemSink(map, "out");
 
-  EXPECT_THAT(graph->dag().nodes(), UnorderedElementsAre(0, 2, 3, 4, 5, 6, 7, 9));
+  EXPECT_THAT(graph->dag().nodes(), UnorderedElementsAre(0, 1, 2, 3, 4, 5, 6, 7));
   EXPECT_THAT(graph->dag().DependenciesOf(mem_source->id()), IsSupersetOf({map->id()}));
   EXPECT_THAT(graph->dag().ParentsOf(add_func->id()), IsSupersetOf({map->id()}));
 
   EXPECT_OK(graph->Prune({mem_sink->id(), map->id()}));
-  EXPECT_THAT(graph->dag().nodes(), UnorderedElementsAre(0, 2, 3, 4, 5, 6));
+  EXPECT_THAT(graph->dag().nodes(), UnorderedElementsAre(0, 1, 2, 3, 4, 5));
   EXPECT_THAT(graph->dag().DependenciesOf(mem_source->id()), IsEmpty());
   EXPECT_THAT(graph->dag().ParentsOf(add_func->id()), IsEmpty());
 }
@@ -1241,67 +1217,6 @@ TEST_F(OperatorTests, GroupByNode) {
     col_names.push_back(g->col_name());
   }
   EXPECT_THAT(col_names, ElementsAre("col1", "col2"));
-}
-
-// TODO(philkuz) (PL-1128) Delete when we remove this part of the API.
-TEST_F(OperatorTests, JoinCondSameParent) {
-  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
-                      types::DataType::INT64},
-                     {"left_only", "col1", "col2", "col3"});
-  auto mem_src1 = MakeMemSource(relation0);
-
-  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
-                      types::DataType::INT64, types::DataType::INT64},
-                     {"right_only", "col1", "col2", "col3", "col4"});
-  auto mem_src2 = MakeMemSource(relation1);
-
-  std::string join_type_name = "inner";
-
-  JoinIR* join = graph->MakeNode<JoinIR>(ast).ConsumeValueOrDie();
-  auto join_init_status =
-      join->Init({mem_src1, mem_src2},
-                 {{{"type", MakeString(join_type_name)},
-                   {"cond", MakeLambda(MakeEqualsFunc(MakeColumn("col1", 0, relation0),
-                                                      MakeColumn("col2", 0, relation0)),
-                                       /* num_parents */ 2)},
-                   {"cols", MakeLambda({{"right_only", MakeColumn("right_only", 1, relation1)}},
-                                       /* num_parents */ 2)}},
-                  {}},
-                 ast);
-
-  EXPECT_THAT(join_init_status,
-              HasCompilerError("Equality condition must have an element from both sides"));
-}
-
-TEST_F(OperatorTests, JoinNonBoolCondition) {
-  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
-                      types::DataType::INT64},
-                     {"left_only", "col1", "col2", "col3"});
-  auto mem_src1 = MakeMemSource(relation0);
-
-  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
-                      types::DataType::INT64, types::DataType::INT64},
-                     {"right_only", "col1", "col2", "col3", "col4"});
-  auto mem_src2 = MakeMemSource(relation1);
-
-  std::string join_type_name = "inner";
-
-  JoinIR* join = graph->MakeNode<JoinIR>(ast).ConsumeValueOrDie();
-  auto join_init_status = join->Init(
-      {mem_src1, mem_src2},
-      {{{"type", MakeString(join_type_name)},
-        {"cond",
-         MakeLambda(MakeEqualsFunc(MakeAddFunc(MakeColumn("col1", 0, relation0), MakeInt(10)),
-                                   MakeColumn("col2", 0, relation0)),
-                    /* num_parents */ 2)},
-        {"cols", MakeLambda({{"right_only", MakeColumn("right_only", 1, relation1)}},
-                            /* num_parents */ 2)}},
-       {}},
-      ast);
-
-  EXPECT_THAT(
-      join_init_status,
-      HasCompilerError("'cond' must be equality condition or `and` of equality conditions"));
 }
 
 }  // namespace compiler

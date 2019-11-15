@@ -38,11 +38,11 @@ Status BlockingOperatorGRPCBridgeRule::AddNewGRPCNodes(OperatorIR* parent_op,
   DCHECK(parent_op->IsRelationInit()) << parent_op->DebugString();
   IR* graph = parent_op->graph_ptr();
 
-  PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group, graph->MakeNode<GRPCSourceGroupIR>());
-  PL_RETURN_IF_ERROR(
-      grpc_source_group->Init(grpc_id_counter_, parent_op->relation(), parent_op->ast_node()));
-  PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, graph->MakeNode<GRPCSinkIR>());
-  PL_RETURN_IF_ERROR(grpc_sink->Init(parent_op, grpc_id_counter_, parent_op->ast_node()));
+  PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
+                      graph->MakeNode<GRPCSourceGroupIR>(parent_op->ast_node()));
+  PL_RETURN_IF_ERROR(grpc_source_group->Init(grpc_id_counter_, parent_op->relation()));
+  PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, graph->MakeNode<GRPCSinkIR>(parent_op->ast_node()));
+  PL_RETURN_IF_ERROR(grpc_sink->Init(parent_op, grpc_id_counter_));
   PL_RETURN_IF_ERROR(grpc_sink->SetRelation(parent_op->relation()));
 
   PL_RETURN_IF_ERROR(child_op->ReplaceParent(parent_op, grpc_source_group));

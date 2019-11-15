@@ -542,9 +542,10 @@ StatusOr<MetadataResolverIR*> ResolveMetadataRule::InsertMetadataResolver(
   DCHECK(container_op->IsChildOf(parent_op))
       << "Parent arg should be the actual parent of the container_op.";
   IR* graph = container_op->graph_ptr();
-  PL_ASSIGN_OR_RETURN(auto md_resolver, graph->MakeNode<MetadataResolverIR>());
+  PL_ASSIGN_OR_RETURN(auto md_resolver,
+                      graph->MakeNode<MetadataResolverIR>(container_op->ast_node()));
   // Metadata Resolver is now child of Parent.
-  PL_RETURN_IF_ERROR(md_resolver->Init(parent_op, {{}, {}}, container_op->ast_node()));
+  PL_RETURN_IF_ERROR(md_resolver->Init(parent_op));
   // Previous operator is now child of Metadata Resolver.
   PL_RETURN_IF_ERROR(container_op->ReplaceParent(parent_op, md_resolver));
 
@@ -826,10 +827,8 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
   std::unordered_set<std::string> col_names(std::make_move_iterator(relation.col_names().begin()),
                                             std::make_move_iterator(relation.col_names().end()));
   DCHECK_EQ(col_exprs.size(), md_resolver->relation().NumColumns());
-  PL_ASSIGN_OR_RETURN(MapIR * map, graph->MakeNode<MapIR>());
-  PL_ASSIGN_OR_RETURN(LambdaIR * lambda, graph->MakeNode<LambdaIR>(md_resolver->ast_node()));
-  PL_RETURN_IF_ERROR(lambda->Init(col_names, col_exprs, /* num_parents */ 0));
-  PL_RETURN_IF_ERROR(map->Init(parent_op, {{{"fn", lambda}}, {}}, md_resolver->ast_node()));
+  PL_ASSIGN_OR_RETURN(MapIR * map, graph->MakeNode<MapIR>(md_resolver->ast_node()));
+  PL_RETURN_IF_ERROR(map->Init(parent_op, col_exprs));
   return map;
 }
 

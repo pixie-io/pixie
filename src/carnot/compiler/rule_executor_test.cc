@@ -18,7 +18,7 @@ namespace compiler {
 
 using ::testing::_;
 
-class RuleExecutorTest : public ::testing::Test {
+class RuleExecutorTest : public OperatorTests {
  protected:
   void SetUp() override {
     info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
@@ -48,14 +48,11 @@ class RuleExecutorTest : public ::testing::Test {
     PL_CHECK_OK(col->Init("count", /* parent_op_idx */ 0, ast));
     func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     func2 = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
     PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
                            std::vector<ExpressionIR*>({int_constant, col}), ast));
     PL_CHECK_OK(func2->Init({FuncIR::Opcode::add, "+", "add"},
                             std::vector<ExpressionIR*>({int_constant2, func}), ast));
-    PL_CHECK_OK(lambda->Init({"count"}, {{"func", func2}}, /* num_parents */ 1));
-    ArgMap amap({{{"fn", lambda}}, {}});
-    PL_CHECK_OK(map->Init(mem_src, amap, ast));
+    PL_CHECK_OK(map->Init(mem_src, {{"func", func2}}));
   }
   std::unique_ptr<CompilerState> compiler_state_;
   std::unique_ptr<RegistryInfo> info_;
@@ -68,7 +65,6 @@ class RuleExecutorTest : public ::testing::Test {
   MapIR* map;
   IntIR* int_constant;
   IntIR* int_constant2;
-  LambdaIR* lambda;
   ColumnIR* col;
 };
 

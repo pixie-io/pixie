@@ -22,8 +22,9 @@ StatusOr<GRPCSourceIR*> GRPCSourceGroupConversionRule::CreateGRPCSource(
     GRPCSourceGroupIR* group_ir, const std::string& remote_id) {
   DCHECK(group_ir->IsRelationInit());
   IR* graph = group_ir->graph_ptr();
-  PL_ASSIGN_OR_RETURN(GRPCSourceIR * grpc_source, graph->MakeNode<GRPCSourceIR>());
-  PL_RETURN_IF_ERROR(grpc_source->Init(remote_id, group_ir->relation(), group_ir->ast_node()));
+  PL_ASSIGN_OR_RETURN(GRPCSourceIR * grpc_source,
+                      graph->MakeNode<GRPCSourceIR>(group_ir->ast_node()));
+  PL_RETURN_IF_ERROR(grpc_source->Init(remote_id, group_ir->relation()));
   return grpc_source;
 }
 
@@ -45,8 +46,8 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
     grpc_sources.push_back(new_grpc_source);
   }
   IR* graph = group_ir->graph_ptr();
-  PL_ASSIGN_OR_RETURN(UnionIR * union_op, graph->MakeNode<UnionIR>());
-  PL_RETURN_IF_ERROR(union_op->Init(grpc_sources, {{}, {}}, group_ir->ast_node()));
+  PL_ASSIGN_OR_RETURN(UnionIR * union_op, graph->MakeNode<UnionIR>(group_ir->ast_node()));
+  PL_RETURN_IF_ERROR(union_op->Init(grpc_sources));
   PL_RETURN_IF_ERROR(union_op->SetRelationFromParents());
   return union_op;
 }

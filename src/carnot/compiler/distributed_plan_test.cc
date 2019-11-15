@@ -60,10 +60,10 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_children: 2
+          sorted_children: 1
         }
         nodes {
-          id: 2
+          id: 1
           sorted_parents: 0
         }
       }
@@ -72,10 +72,6 @@ qb_address_to_plan {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
             name: "table"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_idxs: 3
             column_names: "count"
             column_names: "cpu0"
             column_names: "cpu1"
@@ -88,7 +84,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 2
+        id: 1
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {
@@ -119,10 +115,10 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_children: 2
+          sorted_children: 1
         }
         nodes {
-          id: 2
+          id: 1
           sorted_parents: 0
         }
       }
@@ -147,7 +143,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 2
+        id: 1
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {
@@ -212,7 +208,7 @@ TEST_F(DistributedPlanTest, construction_test) {
   physical_plan->AddEdge(physical_plan->Get(0), physical_plan->Get(1));
 
   auto physical_plan_proto = physical_plan->ToProto().ConsumeValueOrDie();
-  EXPECT_THAT(physical_plan_proto, EqualsProto(kIRProto));
+  EXPECT_THAT(physical_plan_proto, Partially(EqualsProto(kIRProto)));
 }
 
 }  // namespace distributed

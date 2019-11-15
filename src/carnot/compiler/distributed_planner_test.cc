@@ -66,10 +66,10 @@ qb_address_to_plan {
       dag {
         nodes {
           id: 0
-          sorted_children: 4
+          sorted_children: 3
         }
         nodes {
-          id: 4
+          id: 3
           sorted_parents: 0
         }
       }
@@ -78,10 +78,6 @@ qb_address_to_plan {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
             name: "table"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_idxs: 3
             column_names: "count"
             column_names: "cpu0"
             column_names: "cpu1"
@@ -94,7 +90,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 4
+        id: 3
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
@@ -118,16 +114,16 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 4
-          sorted_children: 2
+          id: 3
+          sorted_children: 1
         }
         nodes {
-          id: 2
-          sorted_parents: 4
+          id: 1
+          sorted_parents: 3
         }
       }
       nodes {
-        id: 4
+        id: 3
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
@@ -144,7 +140,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 2
+        id: 1
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {
@@ -195,7 +191,7 @@ TEST_F(DistributedPlannerTest, one_agent_one_kelvin) {
   std::unique_ptr<DistributedPlan> physical_plan =
       physical_planner->Plan(ps_pb, compiler_state_.get(), graph.get()).ConsumeValueOrDie();
   EXPECT_THAT(physical_plan->ToProto().ConsumeValueOrDie(),
-              EqualsProto(kOneAgentOneKelvinDistributedPlan));
+              Partially(EqualsProto(kOneAgentOneKelvinDistributedPlan)));
 }
 
 const char* kThreeAgentsOneKelvinDistributedState = R"proto(
@@ -243,10 +239,10 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_children: 4
+          sorted_children: 3
         }
         nodes {
-          id: 4
+          id: 3
           sorted_parents: 0
         }
       }
@@ -255,23 +251,11 @@ qb_address_to_plan {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
             name: "table"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_idxs: 3
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-            column_types: INT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_types: FLOAT64
           }
         }
       }
       nodes {
-        id: 4
+        id: 3
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
@@ -295,10 +279,10 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_children: 4
+          sorted_children: 3
         }
         nodes {
-          id: 4
+          id: 3
           sorted_parents: 0
         }
       }
@@ -307,23 +291,11 @@ qb_address_to_plan {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
             name: "table"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_idxs: 3
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-            column_types: INT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_types: FLOAT64
           }
         }
       }
       nodes {
-        id: 4
+        id: 3
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
@@ -347,10 +319,10 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_children: 4
+          sorted_children: 3
         }
         nodes {
-          id: 4
+          id: 3
           sorted_parents: 0
         }
       }
@@ -359,23 +331,11 @@ qb_address_to_plan {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
             name: "table"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_idxs: 3
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-            column_types: INT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_types: FLOAT64
           }
         }
       }
       nodes {
-        id: 4
+        id: 3
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
@@ -399,31 +359,31 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 6
-          sorted_children: 7
-        }
-        nodes {
           id: 5
-          sorted_children: 7
+          sorted_children: 6
         }
         nodes {
           id: 4
-          sorted_children: 7
+          sorted_children: 6
         }
         nodes {
-          id: 7
-          sorted_children: 2
+          id: 3
+          sorted_children: 6
+        }
+        nodes {
+          id: 6
+          sorted_children: 1
+          sorted_parents: 3
           sorted_parents: 4
           sorted_parents: 5
-          sorted_parents: 6
         }
         nodes {
-          id: 2
-          sorted_parents: 7
+          id: 1
+          sorted_parents: 6
         }
       }
       nodes {
-        id: 6
+        id: 5
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
@@ -440,7 +400,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 5
+        id: 4
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
@@ -457,7 +417,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 4
+        id: 3
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
@@ -474,7 +434,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 7
+        id: 6
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -504,7 +464,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 2
+        id: 1
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {
@@ -572,7 +532,7 @@ TEST_F(DistributedPlannerTest, three_agent_one_kelvin) {
   std::unique_ptr<DistributedPlan> physical_plan =
       physical_planner->Plan(ps_pb, compiler_state_.get(), graph.get()).ConsumeValueOrDie();
   EXPECT_THAT(physical_plan->ToProto().ConsumeValueOrDie(),
-              EqualsProto(kThreeAgentsOneKelvinDistributedPlan));
+              Partially(EqualsProto(kThreeAgentsOneKelvinDistributedPlan)));
 }
 
 }  // namespace distributed

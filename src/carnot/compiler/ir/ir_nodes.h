@@ -291,6 +291,10 @@ class IR {
    */
   Status Prune(const std::unordered_set<int64_t>& ids_to_prune);
 
+  friend std::ostream& operator<<(std::ostream& os, const std::shared_ptr<IR>&) {
+    return os << "ir";
+  }
+
  private:
   Status OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node) const;
   plan::DAG dag_;
@@ -334,43 +338,7 @@ class OperatorIR : public IRNode {
    */
   Status ReplaceParent(OperatorIR* old_parent, OperatorIR* new_parent);
 
-  /**
-   * @brief Initializes the Operator with a single parent.
-   *
-   * @param parent: parent operator, or a nullptr if no parent for this operator.
-   * @param args: the map of string to IRNode that represents
-   * @param ast_node: the node in the ast parser to initialize this.
-   * @return Status: error if anything fails during this call.
-   */
-  Status Init(OperatorIR* parent, const ArgMap& args, const pypa::AstPtr& ast_node);
-
-  /**
-   * @brief Initializes the Operator with multiple parents.
-   *
-   * @param parents: parent operators, or an empty vector.
-   * @param args: the map of string to IRNode that represents
-   * @param ast_node: the node in the ast parser to initialize this.
-   * @return Status: error if anything fails during this call.
-   */
-  Status Init(std::vector<OperatorIR*> parents, const ArgMap& args, const pypa::AstPtr& ast_node);
-  virtual Status InitImpl(const ArgMap& args) = 0;
-  virtual std::vector<std::string> ArgKeys() = 0;
-
-  /**
-   * @brief Returns the default argument values for any argument passed in.
-   * Does not need to be overridden in an Operator definition if an Operator has no default
-   * arguments.
-   *
-   * TODO(philkuz) (PL_804) make the mapping to an Lambda that takes in a graph_ptr and returns a
-   * new IRNode instead of doing this.
-   * @return Stirng to IR mapping
-   */
-  virtual std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) {
-    return std::unordered_map<std::string, IRNode*>();
-  }
   virtual Status ToProto(planpb::Operator*) const = 0;
-  // Checks whether the passed in arg maps contains the expected keys in this init function.
-  Status ArgMapContainsKeys(const ArgMap& args);
 
   Status EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
@@ -1018,7 +986,6 @@ class MetadataLiteralIR : public ExpressionIR {
  */
 class MemorySourceIR : public OperatorIR {
  public:
-  using OperatorIR::Init;
   MemorySourceIR() = delete;
   explicit MemorySourceIR(int64_t id)
       : OperatorIR(id, IRNodeType::kMemorySource, /* has_parents */ false, /* is_source */ true) {}
@@ -1051,18 +1018,11 @@ class MemorySourceIR : public OperatorIR {
   }
 
   Status ToProto(planpb::Operator*) const override;
-  std::vector<std::string> ArgKeys() override { return {"table", "select"}; }
-
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>{{"select", nullptr}};
-  }
-  Status InitImpl(const ArgMap& args) override;
 
   bool select_all() const { return column_names_.size() == 0; }
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   const std::vector<std::string>& column_names() const { return column_names_; }
-  StatusOr<std::vector<std::string>> ParseStringListIR(const ListIR& list_ir);
   void SetTabletValue(const types::TabletID& tablet_value) {
     tablet_value_ = tablet_value;
     has_tablet_value_ = true;
@@ -1097,7 +1057,6 @@ class MemorySourceIR : public OperatorIR {
  */
 class MemorySinkIR : public OperatorIR {
  public:
-  using OperatorIR::Init;
   MemorySinkIR() = delete;
   explicit MemorySinkIR(int64_t id)
       : OperatorIR(id, IRNodeType::kMemorySink, /* has_parents */ true, /* is_source */ false) {}
@@ -1107,14 +1066,9 @@ class MemorySinkIR : public OperatorIR {
   std::string name() const { return name_; }
   Status ToProto(planpb::Operator*) const override;
 
-  std::vector<std::string> ArgKeys() override { return {"name"}; }
-  Status InitImpl(const ArgMap& args) override;
   Status Init(OperatorIR* parent, const std::string& name,
               const std::vector<std::string> out_columns);
 
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>();
-  }
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   bool IsBlocking() const override { return true; }
 
@@ -1135,8 +1089,6 @@ class RangeIR : public OperatorIR {
   RangeIR() = delete;
   explicit RangeIR(int64_t id) : OperatorIR(id, IRNodeType::kRange, true, false) {}
   Status Init(OperatorIR* parent, IRNode* start_repr, IRNode* stop_repr);
-  Status Init(OperatorIR* parent, IRNode* start_repr, IRNode* stop_repr,
-              const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
 
   IRNode* start_repr() const { return start_repr_; }
@@ -1144,15 +1096,6 @@ class RangeIR : public OperatorIR {
   Status SetStartStop(IRNode* start_repr, IRNode* stop_repr);
   Status ToProto(planpb::Operator*) const override;
 
-  // TODO(philkuz) implement
-  std::vector<std::string> ArgKeys() override { return {"start", "stop"}; }
-
-  // TODO(philkuz) implement
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>();
-  }
-  // TODO(philkuz) implement
-  Status InitImpl(const ArgMap& args) override;
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
@@ -1171,18 +1114,13 @@ class MetadataResolverIR : public OperatorIR {
   MetadataResolverIR() = delete;
   explicit MetadataResolverIR(int64_t id)
       : OperatorIR(id, IRNodeType::kMetadataResolver, true, false) {}
-  Status InitImpl(const ArgMap& args) override;
   bool HasLogicalRepr() const override { return false; }
   Status ToProto(planpb::Operator*) const override {
     return error::Unimplemented("Calling ToProto on $0, which lacks a Protobuf representation.",
                                 type_string());
   }
 
-  std::vector<std::string> ArgKeys() override { return {}; }
-
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>();
-  }
+  Status Init(OperatorIR* parent) { return AddParent(parent); }
 
   Status AddMetadata(MetadataProperty* md_property);
   bool HasMetadataColumn(const std::string& type);
@@ -1200,15 +1138,9 @@ class MetadataResolverIR : public OperatorIR {
  */
 class MapIR : public OperatorIR {
  public:
-  using OperatorIR::Init;
   MapIR() = delete;
   explicit MapIR(int64_t id) : OperatorIR(id, IRNodeType::kMap, true, false) {}
-  std::vector<std::string> ArgKeys() override { return {"fn"}; }
 
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>();
-  }
-  Status InitImpl(const ArgMap& args) override;
   Status Init(OperatorIR* parent, const ColExpressionVector& col_exprs);
 
   bool HasLogicalRepr() const override;
@@ -1238,14 +1170,7 @@ class DropIR : public OperatorIR {
  public:
   DropIR() = delete;
   explicit DropIR(int64_t id) : OperatorIR(id, IRNodeType::kDrop, true, false) {}
-  std::vector<std::string> ArgKeys() override { return {"columns"}; }
-
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>();
-  }
-  Status InitImpl(const ArgMap& args) override;
-  Status Init(OperatorIR* parent, const std::vector<std::string>& drop_cols,
-              const pypa::AstPtr& ast_node);
+  Status Init(OperatorIR* parent, const std::vector<std::string>& drop_cols);
 
   bool HasLogicalRepr() const override { return false; }
   Status ToProto(planpb::Operator*) const override;
@@ -1266,7 +1191,6 @@ class DropIR : public OperatorIR {
 class BlockingAggIR : public OperatorIR {
  public:
   // TODO(philkuz) delete when we rebase init.
-  using OperatorIR::Init;
   BlockingAggIR() = delete;
   explicit BlockingAggIR(int64_t id) : OperatorIR(id, IRNodeType::kBlockingAgg, true, false) {}
   bool HasLogicalRepr() const override;
@@ -1278,12 +1202,6 @@ class BlockingAggIR : public OperatorIR {
   Status EvaluateAggregateExpression(planpb::AggregateExpression* expr,
                                      const IRNode& ir_node) const;
 
-  std::vector<std::string> ArgKeys() override { return {"fn", "by"}; }
-
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>{{"by", nullptr}};
-  }
-  Status InitImpl(const ArgMap& args) override;
   Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
               const ColExpressionVector& agg_expr);
 
@@ -1318,12 +1236,6 @@ class GroupByIR : public OperatorIR {
   // GroupBy does not exist as a protobuf object.
   bool HasLogicalRepr() const override { return false; }
 
-  // TODO(philkuz) (PL-1081) remove the following public methods.
-  std::vector<std::string> ArgKeys() override { return {}; }
-  Status InitImpl(const ArgMap&) override {
-    return error::Unimplemented("GroupBy::InitImpl not implementeed");
-  }
-
  private:
   // contains group_names and groups columns.
   std::vector<ColumnIR*> groups_;
@@ -1331,7 +1243,6 @@ class GroupByIR : public OperatorIR {
 
 class FilterIR : public OperatorIR {
  public:
-  using OperatorIR::Init;
   FilterIR() = delete;
   explicit FilterIR(int64_t id) : OperatorIR(id, IRNodeType::kFilter, true, false) {}
   bool HasLogicalRepr() const override;
@@ -1339,12 +1250,6 @@ class FilterIR : public OperatorIR {
   ExpressionIR* filter_expr() const { return filter_expr_; }
   Status ToProto(planpb::Operator*) const override;
 
-  std::vector<std::string> ArgKeys() override { return {"fn"}; }
-
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>();
-  }
-  Status InitImpl(const ArgMap& args) override;
   Status Init(OperatorIR* parent, ExpressionIR* expr);
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
@@ -1355,7 +1260,6 @@ class FilterIR : public OperatorIR {
 
 class LimitIR : public OperatorIR {
  public:
-  using OperatorIR::Init;
   LimitIR() = delete;
   explicit LimitIR(int64_t id) : OperatorIR(id, IRNodeType::kLimit, true, false) {}
   bool HasLogicalRepr() const override;
@@ -1368,12 +1272,6 @@ class LimitIR : public OperatorIR {
   bool limit_value_set() const { return limit_value_set_; }
   int64_t limit_value() const { return limit_value_; }
 
-  std::vector<std::string> ArgKeys() override { return {"rows"}; }
-
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>();
-  }
-  Status InitImpl(const ArgMap& args) override;
   Status Init(OperatorIR* parent, int64_t limit_value);
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
@@ -1397,11 +1295,11 @@ class GRPCSinkIR : public OperatorIR {
       : OperatorIR(id, IRNodeType::kGRPCSink, /* has_parents */ true,
                    /* is_source */ false) {}
   bool HasLogicalRepr() const override { return true; }
-  std::vector<std::string> ArgKeys() override { return {}; }
-  Status InitImpl(const ArgMap&) override { return Status::OK(); }
-  Status Init(OperatorIR* parent, int64_t destination_id, pypa::AstPtr ast_node) {
+
+  Status Init(OperatorIR* parent, int64_t destination_id) {
+    PL_RETURN_IF_ERROR(AddParent(parent));
     destination_id_ = destination_id;
-    return OperatorIR::Init(parent, {{}, {}}, ast_node);
+    return Status::OK();
   }
   Status ToProto(planpb::Operator* op_pb) const override;
 
@@ -1457,9 +1355,7 @@ class GRPCSourceIR : public OperatorIR {
       : OperatorIR(id, IRNodeType::kGRPCSource, /* has_parents */ false,
                    /* is_source */ true) {}
   bool HasLogicalRepr() const override { return true; }
-  std::vector<std::string> ArgKeys() override { return {}; }
   Status ToProto(planpb::Operator* op_pb) const override;
-  Status InitImpl(const ArgMap&) override { return Status::OK(); }
 
   /**
    * @brief Special Init that skips around the Operator init function.
@@ -1468,11 +1364,9 @@ class GRPCSourceIR : public OperatorIR {
    * @param ast_node
    * @return Status
    */
-  Status Init(const std::string& remote_source_id, const table_store::schema::Relation& relation,
-              pypa::AstPtr ast_node) {
+  Status Init(const std::string& remote_source_id, const table_store::schema::Relation& relation) {
     remote_source_id_ = remote_source_id;
-    PL_RETURN_IF_ERROR(SetRelation(relation));
-    return OperatorIR::Init(nullptr, {{}, {}}, ast_node);
+    return SetRelation(relation);
   }
 
   const std::string& remote_source_id() const { return remote_source_id_; }
@@ -1496,10 +1390,7 @@ class GRPCSourceGroupIR : public OperatorIR {
       : OperatorIR(id, IRNodeType::kGRPCSourceGroup, /* has_parents */ false,
                    /* is_source */ true) {}
   bool HasLogicalRepr() const override { return false; }
-  std::vector<std::string> ArgKeys() override { return {}; }
   Status ToProto(planpb::Operator* op_pb) const override;
-
-  Status InitImpl(const ArgMap&) override { return Status::OK(); }
 
   /**
    * @brief Special Init that skips around the Operator init function.
@@ -1508,11 +1399,9 @@ class GRPCSourceGroupIR : public OperatorIR {
    * @param ast_node
    * @return Status
    */
-  Status Init(int64_t source_id, const table_store::schema::Relation& relation,
-              pypa::AstPtr ast_node) {
+  Status Init(int64_t source_id, const table_store::schema::Relation& relation) {
     source_id_ = source_id;
-    PL_RETURN_IF_ERROR(SetRelation(relation));
-    return OperatorIR::Init(nullptr, {{}, {}}, ast_node);
+    return SetRelation(relation);
   }
 
   void SetGRPCAddress(const std::string& grpc_address) { grpc_address_ = grpc_address; }
@@ -1551,17 +1440,15 @@ class UnionIR : public OperatorIR {
       : OperatorIR(id, IRNodeType::kUnion, /* has_parents */ true, /* is_source */ false) {}
   bool HasLogicalRepr() const override { return true; }
 
-  std::vector<std::string> ArgKeys() override { return {}; }
-
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>();
-  }
-
   bool IsBlocking() const override { return true; }
 
   Status ToProto(planpb::Operator*) const override;
-  // TODO(philkuz) figure out whether we need to do anything special to init the union operator.
-  Status InitImpl(const ArgMap&) override { return Status::OK(); }
+  Status Init(const std::vector<OperatorIR*>& parents) {
+    for (auto p : parents) {
+      PL_RETURN_IF_ERROR(AddParent(p));
+    }
+    return Status::OK();
+  }
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   Status SetRelationFromParents();
   bool HasColumnMappings() const { return column_mappings_.size() == parents().size(); }
@@ -1586,9 +1473,6 @@ class UnionIR : public OperatorIR {
  */
 class JoinIR : public OperatorIR {
  public:
-  // TODO(philkuz) delete when we get rid of the old Operator API.
-  using OperatorIR::Init;
-
   enum class JoinType { kLeft, kRight, kOuter, kInner };
 
   JoinIR() = delete;
@@ -1596,16 +1480,10 @@ class JoinIR : public OperatorIR {
       : OperatorIR(id, IRNodeType::kJoin, /* has_parents */ true, /* is_source */ false) {}
   bool HasLogicalRepr() const override { return true; }
 
-  std::vector<std::string> ArgKeys() override { return {"type", "cond", "cols"}; }
-
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>{{"type", nullptr}};
-  }
-
   bool IsBlocking() const override { return true; }
 
   Status ToProto(planpb::Operator*) const override;
-  Status InitImpl(const ArgMap&) override;
+
   /**
    * @brief JoinIR init to directly initialize the operator.
    *
@@ -1722,7 +1600,8 @@ class TabletSourceGroupIR : public OperatorIR {
     PL_RETURN_IF_ERROR(SetRelation(memory_source_ir->relation()));
     DCHECK(relation().HasColumn(tablet_key));
     tablet_key_ = tablet_key;
-    return OperatorIR::Init(nullptr, {{}, {}}, memory_source_ir->ast_node());
+    SetLineCol(memory_source_ir->ast_node());
+    return Status::OK();
   }
 
   explicit TabletSourceGroupIR(int64_t id)
@@ -1732,13 +1611,10 @@ class TabletSourceGroupIR : public OperatorIR {
   bool HasLogicalRepr() const override { return false; }
   bool IsBlocking() const override { return false; }
 
-  std::vector<std::string> ArgKeys() override { return {}; }
-
   Status ToProto(planpb::Operator*) const override {
     return error::Unimplemented("$0::ToProto not implemented because no use found for it yet.",
                                 DebugString());
   }
-  Status InitImpl(const ArgMap&) override { return Status::OK(); }
   StatusOr<IRNode*> DeepCloneIntoImpl(IR*) const override {
     return error::Unimplemented(
         "$0::DeepCloneInto not implemented because no use found for it yet.", DebugString());

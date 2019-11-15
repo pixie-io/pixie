@@ -234,7 +234,7 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, TupleIR* tuple) {
   PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->MakeNode<ColumnIR>(childone->ast_node()));
   // TODO(philkuz) remove ast_node init arguemnt upon refactoring ast node placement.
   // parent_op_idx is 0 because we only have one parent for an aggregate.
-  PL_RETURN_IF_ERROR(argcol->Init(argcol_name, /* parent_op_idx */ 0, childone->ast_node()));
+  PL_RETURN_IF_ERROR(argcol->Init(argcol_name, /* parent_op_idx */ 0));
   PL_RETURN_IF_ERROR(func->AddArg(argcol));
   return func;
 }

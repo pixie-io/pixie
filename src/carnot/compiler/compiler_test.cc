@@ -1938,18 +1938,18 @@ nodes {
     }
     nodes {
       id: 10
-      sorted_children: 35
+      sorted_children: 34
       sorted_parents: 28
     }
     nodes {
-      id: 35
+      id: 34
       sorted_children: 15
       sorted_parents: 10
     }
     nodes {
       id: 15
       sorted_children: 17
-      sorted_parents: 35
+      sorted_parents: 34
     }
     nodes {
       id: 17
@@ -2056,7 +2056,7 @@ nodes {
     }
   }
   nodes {
-    id: 35
+    id: 34
     op {
       op_type: MAP_OPERATOR
       map_op {

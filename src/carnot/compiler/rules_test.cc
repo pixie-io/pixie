@@ -40,59 +40,48 @@ class RulesTest : public OperatorTests {
     md_handler = MetadataHandler::Create();
   }
   MetadataResolverIR* MakeMetadataResolver(OperatorIR* parent) {
-    MetadataResolverIR* md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-    EXPECT_OK(md_resolver->Init(parent, {{}, {}}, ast));
+    MetadataResolverIR* md_resolver = graph->MakeNode<MetadataResolverIR>(ast).ValueOrDie();
+    EXPECT_OK(md_resolver->Init(parent));
     return md_resolver;
   }
   FilterIR* MakeFilter(OperatorIR* parent) {
-    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+    auto constant1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
     EXPECT_OK(constant1->Init(10, ast));
 
-    auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+    auto constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
     EXPECT_OK(constant2->Init(10, ast));
 
     auto column = MakeColumn("column", 0);
 
-    auto filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    auto filter_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"},
                                 std::vector<ExpressionIR*>({constant1, column}), ast));
     filter_func->SetOutputDataType(types::DataType::BOOLEAN);
 
-    auto filter_func_lambda = MakeLambda(filter_func, 1);
-
-    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{{"fn", filter_func_lambda}}, {}});
-    EXPECT_OK(filter->Init(parent, amap, ast));
+    FilterIR* filter = graph->MakeNode<FilterIR>(ast).ValueOrDie();
+    EXPECT_OK(filter->Init(parent, filter_func));
     return filter;
   }
   FilterIR* MakeFilter(OperatorIR* parent, ColumnIR* filter_value) {
-    auto constant1 = graph->MakeNode<StringIR>().ValueOrDie();
+    auto constant1 = graph->MakeNode<StringIR>(ast).ValueOrDie();
     EXPECT_OK(constant1->Init("value", ast));
 
-    FuncIR* filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    FuncIR* filter_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"},
                                 std::vector<ExpressionIR*>({constant1, filter_value}), ast));
 
-    auto filter_func_lambda = MakeLambda(filter_func, 1);
-
-    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{{"fn", filter_func_lambda}}, {}});
-    EXPECT_OK(filter->Init(parent, amap, ast));
+    FilterIR* filter = graph->MakeNode<FilterIR>(ast).ValueOrDie();
+    EXPECT_OK(filter->Init(parent, filter_func));
     return filter;
   }
   using OperatorTests::MakeBlockingAgg;
   BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
-    auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    auto agg_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"},
                              std::vector<ExpressionIR*>({fn_column}), ast));
 
-    auto agg_func_lambda = MakeLambda({{{"agg_fn", agg_func}}, {}}, 1);
-
-    auto by_func_lambda = MakeLambda(by_column, {"group"}, 1);
-
-    BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
-    ArgMap amap({{{"by", by_func_lambda}, {"fn", agg_func_lambda}}, {}});
-    EXPECT_OK(agg->Init(parent, amap, ast));
+    BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>(ast).ValueOrDie();
+    EXPECT_OK(agg->Init(parent, {by_column}, {{"agg_fn", agg_func}}));
     return agg;
   }
 
@@ -106,7 +95,7 @@ class DataTypeRuleTest : public RulesTest {
  protected:
   void SetUp() override {
     RulesTest::SetUp();
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
   MemorySourceIR* mem_src;
@@ -114,17 +103,14 @@ class DataTypeRuleTest : public RulesTest {
 
 // Simple map function.
 TEST_F(DataTypeRuleTest, map_function) {
-  auto map = graph->MakeNode<MapIR>().ValueOrDie();
-  auto constant = graph->MakeNode<IntIR>().ValueOrDie();
+  auto map = graph->MakeNode<MapIR>(ast).ValueOrDie();
+  auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
   auto col = MakeColumn("count", /* parent_op_idx */ 0);
-  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  auto lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
+  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
                        std::vector<ExpressionIR*>({constant, col}), ast));
-  EXPECT_OK(lambda->Init({"col_name"}, {{{"func", func}}, {}}, /* num_parents */ 1));
-  ArgMap amap({{{"fn", lambda}}, {}});
-  EXPECT_OK(map->Init(mem_src, amap, ast));
+  EXPECT_OK(map->Init(mem_src, {{"func", func}}));
 
   // No rule has been run, don't expect any of these to be evaluated.
   EXPECT_FALSE(func->IsDataTypeEvaluated());
@@ -168,17 +154,17 @@ TEST_F(DataTypeRuleTest, map_function) {
 // different rule.
 TEST_F(DataTypeRuleTest, compiler_function_no_match) {
   // Compiler function should not get resolved.
-  auto range = graph->MakeNode<RangeIR>().ValueOrDie();
-  auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+  auto range = graph->MakeNode<RangeIR>(ast).ValueOrDie();
+  auto constant1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant1->Init(10, ast));
-  auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+  auto constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant2->Init(12, ast));
-  auto constant3 = graph->MakeNode<IntIR>().ValueOrDie();
+  auto constant3 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant3->Init(24, ast));
-  auto func2 = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto func2 = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(func2->Init({FuncIR::Opcode::add, "+", "add"},
                         std::vector<ExpressionIR*>({constant1, constant2}), ast));
-  EXPECT_OK(range->Init(mem_src, func2, constant3, ast));
+  EXPECT_OK(range->Init(mem_src, func2, constant3));
 
   // No rule has been run, don't expect any of these to be evaluated.
   EXPECT_FALSE(func2->IsDataTypeEvaluated());
@@ -193,17 +179,14 @@ TEST_F(DataTypeRuleTest, compiler_function_no_match) {
 
 // The DataType shouldn't be resolved for a function without a name.
 TEST_F(DataTypeRuleTest, missing_udf_name) {
-  auto map = graph->MakeNode<MapIR>().ValueOrDie();
-  auto constant = graph->MakeNode<IntIR>().ValueOrDie();
+  auto map = graph->MakeNode<MapIR>(ast).ValueOrDie();
+  auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
   auto col = MakeColumn("count", /* parent_op_idx */ 0);
-  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  auto lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
+  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "gobeldy"},
                        std::vector<ExpressionIR*>({constant, col}), ast));
-  EXPECT_OK(lambda->Init({"col_name"}, {{{"func", func}}, {}}, /* num_parents */ 1));
-  ArgMap amap({{{"fn", lambda}}, {}});
-  EXPECT_OK(map->Init(mem_src, amap, ast));
+  EXPECT_OK(map->Init(mem_src, {{"func", func}}));
 
   // Expect the data_rule to successfully change columnir.
   DataTypeRule data_rule(compiler_state_.get());
@@ -221,15 +204,12 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
 
 // Checks to make sure that agg functions work properly.
 TEST_F(DataTypeRuleTest, function_in_agg) {
-  auto map = graph->MakeNode<BlockingAggIR>().ValueOrDie();
+  auto agg = graph->MakeNode<BlockingAggIR>(ast).ValueOrDie();
   auto col = MakeColumn("count", /* parent_op_idx */ 0);
-  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  auto lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
+  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(
       func->Init({FuncIR::Opcode::non_op, "", "mean"}, std::vector<ExpressionIR*>({col}), ast));
-  EXPECT_OK(lambda->Init({col->col_name()}, {{{"func", func}}, {}}, /* num_parents */ 1));
-  ArgMap amap({{{"fn", lambda}, {"by", nullptr}}, {}});
-  EXPECT_OK(map->Init(mem_src, amap, ast));
+  EXPECT_OK(agg->Init(mem_src, {}, {{"func", func}}));
 
   // Expect the data_rule to successfully evaluate the column.
   DataTypeRule data_rule(compiler_state_.get());
@@ -252,23 +232,20 @@ TEST_F(DataTypeRuleTest, function_in_agg) {
 
 // Checks to make sure that nested functions are evaluated as expected.
 TEST_F(DataTypeRuleTest, nested_functions) {
-  auto map = graph->MakeNode<MapIR>().ValueOrDie();
-  auto constant = graph->MakeNode<IntIR>().ValueOrDie();
+  auto map = graph->MakeNode<MapIR>(ast).ValueOrDie();
+  auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
-  auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+  auto constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant2->Init(12, ast));
   auto col = MakeColumn("count", /* parent_op_idx */ 0);
-  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  auto func2 = graph->MakeNode<FuncIR>().ValueOrDie();
-  auto lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
+  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+  auto func2 = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
                        std::vector<ExpressionIR*>({constant, col}), ast));
 
   EXPECT_OK(func2->Init({FuncIR::Opcode::add, "-", "subtract"},
                         std::vector<ExpressionIR*>({constant2, func}), ast));
-  EXPECT_OK(lambda->Init({"col_name"}, {{{"col_name", func2}}, {}}, /* num_parents */ 1));
-  ArgMap amap({{{"fn", lambda}}, {}});
-  EXPECT_OK(map->Init(mem_src, amap, ast));
+  EXPECT_OK(map->Init(mem_src, {{"col_name", func2}}));
 
   // No rule has been run, don't expect any of these to be evaluated.
   EXPECT_FALSE(func->IsDataTypeEvaluated());
@@ -344,13 +321,8 @@ class SourceRelationTest : public RulesTest {
 
 // Simple check with select all.
 TEST_F(SourceRelationTest, set_source_select_all) {
-  StringIR* table_str_node = graph->MakeNode<StringIR>().ValueOrDie();
-  ASSERT_OK(table_str_node->Init("cpu", ast));
-
-  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  ArgMap memsrc_argmap({{{"table", table_str_node}, {"select", nullptr}}, {}});
-  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
-
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+  EXPECT_OK(mem_src->Init("cpu", {}));
   EXPECT_FALSE(mem_src->IsRelationInit());
 
   SourceRelationRule source_relation_rule(compiler_state_.get());
@@ -366,20 +338,9 @@ TEST_F(SourceRelationTest, set_source_select_all) {
 
 TEST_F(SourceRelationTest, set_source_variable_columns) {
   std::vector<std::string> str_columns = {"cpu1", "cpu2"};
-  StringIR* table_str_node = graph->MakeNode<StringIR>().ValueOrDie();
-  std::vector<ExpressionIR*> select_columns;
-  for (const std::string& c : str_columns) {
-    auto select_col = graph->MakeNode<StringIR>().ValueOrDie();
-    EXPECT_OK(select_col->Init(c, ast));
-    select_columns.push_back(select_col);
-  }
-  auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
-  EXPECT_OK(select_list->Init(ast, select_columns));
-  ASSERT_OK(table_str_node->Init("cpu", ast));
 
-  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  ArgMap memsrc_argmap({{{"table", table_str_node}, {"select", select_list}}, {}});
-  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+  EXPECT_OK(mem_src->Init("cpu", str_columns));
 
   EXPECT_FALSE(mem_src->IsRelationInit());
 
@@ -398,13 +359,9 @@ TEST_F(SourceRelationTest, set_source_variable_columns) {
 }
 
 TEST_F(SourceRelationTest, missing_table_name) {
-  StringIR* table_str_node = graph->MakeNode<StringIR>().ValueOrDie();
-  std::string table_name = "not_a_real_table_name";
-  ASSERT_OK(table_str_node->Init(table_name, ast));
-
-  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  ArgMap memsrc_argmap({{{"table", table_str_node}, {"select", nullptr}}, {}});
-  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+  std::string table_name = "table_name22";
+  EXPECT_OK(mem_src->Init(table_name, {}));
 
   EXPECT_FALSE(mem_src->IsRelationInit());
 
@@ -417,20 +374,8 @@ TEST_F(SourceRelationTest, missing_table_name) {
 TEST_F(SourceRelationTest, missing_columns) {
   std::string missing_column = "blah_column";
   std::vector<std::string> str_columns = {"cpu1", "cpu2", missing_column};
-  StringIR* table_str_node = graph->MakeNode<StringIR>().ValueOrDie();
-  std::vector<ExpressionIR*> select_columns;
-  for (const std::string& c : str_columns) {
-    auto select_col = graph->MakeNode<StringIR>().ValueOrDie();
-    EXPECT_OK(select_col->Init(c, ast));
-    select_columns.push_back(select_col);
-  }
-  auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
-  EXPECT_OK(select_list->Init(ast, select_columns));
-  ASSERT_OK(table_str_node->Init("cpu", ast));
-
-  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  ArgMap memsrc_argmap({{{"table", table_str_node}, {"select", select_list}}, {}});
-  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+  EXPECT_OK(mem_src->Init("cpu", str_columns));
 
   EXPECT_FALSE(mem_src->IsRelationInit());
 
@@ -447,32 +392,26 @@ class BlockingAggRuleTest : public RulesTest {
  protected:
   void SetUp() override { RulesTest::SetUp(); }
   void SetUpGraph(bool resolve_agg_func, bool resolve_agg_group) {
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
-    auto constant = graph->MakeNode<IntIR>().ValueOrDie();
+    auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
     EXPECT_OK(constant->Init(10, ast));
 
-    auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    auto agg_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"},
                              std::vector<ExpressionIR*>({constant}), ast));
     if (resolve_agg_func) {
       agg_func->SetOutputDataType(func_data_type);
     }
 
-    auto agg_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
-    EXPECT_OK(agg_func_lambda->Init({}, {{{agg_func_col, agg_func}}, {}}, /* num_parents */ 1));
-
-    auto by_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
     auto group = MakeColumn(group_name, /* parent_op_idx */ 0);
     // Code to resolve column.
     if (resolve_agg_group) {
       group->ResolveColumn(1, group_data_type);
     }
-    EXPECT_OK(by_func_lambda->Init({group_name}, group, /* num_parents */ 1));
 
-    agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
-    ArgMap amap({{{"by", by_func_lambda}, {"fn", agg_func_lambda}}, {}});
-    ASSERT_OK(agg->Init(mem_src, amap, ast));
+    agg = graph->MakeNode<BlockingAggIR>(ast).ValueOrDie();
+    ASSERT_OK(agg->Init(mem_src, {group}, {{agg_func_col, agg_func}}));
   }
   MemorySourceIR* mem_src;
   BlockingAggIR* agg;
@@ -522,18 +461,18 @@ class MapRuleTest : public RulesTest {
  protected:
   void SetUp() override { RulesTest::SetUp(); }
   void SetUpGraph(bool resolve_map_func, bool keep_input_columns) {
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
-    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+    auto constant1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
     EXPECT_OK(constant1->Init(10, ast));
 
-    auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+    auto constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
     EXPECT_OK(constant2->Init(10, ast));
 
-    auto func_1 = graph->MakeNode<FuncIR>().ValueOrDie();
+    auto func_1 = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     EXPECT_OK(func_1->Init({FuncIR::Opcode::add, "+", "add"},
                            std::vector<ExpressionIR*>({constant1, constant2}), ast));
-    auto func_2 = graph->MakeNode<FuncIR>().ValueOrDie();
+    auto func_2 = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     EXPECT_OK(func_2->Init({FuncIR::Opcode::add, "*", "multiply"},
                            std::vector<ExpressionIR*>({constant1, constant2}), ast));
     if (resolve_map_func) {
@@ -541,13 +480,8 @@ class MapRuleTest : public RulesTest {
       func_2->SetOutputDataType(func_data_type);
     }
 
-    auto map_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
-    EXPECT_OK(map_func_lambda->Init({}, {{new_col_name, func_1}, {old_col_name, func_2}},
-                                    /* num_parents */ 1));
-
-    map = graph->MakeNode<MapIR>().ValueOrDie();
-    ArgMap amap({{{"fn", map_func_lambda}}, {}});
-    ASSERT_OK(map->Init(mem_src, amap, ast));
+    map = graph->MakeNode<MapIR>(ast).ValueOrDie();
+    ASSERT_OK(map->Init(mem_src, {{new_col_name, func_1}, {old_col_name, func_2}}));
     map->set_keep_input_columns(keep_input_columns);
   }
   MemorySourceIR* mem_src;
@@ -611,12 +545,11 @@ class MetadataResolverRuleTest : public RulesTest {
     return property_status.ValueOrDie();
   }
   void SetUpGraph() {
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
 
-    md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-    ArgMap amap({{}, {}});
-    PL_CHECK_OK(md_resolver->Init(mem_src, amap, ast));
+    md_resolver = graph->MakeNode<MetadataResolverIR>(ast).ValueOrDie();
+    PL_CHECK_OK(md_resolver->Init(mem_src));
   }
   MemorySourceIR* mem_src;
   MetadataResolverIR* md_resolver;
@@ -732,15 +665,12 @@ class OperatorRelationTest : public RulesTest {
  protected:
   void SetUp() override {
     RulesTest::SetUp();
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
   LimitIR* MakeLimit(OperatorIR* parent) {
-    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
-    EXPECT_OK(constant1->Init(10, ast));
-    LimitIR* limit = graph->MakeNode<LimitIR>().ValueOrDie();
-    ArgMap amap({{{"rows", constant1}}, {}});
-    EXPECT_OK(limit->Init(parent, amap, ast));
+    LimitIR* limit = graph->MakeNode<LimitIR>(ast).ValueOrDie();
+    EXPECT_OK(limit->Init(parent, 10));
     return limit;
   }
   MemorySourceIR* mem_src;
@@ -770,23 +700,23 @@ class CompilerTimeExpressionTest : public RulesTest {
  protected:
   void SetUp() override {
     RulesTest::SetUp();
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
   FuncIR* MakeConstantAddition(int64_t l, int64_t r) {
-    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+    auto constant1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
     EXPECT_OK(constant1->Init(l, ast));
 
-    auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+    auto constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
     EXPECT_OK(constant2->Init(r, ast));
-    auto func = graph->MakeNode<FuncIR>().ValueOrDie();
+    auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
                          std::vector<ExpressionIR*>({constant1, constant2}), ast));
     return func;
   }
   RangeIR* MakeRange(IRNode* start, IRNode* stop) {
-    RangeIR* range = graph->MakeNode<RangeIR>().ValueOrDie();
-    EXPECT_OK(range->Init(mem_src, start, stop, ast));
+    RangeIR* range = graph->MakeNode<RangeIR>(ast).ValueOrDie();
+    EXPECT_OK(range->Init(mem_src, start, stop));
     return range;
   }
   MemorySourceIR* mem_src;
@@ -794,7 +724,7 @@ class CompilerTimeExpressionTest : public RulesTest {
 
 TEST_F(CompilerTimeExpressionTest, one_argument_function) {
   auto start = MakeConstantAddition(4, 6);
-  auto stop = graph->MakeNode<IntIR>().ValueOrDie();
+  auto stop = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init(13, ast));
 
   RangeIR* range = MakeRange(start, stop);
@@ -835,10 +765,10 @@ TEST_F(CompilerTimeExpressionTest, one_argument_string) {
   int64_t expected_time = time_now - exp_time.count();
   std::string stop_str_repr = absl::Substitute("-$0m", num_minutes_ago);
 
-  auto stop = graph->MakeNode<StringIR>().ValueOrDie();
+  auto stop = graph->MakeNode<StringIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init(stop_str_repr, ast));
 
-  auto start = graph->MakeNode<IntIR>().ValueOrDie();
+  auto start = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(start->Init(10, ast));
 
   RangeIR* range = MakeRange(start, stop);
@@ -868,10 +798,10 @@ TEST_F(CompilerTimeExpressionTest, two_argument_string) {
   int64_t expected_start_time = time_now - exp_start_time.count();
   std::string start_str_repr = absl::Substitute("-$0m", start_num_minutes_ago);
 
-  auto start = graph->MakeNode<StringIR>().ValueOrDie();
+  auto start = graph->MakeNode<StringIR>(ast).ValueOrDie();
   EXPECT_OK(start->Init(start_str_repr, ast));
 
-  auto stop = graph->MakeNode<StringIR>().ValueOrDie();
+  auto stop = graph->MakeNode<StringIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init(stop_str_repr, ast));
 
   RangeIR* range = MakeRange(start, stop);
@@ -890,11 +820,11 @@ TEST_F(CompilerTimeExpressionTest, two_argument_string) {
 }
 
 TEST_F(CompilerTimeExpressionTest, nested_function) {
-  IntIR* constant = graph->MakeNode<IntIR>().ValueOrDie();
+  IntIR* constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant->Init(111, ast));
-  IntIR* start = graph->MakeNode<IntIR>().ValueOrDie();
+  IntIR* start = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(start->Init(10, ast));
-  FuncIR* stop = graph->MakeNode<FuncIR>().ValueOrDie();
+  FuncIR* stop = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init({FuncIR::Opcode::add, "+", "add"},
                        std::vector<ExpressionIR*>({MakeConstantAddition(123, 321), constant}),
                        ast));
@@ -915,13 +845,13 @@ TEST_F(CompilerTimeExpressionTest, nested_function) {
 }
 
 TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
-  IntIR* constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+  IntIR* constant1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant1->Init(111, ast));
-  IntIR* constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+  IntIR* constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant2->Init(11, ast));
-  IntIR* start = graph->MakeNode<IntIR>().ValueOrDie();
+  IntIR* start = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(start->Init(10, ast));
-  FuncIR* stop = graph->MakeNode<FuncIR>().ValueOrDie();
+  FuncIR* stop = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init({FuncIR::Opcode::sub, "-", "subtract"},
                        std::vector<ExpressionIR*>({constant1, constant2}), ast));
 
@@ -941,13 +871,13 @@ TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
 }
 
 TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
-  IntIR* constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+  IntIR* constant1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant1->Init(3, ast));
-  IntIR* constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+  IntIR* constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant2->Init(8, ast));
-  IntIR* start = graph->MakeNode<IntIR>().ValueOrDie();
+  IntIR* start = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(start->Init(10, ast));
-  FuncIR* stop = graph->MakeNode<FuncIR>().ValueOrDie();
+  FuncIR* stop = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init({FuncIR::Opcode::mult, "*", "multiply"},
                        std::vector<ExpressionIR*>({constant1, constant2}), ast));
 
@@ -967,9 +897,9 @@ TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
 }
 
 TEST_F(CompilerTimeExpressionTest, already_completed) {
-  IntIR* constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+  IntIR* constant1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant1->Init(24, ast));
-  IntIR* constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+  IntIR* constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant2->Init(8, ast));
 
   RangeIR* range = MakeRange(constant1, constant2);
@@ -990,25 +920,22 @@ class VerifyFilterExpressionTest : public RulesTest {
  protected:
   void SetUp() override {
     RulesTest::SetUp();
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
   FuncIR* MakeFilter() {
-    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+    auto constant1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
     EXPECT_OK(constant1->Init(10, ast));
 
-    auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+    auto constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
     EXPECT_OK(constant2->Init(10, ast));
 
-    filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    filter_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"},
                                 std::vector<ExpressionIR*>({constant1, constant2}), ast));
 
-    auto filter_func_lambda = MakeLambda(filter_func, /* num_parents */ 1);
-
-    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{{"fn", filter_func_lambda}}, {}});
-    EXPECT_OK(filter->Init(mem_src, amap, ast));
+    FilterIR* filter = graph->MakeNode<FilterIR>(ast).ValueOrDie();
+    EXPECT_OK(filter->Init(mem_src, filter_func));
     return filter_func;
   }
   MemorySourceIR* mem_src;
@@ -1044,45 +971,10 @@ class ResolveMetadataTest : public RulesTest {
  protected:
   void SetUp() override {
     RulesTest::SetUp();
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
-  FilterIR* MakeFilter(OperatorIR* parent, ColumnIR* filter_value) {
-    auto constant1 = graph->MakeNode<StringIR>().ValueOrDie();
-    EXPECT_OK(constant1->Init("value", ast));
 
-    FuncIR* filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"},
-                                std::vector<ExpressionIR*>({constant1, filter_value}), ast));
-
-    auto filter_func_lambda = MakeLambda(filter_func, /* num_parents */ 1);
-
-    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{{"fn", filter_func_lambda}}, {}});
-    EXPECT_OK(filter->Init(parent, amap, ast));
-    return filter;
-  }
-
-  MetadataResolverIR* MakeMetadataResolver(OperatorIR* parent) {
-    md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-    EXPECT_OK(md_resolver->Init(parent, {{}, {}}, ast));
-    return md_resolver;
-  }
-  BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
-    auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"},
-                             std::vector<ExpressionIR*>({fn_column}), ast));
-
-    auto agg_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
-    EXPECT_OK(agg_func_lambda->Init({}, {{{"agg_fn", agg_func}}, {}}, /* num_parents */ 1));
-
-    auto by_func_lambda = MakeLambda(by_column, {"group"}, /* num_parents */ 1);
-
-    BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
-    ArgMap amap({{{"by", by_func_lambda}, {"fn", agg_func_lambda}}, {}});
-    EXPECT_OK(agg->Init(parent, amap, ast));
-    return agg;
-  }
   MemorySourceIR* mem_src;
   MetadataResolverIR* md_resolver;
 };
@@ -1198,14 +1090,13 @@ class FormatMetadataTest : public RulesTest {
  protected:
   void SetUp() override {
     RulesTest::SetUp();
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
-    md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
-    PL_CHECK_OK(md_resolver->Init(mem_src, {{}, {}}, ast));
+    md_resolver = MakeMetadataResolver(mem_src);
   }
 
   MetadataIR* MakeMetadataIR(const std::string& name, int64_t parent_op_idx) {
-    auto metadata = graph->MakeNode<MetadataIR>().ValueOrDie();
+    auto metadata = graph->MakeNode<MetadataIR>(ast).ValueOrDie();
     PL_CHECK_OK(metadata->Init(name, parent_op_idx, ast));
     MetadataProperty* property = md_handler->GetProperty(name).ValueOrDie();
     PL_CHECK_OK(metadata->ResolveMetadataColumn(md_resolver, property));
@@ -1292,21 +1183,14 @@ class CheckRelationRule : public RulesTest {
  protected:
   void SetUp() override {
     RulesTest::SetUp();
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
 
   MapIR* MakeMap(OperatorIR* parent, std::string column_name) {
-    auto map_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(map_func->Init({FuncIR::Opcode::add, "+", "add"},
-                             std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)}), ast));
-
-    auto* map_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
-    EXPECT_OK(map_func_lambda->Init({}, {{{column_name, map_func}}, {}}, /* num_parents */ 1));
-
-    MapIR* map = graph->MakeNode<MapIR>().ValueOrDie();
-    ArgMap amap({{{"fn", map_func_lambda}}, {}});
-    EXPECT_OK(map->Init(parent, amap, ast));
+    auto map_func = MakeAddFunc(MakeInt(10), MakeInt(12));
+    MapIR* map = graph->MakeNode<MapIR>(ast).ValueOrDie();
+    EXPECT_OK(map->Init(parent, {{column_name, map_func}}));
     return map;
   }
 
@@ -1373,21 +1257,17 @@ class MetadataResolverConversionTest : public RulesTest {
  protected:
   void SetUp() override {
     RulesTest::SetUp();
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
 
   MapIR* MakeMap(OperatorIR* parent) {
-    auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    auto agg_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     EXPECT_OK(agg_func->Init({FuncIR::Opcode::add, "+", "add"},
                              std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)}), ast));
 
-    auto agg_func_lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
-    EXPECT_OK(agg_func_lambda->Init({}, {{{"agg_fn", agg_func}}, {}}, /* num_parents */ 1));
-
-    MapIR* agg = graph->MakeNode<MapIR>().ValueOrDie();
-    ArgMap amap({{{"fn", agg_func_lambda}}, {}});
-    EXPECT_OK(agg->Init(parent, amap, ast));
+    MapIR* agg = graph->MakeNode<MapIR>(ast).ValueOrDie();
+    EXPECT_OK(agg->Init(parent, {{"agg_fn", agg_func}}));
     return agg;
   }
 
@@ -1712,19 +1592,16 @@ TEST_F(RulesTest, simple_remove_range) {
   int64_t start_time_ns = 2;
   int64_t stop_time_ns = 4;
 
-  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  RangeIR* range = graph->MakeNode<RangeIR>().ValueOrDie();
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+  RangeIR* range = graph->MakeNode<RangeIR>(ast).ValueOrDie();
   IntIR* start_time = MakeInt(start_time_ns);
   IntIR* stop_time = MakeInt(stop_time_ns);
-  MemorySinkIR* sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-  StringIR* sink_name = MakeString("sink");
 
   EXPECT_OK(mem_src->SetRelation(cpu_relation));
-  EXPECT_OK(range->Init(mem_src, start_time, stop_time, ast));
+  EXPECT_OK(range->Init(mem_src, start_time, stop_time));
 
-  ArgMap amap;
-  amap.kwargs["name"] = sink_name;
-  EXPECT_OK(sink->Init(range, amap, ast));
+  MakeMemSink(range, "sink");
+
   EXPECT_FALSE(mem_src->IsTimeSet());
   EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2, 3, 4));
 
@@ -1749,7 +1626,7 @@ TEST_F(RulesTest, simple_remove_range) {
 TEST_F(RulesTest, drop_to_map) {
   MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>(ast).ConsumeValueOrDie();
   DropIR* drop = graph->MakeNode<DropIR>(ast).ConsumeValueOrDie();
-  EXPECT_OK(drop->Init(mem_src, {"cpu0", "cpu1"}, ast));
+  EXPECT_OK(drop->Init(mem_src, {"cpu0", "cpu1"}));
   MemorySinkIR* sink = MakeMemSink(drop, "sink");
 
   EXPECT_OK(mem_src->SetRelation(cpu_relation));
@@ -1779,30 +1656,25 @@ TEST_F(RulesTest, references_transfer) {
   int64_t start_time_ns = 2;
   int64_t stop_time_ns = 4;
 
-  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  RangeIR* range = graph->MakeNode<RangeIR>().ValueOrDie();
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+  RangeIR* range = graph->MakeNode<RangeIR>(ast).ValueOrDie();
   IntIR* start_time = MakeInt(start_time_ns);
   IntIR* stop_time = MakeInt(stop_time_ns);
-  MapIR* map = graph->MakeNode<MapIR>().ValueOrDie();
-  LambdaIR* lambda = graph->MakeNode<LambdaIR>(ast).ValueOrDie();
   ColumnIR* column = MakeColumn("test", /* parent_op_idx */ 0);
-  MemorySinkIR* sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-  StringIR* sink_name = MakeString("sink");
 
   EXPECT_OK(mem_src->SetRelation(cpu_relation));
-  EXPECT_OK(range->Init(mem_src, start_time, stop_time, ast));
+  EXPECT_OK(range->Init(mem_src, start_time, stop_time));
+  int64_t range_id = range->id();
 
-  ArgMap map_arg_map;
-  EXPECT_OK(lambda->Init({}, {{{"test", column}}, {}}, /* num_parents */ 1));
-  map_arg_map.kwargs["fn"] = lambda;
-  EXPECT_OK(map->Init(range, map_arg_map, ast));
+  MapIR* map = MakeMap(range, {{"test", column}});
 
-  ArgMap sink_arg_map;
-  sink_arg_map.kwargs["name"] = sink_name;
-  EXPECT_OK(sink->Init(map, sink_arg_map, ast));
+  MemorySinkIR* sink = MakeMemSink(map, "sink");
   EXPECT_FALSE(mem_src->IsTimeSet());
   EXPECT_EQ(column->ReferenceID().ConsumeValueOrDie(), range->id());
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2, 3, 4, 6, 7));
+  EXPECT_THAT(graph, HasEdge(mem_src, range));
+  EXPECT_THAT(graph, HasEdge(range, map));
+  EXPECT_THAT(graph, HasEdge(map, sink));
+
   // Apply the rule.
   MergeRangeOperatorRule rule(compiler_state_.get());
   auto status = rule.Execute(graph.get());
@@ -1811,7 +1683,12 @@ TEST_F(RulesTest, references_transfer) {
 
   EXPECT_EQ(column->ReferenceID().ConsumeValueOrDie(), mem_src->id());
   // checks to make sure that all the edges related to range are removed.
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 4, 6, 7));
+  // Range no longer exists.
+  EXPECT_THAT(graph, Not(HasEdge(mem_src, range)));
+  EXPECT_THAT(graph, Not(HasEdge(range, map)));
+  EXPECT_THAT(graph, HasEdge(mem_src, map));
+  EXPECT_THAT(graph, HasEdge(map, sink));
+  EXPECT_FALSE(graph->HasNode(range_id));
 }
 
 TEST_F(RulesTest, setup_join_type_rule) {
@@ -1850,18 +1727,18 @@ TEST_F(RulesTest, setup_join_type_rule) {
 }
 
 TEST_F(RulesTest, eval_compile_time_test) {
-  auto c1 = graph->MakeNode<IntIR>().ValueOrDie();
+  auto c1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(c1->Init(10, ast));
-  auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
+  auto c2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(c2->Init(9, ast));
 
-  auto add_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto add_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(add_func->Init(FuncIR::op_map["+"], std::vector<ExpressionIR*>({c1, c2}), ast));
-  auto mult_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto mult_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], std::vector<ExpressionIR*>({c1, add_func}), ast));
 
   // hours(10*(10 + 9))
-  auto hours_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto hours_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(hours_func->Init({FuncIR::Opcode::non_op, "", "hours"},
                              std::vector<ExpressionIR*>({mult_func}), ast));
 
@@ -1874,18 +1751,18 @@ TEST_F(RulesTest, eval_compile_time_test) {
 }
 
 TEST_F(RulesTest, eval_partial_compile_time_test) {
-  auto c1 = graph->MakeNode<IntIR>().ValueOrDie();
+  auto c1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(c1->Init(10, ast));
-  auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
+  auto c2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(c2->Init(9, ast));
 
-  auto add_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto add_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(add_func->Init(FuncIR::op_map["+"], std::vector<ExpressionIR*>({c1, c2}), ast));
-  auto mult_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto mult_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], std::vector<ExpressionIR*>({c1, add_func}), ast));
 
   // not_hours(10*(10 + 9))
-  auto not_hours_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto not_hours_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(not_hours_func->Init({FuncIR::Opcode::non_op, "", "not_hours"},
                                  std::vector<ExpressionIR*>({mult_func}), ast));
 
