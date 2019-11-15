@@ -17,7 +17,7 @@ export function VizierTopNav() {
       </Nav>
       <NavDropdown alignRight title={<img src={userImage} />} id='profile-icon-dropdown'>
         <NavDropdown.Item as={NavLink} to='/vizier/agents'>Admin</NavDropdown.Item>
-        <NavDropdown.Item as={NavLink} to='/docs/getting-started'>Docs</NavDropdown.Item>
+        <NavDropdown.Item href='/docs/getting-started'>Docs</NavDropdown.Item>
         <Dropdown.Divider />
         <NavDropdown.Item as={NavLink} to='/logout'>Logout</NavDropdown.Item>
       </NavDropdown>
