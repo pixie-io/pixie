@@ -90,6 +90,65 @@ TEST_F(LogicalPlannerTest, many_agents) {
   EXPECT_THAT(out_pb, Partially(EqualsProto(distributedpb::testutils::kExpectedPlanTwoAgents)));
 }
 
+const char* kHttpRequestStats = R"pxl(
+t1 = dataframe(table='http_events').range(start='-30s')
+
+mapop = t1.map(fn=lambda r: {
+  'time_': r.time_,
+  'upid': r.upid,
+  'service': r.attr.service,
+  'remote_addr': r.remote_addr,
+  'remote_port': r.remote_port,
+  'http_resp_status': r.http_resp_status,
+  'http_resp_message': r.http_resp_message,
+  'http_resp_latency_ms': r.http_resp_latency_ns / 1.0E6,
+  'failure': r.http_resp_status >= 400,
+
+  'range_group': pl.subtract(r.time_, pl.modulo(r.time_, 1000000000)),
+})
+quantiles_agg = mapop.agg(by=lambda r: [r.attr.service], fn=lambda r: {
+  'latency_quantiles': pl.quantiles(r.http_resp_latency_ms),
+  'errors': pl.mean(r.failure),
+  'throughput_total': pl.count(r.http_resp_status),
+})
+quantiles_table = quantiles_agg.map(fn=lambda r:{
+  'service': r.attr.service,
+  'latency_p50': pl.pluck(r.latency_quantiles, 'p50'),
+  'latency_p90': pl.pluck(r.latency_quantiles, 'p90'),
+  'latency_p99': pl.pluck(r.latency_quantiles, 'p99'),
+  'errors': r.errors,
+  'throughput_total': r.throughput_total,
+})
+
+# The Range aggregate to calcualte the requests per second.
+range_agg = mapop.agg(by=lambda r: [r.attr.service, r.range_group], fn=lambda r: {
+  'requests_per_window': pl.count(r.http_resp_status)
+})
+
+rps_table = range_agg.agg(by=lambda r: r.attr.service, fn= lambda r: {'rps': pl.mean(r.requests_per_window)})
+joined_table = quantiles_table.merge(rps_table,  type='inner',
+                                    cond=lambda r1, r2: r1.service == r2._attr_service_name,
+                                    cols=lambda r1, r2: {
+                                      "service" : r1.service,
+                                      'latency(p50)': r1.latency_p50,
+                                      'latency(p90)': r1.latency_p90,
+                                      'latency(p99)': r1.latency_p99,
+                                      'errors': r1.errors,
+                                      'throughput (rps)': r2.rps,
+                                      'throughput total': r1.throughput_total,
+                                    })
+joined_table.filter(fn=lambda r: r.service != "").result(name="out")
+
+)pxl";
+
+TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
+  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto plan_or_s = planner->Plan(distributedpb::testutils::CreateTwoAgentsOneKelvinPlannerState(
+                                     distributedpb::testutils::kHttpEventsSchema),
+                                 kHttpRequestStats);
+  EXPECT_OK(plan_or_s);
+}
+
 }  // namespace logical_planner
 }  // namespace compiler
 }  // namespace carnot

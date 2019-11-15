@@ -50,6 +50,78 @@ relation_map {
 
 )proto";
 
+const char* kHttpEventsSchema = R"proto(
+relation_map {
+  key: "http_events"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+    }
+    columns {
+      column_name: "http_major_version"
+      column_type: INT64
+    }
+    columns {
+      column_name: "http_minor_version"
+      column_type: INT64
+    }
+    columns {
+      column_name: "http_content_type"
+      column_type: INT64
+    }
+    columns {
+      column_name: "http_req_headers"
+      column_type: STRING
+    }
+    columns {
+      column_name: "http_req_method"
+      column_type: STRING
+    }
+    columns {
+      column_name: "http_req_path"
+      column_type: STRING
+    }
+    columns {
+      column_name: "http_req_body"
+      column_type: STRING
+    }
+    columns {
+      column_name: "http_resp_headers"
+      column_type: STRING
+    }
+    columns {
+      column_name: "http_resp_status"
+      column_type: INT64
+    }
+    columns {
+      column_name: "http_resp_message"
+      column_type: STRING
+    }
+    columns {
+      column_name: "http_resp_body"
+      column_type: STRING
+    }
+    columns {
+      column_name: "http_resp_latency_ns"
+      column_type: INT64
+    }
+  }
+}
+)proto";
+
 const char* kAgentCarnotInfoTpl = R"proto(
 query_broker_address: "$0"
 has_grpc_server: false
@@ -155,7 +227,7 @@ distributedpb::LogicalPlannerState CreateOneAgentOneKelvinPlannerState() {
   return LoadLogicalPlannerStatePB(distributed_state_proto, kSchema);
 }
 
-distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState() {
+distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState(const std::string& schema) {
   distributedpb::LogicalPlannerState plan;
   std::string table_name = "table1";
   std::string tabletization_key = "upid";
@@ -165,7 +237,11 @@ distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState() {
       {MakeAgentCarnotInfo("agent1", {table_info1}), MakeAgentCarnotInfo("agent2", {table_info2}),
        MakeKelvinCarnotInfo("kelvin", "1111")});
 
-  return LoadLogicalPlannerStatePB(distributed_state_proto, kSchema);
+  return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
+}
+
+distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState() {
+  return CreateTwoAgentsOneKelvinPlannerState(kSchema);
 }
 
 const char* kExpectedPlanTwoAgents = R"proto(

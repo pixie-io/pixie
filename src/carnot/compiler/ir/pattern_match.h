@@ -822,7 +822,6 @@ struct OperatorChainMatch : public ParentMatch {
       return false;
     }
     auto op_node = static_cast<const OperatorIR*>(node);
-    DCHECK_LE(op_node->Children().size(), 1UL);
     if (op_node->Children().size() != 1 || !parent_.Match(op_node)) {
       return false;
     }

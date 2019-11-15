@@ -59,6 +59,8 @@ const distributedpb::TableInfo* TabletSourceConversionRule::GetTableInfo(
 }
 
 StatusOr<bool> MemorySourceTabletRule::Apply(IRNode* ir_node) {
+  // TODO(philkuz) this only matches the situation where there's one child of the tablet source
+  // group.
   if (Match(ir_node, OperatorChain(TabletSourceGroup(), Filter()))) {
     return ReplaceTabletSourceGroupWithFilterChild(static_cast<TabletSourceGroupIR*>(ir_node));
   } else if (Match(ir_node, TabletSourceGroup())) {
