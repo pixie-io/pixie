@@ -133,7 +133,7 @@ rename.result(name='out')
 # 
 # Returns the Total Resource Usage for each pod.
 # 
-t1 = dataframe(table='process_stats').Range(start='-60s')
+t1 = dataframe(table='process_stats').range(start='-60s')
 # Convert to better units.
 mapop = t1.map(fn=lambda r:{
   'time_': r.time_,
@@ -215,7 +215,7 @@ t3 = t2.limit(rows=100).result(name='resp_table')
 ["Network Stats",
 """
 t1 = dataframe(table='network_stats', select=['time_', 'pod_id', 'rx_bytes', 'rx_packets', 'rx_errors',
-                                         'rx_drops', 'tx_bytes', 'tx_packets', 'tx_errors', 'tx_drops']).Range(start='-30s')
+                                         'rx_drops', 'tx_bytes', 'tx_packets', 'tx_errors', 'tx_drops']).range(start='-30s')
 t2 = t1.limit(rows=100).result(name='stats')
 """]
 ]
