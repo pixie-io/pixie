@@ -385,10 +385,10 @@ func TestServerExecuteQuery(t *testing.T) {
 		Plan(plannerStatePB, testQuery).
 		Return(plannerResultPB, nil)
 
-	s, err := newServer(env, mds, nc, createExecutorMock, planner)
-	results, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+	s, err := newServer(env, mds, nc, createExecutorMock)
+	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
-	})
+	}, planner)
 
 	if !assert.Nil(t, err) {
 		t.Fatalf(err.Error())
@@ -454,11 +454,11 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 		Plan(plannerStatePB, testQuery).
 		Return(plannerResultPB, nil)
 
-	s, err := NewServer(env, mds, nc, planner)
+	s, err := NewServer(env, mds, nc)
 
-	results, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
-	})
+	}, planner)
 	if err != nil {
 		t.Fatal("Failed to return results from ExecuteQuery.")
 	}
@@ -497,9 +497,7 @@ func TestReceiveAgentQueryResult(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	planner := mock_controllers.NewMockPlanner(ctrl)
-
-	s, err := NewServer(env, mds, nc, planner)
+	s, err := NewServer(env, mds, nc)
 	if err != nil {
 		t.Fatal("Creating server failed.")
 	}
@@ -555,9 +553,7 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	planner := mock_controllers.NewMockPlanner(ctrl)
-
-	s, err := NewServer(env, mds, nc, planner)
+	s, err := NewServer(env, mds, nc)
 
 	if err != nil {
 		t.Fatal("Creating server failed.")
@@ -608,9 +604,8 @@ func TestGetMultipleAgentInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
-	planner := mock_controllers.NewMockPlanner(ctrl)
 
-	s, err := NewServer(env, mds, nc, planner)
+	s, err := NewServer(env, mds, nc)
 
 	if err != nil {
 		t.Fatal("Creating server failed.")
@@ -693,10 +688,10 @@ func TestPlannerErrorResult(t *testing.T) {
 		Plan(plannerStatePB, badQuery).
 		Return(badPlannerResultPB, nil)
 
-	s, err := newServer(env, mds, nc, createExecutorMock, planner)
-	result, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+	s, err := newServer(env, mds, nc, createExecutorMock)
+	result, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
-	})
+	}, planner)
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Cannot execute query.")
@@ -814,11 +809,11 @@ func TestPlannerExcludesSomeAgents(t *testing.T) {
 		Plan(plannerStatePB, testQuery).
 		Return(plannerResultPB, nil)
 
-	s, err := newServer(env, mds, nc, createExecutorMock, planner)
+	s, err := newServer(env, mds, nc, createExecutorMock)
 	// _, err = s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
-	results, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
-	})
+	}, planner)
 
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -894,11 +889,11 @@ func TestErrorInStatusResult(t *testing.T) {
 		Plan(plannerStatePB, badQuery).
 		Return(badPlannerResultPB, nil)
 
-	s, err := newServer(env, mds, nc, createExecutorMock, planner)
+	s, err := newServer(env, mds, nc, createExecutorMock)
 
-	result, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+	result, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
-	})
+	}, planner)
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Error while executing query.")

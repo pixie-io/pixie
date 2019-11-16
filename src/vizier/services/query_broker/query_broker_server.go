@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	logicalplanner "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
@@ -67,9 +66,8 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to NATS.")
 	}
-	plannerPtr := logicalplanner.New()
-	defer plannerPtr.Free()
-	server, err := controllers.NewServer(env, mdsClient, natsConn, plannerPtr)
+
+	server, err := controllers.NewServer(env, mdsClient, natsConn)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}

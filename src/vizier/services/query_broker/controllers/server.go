@@ -15,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/compiler"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	logicalplanner "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
@@ -44,29 +45,26 @@ type Server struct {
 	mdsClient   metadatapb.MetadataServiceClient
 	natsConn    *nats.Conn
 	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID) Executor
-	planner     Planner
 	executors   map[uuid.UUID]Executor
 	// Mutex is used for managing query executor instances.
 	mux sync.Mutex
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env querybrokerenv.QueryBrokerEnv, mdsClient metadatapb.MetadataServiceClient, natsConn *nats.Conn, planner Planner) (*Server, error) {
-	return newServer(env, mdsClient, natsConn, NewQueryExecutor, planner)
+func NewServer(env querybrokerenv.QueryBrokerEnv, mdsClient metadatapb.MetadataServiceClient, natsConn *nats.Conn) (*Server, error) {
+	return newServer(env, mdsClient, natsConn, NewQueryExecutor)
 }
 
 func newServer(env querybrokerenv.QueryBrokerEnv,
 	mdsClient metadatapb.MetadataServiceClient,
 	natsConn *nats.Conn,
-	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID) Executor,
-	planner Planner) (*Server, error) {
+	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID) Executor) (*Server, error) {
 
 	return &Server{
 		env:         env,
 		mdsClient:   mdsClient,
 		natsConn:    natsConn,
 		newExecutor: newExecutor,
-		planner:     planner,
 		executors:   make(map[uuid.UUID]Executor),
 	}, nil
 }
@@ -148,8 +146,8 @@ func makePlannerState(agentList []uuid.UUID, kelvinList []uuid.UUID, schema *sch
 	return &plannerState, nil
 }
 
-// ExecuteQuery executes a query on multiple agents and compute node.
-func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
+// ExecuteQueryWithPlanner executes a query with the provided planner.
+func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb.QueryRequest, planner Planner) (*querybrokerpb.VizierQueryResponse, error) {
 	// Get the table schema that is presumably shared across agents.
 	mdsSchemaReq := &metadatapb.SchemaRequest{}
 	mdsSchemaResp, err := s.mdsClient.GetSchemas(ctx, mdsSchemaReq)
@@ -197,7 +195,7 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 	}(start)
 
 	// Compile the query plan.
-	plannerResultPB, err := s.planner.Plan(plannerState, req.QueryStr)
+	plannerResultPB, err := planner.Plan(plannerState, req.QueryStr)
 	if err != nil {
 		return nil, err
 	}
@@ -246,6 +244,13 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 	s.deleteExecutorForQuery(queryID)
 
 	return queryResponse, nil
+}
+
+// ExecuteQuery executes a query on multiple agents and compute node.
+func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
+	planner := logicalplanner.New()
+	defer planner.Free()
+	return s.ExecuteQueryWithPlanner(ctx, req, planner)
 }
 
 // GetSchemas returns the schemas in the system.
