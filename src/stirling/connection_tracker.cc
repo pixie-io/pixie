@@ -20,6 +20,9 @@
 #include "src/stirling/mysql/mysql_stitcher.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
+DEFINE_bool(infer_conn_info, true,
+            "Whether to attempt connection information inference when remote endpoint information "
+            "is missing.");
 
 namespace pl {
 namespace stirling {
@@ -388,10 +391,10 @@ bool ConnectionTracker::ReadyForDestruction() const {
 }
 
 void ConnectionTracker::IterationPreTick(system::ProcParser* proc_parser,
-                                         const std::map<int, system::SocketInfo>& connections) {
+                                         const std::map<int, system::SocketInfo>* connections) {
   // If remote_addr is missing, it means the connect/accept was not traced.
   // Attempt to infer the connection information, to populate remote_addr.
-  if (open_info_.remote_addr == "-") {
+  if (open_info_.remote_addr == "-" && FLAGS_infer_conn_info && connections != nullptr) {
     InferConnInfo(proc_parser, connections);
   }
 }
@@ -427,8 +430,9 @@ void ConnectionTracker::HandleInactivity() {
 }
 
 void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
-                                      const std::map<int, system::SocketInfo>& connections) {
+                                      const std::map<int, system::SocketInfo>* connections) {
   DCHECK(proc_parser != nullptr);
+  DCHECK(connections != nullptr);
 
   if (conn_resolution_failed_) {
     // We've previously tried and failed to perform connection inference,
@@ -471,11 +475,11 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   if (!inode_num_or_nullopt) {
     return;
   }
-  int inode_num = inode_num_or_nullopt.value();
+  int inode_num = *inode_num_or_nullopt;
 
   // We found the inode number, now lets see if it maps to a known connection.
-  auto iter = connections.find(inode_num);
-  if (iter == connections.end()) {
+  auto iter = connections->find(inode_num);
+  if (iter == connections->end()) {
     VLOG(2) << "Can't infer remote endpoint. No inode match (possibly not a TCP connection).";
     return;
   }

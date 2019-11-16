@@ -16,6 +16,7 @@
 #include "src/stirling/socket_resolver.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
+DECLARE_bool(infer_conn_info);
 
 namespace pl {
 namespace stirling {
@@ -71,7 +72,7 @@ class ConnectionTracker {
    * @param connections A map of inodes to endpoint information.
    */
   void InferConnInfo(system::ProcParser* proc_parser,
-                     const std::map<int, system::SocketInfo>& connections);
+                     const std::map<int, system::SocketInfo>* connections);
 
   /**
    * @brief Processes the connection tracker, parsing raw events into messages,
@@ -265,7 +266,7 @@ class ConnectionTracker {
    * @param connections A map of inodes to endpoint information.
    */
   void IterationPreTick(system::ProcParser* proc_parser,
-                        const std::map<int, system::SocketInfo>& connections);
+                        const std::map<int, system::SocketInfo>* connections);
 
   /**
    * @brief Sets a the duration after which a connection is deemed to be inactive.

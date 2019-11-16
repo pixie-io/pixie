@@ -133,13 +133,13 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
 
   s = netlink_socket_prober_->InetConnections(socket_connections_.get());
   if (!s.ok()) {
-    LOG(ERROR) << "Failed to probe InetConnections";
+    LOG(ERROR) << absl::Substitute("Failed to probe InetConnections [msg=$0]", s.msg());
     socket_connections_ = nullptr;
   }
 
   s = netlink_socket_prober_->UnixConnections(socket_connections_.get());
   if (!s.ok()) {
-    LOG(ERROR) << "Failed to probe UnixConnections";
+    LOG(ERROR) << absl::Substitute("Failed to probe UnixConnections [msg=$0]", s.msg());
     socket_connections_ = nullptr;
   }
 
@@ -350,7 +350,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, TrafficProtoco
         continue;
       }
 
-      tracker.IterationPreTick(proc_parser_.get(), *socket_connections_);
+      tracker.IterationPreTick(proc_parser_.get(), socket_connections_.get());
 
       // Don't try to extract and parse messages when template type is nullptr_t.
       // Template parameter of nullptr_t is used to process connections with unknown protocols.
