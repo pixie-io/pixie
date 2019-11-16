@@ -3,26 +3,27 @@ import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/python/python';
 import 'codemirror/theme/monokai.css';
 
-import { OperationVariables } from 'apollo-client';
-import { ContentBox } from 'components/content-box/content-box';
+import {OperationVariables} from 'apollo-client';
+import {vizierGQLClient} from 'common/vizier-gql-client';
+import {ContentBox} from 'components/content-box/content-box';
 import gql from 'graphql-tag';
 // @ts-ignore : TS does not like image files.
 import * as loadingSvg from 'images/icons/Loading.svg';
 import * as React from 'react';
-import { Mutation, MutationFn, Query } from 'react-apollo';
-import { Button, Dropdown, DropdownButton } from 'react-bootstrap';
+import {Mutation, MutationFn, Query} from 'react-apollo';
+import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
 import * as CodeMirror from 'react-codemirror';
-import { HotKeys } from 'react-hotkeys';
-import { Link } from 'react-router-dom';
+import {HotKeys} from 'react-hotkeys';
+import {Link} from 'react-router-dom';
 import * as toml from 'toml';
-import { pluralize } from 'utils/pluralize';
+import {pluralize} from 'utils/pluralize';
 import * as ResultDataUtils from 'utils/result-data-utils';
 
 // TODO(zasgar/michelle): Figure out how to impor schema properly
-import { GQLQueryResult } from '../../../../vizier/services/api/controller/schema/schema';
+import {GQLQueryResult} from '../../../../vizier/services/api/controller/schema/schema';
 // @ts-ignore : TS does not seem to like this import.
 import * as PresetQueries from './preset-queries.toml';
-import { QueryResultViewer } from './query-result-viewer';
+import {QueryResultViewer} from './query-result-viewer';
 
 const HOT_KEY_MAP = {
   EXECUTE_QUERY: ['ctrl+enter', 'command+enter'],
@@ -87,7 +88,7 @@ const PRESET_QUERIES = toml.parse(PresetQueries).queries;
 
 // This component displays the number of agents available to query.
 const AgentCountDisplay = () => (
-  <Query context={{ clientName: 'vizier' }} query={GET_AGENT_IDS} pollInterval={1000}>
+  <Query client={vizierGQLClient} query={GET_AGENT_IDS} pollInterval={1000}>
     {({ loading, error, data }) => {
       if (loading) { return 'Loading...'; }
       if (error) { return `Error! ${error.message}`; }
@@ -212,7 +213,7 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
       }
     };
     return (
-      <Mutation context={{ clientName: 'vizier' }} mutation={EXECUTE_QUERY}>
+      <Mutation client={vizierGQLClient} mutation={EXECUTE_QUERY}>
         {(executeQuery, { loading, error, data }) => (
           <HotKeys
             className='hotkey-container'

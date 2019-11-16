@@ -1,18 +1,19 @@
-import { ContentBox } from 'components/content-box/content-box';
-import { mount } from 'enzyme';
+import {ContentBox} from 'components/content-box/content-box';
+import {mount} from 'enzyme';
 import * as React from 'react';
-import { MockedProvider } from 'react-apollo/test-utils';
-import { Button, Dropdown, DropdownButton } from 'react-bootstrap';
+import {MockedProvider} from 'react-apollo/test-utils';
+import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
 import * as CodeMirror from 'react-codemirror';
-import { HotKeys } from 'react-hotkeys';
-import { MemoryRouter } from 'react-router-dom';
+import {HotKeys} from 'react-hotkeys';
+import {MemoryRouter} from 'react-router-dom';
 
-import { EXECUTE_QUERY, GET_AGENT_IDS, QueryManager } from './query-manager';
+import {EXECUTE_QUERY, GET_AGENT_IDS, QueryManager} from './query-manager';
 
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // Mock CodeMirror component because it does not mount properly in Jest.
 jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
+jest.mock('common/vizier-gql-client', () => ({}));
 
 describe('<QueryManager/> test', () => {
   it('should update code upon dropdown selection', () => {
@@ -171,6 +172,7 @@ describe('<QueryManager/> test', () => {
           variables: { queryStr: '# Enter Query Here\n' },
         },
         result: {
+          data: null,
           loading: true,
         },
       }];

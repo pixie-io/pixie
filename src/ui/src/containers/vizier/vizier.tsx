@@ -1,5 +1,6 @@
 import './vizier.scss';
 
+import {vizierGQLClient} from 'common/vizier-gql-client';
 import {DialogBox} from 'components/dialog-box/dialog-box';
 import gql from 'graphql-tag';
 // @ts-ignore : TS does not like image files.
@@ -75,7 +76,7 @@ const ClusterInstructions = (props: ClusterInstructionsProps) => (
 export class VizierMain extends React.Component<VizierMainProps, {}> {
   render() {
     return (
-      <Query context={{ clientName: 'vizier' }} query={CHECK_VIZIER} pollInterval={2500}>
+      <Query client={vizierGQLClient} query={CHECK_VIZIER} pollInterval={2500}>
         {({ loading, error, data }) => {
           if (loading || (error && error.networkError)) {
             // TODO(michelle): Make a separate HTTP request to Vizier so we can get a better error message

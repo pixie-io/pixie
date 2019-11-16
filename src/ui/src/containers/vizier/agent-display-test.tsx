@@ -1,8 +1,11 @@
 import {mount} from 'enzyme';
 import * as React from 'react';
-import { MockedProvider } from 'react-apollo/test-utils';
+import {MockedProvider} from 'react-apollo/test-utils';
 import * as CodeMirror from 'react-codemirror';
+
 import {AgentDisplay, GET_AGENTS} from './agent-display';
+
+jest.mock('common/vizier-gql-client', () => ({}));
 
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -18,7 +21,7 @@ describe('<AgentDisplay/> test', () => {
           data: {
             vizier: {
               agents: [
-                { state: 'HEALTHY', info: { id: '1', hostInfo: { hostname: 'test'} }, lastHeartbeatMs: 1, uptimeS: 1 },
+                { state: 'HEALTHY', info: { id: '1', hostInfo: { hostname: 'test' } }, lastHeartbeatMs: 1, uptimeS: 1 },
               ],
             },
           },

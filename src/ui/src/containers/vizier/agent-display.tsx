@@ -1,12 +1,13 @@
 import './vizier.scss';
 
-import { ContentBox } from 'components/content-box/content-box';
-import { AutoSizedScrollableTable } from 'components/table/scrollable-table';
-import { distanceInWords, subSeconds } from 'date-fns';
+import {vizierGQLClient} from 'common/vizier-gql-client';
+import {ContentBox} from 'components/content-box/content-box';
+import {AutoSizedScrollableTable} from 'components/table/scrollable-table';
+import {distanceInWords, subSeconds} from 'date-fns';
 import gql from 'graphql-tag';
 import * as React from 'react';
-import { Query } from 'react-apollo';
-import { pluralize } from 'utils/pluralize';
+import {Query} from 'react-apollo';
+import {pluralize} from 'utils/pluralize';
 
 export const GET_AGENTS = gql`
 {
@@ -65,7 +66,7 @@ export class AgentDisplay extends React.Component {
   private loaded = false;
 
   render() {
-    return <Query context={{ clientName: 'vizier' }} query={GET_AGENTS} pollInterval={2500}>
+    return <Query client={vizierGQLClient} query={GET_AGENTS} pollInterval={2500}>
       {({ loading, error, data }) => {
         if (loading && !this.loaded) { return 'Loading...'; }
         if (error) { return `Error! ${error.message}`; }
