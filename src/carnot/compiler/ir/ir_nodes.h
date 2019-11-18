@@ -1242,7 +1242,7 @@ class DropIR : public OperatorIR {
     return std::unordered_map<std::string, IRNode*>();
   }
   Status InitImpl(const ArgMap& args) override;
-  Status Init(OperatorIR* parent, const std::vector<std::string> drop_cols,
+  Status Init(OperatorIR* parent, const std::vector<std::string>& drop_cols,
               const pypa::AstPtr& ast_node);
 
   bool HasLogicalRepr() const override { return false; }

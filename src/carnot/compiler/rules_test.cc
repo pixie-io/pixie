@@ -1753,6 +1753,39 @@ TEST_F(RulesTest, simple_remove_range) {
   EXPECT_FALSE(graph->dag().HasNode(start_time->id()));
 }
 
+TEST_F(RulesTest, drop_to_map) {
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  DropIR* drop = graph->MakeNode<DropIR>().ValueOrDie();
+  EXPECT_OK(drop->Init(mem_src, {"cpu0", "cpu1"}, ast));
+
+  MemorySinkIR* sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
+  StringIR* sink_name = MakeString("sink");
+
+  EXPECT_OK(mem_src->SetRelation(cpu_relation));
+
+  ArgMap sink_amap;
+  sink_amap.kwargs["name"] = sink_name;
+  EXPECT_OK(sink->Init(drop, sink_amap, ast));
+  EXPECT_FALSE(mem_src->IsTimeSet());
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2));
+
+  // Apply the rule.
+  DropToMapOperatorRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+  ASSERT_OK(status);
+  EXPECT_TRUE(status.ValueOrDie());
+
+  // checks to make sure that all the edges related to range are removed.
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 4, 5, 6, 2));
+  EXPECT_FALSE(graph->dag().HasNode(drop->id()));
+
+  auto op = static_cast<MapIR*>(graph->Get(4));
+  EXPECT_EQ(op->type(), IRNodeType::kMap);
+  EXPECT_EQ(op->col_exprs().size(), 2);
+  EXPECT_EQ(op->col_exprs()[0].name, "count");
+  EXPECT_EQ(op->col_exprs()[1].name, "cpu2");
+}
+
 // Make sure that children of Range actually reference the parent.
 TEST_F(RulesTest, references_transfer) {
   int64_t start_time_ns = 2;

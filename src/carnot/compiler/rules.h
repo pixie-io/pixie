@@ -271,6 +271,20 @@ class MergeRangeOperatorRule : public Rule {
   StatusOr<bool> MergeRange(RangeIR* range_ir);
 };
 
+class DropToMapOperatorRule : public Rule {
+  /**
+   * @brief Takes a DropIR and converts it to the corresponding Map IR.
+   */
+ public:
+  explicit DropToMapOperatorRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  StatusOr<bool> DropToMap(DropIR* drop_ir);
+};
+
 class SetupJoinTypeRule : public Rule {
   /**
    * @brief Converts a right join into a left join.

@@ -734,6 +734,11 @@ inline ClassMatch<IRNodeType::kRange> Range() { return ClassMatch<IRNodeType::kR
 inline ClassMatch<IRNodeType::kMap> Map() { return ClassMatch<IRNodeType::kMap>(); }
 
 /**
+ * @brief Match drop operator.
+ */
+inline ClassMatch<IRNodeType::kDrop> Drop() { return ClassMatch<IRNodeType::kDrop>(); }
+
+/**
  * @brief Match blocking_agg operator.
  */
 inline ClassMatch<IRNodeType::kBlockingAgg> BlockingAgg() {

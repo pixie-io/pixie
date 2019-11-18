@@ -391,7 +391,7 @@ Status DropIR::InitImpl(const ArgMap&) {
   return error::Unimplemented("$0 does not implement deprecated InitImpl API.", type_string());
 }
 
-Status DropIR::Init(OperatorIR* parent, const std::vector<std::string> drop_cols,
+Status DropIR::Init(OperatorIR* parent, const std::vector<std::string>& drop_cols,
                     const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   PL_RETURN_IF_ERROR(AddParent(parent));

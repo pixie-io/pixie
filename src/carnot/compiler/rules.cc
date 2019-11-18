@@ -1,3 +1,5 @@
+#include "absl/container/flat_hash_set.h"
+
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -908,6 +910,62 @@ StatusOr<bool> MergeRangeOperatorRule::MergeRange(RangeIR* range_ir) {
   }
   PL_RETURN_IF_ERROR(range_ir->RemoveParent(src_ir));
   DeferNodeDeletion(range_ir->id());
+  return true;
+}
+
+StatusOr<bool> DropToMapOperatorRule::Apply(IRNode* ir_node) {
+  if (Match(ir_node, Drop())) {
+    return DropToMap(static_cast<DropIR*>(ir_node));
+  }
+  return false;
+}
+
+StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
+  IR* ir_graph = drop_ir->graph_ptr();
+  DCHECK_EQ(drop_ir->parents().size(), 1UL);
+  OperatorIR* parent_op = drop_ir->parents()[0];
+
+  absl::flat_hash_set<std::string> dropped_columns;
+  for (const auto& name : drop_ir->col_names()) {
+    dropped_columns.insert(name);
+  }
+
+  PL_ASSIGN_OR_RETURN(MapIR * map_ir, ir_graph->MakeNode<MapIR>());
+  ColExpressionVector col_exprs;
+  std::unordered_set<std::string> col_names;
+
+  DCHECK(parent_op->IsRelationInit());
+  Relation parent_relation = parent_op->relation();
+  for (size_t i = 0; i < parent_relation.NumColumns(); ++i) {
+    auto input_col_name = parent_relation.GetColumnName(i);
+    if (dropped_columns.contains(input_col_name)) {
+      continue;
+    }
+    col_names.insert(input_col_name);
+    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, ir_graph->MakeNode<ColumnIR>());
+    PL_RETURN_IF_ERROR(column_ir->Init(input_col_name, /*parent_op_idx*/ 0, drop_ir->ast_node()));
+    column_ir->ResolveColumn(i, parent_relation.GetColumnType(i));
+    col_exprs.emplace_back(input_col_name, column_ir);
+  }
+
+  // Init the map from the drop.
+  // TODO(nserrino): After lambda maps are deprecated, refactor MapIR to not need
+  // to wrap these with lambdas.
+  PL_ASSIGN_OR_RETURN(LambdaIR * lambda, ir_graph->MakeNode<LambdaIR>());
+  PL_RETURN_IF_ERROR(lambda->Init(col_names, col_exprs, drop_ir->ast_node()));
+  PL_RETURN_IF_ERROR(map_ir->Init(parent_op, {{{"fn", lambda}}, {}}, drop_ir->ast_node()));
+
+  // Update all of drop's dependencies to point to src.
+  for (const auto& dep : drop_ir->Children()) {
+    if (!dep->IsOperator()) {
+      return drop_ir->CreateIRNodeError(
+          "Received unexpected non-operator dependency on Drop node.");
+    }
+    auto casted_node = static_cast<OperatorIR*>(dep);
+    PL_RETURN_IF_ERROR(casted_node->ReplaceParent(drop_ir, map_ir));
+  }
+  PL_RETURN_IF_ERROR(drop_ir->RemoveParent(parent_op));
+  DeferNodeDeletion(drop_ir->id());
   return true;
 }
 
