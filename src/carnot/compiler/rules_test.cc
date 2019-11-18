@@ -526,7 +526,7 @@ TEST_F(BlockingAggRuleTest, failed_resolve_function) {
 class MapRuleTest : public RulesTest {
  protected:
   void SetUp() override { RulesTest::SetUp(); }
-  void SetUpGraph(bool resolve_map_func) {
+  void SetUpGraph(bool resolve_map_func, bool keep_input_columns) {
     mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
     auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
@@ -535,29 +535,36 @@ class MapRuleTest : public RulesTest {
     auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
     EXPECT_OK(constant2->Init(10, ast));
 
-    auto map_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(map_func->Init({FuncIR::Opcode::add, "+", "add"},
-                             std::vector<ExpressionIR*>({constant1, constant2}), ast));
+    auto func_1 = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(func_1->Init({FuncIR::Opcode::add, "+", "add"},
+                           std::vector<ExpressionIR*>({constant1, constant2}), ast));
+    auto func_2 = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(func_2->Init({FuncIR::Opcode::add, "*", "multiply"},
+                           std::vector<ExpressionIR*>({constant1, constant2}), ast));
     if (resolve_map_func) {
-      map_func->SetOutputDataType(func_data_type);
+      func_1->SetOutputDataType(func_data_type);
+      func_2->SetOutputDataType(func_data_type);
     }
 
     auto map_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(map_func_lambda->Init({}, {{{map_func_col, map_func}}, {}}, ast));
+    EXPECT_OK(
+        map_func_lambda->Init({}, {{{new_col_name, func_1}, {old_col_name, func_2}}, {}}, ast));
 
     map = graph->MakeNode<MapIR>().ValueOrDie();
     ArgMap amap({{{"fn", map_func_lambda}}, {}});
     ASSERT_OK(map->Init(mem_src, amap, ast));
+    map->set_keep_input_columns(keep_input_columns);
   }
   MemorySourceIR* mem_src;
   MapIR* map;
   types::DataType func_data_type = types::DataType::INT64;
-  std::string map_func_col = "sum";
+  std::string new_col_name = "sum";
+  std::string old_col_name = "cpu0";
 };
 
 // Relation should resolve, all expressions in operator are resolved.
 TEST_F(MapRuleTest, successful_resolve) {
-  SetUpGraph(true /* resolve_map_func */);
+  SetUpGraph(true /* resolve_map_func */, false /* keep_input_columns */);
   OperatorRelationRule op_rel_rule(compiler_state_.get());
   EXPECT_FALSE(map->IsRelationInit());
   auto result = op_rel_rule.Execute(graph.get());
@@ -566,14 +573,32 @@ TEST_F(MapRuleTest, successful_resolve) {
   ASSERT_TRUE(map->IsRelationInit());
 
   auto result_relation = map->relation();
-  table_store::schema::Relation expected_relation({types::DataType::INT64}, {map_func_col});
-  EXPECT_TRUE(result_relation.col_types() == expected_relation.col_types());
-  EXPECT_TRUE(result_relation.col_names() == expected_relation.col_names());
+  table_store::schema::Relation expected_relation({types::DataType::INT64, types::DataType::INT64},
+                                                  {new_col_name, old_col_name});
+  EXPECT_EQ(result_relation, expected_relation);
+}
+
+// Relation should resolve, all expressions in operator are resolved, and add the previous columns.
+TEST_F(MapRuleTest, successful_resolve_keep_input_columns) {
+  SetUpGraph(true /* resolve_map_func */, true /* keep_input_columns */);
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  EXPECT_FALSE(map->IsRelationInit());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  ASSERT_TRUE(map->IsRelationInit());
+
+  auto result_relation = map->relation();
+  table_store::schema::Relation expected_relation(
+      {types::DataType::INT64, types::DataType::FLOAT64, types::DataType::FLOAT64,
+       types::DataType::INT64, types::DataType::INT64},
+      {"count", "cpu1", "cpu2", new_col_name, old_col_name});
+  EXPECT_EQ(result_relation, expected_relation);
 }
 
 // Rule shouldn't work because function is not resolved.
 TEST_F(MapRuleTest, failed_resolve_function) {
-  SetUpGraph(false /* resolve_map_func */);
+  SetUpGraph(false /* resolve_map_func */, false /* keep_input_columns */);
   OperatorRelationRule op_rel_rule(compiler_state_.get());
   EXPECT_FALSE(map->IsRelationInit());
   auto result = op_rel_rule.Execute(graph.get());

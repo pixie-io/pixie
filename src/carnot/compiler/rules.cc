@@ -251,17 +251,57 @@ StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const
   return true;
 }
 
-StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
-  Relation map_rel;
+Relation RelationFromExprs(const ColExpressionVector& exprs) {
+  Relation rel;
   // Make a new relation with each of the expression key, type pairs.
-  for (auto& entry : map_ir->col_exprs()) {
-    std::string col_name = entry.name;
+  for (auto& entry : exprs) {
+    DCHECK(entry.node->IsDataTypeEvaluated());
+    rel.AddColumn(entry.node->EvaluatedDataType(), entry.name);
+  }
+  return rel;
+}
+
+StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
+  DCHECK_EQ(map_ir->parents().size(), 1UL) << "There should be exactly one parent.";
+  auto parent_relation = map_ir->parents()[0]->relation();
+  const ColExpressionVector& expressions = map_ir->col_exprs();
+
+  for (auto& entry : expressions) {
     if (!entry.node->IsDataTypeEvaluated()) {
       return false;
     }
-    map_rel.AddColumn(entry.node->EvaluatedDataType(), col_name);
   }
-  PL_RETURN_IF_ERROR(map_ir->SetRelation(map_rel));
+
+  if (map_ir->keep_input_columns()) {
+    ColExpressionVector output_expressions;
+
+    absl::flat_hash_set<std::string> new_columns;
+    for (ColumnExpression expr : expressions) {
+      new_columns.insert(expr.name);
+    }
+
+    for (const auto& input_col_name : parent_relation.col_names()) {
+      // If this column is being overwritten with a new expression, skip it here.
+      if (new_columns.contains(input_col_name)) {
+        continue;
+      }
+      // Otherwise, bring over the column from the previous relation.
+      PL_ASSIGN_OR_RETURN(ColumnIR * col_ir, map_ir->graph_ptr()->MakeNode<ColumnIR>());
+      PL_RETURN_IF_ERROR(col_ir->Init(input_col_name, 0 /*parent_op_idx*/, map_ir->ast_node()));
+      col_ir->ResolveColumn(output_expressions.size(),
+                            parent_relation.GetColumnType(input_col_name));
+      output_expressions.push_back(ColumnExpression(input_col_name, col_ir));
+    }
+
+    for (const ColumnExpression& expr : expressions) {
+      output_expressions.push_back(expr);
+    }
+
+    map_ir->set_col_exprs(output_expressions);
+    map_ir->set_keep_input_columns(false);
+  }
+
+  PL_RETURN_IF_ERROR(map_ir->SetRelation(RelationFromExprs(map_ir->col_exprs())));
   return true;
 }
 

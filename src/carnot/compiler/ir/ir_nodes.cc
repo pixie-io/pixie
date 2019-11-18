@@ -367,7 +367,9 @@ Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs) {
   return Status::OK();
 }
 
-bool MapIR::HasLogicalRepr() const { return true; }
+// A rule needs to be applied expanding the input columns before the MapIR has a logical
+// representation.
+bool MapIR::HasLogicalRepr() const { return !keep_input_columns_; }
 
 Status DropIR::InitImpl(const ArgMap&) {
   return error::Unimplemented("$0 does not implement deprecated InitImpl API.", type_string());

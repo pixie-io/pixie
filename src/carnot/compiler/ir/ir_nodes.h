@@ -1210,14 +1210,18 @@ class MapIR : public OperatorIR {
   bool HasLogicalRepr() const override;
 
   const ColExpressionVector& col_exprs() const { return col_exprs_; }
+  void set_col_exprs(const ColExpressionVector& exprs) { col_exprs_ = exprs; }
   Status ToProto(planpb::Operator*) const override;
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  bool keep_input_columns() const { return keep_input_columns_; }
+  void set_keep_input_columns(bool keep) { keep_input_columns_ = keep; }
 
  private:
   Status SetupMapExpressions(LambdaIR* map_func);
   // The map from new column_names to expressions.
   ColExpressionVector col_exprs_;
+  bool keep_input_columns_ = false;
 };
 
 /**
