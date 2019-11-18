@@ -18,6 +18,10 @@ extern "C" {
 
 #include "src/common/base/base.h"
 
+// Macro to load BPF source code embedded in object files.
+// See 'pl_bpf_cc_resource' bazel rule to see how these are generated.
+#define BCC_SRC_STRVIEW(varname, build_label) OBJ_STRVIEW(varname, _binary_##build_label##_bpf_src);
+
 DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
 DECLARE_bool(stirling_bpf_enable_logging);
 

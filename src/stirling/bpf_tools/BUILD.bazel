@@ -16,7 +16,6 @@ pl_cc_library(
         ],
     ),
     deps = [
-        "//src/stirling/common:cc_library",
         "//src/stirling/bcc_bpf_interface:cc_library",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
