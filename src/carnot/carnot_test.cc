@@ -129,6 +129,35 @@ TEST_F(CarnotTest, map_test) {
                  .ConsumeValueOrDie();
   EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
 }
+
+TEST_F(CarnotTest, subscript_map_test) {
+  std::vector<types::Float64Value> col1_in1 = {1.5, 3.2, 8.3};
+  std::vector<types::Float64Value> col1_in2 = {5.1, 11.1};
+
+  auto query = absl::StrJoin(
+      {"queryDF = dataframe(table='test_table', select=['col1', 'col2'])",
+       "queryDF['res'] = queryDF['col1'] + queryDF['col2']", "queryDF.result(name='test_output')"},
+      "\n");
+
+  auto uuid = sole::uuid4();
+  auto s = carnot_->ExecuteQuery(query, uuid, 0);
+  ASSERT_OK(s);
+
+  auto output_table = table_store_->GetTable(GetTableName(uuid, 0));
+  EXPECT_EQ(2, output_table->NumBatches());
+  EXPECT_EQ(3, output_table->NumColumns());
+
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+
+  auto rb2 =
+      output_table->GetRowBatch(1, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  EXPECT_TRUE(rb2->ColumnAt(2)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+}
+
 // Test whether the compiler will handle issues nicely
 TEST_F(CarnotTest, bad_syntax) {
   // Missing paranethesis

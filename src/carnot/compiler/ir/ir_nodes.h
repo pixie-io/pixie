@@ -247,9 +247,11 @@ class IR {
   }
 
   Status AddEdge(int64_t from_node, int64_t to_node);
+  bool HasEdge(int64_t from_node, int64_t to_node);
   bool HasNode(int64_t node_id) { return dag().HasNode(node_id); }
 
   Status AddEdge(IRNode* from_node, IRNode* to_node);
+  bool HasEdge(IRNode* from_node, IRNode* to_node);
   Status DeleteEdge(int64_t from_node, int64_t to_node);
   Status DeleteNode(int64_t node);
   Status DeleteNodeAndChildren(int64_t node);
@@ -1210,11 +1212,13 @@ class MapIR : public OperatorIR {
   bool HasLogicalRepr() const override;
 
   const ColExpressionVector& col_exprs() const { return col_exprs_; }
-  void set_col_exprs(const ColExpressionVector& exprs) { col_exprs_ = exprs; }
+  Status SetColExprs(const ColExpressionVector& exprs);
   Status ToProto(planpb::Operator*) const override;
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   bool keep_input_columns() const { return keep_input_columns_; }
+
+  // TODO(nserrino): Remove when lambda maps are deprecated.
   void set_keep_input_columns(bool keep) { keep_input_columns_ = keep; }
 
  private:

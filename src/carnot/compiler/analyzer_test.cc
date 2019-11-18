@@ -322,6 +322,19 @@ TEST_F(AnalyzerTest, multi_col_map) {
   VLOG(1) << handle_status.status().ToString();
 }
 
+TEST_F(AnalyzerTest, subscript_map) {
+  std::string single_col_map_sum = absl::StrJoin(
+      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+       "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']", "queryDF.result(name='cpu_out')"},
+      "\n");
+  auto ir_graph_status = CompileGraph(single_col_map_sum);
+  ASSERT_OK(ir_graph_status);
+  // now pass into the relation handler.
+  auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
+  EXPECT_OK(handle_status);
+  VLOG(1) << handle_status.status().ToString();
+}
+
 TEST_F(AnalyzerTest, bin_op_test) {
   std::string single_col_map_sum = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",

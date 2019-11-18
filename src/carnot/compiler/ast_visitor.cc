@@ -72,17 +72,77 @@ Status ASTWalker::ProcessModuleNode(const pypa::AstModulePtr& m) {
   return MergeStatuses(status_vector);
 }
 
+Status ASTWalker::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr& subscript,
+                                                const pypa::AstPtr& expr_node) {
+  if (subscript->value->type != AstType::Name) {
+    return CreateAstError(expr_node, "Subscript must be on a Name node, received: $0",
+                          GetAstTypeName(subscript->value->type));
+  }
+  auto assign_name = PYPA_PTR_CAST(Name, subscript->value);
+  auto assign_name_string = GetNameID(subscript->value);
+
+  // Check to make sure this dataframe exists
+  PL_ASSIGN_OR_RETURN(auto parent_op, LookupName(assign_name));
+
+  if (subscript->slice->type != AstType::Index) {
+    return CreateAstError(subscript->slice,
+                          "Expected to receive index as subscript slice, received $0.",
+                          GetAstTypeName(subscript->slice->type));
+  }
+  auto index = PYPA_PTR_CAST(Index, subscript->slice);
+  if (index->value->type != AstType::Str) {
+    return CreateAstError(index->value,
+                          "Expected to receive string as subscript index value, received $0.",
+                          GetAstTypeName(index->value->type));
+  }
+  auto col_name = PYPA_PTR_CAST(Str, index->value)->value;
+
+  // Maps can only assign to the same table as the input table when of the form:
+  // df['foo'] = df['bar'] + 2
+  OperatorContext op_context{{parent_op}, kMapOpId, {assign_name_string}};
+  PL_ASSIGN_OR_RETURN(auto result, ProcessData(expr_node, op_context));
+  if (!result->IsExpression()) {
+    return CreateAstError(
+        expr_node, "Expected to receive expression as map subscript assignment value, received $0.",
+        GetAstTypeName(index->value->type));
+  }
+  auto expr = static_cast<ExpressionIR*>(result);
+
+  // TODO(nserrino): Remove this conversion into lambdas once lambdas are fully removed for maps.
+  PL_ASSIGN_OR_RETURN(LambdaIR * map_lambda_ir_node, ir_graph_->MakeNode<LambdaIR>());
+  // Pull in all columns needed in fn.
+  ColExpressionVector map_exprs = ColExpressionVector({ColumnExpression{col_name, expr}});
+  PL_RETURN_IF_ERROR(
+      map_lambda_ir_node->Init(std::unordered_set<std::string>({col_name}), map_exprs, expr_node));
+
+  PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->MakeNode<MapIR>());
+  ArgMap map_args{{{"fn", map_lambda_ir_node}}, {}};
+  PL_RETURN_IF_ERROR(ir_node->Init(parent_op, map_args, expr_node));
+  ir_node->set_keep_input_columns(true);
+
+  var_table_[assign_name_string] = ir_node;
+
+  return Status::OK();
+}
+
 Status ASTWalker::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   // Check # nodes to assign.
   if (node->targets.size() != 1) {
     return CreateAstError(node, "AssignNodes are only supported with one target.");
   }
   // Get the name that we are targeting.
-  auto expr_node = node->targets[0];
-  if (expr_node->type != AstType::Name) {
-    return CreateAstError(expr_node, "Assign target must be a Name node.");
+  auto target_node = node->targets[0];
+
+  // Special handler for this type of map statement: df['foo'] = df['bar']
+  if (target_node->type == AstType::Subscript) {
+    return ProcessSubscriptMapAssignment(PYPA_PTR_CAST(Subscript, node->targets[0]), node->value);
   }
-  std::string assign_name = GetNameID(expr_node);
+
+  if (target_node->type != AstType::Name) {
+    return CreateAstError(target_node, "Assign target must be a Name node, received: $0",
+                          GetAstTypeName(target_node->type));
+  }
+  std::string assign_name = GetNameID(target_node);
   // Get the object that we want to assign.
   switch (node->value->type) {
     case AstType::Call: {

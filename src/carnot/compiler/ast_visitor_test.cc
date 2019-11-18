@@ -128,6 +128,35 @@ TEST(MapTest, single_col_map) {
   EXPECT_OK(ParseQuery(single_col_div_map_query));
 }
 
+TEST(MapTest, single_col_map_subscript) {
+  std::string single_col_map_sum = absl::StrJoin(
+      {
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF['cpu2'] = queryDF['cpu0'] + queryDF['cpu1']",
+      },
+      "\n");
+  auto result_s = ParseQuery(single_col_map_sum);
+  EXPECT_OK(result_s);
+  auto result = result_s.ValueOrDie();
+
+  MapIR* map;
+  for (const auto node_id : result->dag().nodes()) {
+    if (result->Get(node_id)->type() == IRNodeType::kMap) {
+      map = static_cast<MapIR*>(result->Get(node_id));
+      break;
+    }
+  }
+  EXPECT_NE(map, nullptr);
+  EXPECT_TRUE(map->keep_input_columns());
+
+  std::vector<std::string> output_columns;
+  for (const ColumnExpression& expr : map->col_exprs()) {
+    output_columns.push_back(expr.name);
+  }
+
+  EXPECT_EQ(output_columns, std::vector<std::string>{"cpu2"});
+}
+
 TEST(MapTest, multi_col_map) {
   std::string multi_col = absl::StrJoin(
       {

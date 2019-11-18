@@ -100,10 +100,17 @@ void DAG::AddEdge(int64_t from_node, int64_t to_node) {
 }
 
 void DAG::AddForwardEdge(int64_t from_node, int64_t to_node) {
+  DCHECK(std::find(forward_edges_by_node_[from_node].begin(),
+                   forward_edges_by_node_[from_node].end(),
+                   to_node) == forward_edges_by_node_[from_node].end())
+      << absl::Substitute("Forward edge from $0 to $1 already exists", from_node, to_node);
   forward_edges_by_node_[from_node].push_back(to_node);
 }
 
 void DAG::AddReverseEdge(int64_t to_node, int64_t from_node) {
+  DCHECK(std::find(reverse_edges_by_node_[to_node].begin(), reverse_edges_by_node_[to_node].end(),
+                   from_node) == reverse_edges_by_node_[to_node].end())
+      << absl::Substitute("Reverse edge to $0 from $1 already exists", to_node, from_node);
   reverse_edges_by_node_[to_node].push_back(from_node);
 }
 

@@ -499,8 +499,7 @@ TEST_F(BlockingAggRuleTest, successful_resolve) {
   auto result_relation = agg->relation();
   table_store::schema::Relation expected_relation(
       {types::DataType::INT64, types::DataType::FLOAT64}, {group_name, agg_func_col});
-  EXPECT_TRUE(result_relation.col_types() == expected_relation.col_types());
-  EXPECT_TRUE(result_relation.col_names() == expected_relation.col_names());
+  EXPECT_EQ(result_relation, expected_relation);
 }
 // Rule shouldn't work because column is not resolved.
 TEST_F(BlockingAggRuleTest, failed_resolve_column) {

@@ -275,7 +275,7 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
   if (map_ir->keep_input_columns()) {
     ColExpressionVector output_expressions;
 
-    absl::flat_hash_set<std::string> new_columns;
+    absl::flat_hash_set<std::string> new_columns;  
     for (ColumnExpression expr : expressions) {
       new_columns.insert(expr.name);
     }
@@ -297,8 +297,8 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
       output_expressions.push_back(expr);
     }
 
-    map_ir->set_col_exprs(output_expressions);
     map_ir->set_keep_input_columns(false);
+    PL_RETURN_IF_ERROR(map_ir->SetColExprs(output_expressions));
   }
 
   PL_RETURN_IF_ERROR(map_ir->SetRelation(RelationFromExprs(map_ir->col_exprs())));

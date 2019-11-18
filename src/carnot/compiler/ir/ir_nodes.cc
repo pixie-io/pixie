@@ -18,6 +18,12 @@ Status IR::AddEdge(IRNode* from_node, IRNode* to_node) {
   return AddEdge(from_node->id(), to_node->id());
 }
 
+bool IR::HasEdge(IRNode* from_node, IRNode* to_node) {
+  return HasEdge(from_node->id(), to_node->id());
+}
+
+bool IR::HasEdge(int64_t from_node, int64_t to_node) { return dag_.HasEdge(from_node, to_node); }
+
 Status IR::DeleteEdge(int64_t from_node, int64_t to_node) {
   DCHECK(dag_.HasEdge(from_node, to_node))
       << absl::Substitute("No edge ($0, $1) exists.", from_node, to_node);
@@ -335,6 +341,7 @@ Status RangeIR::ToProto(planpb::Operator*) const {
 }
 
 Status MapIR::InitImpl(const ArgMap& args) {
+  // TODO(nserrino): Refactor this when lambdas passed to maps are fully deprecated.
   DCHECK(args.kwargs.find("fn") != args.kwargs.end());
   IRNode* lambda_func_node = args.kwargs.find("fn")->second;
   if (lambda_func_node->type() != IRNodeType::kLambda) {
@@ -348,22 +355,31 @@ Status MapIR::SetupMapExpressions(LambdaIR* map_func) {
   if (!map_func->HasDictBody()) {
     return map_func->CreateIRNodeError("Expected lambda func to have dictionary body.");
   }
-  col_exprs_ = map_func->col_exprs();
   for (const ColumnExpression& mapped_expression : col_exprs_) {
     ExpressionIR* expr = mapped_expression.node;
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(map_func->id(), expr->id()));
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
   }
+  PL_RETURN_IF_ERROR(SetColExprs(map_func->col_exprs()));
   return graph_ptr()->DeleteNode(map_func->id());
 }
 
-Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs) {
-  PL_RETURN_IF_ERROR(AddParent(parent));
-  col_exprs_ = col_exprs;
+Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
+  col_exprs_ = exprs;
   for (const ColumnExpression& mapped_expression : col_exprs_) {
     ExpressionIR* expr = mapped_expression.node;
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
+    // TODO(nserrino): SetColExprs will be called twice for subscript maps, because the input
+    // column expansion uses it as well. Once lambda maps are deprecated, clean up this logic.
+    if (!graph_ptr()->HasEdge(this, expr)) {
+      PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
+    }
   }
+  return Status::OK();
+}    
+
+// TODO(nserrino): Have keep_input_columns as an argument here once InitImpl is deprecated.
+Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs) {
+  PL_RETURN_IF_ERROR(AddParent(parent));
+  PL_RETURN_IF_ERROR(SetColExprs(col_exprs));
   return Status::OK();
 }
 
