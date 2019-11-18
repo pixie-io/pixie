@@ -23,6 +23,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 // Planner describes the interface for any planner.
@@ -119,21 +120,21 @@ func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string) *distributedpb.
 		GrpcAddress:          grpcAddress,
 		HasDataStore:         false,
 		ProcessesData:        true,
-		AcceptsRemoteSources: false,
+		AcceptsRemoteSources: true,
 	}
 }
 
-func makePlannerState(agentList []uuid.UUID, kelvinList []uuid.UUID, schema *schemapb.Schema) (*distributedpb.LogicalPlannerState, error) {
+func makePlannerState(pemInfo []*agentpb.AgentInfo, kelvinList []*agentpb.AgentInfo, schema *schemapb.Schema) (*distributedpb.LogicalPlannerState, error) {
 	// TODO(philkuz) (PL-910) need to update this to pass table info.
 	carnotInfoList := make([]*distributedpb.CarnotInfo, 0)
-	for _, agentID := range agentList {
-		carnotInfoList = append(carnotInfoList, makeAgentCarnotInfo(agentID))
+	for _, pem := range pemInfo {
+		pemID := utils.UUIDFromProtoOrNil(pem.AgentID)
+		carnotInfoList = append(carnotInfoList, makeAgentCarnotInfo(pemID))
 	}
 
-	for _, kelvinID := range kelvinList {
-		// TODO(philkuz/zasgar) (PL-873) pass the grpc address for kelvin here somehow.
-		// Maybe change KelvinLIst to be a list of structs that contain uuid and grpc address instead?
-		kelvinGrpcAddress := ""
+	for _, kelvin := range kelvinList {
+		kelvinID := utils.UUIDFromProtoOrNil(kelvin.AgentID)
+		kelvinGrpcAddress := kelvin.IPAddress
 		carnotInfoList = append(carnotInfoList, makeKelvinCarnotInfo(kelvinID, kelvinGrpcAddress))
 	}
 
@@ -164,22 +165,18 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb
 		return nil, err
 	}
 
-	var agentList []uuid.UUID
+	var kelvinList []*agentpb.AgentInfo
+	var pemList []*agentpb.AgentInfo
 
-	for _, info := range mdsResp.Info {
-		agentIDPB := info.Agent.Info.AgentID
-		agentID, err := utils.UUIDFromProto(agentIDPB)
-		if err != nil {
-			return nil, err
+	for _, m := range mdsResp.Info {
+		if m.Agent.Info.Capabilities.CollectsData {
+			pemList = append(pemList, m.Agent.Info)
+		} else {
+			kelvinList = append(kelvinList, m.Agent.Info)
 		}
-		agentList = append(agentList, agentID)
 	}
 
-	// TODO(philkuz/zasgar) (PL-873) populate kelvinList and pass the grpc address for kelvin here somehow.
-	// Maybe change KelvinLIst to be a list of structs that contain uuid and grpc address instead?
-	var kelvinList []uuid.UUID
-
-	plannerState, err := makePlannerState(agentList, kelvinList, schema)
+	plannerState, err := makePlannerState(pemList, kelvinList, schema)
 	if err != nil {
 		return nil, err
 	}

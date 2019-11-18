@@ -30,6 +30,9 @@ info {
 			host_info {
 				hostname: "test_host"
 			}
+			capabilities {
+				collects_data: true
+			}
 		}
 	}
 	status {
@@ -105,6 +108,9 @@ info {
 			host_info {
 				hostname: "test_host"
 			}
+			capabilities {
+				collects_data: true
+			}
 		}
 	}
 	status {
@@ -119,6 +125,9 @@ info {
 			}
 			host_info {
 				hostname: "another_host"
+			}
+			capabilities {
+				collects_data: true
 			}
 		}
 	}
