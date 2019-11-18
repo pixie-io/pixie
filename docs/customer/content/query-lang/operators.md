@@ -88,7 +88,7 @@ Note that at the moment, this operator does not make the table available for que
 
 Nothing
 
-## map()
+## map
 
 `df.map(Lambda fn)`
 
@@ -96,27 +96,13 @@ Nothing
 
 ```python
 df = dataframe(table="http_events")
-df.map(fn=lambda r: {
-  'upid': r.upid, # copy the column. 
-  'http_resp_latency_ms': r.http_resp_latency_ns / 1.0E6, # apply an arithmetic operation.
-  'http_body_first10': pl.substring(r.http_body, 0, 10), # apply a UDF to a column.
-})
+df['http_resp_latency_ms'] = df['http_resp_latency_ns' / 1.0E6 # apply an arithmetic operation.
+df['http_body_first10'] = pl.substring(df['http_body'], 0, 10)
 ```
 
 #### Description
 
-`Map` performs a projection on the Dataframe, mapping the original column values to a set of new column values according to scalar functions. 
-
-#### Arguments
-
-* `fn` (*type lambda*): a lambda function that specifies the expressions that create the output Dataframe. The body 
-of this lambda function must be a dictionary where the keys are the new column names and the values are the expressions. The set of functions that you can execute are 
-listed in the [Scalar Functions document](/user-guides/functions).
-
-#### Returns
-
-A Dataframe that is the result of this Operator's projections, as described by the `fn` argument.
-The size of the relation should be equal to the number of dictionary elements specified in `fn`.
+`Map`, expressed as a subscript assignment, performs a projection on the Dataframe, mapping the original column values to a set of new column values according to scalar functions. The original columns in the input dataframe are kept in the output dataframe.
 
 ## agg()
 

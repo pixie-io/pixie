@@ -40,11 +40,8 @@ operations together
 
 ```python 
 table = dataframe(table="http_events")
-mapop = table.map(fn=lambda r: {
-  'upid': r.upid,
-  'http_resp_latency_ms': r.http_resp_latency_ns/1.0E6,
-})
-aggop = mapop.agg(by=lambda r: r.upid, fn=lambda r:{
+table['http_resp_latency_ms'] = table['http_resp_latency_ns']/1.0E6
+aggop = table.agg(by=lambda r: r.upid, fn=lambda r:{
   'resp_latency_mean': pl.mean(r.http_resp_latency_ms)
 }) 
 ```
@@ -54,11 +51,8 @@ Finally, to view the computed data in your data window, you must append a `Resul
 ```python
 # Data created will now be passed up to the UI.
 table = dataframe(table="http_events")
-mapop = table.map(fn=lambda r: {
-  'upid': r.upid,
-  'http_resp_latency_ms': r.http_resp_latency_ns/1.0E6,
-})
-aggop = mapop.agg(by=lambda r: r.upid, fn=lambda r:{
+table['http_resp_latency_ms'] = table['http_resp_latency_ns']/1.0E6
+aggop = table.agg(by=lambda r: r.upid, fn=lambda r:{
   'resp_latency_mean': pl.mean(r.http_resp_latency_ms)
 }).result(name="table_name")
 ```
