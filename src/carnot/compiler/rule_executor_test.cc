@@ -34,24 +34,24 @@ class RuleExecutorTest : public OperatorTests {
 
     ast = MakeTestAstPtr();
     graph = std::make_shared<IR>();
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
     SetupGraph();
   }
   void SetupGraph() {
     map = graph->MakeNode<MapIR>(ast).ValueOrDie();
     int_constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
-    PL_CHECK_OK(int_constant->Init(10, ast));
+    PL_CHECK_OK(int_constant->Init(10));
     int_constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
-    PL_CHECK_OK(int_constant2->Init(12, ast));
+    PL_CHECK_OK(int_constant2->Init(12));
     col = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
-    PL_CHECK_OK(col->Init("count", /* parent_op_idx */ 0, ast));
+    PL_CHECK_OK(col->Init("count", /* parent_op_idx */ 0));
     func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     func2 = graph->MakeNode<FuncIR>(ast).ValueOrDie();
     PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
-                           std::vector<ExpressionIR*>({int_constant, col}), ast));
+                           std::vector<ExpressionIR*>({int_constant, col})));
     PL_CHECK_OK(func2->Init({FuncIR::Opcode::add, "+", "add"},
-                            std::vector<ExpressionIR*>({int_constant2, func}), ast));
+                            std::vector<ExpressionIR*>({int_constant2, func})));
     PL_CHECK_OK(map->Init(mem_src, {{"func", func2}}));
   }
   std::unique_ptr<CompilerState> compiler_state_;

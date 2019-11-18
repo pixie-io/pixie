@@ -46,8 +46,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataframeOp(const pypa::AstPtr& ast
   std::string table_name = static_cast<StringIR*>(table)->str();
   PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
                       ParseStringListIR(static_cast<ListIR*>(select)));
-  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op, ir_graph_->MakeNode<MemorySourceIR>(ast));
-  PL_RETURN_IF_ERROR(mem_source_op->Init(table_name, columns));
+  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
+                      ir_graph_->CreateNode<MemorySourceIR>(ast, table_name, columns));
   return StatusOr(std::make_shared<Dataframe>(mem_source_op));
 }
 
@@ -74,8 +74,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessPrint(const pypa::AstPtr& ast,
   PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
                       ParseStringListIR(static_cast<ListIR*>(cols)));
 
-  PL_ASSIGN_OR_RETURN(MemorySinkIR * mem_sink_op, ir_graph_->MakeNode<MemorySinkIR>(ast));
-  PL_RETURN_IF_ERROR(mem_sink_op->Init(out_op, out_name, columns));
+  PL_ASSIGN_OR_RETURN(MemorySinkIR * mem_sink_op,
+                      ir_graph_->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
   return StatusOr(std::make_shared<NoneObject>(mem_sink_op));
 }
 
@@ -350,40 +350,36 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessOpCallNode(const pypa::AstCallPtr& 
 }
 
 StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessStr(const pypa::AstStrPtr& ast) {
-  PL_ASSIGN_OR_RETURN(StringIR * ir_node, ir_graph_->MakeNode<StringIR>());
   PL_ASSIGN_OR_RETURN(auto str_value, GetStrAstValue(ast));
-  PL_RETURN_IF_ERROR(ir_node->Init(str_value, ast));
-  return ir_node;
+  return ir_graph_->CreateNode<StringIR>(ast, str_value);
 }
 
-Status ASTVisitorImpl::InitCollectionData(CollectionIR* collection, const pypa::AstPtr& ast,
-                                          const pypa::AstExprList& elements,
-                                          const OperatorContext& op_context) {
+StatusOr<std::vector<ExpressionIR*>> ASTVisitorImpl::ProcessCollectionChildren(
+    const pypa::AstExprList& elements, const OperatorContext& op_context) {
   std::vector<ExpressionIR*> children;
   for (auto& child : elements) {
     PL_ASSIGN_OR_RETURN(IRNode * child_node, ProcessData(child, op_context));
     if (!child_node->IsExpression()) {
-      return CreateAstError(ast, "Can't support '$0' as a Collection member.",
+      return CreateAstError(child, "Can't support '$0' as a Collection member.",
                             child_node->type_string());
     }
     children.push_back(static_cast<ExpressionIR*>(child_node));
   }
-  PL_RETURN_IF_ERROR(collection->Init(ast, children));
-  return Status::OK();
+  return children;
 }
 
 StatusOr<ListIR*> ASTVisitorImpl::ProcessList(const pypa::AstListPtr& ast,
                                               const OperatorContext& op_context) {
-  ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
-  PL_RETURN_IF_ERROR(InitCollectionData(ir_node, ast, ast->elements, op_context));
-  return ir_node;
+  PL_ASSIGN_OR_RETURN(std::vector<ExpressionIR*> expr_vec,
+                      ProcessCollectionChildren(ast->elements, op_context));
+  return ir_graph_->CreateNode<ListIR>(ast, expr_vec);
 }
 
 StatusOr<TupleIR*> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
                                                 const OperatorContext& op_context) {
-  TupleIR* ir_node = ir_graph_->MakeNode<TupleIR>().ValueOrDie();
-  PL_RETURN_IF_ERROR(InitCollectionData(ir_node, ast, ast->elements, op_context));
-  return ir_node;
+  PL_ASSIGN_OR_RETURN(std::vector<ExpressionIR*> expr_vec,
+                      ProcessCollectionChildren(ast->elements, op_context));
+  return ir_graph_->CreateNode<TupleIR>(ast, expr_vec);
 }
 
 StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessLambdaNestedAttribute(
@@ -432,9 +428,10 @@ StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessMetadataAttribute(
                           "to access Metadata.",
                           value);
   }
-  PL_ASSIGN_OR_RETURN(MetadataIR * md_node, ir_graph_->MakeNode<MetadataIR>());
   int64_t parent_op_idx = arg_op_iter->second;
-  PL_RETURN_IF_ERROR(md_node->Init(attribute_value, parent_op_idx, val_attr->attribute));
+  PL_ASSIGN_OR_RETURN(
+      MetadataIR * md_node,
+      ir_graph_->CreateNode<MetadataIR>(val_attr->attribute, attribute_value, parent_op_idx));
   return LambdaExprReturn(md_node, {attribute_value});
 }
 
@@ -481,8 +478,8 @@ StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessRecordColumn(const std::string
                                                                int64_t parent_op_idx) {
   std::unordered_set<std::string> column_names;
   column_names.insert(column_name);
-  PL_ASSIGN_OR_RETURN(ColumnIR * column, ir_graph_->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(column->Init(column_name, parent_op_idx, column_ast_node));
+  PL_ASSIGN_OR_RETURN(ColumnIR * column,
+                      ir_graph_->CreateNode<ColumnIR>(column_ast_node, column_name, parent_op_idx));
   return LambdaExprReturn(column, column_names);
 }
 
@@ -495,15 +492,11 @@ StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessArglessFunction(
 StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& node) {
   switch (node->num_type) {
     case pypa::AstNumber::Type::Float: {
-      PL_ASSIGN_OR_RETURN(FloatIR * ir_node, ir_graph_->MakeNode<FloatIR>());
-      PL_RETURN_IF_ERROR(ir_node->Init(node->floating, node));
-      return ir_node;
+      return ir_graph_->CreateNode<FloatIR>(node, node->floating);
     }
     case pypa::AstNumber::Type::Integer:
     case pypa::AstNumber::Type::Long: {
-      PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->MakeNode<IntIR>());
-      PL_RETURN_IF_ERROR(ir_node->Init(node->integer, node));
-      return ir_node;
+      return ir_graph_->CreateNode<IntIR>(node, node->integer);
     }
     default:
       return CreateAstError(node, "Couldn't find number type $0", node->num_type);
@@ -513,20 +506,20 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& 
 StatusOr<LambdaExprReturn> ASTVisitorImpl::BuildLambdaFunc(
     const FuncIR::Op& op, const std::vector<LambdaExprReturn>& children_ret_expr,
     const pypa::AstPtr& parent_node) {
-  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->MakeNode<FuncIR>());
   std::vector<ExpressionIR*> expressions;
-  auto ret = LambdaExprReturn(ir_node);
+  std::unordered_set<std::string> columns;
   for (auto expr_ret : children_ret_expr) {
     if (expr_ret.StringOnly()) {
       return CreateAstError(parent_node, "Attribute call with '$0' prefix not allowed in lambda.",
                             kCompileTimeFuncPrefix);
-    } else {
-      expressions.push_back(expr_ret.expr_);
-      ret.MergeColumns(expr_ret);
     }
+    expressions.push_back(expr_ret.expr_);
+    columns.insert(expr_ret.input_relation_columns_.begin(),
+                   expr_ret.input_relation_columns_.end());
   }
-  PL_RETURN_IF_ERROR(ir_node->Init(op, expressions, parent_node));
-  return ret;
+  PL_ASSIGN_OR_RETURN(FuncIR * ir_node,
+                      ir_graph_->CreateNode<FuncIR>(parent_node, op, expressions));
+  return LambdaExprReturn(ir_node, columns);
 }
 
 StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessLambdaBinOp(const LambdaOperatorMap& arg_op_map,
@@ -605,9 +598,8 @@ StatusOr<LambdaExprReturn> WrapLambdaExprReturn(StatusOr<ExpressionIR*> node) {
 
 StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessLambdaList(const LambdaOperatorMap& arg_op_map,
                                                              const pypa::AstListPtr& node) {
-  ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
-  LambdaExprReturn expr_return(ir_node);
   std::vector<ExpressionIR*> children;
+  std::unordered_set<std::string> columns;
   for (auto& child : node->elements) {
     PL_ASSIGN_OR_RETURN(auto child_attr, ProcessLambdaExpr(arg_op_map, child));
     if (child_attr.StringOnly() || (!child_attr.expr_->IsColumn())) {
@@ -615,11 +607,12 @@ StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessLambdaList(const LambdaOperato
           node, "Lambda list can only handle Metadata and Column types. Can't handle $0.",
           child_attr.expr_->type_string());
     }
-    expr_return.MergeColumns(child_attr);
     children.push_back(child_attr.expr_);
+    columns.insert(child_attr.input_relation_columns_.begin(),
+                   child_attr.input_relation_columns_.end());
   }
-  PL_RETURN_IF_ERROR(ir_node->Init(node, children));
-  return expr_return;
+  PL_ASSIGN_OR_RETURN(ListIR * ir_node, ir_graph_->CreateNode<ListIR>(node, children));
+  return LambdaExprReturn(ir_node, columns);
 }
 
 StatusOr<LambdaExprReturn> ASTVisitorImpl::ProcessLambdaExpr(const LambdaOperatorMap& arg_op_map,
@@ -715,32 +708,23 @@ StatusOr<LambdaBodyReturn> ASTVisitorImpl::ProcessLambdaDict(const LambdaOperato
 
 StatusOr<LambdaIR*> ASTVisitorImpl::ProcessLambda(const pypa::AstLambdaPtr& ast,
                                                   const OperatorContext&) {
-  LambdaIR* lambda_node = ir_graph_->MakeNode<LambdaIR>(ast->body).ValueOrDie();
   PL_ASSIGN_OR_RETURN(LambdaOperatorMap arg_op_map, ProcessLambdaArgs(ast));
   int64_t number_of_parents = arg_op_map.size();
-  LambdaBodyReturn return_struct;
-  switch (ast->body->type) {
-    case AstType::Dict: {
-      PL_ASSIGN_OR_RETURN(return_struct,
-                          ProcessLambdaDict(arg_op_map, PYPA_PTR_CAST(Dict, ast->body)));
-      PL_RETURN_IF_ERROR(lambda_node->Init(return_struct.input_relation_columns_,
-                                           return_struct.col_exprs_, number_of_parents));
-      return lambda_node;
-    }
-
-    default: {
-      PL_ASSIGN_OR_RETURN(LambdaExprReturn return_val, ProcessLambdaExpr(arg_op_map, ast->body));
-      PL_RETURN_IF_ERROR(lambda_node->Init(return_val.input_relation_columns_, return_val.expr_,
-                                           number_of_parents));
-      return lambda_node;
-    }
+  if (ast->body->type == AstType::Dict) {
+    PL_ASSIGN_OR_RETURN(LambdaBodyReturn return_struct,
+                        ProcessLambdaDict(arg_op_map, PYPA_PTR_CAST(Dict, ast->body)));
+    return ir_graph_->CreateNode<LambdaIR>(ast->body, return_struct.input_relation_columns_,
+                                           return_struct.col_exprs_, number_of_parents);
   }
+
+  PL_ASSIGN_OR_RETURN(LambdaExprReturn return_val, ProcessLambdaExpr(arg_op_map, ast->body));
+  return ir_graph_->CreateNode<LambdaIR>(ast->body, return_val.input_relation_columns_,
+                                         return_val.expr_, number_of_parents);
 }
 
 StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr& node,
                                                          const OperatorContext& op_context) {
   std::string op_str = pypa::to_string(node->op);
-  PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
 
   PL_ASSIGN_OR_RETURN(IRNode * left, ProcessData(node->left, op_context));
   PL_ASSIGN_OR_RETURN(IRNode * right, ProcessData(node->right, op_context));
@@ -758,12 +742,11 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr
         "expression.",
         right->type_string());
   }
-  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->MakeNode<FuncIR>());
+
+  PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
   std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
                                             static_cast<ExpressionIR*>(right)};
-  PL_RETURN_IF_ERROR(ir_node->Init(op, expressions, node));
-
-  return ir_node;
+  return ir_graph_->CreateNode<FuncIR>(node, op, expressions);
 }
 
 StatusOr<ColumnIR*> ASTVisitorImpl::ProcessSubscriptColumn(const pypa::AstSubscriptPtr& subscript,
@@ -797,9 +780,7 @@ StatusOr<ColumnIR*> ASTVisitorImpl::ProcessSubscriptColumn(const pypa::AstSubscr
   }
   auto col_name = PYPA_PTR_CAST(Str, index->value)->value;
 
-  PL_ASSIGN_OR_RETURN(ColumnIR * subscript_col, ir_graph_->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(subscript_col->Init(col_name, /* parent_op_idx */ 0, subscript));
-  return subscript_col;
+  return ir_graph_->CreateNode<ColumnIR>(subscript, col_name, /* parent_op_idx */ 0);
 }
 
 StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCall(const pypa::AstCallPtr& node,
@@ -837,11 +818,8 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCall(const pypa::AstCallPtr& 
     func_args.push_back(static_cast<ExpressionIR*>(result));
   }
 
-  PL_ASSIGN_OR_RETURN(FuncIR * func_ir, ir_graph_->MakeNode<FuncIR>());
   FuncIR::Op op{FuncIR::Opcode::non_op, "", attr_fn_str};
-  PL_RETURN_IF_ERROR(func_ir->Init(op, func_args, node));
-
-  return func_ir;
+  return ir_graph_->CreateNode<FuncIR>(node, op, func_args);
 }
 
 StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,

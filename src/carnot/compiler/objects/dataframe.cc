@@ -162,9 +162,9 @@ StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
         "'suffixes' must be a tuple with 2 elements. Received $0", suffix_strs.size());
   }
 
-  PL_ASSIGN_OR_RETURN(JoinIR * join_op, df->graph()->MakeNode<JoinIR>(ast));
-  PL_RETURN_IF_ERROR(
-      join_op->Init({df->op(), right}, how_type, left_on_cols, right_on_cols, suffix_strs));
+  PL_ASSIGN_OR_RETURN(JoinIR * join_op, df->graph()->CreateNode<JoinIR>(
+                                            ast, std::vector<OperatorIR*>{df->op(), right},
+                                            how_type, left_on_cols, right_on_cols, suffix_strs));
   return StatusOr(std::make_shared<Dataframe>(join_op));
 }
 
@@ -177,8 +177,8 @@ StatusOr<std::vector<ColumnIR*>> JoinHandler::ProcessCols(IRNode* node, std::str
     std::vector<ColumnIR*> columns(list->children().size());
     for (const auto& [idx, node] : Enumerate(list->children())) {
       StringIR* str = static_cast<StringIR*>(node);
-      PL_ASSIGN_OR_RETURN(ColumnIR * col, graph->MakeNode<ColumnIR>());
-      PL_RETURN_IF_ERROR(col->Init(str->str(), parent_index, str->ast_node()));
+      PL_ASSIGN_OR_RETURN(ColumnIR * col,
+                          graph->CreateNode<ColumnIR>(str->ast_node(), str->str(), parent_index));
       columns[idx] = col;
     }
     return columns;
@@ -186,8 +186,8 @@ StatusOr<std::vector<ColumnIR*>> JoinHandler::ProcessCols(IRNode* node, std::str
     return node->CreateIRNodeError("'$0' must be a label or a list of labels", arg_name);
   }
   StringIR* str = static_cast<StringIR*>(node);
-  PL_ASSIGN_OR_RETURN(ColumnIR * col, graph->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(col->Init(str->str(), parent_index, str->ast_node()));
+  PL_ASSIGN_OR_RETURN(ColumnIR * col,
+                      graph->CreateNode<ColumnIR>(str->ast_node(), str->str(), parent_index));
   return std::vector<ColumnIR*>{col};
 }
 
@@ -205,8 +205,9 @@ StatusOr<QLObjectPtr> AggHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
     aggregate_expressions.push_back({name, parsed_expr});
   }
 
-  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_op, df->graph()->MakeNode<BlockingAggIR>(ast));
-  PL_RETURN_IF_ERROR(agg_op->Init(df->op(), {}, aggregate_expressions));
+  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_op,
+                      df->graph()->CreateNode<BlockingAggIR>(
+                          ast, df->op(), std::vector<ColumnIR*>{}, aggregate_expressions));
   return StatusOr(std::make_shared<Dataframe>(agg_op));
 }
 
@@ -231,10 +232,9 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, TupleIR* tuple) {
   if (func->args().size() != 0) {
     return func->CreateIRNodeError("Expected function to not have specified arguments");
   }
-  PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->MakeNode<ColumnIR>(childone->ast_node()));
-  // TODO(philkuz) remove ast_node init arguemnt upon refactoring ast node placement.
   // parent_op_idx is 0 because we only have one parent for an aggregate.
-  PL_RETURN_IF_ERROR(argcol->Init(argcol_name, /* parent_op_idx */ 0));
+  PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->CreateNode<ColumnIR>(childone->ast_node(), argcol_name,
+                                                                  /* parent_op_idx */ 0));
   PL_RETURN_IF_ERROR(func->AddArg(argcol));
   return func;
 }
@@ -254,8 +254,8 @@ StatusOr<QLObjectPtr> RangeHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
   ExpressionIR* start_expr = static_cast<ExpressionIR*>(start_repr);
   ExpressionIR* stop_expr = static_cast<ExpressionIR*>(stop_repr);
 
-  PL_ASSIGN_OR_RETURN(RangeIR * range_op, df->graph()->MakeNode<RangeIR>(ast));
-  PL_RETURN_IF_ERROR(range_op->Init(df->op(), start_expr, stop_expr));
+  PL_ASSIGN_OR_RETURN(RangeIR * range_op,
+                      df->graph()->CreateNode<RangeIR>(ast, df->op(), start_expr, stop_expr));
   return StatusOr(std::make_shared<Dataframe>(range_op));
 }
 
@@ -299,8 +299,8 @@ StatusOr<QLObjectPtr> OldMapHandler::Eval(Dataframe* df, const pypa::AstPtr& ast
   LambdaIR* lambda = static_cast<LambdaIR*>(lambda_func);
   PL_RETURN_IF_ERROR(VerifyLambda(lambda, "fn", 1, /* should_have_dict_body */ true));
 
-  PL_ASSIGN_OR_RETURN(MapIR * map_op, df->graph()->MakeNode<MapIR>(ast));
-  PL_RETURN_IF_ERROR(map_op->Init(df->op(), lambda->col_exprs()));
+  PL_ASSIGN_OR_RETURN(MapIR * map_op,
+                      df->graph()->CreateNode<MapIR>(ast, df->op(), lambda->col_exprs()));
   // Delete the lambda.
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(lambda->id()));
   return StatusOr(std::make_shared<Dataframe>(map_op));
@@ -319,8 +319,7 @@ StatusOr<QLObjectPtr> OldFilterHandler::Eval(Dataframe* df, const pypa::AstPtr& 
   // Have to remove the edges from the Lambda
   PL_ASSIGN_OR_RETURN(ExpressionIR * expr, lambda->GetDefaultExpr());
 
-  PL_ASSIGN_OR_RETURN(FilterIR * filter_op, df->graph()->MakeNode<FilterIR>(ast));
-  PL_RETURN_IF_ERROR(filter_op->Init(df->op(), expr));
+  PL_ASSIGN_OR_RETURN(FilterIR * filter_op, df->graph()->CreateNode<FilterIR>(ast, df->op(), expr));
   // Delete the lambda.
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(lambda->id()));
   return StatusOr(std::make_shared<Dataframe>(filter_op));
@@ -335,8 +334,8 @@ StatusOr<QLObjectPtr> LimitHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
   }
   int64_t limit_value = static_cast<IntIR*>(rows_node)->val();
 
-  PL_ASSIGN_OR_RETURN(LimitIR * limit_op, df->graph()->MakeNode<LimitIR>(ast));
-  PL_RETURN_IF_ERROR(limit_op->Init(df->op(), limit_value));
+  PL_ASSIGN_OR_RETURN(LimitIR * limit_op,
+                      df->graph()->CreateNode<LimitIR>(ast, df->op(), limit_value));
   // Delete the integer node.
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(rows_node->id()));
   return StatusOr(std::make_shared<Dataframe>(limit_op));
@@ -362,8 +361,8 @@ StatusOr<QLObjectPtr> OldAggHandler::Eval(Dataframe* df, const pypa::AstPtr& ast
   PL_ASSIGN_OR_RETURN(ExpressionIR * by_expr, by->GetDefaultExpr());
   PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> groups, SetupGroups(by_expr));
 
-  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_op, df->graph()->MakeNode<BlockingAggIR>(ast));
-  PL_RETURN_IF_ERROR(agg_op->Init(df->op(), groups, fn->col_exprs()));
+  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_op, df->graph()->CreateNode<BlockingAggIR>(
+                                                  ast, df->op(), groups, fn->col_exprs()));
   // Delete the by.
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(by->id()));
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(fn->id()));
@@ -433,9 +432,10 @@ StatusOr<QLObjectPtr> OldJoinHandler::Eval(Dataframe* df, const pypa::AstPtr& as
   PL_ASSIGN_OR_RETURN(ExpressionIR * cond_expr, cond->GetDefaultExpr());
   PL_ASSIGN_OR_RETURN(JoinIR::EqConditionColumns eq_condition, JoinIR::ParseCondition(cond_expr));
 
-  PL_ASSIGN_OR_RETURN(JoinIR * join_op, df->graph()->MakeNode<JoinIR>(ast));
-  PL_RETURN_IF_ERROR(join_op->Init({df->op(), right}, how_str, eq_condition.left_on_cols,
-                                   eq_condition.right_on_cols, {}));
+  PL_ASSIGN_OR_RETURN(JoinIR * join_op, df->graph()->CreateNode<JoinIR>(
+                                            ast, std::vector<OperatorIR*>{df->op(), right}, how_str,
+                                            eq_condition.left_on_cols, eq_condition.right_on_cols,
+                                            std::vector<std::string>{}));
   PL_RETURN_IF_ERROR(join_op->SetOutputColumns(column_names, columns));
   // Delete the lambdas.
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(cond_node->id()));
@@ -450,8 +450,8 @@ StatusOr<QLObjectPtr> OldResultHandler::Eval(Dataframe* df, const pypa::AstPtr& 
     return name_node->CreateIRNodeError("'name' must be a str");
   }
   std::string name = static_cast<StringIR*>(name_node)->str();
-  PL_ASSIGN_OR_RETURN(MemorySinkIR * sink_op, df->graph()->MakeNode<MemorySinkIR>(ast));
-  PL_RETURN_IF_ERROR(sink_op->Init(df->op(), name, {}));
+  PL_ASSIGN_OR_RETURN(MemorySinkIR * sink_op, df->graph()->CreateNode<MemorySinkIR>(
+                                                  ast, df->op(), name, std::vector<std::string>{}));
   return StatusOr(std::make_shared<NoneObject>(sink_op));
 }
 
@@ -495,21 +495,21 @@ StatusOr<QLObjectPtr> OldRangeAggHandler::Eval(Dataframe* df, const pypa::AstPtr
   ColExpressionVector map_exprs{{"group", group_expression}};
   // TODO(philkuz/nserrino) when D2570 lands, add copy columns as init arg instead of doing this.
   for (const auto& name : fn->expected_column_names()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col_node, df->graph()->MakeNode<ColumnIR>(ast));
-    PL_RETURN_IF_ERROR(col_node->Init(name, /* parent_op_idx */ 0, ast));
+    PL_ASSIGN_OR_RETURN(ColumnIR * col_node,
+                        df->graph()->CreateNode<ColumnIR>(ast, name, /* parent_op_idx */ 0));
     map_exprs.push_back({name, col_node});
   }
 
-  PL_ASSIGN_OR_RETURN(MapIR * map, df->graph()->MakeNode<MapIR>(ast));
-  PL_RETURN_IF_ERROR(map->Init(df->op(), map_exprs));
+  PL_ASSIGN_OR_RETURN(MapIR * map, df->graph()->CreateNode<MapIR>(ast, df->op(), map_exprs));
 
   // Make the Blocking Agg prerequisite nodes.
 
-  PL_ASSIGN_OR_RETURN(ColumnIR * agg_group_by_col, df->graph()->MakeNode<ColumnIR>(ast));
-  PL_RETURN_IF_ERROR(agg_group_by_col->Init("group", /*parent_op_idx*/ 0));
+  PL_ASSIGN_OR_RETURN(ColumnIR * agg_group_by_col,
+                      df->graph()->CreateNode<ColumnIR>(ast, "group", /*parent_op_idx*/ 0));
 
-  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg, df->graph()->MakeNode<BlockingAggIR>(ast));
-  PL_RETURN_IF_ERROR(agg->Init(map, {agg_group_by_col}, fn->col_exprs()));
+  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg,
+                      df->graph()->CreateNode<BlockingAggIR>(
+                          ast, map, std::vector<ColumnIR*>{agg_group_by_col}, fn->col_exprs()));
 
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(by->id()));
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(fn->id()));
@@ -524,20 +524,23 @@ StatusOr<FuncIR*> OldRangeAggHandler::MakeRangeAggGroupExpression(ColumnIR* rang
   DCHECK(op_map_iter != FuncIR::op_map.end());
   FuncIR::Op mod_op = op_map_iter->second;
 
-  PL_ASSIGN_OR_RETURN(FuncIR * mod_ir_node, graph->MakeNode<FuncIR>(ast));
-  PL_RETURN_IF_ERROR(mod_ir_node->Init(mod_op, {range_agg_col, size_expr}, ast));
+  PL_ASSIGN_OR_RETURN(
+      FuncIR * mod_ir_node,
+      graph->CreateNode<FuncIR>(ast, mod_op, std::vector<ExpressionIR*>{range_agg_col, size_expr}));
 
-  PL_ASSIGN_OR_RETURN(ColumnIR * range_agg_col_copy, graph->MakeNode<ColumnIR>(ast));
-  PL_RETURN_IF_ERROR(range_agg_col_copy->Init(range_agg_col->col_name(), /* parent_op_idx */ 0,
-                                              range_agg_col->ast_node()));
+  PL_ASSIGN_OR_RETURN(
+      ColumnIR * range_agg_col_copy,
+      graph->CreateNode<ColumnIR>(ast, range_agg_col->col_name(), /* parent_op_idx */ 0));
 
   op_map_iter = FuncIR::op_map.find("-");
   DCHECK(op_map_iter != FuncIR::op_map.end());
   FuncIR::Op sub_op = op_map_iter->second;
 
   // pl.subtract(by_col, pl.mod(by_col, size)).
-  PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, graph->MakeNode<FuncIR>());
-  PL_RETURN_IF_ERROR(sub_ir_node->Init(sub_op, {range_agg_col_copy, mod_ir_node}, ast));
+  PL_ASSIGN_OR_RETURN(
+      FuncIR * sub_ir_node,
+      graph->CreateNode<FuncIR>(ast, sub_op,
+                                std::vector<ExpressionIR*>{range_agg_col_copy, mod_ir_node}));
 
   return sub_ir_node;
 }

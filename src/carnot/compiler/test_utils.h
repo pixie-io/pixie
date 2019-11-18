@@ -141,9 +141,8 @@ class OperatorTests : public ::testing::Test {
   MemorySourceIR* MakeMemSource() { return MakeMemSource("table"); }
 
   MemorySourceIR* MakeMemSource(const std::string& name) {
-    MemorySourceIR* mem_source = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
-    PL_CHECK_OK(mem_source->Init(name, {}));
-    return mem_source;
+    return graph->CreateNode<MemorySourceIR>(ast, name, std::vector<std::string>{})
+        .ConsumeValueOrDie();
   }
 
   MemorySourceIR* MakeMemSource(const table_store::schema::Relation& relation) {
@@ -163,8 +162,7 @@ class OperatorTests : public ::testing::Test {
   }
 
   MapIR* MakeMap(OperatorIR* parent, const ColExpressionVector& col_map) {
-    MapIR* map = graph->MakeNode<MapIR>(ast).ConsumeValueOrDie();
-    PL_CHECK_OK(map->Init(parent, col_map));
+    MapIR* map = graph->CreateNode<MapIR>(ast, parent, col_map).ConsumeValueOrDie();
     return map;
   }
 
@@ -175,15 +173,15 @@ class OperatorTests : public ::testing::Test {
 
   LambdaIR* MakeLambda(ExpressionIR* expr, const std::unordered_set<std::string>& expected_cols,
                        int64_t num_parents) {
-    LambdaIR* lambda = graph->MakeNode<LambdaIR>(ast).ConsumeValueOrDie();
-    PL_CHECK_OK(lambda->Init(expected_cols, expr, num_parents));
+    LambdaIR* lambda =
+        graph->CreateNode<LambdaIR>(ast, expected_cols, expr, num_parents).ConsumeValueOrDie();
     return lambda;
   }
 
   LambdaIR* MakeLambda(const ColExpressionVector& expr,
                        const std::unordered_set<std::string>& expected_cols, int64_t num_parents) {
-    LambdaIR* lambda = graph->MakeNode<LambdaIR>(ast).ConsumeValueOrDie();
-    PL_CHECK_OK(lambda->Init(expected_cols, expr, num_parents));
+    LambdaIR* lambda =
+        graph->CreateNode<LambdaIR>(ast, expected_cols, expr, num_parents).ConsumeValueOrDie();
     return lambda;
   }
 
@@ -193,8 +191,7 @@ class OperatorTests : public ::testing::Test {
 
   MemorySinkIR* MakeMemSink(OperatorIR* parent, std::string name,
                             const std::vector<std::string>& out_cols) {
-    auto sink = graph->MakeNode<MemorySinkIR>(ast).ValueOrDie();
-    PL_CHECK_OK(sink->Init(parent, name, out_cols));
+    auto sink = graph->CreateNode<MemorySinkIR>(ast, parent, name, out_cols).ConsumeValueOrDie();
     return sink;
   }
 
@@ -203,27 +200,24 @@ class OperatorTests : public ::testing::Test {
   }
 
   FilterIR* MakeFilter(OperatorIR* parent, ExpressionIR* filter_expr) {
-    FilterIR* filter = graph->MakeNode<FilterIR>(ast).ValueOrDie();
-    EXPECT_OK(filter->Init(parent, filter_expr));
+    FilterIR* filter = graph->CreateNode<FilterIR>(ast, parent, filter_expr).ConsumeValueOrDie();
     return filter;
   }
 
   LimitIR* MakeLimit(OperatorIR* parent, int64_t limit_value) {
-    LimitIR* limit = graph->MakeNode<LimitIR>(ast).ValueOrDie();
-    EXPECT_OK(limit->Init(parent, limit_value));
+    LimitIR* limit = graph->CreateNode<LimitIR>(ast, parent, limit_value).ConsumeValueOrDie();
     return limit;
   }
 
   BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, const std::vector<ColumnIR*>& columns,
                                  const ColExpressionVector& col_agg) {
-    BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>(ast).ConsumeValueOrDie();
-    PL_CHECK_OK(agg->Init(parent, columns, col_agg));
+    BlockingAggIR* agg =
+        graph->CreateNode<BlockingAggIR>(ast, parent, columns, col_agg).ConsumeValueOrDie();
     return agg;
   }
 
   ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx) {
-    ColumnIR* column = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
-    PL_CHECK_OK(column->Init(name, parent_op_idx, ast));
+    ColumnIR* column = graph->CreateNode<ColumnIR>(ast, name, parent_op_idx).ConsumeValueOrDie();
     return column;
   }
 
@@ -235,72 +229,66 @@ class OperatorTests : public ::testing::Test {
   }
 
   StringIR* MakeString(std::string val) {
-    auto str_ir = graph->MakeNode<StringIR>(ast).ValueOrDie();
-    EXPECT_OK(str_ir->Init(val, ast));
-    return str_ir;
+    return graph->CreateNode<StringIR>(ast, val).ConsumeValueOrDie();
   }
 
-  IntIR* MakeInt(int64_t val) {
-    auto int_ir = graph->MakeNode<IntIR>(ast).ValueOrDie();
-    EXPECT_OK(int_ir->Init(val, ast));
-    return int_ir;
-  }
+  IntIR* MakeInt(int64_t val) { return graph->CreateNode<IntIR>(ast, val).ConsumeValueOrDie(); }
 
   FuncIR* MakeAddFunc(ExpressionIR* left, ExpressionIR* right) {
-    FuncIR* func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
-                           std::vector<ExpressionIR*>({left, right}), ast));
-    return func;
+    return graph
+        ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("+")->second,
+                             std::vector<ExpressionIR*>({left, right}))
+        .ConsumeValueOrDie();
   }
   FuncIR* MakeSubFunc(ExpressionIR* left, ExpressionIR* right) {
-    FuncIR* func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    PL_CHECK_OK(func->Init(FuncIR::op_map.find("-")->second,
-                           std::vector<ExpressionIR*>({left, right}), ast));
-    return func;
+    return graph
+        ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("-")->second,
+                             std::vector<ExpressionIR*>({left, right}))
+        .ConsumeValueOrDie();
   }
 
   FuncIR* MakeEqualsFunc(ExpressionIR* left, ExpressionIR* right) {
-    FuncIR* func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::eq, "==", "equals"},
-                           std::vector<ExpressionIR*>({left, right}), ast));
-    return func;
+    return graph
+        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equals"},
+                             std::vector<ExpressionIR*>({left, right}))
+        .ConsumeValueOrDie();
   }
 
   FuncIR* MakeFunc(const std::string& name, const std::vector<ExpressionIR*>& args) {
-    FuncIR* func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::non_op, "", name}, args, ast));
-    return func;
+    return graph->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", name}, args)
+        .ConsumeValueOrDie();
   }
 
   FuncIR* MakeAndFunc(ExpressionIR* left, ExpressionIR* right) {
-    FuncIR* func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    PL_CHECK_OK(func->Init(FuncIR::op_map.find("and")->second,
-                           std::vector<ExpressionIR*>({left, right}), ast));
-    return func;
+    return graph
+        ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("and")->second,
+                             std::vector<ExpressionIR*>({left, right}))
+        .ConsumeValueOrDie();
   }
 
   MetadataIR* MakeMetadataIR(const std::string& name, int64_t parent_op_idx) {
-    MetadataIR* metadata = graph->MakeNode<MetadataIR>(ast).ValueOrDie();
-    PL_CHECK_OK(metadata->Init(name, parent_op_idx, ast));
+    MetadataIR* metadata =
+        graph->CreateNode<MetadataIR>(ast, name, parent_op_idx).ConsumeValueOrDie();
     return metadata;
   }
 
   MetadataLiteralIR* MakeMetadataLiteral(DataIR* data_ir) {
-    MetadataLiteralIR* metadata_literal = graph->MakeNode<MetadataLiteralIR>(ast).ValueOrDie();
-    PL_CHECK_OK(metadata_literal->Init(data_ir, ast));
+    MetadataLiteralIR* metadata_literal =
+        graph->CreateNode<MetadataLiteralIR>(ast, data_ir).ConsumeValueOrDie();
     return metadata_literal;
   }
 
   FuncIR* MakeMeanFunc(ExpressionIR* value) {
-    FuncIR* func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    PL_CHECK_OK(
-        func->Init({FuncIR::Opcode::non_op, "", "mean"}, std::vector<ExpressionIR*>({value}), ast));
-    return func;
+    return graph
+        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
+                             std::vector<ExpressionIR*>({value}))
+        .ConsumeValueOrDie();
   }
   FuncIR* MakeMeanFunc() {
-    FuncIR* func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::non_op, "", "mean"}, {}, ast));
-    return func;
+    return graph
+        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
+                             std::vector<ExpressionIR*>{})
+        .ConsumeValueOrDie();
   }
 
   std::shared_ptr<IR> SwapGraphBeingBuilt(std::shared_ptr<IR> new_graph) {
@@ -311,27 +299,26 @@ class OperatorTests : public ::testing::Test {
 
   GRPCSourceGroupIR* MakeGRPCSourceGroup(int64_t source_id,
                                          const table_store::schema::Relation& relation) {
-    GRPCSourceGroupIR* grpc_src_group = graph->MakeNode<GRPCSourceGroupIR>(ast).ValueOrDie();
-    EXPECT_OK(grpc_src_group->Init(source_id, relation));
+    GRPCSourceGroupIR* grpc_src_group =
+        graph->CreateNode<GRPCSourceGroupIR>(ast, source_id, relation).ConsumeValueOrDie();
     return grpc_src_group;
   }
 
   GRPCSinkIR* MakeGRPCSink(OperatorIR* parent, int64_t source_id) {
-    GRPCSinkIR* grpc_sink = graph->MakeNode<GRPCSinkIR>(ast).ValueOrDie();
-    EXPECT_OK(grpc_sink->Init(parent, source_id));
+    GRPCSinkIR* grpc_sink =
+        graph->CreateNode<GRPCSinkIR>(ast, parent, source_id).ConsumeValueOrDie();
     return grpc_sink;
   }
 
   GRPCSourceIR* MakeGRPCSource(const std::string& source_id,
                                const table_store::schema::Relation& relation) {
-    GRPCSourceIR* grpc_src_group = graph->MakeNode<GRPCSourceIR>(ast).ValueOrDie();
-    EXPECT_OK(grpc_src_group->Init(source_id, relation));
+    GRPCSourceIR* grpc_src_group =
+        graph->CreateNode<GRPCSourceIR>(ast, source_id, relation).ConsumeValueOrDie();
     return grpc_src_group;
   }
 
   UnionIR* MakeUnion(std::vector<OperatorIR*> parents) {
-    UnionIR* union_node = graph->MakeNode<UnionIR>(ast).ValueOrDie();
-    EXPECT_OK(union_node->Init(parents));
+    UnionIR* union_node = graph->CreateNode<UnionIR>(ast, parents).ConsumeValueOrDie();
     return union_node;
   }
 
@@ -341,11 +328,12 @@ class OperatorTests : public ::testing::Test {
     // "col1", a.col1,
     // "col2", b.col2})
 
-    JoinIR* join_node = graph->MakeNode<JoinIR>(ast).ConsumeValueOrDie();
-
     auto eq_conditions = JoinIR::ParseCondition(equality_condition).ConsumeValueOrDie();
-    PL_CHECK_OK(join_node->Init(parents, join_type, eq_conditions.left_on_cols,
-                                eq_conditions.right_on_cols, {}));
+    JoinIR* join_node =
+        graph
+            ->CreateNode<JoinIR>(ast, parents, join_type, eq_conditions.left_on_cols,
+                                 eq_conditions.right_on_cols, std::vector<std::string>{})
+            .ConsumeValueOrDie();
 
     std::vector<std::string> output_column_names;
     std::vector<ColumnIR*> output_column_values;
@@ -377,28 +365,28 @@ class OperatorTests : public ::testing::Test {
   TabletSourceGroupIR* MakeTabletSourceGroup(MemorySourceIR* mem_source,
                                              const std::vector<types::TabletID>& tablet_key_values,
                                              const std::string& tablet_key) {
-    TabletSourceGroupIR* group = graph->MakeNode<TabletSourceGroupIR>(ast).ConsumeValueOrDie();
-    PL_CHECK_OK(group->Init(mem_source, tablet_key_values, tablet_key));
+    TabletSourceGroupIR* group =
+        graph->CreateNode<TabletSourceGroupIR>(ast, mem_source, tablet_key_values, tablet_key)
+            .ConsumeValueOrDie();
     return group;
   }
 
   GroupByIR* MakeGroupBy(OperatorIR* parent, const std::vector<ColumnIR*>& groups) {
-    GroupByIR* groupby = graph->MakeNode<GroupByIR>(ast).ConsumeValueOrDie();
-    PL_CHECK_OK(groupby->Init(parent, groups));
+    GroupByIR* groupby = graph->CreateNode<GroupByIR>(ast, parent, groups).ConsumeValueOrDie();
     return groupby;
   }
 
   template <typename... Args>
   ListIR* MakeList(Args... args) {
-    ListIR* list = graph->MakeNode<ListIR>(ast).ConsumeValueOrDie();
-    PL_CHECK_OK(list->Init(ast, std::vector<ExpressionIR*>{args...}));
+    ListIR* list =
+        graph->CreateNode<ListIR>(ast, std::vector<ExpressionIR*>{args...}).ConsumeValueOrDie();
     return list;
   }
 
   template <typename... Args>
   TupleIR* MakeTuple(Args... args) {
-    TupleIR* tuple = graph->MakeNode<TupleIR>(ast).ConsumeValueOrDie();
-    PL_CHECK_OK(tuple->Init(ast, std::vector<ExpressionIR*>{args...}));
+    TupleIR* tuple =
+        graph->CreateNode<TupleIR>(ast, std::vector<ExpressionIR*>{args...}).ConsumeValueOrDie();
     return tuple;
   }
 

@@ -32,13 +32,12 @@ StatusOr<bool> TabletSourceConversionRule::ReplaceMemorySourceWithTabletSourceGr
     tablets.push_back(table_info->tablets()[i]);
   }
 
-  // Make the tablet source groups
   IR* graph = mem_source_ir->graph_ptr();
-  PL_ASSIGN_OR_RETURN(TabletSourceGroupIR * tablet_source_group,
-                      graph->MakeNode<TabletSourceGroupIR>());
-
+  // Make the tablet source groups
   // Init with the memory source and tablets.
-  PL_RETURN_IF_ERROR(tablet_source_group->Init(mem_source_ir, tablets, tablet_key));
+  PL_ASSIGN_OR_RETURN(TabletSourceGroupIR * tablet_source_group,
+                      graph->CreateNode<TabletSourceGroupIR>(mem_source_ir->ast_node(),
+                                                             mem_source_ir, tablets, tablet_key));
 
   // Replace the child's parent that originally pointed to memory source to point to
   // the new tablet source group.
@@ -88,8 +87,7 @@ StatusOr<OperatorIR*> MemorySourceTabletRule::MakeNewSources(
 
   IR* graph = tablet_source_group->graph_ptr();
   PL_ASSIGN_OR_RETURN(UnionIR * union_op,
-                      graph->MakeNode<UnionIR>(tablet_source_group->ast_node()));
-  PL_RETURN_IF_ERROR(union_op->Init(sources));
+                      graph->CreateNode<UnionIR>(tablet_source_group->ast_node(), sources));
   PL_RETURN_IF_ERROR(union_op->SetRelationFromParents());
   return union_op;
 }
@@ -210,8 +208,9 @@ StatusOr<MemorySourceIR*> MemorySourceTabletRule::CreateMemorySource(
   IR* graph = original_memory_source->graph_ptr();
   // Create the Memory Source.
   PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_ir,
-                      graph->MakeNode<MemorySourceIR>(original_memory_source->ast_node()));
-  PL_RETURN_IF_ERROR(mem_source_ir->Init(original_memory_source->table_name(), {}));
+                      graph->CreateNode<MemorySourceIR>(original_memory_source->ast_node(),
+                                                        original_memory_source->table_name(),
+                                                        std::vector<std::string>{}));
   PL_RETURN_IF_ERROR(mem_source_ir->SetRelation(original_memory_source->relation()));
   if (mem_source_ir->IsTimeSet()) {
     mem_source_ir->SetTime(original_memory_source->time_start_ns(),

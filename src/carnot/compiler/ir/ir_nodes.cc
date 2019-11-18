@@ -627,13 +627,6 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
 }
 
 bool ColumnIR::HasLogicalRepr() const { return false; }
-Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx,
-                      const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
-  SetColumnName(col_name);
-  SetContainingOperatorParentIdx(parent_idx);
-  return Status::OK();
-}
 
 Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {
   SetColumnName(col_name);
@@ -662,20 +655,18 @@ StatusOr<OperatorIR*> ColumnIR::ReferencedOperator() const {
 
 bool StringIR::HasLogicalRepr() const { return false; }
 
-Status StringIR::Init(std::string str, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+Status StringIR::Init(std::string str) {
   str_ = str;
   return Status::OK();
 }
 
 bool CollectionIR::HasLogicalRepr() const { return false; }
 
-Status CollectionIR::Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> children) {
+Status CollectionIR::Init(std::vector<ExpressionIR*> children) {
   if (!children_.empty()) {
     return error::AlreadyExists(
         "CollectionIR already has children and likely has been created already.");
   }
-  SetLineCol(ast_node);
   for (auto child : children) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, child));
   }
@@ -739,8 +730,7 @@ std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
     {"or", {FuncIR::Opcode::logor, "or", "logicalOr"}}};
 bool FuncIR::HasLogicalRepr() const { return false; }
 
-Status FuncIR::Init(Op op, const std::vector<ExpressionIR*>& args, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+Status FuncIR::Init(Op op, const std::vector<ExpressionIR*>& args) {
   op_ = op;
   for (auto a : args) {
     PL_RETURN_IF_ERROR(AddArg(a));
@@ -759,24 +749,21 @@ Status FuncIR::AddArg(ExpressionIR* arg) {
 /* Float IR */
 bool FloatIR::HasLogicalRepr() const { return false; }
 
-Status FloatIR::Init(double val, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+Status FloatIR::Init(double val) {
   val_ = val;
   return Status::OK();
 }
 /* Int IR */
 bool IntIR::HasLogicalRepr() const { return false; }
 
-Status IntIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+Status IntIR::Init(int64_t val) {
   val_ = val;
   return Status::OK();
 }
 /* Bool IR */
 bool BoolIR::HasLogicalRepr() const { return false; }
 
-Status BoolIR::Init(bool val, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+Status BoolIR::Init(bool val) {
   val_ = val;
   return Status::OK();
 }
@@ -784,17 +771,15 @@ Status BoolIR::Init(bool val, const pypa::AstPtr& ast_node) {
 /* Time IR */
 bool TimeIR::HasLogicalRepr() const { return false; }
 
-Status TimeIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+Status TimeIR::Init(int64_t val) {
   val_ = val;
   return Status::OK();
 }
 
 /* Metadata IR */
-Status MetadataIR::Init(const std::string& metadata_str, int64_t parent_op_idx,
-                        const pypa::AstPtr& ast_node) {
+Status MetadataIR::Init(const std::string& metadata_str, int64_t parent_op_idx) {
   // Note, metadata_str is a temporary name. It is updated in ResolveMetadataColumn.
-  PL_RETURN_IF_ERROR(ColumnIR::Init(metadata_str, parent_op_idx, ast_node));
+  PL_RETURN_IF_ERROR(ColumnIR::Init(metadata_str, parent_op_idx));
   metadata_name_ = metadata_str;
   return Status::OK();
 }
@@ -809,8 +794,7 @@ Status MetadataIR::ResolveMetadataColumn(MetadataResolverIR* resolver_op,
 }
 
 /* MetadataLiteral IR */
-Status MetadataLiteralIR::Init(DataIR* literal, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+Status MetadataLiteralIR::Init(DataIR* literal) {
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, literal));
   literal_ = literal;
   literal_type_ = literal->type();

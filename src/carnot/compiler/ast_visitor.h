@@ -284,16 +284,14 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<std::string> GetAttribute(const pypa::AstAttributePtr& attr);
 
   /**
-   * @brief Helper function for processing lists and tuples into IR nodes.
+   * @brief Helper function for processing lists and tuples children into IR nodes.
    *
-   * @param collection the collection to put the results in
-   * @param ast
    * @param elements elements of the input collection
    * @param op_context: The context of the operator which this is contained within.
-   * @return StatusOr<IRNode*> the IR representation of the liset.
+   * @return StatusOr<std::vector<ExpressionIR*>> the IR representation of the list.
    */
-  Status InitCollectionData(CollectionIR* collection, const pypa::AstPtr& ast,
-                            const pypa::AstExprList& elements, const OperatorContext& op_context);
+  StatusOr<std::vector<ExpressionIR*>> ProcessCollectionChildren(const pypa::AstExprList& elements,
+                                                                 const OperatorContext& op_context);
 
   /**
    * @brief Processes a list ptr into an IR node.

@@ -38,11 +38,11 @@ TEST(IRTest, check_connection) {
   auto ig = std::make_shared<IR>();
   auto src = ig->MakeNode<MemorySourceIR>(ast).ValueOrDie();
   auto range = ig->MakeNode<RangeIR>(ast).ValueOrDie();
-  auto start_rng_str = ig->MakeNode<IntIR>().ValueOrDie();
-  auto stop_rng_str = ig->MakeNode<IntIR>().ValueOrDie();
+  auto start_rng_str = ig->MakeNode<IntIR>(ast).ValueOrDie();
+  auto stop_rng_str = ig->MakeNode<IntIR>(ast).ValueOrDie();
 
-  EXPECT_OK(start_rng_str->Init(0, ast));
-  EXPECT_OK(stop_rng_str->Init(10, ast));
+  EXPECT_OK(start_rng_str->Init(0));
+  EXPECT_OK(stop_rng_str->Init(10));
   std::string table_str = "tableName";
 
   EXPECT_OK(src->Init(table_str, {"testCol"}));
@@ -78,7 +78,7 @@ TEST(ToProto, memory_source_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
 
-  auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
   EXPECT_OK(mem_src->Init("test_table", {}));
 
   EXPECT_OK(mem_src->SetRelation(
@@ -153,8 +153,8 @@ TEST(ToProto, memory_sink_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
 
-  auto mem_sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-  auto mem_source = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto mem_sink = graph->MakeNode<MemorySinkIR>(ast).ValueOrDie();
+  auto mem_source = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
 
   auto rel = table_store::schema::Relation(
       std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}),
@@ -201,13 +201,13 @@ TEST(ToProto, map_ir) {
   auto mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
   auto map = graph->MakeNode<MapIR>(ast).ValueOrDie();
   auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
-  EXPECT_OK(constant->Init(10, ast));
+  EXPECT_OK(constant->Init(10));
   auto col = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
-  EXPECT_OK(col->Init("col_name", /*parent_op_idx*/ 0, ast));
+  EXPECT_OK(col->Init("col_name", /*parent_op_idx*/ 0));
   col->ResolveColumn(4, types::INT64);
   auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
-                       std::vector<ExpressionIR*>({constant, col}), ast));
+  EXPECT_OK(
+      func->Init({FuncIR::Opcode::add, "+", "add"}, std::vector<ExpressionIR*>({constant, col})));
   func->set_func_id(1);
 
   EXPECT_OK(map->Init(mem_src, {{"col_name", func}}));
@@ -255,17 +255,17 @@ TEST(ToProto, agg_ir) {
   auto mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
   auto agg = graph->MakeNode<BlockingAggIR>(ast).ValueOrDie();
   auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
-  EXPECT_OK(constant->Init(10, ast));
+  EXPECT_OK(constant->Init(10));
   auto col = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
-  EXPECT_OK(col->Init("column", /*parent_op_idx*/ 0, ast));
+  EXPECT_OK(col->Init("column", /*parent_op_idx*/ 0));
   col->ResolveColumn(4, types::INT64);
 
   auto agg_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"},
-                           std::vector<ExpressionIR*>({constant, col}), ast));
+                           std::vector<ExpressionIR*>({constant, col})));
 
   auto group1 = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
-  EXPECT_OK(group1->Init("group1", /*parent_op_idx*/ 0, ast));
+  EXPECT_OK(group1->Init("group1", /*parent_op_idx*/ 0));
   group1->ResolveColumn(1, types::INT64);
 
   ASSERT_OK(agg->Init(mem_src, {group1}, {{"mean", agg_func}}));
@@ -284,14 +284,14 @@ class MetadataTests : public ::testing::Test {
     graph = std::make_shared<IR>();
     md_handler = MetadataHandler::Create();
   }
-  MemorySourceIR* MakeMemSource() { return graph->MakeNode<MemorySourceIR>().ValueOrDie(); }
+  MemorySourceIR* MakeMemSource() { return graph->MakeNode<MemorySourceIR>(ast).ValueOrDie(); }
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
   std::unique_ptr<MetadataHandler> md_handler;
 };
 
 TEST_F(MetadataTests, metadata_resolver) {
-  MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
+  MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>(ast).ValueOrDie();
   EXPECT_OK(metadata_resolver->Init(MakeMemSource()));
   MetadataProperty* md_property = md_handler->GetProperty("pod_name").ValueOrDie();
   EXPECT_FALSE(metadata_resolver->HasMetadataColumn("pod_name"));
@@ -304,7 +304,7 @@ TEST_F(MetadataTests, metadata_resolver) {
 TEST_F(MetadataTests, metadata_ir) {
   MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>(ast).ValueOrDie();
   MetadataIR* metadata_ir = graph->MakeNode<MetadataIR>(ast).ValueOrDie();
-  EXPECT_OK(metadata_ir->Init("pod_name", /*parent_op_idx*/ 0, ast));
+  EXPECT_OK(metadata_ir->Init("pod_name", /*parent_op_idx*/ 0));
   EXPECT_TRUE(metadata_ir->IsColumn());
   EXPECT_FALSE(metadata_ir->HasMetadataResolver());
   EXPECT_EQ(metadata_ir->name(), "pod_name");
@@ -1196,7 +1196,7 @@ TEST_F(IRPruneTests, prune_test) {
 
 TEST_F(OperatorTests, tablet_source_group) {
   auto mem_source = MakeMemSource("table", MakeRelation());
-  auto tablet_source = graph->MakeNode<TabletSourceGroupIR>().ConsumeValueOrDie();
+  auto tablet_source = graph->MakeNode<TabletSourceGroupIR>(ast).ConsumeValueOrDie();
   std::vector<types::TabletID> tablet_values = {"tablet1", "tablet2"};
 
   EXPECT_OK(tablet_source->Init(mem_source, tablet_values, "cpu0"));

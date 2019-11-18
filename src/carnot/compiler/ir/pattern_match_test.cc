@@ -12,13 +12,13 @@ namespace compiler {
 class PatternMatchTest : public OperatorTests {};
 
 TEST_F(PatternMatchTest, equals_test) {
-  auto c1 = graph->MakeNode<IntIR>().ValueOrDie();
-  EXPECT_OK(c1->Init(10, ast));
-  auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
+  auto c1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
+  EXPECT_OK(c1->Init(10));
+  auto c2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
 
-  auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(agg_func->Init({FuncIR::Opcode::eq, "==", "equals"},
-                           std::vector<ExpressionIR*>({c1, c2}), ast));
+  auto agg_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+  EXPECT_OK(
+      agg_func->Init({FuncIR::Opcode::eq, "==", "equals"}, std::vector<ExpressionIR*>({c1, c2})));
 
   EXPECT_TRUE(Match(agg_func, Equals(Int(10), Value())));
   EXPECT_TRUE(Match(agg_func, Equals(Value(), Int())));
@@ -26,41 +26,41 @@ TEST_F(PatternMatchTest, equals_test) {
 }
 
 TEST_F(PatternMatchTest, compile_time_func_test) {
-  auto c1 = graph->MakeNode<IntIR>().ValueOrDie();
-  EXPECT_OK(c1->Init(10, ast));
-  auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
-  EXPECT_OK(c2->Init(9, ast));
+  auto c1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
+  EXPECT_OK(c1->Init(10));
+  auto c2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
+  EXPECT_OK(c2->Init(9));
 
   // now()
-  auto time_now_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto time_now_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(time_now_func->Init({FuncIR::Opcode::non_op, "", kTimeNowFnStr},
-                                std::vector<ExpressionIR*>({}), ast));
+                                std::vector<ExpressionIR*>({})));
 
-  auto not_now_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto not_now_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(not_now_func->Init({FuncIR::Opcode::non_op, "", "not_time_now"},
-                               std::vector<ExpressionIR*>({}), ast));
+                               std::vector<ExpressionIR*>({})));
 
   EXPECT_TRUE(Match(time_now_func, CompileTimeNow()));
   EXPECT_FALSE(Match(not_now_func, CompileTimeNow()));
 
   // 10 * (10 + 9)
-  auto add_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(add_func->Init(FuncIR::op_map["+"], std::vector<ExpressionIR*>({c1, c2}), ast));
-  auto mult_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], std::vector<ExpressionIR*>({c1, add_func}), ast));
+  auto add_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+  EXPECT_OK(add_func->Init(FuncIR::op_map["+"], std::vector<ExpressionIR*>({c1, c2})));
+  auto mult_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+  EXPECT_OK(mult_func->Init(FuncIR::op_map["*"], std::vector<ExpressionIR*>({c1, add_func})));
 
-  auto add_func_no_args = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(add_func_no_args->Init({FuncIR::Opcode::add, "+", "add"},
-                                   std::vector<ExpressionIR*>({}), ast));
+  auto add_func_no_args = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+  EXPECT_OK(
+      add_func_no_args->Init({FuncIR::Opcode::add, "+", "add"}, std::vector<ExpressionIR*>({})));
 
   // hours(10 + 9)
-  auto hours_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto hours_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(hours_func->Init({FuncIR::Opcode::non_op, "", "hours"},
-                             std::vector<ExpressionIR*>({add_func}), ast));
+                             std::vector<ExpressionIR*>({add_func})));
 
-  auto no_arg_hours_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto no_arg_hours_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
   EXPECT_OK(no_arg_hours_func->Init({FuncIR::Opcode::non_op, "", "hours"},
-                                    std::vector<ExpressionIR*>({}), ast));
+                                    std::vector<ExpressionIR*>({})));
 
   EXPECT_TRUE(Match(hours_func, CompileTimeUnitTime()));
   EXPECT_FALSE(Match(no_arg_hours_func, CompileTimeUnitTime()));
@@ -80,13 +80,12 @@ TEST_F(PatternMatchTest, compile_time_func_test) {
 // This bin op test makes sure that non_op doesn't throw errors
 // while pattern matching
 TEST_F(PatternMatchTest, arbitrary_bin_op_test) {
-  auto c1 = graph->MakeNode<IntIR>().ValueOrDie();
-  EXPECT_OK(c1->Init(10, ast));
-  auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
+  auto c1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
+  EXPECT_OK(c1->Init(10));
+  auto c2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
 
-  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(
-      func->Init({FuncIR::Opcode::non_op, "", "op"}, std::vector<ExpressionIR*>({c1, c2}), ast));
+  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+  EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, std::vector<ExpressionIR*>({c1, c2})));
 
   EXPECT_FALSE(Match(func, Equals(Int(10), Value())));
   EXPECT_TRUE(Match(func, BinOp(Value(), Value())));
@@ -94,13 +93,13 @@ TEST_F(PatternMatchTest, arbitrary_bin_op_test) {
 }
 
 TEST_F(PatternMatchTest, expression_data_type_resolution) {
-  auto int1 = graph->MakeNode<IntIR>().ValueOrDie();
-  EXPECT_OK(int1->Init(10, ast));
-  auto col1 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col1->Init("col1", /* parent_op_idx */ 0, ast));
-  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, std::vector<ExpressionIR*>({int1, col1}),
-                       ast));
+  auto int1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
+  EXPECT_OK(int1->Init(10));
+  auto col1 = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
+  EXPECT_OK(col1->Init("col1", /* parent_op_idx */ 0));
+  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
+  EXPECT_OK(
+      func->Init({FuncIR::Opcode::non_op, "", "op"}, std::vector<ExpressionIR*>({int1, col1})));
 
   // Make sure expression works.
   EXPECT_TRUE(Match(int1, Expression()));
@@ -144,12 +143,12 @@ TEST_F(PatternMatchTest, relation_status_operator_match) {
   table_store::schema::Relation test_relation;
   test_relation.AddColumn(types::DataType::INT64, "col1");
   test_relation.AddColumn(types::DataType::INT64, "col2");
-  auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto blocking_agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
+  auto mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+  auto blocking_agg = graph->MakeNode<BlockingAggIR>(ast).ValueOrDie();
   EXPECT_OK(blocking_agg->AddParent(mem_src));
-  auto map = graph->MakeNode<MapIR>().ValueOrDie();
+  auto map = graph->MakeNode<MapIR>(ast).ValueOrDie();
   EXPECT_OK(map->AddParent(mem_src));
-  auto filter = graph->MakeNode<FilterIR>().ValueOrDie();
+  auto filter = graph->MakeNode<FilterIR>(ast).ValueOrDie();
   EXPECT_OK(filter->AddParent(mem_src));
 
   // Unresolved blocking aggregate with unresolved parent.

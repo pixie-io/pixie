@@ -219,12 +219,6 @@ class IR {
    * by this IR object.
    */
   template <typename TOperator>
-  StatusOr<TOperator*> MakeNode() {
-    return MakeNode<TOperator>(id_node_counter, nullptr);
-  }
-
-  // TODO(philkuz) refactor as much as possible to support the ast method instead.
-  template <typename TOperator>
   StatusOr<TOperator*> MakeNode(const pypa::AstPtr& ast) {
     return MakeNode<TOperator>(id_node_counter, ast);
   }
@@ -244,6 +238,13 @@ class IR {
     TOperator* raw = node.get();
     id_node_map_.emplace(node->id(), std::move(node));
     return raw;
+  }
+
+  template <typename TOperator, typename... Args>
+  StatusOr<TOperator*> CreateNode(const pypa::AstPtr& ast, Args... args) {
+    PL_ASSIGN_OR_RETURN(TOperator * op, MakeNode<TOperator>(ast));
+    PL_RETURN_IF_ERROR(op->Init(args...));
+    return op;
   }
 
   Status AddEdge(int64_t from_node, int64_t to_node);
@@ -582,25 +583,15 @@ class ColumnIR : public ExpressionIR {
   ColumnIR() = delete;
   explicit ColumnIR(int64_t id) : ExpressionIR(id, IRNodeType::kColumn) {}
 
-  // TODO(philkuz) (PL-1152) Remove ast
   /**
    * @brief Creates a new column that references the passed in operator.
    *
    * @param col_name: The name of the column.
    * @param parent_op_idx: The index of the parent operator that this column references.
-   * @param ast_node: AST node used for query error reporting and debugging.
    * @return Status: error container.
    */
-  Status Init(const std::string& col_name, int64_t parent_op_idx, const pypa::AstPtr& ast_node);
-
-  /**
-   * @brief Initializes a new column to reference an operator
-   *
-   * @param col_name
-   * @param parent_op_idx
-   * @return Status
-   */
   Status Init(const std::string& col_name, int64_t parent_op_idx);
+
   bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
 
@@ -682,7 +673,7 @@ class StringIR : public DataIR {
  public:
   StringIR() = delete;
   explicit StringIR(int64_t id) : DataIR(id, IRNodeType::kString, types::DataType::STRING) {}
-  Status Init(std::string str, const pypa::AstPtr& ast_node);
+  Status Init(std::string str);
   bool HasLogicalRepr() const override;
   std::string str() const { return str_; }
 
@@ -703,7 +694,7 @@ class CollectionIR : public DataIR {
   CollectionIR(int64_t id, IRNodeType type)
       : DataIR(id, type, types::DataType::DATA_TYPE_UNKNOWN) {}
   bool HasLogicalRepr() const override;
-  Status Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> children);
+  Status Init(std::vector<ExpressionIR*> children);
 
   std::vector<ExpressionIR*> children() const { return children_; }
   bool IsOperator() const override { return false; }
@@ -815,7 +806,7 @@ class FuncIR : public ExpressionIR {
   Opcode opcode() const { return op_.op_code; }
   const Op& op() const { return op_; }
   explicit FuncIR(int64_t id) : ExpressionIR(id, IRNodeType::kFunc) {}
-  Status Init(Op op, const std::vector<ExpressionIR*>& args, const pypa::AstPtr& ast_node);
+  Status Init(Op op, const std::vector<ExpressionIR*>& args);
   bool HasLogicalRepr() const override;
 
   // NOLINTNEXTLINE(readability/inheritance)
@@ -875,7 +866,7 @@ class FloatIR : public DataIR {
  public:
   FloatIR() = delete;
   explicit FloatIR(int64_t id) : DataIR(id, IRNodeType::kFloat, types::DataType::FLOAT64) {}
-  Status Init(double val, const pypa::AstPtr& ast_node);
+  Status Init(double val);
   bool HasLogicalRepr() const override;
 
   double val() const { return val_; }
@@ -890,7 +881,7 @@ class IntIR : public DataIR {
  public:
   IntIR() = delete;
   explicit IntIR(int64_t id) : DataIR(id, IRNodeType::kInt, types::DataType::INT64) {}
-  Status Init(int64_t val, const pypa::AstPtr& ast_node);
+  Status Init(int64_t val);
   bool HasLogicalRepr() const override;
 
   int64_t val() const { return val_; }
@@ -905,7 +896,7 @@ class BoolIR : public DataIR {
  public:
   BoolIR() = delete;
   explicit BoolIR(int64_t id) : DataIR(id, IRNodeType::kBool, types::DataType::BOOLEAN) {}
-  Status Init(bool val, const pypa::AstPtr& ast_node);
+  Status Init(bool val);
   bool HasLogicalRepr() const override;
 
   bool val() const { return val_; }
@@ -920,7 +911,7 @@ class TimeIR : public DataIR {
  public:
   TimeIR() = delete;
   explicit TimeIR(int64_t id) : DataIR(id, IRNodeType::kTime, types::DataType::TIME64NS) {}
-  Status Init(int64_t val, const pypa::AstPtr& ast_node);
+  Status Init(int64_t val);
   bool HasLogicalRepr() const override;
 
   bool val() const { return val_ != 0; }
@@ -937,7 +928,7 @@ class MetadataIR : public ColumnIR {
  public:
   MetadataIR() = delete;
   explicit MetadataIR(int64_t id) : ColumnIR(id, IRNodeType::kMetadata) {}
-  Status Init(const std::string& metadata_val, int64_t parent_op_idx, const pypa::AstPtr& ast_node);
+  Status Init(const std::string& metadata_val, int64_t parent_op_idx);
   bool HasLogicalRepr() const override { return false; };
 
   std::string name() const { return metadata_name_; }
@@ -965,7 +956,7 @@ class MetadataLiteralIR : public ExpressionIR {
  public:
   MetadataLiteralIR() = delete;
   explicit MetadataLiteralIR(int64_t id) : ExpressionIR(id, IRNodeType::kMetadataLiteral) {}
-  Status Init(DataIR* literal, const pypa::AstPtr& ast_node);
+  Status Init(DataIR* literal);
   bool HasLogicalRepr() const override { return false; }
 
   IRNodeType literal_type() const { return literal_type_; }
@@ -1361,7 +1352,6 @@ class GRPCSourceIR : public OperatorIR {
    * @brief Special Init that skips around the Operator init function.
    *
    * @param source_id
-   * @param ast_node
    * @return Status
    */
   Status Init(const std::string& remote_source_id, const table_store::schema::Relation& relation) {
@@ -1396,7 +1386,7 @@ class GRPCSourceGroupIR : public OperatorIR {
    * @brief Special Init that skips around the Operator init function.
    *
    * @param source_id
-   * @param ast_node
+   * @param relation
    * @return Status
    */
   Status Init(int64_t source_id, const table_store::schema::Relation& relation) {
@@ -1600,7 +1590,6 @@ class TabletSourceGroupIR : public OperatorIR {
     PL_RETURN_IF_ERROR(SetRelation(memory_source_ir->relation()));
     DCHECK(relation().HasColumn(tablet_key));
     tablet_key_ = tablet_key;
-    SetLineCol(memory_source_ir->ast_node());
     return Status::OK();
   }
 
