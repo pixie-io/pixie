@@ -369,6 +369,22 @@ Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs) {
 
 bool MapIR::HasLogicalRepr() const { return true; }
 
+Status DropIR::InitImpl(const ArgMap&) {
+  return error::Unimplemented("$0 does not implement deprecated InitImpl API.", type_string());
+}
+
+Status DropIR::Init(OperatorIR* parent, const std::vector<std::string> drop_cols,
+                    const pypa::AstPtr& ast_node) {
+  SetLineCol(ast_node);
+  PL_RETURN_IF_ERROR(AddParent(parent));
+  col_names_ = drop_cols;
+  return Status::OK();
+}
+
+Status DropIR::ToProto(planpb::Operator*) const {
+  return error::Unimplemented("$0 does not have a protobuf.", type_string());
+}
+
 Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const {
   switch (ir_node.type()) {
     case IRNodeType::kMetadata:
@@ -1173,6 +1189,12 @@ StatusOr<IRNode*> MapIR::DeepCloneIntoImpl(IR* graph) const {
     map->col_exprs_.push_back({col_expr.name, static_cast<ExpressionIR*>(new_node)});
   }
   return map;
+}
+
+StatusOr<IRNode*> DropIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(DropIR * drop, graph->MakeNode<DropIR>(id()));
+  drop->col_names_ = col_names_;
+  return drop;
 }
 
 StatusOr<IRNode*> BlockingAggIR::DeepCloneIntoImpl(IR* graph) const {

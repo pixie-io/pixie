@@ -37,6 +37,7 @@ enum class IRNodeType {
   kMemorySink,
   kRange,
   kMap,
+  kDrop,
   kBlockingAgg,
   kFilter,
   kLimit,
@@ -67,6 +68,7 @@ static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "MemorySink",
                                                  "Range",
                                                  "Map",
+                                                 "Drop",
                                                  "BlockingAgg",
                                                  "Filter",
                                                  "Limit",
@@ -1216,6 +1218,35 @@ class MapIR : public OperatorIR {
   Status SetupMapExpressions(LambdaIR* map_func);
   // The map from new column_names to expressions.
   ColExpressionVector col_exprs_;
+};
+
+/**
+ * @brief The DropIR is a container for Drop column operators.
+ * It eventually compiles down to a Map node.
+ */
+class DropIR : public OperatorIR {
+ public:
+  DropIR() = delete;
+  explicit DropIR(int64_t id) : OperatorIR(id, IRNodeType::kDrop, true, false) {}
+  std::vector<std::string> ArgKeys() override { return {"columns"}; }
+
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>();
+  }
+  Status InitImpl(const ArgMap& args) override;
+  Status Init(OperatorIR* parent, const std::vector<std::string> drop_cols,
+              const pypa::AstPtr& ast_node);
+
+  bool HasLogicalRepr() const override { return false; }
+  Status ToProto(planpb::Operator*) const override;
+
+  const std::vector<std::string>& col_names() const { return col_names_; }
+
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
+ private:
+  // Names of the columns to drop.
+  std::vector<std::string> col_names_;
 };
 
 /**
