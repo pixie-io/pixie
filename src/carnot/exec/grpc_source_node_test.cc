@@ -39,11 +39,11 @@ class GrpcSourceNodeTest : public ::testing::Test {
 };
 
 TEST_F(GrpcSourceNodeTest, basic) {
-  auto op_proto = planpb::testutils::CreateTestGrpcSource1PB();
-  std::unique_ptr<plan::Operator> plan_node = plan::GrpcSourceOperator::FromProto(op_proto, 1);
+  auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
+  std::unique_ptr<plan::Operator> plan_node = plan::GRPCSourceOperator::FromProto(op_proto, 1);
   RowDescriptor output_rd({types::DataType::INT64});
 
-  auto tester = exec::ExecNodeTester<GRPCSourceNode, plan::GrpcSourceOperator>(
+  auto tester = exec::ExecNodeTester<GRPCSourceNode, plan::GRPCSourceOperator>(
       *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
 
   for (auto i = 0; i < 3; ++i) {

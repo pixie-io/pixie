@@ -440,10 +440,10 @@ type Operator_UnionOp struct {
 	UnionOp *UnionOperator `protobuf:"bytes,8,opt,name=union_op,json=unionOp,proto3,oneof"`
 }
 type Operator_GrpcSourceOp struct {
-	GrpcSourceOp *GrpcSourceOperator `protobuf:"bytes,9,opt,name=grpc_source_op,json=grpcSourceOp,proto3,oneof"`
+	GrpcSourceOp *GRPCSourceOperator `protobuf:"bytes,9,opt,name=grpc_source_op,json=grpcSourceOp,proto3,oneof"`
 }
 type Operator_GrpcSinkOp struct {
-	GrpcSinkOp *GrpcSinkOperator `protobuf:"bytes,10,opt,name=grpc_sink_op,json=grpcSinkOp,proto3,oneof"`
+	GrpcSinkOp *GRPCSinkOperator `protobuf:"bytes,10,opt,name=grpc_sink_op,json=grpcSinkOp,proto3,oneof"`
 }
 type Operator_JoinOp struct {
 	JoinOp *JoinOperator `protobuf:"bytes,11,opt,name=join_op,json=joinOp,proto3,oneof"`
@@ -523,14 +523,14 @@ func (m *Operator) GetUnionOp() *UnionOperator {
 	return nil
 }
 
-func (m *Operator) GetGrpcSourceOp() *GrpcSourceOperator {
+func (m *Operator) GetGrpcSourceOp() *GRPCSourceOperator {
 	if x, ok := m.GetOp().(*Operator_GrpcSourceOp); ok {
 		return x.GrpcSourceOp
 	}
 	return nil
 }
 
-func (m *Operator) GetGrpcSinkOp() *GrpcSinkOperator {
+func (m *Operator) GetGrpcSinkOp() *GRPCSinkOperator {
 	if x, ok := m.GetOp().(*Operator_GrpcSinkOp); ok {
 		return x.GrpcSinkOp
 	}
@@ -710,21 +710,21 @@ func (m *MemorySinkOperator) GetColumnNames() []string {
 	return nil
 }
 
-type GrpcSourceOperator struct {
+type GRPCSourceOperator struct {
 	SourceId    string            `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
 	ColumnTypes []proto1.DataType `protobuf:"varint,2,rep,packed,name=column_types,json=columnTypes,proto3,enum=pl.types.DataType" json:"column_types,omitempty"`
 	ColumnNames []string          `protobuf:"bytes,3,rep,name=column_names,json=columnNames,proto3" json:"column_names,omitempty"`
 }
 
-func (m *GrpcSourceOperator) Reset()      { *m = GrpcSourceOperator{} }
-func (*GrpcSourceOperator) ProtoMessage() {}
-func (*GrpcSourceOperator) Descriptor() ([]byte, []int) {
+func (m *GRPCSourceOperator) Reset()      { *m = GRPCSourceOperator{} }
+func (*GRPCSourceOperator) ProtoMessage() {}
+func (*GRPCSourceOperator) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e5dcfc8666ec3f33, []int{7}
 }
-func (m *GrpcSourceOperator) XXX_Unmarshal(b []byte) error {
+func (m *GRPCSourceOperator) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *GrpcSourceOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *GRPCSourceOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_GrpcSourceOperator.Marshal(b, m, deterministic)
 	} else {
@@ -736,53 +736,53 @@ func (m *GrpcSourceOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *GrpcSourceOperator) XXX_Merge(src proto.Message) {
+func (m *GRPCSourceOperator) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GrpcSourceOperator.Merge(m, src)
 }
-func (m *GrpcSourceOperator) XXX_Size() int {
+func (m *GRPCSourceOperator) XXX_Size() int {
 	return m.Size()
 }
-func (m *GrpcSourceOperator) XXX_DiscardUnknown() {
+func (m *GRPCSourceOperator) XXX_DiscardUnknown() {
 	xxx_messageInfo_GrpcSourceOperator.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_GrpcSourceOperator proto.InternalMessageInfo
 
-func (m *GrpcSourceOperator) GetSourceId() string {
+func (m *GRPCSourceOperator) GetSourceId() string {
 	if m != nil {
 		return m.SourceId
 	}
 	return ""
 }
 
-func (m *GrpcSourceOperator) GetColumnTypes() []proto1.DataType {
+func (m *GRPCSourceOperator) GetColumnTypes() []proto1.DataType {
 	if m != nil {
 		return m.ColumnTypes
 	}
 	return nil
 }
 
-func (m *GrpcSourceOperator) GetColumnNames() []string {
+func (m *GRPCSourceOperator) GetColumnNames() []string {
 	if m != nil {
 		return m.ColumnNames
 	}
 	return nil
 }
 
-type GrpcSinkOperator struct {
+type GRPCSinkOperator struct {
 	Address       string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	DestinationId string `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
 }
 
-func (m *GrpcSinkOperator) Reset()      { *m = GrpcSinkOperator{} }
-func (*GrpcSinkOperator) ProtoMessage() {}
-func (*GrpcSinkOperator) Descriptor() ([]byte, []int) {
+func (m *GRPCSinkOperator) Reset()      { *m = GRPCSinkOperator{} }
+func (*GRPCSinkOperator) ProtoMessage() {}
+func (*GRPCSinkOperator) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e5dcfc8666ec3f33, []int{8}
 }
-func (m *GrpcSinkOperator) XXX_Unmarshal(b []byte) error {
+func (m *GRPCSinkOperator) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *GrpcSinkOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *GRPCSinkOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_GrpcSinkOperator.Marshal(b, m, deterministic)
 	} else {
@@ -794,26 +794,26 @@ func (m *GrpcSinkOperator) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return b[:n], nil
 	}
 }
-func (m *GrpcSinkOperator) XXX_Merge(src proto.Message) {
+func (m *GRPCSinkOperator) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GrpcSinkOperator.Merge(m, src)
 }
-func (m *GrpcSinkOperator) XXX_Size() int {
+func (m *GRPCSinkOperator) XXX_Size() int {
 	return m.Size()
 }
-func (m *GrpcSinkOperator) XXX_DiscardUnknown() {
+func (m *GRPCSinkOperator) XXX_DiscardUnknown() {
 	xxx_messageInfo_GrpcSinkOperator.DiscardUnknown(m)
 }
 
 var xxx_messageInfo_GrpcSinkOperator proto.InternalMessageInfo
 
-func (m *GrpcSinkOperator) GetAddress() string {
+func (m *GRPCSinkOperator) GetAddress() string {
 	if m != nil {
 		return m.Address
 	}
 	return ""
 }
 
-func (m *GrpcSinkOperator) GetDestinationId() string {
+func (m *GRPCSinkOperator) GetDestinationId() string {
 	if m != nil {
 		return m.DestinationId
 	}
@@ -1854,8 +1854,8 @@ func init() {
 	proto.RegisterType((*Operator)(nil), "pl.carnot.planpb.Operator")
 	proto.RegisterType((*MemorySourceOperator)(nil), "pl.carnot.planpb.MemorySourceOperator")
 	proto.RegisterType((*MemorySinkOperator)(nil), "pl.carnot.planpb.MemorySinkOperator")
-	proto.RegisterType((*GrpcSourceOperator)(nil), "pl.carnot.planpb.GrpcSourceOperator")
-	proto.RegisterType((*GrpcSinkOperator)(nil), "pl.carnot.planpb.GrpcSinkOperator")
+	proto.RegisterType((*GRPCSourceOperator)(nil), "pl.carnot.planpb.GRPCSourceOperator")
+	proto.RegisterType((*GRPCSinkOperator)(nil), "pl.carnot.planpb.GRPCSinkOperator")
 	proto.RegisterType((*MapOperator)(nil), "pl.carnot.planpb.MapOperator")
 	proto.RegisterType((*AggregateOperator)(nil), "pl.carnot.planpb.AggregateOperator")
 	proto.RegisterType((*FilterOperator)(nil), "pl.carnot.planpb.FilterOperator")
@@ -2539,14 +2539,14 @@ func (this *MemorySinkOperator) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *GrpcSourceOperator) Equal(that interface{}) bool {
+func (this *GRPCSourceOperator) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*GrpcSourceOperator)
+	that1, ok := that.(*GRPCSourceOperator)
 	if !ok {
-		that2, ok := that.(GrpcSourceOperator)
+		that2, ok := that.(GRPCSourceOperator)
 		if ok {
 			that1 = &that2
 		} else {
@@ -2579,14 +2579,14 @@ func (this *GrpcSourceOperator) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *GrpcSinkOperator) Equal(that interface{}) bool {
+func (this *GRPCSinkOperator) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*GrpcSinkOperator)
+	that1, ok := that.(*GRPCSinkOperator)
 	if !ok {
-		that2, ok := that.(GrpcSinkOperator)
+		that2, ok := that.(GRPCSinkOperator)
 		if ok {
 			that1 = &that2
 		} else {
@@ -3592,24 +3592,24 @@ func (this *MemorySinkOperator) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *GrpcSourceOperator) GoString() string {
+func (this *GRPCSourceOperator) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 7)
-	s = append(s, "&planpb.GrpcSourceOperator{")
+	s = append(s, "&planpb.GRPCSourceOperator{")
 	s = append(s, "SourceId: "+fmt.Sprintf("%#v", this.SourceId)+",\n")
 	s = append(s, "ColumnTypes: "+fmt.Sprintf("%#v", this.ColumnTypes)+",\n")
 	s = append(s, "ColumnNames: "+fmt.Sprintf("%#v", this.ColumnNames)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *GrpcSinkOperator) GoString() string {
+func (this *GRPCSinkOperator) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&planpb.GrpcSinkOperator{")
+	s = append(s, "&planpb.GRPCSinkOperator{")
 	s = append(s, "Address: "+fmt.Sprintf("%#v", this.Address)+",\n")
 	s = append(s, "DestinationId: "+fmt.Sprintf("%#v", this.DestinationId)+",\n")
 	s = append(s, "}")
@@ -4555,7 +4555,7 @@ func (m *MemorySinkOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *GrpcSourceOperator) Marshal() (dAtA []byte, err error) {
+func (m *GRPCSourceOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -4565,12 +4565,12 @@ func (m *GrpcSourceOperator) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *GrpcSourceOperator) MarshalTo(dAtA []byte) (int, error) {
+func (m *GRPCSourceOperator) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *GrpcSourceOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *GRPCSourceOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -4612,7 +4612,7 @@ func (m *GrpcSourceOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *GrpcSinkOperator) Marshal() (dAtA []byte, err error) {
+func (m *GRPCSinkOperator) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -4622,12 +4622,12 @@ func (m *GrpcSinkOperator) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *GrpcSinkOperator) MarshalTo(dAtA []byte) (int, error) {
+func (m *GRPCSinkOperator) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *GrpcSinkOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *GRPCSinkOperator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -5868,7 +5868,7 @@ func (m *MemorySinkOperator) Size() (n int) {
 	return n
 }
 
-func (m *GrpcSourceOperator) Size() (n int) {
+func (m *GRPCSourceOperator) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5894,7 +5894,7 @@ func (m *GrpcSourceOperator) Size() (n int) {
 	return n
 }
 
-func (m *GrpcSinkOperator) Size() (n int) {
+func (m *GRPCSinkOperator) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -6501,7 +6501,7 @@ func (this *Operator_GrpcSourceOp) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&Operator_GrpcSourceOp{`,
-		`GrpcSourceOp:` + strings.Replace(fmt.Sprintf("%v", this.GrpcSourceOp), "GrpcSourceOperator", "GrpcSourceOperator", 1) + `,`,
+		`GrpcSourceOp:` + strings.Replace(fmt.Sprintf("%v", this.GrpcSourceOp), "GRPCSourceOperator", "GRPCSourceOperator", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6511,7 +6511,7 @@ func (this *Operator_GrpcSinkOp) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&Operator_GrpcSinkOp{`,
-		`GrpcSinkOp:` + strings.Replace(fmt.Sprintf("%v", this.GrpcSinkOp), "GrpcSinkOperator", "GrpcSinkOperator", 1) + `,`,
+		`GrpcSinkOp:` + strings.Replace(fmt.Sprintf("%v", this.GrpcSinkOp), "GRPCSinkOperator", "GRPCSinkOperator", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6554,11 +6554,11 @@ func (this *MemorySinkOperator) String() string {
 	}, "")
 	return s
 }
-func (this *GrpcSourceOperator) String() string {
+func (this *GRPCSourceOperator) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&GrpcSourceOperator{`,
+	s := strings.Join([]string{`&GRPCSourceOperator{`,
 		`SourceId:` + fmt.Sprintf("%v", this.SourceId) + `,`,
 		`ColumnTypes:` + fmt.Sprintf("%v", this.ColumnTypes) + `,`,
 		`ColumnNames:` + fmt.Sprintf("%v", this.ColumnNames) + `,`,
@@ -6566,11 +6566,11 @@ func (this *GrpcSourceOperator) String() string {
 	}, "")
 	return s
 }
-func (this *GrpcSinkOperator) String() string {
+func (this *GRPCSinkOperator) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&GrpcSinkOperator{`,
+	s := strings.Join([]string{`&GRPCSinkOperator{`,
 		`Address:` + fmt.Sprintf("%v", this.Address) + `,`,
 		`DestinationId:` + fmt.Sprintf("%v", this.DestinationId) + `,`,
 		`}`,
@@ -7926,7 +7926,7 @@ func (m *Operator) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &GrpcSourceOperator{}
+			v := &GRPCSourceOperator{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -7961,7 +7961,7 @@ func (m *Operator) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &GrpcSinkOperator{}
+			v := &GRPCSinkOperator{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -8578,7 +8578,7 @@ func (m *MemorySinkOperator) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *GrpcSourceOperator) Unmarshal(dAtA []byte) error {
+func (m *GRPCSourceOperator) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -8601,10 +8601,10 @@ func (m *GrpcSourceOperator) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: GrpcSourceOperator: wiretype end group for non-group")
+			return fmt.Errorf("proto: GRPCSourceOperator: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GrpcSourceOperator: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: GRPCSourceOperator: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -8764,7 +8764,7 @@ func (m *GrpcSourceOperator) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *GrpcSinkOperator) Unmarshal(dAtA []byte) error {
+func (m *GRPCSinkOperator) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -8787,10 +8787,10 @@ func (m *GrpcSinkOperator) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: GrpcSinkOperator: wiretype end group for non-group")
+			return fmt.Errorf("proto: GRPCSinkOperator: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GrpcSinkOperator: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: GRPCSinkOperator: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

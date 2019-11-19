@@ -30,9 +30,9 @@ using ::testing::Return;
 using ::testing::SaveArg;
 using ::testing::SetArgPointee;
 
-class GrpcSinkNodeTest : public ::testing::Test {
+class GRPCSinkNodeTest : public ::testing::Test {
  public:
-  GrpcSinkNodeTest() {
+  GRPCSinkNodeTest() {
     udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
     uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
     auto table_store = std::make_shared<table_store::TableStore>();
@@ -56,16 +56,16 @@ class GrpcSinkNodeTest : public ::testing::Test {
   MockKelvinServiceStub* mock_;
 };
 
-TEST_F(GrpcSinkNodeTest, basic) {
-  auto op_proto = planpb::testutils::CreateTestGrpcSink1PB();
-  auto plan_node = std::make_unique<plan::GrpcSinkOperator>(1);
+TEST_F(GRPCSinkNodeTest, basic) {
+  auto op_proto = planpb::testutils::CreateTestGRPCSink1PB();
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
   auto s = plan_node->Init(op_proto.grpc_sink_op());
   RowDescriptor input_rd({types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
 
   google::protobuf::util::MessageDifferencer differ;
 
-  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GrpcSinkOperator>(
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
       *plan_node, output_rd, {input_rd}, exec_state_.get());
 
   RowBatchResponse resp;

@@ -142,10 +142,10 @@ class MemorySinkOperator : public Operator {
   planpb::MemorySinkOperator pb_;
 };
 
-class GrpcSourceOperator : public Operator {
+class GRPCSourceOperator : public Operator {
  public:
-  explicit GrpcSourceOperator(int64_t id) : Operator(id, planpb::GRPC_SOURCE_OPERATOR) {}
-  ~GrpcSourceOperator() override = default;
+  explicit GRPCSourceOperator(int64_t id) : Operator(id, planpb::GRPC_SOURCE_OPERATOR) {}
+  ~GRPCSourceOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema& schema, const PlanState& state,
@@ -159,10 +159,10 @@ class GrpcSourceOperator : public Operator {
   planpb::GrpcSourceOperator pb_;
 };
 
-class GrpcSinkOperator : public Operator {
+class GRPCSinkOperator : public Operator {
  public:
-  explicit GrpcSinkOperator(int64_t id) : Operator(id, planpb::GRPC_SINK_OPERATOR) {}
-  ~GrpcSinkOperator() override = default;
+  explicit GRPCSinkOperator(int64_t id) : Operator(id, planpb::GRPC_SINK_OPERATOR) {}
+  ~GRPCSinkOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema& schema, const PlanState& state,

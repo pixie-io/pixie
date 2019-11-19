@@ -40,9 +40,9 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
     case planpb::MEMORY_SINK_OPERATOR:
       return CreateOperator<MemorySinkOperator>(id, pb.mem_sink_op());
     case planpb::GRPC_SOURCE_OPERATOR:
-      return CreateOperator<GrpcSourceOperator>(id, pb.grpc_source_op());
+      return CreateOperator<GRPCSourceOperator>(id, pb.grpc_source_op());
     case planpb::GRPC_SINK_OPERATOR:
-      return CreateOperator<GrpcSinkOperator>(id, pb.grpc_sink_op());
+      return CreateOperator<GRPCSinkOperator>(id, pb.grpc_sink_op());
     case planpb::FILTER_OPERATOR:
       return CreateOperator<FilterOperator>(id, pb.filter_op());
     case planpb::LIMIT_OPERATOR:
@@ -234,17 +234,17 @@ StatusOr<table_store::schema::Relation> MemorySinkOperator::OutputRelation(
  * GRPC Source Operator Implementation.
  */
 
-std::string GrpcSourceOperator::DebugString() const {
+std::string GRPCSourceOperator::DebugString() const {
   return absl::Substitute("Op:GrpcSource($0)", absl::StrJoin(pb_.column_names(), ","));
 }
 
-Status GrpcSourceOperator::Init(const planpb::GrpcSourceOperator& pb) {
+Status GRPCSourceOperator::Init(const planpb::GrpcSourceOperator& pb) {
   pb_ = pb;
   is_initialized_ = true;
   return Status::OK();
 }
 
-StatusOr<table_store::schema::Relation> GrpcSourceOperator::OutputRelation(
+StatusOr<table_store::schema::Relation> GRPCSourceOperator::OutputRelation(
     const table_store::schema::Schema&, const PlanState&,
     const std::vector<int64_t>& input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
@@ -263,17 +263,17 @@ StatusOr<table_store::schema::Relation> GrpcSourceOperator::OutputRelation(
  * GRPC Sink Operator Implementation.
  */
 
-std::string GrpcSinkOperator::DebugString() const {
+std::string GRPCSinkOperator::DebugString() const {
   return absl::Substitute("Op:GrpcSink($0, $1)", address(), destination_id());
 }
 
-Status GrpcSinkOperator::Init(const planpb::GrpcSinkOperator& pb) {
+Status GRPCSinkOperator::Init(const planpb::GrpcSinkOperator& pb) {
   pb_ = pb;
   is_initialized_ = true;
   return Status::OK();
 }
 
-StatusOr<table_store::schema::Relation> GrpcSinkOperator::OutputRelation(
+StatusOr<table_store::schema::Relation> GRPCSinkOperator::OutputRelation(
     const table_store::schema::Schema&, const PlanState&, const std::vector<int64_t>&) const {
   DCHECK(is_initialized_) << "Not initialized";
   // There are no outputs.

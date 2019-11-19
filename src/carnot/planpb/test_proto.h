@@ -227,11 +227,11 @@ column_names: "test_col2"
 column_types: BOOLEAN
 )";
 
-const char* kGrpcSourceOperator1 = R"(
+const char* kGRPCSourceOperator1 = R"(
 source_id: "agent1_2"
 )";
 
-const char* kGrpcSinkOperator1 = R"(
+const char* kGRPCSinkOperator1 = R"(
 address: "localhost:1234"
 destination_id: "agent1_2"
 )";
@@ -889,18 +889,18 @@ planpb::Operator CreateTestSink2PB() {
   return op;
 }
 
-planpb::Operator CreateTestGrpcSource1PB() {
+planpb::Operator CreateTestGRPCSource1PB() {
   planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "GRPC_SOURCE_OPERATOR", "grpc_source_op",
-                                   kGrpcSourceOperator1);
+                                   kGRPCSourceOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-planpb::Operator CreateTestGrpcSink1PB() {
+planpb::Operator CreateTestGRPCSink1PB() {
   planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "GRPC_SINK_OPERATOR", "grpc_sink_op",
-                                   kGrpcSinkOperator1);
+                                   kGRPCSinkOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

@@ -25,12 +25,12 @@ Status GRPCSinkNode::InitImpl(const plan::Operator& plan_node, const RowDescript
                               const std::vector<RowDescriptor>& input_descriptors) {
   CHECK(plan_node.op_type() == planpb::OperatorType::GRPC_SINK_OPERATOR);
   if (input_descriptors.size() != 1) {
-    return error::InvalidArgument("GrpcSink operator expects a single input relation, got $0",
+    return error::InvalidArgument("GRPCSink operator expects a single input relation, got $0",
                                   input_descriptors.size());
   }
   input_descriptor_ = std::make_unique<RowDescriptor>(input_descriptors[0]);
-  const auto* sink_plan_node = static_cast<const plan::GrpcSinkOperator*>(&plan_node);
-  plan_node_ = std::make_unique<plan::GrpcSinkOperator>(*sink_plan_node);
+  const auto* sink_plan_node = static_cast<const plan::GRPCSinkOperator*>(&plan_node);
+  plan_node_ = std::make_unique<plan::GRPCSinkOperator>(*sink_plan_node);
   return Status::OK();
 }
 
@@ -49,7 +49,7 @@ Status GRPCSinkNode::CloseWriter() {
   auto s = writer_->Finish();
   if (!s.ok()) {
     return error::Internal(absl::Substitute(
-        "GRPC Sink node: Error calling Finish on stream, message: $0", s.error_message()));
+        "GRPCSink node: Error calling Finish on stream, message: $0", s.error_message()));
   }
   return Status::OK();
 }
@@ -61,7 +61,7 @@ Status GRPCSinkNode::CloseImpl(ExecState*) {
 
   if (writer_ != nullptr) {
     PL_RETURN_IF_ERROR(CloseWriter());
-    return error::Internal("Closing GRPC Sink node without receiving EOS.");
+    return error::Internal("Closing GRPCSinkNode without receiving EOS.");
   }
 
   return Status::OK();
@@ -91,7 +91,7 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
   return response_.success()
              ? Status::OK()
              : error::Internal(absl::Substitute(
-                   "GRPC Sink node: error sending stream to address $0, error message: $1",
+                   "GRPCSinkNode: error sending stream to address $0, error message: $1",
                    plan_node_->address(), response_.message()));
 }
 

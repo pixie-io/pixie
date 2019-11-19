@@ -93,7 +93,7 @@ TEST_F(OperatorTest, from_proto_mem_sink) {
 }
 
 TEST_F(OperatorTest, from_proto_grpc_source) {
-  auto sink_pb = planpb::testutils::CreateTestGrpcSource1PB();
+  auto sink_pb = planpb::testutils::CreateTestGRPCSource1PB();
   auto sink_op = Operator::FromProto(sink_pb, 1);
   EXPECT_EQ(1, sink_op->id());
   EXPECT_TRUE(sink_op->is_initialized());
@@ -101,7 +101,7 @@ TEST_F(OperatorTest, from_proto_grpc_source) {
 }
 
 TEST_F(OperatorTest, from_proto_grpc_sink) {
-  auto sink_pb = planpb::testutils::CreateTestGrpcSink1PB();
+  auto sink_pb = planpb::testutils::CreateTestGRPCSink1PB();
   auto sink_op = Operator::FromProto(sink_pb, 1);
   EXPECT_EQ(1, sink_op->id());
   EXPECT_TRUE(sink_op->is_initialized());

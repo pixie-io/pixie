@@ -126,7 +126,7 @@ message MemorySinkOperator {
 
 // Reads from a GRPC service that other machines send RowBatches to.
 message GrpcSourceOperator {
-  // Pairs of GrpcSourceOperator and GrpcSinkOperator refer to each other via this ID field.
+  // Pairs of GRPCSourceOperator and GRPCSinkOperator refer to each other via this ID field.
   string source_id = 1;
   // The types of the columns that the source generates.
   repeated pl.types.DataType column_types = 2;
@@ -138,7 +138,7 @@ message GrpcSourceOperator {
 message GrpcSinkOperator {
   // The address of the GRPC service.
   string address = 1;
-  // Pairs of GrpcSourceOperator and GrpcSinkOperator refer to each other via this ID field.
+  // Pairs of GRPCSourceOperator and GRPCSinkOperator refer to each other via this ID field.
   string destination_id = 2;
 }
 

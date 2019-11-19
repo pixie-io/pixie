@@ -45,7 +45,7 @@ class GRPCSourceNode : public SourceNode {
   std::unique_ptr<carnotpb::RowBatchRequest> next_up_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<carnotpb::RowBatchRequest>> row_batch_queue_;
 
-  std::unique_ptr<plan::GrpcSourceOperator> plan_node_;
+  std::unique_ptr<plan::GRPCSourceOperator> plan_node_;
   std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
 };
 
