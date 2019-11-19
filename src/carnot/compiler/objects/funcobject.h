@@ -84,6 +84,8 @@ class FuncObject : public QLObject {
   StatusOr<QLObjectPtr> Call(const ArgMap& args, const pypa::AstPtr& ast, ASTVisitor* ast_visitor);
   const std::string& name() const { return name_; }
 
+  const std::vector<std::string>& arguments() const { return arguments_; }
+
  private:
   StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast,
                                    ASTVisitor* ast_visitor);

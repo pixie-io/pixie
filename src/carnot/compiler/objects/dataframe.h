@@ -255,6 +255,19 @@ class OldRangeAggHandler {
                                                        const pypa::AstPtr& ast, IR* graph);
 };
 
+class FilterHandler {
+ public:
+  /**
+   * @brief Evaluates the filter operator
+   *
+   * @param df the dataframe that's a parent to the filter function.
+   * @param ast the ast node that signifies where the query was written.
+   * @param args the arguments for filter()
+   * @return StatusOr<QLObjectPtr>
+   */
+  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -67,12 +67,31 @@ class QLObject {
   }
 
   /**
+   * @brief Get the method that runs when this object is called with a subscript.
+   * ie
+   * ```
+   * df = dataframe(...)
+   * a = dataframe[12 == 2]
+   * ```
+   *
+   * @return StatusOr<std::shared_ptr<FuncObject>>
+   */
+  StatusOr<std::shared_ptr<FuncObject>> GetSubscriptMethod() const {
+    if (!HasMethod(kSubscriptMethodName)) {
+      return CreateError("'$0' object is not callable", type_descriptor_.name());
+    }
+    return GetMethod(kSubscriptMethodName);
+  }
+
+  /**
    * @brief Returns whether object has a method with `name`
    *
    * @param name the string name of the method.
    * @return whether the object has the method.
    */
   bool HasMethod(const std::string& name) const { return methods_.find(name) != methods_.end(); }
+
+  bool HasSubscriptMethod() const { return HasMethod(kSubscriptMethodName); }
 
   const TypeDescriptor& type_descriptor() { return type_descriptor_; }
   IRNode* node() const { return node_; }
@@ -145,8 +164,11 @@ class QLObject {
     AddMethod(kCallMethodName, func_object);
   }
 
+  void AddSubscriptMethod(std::shared_ptr<FuncObject> func_object);
+
   // Reserved keyword for call.
   inline static constexpr char kCallMethodName[] = "__call__";
+  inline static constexpr char kSubscriptMethodName[] = "__getitem__";
 
  private:
   absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> methods_;

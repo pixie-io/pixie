@@ -123,6 +123,12 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       /* has_kwargs */ false,
       std::bind(&OldRangeAggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kRangeAggOpId, old_range_agg_fn);
+
+  std::shared_ptr<FuncObject> filter_fn(new FuncObject(
+      kSubscriptMethodName, {"key"}, {},
+      /* has_kwargs */ false,
+      std::bind(&FilterHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddSubscriptMethod(filter_fn);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
@@ -543,6 +549,20 @@ StatusOr<FuncIR*> OldRangeAggHandler::MakeRangeAggGroupExpression(ColumnIR* rang
                                 std::vector<ExpressionIR*>{range_agg_col_copy, mod_ir_node}));
 
   return sub_ir_node;
+}
+
+StatusOr<QLObjectPtr> FilterHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                          const ParsedArgs& args) {
+  IRNode* key = args.GetArg("key");
+
+  if (!key->IsExpression()) {
+    return key->CreateIRNodeError("subscript argument must have an expression. '$0' not allowed",
+                                  key->type_string());
+  }
+
+  ExpressionIR* expr = static_cast<ExpressionIR*>(key);
+  PL_ASSIGN_OR_RETURN(FilterIR * filter_op, df->graph()->CreateNode<FilterIR>(ast, df->op(), expr));
+  return StatusOr(std::make_shared<Dataframe>(filter_op));
 }
 
 }  // namespace compiler

@@ -1454,6 +1454,63 @@ TEST_F(OldRangeAggTest, ByArgHasMoreThan1Parent) {
   EXPECT_THAT(status.status(), HasCompilerError("expected 1 column to group by, received 2"));
 }
 
+class FilterTest : public DataframeTest {
+ protected:
+  void SetUp() override {
+    DataframeTest::SetUp();
+    src = MakeMemSource();
+    srcdf = std::make_shared<Dataframe>(src);
+  }
+
+  std::shared_ptr<Dataframe> srcdf;
+  MemorySourceIR* src;
+};
+
+TEST_F(FilterTest, FilterCanTakeExpr) {
+  ParsedArgs parsed_args;
+  auto eq_func = MakeEqualsFunc(MakeColumn("service", 0), MakeString("blah"));
+  parsed_args.AddArg("key", eq_func);
+
+  auto qlo_or_s = FilterHandler::Eval(srcdf.get(), ast, parsed_args);
+  ASSERT_OK(qlo_or_s);
+  QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto filter_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  FilterIR* filt_ir = static_cast<FilterIR*>(filter_obj->op());
+  EXPECT_EQ(filt_ir->filter_expr(), eq_func);
+}
+
+TEST_F(FilterTest, DataframeHasFilterAsGetItem) {
+  auto eq_func = MakeEqualsFunc(MakeColumn("service", 0), MakeString("blah"));
+  ArgMap args{{}, {eq_func}};
+
+  auto get_method_status = srcdf->GetSubscriptMethod();
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  auto qlo_or_s = func_obj->Call(args, ast, ast_visitor.get());
+
+  ASSERT_OK(qlo_or_s);
+  QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto filter_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  FilterIR* filt_ir = static_cast<FilterIR*>(filter_obj->op());
+  EXPECT_EQ(filt_ir->filter_expr(), eq_func);
+}
+
+TEST_F(FilterTest, FilterCanHandleErrorInput) {
+  ParsedArgs parsed_args;
+  auto node = MakeMemSource();
+  parsed_args.AddArg("key", node);
+
+  auto qlo_or_s = FilterHandler::Eval(srcdf.get(), ast, parsed_args);
+  ASSERT_NOT_OK(qlo_or_s);
+
+  EXPECT_THAT(qlo_or_s.status(),
+              HasCompilerError("subscript argument must have an expression. '.*' not allowed"));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
