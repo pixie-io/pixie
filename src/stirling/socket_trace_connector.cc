@@ -2,6 +2,7 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <experimental/filesystem>
 
 #include <google/protobuf/empty.pb.h>
 #include <google/protobuf/text_format.h>
@@ -13,6 +14,7 @@
 #include "absl/strings/match.h"
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
+#include "src/common/protobufs/recordio.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/common/event_parser.h"
@@ -40,9 +42,13 @@ DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to 
 DEFINE_uint32(stirling_socket_trace_sampling_period_millis, 100,
               "The sampling period, in milliseconds, at which Stirling reads the BPF perf buffers "
               "for events.");
+// TODO(yzhao): If we ever need to write all events from different perf buffers, then we need either
+// write to different files for individual perf buffers, or create a protobuf message with an oneof
+// field to include all supported message types.
 DEFINE_string(perf_buffer_events_output_path, "",
-              "If not empty, specifies the path to a directory that the socket tracer should "
-              "write the events to Record IO formatted files named after the perf buffer name.");
+              "If not empty, specifies the path & format to a file to which the socket tracer "
+              "writes data events. If the filename ends with '.bin', the events are serialized in "
+              "binary format; otherwise, text format.");
 
 // TODO(oazizi/yzhao): Re-enable grpc and mysql tracing once stable.
 DEFINE_bool(stirling_enable_http_tracing, true,
@@ -67,6 +73,8 @@ using ::pl::stirling::grpc::PBTextFormat;
 using ::pl::stirling::grpc::PBWireToText;
 using ::pl::stirling::http2::HTTP2Message;
 using ::pl::stirling::utils::WriteMapAsJSON;
+
+namespace fs = std::experimental::filesystem;
 
 Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders());
@@ -99,8 +107,16 @@ Status SocketTraceConnector::InitImpl() {
     PL_RETURN_IF_ERROR(DisableSelfTracing());
   }
   if (!FLAGS_perf_buffer_events_output_path.empty()) {
-    perf_buffer_events_output_stream_ =
-        std::make_unique<std::ofstream>(FLAGS_perf_buffer_events_output_path);
+    fs::path output_path(FLAGS_perf_buffer_events_output_path);
+    fs::path abs_path = fs::absolute(output_path);
+    perf_buffer_events_output_stream_ = std::make_unique<std::ofstream>(abs_path);
+    std::string format = "text";
+    constexpr char kBinSuffix[] = ".bin";
+    if (absl::EndsWith(FLAGS_perf_buffer_events_output_path, kBinSuffix)) {
+      perf_buffer_events_output_format_ = OutputFormat::kBin;
+      format = "binary";
+    }
+    LOG(INFO) << absl::Substitute("Writing output to: $0 in $1 format.", abs_path.string(), format);
   }
 
   netlink_socket_prober_ = std::make_unique<system::NetlinkSocketProber>();
@@ -110,6 +126,9 @@ Status SocketTraceConnector::InitImpl() {
 
 Status SocketTraceConnector::StopImpl() {
   bpf_tools::BCCWrapper::Stop();
+  if (perf_buffer_events_output_stream_ != nullptr) {
+    perf_buffer_events_output_stream_->close();
+  }
   return Status::OK();
 }
 
@@ -279,11 +298,19 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
     sockeventpb::SocketDataEvent pb;
     SocketDataEventToPB(*event, &pb);
     std::string text;
-    // TextFormat::Print() can print to a stream. That complicates things a bit, and we opt not to
-    // do that as this is for debugging.
-    TextFormat::PrintToString(pb, &text);
-    // TextFormat already output a \n, so no need to do it here.
-    *perf_buffer_events_output_stream_ << text;
+    switch (perf_buffer_events_output_format_) {
+      case OutputFormat::kTxt:
+        // TextFormat::Print() can print to a stream. That complicates things a bit, and we opt not
+        // to do that as this is for debugging.
+        TextFormat::PrintToString(pb, &text);
+        // TextFormat already output a \n, so no need to do it here.
+        *perf_buffer_events_output_stream_ << text;
+        break;
+      case OutputFormat::kBin:
+        rio::SerializeToStream(pb, perf_buffer_events_output_stream_.get());
+        *perf_buffer_events_output_stream_ << std::flush;
+        break;
+    }
   }
 
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);

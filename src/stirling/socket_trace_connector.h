@@ -230,6 +230,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // If not a nullptr, writes the events received from perf buffers to this stream.
   std::unique_ptr<std::ofstream> perf_buffer_events_output_stream_;
+  enum class OutputFormat {
+    kTxt,
+    kBin,
+  };
+  OutputFormat perf_buffer_events_output_format_ = OutputFormat::kTxt;
 
   std::unique_ptr<system::NetlinkSocketProber> netlink_socket_prober_;
 
