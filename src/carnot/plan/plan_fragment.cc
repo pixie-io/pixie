@@ -51,8 +51,17 @@ void PlanFragmentWalker::CallWalkFn(const Operator& op) {
     case planpb::OperatorType::JOIN_OPERATOR:
       CallAs<JoinOperator>(on_join_walk_fn_, op);
       break;
+    case planpb::OperatorType::UNION_OPERATOR:
+      CallAs<UnionOperator>(on_union_walk_fn_, op);
+      break;
+    case planpb::OperatorType::GRPC_SINK_OPERATOR:
+      CallAs<GRPCSinkOperator>(on_grpc_sink_walk_fn_, op);
+      break;
+    case planpb::OperatorType::GRPC_SOURCE_OPERATOR:
+      CallAs<GRPCSourceOperator>(on_grpc_source_walk_fn_, op);
+      break;
     default:
-      LOG(WARNING) << absl::StrCat("Operator does not exist.");
+      LOG(WARNING) << absl::StrCat("Operator does not exist: %d", op_type);
   }
 }
 

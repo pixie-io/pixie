@@ -51,6 +51,8 @@ class PlanFragmentWalker {
   using LimitWalkFn = std::function<void(const LimitOperator&)>;
   using UnionWalkFn = std::function<void(const UnionOperator&)>;
   using JoinWalkFn = std::function<void(const JoinOperator&)>;
+  using GRPCSinkWalkFn = std::function<void(const GRPCSinkOperator&)>;
+  using GRPCSourceWalkFn = std::function<void(const GRPCSourceOperator&)>;
 
   /**
    * Register callback for when a memory source operator is encountered.
@@ -132,6 +134,16 @@ class PlanFragmentWalker {
     return *this;
   }
 
+  PlanFragmentWalker& OnGRPCSource(const GRPCSourceWalkFn& fn) {
+    on_grpc_source_walk_fn_ = fn;
+    return *this;
+  }
+
+  PlanFragmentWalker& OnGRPCSink(const GRPCSinkWalkFn& fn) {
+    on_grpc_sink_walk_fn_ = fn;
+    return *this;
+  }
+
   /**
    * Perform a walk of the plan fragment operators in a topologically-sorted order.
    * @param plan_fragment The plan fragment to walk.
@@ -152,6 +164,8 @@ class PlanFragmentWalker {
   LimitWalkFn on_limit_walk_fn_;
   UnionWalkFn on_union_walk_fn_;
   JoinWalkFn on_join_walk_fn_;
+  GRPCSinkWalkFn on_grpc_sink_walk_fn_;
+  GRPCSourceWalkFn on_grpc_source_walk_fn_;
 };
 
 }  // namespace plan
