@@ -1,0 +1,44 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  # This name is ignored.
+  name: daemonset-with-logging
+spec:
+  template:
+    spec:
+      containers:
+      - name: vizier-logtailer
+        image: gcr.io/pl-dev-infra/vizier/logtailer_image:latest
+        env:
+        - name: PL_CONTAINER_LOGS
+          value: /var/log/containers
+        - name: PL_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
+        volumeMounts:
+        - mountPath: /certs
+          name: certs
+        - mountPath: /var/log/containers
+          name: var-log-containers
+        - mountPath: /var/log/pods
+          name: var-log-pods
+        - mountPath: /var/lib/docker/containers
+          name: lib-docker-containers
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - hostPath:
+          path: /var/log/containers
+        name: var-log-containers
+      - hostPath:
+          path: /var/log/pods
+        name: var-log-pods
+      - hostPath:
+          path: /var/lib/docker/containers
+        name: lib-docker-containers

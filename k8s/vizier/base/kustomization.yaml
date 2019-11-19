@@ -6,6 +6,9 @@ commonLabels:
 kind: Kustomization
 namespace: pl
 patches:
+- path: patch_logging_sidecar_daemonset.yaml
+  target:
+    kind: DaemonSet
 - path: patch_logging_sidecar_deployment.yaml
   target:
     kind: Deployment
