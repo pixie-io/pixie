@@ -9,7 +9,7 @@ jest.mock('common/vizier-gql-client', () => ({}));
 
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
-describe('<AgentDisplay/> test', () => {
+describe.skip('<AgentDisplay/> test', () => {
   it('should pass correct headers into content box', async () => {
     const mocks = [
       {

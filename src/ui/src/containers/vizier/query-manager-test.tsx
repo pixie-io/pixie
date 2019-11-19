@@ -15,7 +15,7 @@ const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
 jest.mock('common/vizier-gql-client', () => ({}));
 
-describe('<QueryManager/> test', () => {
+describe.skip('<QueryManager/> test', () => {
   it('should update code upon dropdown selection', () => {
     const wrapper = mount(
       <MemoryRouter>

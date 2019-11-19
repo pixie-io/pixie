@@ -17,7 +17,7 @@ jest.mock('common/vizier-gql-client', () => ({}));
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-describe('<VizierMain/> test', () => {
+describe.skip('<VizierMain/> test', () => {
   it('should have sidebar if Vizier is connected', async () => {
     const mocks = [
       {
@@ -78,7 +78,7 @@ describe('<VizierMain/> test', () => {
   });
 });
 
-describe('<Vizier/> test', () => {
+describe.skip('<Vizier/> test', () => {
   it('should have sidebar if Vizier is healthy', async () => {
     const mocks = [
       {

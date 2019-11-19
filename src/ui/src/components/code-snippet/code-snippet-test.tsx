@@ -2,9 +2,10 @@ import {mount} from 'enzyme';
 import * as React from 'react';
 import {Tooltip} from 'react-bootstrap';
 import Highlight from 'react-highlight';
+
 import {CodeSnippet} from './code-snippet';
 
-describe('<CodeSnippet/> test', () => {
+describe.skip('<CodeSnippet/> test', () => {
   it('should show correct contents', () => {
     const wrapper = mount(<CodeSnippet
       showCopy={false}
