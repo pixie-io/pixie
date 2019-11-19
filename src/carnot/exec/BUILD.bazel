@@ -33,6 +33,7 @@ pl_cc_library(
         "@com_github_cameron314_concurrentqueue//:concurrentqueue",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_rlyeh_sole//:sole",
+        "@com_google_absl//absl/container:node_hash_map",
     ],
 )
 
@@ -214,6 +215,14 @@ pl_cc_test(
 pl_cc_test(
     name = "row_tuple_test",
     srcs = ["row_tuple_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "grpc_router_test",
+    srcs = ["grpc_router_test.cc"],
     deps = [
         ":cc_library",
     ],

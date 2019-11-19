@@ -25,6 +25,9 @@ class GRPCSourceNode : public SourceNode {
   bool NextBatchReady() override;
   virtual Status EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest> row_batch);
 
+  // TODO(zasgar/michelle): Remove this once Natalie's changes land.
+  std::string destination_id() { return plan_node_->source_id(); }
+
  protected:
   std::string DebugStringImpl() override;
   Status InitImpl(
