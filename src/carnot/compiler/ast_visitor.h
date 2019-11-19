@@ -248,6 +248,14 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> ProcessOpCallNode(const pypa::AstCallPtr& node);
 
   /**
+   * @brief Processes a subscript call.
+   *
+   * @param node
+   * @return the operator contained by the subscript.
+   */
+  StatusOr<QLObjectPtr> ProcessSubscriptCall(const pypa::AstSubscriptPtr& node);
+
+  /**
    * @brief Create a MemorySource Operator declared by a dataframe() statement.
    *
    * @param ast the ast node that creates the From op.
@@ -504,6 +512,16 @@ class ASTVisitorImpl : public ASTVisitor {
    */
   StatusOr<ExpressionIR*> ProcessDataBinOp(const pypa::AstBinOpPtr& node,
                                            const OperatorContext& op_context);
+
+  /**
+   * @brief Processes compare nodes
+   *
+   * @param node
+   * @param op_context
+   * @return the evaluated data compare object.
+   */
+  StatusOr<ExpressionIR*> ProcessDataCompare(const pypa::AstComparePtr& node,
+                                             const OperatorContext& op_context);
   /**
    * @brief Handler for functions that are called as args in the data.
    * Calls nested within Lambda trees are not touched by this.

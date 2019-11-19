@@ -685,6 +685,97 @@ TEST(JoinTest, test_inner_join) {
   EXPECT_THAT(graph->dag().ParentsOf(join->id()), ElementsAre(mem_src1->id(), mem_src2->id()));
 }
 
+const char* kNewFilterQuery = R"query(
+df = dataframe("bar")
+df = df[df["service"] == "foo"]
+df.result("ld")
+)query";
+
+TEST(FilterTest, TestNewFilter) {
+  auto ir_graph_or_s = ParseQuery(kNewFilterQuery);
+  ASSERT_OK(ir_graph_or_s);
+  auto graph = ir_graph_or_s.ConsumeValueOrDie();
+  FilterIR* filter = nullptr;
+  for (int64_t i : graph->dag().TopologicalSort()) {
+    auto node = graph->Get(i);
+    if (Match(node, Filter())) {
+      filter = static_cast<FilterIR*>(node);
+    }
+  }
+
+  ASSERT_TRUE(filter) << "Filter not found in graph.";
+
+  ASSERT_EQ(filter->parents().size(), 1);
+  ASSERT_TRUE(Match(filter->parents()[0], MemorySource()));
+  auto mem_src = static_cast<MemorySourceIR*>(filter->parents()[0]);
+  EXPECT_EQ(mem_src->table_name(), "bar");
+
+  ASSERT_TRUE(Match(filter->filter_expr(), Equals(ColumnNode(), String())));
+
+  auto filter_expr = static_cast<FuncIR*>(filter->filter_expr());
+  ASSERT_TRUE(Match(filter_expr->args()[0], ColumnNode()));
+  ASSERT_TRUE(Match(filter_expr->args()[1], String()));
+
+  ColumnIR* col = static_cast<ColumnIR*>(filter_expr->args()[0]);
+  StringIR* str = static_cast<StringIR*>(filter_expr->args()[1]);
+  EXPECT_EQ(col->col_name(), "service");
+  EXPECT_EQ(str->str(), "foo");
+
+  ASSERT_EQ(filter->Children().size(), 1);
+  ASSERT_TRUE(Match(filter->Children()[0], MemorySink()));
+}
+
+const char* kFilterChainedQuery = R"query(
+df = dataframe("bar")
+df[df["service"] == "foo"].result("ld")
+)query";
+
+TEST(FilterTest, ChainedFilterQuery) {
+  auto ir_graph_or_s = ParseQuery(kFilterChainedQuery);
+  ASSERT_OK(ir_graph_or_s);
+  auto graph = ir_graph_or_s.ConsumeValueOrDie();
+  FilterIR* filter = nullptr;
+  for (int64_t i : graph->dag().TopologicalSort()) {
+    auto node = graph->Get(i);
+    if (Match(node, Filter())) {
+      filter = static_cast<FilterIR*>(node);
+    }
+  }
+
+  ASSERT_TRUE(filter) << "Filter not found in graph.";
+
+  ASSERT_EQ(filter->parents().size(), 1);
+  ASSERT_TRUE(Match(filter->parents()[0], MemorySource()));
+  auto mem_src = static_cast<MemorySourceIR*>(filter->parents()[0]);
+  EXPECT_EQ(mem_src->table_name(), "bar");
+
+  ASSERT_TRUE(Match(filter->filter_expr(), Equals(ColumnNode(), String())));
+
+  auto filter_expr = static_cast<FuncIR*>(filter->filter_expr());
+  ASSERT_TRUE(Match(filter_expr->args()[0], ColumnNode()));
+  ASSERT_TRUE(Match(filter_expr->args()[1], String()));
+
+  ColumnIR* col = static_cast<ColumnIR*>(filter_expr->args()[0]);
+  StringIR* str = static_cast<StringIR*>(filter_expr->args()[1]);
+  EXPECT_EQ(col->col_name(), "service");
+  EXPECT_EQ(str->str(), "foo");
+
+  ASSERT_EQ(filter->Children().size(), 1);
+  ASSERT_TRUE(Match(filter->Children()[0], MemorySink()));
+}
+
+const char* kInvalidFilterChainQuery = R"query(
+df = dataframe("bar")[df["service"] == "foo"].result("ld")
+)query";
+
+// Filter can't be defined when it's chained after a node.
+TEST(FilterTest, InvalidChainedFilterQuery) {
+  auto ir_graph_or_s = ParseQuery(kInvalidFilterChainQuery);
+  ASSERT_NOT_OK(ir_graph_or_s);
+  EXPECT_THAT(ir_graph_or_s.status(),
+              HasCompilerError("name 'df' is not available in this context"));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
