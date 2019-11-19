@@ -15,13 +15,13 @@ namespace exec {
 using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 
-std::string GrpcSinkNode::DebugStringImpl() {
-  return absl::Substitute("Exec::GrpcSinkNode: {address: $0, destination_id: $1, output: $2}",
+std::string GRPCSinkNode::DebugStringImpl() {
+  return absl::Substitute("Exec::GRPCSinkNode: {address: $0, destination_id: $1, output: $2}",
                           plan_node_->address(), plan_node_->destination_id(),
                           input_descriptor_->DebugString());
 }
 
-Status GrpcSinkNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor&,
+Status GRPCSinkNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor&,
                               const std::vector<RowDescriptor>& input_descriptors) {
   CHECK(plan_node.op_type() == planpb::OperatorType::GRPC_SINK_OPERATOR);
   if (input_descriptors.size() != 1) {
@@ -34,14 +34,14 @@ Status GrpcSinkNode::InitImpl(const plan::Operator& plan_node, const RowDescript
   return Status::OK();
 }
 
-Status GrpcSinkNode::PrepareImpl(ExecState*) { return Status::OK(); }
+Status GRPCSinkNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
-Status GrpcSinkNode::OpenImpl(ExecState* exec_state) {
+Status GRPCSinkNode::OpenImpl(ExecState* exec_state) {
   stub_ = exec_state->KelvinServiceStub(plan_node_->address());
   return Status::OK();
 }
 
-Status GrpcSinkNode::CloseWriter() {
+Status GRPCSinkNode::CloseWriter() {
   if (writer_ == nullptr) {
     return Status::OK();
   }
@@ -54,7 +54,7 @@ Status GrpcSinkNode::CloseWriter() {
   return Status::OK();
 }
 
-Status GrpcSinkNode::CloseImpl(ExecState*) {
+Status GRPCSinkNode::CloseImpl(ExecState*) {
   if (sent_eos_) {
     return Status::OK();
   }
@@ -67,7 +67,7 @@ Status GrpcSinkNode::CloseImpl(ExecState*) {
   return Status::OK();
 }
 
-Status GrpcSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
+Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
   if (writer_ == nullptr) {
     writer_ = stub_->TransferRowBatch(&context_, &response_);
   }

@@ -18,9 +18,9 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-class GrpcSourceNode : public SourceNode {
+class GRPCSourceNode : public SourceNode {
  public:
-  GrpcSourceNode() = default;
+  GRPCSourceNode() = default;
   bool HasBatchesRemaining() override;
   bool NextBatchReady() override;
   Status EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest> row_batch);

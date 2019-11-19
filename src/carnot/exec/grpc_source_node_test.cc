@@ -43,7 +43,7 @@ TEST_F(GrpcSourceNodeTest, basic) {
   std::unique_ptr<plan::Operator> plan_node = plan::GrpcSourceOperator::FromProto(op_proto, 1);
   RowDescriptor output_rd({types::DataType::INT64});
 
-  auto tester = exec::ExecNodeTester<GrpcSourceNode, plan::GrpcSourceOperator>(
+  auto tester = exec::ExecNodeTester<GRPCSourceNode, plan::GrpcSourceOperator>(
       *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
 
   for (auto i = 0; i < 3; ++i) {

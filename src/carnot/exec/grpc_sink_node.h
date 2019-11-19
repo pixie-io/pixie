@@ -18,9 +18,9 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-class GrpcSinkNode : public SinkNode {
+class GRPCSinkNode : public SinkNode {
  public:
-  GrpcSinkNode() = default;
+  GRPCSinkNode() = default;
 
  protected:
   std::string DebugStringImpl() override;

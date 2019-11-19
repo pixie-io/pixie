@@ -13,12 +13,12 @@ namespace exec {
 
 using table_store::schema::RowBatch;
 
-std::string GrpcSourceNode::DebugStringImpl() {
-  return absl::Substitute("Exec::GrpcSourceNode: <id: $0, output: $1>", plan_node_->source_id(),
+std::string GRPCSourceNode::DebugStringImpl() {
+  return absl::Substitute("Exec::GRPCSourceNode: <id: $0, output: $1>", plan_node_->source_id(),
                           output_descriptor_->DebugString());
 }
 
-Status GrpcSourceNode::InitImpl(const plan::Operator& plan_node,
+Status GRPCSourceNode::InitImpl(const plan::Operator& plan_node,
                                 const table_store::schema::RowDescriptor& output_descriptor,
                                 const std::vector<table_store::schema::RowDescriptor>&) {
   CHECK(plan_node.op_type() == planpb::OperatorType::GRPC_SOURCE_OPERATOR);
@@ -27,16 +27,16 @@ Status GrpcSourceNode::InitImpl(const plan::Operator& plan_node,
   output_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(output_descriptor);
   return Status::OK();
 }
-Status GrpcSourceNode::PrepareImpl(ExecState*) { return Status::OK(); }
+Status GRPCSourceNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
-Status GrpcSourceNode::OpenImpl(ExecState*) { return Status::OK(); }
+Status GRPCSourceNode::OpenImpl(ExecState*) { return Status::OK(); }
 
-Status GrpcSourceNode::CloseImpl(ExecState*) { return Status::OK(); }
+Status GRPCSourceNode::CloseImpl(ExecState*) { return Status::OK(); }
 
-Status GrpcSourceNode::GenerateNextImpl(ExecState* exec_state) {
+Status GRPCSourceNode::GenerateNextImpl(ExecState* exec_state) {
   // NextBatchReady calls OptionallyPopRowBatch() to ensure a RowBatch is ready to go, if available.
   if (!NextBatchReady()) {
-    return error::Internal("Error dequeuing RowBatch in GrpcSourceNode");
+    return error::Internal("Error dequeuing RowBatch in GRPCSourceNode");
   }
 
   PL_ASSIGN_OR_RETURN(auto rb, RowBatch::FromProto(next_up_->row_batch()));
@@ -49,23 +49,23 @@ Status GrpcSourceNode::GenerateNextImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
-Status GrpcSourceNode::EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest> row_batch) {
+Status GRPCSourceNode::EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest> row_batch) {
   if (!row_batch_queue_.enqueue(std::move(row_batch))) {
     return error::Internal("Failed to enqueue RowBatch");
   }
   return Status::OK();
 }
 
-bool GrpcSourceNode::HasBatchesRemaining() { return !sent_eos_; }
+bool GRPCSourceNode::HasBatchesRemaining() { return !sent_eos_; }
 
-void GrpcSourceNode::OptionallyPopRowBatch() {
+void GRPCSourceNode::OptionallyPopRowBatch() {
   if (next_up_ != nullptr) {
     return;
   }
   row_batch_queue_.try_dequeue(next_up_);
 }
 
-bool GrpcSourceNode::NextBatchReady() {
+bool GRPCSourceNode::NextBatchReady() {
   OptionallyPopRowBatch();
   return next_up_ != nullptr;
 }

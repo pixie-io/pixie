@@ -65,7 +65,7 @@ TEST_F(GrpcSinkNodeTest, basic) {
 
   google::protobuf::util::MessageDifferencer differ;
 
-  auto tester = exec::ExecNodeTester<GrpcSinkNode, plan::GrpcSinkOperator>(
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GrpcSinkOperator>(
       *plan_node, output_rd, {input_rd}, exec_state_.get());
 
   RowBatchResponse resp;
