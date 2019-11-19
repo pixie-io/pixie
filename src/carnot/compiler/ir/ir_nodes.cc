@@ -1255,7 +1255,7 @@ StatusOr<IRNode*> GRPCSourceIR::DeepCloneIntoImpl(IR* graph) const {
 
 Status GRPCSourceGroupIR::ToProto(planpb::Operator* op) const {
   // Note this is more for testing.
-  auto pb = new planpb::GrpcSourceOperator();
+  auto pb = new planpb::GRPCSourceOperator();
 
   pb->set_source_id(absl::StrCat(source_id_));
   auto types = relation().col_types();
@@ -1272,7 +1272,7 @@ Status GRPCSourceGroupIR::ToProto(planpb::Operator* op) const {
 }
 
 Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::GrpcSinkOperator();
+  auto pb = new planpb::GRPCSinkOperator();
   pb->set_address(destination_address());
   pb->set_destination_id(DistributedDestinationID());
 
@@ -1282,7 +1282,7 @@ Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
 }
 
 Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::GrpcSourceOperator();
+  auto pb = new planpb::GRPCSourceOperator();
   pb->set_source_id(remote_source_id_);
   auto types = relation().col_types();
   auto names = relation().col_names();

@@ -24,7 +24,7 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-func isGrpcRequest(r *http.Request) bool {
+func isGRPCRequest(r *http.Request) bool {
 	return r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc")
 }
 
@@ -76,7 +76,7 @@ func (s *PLServer) serveHTTP2() {
 	serverAddr := fmt.Sprintf(":%d", viper.GetInt("http2_port"))
 	// If it's a GRPC request we use the GRPC handler, otherwise forward to the regular HTTP(/2) handler.
 	muxHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isGrpcRequest(r) {
+		if isGRPCRequest(r) {
 			s.grpcServer.ServeHTTP(w, r)
 			return
 		}

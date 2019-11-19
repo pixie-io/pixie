@@ -235,10 +235,10 @@ StatusOr<table_store::schema::Relation> MemorySinkOperator::OutputRelation(
  */
 
 std::string GRPCSourceOperator::DebugString() const {
-  return absl::Substitute("Op:GrpcSource($0)", absl::StrJoin(pb_.column_names(), ","));
+  return absl::Substitute("Op:GRPCSource($0)", absl::StrJoin(pb_.column_names(), ","));
 }
 
-Status GRPCSourceOperator::Init(const planpb::GrpcSourceOperator& pb) {
+Status GRPCSourceOperator::Init(const planpb::GRPCSourceOperator& pb) {
   pb_ = pb;
   is_initialized_ = true;
   return Status::OK();
@@ -264,10 +264,10 @@ StatusOr<table_store::schema::Relation> GRPCSourceOperator::OutputRelation(
  */
 
 std::string GRPCSinkOperator::DebugString() const {
-  return absl::Substitute("Op:GrpcSink($0, $1)", address(), destination_id());
+  return absl::Substitute("Op:GRPCSink($0, $1)", address(), destination_id());
 }
 
-Status GRPCSinkOperator::Init(const planpb::GrpcSinkOperator& pb) {
+Status GRPCSinkOperator::Init(const planpb::GRPCSinkOperator& pb) {
   pb_ = pb;
   is_initialized_ = true;
   return Status::OK();

@@ -19,9 +19,9 @@ using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 using ::testing::_;
 
-class GrpcSourceNodeTest : public ::testing::Test {
+class GRPCSourceNodeTest : public ::testing::Test {
  public:
-  GrpcSourceNodeTest() {
+  GRPCSourceNodeTest() {
     udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
     uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
     auto table_store = std::make_shared<table_store::TableStore>();
@@ -38,7 +38,7 @@ class GrpcSourceNodeTest : public ::testing::Test {
   std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
 };
 
-TEST_F(GrpcSourceNodeTest, basic) {
+TEST_F(GRPCSourceNodeTest, basic) {
   auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
   std::unique_ptr<plan::Operator> plan_node = plan::GRPCSourceOperator::FromProto(op_proto, 1);
   RowDescriptor output_rd({types::DataType::INT64});

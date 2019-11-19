@@ -3,6 +3,7 @@ syntax = "proto3";
 import "src/carnot/planpb/plan.proto";
 import "src/common/base/proto/status.proto";
 import "src/table_store/proto/schema.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 package pl.carnot.compiler.distributedpb;
 
@@ -13,9 +14,9 @@ message CarnotInfo {
   // The unique address used by the query broker to contact this instance.
   string query_broker_address = 1;
   // Flag if the Carnot instance hosts a GRPC server.
-  bool has_grpc_server = 2;
+  bool has_grpc_server = 2 [ (gogoproto.customname) = "HasGRPCServer" ];
   // The address of the GRPC server hosted by the Carnot instance, it has a GRPC server.
-  string grpc_address = 3;
+  string grpc_address = 3 [ (gogoproto.customname) = "GRPCAddress" ];
   // Flag if the carnot instance has an in-memory store of data.
   // E.g. agents stores data, but some Kelvin instances might only be used for computation.
   bool has_data_store = 4;

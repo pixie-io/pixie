@@ -106,7 +106,7 @@ func makeAgentCarnotInfo(agentID uuid.UUID) *distributedpb.CarnotInfo {
 	// TODO(philkuz) (PL-910) need to update this to also contain table info.
 	return &distributedpb.CarnotInfo{
 		QueryBrokerAddress:   agentID.String(),
-		HasGrpcServer:        false,
+		HasGRPCServer:        false,
 		HasDataStore:         true,
 		ProcessesData:        true,
 		AcceptsRemoteSources: false,
@@ -116,8 +116,8 @@ func makeAgentCarnotInfo(agentID uuid.UUID) *distributedpb.CarnotInfo {
 func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string) *distributedpb.CarnotInfo {
 	return &distributedpb.CarnotInfo{
 		QueryBrokerAddress:   agentID.String(),
-		HasGrpcServer:        true,
-		GrpcAddress:          grpcAddress,
+		HasGRPCServer:        true,
+		GRPCAddress:          grpcAddress,
 		HasDataStore:         false,
 		ProcessesData:        true,
 		AcceptsRemoteSources: true,
@@ -134,8 +134,8 @@ func makePlannerState(pemInfo []*agentpb.AgentInfo, kelvinList []*agentpb.AgentI
 
 	for _, kelvin := range kelvinList {
 		kelvinID := utils.UUIDFromProtoOrNil(kelvin.AgentID)
-		kelvinGrpcAddress := kelvin.IPAddress
-		carnotInfoList = append(carnotInfoList, makeKelvinCarnotInfo(kelvinID, kelvinGrpcAddress))
+		kelvinGRPCAddress := kelvin.IPAddress
+		carnotInfoList = append(carnotInfoList, makeKelvinCarnotInfo(kelvinID, kelvinGRPCAddress))
 	}
 
 	plannerState := distributedpb.LogicalPlannerState{

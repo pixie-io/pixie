@@ -59,8 +59,8 @@ distributed_state {
 	carnot_info{
 		query_broker_address: "kelvin"
 		grpc_address: "1111"
-		has_grpc_server: true 
-		has_data_store: false 
+		has_grpc_server: true
+		has_data_store: false
 		processes_data: true
 		accepts_remote_sources: true
 	}
@@ -114,29 +114,29 @@ func TestPlanner_Simple(t *testing.T) {
 	assert.Equal(t, agent2MemSrc1.Tablet, "4")
 	assert.Equal(t, agent2MemSrc2.Tablet, "3")
 	// TODO(philkuz) (PL-873) uncomment these when Kelvin is enabled.
-	// agent1GRPCSink := agent1Plan.Nodes[0].Nodes[len(agent1Plan.Nodes[0].Nodes)-1].Op.GetGrpcSinkOp()
-	// if !assert.NotNil(t, agent1GrpcSink) {
+	// agent1GRPCSink := agent1Plan.Nodes[0].Nodes[len(agent1Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
+	// if !assert.NotNil(t, agent1GRPCSink) {
 	// 	t.FailNow()
 	// }
 	// assert.Equal(t, agent1GRPCSink.Address, "1111")
 	// assert.Equal(t, agent1GRPCSink.DestinationId, "agent1:0")
-	// agent2GRPCSink := agent2Plan.Nodes[0].Nodes[len(agent2Plan.Nodes[0].Nodes)-1].Op.GetGrpcSinkOp()
-	// if !assert.NotNil(t, agent2GrpcSink) {
+	// agent2GRPCSink := agent2Plan.Nodes[0].Nodes[len(agent2Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
+	// if !assert.NotNil(t, agent2GRPCSink) {
 	// 	t.FailNow()
 	// }
 	// assert.Equal(t, agent2GRPCSink.Address, "1111")
 	// assert.Equal(t, agent2GRPCSink.DestinationId, "agent2:0")
 	// agent3Plan := planPB.QbAddressToPlan["kelvin"]
-	// agent3GrpcSource1 := agent3Plan.Nodes[0].Nodes[0].Op.GetGrpcSourceOp()
-	// agent3GrpcSource2 := agent3Plan.Nodes[0].Nodes[1].Op.GetGrpcSourceOp()
-	// if !assert.NotNil(t, agent3GrpcSource1) {
+	// agent3GRPCSource1 := agent3Plan.Nodes[0].Nodes[0].Op.GetGRPCSourceOp()
+	// agent3GRPCSource2 := agent3Plan.Nodes[0].Nodes[1].Op.GetGRPCSourceOp()
+	// if !assert.NotNil(t, agent3GRPCSource1) {
 	// 	t.FailNow()
 	// }
-	// if !assert.NotNil(t, agent3GrpcSource2) {
+	// if !assert.NotNil(t, agent3GRPCSource2) {
 	// 	t.FailNow()
 	// }
-	// assert.Equal(t, agent3GrpcSource1.SourceId, "agent1:0")
-	// assert.Equal(t, agent3GrpcSource2.SourceId, "agent2:0")
+	// assert.Equal(t, agent3GRPCSource1.SourceId, "agent1:0")
+	// assert.Equal(t, agent3GRPCSource2.SourceId, "agent2:0")
 }
 
 func TestPlanner_MissingTable(t *testing.T) {

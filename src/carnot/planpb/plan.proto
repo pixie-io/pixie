@@ -1,6 +1,7 @@
 syntax = "proto3";
 import "google/protobuf/wrappers.proto";
 import "src/shared/types/proto/types.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 package pl.carnot.planpb;
 
@@ -87,9 +88,9 @@ message Operator {
     // Operator that performs an ordered union across multiple inputs.
     UnionOperator union_op = 8;
     // Operator that reads data from a remote node via grpc.
-    GrpcSourceOperator grpc_source_op = 9;
+    GRPCSourceOperator grpc_source_op = 9 [ (gogoproto.customname) = "GRPCSourceOp" ];
     // Operator that stores data to a remote node via grpc.
-    GrpcSinkOperator grpc_sink_op = 10;
+    GRPCSinkOperator grpc_sink_op = 1000 [ (gogoproto.customname) = "GRPCSinkOp" ];
     // Operator that performs a join based on column equality and/or time_ columns within a certain
     // range of each other.
     JoinOperator join_op = 11;
@@ -125,7 +126,7 @@ message MemorySinkOperator {
 }
 
 // Reads from a GRPC service that other machines send RowBatches to.
-message GrpcSourceOperator {
+message GRPCSourceOperator {
   // Pairs of GRPCSourceOperator and GRPCSinkOperator refer to each other via this ID field.
   string source_id = 1;
   // The types of the columns that the source generates.
@@ -135,7 +136,7 @@ message GrpcSourceOperator {
 }
 
 // Writes to a remote machine via GRPC.
-message GrpcSinkOperator {
+message GRPCSinkOperator {
   // The address of the GRPC service.
   string address = 1;
   // Pairs of GRPCSourceOperator and GRPCSinkOperator refer to each other via this ID field.

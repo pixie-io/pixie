@@ -150,13 +150,13 @@ class GRPCSourceOperator : public Operator {
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema& schema, const PlanState& state,
       const std::vector<int64_t>& input_ids) const override;
-  Status Init(const planpb::GrpcSourceOperator& pb);
+  Status Init(const planpb::GRPCSourceOperator& pb);
   std::string DebugString() const override;
 
   std::string source_id() const { return pb_.source_id(); }
 
  private:
-  planpb::GrpcSourceOperator pb_;
+  planpb::GRPCSourceOperator pb_;
 };
 
 class GRPCSinkOperator : public Operator {
@@ -167,14 +167,14 @@ class GRPCSinkOperator : public Operator {
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema& schema, const PlanState& state,
       const std::vector<int64_t>& input_ids) const override;
-  Status Init(const planpb::GrpcSinkOperator& pb);
+  Status Init(const planpb::GRPCSinkOperator& pb);
   std::string DebugString() const override;
 
   std::string address() const { return pb_.address(); }
   std::string destination_id() const { return pb_.destination_id(); }
 
  private:
-  planpb::GrpcSinkOperator pb_;
+  planpb::GRPCSinkOperator pb_;
 };
 
 class FilterOperator : public Operator {
