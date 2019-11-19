@@ -23,7 +23,7 @@ class GRPCSourceNode : public SourceNode {
   GRPCSourceNode() = default;
   bool HasBatchesRemaining() override;
   bool NextBatchReady() override;
-  Status EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest> row_batch);
+  virtual Status EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest> row_batch);
 
  protected:
   std::string DebugStringImpl() override;
