@@ -327,6 +327,45 @@ func TestGetAgentsForHostnames(t *testing.T) {
 	assert.Equal(t, "agent4", (*agents)[3])
 }
 
+func TestGetKelvinIDs(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), controllers.GetKelvinAgentKey("test"), "test")
+	if err != nil {
+		t.Fatal("Unable to add kelvinData to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), controllers.GetKelvinAgentKey("test2"), "test2")
+	if err != nil {
+		t.Fatal("Unable to add kelvinData to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), controllers.GetKelvinAgentKey("test3"), "test3")
+	if err != nil {
+		t.Fatal("Unable to add kelvinData to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), controllers.GetKelvinAgentKey("test4"), "test4")
+	if err != nil {
+		t.Fatal("Unable to add kelvinData to etcd.")
+	}
+
+	kelvins, err := mds.GetKelvinIDs()
+	assert.Nil(t, err)
+
+	assert.Equal(t, 4, len(kelvins))
+	assert.Equal(t, "test", kelvins[0])
+	assert.Equal(t, "test2", kelvins[1])
+	assert.Equal(t, "test3", kelvins[2])
+	assert.Equal(t, "test4", kelvins[3])
+}
+
 func TestGetAgentsForMissingHostnames(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()

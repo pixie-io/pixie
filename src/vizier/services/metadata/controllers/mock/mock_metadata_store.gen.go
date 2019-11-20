@@ -133,6 +133,19 @@ func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnames(arg0 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsForHostnames", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsForHostnames), arg0)
 }
 
+// GetKelvinIDs mocks base method
+func (m *MockMetadataStore) GetKelvinIDs() ([]string, error) {
+	ret := m.ctrl.Call(m, "GetKelvinIDs")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetKelvinIDs indicates an expected call of GetKelvinIDs
+func (mr *MockMetadataStoreMockRecorder) GetKelvinIDs() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKelvinIDs", reflect.TypeOf((*MockMetadataStore)(nil).GetKelvinIDs))
+}
+
 // AddToAgentUpdateQueue mocks base method
 func (m *MockMetadataStore) AddToAgentUpdateQueue(arg0, arg1 string) error {
 	ret := m.ctrl.Call(m, "AddToAgentUpdateQueue", arg0, arg1)

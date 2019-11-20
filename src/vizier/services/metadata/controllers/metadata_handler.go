@@ -27,6 +27,7 @@ type MetadataStore interface {
 	UpdateSchemas(uuid.UUID, []*metadatapb.SchemaInfo) error
 	UpdateProcesses([]*metadatapb.ProcessInfo) error
 	GetAgentsForHostnames(*[]string) (*[]string, error)
+	GetKelvinIDs() ([]string, error)
 	AddToAgentUpdateQueue(string, string) error
 	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
 	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error

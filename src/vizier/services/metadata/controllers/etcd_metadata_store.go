@@ -419,6 +419,11 @@ func GetHostnameAgentKey(hostname string) string {
 	return "/hostname/" + hostname + "/agent"
 }
 
+// GetKelvinAgentKey gets the etcd key for a kelvin node.
+func GetKelvinAgentKey(agentID string) string {
+	return "/kelvin/" + agentID
+}
+
 // GetUpdateKey gets the etcd key that the service should grab a lock on before updating any values in etcd.
 func GetUpdateKey() string {
 	return "/updateKey"
@@ -570,6 +575,23 @@ func (mds *EtcdMetadataStore) GetAgents() ([]*agentpb.Agent, error) {
 	}
 
 	return agents, nil
+}
+
+// GetKelvinIDs gets the IDs of the current active kelvins.
+func (mds *EtcdMetadataStore) GetKelvinIDs() ([]string, error) {
+	var ids []string
+
+	// Get all kelvins.
+	resp, err := mds.client.Get(context.Background(), GetKelvinAgentKey(""), clientv3.WithPrefix())
+	if err != nil {
+		log.WithError(err).Error("Failed to execute etcd Get")
+		return nil, err
+	}
+	for _, kv := range resp.Kvs {
+		ids = append(ids, string(kv.Value))
+	}
+
+	return ids, nil
 }
 
 // GetASID gets the next assignable ASID.

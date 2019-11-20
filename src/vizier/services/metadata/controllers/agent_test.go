@@ -33,6 +33,7 @@ func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager
 
 	CreateAgent(t, testutils.ExistingAgentUUID, etcdClient, testutils.ExistingAgentInfo)
 	CreateAgent(t, testutils.UnhealthyAgentUUID, etcdClient, testutils.UnhealthyAgentInfo)
+	CreateAgent(t, testutils.UnhealthyKelvinAgentUUID, etcdClient, testutils.UnhealthyKelvinAgentInfo)
 
 	clock := testingutils.NewTestClock(time.Unix(0, testutils.ClockNowNS))
 	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, mockMds, clock)
@@ -58,6 +59,13 @@ func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 	_, err = client.Put(context.Background(), controllers.GetHostnameAgentKey(info.Info.HostInfo.Hostname), agentID)
 	if err != nil {
 		t.Fatal("Unable to add agentData to etcd.")
+	}
+
+	if info.Info.Capabilities.CollectsData {
+		_, err = client.Put(context.Background(), controllers.GetKelvinAgentKey(agentID), agentID)
+		if err != nil {
+			t.Fatal("Unable to add kelvin data to etcd.")
+		}
 	}
 
 	// Add schema info.
@@ -97,6 +105,9 @@ func TestRegisterAgent(t *testing.T) {
 				Hostname: "localhost",
 			},
 			AgentID: upb,
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: true,
+			},
 		},
 		LastHeartbeatNS: 1,
 		CreateTimeNS:    4,
@@ -130,6 +141,59 @@ func TestRegisterAgent(t *testing.T) {
 	assert.Equal(t, testutils.NewAgentUUID, string(resp.Kvs[0].Value))
 }
 
+func TestRegisterKelvinAgent(t *testing.T) {
+	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
+	defer cleanup()
+
+	u, err := uuid.FromString(testutils.KelvinAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+	upb := utils.ProtoFromUUID(&u)
+
+	mockMds.
+		EXPECT().
+		GetASID().
+		Return(uint32(1), nil)
+
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "test",
+			},
+			AgentID: upb,
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: true,
+			},
+		},
+		LastHeartbeatNS: 1,
+		CreateTimeNS:    4,
+	}
+
+	id, err := agtMgr.RegisterAgent(agentInfo)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uint32(1), id)
+
+	// Check that correct agent info is in etcd.
+	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
+	if err != nil {
+		t.Fatal("Failed to get agent.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	pb := &agentpb.Agent{}
+	proto.Unmarshal(resp.Kvs[0].Value, pb)
+	uid, err := utils.UUIDFromProto(pb.Info.AgentID)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, testutils.KelvinAgentUUID, uid.String())
+
+	resp, err = etcdClient.Get(context.Background(), controllers.GetKelvinAgentKey(testutils.KelvinAgentUUID))
+	if err != nil {
+		t.Fatal("Failed to get kelvin info.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, testutils.KelvinAgentUUID, string(resp.Kvs[0].Value))
+}
+
 func TestRegisterAgentWithExistingHostname(t *testing.T) {
 	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
@@ -155,6 +219,9 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 				Hostname: "testhost",
 			},
 			AgentID: upb,
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: false,
+			},
 		},
 		LastHeartbeatNS: 1,
 		CreateTimeNS:    4,
@@ -284,7 +351,7 @@ func TestUpdateAgentState(t *testing.T) {
 	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
-	agents := make([]*agentpb.Agent, 2)
+	agents := make([]*agentpb.Agent, 3)
 
 	agent1 := &agentpb.Agent{}
 	if err := proto.UnmarshalText(testutils.ExistingAgentInfo, agent1); err != nil {
@@ -297,6 +364,12 @@ func TestUpdateAgentState(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	agents[1] = agent2
+
+	agent3 := &agentpb.Agent{}
+	if err := proto.UnmarshalText(testutils.UnhealthyKelvinAgentInfo, agent3); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	agents[2] = agent3
 
 	mockMds.
 		EXPECT().
@@ -323,6 +396,10 @@ func TestUpdateAgentState(t *testing.T) {
 	// Healthy agent should still have a schema.
 	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentSchemasKey(testutils.ExistingAgentUUID), clientv3.WithPrefix())
 	assert.Equal(t, 1, len(resp.Kvs))
+
+	// Should have no Kelvin entries.
+	resp, err = etcdClient.Get(context.Background(), controllers.GetKelvinAgentKey(""), clientv3.WithPrefix())
+	assert.Equal(t, 0, len(resp.Kvs))
 }
 
 func TestUpdateAgentStateGetAgentsFailed(t *testing.T) {
@@ -376,6 +453,9 @@ func TestGetActiveAgents(t *testing.T) {
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "testhost",
 			},
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: false,
+			},
 		},
 	}
 	assert.Equal(t, agent1Info, agents[0])
@@ -387,6 +467,9 @@ func TestGetActiveAgents(t *testing.T) {
 			AgentID: &uuidpb.UUID{Data: []byte("8ba7b8109dad11d180b400c04fd430c8")},
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "anotherhost",
+			},
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: false,
 			},
 		},
 	}

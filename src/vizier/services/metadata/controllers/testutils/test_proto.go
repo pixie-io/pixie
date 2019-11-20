@@ -20,6 +20,12 @@ var ExistingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 // UnhealthyAgentUUID is the UUID of an agent that exists but is unhealthy.
 var UnhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
+// KelvinAgentUUID is the UUID of a Kelvin agent.
+var KelvinAgentUUID = "9ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+// UnhealthyKelvinAgentUUID is the UUID of an unhealthy Kelvin agent.
+var UnhealthyKelvinAgentUUID = "5ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
 // ExistingAgentInfo is the agent info for the healthy agent that already exists.
 var ExistingAgentInfo = `
 info {
@@ -28,6 +34,9 @@ info {
   }
   host_info {
     hostname: "testhost"
+  }
+  capabilities {
+    collects_data: false
   }
 }
 create_time_ns: 0
@@ -42,6 +51,26 @@ info {
   }
   host_info {
     hostname: "anotherhost"
+  }
+  capabilities {
+    collects_data: false
+  }
+}
+create_time_ns: 0
+last_heartbeat_ns: 0
+`
+
+// UnhealthyKelvinAgentInfo is the agent info for the unhealthy kelvin.
+var UnhealthyKelvinAgentInfo = `
+info {
+  agent_id {
+    data: "5ba7b8109dad11d180b400c04fd430c8"
+  }
+  host_info {
+    hostname: "abcd"
+  }
+  capabilities {
+    collects_data: true
   }
 }
 create_time_ns: 0

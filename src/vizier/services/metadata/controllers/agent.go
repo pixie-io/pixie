@@ -212,7 +212,7 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 		log.WithError(err).Fatal("Failed to execute etcd Get")
 	} else if len(resp.Kvs) != 0 {
 		// Another agent already exists for this hostname. Delete it.
-		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.HostInfo.Hostname)
+		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.HostInfo.Hostname, info.Capabilities.CollectsData)
 	}
 
 	infoPb := &agentpb.Agent{
@@ -230,10 +230,16 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 	defer mu.Unlock(context.Background())
 
 	hostnameDNE := clientv3util.KeyMissing(GetHostnameAgentKey(info.HostInfo.Hostname))
-	createHostname := clientv3.OpPut(GetHostnameAgentKey(info.HostInfo.Hostname), aUUID.String())
-	createAgent := clientv3.OpPut(GetAgentKeyFromUUID(aUUID), string(i))
 
-	_, err = m.client.Txn(ctx).If(hostnameDNE).Then(createHostname, createAgent).Commit()
+	ops := make([]clientv3.Op, 2)
+	ops[0] = clientv3.OpPut(GetHostnameAgentKey(info.HostInfo.Hostname), aUUID.String())
+	ops[1] = clientv3.OpPut(GetAgentKeyFromUUID(aUUID), string(i))
+
+	if info.Capabilities.CollectsData {
+		ops = append(ops, clientv3.OpPut(GetKelvinAgentKey(aUUID.String()), aUUID.String()))
+	}
+
+	_, err = m.client.Txn(ctx).If(hostnameDNE).Then(ops...).Commit()
 	if err != nil {
 		log.WithError(err).Fatal("Could not update agent data in etcd")
 	}
@@ -283,7 +289,7 @@ func (m *AgentManagerImpl) UpdateAgent(info *agentpb.Agent) error {
 	return nil
 }
 
-func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, hostname string) error {
+func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, hostname string, collectsData bool) error {
 	mu := concurrency.NewMutex(m.sess, GetUpdateKey())
 	mu.Lock(ctx)
 	defer mu.Unlock(context.Background())
@@ -297,6 +303,10 @@ func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, host
 	ops := make([]clientv3.Op, 2)
 	ops[0] = clientv3.OpDelete(GetHostnameAgentKey(hostname))
 	ops[1] = clientv3.OpDelete(GetAgentSchemasKey(agentID), clientv3.WithPrefix())
+
+	if collectsData {
+		ops = append(ops, clientv3.OpDelete(GetKelvinAgentKey(agentID)))
+	}
 
 	_, err = m.client.Txn(ctx).If(hostnameAgentMap).Then(ops...).Commit()
 
@@ -323,7 +333,7 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 			if err != nil {
 				log.WithError(err).Fatal("Could not convert UUID to proto")
 			}
-			err = m.deleteAgent(ctx, uid.String(), agentPb.Info.HostInfo.Hostname)
+			err = m.deleteAgent(ctx, uid.String(), agentPb.Info.HostInfo.Hostname, agentPb.Info.Capabilities.CollectsData)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to delete agent from etcd")
 			}
