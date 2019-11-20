@@ -48,7 +48,7 @@ const Release = (props) => {
     <div>
       <ReactMarkdown source={'#### v' + props.version + ' (' + ds + ')'}/>
       <div>
-        <ReactMarkdown source={props.changelog} />
+        <ReactMarkdown source={props.changelog.replace(/\\n/g, '\n')} />
       </div>
     </div>
   );
