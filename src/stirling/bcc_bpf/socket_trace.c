@@ -188,7 +188,7 @@ static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
  * Trace filtering functions
  ***********************************************************/
 
-static __inline bool should_trace(const struct traffic_class_t* traffic_class) {
+static __inline bool should_trace_protocol(const struct traffic_class_t* traffic_class) {
   u32 protocol = traffic_class->protocol;
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
@@ -204,6 +204,25 @@ static __inline bool should_trace(const struct traffic_class_t* traffic_class) {
   // lookup() suffices. But this seems more robust, as BCC behavior is often not intuitive.
   u64 control = *control_map.lookup_or_init(&protocol, &kZero);
   return control & traffic_class->role;
+}
+
+// Returns true if detection passes threshold. Right now this only makes sense for MySQL.
+static __inline bool protocol_detection_passes_threshold(const struct conn_info_t* conn_info) {
+  if (conn_info->traffic_class.protocol == kProtocolMySQL) {
+    // Since some protocols are hard to infer from a single event, we track the inference stats over
+    // time, and then use the match rate to determine whether we really want to consider it to be of
+    // the protocol or not. This helps reduce polluting events to user-space.
+    bool meets_threshold =
+        kTrafficInferenceThresholdDen * (conn_info->protocol_match_count + kTrafficInferenceBias) >
+        kTrafficInferenceThresholdNum * conn_info->protocol_total_count;
+    return meets_threshold;
+  }
+  return true;
+}
+
+static __inline bool should_trace_conn(const struct conn_info_t* conn_info) {
+  return protocol_detection_passes_threshold(conn_info) &&
+         should_trace_protocol(&conn_info->traffic_class);
 }
 
 static __inline bool test_only_should_trace_target_tgid(const u32 tgid) {
@@ -495,13 +514,6 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
 
   event->attr.msg_size = buf_size;
 
-  // Since some protocols are hard to infer from a single event, we track the inference stats over
-  // time, and then use the match rate to determine whether we really want to consider it to be of
-  // the protocol or not. This helps reduce polluting events to user-space.
-  bool meets_threshold =
-      kTrafficInferenceThresholdDen * (conn_info->protocol_match_count + kTrafficInferenceBias) >
-      kTrafficInferenceThresholdNum * conn_info->protocol_total_count;
-
   // Write snooped arguments to perf ring buffer.
   const size_t size_to_submit = sizeof(event->attr) + msg_submit_size;
   switch (event->attr.traffic_class.protocol) {
@@ -510,9 +522,7 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
       socket_data_events.perf_submit(ctx, event, size_to_submit);
       break;
     case kProtocolMySQL:
-      if (meets_threshold) {
-        socket_data_events.perf_submit(ctx, event, size_to_submit);
-      }
+      socket_data_events.perf_submit(ctx, event, size_to_submit);
       break;
     default:
       break;
@@ -725,7 +735,7 @@ static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd,
   }
 
   // Filter for request or response based on control flags and protocol type.
-  if (!should_trace(&conn_info->traffic_class)) {
+  if (!should_trace_conn(conn_info)) {
     return;
   }
 
@@ -820,7 +830,7 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
   }
 
   // Filter for request or response based on control flags and protocol type.
-  if (!should_trace(&conn_info->traffic_class)) {
+  if (!should_trace_conn(conn_info)) {
     return;
   }
 
