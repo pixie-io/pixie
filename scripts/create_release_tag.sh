@@ -160,7 +160,7 @@ else
 fi
 
 new_tag="release/$ARTIFACT_TYPE/v"$new_version_str
-git tag -a "$new_tag" -m "$CHANGELOG"
+git tag -a "$new_tag" -m "$(echo -e "$CHANGELOG")"
 
 if [ "$PUSH" = "true" ]; then
   git push origin "$new_tag"
