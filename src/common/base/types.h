@@ -27,6 +27,11 @@ inline std::string ConstString(const char (&a)[N]) {
 }
 
 template <size_t N>
+inline std::basic_string<uint8_t> ConstU8String(const char (&a)[N]) {
+  return std::basic_string<uint8_t>(reinterpret_cast<const uint8_t*>(a), N - 1);
+}
+
+template <size_t N>
 inline constexpr std::string_view CharArrayStringView(const char (&a)[N]) {
   return std::string_view(a, N);
 }
