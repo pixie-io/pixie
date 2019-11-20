@@ -19,7 +19,6 @@
 #include "src/shared/schema/utils.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
 #include "src/vizier/services/agent/controller/controller.h"
-#include "src/vizier/services/agent/controller/throwaway_dummy_data.h"
 
 DEFINE_int32(agent_registration_attempts, 6,
              "The attempts made by an agent to connect with the broker, "
