@@ -173,8 +173,9 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	}
 
 	return &pb.LoginReply{
-		Token:     token,
-		ExpiresAt: expiresAt.Unix(),
+		Token:       token,
+		ExpiresAt:   expiresAt.Unix(),
+		UserCreated: newUser,
 	}, nil
 }
 

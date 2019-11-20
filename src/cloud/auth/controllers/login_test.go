@@ -107,7 +107,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	currentTime := time.Now().Unix()
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
-
+	assert.True(t, resp.UserCreated)
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
@@ -350,7 +350,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	currentTime := time.Now().Unix()
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
-
+	assert.False(t, resp.UserCreated)
 	verifyToken(t, resp.Token, "pluserid", "plorgid", resp.ExpiresAt, "jwtkey")
 }
 

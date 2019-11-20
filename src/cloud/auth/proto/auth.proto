@@ -60,6 +60,9 @@ message LoginReply {
   string token = 1;
   // When this login expires.
   int64 expires_at      = 2;
+  // True if a new user was created while processing the LoginRequest. This is only possible if
+  // create_user_if_not_exists is set in the LoginRequest.
+  bool user_created = 3;
 }
 
 message GetAugmentedAuthTokenRequest {
