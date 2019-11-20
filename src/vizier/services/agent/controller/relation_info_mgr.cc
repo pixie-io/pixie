@@ -3,13 +3,13 @@
 namespace pl {
 namespace vizier {
 namespace agent {
-Status RelationInfoMgr::UpdateRelationInfo(const std::vector<RelationInfo>& relation_info_vec) {
+Status RelationInfoManager::UpdateRelationInfo(const std::vector<RelationInfo>& relation_info_vec) {
   relation_info_ = relation_info_vec;
   return Status::OK();
 }
 
 // TODO(philkuz) (PL-852) only send schema updates for changes to the schema.
-void RelationInfoMgr::AddSchemaUpdateInfo(messages::AgentUpdateInfo* update_info) {
+void RelationInfoManager::AddSchemaToUpdateInfo(messages::AgentUpdateInfo* update_info) {
   for (const auto& relation_info : relation_info_) {
     auto* schema = update_info->add_schema();
     schema->set_name(relation_info.name);

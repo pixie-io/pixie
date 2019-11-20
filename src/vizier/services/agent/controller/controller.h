@@ -129,7 +129,7 @@ class Controller : public NotCopyable {
   std::unique_ptr<pl::md::AgentMetadataStateManager> mds_manager_;
   std::unique_ptr<std::thread> mds_thread_;
 
-  std::unique_ptr<RelationInfoMgr> relation_info_mgr_;
+  std::unique_ptr<RelationInfoManager> relation_info_manager_;
 };
 
 }  // namespace agent

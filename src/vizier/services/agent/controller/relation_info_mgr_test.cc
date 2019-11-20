@@ -15,11 +15,11 @@ namespace agent {
 using ::pl::table_store::schema::Relation;
 using ::pl::testing::proto::EqualsProto;
 
-class RelationInfoMgrTest : public ::testing::Test {
+class RelationInfoManagerTest : public ::testing::Test {
  protected:
-  void SetUp() override { relation_info_mgr_ = std::make_unique<RelationInfoMgr>(); };
+  void SetUp() override { relation_info_manager_ = std::make_unique<RelationInfoManager>(); };
 
-  std::unique_ptr<RelationInfoMgr> relation_info_mgr_;
+  std::unique_ptr<RelationInfoManager> relation_info_manager_;
 };
 
 const char* kAgentUpdateInfoSchemaNoTablets = R"proto(
@@ -46,7 +46,7 @@ schema {
   }
 })proto";
 
-TEST_F(RelationInfoMgrTest, test_update) {
+TEST_F(RelationInfoManagerTest, test_update) {
   // Relation info with no tabletization.
   Relation relation0({types::TIME64NS, types::INT64}, {"time_", "count"});
   RelationInfo relation_info0("relation0", /* id */ 0, relation0);
@@ -56,11 +56,11 @@ TEST_F(RelationInfoMgrTest, test_update) {
   RelationInfo relation_info1("relation1", /* id */ 1, relation1);
   std::vector<RelationInfo> relation_info_vec({relation_info0, relation_info1});
   // Pass relation info to the manager.
-  EXPECT_OK(relation_info_mgr_->UpdateRelationInfo(relation_info_vec));
+  EXPECT_OK(relation_info_manager_->UpdateRelationInfo(relation_info_vec));
 
   // Check to see that the agent info is as expected.
   messages::AgentUpdateInfo update_info;
-  relation_info_mgr_->AddSchemaUpdateInfo(&update_info);
+  relation_info_manager_->AddSchemaToUpdateInfo(&update_info);
   LOG(INFO) << update_info.DebugString();
   EXPECT_THAT(update_info, EqualsProto(kAgentUpdateInfoSchemaNoTablets));
 }
@@ -95,7 +95,7 @@ schema {
   tabletization_key: "upid"
 })proto";
 
-TEST_F(RelationInfoMgrTest, test_tabletization_keys) {
+TEST_F(RelationInfoManagerTest, test_tabletization_keys) {
   // Relation info with no tabletization.
   Relation relation0({types::TIME64NS, types::INT64}, {"time_", "count"});
   RelationInfo relation_info0("relation0", /* id */ 0, relation0);
@@ -106,11 +106,11 @@ TEST_F(RelationInfoMgrTest, test_tabletization_keys) {
 
   std::vector<RelationInfo> relation_info_vec({relation_info0, relation_info1});
   // Pass relation info to the manager.
-  EXPECT_OK(relation_info_mgr_->UpdateRelationInfo(relation_info_vec));
+  EXPECT_OK(relation_info_manager_->UpdateRelationInfo(relation_info_vec));
 
   // Check to see that the agent info is as expected.
   messages::AgentUpdateInfo update_info;
-  relation_info_mgr_->AddSchemaUpdateInfo(&update_info);
+  relation_info_manager_->AddSchemaToUpdateInfo(&update_info);
   LOG(INFO) << update_info.DebugString();
   EXPECT_THAT(update_info, EqualsProto(kAgentUpdateInfoSchemaHasTablets));
 }

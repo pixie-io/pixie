@@ -11,7 +11,7 @@ namespace agent {
  * @brief Manager of relation info for a given agent. In the future, this can be used to provide
  * diff-updates of a schema rather than passing the entire schema through the update message.
  */
-class RelationInfoMgr {
+class RelationInfoManager {
  public:
   /**
    * @brief Receives an updated record of relation info for the agent.
@@ -26,7 +26,7 @@ class RelationInfoMgr {
    *
    * @param update_info: the message that should receive the updated schema info.
    */
-  void AddSchemaUpdateInfo(messages::AgentUpdateInfo* update_info);
+  void AddSchemaToUpdateInfo(messages::AgentUpdateInfo* update_info);
 
  private:
   std::vector<RelationInfo> relation_info_;

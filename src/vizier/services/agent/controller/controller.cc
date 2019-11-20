@@ -106,7 +106,7 @@ Status Controller::Init() {
 
   mds_manager_ =
       std::make_unique<pl::md::AgentMetadataStateManager>(asid_, pl::system::Config::GetInstance());
-  relation_info_mgr_ = std::make_unique<RelationInfoMgr>();
+  relation_info_manager_ = std::make_unique<RelationInfoManager>();
 
   if (stirling_) {
     // Register the Stirling Callback.
@@ -278,7 +278,7 @@ void Controller::RunHeartbeat() {
     ConsumeAgentPIDUpdates(update_info);
 
     // Grab current schema available.
-    relation_info_mgr_->AddSchemaUpdateInfo(update_info);
+    relation_info_manager_->AddSchemaToUpdateInfo(update_info);
 
     VLOG(2) << "Sending heartbeat message: " << req.DebugString();
     auto s = nats_connector_->Publish(req);
@@ -386,7 +386,7 @@ Status Controller::InitThrowaway() {
 
   // This should eventually be done by subscribe requests.
   auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
-  PL_RETURN_IF_ERROR(relation_info_mgr_->UpdateRelationInfo(relation_info_vec));
+  PL_RETURN_IF_ERROR(relation_info_manager_->UpdateRelationInfo(relation_info_vec));
   for (const auto& relation_info : relation_info_vec) {
     PL_RETURN_IF_ERROR(table_store_->AddTable(relation_info.id, relation_info.name,
                                               table_store::Table::Create(relation_info.relation)));
