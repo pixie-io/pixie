@@ -84,6 +84,8 @@ require (
 	github.com/prometheus/common v0.4.0 // indirect
 	github.com/prometheus/procfs v0.0.0-20190507164030-5867b95ac084 // indirect
 	github.com/satori/go.uuid v1.2.0
+	github.com/segmentio/analytics-go v3.1.0+incompatible // indirect
+	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
 	github.com/sercand/kuberesolver v2.1.0+incompatible
 	github.com/shopspring/decimal v0.0.0-20190905144223-a36b5d85f337 // indirect
 	github.com/sirupsen/logrus v1.4.1
@@ -99,6 +101,7 @@ require (
 	github.com/vbauerster/mpb/v4 v4.11.0
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
+	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5
 	go.etcd.io/bbolt v1.3.3 // indirect
 	go.etcd.io/etcd v3.3.13+incompatible
@@ -116,6 +119,7 @@ require (
 	google.golang.org/api v0.9.0
 	google.golang.org/grpc v1.23.1
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.2.2
 	gotest.tools v2.2.0+incompatible // indirect

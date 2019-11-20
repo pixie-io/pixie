@@ -1782,3 +1782,31 @@ go_repository(
     importpath = "github.com/hpcloud/tail",
     commit = "a1dbeea552b7c8df4b542c66073e393de198a800",
 )
+
+go_repository(
+    name = "com_github_segmentio_analytics_go",
+    importpath = "github.com/segmentio/analytics-go",
+    sum = "h1:IyiOfUgQFVHvsykKKbdI7ZsH374uv3/DfZUo9+G0Z80=",
+    version = "v3.1.0+incompatible",
+)
+
+go_repository(
+    name = "com_github_segmentio_backo_go",
+    importpath = "github.com/segmentio/backo-go",
+    sum = "h1:rsRTAcCR5CeNLkvgBVSjQoDGRRt6kggsE6XYBqCv2KQ=",
+    version = "v0.0.0-20160424052352-204274ad699c",
+)
+
+go_repository(
+    name = "com_github_xtgo_uuid",
+    importpath = "github.com/xtgo/uuid",
+    sum = "h1:3lbZUMbMiGUW/LMkfsEABsc5zNT9+b1CvsJx47JzJ8g=",
+    version = "v0.0.0-20140804021211-a0b114877d4c",
+)
+
+go_repository(
+    name = "in_gopkg_segmentio_analytics_go_v3",
+    importpath = "gopkg.in/segmentio/analytics-go.v3",
+    sum = "h1:UzxH1uaGZRpMKDhJyBz0pexz6yUoBU3x8bJsRk/HV6U=",
+    version = "v3.1.0",
+)
