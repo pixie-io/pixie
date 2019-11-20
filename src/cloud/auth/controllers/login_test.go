@@ -607,7 +607,8 @@ func TestServer_CreateUserOrg(t *testing.T) {
 	currentTime := time.Now().Unix()
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
-
+	assert.Equal(t, resp.OrgName, "abc@defg.com")
+	assert.Equal(t, resp.DomainName, "abc@defg.com")
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 

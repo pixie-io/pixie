@@ -42,6 +42,10 @@ message CreateUserOrgRequest {
    pl.uuidpb.UUID user_id = 4 [
                              (gogoproto.customname) = "UserID"
                              ];
+   // The name of the org. Since this might be automatically determined by the system we need
+   // to send it upstream for identification purposes.
+   string org_name = 5;
+   string domain_name = 6;
 }
 
 message LoginRequest {

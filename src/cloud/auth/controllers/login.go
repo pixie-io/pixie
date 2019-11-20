@@ -62,10 +62,11 @@ func (s *Server) CreateUserOrg(ctx context.Context, in *pb.CreateUserOrgRequest)
 
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
+	orgName := domainName
 
 	rpcReq := &profilepb.CreateOrgAndUserRequest{
 		Org: &profilepb.CreateOrgAndUserRequest_Org{
-			OrgName:    domainName,
+			OrgName:    orgName,
 			DomainName: domainName,
 		},
 		User: &profilepb.CreateOrgAndUserRequest_User{
@@ -90,10 +91,12 @@ func (s *Server) CreateUserOrg(ctx context.Context, in *pb.CreateUserOrgRequest)
 	}
 
 	return &pb.CreateUserOrgResponse{
-		Token:     token,
-		ExpiresAt: expiresAt.Unix(),
-		UserID:    resp.UserID,
-		OrgID:     resp.OrgID,
+		Token:      token,
+		ExpiresAt:  expiresAt.Unix(),
+		UserID:     resp.UserID,
+		OrgID:      resp.OrgID,
+		OrgName:    orgName,
+		DomainName: domainName,
 	}, nil
 }
 
