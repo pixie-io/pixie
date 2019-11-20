@@ -19,6 +19,7 @@ HTML_OUTPUT_DIR=""
 
 CC_COVERAGE_FILE="cc_coverage.info"
 GO_COVERAGE_FILE="coverage.txt"
+UI_COVERAGE_FILE="bazel-bin/src/ui/lcov.info"
 
 # Print out the usage information and exit.
 usage() {
@@ -165,6 +166,9 @@ done
 # Remove test files from the go coverage.
 grep -v "_test.go" coverage.tmp > ${GO_COVERAGE_FILE}
 rm -f coverage.tmp
+
+# Copy the UI coverage files.
+cp "${UI_COVERAGE_FILE}" lcov.info
 
 # Upload to codecov.io.
 if [ "${UPLOAD_TO_CODECOV}" = true ]; then

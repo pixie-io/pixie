@@ -20,6 +20,7 @@ genrule(
         "bundle.tar.gz",
         "bundle_storybook.tar.gz",
         "junit.xml",
+        "lcov.info",
     ],
     cmd = """
       export PATH=/usr/local/bin:/opt/node/bin:$$PATH;
@@ -33,7 +34,7 @@ genrule(
       yarn install --prefer_offline
 
       # Run the unit tests.
-      jest
+      jest --coverage
 
       # Build the prod bundle.
       yarn build_prod;
@@ -45,6 +46,7 @@ genrule(
       cp dist/bundle.tar.gz $${PL_DIST_BUNDLE_OUTPUT}
       tar -czvvf $${PL_DIST_BUNDLE_OUTPUT}/bundle_storybook.tar.gz storybook_static
       cp junit.xml $${PL_DIST_BUNDLE_OUTPUT}
+      cp coverage/lcov.info $${PL_DIST_BUNDLE_OUTPUT}
       popd;
 
       rm -rf $${TMPPATH}
@@ -86,7 +88,7 @@ genrule(
       yarn install --prefer_offline
 
       # License check
-      yarn license-checker --json --out $@ 
+      yarn license-checker --json --out $@
       cp $@ $${PL_DIST_BUNDLE_OUTPUT}
       popd;
       python $(location :tools/licenses/npm_license_extractor.py) $@ $@ --override_license $(location :tools/licenses/override_license.json)
