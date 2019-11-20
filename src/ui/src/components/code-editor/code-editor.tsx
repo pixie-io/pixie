@@ -36,7 +36,10 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps> {
         }}
         options={options}
         className='pl-code-editor'
-        editorDidMount={(editor) => { this.editorInstance = editor; }}
+        editorDidMount={(editor) => {
+          this.editorInstance = editor;
+          editor.refresh();
+        }}
       />
     );
   }

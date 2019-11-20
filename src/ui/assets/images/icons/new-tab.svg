@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="23px" height="23px" viewBox="0 0 23 23" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->
+    <title>2506D222-6DDF-4DB5-9F1A-3A3B2A9523A5</title>
+    <desc>Created with sketchtool.</desc>
+    <g id="Dashboard" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="05-00-Console-Page---Map-Widget-2" transform="translate(-541.000000, -57.000000)" fill-rule="nonzero">
+            <g id="Group-9" transform="translate(38.000000, 53.000000)">
+                <g id="Button-/-Plus-Circle" transform="translate(506.000000, 7.000000)">
+                    <g id="Btn" transform="translate(-2.000000, -2.000000)">
+                        <rect id="Base" stroke="#445258" stroke-width="1.5" x="0" y="0" width="20.8" height="20.8" rx="10.4"></rect>
+                        <polygon id="Plus" fill="#445258" points="11.109375 9.53730469 14.2019531 9.53730469 14.2019531 10.8703125 11.109375 10.8703125 11.109375 14.3742187 9.69257813 14.3742187 9.69257813 10.8703125 6.6 10.8703125 6.6 9.53730469 9.69257813 9.53730469 9.69257813 6.3 11.109375 6.3"></polygon>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

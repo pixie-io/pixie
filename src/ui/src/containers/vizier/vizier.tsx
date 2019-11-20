@@ -2,6 +2,7 @@ import './vizier.scss';
 
 import {vizierGQLClient} from 'common/vizier-gql-client';
 import {DialogBox} from 'components/dialog-box/dialog-box';
+import {Editor} from 'containers/editor';
 import gql from 'graphql-tag';
 // @ts-ignore : TS does not like image files.
 import * as loadingSvg from 'images/icons/loading-dark.svg';
@@ -90,6 +91,7 @@ export class VizierMain extends React.Component<VizierMainProps, {}> {
               <VizierTopNav />
               <Switch>
                 <Route path={`/vizier/agents`} component={AgentDisplay} />
+                <Route path={'/vizier/script'} component={Editor} />
                 <Route path={`/`} component={QueryManager} />
               </Switch>
             </>

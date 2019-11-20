@@ -96,6 +96,7 @@
     "react-virtualized": "^9.21.0",
     "toml": "^3.0.0",
     "unfetch": "^4.0.1",
+    "uuid": "^3.3.3",
     "whatwg-fetch": "^3.0.0",
     "yaml": "^1.6.0"
   },
