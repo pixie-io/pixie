@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["track.go"],
+    srcs = [
+        "events.go",
+        "track.go",
+    ],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/events",
     visibility = ["//visibility:public"],
     deps = [

@@ -14,12 +14,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	commonenv "pixielabs.ai/pixielabs/src/shared/services/env"
+	"pixielabs.ai/pixielabs/src/shared/services/events"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
+	pbutils "pixielabs.ai/pixielabs/src/utils"
 )
 
 // GetServiceCredentials returns JWT credentials for inter-service requests.
@@ -91,6 +94,29 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 		return services.HTTPStatusFromError(err, "Failed to login")
 	}
+
+	userIDStr := pbutils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
+	ev := events.UserLoggedIn
+	if resp.UserCreated {
+		ev = events.UserSignedUp
+
+		// User created successfully, send an analytics event to identify the user.
+		events.Client().Enqueue(&analytics.Identify{
+			UserId: userIDStr,
+			Traits: analytics.NewTraits().
+				SetFirstName(resp.UserInfo.FirstName).
+				SetLastName(resp.UserInfo.LastName).
+				SetEmail(resp.UserInfo.Email),
+		})
+
+	}
+
+	events.Client().Enqueue(&analytics.Track{
+		UserId: userIDStr,
+		Event:  ev,
+		Properties: analytics.NewProperties().
+			Set("site_name", params.SiteName),
+	})
 
 	setSessionCookie(session, resp.Token, resp.ExpiresAt, params.SiteName, r, w)
 

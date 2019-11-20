@@ -22,6 +22,7 @@ import (
 	mock_sitemanager "pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb/mock"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
+	pbutils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
@@ -38,7 +39,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		AppMetadata: nil,
@@ -50,7 +51,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	fakeOrgInfo := &profilepb.OrgInfo{
 		ID: &uuidpb.UUID{Data: []byte(orgID)},
 	}
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo, nil)
 
 	a.EXPECT().GetClientID().Return("foo")
 
@@ -61,13 +62,13 @@ func TestServer_LoginNewUser(t *testing.T) {
 		FirstName:   "first",
 		LastName:    "last",
 	}
-	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.AppMetadata["foo"] = &controllers.UserMetadata{
 			PLUserID: plid,
 			PLOrgID:  plorgid,
 		}
 	}).Return(nil)
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
@@ -83,7 +84,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 			LastName:  "last",
 			Email:     "abc@defg.com",
 		}).
-		Return(&uuidpb.UUID{Data: []byte(userID)}, nil)
+		Return(pbutils.ProtoFromUUIDStrOrNil(userID), nil)
 
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 	siteInfo := &sitemanagerpb.SiteInfo{
@@ -108,6 +109,10 @@ func TestServer_LoginNewUser(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.True(t, resp.UserCreated)
+	assert.Equal(t, pbutils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String(), userID)
+	assert.Equal(t, resp.UserInfo.FirstName, "first")
+	assert.Equal(t, resp.UserInfo.LastName, "last")
+	assert.Equal(t, resp.UserInfo.Email, "abc@defg.com")
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 

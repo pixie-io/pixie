@@ -179,6 +179,12 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		Token:       token,
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: newUser,
+		UserInfo: &pb.LoginReply_UserInfo{
+			UserID:    pbutils.ProtoFromUUIDStrOrNil(userID),
+			FirstName: userInfo.FirstName,
+			LastName:  userInfo.LastName,
+			Email:     userInfo.Email,
+		},
 	}, nil
 }
 

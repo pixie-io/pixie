@@ -20,6 +20,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
+	pbutils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
@@ -55,6 +56,11 @@ func TestAuthLoginHandler(t *testing.T) {
 	loginResp := &authpb.LoginReply{
 		Token:     testReplyToken,
 		ExpiresAt: testTokenExpiry,
+		UserInfo: &authpb.LoginReply_UserInfo{
+			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			FirstName: "first",
+			LastName:  "last",
+		},
 	}
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
@@ -102,6 +108,11 @@ func TestAuthLoginHandler_ExistingSessionMismatchedSite(t *testing.T) {
 	loginResp := &authpb.LoginReply{
 		Token:     testReplyToken,
 		ExpiresAt: testTokenExpiry,
+		UserInfo: &authpb.LoginReply_UserInfo{
+			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			FirstName: "first",
+			LastName:  "last",
+		},
 	}
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
@@ -141,6 +152,11 @@ func TestAuthLoginHandler_ExistingSessionMismatchedSite(t *testing.T) {
 	loginResp = &authpb.LoginReply{
 		Token:     testReplyToken2,
 		ExpiresAt: testTokenExpiry2,
+		UserInfo: &authpb.LoginReply_UserInfo{
+			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			FirstName: "first",
+			LastName:  "last",
+		},
 	}
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
 		assert.Equal(t, "the-token-2", in.AccessToken)

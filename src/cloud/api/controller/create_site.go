@@ -2,7 +2,9 @@ package controller
 
 import (
 	"encoding/json"
+	"gopkg.in/segmentio/analytics-go.v3"
 	"net/http"
+	"pixielabs.ai/pixielabs/src/shared/services/events"
 
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
@@ -10,6 +12,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	commonenv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
+	"pixielabs.ai/pixielabs/src/utils"
 )
 
 // CreateSiteHandler creates a new user/org and registers the site.
@@ -56,6 +59,25 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		return services.HTTPStatusFromError(err, "Failed to create user/org")
 	}
 
+	userIDStr := utils.UUIDFromProtoOrNil(resp.UserID).String()
+	orgIDStr := utils.UUIDFromProtoOrNil(resp.OrgID).String()
+	events.Client().Enqueue(&analytics.Group{
+		UserId:  userIDStr,
+		GroupId: orgIDStr,
+		Traits: map[string]interface{}{
+			"kind":        "organization",
+			"name":        resp.OrgName,
+			"domain_name": resp.DomainName,
+		},
+	})
+
+	events.Client().Enqueue(&analytics.Track{
+		UserId: utils.UUIDFromProtoOrNil(resp.UserID).String(),
+		Event:  events.OrgCreated,
+		Properties: analytics.NewProperties().
+			Set("org_id", orgIDStr),
+	})
+
 	siteReq := &sitemanagerpb.RegisterSiteRequest{
 		SiteName: params.SiteName,
 		OrgID:    resp.OrgID,
@@ -68,6 +90,14 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	if !siteResp.SiteRegistered {
 		return handler.NewStatusError(http.StatusInternalServerError, "Failed to create site")
 	}
+
+	events.Client().Enqueue(&analytics.Track{
+		UserId: userIDStr,
+		Event:  events.SiteCreated,
+		Properties: analytics.NewProperties().
+			Set("site_name", params.SiteName).
+			Set("org_id", orgIDStr),
+	})
 
 	setSessionCookie(session, resp.Token, resp.ExpiresAt, params.SiteName, r, w)
 
