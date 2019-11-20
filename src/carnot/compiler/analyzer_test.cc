@@ -1154,7 +1154,23 @@ TEST_F(AnalyzerTest, join_missing_parent_column_output_cols) {
   auto analyzer_status = HandleRelation(ir_graph);
   ASSERT_NOT_OK(analyzer_status);
   EXPECT_THAT(analyzer_status,
-              HasCompilerError("Column 'thiscoldoesnotexist' not found in relation of Map."));
+              HasCompilerError("Column 'thiscoldoesnotexist' not found in parent dataframe"));
+}
+
+const char* kJoinUnequalLeftOnRightOnColumns = R"query(
+src1 = dataframe(table='cpu', select=['upid', 'cpu0'])
+src2 = dataframe(table='network', select=['upid', 'bytes_in'])
+join = src1.merge(src2, how='inner', left_on=['upid', 'cpu0'], right_on=['upid']).result(name='joined')
+)query";
+
+// TODO(phlkuz/nserrino) on integration of the QL.next enable this and make sure it works.
+TEST_F(AnalyzerTest, DISABLED_JoinConditionsWithUnequalLengths) {
+  auto ir_graph_status = CompileGraph(kJoinUnequalLeftOnRightOnColumns);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_NOT_OK(analyzer_status);
+  EXPECT_THAT(analyzer_status, HasCompilerError("len(right_on) must equal len(left_on)"));
 }
 
 }  // namespace compiler

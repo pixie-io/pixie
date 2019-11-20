@@ -300,6 +300,23 @@ inline ExpressionMatch<true> ResolvedExpression() { return ExpressionMatch<true>
  */
 inline ExpressionMatch<false> UnresolvedExpression() { return ExpressionMatch<false>(); }
 
+struct ExpressionMatchDataType : public ParentMatch {
+  explicit ExpressionMatchDataType(types::DataType type)
+      : ParentMatch(IRNodeType::kAny), type_(type) {}
+  bool Match(const IRNode* node) const override {
+    if (!node->IsExpression()) {
+      return false;
+    }
+    const ExpressionIR* expr = static_cast<const ExpressionIR*>(node);
+    return expr->IsDataTypeEvaluated() && expr->EvaluatedDataType() == type_;
+  }
+  types::DataType type_;
+};
+
+inline ExpressionMatchDataType Expression(types::DataType type) {
+  return ExpressionMatchDataType(type);
+}
+
 /**
  * @brief Match a specifically typed expression that has a given resolution state.
  *
@@ -924,6 +941,25 @@ template <typename OpType, typename ParentType>
 inline ParentOfOpMatcher<OpType, ParentType> OperatorWithParent(OpType op_matcher,
                                                                 ParentType parent_matcher) {
   return ParentOfOpMatcher<OpType, ParentType>(op_matcher, parent_matcher);
+}
+
+template <bool OutputColumnsAreSet>
+struct OutputColumnsJoinMatcher : public ParentMatch {
+  OutputColumnsJoinMatcher() : ParentMatch(IRNodeType::kJoin) {}
+  bool Match(const IRNode* node) const override {
+    if (!Join().Match(node)) {
+      return false;
+    }
+    auto join = static_cast<const JoinIR*>(node);
+    if (OutputColumnsAreSet) {
+      return join->output_columns().size() != 0;
+    }
+    return join->output_columns().size() == 0;
+  }
+};
+
+inline OutputColumnsJoinMatcher<false> UnsetOutputColumnsJoin() {
+  return OutputColumnsJoinMatcher<false>();
 }
 
 }  // namespace compiler

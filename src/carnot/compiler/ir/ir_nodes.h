@@ -1464,6 +1464,9 @@ class JoinIR : public OperatorIR {
   }
   Status SetJoinType(const std::string& join_type) {
     PL_ASSIGN_OR_RETURN(join_type_, GetJoinEnum(join_type));
+    if (join_type_ == JoinType::kRight) {
+      specified_as_right_ = true;
+    }
     return Status::OK();
   }
 
@@ -1498,6 +1501,7 @@ class JoinIR : public OperatorIR {
    * @return StatusOr<EqConditionColumns>
    */
   static StatusOr<EqConditionColumns> ParseCondition(ExpressionIR* expr);
+  bool specified_as_right() const { return specified_as_right_; }
 
  private:
   static Status ParseConditionImpl(ExpressionIR* expr, EqConditionColumns* eq_condition);
@@ -1535,6 +1539,10 @@ class JoinIR : public OperatorIR {
   std::vector<ColumnIR*> right_on_columns_;
   // The suffixes to add to the left columns and to the right columns.
   std::vector<std::string> suffix_strs_;
+
+  // Whether this join was originally specified as a right join.
+  // Used because we transform left joins into right joins but need to do some back transform.
+  bool specified_as_right_ = false;
 };
 
 /*

@@ -80,21 +80,25 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(FuncIR* func) const {
 StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) const {
   PL_ASSIGN_OR_RETURN(OperatorIR * parent_op, column->ReferencedOperator());
   if (!parent_op->IsRelationInit()) {
-    // Missing a relation in parent op is not a failure, it means the parent op still has to
-    // propogate results.
+    // Missing a relation in parent op is not a failure - the parent op still has to
+    // propagate results.
     return false;
   }
 
   // Get the parent relation and find the column in it.
-  Relation relation = parent_op->relation();
+  PL_RETURN_IF_ERROR(EvaluateColumnFromRelation(column, parent_op->relation()));
+  return true;
+}
+
+Status DataTypeRule::EvaluateColumnFromRelation(ColumnIR* column, const Relation& relation) {
   if (!relation.HasColumn(column->col_name())) {
-    return column->CreateIRNodeError("Column '$0' not found in relation of $1(id=$2)",
-                                     column->col_name(), parent_op->type_string(), parent_op->id());
+    return column->CreateIRNodeError("Column '$0' not found in parent dataframe",
+                                     column->col_name());
   }
   types::DataType col_type = relation.GetColumnType(column->col_name());
   int64_t col_idx = relation.GetColumnIndex(column->col_name());
   column->ResolveColumn(col_idx, col_type);
-  return true;
+  return Status::OK();
 }
 
 StatusOr<bool> SourceRelationRule::Apply(IRNode* ir_node) {
@@ -189,14 +193,18 @@ StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) {
   } else if (Match(ir_node, UnresolvedReadyUnion())) {
     return SetUnion(static_cast<UnionIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedReadyJoin())) {
-    return SetJoin(static_cast<JoinIR*>(ir_node));
+    JoinIR* join_node = static_cast<JoinIR*>(ir_node);
+    if (Match(ir_node, UnsetOutputColumnsJoin())) {
+      PL_RETURN_IF_ERROR(SetJoinOutputColumns(join_node));
+    }
+    return SetOldJoin(join_node);
   } else if (Match(ir_node, UnresolvedReadyOp())) {
     return SetOther(static_cast<OperatorIR*>(ir_node));
   }
   return false;
 }
 
-StatusOr<bool> OperatorRelationRule::SetJoin(JoinIR* join_node) const {
+StatusOr<bool> OperatorRelationRule::SetOldJoin(JoinIR* join_node) const {
   DCHECK_EQ(join_node->parents().size(), 2UL);
   OperatorIR* left = join_node->parents()[0];
   OperatorIR* right = join_node->parents()[1];
@@ -206,8 +214,7 @@ StatusOr<bool> OperatorRelationRule::SetJoin(JoinIR* join_node) const {
 
   Relation out_relation;
 
-  for (size_t col_idx = 0; col_idx < join_node->output_columns().size(); ++col_idx) {
-    const ColumnIR* col = join_node->output_columns()[col_idx];
+  for (const auto& [col_idx, col] : Enumerate(join_node->output_columns())) {
     if (!col->IsDataTypeEvaluated()) {
       return false;
     }
@@ -231,6 +238,134 @@ bool UpdateColumn(ColumnIR* col_expr, Relation* relation_ptr) {
   }
   relation_ptr->AddColumn(col_expr->EvaluatedDataType(), col_expr->col_name());
   return true;
+}
+
+StatusOr<ColumnIR*> OperatorRelationRule::CreateOutputColumn(JoinIR* join_node,
+                                                             const std::string& col_name,
+                                                             int64_t parent_idx,
+                                                             const Relation& relation) const {
+  PL_ASSIGN_OR_RETURN(ColumnIR * col, join_node->graph_ptr()->CreateNode<ColumnIR>(
+                                          join_node->ast_node(), col_name, parent_idx));
+  PL_RETURN_IF_ERROR(DataTypeRule::EvaluateColumnFromRelation(col, relation));
+  return col;
+}
+
+StatusOr<std::vector<ColumnIR*>> OperatorRelationRule::CreateOutputColumnIRNodes(
+    JoinIR* join_node, const Relation& left_relation, const Relation& right_relation) const {
+  int64_t left_idx = 0;
+  int64_t right_idx = 1;
+  if (join_node->specified_as_right()) {
+    left_idx = 1;
+    right_idx = 0;
+  }
+  std::vector<ColumnIR*> output_columns;
+  output_columns.reserve(left_relation.NumColumns() + right_relation.NumColumns());
+  for (const auto& col_name : left_relation.col_names()) {
+    PL_ASSIGN_OR_RETURN(
+        ColumnIR * col,
+        CreateOutputColumn(join_node, col_name, /* parent_idx */ left_idx, left_relation));
+    output_columns.push_back(col);
+  }
+  for (const auto& right_df_name : right_relation.col_names()) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * col,
+                        CreateOutputColumn(join_node, right_df_name,
+                                           /* parent_idx */ right_idx, right_relation));
+    output_columns.push_back(col);
+  }
+  return output_columns;
+}
+
+Status OperatorRelationRule::SetJoinOutputColumns(JoinIR* join_node) const {
+  DCHECK_EQ(join_node->parents().size(), 2UL);
+  int64_t left_idx = 0;
+  int64_t right_idx = 1;
+
+  if (join_node->specified_as_right()) {
+    left_idx = 1;
+    right_idx = 0;
+  }
+  const Relation& left_relation = join_node->parents()[left_idx]->relation();
+  const Relation& right_relation = join_node->parents()[right_idx]->relation();
+  const std::string& left_suffix = join_node->suffix_strs()[left_idx];
+  const std::string& right_suffix = join_node->suffix_strs()[right_idx];
+
+  absl::flat_hash_set<std::string> columns_set(left_relation.col_names().begin(),
+                                               left_relation.col_names().end());
+  columns_set.reserve(left_relation.NumColumns() + right_relation.NumColumns());
+  // The left relation should only have unique names.
+  DCHECK_EQ(columns_set.size(), left_relation.NumColumns())
+      << "Left relation has duplicate columns, should have caught this earlier.";
+
+  std::vector<std::string> output_column_names(left_relation.col_names().begin(),
+                                               left_relation.col_names().end());
+  output_column_names.reserve(left_relation.NumColumns() + right_relation.NumColumns());
+
+  absl::flat_hash_set<std::string> duplicate_column_names;
+  for (const auto& right_df_name : right_relation.col_names()) {
+    // Output columns are added to regardless, we replace both duplicated columns in the following
+    // loop.
+    output_column_names.push_back(right_df_name);
+
+    if (columns_set.contains(right_df_name)) {
+      duplicate_column_names.insert(right_df_name);
+      continue;
+    }
+    columns_set.insert(right_df_name);
+  }
+
+  // Resolve any of the duplicates, check to see if there are duplicates afterwards
+  for (const auto& dup_name : duplicate_column_names) {
+    columns_set.erase(dup_name);
+    std::string left_column = absl::Substitute("$0$1", dup_name, left_suffix);
+    std::string right_column = absl::Substitute("$0$1", dup_name, right_suffix);
+
+    std::string err_string = absl::Substitute(
+        "duplicate column '$0' after merge. Change the specified suffixes ('$1','$2') to fix "
+        "this",
+        "$0", left_suffix, right_suffix);
+    // Make sure that the new left_column doesn't already exist in the
+    if (columns_set.contains(left_column)) {
+      return join_node->CreateIRNodeError(err_string, left_column);
+    }
+    // Insert before checking right column to make sure left_column != right_column. Saves a check.
+    columns_set.insert(left_column);
+    if (columns_set.contains(right_column)) {
+      return join_node->CreateIRNodeError(err_string, right_column);
+    }
+    columns_set.insert(right_column);
+    ReplaceDuplicateNames(&output_column_names, dup_name, left_column, right_column);
+  }
+
+  // Assertion that columns are the same size as the sum of the columns.
+  DCHECK_EQ(columns_set.size(), left_relation.NumColumns() + right_relation.NumColumns());
+  PL_ASSIGN_OR_RETURN(auto output_columns,
+                      CreateOutputColumnIRNodes(join_node, left_relation, right_relation));
+
+  return join_node->SetOutputColumns(output_column_names, output_columns);
+}
+
+void OperatorRelationRule::ReplaceDuplicateNames(std::vector<std::string>* column_names,
+                                                 const std::string& dup_name,
+                                                 const std::string& left_column,
+                                                 const std::string& right_column) const {
+  bool left_found = false;
+  bool right_found = false;
+  // Iterate through the output column names and replace the two duplicate columns.
+  for (const auto& [idx, str] : Enumerate(*column_names)) {
+    if (str != dup_name) {
+      continue;
+    }
+    // Left column should be found first.
+    if (left_found) {
+      (*column_names)[idx] = right_column;
+      // When right column is found, then we exit the loop.
+      right_found = true;
+      break;
+    }
+    (*column_names)[idx] = left_column;
+    left_found = true;
+  }
+  DCHECK(right_found);
 }
 
 StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const {

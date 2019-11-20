@@ -695,6 +695,187 @@ TEST_F(OperatorRelationTest, propogate_test) {
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
 }
+
+TEST_F(OperatorRelationTest, JoinCreateOutputColumns) {
+  std::string join_key = "key";
+  Relation rel1({types::INT64, types::FLOAT64, types::STRING}, {join_key, "latency", "data"});
+  Relation rel2({types::INT64, types::FLOAT64}, {join_key, "cpu_usage"});
+  auto mem_src1 = MakeMemSource(rel1);
+  auto mem_src2 = MakeMemSource(rel2);
+
+  std::string left_suffix = "_x";
+  std::string right_suffix = "_y";
+
+  JoinIR* join = graph
+                     ->CreateNode<JoinIR>(ast, std::vector<OperatorIR*>{mem_src1, mem_src2},
+                                          "inner", std::vector<ColumnIR*>{MakeColumn(join_key, 0)},
+                                          std::vector<ColumnIR*>{MakeColumn(join_key, 1)},
+                                          std::vector<std::string>{left_suffix, right_suffix})
+                     .ConsumeValueOrDie();
+
+  EXPECT_TRUE(mem_src1->IsRelationInit());
+  EXPECT_TRUE(mem_src2->IsRelationInit());
+  EXPECT_FALSE(join->IsRelationInit());
+
+  EXPECT_EQ(join->output_columns().size(), 0);
+
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  // Check that output columns are named what we expect.
+  EXPECT_EQ(join->output_columns().size(), 5);
+  EXPECT_TRUE(Match(join->output_columns()[0], ColumnNode(join_key, /* parent_idx */ 0)))
+      << join->output_columns()[0]->DebugString();
+  EXPECT_TRUE(Match(join->output_columns()[1], ColumnNode("latency", /* parent_idx */ 0)));
+  EXPECT_TRUE(Match(join->output_columns()[2], ColumnNode("data", /* parent_idx */ 0)));
+  EXPECT_TRUE(Match(join->output_columns()[3], ColumnNode(join_key, /* parent_idx */ 1)));
+  EXPECT_TRUE(Match(join->output_columns()[4], ColumnNode("cpu_usage", /* parent_idx */ 1)));
+
+  // Match expected data types.
+  EXPECT_TRUE(Match(join->output_columns()[0], Expression(types::INT64)));
+  EXPECT_TRUE(Match(join->output_columns()[1], Expression(types::FLOAT64)));
+  EXPECT_TRUE(Match(join->output_columns()[2], Expression(types::STRING)));
+  EXPECT_TRUE(Match(join->output_columns()[3], Expression(types::INT64)));
+  EXPECT_TRUE(Match(join->output_columns()[4], Expression(types::FLOAT64)));
+
+  // Join relation should be set.
+  EXPECT_TRUE(join->IsRelationInit());
+  EXPECT_EQ(join->relation(),
+            Relation({types::INT64, types::FLOAT64, types::STRING, types::INT64, types::FLOAT64},
+                     {"key_x", "latency", "data", "key_y", "cpu_usage"}));
+}
+
+TEST_F(OperatorRelationTest, JoinCreateOutputColumnsFailsDuplicateResultColumns) {
+  std::string join_key = "key";
+  std::string left_suffix = "_x";
+  std::string right_suffix = "_y";
+  std::string dup_key = absl::Substitute("$0$1", join_key, left_suffix);
+  Relation rel1({types::INT64, types::FLOAT64, types::STRING}, {join_key, dup_key, "data"});
+  Relation rel2({types::INT64, types::FLOAT64}, {join_key, "cpu_usage"});
+  auto mem_src1 = MakeMemSource(rel1);
+  auto mem_src2 = MakeMemSource(rel2);
+
+  JoinIR* join = graph
+                     ->CreateNode<JoinIR>(ast, std::vector<OperatorIR*>{mem_src1, mem_src2},
+                                          "inner", std::vector<ColumnIR*>{MakeColumn(join_key, 0)},
+                                          std::vector<ColumnIR*>{MakeColumn(join_key, 1)},
+                                          std::vector<std::string>{left_suffix, right_suffix})
+                     .ConsumeValueOrDie();
+
+  EXPECT_TRUE(mem_src1->IsRelationInit());
+  EXPECT_TRUE(mem_src2->IsRelationInit());
+  EXPECT_FALSE(join->IsRelationInit());
+
+  EXPECT_EQ(join->output_columns().size(), 0);
+
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_NOT_OK(result);
+  EXPECT_THAT(result.status(), HasCompilerError("duplicate column '$0' after merge. Change the "
+                                                "specified suffixes .*'$1','$2'.* to fix this",
+                                                dup_key, left_suffix, right_suffix));
+}
+
+TEST_F(OperatorRelationTest, JoinCreateOutputColumnsFailsDuplicateNoSuffixes) {
+  std::string join_key = "key";
+  std::string left_suffix = "";
+  std::string right_suffix = "";
+  Relation rel1({types::INT64, types::FLOAT64, types::STRING}, {join_key, "latency_ns", "data"});
+  Relation rel2({types::INT64, types::FLOAT64}, {join_key, "cpu_usage"});
+  auto mem_src1 = MakeMemSource(rel1);
+  auto mem_src2 = MakeMemSource(rel2);
+
+  JoinIR* join = graph
+                     ->CreateNode<JoinIR>(ast, std::vector<OperatorIR*>{mem_src1, mem_src2},
+                                          "inner", std::vector<ColumnIR*>{MakeColumn(join_key, 0)},
+                                          std::vector<ColumnIR*>{MakeColumn(join_key, 1)},
+                                          std::vector<std::string>{left_suffix, right_suffix})
+                     .ConsumeValueOrDie();
+
+  EXPECT_TRUE(mem_src1->IsRelationInit());
+  EXPECT_TRUE(mem_src2->IsRelationInit());
+  EXPECT_FALSE(join->IsRelationInit());
+
+  EXPECT_EQ(join->output_columns().size(), 0);
+
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_NOT_OK(result);
+  EXPECT_THAT(result.status(),
+              HasCompilerError("duplicate column '$0' after merge. Change the specified suffixes.*",
+                               join_key));
+}
+
+// The right join is a weird special case for output columns - we need the order of the output
+// columns to be the same -> this ensures that.
+TEST_F(OperatorRelationTest, JoinCreateOutputColumnsAfterRightJoin) {
+  std::string join_key = "key";
+  Relation rel1({types::INT64, types::FLOAT64, types::STRING}, {join_key, "latency", "data"});
+  Relation rel2({types::INT64, types::FLOAT64}, {join_key, "cpu_usage"});
+  auto mem_src1 = MakeMemSource(rel1);
+  auto mem_src2 = MakeMemSource(rel2);
+
+  std::string left_suffix = "_x";
+  std::string right_suffix = "_y";
+
+  JoinIR* join = graph
+                     ->CreateNode<JoinIR>(ast, std::vector<OperatorIR*>{mem_src1, mem_src2},
+                                          "right", std::vector<ColumnIR*>{MakeColumn(join_key, 0)},
+                                          std::vector<ColumnIR*>{MakeColumn(join_key, 1)},
+                                          std::vector<std::string>{left_suffix, right_suffix})
+                     .ConsumeValueOrDie();
+
+  EXPECT_TRUE(mem_src1->IsRelationInit());
+  EXPECT_TRUE(mem_src2->IsRelationInit());
+  EXPECT_FALSE(join->IsRelationInit());
+
+  EXPECT_EQ(join->output_columns().size(), 0);
+
+  // Join should be a right join.
+  EXPECT_TRUE(join->specified_as_right());
+  EXPECT_TRUE(join->join_type() == JoinIR::JoinType::kRight);
+
+  // Converts right join to left join.
+  SetupJoinTypeRule rule;
+  auto result_or_s = rule.Execute(graph.get());
+  ASSERT_OK(result_or_s);
+  EXPECT_TRUE(result_or_s.ValueOrDie());
+
+  // Join should still be specified as a  right join.
+  EXPECT_TRUE(join->specified_as_right());
+  // But this switches over as internally Left is a simple column reshuffling of a Right join.
+  EXPECT_TRUE(join->join_type() == JoinIR::JoinType::kLeft);
+
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  // Check that output columns are named what we expect.
+  EXPECT_EQ(join->output_columns().size(), 5);
+  EXPECT_TRUE(Match(join->output_columns()[0], ColumnNode(join_key, /* parent_idx */ 1)))
+      << join->output_columns()[0]->DebugString();
+  EXPECT_TRUE(Match(join->output_columns()[1], ColumnNode("latency", /* parent_idx */ 1)));
+  EXPECT_TRUE(Match(join->output_columns()[2], ColumnNode("data", /* parent_idx */ 1)));
+  EXPECT_TRUE(Match(join->output_columns()[3], ColumnNode(join_key, /* parent_idx */ 0)));
+  EXPECT_TRUE(Match(join->output_columns()[4], ColumnNode("cpu_usage", /* parent_idx */ 0)));
+
+  // Match expected data types.
+  EXPECT_TRUE(Match(join->output_columns()[0], Expression(types::INT64)));
+  EXPECT_TRUE(Match(join->output_columns()[1], Expression(types::FLOAT64)));
+  EXPECT_TRUE(Match(join->output_columns()[2], Expression(types::STRING)));
+  EXPECT_TRUE(Match(join->output_columns()[3], Expression(types::INT64)));
+  EXPECT_TRUE(Match(join->output_columns()[4], Expression(types::FLOAT64)));
+
+  // Join relation should be set.
+  EXPECT_TRUE(join->IsRelationInit());
+  EXPECT_EQ(join->relation(),
+            Relation({types::INT64, types::FLOAT64, types::STRING, types::INT64, types::FLOAT64},
+                     {"key_x", "latency", "data", "key_y", "cpu_usage"}));
+}
+
 class CompilerTimeExpressionTest : public RulesTest {
  protected:
   void SetUp() override {
