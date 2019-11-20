@@ -1,3 +1,4 @@
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -15,41 +16,46 @@ spec:
       - name: cloud-proxy-server
         image: gcr.io/pl-dev-infra/cloud/proxy_server_image
         ports:
-          - containerPort: 56000
+        - containerPort: 56000
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
             port: 56000
         envFrom:
-          - configMapRef:
-              name: pl-auth0-config
-          - configMapRef:
-              name: pl-domain-config
+        - configMapRef:
+            name: pl-auth0-config
+        - configMapRef:
+            name: pl-domain-config
         env:
-          - name: PL_JWT_SIGNING_KEY
-            valueFrom:
-              secretKeyRef:
-                name: cloud-auth-secrets
-                key: jwt-signing-key
-          - name: PL_TLS_CERT
-            value: /certs/tls.crt
-          - name: PL_TLS_KEY
-            value: /certs/tls.key
-          - name: PL_API_SERVICE_HTTP
-            valueFrom:
-              configMapKeyRef:
-                name: pl-service-config
-                key: PL_API_SERVICE_HTTP
-          - name: PL_DOCS_SERVICE_HTTP
-            valueFrom:
-              configMapKeyRef:
-                name: pl-service-config
-                key: PL_DOCS_SERVICE_HTTP
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_TLS_CERT
+          value: /certs/tls.crt
+        - name: PL_TLS_KEY
+          value: /certs/tls.key
+        - name: PL_API_SERVICE_HTTP
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_API_SERVICE_HTTP
+        - name: PL_DOCS_SERVICE_HTTP
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_DOCS_SERVICE_HTTP
+        - name: PL_SEGMENT_WRITE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: segment-secrets
+              key: write-key
         volumeMounts:
-            - name: certs
-              mountPath: /certs
-      volumes:
         - name: certs
-          secret:
-            secretName: cloud-proxy-tls-certs
+          mountPath: /certs
+      volumes:
+      - name: certs
+        secret:
+          secretName: cloud-proxy-tls-certs
