@@ -43,7 +43,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		AppMetadata: nil,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -58,7 +58,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		AppMetadata: make(map[string]*controllers.UserMetadata),
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -73,16 +73,16 @@ func TestServer_LoginNewUser(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@defg.com"}).
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil).Times(2)
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 			OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
-			Username:  "abc@defg.com",
+			Username:  "abc@gmail.com",
 			FirstName: "first",
 			LastName:  "last",
-			Email:     "abc@defg.com",
+			Email:     "abc@gmail.com",
 		}).
 		Return(pbutils.ProtoFromUUIDStrOrNil(userID), nil)
 
@@ -112,7 +112,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	assert.Equal(t, pbutils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String(), userID)
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
-	assert.Equal(t, resp.UserInfo.Email, "abc@defg.com")
+	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
@@ -126,7 +126,7 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		AppMetadata: nil,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -189,7 +189,7 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		AppMetadata: nil,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -200,7 +200,7 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@defg.com"}).
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(nil, errors.New("organization does not exist"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -226,7 +226,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		AppMetadata: nil,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -240,16 +240,16 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@defg.com"}).
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil).Times(2)
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 			OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
-			Username:  "abc@defg.com",
+			Username:  "abc@gmail.com",
 			FirstName: "first",
 			LastName:  "last",
-			Email:     "abc@defg.com",
+			Email:     "abc@gmail.com",
 		}).
 		Return(nil, errors.New("Could not create user"))
 
@@ -315,7 +315,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		AppMetadata: appMetadata,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 	}
 
 	a.EXPECT().GetClientID().Return("foo").MinTimes(1)
@@ -329,7 +329,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 		ID: &uuidpb.UUID{Data: []byte(orgID)},
 	}
 	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@defg.com"}).
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil)
 
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
@@ -378,7 +378,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		AppMetadata: appMetadata,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -388,7 +388,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		AppMetadata: make(map[string]*controllers.UserMetadata),
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -411,16 +411,16 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	}
 
 	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@defg.com"}).
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil).Times(2)
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
 			OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
-			Username:  "abc@defg.com",
+			Username:  "abc@gmail.com",
 			FirstName: "first",
 			LastName:  "last",
-			Email:     "abc@defg.com",
+			Email:     "abc@gmail.com",
 		}).
 		Return(&uuidpb.UUID{Data: []byte(userID)}, nil)
 
@@ -554,7 +554,7 @@ func TestServer_CreateUserOrg(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		AppMetadata: nil,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -566,7 +566,7 @@ func TestServer_CreateUserOrg(t *testing.T) {
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		AppMetadata: make(map[string]*controllers.UserMetadata),
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -584,14 +584,14 @@ func TestServer_CreateUserOrg(t *testing.T) {
 	mockProfile.EXPECT().
 		CreateOrgAndUser(gomock.Any(), &profilepb.CreateOrgAndUserRequest{
 			Org: &profilepb.CreateOrgAndUserRequest_Org{
-				OrgName:    "abc@defg.com",
-				DomainName: "abc@defg.com",
+				OrgName:    "abc@gmail.com",
+				DomainName: "abc@gmail.com",
 			},
 			User: &profilepb.CreateOrgAndUserRequest_User{
-				Username:  "abc@defg.com",
+				Username:  "abc@gmail.com",
 				FirstName: "first",
 				LastName:  "last",
-				Email:     "abc@defg.com",
+				Email:     "abc@gmail.com",
 			},
 		}).
 		Return(&profilepb.CreateOrgAndUserResponse{
@@ -612,8 +612,8 @@ func TestServer_CreateUserOrg(t *testing.T) {
 	currentTime := time.Now().Unix()
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
-	assert.Equal(t, resp.OrgName, "abc@defg.com")
-	assert.Equal(t, resp.DomainName, "abc@defg.com")
+	assert.Equal(t, resp.OrgName, "abc@gmail.com")
+	assert.Equal(t, resp.DomainName, "abc@gmail.com")
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
@@ -666,7 +666,7 @@ func TestServer_CreateUserOrg_AccountExists(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		AppMetadata: appMetadata,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -678,7 +678,7 @@ func TestServer_CreateUserOrg_AccountExists(t *testing.T) {
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		AppMetadata: make(map[string]*controllers.UserMetadata),
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -695,14 +695,14 @@ func TestServer_CreateUserOrg_AccountExists(t *testing.T) {
 	mockProfile.EXPECT().
 		CreateOrgAndUser(gomock.Any(), &profilepb.CreateOrgAndUserRequest{
 			Org: &profilepb.CreateOrgAndUserRequest_Org{
-				OrgName:    "abc@defg.com",
-				DomainName: "abc@defg.com",
+				OrgName:    "abc@gmail.com",
+				DomainName: "abc@gmail.com",
 			},
 			User: &profilepb.CreateOrgAndUserRequest_User{
-				Username:  "abc@defg.com",
+				Username:  "abc@gmail.com",
 				FirstName: "first",
 				LastName:  "last",
-				Email:     "abc@defg.com",
+				Email:     "abc@gmail.com",
 			},
 		}).
 		Return(&profilepb.CreateOrgAndUserResponse{
@@ -739,7 +739,7 @@ func TestServer_CreateUserOrg_CreateFailed(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		AppMetadata: nil,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -752,14 +752,14 @@ func TestServer_CreateUserOrg_CreateFailed(t *testing.T) {
 	mockProfile.EXPECT().
 		CreateOrgAndUser(gomock.Any(), &profilepb.CreateOrgAndUserRequest{
 			Org: &profilepb.CreateOrgAndUserRequest_Org{
-				OrgName:    "abc@defg.com",
-				DomainName: "abc@defg.com",
+				OrgName:    "abc@gmail.com",
+				DomainName: "abc@gmail.com",
 			},
 			User: &profilepb.CreateOrgAndUserRequest_User{
-				Username:  "abc@defg.com",
+				Username:  "abc@gmail.com",
 				FirstName: "first",
 				LastName:  "last",
-				Email:     "abc@defg.com",
+				Email:     "abc@gmail.com",
 			},
 		}).
 		Return(nil, errors.New("Could not create user org"))
@@ -807,7 +807,7 @@ func doLoginRequestNoAutoCreate(ctx context.Context, t *testing.T, server *contr
 func doCreateUserOrgRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.CreateUserOrgResponse, error) {
 	req := &pb.CreateUserOrgRequest{
 		AccessToken: "tokenabc",
-		UserEmail:   "abc@defg.com",
+		UserEmail:   "abc@gmail.com",
 	}
 	return server.CreateUserOrg(ctx, req)
 }
@@ -825,7 +825,7 @@ func TestServer_LoginSiteNotInOrg(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		AppMetadata: nil,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -838,12 +838,12 @@ func TestServer_LoginSiteNotInOrg(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@defg.com"}).
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil)
 
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 	siteInfo := &sitemanagerpb.SiteInfo{
-		SiteName: "abc@defg.com",
+		SiteName: "abc@gmail.com",
 		OrgID:    &uuidpb.UUID{Data: []byte(otherOrgID)},
 	}
 	mockSiteMgr.EXPECT().
@@ -872,7 +872,7 @@ func TestServer_LoginGetSiteFailed(t *testing.T) {
 
 	fakeUserInfo := &controllers.UserInfo{
 		AppMetadata: nil,
-		Email:       "abc@defg.com",
+		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
@@ -885,7 +885,7 @@ func TestServer_LoginGetSiteFailed(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@defg.com"}).
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil)
 
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
