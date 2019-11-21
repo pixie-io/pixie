@@ -57,19 +57,24 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 			"failed to decode json request")
 	}
 
-	// Bail early if the session is valid.
-	if len(session.Values) != 0 && session.Values["_at"] != nil {
-		expiresAt, ok := session.Values["_expires_at"].(int64)
-		if !ok {
-			http.Error(w, "failed to get session expiration", http.StatusInternalServerError)
-			return nil
-		}
-		// Check if token is still valid.
-		if expiresAt > time.Now().Unix() && session.Values["_auth_site"] == params.SiteName {
-			w.WriteHeader(http.StatusOK)
-			return nil
-		}
-	}
+	// TODO(zasgar/michelle): See if we can enable this again. This block of code provides an
+	// optimization to return the existing cookie if a valid session exists.
+	// However, This breaks the API contract since
+	// we don't ship back the user information, token, ID. Adding this information might make it
+	// just as expensive as performing the Login, so this needs to be investigated.
+	//	// Bail early if the session is valid.
+	//	if len(session.Values) != 0 && session.Values["_at"] != nil {
+	//		expiresAt, ok := session.Values["_expires_at"].(int64)
+	//		if !ok {
+	//			http.Error(w, "failed to get session expiration", http.StatusInternalServerError)
+	//			return nil
+	//		}
+	//		// Check if token is still valid.
+	//		if expiresAt > time.Now().Unix() && session.Values["_auth_site"] == params.SiteName {
+	//			w.WriteHeader(http.StatusOK)
+	//			return nil
+	//		}
+	//	}
 
 	ctxWithCreds, err := attachCredentialsToContext(env, r)
 	if err != nil {
