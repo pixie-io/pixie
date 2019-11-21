@@ -38,6 +38,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps> {
         className='pl-code-editor'
         editorDidMount={(editor) => {
           this.editorInstance = editor;
+          editor.setSize('100%', '100%');
           editor.refresh();
         }}
       />
