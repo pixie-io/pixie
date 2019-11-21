@@ -47,11 +47,11 @@ spec:
             configMapKeyRef:
               name: pl-service-config
               key: PL_DOCS_SERVICE_HTTP
-        - name: PL_SEGMENT_WRITE_KEY
+        - name: PL_SEGMENT_UI_WRITE_KEY
           valueFrom:
             secretKeyRef:
               name: segment-secrets
-              key: write-key
+              key: ui-write-key
         volumeMounts:
         - name: certs
           mountPath: /certs
