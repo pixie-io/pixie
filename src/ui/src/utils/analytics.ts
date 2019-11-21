@@ -6,9 +6,16 @@ declare global {
     interface Window { analytics: SegmentAnalytics.AnalyticsJS; }
 }
 
+function isValidSegmentKey(k) {
+     // The TS compiler is really smart and is optmizing away the checks,
+     // which is why this check is so convoluted...
+     return k && !k.startsWith('__S');
+}
+
 class Analytics {
     constructor() {
-        if (SEGMENT_UI_WRITE_KEY) {
+        // If the key is not valid, we disable segment.
+        if (isValidSegmentKey(SEGMENT_UI_WRITE_KEY)) {
             this.load();
         }
     }
