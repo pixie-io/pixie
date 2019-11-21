@@ -1,4 +1,5 @@
 #include "src/carnot/compiler/objects/dataframe.h"
+#include "src/carnot/compiler/ir/ast_utils.h"
 #include "src/carnot/compiler/objects/none_object.h"
 
 namespace pl {
@@ -124,11 +125,11 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       std::bind(&OldRangeAggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kRangeAggOpId, old_range_agg_fn);
 
-  std::shared_ptr<FuncObject> filter_fn(new FuncObject(
+  std::shared_ptr<FuncObject> subscript_fn(new FuncObject(
       kSubscriptMethodName, {"key"}, {},
       /* has_kwargs */ false,
-      std::bind(&FilterHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  AddSubscriptMethod(filter_fn);
+      std::bind(&SubscriptHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddSubscriptMethod(subscript_fn);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
@@ -551,18 +552,42 @@ StatusOr<FuncIR*> OldRangeAggHandler::MakeRangeAggGroupExpression(ColumnIR* rang
   return sub_ir_node;
 }
 
-StatusOr<QLObjectPtr> FilterHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
-                                          const ParsedArgs& args) {
+StatusOr<QLObjectPtr> SubscriptHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                             const ParsedArgs& args) {
   IRNode* key = args.GetArg("key");
-
   if (!key->IsExpression()) {
     return key->CreateIRNodeError("subscript argument must have an expression. '$0' not allowed",
                                   key->type_string());
   }
+  if (Match(key, List())) {
+    return EvalKeep(df, ast, static_cast<ListIR*>(key));
+  }
+  return EvalFilter(df, ast, static_cast<ExpressionIR*>(key));
+}
 
-  ExpressionIR* expr = static_cast<ExpressionIR*>(key);
+StatusOr<QLObjectPtr> SubscriptHandler::EvalFilter(Dataframe* df, const pypa::AstPtr& ast,
+                                                   ExpressionIR* expr) {
   PL_ASSIGN_OR_RETURN(FilterIR * filter_op, df->graph()->CreateNode<FilterIR>(ast, df->op(), expr));
   return StatusOr(std::make_shared<Dataframe>(filter_op));
+}
+
+StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(Dataframe* df, const pypa::AstPtr& ast,
+                                                 ListIR* key) {
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> keep_column_names, ParseStringListIR(key));
+
+  ColExpressionVector keep_exprs;
+  for (const auto& col_name : keep_column_names) {
+    // parent_op_idx is 0 because we only have one parent for a map.
+    PL_ASSIGN_OR_RETURN(ColumnIR * keep_col,
+                        df->graph()->CreateNode<ColumnIR>(ast, col_name, /* parent_op_idx */ 0));
+    keep_exprs.emplace_back(col_name, keep_col);
+  }
+
+  PL_ASSIGN_OR_RETURN(MapIR * map_op, df->graph()->CreateNode<MapIR>(ast, df->op(), keep_exprs));
+  // TODO(nserrino): Refactor this once lambda maps are deprecated.
+  // Technically not needed but here for explicitness until the refactor.
+  map_op->set_keep_input_columns(false);
+  return StatusOr(std::make_shared<Dataframe>(map_op));
 }
 
 }  // namespace compiler

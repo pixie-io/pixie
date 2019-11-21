@@ -1454,7 +1454,7 @@ TEST_F(OldRangeAggTest, ByArgHasMoreThan1Parent) {
   EXPECT_THAT(status.status(), HasCompilerError("expected 1 column to group by, received 2"));
 }
 
-class FilterTest : public DataframeTest {
+class SubscriptTest : public DataframeTest {
  protected:
   void SetUp() override {
     DataframeTest::SetUp();
@@ -1466,12 +1466,12 @@ class FilterTest : public DataframeTest {
   MemorySourceIR* src;
 };
 
-TEST_F(FilterTest, FilterCanTakeExpr) {
+TEST_F(SubscriptTest, FilterCanTakeExpr) {
   ParsedArgs parsed_args;
   auto eq_func = MakeEqualsFunc(MakeColumn("service", 0), MakeString("blah"));
   parsed_args.AddArg("key", eq_func);
 
-  auto qlo_or_s = FilterHandler::Eval(srcdf.get(), ast, parsed_args);
+  auto qlo_or_s = SubscriptHandler::Eval(srcdf.get(), ast, parsed_args);
   ASSERT_OK(qlo_or_s);
   QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -1481,7 +1481,7 @@ TEST_F(FilterTest, FilterCanTakeExpr) {
   EXPECT_EQ(filt_ir->filter_expr(), eq_func);
 }
 
-TEST_F(FilterTest, DataframeHasFilterAsGetItem) {
+TEST_F(SubscriptTest, DataframeHasFilterAsGetItem) {
   auto eq_func = MakeEqualsFunc(MakeColumn("service", 0), MakeString("blah"));
   ArgMap args{{}, {eq_func}};
 
@@ -1499,12 +1499,49 @@ TEST_F(FilterTest, DataframeHasFilterAsGetItem) {
   EXPECT_EQ(filt_ir->filter_expr(), eq_func);
 }
 
-TEST_F(FilterTest, FilterCanHandleErrorInput) {
+TEST_F(SubscriptTest, KeepTest) {
+  ParsedArgs parsed_args;
+  auto keep_list = MakeList(MakeString("foo"), MakeString("bar"));
+  parsed_args.AddArg("key", keep_list);
+
+  auto qlo_or_s = SubscriptHandler::Eval(srcdf.get(), ast, parsed_args);
+  ASSERT_OK(qlo_or_s);
+  QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto map_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  MapIR* map_ir = static_cast<MapIR*>(map_obj->op());
+  EXPECT_EQ(map_ir->col_exprs().size(), 2);
+  EXPECT_EQ(map_ir->col_exprs()[0].name, "foo");
+  EXPECT_EQ(map_ir->col_exprs()[1].name, "bar");
+}
+
+TEST_F(SubscriptTest, DataframeHasKeepAsGetItem) {
+  auto keep_list = MakeList(MakeString("foo"), MakeString("bar"));
+  ArgMap args{{}, {keep_list}};
+
+  auto get_method_status = srcdf->GetSubscriptMethod();
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  auto qlo_or_s = func_obj->Call(args, ast, ast_visitor.get());
+
+  ASSERT_OK(qlo_or_s);
+  QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto map_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  MapIR* map_ir = static_cast<MapIR*>(map_obj->op());
+  EXPECT_EQ(map_ir->col_exprs().size(), 2);
+  EXPECT_EQ(map_ir->col_exprs()[0].name, "foo");
+  EXPECT_EQ(map_ir->col_exprs()[1].name, "bar");
+}
+
+TEST_F(SubscriptTest, SubscriptCanHandleErrorInput) {
   ParsedArgs parsed_args;
   auto node = MakeMemSource();
   parsed_args.AddArg("key", node);
 
-  auto qlo_or_s = FilterHandler::Eval(srcdf.get(), ast, parsed_args);
+  auto qlo_or_s = SubscriptHandler::Eval(srcdf.get(), ast, parsed_args);
   ASSERT_NOT_OK(qlo_or_s);
 
   EXPECT_THAT(qlo_or_s.status(),

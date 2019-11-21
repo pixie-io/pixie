@@ -255,17 +255,22 @@ class OldRangeAggHandler {
                                                        const pypa::AstPtr& ast, IR* graph);
 };
 
-class FilterHandler {
+class SubscriptHandler {
  public:
   /**
-   * @brief Evaluates the filter operator
+   * @brief Evaluates the subscript operator (filter and keep)
    *
    * @param df the dataframe that's a parent to the filter function.
    * @param ast the ast node that signifies where the query was written.
-   * @param args the arguments for filter()
+   * @param args the arguments
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
+
+ private:
+  static StatusOr<QLObjectPtr> EvalFilter(Dataframe* df, const pypa::AstPtr& ast,
+                                          ExpressionIR* expr);
+  static StatusOr<QLObjectPtr> EvalKeep(Dataframe* df, const pypa::AstPtr& ast, ListIR* cols);
 };
 
 }  // namespace compiler
