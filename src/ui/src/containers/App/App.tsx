@@ -4,7 +4,8 @@ import {cloudGQLClient} from 'common/cloud-gql-client';
 import {Login} from 'containers/login';
 import * as React from 'react';
 import {ApolloProvider} from 'react-apollo';
-import {BrowserRouter as Router, Link, Route, Switch} from 'react-router-dom';
+import {Route, Router, Switch, withRouter} from 'react-router-dom';
+import history from 'utils/pl-history';
 
 export interface AppProps {
   name: string;
@@ -13,7 +14,7 @@ export interface AppProps {
 export class App extends React.Component<AppProps, {}> {
   render() {
     return (
-      <Router>
+      <Router history={history}>
         <ApolloProvider client={cloudGQLClient}>
           <div className='main-page'>
             <div className='content'>
@@ -30,4 +31,4 @@ export class App extends React.Component<AppProps, {}> {
   }
 }
 
-export default App;
+export default withRouter(App);
