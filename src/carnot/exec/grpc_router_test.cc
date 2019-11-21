@@ -1,7 +1,10 @@
 #include <grpcpp/grpcpp.h>
 #include <gtest/gtest.h>
+#include <chrono>
+#include <thread>
 #include <utility>
 
+#include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/grpc_router.h"
 #include "src/carnot/exec/grpc_source_node.h"
 #include "src/carnot/exec/test_utils.h"
@@ -176,6 +179,83 @@ TEST_F(GRPCRouterTest, delete_node_router_test) {
   ASSERT_OK(s);
 
   service_->DeleteQuery(query_uuid);
+}
+
+// This test is a TSAN test. IT should be run enough times so that all possible
+// race conditions will be met.
+TEST_F(GRPCRouterTest, threaded_router_test) {
+  ResetStub();
+  auto query_id_str = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
+  auto query_uuid = sole::rebuild(query_id_str);
+
+  auto udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
+  auto uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
+  auto table_store = std::make_shared<table_store::TableStore>();
+  auto exec_state =
+      std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,
+                                  MockKelvinStubGenerator, sole::uuid4());
+
+  MockExecNode mock_child;
+
+  RowDescriptor input_rd({types::DataType::INT64});
+  auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
+  std::unique_ptr<pl::carnot::plan::Operator> plan_node =
+      plan::GRPCSourceOperator::FromProto(op_proto, 1);
+  auto source_node = GRPCSourceNode();
+  ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
+  source_node.AddChild(&mock_child, 0);
+
+  ::pl::carnotpb::RowBatchResponse response;
+  grpc::ClientContext context;
+  auto writer = stub_->TransferRowBatch(&context, &response);
+
+  // Start up thread that enqueues row batches.
+  std::thread write_thread([&] {
+    for (int idx = 0; idx <= 100; ++idx) {
+      auto rb = RowBatchBuilder(input_rd, 1, /*eow*/ idx == 100, /*eos*/ idx == 100)
+                    .AddColumn<types::Int64Value>({
+                        idx,
+                    })
+                    .get();
+      auto rb_req = carnotpb::RowBatchRequest();
+      EXPECT_OK(rb.ToProto(rb_req.mutable_row_batch()));
+      rb_req.set_address("localhost");
+      rb_req.set_destination_id("agent1_2");
+      auto query_id = rb_req.mutable_query_id();
+      query_id->set_data(query_id_str);
+      writer->Write(rb_req);
+    }
+    writer->WritesDone();
+    writer->Finish();
+  });
+  write_thread.join();
+
+  // Start up thread which adds the source node to the router and verifies rowbatches have been
+  // enqueued in correct order.
+  std::thread read_thread([&] {
+    auto idx = 0;
+
+    auto s = service_->AddGRPCSourceNode(query_uuid, &source_node);
+    ASSERT_OK(s);
+    do {
+      auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& rb, int64_t) {
+        EXPECT_EQ(idx,
+                  types::GetValueFromArrowArray<types::DataType::INT64>(rb.ColumnAt(0).get(), 0));
+      };
+
+      EXPECT_CALL(mock_child, ConsumeNextImpl(::testing::_, ::testing::_, ::testing::_))
+          .Times(1)
+          .WillRepeatedly(::testing::DoAll(::testing::Invoke(check_result_batch),
+                                           ::testing::Return(Status::OK())))
+          .RetiresOnSaturation();
+
+      ASSERT_OK(source_node.GenerateNext(exec_state.get()));
+      idx++;
+    } while (source_node.HasBatchesRemaining());
+  });
+  // Sleep for 1ms to allow some row batches to enqueue before the source node is added.
+  std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  read_thread.join();
 }
 
 }  // namespace exec
