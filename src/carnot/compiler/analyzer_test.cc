@@ -218,11 +218,16 @@ class AnalyzerTest : public ::testing::Test {
    * @param type
    * @return StatusOr<IRNode*> IRNode of type, otherwise returns an error.
    */
-  StatusOr<IRNode*> FindNodeType(std::shared_ptr<IR> ir_graph, IRNodeType type) {
+  StatusOr<IRNode*> FindNodeType(std::shared_ptr<IR> ir_graph, IRNodeType type,
+                                 int64_t instance = 0) {
+    int found = 0;
     for (auto& i : ir_graph->dag().TopologicalSort()) {
       auto node = ir_graph->Get(i);
       if (node->type() == type) {
-        return node;
+        if (found == instance) {
+          return node;
+        }
+        found++;
       }
     }
     return error::NotFound("Couldn't find node of type $0 in ir_graph.",
@@ -282,8 +287,8 @@ TEST_F(AnalyzerTest, assign_functionality) {
 TEST_F(AnalyzerTest, single_col_map) {
   std::string single_col_map_sum = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
-       "mapDF.result(name='cpu_out')"},
+       "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+       "queryDF[['sum']].result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(single_col_map_sum);
   ASSERT_OK(ir_graph_status);
@@ -294,8 +299,8 @@ TEST_F(AnalyzerTest, single_col_map) {
 
   std::string single_col_div_map_query = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'sum' : pl.divide(r.cpu0,r.cpu1)})",
-       "mapDF.result(name='cpu_out')"},
+       "queryDF['div'] = queryDF['cpu0'] / queryDF['cpu1']",
+       "queryDF[['div']].result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(single_col_div_map_query);
   ASSERT_OK(ir_graph_status);
@@ -310,8 +315,9 @@ TEST_F(AnalyzerTest, multi_col_map) {
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', "
           "'cpu2']).range(start=0,stop=10)",
-          "mapDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1, 'copy' : r.cpu2})",
-          "mapDF.result(name='cpu_out')",
+          "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+          "queryDF['copy'] = queryDF['cpu2']",
+          "queryDF[['sum', 'copy']].result(name='cpu_out')",
       },
       "\n");
   auto ir_graph_status = CompileGraph(multi_col);
@@ -322,24 +328,11 @@ TEST_F(AnalyzerTest, multi_col_map) {
   VLOG(1) << handle_status.status().ToString();
 }
 
-TEST_F(AnalyzerTest, subscript_map) {
-  std::string single_col_map_sum = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']", "queryDF.result(name='cpu_out')"},
-      "\n");
-  auto ir_graph_status = CompileGraph(single_col_map_sum);
-  ASSERT_OK(ir_graph_status);
-  // now pass into the relation handler.
-  auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
-  EXPECT_OK(handle_status);
-  VLOG(1) << handle_status.status().ToString();
-}
-
 TEST_F(AnalyzerTest, bin_op_test) {
   std::string single_col_map_sum = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
-       "mapDF.result(name='cpu_out')"},
+       "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+       "queryDF[['sum']].result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(single_col_map_sum);
   ASSERT_OK(ir_graph_status);
@@ -350,8 +343,8 @@ TEST_F(AnalyzerTest, bin_op_test) {
 
   std::string single_col_map_sub = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'sub' : r.cpu0 - r.cpu1})",
-       "mapDF.result(name='cpu_out')"},
+       "queryDF['sub'] = queryDF['cpu0'] - queryDF['cpu1']",
+       "queryDF[['sub']].result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(single_col_map_sub);
   ASSERT_OK(ir_graph_status);
@@ -362,8 +355,8 @@ TEST_F(AnalyzerTest, bin_op_test) {
 
   std::string single_col_map_product = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'product' : r.cpu0 * r.cpu1})",
-       "mapDF.result(name='cpu_out')"},
+       "queryDF['product'] = queryDF['cpu0'] * queryDF['cpu1']",
+       "queryDF[['product']].result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(single_col_map_product);
   ASSERT_OK(ir_graph_status);
@@ -374,8 +367,8 @@ TEST_F(AnalyzerTest, bin_op_test) {
 
   std::string single_col_map_quotient = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1})",
-       "mapDF.result(name='cpu_out')"},
+       "queryDF['quotient'] = queryDF['cpu0'] / queryDF['cpu1']",
+       "queryDF[['quotient']].result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(single_col_map_quotient);
   ASSERT_OK(ir_graph_status);
@@ -413,14 +406,14 @@ TEST_F(AnalyzerTest, single_col_agg) {
 // Make sure the relations match the expected values.
 TEST_F(AnalyzerTest, test_relation_results) {
   // operators don't use generated columns, are just chained.
-  std::string chain_operators = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu', select=['upid', 'cpu0', 'cpu1', "
-       "'cpu2', 'agent_id']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'cpu0' : r.cpu0, 'cpu1' : r.cpu1, 'cpu_sum' : "
-       "r.cpu0+r.cpu1})",
-       "aggDF = mapDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
-       "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).result(name='cpu_out')"},
-      "\n");
+  std::string chain_operators =
+      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['upid', 'cpu0', 'cpu1', "
+                     "'cpu2', 'agent_id']).range(start=0,stop=10)",
+                     "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+                     "aggDF = queryDF[['cpu0', 'cpu1', 'cpu_sum']].agg(by=lambda r : r.cpu0, "
+                     "fn=lambda r : {'cpu_count' : "
+                     "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).result(name='cpu_out')"},
+                    "\n");
   auto ir_graph_status = CompileGraph(chain_operators);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
@@ -434,7 +427,7 @@ TEST_F(AnalyzerTest, test_relation_results) {
   auto mem_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySink);
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
-  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap);
+  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 1);
   EXPECT_OK(map_node_status);
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
   auto test_map_relation_s =
@@ -530,11 +523,11 @@ TEST_F(AnalyzerTest, test_from_select) {
 }
 
 // Test to make sure the system detects udfs/udas that don't exist.
-TEST_F(AnalyzerTest, nonexistant_udfs) {
+TEST_F(AnalyzerTest, nonexistent_udfs) {
   std::string missing_udf = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'cpu_sum' : "
-       "pl.sus(r.cpu0,r.cpu1)}).result(name='cpu_out')"},
+       "queryDF['cpu_sum'] = pl.sus(queryDF['cpu0'], queryDF['cpu1'])",
+       "queryDF[['cpu_sum']].result(name='cpu_out')"},
       "\n");
 
   auto ir_graph_status = CompileGraph(missing_udf);
@@ -555,12 +548,12 @@ TEST_F(AnalyzerTest, nonexistant_udfs) {
   EXPECT_FALSE(handle_status.ok());
 }
 
-TEST_F(AnalyzerTest, nonexistant_cols) {
+TEST_F(AnalyzerTest, nonexistent_cols) {
   // Test for columns used in map function that don't exist in relation.
   std::string wrong_column_map_func = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'cpu_sum' : "
-       "pl.sum(r.cpu0,r.cpu100)}).result(name='cpu_out')"},
+       "queryDF['cpu_sum'] = pl.sum(queryDF['cpu0'], queryDF['cpu100'])",
+       "queryDF[['cpu_sum']].result(name='cpu_out')"},
       "\n");
 
   auto ir_graph_status = CompileGraph(wrong_column_map_func);
@@ -602,8 +595,8 @@ TEST_F(AnalyzerTest, nonexistant_cols) {
 TEST_F(AnalyzerTest, created_columns) {
   std::string agg_use_map_col_fn = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'cpu2' : r.cpu2, 'cpu_sum' : r.cpu0+r.cpu1})",
-       "aggDF = mapDF.agg(by=lambda r : r.cpu2, fn=lambda r : {'cpu_count' : "
+       "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+       "aggDF = queryDF.agg(by=lambda r : r.cpu2, fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu_sum)}).result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(agg_use_map_col_fn);
@@ -615,8 +608,8 @@ TEST_F(AnalyzerTest, created_columns) {
 
   std::string agg_use_map_col_by = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'cpu2' : r.cpu2, 'cpu_sum' : r.cpu0+r.cpu1})",
-       "aggDF = mapDF.agg(by=lambda r : r.cpu_sum, fn=lambda r : {'cpu_count' : "
+       "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+       "aggDF = queryDF.agg(by=lambda r : r.cpu_sum, fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu2)}).result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(agg_use_map_col_by);
@@ -633,8 +626,8 @@ TEST_F(AnalyzerTest, created_columns) {
           "aggDF = queryDF.agg(by=lambda r : r.cpu1, fn=lambda r : {'cpu0_mean' : "
           "pl.mean(r.cpu0), "
           "'cpu1_mean' : pl.mean(r.cpu1)})",
-          "mapDF = aggDF.map(fn=lambda r : {'cpu_sum' : "
-          "r.cpu1_mean+r.cpu1_mean}).result(name='cpu_out')",
+          "aggDF['cpu_sum'] = aggDF['cpu1_mean'] + aggDF['cpu1_mean']",
+          "aggDF[['cpu_sum']].result(name='cpu_out')",
       },
       "\n");
   ir_graph_status = CompileGraph(map_use_agg_col);
@@ -646,8 +639,9 @@ TEST_F(AnalyzerTest, created_columns) {
 
   std::string map_use_map_col = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'cpu2': r.cpu2, 'cpu_sum' : r.cpu0+r.cpu1})",
-       "map2Df = mapDF.map(fn=lambda r : {'cpu_sum2' : r.cpu2+r.cpu_sum}).result(name='cpu_out')"},
+       "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+       "queryDF['cpu_sum2'] = queryDF['cpu2'] + queryDF['cpu_sum']",
+       "queryDF[['cpu_sum2']].result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(map_use_map_col);
   ASSERT_OK(ir_graph_status);
@@ -712,25 +706,32 @@ TEST_F(AnalyzerTest, non_float_columns) {
 TEST_F(AnalyzerTest, assign_udf_func_ids) {
   std::string chain_operators = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'cpu_sub': r.cpu0 - r.cpu1, 'cpu_sum': r.cpu0+r.cpu1, "
-       "'cpu_sum2': r.cpu2 + r.cpu1})",
-       "mapDF.result(name='cpu_out')"},
+       "queryDF['cpu_sub'] = queryDF['cpu0'] - queryDF['cpu1']",
+       "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+       "queryDF['cpu_sum2'] = queryDF['cpu2'] + queryDF['cpu1']",
+       "queryDF[['cpu_sum2', 'cpu_sum', 'cpu_sub']].result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(chain_operators);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
 
-  // Map relation should be contain cpu0, cpu1, and cpu_sum.
-  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap);
+  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 0);
   EXPECT_OK(map_node_status);
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
-
-  auto func_node = static_cast<FuncIR*>(map_node->col_exprs()[0].node);
+  auto func_node = static_cast<FuncIR*>(map_node->col_exprs()[3].node);
   EXPECT_EQ(0, func_node->func_id());
-  func_node = static_cast<FuncIR*>(map_node->col_exprs()[1].node);
+
+  map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 1);
+  EXPECT_OK(map_node_status);
+  map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  func_node = static_cast<FuncIR*>(map_node->col_exprs()[4].node);
   EXPECT_EQ(1, func_node->func_id());
-  func_node = static_cast<FuncIR*>(map_node->col_exprs()[2].node);
+
+  map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 2);
+  EXPECT_OK(map_node_status);
+  map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  func_node = static_cast<FuncIR*>(map_node->col_exprs()[5].node);
   EXPECT_EQ(1, func_node->func_id());
 }
 
@@ -816,11 +817,10 @@ TEST_F(AnalyzerTest, metadata_fails_no_upid) {
 }
 
 TEST_F(AnalyzerTest, define_column_metadata) {
-  std::string valid_query =
-      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0']) ",
-                     "opDF = queryDF.map(fn=lambda r:{'$0service': pl.add(r.cpu0, 1)})",
-                     "opDF.result(name='out')"},
-                    "\n");
+  std::string valid_query = absl::StrJoin(
+      {"queryDF = dataframe(table='cpu', select=['cpu0']) ",
+       "queryDF['$0service'] = pl.add(queryDF['cpu0'], 1)", "queryDF.result(name='out')"},
+      "\n");
   valid_query = absl::Substitute(valid_query, MetadataProperty::kMetadataColumnPrefix);
   auto ir_graph_status = CompileGraph(valid_query);
   ASSERT_OK(ir_graph_status);
@@ -900,8 +900,8 @@ join = src1.merge(src2,  type='inner',
                         'cpu0': r1.cpu0,
                         'cpu1': r1.cpu1,
                       })
-map = join.map(fn=lambda r: {"mb_in": r.bytes_in / 1E6})
-map.result(name='joined')
+join['mb_in'] = join['bytes_in'] / 1E6
+join[['mb_in']].result(name='joined')
 )query";
 
 TEST_F(AnalyzerTest, use_join_col_test) {
@@ -1123,10 +1123,7 @@ TEST_F(AnalyzerTest, join_nested_equality_condition_parens) {
 const char* kJoinMissingParentColumnOutCols = R"query(
 src1 = dataframe(table='cpu', select=['upid', 'cpu0','cpu1', 'agent_id'])
 src2 = dataframe(table='network', select=['upid', 'bytes_in', 'bytes_out', 'agent_id'])
-src1 = src1.map(fn=lambda r: {
-  'upid': r.upid,
-  'cpu0_ms': r.cpu0,
-})
+src1['cpu0_ms'] = src1['cpu0']
 join = src1.merge(src2,  type='inner',
                       cond=lambda r1, r2: r1.upid == r2.upid,
                       cols=lambda r1, r2: {
