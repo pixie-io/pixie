@@ -289,8 +289,8 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
       }
       // Otherwise, bring over the column from the previous relation.
       PL_ASSIGN_OR_RETURN(ColumnIR * col_ir,
-                          map_ir->graph_ptr()->MakeNode<ColumnIR>(map_ir->ast_node()));
-      PL_RETURN_IF_ERROR(col_ir->Init(input_col_name, 0 /*parent_op_idx*/));
+                          map_ir->graph_ptr()->CreateNode<ColumnIR>(
+                              map_ir->ast_node(), input_col_name, 0 /*parent_op_idx*/));
       col_ir->ResolveColumn(output_expressions.size(),
                             parent_relation.GetColumnType(input_col_name));
       output_expressions.push_back(ColumnExpression(input_col_name, col_ir));
@@ -936,16 +936,16 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
       continue;
     }
     col_names.insert(input_col_name);
-    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, ir_graph->MakeNode<ColumnIR>(drop_ir->ast_node()));
-    PL_RETURN_IF_ERROR(column_ir->Init(input_col_name, /*parent_op_idx*/ 0));
+    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir,
+                        ir_graph->CreateNode<ColumnIR>(drop_ir->ast_node(), input_col_name,
+                                                       /*parent_op_idx*/ 0));
     column_ir->ResolveColumn(i, parent_relation.GetColumnType(i));
     col_exprs.emplace_back(input_col_name, column_ir);
   }
 
   // Init the map from the drop.
-  // TODO(philkuz) Make into Create with the CreateNode diff.
-  PL_ASSIGN_OR_RETURN(MapIR * map_ir, ir_graph->MakeNode<MapIR>(drop_ir->ast_node()));
-  PL_RETURN_IF_ERROR(map_ir->Init(parent_op, col_exprs));
+  PL_ASSIGN_OR_RETURN(MapIR * map_ir,
+                      ir_graph->CreateNode<MapIR>(drop_ir->ast_node(), parent_op, col_exprs));
 
   // Update all of drop's dependencies to point to src.
   for (const auto& dep : drop_ir->Children()) {
