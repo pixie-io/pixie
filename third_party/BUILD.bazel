@@ -4,7 +4,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 licenses(["notice"])
 
-exports_files(["libpypa/COPYING", "arrow/LICENSE.txt"])
+exports_files([
+    "libpypa/COPYING",
+    "arrow/LICENSE.txt",
+])
 
 filegroup(
     name = "bcc_source",
@@ -129,6 +132,16 @@ pl_cc_library(
     ],
 )
 
+pl_cc_library(
+    name = "aes-min",
+    srcs = ["aes-min/aes-min.c"],
+    hdrs = ["aes-min/aes-min.h"],
+    copts = [
+        "-Wno-unused-function",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 go_library(
     name = "glice_api_library",
     srcs = ["glice/api/repo.go"],
@@ -143,7 +156,7 @@ go_library(
 
 go_library(
     name = "glice_library",
-    srcs =[
+    srcs = [
         "glice/main.go",
         "glice/other.go",
     ],
