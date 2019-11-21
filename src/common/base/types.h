@@ -21,14 +21,9 @@ inline constexpr std::string_view ConstStringView(const char (&a)[N]) {
   return std::string_view(a, N - 1);
 }
 
-template <size_t N>
-inline std::string ConstString(const char (&a)[N]) {
-  return std::string(a, N - 1);
-}
-
-template <size_t N>
-inline std::basic_string<uint8_t> ConstU8String(const char (&a)[N]) {
-  return std::basic_string<uint8_t>(reinterpret_cast<const uint8_t*>(a), N - 1);
+template <typename TCharType = char, size_t N>
+inline std::basic_string<TCharType> ConstString(const char (&a)[N]) {
+  return std::basic_string<TCharType>(reinterpret_cast<const TCharType*>(a), N - 1);
 }
 
 template <size_t N>
