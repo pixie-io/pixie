@@ -3,6 +3,7 @@
 #include "src/carnot/compiler/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/objects/none_object.h"
+#include "src/carnot/compiler/objects/pl_module.h"
 
 namespace pl {
 namespace carnot {
@@ -17,19 +18,30 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const p
   return op_find->second;
 }
 
-ASTVisitorImpl::ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state)
-    : ir_graph_(ir_graph), compiler_state_(compiler_state) {
+StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
+                                                                 CompilerState* compiler_state) {
+  std::shared_ptr<ASTVisitorImpl> ast_visitor =
+      std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(ir_graph, compiler_state));
+  PL_RETURN_IF_ERROR(ast_visitor->Init());
+  return ast_visitor;
+}
+
+Status ASTVisitorImpl::Init() {
   var_table_ = VarTable();
   var_table_[kDataframeOpId] = std::shared_ptr<FuncObject>(new FuncObject(
       kDataframeOpId, {"table", "select"}, {{"select", "[]"}}, /*has_variable_len_kwargs*/ false,
       std::bind(&ASTVisitorImpl::ProcessDataframeOp, this, std::placeholders::_1,
                 std::placeholders::_2)));
+
+  PL_ASSIGN_OR_RETURN(var_table_[kPLModuleObjName], PLModule::Create(ir_graph_, compiler_state_));
+
   // TODO(philkuz) (PL-1038) figure out naming for Print syntax to get around parser.
   // var_table_[kPrintOpId] = std::shared_ptr<FuncObject>(new FuncObject(
   //     kPrintOpId, {"out", "name", "cols"}, {{"name", ""}, {"cols", "[]"}},
   //     /*has_variable_len_kwargs*/ false, std::bind(&ASTVisitorImpl::ProcessPrint, this,
   //     std::placeholders::_1,
   //               std::placeholders::_2)));
+  return Status::OK();
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataframeOp(const pypa::AstPtr& ast,
@@ -902,6 +914,21 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCall(const pypa::AstCallPtr& 
   return ir_graph_->CreateNode<FuncIR>(node, op, func_args);
 }
 
+StatusOr<IRNode*> ASTVisitorImpl::ProcessDataForAttribute(const pypa::AstAttributePtr& attr) {
+  if (attr->value->type != AstType::Name) {
+    // TODO(philkuz) support more complex cases here when they come
+    return CreateAstError(attr, "Attributes can only be one layer deep for now");
+  }
+
+  PL_ASSIGN_OR_RETURN(QLObjectPtr object, LookupVariable(PYPA_PTR_CAST(Name, attr->value)));
+  std::string attr_str = GetNameAsString(attr->attribute);
+  PL_ASSIGN_OR_RETURN(QLObjectPtr attr_object, object->GetAttribute(attr->attribute, attr_str));
+  if (!attr_object->HasNode()) {
+    return CreateAstError(attr->attribute, "does not return a usable value");
+  }
+  return attr_object->node();
+}
+
 StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
                                               const OperatorContext& op_context) {
   switch (ast->type) {
@@ -934,6 +961,9 @@ StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
     }
     case AstType::Subscript: {
       return ProcessSubscriptColumn(PYPA_PTR_CAST(Subscript, ast), op_context);
+    }
+    case AstType::Attribute: {
+      return ProcessDataForAttribute(PYPA_PTR_CAST(Attribute, ast));
     }
     default: {
       return CreateAstError(ast, "Couldn't find $0 in ProcessData", GetAstTypeName(ast->type));

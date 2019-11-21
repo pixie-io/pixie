@@ -110,14 +110,7 @@ struct OperatorContext {
 
 class ASTVisitorImpl : public ASTVisitor {
  public:
-  /**
-   * @brief Construct a new ASTWalker object.
-   * This constructor will be used at the top level.
-   *
-   * @param ir_graph
-   */
-  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state);
-
+  static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state);
   /**
    * @brief The entry point into traversal as the root AST is a module.
    *
@@ -156,6 +149,9 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kFilterOpId[] = "filter";
   inline static constexpr char kLimitOpId[] = "limit";
   inline static constexpr char kJoinOpId[] = "merge";
+
+  // Constant for the modules.
+  inline static constexpr char kPLModuleObjName[] = "pl";
   // TODO(philkuz) (PL-1038) figure out naming for Print syntax to get around special casing in the
   // parser. inline static constexpr char kPrintOpId[] = "print";
 
@@ -163,6 +159,17 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kTimeConstantColumnName[] = "time_";
 
  private:
+  /**
+   * @brief Construct a new ASTWalker object.
+   * This constructor will be used at the top level.
+   *
+   * @param ir_graph
+   */
+  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state)
+      : ir_graph_(ir_graph), compiler_state_(compiler_state) {}
+
+  Status Init();
+
   /**
    * @brief ProcessArgs traverses an arg_ast tree, converts the expressions into IR and then returns
    * a data structure of positional and keyword arguments representing the arguments in IR.
@@ -588,6 +595,7 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> LookupVariable(const pypa::AstNamePtr& name) {
     return LookupVariable(name, name->id);
   }
+  StatusOr<IRNode*> ProcessDataForAttribute(const pypa::AstAttributePtr& attr);
 
   static bool IsUnitTimeFn(const std::string& fn_name);
   IR* ir_graph_;

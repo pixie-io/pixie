@@ -45,7 +45,7 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   PL_RETURN_IF_ERROR(info->Init(info_pb));
   auto compiler_state =
       std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
-  ASTVisitorImpl ast_walker(ir.get(), compiler_state.get());
+  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state.get()));
 
   pypa::AstModulePtr ast;
   pypa::SymbolTablePtr symbols;
@@ -59,7 +59,7 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   }
 
   if (pypa::parse(lexer, ast, symbols, options)) {
-    PL_RETURN_IF_ERROR(ast_walker.ProcessModuleNode(ast));
+    PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   } else {
     return error::InvalidArgument("Parsing was unsuccessful, likely because of broken argument.");
   }
