@@ -57,6 +57,17 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       std::bind(&OldMapHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kMapOpId, mapfn);
 
+  // TODO(philkuz) (PL-1036) remove this upon availability of new syntax.
+  /**
+   * # Equivalent to the python method method syntax:
+   * def drop(self, fn):
+   *     ...
+   */
+  std::shared_ptr<FuncObject> dropfn(new FuncObject(
+      kDropOpId, {"columns"}, {}, /* has_kwargs */ false,
+      std::bind(&DropHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kDropOpId, dropfn);
+
   // TODO(philkuz) (PL-1038) remove this upon availability of new syntax.
   /**
    * # Equivalent to the python method method syntax:
@@ -244,6 +255,25 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, TupleIR* tuple) {
                                                                   /* parent_op_idx */ 0));
   PL_RETURN_IF_ERROR(func->AddArg(argcol));
   return func;
+}
+
+StatusOr<QLObjectPtr> DropHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                        const ParsedArgs& args) {
+  LOG(ERROR) << args.args().size();
+  LOG(ERROR) << args.kwargs().size();
+
+  IRNode* columns_arg = args.GetArg("columns");
+  if (!Match(columns_arg, List())) {
+    return columns_arg->CreateIRNodeError(
+        "Expected '$0' kwarg argument 'columns' to be a list, not $1", Dataframe::kDropOpId,
+        columns_arg->type_string());
+  }
+  ListIR* columns_list = static_cast<ListIR*>(columns_arg);
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns, ParseStringListIR(columns_list));
+
+  PL_ASSIGN_OR_RETURN(DropIR * drop_op, df->graph()->CreateNode<DropIR>(ast, df->op(), columns));
+  PL_RETURN_IF_ERROR(df->graph()->DeleteNodeAndChildren(columns_list->id()));
+  return StatusOr(std::make_shared<Dataframe>(drop_op));
 }
 
 StatusOr<QLObjectPtr> RangeHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,

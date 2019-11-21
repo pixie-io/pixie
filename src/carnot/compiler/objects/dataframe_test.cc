@@ -86,6 +86,38 @@ TEST_F(JoinHandlerTest, MergeTest) {
   EXPECT_THAT(join->suffix_strs(), ElementsAre("_x", "_y"));
 }
 
+using DropHandlerTest = DataframeTest;
+TEST_F(DropHandlerTest, DropTest) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+  ParsedArgs args;
+  args.AddArg("columns", MakeList(MakeString("foo"), MakeString("bar")));
+  auto status = DropHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_OK(status);
+
+  std::shared_ptr<QLObject> obj = status.ConsumeValueOrDie();
+  // Add compartor for type() and Dataframe.
+  ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
+  auto df_obj = static_cast<Dataframe*>(obj.get());
+
+  // Check to make sure that the output is a Join operator.
+  OperatorIR* op = df_obj->op();
+  ASSERT_TRUE(Match(op, Drop()));
+  DropIR* drop = static_cast<DropIR*>(op);
+  // Verify that the operator does what we expect it to.
+  EXPECT_EQ(drop->col_names(), std::vector<std::string>({"foo", "bar"}));
+}
+
+TEST_F(DropHandlerTest, DropTestNonString) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+  ParsedArgs args;
+  args.AddArg("columns", MakeList(MakeInt(1)));
+  auto status = DropHandler::Eval(srcdf.get(), ast, args);
+  ASSERT_NOT_OK(status);
+  EXPECT_THAT(status.status(), HasCompilerError("The elements of the list must be Strings, not"));
+}
+
 // TODO(philkuz) (PL-1128) re-enable when we switch from old agg to new agg.
 TEST_F(DataframeTest, DISABLED_AggTest) {
   MemorySourceIR* src = MakeMemSource();

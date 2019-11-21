@@ -42,6 +42,7 @@ class Dataframe : public QLObject {
 
   inline static constexpr char kRangeOpId[] = "range";
   inline static constexpr char kMapOpId[] = "map";
+  inline static constexpr char kDropOpId[] = "drop";
   inline static constexpr char kFilterOpId[] = "filter";
   inline static constexpr char kBlockingAggOpId[] = "agg";
   inline static constexpr char kRangeAggOpId[] = "range_agg";
@@ -104,6 +105,23 @@ class RangeHandler {
   /**
    * @brief Evaluates the range function by adding Range as a child of the df. The analyzer will
    * remove the Range function afterwards.
+   *
+   * @param df the dataframe to operate on
+   * @param ast the ast node that signifies where the query was written
+   * @param args the arguments for range()
+   * @return StatusOr<QLObjectPtr>
+   */
+  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
+};
+
+/**
+ * @brief Implements the drop operator logic
+ *
+ */
+class DropHandler {
+ public:
+  /**
+   * @brief Evaluates the drop operator logic. Downstream it will be converted to a map.
    *
    * @param df the dataframe to operate on
    * @param ast the ast node that signifies where the query was written
