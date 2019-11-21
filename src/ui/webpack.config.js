@@ -5,6 +5,7 @@ const webpack = require('webpack');
 const { CheckerPlugin } = require('awesome-typescript-loader');
 const ArchivePlugin = require('webpack-archive-plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const utils = require('./webpack-utils');
@@ -33,6 +34,9 @@ let plugins = [
     template: 'subdomain-index.html',
     filename: 'subdomain-index.html',
   }),
+  new CopyPlugin([
+    { from: 'segment.js', to: 'assets/segment.js' },
+  ]),
   new HtmlWebpackHarddiskPlugin(),
 ];
 

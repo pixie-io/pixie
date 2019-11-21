@@ -1,7 +1,7 @@
 {
   "exclude": [
     "(Doxyfile$)",
-    "(src/ui/assets/segment.js$)",
+    "(src/ui/src/segment.js$)",
     "(chef/site-cookbooks/.*$)",
     "(experimental/.*$)",
     "(^linters/.*$)",
