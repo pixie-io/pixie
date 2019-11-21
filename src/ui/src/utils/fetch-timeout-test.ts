@@ -5,6 +5,10 @@ import fetchWithTimeout from './fetch-timeout';
 jest.mock('whatwg-fetch');
 
 describe('fetchWithTimeout test', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
   it('resolves before timeout', () => {
     expect.assertions(1);
     fetch.mockImplementationOnce(() => new Promise((resolve) => {
@@ -12,7 +16,7 @@ describe('fetchWithTimeout test', () => {
         resolve('success');
       }, 5);
     }));
-
+    Promise.resolve().then(() => jest.advanceTimersByTime(5));
     return expect(fetchWithTimeout(10)('uri', {})).resolves.toMatch('success');
   });
 
@@ -23,7 +27,7 @@ describe('fetchWithTimeout test', () => {
         reject('failed');
       }, 5);
     }));
-
+    Promise.resolve().then(() => jest.advanceTimersByTime(5));
     return expect(fetchWithTimeout(10)('uri', {})).rejects.toMatch('failed');
   });
 
@@ -34,7 +38,7 @@ describe('fetchWithTimeout test', () => {
         resolve('success');
       }, 10);
     }));
-
+    Promise.resolve().then(() => jest.advanceTimersByTime(5));
     return expect(fetchWithTimeout(5)('uri', {})).rejects.toThrow('request timed out');
   });
 });
