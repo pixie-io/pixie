@@ -85,6 +85,48 @@ TEST(AsciiHexToBytesTest, FailureCases) {
   }
 }
 
+TEST(CreateStringView, FromArrayToCharString) {
+  const char char_array[] = "abcdef";
+  EXPECT_EQ("abcdef", CreateStringView<char>(char_array));
+}
+
+TEST(CreateStringView, FromArrayToU8String) {
+  const char char_array[] = "abcdef";
+  std::basic_string<uint8_t> expected = {'a', 'b', 'c', 'd', 'e', 'f'};
+  EXPECT_EQ(expected, CreateStringView<uint8_t>(char_array));
+}
+
+TEST(CreateStringView, FromContainerToCharString) {
+  std::string char_str = {'a', 'b', 'c', 'd', 'e', 'f'};
+  EXPECT_EQ("abcdef", CreateStringView(char_str));
+
+  std::basic_string<uint8_t> uint8_str = {'a', 'b', 'c', 'd', 'e', 'f'};
+  EXPECT_EQ("abcdef", CreateStringView(uint8_str));
+
+  std::vector<uint8_t> uint8_vec = {'a', 'b', 'c', 'd', 'e', 'f'};
+  EXPECT_EQ("abcdef", CreateStringView(uint8_vec));
+
+  std::vector<uint32_t> uint32_vec = {0x64636261, 0x68676665};
+  EXPECT_EQ("abcdefgh", CreateStringView(uint32_vec));
+}
+
+TEST(CreateStringView, FromContainerToU8String) {
+  std::basic_string<uint8_t> expected = {'a', 'b', 'c', 'd', 'e', 'f'};
+
+  std::string char_str = {'a', 'b', 'c', 'd', 'e', 'f'};
+  EXPECT_EQ(expected, CreateStringView<uint8_t>(char_str));
+
+  std::basic_string<uint8_t> uint8_str = {'a', 'b', 'c', 'd', 'e', 'f'};
+  EXPECT_EQ(expected, CreateStringView<uint8_t>(uint8_str));
+
+  std::vector<uint8_t> uint8_vec = {'a', 'b', 'c', 'd', 'e', 'f'};
+  EXPECT_EQ(expected, CreateStringView<uint8_t>(uint8_vec));
+
+  expected = {'a', 'b', 'c', 'd', 'e', 'f', 0, 0};
+  std::vector<uint32_t> uint32_vec = {0x64636261, 0x6665};
+  EXPECT_EQ(expected, CreateStringView<uint8_t>(uint32_vec));
+}
+
 TEST(Enumerate, LoopsThroughVectorWithIndex) {
   std::vector<int> vals = {0, 2, 4, 6, 8};
 

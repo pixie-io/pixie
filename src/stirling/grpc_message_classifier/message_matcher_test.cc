@@ -222,20 +222,19 @@ TEST(GRPCMessageFlowTest, ReceivesIndexedHeaderFields) {
   EXPECT_THAT(flow.AddMessage({IndexedHeaderField{3}, IndexedHeaderField{62}, IndexedHeaderField{6},
                                IndexedHeaderField{63}}),
               IsOKAndHolds(0ul));
-  EXPECT_THAT(
-      flow.AddMessage(
-          {IndexedHeaderField{3}, IndexedHeaderField{6}, IndexedHeaderField{62},
-           IndexedHeaderField{63},
-           LiteralHeaderField{/*update_dynamic_table*/ true, /*is_name_huff_encoded*/ true,
-                              ConvertToStringView<uint8_t>("abc"), /*is_value_huff_encoded*/ true,
-                              ConvertToStringView<uint8_t>("abc")}}),
-      IsOKAndHolds(0ul));
+  EXPECT_THAT(flow.AddMessage({IndexedHeaderField{3}, IndexedHeaderField{6}, IndexedHeaderField{62},
+                               IndexedHeaderField{63},
+                               LiteralHeaderField{
+                                   /*update_dynamic_table*/ true, /*is_name_huff_encoded*/ true,
+                                   CreateStringView<uint8_t>("abc"), /*is_value_huff_encoded*/ true,
+                                   CreateStringView<uint8_t>("abc")}}),
+              IsOKAndHolds(0ul));
   EXPECT_THAT(flow.AddMessage({IndexedHeaderField{3}, IndexedHeaderField{6}, IndexedHeaderField{63},
                                IndexedHeaderField{64}}),
               IsOKAndHolds(0ul));
   EXPECT_THAT(flow.AddMessage({IndexedHeaderField{3}, IndexedHeaderField{6}, IndexedHeaderField{63},
-                               LiteralHeaderField{true, true, ConvertToStringView<uint8_t>("abc"),
-                                                  true, ConvertToStringView<uint8_t>("abc")}}),
+                               LiteralHeaderField{true, true, CreateStringView<uint8_t>("abc"),
+                                                  true, CreateStringView<uint8_t>("abc")}}),
               IsOKAndHolds(1ul));
   EXPECT_THAT(flow.AddMessage({IndexedHeaderField{3}, IndexedHeaderField{6}, IndexedHeaderField{64},
                                IndexedHeaderField{62}}),
@@ -250,8 +249,8 @@ TEST(GRPCMessageFlowTest, PlainTextHeaderFields) {
   StatusOr<size_t> res = flow.AddMessage(
       {IndexedHeaderField{3}, IndexedHeaderField{6}, IndexedHeaderField{62},
        LiteralHeaderField{/*update_dynamic_table*/ true, /*is_name_huff_encoded*/ false,
-                          ConvertToStringView<uint8_t>(":method"), /*is_value_huff_encoded*/ false,
-                          ConvertToStringView<uint8_t>("POST")}});
+                          CreateStringView<uint8_t>(":method"), /*is_value_huff_encoded*/ false,
+                          CreateStringView<uint8_t>("POST")}});
   EXPECT_EQ(statuspb::INVALID_ARGUMENT, res.code());
 }
 
