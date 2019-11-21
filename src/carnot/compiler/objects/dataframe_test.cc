@@ -1580,6 +1580,85 @@ TEST_F(SubscriptTest, SubscriptCanHandleErrorInput) {
               HasCompilerError("subscript argument must have an expression. '.*' not allowed"));
 }
 
+class GroupByTest : public DataframeTest {
+ protected:
+  void SetUp() override {
+    DataframeTest::SetUp();
+    src = MakeMemSource();
+    srcdf = std::make_shared<Dataframe>(src);
+  }
+
+  std::shared_ptr<Dataframe> srcdf;
+  MemorySourceIR* src;
+};
+
+TEST_F(GroupByTest, GroupByList) {
+  auto list = MakeList(MakeString("col1"), MakeString("col2"));
+  ParsedArgs parsed_args;
+  parsed_args.AddArg("by", list);
+  auto qlo_or_s = GroupByHandler::Eval(srcdf.get(), ast, parsed_args);
+
+  ASSERT_OK(qlo_or_s);
+
+  QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto group_by_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(group_by_obj->op(), GroupBy()));
+  GroupByIR* group_by = static_cast<GroupByIR*>(group_by_obj->op());
+  EXPECT_EQ(group_by->groups().size(), 2);
+  EXPECT_TRUE(Match(group_by->groups()[0], ColumnNode("col1", 0)));
+  EXPECT_TRUE(Match(group_by->groups()[1], ColumnNode("col2", 0)));
+}
+
+TEST_F(GroupByTest, GroupByString) {
+  auto str = MakeString("col1");
+  ParsedArgs parsed_args;
+  parsed_args.AddArg("by", str);
+  auto qlo_or_s = GroupByHandler::Eval(srcdf.get(), ast, parsed_args);
+
+  ASSERT_OK(qlo_or_s);
+
+  QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto group_by_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(group_by_obj->op(), GroupBy()));
+  GroupByIR* group_by = static_cast<GroupByIR*>(group_by_obj->op());
+  EXPECT_EQ(group_by->groups().size(), 1);
+  EXPECT_TRUE(Match(group_by->groups()[0], ColumnNode("col1", 0)));
+}
+
+TEST_F(GroupByTest, GroupByMixedListElementTypesCausesError) {
+  auto list = MakeList(MakeString("col1"), MakeInt(2));
+  ParsedArgs parsed_args;
+  parsed_args.AddArg("by", list);
+  auto qlo_or_s = GroupByHandler::Eval(srcdf.get(), ast, parsed_args);
+
+  ASSERT_NOT_OK(qlo_or_s);
+  EXPECT_THAT(qlo_or_s.status(), HasCompilerError("'by' expected string or list of strings"));
+}
+
+TEST_F(GroupByTest, GroupByInDataframe) {
+  auto str = MakeString("col1");
+  ArgMap args{{}, {str}};
+
+  auto get_method_status = srcdf->GetMethod("groupby");
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  auto qlo_or_s = func_obj->Call(args, ast, ast_visitor.get());
+  ASSERT_OK(qlo_or_s);
+
+  QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  auto group_by_obj = std::static_pointer_cast<Dataframe>(ql_object);
+
+  ASSERT_TRUE(Match(group_by_obj->op(), GroupBy()));
+  GroupByIR* group_by = static_cast<GroupByIR*>(group_by_obj->op());
+  EXPECT_EQ(group_by->groups().size(), 1);
+  EXPECT_TRUE(Match(group_by->groups()[0], ColumnNode("col1", 0)));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

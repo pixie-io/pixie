@@ -136,11 +136,25 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       std::bind(&OldRangeAggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kRangeAggOpId, old_range_agg_fn);
 
+  /**
+   *
+   * # Equivalent to the python method method syntax:
+   * def __getitem__(self, key):
+   *     ...
+   *
+   * # It's important to note that this is added as a subscript method instead.
+   */
   std::shared_ptr<FuncObject> subscript_fn(new FuncObject(
       kSubscriptMethodName, {"key"}, {},
       /* has_variable_len_kwargs */ false,
       std::bind(&SubscriptHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddSubscriptMethod(subscript_fn);
+
+  std::shared_ptr<FuncObject> group_by_fn(new FuncObject(
+      kGroupByOpId, {"by"}, {},
+      /* has_variable_len_kwargs */ false,
+      std::bind(&GroupByHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kGroupByOpId, group_by_fn);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
@@ -618,6 +632,38 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(Dataframe* df, const pypa::AstP
   // Technically not needed but here for explicitness until the refactor.
   map_op->set_keep_input_columns(false);
   return StatusOr(std::make_shared<Dataframe>(map_op));
+}
+
+StatusOr<QLObjectPtr> GroupByHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
+                                           const ParsedArgs& args) {
+  IRNode* by = args.GetArg("by");
+
+  PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> groups, ParseByFunction(by));
+  PL_ASSIGN_OR_RETURN(GroupByIR * group_by_op,
+                      df->graph()->CreateNode<GroupByIR>(ast, df->op(), groups));
+  return StatusOr(std::make_shared<Dataframe>(group_by_op));
+}
+
+StatusOr<std::vector<ColumnIR*>> GroupByHandler::ParseByFunction(IRNode* by) {
+  if (!Match(by, ListWithChildren(String())) && !Match(by, String())) {
+    return by->CreateIRNodeError("'by' expected string or list of strings");
+  } else if (Match(by, String())) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * col,
+                        by->graph_ptr()->CreateNode<ColumnIR>(
+                            by->ast_node(), static_cast<StringIR*>(by)->str(), /* parent_idx */ 0));
+    return std::vector<ColumnIR*>{col};
+  }
+
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> column_names,
+                      ParseStringListIR(static_cast<ListIR*>(by)));
+  std::vector<ColumnIR*> columns;
+  for (const auto& col_name : column_names) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * col,
+                        by->graph_ptr()->CreateNode<ColumnIR>(by->ast_node(), col_name,
+                                                              /* parent_idx */ 0));
+    columns.push_back(col);
+  }
+  return columns;
 }
 
 }  // namespace compiler

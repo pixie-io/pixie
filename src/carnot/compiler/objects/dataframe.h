@@ -49,6 +49,7 @@ class Dataframe : public QLObject {
   inline static constexpr char kLimitOpId[] = "limit";
   inline static constexpr char kMergeOpId[] = "merge";
   inline static constexpr char kSinkOpId[] = "result";
+  inline static constexpr char kGroupByOpId[] = "groupby";
 
  private:
   OperatorIR* op_;
@@ -289,6 +290,26 @@ class SubscriptHandler {
   static StatusOr<QLObjectPtr> EvalFilter(Dataframe* df, const pypa::AstPtr& ast,
                                           ExpressionIR* expr);
   static StatusOr<QLObjectPtr> EvalKeep(Dataframe* df, const pypa::AstPtr& ast, ListIR* cols);
+};
+
+/**
+ * @brief Handles the groupby() method and creates the groupby node.
+ *
+ */
+class GroupByHandler {
+ public:
+  /**
+   * @brief Evaluates the groupby operator.
+   *
+   * @param df the dataframe that's a parent to the groupby function.
+   * @param ast the ast node that signifies where the query was written.
+   * @param args the arguments for groupby()
+   * @return StatusOr<QLObjectPtr>
+   */
+  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
+
+ private:
+  static StatusOr<std::vector<ColumnIR*>> ParseByFunction(IRNode* by);
 };
 
 }  // namespace compiler
