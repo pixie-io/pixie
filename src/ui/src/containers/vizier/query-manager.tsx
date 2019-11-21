@@ -31,6 +31,7 @@ const HOT_KEY_MAP = {
 
 interface QueryManagerState {
   code: string;
+  prevQueryID: string;
   codeMirror: CodeMirror; // Ref to codeMirror component.
 }
 
@@ -155,6 +156,7 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
     }
     this.state = {
       code,
+      prevQueryID: '',
       codeMirror: React.createRef(),
     };
   }
@@ -219,12 +221,18 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
           if (error) {
             analytics.track('Query Execution Failed', {
               query: this.state.code,
+              error: error ? error.toString() : '',
             });
-          } else if (data !== null) {
-            analytics.track('Query Execution Success', {
-              query: this.state.code,
-              queryID: data.ExecuteQuery.id,
-            });
+          } else if (data) {
+            if (this.state.prevQueryID !== data.ExecuteQuery.id) {
+              analytics.track('Query Execution Success', {
+                query: this.state.code,
+                queryID: data.ExecuteQuery.id,
+              });
+              this.setState({
+                prevQueryID: data.ExecuteQuery.id,
+              });
+            }
           }
 
           return (<HotKeys
