@@ -16,6 +16,7 @@ import * as CodeMirror from 'react-codemirror';
 import {HotKeys} from 'react-hotkeys';
 import {Link} from 'react-router-dom';
 import * as toml from 'toml';
+import analytics from 'utils/analytics';
 import {pluralize} from 'utils/pluralize';
 import * as ResultDataUtils from 'utils/result-data-utils';
 

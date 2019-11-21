@@ -7,9 +7,9 @@ declare global {
 }
 
 function isValidSegmentKey(k) {
-     // The TS compiler is really smart and is optmizing away the checks,
-     // which is why this check is so convoluted...
-     return k && !k.startsWith('__S');
+    // The TS compiler is really smart and is optmizing away the checks,
+    // which is why this check is so convoluted...
+    return k && !k.startsWith('__S');
 }
 
 class Analytics {
@@ -28,7 +28,7 @@ class Analytics {
         window.analytics.page();
     }
 
-    track = (name: string, properties: any) => {
+    track = (name: string, properties?: any) => {
         window.analytics.track(name, properties);
     }
 

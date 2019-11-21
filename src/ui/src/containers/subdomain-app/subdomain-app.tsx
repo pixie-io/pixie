@@ -5,7 +5,8 @@ import {Login} from 'containers/login';
 import {Vizier} from 'containers/vizier';
 import * as React from 'react';
 import {ApolloProvider} from 'react-apollo';
-import {BrowserRouter as Router, Link, Route, Switch} from 'react-router-dom';
+import {Route, Router, Switch, withRouter} from 'react-router-dom';
+import history from 'utils/pl-history';
 
 export interface SubdomainAppProps {
   name: string;
@@ -14,7 +15,7 @@ export interface SubdomainAppProps {
 export class SubdomainApp extends React.Component<SubdomainAppProps, {}> {
   render() {
     return (
-      <Router>
+      <Router history={history}>
         <ApolloProvider client={cloudGQLClient}>
           <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
             <Switch>
@@ -30,4 +31,4 @@ export class SubdomainApp extends React.Component<SubdomainAppProps, {}> {
   }
 }
 
-export default SubdomainApp;
+export default withRouter(SubdomainApp);

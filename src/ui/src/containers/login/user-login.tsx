@@ -4,17 +4,16 @@ import {CodeSnippet} from 'components/code-snippet/code-snippet';
 import {DialogBox} from 'components/dialog-box/dialog-box';
 import {AUTH0_CLIENT_ID, AUTH0_DOMAIN, DOMAIN_NAME} from 'containers/constants';
 import gql from 'graphql-tag';
-import * as QueryString from 'query-string';
-import * as React from 'react';
-import { ApolloConsumer } from 'react-apollo';
-import {Button} from 'react-bootstrap';
-import * as RedirectUtils from 'utils/redirect-utils';
-
 // @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/dark-logo.svg';
 // @ts-ignore : TS does not like image files.
 import * as criticalImage from 'images/icons/critical.svg';
-import analytics from '../../utils/analytics';
+import * as QueryString from 'query-string';
+import * as React from 'react';
+import {ApolloConsumer} from 'react-apollo';
+import {Button} from 'react-bootstrap';
+import analytics from 'utils/analytics';
+import * as RedirectUtils from 'utils/redirect-utils';
 
 export interface RouterInfo {
   search: string;
@@ -60,9 +59,14 @@ function onLoginAuthenticated(authResult) {
 
       // Associate anonymous use with actual user ID.
       analytics.identify(response.data.userInfo.userID, {});
+      if (response.data.userCreated) {
+        analytics.track('User created');
+      }
+      analytics.track('Login success');
 
       RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
     }).catch((err) => {
+      analytics.track('Login failed', { error: err.response.data });
       this.setState({
         error: err.response.data,
       });
@@ -88,38 +92,41 @@ function onCreateAuthenticated(authResult) {
       });
       // Associate anonymous use with actual user ID.
       analytics.identify(response.data.userInfo.userID, {});
+      analytics.track('Login success');
+      analytics.track('Site created', { siteName: this.siteName });
 
     }).then((results) => {
-        RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
+      RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
     }).catch((err) => {
+      analytics.track('Site create failed', { error: err.response.data });
       this.setState({
         error: err.response.data,
       });
     });
-});
+  });
 }
 
 export const UserLogin = (props) => {
   return (<Auth0Login
-      redirectPath='login'
-      onAuthenticated={onLoginAuthenticated}
-      allowLogin={true}
-      allowSignUp={false}
-      {...props}
-    />
+    redirectPath='login'
+    onAuthenticated={onLoginAuthenticated}
+    allowLogin={true}
+    allowSignUp={false}
+    {...props}
+  />
   );
 };
 
 export const UserCreate = (props) => {
   return (<ApolloConsumer>{(client) => {
     return (<Auth0Login
-        client={client}
-        redirectPath='create-site'
-        onAuthenticated={onCreateAuthenticated}
-        allowLogin={false}
-        allowSignUp={true}
-        {...props}
-      />
+      client={client}
+      redirectPath='create-site'
+      onAuthenticated={onCreateAuthenticated}
+      allowLogin={false}
+      allowSignUp={true}
+      {...props}
+    />
     );
   }}</ApolloConsumer>);
 };
@@ -179,7 +186,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     // Redirect to the correct login endpoint if the path is incorrect.
     const subdomain = window.location.host.split('.')[0];
     if (subdomain !== 'id') {
-      RedirectUtils.redirect('id', window.location.pathname, {['site_name']: subdomain});
+      RedirectUtils.redirect('id', window.location.pathname, { ['site_name']: subdomain });
     }
 
     this._lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {
@@ -212,7 +219,12 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     }
 
     this._lock.show();
-    this._lock.on('authenticated', this.props.onAuthenticated.bind(this));
+    this._lock.on('authenticated', (auth) => {
+      analytics.track('Auth success');
+      this.props.onAuthenticated.call(this, auth);
+    });
+    this._lock.on('signin ready', () => analytics.track('Auth start'));
+    this._lock.on('authorization_error', (error) => analytics.track('Auth failed', { error }));
   }
 
   componentWillUnmount() {
@@ -250,13 +262,13 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     }
 
     if (this.state.error === '') {
-      return <div id={this.props.containerID}/>;
+      return <div id={this.props.containerID} />;
     }
 
     return (
       <DialogBox width={480}>
         <div className='error-message'>
-          <div className='error-message--icon'><img src={criticalImage}/></div>
+          <div className='error-message--icon'><img src={criticalImage} /></div>
           {this.state.error}
         </div>
         <Button variant='danger' onClick={() => {
