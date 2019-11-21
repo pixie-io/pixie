@@ -55,9 +55,11 @@ void ConnectionTracker::AddControlEvent(const socket_control_event_t& event) {
 }
 
 void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
-  LOG_IF_EVERY_N(WARNING, open_info_.timestamp_ns != 0, 10) << absl::Substitute(
-      "[PL-985] Clobbering existing ConnOpenEvent [pid=$0 fd=$1 gen=$2].", conn_event.conn_id.pid,
-      conn_event.conn_id.fd, conn_event.conn_id.generation);
+  if (open_info_.timestamp_ns != 0) {
+    LOG_FIRST_N(WARNING, 20) << absl::Substitute(
+        "[PL-985] Clobbering existing ConnOpenEvent [pid=$0 fd=$1 gen=$2].", conn_event.conn_id.pid,
+        conn_event.conn_id.fd, conn_event.conn_id.generation);
+  }
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
              "Did not expect to receive Open event more than 1 sampling iteration after Close "
@@ -79,9 +81,11 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
 }
 
 void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
-  LOG_IF(ERROR, close_info_.timestamp_ns != 0) << absl::Substitute(
-      "Clobbering existing ConnCloseEvent [pid=$0 fd=$1 gen=$2].", close_event.conn_id.pid,
-      close_event.conn_id.fd, close_event.conn_id.generation);
+  if (close_info_.timestamp_ns != 0) {
+    LOG_FIRST_N(ERROR, 20) << absl::Substitute(
+        "Clobbering existing ConnCloseEvent [pid=$0 fd=$1 gen=$2].", close_event.conn_id.pid,
+        close_event.conn_id.fd, close_event.conn_id.generation);
+  }
 
   UpdateTimestamps(close_event.timestamp_ns);
   SetPID(close_event.conn_id);
