@@ -104,17 +104,18 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	ev := events.UserLoggedIn
 	if resp.UserCreated {
 		ev = events.UserSignedUp
-
-		// User created successfully, send an analytics event to identify the user.
-		events.Client().Enqueue(&analytics.Identify{
-			UserId: userIDStr,
-			Traits: analytics.NewTraits().
-				SetFirstName(resp.UserInfo.FirstName).
-				SetLastName(resp.UserInfo.LastName).
-				SetEmail(resp.UserInfo.Email),
-		})
-
 	}
+
+	// TODO(zasgar/michelle): Move this to the above block ~ mid dec, since we just need to associate users once.
+	// This is here for now to help associate old users.
+	// User created successfully, send an analytics event to identify the user.
+	events.Client().Enqueue(&analytics.Identify{
+		UserId: userIDStr,
+		Traits: analytics.NewTraits().
+			SetFirstName(resp.UserInfo.FirstName).
+			SetLastName(resp.UserInfo.LastName).
+			SetEmail(resp.UserInfo.Email),
+	})
 
 	events.Client().Enqueue(&analytics.Track{
 		UserId: userIDStr,
