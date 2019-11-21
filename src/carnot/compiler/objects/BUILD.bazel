@@ -69,3 +69,12 @@ pl_cc_test(
         ":test_utils",
     ],
 )
+
+pl_cc_test(
+    name = "pl_module_test",
+    srcs = ["pl_module_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
