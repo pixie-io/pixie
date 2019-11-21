@@ -90,6 +90,7 @@ func (s *Server) CreateUserOrg(ctx context.Context, in *pb.CreateUserOrgRequest)
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
+	userID = userInfo.AppMetadata[s.a.GetClientID()].PLUserID
 	return &pb.CreateUserOrgResponse{
 		Token:      token,
 		ExpiresAt:  expiresAt.Unix(),
@@ -98,7 +99,7 @@ func (s *Server) CreateUserOrg(ctx context.Context, in *pb.CreateUserOrgRequest)
 		OrgName:    orgName,
 		DomainName: domainName,
 		UserInfo: &pb.UserInfo{
-			UserID:    resp.UserID,
+			UserID:    pbutils.ProtoFromUUIDStrOrNil(userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
@@ -180,6 +181,8 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
+
+	userID = userInfo.AppMetadata[s.a.GetClientID()].PLUserID
 
 	return &pb.LoginReply{
 		Token:       token,

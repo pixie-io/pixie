@@ -53,10 +53,11 @@ func TestServer_LoginNewUser(t *testing.T) {
 	}
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo, nil)
 
-	a.EXPECT().GetClientID().Return("foo")
+	a.EXPECT().GetClientID().Return("foo").AnyTimes()
 
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
+		UserID:      userID,
 		AppMetadata: make(map[string]*controllers.UserMetadata),
 		Email:       "abc@gmail.com",
 		FirstName:   "first",
@@ -562,7 +563,7 @@ func TestServer_CreateUserOrg(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	// Add PL UserID to the response of the second call.
-	a.EXPECT().GetClientID().Return("foo")
+	a.EXPECT().GetClientID().Return("foo").AnyTimes()
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		AppMetadata: make(map[string]*controllers.UserMetadata),
@@ -678,7 +679,7 @@ func TestServer_CreateUserOrg_AccountExists(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	// Add PL UserID to the response of the second call.
-	a.EXPECT().GetClientID().Return("foo")
+	a.EXPECT().GetClientID().Return("foo").AnyTimes()
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		AppMetadata: make(map[string]*controllers.UserMetadata),
