@@ -18,7 +18,7 @@ namespace compiler {
 // are QLObjects themselves. Fully declared in "src/carnot/compiler/objects/funcobject.h".
 class FuncObject;
 
-enum class QLObjectType { kMisc = 0, kDataframe, kFunction, kNone };
+enum class QLObjectType { kMisc = 0, kDataframe, kFunction, kExpr, kNone, kPLModule };
 
 class TypeDescriptor {
  public:
@@ -34,6 +34,7 @@ class TypeDescriptor {
 
 class QLObject {
  public:
+  virtual ~QLObject() = default;
   /**
    * @brief Gets the Method with specified name.
    *
@@ -41,11 +42,10 @@ class QLObject {
    * @return ptr to the method. nullptr if not found.
    */
   StatusOr<std::shared_ptr<FuncObject>> GetMethod(const std::string& name) const {
-    auto methods_iter = methods_.find(name);
-    if (methods_iter == methods_.end()) {
+    if (!methods_.contains(name)) {
       return CreateError("'$0' object has no attribute $1", type_descriptor_.name(), name);
     }
-    return methods_iter->second;
+    return methods_.find(name)->second;
   }
 
   /**
@@ -78,7 +78,7 @@ class QLObject {
    */
   StatusOr<std::shared_ptr<FuncObject>> GetSubscriptMethod() const {
     if (!HasMethod(kSubscriptMethodName)) {
-      return CreateError("'$0' object is not callable", type_descriptor_.name());
+      return CreateError("'$0' object is not subscriptable", type_descriptor_.name());
     }
     return GetMethod(kSubscriptMethodName);
   }
@@ -92,6 +92,14 @@ class QLObject {
   bool HasMethod(const std::string& name) const { return methods_.find(name) != methods_.end(); }
 
   bool HasSubscriptMethod() const { return HasMethod(kSubscriptMethodName); }
+  bool HasCallMethod() const { return HasMethod(kCallMethodName); }
+
+  StatusOr<std::shared_ptr<QLObject>> GetAttribute(const pypa::AstPtr& ast,
+                                                   const std::string& name) const;
+
+  bool HasAttribute(const std::string& name) const {
+    return HasAttributeImpl(name) || HasMethod(name);
+  }
 
   const TypeDescriptor& type_descriptor() { return type_descriptor_; }
   IRNode* node() const { return node_; }
@@ -126,7 +134,6 @@ class QLObject {
   /**
    * @brief Construct a new QLObject. The type_descriptor must be a static member of the class.
    *
-   * TODO(reviewer) need to figure out if this is the right way to do things.
    *
    * @param type_descriptor the type descriptor
    * @param node the node to store in the QLObject. Can be null if not necessary for the
@@ -165,6 +172,38 @@ class QLObject {
   }
 
   void AddSubscriptMethod(std::shared_ptr<FuncObject> func_object);
+
+  /**
+   * @brief NVI for GetAttribute(). GetAttribute is not simple in our objects model. GetAttribute
+   * should return an IRNode but there are cases where we don't want to return the same IRNode each
+   * time GetAttribute("x") is called, instead we want to create a new IRNode.
+   *
+   * This excludes the possibility of holding a map of strings to IRNodes or QLObjects.
+   *
+   * Instead we have the children of QLObject implement this NVI so the children make the creation
+   * vs maintenance choice.
+   *
+   * Note -> to be compatible with the AST visitor and not cause unnecessary errors, the QLObject
+   * returned by must have QLObject->node() set by using one of the QLObject Constructors with an
+   * IRNode* node argument when constructing their own objects.
+   *
+   * // TODO(reviewer) should we make this into a Pure virtual function?
+   *
+   * @return StatusOr<std::shared_ptr<QLObject>>
+   */
+  virtual StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr&,
+                                                               const std::string&) const {
+    return error::Unimplemented("");
+  }
+
+  /**
+   * @brief NVI for HasAttribute(). Only override if your object contains attributes you want to
+   * serve up. By default, QLObjects will return false.
+   *
+   * @return true
+   * @return false
+   */
+  virtual bool HasAttributeImpl(const std::string&) const { return false; }
 
   // Reserved keyword for call.
   inline static constexpr char kCallMethodName[] = "__call__";

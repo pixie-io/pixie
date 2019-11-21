@@ -13,6 +13,20 @@ void QLObject::AddSubscriptMethod(std::shared_ptr<FuncObject> func_object) {
       << absl::StrJoin(func_object->arguments(), ",");
   AddMethod(kSubscriptMethodName, func_object);
 }
+
+StatusOr<std::shared_ptr<QLObject>> QLObject::GetAttribute(const pypa::AstPtr& ast,
+                                                           const std::string& name) const {
+  if (HasAttributeImpl(name)) {
+    return GetAttributeImpl(ast, name);
+  }
+
+  if (!HasMethod(name)) {
+    return CreateAstError(ast, "'$0' object has no attribute '$1'", type_descriptor_.name(), name);
+  }
+
+  return GetMethod(name);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

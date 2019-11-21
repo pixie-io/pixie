@@ -35,6 +35,15 @@ pl_cc_test_library(
 )
 
 pl_cc_test(
+    name = "ql_object_test",
+    srcs = ["ql_object_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
     name = "funcobject_test",
     srcs = ["funcobject_test.cc"],
     deps = [
