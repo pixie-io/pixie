@@ -66,12 +66,12 @@ class FuncObject : public QLObject {
    * @param arguments the list of all argument names.
    * @param defaults the list of all defaults. Each key must be a part of arguments, otherwise will
    * fail.
-   * @param has_kwargs whether or not this supports generic keyword arguments.
+   * @param has_variable_len_kwargs whether or not this supports generic keyword arguments.
    * @param impl the implementation of the function.
    */
   FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
-             const absl::flat_hash_map<std::string, DefaultType>& defaults, bool has_kwargs,
-             FunctionType impl);
+             const absl::flat_hash_map<std::string, DefaultType>& defaults,
+             bool has_variable_len_kwargs, FunctionType impl);
 
   /**
    * @brief Call this function with the args.
@@ -102,7 +102,7 @@ class FuncObject : public QLObject {
   std::vector<std::string> arguments_;
   absl::flat_hash_map<std::string, DefaultType> defaults_;
   FunctionType impl_;
-  bool has_kwargs_;
+  bool has_variable_len_kwargs_;
 };
 
 }  // namespace compiler

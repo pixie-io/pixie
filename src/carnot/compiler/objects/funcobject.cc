@@ -7,13 +7,13 @@ namespace compiler {
 
 FuncObject::FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
                        const absl::flat_hash_map<std::string, DefaultType>& defaults,
-                       bool has_kwargs, FunctionType impl)
+                       bool has_variable_len_kwargs, FunctionType impl)
     : QLObject(FuncType),
       name_(name),
       arguments_(arguments),
       defaults_(defaults),
       impl_(impl),
-      has_kwargs_(has_kwargs) {
+      has_variable_len_kwargs_(has_variable_len_kwargs) {
 #if DCHECK_IS_ON()
   for (const auto& arg : defaults) {
     DCHECK(std::find(arguments.begin(), arguments.end(), arg.first) != arguments.end())
@@ -55,7 +55,7 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
       return CreateAstError(ast, err_msg);
     }
     if (!missing_args.contains(arg)) {
-      if (!has_kwargs_) {
+      if (!has_variable_len_kwargs_) {
         std::string err_msg =
             absl::Substitute("$0() got an unexpected keyword argument '$1'", name(), arg);
         return CreateAstError(ast, err_msg);

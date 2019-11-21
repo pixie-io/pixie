@@ -20,14 +20,15 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const p
 ASTVisitorImpl::ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state)
     : ir_graph_(ir_graph), compiler_state_(compiler_state) {
   var_table_ = VarTable();
-  var_table_[kDataframeOpId] = std::shared_ptr<FuncObject>(
-      new FuncObject(kDataframeOpId, {"table", "select"}, {{"select", "[]"}}, /*has_kwargs*/ false,
-                     std::bind(&ASTVisitorImpl::ProcessDataframeOp, this, std::placeholders::_1,
-                               std::placeholders::_2)));
+  var_table_[kDataframeOpId] = std::shared_ptr<FuncObject>(new FuncObject(
+      kDataframeOpId, {"table", "select"}, {{"select", "[]"}}, /*has_variable_len_kwargs*/ false,
+      std::bind(&ASTVisitorImpl::ProcessDataframeOp, this, std::placeholders::_1,
+                std::placeholders::_2)));
   // TODO(philkuz) (PL-1038) figure out naming for Print syntax to get around parser.
   // var_table_[kPrintOpId] = std::shared_ptr<FuncObject>(new FuncObject(
-  //     kPrintOpId, {"out", "name", "cols"}, {{"name", ""}, {"cols", "[]"}}, /*has_kwargs*/ false,
-  //     std::bind(&ASTVisitorImpl::ProcessPrint, this, std::placeholders::_1,
+  //     kPrintOpId, {"out", "name", "cols"}, {{"name", ""}, {"cols", "[]"}},
+  //     /*has_variable_len_kwargs*/ false, std::bind(&ASTVisitorImpl::ProcessPrint, this,
+  //     std::placeholders::_1,
   //               std::placeholders::_2)));
 }
 

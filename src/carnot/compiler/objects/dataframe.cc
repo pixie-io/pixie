@@ -19,7 +19,7 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
   // std::shared_ptr<FuncObject> mergefn(new FuncObject(
   //     kMergeOpId, {"right", "how", "left_on", "right_on", "suffixes"},
   //     {{"suffixes", "('_x', '_y')"}},
-  //     /* has_kwargs */ false,
+  //     /* has_variable_len_kwargs */ false,
   //     std::bind(&JoinHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   // AddMethod(kMergeOpId, mergefn);
 
@@ -31,7 +31,7 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
   // TODO(philkuz) (PL-1128) re-enable this when new agg syntax is supported.
   // std::shared_ptr<FuncObject> aggfn(new FuncObject(
   //     kBlockingAggOpId, {}, {},
-  //     /* has_kwargs */ true,
+  //     /* has_variable_len_kwargs */ true,
   //     std::bind(&AggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   // AddMethod(kBlockingAggOpId, aggfn);
 
@@ -42,7 +42,7 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
    */
   std::shared_ptr<FuncObject> rangefn(new FuncObject(
       kRangeOpId, {"start", "stop"}, {{"stop", "plc.now()"}},
-      /* has_kwargs */ false,
+      /* has_variable_len_kwargs */ false,
       std::bind(&RangeHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kRangeOpId, rangefn);
 
@@ -53,7 +53,7 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
    *     ...
    */
   std::shared_ptr<FuncObject> mapfn(new FuncObject(
-      kMapOpId, {"fn"}, {}, /* has_kwargs */ false,
+      kMapOpId, {"fn"}, {}, /* has_variable_len_kwargs */ false,
       std::bind(&OldMapHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kMapOpId, mapfn);
 
@@ -75,7 +75,7 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
    *     ...
    */
   std::shared_ptr<FuncObject> filterfn(new FuncObject(
-      kFilterOpId, {"fn"}, {}, /* has_kwargs */ false,
+      kFilterOpId, {"fn"}, {}, /* has_variable_len_kwargs */ false,
       std::bind(&OldFilterHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kFilterOpId, filterfn);
 
@@ -85,7 +85,7 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
    *     ...
    */
   std::shared_ptr<FuncObject> limitfn(new FuncObject(
-      kLimitOpId, {"rows"}, {}, /* has_kwargs */ false,
+      kLimitOpId, {"rows"}, {}, /* has_variable_len_kwargs */ false,
       std::bind(&LimitHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kLimitOpId, limitfn);
 
@@ -97,7 +97,7 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
    */
   std::shared_ptr<FuncObject> aggfn(new FuncObject(
       kBlockingAggOpId, {"by", "fn"}, {{"by", "lambda x : []"}},
-      /* has_kwargs */ false,
+      /* has_variable_len_kwargs */ false,
       std::bind(&OldAggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kBlockingAggOpId, aggfn);
   // TODO(philkuz) (PL-1128) disable this when new join syntax is supported.
@@ -108,7 +108,7 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
    */
   std::shared_ptr<FuncObject> old_join_fn(new FuncObject(
       kMergeOpId, {"right", "cond", "cols", "type"}, {{"type", "'inner'"}},
-      /* has_kwargs */ false,
+      /* has_variable_len_kwargs */ false,
       std::bind(&OldJoinHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kMergeOpId, old_join_fn);
 
@@ -120,7 +120,7 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
    */
   std::shared_ptr<FuncObject> old_sink_fn(new FuncObject(
       kSinkOpId, {"name"}, {},
-      /* has_kwargs */ false,
+      /* has_variable_len_kwargs */ false,
       std::bind(&OldResultHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kSinkOpId, old_sink_fn);
 
@@ -132,13 +132,13 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
    */
   std::shared_ptr<FuncObject> old_range_agg_fn(new FuncObject(
       kRangeAggOpId, {"by", "fn", "size"}, {},
-      /* has_kwargs */ false,
+      /* has_variable_len_kwargs */ false,
       std::bind(&OldRangeAggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kRangeAggOpId, old_range_agg_fn);
 
   std::shared_ptr<FuncObject> subscript_fn(new FuncObject(
       kSubscriptMethodName, {"key"}, {},
-      /* has_kwargs */ false,
+      /* has_variable_len_kwargs */ false,
       std::bind(&SubscriptHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddSubscriptMethod(subscript_fn);
 }
