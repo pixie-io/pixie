@@ -214,8 +214,20 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
     };
     return (
       <Mutation client={vizierGQLClient} mutation={EXECUTE_QUERY}>
-        {(executeQuery, { loading, error, data }) => (
-          <HotKeys
+        {(executeQuery, { loading, error, data }) => {
+
+          if (error) {
+            analytics.track('Query Execution Failed', {
+              query: this.state.code,
+            });
+          } else if (data !== null) {
+            analytics.track('Query Execution Success', {
+              query: this.state.code,
+              queryID: data.ExecuteQuery.id,
+            });
+          }
+
+          return (<HotKeys
             className='hotkey-container'
             attach={window}
             focused={true}
@@ -272,8 +284,8 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
                 />
               </ContentBox>
             </div>
-          </HotKeys>
-        )}
+          </HotKeys>);
+        }}
       </Mutation>
     );
   }

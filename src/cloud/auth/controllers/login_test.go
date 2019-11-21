@@ -614,6 +614,10 @@ func TestServer_CreateUserOrg(t *testing.T) {
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.Equal(t, resp.OrgName, "abc@gmail.com")
 	assert.Equal(t, resp.DomainName, "abc@gmail.com")
+	assert.Equal(t, resp.UserInfo.UserID, pbutils.ProtoFromUUIDStrOrNil(userID))
+	assert.Equal(t, resp.UserInfo.FirstName, "first")
+	assert.Equal(t, resp.UserInfo.LastName, "last")
+	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 

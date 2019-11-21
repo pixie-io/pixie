@@ -97,6 +97,12 @@ func (s *Server) CreateUserOrg(ctx context.Context, in *pb.CreateUserOrgRequest)
 		OrgID:      resp.OrgID,
 		OrgName:    orgName,
 		DomainName: domainName,
+		UserInfo: &pb.UserInfo{
+			UserID:    resp.UserID,
+			FirstName: userInfo.FirstName,
+			LastName:  userInfo.LastName,
+			Email:     userInfo.Email,
+		},
 	}, nil
 }
 
@@ -179,7 +185,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		Token:       token,
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: newUser,
-		UserInfo: &pb.LoginReply_UserInfo{
+		UserInfo: &pb.UserInfo{
 			UserID:    pbutils.ProtoFromUUIDStrOrNil(userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,

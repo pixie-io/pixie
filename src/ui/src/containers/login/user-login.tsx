@@ -14,6 +14,7 @@ import * as RedirectUtils from 'utils/redirect-utils';
 import * as logoImage from 'images/dark-logo.svg';
 // @ts-ignore : TS does not like image files.
 import * as criticalImage from 'images/icons/critical.svg';
+import analytics from '../../utils/analytics';
 
 export interface RouterInfo {
   search: string;
@@ -56,6 +57,10 @@ function onLoginAuthenticated(authResult) {
         idToken: response.data.Token,
         expiresAt: response.data.ExpiresAt,
       });
+
+      // Associate anonymous use with actual user ID.
+      analytics.identify(response.data.userInfo.userID, {});
+
       RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
     }).catch((err) => {
       this.setState({
@@ -81,6 +86,9 @@ function onCreateAuthenticated(authResult) {
         idToken: response.data.Token,
         expiresAt: response.data.ExpiresAt,
       });
+      // Associate anonymous use with actual user ID.
+      analytics.identify(response.data.userInfo.userID, {});
+
     }).then((results) => {
         RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
     }).catch((err) => {

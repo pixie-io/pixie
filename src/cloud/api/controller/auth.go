@@ -120,6 +120,12 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	setSessionCookie(session, resp.Token, resp.ExpiresAt, params.SiteName, r, w)
 
+	err = sendUserInfo(w, resp.UserInfo, resp.Token, resp.ExpiresAt, resp.UserCreated)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return err
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
@@ -196,13 +202,31 @@ func setSessionCookie(session *sessions.Session, token string, expiresAt int64, 
 	session.Options.Domain = viper.GetString("domain_name")
 
 	session.Save(r, w)
+}
 
-	var payload struct {
+func sendUserInfo(w http.ResponseWriter, userInfo *authpb.UserInfo, token string, expiresAt int64, userCreated bool) error {
+	var data struct {
 		Token     string `json:"token"`
 		ExpiresAt int64  `json:"expiresAt"`
+		UserInfo  struct {
+			UserID    string `json:"userID"`
+			FirstName string `json:"firstName"`
+			LastName  string `json:"lastName"`
+			Email     string `json:"email"`
+		} `json:"userInfo"`
+		UserCreated bool `json:"userCreated"`
 	}
-	payload.Token = token
-	payload.ExpiresAt = expiresAt
 
-	json.NewEncoder(w).Encode(payload)
+	data.Token = token
+	data.ExpiresAt = expiresAt
+	data.UserInfo.UserID = pbutils.UUIDFromProtoOrNil(userInfo.UserID).String()
+	data.UserInfo.Email = userInfo.Email
+	data.UserInfo.FirstName = userInfo.FirstName
+	data.UserInfo.LastName = userInfo.LastName
+	data.UserCreated = userCreated
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	return json.NewEncoder(w).Encode(&data)
 }

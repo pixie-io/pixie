@@ -24,6 +24,10 @@ class Analytics {
     track = (name: string, properties: any) => {
         window.analytics.track(name, properties);
     }
+
+    identify = (userid: string, traits: any) => {
+        window.analytics.identify(userid, traits);
+    }
 }
 
 export default new Analytics();

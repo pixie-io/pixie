@@ -2,8 +2,9 @@ package controller
 
 import (
 	"encoding/json"
-	"gopkg.in/segmentio/analytics-go.v3"
 	"net/http"
+
+	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/shared/services/events"
 
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
@@ -100,6 +101,12 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	})
 
 	setSessionCookie(session, resp.Token, resp.ExpiresAt, params.SiteName, r, w)
+
+	err = sendUserInfo(w, resp.UserInfo, resp.Token, resp.ExpiresAt, true)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return err
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

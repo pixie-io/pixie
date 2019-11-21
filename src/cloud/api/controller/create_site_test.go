@@ -18,6 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
+	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
@@ -43,6 +44,12 @@ func TestCreateSiteHandler(t *testing.T) {
 		ExpiresAt: testTokenExpiry,
 		OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
 		UserID:    &uuidpb.UUID{Data: []byte(userID)},
+		UserInfo: &authpb.UserInfo{
+			UserID:    utils.ProtoFromUUIDStrOrNil(userID),
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "abc@hulu.com",
+		},
 	}
 	mockAuthClient.EXPECT().CreateUserOrg(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.CreateUserOrgRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
@@ -103,6 +110,12 @@ func TestCreateSiteHandler_IndividualSite(t *testing.T) {
 		ExpiresAt: testTokenExpiry,
 		OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
 		UserID:    &uuidpb.UUID{Data: []byte(userID)},
+		UserInfo: &authpb.UserInfo{
+			UserID:    utils.ProtoFromUUIDStrOrNil(userID),
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "abc@hulu.com",
+		},
 	}
 	mockAuthClient.EXPECT().CreateUserOrg(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.CreateUserOrgRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
@@ -200,6 +213,12 @@ func TestCreateSiteHandler_SiteCreationError(t *testing.T) {
 		ExpiresAt: testTokenExpiry,
 		OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
 		UserID:    &uuidpb.UUID{Data: []byte(userID)},
+		UserInfo: &authpb.UserInfo{
+			UserID:    utils.ProtoFromUUIDStrOrNil(userID),
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "abc@hulu.com",
+		},
 	}
 	mockAuthClient.EXPECT().CreateUserOrg(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.CreateUserOrgRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
@@ -240,6 +259,12 @@ func TestCreateSiteHandler_SiteCreationFailed(t *testing.T) {
 		ExpiresAt: testTokenExpiry,
 		OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
 		UserID:    &uuidpb.UUID{Data: []byte(userID)},
+		UserInfo: &authpb.UserInfo{
+			UserID:    utils.ProtoFromUUIDStrOrNil(userID),
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "abc@hulu.com",
+		},
 	}
 	mockAuthClient.EXPECT().CreateUserOrg(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.CreateUserOrgRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)

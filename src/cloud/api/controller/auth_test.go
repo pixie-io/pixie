@@ -56,10 +56,11 @@ func TestAuthLoginHandler(t *testing.T) {
 	loginResp := &authpb.LoginReply{
 		Token:     testReplyToken,
 		ExpiresAt: testTokenExpiry,
-		UserInfo: &authpb.LoginReply_UserInfo{
+		UserInfo: &authpb.UserInfo{
 			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 			FirstName: "first",
 			LastName:  "last",
+			Email:     "abc@defg.com",
 		},
 	}
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
@@ -74,11 +75,22 @@ func TestAuthLoginHandler(t *testing.T) {
 	var parsedResponse struct {
 		Token     string
 		ExpiresAt int64
+		UserInfo  struct {
+			UserID    string `json:"userID"`
+			FirstName string `json:"firstName"`
+			LastName  string `json:"lastName"`
+			Email     string `json:"email"`
+		} `json:"userInfo"`
+		UserCreated bool `json:"userCreated"`
 	}
 	err = json.NewDecoder(rr.Body).Decode(&parsedResponse)
 	assert.Nil(t, err)
 	assert.Equal(t, testReplyToken, parsedResponse.Token)
 	assert.Equal(t, testTokenExpiry, parsedResponse.ExpiresAt)
+	assert.Equal(t, "abc@defg.com", parsedResponse.UserInfo.Email)
+	assert.Equal(t, "first", parsedResponse.UserInfo.FirstName)
+	assert.Equal(t, "last", parsedResponse.UserInfo.LastName)
+	assert.Equal(t, false, parsedResponse.UserCreated)
 
 	// Check the token in the cookie.
 	rawCookies := rr.Header().Get("Set-Cookie")
@@ -108,7 +120,7 @@ func TestAuthLoginHandler_ExistingSessionMismatchedSite(t *testing.T) {
 	loginResp := &authpb.LoginReply{
 		Token:     testReplyToken,
 		ExpiresAt: testTokenExpiry,
-		UserInfo: &authpb.LoginReply_UserInfo{
+		UserInfo: &authpb.UserInfo{
 			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 			FirstName: "first",
 			LastName:  "last",
@@ -152,7 +164,7 @@ func TestAuthLoginHandler_ExistingSessionMismatchedSite(t *testing.T) {
 	loginResp = &authpb.LoginReply{
 		Token:     testReplyToken2,
 		ExpiresAt: testTokenExpiry2,
-		UserInfo: &authpb.LoginReply_UserInfo{
+		UserInfo: &authpb.UserInfo{
 			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 			FirstName: "first",
 			LastName:  "last",
