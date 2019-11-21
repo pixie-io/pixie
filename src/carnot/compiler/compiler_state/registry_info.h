@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_format.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
@@ -61,9 +62,13 @@ class RegistryInfo {
   StatusOr<types::DataType> GetUDA(std::string name, std::vector<types::DataType> update_arg_types);
   StatusOr<types::DataType> GetUDF(std::string name, std::vector<types::DataType> exec_arg_types);
 
+  const absl::flat_hash_set<std::string>& func_names() const { return func_names_; }
+
  protected:
   std::map<RegistryKey, types::DataType> udf_map_;
   std::map<RegistryKey, types::DataType> uda_map_;
+  // Union of udf and uda names.
+  absl::flat_hash_set<std::string> func_names_;
 };
 
 }  // namespace compiler

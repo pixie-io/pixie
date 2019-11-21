@@ -11,6 +11,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
+using ::testing::UnorderedElementsAre;
 
 const char* kExpectedUDFInfo = R"(
 udas {
@@ -48,6 +49,8 @@ TEST(RegistryInfo, basic) {
   EXPECT_EQ(types::FLOAT64,
             info.GetUDF("add", std::vector<types::DataType>({types::FLOAT64, types::FLOAT64}))
                 .ConsumeValueOrDie());
+
+  EXPECT_THAT(info.func_names(), UnorderedElementsAre("uda1", "add", "scalar1"));
 }
 
 }  // namespace compiler

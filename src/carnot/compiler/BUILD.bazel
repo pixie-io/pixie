@@ -63,12 +63,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "registry_info_test",
-    srcs = ["registry_info_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
     name = "ir_verifier_test",
     srcs = ["ir_verifier_test.cc"],
     deps = [":cc_library"],

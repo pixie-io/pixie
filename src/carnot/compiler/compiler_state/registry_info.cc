@@ -24,6 +24,8 @@ Status RegistryInfo::Init(const udfspb::UDFInfo info) {
     }
     auto key = RegistryKey(uda.name(), arg_types);
     uda_map_[key] = uda.finalize_type();
+    // Add uda to func_names_.
+    func_names_.insert(uda.name());
   }
 
   for (auto udf : info.scalar_udfs()) {
@@ -36,6 +38,8 @@ Status RegistryInfo::Init(const udfspb::UDFInfo info) {
 
     auto key = RegistryKey(udf.name(), arg_types);
     udf_map_[key] = udf.return_type();
+    // Add udf to func_names_.
+    func_names_.insert(udf.name());
   }
 
   return Status::OK();
