@@ -9,6 +9,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/analyzer.h"
+#include "src/carnot/compiler/parser/parser.h"
 #include "src/carnot/compiler/test_utils.h"
 
 namespace pl {
@@ -19,225 +20,17 @@ using table_store::schema::Relation;
 using ::testing::_;
 
 using ::testing::Contains;
+using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 
-const char* kExpectedUDFInfo = R"(
-scalar_udfs {
-  name: "pl.divide"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type:FLOAT64
-}
-scalar_udfs {
-  name: "pl.divide"
-  exec_arg_types: INT64
-  exec_arg_types: FLOAT64
-  return_type:FLOAT64
-}
-scalar_udfs {
-  name: "pl.add"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type:  FLOAT64
-}
-scalar_udfs {
-  name: "pl.add"
-  exec_arg_types: INT64
-  exec_arg_types: INT64
-  return_type:  INT64
-}
-scalar_udfs {
-  name: "pl.equal"
-  exec_arg_types: STRING
-  exec_arg_types: STRING
-  return_type: BOOLEAN
-}
-scalar_udfs {
-  name: "pl.equal"
-  exec_arg_types: UINT128
-  exec_arg_types: UINT128
-  return_type: BOOLEAN
-}
-scalar_udfs {
-  name: "pl.equal"
-  exec_arg_types: INT64
-  exec_arg_types: INT64
-  return_type: BOOLEAN
-}
-scalar_udfs {
-  name: "pl.multiply"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type:  FLOAT64
-}
-scalar_udfs {
-  name: "pl.logicalAnd"
-  exec_arg_types: BOOLEAN
-  exec_arg_types: BOOLEAN
-  return_type:  BOOLEAN
-}
-scalar_udfs {
-  name: "pl.subtract"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type:  FLOAT64
-}
-scalar_udfs {
-  name: "pl.upid_to_service_id"
-  exec_arg_types: UINT128
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.upid_to_service_name"
-  exec_arg_types: UINT128
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.service_id_to_service_name"
-  exec_arg_types: STRING
-  return_type: STRING
-}
-udas {
-  name: "pl.count"
-  update_arg_types: FLOAT64
-  finalize_type:  INT64
-}
-udas {
-  name: "pl.count"
-  update_arg_types: INT64
-  finalize_type:  INT64
-}
-udas {
-  name: "pl.count"
-  update_arg_types: BOOLEAN
-  finalize_type:  INT64
-}
-udas {
-  name: "pl.count"
-  update_arg_types: STRING
-  finalize_type:  INT64
-}
-udas {
-  name: "pl.mean"
-  update_arg_types: FLOAT64
-  finalize_type:  FLOAT64
-}
-)";
-
-class AnalyzerTest : public ::testing::Test {
+class AnalyzerTest : public ASTVisitorTest {
  protected:
-  void SetUp() override {
-    Test::SetUp();
-    relation_map_ = std::make_unique<RelationMap>();
-
-    registry_info_ = std::make_shared<RegistryInfo>();
-    udfspb::UDFInfo info_pb;
-    google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-    EXPECT_OK(registry_info_->Init(info_pb));
-    table_store::schema::Relation cpu_relation;
-    relation_map_ = std::make_unique<RelationMap>();
-    cpu_relation.AddColumn(types::FLOAT64, "cpu0");
-    cpu_relation.AddColumn(types::FLOAT64, "cpu1");
-    cpu_relation.AddColumn(types::FLOAT64, "cpu2");
-    cpu_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
-    cpu_relation.AddColumn(types::INT64, "agent_id");
-    relation_map_->emplace("cpu", cpu_relation);
-
-    table_store::schema::Relation non_float_relation;
-    non_float_relation.AddColumn(types::INT64, "int_col");
-    non_float_relation.AddColumn(types::FLOAT64, "float_col");
-    non_float_relation.AddColumn(types::STRING, "string_col");
-    non_float_relation.AddColumn(types::BOOLEAN, "bool_col");
-    relation_map_->emplace("non_float_table", non_float_relation);
-
-    Relation network_relation;
-    network_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
-    network_relation.AddColumn(types::INT64, "bytes_in");
-    network_relation.AddColumn(types::INT64, "bytes_out");
-    network_relation.AddColumn(types::INT64, "agent_id");
-    relation_map_->emplace("network", network_relation);
-
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(relation_map_), registry_info_.get(), time_now);
-  }
-
-  StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {
-    auto result = ParseQuery(query);
-    PL_RETURN_IF_ERROR(result);
-    // just a quick test to find issues.
-    if (result.ValueOrDie()->GetSinks().size() == 0) {
-      return error::InvalidArgument("IR Doesn't have sink");
-    }
-    return result;
-  }
   Status HandleRelation(std::shared_ptr<IR> ir_graph) {
     PL_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer,
                         Analyzer::Create(compiler_state_.get()));
     return analyzer->Execute(ir_graph.get());
   }
-  // TODO(philkuz) remove this  -> we now have a function for this in the Relation class.
-  bool RelationEquality(const table_store::schema::Relation& r1,
-                        const table_store::schema::Relation& r2) {
-    std::vector<std::string> r1_names;
-    std::vector<std::string> r2_names;
-    std::vector<types::DataType> r1_types;
-    std::vector<types::DataType> r2_types;
-    if (r1.NumColumns() >= r2.NumColumns()) {
-      r1_names = r1.col_names();
-      r1_types = r1.col_types();
-      r2_names = r2.col_names();
-      r2_types = r2.col_types();
-    } else {
-      r1_names = r2.col_names();
-      r1_types = r2.col_types();
-      r2_names = r1.col_names();
-      r2_types = r1.col_types();
-    }
-    for (size_t i = 0; i < r1_names.size(); i++) {
-      std::string col1 = r1_names[i];
-      auto type1 = r1_types[i];
-      auto r2_iter = std::find(r2_names.begin(), r2_names.end(), col1);
-      // if we can't find name in the second relation, then
-      if (r2_iter == r2_names.end()) {
-        return false;
-      }
-      int64_t r2_idx = std::distance(r2_names.begin(), r2_iter);
-      if (r2_types[r2_idx] != type1) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
-   * @brief Finds the specified type in the graph and returns the node.
-   *
-   *
-   * @param ir_graph
-   * @param type
-   * @return StatusOr<IRNode*> IRNode of type, otherwise returns an error.
-   */
-  StatusOr<IRNode*> FindNodeType(std::shared_ptr<IR> ir_graph, IRNodeType type,
-                                 int64_t instance = 0) {
-    int found = 0;
-    for (auto& i : ir_graph->dag().TopologicalSort()) {
-      auto node = ir_graph->Get(i);
-      if (node->type() == type) {
-        if (found == instance) {
-          return node;
-        }
-        found++;
-      }
-    }
-    return error::NotFound("Couldn't find node of type $0 in ir_graph.",
-                           kIRNodeStrings[static_cast<int64_t>(type)]);
-  }
-
-  std::shared_ptr<RegistryInfo> registry_info_;
-  std::unique_ptr<RelationMap> relation_map_;
-  std::unique_ptr<CompilerState> compiler_state_;
-  int64_t time_now = 1552607213931245000;
 };
 
 TEST_F(AnalyzerTest, test_utils) {
@@ -381,26 +174,24 @@ TEST_F(AnalyzerTest, bin_op_test) {
 TEST_F(AnalyzerTest, single_col_agg) {
   std::string single_col_agg = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "aggDF = queryDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
-       "pl.count(r.cpu1)}).result(name='cpu_out')"},
+       "queryDF.groupby('cpu0').agg(cpu_count=('cpu1', pl.count)).result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(single_col_agg);
   ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
-  VLOG(1) << handle_status.status().ToString();
+
   std::string multi_output_col_agg = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0','cpu1']).range(start=0,stop=10)",
-       "aggDF = queryDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count': "
-       "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).result(name='cpu_out')"},
+       "queryDF.groupby('cpu0').agg(cpu_count=('cpu1', pl.count),",
+       "cpu_mean=('cpu1', pl.mean)).result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(multi_output_col_agg);
   ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
-  VLOG(1) << handle_status.status().ToString();
 }
 
 // Make sure the relations match the expected values.
@@ -410,14 +201,15 @@ TEST_F(AnalyzerTest, test_relation_results) {
       absl::StrJoin({"queryDF = dataframe(table='cpu', select=['upid', 'cpu0', 'cpu1', "
                      "'cpu2', 'agent_id']).range(start=0,stop=10)",
                      "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
-                     "aggDF = queryDF[['cpu0', 'cpu1', 'cpu_sum']].agg(by=lambda r : r.cpu0, "
-                     "fn=lambda r : {'cpu_count' : "
-                     "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).result(name='cpu_out')"},
+                     "groupDF = queryDF[['cpu0', 'cpu1', 'cpu_sum']].groupby('cpu0')",
+                     "groupDF.agg(cpu_count=('cpu1', pl.count),",
+                     "cpu_mean=('cpu1', pl.mean)).result(name='cpu_out')"},
                     "\n");
   auto ir_graph_status = CompileGraph(chain_operators);
+  ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
-  EXPECT_OK(handle_status);
+  ASSERT_OK(handle_status);
 
   // Memory Source should copy the source relation.
   auto source_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySource);
@@ -460,18 +252,18 @@ TEST_F(AnalyzerTest, test_relation_fails) {
   // operators don't use generated columns, are just chained.
   std::string chain_operators = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
-       "aggDF = queryDF[['cpu_sum']].agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
-       "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).result(name='cpu_out')"},
+       "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']", "queryDF = queryDF[['cpu_sum']]",
+       "queryDF.groupby('cpu0').agg(cpu_count=('cpu1', pl.count),",
+       "cpu_mean=('cpu1', pl.mean)).result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(chain_operators);
+  ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
 
   // This query assumes implicit copying of Input relation into Map. The relation handler should
   // fail.
   auto handle_status = HandleRelation(ir_graph);
-  VLOG(1) << handle_status.ToString();
-  EXPECT_FALSE(handle_status.ok());
+  ASSERT_NOT_OK(handle_status);
 
   // Map should result just be the cpu_sum column.
   auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 1);
@@ -479,16 +271,17 @@ TEST_F(AnalyzerTest, test_relation_fails) {
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
   table_store::schema::Relation test_map_relation;
   test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
-  EXPECT_TRUE(RelationEquality(map_node->relation(), test_map_relation));
+  EXPECT_EQ(map_node->relation(), test_map_relation);
 }
 
 TEST_F(AnalyzerTest, test_relation_multi_col_agg) {
   std::string chain_operators = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "aggDF = queryDF.agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
-       "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).result(name='cpu_out')"},
+       "aggDF = queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', pl.count),",
+       "cpu_mean=('cpu1', pl.mean)).result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(chain_operators);
+  ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   VLOG(1) << handle_status.ToString();
@@ -514,6 +307,7 @@ TEST_F(AnalyzerTest, test_from_select) {
   test_relation.AddColumn(types::FLOAT64, "cpu0");
   test_relation.AddColumn(types::FLOAT64, "cpu2");
   auto ir_graph_status = CompileGraph(chain_operators);
+  ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   auto sink_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySink);
@@ -534,18 +328,18 @@ TEST_F(AnalyzerTest, nonexistent_udfs) {
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
-  EXPECT_FALSE(handle_status.ok());
+  ASSERT_NOT_OK(handle_status);
+  // TODO(philkuz) convert all data udfs to be attributes of pl rather than something resolved in
+  // Analyzer.
+  EXPECT_THAT(handle_status.msg(), ContainsRegex("Could not find.*'pl.sus'"));
+  // EXPECT_THAT(handle_status.status(), HasCompilerError("'pl' object has no attribute 'sus'"));
   std::string missing_uda = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "aggDF = queryDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
-       "pl.punt(r.cpu1)}).result(name='cpu_out')"},
+       "aggDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', pl.punt)).result(name='cpu_out')"},
       "\n");
 
   ir_graph_status = CompileGraph(missing_uda);
-  ASSERT_OK(ir_graph_status);
-  ir_graph = ir_graph_status.ConsumeValueOrDie();
-  handle_status = HandleRelation(ir_graph);
-  EXPECT_FALSE(handle_status.ok());
+  EXPECT_THAT(ir_graph_status.status(), HasCompilerError("'pl' object has no attribute 'punt'"));
 }
 
 TEST_F(AnalyzerTest, nonexistent_cols) {
@@ -560,35 +354,36 @@ TEST_F(AnalyzerTest, nonexistent_cols) {
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
-  EXPECT_FALSE(handle_status.ok());
-  VLOG(1) << handle_status.status().ToString();
+  ASSERT_NOT_OK(handle_status);
+  EXPECT_THAT(handle_status.status(),
+              HasCompilerError("Column 'cpu100' not found in parent dataframe"));
 
   // Test for columns used in group_by arg of Agg that don't exist.
   std::string wrong_column_agg_by = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "aggDF = queryDF.agg(by=lambda r : r.cpu101, fn=lambda r : {'cpu_count' "
-       ": "
-       "pl.count(r.cpu1)}).result(name='cpu_out')"},
+       "aggDF = queryDF.groupby('cpu101').agg(cpu_count=('cpu1', "
+       "pl.count)).result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(wrong_column_agg_by);
   ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
-  EXPECT_FALSE(handle_status.ok());
-  VLOG(1) << handle_status.status().ToString();
+  ASSERT_NOT_OK(handle_status);
+  EXPECT_THAT(handle_status.status(),
+              HasCompilerError("Column 'cpu101' not found in parent dataframe"));
 
   // Test for column not selected in From.
   std::string not_selected_col = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu2']).range(start=0,stop=10)",
-       "aggDF = queryDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
-       "pl.count(r.cpu1)}).result(name='cpu_out')"},
+       "aggDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', pl.count)).result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(not_selected_col);
   ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
-  EXPECT_FALSE(handle_status.ok());
-  VLOG(1) << handle_status.status().ToString();
+  ASSERT_NOT_OK(handle_status);
+  EXPECT_THAT(handle_status.status(),
+              HasCompilerError("Column 'cpu1' not found in parent dataframe"));
 }
 
 // Use results of created columns in later parts of the pipeline.
@@ -596,36 +391,33 @@ TEST_F(AnalyzerTest, created_columns) {
   std::string agg_use_map_col_fn = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
        "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
-       "aggDF = queryDF.agg(by=lambda r : r.cpu2, fn=lambda r : {'cpu_count' : "
-       "pl.count(r.cpu_sum)}).result(name='cpu_out')"},
+       "aggDF = queryDF.groupby('cpu2').agg(",
+       "cpu_count=('cpu_sum', pl.count)).result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(agg_use_map_col_fn);
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
-  VLOG(1) << handle_status.status().ToString();
 
   std::string agg_use_map_col_by = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
        "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
-       "aggDF = queryDF.agg(by=lambda r : r.cpu_sum, fn=lambda r : {'cpu_count' : "
-       "pl.count(r.cpu2)}).result(name='cpu_out')"},
+       "aggDF = queryDF.groupby('cpu_sum').agg(",
+       "cpu_count=('cpu2', pl.count)).result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(agg_use_map_col_by);
   ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
-  VLOG(1) << handle_status.status().ToString();
 
   std::string map_use_agg_col = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', "
           "'cpu2']).range(start=0,stop=10)",
-          "aggDF = queryDF.agg(by=lambda r : r.cpu1, fn=lambda r : {'cpu0_mean' : "
-          "pl.mean(r.cpu0), "
-          "'cpu1_mean' : pl.mean(r.cpu1)})",
+          "aggDF = queryDF.groupby('cpu1').agg(cpu0_mean=('cpu0', pl.mean),",
+          "cpu1_mean=('cpu1', pl.mean))",
           "aggDF['cpu_sum'] = aggDF['cpu1_mean'] + aggDF['cpu1_mean']",
           "aggDF[['cpu_sum']].result(name='cpu_out')",
       },
@@ -635,7 +427,6 @@ TEST_F(AnalyzerTest, created_columns) {
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
-  VLOG(1) << handle_status.status().ToString();
 
   std::string map_use_map_col = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
@@ -648,21 +439,18 @@ TEST_F(AnalyzerTest, created_columns) {
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
-  VLOG(1) << handle_status.status().ToString();
 
   std::string agg_use_agg_col = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "aggDF = queryDF.agg(by=lambda r : r.cpu1, fn=lambda r : {'cpu0_mean' : pl.mean(r.cpu0), "
-       "'cpu1_mean' : pl.mean(r.cpu1)})",
-       "agg2DF = aggDF.agg(by=lambda r : r.cpu1_mean, fn=lambda r : {'cpu0_mean_mean' : "
-       "pl.mean(r.cpu0_mean)}).result(name='cpu_out') "},
+       "aggDF = queryDF.groupby('cpu1').agg(cpu0_mean=('cpu0', pl.mean),",
+       "cpu1_mean=('cpu1', pl.mean))", "agg2DF = aggDF.groupby('cpu1_mean').agg(",
+       "cpu0_mean_mean =('cpu0_mean', pl.mean)).result(name='cpu_out') "},
       "\n");
   ir_graph_status = CompileGraph(agg_use_agg_col);
   ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
-  VLOG(1) << handle_status.status().ToString();
 }
 
 TEST_F(AnalyzerTest, non_float_columns) {
@@ -671,10 +459,11 @@ TEST_F(AnalyzerTest, non_float_columns) {
           "queryDF = dataframe(table='non_float_table', select=['float_col', 'int_col', "
           "'bool_col', "
           "'string_col']).range(start=0,stop=10)",
-          "aggDF = queryDF.agg(by=lambda r : r.float_col, fn=lambda r : {"
-          "'int_count' : pl.count(r.int_col), "
-          "'bool_count' : pl.count(r.bool_col),"
-          " 'string_count' : pl.count(r.string_col)}).result(name='cpu_out')",
+          "aggDF = queryDF.groupby('float_col').agg(",
+          "int_count=('int_col', pl.count),",
+          "bool_count=('bool_col', pl.count),",
+          "string_count=('string_col', pl.count),",
+          ").result(name='cpu_out')",
       },
       "\n");
   auto ir_graph_status = CompileGraph(agg_fn_count_all);
@@ -682,17 +471,17 @@ TEST_F(AnalyzerTest, non_float_columns) {
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
-  VLOG(1) << handle_status.status().ToString();
 
   std::string by_fn_count_all = absl::StrJoin(
       {
           "queryDF = dataframe(table='non_float_table', select=['float_col', 'int_col', "
           "'bool_col', "
           "'string_col']).range(start=0,stop=10)",
-          "aggDF = queryDF.agg(by=lambda r : r.int_col, fn=lambda r : {"
-          "'float_count' : pl.count(r.float_col), "
-          "'bool_count' : pl.count(r.bool_col),"
-          " 'string_count' : pl.count(r.string_col)}).result(name='cpu_out')",
+          "aggDF = queryDF.groupby('int_col').agg(",
+          "float_count=('float_col', pl.count),",
+          "bool_count=('bool_col', pl.count),",
+          "string_count=('string_col', pl.count),",
+          ").result(name='cpu_out')",
       },
       "\n");
   ir_graph_status = CompileGraph(by_fn_count_all);
@@ -700,7 +489,6 @@ TEST_F(AnalyzerTest, non_float_columns) {
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
-  VLOG(1) << handle_status.status().ToString();
 }
 
 TEST_F(AnalyzerTest, assign_udf_func_ids) {
@@ -738,11 +526,11 @@ TEST_F(AnalyzerTest, assign_udf_func_ids) {
 TEST_F(AnalyzerTest, assign_uda_func_ids) {
   std::string chain_operators = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "aggDF = queryDF.agg(by=lambda r: r.cpu0, fn=lambda r: {'cnt': pl.count(r.cpu1), 'mean': "
-       "pl.mean(r.cpu2)})",
-       "aggDF.result(name='cpu_out')"},
+       "aggDF = queryDF.groupby('cpu0').agg(cnt=('cpu1', pl.count), mean=('cpu2', "
+       "pl.mean)).result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(chain_operators);
+  ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
@@ -790,16 +578,18 @@ TEST_P(MetadataSingleOps, valid_metadata_calls) {
 }
 std::vector<std::string> metadata_operators{
     "queryDF[queryDF.attr['service'] == 'pl/orders']",
+
     "queryDF['service'] = queryDF.attr['service']\nqueryDF",
-    "queryDF.agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : r.attr.service)",
-    "queryDF.agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.cpu0, "
-    "r.attr.service])",
-    "aggDF = queryDF.agg(by=lambda r: [r.upid, r.attr.service], fn=lambda "
-    "r:{'mean_cpu': pl.mean(r.cpu0)})\naggDF[aggDF.attr['service'] == 'pl/service-name']",
-    "aggDF = queryDF.agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.cpu0, "
-    "r.attr.service])\naggDF[aggDF.attr['service'] =='pl/orders']",
-    "aggDF = queryDF.agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.cpu0, "
-    "r.attr.service_id])\naggDF[aggDF.attr['service'] == 'pl/orders']"};
+
+    "queryDF['service'] = queryDF.attr['service']\n"
+    "queryDF.groupby('service').agg(mean_cpu=('cpu0', pl.mean))",
+
+    "queryDF['service'] = queryDF.attr['service']\n"
+    "queryDF.groupby(['cpu0', 'service']).agg(mean_cpu=('cpu0', pl.mean))",
+
+    "queryDF['service'] = queryDF.attr['service']\n"
+    "aggDF = queryDF.groupby(['upid', 'service']).agg(mean_cpu=('cpu0', pl.mean))\n"
+    "aggDF[aggDF.attr['service'] == 'pl/service-name']"};
 
 INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
                          ::testing::ValuesIn(metadata_operators));
@@ -848,9 +638,8 @@ TEST_F(AnalyzerTest, define_column_metadata) {
 // Test to make sure that copying the metadata key column still works.
 TEST_F(AnalyzerTest, copy_metadata_key_and_og_column) {
   std::string valid_query = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu') ",
-       "opDF = queryDF.agg(by=lambda r: [r.$0, r.attr.service],  fn=lambda "
-       "r:{'mean_cpu': pl.mean(r.cpu0)})",
+      {"queryDF = dataframe(table='cpu')", "queryDF['service'] = queryDF.attr['service']",
+       "opDF = queryDF.groupby(['$0', 'service']).agg(mean_cpu =('cpu0', pl.mean))",
        "opDF = opDF[opDF.attr['service']=='pl/service-name']", "opDF.result(name='out')"},
       "\n");
   valid_query = absl::Substitute(valid_query, MetadataProperty::kUniquePIDColumn);

@@ -15,12 +15,124 @@
 
 #include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
+#include "src/carnot/compiler/parser/parser.h"
 #include "src/carnot/compiler/parser/string_reader.h"
 #include "src/common/testing/testing.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
+
+using table_store::schema::Relation;
+
+const char* kExpectedUDFInfo = R"(
+scalar_udfs {
+  name: "pl.divide"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type:FLOAT64
+}
+scalar_udfs {
+  name: "pl.divide"
+  exec_arg_types: INT64
+  exec_arg_types: FLOAT64
+  return_type:FLOAT64
+}
+scalar_udfs {
+  name: "pl.add"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type:  FLOAT64
+}
+scalar_udfs {
+  name: "pl.add"
+  exec_arg_types: INT64
+  exec_arg_types: INT64
+  return_type:  INT64
+}
+scalar_udfs {
+  name: "pl.equal"
+  exec_arg_types: STRING
+  exec_arg_types: STRING
+  return_type: BOOLEAN
+}
+scalar_udfs {
+  name: "pl.equal"
+  exec_arg_types: UINT128
+  exec_arg_types: UINT128
+  return_type: BOOLEAN
+}
+scalar_udfs {
+  name: "pl.equal"
+  exec_arg_types: INT64
+  exec_arg_types: INT64
+  return_type: BOOLEAN
+}
+scalar_udfs {
+  name: "pl.multiply"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type:  FLOAT64
+}
+scalar_udfs {
+  name: "pl.logicalAnd"
+  exec_arg_types: BOOLEAN
+  exec_arg_types: BOOLEAN
+  return_type:  BOOLEAN
+}
+scalar_udfs {
+  name: "pl.subtract"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type:  FLOAT64
+}
+scalar_udfs {
+  name: "pl.upid_to_service_id"
+  exec_arg_types: UINT128
+  return_type: STRING
+}
+scalar_udfs {
+  name: "pl.upid_to_service_name"
+  exec_arg_types: UINT128
+  return_type: STRING
+}
+scalar_udfs {
+  name: "pl.service_id_to_service_name"
+  exec_arg_types: STRING
+  return_type: STRING
+}
+udas {
+  name: "pl.count"
+  update_arg_types: FLOAT64
+  finalize_type:  INT64
+}
+udas {
+  name: "pl.count"
+  update_arg_types: INT64
+  finalize_type:  INT64
+}
+udas {
+  name: "pl.count"
+  update_arg_types: BOOLEAN
+  finalize_type:  INT64
+}
+udas {
+  name: "pl.sum"
+  update_arg_types: INT64
+  finalize_type:  INT64
+}
+udas {
+  name: "pl.count"
+  update_arg_types: STRING
+  finalize_type:  INT64
+}
+udas {
+  name: "pl.mean"
+  update_arg_types: FLOAT64
+  finalize_type:  FLOAT64
+}
+)";
+
 /**
  * @brief Makes a test ast ptr that makes testing IRnode
  * Init calls w/o queries not error out.
@@ -42,6 +154,7 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   auto info = std::make_shared<RegistryInfo>();
   udfspb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   PL_RETURN_IF_ERROR(info->Init(info_pb));
   auto compiler_state =
       std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
@@ -459,6 +572,117 @@ template <typename... Args>
 inline ::testing::PolymorphicMatcher<HasEdgeMatcher> HasEdge(IRNode* from, IRNode* to) {
   return ::testing::MakePolymorphicMatcher(HasEdgeMatcher(from, to));
 }
+
+class ASTVisitorTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    Test::SetUp();
+    relation_map_ = std::make_unique<RelationMap>();
+
+    registry_info_ = std::make_shared<RegistryInfo>();
+    udfspb::UDFInfo info_pb;
+    google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+    EXPECT_OK(registry_info_->Init(info_pb));
+    table_store::schema::Relation cpu_relation;
+    relation_map_ = std::make_unique<RelationMap>();
+    cpu_relation.AddColumn(types::FLOAT64, "cpu0");
+    cpu_relation.AddColumn(types::FLOAT64, "cpu1");
+    cpu_relation.AddColumn(types::FLOAT64, "cpu2");
+    cpu_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
+    cpu_relation.AddColumn(types::INT64, "agent_id");
+    relation_map_->emplace("cpu", cpu_relation);
+
+    table_store::schema::Relation non_float_relation;
+    non_float_relation.AddColumn(types::INT64, "int_col");
+    non_float_relation.AddColumn(types::FLOAT64, "float_col");
+    non_float_relation.AddColumn(types::STRING, "string_col");
+    non_float_relation.AddColumn(types::BOOLEAN, "bool_col");
+    relation_map_->emplace("non_float_table", non_float_relation);
+
+    Relation network_relation;
+    network_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
+    network_relation.AddColumn(types::INT64, "bytes_in");
+    network_relation.AddColumn(types::INT64, "bytes_out");
+    network_relation.AddColumn(types::INT64, "agent_id");
+    relation_map_->emplace("network", network_relation);
+
+    compiler_state_ =
+        std::make_unique<CompilerState>(std::move(relation_map_), registry_info_.get(), time_now);
+  }
+
+  StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {
+    Parser parser;
+    PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
+    std::shared_ptr<IR> ir = std::make_shared<IR>();
+    PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state_.get()));
+
+    PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+    return ir;
+  }
+
+  // TODO(philkuz) remove this  -> we now have a function for this in the Relation class.
+  bool RelationEquality(const table_store::schema::Relation& r1,
+                        const table_store::schema::Relation& r2) {
+    std::vector<std::string> r1_names;
+    std::vector<std::string> r2_names;
+    std::vector<types::DataType> r1_types;
+    std::vector<types::DataType> r2_types;
+    if (r1.NumColumns() >= r2.NumColumns()) {
+      r1_names = r1.col_names();
+      r1_types = r1.col_types();
+      r2_names = r2.col_names();
+      r2_types = r2.col_types();
+    } else {
+      r1_names = r2.col_names();
+      r1_types = r2.col_types();
+      r2_names = r1.col_names();
+      r2_types = r1.col_types();
+    }
+    for (size_t i = 0; i < r1_names.size(); i++) {
+      std::string col1 = r1_names[i];
+      auto type1 = r1_types[i];
+      auto r2_iter = std::find(r2_names.begin(), r2_names.end(), col1);
+      // if we can't find name in the second relation, then
+      if (r2_iter == r2_names.end()) {
+        return false;
+      }
+      int64_t r2_idx = std::distance(r2_names.begin(), r2_iter);
+      if (r2_types[r2_idx] != type1) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * @brief Finds the specified type in the graph and returns the node.
+   *
+   *
+   * @param ir_graph
+   * @param type
+   * @return StatusOr<IRNode*> IRNode of type, otherwise returns an error.
+   */
+  StatusOr<IRNode*> FindNodeType(std::shared_ptr<IR> ir_graph, IRNodeType type,
+                                 int64_t instance = 0) {
+    int found = 0;
+    for (auto& i : ir_graph->dag().TopologicalSort()) {
+      auto node = ir_graph->Get(i);
+      if (node->type() == type) {
+        if (found == instance) {
+          return node;
+        }
+        found++;
+      }
+    }
+    return error::NotFound("Couldn't find node of type $0 in ir_graph.",
+                           kIRNodeStrings[static_cast<int64_t>(type)]);
+  }
+
+  std::shared_ptr<RegistryInfo> registry_info_;
+  std::unique_ptr<RelationMap> relation_map_;
+  std::unique_ptr<CompilerState> compiler_state_;
+  int64_t time_now = 1552607213931245000;
+};
 
 }  // namespace compiler
 }  // namespace carnot

@@ -327,7 +327,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::LookupVariable(const pypa::AstPtr& ast,
                                                      const std::string& name) {
   auto find_name = var_table_.find(name);
   if (find_name == var_table_.end()) {
-    return CreateAstError(ast, "Can't find variable '$0'.", name);
+    return CreateAstError(ast, "name '$0' is not defined", name);
   }
   return find_name->second;
 }

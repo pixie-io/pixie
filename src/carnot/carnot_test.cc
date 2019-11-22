@@ -475,13 +475,13 @@ INSTANTIATE_TEST_SUITE_P(CarnotRangeVariants, CarnotRangeTest,
 
 TEST_F(CarnotTest, group_by_all_agg_test) {
   auto agg_dict =
-      absl::StrJoin({"'mean' : pl.mean(r.col2)", "'count' : pl.count(r.col3)",
-                     "'min' : pl.min(r.col2)", "'max' : pl.max(r.col3)", "'sum' : pl.sum(r.col3)"},
+      absl::StrJoin({"mean=('col2', pl.mean)", "count=('col3', pl.count)", "min=('col2', pl.min)",
+                     "max=('col3', pl.max)", "sum=('col3', pl.sum)"},
                     ",");
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2', 'col3'])",
-          "aggDF = queryDF.agg(fn=lambda r : {$0})",
+          "aggDF = queryDF.agg($0)",
           "aggDF.result(name='test_output')",
       },
       "\n");
@@ -543,7 +543,7 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col3', 'num_groups'])",
-          "aggDF = queryDF.agg(by=lambda r : r.num_groups, fn=lambda r : {'sum' : pl.sum(r.col3)})",
+          "aggDF = queryDF.groupby('num_groups').agg(sum=('col3', pl.sum))",
           "aggDF.result(name='test_output')",
       },
       "\n");
@@ -581,8 +581,7 @@ TEST_F(CarnotTest, multiple_group_by_test) {
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col3', 'num_groups', "
           "'string_groups'])",
-          "aggDF = queryDF.agg(by=lambda r : [r.num_groups, r.string_groups], fn=lambda r : {'sum' "
-          ": pl.sum(r.col3)})",
+          "aggDF = queryDF.groupby(['num_groups', 'string_groups']).agg(sum=('col3', pl.sum))",
           "aggDF.result(name='test_output')",
       },
       "\n");
@@ -675,8 +674,7 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col3', 'num_groups', "
           "'string_groups'])",
           "queryDF['is_large'] = queryDF['col3'] > $0",
-          "aggDF = queryDF.agg(by=lambda r : r.is_large, fn=lambda r : {'count' : "
-          "pl.count(r.num_groups)})",
+          "aggDF = queryDF.groupby('is_large').agg(count=('num_groups', pl.count))",
           "aggDF.result(name='test_output')",
       },
       "\n");

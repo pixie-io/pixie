@@ -25,12 +25,11 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
    * def agg(self, **kwargs):
    *     ...
    */
-  // TODO(philkuz) (PL-1128) re-enable this when new agg syntax is supported.
-  // std::shared_ptr<FuncObject> aggfn(new FuncObject(
-  //     kBlockingAggOpId, {}, {},
-  //     /* has_variable_len_kwargs */ true,
-  //     std::bind(&AggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  // AddMethod(kBlockingAggOpId, aggfn);
+  std::shared_ptr<FuncObject> aggfn(new FuncObject(
+      kBlockingAggOpId, {}, {},
+      /* has_variable_len_kwargs */ true,
+      std::bind(&AggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kBlockingAggOpId, aggfn);
 
   /**
    * # Equivalent to the python method method syntax:
@@ -85,18 +84,6 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       kLimitOpId, {"rows"}, {}, /* has_variable_len_kwargs */ false,
       std::bind(&LimitHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kLimitOpId, limitfn);
-
-  // TODO(philkuz) (PL-1128) disable this when new agg syntax is supported.
-  /**
-   * # Equivalent to the python method method syntax:
-   * def agg(self, by, fn):
-   *     ...
-   */
-  std::shared_ptr<FuncObject> aggfn(new FuncObject(
-      kBlockingAggOpId, {"by", "fn"}, {{"by", "lambda x : []"}},
-      /* has_variable_len_kwargs */ false,
-      std::bind(&OldAggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  AddMethod(kBlockingAggOpId, aggfn);
 
   // TODO(philkuz) (PL-1128) disable this when new result syntax is supported.
   /**
@@ -270,7 +257,7 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, TupleIR* tuple) {
   // The function should be specified as a single function by itself.
   // This could change in the future.
   if (func->args().size() != 0) {
-    return func->CreateIRNodeError("Expected function to not have specified arguments");
+    return func->CreateIRNodeError("Unexpected aggregate function");
   }
   // parent_op_idx is 0 because we only have one parent for an aggregate.
   PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->CreateNode<ColumnIR>(childone->ast_node(), argcol_name,

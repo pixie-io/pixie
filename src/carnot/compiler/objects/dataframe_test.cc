@@ -215,8 +215,7 @@ TEST_F(AggHandlerTest, NonZeroArgFuncKwarg) {
   args.AddKwarg("outcol1", MakeTuple(MakeString("ll"), MakeMeanFunc(MakeColumn("str", 0))));
   auto status = AggHandler::Eval(srcdf.get(), ast, args);
   ASSERT_NOT_OK(status);
-  EXPECT_THAT(status.status(),
-              HasCompilerError("Expected function to not have specified arguments"));
+  EXPECT_THAT(status.status(), HasCompilerError("Unexpected aggregate function"));
 }
 
 using RangeHandlerTest = DataframeTest;
@@ -822,7 +821,8 @@ TEST_F(OldAggTest, OldAggByArgWithLambdaDictBody) {
               HasCompilerError("'by' argument error, lambda cannot have a dictionary body"));
 }
 
-TEST_F(DataframeTest, OldAggCall) {
+// TODO(nserrino/philkuz) delete this when we switch over.
+TEST_F(DataframeTest, DISABLED_OldAggCall) {
   MemorySourceIR* src = MakeMemSource();
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 

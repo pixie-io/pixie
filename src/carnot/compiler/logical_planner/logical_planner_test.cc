@@ -93,29 +93,34 @@ TEST_F(LogicalPlannerTest, many_agents) {
 const char* kHttpRequestStats = R"pxl(
 t1 = dataframe(table='http_events').range(start='-30s')
 
+t1['service'] = t1.attr['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t1['failure'] = t1['http_resp_status'] >= 400
-t1['range_group'] = pl.subtract(t1['time_'], pl.modulo(t1['time_'], 1000000000))
+t1['range_group'] = t1['time_'] - pl.modulo(t1['time_'], 1000000000)
 
-quantiles_agg = t1.agg(by=lambda r: [r.attr.service], fn=lambda r: {
-  'latency_quantiles': pl.quantiles(r.http_resp_latency_ms),
-  'errors': pl.mean(r.failure),
-  'throughput_total': pl.count(r.http_resp_status),
-})
+quantiles_agg = t1.groupby('service').agg(
+  latency_quantiles=('http_resp_latency_ms', pl.quantiles),
+  errors=('failure', pl.mean),
+  throughput_total=('http_resp_status', pl.count),
+)
 
 quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p50')
 quantiles_agg['latency_p90'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
 quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
-quantiles_agg['service'] = quantiles_agg.attr['service']
 quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
 
 # The Range aggregate to calcualte the requests per second.
-range_agg = t1.agg(by=lambda r: [r.attr.service, r.range_group], fn=lambda r: {
-  'requests_per_window': pl.count(r.http_resp_status)
-})
+range_agg = t1.groupby(['service', 'range_group']).agg(
+  requests_per_window=('http_resp_status', pl.count),
+)
 
-rps_table = range_agg.agg(by=lambda r: r.attr.service, fn= lambda r: {'rps': pl.mean(r.requests_per_window)})
-joined_table = quantiles_table.merge(rps_table, how='inner', left_on=["service"], right_on=["_attr_service_name"])
+rps_table = range_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
+
+joined_table = quantiles_table.merge(rps_table,
+                                     how='inner',
+                                     left_on=['service'],
+                                     right_on=['service'],
+                                     suffixes=['', '_x'])
 
 joined_table['latency(p50)'] = joined_table['latency_p50']
 joined_table['latency(p90)'] = joined_table['latency_p90']
@@ -131,8 +136,7 @@ joined_table = joined_table[[
   'errors',
   'throughput (rps)',
   'throughput total']]
-joined_table.filter(fn=lambda r: r.service != "").result(name="out")
-
+joined_table[joined_table['service'] != ''].result(name='out')
 )pxl";
 
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {

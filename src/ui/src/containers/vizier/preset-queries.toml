@@ -8,24 +8,24 @@ t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t1['failure'] = t1['http_resp_status'] >= 400
 t1['range_group'] = t1['time_'] - pl.modulo(t1['time_'], 1000000000)
 
-quantiles_agg = t1.agg(by=lambda r: [r.attr.service], fn=lambda r: {
-  'latency_quantiles': pl.quantiles(r.http_resp_latency_ms),
-  'errors': pl.mean(r.failure),
-  'throughput_total': pl.count(r.http_resp_status),
-})
+quantiles_agg = t1.groupby('service').agg(
+  latency_quantiles=('http_resp_latency_ms', pl.quantiles),
+  errors=('failure', pl.mean),
+  throughput_total=('http_resp_status', pl.count),
+)
 
 quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p50')
 quantiles_agg['latency_p90'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
 quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
-quantiles_agg['service'] = quantiles_agg.attr['service']
 quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
 
 # The Range aggregate to calcualte the requests per second.
-range_agg = t1.agg(by=lambda r: [r.service, r.range_group], fn=lambda r: {
-  'requests_per_window': pl.count(r.http_resp_status)
-})
+range_agg = t1.groupby(['service', 'range_group']).agg(
+  requests_per_window=('http_resp_status', pl.count),
+)
 
-rps_table = range_agg.agg(by=lambda r: r.service, fn= lambda r: {'rps': pl.mean(r.requests_per_window)})
+rps_table = range_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
+
 joined_table = quantiles_table.merge(rps_table, 
                                      how='inner', 
                                      left_on=['service'], 
@@ -66,24 +66,24 @@ t1['write_bytes_mb'] = t1['write_bytes'] / 1024.0 / 1024.0
 t1['rchar_bytes_mb'] = t1['rchar_bytes'] / 1024.0 / 1024.0
 t1['wchar_bytes_mb'] = t1['wchar_bytes'] / 1024.0 / 1024.0
 
-upid_aggop = t1.agg(by=lambda r: r.upid, fn=lambda r:{
-  'vsize_mb': pl.mean(r.vsize_mb),
-  'rss_bytes_mb': pl.mean(r.rss_bytes_mb),
+upid_aggop = t1.groupby('upid').agg(
+  vsize_mb=('vsize_mb', pl.mean),
+  rss_bytes_mb=('rss_bytes_mb', pl.mean),
   # The following columns are all counters, so we diff the value at the beginning 
   # of the period with the value at the end of the period.
-  'cpu_utime_s_end': pl.max(r.cpu_utime_s),
-  'cpu_ktime_s_end': pl.max(r.cpu_ktime_s),
-  'cpu_utime_s_start': pl.min(r.cpu_utime_s),
-  'cpu_ktime_s_start': pl.min(r.cpu_ktime_s),
-  'read_bytes_mb_end': pl.max(r.read_bytes_mb),
-  'read_bytes_mb_start': pl.min(r.read_bytes_mb),
-  'write_bytes_mb_end': pl.max(r.write_bytes_mb),
-  'write_bytes_mb_start': pl.min(r.write_bytes_mb),
-  "rchar_bytes_mb_end": pl.max(r.rchar_bytes_mb),
-  "rchar_bytes_mb_start": pl.min(r.rchar_bytes_mb),
-  "wchar_bytes_mb_end": pl.max(r.wchar_bytes_mb),
-  "wchar_bytes_mb_start": pl.min(r.wchar_bytes_mb)
-})
+  cpu_utime_s_end=('cpu_utime_s', pl.max),
+  cpu_ktime_s_end=('cpu_ktime_s', pl.max),
+  cpu_utime_s_start=('cpu_utime_s', pl.min),
+  cpu_ktime_s_start=('cpu_ktime_s', pl.min),
+  read_bytes_mb_end=('read_bytes_mb', pl.max),
+  read_bytes_mb_start=('read_bytes_mb', pl.min),
+  write_bytes_mb_end=('write_bytes_mb', pl.max),
+  write_bytes_mb_start=('write_bytes_mb', pl.min),
+  rchar_bytes_mb_end=('rchar_bytes_mb', pl.max),
+  rchar_bytes_mb_start=('rchar_bytes_mb', pl.min),
+  wchar_bytes_mb_end=('wchar_bytes_mb', pl.max),
+  wchar_bytes_mb_start=('wchar_bytes_mb', pl.min),
+)
 
 # The cpu time diff.
 upid_aggop['cpu_utime_s'] = upid_aggop['cpu_utime_s_end'] - upid_aggop['cpu_utime_s_start']
@@ -92,22 +92,23 @@ upid_aggop['read_bytes_mb'] = upid_aggop['read_bytes_mb_end'] - upid_aggop['read
 upid_aggop['write_bytes_mb'] = upid_aggop['write_bytes_mb_end'] - upid_aggop['write_bytes_mb_start']
 upid_aggop['rchar_bytes_mb'] = upid_aggop['rchar_bytes_mb_end'] - upid_aggop['rchar_bytes_mb_start']
 upid_aggop['wchar_bytes_mb'] = upid_aggop['wchar_bytes_mb_end'] - upid_aggop['wchar_bytes_mb_start']
+upid_aggop['pod'] = upid_aggop.attr['pod']
 
 # For this aggregate, we sum up the values as we've already calculated the average/usage 
 # for the upids already.
-pod_aggop = upid_aggop.agg(by=lambda r: r.attr.pod, fn=lambda r:{
-  'cpu_utime_s': pl.sum(r.cpu_utime_s),
-  'cpu_ktime_s': pl.sum(r.cpu_ktime_s),
-  'vsize_mb': pl.sum(r.vsize_mb),
-  'rss_bytes_mb': pl.sum(r.rss_bytes_mb),
-  'read_bytes_mb': pl.sum(r.read_bytes_mb),
-  'write_bytes_mb': pl.sum(r.write_bytes_mb),
-  "rchar_bytes_mb": pl.sum(r.rchar_bytes_mb),
-  "wchar_bytes_mb": pl.sum(r.wchar_bytes_mb)
-})
+pod_aggop = upid_aggop.groupby('pod').agg(
+  cpu_utime_s=('cpu_utime_s', pl.sum),
+  cpu_ktime_s=('cpu_ktime_s', pl.sum),
+  vsize_mb=('vsize_mb', pl.sum),
+  rss_bytes_mb=('rss_bytes_mb', pl.sum),
+  read_bytes_mb=('read_bytes_mb', pl.sum),
+  write_bytes_mb=('write_bytes_mb', pl.sum),
+  rchar_bytes_mb=('rchar_bytes_mb', pl.sum),
+  wchar_bytes_mb=('wchar_bytes_mb', pl.sum),
+)
 
 # Format everything nicely.
-pod_aggop['pod_name'] = pod_aggop.attr['pod']
+pod_aggop['pod_name'] = pod_aggop['pod']
 pod_aggop['status'] = pl.pod_name_to_status(pod_aggop['pod_name'])
 pod_aggop['Created on'] = pl.pod_name_to_start_time(pod_aggop['pod_name'])
 pod_aggop['CPU User time (s)'] = pod_aggop['cpu_utime_s']
@@ -141,32 +142,33 @@ t1['write_bytes_mb'] = t1['write_bytes'] / 1024.0 / 1024.0
 t1['rchar_bytes_mb'] = t1['rchar_bytes'] / 1024.0 / 1024.0
 t1['wchar_bytes_mb'] = t1['wchar_bytes'] / 1024.0 / 1024.0
 
-upid_aggop = t1.agg(by=lambda r: r.upid, fn=lambda r:{
-  'vsize_mb': pl.mean(r.vsize_mb),
-  'rss_bytes_mb': pl.mean(r.rss_bytes_mb),
+upid_aggop = t1.groupby('upid').agg(
+  vsize_mb=('vsize_mb', pl.mean),
+  rss_bytes_mb=('rss_bytes_mb', pl.mean),
   # The following columns are all counters, so we take the maximum value.
-  'cpu_utime_s': pl.max(r.cpu_utime_s),
-  'cpu_ktime_s': pl.max(r.cpu_ktime_s),
-  'read_bytes_mb': pl.max(r.read_bytes_mb),
-  'write_bytes_mb': pl.max(r.write_bytes_mb),
-  "rchar_bytes_mb": pl.max(r.rchar_bytes_mb),
-  "wchar_bytes_mb": pl.max(r.wchar_bytes_mb),
-})
+  cpu_utime_s=('cpu_utime_s', pl.max),
+  cpu_ktime_s=('cpu_ktime_s', pl.max),
+  read_bytes_mb=('read_bytes_mb', pl.max),
+  write_bytes_mb=('write_bytes_mb', pl.max),
+  rchar_bytes_mb=('rchar_bytes_mb', pl.max),
+  wchar_bytes_mb=('wchar_bytes_mb', pl.max),
+)
 # For this aggregate, we sum up the values as we've already calculated the average/usage 
 # for the upids already.
-pod_aggop = upid_aggop.agg(by=lambda r: r.attr.pod, fn=lambda r:{
-  'cpu_utime_s': pl.sum(r.cpu_utime_s),
-  'cpu_ktime_s': pl.sum(r.cpu_ktime_s),
-  'vsize_mb': pl.sum(r.vsize_mb),
-  'rss_bytes_mb': pl.sum(r.rss_bytes_mb),
-  'read_bytes_mb': pl.sum(r.read_bytes_mb),
-  'write_bytes_mb': pl.sum(r.write_bytes_mb),
-  "rchar_bytes_mb": pl.sum(r.rchar_bytes_mb),
-  "wchar_bytes_mb": pl.sum(r.wchar_bytes_mb)
-})
+upid_aggop['pod'] = upid_aggop.attr['pod']
+pod_aggop = upid_aggop.groupby('pod').agg(
+  cpu_utime_s=('cpu_utime_s', pl.sum),
+  cpu_ktime_s=('cpu_ktime_s', pl.sum),
+  vsize_mb=('vsize_mb', pl.sum),
+  rss_bytes_mb=('rss_bytes_mb', pl.sum),
+  read_bytes_mb=('read_bytes_mb', pl.sum),
+  write_bytes_mb=('write_bytes_mb', pl.sum),
+  rchar_bytes_mb=('rchar_bytes_mb', pl.sum),
+  wchar_bytes_mb=('wchar_bytes_mb', pl.sum),
+)
 
 # Format everything nicely.
-pod_aggop['pod_name'] = pod_aggop.attr['pod']
+pod_aggop['pod_name'] = pod_aggop['pod']
 pod_aggop['status'] = pl.pod_name_to_status(pod_aggop['pod_name'])
 pod_aggop['Created on'] = pl.pod_name_to_start_time(pod_aggop['pod_name'])
 pod_aggop['CPU User time (s)'] = pod_aggop['cpu_utime_s']
