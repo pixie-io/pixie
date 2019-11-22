@@ -615,10 +615,11 @@ template <bool HasRelation = false>
 struct SourceHasRelationMatch : public ParentMatch {
   SourceHasRelationMatch() : ParentMatch(IRNodeType::kAny) {}
   bool Match(const IRNode* node) const override {
-    if (node->is_source()) {
-      return static_cast<const OperatorIR*>(node)->IsRelationInit() == HasRelation;
+    if (!node->IsOperator()) {
+      return false;
     }
-    return false;
+    const OperatorIR* op = static_cast<const OperatorIR*>(node);
+    return op->is_source() && op->IsRelationInit() == HasRelation;
   }
 };
 

@@ -113,7 +113,6 @@ class IRNode {
   virtual std::string DebugString() const;
   virtual bool IsOperator() const = 0;
   virtual bool IsExpression() const = 0;
-  bool is_source() const { return is_source_; }
   IRNodeType type() const { return type_; }
   std::string type_string() const { return TypeString(type()); }
   static std::string TypeString(const IRNodeType& node_type) {
@@ -171,8 +170,7 @@ class IRNode {
   void SetLineCol(const pypa::AstPtr& ast_node);
 
  protected:
-  explicit IRNode(int64_t id, IRNodeType type, bool is_source)
-      : type_(type), id_(id), is_source_(is_source) {}
+  explicit IRNode(int64_t id, IRNodeType type) : type_(type), id_(id) {}
   /**
    * @brief The implementation of DeepCloneInto to be overridden by children of this class.
    *
@@ -191,7 +189,6 @@ class IRNode {
   int64_t col_;
   IR* graph_ptr_;
   bool line_col_set_ = false;
-  bool is_source_ = false;
   pypa::AstPtr ast_node_;
 };
 
@@ -354,15 +351,18 @@ class OperatorIR : public IRNode {
    */
   std::vector<OperatorIR*> Children() const;
 
+  bool is_source() const { return is_source_; }
+
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type, bool has_parents, bool is_source)
-      : IRNode(id, type, is_source), can_have_parents_(has_parents) {}
+      : IRNode(id, type), is_source_(is_source), can_have_parents_(has_parents) {}
 
  private:
-  table_store::schema::Relation relation_;
+  bool is_source_ = false;
   bool relation_init_ = false;
   bool can_have_parents_;
   std::vector<OperatorIR*> parents_;
+  table_store::schema::Relation relation_;
 };
 
 class ExpressionIR : public IRNode {
@@ -401,7 +401,7 @@ class ExpressionIR : public IRNode {
   }
 
  protected:
-  ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type, false) {}
+  ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
 };
 
 class MetadataProperty : public NotCopyable {
@@ -726,7 +726,7 @@ using ColExpressionVector = std::vector<ColumnExpression>;
 class LambdaIR : public IRNode {
  public:
   LambdaIR() = delete;
-  explicit LambdaIR(int64_t id) : IRNode(id, IRNodeType::kLambda, false) {}
+  explicit LambdaIR(int64_t id) : IRNode(id, IRNodeType::kLambda) {}
   Status Init(std::unordered_set<std::string> column_names, const ColExpressionVector& col_exprs,
               int64_t number_of_parents);
   /**

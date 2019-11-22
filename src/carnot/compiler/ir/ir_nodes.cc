@@ -73,7 +73,6 @@ StatusOr<IRNode*> IRNode::DeepCloneInto(IR* graph) const {
   other->line_ = line_;
   other->col_ = col_;
   other->line_col_set_ = line_col_set_;
-  other->is_source_ = is_source_;
   other->ast_node_ = ast_node_;
   return other;
 }
@@ -969,6 +968,8 @@ StatusOr<IRNode*> OperatorIR::DeepCloneInto(IR* graph) const {
   DCHECK(node->IsOperator());
   OperatorIR* new_op = static_cast<OperatorIR*>(node);
   PL_RETURN_IF_ERROR(CopyParents(new_op));
+
+  new_op->is_source_ = is_source_;
   new_op->relation_ = relation_;
   new_op->relation_init_ = relation_init_;
   return new_op;
