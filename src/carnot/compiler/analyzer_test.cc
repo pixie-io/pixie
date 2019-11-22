@@ -166,7 +166,7 @@ class AnalyzerTest : public ::testing::Test {
     auto result = ParseQuery(query);
     PL_RETURN_IF_ERROR(result);
     // just a quick test to find issues.
-    if (!result.ValueOrDie()->GetSinks().ok()) {
+    if (result.ValueOrDie()->GetSinks().size() == 0) {
       return error::InvalidArgument("IR Doesn't have sink");
     }
     return result;

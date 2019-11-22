@@ -260,7 +260,7 @@ class IR {
     return iterator->second.get();
   }
   size_t size() const { return id_node_map_.size(); }
-  StatusOr<std::vector<IRNode*>> GetSinks() {
+  std::vector<IRNode*> GetSinks() {
     std::vector<IRNode*> nodes;
     for (auto& i : dag().TopologicalSort()) {
       IRNode* node = Get(i);
@@ -268,9 +268,6 @@ class IR {
         nodes.push_back(node);
         DCHECK(node->IsOperator());
       }
-    }
-    if (nodes.empty()) {
-      return error::InvalidArgument("No Result() found in the graph.");
     }
     return nodes;
   }

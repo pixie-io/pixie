@@ -25,6 +25,7 @@ using ::pl::table_store::schema::Relation;
 using ::pl::testing::proto::EqualsProto;
 using planpb::testutils::CompareLogicalPlans;
 using ::testing::_;
+using ::testing::ContainsRegex;
 
 const char* kExtraScalarUDFs = R"proto(
 scalar_udfs {
@@ -2779,6 +2780,16 @@ TEST_F(CompilerTest, DISABLED_agg_and_expression_fails) {
   ASSERT_NOT_OK(plan_status);
   LOG(INFO) << plan_status.ToString();
   EXPECT_THAT(plan_status.status(), HasCompilerError("agg expressions cannot be nested"));
+}
+
+TEST_F(CompilerTest, missing_result) {
+  // Missing the result call at the end of the query.
+  auto missing_result_call = "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])";
+  auto missing_result_status = compiler_.Compile(missing_result_call, compiler_state_.get());
+  ASSERT_NOT_OK(missing_result_status);
+
+  EXPECT_THAT(missing_result_status.status().msg(),
+              ContainsRegex("query does not output a result, please add a print.* statement"));
 }
 
 }  // namespace compiler

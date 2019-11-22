@@ -189,16 +189,6 @@ TEST_F(CarnotTest, wrong_columns) {
   EXPECT_FALSE(wrong_columns_status.ok());
 }
 
-TEST_F(CarnotTest, missing_result) {
-  // Missing the result call at the end of the query.
-  auto missing_result_call = "queryDF = dataframe(table='test_table', select=['col1', 'col2'])";
-  // No time column, doesn't use a time parameter.
-  auto query_uuid = sole::uuid4();
-  auto missing_result_status = carnot_->ExecuteQuery(missing_result_call, query_uuid, 0);
-  VLOG(1) << missing_result_status.ToString();
-  EXPECT_FALSE(missing_result_status.ok());
-}
-
 // See whether executor is tolerant to receiving the wrong table name.
 TEST_F(CarnotTest, wrong_table_name) {
   auto wrong_table_name =

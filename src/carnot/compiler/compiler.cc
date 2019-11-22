@@ -11,7 +11,6 @@
 #include "src/carnot/compiler/analyzer.h"
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
-#include "src/carnot/compiler/ir_verifier.h"
 #include "src/carnot/compiler/parser/parser.h"
 #include "src/carnot/planpb/plan.pb.h"
 
@@ -26,16 +25,12 @@ StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState
 StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
                                                     CompilerState* compiler_state) {
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state));
-  PL_RETURN_IF_ERROR(VerifyIRConnections(*ir));
   PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
+
+  PL_RETURN_IF_ERROR(VerifyGraphHasMemorySink(ir.get()));
   return ir;
 }
-Status Compiler::VerifyIRConnections(const IR& ir) {
-  auto verifier = IRVerifier();
-  PL_RETURN_IF_ERROR(verifier.VerifyGraphConnections(ir));
-  PL_RETURN_IF_ERROR(verifier.VerifyLineColGraph(ir));
-  return Status::OK();
-}
+
 Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer, Analyzer::Create(compiler_state));
   return analyzer->Execute(ir);
@@ -51,6 +46,14 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   return ir;
+}
+
+Status Compiler::VerifyGraphHasMemorySink(IR* ir) {
+  auto sinks = ir->GetSinks();
+  if (sinks.size() == 0) {
+    return error::InvalidArgument("query does not output a result, please add a print() statement");
+  }
+  return Status::OK();
 }
 
 }  // namespace compiler

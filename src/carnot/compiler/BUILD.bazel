@@ -63,12 +63,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "ir_verifier_test",
-    srcs = ["ir_verifier_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
     name = "compiler_test",
     srcs = ["compiler_test.cc"],
     deps = [

@@ -32,7 +32,7 @@ class Compiler {
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state);
 
   Status UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state);
-  Status VerifyIRConnections(const IR& ir);
+  Status VerifyGraphHasMemorySink(IR* ir);
 };
 
 }  // namespace compiler
