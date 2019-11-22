@@ -794,6 +794,45 @@ TEST(FilterTest, InvalidChainedFilterQuery) {
               HasCompilerError("name 'df' is not available in this context"));
 }
 
+const char* kFilterWithNewMetadataQuery = R"query(
+df = dataframe("bar")
+df[df.attr["service"] == "foo"].result("ld")
+)query";
+
+TEST(FilterTest, ChainedFilterWithNewMetadataQuery) {
+  auto ir_graph_or_s = ParseQuery(kFilterWithNewMetadataQuery);
+  ASSERT_OK(ir_graph_or_s);
+  auto graph = ir_graph_or_s.ConsumeValueOrDie();
+  FilterIR* filter = nullptr;
+  for (int64_t i : graph->dag().TopologicalSort()) {
+    auto node = graph->Get(i);
+    if (Match(node, Filter())) {
+      filter = static_cast<FilterIR*>(node);
+    }
+  }
+
+  ASSERT_TRUE(filter) << "Filter not found in graph.";
+
+  ASSERT_EQ(filter->parents().size(), 1);
+  ASSERT_TRUE(Match(filter->parents()[0], MemorySource()));
+  auto mem_src = static_cast<MemorySourceIR*>(filter->parents()[0]);
+  EXPECT_EQ(mem_src->table_name(), "bar");
+
+  ASSERT_TRUE(Match(filter->filter_expr(), Equals(Metadata(), String())));
+
+  auto filter_expr = static_cast<FuncIR*>(filter->filter_expr());
+  ASSERT_TRUE(Match(filter_expr->args()[0], Metadata()));
+  ASSERT_TRUE(Match(filter_expr->args()[1], String()));
+
+  MetadataIR* col = static_cast<MetadataIR*>(filter_expr->args()[0]);
+  StringIR* str = static_cast<StringIR*>(filter_expr->args()[1]);
+  EXPECT_EQ(col->name(), "service");
+  EXPECT_EQ(str->str(), "foo");
+
+  ASSERT_EQ(filter->Children().size(), 1);
+  ASSERT_TRUE(Match(filter->Children()[0], MemorySink()));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

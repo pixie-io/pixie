@@ -597,6 +597,9 @@ class ASTVisitorImpl : public ASTVisitor {
   }
   StatusOr<IRNode*> ProcessDataForAttribute(const pypa::AstAttributePtr& attr);
 
+  StatusOr<ColumnIR*> ProcessSubscriptColumnWithAttribute(const pypa::AstSubscriptPtr& subscript,
+                                                          const OperatorContext& op_context);
+
   static bool IsUnitTimeFn(const std::string& fn_name);
   IR* ir_graph_;
   VarTable var_table_;

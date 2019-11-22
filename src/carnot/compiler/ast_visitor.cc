@@ -841,9 +841,52 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCompare(const pypa::AstCompar
   return ir_graph_->CreateNode<FuncIR>(node, op, expressions);
 }
 
+StatusOr<ColumnIR*> ASTVisitorImpl::ProcessSubscriptColumnWithAttribute(
+    const pypa::AstSubscriptPtr& subscript, const OperatorContext& op_context) {
+  QLObjectPtr ptr;
+  if (subscript->value->type != AstType::Attribute) {
+    return CreateAstError(subscript, "expected attribute, got $0",
+                          GetAstTypeName(subscript->value->type));
+  }
+
+  auto attr = PYPA_PTR_CAST(Attribute, subscript->value);
+  PL_ASSIGN_OR_RETURN(QLObjectPtr attribute_value_ptr, ProcessAttributeValue(attr));
+
+  PL_ASSIGN_OR_RETURN(
+      ptr, attribute_value_ptr->GetAttribute(attr->attribute, GetNameAsString(attr->attribute)));
+
+  // TODO(philkuz) check the line, column of this error to make sure it's here, otherwise call the
+  // error here.
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> func, ptr->GetSubscriptMethod());
+
+  if (subscript->slice->type != AstType::Index) {
+    return CreateAstError(subscript->slice,
+                          "Expected to receive index as subscript slice, received $0.",
+                          GetAstTypeName(subscript->slice->type));
+  }
+  auto index = PYPA_PTR_CAST(Index, subscript->slice);
+  PL_ASSIGN_OR_RETURN(IRNode * data, ProcessData(index->value, op_context));
+  PL_ASSIGN_OR_RETURN(QLObjectPtr func_result, func->Call(ArgMap{{}, {data}}, subscript, this));
+  if (!func_result->HasNode()) {
+    return CreateAstError(subscript, "subscript operator does not return any value");
+  }
+
+  if (!Match(func_result->node(), ColumnNode())) {
+    return CreateAstError(subscript, "subscript result isn't a column, received a $0",
+                          func_result->node()->type_string());
+  }
+
+  return static_cast<ColumnIR*>(func_result->node());
+}
+
 StatusOr<ColumnIR*> ASTVisitorImpl::ProcessSubscriptColumn(const pypa::AstSubscriptPtr& subscript,
                                                            const OperatorContext& op_context) {
   auto value_ir = ProcessData(subscript->value, op_context);
+
+  // TODO(philkuz) generalize this approach by support "load" subscripts for Dataframes.
+  if (subscript->value->type == AstType::Attribute) {
+    return ProcessSubscriptColumnWithAttribute(subscript, op_context);
+  }
 
   // TODO(nserrino) support indexing into lists and other things like that.
   if (subscript->value->type != AstType::Name) {
