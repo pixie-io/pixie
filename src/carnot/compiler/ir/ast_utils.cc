@@ -4,7 +4,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-StatusOr<std::vector<std::string>> ParseStringListIR(const ListIR* list_ir) {
+StatusOr<std::vector<std::string>> ParseStringsFromCollection(const CollectionIR* list_ir) {
   std::vector<std::string> out_vector;
   for (size_t idx = 0; idx < list_ir->children().size(); ++idx) {
     IRNode* child_ir = list_ir->children()[idx];

@@ -204,13 +204,14 @@ StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
                       ProcessCols(right_on_node, "right_on", 1));
 
   // TODO(philkuz) consider using a struct instead of a vector because it's a fixed size.
-  if (!Match(suffixes_node, ListWithChildren(String()))) {
+  if (!Match(suffixes_node, CollectionWithChildren(String()))) {
     return suffixes_node->CreateIRNodeError(
-        "'suffixes' must be a tuple with 2 strings - for the left and right suffixes.");
+        "'suffixes' must be a tuple with 2 strings for the left and right suffixes. Received $0",
+        suffixes_node->type_string());
   }
 
   PL_ASSIGN_OR_RETURN(std::vector<std::string> suffix_strs,
-                      ParseStringListIR(static_cast<ListIR*>(suffixes_node)));
+                      ParseStringsFromCollection(static_cast<ListIR*>(suffixes_node)));
   if (suffix_strs.size() != 2) {
     return suffixes_node->CreateIRNodeError(
         "'suffixes' must be a tuple with 2 elements. Received $0", suffix_strs.size());
@@ -308,7 +309,7 @@ StatusOr<QLObjectPtr> DropHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
         columns_arg->type_string());
   }
   ListIR* columns_list = static_cast<ListIR*>(columns_arg);
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns, ParseStringListIR(columns_list));
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns, ParseStringsFromCollection(columns_list));
 
   PL_ASSIGN_OR_RETURN(DropIR * drop_op, df->graph()->CreateNode<DropIR>(ast, df->op(), columns));
   PL_RETURN_IF_ERROR(df->graph()->DeleteNodeAndChildren(columns_list->id()));
@@ -642,7 +643,7 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalFilter(Dataframe* df, const pypa::As
 
 StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(Dataframe* df, const pypa::AstPtr& ast,
                                                  ListIR* key) {
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> keep_column_names, ParseStringListIR(key));
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> keep_column_names, ParseStringsFromCollection(key));
 
   ColExpressionVector keep_exprs;
   for (const auto& col_name : keep_column_names) {
@@ -680,7 +681,7 @@ StatusOr<std::vector<ColumnIR*>> GroupByHandler::ParseByFunction(IRNode* by) {
   }
 
   PL_ASSIGN_OR_RETURN(std::vector<std::string> column_names,
-                      ParseStringListIR(static_cast<ListIR*>(by)));
+                      ParseStringsFromCollection(static_cast<ListIR*>(by)));
   std::vector<ColumnIR*> columns;
   for (const auto& col_name : column_names) {
     PL_ASSIGN_OR_RETURN(ColumnIR * col,

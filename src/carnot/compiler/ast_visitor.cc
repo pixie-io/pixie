@@ -58,7 +58,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataframeOp(const pypa::AstPtr& ast
 
   std::string table_name = static_cast<StringIR*>(table)->str();
   PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
-                      ParseStringListIR(static_cast<ListIR*>(select)));
+                      ParseStringsFromCollection(static_cast<ListIR*>(select)));
   PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
                       ir_graph_->CreateNode<MemorySourceIR>(ast, table_name, columns));
   return StatusOr(std::make_shared<Dataframe>(mem_source_op));
@@ -85,7 +85,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessPrint(const pypa::AstPtr& ast,
   OperatorIR* out_op = static_cast<OperatorIR*>(out);
   std::string out_name = static_cast<StringIR*>(name)->str();
   PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
-                      ParseStringListIR(static_cast<ListIR*>(cols)));
+                      ParseStringsFromCollection(static_cast<ListIR*>(cols)));
 
   PL_ASSIGN_OR_RETURN(MemorySinkIR * mem_sink_op,
                       ir_graph_->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));

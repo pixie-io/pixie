@@ -388,6 +388,7 @@ class ExpressionIR : public IRNode {
   virtual bool IsDataTypeEvaluated() const = 0;
   virtual bool IsColumn() const { return false; }
   virtual bool IsData() const { return false; }
+  virtual bool IsCollection() const { return false; }
   StatusOr<OperatorIR*> ContainingOperator() const {
     IR* graph = graph_ptr();
     int64_t cur_id = id();
@@ -690,16 +691,18 @@ class StringIR : public DataIR {
  * vector of pointers to the contained nodes in the collection.
  *
  */
-class CollectionIR : public DataIR {
+class CollectionIR : public ExpressionIR {
  public:
   CollectionIR() = delete;
-  CollectionIR(int64_t id, IRNodeType type)
-      : DataIR(id, type, types::DataType::DATA_TYPE_UNKNOWN) {}
+  CollectionIR(int64_t id, IRNodeType type) : ExpressionIR(id, type) {}
   Status Init(std::vector<ExpressionIR*> children);
 
   std::vector<ExpressionIR*> children() const { return children_; }
-  bool IsOperator() const override { return false; }
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override = 0;
+
+  bool IsCollection() const override { return true; }
+  bool IsDataTypeEvaluated() const override { return true; }
+  types::DataType EvaluatedDataType() const override { return types::DATA_TYPE_UNKNOWN; }
 
  protected:
   StatusOr<IRNode*> DeepCloneIntoCollection(IR* graph, CollectionIR* collection) const;

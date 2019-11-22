@@ -47,7 +47,7 @@ Status CreateAstError(const pypa::Ast& ast, Args... args) {
  * @param list_ir
  * @return StatusOr<std::vector<std::string>>
  */
-StatusOr<std::vector<std::string>> ParseStringListIR(const ListIR* list_ir);
+StatusOr<std::vector<std::string>> ParseStringsFromCollection(const CollectionIR* list_ir);
 
 /**
  * @brief Get the string repr of the passed in type.
