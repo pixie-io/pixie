@@ -1331,6 +1331,10 @@ Status JoinIR::Init(std::vector<OperatorIR*> parents, const std::string& how_typ
                     const std::vector<ColumnIR*> left_on_cols,
                     const std::vector<ColumnIR*>& right_on_cols,
                     const std::vector<std::string>& suffix_strs) {
+  if (left_on_cols.size() != right_on_cols.size()) {
+    return CreateIRNodeError("'left_on' and 'right_on' must contain the same number of elements.");
+  }
+
   for (auto* p : parents) {
     PL_RETURN_IF_ERROR(AddParent(p));
   }

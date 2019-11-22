@@ -1219,6 +1219,32 @@ TEST_F(OperatorTests, GroupByNode) {
   EXPECT_THAT(col_names, ElementsAre("col1", "col2"));
 }
 
+TEST_F(OperatorTests, join_node) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  auto join_node = graph->MakeNode<JoinIR>(ast).ConsumeValueOrDie();
+  EXPECT_OK(join_node->Init({mem_src1, mem_src2}, "inner", {MakeColumn("col1", 0)},
+                            {MakeColumn("col1", 1)}, {"_x", "_y"}));
+}
+
+TEST_F(OperatorTests, join_node_mismatched_columns) {
+  auto mem_source1 = MakeMemSource();
+  auto mem_source2 = MakeMemSource();
+
+  auto join_node = graph->MakeNode<JoinIR>(ast).ConsumeValueOrDie();
+  EXPECT_NOT_OK(join_node->Init({mem_source1, mem_source2}, "inner",
+                                {MakeColumn("col1", 0), MakeColumn("col2", 0)},
+                                {MakeColumn("col1", 1)}, {}));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
