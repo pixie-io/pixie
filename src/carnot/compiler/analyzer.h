@@ -36,6 +36,7 @@ class Analyzer : public RuleExecutor {
                                                                        md_handler_.get());
     source_and_metadata_resolution_batch->AddRule<MetadataFunctionFormatRule>(compiler_state_);
     source_and_metadata_resolution_batch->AddRule<SetupJoinTypeRule>();
+    source_and_metadata_resolution_batch->AddRule<MergeGroupByIntoAggRule>();
   }
 
   void CreateVerifyUserDefinedColumnsBatch() {
@@ -63,11 +64,6 @@ class Analyzer : public RuleExecutor {
     resolution_verification_batch->AddRule<VerifyFilterExpressionRule>(compiler_state_);
   }
 
-  void CreatePostResolutionBatch() {
-    RuleBatch* post_resolution = CreateRuleBatch<FailOnMax>("PostResolution", 2);
-    post_resolution->AddRule<MergeGroupByIntoAggRule>();
-  }
-
   void CreateRemoveIROnlyNodesBatch() {
     RuleBatch* remove_ir_only_nodes_batch = CreateRuleBatch<FailOnMax>("RemoveIROnlyNodes", 2);
     remove_ir_only_nodes_batch->AddRule<MetadataResolverConversionRule>(compiler_state_);
@@ -82,7 +78,6 @@ class Analyzer : public RuleExecutor {
     CreateRangeArgExpressionBatch();
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();
-    CreatePostResolutionBatch();
     CreateRemoveIROnlyNodesBatch();
     return Status::OK();
   }

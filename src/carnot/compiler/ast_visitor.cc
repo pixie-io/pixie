@@ -317,7 +317,7 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast,
     pypa::AstKeywordPtr kw_ptr = PYPA_PTR_CAST(Keyword, k);
     std::string key = GetNameAsString(kw_ptr->name);
     PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(kw_ptr->value, op_context));
-    arg_map.kwargs[key] = value;
+    arg_map.kwargs.emplace_back(key, value);
   }
 
   return arg_map;
@@ -368,14 +368,6 @@ StatusOr<std::string> ASTVisitorImpl::GetAttribute(const pypa::AstAttributePtr& 
     return CreateAstError(attr, "$0 not a valid attribute", GetAstTypeName(attr->attribute->type));
   }
   return GetNameAsString(attr->attribute);
-}
-
-IRNode* GetArgument(const ArgMap& args, const std::string& arg_name) {
-  auto iter = args.kwargs.find(arg_name);
-  if (iter == args.kwargs.end()) {
-    return nullptr;
-  }
-  return iter->second;
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessOpCallNode(const pypa::AstCallPtr& node) {

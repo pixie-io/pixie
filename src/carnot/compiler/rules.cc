@@ -1147,17 +1147,24 @@ StatusOr<bool> MergeGroupByIntoAggRule::Apply(IRNode* ir_node) {
   return false;
 }
 
+StatusOr<ColumnIR*> MergeGroupByIntoAggRule::CopyColumn(ColumnIR* g) {
+  if (Match(g, Metadata())) {
+    return g->graph_ptr()->CreateNode<MetadataIR>(g->ast_node(), g->col_name(),
+                                                  g->container_op_parent_idx());
+  }
+
+  return g->graph_ptr()->CreateNode<ColumnIR>(g->ast_node(), g->col_name(),
+                                              g->container_op_parent_idx());
+}
+
 StatusOr<bool> MergeGroupByIntoAggRule::AddGroupByDataIntoAgg(BlockingAggIR* agg_node) {
   DCHECK_EQ(agg_node->parents().size(), 1UL);
   OperatorIR* parent = agg_node->parents()[0];
   DCHECK(Match(parent, GroupBy()));
   GroupByIR* groupby = static_cast<GroupByIR*>(parent);
-  IR* graph = groupby->graph_ptr();
   for (ColumnIR* g : groupby->groups()) {
-    // TODO(philkuz) can this properly handle metadata Columns.
-    PL_ASSIGN_OR_RETURN(ColumnIR * col, graph->CreateNode<ColumnIR>(g->ast_node(), g->col_name(),
-                                                                    g->container_op_parent_idx()));
-    agg_node->AddGroup(col);
+    PL_ASSIGN_OR_RETURN(ColumnIR * col, CopyColumn(g));
+    PL_RETURN_IF_ERROR(agg_node->AddGroup(col));
   }
 
   DCHECK_EQ(groupby->parents().size(), 1UL);

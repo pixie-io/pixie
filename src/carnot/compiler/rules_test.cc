@@ -22,6 +22,8 @@ using table_store::schema::Relation;
 using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
+using ::testing::Not;
+using ::testing::UnorderedElementsAreArray;
 
 class RulesTest : public OperatorTests {
  protected:
@@ -2135,6 +2137,9 @@ TEST_F(RulesTest, MergeAndRemove) {
     actual_group_names.push_back(g->col_name());
     actual_group_ids.push_back(g->id());
   }
+
+  EXPECT_THAT(actual_group_names, ElementsAre("col1", "col2"));
+  EXPECT_THAT(actual_group_ids, Not(UnorderedElementsAreArray(groupby_ids)));
 }
 
 TEST_F(RulesTest, MergeAndRemove_MultipleAggs) {
@@ -2191,6 +2196,51 @@ TEST_F(RulesTest, MergeAndRemove_MultipleAggs) {
 
   // Ids must be different -> must be a deep copy not a pointer copy.
   EXPECT_NE(group_ids1, group_ids2);
+}
+
+TEST_F(RulesTest, MergeAndRemove_GroupByOnMetadataColumns) {
+  MemorySourceIR* mem_source = MakeMemSource();
+  GroupByIR* group_by =
+      MakeGroupBy(mem_source, {MakeMetadataIR("service", 0), MakeColumn("col2", 0)});
+  BlockingAggIR* agg =
+      MakeBlockingAgg(group_by, {}, {{"outcount", MakeMeanFunc(MakeColumn("count", 0))}});
+  MakeMemSink(agg, "");
+
+  int64_t group_by_node_id = group_by->id();
+  std::vector<int64_t> groupby_ids;
+  for (ColumnIR* g : group_by->groups()) {
+    groupby_ids.push_back(g->id());
+  }
+
+  // Do remove groupby after running both
+  MergeGroupByIntoAggRule rule1;
+  RemoveGroupByRule rule2;
+  auto result1 = rule1.Execute(graph.get());
+  ASSERT_OK(result1);
+  ASSERT_TRUE(result1.ConsumeValueOrDie());
+  auto result2 = rule2.Execute(graph.get());
+  ASSERT_OK(result1);
+  ASSERT_TRUE(result2.ConsumeValueOrDie());
+
+  EXPECT_FALSE(graph->HasNode(group_by_node_id));
+  // Make sure no groupby sticks around either
+  for (int64_t i : graph->dag().TopologicalSort()) {
+    EXPECT_FALSE(Match(graph->Get(i), GroupBy())) << absl::Substitute("Node $0 is a groupby()", i);
+  }
+
+  EXPECT_THAT(agg->parents(), ElementsAre(mem_source));
+
+  std::vector<std::string> actual_group_names;
+  std::vector<int64_t> actual_group_ids;
+  for (ColumnIR* g : agg->groups()) {
+    actual_group_names.push_back(g->col_name());
+    actual_group_ids.push_back(g->id());
+  }
+  EXPECT_THAT(actual_group_ids, Not(UnorderedElementsAreArray(groupby_ids)));
+
+  EXPECT_TRUE(Match(agg->groups()[0], Metadata()));
+  EXPECT_TRUE(!Match(agg->groups()[1], Metadata()));
+  EXPECT_TRUE(Match(agg->groups()[1], ColumnNode()));
 }
 
 }  // namespace compiler

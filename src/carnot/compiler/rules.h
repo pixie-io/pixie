@@ -375,6 +375,7 @@ class MergeGroupByIntoAggRule : public Rule {
 
  private:
   StatusOr<bool> AddGroupByDataIntoAgg(BlockingAggIR* ir_node);
+  StatusOr<ColumnIR*> CopyColumn(ColumnIR* g);
 };
 
 /**

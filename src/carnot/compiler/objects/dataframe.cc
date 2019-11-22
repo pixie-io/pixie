@@ -290,6 +290,9 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, TupleIR* tuple) {
   PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->CreateNode<ColumnIR>(childone->ast_node(), argcol_name,
                                                                   /* parent_op_idx */ 0));
   PL_RETURN_IF_ERROR(func->AddArg(argcol));
+
+  // Delete tuple id.
+  PL_RETURN_IF_ERROR(ir->DeleteNode(tuple->id()));
   return func;
 }
 

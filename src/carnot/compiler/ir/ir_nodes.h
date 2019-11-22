@@ -26,8 +26,21 @@ class IR;
 class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
 
+/**
+ * @brief NameToNode is a struct to store string, node pairs. This enables Arg data structures to
+ * preserve input order of these arguments which is probably expected by the user and gives
+ * deterministic guarantees that hashmaps can't.
+ *
+ */
+struct NameToNode {
+  NameToNode(std::string_view n, IRNode* nd) : name(n), node(nd) {}
+  std::string name;
+  IRNode* node;
+};
+
 struct ArgMap {
-  std::unordered_map<std::string, IRNode*> kwargs;
+  // Kwargs is a vector because we want to preserve the input order for display of the tables.
+  std::vector<NameToNode> kwargs;
   std::vector<IRNode*> args;
 };
 
@@ -1170,7 +1183,10 @@ class BlockingAggIR : public OperatorIR {
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   inline bool IsBlocking() const override { return true; }
 
-  void AddGroup(ColumnIR* new_group) { groups_.push_back(new_group); }
+  Status AddGroup(ColumnIR* new_group) {
+    groups_.push_back(new_group);
+    return graph_ptr()->AddEdge(this, new_group);
+  }
 
  private:
   // TODO(philkuz) (PL-1081) remove this on removing the init stuff.

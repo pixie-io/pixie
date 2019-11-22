@@ -24,29 +24,36 @@ class ParsedArgs {
     args_[arg_name] = node;
   }
 
-  bool HasArgOrKwarg(const std::string& arg_name) {
-    return args_.contains(arg_name) || kwargs_.contains(arg_name);
-  }
+  bool HasArgOrKwarg(std::string_view arg_name) { return HasArg(arg_name) || HasKwarg(arg_name); }
 
-  IRNode* GetArg(const std::string& arg_name) const {
-    auto args_iter = args_.find(arg_name);
-    DCHECK(args_iter != args_.end()) << absl::Substitute("arg '$0' not found", arg_name);
-    return args_iter->second;
+  IRNode* GetArg(std::string_view arg_name) const {
+    DCHECK(args_.contains(arg_name)) << absl::Substitute("arg '$0' not found", arg_name);
+    return args_.find(arg_name)->second;
   }
 
   void AddKwarg(const std::string& arg_name, IRNode* node) {
     DCHECK(!HasArgOrKwarg(arg_name));
-    kwargs_[arg_name] = node;
+    kwargs_.emplace_back(arg_name, node);
   }
 
-  const absl::flat_hash_map<std::string, IRNode*>& kwargs() const { return kwargs_; }
+  const std::vector<NameToNode>& kwargs() const { return kwargs_; }
   const absl::flat_hash_map<std::string, IRNode*>& args() const { return args_; }
 
  private:
+  bool HasArg(std::string_view arg_name) { return args_.contains(arg_name); }
+  bool HasKwarg(std::string_view kwarg) {
+    for (const auto& kw : kwargs_) {
+      if (kw.name == kwarg) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // The mapping of specified arguments to the ir representation.
   absl::flat_hash_map<std::string, IRNode*> args_;
   // Holder for extra kw args if the function has a **kwargs argument.
-  absl::flat_hash_map<std::string, IRNode*> kwargs_;
+  std::vector<NameToNode> kwargs_;
 };
 
 using FunctionType = std::function<StatusOr<QLObjectPtr>(const pypa::AstPtr&, const ParsedArgs&)>;
