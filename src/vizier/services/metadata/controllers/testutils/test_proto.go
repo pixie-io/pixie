@@ -249,6 +249,23 @@ register_agent_request {
 }
 `
 
+// RegisterKelvinRequestPB is the protobuf for a register agent request.
+var RegisterKelvinRequestPB = `
+register_agent_request {
+  info {
+    agent_id {
+      data: "11285cdd1de94ab1ae6a0ba08c8c676c"
+    }
+    host_info {
+      hostname: "test-host"
+    }
+    capabilities {
+      collects_data: false
+    }
+  }
+}
+`
+
 // InvalidRegisterAgentRequestPB is an invalid protobuf of a register agent request.
 var InvalidRegisterAgentRequestPB = `
 register_agent_request {

@@ -337,7 +337,7 @@ func GetNodeResourceUpdateFromEndpoints(ep *metadatapb.Endpoints, hostname strin
 	var pods []string
 	for _, subset := range ep.Subsets {
 		for _, addr := range subset.Addresses {
-			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" && addr.NodeName == hostname {
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" && (addr.NodeName == hostname || hostname == "") {
 				pods = append(pods, addr.TargetRef.UID)
 			}
 		}

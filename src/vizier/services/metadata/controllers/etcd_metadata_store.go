@@ -111,7 +111,7 @@ func (mds *EtcdMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.E
 
 		for _, subset := range pb.Subsets {
 			for _, address := range subset.Addresses {
-				if address.NodeName == hostname && pb.Metadata.DeletionTimestampNS == 0 {
+				if (address.NodeName == hostname || hostname == "") && pb.Metadata.DeletionTimestampNS == 0 {
 					endpoints = append(endpoints, pb)
 				}
 			}
@@ -187,7 +187,7 @@ func (mds *EtcdMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, e
 	for _, kv := range resp.Kvs {
 		pb := &metadatapb.Pod{}
 		proto.Unmarshal(kv.Value, pb)
-		if pb.Status.HostIP == ipStr && pb.Metadata.DeletionTimestampNS == 0 {
+		if (pb.Status.HostIP == ipStr || hostname == "") && pb.Metadata.DeletionTimestampNS == 0 {
 			pods = append(pods, pb)
 		}
 	}

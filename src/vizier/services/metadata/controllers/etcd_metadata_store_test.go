@@ -1043,4 +1043,10 @@ func TestGetNodeEndpoints(t *testing.T) {
 	assert.Equal(t, 1, len(eps))
 
 	assert.Equal(t, e2.Metadata.Name, (*eps[0]).Metadata.Name)
+
+	eps, err = mds.GetNodeEndpoints("")
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(eps))
+	assert.Equal(t, e1.Metadata.Name, (*eps[0]).Metadata.Name)
+	assert.Equal(t, e2.Metadata.Name, (*eps[1]).Metadata.Name)
 }

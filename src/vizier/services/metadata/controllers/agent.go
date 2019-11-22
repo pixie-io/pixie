@@ -373,7 +373,8 @@ func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID uuid.UUID, updates []*
 	return m.mds.AddUpdatesToAgentQueue(agentID.String(), updates)
 }
 
-// GetMetadataUpdates gets all updates from the metadata store.
+// GetMetadataUpdates gets all updates from the metadata store. If no hostname is specified, it fetches all updates
+// regardless of hostname.
 func (m *AgentManagerImpl) GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error) {
 	var updates []*metadatapb.ResourceUpdate
 

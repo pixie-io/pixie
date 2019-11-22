@@ -176,6 +176,107 @@ func TestAgentRegisterRequest(t *testing.T) {
 	assert.Equal(t, m.Data, respPb)
 }
 
+func TestKelvinRegisterRequest(t *testing.T) {
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	u, err := uuid.FromString(uuidStr)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "test-host",
+			},
+			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: false,
+			},
+		},
+		LastHeartbeatNS: 10,
+		CreateTimeNS:    10,
+	}
+
+	updatePb := metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
+		},
+	}
+
+	updates := []*metadatapb.ResourceUpdate{&updatePb}
+
+	mockAgtMgr.
+		EXPECT().
+		GetMetadataUpdates("").
+		DoAndReturn(func(hostname string) ([]*metadatapb.ResourceUpdate, error) {
+			wg.Done()
+			return updates, nil
+		})
+
+	mockAgtMgr.
+		EXPECT().
+		AddUpdatesToAgentQueue(u, updates).
+		DoAndReturn(func(uuid.UUID, []*metadatapb.ResourceUpdate) error {
+			wg.Done()
+			return nil
+		})
+
+	// Create Metadata Service controller.
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+
+	// Listen for response.
+	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
+	if err != nil {
+		t.Fatal("Could not subscribe to NATS.")
+	}
+
+	req := new(messages.VizierMessage)
+	if err := proto.UnmarshalText(testutils.RegisterKelvinRequestPB, req); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	reqPb, err := req.Marshal()
+
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_RegisterAgentResponse{
+			RegisterAgentResponse: &messages.RegisterAgentResponse{
+				ASID: 1,
+			},
+		},
+	}
+	respPb, err := resp.Marshal()
+
+	mockAgtMgr.
+		EXPECT().
+		RegisterAgent(agentInfo).
+		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
+			wg.Done()
+			return uint32(1), nil
+		})
+
+	// Send update.
+	nc.Publish("agent_update", reqPb)
+
+	wg.Wait()
+
+	m, err := sub.NextMsg(time.Second)
+	assert.Equal(t, m.Data, respPb)
+}
+
 func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
