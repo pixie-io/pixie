@@ -130,8 +130,6 @@ std::string OperatorIR::ParentsDebugString() {
   });
 }
 
-bool MemorySourceIR::HasLogicalRepr() const { return true; }
-
 Status MemorySourceIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_mem_source_op();
   op->set_op_type(planpb::MEMORY_SOURCE_OPERATOR);
@@ -177,8 +175,6 @@ std::string DebugStringFmt(int64_t depth, std::string name,
   }
   return absl::StrJoin(property_strings, "\n");
 }
-
-bool MemorySinkIR::HasLogicalRepr() const { return true; }
 
 Status MemorySinkIR::Init(OperatorIR* parent, const std::string& name,
                           const std::vector<std::string> out_columns) {
@@ -234,8 +230,6 @@ Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
   return graph_ptr()->AddEdge(this, stop_repr_);
 }
 
-bool RangeIR::HasLogicalRepr() const { return false; }
-
 Status RangeIR::ToProto(planpb::Operator*) const {
   return error::Unimplemented("$0 does not have a protobuf.", type_string());
 }
@@ -271,10 +265,6 @@ Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs) {
   PL_RETURN_IF_ERROR(SetColExprs(col_exprs));
   return Status::OK();
 }
-
-// A rule needs to be applied expanding the input columns before the MapIR has a logical
-// representation.
-bool MapIR::HasLogicalRepr() const { return !keep_input_columns_; }
 
 Status DropIR::Init(OperatorIR* parent, const std::vector<std::string>& drop_cols) {
   PL_RETURN_IF_ERROR(AddParent(parent));
@@ -379,8 +369,6 @@ Status FilterIR::Init(OperatorIR* parent, ExpressionIR* expr) {
   return graph_ptr()->AddEdge(this, filter_expr_);
 }
 
-bool FilterIR::HasLogicalRepr() const { return true; }
-
 Status FilterIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_filter_op();
   op->set_op_type(planpb::FILTER_OPERATOR);
@@ -402,8 +390,6 @@ Status LimitIR::Init(OperatorIR* parent, int64_t limit_value) {
   SetLimitValue(limit_value);
   return Status::OK();
 }
-
-bool LimitIR::HasLogicalRepr() const { return true; }
 
 Status LimitIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_limit_op();
@@ -532,8 +518,6 @@ Status BlockingAggIR::SetupAggFunctions(LambdaIR* agg_func) {
   return graph_ptr()->DeleteNode(agg_func->id());
 }
 
-bool BlockingAggIR::HasLogicalRepr() const { return true; }
-
 Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* expr,
                                                   const IRNode& ir_node) const {
   DCHECK(ir_node.type() == IRNodeType::kFunc);
@@ -626,8 +610,6 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
-bool ColumnIR::HasLogicalRepr() const { return false; }
-
 Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {
   SetColumnName(col_name);
   SetContainingOperatorParentIdx(parent_idx);
@@ -653,14 +635,10 @@ StatusOr<OperatorIR*> ColumnIR::ReferencedOperator() const {
   return containing_op->parents()[container_op_parent_idx_];
 }
 
-bool StringIR::HasLogicalRepr() const { return false; }
-
 Status StringIR::Init(std::string str) {
   str_ = str;
   return Status::OK();
 }
-
-bool CollectionIR::HasLogicalRepr() const { return false; }
 
 Status CollectionIR::Init(std::vector<ExpressionIR*> children) {
   if (!children_.empty()) {
@@ -674,7 +652,6 @@ Status CollectionIR::Init(std::vector<ExpressionIR*> children) {
   return Status::OK();
 }
 
-bool LambdaIR::HasLogicalRepr() const { return false; }
 bool LambdaIR::HasDictBody() const { return has_dict_body_; }
 
 Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
@@ -728,7 +705,6 @@ std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
     {">=", {FuncIR::Opcode::gteq, ">=", "greaterThanEqual"}},
     {"and", {FuncIR::Opcode::logand, "and", "logicalAnd"}},
     {"or", {FuncIR::Opcode::logor, "or", "logicalOr"}}};
-bool FuncIR::HasLogicalRepr() const { return false; }
 
 Status FuncIR::Init(Op op, const std::vector<ExpressionIR*>& args) {
   op_ = op;
@@ -747,30 +723,22 @@ Status FuncIR::AddArg(ExpressionIR* arg) {
 }
 
 /* Float IR */
-bool FloatIR::HasLogicalRepr() const { return false; }
-
 Status FloatIR::Init(double val) {
   val_ = val;
   return Status::OK();
 }
 /* Int IR */
-bool IntIR::HasLogicalRepr() const { return false; }
-
 Status IntIR::Init(int64_t val) {
   val_ = val;
   return Status::OK();
 }
 /* Bool IR */
-bool BoolIR::HasLogicalRepr() const { return false; }
-
 Status BoolIR::Init(bool val) {
   val_ = val;
   return Status::OK();
 }
 
 /* Time IR */
-bool TimeIR::HasLogicalRepr() const { return false; }
-
 Status TimeIR::Init(int64_t val) {
   val_ = val;
   return Status::OK();

@@ -101,17 +101,11 @@ inline static constexpr char kPLFuncPrefix[] = "pl";
 /**
  * @brief Node class for the IR.
  *
- * Each Operator that overlaps IR and LogicalPlan can notify the compiler by returning true in the
- * overloaded HasLogicalRepr method.
  */
 class IRNode {
  public:
   IRNode() = delete;
   virtual ~IRNode() = default;
-  /**
-   * @return whether or not the node has a logical representation.
-   */
-  virtual bool HasLogicalRepr() const = 0;
   int64_t line() const { return line_; }
   int64_t col() const { return col_; }
   bool line_col_set() const { return line_col_set_; }
@@ -592,7 +586,6 @@ class ColumnIR : public ExpressionIR {
    */
   Status Init(const std::string& col_name, int64_t parent_op_idx);
 
-  bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
 
   bool IsColumn() const override { return true; }
@@ -674,7 +667,6 @@ class StringIR : public DataIR {
   StringIR() = delete;
   explicit StringIR(int64_t id) : DataIR(id, IRNodeType::kString, types::DataType::STRING) {}
   Status Init(std::string str);
-  bool HasLogicalRepr() const override;
   std::string str() const { return str_; }
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
@@ -693,7 +685,6 @@ class CollectionIR : public DataIR {
   CollectionIR() = delete;
   CollectionIR(int64_t id, IRNodeType type)
       : DataIR(id, type, types::DataType::DATA_TYPE_UNKNOWN) {}
-  bool HasLogicalRepr() const override;
   Status Init(std::vector<ExpressionIR*> children);
 
   std::vector<ExpressionIR*> children() const { return children_; }
@@ -754,7 +745,6 @@ class LambdaIR : public IRNode {
    * @return StatusOr<IRNode*>
    */
   StatusOr<ExpressionIR*> GetDefaultExpr();
-  bool HasLogicalRepr() const override;
   bool HasDictBody() const;
 
   bool IsOperator() const override { return false; }
@@ -807,7 +797,6 @@ class FuncIR : public ExpressionIR {
   const Op& op() const { return op_; }
   explicit FuncIR(int64_t id) : ExpressionIR(id, IRNodeType::kFunc) {}
   Status Init(Op op, const std::vector<ExpressionIR*>& args);
-  bool HasLogicalRepr() const override;
 
   // NOLINTNEXTLINE(readability/inheritance)
   virtual std::string DebugString() const override {
@@ -867,7 +856,6 @@ class FloatIR : public DataIR {
   FloatIR() = delete;
   explicit FloatIR(int64_t id) : DataIR(id, IRNodeType::kFloat, types::DataType::FLOAT64) {}
   Status Init(double val);
-  bool HasLogicalRepr() const override;
 
   double val() const { return val_; }
 
@@ -882,7 +870,6 @@ class IntIR : public DataIR {
   IntIR() = delete;
   explicit IntIR(int64_t id) : DataIR(id, IRNodeType::kInt, types::DataType::INT64) {}
   Status Init(int64_t val);
-  bool HasLogicalRepr() const override;
 
   int64_t val() const { return val_; }
 
@@ -897,7 +884,6 @@ class BoolIR : public DataIR {
   BoolIR() = delete;
   explicit BoolIR(int64_t id) : DataIR(id, IRNodeType::kBool, types::DataType::BOOLEAN) {}
   Status Init(bool val);
-  bool HasLogicalRepr() const override;
 
   bool val() const { return val_; }
 
@@ -912,7 +898,6 @@ class TimeIR : public DataIR {
   TimeIR() = delete;
   explicit TimeIR(int64_t id) : DataIR(id, IRNodeType::kTime, types::DataType::TIME64NS) {}
   Status Init(int64_t val);
-  bool HasLogicalRepr() const override;
 
   bool val() const { return val_ != 0; }
 
@@ -929,7 +914,6 @@ class MetadataIR : public ColumnIR {
   MetadataIR() = delete;
   explicit MetadataIR(int64_t id) : ColumnIR(id, IRNodeType::kMetadata) {}
   Status Init(const std::string& metadata_val, int64_t parent_op_idx);
-  bool HasLogicalRepr() const override { return false; };
 
   std::string name() const { return metadata_name_; }
   bool HasMetadataResolver() const { return has_metadata_resolver_; }
@@ -957,7 +941,6 @@ class MetadataLiteralIR : public ExpressionIR {
   MetadataLiteralIR() = delete;
   explicit MetadataLiteralIR(int64_t id) : ExpressionIR(id, IRNodeType::kMetadataLiteral) {}
   Status Init(DataIR* literal);
-  bool HasLogicalRepr() const override { return false; }
 
   IRNodeType literal_type() const { return literal_type_; }
   DataIR* literal() const { return literal_; }
@@ -989,8 +972,6 @@ class MemorySourceIR : public OperatorIR {
    * @return Status
    */
   Status Init(const std::string& table_name, const std::vector<std::string>& select_columns);
-
-  bool HasLogicalRepr() const override;
 
   std::string table_name() const { return table_name_; }
   void SetTime(int64_t time_start_ns, int64_t time_stop_ns) {
@@ -1051,7 +1032,6 @@ class MemorySinkIR : public OperatorIR {
   MemorySinkIR() = delete;
   explicit MemorySinkIR(int64_t id)
       : OperatorIR(id, IRNodeType::kMemorySink, /* has_parents */ true, /* is_source */ false) {}
-  bool HasLogicalRepr() const override;
 
   bool name_set() const { return name_set_; }
   std::string name() const { return name_; }
@@ -1080,7 +1060,6 @@ class RangeIR : public OperatorIR {
   RangeIR() = delete;
   explicit RangeIR(int64_t id) : OperatorIR(id, IRNodeType::kRange, true, false) {}
   Status Init(OperatorIR* parent, IRNode* start_repr, IRNode* stop_repr);
-  bool HasLogicalRepr() const override;
 
   IRNode* start_repr() const { return start_repr_; }
   IRNode* stop_repr() const { return stop_repr_; }
@@ -1105,7 +1084,6 @@ class MetadataResolverIR : public OperatorIR {
   MetadataResolverIR() = delete;
   explicit MetadataResolverIR(int64_t id)
       : OperatorIR(id, IRNodeType::kMetadataResolver, true, false) {}
-  bool HasLogicalRepr() const override { return false; }
   Status ToProto(planpb::Operator*) const override {
     return error::Unimplemented("Calling ToProto on $0, which lacks a Protobuf representation.",
                                 type_string());
@@ -1134,8 +1112,6 @@ class MapIR : public OperatorIR {
 
   Status Init(OperatorIR* parent, const ColExpressionVector& col_exprs);
 
-  bool HasLogicalRepr() const override;
-
   const ColExpressionVector& col_exprs() const { return col_exprs_; }
   Status SetColExprs(const ColExpressionVector& exprs);
   Status ToProto(planpb::Operator*) const override;
@@ -1163,7 +1139,6 @@ class DropIR : public OperatorIR {
   explicit DropIR(int64_t id) : OperatorIR(id, IRNodeType::kDrop, true, false) {}
   Status Init(OperatorIR* parent, const std::vector<std::string>& drop_cols);
 
-  bool HasLogicalRepr() const override { return false; }
   Status ToProto(planpb::Operator*) const override;
 
   const std::vector<std::string>& col_names() const { return col_names_; }
@@ -1184,7 +1159,6 @@ class BlockingAggIR : public OperatorIR {
   // TODO(philkuz) delete when we rebase init.
   BlockingAggIR() = delete;
   explicit BlockingAggIR(int64_t id) : OperatorIR(id, IRNodeType::kBlockingAgg, true, false) {}
-  bool HasLogicalRepr() const override;
 
   std::vector<ColumnIR*> groups() const { return groups_; }
   bool group_by_all() const { return groups_.size() == 0; }
@@ -1224,8 +1198,6 @@ class GroupByIR : public OperatorIR {
   Status ToProto(planpb::Operator*) const override {
     return error::Unimplemented("ToProto not implemented.");
   }
-  // GroupBy does not exist as a protobuf object.
-  bool HasLogicalRepr() const override { return false; }
 
  private:
   // contains group_names and groups columns.
@@ -1236,7 +1208,6 @@ class FilterIR : public OperatorIR {
  public:
   FilterIR() = delete;
   explicit FilterIR(int64_t id) : OperatorIR(id, IRNodeType::kFilter, true, false) {}
-  bool HasLogicalRepr() const override;
 
   ExpressionIR* filter_expr() const { return filter_expr_; }
   Status ToProto(planpb::Operator*) const override;
@@ -1253,7 +1224,6 @@ class LimitIR : public OperatorIR {
  public:
   LimitIR() = delete;
   explicit LimitIR(int64_t id) : OperatorIR(id, IRNodeType::kLimit, true, false) {}
-  bool HasLogicalRepr() const override;
 
   Status ToProto(planpb::Operator*) const override;
   void SetLimitValue(int64_t value) {
@@ -1285,7 +1255,6 @@ class GRPCSinkIR : public OperatorIR {
   explicit GRPCSinkIR(int64_t id)
       : OperatorIR(id, IRNodeType::kGRPCSink, /* has_parents */ true,
                    /* is_source */ false) {}
-  bool HasLogicalRepr() const override { return true; }
 
   Status Init(OperatorIR* parent, int64_t destination_id) {
     PL_RETURN_IF_ERROR(AddParent(parent));
@@ -1345,7 +1314,6 @@ class GRPCSourceIR : public OperatorIR {
   explicit GRPCSourceIR(int64_t id)
       : OperatorIR(id, IRNodeType::kGRPCSource, /* has_parents */ false,
                    /* is_source */ true) {}
-  bool HasLogicalRepr() const override { return true; }
   Status ToProto(planpb::Operator* op_pb) const override;
 
   /**
@@ -1379,7 +1347,6 @@ class GRPCSourceGroupIR : public OperatorIR {
   explicit GRPCSourceGroupIR(int64_t id)
       : OperatorIR(id, IRNodeType::kGRPCSourceGroup, /* has_parents */ false,
                    /* is_source */ true) {}
-  bool HasLogicalRepr() const override { return false; }
   Status ToProto(planpb::Operator* op_pb) const override;
 
   /**
@@ -1428,7 +1395,6 @@ class UnionIR : public OperatorIR {
   UnionIR() = delete;
   explicit UnionIR(int64_t id)
       : OperatorIR(id, IRNodeType::kUnion, /* has_parents */ true, /* is_source */ false) {}
-  bool HasLogicalRepr() const override { return true; }
 
   bool IsBlocking() const override { return true; }
 
@@ -1468,7 +1434,6 @@ class JoinIR : public OperatorIR {
   JoinIR() = delete;
   explicit JoinIR(int64_t id)
       : OperatorIR(id, IRNodeType::kJoin, /* has_parents */ true, /* is_source */ false) {}
-  bool HasLogicalRepr() const override { return true; }
 
   bool IsBlocking() const override { return true; }
 
@@ -1597,7 +1562,6 @@ class TabletSourceGroupIR : public OperatorIR {
       : OperatorIR(id, IRNodeType::kTabletSourceGroup, /* has_parents */ false,
                    /* is_source */ true) {}
 
-  bool HasLogicalRepr() const override { return false; }
   bool IsBlocking() const override { return false; }
 
   Status ToProto(planpb::Operator*) const override {
