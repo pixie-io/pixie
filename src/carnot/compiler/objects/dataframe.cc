@@ -1,5 +1,6 @@
 #include "src/carnot/compiler/objects/dataframe.h"
 #include "src/carnot/compiler/ir/ast_utils.h"
+#include "src/carnot/compiler/objects/metadata_object.h"
 #include "src/carnot/compiler/objects/none_object.h"
 
 namespace pl {
@@ -155,6 +156,27 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       /* has_variable_len_kwargs */ false,
       std::bind(&GroupByHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kGroupByOpId, group_by_fn);
+}
+
+bool Dataframe::HasAttributeImpl(const std::string& name) const {
+  if (name == kMetadataAttrName) {
+    return true;
+  }
+  // Leaving room for other attributes here.
+  return false;
+}
+
+StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
+                                                  const std::string& name) const {
+  // If this gets to this point, should fail here.
+  DCHECK(HasAttributeImpl(name));
+
+  if (name == kMetadataAttrName) {
+    return MetadataObject::Create(op());
+  }
+
+  // Shouldn't ever be hit, but will appear here anyways.
+  return CreateAstError(ast, "'$0' object has no attribute '$1'", name);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,

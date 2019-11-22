@@ -4,6 +4,8 @@
 #include "absl/container/flat_hash_map.h"
 
 #include "src/carnot/compiler/objects/dataframe.h"
+#include "src/carnot/compiler/objects/expr_object.h"
+#include "src/carnot/compiler/objects/metadata_object.h"
 #include "src/carnot/compiler/objects/none_object.h"
 #include "src/carnot/compiler/objects/test_utils.h"
 
@@ -1657,6 +1659,30 @@ TEST_F(GroupByTest, GroupByInDataframe) {
   GroupByIR* group_by = static_cast<GroupByIR*>(group_by_obj->op());
   EXPECT_EQ(group_by->groups().size(), 1);
   EXPECT_TRUE(Match(group_by->groups()[0], ColumnNode("col1", 0)));
+}
+
+TEST_F(DataframeTest, AttributeMetadataSubscriptTest) {
+  MemorySourceIR* src = MakeMemSource();
+  std::shared_ptr<QLObject> test = std::make_shared<Dataframe>(src);
+  EXPECT_TRUE(test->HasAttribute(Dataframe::kMetadataAttrName));
+  auto attr_or_s = test->GetAttribute(ast, Dataframe::kMetadataAttrName);
+
+  ASSERT_OK(attr_or_s);
+
+  QLObjectPtr ptr = attr_or_s.ConsumeValueOrDie();
+  EXPECT_TRUE(ptr->type_descriptor().type() == QLObjectType::kMetadata);
+  auto metadata = static_cast<MetadataObject*>(ptr.get());
+  ASSERT_TRUE(metadata->HasSubscriptMethod());
+  std::shared_ptr<FuncObject> func = metadata->GetSubscriptMethod().ConsumeValueOrDie();
+
+  auto func_result =
+      func->Call(ArgMap{{}, {MakeString("service")}}, ast, ast_visitor.get()).ConsumeValueOrDie();
+  ASSERT_TRUE(func_result->type_descriptor().type() == QLObjectType::kExpr);
+  auto metadata_expr = static_cast<ExprObject*>(func_result.get());
+  ASSERT_TRUE(metadata_expr->HasNode());
+  ASSERT_TRUE(Match(metadata_expr->node(), Metadata()));
+  auto metadata_node = static_cast<MetadataIR*>(metadata_expr->node());
+  EXPECT_EQ(metadata_node->name(), "service");
 }
 
 }  // namespace compiler

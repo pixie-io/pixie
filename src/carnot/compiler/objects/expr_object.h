@@ -31,7 +31,7 @@ class ExprObject : public QLObject {
   explicit ExprObject(ExpressionIR* expr) : QLObject(ExprType, expr), expr_(expr) {}
 
  private:
-  ExpressionIR* expr_;
+  ExpressionIR* expr_ = nullptr;
 };
 
 }  // namespace compiler

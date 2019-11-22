@@ -78,3 +78,12 @@ pl_cc_test(
         ":test_utils",
     ],
 )
+
+pl_cc_test(
+    name = "metadata_object_test",
+    srcs = ["metadata_object_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)

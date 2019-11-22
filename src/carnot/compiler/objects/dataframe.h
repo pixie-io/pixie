@@ -40,6 +40,7 @@ class Dataframe : public QLObject {
    */
   IR* graph() const { return op_->graph_ptr(); }
 
+  // Method names.
   inline static constexpr char kRangeOpId[] = "range";
   inline static constexpr char kMapOpId[] = "map";
   inline static constexpr char kDropOpId[] = "drop";
@@ -50,6 +51,13 @@ class Dataframe : public QLObject {
   inline static constexpr char kMergeOpId[] = "merge";
   inline static constexpr char kSinkOpId[] = "result";
   inline static constexpr char kGroupByOpId[] = "groupby";
+  // Attribute names.
+  inline static constexpr char kMetadataAttrName[] = "attr";
+
+ protected:
+  StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
+                                                       const std::string& name) const override;
+  bool HasAttributeImpl(const std::string& name) const override;
 
  private:
   OperatorIR* op_;
