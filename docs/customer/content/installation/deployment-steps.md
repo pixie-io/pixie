@@ -15,8 +15,3 @@ metaDescription: "Pixie is ..."
 > **Step 5:** Run the commands in the deployment instructions page on the UI. 
 
 > **Step 6:** The UI will auto-refresh in a few minutes to a live Pixie Console!
-
-
-#### Instructional Videos
-
-- [How to Deploy Pixie - Walkthrough with a Remote GKE Cluster](https://www.youtube.com/watch?v=F53MyM382d0&feature=youtu.be)

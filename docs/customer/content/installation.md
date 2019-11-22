@@ -4,6 +4,10 @@ metaTitle: "Installation | Pixie"
 metaDescription: "How to Install ..."
 ---
 
-Pixie's Kubernetes native distributed monitoring system is designed to be deployable in less than 30 seconds. 
+import YoutubeEmbed from "../src/YoutubeEmbed.js";
 
-This section describes how Admins can use the Pixie Command-Line Interface (CLI) to deploy, uninstall and upgrade Pixie.
+Pixie is designed to take you from **zero to data** in seconds.
+
+This section walks you through how to setup, upgrade & uninstall Pixie. For a sneak peek, here's what our deployment looks like: 
+
+<YoutubeEmbed link="https://www.youtube.com/embed/wq8L7HdvgfA" />

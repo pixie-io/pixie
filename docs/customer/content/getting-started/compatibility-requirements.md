@@ -6,7 +6,7 @@ metaDescription: "Pixie is ..."
 
 Pixie is designed for Linux environments on Kubernetes clusters.
 
-## Compatibility
+### Compatibility
 
 #### OS
 |         | Support         | Version           |
@@ -26,26 +26,26 @@ Pixie is designed for Linux environments on Kubernetes clusters.
 |           | Support       | Notes                     |
 | :-------- | :------------ | :----------------------   |
 | HTTP      | Supported     |                           |
+| gRPC      | Supported     | Initial support released  |
 | HTTPS     | Not Supported | Planned in Beta roadmap   |
-| gRPC      | Not Supported | Planned in Beta roadmap   |
 | Thrift    | Not Supported | Not in roadmap            |
 
 #### Databases
 
 |               | Support       | Notes                     |
 | :------------ | :------------ | :----------------------   |
-| MySQL         | Not Supported | Planned in Beta roadmap   |
+| MySQL         | Supported     |                           |
 | PostgreSQL    | Not Supported | Planned in Beta roadmap   |
 | MongoDB       | Not Supported | Planned in Beta roadmap   |
 | Kafka         | Not Supported | Planned in Beta roadmap   |
 
 
-## Requirements
+### Requirements
 
 #### Memory Requirements
 |                       | Minimum   | Notes            |
 | :-------------------  | :-------- | :--------------- |
-| Pixie Edge Module     | 500Mi     | 2GiB  preferred  |
+| Pixie Edge Module     | 500MiB    | 2GiB  preferred  |
 | Pixie Command Module  | 2GiB      | 8GiB+ preferred  |
 
 #### CPU Requirements
