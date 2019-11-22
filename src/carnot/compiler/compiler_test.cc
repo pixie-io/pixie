@@ -106,21 +106,21 @@ nodes {
   dag {
     nodes {
       id: 4
-      sorted_children: 11
+      sorted_children: 8
     }
     nodes {
-      id: 11
+      id: 8
+      sorted_children: 16
       sorted_parents: 4
-      sorted_children: 19
     }
     nodes {
-      id: 19
-      sorted_parents: 11
-      sorted_children: 21
+      id: 16
+      sorted_children: 18
+      sorted_parents: 8
     }
     nodes {
-      id: 21
-      sorted_parents: 19
+      id: 18
+      sorted_parents: 16
     }
   }
   nodes {
@@ -139,7 +139,7 @@ nodes {
     }
   }
   nodes {
-    id: 11
+    id: 8
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -179,16 +179,15 @@ nodes {
     }
   }
   nodes {
-    id: 19
+    id: 16
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
-        windowed: false
         values {
           name: "pl.mean"
           args {
             column {
-              node: 11
+              node: 8
               index: 2
             }
           }
@@ -198,14 +197,14 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 11
+              node: 8
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 11
+          node: 8
         }
         group_names: "cpu0"
         value_names: "quotient_mean"
@@ -214,7 +213,7 @@ nodes {
     }
   }
   nodes {
-    id: 21
+    id: 18
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -230,13 +229,13 @@ nodes {
   }
 }
 )";
+
 TEST_F(CompilerTest, test_general_compilation) {
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
-          "mapDF = queryDF.map(fn=lambda r : {'cpu0' : r.cpu0, 'cpu1' : r.cpu1, 'quotient' : "
-          "r.cpu1 / r.cpu0})",
-          "aggDF = mapDF.agg(by=lambda r: r.cpu0, fn=lambda r : {'quotient_mean' : "
+          "queryDF['quotient'] = queryDF['cpu1'] / queryDF['cpu0']",
+          "aggDF = queryDF.agg(by=lambda r: r.cpu0, fn=lambda r : {'quotient_mean' : "
           "pl.mean(r.quotient), 'cpu1_mean' : pl.mean(r.cpu1)}"
           ").result(name='cpu2')",
       },
@@ -248,7 +247,8 @@ TEST_F(CompilerTest, test_general_compilation) {
   planpb::Plan logical_plan = plan_status.ValueOrDie();
   VLOG(2) << logical_plan.DebugString();
 
-  EXPECT_THAT(logical_plan, EqualsProto(kExpectedLogicalPlan));
+  EXPECT_THAT(logical_plan, EqualsProto(kExpectedLogicalPlan))
+      << "fFOOOO " << logical_plan.DebugString();
 }
 
 // Test for select order that is different than the schema.
@@ -796,9 +796,8 @@ TEST_F(CompilerTest, multiple_group_by_agg_test) {
 TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
   std::string query = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "mapDF =  queryDF.map(fn = lambda r : {'cpu0' : r.cpu0, 'cpu1' : r.cpu1, 'cpu2' : r.cpu2, "
-       "'cpu_sum' : r.cpu0+r.cpu1+r.cpu2})",
-       "aggDF = mapDF.agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
+       "queryDF['cpu_sum'] = queryDF['cpu1'] + queryDF['cpu2']",
+       "aggDF = queryDF.agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).result(name='cpu_out')"},
       "\n");
 
@@ -806,10 +805,12 @@ TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
   VLOG(2) << plan.ToString();
   EXPECT_OK(plan);
 }
+
 TEST_F(CompilerTest, rename_then_group_by_test) {
   auto query =
       absl::StrJoin({"queryDF = dataframe(table='sequences', select=['time_', 'xmod10', 'PIx'])",
-                     "map_out = queryDF.map(fn=lambda r : {'res': r.PIx, 'c1': r.xmod10})",
+                     "queryDF['res'] = queryDF['PIx']", "queryDF['c1'] = queryDF['xmod10']",
+                     "map_out = queryDF[['res', 'c1']]",
                      "agg_out = map_out.agg(by=lambda r: [r.res, r.c1], fn=lambda r: {'count': "
                      "pl.count(r.c1)})",
                      "agg_out.result(name='t15')"},
@@ -822,13 +823,15 @@ TEST_F(CompilerTest, rename_then_group_by_test) {
 
 // Test to see whether comparisons work.
 TEST_F(CompilerTest, comparison_test) {
-  auto query =
-      absl::StrJoin({"queryDF = dataframe(table='sequences', select=['time_', 'xmod10', 'PIx'])",
-                     "map_out = queryDF.map(fn=lambda r : {'res': r.PIx, "
-                     "'c1': r.xmod10, 'gt' : r.xmod10 > 10.0,'lt' : r.xmod10 < 10.0,",
-                     "'gte' : r.PIx >= 1.0, 'lte' : r.PIx <= 1.0,", "'eq' : r.PIx == 1.0})",
-                     "map_out.result(name='t15')"},
-                    "\n");
+  auto query = absl::StrJoin(
+      {"queryDF = dataframe(table='sequences', select=['time_', 'xmod10', 'PIx'])",
+       "queryDF['res'] = queryDF['PIx']", "queryDF['c1'] = queryDF['xmod10']",
+       "queryDF['gt'] = queryDF['xmod10'] > 10.0", "queryDF['lt'] = queryDF['xmod10'] < 10.0",
+       "queryDF['gte'] = queryDF['PIx'] >= 1.0", "queryDF['lte'] = queryDF['PIx'] <= 1.0",
+       "queryDF['eq'] = queryDF['PIx'] == 1.0",
+       "map_out = queryDF[['res', 'c1', 'gt', 'lt', 'gte', 'lte', 'eq']]",
+       "map_out.result(name='t15')"},
+      "\n");
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();

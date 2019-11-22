@@ -460,8 +460,8 @@ TEST_F(AnalyzerTest, test_relation_fails) {
   // operators don't use generated columns, are just chained.
   std::string chain_operators = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "mapDF = queryDF.map(fn=lambda r : {'cpu_sum' : r.cpu0+r.cpu1})",
-       "aggDF = mapDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
+       "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+       "aggDF = queryDF[['cpu_sum']].agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(chain_operators);
@@ -474,7 +474,7 @@ TEST_F(AnalyzerTest, test_relation_fails) {
   EXPECT_FALSE(handle_status.ok());
 
   // Map should result just be the cpu_sum column.
-  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap);
+  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 1);
   EXPECT_OK(map_node_status);
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
   table_store::schema::Relation test_map_relation;
@@ -790,7 +790,6 @@ TEST_P(MetadataSingleOps, valid_metadata_calls) {
 }
 std::vector<std::string> metadata_operators{
     "filter(fn=lambda r : r.attr.service == 'pl/orders')",
-    "map(fn=lambda r: {'service': r.attr.service})",
     "agg(fn=lambda r: {'mean': pl.mean(r.cpu0)}, by=lambda r: r.attr.service)",
     "agg(fn=lambda r: {'mean': pl.count(r.cpu0)}, by=lambda r: [r.cpu0, r.attr.service])",
     "agg(fn=lambda r: {'mean': pl.count(r.cpu0)}, by=lambda r: r.attr.service).filter(fn=lambda r: "
@@ -801,12 +800,26 @@ std::vector<std::string> metadata_operators{
 
 INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
                          ::testing::ValuesIn(metadata_operators));
-TEST_F(AnalyzerTest, metadata_fails_no_upid) {
-  std::string op_call = "map(fn=lambda r: {'service': r.attr.service})";
-  std::string valid_query = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0']) ",
-                                           "opDF = queryDF.$0", "opDF.result(name='out')"},
-                                          "\n");
-  valid_query = absl::Substitute(valid_query, op_call);
+
+// TODO(nserrino): Enable this once df.attr['service'] syntax lands.
+TEST_F(AnalyzerTest, DISABLED_valid_metadata_call) {
+  std::string valid_query =
+      absl::StrJoin({"queryDF = dataframe(table='cpu') ",
+                     "queryDF['service'] = queryDF.attr['service']", "queryDF.result(name='out')"},
+                    "\n");
+  VLOG(1) << valid_query;
+  auto ir_graph_status = CompileGraph(valid_query);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+}
+
+// TODO(nserrino): Enable this once df.attr['service'] syntax lands.
+TEST_F(AnalyzerTest, DISABLED_metadata_fails_no_upid) {
+  std::string valid_query =
+      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0']) ",
+                     "queryDF['service'] = queryDF.attr['service']", "opDF.result(name='out')"},
+                    "\n");
   VLOG(1) << valid_query;
   auto ir_graph_status = CompileGraph(valid_query);
   ASSERT_OK(ir_graph_status);

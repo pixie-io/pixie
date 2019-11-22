@@ -34,7 +34,7 @@ TEST(StringReaderTest, basic) {
 TEST(StringReaderTest, pypa) {
   // Test that StringReader works with pypa's Lexer.
   pypa::Lexer lexer(std::make_unique<StringReader>(
-      "dataframe(table='cpu', select=['cpu0'])\\\n.Range(time='-2m');"));
+      "dataframe(table='cpu', select=['cpu0'])\\\n.range(time='-2m');"));
   pypa::AstModulePtr ast;
   pypa::SymbolTablePtr symbols;
   pypa::ParserOptions options;
@@ -46,7 +46,7 @@ TEST(StringReaderTest, pypa_mult_statements) {
   // Test that StringReader works with pypa's Lexer.
   pypa::Lexer lexer(
       std::make_unique<StringReader>("queryDF = dataframe(table = 'cpu', select = [ 'cpu0', 'cpu1' "
-                                     "])\nqueryDF.Range(time ='-2m')"));
+                                     "])\nqueryDF.range(time ='-2m')"));
   pypa::AstModulePtr ast;
   pypa::SymbolTablePtr symbols;
   pypa::ParserOptions options;
@@ -73,7 +73,7 @@ TEST(StringReaderTest, pypa_newline_error) {
   // Test that StringReader works with pypa's Lexer and can detect when a newline is improperly
   // placed.
   pypa::Lexer lexer(std::make_unique<StringReader>(
-      "queryDF = dataframe(table = 'cpu', select=['cpu0']\n.Range(time='-2m')"));
+      "queryDF = dataframe(table = 'cpu', select=['cpu0']\n.range(time='-2m')"));
   pypa::AstModulePtr ast;
   pypa::SymbolTablePtr symbols;
   pypa::ParserOptions options;
@@ -84,20 +84,25 @@ TEST(StringReaderTest, pypa_newline_error) {
   }
 
   EXPECT_FALSE(pypa::parse(lexer, ast, symbols, options));
+}
 
-  pypa::Lexer lexer2(std::make_unique<StringReader>(
+TEST(StringReaderTest, pypa_args_before_kwargs_error) {
+  pypa::AstModulePtr ast;
+  pypa::SymbolTablePtr symbols;
+  pypa::ParserOptions options;
+  if (VLOG_IS_ON(1)) {
+    options.printerrors = true;
+  } else {
+    options.printerrors = false;
+  }
+
+  // Expected to fail because keyword args should come before positional args.
+  pypa::Lexer lexer(std::make_unique<StringReader>(
       absl::StrJoin({"queryDF = dataframe(table = 'cpu', select=['cpu0'])",
-                     "queryDF.Range(time='-2m')", "rangeDF.Map(fn=1, 20)", "rangeDF.Agg(fn=2)"},
+                     "queryDF.range(time='-2m')", "rangeDF.agg(fn=2, 1)"},
                     "\n")));
 
-  EXPECT_FALSE(pypa::parse(lexer2, ast, symbols, options));
-
-  pypa::Lexer lexer3(std::make_unique<StringReader>(
-      absl::StrJoin({"queryDF = dataframe(table = 'cpu', select=['cpu0'])",
-                     "queryDF.Range(time='-2m')", "rangeDF.Map(fn=1, 20)"},
-                    "\n")));
-
-  EXPECT_FALSE(pypa::parse(lexer3, ast, symbols, options));
+  EXPECT_FALSE(pypa::parse(lexer, ast, symbols, options));
 }
 
 }  // namespace compiler

@@ -90,7 +90,11 @@ Nothing
 
 ## map
 
-`df.map(Lambda fn)`
+`df['col_name'] = <expression>`
+
+#### Description
+
+`Map`, expressed as a subscript, creates a new column in the table from the input expression and column name.
 
 #### Example
 
@@ -100,9 +104,53 @@ df['http_resp_latency_ms'] = df['http_resp_latency_ns' / 1.0E6 # apply an arithm
 df['http_body_first10'] = pl.substring(df['http_body'], 0, 10)
 ```
 
+## keep
+
+`df = df[List<String>]`
+
 #### Description
 
-`Map`, expressed as a subscript assignment, performs a projection on the Dataframe, mapping the original column values to a set of new column values according to scalar functions. The original columns in the input dataframe are kept in the output dataframe.
+`Keep`, expressed as a subscript, creates a dataframe using only the enumerated columns of the input table.
+
+#### Example
+
+```python
+df = dataframe(table="http_events")
+df = df[['http_body_first10']] # Only keep the column http_body_first10
+```
+
+#### Description
+
+`Drop` drops the listed columns by name on the dataframe.
+
+## drop()
+
+`df.drop(columns List<String>)`
+
+#### Example
+
+```python
+df = dataframe(table="http_events")
+df = df.drop(columns=['upid', 'http_resp_status'])
+```
+
+#### Description
+
+`agg` groups by the specified columns and aggregates columns according to the aggregate expressions. 
+
+#### Arguments
+
+* `fn` (*type lambda*): a lambda function that specifies the aggregate expressions that create the output Dataframe. The body 
+of this lambda function must be a dictionary where the keys are the new column names and the values are the aggregate expressions.
+The available aggregate functions are listed in the [Aggregate Functions document](/user-guides/functions).
+
+* `by` (*type lambda*) ***optional***: a lambda function that specifies the group by columns. The body can either be
+a Column or a list of Columns. If `by` is not specified, then the Aggregate groups by all and returns only those columns specified in the `fn`.
+
+#### Returns
+
+A Dataframe that is the result of aggregation. The first columns in the resulting Dataframe's relation correspond to the columns 
+of the `by` argument, while the remaining columns are the result of the aggregate expressions defined in the `fn` argument.
 
 ## agg()
 

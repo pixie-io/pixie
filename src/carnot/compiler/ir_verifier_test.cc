@@ -68,7 +68,8 @@ TEST(MapTest, single_col_map) {
   std::string single_col_map_sum = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1}).result(name='cpu2')",
+          "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+          "queryDF[['sum']].result(name='cpu2')",
       },
       "\n");
   auto ir_graph_status = ParseQuery(single_col_map_sum);
@@ -82,8 +83,8 @@ TEST(MapTest, single_col_map) {
   std::string single_col_div_map_query = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : "
-          "pl.div(r.cpu0,r.cpu1)}).result(name='cpu2')",
+          "queryDF['div'] = pl.div(queryDF['cpu0'], queryDF['cpu1'])",
+          "queryDF[['div']].result(name='cpu2')",
       },
       "\n");
   ir_graph_status = ParseQuery(single_col_div_map_query);
@@ -100,8 +101,9 @@ TEST(MapTest, multi_col_map) {
   std::string multi_col = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1, 'copy' : "
-          "r.cpu2}).result(name='cpu2')",
+          "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+          "queryDF['copy'] = queryDF['cpu2']",
+          "queryDF[['sum', 'copy']].result(name='cpu2')",
       },
       "\n");
   auto ir_graph_status = ParseQuery(multi_col);
@@ -118,25 +120,29 @@ TEST(MapTest, bin_op_test) {
   std::string single_col_map_sum = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1}).result(name='cpu2')",
+          "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+          "queryDF[['sum']].result(name='cpu2')",
       },
       "\n");
   std::string single_col_map_sub = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sub' : r.cpu0 - r.cpu1}).result(name='cpu2')",
+          "queryDF['sub'] = queryDF['cpu0'] - queryDF['cpu1']",
+          "queryDF[['sub']].result(name='cpu2')",
       },
       "\n");
   std::string single_col_map_product = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'product' : r.cpu0 * r.cpu1}).result(name='cpu2')",
+          "queryDF['product'] = queryDF['cpu0'] * queryDF['cpu1']",
+          "queryDF[['product']].result(name='cpu2')",
       },
       "\n");
   std::string single_col_map_quotient = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1}).result(name='cpu2')",
+          "queryDF['quotient'] = queryDF['cpu0'] / queryDF['cpu1']",
+          "queryDF[['quotient']].result(name='cpu2')",
       },
       "\n");
   auto ir_graph_status = ParseQuery(single_col_map_sum);
@@ -180,8 +186,8 @@ TEST(MapTest, nested_expr_map) {
   std::string nested_expr = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1 + "
-          "r.cpu2}).result(name='cpu2')",
+          "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1'] + queryDF['cpu2']",
+          "queryDF[['sum']].result(name='cpu2')",
       },
       "\n");
   auto ir_graph_status = ParseQuery(nested_expr);
@@ -196,8 +202,8 @@ TEST(MapTest, nested_expr_map) {
   std::string nested_fn = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : pl.div(r.cpu0 + r.cpu1, "
-          "r.cpu2)}).result(name='cpu2')",
+          "queryDF['sum'] = pl.div(queryDF['cpu0'] + queryDF['cpu1'], queryDF['cpu2'])",
+          "queryDF[['sum']].result(name='cpu2')",
       },
       "\n");
   ir_graph_status = ParseQuery(nested_fn);
@@ -260,7 +266,8 @@ TEST(TimeTest, basic) {
   std::string add_test = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'time' : r.cpu + pl.second}).result(name='cpu2')",
+          "queryDF['time'] = queryDF['cpu'] + pl.second"
+          "result = queryDF[['time']].result(name='cpu2')",
       },
       "\n");
   auto ir_graph_status = ParseQuery(add_test);
@@ -271,8 +278,8 @@ TEST(TimeTest, basic) {
 TEST(RangeValueTests, now_stop) {
   std::string plc_now_test = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=plc.now())",
-       "rangeDF = queryDF.map(fn=lambda r : {'plc_now' : r.cpu0 })",
-       "result = rangeDF.result(name='mapped')"},
+       "queryDF['plc_now'] = queryDF['cpu0']",
+       "result = queryDF[['plc_now']].result(name='mapped')"},
       "\n");
   auto ir_graph_status = ParseQuery(plc_now_test);
   VLOG(1) << ir_graph_status.ToString();

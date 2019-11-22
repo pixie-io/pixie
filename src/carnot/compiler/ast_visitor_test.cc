@@ -114,14 +114,16 @@ TEST(MapTest, single_col_map) {
   std::string single_col_map_sum = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
+          "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+          "rangeDF = queryDF[['sum']]",
       },
       "\n");
   EXPECT_OK(ParseQuery(single_col_map_sum));
   std::string single_col_div_map_query = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : pl.div(r.cpu0,r.cpu1)})",
+          "queryDF['div'] = pl.div(queryDF['cpu0'], queryDF['cpu1'])",
+          "rangeDF = queryDF[['div']]",
       },
       "\n");
   EXPECT_OK(ParseQuery(single_col_div_map_query));
@@ -160,7 +162,8 @@ TEST(MapTest, multi_col_map) {
   std::string multi_col = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1, 'copy' : r.cpu2})",
+          "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+          "queryDF['copy'] = queryDF['cpu2']",
       },
       "\n");
   EXPECT_OK(ParseQuery(multi_col));
@@ -170,28 +173,28 @@ TEST(MapTest, bin_op_test) {
   std::string single_col_map_sum = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
+          "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
       },
       "\n");
   EXPECT_OK(ParseQuery(single_col_map_sum));
   std::string single_col_map_sub = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sub' : r.cpu0 - r.cpu1})",
+          "queryDF['sub'] = queryDF['cpu0'] - queryDF['cpu1']",
       },
       "\n");
   EXPECT_OK(ParseQuery(single_col_map_sub));
   std::string single_col_map_product = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'product' : r.cpu0 * r.cpu1})",
+          "queryDF['product'] = queryDF['cpu0'] * queryDF['cpu1']",
       },
       "\n");
   EXPECT_OK(ParseQuery(single_col_map_product));
   std::string single_col_map_quotient = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1})",
+          "queryDF['quotient'] = queryDF['cpu0'] / queryDF['cpu1']",
       },
       "\n");
   EXPECT_OK(ParseQuery(single_col_map_quotient));
@@ -201,17 +204,46 @@ TEST(MapTest, nested_expr_map) {
   std::string nested_expr = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1 + r.cpu2})",
+          "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1'] + queryDF['cpu2']",
       },
       "\n");
   EXPECT_OK(ParseQuery(nested_expr));
   std::string nested_fn = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "rangeDF = queryDF.map(fn=lambda r : {'sum' : pl.div(r.cpu0 + r.cpu1, r.cpu2)})",
+          "queryDF['div'] = pl.div(queryDF['cpu0'] + queryDF['cpu1'], queryDF['cpu2'])",
       },
       "\n");
   EXPECT_OK(ParseQuery(nested_fn));
+}
+
+TEST(MapTest, wrong_df_name) {
+  std::string wrong_df = absl::StrJoin(
+      {
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "wrong = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF['sum'] = wrong['cpu0'] + wrong['cpu1'] + wrong['cpu2']",
+      },
+      "\n");
+  auto ir_graph_status = ParseQuery(wrong_df);
+  VLOG(1) << ir_graph_status.ToString();
+  EXPECT_NOT_OK(ir_graph_status);
+  EXPECT_THAT(ir_graph_status.status(),
+              HasCompilerError("name 'wrong' is not available in this context"));
+}
+
+TEST(MapTest, missing_df) {
+  std::string wrong_df = absl::StrJoin(
+      {
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF['sum'] = dne['cpu0'] + dne['cpu1'] + dne['cpu2']",
+      },
+      "\n");
+  auto ir_graph_status = ParseQuery(wrong_df);
+  VLOG(1) << ir_graph_status.ToString();
+  EXPECT_NOT_OK(ir_graph_status);
+  EXPECT_THAT(ir_graph_status.status(),
+              HasCompilerError("name 'dne' is not available in this context"));
 }
 
 TEST(AggTest, single_col_agg) {
@@ -288,8 +320,8 @@ TEST(AggTest, not_allowed_agg_fn) {
 TEST(ResultTest, basic) {
   std::string single_col_map_sub = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-       "rangeDF = queryDF.map(fn=lambda r : {'sub' : r.cpu0 - r.cpu1})",
-       "result = rangeDF.result(name='mapped')"},
+       "queryDF['sub'] = queryDF['cpu0'] - queryDF['cpu1']",
+       "result = queryDF[['sub']].result(name='mapped')"},
       "\n");
   EXPECT_OK(ParseQuery(single_col_map_sub));
 }
@@ -306,11 +338,10 @@ TEST(OptionalArgs, DISABLED_map_copy_relation) {
   // TODO(philkuz) later diff impl this.
   // TODO(philkuz) make a relation handler test that confirms the relation is actually copied.
 
-  std::string map_query =
-      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
-                     "queryDF.map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1}, "
-                     "copy_source_cols=True).result(name='map')"},
-                    "\n");
+  std::string map_query = absl::StrJoin(
+      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
+       "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']", "queryDF.result(name='map')"},
+      "\n");
   EXPECT_OK(ParseQuery(map_query));
 }
 
@@ -570,19 +601,6 @@ TEST(AggTest, not_allowed_by_arguments) {
   ASSERT_NOT_OK(ir_graph_status);
 }
 
-TEST(LambdaTest, test_wrong_number_of_arguments) {
-  std::string add_combination = absl::StrJoin(
-      {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
-          "queryDF.map(fn=lambda r, b: {'cpu_plus_2' : r.cpu0+2}).result(name='cpu2')",
-      },
-      "\n");
-  auto ir_graph_status = ParseQuery(add_combination);
-  VLOG(1) << ir_graph_status.ToString();
-  EXPECT_NOT_OK(ir_graph_status);
-  EXPECT_THAT(ir_graph_status.status(), HasCompilerError("operator expects 1 parent, received 2"));
-}
-
 const char* kJoinDuplicatedLambdaQuery = R"query(
 src1 = dataframe(table='cpu', select=['upid', 'cpu0','cpu1'])
 src2 = dataframe(table='network', select=['upid', 'bytes_in', 'bytes_out'])
@@ -609,8 +627,8 @@ TEST(RangeTest, test_parent_is_memory_source) {
   std::string add_combination = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
-          "queryDF.map(fn=lambda r: {'cpu_plus_2' : r.cpu0+2}).range(start=10, "
-          "stop=12).result(name='cpu2')",
+          "queryDF['foo'] = 2",
+          "queryDF.range(start=10, stop=12).result(name='cpu2')",
       },
       "\n");
   auto ir_graph_status = ParseQuery(add_combination);
