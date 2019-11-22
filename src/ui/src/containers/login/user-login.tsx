@@ -53,8 +53,8 @@ function onLoginAuthenticated(authResult) {
       },
     }).then((response) => {
       this.setSession({
-        idToken: response.data.Token,
-        expiresAt: response.data.ExpiresAt,
+        idToken: response.data.token,
+        expiresAt: response.data.expiresAt,
       });
 
       // Associate anonymous use with actual user ID.
@@ -87,8 +87,8 @@ function onCreateAuthenticated(authResult) {
       },
     }).then((response) => {
       this.setSession({
-        idToken: response.data.Token,
-        expiresAt: response.data.ExpiresAt,
+        idToken: response.data.token,
+        expiresAt: response.data.expiresAt,
       });
       // Associate anonymous use with actual user ID.
       analytics.identify(response.data.userInfo.userID, {});
@@ -214,8 +214,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     });
 
     if (this.isAuthenticated()) {
-      this._lock.hide();
-      return;
+      RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
     }
 
     this._lock.show();
