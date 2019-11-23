@@ -779,8 +779,8 @@ TEST_F(AnalyzerTest, select_all) {
 class MetadataSingleOps : public AnalyzerTest, public ::testing::WithParamInterface<std::string> {};
 TEST_P(MetadataSingleOps, valid_metadata_calls) {
   std::string op_call = GetParam();
-  std::string valid_query = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu') ", "opDF = queryDF.$0", "opDF.result(name='out')"}, "\n");
+  std::string valid_query =
+      absl::StrJoin({"queryDF = dataframe(table='cpu') ", "$0.result(name='out')"}, "\n");
   valid_query = absl::Substitute(valid_query, op_call);
   VLOG(1) << valid_query;
   auto ir_graph_status = CompileGraph(valid_query);
@@ -789,20 +789,22 @@ TEST_P(MetadataSingleOps, valid_metadata_calls) {
   ASSERT_OK(HandleRelation(ir_graph));
 }
 std::vector<std::string> metadata_operators{
-    "filter(fn=lambda r : r.attr.service == 'pl/orders')",
-    "agg(fn=lambda r: {'mean': pl.mean(r.cpu0)}, by=lambda r: r.attr.service)",
-    "agg(fn=lambda r: {'mean': pl.count(r.cpu0)}, by=lambda r: [r.cpu0, r.attr.service])",
-    "agg(fn=lambda r: {'mean': pl.count(r.cpu0)}, by=lambda r: r.attr.service).filter(fn=lambda r: "
-    "r.attr.service == 'pl/orders')",
-    "agg(fn=lambda r: {'mean': pl.count(r.cpu0)}, by=lambda r: r.attr.service_id).filter(fn=lambda "
-    "r: "
-    "r.attr.service == 'pl/orders')"};
+    "queryDF[queryDF.attr['service'] == 'pl/orders']",
+    "queryDF['service'] = queryDF.attr['service']\nqueryDF",
+    "queryDF.agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : r.attr.service)",
+    "queryDF.agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.cpu0, "
+    "r.attr.service])",
+    "aggDF = queryDF.agg(by=lambda r: [r.upid, r.attr.service], fn=lambda "
+    "r:{'mean_cpu': pl.mean(r.cpu0)})\naggDF[aggDF.attr['service'] == 'pl/service-name']",
+    "aggDF = queryDF.agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.cpu0, "
+    "r.attr.service])\naggDF[aggDF.attr['service'] =='pl/orders']",
+    "aggDF = queryDF.agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.cpu0, "
+    "r.attr.service_id])\naggDF[aggDF.attr['service'] == 'pl/orders']"};
 
 INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
                          ::testing::ValuesIn(metadata_operators));
 
-// TODO(nserrino): Enable this once df.attr['service'] syntax lands.
-TEST_F(AnalyzerTest, DISABLED_valid_metadata_call) {
+TEST_F(AnalyzerTest, valid_metadata_call) {
   std::string valid_query =
       absl::StrJoin({"queryDF = dataframe(table='cpu') ",
                      "queryDF['service'] = queryDF.attr['service']", "queryDF.result(name='out')"},
@@ -814,11 +816,10 @@ TEST_F(AnalyzerTest, DISABLED_valid_metadata_call) {
   ASSERT_OK(HandleRelation(ir_graph));
 }
 
-// TODO(nserrino): Enable this once df.attr['service'] syntax lands.
-TEST_F(AnalyzerTest, DISABLED_metadata_fails_no_upid) {
+TEST_F(AnalyzerTest, metadata_fails_no_upid) {
   std::string valid_query =
       absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0']) ",
-                     "queryDF['service'] = queryDF.attr['service']", "opDF.result(name='out')"},
+                     "queryDF['service'] = queryDF.attr['service']", "queryDF.result(name='out')"},
                     "\n");
   VLOG(1) << valid_query;
   auto ir_graph_status = CompileGraph(valid_query);
@@ -849,8 +850,8 @@ TEST_F(AnalyzerTest, copy_metadata_key_and_og_column) {
   std::string valid_query = absl::StrJoin(
       {"queryDF = dataframe(table='cpu') ",
        "opDF = queryDF.agg(by=lambda r: [r.$0, r.attr.service],  fn=lambda "
-       "r:{'mean_cpu': pl.mean(r.cpu0)}).filter(fn=lambda r: r.attr.service=='pl/service-name')",
-       "opDF.result(name='out')"},
+       "r:{'mean_cpu': pl.mean(r.cpu0)})",
+       "opDF = opDF[opDF.attr['service']=='pl/service-name']", "opDF.result(name='out')"},
       "\n");
   valid_query = absl::Substitute(valid_query, MetadataProperty::kUniquePIDColumn);
   auto ir_graph_status = CompileGraph(valid_query);

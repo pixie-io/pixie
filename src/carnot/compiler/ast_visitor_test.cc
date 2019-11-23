@@ -385,10 +385,10 @@ class FilterTestParam : public ::testing::TestWithParam<std::string> {
     // TODO(philkuz) use Combine with the tuple to get out a set of different values for each of the
     // values.
     compare_op_ = GetParam();
-    query = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                           "'cpu1']).filter(fn=lambda r : r.cpu0 $0 0.5)",
-                           "queryDF.result(name='filtered')"},
-                          "\n");
+    query = absl::StrJoin(
+        {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
+         "queryDF = queryDF[queryDF['cpu0'] $0 0.5]", "queryDF.result(name='filtered')"},
+        "\n");
     query = absl::Substitute(query, compare_op_);
     VLOG(2) << query;
   }
@@ -406,23 +406,23 @@ INSTANTIATE_TEST_SUITE_P(FilterTestSuites, FilterTestParam,
 TEST(FilterExprTest, basic) {
   // Test for and
   std::string simple_and =
-      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                     "'cpu1']).filter(fn=lambda r : r.cpu0 == 0.5 and r.cpu1 >= 0.2)",
+      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
+                     "queryDF = queryDF[queryDF['cpu0'] == 0.5 and queryDF['cpu1'] >= 0.2]",
                      "queryDF.result(name='filtered')"},
                     "\n");
   EXPECT_OK(ParseQuery(simple_and));
   // Test for or
   std::string simple_or =
-      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                     "'cpu1']).filter(fn=lambda r : r.cpu0 == 0.5 or r.cpu1 >= 0.2)",
+      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
+                     "queryDF = queryDF[queryDF['cpu0'] == 0.5 or queryDF['cpu1'] >= 0.2]",
                      "queryDF.result(name='filtered')"},
                     "\n");
   EXPECT_OK(ParseQuery(simple_or));
   // Test for nested and/or clauses
   std::string and_or_query =
-      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                     "'cpu1']).filter(fn=lambda r : r.cpu0 == 0.5 and r.cpu1 "
-                     ">= 0.2 or r.cpu0 >= 0.5 and r.cpu1 == 0.2)",
+      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
+                     "queryDF = queryDF[queryDF['cpu0'] == 0.5 and queryDF['cpu1'] >= 0.2 or "
+                     "queryDF['cpu0'] >= 5 and queryDF['cpu1'] == 0.2]",
                      "queryDF.result(name='filtered')"},
                     "\n");
   EXPECT_OK(ParseQuery(and_or_query));
@@ -461,19 +461,11 @@ TEST(LimitTest, limit_invalid_queries) {
   EXPECT_NOT_OK(ParseQuery(float_arg));
 }
 
-TEST(FilterTest, filter_invalid_queries) {
-  std::string int_val = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                       "'cpu1']).filter(fn=1)",
-                                       "queryDF.result(name='filtered')"},
-                                      "\n");
-  EXPECT_NOT_OK(ParseQuery(int_val));
-}
-
 // TODO(philkuz) (PL-524) both of these changes require modifications to the actual parser.
 TEST(NegationTest, DISABLED_bang_negation) {
   std::string bang_negation =
       absl::StrJoin({"queryDF = dataframe(table='cpu', select=['bool_col']) "
-                     "filterDF = queryDF.filter(fn=lambda r : !r.bool_col)",
+                     "filterDF = queryDF[!queryDF['bool_col']]",
                      "filterDF.result(name='filtered')"},
                     "\n");
   EXPECT_OK(ParseQuery(bang_negation));
@@ -482,7 +474,7 @@ TEST(NegationTest, DISABLED_bang_negation) {
 TEST(NegationTest, DISABLED_pythonic_negation) {
   std::string pythonic_negation =
       absl::StrJoin({"queryDF = dataframe(table='cpu', select=['bool_col']) "
-                     "filterDF = queryDF.filter(fn=lambda r : not r.bool_col)",
+                     "filterDF = queryDF[not queryDF['bool_col']]",
                      "filterDF.result(name='filtered')"},
                     "\n");
   EXPECT_OK(ParseQuery(pythonic_negation));
@@ -503,7 +495,7 @@ TEST_P(OpsAsAttributes, valid_attributes) {
   EXPECT_OK(ParseQuery(valid_query));
 }
 std::vector<std::string> operators{
-    "filter(fn=lambda r : r.bool_col)", "map(fn=lambda r : {'boolin': r.bool_col})",
+    "map(fn=lambda r : {'boolin': r.bool_col})",
     "agg(fn=lambda r : {'count': pl.count(r.bool_col)},by=lambda r : r.bool_col)",
     "limit(rows=1000)", "range(start=plc.now() - plc.minutes(2), stop=plc.now())"};
 
@@ -521,7 +513,6 @@ TEST_P(MetadataAttributes, valid_metadata_calls) {
   EXPECT_OK(ParseQuery(valid_query));
 }
 std::vector<std::string> metadata_operators{
-    "filter(fn=lambda r : r.attr.services == 'orders')",
     "map(fn=lambda r : {'services': r.attr.services})",
     "agg(fn=lambda r : {'count': pl.count(r.bool_col)},by=lambda r : r.attr.services)",
     "agg(fn=lambda r : {'count': pl.count(r.bool_col)},by=lambda r : [r.not_bool_col, "

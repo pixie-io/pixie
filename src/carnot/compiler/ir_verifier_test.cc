@@ -320,10 +320,11 @@ class VerifierTest : public ::testing::Test {
 };
 
 TEST_F(VerifierTest, filter_valid_query) {
-  std::string query = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                     "'cpu1']).filter(fn=lambda r : r.cpu0 >  0.5)",
-                                     "queryDF.result(name='filtered')"},
-                                    "\n");
+  std::string query =
+      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
+                     "'cpu1'])",
+                     "queryDF = queryDF[queryDF['cpu0'] > 0.5]", "queryDF.result(name='filtered')"},
+                    "\n");
   ASSERT_OK(ParseQueryTest(query));
   EXPECT_OK(VerifyGraphTest());
   EXPECT_OK(VerifyLineColTest());

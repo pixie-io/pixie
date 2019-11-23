@@ -99,7 +99,7 @@ TEST_F(PlannerExportTest, bad_queries) {
 
 const char* kUDFQuery = R"query(
 t1 = dataframe(table='table1').range(start='-30s')
-t1 = t1.filter(fn=lambda r: r.cpu_cycles >= 0)
+t1 = t1[t1['cpu_cycles'] >= 0]
 t1.result(name="")
 )query";
 

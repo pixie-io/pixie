@@ -765,7 +765,7 @@ TEST_P(CarnotFilterTest, int_filter) {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2', 'col3', "
           "'num_groups', "
           "'string_groups'])",
-          "mapDF = queryDF.filter(fn=lambda r : r.$2 $1 $0)",
+          "mapDF = queryDF[queryDF['$2'] $1 $0]",
           "mapDF.result(name='test_output')",
       },
       "\n");
@@ -824,7 +824,7 @@ TEST_F(CarnotTest, string_filter) {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2', 'col3', "
           "'num_groups', "
           "'string_groups'])",
-          "mapDF = queryDF.filter(fn=lambda r : r.$2 $1 '$0')",
+          "mapDF = queryDF[queryDF['$2'] $1 '$0']",
           "mapDF.result(name='test_output')",
       },
       "\n");
@@ -938,7 +938,7 @@ TEST_F(CarnotTest, reused_result) {
           "'string_groups'])",
           "mapDF = queryDF[['col3', 'num_groups']]",
           "mapDF['is_large'] = mapDF['col3'] > 30",
-          "x = queryDF.filter(fn = lambda r : r.num_groups > 2)",
+          "x = queryDF[queryDF['num_groups'] > 2]",
           "mapDF[['is_large', 'num_groups']].result(name='test_output')",
       },
       "\n");
@@ -976,7 +976,7 @@ TEST_F(CarnotTest, multiple_result_calls) {
           "mapDF['lt'] = mapDF['col3'] < $0",
           "mapDF['gt'] = mapDF['num_groups'] > $1",
           "mapDF[['lt', 'gt']].result(name='test_output')",
-          "x = queryDF.filter(fn = lambda r : r.num_groups > $2).result(name='filtered_output')",
+          "x = queryDF[queryDF['num_groups'] > $2].result(name='filtered_output')",
       },
       "\n");
   // Values to test on.
@@ -1105,7 +1105,8 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
   std::string query = absl::StrJoin(
       {
           "df = dataframe(table='big_test_table', select=['string_groups', '_attr_pod_id'])",
-          "bdf = df.filter(fn=lambda r: r.attr.pod_name == 'pl/name')",
+          "df['pod_name'] = df.attr['pod_name']",
+          "bdf = df[df['pod_name'] == 'pl/name']",
           "cdf = bdf.result(name='logical_plan')",
       },
       "\n");

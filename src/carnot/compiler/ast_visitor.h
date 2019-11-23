@@ -511,7 +511,7 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<FuncIR::Op> GetOp(const std::string& python_op, pypa::AstPtr node);
 
   /**
-   * @brief Handler for Binary operations that are run at compile time, not runtime.
+   * @brief Handler for Binary operations.
    *
    * @param ast
    * @param op_context: The context of the operator which this is contained within.
@@ -519,6 +519,16 @@ class ASTVisitorImpl : public ASTVisitor {
    */
   StatusOr<ExpressionIR*> ProcessDataBinOp(const pypa::AstBinOpPtr& node,
                                            const OperatorContext& op_context);
+
+  /**
+   * @brief Handler for Bool operations.
+   *
+   * @param ast
+   * @param op_context: The context of the operator which this is contained within.
+   * @return StatusOr<ExpressionIR*>
+   */
+  StatusOr<ExpressionIR*> ProcessDataBoolOp(const pypa::AstBoolOpPtr& node,
+                                            const OperatorContext& op_context);
 
   /**
    * @brief Processes compare nodes

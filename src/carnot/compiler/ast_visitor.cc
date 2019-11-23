@@ -811,6 +811,36 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr
   return ir_graph_->CreateNode<FuncIR>(node, op, expressions);
 }
 
+StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataBoolOp(const pypa::AstBoolOpPtr& node,
+                                                          const OperatorContext& op_context) {
+  std::string op_str = pypa::to_string(node->op);
+  if (node->values.size() != 2) {
+    return CreateAstError(node, "Expected two arguments to '$0'.", op_str);
+  }
+
+  PL_ASSIGN_OR_RETURN(IRNode * left, ProcessData(node->values[0], op_context));
+  PL_ASSIGN_OR_RETURN(IRNode * right, ProcessData(node->values[1], op_context));
+  if (!left->IsExpression()) {
+    return CreateAstError(
+        node,
+        "Expected left side of operation to be an expression, but got $0, which is not an "
+        "expression..",
+        left->type_string());
+  }
+  if (!right->IsExpression()) {
+    return CreateAstError(
+        node,
+        "Expected right side of operation to be an expression, but got $0, which is not an "
+        "expression.",
+        right->type_string());
+  }
+
+  PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
+  std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
+                                            static_cast<ExpressionIR*>(right)};
+  return ir_graph_->CreateNode<FuncIR>(node, op, expressions);
+}
+
 StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCompare(const pypa::AstComparePtr& node,
                                                            const OperatorContext& op_context) {
   DCHECK_EQ(node->operators.size(), 1ULL);
@@ -995,6 +1025,9 @@ StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
     }
     case AstType::BinOp: {
       return ProcessDataBinOp(PYPA_PTR_CAST(BinOp, ast), op_context);
+    }
+    case AstType::BoolOp: {
+      return ProcessDataBoolOp(PYPA_PTR_CAST(BoolOp, ast), op_context);
     }
     case AstType::Compare: {
       return ProcessDataCompare(PYPA_PTR_CAST(Compare, ast), op_context);
