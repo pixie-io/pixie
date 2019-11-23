@@ -465,6 +465,11 @@ func getAgentUpdateKey(agentID string) string {
 
 // GetAgentsForHostnames gets the agents running on the given hostnames.
 func (mds *EtcdMetadataStore) GetAgentsForHostnames(hostnames *[]string) (*[]string, error) {
+	agents := []string{}
+	if len(*hostnames) == 0 {
+		return &agents, nil
+	}
+
 	cmps := make([]clientv3.Cmp, len(*hostnames))
 	ops := make([]clientv3.Op, len(*hostnames))
 	for i, hostname := range *hostnames {
@@ -477,7 +482,6 @@ func (mds *EtcdMetadataStore) GetAgentsForHostnames(hostnames *[]string) (*[]str
 		return nil, err
 	}
 
-	var agents []string
 	for _, resp := range txnresp.Responses {
 		if len(resp.GetResponseRange().Kvs) > 0 {
 			agents = append(agents, string(resp.GetResponseRange().Kvs[0].Value))

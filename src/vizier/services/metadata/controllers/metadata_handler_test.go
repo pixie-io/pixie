@@ -58,6 +58,20 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	}
 	ag2Update, err := ag2UpdatePb.Marshal()
 
+	fullUpdatePb := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"abcd", "efgh"},
+			},
+		},
+	}
+	fullUpdate, err := fullUpdatePb.Marshal()
+
 	mockMds.
 		EXPECT().
 		UpdateEndpoints(expectedPb).
@@ -73,8 +87,17 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		GetAgentsForHostnames(&[]string{"node-a"}).
 		Return(&[]string{"agent-2"}, nil)
 
+	mockMds.
+		EXPECT().
+		GetAgentsForHostnames(&[]string{}).
+		Return(&[]string{}, nil)
+
+	mockMds.
+		EXPECT().
+		GetKelvinIDs().Return([]string{"kelvin-1", "kelvin-2"}, nil)
+
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(4)
 	defer wg.Wait()
 
 	mockMds.
@@ -88,6 +111,22 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	mockMds.
 		EXPECT().
 		AddToAgentUpdateQueue("agent-2", string(ag2Update)).
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
+		})
+
+	mockMds.
+		EXPECT().
+		AddToAgentUpdateQueue("kelvin-1", string(fullUpdate)).
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
+		})
+
+	mockMds.
+		EXPECT().
+		AddToAgentUpdateQueue("kelvin-2", string(fullUpdate)).
 		DoAndReturn(func(agent string, update string) error {
 			wg.Done()
 			return nil
@@ -187,9 +226,11 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	assert.Equal(t, true, more)
 	more = mh.ProcessNextAgentUpdate()
 	assert.Equal(t, true, more)
+	more = mh.ProcessNextAgentUpdate()
+	assert.Equal(t, true, more)
 }
 
-func TestNoHostnameResolvedProto(t *testing.T) {
+func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -200,21 +241,126 @@ func TestNoHostnameResolvedProto(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
+	refs := make([]*metadatapb.ObjectReference, 1)
+	refs[0] = &metadatapb.ObjectReference{
+		Kind:      "Pod",
+		Namespace: "pl",
+		UID:       "abcd",
+	}
+
+	ag1UpdatePb := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"abcd"},
+			},
+		},
+	}
+	ag1Update, err := ag1UpdatePb.Marshal()
+
+	ag2UpdatePb := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"efgh"},
+			},
+		},
+	}
+	ag2Update, err := ag2UpdatePb.Marshal()
+
+	fullUpdatePb := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"abcd", "efgh"},
+			},
+		},
+	}
+	fullUpdate, err := fullUpdatePb.Marshal()
+
 	mockMds.
 		EXPECT().
 		UpdateEndpoints(expectedPb).
 		Return(nil)
 
+	mockMds.
+		EXPECT().
+		GetAgentsForHostnames(&[]string{"this-is-a-node"}).
+		Return(&[]string{"agent-1"}, nil)
+
+	mockMds.
+		EXPECT().
+		GetAgentsForHostnames(&[]string{"node-a"}).
+		Return(&[]string{"agent-2"}, nil)
+
+	mockMds.
+		EXPECT().
+		GetAgentsForHostnames(&[]string{"node-a"}).
+		Return(&[]string{"agent-3"}, nil)
+
+	mockMds.
+		EXPECT().
+		GetAgentsForHostnames(&[]string{}).
+		Return(&[]string{}, nil)
+
+	mockMds.
+		EXPECT().
+		GetKelvinIDs().Return([]string{"kelvin-1", "kelvin-2"}, nil)
+
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(5)
 	defer wg.Wait()
 
 	mockMds.
 		EXPECT().
-		GetAgentsForHostnames(&[]string{"this-is-a-node"}).
-		DoAndReturn(func(hostnames *[]string) (*[]string, error) {
+		AddToAgentUpdateQueue("agent-1", string(ag1Update)).
+		DoAndReturn(func(agent string, update string) error {
 			wg.Done()
-			return nil, nil
+			return nil
+		})
+
+	mockMds.
+		EXPECT().
+		AddToAgentUpdateQueue("agent-2", string(ag2Update)).
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return errors.New("Could not add to agent queue")
+		})
+
+	mockMds.
+		EXPECT().
+		AddToAgentUpdateQueue("agent-3", string(ag2Update)).
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
+		})
+
+	mockMds.
+		EXPECT().
+		AddToAgentUpdateQueue("kelvin-1", string(fullUpdate)).
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
+		})
+
+	mockMds.
+		EXPECT().
+		AddToAgentUpdateQueue("kelvin-2", string(fullUpdate)).
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
 		})
 
 	// Create endpoints object.
@@ -309,193 +455,8 @@ func TestNoHostnameResolvedProto(t *testing.T) {
 
 	more := mh.ProcessNextAgentUpdate()
 	assert.Equal(t, true, more)
-}
 
-func TestAddToAgentUpdateQueueFailed(t *testing.T) {
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
-
-	expectedPb := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	refs := make([]*metadatapb.ObjectReference, 1)
-	refs[0] = &metadatapb.ObjectReference{
-		Kind:      "Pod",
-		Namespace: "pl",
-		UID:       "abcd",
-	}
-
-	ag1UpdatePb := &metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
-			ServiceUpdate: &metadatapb.ServiceUpdate{
-				UID:              "ijkl",
-				Name:             "object_md",
-				Namespace:        "a_namespace",
-				StartTimestampNS: 4,
-				StopTimestampNS:  6,
-				PodIDs:           []string{"abcd"},
-			},
-		},
-	}
-	ag1Update, err := ag1UpdatePb.Marshal()
-
-	ag2UpdatePb := &metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
-			ServiceUpdate: &metadatapb.ServiceUpdate{
-				UID:              "ijkl",
-				Name:             "object_md",
-				Namespace:        "a_namespace",
-				StartTimestampNS: 4,
-				StopTimestampNS:  6,
-				PodIDs:           []string{"efgh"},
-			},
-		},
-	}
-	ag2Update, err := ag2UpdatePb.Marshal()
-
-	mockMds.
-		EXPECT().
-		UpdateEndpoints(expectedPb).
-		Return(nil)
-
-	mockMds.
-		EXPECT().
-		GetAgentsForHostnames(&[]string{"this-is-a-node"}).
-		Return(&[]string{"agent-1"}, nil)
-
-	mockMds.
-		EXPECT().
-		GetAgentsForHostnames(&[]string{"node-a"}).
-		Return(&[]string{"agent-2"}, nil)
-
-	mockMds.
-		EXPECT().
-		GetAgentsForHostnames(&[]string{"node-a"}).
-		Return(&[]string{"agent-3"}, nil)
-
-	var wg sync.WaitGroup
-	wg.Add(3)
-	defer wg.Wait()
-
-	mockMds.
-		EXPECT().
-		AddToAgentUpdateQueue("agent-1", string(ag1Update)).
-		DoAndReturn(func(agent string, update string) error {
-			wg.Done()
-			return nil
-		})
-
-	mockMds.
-		EXPECT().
-		AddToAgentUpdateQueue("agent-2", string(ag2Update)).
-		DoAndReturn(func(agent string, update string) error {
-			wg.Done()
-			return errors.New("Could not add to agent queue")
-		})
-
-	mockMds.
-		EXPECT().
-		AddToAgentUpdateQueue("agent-3", string(ag2Update)).
-		DoAndReturn(func(agent string, update string) error {
-			wg.Done()
-			return nil
-		})
-
-	// Create endpoints object.
-	or := v1.ObjectReference{
-		Kind:      "Pod",
-		Namespace: "pl",
-		UID:       "abcd",
-	}
-
-	or2 := v1.ObjectReference{
-		Kind:      "Pod",
-		Namespace: "pl",
-		UID:       "efgh",
-	}
-
-	addrs := make([]v1.EndpointAddress, 2)
-	nodeName := "this-is-a-node"
-	addrs[0] = v1.EndpointAddress{
-		IP:        "127.0.0.1",
-		Hostname:  "host",
-		NodeName:  &nodeName,
-		TargetRef: &or,
-	}
-
-	nodeName2 := "node-a"
-	addrs[1] = v1.EndpointAddress{
-		IP:        "127.0.0.2",
-		Hostname:  "host-2",
-		NodeName:  &nodeName2,
-		TargetRef: &or2,
-	}
-
-	notReadyAddrs := make([]v1.EndpointAddress, 1)
-	nodeName3 := "node-b"
-	notReadyAddrs[0] = v1.EndpointAddress{
-		IP:       "127.0.0.3",
-		Hostname: "host-3",
-		NodeName: &nodeName3,
-	}
-
-	ports := make([]v1.EndpointPort, 2)
-	ports[0] = v1.EndpointPort{
-		Name:     "endpt",
-		Port:     10,
-		Protocol: v1.ProtocolTCP,
-	}
-	ports[1] = v1.EndpointPort{
-		Name:     "abcd",
-		Port:     500,
-		Protocol: v1.ProtocolTCP,
-	}
-
-	subsets := make([]v1.EndpointSubset, 1)
-	subsets[0] = v1.EndpointSubset{
-		Addresses:         addrs,
-		NotReadyAddresses: notReadyAddrs,
-		Ports:             ports,
-	}
-
-	delTime := metav1.Unix(0, 6)
-	creationTime := metav1.Unix(0, 4)
-	oRef := metav1.OwnerReference{
-		Kind: "pod",
-		Name: "test",
-		UID:  "abcd",
-	}
-
-	oRefs := make([]metav1.OwnerReference, 1)
-	oRefs[0] = oRef
-	md := metav1.ObjectMeta{
-		Name:              "object_md",
-		Namespace:         "a_namespace",
-		UID:               "ijkl",
-		ResourceVersion:   "1",
-		CreationTimestamp: creationTime,
-		DeletionTimestamp: &delTime,
-		OwnerReferences:   oRefs,
-	}
-
-	o := v1.Endpoints{
-		ObjectMeta: md,
-		Subsets:    subsets,
-	}
-
-	isLeader := true
-	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
-	assert.Nil(t, err)
-
-	ch := mh.GetChannel()
-	msg := &controllers.K8sMessage{Object: &o, ObjectType: "endpoints"}
-	ch <- msg
-
-	more := mh.ProcessNextAgentUpdate()
+	more = mh.ProcessNextAgentUpdate()
 	assert.Equal(t, true, more)
 
 	more = mh.ProcessNextAgentUpdate()
@@ -690,16 +651,29 @@ func TestObjectToPodProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
+		GetKelvinIDs().
+		Return([]string{"kelvin-1"}, nil)
+
+	mockMds.
+		EXPECT().
 		GetAgentsForHostnames(&[]string{"test"}).
 		Return(&[]string{"agent-1"}, nil)
 
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	defer wg.Wait()
 
 	mockMds.
 		EXPECT().
 		AddToAgentUpdateQueue("agent-1", string(update)).
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
+		})
+
+	mockMds.
+		EXPECT().
+		AddToAgentUpdateQueue("kelvin-1", string(update)).
 		DoAndReturn(func(agent string, update string) error {
 			wg.Done()
 			return nil

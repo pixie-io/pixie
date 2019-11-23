@@ -52,8 +52,9 @@ type K8sMessage struct {
 
 // UpdateMessage is an update message for a specific hostname.
 type UpdateMessage struct {
-	Message   *metadatapb.ResourceUpdate
-	Hostnames *[]string
+	Message      *metadatapb.ResourceUpdate
+	Hostnames    *[]string
+	NodeSpecific bool // Specifies whether the update should only be sent to a specific node.
 }
 
 // MetadataHandler processes messages in its channel.
@@ -122,7 +123,7 @@ func (mh *MetadataHandler) ProcessNextAgentUpdate() bool {
 	}
 
 	// Apply updates.
-	mh.updateAgentQueues(msg.Message, msg.Hostnames)
+	mh.updateAgentQueues(msg.Message, msg.Hostnames, msg.NodeSpecific)
 
 	return more
 }
@@ -156,32 +157,44 @@ func (mh *MetadataHandler) MetadataListener() {
 
 // updateAgentQueues appends the resource update to the relevant agent queues. If appending to the queue has failed,
 // it adds the update to the handler's retry channel.
-func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate, hostnames *[]string) {
+func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate, hostnames *[]string, nodeSpecific bool) {
 	agents, err := mh.mds.GetAgentsForHostnames(hostnames)
-
-	if agents == nil || len(*agents) == 0 {
+	if err != nil {
 		return
 	}
-
 	update, err := updatePb.Marshal()
 	if err != nil {
 		log.WithError(err).Error("Could not marshall service update message.")
 		return
 	}
 
+	allAgents := *agents
+	if !nodeSpecific {
+		// This update is not for a specific node. Send to Kelvins as well.
+		kelvinIDs, err := mh.mds.GetKelvinIDs()
+		if err != nil {
+			log.WithError(err).Error("Could not get kelvin IDs")
+		} else {
+			allAgents = append(allAgents, kelvinIDs...)
+		}
+	}
+
 	var failedHostnames []string
-	for i, agent := range *agents {
+	for i, agent := range allAgents {
 		err = mh.mds.AddToAgentUpdateQueue(agent, string(update))
 		if err != nil {
 			log.WithError(err).Error("Could not write service update to agent update queue.")
-			failedHostnames = append(failedHostnames, (*hostnames)[i])
+			if i < len(*agents) { // If failed agent is not a Kelvin node, we should retry.
+				failedHostnames = append(failedHostnames, (*hostnames)[i])
+			}
 		}
 	}
 
 	if len(failedHostnames) > 0 {
 		mh.agentUpdateCh <- &UpdateMessage{
-			Message:   updatePb,
-			Hostnames: &failedHostnames,
+			Message:      updatePb,
+			Hostnames:    &failedHostnames,
+			NodeSpecific: nodeSpecific,
 		}
 	}
 }
@@ -210,10 +223,18 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 			hostnames := []string{addr.NodeName}
 			updatePb := GetNodeResourceUpdateFromEndpoints(pb, addr.NodeName)
 			mh.agentUpdateCh <- &UpdateMessage{
-				Hostnames: &hostnames,
-				Message:   updatePb,
+				Hostnames:    &hostnames,
+				Message:      updatePb,
+				NodeSpecific: true,
 			}
 		}
+	}
+	// Add endpoint update for Kelvins.
+	updatePb := GetNodeResourceUpdateFromEndpoints(pb, "")
+	mh.agentUpdateCh <- &UpdateMessage{
+		Hostnames:    &[]string{},
+		Message:      updatePb,
+		NodeSpecific: false,
 	}
 }
 
