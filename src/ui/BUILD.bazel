@@ -1,56 +1,120 @@
 package(default_visibility = ["//visibility:public"])
 
+UI_DEP_PACKAGES = [
+    "yarn.lock",
+    "package.json",
+    ".yarnrc",
+] + glob([
+    "offline_package_cache/**",
+])
+
+UI_SRCS = glob([
+    "*.js",
+    "*.json",
+    ".storybook/**",
+    "stories/**",
+    "src/**",
+    "assets/**",
+]) + ["//src/vizier/services/api/controller/schema:schema"]
+
+UI_SCRIPT_START = """
+      export BASE_PATH=$$(pwd)
+      export PATH=/usr/local/bin:/opt/node/bin:$$PATH;
+      export HOME=$$(mktemp -d) # This makes node-gyp happy.
+      export OUTPUT_PATH="$$(pwd)/$(RULEDIR)"
+      export TMPPATH=$$(mktemp -d)
+
+      cp -aL $${BASE_PATH}/* $${TMPPATH}
+
+      pushd $${TMPPATH}/src/ui
+"""
+
+UI_SCRIPT_END = """
+      popd;
+      rm -rf $${TMPPATH}
+    """
+
 # This is a simple wrapper around webpack. Hopefully, when native Bazel webpack
 # builds become more stable we can use that.
 genrule(
-    name = "ui-bundle",
-    srcs = [
-        "yarn.lock",
-        ".yarnrc",
-    ] + glob([
-        "*.js",
-        "*.json",
-        ".storybook/**",
-        "stories/**",
-        "src/**",
-        "assets/**",
-        "offline_package_cache/**",
-    ]) + ["//src/vizier/services/api/controller/schema:schema"],
+    name = "ui-deps",
+    srcs = UI_DEP_PACKAGES,
     outs = [
-        "bundle.tar.gz",
-        "bundle_storybook.tar.gz",
-        "junit.xml",
-        "lcov.info",
+        "deps.tar",
     ],
-    cmd = """
-      export PATH=/usr/local/bin:/opt/node/bin:$$PATH;
-      export HOME=`mktemp -d` # This makes node-gyp happy.
-      export PL_DIST_BUNDLE_OUTPUT=`pwd`/$(RULEDIR)
-      export TMPPATH=`mktemp -d`
-
-      cp -aL `pwd`/* $${TMPPATH}
-
+    cmd = UI_SCRIPT_START + """
       pushd $${TMPPATH}/src/ui
       yarn install --prefer_offline
 
-      # Run the unit tests.
+      tar -czf $${OUTPUT_PATH}/deps.tar node_modules .
+      """ + UI_SCRIPT_END,
+    tags = [
+        "ui_build",
+    ],
+)
+
+genrule(
+    name = "ui-tests",
+    srcs = [
+        ":ui-deps",
+    ] + UI_SRCS,
+    outs = [
+        "junit.xml",
+        "lcov.info",
+    ],
+    cmd = UI_SCRIPT_START + """
+      tar -xf $${BASE_PATH}/$(location //src/ui:ui-deps)
+
       jest --coverage
+
+      cp junit.xml $${OUTPUT_PATH}
+      cp coverage/lcov.info $${OUTPUT_PATH}
+   """ + UI_SCRIPT_END,
+    tags = [
+        "ui_build",
+    ],
+)
+
+genrule(
+    name = "ui-bundle",
+    srcs = [
+        ":ui-deps",
+    ] + UI_SRCS,
+    outs = [
+        "bundle.tar.gz",
+    ],
+    cmd = UI_SCRIPT_START + """
+      tar -zxf $${BASE_PATH}/$(location //src/ui:ui-deps)
 
       # Build the prod bundle.
       yarn build_prod;
 
-      # Build the storybook bundle.
+      # Write the outputs to the correct location so Bazel can find them.
+      cp dist/bundle.tar.gz $${OUTPUT_PATH}
+    """ + UI_SCRIPT_END,
+    output_to_bindir = 1,  # We treat "outputs" as binaries.
+    tags = [
+        "ui_build",
+    ],
+)
+
+genrule(
+    name = "ui-storybook-bundle",
+    srcs = [
+        ":ui-deps",
+    ] + UI_SRCS,
+    outs = [
+        "bundle_storybook.tar.gz",
+    ],
+    cmd = UI_SCRIPT_START + """
+      tar -xf $${BASE_PATH}/$(location //src/ui:ui-deps)
+
+      # Build the prod bundle.
       yarn storybook_static
 
       # Write the outputs to the correct location so Bazel can find them.
-      cp dist/bundle.tar.gz $${PL_DIST_BUNDLE_OUTPUT}
-      tar -czvvf $${PL_DIST_BUNDLE_OUTPUT}/bundle_storybook.tar.gz storybook_static
-      cp junit.xml $${PL_DIST_BUNDLE_OUTPUT}
-      cp coverage/lcov.info $${PL_DIST_BUNDLE_OUTPUT}
-      popd;
-
-      rm -rf $${TMPPATH}
-    """,
+      tar -czf $${OUTPUT_PATH}/bundle_storybook.tar.gz storybook_static
+    """ + UI_SCRIPT_END,
     output_to_bindir = 1,  # We treat "outputs" as binaries.
     tags = [
         "ui_build",
@@ -60,14 +124,7 @@ genrule(
 genrule(
     name = "ui-licenses",
     srcs = [
-        "yarn.lock",
-        ".yarnrc",
-    ] + glob([
-        "*.js",
-        "*.json",
-        "offline_package_cache/**",
-    ]) + [
-        ":ui-bundle",
+        ":ui-deps",
     ],
     outs = [
         "NPM_LICENSES",
@@ -76,23 +133,19 @@ genrule(
         "tools/licenses/npm_license_extractor.py",
         "tools/licenses/override_license.json",
     ],
-    cmd = """
-      export PATH=/usr/local/bin:/opt/node/bin:$$PATH;
-      export HOME=`mktemp -d` # This makes node-gyp happy.
-      export PL_DIST_BUNDLE_OUTPUT=`pwd`/$(RULEDIR)
-      export TMPPATH=`mktemp -d`
-
-      cp -aL `pwd`/* $${TMPPATH}
-
-      pushd $${TMPPATH}/src/ui
-      yarn install --prefer_offline
+    cmd = UI_SCRIPT_START + """
+      tar -xf $${BASE_PATH}/$(location //src/ui:ui-deps)
 
       # License check
       yarn license-checker --json --out $@
-      cp $@ $${PL_DIST_BUNDLE_OUTPUT}
-      popd;
-      python $(location :tools/licenses/npm_license_extractor.py) $@ $@ --override_license $(location :tools/licenses/override_license.json)
+      cp $@ $${OUTPUT_PATH}
 
+      popd
+      python "$(location :tools/licenses/npm_license_extractor.py)" "$@" "$@" --override_license "$(location :tools/licenses/override_license.json)"
       rm -rf $${TMPPATH}
     """,
+    output_to_bindir = 1,  # We treat "outputs" as binaries.
+    tags = [
+        "ui_build",
+    ],
 )
