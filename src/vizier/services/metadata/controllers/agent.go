@@ -206,7 +206,7 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 		return 0, errors.New("Agent already exists")
 	}
 
-	collectsData := info.Capabilities != nil && info.Capabilities.CollectsData
+	collectsData := info.Capabilities == nil || info.Capabilities.CollectsData
 
 	// Check there's an existing agent for the hostname.
 	resp, err = m.client.Get(ctx, GetHostnameAgentKey(info.HostInfo.Hostname))
@@ -335,7 +335,7 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 			if err != nil {
 				log.WithError(err).Fatal("Could not convert UUID to proto")
 			}
-			collectsData := agentPb.Info.Capabilities != nil && agentPb.Info.Capabilities.CollectsData
+			collectsData := agentPb.Info.Capabilities == nil || agentPb.Info.Capabilities.CollectsData
 			err = m.deleteAgent(ctx, uid.String(), agentPb.Info.HostInfo.Hostname, collectsData)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to delete agent from etcd")

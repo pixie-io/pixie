@@ -169,7 +169,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb
 	var pemList []*agentpb.AgentInfo
 
 	for _, m := range mdsResp.Info {
-		if m.Agent.Info.Capabilities != nil && m.Agent.Info.Capabilities.CollectsData {
+		if m.Agent.Info.Capabilities == nil || m.Agent.Info.Capabilities.CollectsData {
 			pemList = append(pemList, m.Agent.Info)
 		} else {
 			kelvinList = append(kelvinList, m.Agent.Info)
