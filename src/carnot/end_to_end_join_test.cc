@@ -39,10 +39,11 @@ TEST_F(JoinTest, basic) {
   std::string queryString =
       "src1 = dataframe(table='left_table', select=['col1', 'col2'])\n"
       "src2 = dataframe(table='right_table', select=['col1', 'col2'])\n"
-      "join = src1.merge(src2, type='inner', "
-      "cond=lambda r1, r2: r1.col1 == r2.col1, "
-      "cols=lambda r1, r2: {'left_col1': r1.col1, 'right_col2': r2.col2})\n"
-      "join.result(name='unused_param')";
+      "join = src1.merge(src2, how='inner', left_on=['col1'], right_on=['col1'], "
+      "suffixes=['', '_x'])\n"
+      "join['left_col1'] = join['col1']\n"
+      "join['right_col2'] = join['col2']\n"
+      "join[['left_col1', 'right_col2']].result(name='unused_param')";
 
   auto query = absl::StrJoin({queryString}, "\n");
   auto query_id = sole::uuid4();

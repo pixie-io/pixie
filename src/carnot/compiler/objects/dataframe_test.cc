@@ -18,7 +18,7 @@ using ::testing::UnorderedElementsAre;
 
 using DataframeTest = QLObjectTest;
 
-TEST_F(DataframeTest, DISABLED_MergeTest) {
+TEST_F(DataframeTest, MergeTest) {
   MemorySourceIR* left = MakeMemSource();
   MemorySourceIR* right = MakeMemSource();
   std::shared_ptr<QLObject> test = std::make_shared<Dataframe>(left);
@@ -1179,7 +1179,8 @@ TEST_F(OldJoinTest, OldJoinCondNotAFunc) {
       HasCompilerError("'cond' must be equality condition or `and` of equality conditions"));
 }
 
-TEST_F(DataframeTest, JoinCall) {
+// TODO(philkuz/nserrino) delete this when we are ready.
+TEST_F(DataframeTest, DISABLED_JoinCall) {
   MemorySourceIR* left = MakeMemSource();
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
   // No df for the right because the compiler should remove it if possible.
@@ -1234,7 +1235,8 @@ TEST_F(DataframeTest, JoinCall) {
   EXPECT_THAT(join->right_on_columns(), ElementsAre(right_column));
 }
 
-TEST_F(DataframeTest, JoinCallDefaultTypeArg) {
+// TODO(philkuz/nserrino) delete this.
+TEST_F(DataframeTest, DISABLED_JoinCallDefaultTypeArg) {
   MemorySourceIR* left = MakeMemSource();
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(left);
   // No df for the right because the compiler should remove it if possible.

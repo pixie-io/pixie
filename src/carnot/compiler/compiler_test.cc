@@ -2470,40 +2470,27 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 5
-      sorted_children: 23
-    }
-    nodes {
       id: 11
-      sorted_children: 23
+      sorted_children: 22
     }
     nodes {
-      id: 23
-      sorted_children: 25
+      id: 5
+      sorted_children: 22
+    }
+    nodes {
+      id: 22
+      sorted_children: 34
       sorted_parents: 5
       sorted_parents: 11
     }
     nodes {
-      id: 25
-      sorted_parents: 23
+      id: 34
+      sorted_children: 36
+      sorted_parents: 22
     }
-  }
-  nodes {
-    id: 5
-    op {
-      op_type: MEMORY_SOURCE_OPERATOR
-      mem_source_op {
-        name: "cpu"
-        column_idxs: 1
-        column_idxs: 4
-        column_idxs: 2
-        column_names: "cpu0"
-        column_names: "upid"
-        column_names: "cpu1"
-        column_types: FLOAT64
-        column_types: UINT128
-        column_types: FLOAT64
-      }
+    nodes {
+      id: 36
+      sorted_parents: 34
     }
   }
   nodes {
@@ -2525,34 +2512,93 @@ nodes {
     }
   }
   nodes {
-    id: 23
+    id: 5
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 1
+        column_idxs: 4
+        column_idxs: 2
+        column_names: "cpu0"
+        column_names: "upid"
+        column_names: "cpu1"
+        column_types: FLOAT64
+        column_types: UINT128
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    id: 22
     op {
       op_type: JOIN_OPERATOR
       join_op {
-        type: INNER
         equality_conditions {
           left_column_index: 1
           right_column_index: 1
         }
         output_columns {
-          parent_index: 0
+        }
+        output_columns {
+          column_index: 1
+        }
+        output_columns {
+          column_index: 2
+        }
+        output_columns {
+          parent_index: 1
+        }
+        output_columns {
+          parent_index: 1
           column_index: 1
         }
         output_columns {
           parent_index: 1
-          column_index: 0
-        }
-        output_columns {
-          parent_index: 1
           column_index: 2
         }
-        output_columns {
-          parent_index: 0
-          column_index: 0
+        column_names: "cpu0"
+        column_names: "upid"
+        column_names: "cpu1"
+        column_names: "http_resp_status"
+        column_names: "upid_x"
+        column_names: "http_resp_latency_ns"
+      }
+    }
+  }
+  nodes {
+    id: 34
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+            node: 22
+            index: 1
+          }
         }
-        output_columns {
-          parent_index: 0
-          column_index: 2
+        expressions {
+          column {
+            node: 22
+            index: 3
+          }
+        }
+        expressions {
+          column {
+            node: 22
+            index: 5
+          }
+        }
+        expressions {
+          column {
+            node: 22
+          }
+        }
+        expressions {
+          column {
+            node: 22
+            index: 2
+          }
         }
         column_names: "upid"
         column_names: "http_resp_status"
@@ -2563,7 +2609,7 @@ nodes {
     }
   }
   nodes {
-    id: 25
+    id: 36
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2581,22 +2627,14 @@ nodes {
       }
     }
   }
-}
-)proto";
+})proto";
 
 const char* kJoinQueryTypeTpl = R"query(
 src1 = dataframe(table='cpu', select=['cpu0', 'upid', 'cpu1'])
 src2 = dataframe(table='http_table', select=['http_resp_status', 'upid',  'http_resp_latency_ns'])
-join = src1.merge(src2,  type='$0',
-                      cond=lambda r1, r2: r1.upid == r2.upid,
-                      cols=lambda r1, r2: {
-                        'upid': r1.upid,
-                        'http_resp_status': r2.http_resp_status,
-                        'http_resp_latency_ns': r2.http_resp_latency_ns,
-                        'cpu0': r1.cpu0,
-                        'cpu1': r1.cpu1,
-                      })
-join.result(name='joined')
+join = src1.merge(src2, how='$0', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
+output = join[["upid", "http_resp_status", "http_resp_latency_ns", "cpu0", "cpu1"]]
+output.result(name='joined')
 )query";
 
 TEST_F(CompilerTest, inner_join) {
@@ -2604,8 +2642,7 @@ TEST_F(CompilerTest, inner_join) {
       compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "inner"), compiler_state_.get());
   VLOG(1) << plan_status.ToString();
   EXPECT_OK(plan_status);
-  VLOG(1) << plan_status.ValueOrDie().DebugString();
-  EXPECT_THAT(plan_status.ConsumeValueOrDie(), EqualsProto(kJoinInnerQueryPlan));
+  EXPECT_THAT(plan_status.ValueOrDie(), EqualsProto(kJoinInnerQueryPlan));
 }
 
 const char* kJoinRightQueryPlan = R"proto(
@@ -2618,40 +2655,27 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 5
-      sorted_children: 23
-    }
-    nodes {
       id: 11
-      sorted_children: 23
+      sorted_children: 22
     }
     nodes {
-      id: 23
-      sorted_children: 25
+      id: 5
+      sorted_children: 22
+    }
+    nodes {
+      id: 22
+      sorted_children: 34
       sorted_parents: 11
       sorted_parents: 5
     }
     nodes {
-      id: 25
-      sorted_parents: 23
+      id: 34
+      sorted_children: 36
+      sorted_parents: 22
     }
-  }
-  nodes {
-    id: 5
-    op {
-      op_type: MEMORY_SOURCE_OPERATOR
-      mem_source_op {
-        name: "cpu"
-        column_idxs: 1
-        column_idxs: 4
-        column_idxs: 2
-        column_names: "cpu0"
-        column_names: "upid"
-        column_names: "cpu1"
-        column_types: FLOAT64
-        column_types: UINT128
-        column_types: FLOAT64
-      }
+    nodes {
+      id: 36
+      sorted_parents: 34
     }
   }
   nodes {
@@ -2673,7 +2697,25 @@ nodes {
     }
   }
   nodes {
-    id: 23
+    id: 5
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 1
+        column_idxs: 4
+        column_idxs: 2
+        column_names: "cpu0"
+        column_names: "upid"
+        column_names: "cpu1"
+        column_types: FLOAT64
+        column_types: UINT128
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    id: 22
     op {
       op_type: JOIN_OPERATOR
       join_op {
@@ -2684,23 +2726,65 @@ nodes {
         }
         output_columns {
           parent_index: 1
+        }
+        output_columns {
+          parent_index: 1
           column_index: 1
         }
         output_columns {
-          parent_index: 0
-          column_index: 0
-        }
-        output_columns {
-          parent_index: 0
-          column_index: 2
-        }
-        output_columns {
-          parent_index: 1
-          column_index: 0
-        }
-        output_columns {
           parent_index: 1
           column_index: 2
+        }
+        output_columns {
+        }
+        output_columns {
+          column_index: 1
+        }
+        output_columns {
+          column_index: 2
+        }
+        column_names: "cpu0"
+        column_names: "upid"
+        column_names: "cpu1"
+        column_names: "http_resp_status"
+        column_names: "upid_x"
+        column_names: "http_resp_latency_ns"
+      }
+    }
+  }
+  nodes {
+    id: 34
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+            node: 22
+            index: 1
+          }
+        }
+        expressions {
+          column {
+            node: 22
+            index: 3
+          }
+        }
+        expressions {
+          column {
+            node: 22
+            index: 5
+          }
+        }
+        expressions {
+          column {
+            node: 22
+          }
+        }
+        expressions {
+          column {
+            node: 22
+            index: 2
+          }
         }
         column_names: "upid"
         column_names: "http_resp_status"
@@ -2711,7 +2795,7 @@ nodes {
     }
   }
   nodes {
-    id: 25
+    id: 36
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2735,7 +2819,8 @@ TEST_F(CompilerTest, right_join) {
   auto plan_status =
       compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "right"), compiler_state_.get());
   EXPECT_OK(plan_status);
-  EXPECT_THAT(plan_status.ConsumeValueOrDie(), EqualsProto(kJoinRightQueryPlan));
+  EXPECT_THAT(plan_status.ValueOrDie(), EqualsProto(kJoinRightQueryPlan));
+  LOG(INFO) << plan_status.ValueOrDie().DebugString();
 }
 
 // Test to make sure syntax errors are properly parsed.

@@ -1,5 +1,5 @@
 queries = [
-["Service HTTP Requests",
+["HTTP Requests Statistics per Service",
 """
 t1 = dataframe(table='http_events').range(start='-30s')
 
@@ -14,28 +14,38 @@ quantiles_agg = t1.agg(by=lambda r: [r.attr.service], fn=lambda r: {
   'throughput_total': pl.count(r.http_resp_status),
 })
 
-quantiles_agg['service'] = t1.attr['service']
 quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p50')
-quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
-quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
+quantiles_agg['latency_p90'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
+quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
+quantiles_agg['service'] = quantiles_agg.attr['service']
+quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
 
 # The Range aggregate to calcualte the requests per second.
-range_agg = quantiles_agg.agg(by=lambda r: [r.attr.service, r.range_group], fn=lambda r: {
+range_agg = t1.agg(by=lambda r: [r.service, r.range_group], fn=lambda r: {
   'requests_per_window': pl.count(r.http_resp_status)
 })
 
-rps_table = range_agg.agg(by=lambda r: r.attr.service, fn= lambda r: {'rps': pl.mean(r.requests_per_window)})
-joined_table = quantiles_table.merge(rps_table,  type='inner',
-                                    cond=lambda r1, r2: r1.service == r2._attr_service_name,
-                                    cols=lambda r1, r2: {
-                                      "service" : r1.service,
-                                      'latency(p50)': r1.latency_p50,
-                                      'latency(p90)': r1.latency_p90,
-                                      'latency(p99)': r1.latency_p99,
-                                      'errors': r1.errors,
-                                      'throughput (rps)': r2.rps,
-                                      'throughput total': r1.throughput_total,
-                                    })
+rps_table = range_agg.agg(by=lambda r: r.service, fn= lambda r: {'rps': pl.mean(r.requests_per_window)})
+joined_table = quantiles_table.merge(rps_table, 
+                                     how='inner', 
+                                     left_on=['service'], 
+                                     right_on=['service'],
+                                     suffixes=['', '_x'])
+
+joined_table['latency(p50)'] = joined_table['latency_p50']
+joined_table['latency(p90)'] = joined_table['latency_p90']
+joined_table['latency(p99)'] = joined_table['latency_p99']
+joined_table['throughput (rps)'] = joined_table['rps']
+joined_table['throughput total'] = joined_table['throughput_total']
+
+joined_table = joined_table[[
+  'service',
+  'latency(p50)',
+  'latency(p90)',
+  'latency(p99)',
+  'errors',
+  'throughput (rps)',
+  'throughput total']]
 joined_table[joined_table['service'] != ''].result(name='out')
 """
 ],

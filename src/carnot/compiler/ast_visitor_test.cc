@@ -631,17 +631,10 @@ TEST(RangeTest, test_parent_is_memory_source) {
 
 const char* kInnerJoinQuery = R"query(
 src1 = dataframe(table='cpu', select=['upid', 'cpu0','cpu1'])
-src2 = dataframe(table='network', select=['upid', 'bytes_in', 'bytes_out'])
-join = src1.merge(src2,  type='inner',
-                      cond=lambda r1, r2: r1.upid == r2.upid,
-                      cols=lambda r1, r2: {
-                        'upid': r1.upid,
-                        'bytes_in': r2.bytes_in,
-                        'bytes_out': r2.bytes_out,
-                        'cpu0': r1.cpu0,
-                        'cpu1': r1.cpu1,
-                      })
-join.result(name='joined')
+src2 = dataframe(table='network', select=['bytes_in', 'upid', 'bytes_out'])
+join = src1.merge(src2, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
+output = join[["upid", "bytes_in", "bytes_out", "cpu0", "cpu1"]]
+output.result(name='joined')
 )query";
 
 TEST(JoinTest, test_inner_join) {
@@ -677,21 +670,26 @@ TEST(JoinTest, test_inner_join) {
   EXPECT_EQ(join->left_on_columns()[0]->container_op_parent_idx(), 0);
   EXPECT_EQ(join->right_on_columns()[0]->container_op_parent_idx(), 1);
 
-  EXPECT_THAT(join->column_names(), ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
-
-  std::vector<std::string> column_ir_names;
-  std::vector<int64_t> column_ir_parent_idx;
-
-  for (ColumnIR* col : join->output_columns()) {
-    column_ir_names.push_back(col->col_name());
-    column_ir_parent_idx.push_back(col->container_op_parent_idx());
-  }
-
-  EXPECT_THAT(column_ir_names, ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
-  EXPECT_THAT(column_ir_parent_idx, ElementsAre(0, 1, 1, 0, 0));
+  // Output column details are set in analyzer, not in ast visitor.
+  EXPECT_EQ(join->output_columns().size(), 0);
+  EXPECT_EQ(join->column_names().size(), 0);
 
   EXPECT_EQ(join->join_type(), JoinIR::JoinType::kInner);
   EXPECT_THAT(graph->dag().ParentsOf(join->id()), ElementsAre(mem_src1->id(), mem_src2->id()));
+}
+
+const char* kJoinUnequalLeftOnRightOnColumns = R"query(
+src1 = dataframe(table='cpu', select=['upid', 'cpu0'])
+src2 = dataframe(table='network', select=['upid', 'bytes_in'])
+join = src1.merge(src2, how='inner', left_on=['upid', 'cpu0'], right_on=['upid']).result(name='joined')
+)query";
+
+TEST(JoinTest, JoinConditionsWithUnequalLengths) {
+  auto ir_graph_status = ParseQuery(kJoinUnequalLeftOnRightOnColumns);
+  ASSERT_NOT_OK(ir_graph_status);
+  EXPECT_THAT(
+      ir_graph_status.status(),
+      HasCompilerError("'left_on' and 'right_on' must contain the same number of elements."));
 }
 
 const char* kNewFilterQuery = R"query(

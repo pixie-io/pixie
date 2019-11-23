@@ -8,21 +8,17 @@ namespace carnot {
 namespace compiler {
 Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
   CHECK(op != nullptr) << "Bad argument in Dataframe constructor.";
-  // TODO(philkuz) (PL-1128) re-enable this when new join syntax is supported.
   /**
    * # Equivalent to the python method method syntax:
    * def merge(self, right, how, left_on, right_on, suffixes=('_x', '_y')):
    *     ...
    */
-  // TODO(philkuz) If there's a chance convert the internals of FuncObject to compile time
-  // checking of the default arguments. Everytime we create a Dataframe object you have to make this
-  // binding.
-  // std::shared_ptr<FuncObject> mergefn(new FuncObject(
-  //     kMergeOpId, {"right", "how", "left_on", "right_on", "suffixes"},
-  //     {{"suffixes", "('_x', '_y')"}},
-  //     /* has_variable_len_kwargs */ false,
-  //     std::bind(&JoinHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  // AddMethod(kMergeOpId, mergefn);
+  std::shared_ptr<FuncObject> mergefn(new FuncObject(
+      kMergeOpId, {"right", "how", "left_on", "right_on", "suffixes"},
+      {{"suffixes", "('_x', '_y')"}},
+      /* has_variable_len_kwargs */ false,
+      std::bind(&JoinHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kMergeOpId, mergefn);
 
   /**
    * # Equivalent to the python method method syntax:
@@ -101,17 +97,6 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       /* has_variable_len_kwargs */ false,
       std::bind(&OldAggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kBlockingAggOpId, aggfn);
-  // TODO(philkuz) (PL-1128) disable this when new join syntax is supported.
-  /**
-   * # Equivalent to the python method method syntax:
-   * def merge(self, right, cond, cols, type="inner"):
-   *     ...
-   */
-  std::shared_ptr<FuncObject> old_join_fn(new FuncObject(
-      kMergeOpId, {"right", "cond", "cols", "type"}, {{"type", "'inner'"}},
-      /* has_variable_len_kwargs */ false,
-      std::bind(&OldJoinHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  AddMethod(kMergeOpId, old_join_fn);
 
   // TODO(philkuz) (PL-1128) disable this when new result syntax is supported.
   /**
