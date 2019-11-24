@@ -28,7 +28,6 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
     testing::EventsFixture::SetUp();
 
     // Create and configure the connector.
-    FLAGS_stirling_enable_http_tracing = true;
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
     ASSERT_NE(nullptr, source_);
@@ -673,8 +672,6 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
-  FLAGS_stirling_enable_mysql_tracing = true;
-
   struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
   std::unique_ptr<SocketDataEvent> prepare_req_event = InitSendEvent(mysql_stmt_prepare_req);
   std::vector<std::unique_ptr<SocketDataEvent>> prepare_resp_events;
@@ -752,8 +749,6 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {
-  FLAGS_stirling_enable_mysql_tracing = true;
-
   struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
   std::unique_ptr<SocketDataEvent> query_req_event = InitSendEvent(mysql_query_req);
   std::vector<std::unique_ptr<SocketDataEvent>> query_resp_events;
@@ -783,8 +778,6 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
-  FLAGS_stirling_enable_mysql_tracing = true;
-
   struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
 
   // The following is a captured trace while running a script on a real instance of MySQL.
@@ -958,8 +951,6 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
 // Inspired from real traced query.
 // Number of resultset rows is large enough to cause a sequence ID rollover.
 TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
-  FLAGS_stirling_enable_mysql_tracing = true;
-
   struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
 
   // The following is a captured trace while running a script on a real instance of MySQL.
@@ -1029,8 +1020,6 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
 //    CALL multi();
 //    DROP TABLE ins;
 TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
-  FLAGS_stirling_enable_mysql_tracing = true;
-
   struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
 
   // The following is a captured trace while running a script on a real instance of MySQL.

@@ -200,6 +200,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
     proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
     netlink_socket_prober_ = std::make_unique<system::NetlinkSocketProber>();
+
+    protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
+    protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_tracing;
+    protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
   }
 
   // Events from BPF.
@@ -209,9 +213,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);
   void AcceptControlEvent(const socket_control_event_t& event);
 
+  void UpdateActiveConnections();
+
   // Transfer of messages to the data table.
+  void TransferStreams(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
+
   template <typename TEntryType>
-  void TransferStreams(ConnectorContext* ctx, TrafficProtocol protocol, DataTable* data_table);
+  void TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table);
 
   template <typename TEntryType>
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
@@ -227,6 +235,25 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
   // Key is {PID, FD} for outer map (see GetStreamId()), and generation for inner map.
   std::unordered_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
+
+  struct TransferSpec {
+    uint32_t table_num;
+    std::function<void(SocketTraceConnector&, ConnectorContext*, ConnectionTracker*, DataTable*)>
+        transfer_fn = nullptr;
+    bool enabled = false;
+  };
+
+  // This map controls how each protocol is processed and transferred.
+  // The table num identifies which data the collected data is transferred.
+  // The transfer_fn defines which function is called to process the data for transfer.
+  std::map<TrafficProtocol, TransferSpec> protocol_transfer_specs_ = {
+      {kProtocolHTTP, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http::Record>}},
+      {kProtocolHTTP2, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2::Record>}},
+      {kProtocolMySQL, {kMySQLTableNum, &SocketTraceConnector::TransferStream<mysql::Record>}},
+      // Unknown protocols attached to HTTP table so that they run their cleanup functions,
+      // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
+      {kProtocolUnknown, {kHTTPTableNum, nullptr}},
+  };
 
   // If not a nullptr, writes the events received from perf buffers to this stream.
   std::unique_ptr<std::ofstream> perf_buffer_events_output_stream_;

@@ -93,13 +93,13 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFCode(cflags));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
-  if (FLAGS_stirling_enable_http_tracing) {
+  if (protocol_transfer_specs_[kProtocolHTTP].enabled) {
     PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
   }
-  if (FLAGS_stirling_enable_grpc_tracing) {
+  if (protocol_transfer_specs_[kProtocolHTTP2].enabled) {
     PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleRequestor));
   }
-  if (FLAGS_stirling_enable_mysql_tracing) {
+  if (protocol_transfer_specs_[kProtocolMySQL].enabled) {
     PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kRoleRequestor));
   }
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
@@ -132,6 +132,22 @@ Status SocketTraceConnector::StopImpl() {
   return Status::OK();
 }
 
+void SocketTraceConnector::UpdateActiveConnections() {
+  // Grab a list of active connections, in case we need to infer the endpoints of any connections
+  // with missing endpoints.
+  // TODO(oazizi): Optimization is to skip this if we don't have any connection trackers with
+  // unknown remote endpoints.
+  socket_connections_ = std::make_unique<std::map<int, system::SocketInfo>>();
+
+  Status s;
+
+  s = netlink_socket_prober_->InetConnections(socket_connections_.get());
+  LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to probe InetConnections [msg=$0]", s.msg());
+
+  s = netlink_socket_prober_->UnixConnections(socket_connections_.get());
+  LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to probe UnixConnections [msg=$0]", s.msg());
+}
+
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
   DCHECK_LT(table_num, kTables.size())
@@ -142,52 +158,10 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   // This drains the relevant perf buffer, and causes Handle() callback functions to get called.
   ReadPerfBuffer(table_num);
 
-  // Grab a list of active connections, in case we need to infer the endpoints of any connections
-  // with missing endpoints.
-  // TODO(oazizi): Optimization is to skip this if we don't have any connection trackers with
-  // unknown remote endpoints.
-  socket_connections_ = std::make_unique<std::map<int, system::SocketInfo>>();
+  // Set-up current state for connection inference purposes.
+  UpdateActiveConnections();
 
-  Status s;
-
-  s = netlink_socket_prober_->InetConnections(socket_connections_.get());
-  if (!s.ok()) {
-    LOG(ERROR) << absl::Substitute("Failed to probe InetConnections [msg=$0]", s.msg());
-    socket_connections_ = nullptr;
-  }
-
-  s = netlink_socket_prober_->UnixConnections(socket_connections_.get());
-  if (!s.ok()) {
-    LOG(ERROR) << absl::Substitute("Failed to probe UnixConnections [msg=$0]", s.msg());
-    socket_connections_ = nullptr;
-  }
-
-  switch (table_num) {
-    case kHTTPTableNum:
-      if (FLAGS_stirling_enable_http_tracing) {
-        TransferStreams<http::Record>(ctx, kProtocolHTTP, data_table);
-      }
-
-      if (FLAGS_stirling_enable_grpc_tracing) {
-        TransferStreams<http2::Record>(ctx, kProtocolHTTP2, data_table);
-      }
-
-      // Also call transfer streams on kProtocolUnknown to clean up any closed connections.
-      // Since there will be no InfoClassManager to call TransferData on unknown protocols,
-      // we are sneaking this in with HTTP table transfers.
-      // TODO(oazizi): If we disable the HTTP table dynamically, this code won't run, which will
-      // cause memory leaks.
-      TransferStreams<std::nullptr_t>(ctx, kProtocolUnknown, nullptr);
-      break;
-    case kMySQLTableNum:
-      // TODO(oazizi): Re-enable this after more stress-testing.
-      if (FLAGS_stirling_enable_mysql_tracing) {
-        TransferStreams<mysql::Record>(ctx, kProtocolMySQL, data_table);
-      }
-      break;
-    default:
-      LOG(ERROR) << absl::StrFormat("Unknown table number: %d", table_num);
-  }
+  TransferStreams(ctx, table_num, data_table);
 
   DumpBPFLog();
 }
@@ -349,72 +323,6 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
   }
 
   return &tracker_it->second;
-}
-
-//-----------------------------------------------------------------------------
-// Generic/Templatized TransferData Helpers
-//-----------------------------------------------------------------------------
-
-template <typename TEntryType>
-void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, TrafficProtocol protocol,
-                                           DataTable* data_table) {
-  // TODO(oazizi): The single connection trackers model makes TransferStreams() inefficient,
-  //               because it will get called multiple times, looping through all connection
-  //               trackers, but selecting a mutually exclusive subset each time.
-  //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
-
-  // Outer loop iterates through tracker sets (keyed by PID+FD),
-  // while inner loop iterates through generations of trackers for that PID+FD pair.
-  auto tracker_set_it = connection_trackers_.begin();
-  while (tracker_set_it != connection_trackers_.end()) {
-    auto& tracker_generations = tracker_set_it->second;
-
-    auto generation_it = tracker_generations.begin();
-    while (generation_it != tracker_generations.end()) {
-      auto& tracker = generation_it->second;
-      if (tracker.protocol() != protocol) {
-        ++generation_it;
-        continue;
-      }
-
-      tracker.IterationPreTick(proc_parser_.get(), socket_connections_.get());
-
-      // Don't try to extract and parse messages when template type is nullptr_t.
-      // Template parameter of nullptr_t is used to process connections with unknown protocols.
-      // This is required to clean-up old connections.
-      // TODO(oazizi): Consider refactoring the connection tracker clean-up from transfer streams.
-      // This will cause us to iterate through all connection trackers an extra time, but may be
-      // worth it.
-      if constexpr (!std::is_same_v<TEntryType, std::nullptr_t>) {
-        auto messages = tracker.ProcessMessages<TEntryType>();
-
-        for (auto& msg : messages) {
-          AppendMessage(ctx, tracker, msg, data_table);
-        }
-
-        VLOG(3) << absl::StrCat("Connection\n", tracker.DebugString<TEntryType>());
-      } else {
-        // Needed to keep GCC happy.
-        PL_UNUSED(ctx);
-        PL_UNUSED(data_table);
-      }
-
-      tracker.IterationPostTick();
-
-      // Only the most recent generation of a connection on a PID+FD should be active.
-      // Mark all others for death (after having their data processed, of course).
-      if (generation_it != --tracker_generations.end()) {
-        tracker.MarkForDeath();
-      }
-
-      // Update iterator, handling deletions as we go. This must be the last line in the loop.
-      generation_it = tracker.ReadyForDestruction() ? tracker_generations.erase(generation_it)
-                                                    : ++generation_it;
-    }
-
-    tracker_set_it =
-        tracker_generations.empty() ? connection_trackers_.erase(tracker_set_it) : ++tracker_set_it;
-  }
 }
 
 //-----------------------------------------------------------------------------
@@ -588,6 +496,83 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 }
+
+//-----------------------------------------------------------------------------
+// TransferData Helpers
+//-----------------------------------------------------------------------------
+
+void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table_num,
+                                           DataTable* data_table) {
+  // TODO(oazizi): TransferStreams() is slightly inefficient because it loops through all
+  //               connection trackers, but processing a mutually exclusive subset each time.
+  //               This is because trackers for different tables are mixed together
+  //               in a single pool. This is not a big concern as long as the number of tables
+  //               is small (currently only 2).
+  //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
+
+  // Outer loop iterates through tracker sets (keyed by PID+FD),
+  // while inner loop iterates through generations of trackers for that PID+FD pair.
+  auto tracker_set_it = connection_trackers_.begin();
+  while (tracker_set_it != connection_trackers_.end()) {
+    auto& tracker_generations = tracker_set_it->second;
+
+    auto generation_it = tracker_generations.begin();
+    while (generation_it != tracker_generations.end()) {
+      auto& tracker = generation_it->second;
+
+      const TransferSpec& transfer_spec = protocol_transfer_specs_[tracker.protocol()];
+
+      // Don't process trackers meant for a different table_num.
+      if (transfer_spec.table_num != table_num) {
+        ++generation_it;
+        continue;
+      }
+
+      tracker.IterationPreTick(proc_parser_.get(), socket_connections_.get());
+
+      if (transfer_spec.transfer_fn && transfer_spec.enabled) {
+        transfer_spec.transfer_fn(*this, ctx, &tracker, data_table);
+      }
+
+      tracker.IterationPostTick();
+
+      // Only the most recent generation of a connection on a PID+FD should be active.
+      // Mark all others for death (after having their data processed, of course).
+      if (generation_it != --tracker_generations.end()) {
+        tracker.MarkForDeath();
+      }
+
+      // Update iterator, handling deletions as we go. This must be the last line in the loop.
+      generation_it = tracker.ReadyForDestruction() ? tracker_generations.erase(generation_it)
+                                                    : ++generation_it;
+    }
+
+    tracker_set_it =
+        tracker_generations.empty() ? connection_trackers_.erase(tracker_set_it) : ++tracker_set_it;
+  }
+}
+
+template <typename TEntryType>
+void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker,
+                                          DataTable* data_table) {
+  VLOG(3) << absl::StrCat("Connection\n", tracker->DebugString<TEntryType>());
+
+  auto messages = tracker->ProcessMessages<TEntryType>();
+
+  for (auto& msg : messages) {
+    AppendMessage(ctx, *tracker, msg, data_table);
+  }
+}
+
+template void SocketTraceConnector::TransferStream<http::Record>(ConnectorContext* ctx,
+                                                                 ConnectionTracker* tracker,
+                                                                 DataTable* data_table);
+template void SocketTraceConnector::TransferStream<http2::Record>(ConnectorContext* ctx,
+                                                                  ConnectionTracker* tracker,
+                                                                  DataTable* data_table);
+template void SocketTraceConnector::TransferStream<mysql::Record>(ConnectorContext* ctx,
+                                                                  ConnectionTracker* tracker,
+                                                                  DataTable* data_table);
 
 }  // namespace stirling
 }  // namespace pl
