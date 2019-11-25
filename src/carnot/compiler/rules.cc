@@ -1055,16 +1055,20 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
   DCHECK_EQ(drop_ir->parents().size(), 1UL);
   OperatorIR* parent_op = drop_ir->parents()[0];
 
+  DCHECK(parent_op->IsRelationInit());
+  Relation parent_relation = parent_op->relation();
+
   absl::flat_hash_set<std::string> dropped_columns;
   for (const auto& name : drop_ir->col_names()) {
+    if (!parent_relation.HasColumn(name)) {
+      return drop_ir->CreateIRNodeError("Column '$0' not found in parent dataframe", name);
+    }
     dropped_columns.insert(name);
   }
 
   ColExpressionVector col_exprs;
   std::unordered_set<std::string> col_names;
 
-  DCHECK(parent_op->IsRelationInit());
-  Relation parent_relation = parent_op->relation();
   for (size_t i = 0; i < parent_relation.NumColumns(); ++i) {
     auto input_col_name = parent_relation.GetColumnName(i);
     if (dropped_columns.contains(input_col_name)) {
@@ -1081,6 +1085,7 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
   // Init the map from the drop.
   PL_ASSIGN_OR_RETURN(MapIR * map_ir,
                       ir_graph->CreateNode<MapIR>(drop_ir->ast_node(), parent_op, col_exprs));
+  PL_RETURN_IF_ERROR(map_ir->SetRelation(RelationFromExprs(map_ir->col_exprs())));
 
   // Update all of drop's dependencies to point to src.
   for (const auto& dep : drop_ir->Children()) {

@@ -1173,6 +1173,41 @@ TEST_F(AnalyzerTest, DISABLED_JoinConditionsWithUnequalLengths) {
   EXPECT_THAT(analyzer_status, HasCompilerError("len(right_on) must equal len(left_on)"));
 }
 
+const char* kDropColumn = R"query(
+src1 = dataframe(table='cpu', select=['upid', 'cpu0']).drop(columns=['upid']).result(name='dropped')
+)query";
+
+TEST_F(AnalyzerTest, drop_to_map_test) {
+  auto ir_graph_status = CompileGraph(kDropColumn);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+
+  auto drop_node_status = FindNodeType(ir_graph, IRNodeType::kDrop);
+  EXPECT_NOT_OK(drop_node_status);
+
+  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap);
+  EXPECT_OK(map_node_status);
+  auto map = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  table_store::schema::Relation cpu0_relation;
+  cpu0_relation.AddColumn(types::FLOAT64, "cpu0");
+  EXPECT_EQ(map->relation(), cpu0_relation);
+}
+
+const char* kDropNonexistentColumn = R"query(
+src1 = dataframe(table='cpu', select=['upid', 'cpu0']).drop(columns=['thiscoldoesnotexist']).result(name='dropped')
+)query";
+
+TEST_F(AnalyzerTest, drop_to_map_nonexistent_test) {
+  auto ir_graph_status = CompileGraph(kDropNonexistentColumn);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_NOT_OK(analyzer_status);
+  EXPECT_THAT(analyzer_status,
+              HasCompilerError("Column 'thiscoldoesnotexist' not found in parent dataframe"));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

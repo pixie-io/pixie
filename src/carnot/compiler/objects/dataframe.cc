@@ -299,9 +299,6 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, TupleIR* tuple) {
 
 StatusOr<QLObjectPtr> DropHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
                                         const ParsedArgs& args) {
-  LOG(ERROR) << args.args().size();
-  LOG(ERROR) << args.kwargs().size();
-
   IRNode* columns_arg = args.GetArg("columns");
   if (!Match(columns_arg, List())) {
     return columns_arg->CreateIRNodeError(

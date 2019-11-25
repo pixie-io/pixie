@@ -69,6 +69,7 @@ class Analyzer : public RuleExecutor {
     remove_ir_only_nodes_batch->AddRule<MetadataResolverConversionRule>(compiler_state_);
     remove_ir_only_nodes_batch->AddRule<MergeRangeOperatorRule>(compiler_state_);
     remove_ir_only_nodes_batch->AddRule<RemoveGroupByRule>();
+    remove_ir_only_nodes_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }
 
   Status Init() {
