@@ -143,6 +143,7 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 				UpdateInfo: &messages.MetadataUpdateInfo{
 					Updates: updates,
 				},
+				SequenceNumber: m.SequenceNumber,
 			},
 		},
 	}
