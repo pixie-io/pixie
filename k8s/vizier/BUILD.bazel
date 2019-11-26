@@ -13,6 +13,7 @@ VIZIER_IMAGE_MAP = {
     "gcr.io/pl-dev-infra/vizier/api_server_image": "//src/vizier/services/api:api_server_image",
     "gcr.io/pl-dev-infra/vizier/proxy_server_image": "//src/vizier/services/proxy:proxy_server_prod_image",
     "gcr.io/pl-dev-infra/vizier/certmgr_server_image": "//src/vizier/services/certmgr:certmgr_server_image",
+    "gcr.io/pl-dev-infra/vizier/logtailer_image": "//src/vizier/utils/logtailer:logtailer_image",
 }
 
 generate_vizier_yamls(
