@@ -90,7 +90,6 @@ TEST_F(LogicalPlannerTest, many_agents) {
   EXPECT_THAT(out_pb, Partially(EqualsProto(distributedpb::testutils::kExpectedPlanTwoAgents)));
 }
 
-// TODO(nserrino): Add service metadata column back in (see commented code)
 const char* kHttpRequestStats = R"pxl(
 t1 = dataframe(table='http_events').range(start='-30s')
 
@@ -107,8 +106,7 @@ quantiles_agg = t1.agg(by=lambda r: [r.attr.service], fn=lambda r: {
 quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p50')
 quantiles_agg['latency_p90'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
 quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
-# quantiles_agg['service'] = quantiles_agg.attr['service']
-quantiles_agg['service'] = 'foo'
+quantiles_agg['service'] = quantiles_agg.attr['service']
 quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
 
 # The Range aggregate to calcualte the requests per second.
