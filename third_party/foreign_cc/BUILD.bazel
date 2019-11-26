@@ -49,6 +49,20 @@ cmake_external(
 )
 
 cmake_external(
+    name = "libuv",
+    cache_entries = {
+        "BUILD_TESTING": "OFF",
+    },
+    generate_crosstool_file = True,
+    lib_name = "libuv_a",
+    lib_source = "@com_github_libuv_libuv//:all",
+    make_commands = [
+        "make uv_a",
+        "make install",
+    ],
+)
+
+cmake_external(
     name = "bcc",
     generate_crosstool_file = True,
     lib_name = "libbcc_static",

@@ -151,6 +151,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "nats.c-3b4668698b8510b8f08413a94523b05a8036d9ab",
         urls = ["https://github.com/nats-io/nats.c/archive/3b4668698b8510b8f08413a94523b05a8036d9ab.tar.gz"],
     ),
+    com_github_libuv_libuv = dict(
+        sha256 = "63794499bf5da1720e249d3fc14ff396b70b8736effe6ce5b4e47e0f3d476467",
+        strip_prefix = "libuv-1.33.1",
+        urls = ["https://github.com/libuv/libuv/archive/v1.33.1.tar.gz"],
+    ),
     com_github_cameron314_concurrentqueue = dict(
         sha256 = "dde227e8fd561b46bdb3c211fa843adc543227b30607acf8eff049006cdffcd1",
         strip_prefix = "concurrentqueue-dea078cf5b6e742cd67a0d725e36f872feca4de4",

@@ -120,6 +120,14 @@ def _com_github_nats_io_natsc():
         **location
     )
 
+def _com_github_libuv_libuv():
+    location = REPOSITORY_LOCATIONS["com_github_libuv_libuv"]
+    http_archive(
+        name = "com_github_libuv_libuv",
+        build_file_content = BUILD_ALL_CONTENT,
+        **location
+    )
+
 def _com_github_nghttp2_nghttp2():
     location = REPOSITORY_LOCATIONS["com_github_nghttp2_nghttp2"]
     http_archive(
@@ -180,6 +188,7 @@ def _cc_deps():
     _com_github_gperftools_gperftools()
     _repository_impl(name = "com_google_boringssl")
     _com_github_nats_io_natsc()
+    _com_github_libuv_libuv()
     _com_github_nghttp2_nghttp2()
     _com_github_cameron314_concurrentqueue()
     _com_github_serge1_elfio()
