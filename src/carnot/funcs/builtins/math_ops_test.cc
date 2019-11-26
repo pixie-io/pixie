@@ -353,6 +353,30 @@ TEST(MathOps, basic_string_less_than_equal_test) {
   udf_tester.ForInput("abc", "abc").Expect(true);
 }
 
+TEST(MathOps, int_int_bin_test) {
+  auto udf_tester =
+      udf::UDFTester<BinUDF<types::Int64Value, types::Int64Value, types::Int64Value>>();
+  udf_tester.ForInput(11, 2).Expect(10);
+}
+
+TEST(MathOps, int_time_bin_test) {
+  auto udf_tester =
+      udf::UDFTester<BinUDF<types::Int64Value, types::Int64Value, types::Time64NSValue>>();
+  udf_tester.ForInput(0, 2).Expect(0);
+}
+
+TEST(MathOps, time_int_bin_test) {
+  auto udf_tester =
+      udf::UDFTester<BinUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>();
+  udf_tester.ForInput(11, 3).Expect(9);
+}
+
+TEST(MathOps, time_time_bin_test) {
+  auto udf_tester =
+      udf::UDFTester<BinUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>();
+  udf_tester.ForInput(11, 2).Expect(10);
+}
+
 TEST(MathOps, basic_float64_mean_uda_test) {
   auto inputs = std::vector<double>({1.234, 2.442, 1.04, 5.322, 6.333});
   uint64_t size = inputs.size();

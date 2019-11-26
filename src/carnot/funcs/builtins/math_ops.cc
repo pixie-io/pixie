@@ -121,6 +121,16 @@ void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
   registry->RegisterOrDie<LessThanEqualUDF<types::Float64Value, types::Float64Value>>(
       "pl.lessThanEqual");
   registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("pl.lessThanEqual");
+
+  // Bin
+  registry->RegisterOrDie<BinUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
+      "pl.bin");
+  registry->RegisterOrDie<BinUDF<types::Int64Value, types::Int64Value, types::Time64NSValue>>(
+      "pl.bin");
+  registry->RegisterOrDie<BinUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>(
+      "pl.bin");
+  registry->RegisterOrDie<BinUDF<types::Time64NSValue, types::Time64NSValue, types::Time64NSValue>>(
+      "pl.bin");
 }
 
 void RegisterMathOpsOrDie(udf::UDARegistry* registry) {

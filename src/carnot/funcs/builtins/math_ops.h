@@ -116,6 +116,12 @@ class LessThanEqualUDF : public udf::ScalarUDF {
   types::BoolValue Exec(udf::FunctionContext*, TArg1 b1, TArg2 b2) { return b1 <= b2; }
 };
 
+template <typename TReturn, typename TArg1, typename TArg2>
+class BinUDF : public udf::ScalarUDF {
+ public:
+  TReturn Exec(udf::FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val - (b1.val % b2.val); }
+};
+
 template <typename TArg>
 class MeanUDA : public udf::UDA {
  public:
