@@ -24,6 +24,11 @@ class ParsedArgs {
     args_[arg_name] = node;
   }
 
+  void SubDefaultArg(const std::string& arg_name, IRNode* node) {
+    default_subbed_args_.emplace(arg_name);
+    AddArg(arg_name, node);
+  }
+
   bool HasArgOrKwarg(std::string_view arg_name) { return HasArg(arg_name) || HasKwarg(arg_name); }
 
   IRNode* GetArg(std::string_view arg_name) const {
@@ -38,6 +43,9 @@ class ParsedArgs {
 
   const std::vector<NameToNode>& kwargs() const { return kwargs_; }
   const absl::flat_hash_map<std::string, IRNode*>& args() const { return args_; }
+  const absl::flat_hash_set<std::string>& default_subbed_args() const {
+    return default_subbed_args_;
+  }
 
  private:
   bool HasArg(std::string_view arg_name) { return args_.contains(arg_name); }
@@ -54,6 +62,8 @@ class ParsedArgs {
   absl::flat_hash_map<std::string, IRNode*> args_;
   // Holder for extra kw args if the function has a **kwargs argument.
   std::vector<NameToNode> kwargs_;
+  // The set of arguments that wer substituted with defaults.
+  absl::flat_hash_set<std::string> default_subbed_args_;
 };
 
 using FunctionType = std::function<StatusOr<QLObjectPtr>(const pypa::AstPtr&, const ParsedArgs&)>;

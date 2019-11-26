@@ -981,20 +981,34 @@ class MemorySourceIR : public OperatorIR {
    * @brief Initialize the memory source.
    *
    * @param table_name the table to load.
-   * @param select_columns the columns to select. If vector is empty, then select all columns
+   * @param select_columns the columns to select. If vector is empty, then select all columns.
    * @return Status
    */
   Status Init(const std::string& table_name, const std::vector<std::string>& select_columns);
 
   std::string table_name() const { return table_name_; }
-  void SetTime(int64_t time_start_ns, int64_t time_stop_ns) {
+
+  void SetTimeExpressions(ExpressionIR* start_time_expr, ExpressionIR* end_time_expr) {
+    start_time_expr_ = start_time_expr;
+    end_time_expr_ = end_time_expr;
+    has_time_expressions_ = true;
+  }
+
+  // Sets the time expressions that eventually get converted
+  ExpressionIR* start_time_expr() const { return start_time_expr_; }
+  ExpressionIR* end_time_expr() const { return end_time_expr_; }
+  bool HasTimeExpressions() const { return has_time_expressions_; }
+
+  void SetTimeValuesNS(int64_t time_start_ns, int64_t time_stop_ns) {
     time_start_ns_ = time_start_ns;
     time_stop_ns_ = time_stop_ns;
     time_set_ = true;
   }
+  bool IsTimeSet() const { return time_set_; }
+
   int64_t time_start_ns() const { return time_start_ns_; }
   int64_t time_stop_ns() const { return time_stop_ns_; }
-  bool IsTimeSet() const { return time_set_; }
+
   const std::vector<int64_t>& column_index_map() const { return column_index_map_; }
   bool column_index_map_set() const { return column_index_map_set_; }
   void SetColumnIndexMap(const std::vector<int64_t>& column_index_map) {
@@ -1021,6 +1035,10 @@ class MemorySourceIR : public OperatorIR {
 
  private:
   std::string table_name_;
+
+  bool has_time_expressions_ = false;
+  ExpressionIR* start_time_expr_;
+  ExpressionIR* end_time_expr_;
 
   bool time_set_ = false;
   int64_t time_start_ns_;

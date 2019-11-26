@@ -75,7 +75,7 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
       continue;
     }
     PL_ASSIGN_OR_RETURN(IRNode * default_node, GetDefault(arg, ast_visitor));
-    parsed_args.AddArg(arg, default_node);
+    parsed_args.SubDefaultArg(arg, default_node);
   }
 
   // If missing positional arguments.

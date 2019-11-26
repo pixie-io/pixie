@@ -91,7 +91,7 @@ TEST_F(LogicalPlannerTest, many_agents) {
 }
 
 const char* kHttpRequestStats = R"pxl(
-t1 = dataframe(table='http_events').range(start='-30s')
+t1 = dataframe(table='http_events', start_time='-30s')
 
 t1['service'] = t1.attr['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6

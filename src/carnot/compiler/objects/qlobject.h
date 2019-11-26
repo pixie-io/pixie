@@ -43,7 +43,7 @@ class QLObject {
    */
   StatusOr<std::shared_ptr<FuncObject>> GetMethod(const std::string& name) const {
     if (!methods_.contains(name)) {
-      return CreateError("'$0' object has no attribute $1", type_descriptor_.name(), name);
+      return CreateError("'$0' object has no attribute '$1'", type_descriptor_.name(), name);
     }
     return methods_.find(name)->second;
   }

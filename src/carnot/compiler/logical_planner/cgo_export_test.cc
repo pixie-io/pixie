@@ -61,7 +61,8 @@ TEST_F(PlannerExportTest, two_agents_query_test) {
   ASSERT_OK(planner_result.status());
   std::string expected_planner_result_str =
       absl::Substitute("plan {$0}", distributedpb::testutils::kExpectedPlanTwoAgents);
-  EXPECT_THAT(planner_result, Partially(EqualsProto(expected_planner_result_str)));
+  EXPECT_THAT(planner_result, Partially(EqualsProto(expected_planner_result_str)))
+      << planner_result.DebugString();
 }
 
 // TODO(philkuz/zasgar) (PL-873) enable this test when switching to use Kelvin.
@@ -79,7 +80,8 @@ TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
   ASSERT_OK(planner_result.status());
   std::string expected_planner_result_str =
       absl::Substitute("plan {$0}", distributedpb::testutils::kExpectedPlanTwoAgentOneKelvin);
-  EXPECT_THAT(planner_result, Partially(EqualsProto(expected_planner_result_str)));
+  EXPECT_THAT(planner_result, Partially(EqualsProto(expected_planner_result_str)))
+      << planner_result.DebugString();
 }
 
 TEST_F(PlannerExportTest, bad_queries) {
@@ -98,7 +100,7 @@ TEST_F(PlannerExportTest, bad_queries) {
 }
 
 const char* kUDFQuery = R"query(
-t1 = dataframe(table='table1').range(start='-30s')
+t1 = dataframe(table='table1', start_time='-30s')
 t1 = t1[t1['cpu_cycles'] >= 0]
 t1.result(name="")
 )query";

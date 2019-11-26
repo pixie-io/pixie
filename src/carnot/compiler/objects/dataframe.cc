@@ -31,17 +31,6 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       std::bind(&AggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kBlockingAggOpId, aggfn);
 
-  /**
-   * # Equivalent to the python method method syntax:
-   * def range(self, start, stop=plc.now()):
-   *     ...
-   */
-  std::shared_ptr<FuncObject> rangefn(new FuncObject(
-      kRangeOpId, {"start", "stop"}, {{"stop", "plc.now()"}},
-      /* has_variable_len_kwargs */ false,
-      std::bind(&RangeHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  AddMethod(kRangeOpId, rangefn);
-
   // TODO(philkuz) (PL-1036) remove this upon availability of new syntax.
   /**
    * # Equivalent to the python method method syntax:

@@ -106,26 +106,26 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 4
-      sorted_children: 8
+      id: 6
+      sorted_children: 10
     }
     nodes {
-      id: 8
-      sorted_children: 21
-      sorted_parents: 4
-    }
-    nodes {
-      id: 21
+      id: 10
       sorted_children: 23
-      sorted_parents: 8
+      sorted_parents: 6
     }
     nodes {
       id: 23
-      sorted_parents: 21
+      sorted_children: 25
+      sorted_parents: 10
+    }
+    nodes {
+      id: 25
+      sorted_parents: 23
     }
   }
   nodes {
-    id: 4
+    id: 6
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -140,18 +140,18 @@ nodes {
     }
   }
   nodes {
-    id: 8
+    id: 10
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 4
+            node: 6
           }
         }
         expressions {
           column {
-            node: 4
+            node: 6
             index: 1
           }
         }
@@ -160,13 +160,13 @@ nodes {
             name: "pl.divide"
             args {
               column {
-                node: 4
+                node: 6
                 index: 1
               }
             }
             args {
               column {
-                node: 4
+                node: 6
               }
             }
             args_data_types: FLOAT64
@@ -180,7 +180,7 @@ nodes {
     }
   }
   nodes {
-    id: 21
+    id: 23
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -188,7 +188,7 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 8
+              node: 10
               index: 2
             }
           }
@@ -198,14 +198,14 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 8
+              node: 10
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 8
+          node: 10
         }
         group_names: "cpu0"
         value_names: "quotient_mean"
@@ -214,7 +214,7 @@ nodes {
     }
   }
   nodes {
-    id: 23
+    id: 25
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -247,7 +247,7 @@ TEST_F(CompilerTest, test_general_compilation) {
 
   planpb::Plan logical_plan = plan_status.ValueOrDie();
 
-  EXPECT_THAT(logical_plan, EqualsProto(kExpectedLogicalPlan));
+  EXPECT_THAT(logical_plan, EqualsProto(kExpectedLogicalPlan)) << logical_plan.DebugString();
 }
 
 // Test for select order that is different than the schema.
@@ -341,24 +341,21 @@ nodes {
 TEST_F(CompilerTest, range_now_test) {
   auto query = absl::StrJoin(
       {
-          "queryDF = dataframe(table='sequences', select=['time_', 'xmod10']).range(start=0, "
-          "stop=plc.now())",
+          "queryDF = dataframe(table='sequences', select=['time_', 'xmod10'], start_time=0, "
+          "end_time=plc.now())",
           "queryDF.result(name='range_table')",
       },
       "\n");
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
-  EXPECT_OK(plan);
-  VLOG(2) << plan.ValueOrDie().DebugString();
+  ASSERT_OK(plan);
   int64_t start_time = 0;
   int64_t stop_time = compiler_state_->time_now().val;
   auto expected_plan = absl::Substitute(kRangeNowPlan, start_time, stop_time);
 
-  planpb::Plan plan_pb;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
-  VLOG(2) << plan_pb.DebugString();
-  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
+  EXPECT_THAT(plan.ConsumeValueOrDie(), Partially(EqualsProto(expected_plan)));
 }
+
 const char* kRangeTimeUnitPlan = R"(
 nodes {
   nodes {
@@ -404,7 +401,7 @@ class CompilerTimeFnTest
     CompilerTest::SetUp();
     std::tie(time_function, chrono_ns) = GetParam();
     query = absl::StrJoin({"queryDF = dataframe(table='sequences', select=['time_', "
-                           "'xmod10']).range(start=plc.now() - $1,stop=plc.now())",
+                           "'xmod10'], start_time=plc.now() - $1, end_time=plc.now())",
                            "queryDF.result(name='$0')"},
                           "\n");
     query = absl::Substitute(query, table_name_, time_function);
@@ -508,7 +505,7 @@ TEST_F(CompilerTest, group_by_all) {
 }
 
 const char* kRangeAggPlan = R"(
-dag {
+  dag {
   nodes {
     id: 1
   }
@@ -517,54 +514,62 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 5
-      sorted_children: 16
-    }
-    nodes {
-      id: 16
+      id: 7
       sorted_children: 18
-      sorted_parents: 5
     }
     nodes {
       id: 18
       sorted_children: 20
-      sorted_parents: 16
+      sorted_parents: 7
     }
     nodes {
       id: 20
+      sorted_children: 22
       sorted_parents: 18
+    }
+    nodes {
+      id: 22
+      sorted_parents: 20
     }
   }
   nodes {
-    id: 5
+    id: 7
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
+        name: "cpu"
+        column_idxs: 3
+        column_idxs: 0
+        column_idxs: 2
+        column_names: "cpu2"
+        column_names: "count"
+        column_names: "cpu1"
+        column_types: FLOAT64
+        column_types: INT64
+        column_types: FLOAT64
       }
     }
   }
   nodes {
-    id: 16
+    id: 18
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           func {
             name: "pl.subtract"
-            id: 1
             args {
               column {
-                node: 5
+                node: 7
                 index: 1
               }
             }
             args {
               func {
                 name: "pl.modulo"
-                id: 0
                 args {
                   column {
-                    node: 5
+                    node: 7
                     index: 1
                   }
                 }
@@ -578,13 +583,14 @@ nodes {
                 args_data_types: INT64
               }
             }
+            id: 1
             args_data_types: INT64
             args_data_types: INT64
           }
         }
         expressions {
           column {
-            node: 5
+            node: 7
             index: 2
           }
         }
@@ -594,22 +600,22 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 20
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
-        windowed: false
         values {
           name: "pl.mean"
           args {
             column {
-              node: 16
+              node: 18
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
+          node: 18
         }
         group_names: "group"
         value_names: "mean"
@@ -617,7 +623,7 @@ nodes {
     }
   }
   nodes {
-    id: 20
+    id: 22
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -641,9 +647,10 @@ TEST_F(CompilerTest, range_agg_test) {
       },
       "\n");
 
-  auto plan = compiler_.Compile(query, compiler_state_.get());
-  EXPECT_OK(plan);
-  EXPECT_THAT(plan.ConsumeValueOrDie(), Partially(EqualsProto(kRangeAggPlan)));
+  auto plan_or_s = compiler_.Compile(query, compiler_state_.get());
+  ASSERT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_THAT(plan, Partially(EqualsProto(kRangeAggPlan))) << plan.DebugString();
 }
 
 TEST_F(CompilerTest, range_agg_multiple_args_fail) {
@@ -765,11 +772,12 @@ TEST_F(CompilerTest, DISABLED_range_agg_op_list_group_by_one_entry) {
 }
 
 TEST_F(CompilerTest, multiple_group_by_agg_test) {
-  std::string query = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', pl.count),",
-       "cpu_mean=('cpu1', pl.mean)).result(name='cpu_out')"},
-      "\n");
+  std::string query =
+      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+                     "start_time=0, end_time=10)",
+                     "queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', pl.count),",
+                     "cpu_mean=('cpu1', pl.mean)).result(name='cpu_out')"},
+                    "\n");
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
@@ -777,12 +785,13 @@ TEST_F(CompilerTest, multiple_group_by_agg_test) {
 }
 
 TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
-  std::string query = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0,stop=10)",
-       "queryDF['cpu_sum'] = queryDF['cpu1'] + queryDF['cpu2']",
-       "queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', pl.count),",
-       "cpu_mean=('cpu1', pl.mean)).result(name='cpu_out')"},
-      "\n");
+  std::string query =
+      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+                     "start_time=0, end_time=10)",
+                     "queryDF['cpu_sum'] = queryDF['cpu1'] + queryDF['cpu2']",
+                     "queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', pl.count),",
+                     "cpu_mean=('cpu1', pl.mean)).result(name='cpu_out')"},
+                    "\n");
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
@@ -818,84 +827,6 @@ TEST_F(CompilerTest, comparison_test) {
   auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
   EXPECT_OK(plan);
-}
-
-// Test to make sure that we can have no args to pl count.
-// The compiler will allow it if you have a udf definition for it
-// however, translating to the executor is more than a quick fix.
-// TODO(philkuz) fix up the builtins to allow for arg-less count.
-TEST_F(CompilerTest, DISABLED_no_arg_pl_count_test) {
-  std::string query = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).range(start=0, stop=10)",
-       "aggDF = queryDF.agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
-       "pl.count}).result(name='cpu_out')"},
-      "\n");
-
-  auto plan = compiler_.Compile(query, compiler_state_.get());
-  ASSERT_OK(plan);
-  VLOG(2) << plan.ValueOrDie().DebugString();
-}
-
-TEST_F(CompilerTest, implied_stop_params) {
-  std::string query = absl::StrJoin({"queryDF = dataframe(table='sequences', select=['time_', "
-                                     "'xmod10']).range(start=plc.now() - plc.minutes(2))",
-                                     "queryDF.result(name='$0')"},
-                                    "\n");
-  std::string table_name = "ranged_table";
-  query = absl::Substitute(query, table_name);
-
-  auto plan = compiler_.Compile(query, compiler_state_.get());
-  ASSERT_OK(plan);
-  VLOG(2) << plan.ValueOrDie().DebugString();
-  int64_t now_time = compiler_state_->time_now().val;
-  std::chrono::nanoseconds time_diff = std::chrono::minutes(2);
-  std::string expected_plan =
-      absl::Substitute(kRangeTimeUnitPlan, now_time - time_diff.count(), now_time, table_name);
-  planpb::Plan plan_pb;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
-  VLOG(2) << plan_pb.DebugString();
-  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
-}
-
-TEST_F(CompilerTest, string_start_param) {
-  std::string query = absl::StrJoin({"queryDF = dataframe(table='sequences', select=['time_', "
-                                     "'xmod10']).range(start='-2m')",
-                                     "queryDF.result(name='$0')"},
-                                    "\n");
-  std::string table_name = "ranged_table";
-  query = absl::Substitute(query, table_name);
-
-  auto plan = compiler_.Compile(query, compiler_state_.get());
-  ASSERT_OK(plan);
-  VLOG(2) << plan.ValueOrDie().DebugString();
-  int64_t now_time = compiler_state_->time_now().val;
-  std::chrono::nanoseconds time_diff = std::chrono::minutes(2);
-  std::string expected_plan =
-      absl::Substitute(kRangeTimeUnitPlan, now_time - time_diff.count(), now_time, table_name);
-  planpb::Plan plan_pb;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
-  VLOG(2) << plan_pb.DebugString();
-  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
-}
-
-TEST_F(CompilerTest, string_start_stop_param) {
-  std::string query = absl::StrJoin({"queryDF = dataframe(table='sequences', select=['time_', "
-                                     "'xmod10']).range(start='-5m', stop='-1m')",
-                                     "queryDF.result(name='$0')"},
-                                    "\n");
-  std::string table_name = "ranged_table";
-  query = absl::Substitute(query, table_name);
-
-  auto plan = compiler_.Compile(query, compiler_state_.get());
-  ASSERT_OK(plan);
-  VLOG(2) << plan.ValueOrDie().DebugString();
-  int64_t now_time = compiler_state_->time_now().val;
-  std::chrono::nanoseconds time_diff_start = std::chrono::minutes(5);
-  std::chrono::nanoseconds time_diff_end = std::chrono::minutes(1);
-  std::string expected_plan =
-      absl::Substitute(kRangeTimeUnitPlan, now_time - time_diff_start.count(),
-                       now_time - time_diff_end.count(), table_name);
-  EXPECT_THAT(plan.ConsumeValueOrDie(), Partially(EqualsProto(expected_plan)));
 }
 
 const char* kFilterPlan = R"(
@@ -1012,7 +943,7 @@ TEST_F(CompilerTest, filter_errors) {
 const char* kExpectedLimitPlan = R"(
 nodes {
   nodes {
-    id: 4
+    id: 6
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1027,21 +958,23 @@ nodes {
     }
   }
   nodes {
+    id: 8
     op {
       op_type: LIMIT_OPERATOR
       limit_op {
         limit: 1000
         columns {
-          node: 4
+          node: 6
         }
         columns {
-          node: 4
+          node: 6
           index: 1
         }
       }
     }
   }
   nodes {
+    id: 10
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1061,42 +994,58 @@ TEST_F(CompilerTest, limit_test) {
                                      "'cpu1']).limit(rows=1000)",
                                      "queryDF.result(name='out_table')"},
                                     "\n");
-  auto plan = compiler_.Compile(query, compiler_state_.get());
-  ASSERT_OK(plan);
-  EXPECT_THAT(plan.ConsumeValueOrDie(), Partially(EqualsProto(kExpectedLimitPlan)));
+  auto plan_or_s = compiler_.Compile(query, compiler_state_.get());
+  ASSERT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_THAT(plan, Partially(EqualsProto(kExpectedLimitPlan))) << plan.DebugString();
 }
 
 TEST_F(CompilerTest, reused_result) {
   std::string query = absl::StrJoin(
       {
           "queryDF = dataframe(table='http_table', select=['time_', 'upid', 'http_resp_status', "
-          "'http_resp_latency_ns'])",
-          "range_out = queryDF.range(start='-1m')",
-          "x = range_out[range_out['http_resp_latency_ns'] < 1000000]",
-          "result_= range_out.result(name='out');",
+          "'http_resp_latency_ns'], start_time='-1m')",
+          "x = queryDF[queryDF['http_resp_latency_ns'] < 1000000]",
+          "result_= queryDF.result(name='out');",
       },
 
       "\n");
-  auto plan_status = compiler_.Compile(query, compiler_state_.get());
+  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get());
   VLOG(2) << plan_status.ToString();
-  // This used to not work, but with rearchitecture this actually works.
-  EXPECT_OK(plan_status);
+  ASSERT_OK(plan_status);
+  auto plan = plan_status.ConsumeValueOrDie();
+  auto node_or_s = FindNodeType(plan, IRNodeType::kMemorySource);
+  ASSERT_OK(node_or_s);
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(node_or_s.ConsumeValueOrDie());
+
+  EXPECT_EQ(mem_src->Children().size(), 2);
+
+  OperatorIR* src_child1 = mem_src->Children()[0];
+  ASSERT_TRUE(Match(src_child1, Filter()));
+  FilterIR* filter_child = static_cast<FilterIR*>(src_child1);
+  EXPECT_TRUE(Match(filter_child->filter_expr(), LessThan(ColumnNode(), Int(1000000))));
+  // Filter should not have children.
+  EXPECT_EQ(filter_child->Children().size(), 0);
+
+  OperatorIR* src_child2 = mem_src->Children()[1];
+  ASSERT_TRUE(Match(src_child2, MemorySink()));
+  MemorySinkIR* mem_sink_child = static_cast<MemorySinkIR*>(src_child2);
+  EXPECT_EQ(mem_sink_child->name(), "out");
 }
 
 TEST_F(CompilerTest, multiple_result_sinks) {
   std::string query = absl::StrJoin(
       {
           "queryDF = dataframe(table='http_table', select=['time_', 'upid', 'http_resp_status', "
-          "'http_resp_latency_ns'])",
-          "range_out = queryDF.range(start='-1m')",
-          "x = range_out[range_out['http_resp_latency_ns'] < "
+          "'http_resp_latency_ns'], start_time='-1m')",
+          "x = queryDF[queryDF['http_resp_latency_ns'] < "
           "1000000].result(name='filtered_result')",
-          "result_= range_out.result(name='result');",
+          "result_= queryDF.result(name='result');",
       },
       "\n");
   auto plan_status = compiler_.Compile(query, compiler_state_.get());
-  VLOG(2) << plan_status.ToString();
-  EXPECT_OK(plan_status);
+  auto plan = plan_status.ConsumeValueOrDie();
+  ASSERT_OK(plan_status);
 }
 
 const char* kExpectedSelectDefaultArg = R"proto(
@@ -1175,26 +1124,35 @@ TEST_F(CompilerTest, from_select_default_arg) {
 }
 
 const char* kExpectedFilterMetadataPlan = R"proto(
+  dag {
+  nodes {
+    id: 1
+  }
+}
 nodes {
+  id: 1
   dag {
     nodes {
-      id: 2
-      sorted_children: 19
+      id: 4
+      sorted_children: 21
     }
     nodes {
-      id: 19
-      sorted_children: 7
-    }
-    nodes {
-      id: 7
+      id: 21
       sorted_children: 9
+      sorted_parents: 4
     }
     nodes {
       id: 9
+      sorted_children: 11
+      sorted_parents: 21
+    }
+    nodes {
+      id: 11
+      sorted_parents: 9
     }
   }
   nodes {
-    id: 2
+    id: 4
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1218,31 +1176,36 @@ nodes {
     }
   }
   nodes {
-    id: 19
+    id: 21
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
+            node: 4
           }
         }
         expressions {
           column {
+            node: 4
             index: 1
           }
         }
         expressions {
           column {
+            node: 4
             index: 2
           }
         }
         expressions {
           column {
+            node: 4
             index: 3
           }
         }
         expressions {
           column {
+            node: 4
             index: 4
           }
         }
@@ -1251,6 +1214,7 @@ nodes {
             name: "pl.upid_to_service_name"
             args {
               column {
+                node: 4
                 index: 4
               }
             }
@@ -1268,7 +1232,7 @@ nodes {
     }
   }
   nodes {
-    id: 7
+    id: 9
     op {
       op_type: FILTER_OPERATOR
       filter_op {
@@ -1277,6 +1241,7 @@ nodes {
             name: "pl.equal"
             args {
               column {
+                node: 21
                 index: 5
               }
             }
@@ -1291,27 +1256,33 @@ nodes {
           }
         }
         columns {
+          node: 21
         }
         columns {
+          node: 21
           index: 1
         }
         columns {
+          node: 21
           index: 2
         }
         columns {
+          node: 21
           index: 3
         }
         columns {
+          node: 21
           index: 4
         }
         columns {
+          node: 21
           index: 5
         }
       }
     }
   }
   nodes {
-    id: 9
+    id: 11
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1335,34 +1306,40 @@ nodes {
 )proto";
 
 const char* kExpectedMapMetadataPlan = R"proto(
+  dag {
+  nodes {
+    id: 1
+  }
+}
 nodes {
   id: 1
   dag {
     nodes {
-      sorted_children: 26
+      id: 4
+      sorted_children: 28
     }
     nodes {
-      id: 26
-      sorted_children: 5
-      sorted_parents: 2
+      id: 28
+      sorted_children: 7
+      sorted_parents: 4
     }
     nodes {
-      id: 5
-      sorted_children: 9
-      sorted_parents: 26
-    }
-    nodes {
-      id: 9
+      id: 7
       sorted_children: 11
-      sorted_parents: 5
+      sorted_parents: 28
     }
     nodes {
       id: 11
-      sorted_parents: 9
+      sorted_children: 13
+      sorted_parents: 7
+    }
+    nodes {
+      id: 13
+      sorted_parents: 11
     }
   }
   nodes {
-    id: 2
+    id: 4
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1386,31 +1363,36 @@ nodes {
     }
   }
   nodes {
-    id: 26
+    id: 28
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
+            node: 4
           }
         }
         expressions {
           column {
+            node: 4
             index: 1
           }
         }
         expressions {
           column {
+            node: 4
             index: 2
           }
         }
         expressions {
           column {
+            node: 4
             index: 3
           }
         }
         expressions {
           column {
+            node: 4
             index: 4
           }
         }
@@ -1419,6 +1401,7 @@ nodes {
             name: "pl.upid_to_service_name"
             args {
               column {
+                node: 4
                 index: 4
               }
             }
@@ -1435,41 +1418,48 @@ nodes {
     }
   }
   nodes {
-    id: 5
+    id: 7
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
+            node: 28
           }
         }
         expressions {
           column {
+            node: 28
             index: 1
           }
         }
         expressions {
           column {
+            node: 28
             index: 2
           }
         }
         expressions {
           column {
+            node: 28
             index: 3
           }
         }
         expressions {
           column {
+            node: 28
             index: 4
           }
         }
         expressions {
           column {
+            node: 28
             index: 5
           }
         }
         expressions {
           column {
+            node: 28
             index: 5
           }
         }
@@ -1484,12 +1474,13 @@ nodes {
     }
   }
   nodes {
-    id: 9
+    id: 11
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
+            node: 7
             index: 6
           }
         }
@@ -1498,7 +1489,7 @@ nodes {
     }
   }
   nodes {
-    id: 11
+    id: 13
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1512,35 +1503,40 @@ nodes {
 )proto";
 
 const char* kExpectedAgg1MetadataPlan = R"proto(
+  dag {
+  nodes {
+    id: 1
+  }
+}
 nodes {
   id: 1
   dag {
     nodes {
-      id: 2
-      sorted_children: 31
+      id: 4
+      sorted_children: 33
     }
     nodes {
-      id: 31
-      sorted_children: 5
-      sorted_parents: 2
+      id: 33
+      sorted_children: 7
+      sorted_parents: 4
     }
     nodes {
-      id: 5
-      sorted_children: 13
-      sorted_parents: 31
-    }
-    nodes {
-      id: 13
+      id: 7
       sorted_children: 15
-      sorted_parents: 5
+      sorted_parents: 33
     }
     nodes {
       id: 15
-      sorted_parents: 13
+      sorted_children: 17
+      sorted_parents: 7
+    }
+    nodes {
+      id: 17
+      sorted_parents: 15
     }
   }
   nodes {
-    id: 2
+    id: 4
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1564,36 +1560,36 @@ nodes {
     }
   }
   nodes {
-    id: 31
+    id: 33
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 2
+            node: 4
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 1
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 2
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 3
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 4
           }
         }
@@ -1602,7 +1598,7 @@ nodes {
             name: "pl.upid_to_service_name"
             args {
               column {
-                node: 2
+                node: 4
                 index: 4
               }
             }
@@ -1619,48 +1615,48 @@ nodes {
     }
   }
   nodes {
-    id: 5
+    id: 7
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 31
+            node: 33
           }
         }
         expressions {
           column {
-            node: 31
+            node: 33
             index: 1
           }
         }
         expressions {
           column {
-            node: 31
+            node: 33
             index: 2
           }
         }
         expressions {
           column {
-            node: 31
+            node: 33
             index: 3
           }
         }
         expressions {
           column {
-            node: 31
+            node: 33
             index: 4
           }
         }
         expressions {
           column {
-            node: 31
+            node: 33
             index: 5
           }
         }
         expressions {
           column {
-            node: 31
+            node: 33
             index: 5
           }
         }
@@ -1675,7 +1671,7 @@ nodes {
     }
   }
   nodes {
-    id: 13
+    id: 15
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1683,14 +1679,14 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 5
+              node: 7
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 5
+          node: 7
           index: 6
         }
         group_names: "service"
@@ -1699,7 +1695,7 @@ nodes {
     }
   }
   nodes {
-    id: 15
+    id: 17
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1715,35 +1711,40 @@ nodes {
 )proto";
 
 const char* kExpectedAgg2MetadataPlan = R"proto(
+  dag {
+  nodes {
+    id: 1
+  }
+}
 nodes {
   id: 1
   dag {
     nodes {
-      id: 2
-      sorted_children: 35
+      id: 4
+      sorted_children: 37
     }
     nodes {
-      id: 35
-      sorted_children: 5
-      sorted_parents: 2
+      id: 37
+      sorted_children: 7
+      sorted_parents: 4
     }
     nodes {
-      id: 5
-      sorted_children: 16
-      sorted_parents: 35
-    }
-    nodes {
-      id: 16
+      id: 7
       sorted_children: 18
-      sorted_parents: 5
+      sorted_parents: 37
     }
     nodes {
       id: 18
-      sorted_parents: 16
+      sorted_children: 20
+      sorted_parents: 7
+    }
+    nodes {
+      id: 20
+      sorted_parents: 18
     }
   }
   nodes {
-    id: 2
+    id: 4
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1767,36 +1768,36 @@ nodes {
     }
   }
   nodes {
-    id: 35
+    id: 37
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 2
+            node: 4
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 1
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 2
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 3
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 4
           }
         }
@@ -1805,7 +1806,7 @@ nodes {
             name: "pl.upid_to_service_name"
             args {
               column {
-                node: 2
+                node: 4
                 index: 4
               }
             }
@@ -1822,48 +1823,48 @@ nodes {
     }
   }
   nodes {
-    id: 5
+    id: 7
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 35
+            node: 37
           }
         }
         expressions {
           column {
-            node: 35
+            node: 37
             index: 1
           }
         }
         expressions {
           column {
-            node: 35
+            node: 37
             index: 2
           }
         }
         expressions {
           column {
-            node: 35
+            node: 37
             index: 3
           }
         }
         expressions {
           column {
-            node: 35
+            node: 37
             index: 4
           }
         }
         expressions {
           column {
-            node: 35
+            node: 37
             index: 5
           }
         }
         expressions {
           column {
-            node: 35
+            node: 37
             index: 5
           }
         }
@@ -1878,7 +1879,7 @@ nodes {
     }
   }
   nodes {
-    id: 16
+    id: 18
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1886,18 +1887,18 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 5
+              node: 7
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 5
+          node: 7
           index: 1
         }
         groups {
-          node: 5
+          node: 7
           index: 6
         }
         group_names: "cpu0"
@@ -1907,7 +1908,7 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 20
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1934,41 +1935,41 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 2
-      sorted_children: 42
+      id: 4
+      sorted_children: 44
     }
     nodes {
-      id: 42
-      sorted_children: 5
-      sorted_parents: 2
+      id: 44
+      sorted_children: 7
+      sorted_parents: 4
     }
     nodes {
-      id: 5
-      sorted_children: 16
-      sorted_parents: 42
+      id: 7
+      sorted_children: 18
+      sorted_parents: 44
     }
     nodes {
-      id: 16
-      sorted_children: 48
-      sorted_parents: 5
+      id: 18
+      sorted_children: 50
+      sorted_parents: 7
     }
     nodes {
-      id: 48
-      sorted_children: 21
-      sorted_parents: 16
-    }
-    nodes {
-      id: 21
+      id: 50
       sorted_children: 23
-      sorted_parents: 48
+      sorted_parents: 18
     }
     nodes {
       id: 23
-      sorted_parents: 21
+      sorted_children: 25
+      sorted_parents: 50
+    }
+    nodes {
+      id: 25
+      sorted_parents: 23
     }
   }
   nodes {
-    id: 2
+    id: 4
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1992,36 +1993,36 @@ nodes {
     }
   }
   nodes {
-    id: 42
+    id: 44
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 2
+            node: 4
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 1
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 2
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 3
           }
         }
         expressions {
           column {
-            node: 2
+            node: 4
             index: 4
           }
         }
@@ -2030,7 +2031,7 @@ nodes {
             name: "pl.upid_to_service_name"
             args {
               column {
-                node: 2
+                node: 4
                 index: 4
               }
             }
@@ -2048,48 +2049,48 @@ nodes {
     }
   }
   nodes {
-    id: 5
+    id: 7
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 42
+            node: 44
           }
         }
         expressions {
           column {
-            node: 42
+            node: 44
             index: 1
           }
         }
         expressions {
           column {
-            node: 42
+            node: 44
             index: 2
           }
         }
         expressions {
           column {
-            node: 42
+            node: 44
             index: 3
           }
         }
         expressions {
           column {
-            node: 42
+            node: 44
             index: 4
           }
         }
         expressions {
           column {
-            node: 42
+            node: 44
             index: 5
           }
         }
         expressions {
           column {
-            node: 42
+            node: 44
             index: 5
           }
         }
@@ -2104,7 +2105,7 @@ nodes {
     }
   }
   nodes {
-    id: 16
+    id: 18
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -2112,18 +2113,18 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 5
+              node: 7
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 5
+          node: 7
           index: 4
         }
         groups {
-          node: 5
+          node: 7
           index: 6
         }
         group_names: "upid"
@@ -2133,24 +2134,24 @@ nodes {
     }
   }
   nodes {
-    id: 48
+    id: 50
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 16
+            node: 18
           }
         }
         expressions {
           column {
-            node: 16
+            node: 18
             index: 1
           }
         }
         expressions {
           column {
-            node: 16
+            node: 18
             index: 2
           }
         }
@@ -2159,7 +2160,7 @@ nodes {
             name: "pl.upid_to_service_name"
             args {
               column {
-                node: 16
+                node: 18
               }
             }
             id: 1
@@ -2174,7 +2175,7 @@ nodes {
     }
   }
   nodes {
-    id: 21
+    id: 23
     op {
       op_type: FILTER_OPERATOR
       filter_op {
@@ -2183,7 +2184,7 @@ nodes {
             name: "pl.equal"
             args {
               column {
-                node: 48
+                node: 50
                 index: 3
               }
             }
@@ -2198,25 +2199,25 @@ nodes {
           }
         }
         columns {
-          node: 48
+          node: 50
         }
         columns {
-          node: 48
+          node: 50
           index: 1
         }
         columns {
-          node: 48
+          node: 50
           index: 2
         }
         columns {
-          node: 48
+          node: 50
           index: 3
         }
       }
     }
   }
   nodes {
-    id: 23
+    id: 25
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2716,31 +2717,31 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 11
-      sorted_children: 22
+      id: 15
+      sorted_children: 26
     }
     nodes {
-      id: 5
-      sorted_children: 22
+      id: 7
+      sorted_children: 26
     }
     nodes {
-      id: 22
-      sorted_children: 34
-      sorted_parents: 5
-      sorted_parents: 11
+      id: 26
+      sorted_children: 38
+      sorted_parents: 7
+      sorted_parents: 15
     }
     nodes {
-      id: 34
-      sorted_children: 36
-      sorted_parents: 22
+      id: 38
+      sorted_children: 40
+      sorted_parents: 26
     }
     nodes {
-      id: 36
-      sorted_parents: 34
+      id: 40
+      sorted_parents: 38
     }
   }
   nodes {
-    id: 11
+    id: 15
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2758,7 +2759,7 @@ nodes {
     }
   }
   nodes {
-    id: 5
+    id: 7
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2776,7 +2777,7 @@ nodes {
     }
   }
   nodes {
-    id: 22
+    id: 26
     op {
       op_type: JOIN_OPERATOR
       join_op {
@@ -2813,36 +2814,36 @@ nodes {
     }
   }
   nodes {
-    id: 34
+    id: 38
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 22
+            node: 26
             index: 1
           }
         }
         expressions {
           column {
-            node: 22
+            node: 26
             index: 3
           }
         }
         expressions {
           column {
-            node: 22
+            node: 26
             index: 5
           }
         }
         expressions {
           column {
-            node: 22
+            node: 26
           }
         }
         expressions {
           column {
-            node: 22
+            node: 26
             index: 2
           }
         }
@@ -2855,7 +2856,7 @@ nodes {
     }
   }
   nodes {
-    id: 36
+    id: 40
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2873,7 +2874,8 @@ nodes {
       }
     }
   }
-})proto";
+}
+)proto";
 
 const char* kJoinQueryTypeTpl = R"query(
 src1 = dataframe(table='cpu', select=['cpu0', 'upid', 'cpu1'])
@@ -2886,13 +2888,13 @@ output.result(name='joined')
 TEST_F(CompilerTest, inner_join) {
   auto plan_status =
       compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "inner"), compiler_state_.get());
-  VLOG(1) << plan_status.ToString();
-  EXPECT_OK(plan_status);
-  EXPECT_THAT(plan_status.ValueOrDie(), EqualsProto(kJoinInnerQueryPlan));
+  ASSERT_OK(plan_status);
+  auto plan = plan_status.ConsumeValueOrDie();
+  EXPECT_THAT(plan, EqualsProto(kJoinInnerQueryPlan)) << plan.DebugString();
 }
 
 const char* kJoinRightQueryPlan = R"proto(
-dag {
+  dag {
   nodes {
     id: 1
   }
@@ -2901,31 +2903,31 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 11
-      sorted_children: 22
+      id: 15
+      sorted_children: 26
     }
     nodes {
-      id: 5
-      sorted_children: 22
+      id: 7
+      sorted_children: 26
     }
     nodes {
-      id: 22
-      sorted_children: 34
-      sorted_parents: 11
-      sorted_parents: 5
+      id: 26
+      sorted_children: 38
+      sorted_parents: 15
+      sorted_parents: 7
     }
     nodes {
-      id: 34
-      sorted_children: 36
-      sorted_parents: 22
+      id: 38
+      sorted_children: 40
+      sorted_parents: 26
     }
     nodes {
-      id: 36
-      sorted_parents: 34
+      id: 40
+      sorted_parents: 38
     }
   }
   nodes {
-    id: 11
+    id: 15
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2943,7 +2945,7 @@ nodes {
     }
   }
   nodes {
-    id: 5
+    id: 7
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2961,7 +2963,7 @@ nodes {
     }
   }
   nodes {
-    id: 22
+    id: 26
     op {
       op_type: JOIN_OPERATOR
       join_op {
@@ -2999,36 +3001,36 @@ nodes {
     }
   }
   nodes {
-    id: 34
+    id: 38
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 22
+            node: 26
             index: 1
           }
         }
         expressions {
           column {
-            node: 22
+            node: 26
             index: 3
           }
         }
         expressions {
           column {
-            node: 22
+            node: 26
             index: 5
           }
         }
         expressions {
           column {
-            node: 22
+            node: 26
           }
         }
         expressions {
           column {
-            node: 22
+            node: 26
             index: 2
           }
         }
@@ -3041,7 +3043,7 @@ nodes {
     }
   }
   nodes {
-    id: 36
+    id: 40
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -3064,8 +3066,9 @@ nodes {
 TEST_F(CompilerTest, right_join) {
   auto plan_status =
       compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "right"), compiler_state_.get());
-  EXPECT_OK(plan_status);
-  EXPECT_THAT(plan_status.ValueOrDie(), EqualsProto(kJoinRightQueryPlan));
+  ASSERT_OK(plan_status);
+  auto plan = plan_status.ConsumeValueOrDie();
+  EXPECT_THAT(plan, EqualsProto(kJoinRightQueryPlan)) << plan.DebugString();
 }
 
 // Test to make sure syntax errors are properly parsed.

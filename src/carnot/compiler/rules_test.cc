@@ -896,11 +896,6 @@ class CompilerTimeExpressionTest : public RulesTest {
                          std::vector<ExpressionIR*>({constant1, constant2})));
     return func;
   }
-  RangeIR* MakeRange(IRNode* start, IRNode* stop) {
-    RangeIR* range = graph->MakeNode<RangeIR>(ast).ValueOrDie();
-    EXPECT_OK(range->Init(mem_src, start, stop));
-    return range;
-  }
   MemorySourceIR* mem_src;
 };
 
@@ -908,37 +903,31 @@ TEST_F(CompilerTimeExpressionTest, one_argument_function) {
   auto start = MakeConstantAddition(4, 6);
   auto stop = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init(13));
+  mem_src->SetTimeExpressions(start, stop);
 
-  RangeIR* range = MakeRange(start, stop);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_TRUE(result.ConsumeValueOrDie());
 
-  IRNode* res_start_repr = range->start_repr();
-  IRNode* res_stop_repr = range->stop_repr();
-  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
-  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
-  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
   // Make sure that we don't manipulate the start value.
-  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 13);
+  EXPECT_EQ(mem_src->time_start_ns(), 10);
+  EXPECT_EQ(mem_src->time_stop_ns(), 13);
 }
 
 TEST_F(CompilerTimeExpressionTest, two_argument_function) {
-  RangeIR* range = MakeRange(MakeConstantAddition(4, 6), MakeConstantAddition(123, 321));
+  auto start = MakeConstantAddition(4, 6);
+  auto stop = MakeConstantAddition(123, 321);
+  mem_src->SetTimeExpressions(start, stop);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  IRNode* res_start_repr = range->start_repr();
-  IRNode* res_stop_repr = range->stop_repr();
-  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
-  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
-  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
-  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 444);
+  EXPECT_EQ(mem_src->time_start_ns(), 10);
+  EXPECT_EQ(mem_src->time_stop_ns(), 444);
 }
 
 TEST_F(CompilerTimeExpressionTest, one_argument_string) {
@@ -953,20 +942,15 @@ TEST_F(CompilerTimeExpressionTest, one_argument_string) {
   auto start = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(start->Init(10));
 
-  RangeIR* range = MakeRange(start, stop);
+  mem_src->SetTimeExpressions(start, stop);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  IRNode* res_start_repr = range->start_repr();
-  IRNode* res_stop_repr = range->stop_repr();
-  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
-  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
-  // Make sure that we don't manipulate the start value.
-  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
-  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), expected_time);
+  EXPECT_EQ(mem_src->time_start_ns(), 10);
+  EXPECT_EQ(mem_src->time_stop_ns(), expected_time);
 }
 
 TEST_F(CompilerTimeExpressionTest, two_argument_string) {
@@ -986,19 +970,15 @@ TEST_F(CompilerTimeExpressionTest, two_argument_string) {
   auto stop = graph->MakeNode<StringIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init(stop_str_repr));
 
-  RangeIR* range = MakeRange(start, stop);
+  mem_src->SetTimeExpressions(start, stop);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  IRNode* res_start_repr = range->start_repr();
-  IRNode* res_stop_repr = range->stop_repr();
-  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
-  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
-  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), expected_start_time);
-  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), expected_stop_time);
+  EXPECT_EQ(mem_src->time_start_ns(), expected_start_time);
+  EXPECT_EQ(mem_src->time_stop_ns(), expected_stop_time);
 }
 
 TEST_F(CompilerTimeExpressionTest, nested_function) {
@@ -1010,19 +990,15 @@ TEST_F(CompilerTimeExpressionTest, nested_function) {
   EXPECT_OK(stop->Init({FuncIR::Opcode::add, "+", "add"},
                        std::vector<ExpressionIR*>({MakeConstantAddition(123, 321), constant})));
 
-  RangeIR* range = MakeRange(start, stop);
+  mem_src->SetTimeExpressions(start, stop);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  IRNode* res_start_repr = range->start_repr();
-  IRNode* res_stop_repr = range->stop_repr();
-  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
-  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
-  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
-  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 555);
+  EXPECT_EQ(mem_src->time_start_ns(), 10);
+  EXPECT_EQ(mem_src->time_stop_ns(), 555);
 }
 
 TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
@@ -1036,19 +1012,15 @@ TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
   EXPECT_OK(stop->Init({FuncIR::Opcode::sub, "-", "subtract"},
                        std::vector<ExpressionIR*>({constant1, constant2})));
 
-  RangeIR* range = MakeRange(start, stop);
+  mem_src->SetTimeExpressions(start, stop);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  IRNode* res_start_repr = range->start_repr();
-  IRNode* res_stop_repr = range->stop_repr();
-  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
-  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
-  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
-  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 100);
+  EXPECT_EQ(mem_src->time_start_ns(), 10);
+  EXPECT_EQ(mem_src->time_stop_ns(), 100);
 }
 
 TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
@@ -1062,19 +1034,15 @@ TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
   EXPECT_OK(stop->Init({FuncIR::Opcode::mult, "*", "multiply"},
                        std::vector<ExpressionIR*>({constant1, constant2})));
 
-  RangeIR* range = MakeRange(start, stop);
+  mem_src->SetTimeExpressions(start, stop);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  IRNode* res_start_repr = range->start_repr();
-  IRNode* res_stop_repr = range->stop_repr();
-  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
-  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
-  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
-  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 24);
+  EXPECT_EQ(mem_src->time_start_ns(), 10);
+  EXPECT_EQ(mem_src->time_stop_ns(), 24);
 }
 
 TEST_F(CompilerTimeExpressionTest, already_completed) {
@@ -1083,19 +1051,17 @@ TEST_F(CompilerTimeExpressionTest, already_completed) {
   IntIR* constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant2->Init(8));
 
-  RangeIR* range = MakeRange(constant1, constant2);
+  mem_src->SetTimeExpressions(constant1, constant2);
+  // The rule does this.
+  mem_src->SetTimeValuesNS(24, 8);
   RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
 
-  IRNode* res_start_repr = range->start_repr();
-  IRNode* res_stop_repr = range->stop_repr();
-  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
-  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
-  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 24);
-  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 8);
+  EXPECT_EQ(mem_src->time_start_ns(), 24);
+  EXPECT_EQ(mem_src->time_stop_ns(), 8);
 }
 class VerifyFilterExpressionTest : public RulesTest {
  protected:
@@ -1768,42 +1734,6 @@ TEST_F(MetadataResolverConversionTest, remove_extra_resolver) {
   EXPECT_EQ(graph->dag().DependenciesOf(md_resolver2->id()).size(), 0UL);
 }
 
-TEST_F(RulesTest, simple_remove_range) {
-  // Create nodes.
-  int64_t start_time_ns = 2;
-  int64_t stop_time_ns = 4;
-
-  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
-  RangeIR* range = graph->MakeNode<RangeIR>(ast).ValueOrDie();
-  IntIR* start_time = MakeInt(start_time_ns);
-  IntIR* stop_time = MakeInt(stop_time_ns);
-
-  EXPECT_OK(mem_src->SetRelation(cpu_relation));
-  EXPECT_OK(range->Init(mem_src, start_time, stop_time));
-
-  MakeMemSink(range, "sink");
-
-  EXPECT_FALSE(mem_src->IsTimeSet());
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2, 3, 4));
-
-  // Apply the rule.
-  MergeRangeOperatorRule rule(compiler_state_.get());
-  auto status = rule.Execute(graph.get());
-  ASSERT_OK(status);
-  EXPECT_TRUE(status.ValueOrDie());
-
-  // checks to make sure that all the edges related to range are removed.
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 4));
-  EXPECT_TRUE(mem_src->IsTimeSet());
-  EXPECT_EQ(stop_time_ns - start_time_ns, mem_src->time_stop_ns() - mem_src->time_start_ns());
-  EXPECT_EQ(stop_time_ns, mem_src->time_stop_ns());
-  EXPECT_EQ(start_time_ns, mem_src->time_start_ns());
-
-  EXPECT_FALSE(graph->dag().HasNode(range->id()));
-  EXPECT_FALSE(graph->dag().HasNode(start_time->id()));
-  EXPECT_FALSE(graph->dag().HasNode(start_time->id()));
-}
-
 TEST_F(RulesTest, drop_to_map) {
   MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>(ast).ConsumeValueOrDie();
   DropIR* drop = graph->MakeNode<DropIR>(ast).ConsumeValueOrDie();
@@ -1830,46 +1760,6 @@ TEST_F(RulesTest, drop_to_map) {
 
   EXPECT_EQ(op->Children().size(), 1);
   EXPECT_EQ(op->Children()[0], sink);
-}
-
-// Make sure that children of Range actually reference the parent.
-TEST_F(RulesTest, references_transfer) {
-  int64_t start_time_ns = 2;
-  int64_t stop_time_ns = 4;
-
-  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
-  RangeIR* range = graph->MakeNode<RangeIR>(ast).ValueOrDie();
-  IntIR* start_time = MakeInt(start_time_ns);
-  IntIR* stop_time = MakeInt(stop_time_ns);
-  ColumnIR* column = MakeColumn("test", /* parent_op_idx */ 0);
-
-  EXPECT_OK(mem_src->SetRelation(cpu_relation));
-  EXPECT_OK(range->Init(mem_src, start_time, stop_time));
-  int64_t range_id = range->id();
-
-  MapIR* map = MakeMap(range, {{"test", column}});
-
-  MemorySinkIR* sink = MakeMemSink(map, "sink");
-  EXPECT_FALSE(mem_src->IsTimeSet());
-  EXPECT_EQ(column->ReferenceID().ConsumeValueOrDie(), range->id());
-  EXPECT_THAT(graph, HasEdge(mem_src, range));
-  EXPECT_THAT(graph, HasEdge(range, map));
-  EXPECT_THAT(graph, HasEdge(map, sink));
-
-  // Apply the rule.
-  MergeRangeOperatorRule rule(compiler_state_.get());
-  auto status = rule.Execute(graph.get());
-  ASSERT_OK(status);
-  EXPECT_TRUE(status.ValueOrDie());
-
-  EXPECT_EQ(column->ReferenceID().ConsumeValueOrDie(), mem_src->id());
-  // checks to make sure that all the edges related to range are removed.
-  // Range no longer exists.
-  EXPECT_THAT(graph, Not(HasEdge(mem_src, range)));
-  EXPECT_THAT(graph, Not(HasEdge(range, map)));
-  EXPECT_THAT(graph, HasEdge(mem_src, map));
-  EXPECT_THAT(graph, HasEdge(map, sink));
-  EXPECT_FALSE(graph->HasNode(range_id));
 }
 
 TEST_F(RulesTest, setup_join_type_rule) {

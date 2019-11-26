@@ -306,7 +306,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2', "
-          "'col3']).range(start=$0, stop=$1).result(name='range_output')",
+          "'col3'], start_time=$0, end_time=$1).result(name='range_output')",
       },
       "\n");
   query = absl::Substitute(query, start_time, stop_time);
@@ -367,7 +367,7 @@ TEST_F(CarnotTest, range_test_single_rb) {
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2', "
-          "'col3']).range(start=$0, stop=$1).result(name='range_output')",
+          "'col3'], start_time=$0, end_time=$1).result(name='range_output')",
       },
       "\n");
   int64_t start_time = 9;
@@ -408,7 +408,7 @@ TEST_F(CarnotTest, empty_range_test) {
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2', "
-          "'col3']).range(start=$0, stop=$1).result(name='range_output')",
+          "'col3'], start_time=$0, end_time=$1).result(name='range_output')",
       },
       "\n");
   auto time_col = CarnotTestUtils::big_test_col1;
@@ -437,9 +437,9 @@ class CarnotRangeTest
     bool start_at_now;
     types::Int64Value sub_time;
     std::tie(sub_time, num_batches, start_at_now) = GetParam();
-    query = absl::StrJoin({"queryDF = dataframe(table='big_test_table', select=['time_', 'col2'])",
-                           "queryDF.range(start=$0, stop=$1).result(name='range_output')"},
-                          "\n");
+    query =
+        "queryDF = dataframe(table='big_test_table', select=['time_', 'col2'], start_time=$0, "
+        "end_time=$1).result(name='range_output')";
     if (start_at_now) {
       query = absl::Substitute(query, "plc.now()", sub_time.val);
     } else {

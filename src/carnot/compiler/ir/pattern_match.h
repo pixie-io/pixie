@@ -223,6 +223,14 @@ inline BinaryOpMatch<AllMatch, AllMatch, FuncIR::Opcode::logand, true> LogicalAn
 }
 
 /**
+ * @brief Match equals functions that match the left and right operators. It is commutative.
+ */
+template <typename LHS, typename RHS>
+inline BinaryOpMatch<LHS, RHS, FuncIR::Opcode::lt, false> LessThan(const LHS& L, const RHS& R) {
+  return BinaryOpMatch<LHS, RHS, FuncIR::Opcode::lt, false>(L, R);
+}
+
+/**
  * @brief Match subtract functions that match the left and right operators. It is notcommutative.
  */
 template <typename LHS, typename RHS>

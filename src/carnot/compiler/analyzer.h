@@ -67,7 +67,6 @@ class Analyzer : public RuleExecutor {
   void CreateRemoveIROnlyNodesBatch() {
     RuleBatch* remove_ir_only_nodes_batch = CreateRuleBatch<FailOnMax>("RemoveIROnlyNodes", 2);
     remove_ir_only_nodes_batch->AddRule<MetadataResolverConversionRule>(compiler_state_);
-    remove_ir_only_nodes_batch->AddRule<MergeRangeOperatorRule>(compiler_state_);
     remove_ir_only_nodes_batch->AddRule<RemoveGroupByRule>();
     remove_ir_only_nodes_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }

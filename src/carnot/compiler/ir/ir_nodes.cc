@@ -938,7 +938,16 @@ StatusOr<IRNode*> MemorySourceIR::DeepCloneIntoImpl(IR* graph) const {
   mem->column_names_ = column_names_;
   mem->column_index_map_set_ = column_index_map_set_;
   mem->column_index_map_ = column_index_map_;
+  mem->has_time_expressions_ = has_time_expressions_;
 
+  if (has_time_expressions_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_start_expr, start_time_expr_->DeepCloneInto(graph));
+    DCHECK(Match(new_start_expr, Expression()));
+    mem->start_time_expr_ = static_cast<ExpressionIR*>(new_start_expr);
+    PL_ASSIGN_OR_RETURN(IRNode * new_stop_expr, end_time_expr_->DeepCloneInto(graph));
+    DCHECK(Match(new_stop_expr, Expression()));
+    mem->end_time_expr_ = static_cast<ExpressionIR*>(new_stop_expr);
+  }
   return mem;
 }
 

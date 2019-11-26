@@ -17,7 +17,7 @@ TEST_F(NoneObjectTest, TestNoMethodsWork) {
   std::shared_ptr<NoneObject> none = std::make_shared<NoneObject>(sink);
   auto status = none->GetMethod("agg");
   ASSERT_NOT_OK(status);
-  EXPECT_THAT(status.status(), HasCompilerError("'None' object has no attribute agg"));
+  EXPECT_THAT(status.status(), HasCompilerError("'None' object has no attribute 'agg'"));
 }
 
 }  // namespace compiler

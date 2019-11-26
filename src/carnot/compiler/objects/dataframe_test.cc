@@ -332,60 +332,7 @@ TEST_F(RangeHandlerTest, OpArgumentCausesErrorStart) {
   EXPECT_THAT(status.status(), HasCompilerError("'start' must be an expression"));
 }
 
-TEST_F(DataframeTest, RangeCall) {
-  MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
-
-  auto get_method_status = srcdf->GetMethod("range");
-  ASSERT_OK(get_method_status);
-  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
-  ArgMap args({{}, {MakeString("-2m"), MakeString("-1m")}});
-
-  std::shared_ptr<QLObject> ql_object =
-      func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
-  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
-
-  auto range_obj = std::static_pointer_cast<Dataframe>(ql_object);
-
-  ASSERT_TRUE(Match(range_obj->op(), Range()));
-  RangeIR* range = static_cast<RangeIR*>(range_obj->op());
-
-  ASSERT_TRUE(Match(range->start_repr(), String()));
-  ASSERT_TRUE(Match(range->stop_repr(), String()));
-
-  EXPECT_EQ(range->parents()[0], src);
-  EXPECT_EQ(static_cast<StringIR*>(range->start_repr())->str(), "-2m");
-  EXPECT_EQ(static_cast<StringIR*>(range->stop_repr())->str(), "-1m");
-}
-
-TEST_F(DataframeTest, NoEndArgDefault) {
-  MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
-
-  auto get_method_status = srcdf->GetMethod("range");
-  ASSERT_OK(get_method_status);
-  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
-  ArgMap args({{{"start", MakeString("-2m")}}, {}});
-
-  std::shared_ptr<QLObject> ql_object =
-      func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
-  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
-
-  auto range_obj = std::static_pointer_cast<Dataframe>(ql_object);
-
-  ASSERT_TRUE(Match(range_obj->op(), Range()));
-  RangeIR* range = static_cast<RangeIR*>(range_obj->op());
-
-  ASSERT_TRUE(Match(range->start_repr(), String()));
-  ASSERT_TRUE(Match(range->stop_repr(), Func()));
-
-  EXPECT_EQ(range->parents()[0], src);
-  EXPECT_EQ(static_cast<StringIR*>(range->start_repr())->str(), "-2m");
-  EXPECT_EQ(static_cast<FuncIR*>(range->stop_repr())->carnot_op_name(), "now");
-}
-
 using OldMapTest = DataframeTest;
-
 TEST_F(OldMapTest, CreateOldMap) {
   MemorySourceIR* src = MakeMemSource();
   std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);

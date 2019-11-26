@@ -24,14 +24,15 @@ TEST_F(ASTVisitorTest, compilation_test) {
   EXPECT_OK(ig_status);
   auto ig = ig_status.ValueOrDie();
   // check the connection of ig
-  std::string from_range_expr = "dataframe(table='cpu', select=['cpu0']).range(start=0,stop=10)";
+  std::string from_range_expr =
+      "dataframe(table='cpu', select=['cpu0'], start_time=0, end_time=10)";
   EXPECT_OK(CompileGraph(from_range_expr));
 }
 
 // Checks whether the IR graph constructor can identify bads args.
 TEST_F(ASTVisitorTest, extra_arguments) {
   std::string extra_from_args =
-      "dataframe(table='cpu', select=['cpu0'], fakeArg='hahaha').range(start=0,stop=10)";
+      "dataframe(table='cpu', select=['cpu0'], fakeArg='hahaha'start_time=0, end_time=10)";
   Status s1 = CompileGraph(extra_from_args).status();
   compilerpb::CompilerErrorGroup error_group;
   EXPECT_NOT_OK(s1);
@@ -48,7 +49,7 @@ TEST_F(ASTVisitorTest, extra_arguments) {
 }
 
 TEST_F(ASTVisitorTest, missing_one_argument) {
-  std::string missing_from_args = "dataframe(select=['cpu']).range(start=0,stop=10)";
+  std::string missing_from_args = "dataframe(select=['cpu'], start_time=0, end_time=10)";
   Status s2 = CompileGraph(missing_from_args).status();
   compilerpb::CompilerErrorGroup error_group;
   EXPECT_NOT_OK(s2);
@@ -83,38 +84,46 @@ TEST_F(ASTVisitorTest, bad_syntax) {
 // Checks to make sure the compiler can catch operators that don't exist.
 TEST_F(ASTVisitorTest, nonexistant_operator_names) {
   std::string wrong_from_op_name =
-      "notdataframe(table='cpu', select=['cpu0']).range(start=0,stop=10)";
-  EXPECT_FALSE(CompileGraph(wrong_from_op_name).ok());
+      "notdataframe(table='cpu', select=['cpu0'], start_time=0, end_time=10)";
+  auto graph_or_s = CompileGraph(wrong_from_op_name);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("name 'notdataframe' is not defined"));
+
   std::string wrong_range_op_name =
       "dataframe(table='cpu', select=['cpu0']).brange(start=0,stop=10)";
-  EXPECT_FALSE(CompileGraph(wrong_range_op_name).ok());
+  graph_or_s = CompileGraph(wrong_range_op_name);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(),
+              HasCompilerError("'Dataframe' object has no attribute 'brange'"));
 }
+
 TEST_F(ASTVisitorTest, assign_functionality) {
   std::string simple_assign = "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])";
   EXPECT_OK(CompileGraph(simple_assign));
   std::string assign_and_use =
-      absl::StrJoin({"queryDF = dataframe(table = 'cpu', select = [ 'cpu0', 'cpu1' ])",
-                     "queryDF.range(start=0,stop=10)"},
-                    "\n");
+      "queryDF = dataframe('cpu', ['cpu0','cpu1'], start_time=0, end_time=10)";
   EXPECT_OK(CompileGraph(assign_and_use));
 }
+
 TEST_F(ASTVisitorTest, assign_error_checking) {
-  std::string bad_assign_mult_values = absl::StrJoin(
-      {
-          "queryDF,haha = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
-          "queryDF.range(start=0,stop=10)",
-      },
-      "\n");
-  EXPECT_FALSE(CompileGraph(bad_assign_mult_values).ok());
+  std::string bad_assign_mult_values =
+      "queryDF,haha = dataframe(table='cpu', select=['cpu0', 'cpu1'])";
+  auto graph_or_s = CompileGraph(bad_assign_mult_values);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("Assignment target must be a Name"));
+
   std::string bad_assign_str = "queryDF = 'str'";
-  EXPECT_FALSE(CompileGraph(bad_assign_str).ok());
+  graph_or_s = CompileGraph(bad_assign_str);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("Assign value must be a function call"));
 }
+
 using MapTest = ASTVisitorTest;
 // Map Tests
 TEST_F(MapTest, single_col_map) {
   std::string single_col_map_sum = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
           "rangeDF = queryDF[['sum']]",
       },
@@ -122,7 +131,7 @@ TEST_F(MapTest, single_col_map) {
   EXPECT_OK(CompileGraph(single_col_map_sum));
   std::string single_col_div_map_query = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['div'] = pl.div(queryDF['cpu0'], queryDF['cpu1'])",
           "rangeDF = queryDF[['div']]",
       },
@@ -133,7 +142,7 @@ TEST_F(MapTest, single_col_map) {
 TEST_F(MapTest, single_col_map_subscript) {
   std::string single_col_map_sum = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['cpu2'] = queryDF['cpu0'] + queryDF['cpu1']",
       },
       "\n");
@@ -162,7 +171,7 @@ TEST_F(MapTest, single_col_map_subscript) {
 TEST_F(MapTest, multi_col_map) {
   std::string multi_col = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
           "queryDF['copy'] = queryDF['cpu2']",
       },
@@ -173,28 +182,28 @@ TEST_F(MapTest, multi_col_map) {
 TEST_F(MapTest, bin_op_test) {
   std::string single_col_map_sum = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
       },
       "\n");
   EXPECT_OK(CompileGraph(single_col_map_sum));
   std::string single_col_map_sub = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sub'] = queryDF['cpu0'] - queryDF['cpu1']",
       },
       "\n");
   EXPECT_OK(CompileGraph(single_col_map_sub));
   std::string single_col_map_product = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['product'] = queryDF['cpu0'] * queryDF['cpu1']",
       },
       "\n");
   EXPECT_OK(CompileGraph(single_col_map_product));
   std::string single_col_map_quotient = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['quotient'] = queryDF['cpu0'] / queryDF['cpu1']",
       },
       "\n");
@@ -204,14 +213,14 @@ TEST_F(MapTest, bin_op_test) {
 TEST_F(MapTest, nested_expr_map) {
   std::string nested_expr = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1'] + queryDF['cpu2']",
       },
       "\n");
   EXPECT_OK(CompileGraph(nested_expr));
   std::string nested_fn = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['div'] = pl.div(queryDF['cpu0'] + queryDF['cpu1'], queryDF['cpu2'])",
       },
       "\n");
@@ -221,8 +230,8 @@ TEST_F(MapTest, nested_expr_map) {
 TEST_F(MapTest, wrong_df_name) {
   std::string wrong_df = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
-          "wrong = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+          "wrong = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = wrong['cpu0'] + wrong['cpu1'] + wrong['cpu2']",
       },
       "\n");
@@ -236,7 +245,7 @@ TEST_F(MapTest, wrong_df_name) {
 TEST_F(MapTest, missing_df) {
   std::string wrong_df = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = dne['cpu0'] + dne['cpu1'] + dne['cpu2']",
       },
       "\n");
@@ -252,19 +261,19 @@ TEST_F(AggTest, single_col_agg) {
   std::string single_col_agg = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu0', "
-          "'cpu1']).range(start=0,stop=10)",
+          "'cpu1'], start_time=0, end_time=10)",
           "rangeDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', pl.count))",
       },
       "\n");
   EXPECT_OK(CompileGraph(single_col_agg));
   std::string multi_output_col_agg = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "rangeDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', pl.count), cpu_mean=('cpu1', "
        "pl.mean))"},
       "\n");
   EXPECT_OK(CompileGraph(multi_output_col_agg));
   std::string multi_input_col_agg = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "rangeDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', pl.count), cpu2_mean=('cpu2', "
        "pl.mean))"},
       "\n");
@@ -274,7 +283,7 @@ TEST_F(AggTest, single_col_agg) {
 TEST_F(AggTest, not_allowed_agg_fn) {
   std::string single_col_bad_agg_fn = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'],start_time=0, end_time=10)",
           "rangeDF = queryDF.agg(outcol=('cpu0', 1+2))",
       },
       "\n");
@@ -283,7 +292,7 @@ TEST_F(AggTest, not_allowed_agg_fn) {
   EXPECT_THAT(status.status(), HasCompilerError("Unexpected aggregate function"));
   std::string single_col_dict_by_not_pl = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "rangeDF = queryDF.agg(by=lambda r : r.cpu0, fn=notpl.count)",
       },
       "\n");
@@ -296,7 +305,7 @@ TEST_F(AggTest, not_allowed_agg_fn) {
 using ResultTest = ASTVisitorTest;
 TEST_F(ResultTest, basic) {
   std::string single_col_map_sub = absl::StrJoin(
-      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+      {"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "queryDF['sub'] = queryDF['cpu0'] - queryDF['cpu1']",
        "result = queryDF[['sub']].result(name='mapped')"},
       "\n");
@@ -329,15 +338,16 @@ TEST_F(OptionalArgs, map_copy_relation) {
 using RangeValueTests = ASTVisitorTest;
 TEST_F(RangeValueTests, time_range_compilation) {
   // now doesn't accept args.
-  std::string stop_expr = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                         "'cpu1']).range(start=0,stop=plc.now()-plc.seconds(2))",
-                                         "queryDF.result(name='mapped')"},
-                                        "\n");
+  std::string stop_expr =
+      absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
+                     "'cpu1'], start_time=0, end_time=plc.now()-plc.seconds(2))",
+                     "queryDF.result(name='mapped')"},
+                    "\n");
   EXPECT_OK(CompileGraph(stop_expr));
 
   std::string start_and_stop_expr = absl::StrJoin(
       {"queryDF = dataframe(table='cpu', select=['cpu0', "
-       "'cpu1']).range(start=plc.now() - plc.minutes(2),stop=plc.now()-plc.seconds(2))",
+       "'cpu1'], start_time=plc.now() - plc.minutes(2), end_time=plc.now()-plc.seconds(2))",
        "queryDF.result(name='mapped')"},
       "\n");
   EXPECT_OK(CompileGraph(start_and_stop_expr));
@@ -345,17 +355,15 @@ TEST_F(RangeValueTests, time_range_compilation) {
 
 TEST_F(RangeValueTests, implied_stop_params) {
   std::string start_expr_only = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                               "'cpu1']).range(start=plc.now() - plc.minutes(2))",
+                                               "'cpu1'], start_time=plc.now() - plc.minutes(2))",
                                                "queryDF.result(name='mapped')"},
                                               "\n");
   EXPECT_OK(CompileGraph(start_expr_only));
 }
 
 TEST_F(RangeValueTests, string_start_param) {
-  // TODO(philkuz) make a paramtereized test that takes in a value for minutes and makes sure they
-  // all compile correctly.
   std::string start_expr_only = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                               "'cpu1']).range(start='-2m')",
+                                               "'cpu1'], start_time='-2m')",
                                                "queryDF.result(name='mapped')"},
                                               "\n");
   EXPECT_OK(CompileGraph(start_expr_only));
@@ -479,15 +487,14 @@ TEST_P(OpsAsAttributes, valid_attributes) {
   EXPECT_OK(ParseQuery(valid_query));
 }
 std::vector<std::string> operators{"groupby('bool_col').agg(count=('bool_col', pl.count))",
-                                   "limit(rows=1000)",
-                                   "range(start=plc.now() - plc.minutes(2), stop=plc.now())"};
+                                   "limit(rows=1000)"};
 
 INSTANTIATE_TEST_SUITE_P(OpsAsAttributesSuite, OpsAsAttributes, ::testing::ValuesIn(operators));
 
 TEST_F(AggTest, not_allowed_by_arguments) {
   std::string single_col_bad_by_fn_expr = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1']).range(start=0,stop=10)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "rangeDF = queryDF.groupby(1+2).agg(cpu_count=('cpu0', pl.count)).result(name='cpu2')",
       },
       "\n");
@@ -519,22 +526,6 @@ TEST_F(LambdaTest, duplicate_arguments) {
   EXPECT_NOT_OK(ir_graph_status);
   EXPECT_THAT(ir_graph_status.status(),
               HasCompilerError("Duplicate argument 'r' in lambda definition."));
-}
-
-using RangeTest = ASTVisitorTest;
-TEST_F(RangeTest, test_parent_is_memory_source) {
-  std::string add_combination = absl::StrJoin(
-      {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
-          "queryDF['foo'] = 2",
-          "queryDF.range(start=10, stop=12).result(name='cpu2')",
-      },
-      "\n");
-  auto ir_graph_status = CompileGraph(add_combination);
-  VLOG(1) << ir_graph_status.ToString();
-  EXPECT_NOT_OK(ir_graph_status);
-  EXPECT_THAT(ir_graph_status.status(),
-              HasCompilerError("Expected parent of Range to be a Memory Source, not a Map."));
 }
 
 const char* kInnerJoinQuery = R"query(
@@ -730,6 +721,54 @@ TEST_F(FilterTest, ChainedFilterWithNewMetadataQuery) {
 
   ASSERT_EQ(filter->Children().size(), 1);
   ASSERT_TRUE(Match(filter->Children()[0], MemorySink()));
+}
+
+TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
+  std::string query("dataframe('bar', start_time='-1m').result('ld')");
+  auto ir_graph_or_s = CompileGraph(query);
+  ASSERT_OK(ir_graph_or_s);
+  auto graph = ir_graph_or_s.ConsumeValueOrDie();
+  auto node_or_s = FindNodeType(graph, IRNodeType::kMemorySource);
+  ASSERT_OK(node_or_s);
+  auto node = node_or_s.ConsumeValueOrDie();
+
+  auto mem_src = static_cast<MemorySourceIR*>(node);
+  EXPECT_TRUE(mem_src->HasTimeExpressions());
+  EXPECT_TRUE(Match(mem_src->start_time_expr(), String()));
+  EXPECT_EQ(static_cast<StringIR*>(mem_src->start_time_expr())->str(), "-1m");
+  EXPECT_TRUE(Match(mem_src->end_time_expr(), Func()));
+  auto stop_time_func = static_cast<FuncIR*>(mem_src->end_time_expr());
+  EXPECT_EQ(stop_time_func->func_name(), "pl.now");
+}
+
+TEST_F(ASTVisitorTest, MemorySourceDefaultStartAndStop) {
+  std::string query("dataframe('bar').result('ld')");
+  auto ir_graph_or_s = CompileGraph(query);
+  ASSERT_OK(ir_graph_or_s);
+  auto graph = ir_graph_or_s.ConsumeValueOrDie();
+  auto node_or_s = FindNodeType(graph, IRNodeType::kMemorySource);
+  ASSERT_OK(node_or_s);
+  auto node = node_or_s.ConsumeValueOrDie();
+
+  auto mem_src = static_cast<MemorySourceIR*>(node);
+  EXPECT_FALSE(mem_src->HasTimeExpressions());
+}
+
+TEST_F(ASTVisitorTest, MemorySourceStartAndStop) {
+  std::string query("dataframe('bar', start_time=12, end_time=100).result('ld')");
+  auto ir_graph_or_s = CompileGraph(query);
+  ASSERT_OK(ir_graph_or_s);
+  auto graph = ir_graph_or_s.ConsumeValueOrDie();
+  auto node_or_s = FindNodeType(graph, IRNodeType::kMemorySource);
+  ASSERT_OK(node_or_s);
+  auto node = node_or_s.ConsumeValueOrDie();
+
+  auto mem_src = static_cast<MemorySourceIR*>(node);
+  EXPECT_TRUE(mem_src->HasTimeExpressions());
+  EXPECT_TRUE(Match(mem_src->start_time_expr(), Int()));
+  EXPECT_EQ(static_cast<IntIR*>(mem_src->start_time_expr())->val(), 12);
+  EXPECT_TRUE(Match(mem_src->end_time_expr(), Int()));
+  EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 100);
 }
 
 }  // namespace compiler

@@ -1,7 +1,7 @@
 queries = [
 ["HTTP Requests Statistics per Service",
 """
-t1 = dataframe(table='http_events').range(start='-30s')
+t1 = dataframe(table='http_events', start_time='-30s')
 
 t1['service'] = t1.attr['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
@@ -54,7 +54,7 @@ joined_table[joined_table['service'] != ''].result(name='out')
 # 
 # Returns the Resource Usage for each pod during an interval.
 # 
-t1 = dataframe(table='process_stats').range(start='-60s')
+t1 = dataframe(table='process_stats', start_time='-60s')
 
 # Convert to better units.
 t1['cpu_utime_s'] = t1['cpu_utime_ns'] / 1.0E9
@@ -130,7 +130,7 @@ keep_columns.result(name='out')
 # 
 # Returns the Total Resource Usage for each pod.
 # 
-t1 = dataframe(table='process_stats').range(start='-60s')
+t1 = dataframe(table='process_stats', start_time='-60s')
 
 # Convert to better units.
 t1['cpu_utime_s'] = t1['cpu_utime_ns'] / 1.0E9
@@ -187,20 +187,20 @@ keep_columns.result(name='out')
 """],
 ["Sample HTTP Data",
 """
-t1 = dataframe(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns']).range(start='-30s')
+t1 = dataframe(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns'], start_time='-30s')
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t2 = t1.drop(columns=['http_resp_latency_ns']).limit(rows=100).result(name='resp_table')
 """],
 ["Sample MySQL Data",
 """
-t1 = dataframe(table='mysql_events', select=['time_', 'remote_addr', 'remote_port', 'req_cmd', 'req_body', 'resp_status', 'resp_body', 'latency_ns']).range(start='-30s')
+t1 = dataframe(table='mysql_events', select=['time_', 'remote_addr', 'remote_port', 'req_cmd', 'req_body', 'resp_status', 'resp_body', 'latency_ns'], start_time='-30s')
 t1['latency_ms'] = t1['latency_ns'] / 1.0E6
 t2 = t1.drop(columns=['latency_ns']).limit(rows=100).result(name='resp_table')
 """],
 ["Network Stats",
 """
 t1 = dataframe(table='network_stats', select=['time_', 'pod_id', 'rx_bytes', 'rx_packets', 'rx_errors',
-                                         'rx_drops', 'tx_bytes', 'tx_packets', 'tx_errors', 'tx_drops']).range(start='-30s')
+                                         'rx_drops', 'tx_bytes', 'tx_packets', 'tx_errors', 'tx_drops'], start_time='-30s')
 t2 = t1.limit(rows=100).result(name='stats')
 """]
 ]

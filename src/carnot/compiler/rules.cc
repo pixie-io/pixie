@@ -576,16 +576,14 @@ StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalUnitTime(std::vector<ExpressionIR*
 }
 
 StatusOr<bool> RangeArgExpressionRule::Apply(IRNode* ir_node) {
-  if (Match(ir_node, Range(Int(), Int()))) {
-    // If Range matches this format, don't do any work.
-    return false;
-  } else if (Match(ir_node, Range())) {
-    RangeIR* range = static_cast<RangeIR*>(ir_node);
-    IRNode* start = range->start_repr();
-    IRNode* stop = range->stop_repr();
-    PL_ASSIGN_OR_RETURN(start, EvalExpression(start));
-    PL_ASSIGN_OR_RETURN(stop, EvalExpression(stop));
-    PL_RETURN_IF_ERROR(range->SetStartStop(start, stop));
+  if (Match(ir_node, MemorySource())) {
+    MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(ir_node);
+    if (mem_src->IsTimeSet() || !mem_src->HasTimeExpressions()) {
+      return false;
+    }
+    PL_ASSIGN_OR_RETURN(IntIR * start, EvalExpression(mem_src->start_time_expr()));
+    PL_ASSIGN_OR_RETURN(IntIR * stop, EvalExpression(mem_src->end_time_expr()));
+    mem_src->SetTimeValuesNS(start->val(), stop->val());
     return true;
   }
   return false;
@@ -989,48 +987,6 @@ Status MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_resolver
   // delete metadata_resolver
   PL_RETURN_IF_ERROR(graph->DeleteNode(md_resolver->id()));
   return Status::OK();
-}
-
-StatusOr<bool> MergeRangeOperatorRule::Apply(IRNode* ir_node) {
-  if (Match(ir_node, Range())) {
-    return MergeRange(static_cast<RangeIR*>(ir_node));
-  }
-  return false;
-}
-
-StatusOr<bool> MergeRangeOperatorRule::MergeRange(RangeIR* range_ir) {
-  IR* ir_graph = range_ir->graph_ptr();
-  DCHECK_EQ(range_ir->parents().size(), 1UL);
-  OperatorIR* range_parent = range_ir->parents()[0];
-
-  if (range_parent->type() != IRNodeType::kMemorySource) {
-    return range_parent->CreateIRNodeError("Expected range parent to be a MemorySource, not a $0.",
-                                           range_parent->type_string());
-  }
-
-  MemorySourceIR* src_ir = static_cast<MemorySourceIR*>(range_parent);
-  IntIR* start_time_ir = static_cast<IntIR*>(range_ir->start_repr());
-  IntIR* stop_time_ir = static_cast<IntIR*>(range_ir->stop_repr());
-
-  src_ir->SetTime(start_time_ir->val(), stop_time_ir->val());
-
-  DeferNodeDeletion(start_time_ir->id());
-  DeferNodeDeletion(stop_time_ir->id());
-
-  // Update all of range's dependencies to point to src.
-  for (const auto& dep_id : ir_graph->dag().DependenciesOf(range_ir->id())) {
-    auto dep = ir_graph->Get(dep_id);
-    if (!dep->IsOperator()) {
-      PL_RETURN_IF_ERROR(ir_graph->DeleteEdge(range_ir->id(), dep_id));
-      PL_RETURN_IF_ERROR(ir_graph->AddEdge(src_ir->id(), dep_id));
-      continue;
-    }
-    auto casted_node = static_cast<OperatorIR*>(dep);
-    PL_RETURN_IF_ERROR(casted_node->ReplaceParent(range_ir, src_ir));
-  }
-  PL_RETURN_IF_ERROR(range_ir->RemoveParent(src_ir));
-  DeferNodeDeletion(range_ir->id());
-  return true;
 }
 
 StatusOr<bool> DropToMapOperatorRule::Apply(IRNode* ir_node) {

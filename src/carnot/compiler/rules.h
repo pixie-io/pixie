@@ -303,21 +303,6 @@ class MetadataResolverConversionRule : public Rule {
   bool DoesMapOnlyCopy(MapIR* map) const;
 };
 
-class MergeRangeOperatorRule : public Rule {
-  /**
-   * @brief Takes a Range Operator and merges it with a MemorySource, removing the Range Operator
-   * from the plan tree.
-   */
- public:
-  explicit MergeRangeOperatorRule(CompilerState* compiler_state) : Rule(compiler_state) {}
-
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-
- private:
-  StatusOr<bool> MergeRange(RangeIR* range_ir);
-};
-
 class DropToMapOperatorRule : public Rule {
   /**
    * @brief Takes a DropIR and converts it to the corresponding Map IR.

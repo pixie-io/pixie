@@ -30,14 +30,13 @@ TEST(IRTypes, types_enum_test) {
 /**
  * Creates IR Graph that is the following query compiled
  *
- * `dataframe(table="tableName", select=["testCol"]).Range("-2m")`
+ * `dataframe(table="tableName", select=["testCol"], start_time"-2m")`
  */
 
-TEST(IRTest, check_connection) {
+TEST(IRTest, CreateSource) {
   auto ast = MakeTestAstPtr();
   auto ig = std::make_shared<IR>();
   auto src = ig->MakeNode<MemorySourceIR>(ast).ValueOrDie();
-  auto range = ig->MakeNode<RangeIR>(ast).ValueOrDie();
   auto start_rng_str = ig->MakeNode<IntIR>(ast).ValueOrDie();
   auto stop_rng_str = ig->MakeNode<IntIR>(ast).ValueOrDie();
 
@@ -46,15 +45,15 @@ TEST(IRTest, check_connection) {
   std::string table_str = "tableName";
 
   EXPECT_OK(src->Init(table_str, {"testCol"}));
+  src->SetTimeExpressions(start_rng_str, stop_rng_str);
 
-  EXPECT_OK(range->Init(src, start_rng_str, stop_rng_str));
-  EXPECT_EQ(range->parents()[0], src);
-  EXPECT_EQ(range->start_repr(), start_rng_str);
-  EXPECT_EQ(range->stop_repr(), stop_rng_str);
+  EXPECT_EQ(src->start_time_expr(), start_rng_str);
+  EXPECT_EQ(src->end_time_expr(), stop_rng_str);
 
   EXPECT_EQ(src->table_name(), table_str);
   EXPECT_THAT(src->column_names(), ElementsAre("testCol"));
 }
+
 const char* kExpectedMemSrcPb = R"(
   op_type: MEMORY_SOURCE_OPERATOR
   mem_source_op {
@@ -85,7 +84,7 @@ TEST(ToProto, memory_source_ir) {
       Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"})));
 
   mem_src->SetColumnIndexMap({0, 1});
-  mem_src->SetTime(10, 20);
+  mem_src->SetTimeValuesNS(10, 20);
 
   planpb::Operator pb;
   EXPECT_OK(mem_src->ToProto(&pb));
@@ -125,7 +124,7 @@ TEST(ToProto, memory_source_ir_with_tablet) {
       Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"})));
 
   mem_src->SetColumnIndexMap({0, 2});
-  mem_src->SetTime(10, 20);
+  mem_src->SetTimeValuesNS(10, 20);
 
   types::TabletID tablet_value = "abcd";
 
