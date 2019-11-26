@@ -1,11 +1,13 @@
 import './content.scss';
 
 import {vizierGQLClient} from 'common/vizier-gql-client';
+import {LineChart} from 'components/chart/line-chart';
 import {CodeEditor} from 'components/code-editor';
 import {EXECUTE_QUERY, ExecuteQueryResult} from 'gql-types';
 import * as React from 'react';
-import {Button} from 'react-bootstrap';
+import {Button, Nav, Tab} from 'react-bootstrap';
 import Split from 'react-split';
+import {AutoSizer} from 'react-virtualized';
 
 import {useMutation} from '@apollo/react-hooks';
 
@@ -53,7 +55,35 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
           }}
         />
         <div className='pixie-editor--result-viewer'>
-          {!!data ? <QueryResultViewer data={data.ExecuteQuery} /> : <div>No results</div>}
+          {!!data ? (
+            <Tab.Container defaultActiveKey='table' id='query-results-tabs'>
+              <Nav variant='pills'>
+                <Nav.Item>
+                  <Nav.Link eventKey='table'>RESULTS</Nav.Link>
+                </Nav.Item>
+                <Nav.Item>
+                  <Nav.Link eventKey='chart'>CHART</Nav.Link>
+                </Nav.Item>
+              </Nav>
+              <Tab.Content>
+                <Tab.Pane eventKey='table'>
+                  <QueryResultViewer data={data.ExecuteQuery} />
+                </Tab.Pane>
+                <Tab.Pane eventKey='chart' className='pixie-editor--tab-pane-chart'>
+                  <AutoSizer>
+                    {({ height, width }) => (
+                      <LineChart
+                        data={data.ExecuteQuery}
+                        height={height}
+                        width={width}
+                      />
+                    )}
+                  </AutoSizer>
+                </Tab.Pane>
+              </Tab.Content>
+            </Tab.Container>)
+            : <div>No results</div>
+          }
         </div>
       </Split >
     </div>

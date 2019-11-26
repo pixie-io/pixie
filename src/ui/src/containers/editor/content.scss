@@ -1,4 +1,26 @@
-.pixie-editor--result-viewer .query-results {
+.pixie-editor--result-viewer {
+  .query-results,
+  .query-results--compiler-error {
+    height: 100%;
+    flex: unset;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.pixie-editor--result-viewer {
+  display: flex;
+  flex-direction: column;
+}
+
+.pixie-editor--result-viewer .tab-content {
+  flex: 1;
+}
+
+.pixie-editor--result-viewer .tab-pane {
   height: 100%;
-  flex: unset;
+}
+
+.pixie-editor--result-viewer .pixie-editor--tab-pane-chart {
+  padding: 20px;
 }
