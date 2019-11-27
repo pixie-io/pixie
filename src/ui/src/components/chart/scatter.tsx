@@ -1,7 +1,7 @@
 import * as moment from 'moment';
 import * as numeral from 'numeral';
 import * as React from 'react';
-import {MarkSeries, XAxis, XYPlot, YAxis} from 'react-vis';
+import {Hint, MarkSeries, XAxis, XYPlot, YAxis} from 'react-vis';
 
 import {GQLQueryResult} from '../../../../vizier/services/api/controller/schema/schema';
 import {ChartProps} from './chart';
@@ -46,16 +46,35 @@ export function parseData(data: GQLQueryResult): Point[] {
   }
 }
 
+function formatHint(value: Point) {
+  const hints = [];
+  for (const key of Object.keys(value)) {
+    if (key === 'x') {
+      hints.push({ title: 'time', value: value[key].toLocaleString() });
+    } else {
+      hints.push({ title: key, value: value[key] });
+    }
+  }
+  return hints;
+}
+
 export const ScatterPlot: React.FC<ChartProps> = ({ data, height, width }) => {
   const series = parseData(data);
+  const [value, setValue] = React.useState(null);
+
   return (
     <XYPlot
       height={height}
       width={width}
+      onMouseLeave={() => setValue(null)}
     >
-      <MarkSeries data={series} />
-      <XAxis tickFormat={(value) => moment(value).format('hh:mm:ss')} />
-      <YAxis tickFormat={(value) => numeral(value).format('0.0a')} />
+      <MarkSeries
+        data={series}
+        onNearestXY={(val) => setValue(val)}
+      />
+      {!!value ? <Hint value={value} format={formatHint} /> : null}
+      <XAxis tickFormat={(val) => moment(val).format('hh:mm:ss')} />
+      <YAxis tickFormat={(val) => numeral(val).format('0.0a')} />
     </XYPlot>
   );
 };
