@@ -9,7 +9,8 @@ export function extractData(type: string, col): any[] {
     case 'TIME64NS':
       return col.time64nsData.data.map((d) => new Date(parseFloat(d) / 1000000));
     case 'INT64':
-      return col.int64Data.data.map((d) => BigInt(d));
+      // TODO(malthus): D3 doesn't handle bigints, figure out a better solution.
+      return col.int64Data.data.map((d) => Number(BigInt(d)));
     case 'FLOAT64':
       return col.float64Data.data.map((d) => parseFloat(d));
     case 'UINT128':

@@ -1,7 +1,7 @@
 import * as moment from 'moment';
 import * as numeral from 'numeral';
 import * as React from 'react';
-import {Hint, MarkSeries, XAxis, XYPlot, YAxis} from 'react-vis';
+import {Highlight, Hint, MarkSeries, XAxis, XYPlot, YAxis} from 'react-vis';
 
 import {GQLQueryResult} from '../../../../vizier/services/api/controller/schema/schema';
 import {ChartProps} from './chart';
@@ -61,20 +61,26 @@ function formatHint(value: Point) {
 export const ScatterPlot: React.FC<ChartProps> = ({ data, height, width }) => {
   const series = parseData(data);
   const [value, setValue] = React.useState(null);
+  const [brush, setBrush] = React.useState(null);
 
   return (
     <XYPlot
       height={height}
       width={width}
       onMouseLeave={() => setValue(null)}
+      xDomain={brush && [brush.left, brush.right]}
     >
       <MarkSeries
         data={series}
         onNearestXY={(val) => setValue(val)}
       />
       {!!value ? <Hint value={value} format={formatHint} /> : null}
+      <Highlight
+        enableY={false}
+        onBrushEnd={(br) => setBrush(br)}
+      />
       <XAxis tickFormat={(val) => moment(val).format('hh:mm:ss')} />
-      <YAxis tickFormat={(val) => numeral(val).format('0.0a')} />
+      <YAxis tickFormat={(val) => numeral(val).format('0a')} />
     </XYPlot>
   );
 };

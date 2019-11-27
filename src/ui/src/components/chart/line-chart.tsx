@@ -85,7 +85,7 @@ export const LineChart: React.FC<ChartProps> = ({ data, height, width }) => {
         ))
       }
       <XAxis tickFormat={(value) => moment(value).format('hh:mm:ss')} />
-      <YAxis tickFormat={(value) => numeral(value).format('0.0a')} />
+      <YAxis tickFormat={(value) => numeral(value).format('0a')} />
     </XYPlot>
   );
 };
