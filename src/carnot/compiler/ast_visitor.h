@@ -147,7 +147,7 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kRangeAggOpId[] = "range_agg";
   inline static constexpr char kSinkOpId[] = "result";
   inline static constexpr char kFilterOpId[] = "filter";
-  inline static constexpr char kLimitOpId[] = "limit";
+  inline static constexpr char kLimitOpId[] = "head";
   inline static constexpr char kJoinOpId[] = "merge";
 
   // Constant for the modules.

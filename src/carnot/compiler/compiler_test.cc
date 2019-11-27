@@ -991,7 +991,7 @@ nodes {
 
 TEST_F(CompilerTest, limit_test) {
   std::string query = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                     "'cpu1']).limit(rows=1000)",
+                                     "'cpu1']).head(n=1000)",
                                      "queryDF.result(name='out_table')"},
                                     "\n");
   auto plan_or_s = compiler_.Compile(query, compiler_state_.get());

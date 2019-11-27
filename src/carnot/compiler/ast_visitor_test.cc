@@ -424,34 +424,35 @@ TEST_F(FilterExprTest, basic) {
 using LimitTest = ASTVisitorTest;
 TEST_F(LimitTest, basic) {
   std::string limit = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                     "'cpu1']).limit(rows=100)",
+                                     "'cpu1']).head(100)",
                                      "queryDF.result(name='limited')"},
                                     "\n");
   EXPECT_OK(CompileGraph(limit));
+
+  // No arg should work.
+  std::string no_arg = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
+                                      "'cpu1']).head()",
+                                      "queryDF.result(name='limited')"},
+                                     "\n");
+  EXPECT_OK(ParseQuery(no_arg));
 }
 
 TEST_F(LimitTest, limit_invalid_queries) {
-  std::string no_arg = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                      "'cpu1']).limit()",
-                                      "queryDF.result(name='limited')"},
-                                     "\n");
-  // No arg shouldn't work.
-  EXPECT_NOT_OK(CompileGraph(no_arg));
-
   std::string string_arg = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                          "'cpu1']).limit(rows='arg')",
+                                          "'cpu1']).head('arg')",
                                           "queryDF.result(name='limited')"},
                                          "\n");
   // String as an arg should not work.
   EXPECT_NOT_OK(CompileGraph(string_arg));
 
   std::string float_arg = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                                         "'cpu1']).limit(rows=1.2)",
+                                         "'cpu1']).head(1.2)",
                                          "queryDF.result(name='limited')"},
                                         "\n");
   // float as an arg should not work.
   EXPECT_NOT_OK(CompileGraph(float_arg));
 }
+
 using NegationTest = ASTVisitorTest;
 // TODO(philkuz) (PL-524) both of these changes require modifications to the actual parser.
 TEST_F(NegationTest, DISABLED_bang_negation) {
@@ -486,9 +487,9 @@ TEST_P(OpsAsAttributes, valid_attributes) {
   valid_query = absl::Substitute(valid_query, op_call);
   EXPECT_OK(ParseQuery(valid_query));
 }
-std::vector<std::string> operators{"groupby('bool_col').agg(count=('bool_col', pl.count))",
-                                   "limit(rows=1000)"};
 
+std::vector<std::string> operators{"groupby('bool_col').agg(count=('bool_col', pl.count))",
+                                   "head(n=1000)"};
 INSTANTIATE_TEST_SUITE_P(OpsAsAttributesSuite, OpsAsAttributes, ::testing::ValuesIn(operators));
 
 TEST_F(AggTest, not_allowed_by_arguments) {

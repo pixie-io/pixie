@@ -874,7 +874,7 @@ TEST_P(CarnotLimitTest, limit) {
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2'])",
-          "mapDF = queryDF.limit(rows=$0)",
+          "mapDF = queryDF.head(n=$0)",
           "mapDF.result(name='test_output')",
       },
       "\n");

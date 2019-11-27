@@ -521,7 +521,7 @@ TEST_F(LimitTest, CreateLimit) {
 
   int64_t limit_int_node_id = limit_value->id();
   ParsedArgs args;
-  args.AddArg("rows", limit_value);
+  args.AddArg("n", limit_value);
 
   auto status = LimitHandler::Eval(srcdf.get(), ast, args);
   ASSERT_OK(status);
@@ -543,11 +543,11 @@ TEST_F(LimitTest, LimitNonIntArgument) {
   auto limit_value = MakeString("1234");
 
   ParsedArgs args;
-  args.AddArg("rows", limit_value);
+  args.AddArg("n", limit_value);
 
   auto status = LimitHandler::Eval(srcdf.get(), ast, args);
   ASSERT_NOT_OK(status);
-  EXPECT_THAT(status.status(), HasCompilerError("'rows' must be an int"));
+  EXPECT_THAT(status.status(), HasCompilerError("'n' must be an int"));
 }
 
 TEST_F(DataframeTest, LimitCall) {
@@ -557,9 +557,9 @@ TEST_F(DataframeTest, LimitCall) {
   auto limit_value = MakeInt(1234);
 
   int64_t limit_int_node_id = limit_value->id();
-  ArgMap args{{{"rows", limit_value}}, {}};
+  ArgMap args{{{"n", limit_value}}, {}};
 
-  auto get_method_status = srcdf->GetMethod("limit");
+  auto get_method_status = srcdf->GetMethod("head");
   ASSERT_OK(get_method_status);
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
   auto status = func_obj->Call(args, ast, ast_visitor.get());

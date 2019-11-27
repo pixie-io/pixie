@@ -66,11 +66,11 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
 
   /**
    * # Equivalent to the python method method syntax:
-   * def limit(self, rows):
+   * def head(self, n=5):
    *     ...
    */
   std::shared_ptr<FuncObject> limitfn(new FuncObject(
-      kLimitOpId, {"rows"}, {}, /* has_variable_len_kwargs */ false,
+      kLimitOpId, {"n"}, {{"n", "5"}}, /* has_variable_len_kwargs */ false,
       std::bind(&LimitHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kLimitOpId, limitfn);
 
@@ -363,9 +363,9 @@ StatusOr<QLObjectPtr> OldFilterHandler::Eval(Dataframe* df, const pypa::AstPtr& 
 StatusOr<QLObjectPtr> LimitHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
                                          const ParsedArgs& args) {
   // TODO(philkuz) (PL-1161) Add support for compile time evaluation of Limit argument.
-  IRNode* rows_node = args.GetArg("rows");
+  IRNode* rows_node = args.GetArg("n");
   if (!Match(rows_node, Int())) {
-    return rows_node->CreateIRNodeError("'rows' must be an int");
+    return rows_node->CreateIRNodeError("'n' must be an int");
   }
   int64_t limit_value = static_cast<IntIR*>(rows_node)->val();
 

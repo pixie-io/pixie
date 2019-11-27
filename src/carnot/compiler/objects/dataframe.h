@@ -47,7 +47,7 @@ class Dataframe : public QLObject {
   inline static constexpr char kFilterOpId[] = "filter";
   inline static constexpr char kBlockingAggOpId[] = "agg";
   inline static constexpr char kRangeAggOpId[] = "range_agg";
-  inline static constexpr char kLimitOpId[] = "limit";
+  inline static constexpr char kLimitOpId[] = "head";
   inline static constexpr char kMergeOpId[] = "merge";
   inline static constexpr char kSinkOpId[] = "result";
   inline static constexpr char kGroupByOpId[] = "groupby";
