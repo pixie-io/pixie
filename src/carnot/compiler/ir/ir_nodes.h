@@ -1244,6 +1244,7 @@ class FilterIR : public OperatorIR {
   explicit FilterIR(int64_t id) : OperatorIR(id, IRNodeType::kFilter, true, false) {}
 
   ExpressionIR* filter_expr() const { return filter_expr_; }
+  Status SetFilterExpr(ExpressionIR* expr);
   Status ToProto(planpb::Operator*) const override;
 
   Status Init(OperatorIR* parent, ExpressionIR* expr);

@@ -52,10 +52,10 @@ class Analyzer : public RuleExecutor {
     intermediate_resolution_batch->AddRule<OperatorRelationRule>(compiler_state_);
   }
 
-  void CreateRangeArgExpressionBatch() {
+  void CreateOperatorCompileTimeExpressionRuleBatch() {
     RuleBatch* intermediate_resolution_batch =
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
-    intermediate_resolution_batch->AddRule<RangeArgExpressionRule>(compiler_state_);
+    intermediate_resolution_batch->AddRule<OperatorCompileTimeExpressionRule>(compiler_state_);
   }
 
   void CreateResolutionVerificationBatch() {
@@ -75,7 +75,7 @@ class Analyzer : public RuleExecutor {
     md_handler_ = MetadataHandler::Create();
     CreateSourceAndMetadataResolutionBatch();
     CreateVerifyUserDefinedColumnsBatch();
-    CreateRangeArgExpressionBatch();
+    CreateOperatorCompileTimeExpressionRuleBatch();
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();

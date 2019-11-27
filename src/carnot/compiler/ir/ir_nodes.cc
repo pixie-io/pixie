@@ -364,8 +364,15 @@ Status MapIR::ToProto(planpb::Operator* op) const {
 
 Status FilterIR::Init(OperatorIR* parent, ExpressionIR* expr) {
   PL_RETURN_IF_ERROR(AddParent(parent));
+  return SetFilterExpr(expr);
+}
+
+Status FilterIR::SetFilterExpr(ExpressionIR* expr) {
   filter_expr_ = expr;
-  return graph_ptr()->AddEdge(this, filter_expr_);
+  if (!graph_ptr()->HasEdge(this, filter_expr_)) {
+    return graph_ptr()->AddEdge(this, filter_expr_);
+  }
+  return Status::OK();
 }
 
 Status FilterIR::ToProto(planpb::Operator* op) const {

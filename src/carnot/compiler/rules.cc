@@ -575,24 +575,99 @@ StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalUnitTime(std::vector<ExpressionIR*
   return func_ir->graph_ptr()->CreateNode<IntIR>(func_ir->ast_node(), time_output.count());
 }
 
-StatusOr<bool> RangeArgExpressionRule::Apply(IRNode* ir_node) {
-  if (Match(ir_node, MemorySource())) {
-    MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(ir_node);
-    if (mem_src->IsTimeSet() || !mem_src->HasTimeExpressions()) {
-      return false;
-    }
-    PL_ASSIGN_OR_RETURN(IntIR * start, EvalExpression(mem_src->start_time_expr()));
-    PL_ASSIGN_OR_RETURN(IntIR * stop, EvalExpression(mem_src->end_time_expr()));
-    mem_src->SetTimeValuesNS(start->val(), stop->val());
-    return true;
+StatusOr<bool> OperatorCompileTimeExpressionRule::Apply(IRNode* ir_node) {
+  if (Match(ir_node, Map())) {
+    return EvalMap(static_cast<MapIR*>(ir_node));
+  } else if (Match(ir_node, Filter())) {
+    return EvalFilter(static_cast<FilterIR*>(ir_node));
+  } else if (Match(ir_node, MemorySource())) {
+    return EvalMemorySource(static_cast<MemorySourceIR*>(ir_node));
+  } else if (Match(ir_node, Limit())) {
+    // TODO(nserrino, philkuz): (PL-1161) Add support for compile time evaluation of Limit argument.
+    return false;
   }
   return false;
+}
+
+StatusOr<ExpressionIR*> OperatorCompileTimeExpressionRule::EvalCompileTimeSubExpressions(
+    ExpressionIR* expr) {
+  if (!Match(expr, ContainsCompileTimeFunc())) {
+    return expr;
+  }
+
+  if (Match(expr, CompileTimeFunc())) {
+    EvaluateCompileTimeExpr evaluator(compiler_state_);
+    PL_ASSIGN_OR_RETURN(auto evaled, evaluator.Evaluate(expr));
+    DeferNodeDeletion(expr->id());
+    return evaled;
+  }
+
+  auto func = static_cast<FuncIR*>(expr);
+  std::vector<ExpressionIR*> evaled_args;
+
+  for (size_t i = 0; i < func->args().size(); ++i) {
+    auto arg = func->args()[i];
+    if (!Match(arg, ContainsCompileTimeFunc())) {
+      continue;
+    }
+    PL_ASSIGN_OR_RETURN(auto evaled, EvalCompileTimeSubExpressions(arg));
+    DCHECK_NE(evaled, arg);
+    PL_RETURN_IF_ERROR(func->UpdateArg(i, evaled));
+  }
+
+  return func;
+}
+
+StatusOr<bool> OperatorCompileTimeExpressionRule::EvalMap(MapIR* ir_node) {
+  bool evaled = false;
+
+  ColExpressionVector exprs;
+  for (const auto& expr : ir_node->col_exprs()) {
+    if (!Match(expr.node, ContainsCompileTimeFunc())) {
+      exprs.push_back(expr);
+      continue;
+    }
+    evaled = true;
+    PL_ASSIGN_OR_RETURN(auto new_expr, EvalCompileTimeSubExpressions(expr.node));
+    exprs.emplace_back(expr.name, new_expr);
+  }
+  if (evaled) {
+    PL_RETURN_IF_ERROR(ir_node->SetColExprs(exprs));
+  }
+  return evaled;
+}
+
+StatusOr<bool> OperatorCompileTimeExpressionRule::EvalFilter(FilterIR* ir_node) {
+  if (!Match(ir_node->filter_expr(), ContainsCompileTimeFunc())) {
+    return false;
+  }
+  PL_ASSIGN_OR_RETURN(auto new_expr, EvalCompileTimeSubExpressions(ir_node->filter_expr()));
+  PL_RETURN_IF_ERROR(ir_node->SetFilterExpr(new_expr));
+  return true;
+}
+
+StatusOr<bool> OperatorCompileTimeExpressionRule::EvalMemorySource(MemorySourceIR* ir_node) {
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(ir_node);
+  if (mem_src->IsTimeSet() || !mem_src->HasTimeExpressions()) {
+    return false;
+  }
+
+  PL_ASSIGN_OR_RETURN(auto start_expr, EvalStringTimes(mem_src->start_time_expr()));
+  PL_ASSIGN_OR_RETURN(auto stop_expr, EvalStringTimes(mem_src->end_time_expr()));
+  PL_ASSIGN_OR_RETURN(auto start, EvalCompileTimeSubExpressions(start_expr));
+  PL_ASSIGN_OR_RETURN(auto stop, EvalCompileTimeSubExpressions(stop_expr));
+
+  DCHECK(Match(start, Int()));
+  DCHECK(Match(stop, Int()));
+
+  mem_src->SetTimeValuesNS(static_cast<IntIR*>(start)->val(), static_cast<IntIR*>(stop)->val());
+  return true;
 }
 
 // Support taking strings like "-2m" into a range
 // TODO(nserrino, philkuz) Generalize this so that it can work in other operators
 // without polluting our approach to types.
-StatusOr<ExpressionIR*> RangeArgExpressionRule::EvalStringTimes(ExpressionIR* node) {
+StatusOr<ExpressionIR*> OperatorCompileTimeExpressionRule::EvalStringTimes(ExpressionIR* node) {
   if (Match(node, String())) {
     auto str_node = static_cast<StringIR*>(node);
     PL_ASSIGN_OR_RETURN(int64_t int_val, StringToTimeInt(str_node->str()));
@@ -615,22 +690,6 @@ StatusOr<ExpressionIR*> RangeArgExpressionRule::EvalStringTimes(ExpressionIR* no
     return converted_func;
   }
   return node;
-}
-
-StatusOr<IntIR*> RangeArgExpressionRule::EvalExpression(IRNode* node) {
-  if (!node->IsExpression()) {
-    return node->CreateIRNodeError("Expected expression, not $0", node->type_string());
-  }
-  PL_ASSIGN_OR_RETURN(auto updated_node, EvalStringTimes(static_cast<ExpressionIR*>(node)));
-
-  EvaluateCompileTimeExpr evaluator(compiler_state_);
-  PL_ASSIGN_OR_RETURN(ExpressionIR * evaluated, evaluator.Evaluate(updated_node));
-
-  if (Match(evaluated, Int())) {
-    return static_cast<IntIR*>(evaluated);
-  }
-  return evaluated->CreateIRNodeError("Expected integer expression, not $0",
-                                      evaluated->type_string());
 }
 
 StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) {

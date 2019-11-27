@@ -184,26 +184,30 @@ class EvaluateCompileTimeExpr {
   CompilerState* compiler_state_;
 };
 
-class RangeArgExpressionRule : public Rule {
+class OperatorCompileTimeExpressionRule : public Rule {
   /**
-   * @brief CompilerExpressionRule handles the execution of compiler functions
-   * for things like Range operator arguments.
+   * @brief OperatorCompileTimeExpressionRule handles basic constant folding.
    *
    * ie
-   * df.Range(start = plc.now() - plc.minutes(2), end = plc.now())
-   * should be evaluated to the integer values.
-   * df.Range(start = 15191289803, end = 15191500000)
+   * df['foo'] = pl.not_compile_time(plc.now() - plc.minutes(2))
+   * should be evaluated to the following.
+   * df['foo'] = pl.not_compile_time(15191289803)
    *
    */
  public:
-  explicit RangeArgExpressionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit OperatorCompileTimeExpressionRule(CompilerState* compiler_state)
+      : Rule(compiler_state) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
+  StatusOr<bool> EvalMap(MapIR* expr);
+  StatusOr<bool> EvalFilter(FilterIR* expr);
+  StatusOr<bool> EvalMemorySource(MemorySourceIR* expr);
+  StatusOr<ExpressionIR*> EvalCompileTimeSubExpressions(ExpressionIR* expr);
 
   // Used to support taking strings like "-2m" into a range
   StatusOr<ExpressionIR*> EvalStringTimes(ExpressionIR* ir_node);
-  StatusOr<IntIR*> EvalExpression(IRNode* ir_node);
+  StatusOr<IntIR*> EvalExpression(IRNode* ir_node, bool convert_string_times);
 };
 
 class VerifyFilterExpressionRule : public Rule {

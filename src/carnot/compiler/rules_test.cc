@@ -896,16 +896,81 @@ class CompilerTimeExpressionTest : public RulesTest {
                          std::vector<ExpressionIR*>({constant1, constant2})));
     return func;
   }
+
   MemorySourceIR* mem_src;
 };
 
-TEST_F(CompilerTimeExpressionTest, one_argument_function) {
+TEST_F(CompilerTimeExpressionTest, map_nested) {
+  auto top_level = MakeConstantAddition(4, 6);
+  auto nested =
+      MakeFunc("non_compile", std::vector<ExpressionIR*>{MakeConstantAddition(5, 6), MakeInt(2)});
+  auto int_node = MakeInt(2);
+
+  ColExpressionVector exprs{{"top", top_level}, {"nested", nested}, {"int", int_node}};
+  auto map = graph->CreateNode<MapIR>(ast, mem_src, exprs).ValueOrDie();
+
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  auto col_exprs = map->col_exprs();
+  EXPECT_EQ(3, col_exprs.size());
+  EXPECT_EQ(IRNodeType::kInt, col_exprs[0].node->type());
+  EXPECT_EQ(IRNodeType::kFunc, col_exprs[1].node->type());
+  EXPECT_EQ(IRNodeType::kInt, col_exprs[2].node->type());
+
+  // arg 0
+  auto top_level_res = static_cast<IntIR*>(col_exprs[0].node);
+  EXPECT_EQ(10, top_level_res->val());
+
+  // arg 1
+  auto nested_res = static_cast<FuncIR*>(col_exprs[1].node);
+  EXPECT_EQ(2, nested_res->args().size());
+  EXPECT_EQ(IRNodeType::kInt, nested_res->args()[0]->type());
+  EXPECT_EQ(IRNodeType::kInt, nested_res->args()[1]->type());
+  EXPECT_EQ(11, static_cast<IntIR*>(nested_res->args()[0])->val());
+  EXPECT_EQ(2, static_cast<IntIR*>(nested_res->args()[1])->val());
+
+  // arg 2
+  EXPECT_EQ(2, static_cast<IntIR*>(col_exprs[2].node)->val());
+}
+
+TEST_F(CompilerTimeExpressionTest, filter_eval) {
+  auto col = MakeColumn("cpu0", /* parent_op_idx */ 0);
+  auto expr = MakeConstantAddition(5, 6);
+  auto filter_func = MakeEqualsFunc(col, expr);
+  auto filter = graph->CreateNode<FilterIR>(ast, mem_src, filter_func).ValueOrDie();
+
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(IRNodeType::kFunc, filter->filter_expr()->type());
+}
+
+TEST_F(CompilerTimeExpressionTest, filter_no_eval) {
+  auto col = MakeColumn("cpu0", /* parent_op_idx */ 0);
+  auto expr = MakeInt(5);
+  auto filter_func = graph
+                         ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equals"},
+                                              std::vector<ExpressionIR*>({col, expr}))
+                         .ValueOrDie();
+  ASSERT_OK(graph->CreateNode<FilterIR>(ast, mem_src, filter_func));
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+}
+
+TEST_F(CompilerTimeExpressionTest, mem_src_one_argument_function) {
   auto start = MakeConstantAddition(4, 6);
   auto stop = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init(13));
   mem_src->SetTimeExpressions(start, stop);
 
-  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
@@ -920,7 +985,7 @@ TEST_F(CompilerTimeExpressionTest, two_argument_function) {
   auto start = MakeConstantAddition(4, 6);
   auto stop = MakeConstantAddition(123, 321);
   mem_src->SetTimeExpressions(start, stop);
-  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
@@ -930,7 +995,7 @@ TEST_F(CompilerTimeExpressionTest, two_argument_function) {
   EXPECT_EQ(mem_src->time_stop_ns(), 444);
 }
 
-TEST_F(CompilerTimeExpressionTest, one_argument_string) {
+TEST_F(CompilerTimeExpressionTest, range_one_argument_string) {
   int64_t num_minutes_ago = 2;
   std::chrono::nanoseconds exp_time = std::chrono::minutes(num_minutes_ago);
   int64_t expected_time = time_now - exp_time.count();
@@ -943,7 +1008,7 @@ TEST_F(CompilerTimeExpressionTest, one_argument_string) {
   EXPECT_OK(start->Init(10));
 
   mem_src->SetTimeExpressions(start, stop);
-  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
@@ -971,7 +1036,7 @@ TEST_F(CompilerTimeExpressionTest, two_argument_string) {
   EXPECT_OK(stop->Init(stop_str_repr));
 
   mem_src->SetTimeExpressions(start, stop);
-  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
@@ -991,7 +1056,7 @@ TEST_F(CompilerTimeExpressionTest, nested_function) {
                        std::vector<ExpressionIR*>({MakeConstantAddition(123, 321), constant})));
 
   mem_src->SetTimeExpressions(start, stop);
-  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
@@ -1013,7 +1078,7 @@ TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
                        std::vector<ExpressionIR*>({constant1, constant2})));
 
   mem_src->SetTimeExpressions(start, stop);
-  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
@@ -1035,7 +1100,7 @@ TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
                        std::vector<ExpressionIR*>({constant1, constant2})));
 
   mem_src->SetTimeExpressions(start, stop);
-  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
@@ -1054,7 +1119,7 @@ TEST_F(CompilerTimeExpressionTest, already_completed) {
   mem_src->SetTimeExpressions(constant1, constant2);
   // The rule does this.
   mem_src->SetTimeValuesNS(24, 8);
-  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
