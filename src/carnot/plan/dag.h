@@ -45,7 +45,7 @@ class DAG {
   void ReplaceChildEdge(int64_t parent_node, int64_t old_child_node, int64_t new_child_node);
   void ReplaceParentEdge(int64_t child_node, int64_t old_parent_node, int64_t new_parent_node);
 
-  std::string DebugString();
+  std::string DebugString() const;
   void Debug();
 
   std::unordered_set<int64_t> Orphans();

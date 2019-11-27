@@ -292,11 +292,11 @@ vector<int64_t> DAG::TopologicalSort() const {
   return ordered;
 }
 
-std::string DAG::DebugString() {
+std::string DAG::DebugString() const {
   std::string debug_string;
   for (const auto& node : nodes_) {
-    debug_string +=
-        absl::Substitute("{$0} : [$1]\n", node, absl::StrJoin(forward_edges_by_node_[node], ", "));
+    debug_string += absl::Substitute("{$0} : [$1]\n", node,
+                                     absl::StrJoin(forward_edges_by_node_.at(node), ", "));
   }
   return debug_string;
 }
