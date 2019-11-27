@@ -163,7 +163,7 @@ class OperatorRelationRule : public Rule {
                              const std::string& left_column, const std::string& right_column) const;
 };
 
-class EvaluateCompileTimeExprRule : public Rule {
+class EvaluateCompileTimeExpr {
   /**
    * @brief Takes an ExpressionIR node and traverses it to evaluate certain expressions at compile
    * time.
@@ -171,23 +171,17 @@ class EvaluateCompileTimeExprRule : public Rule {
    */
 
  public:
-  explicit EvaluateCompileTimeExprRule(CompilerState* compiler_state) : Rule(compiler_state) {}
-  // This rule needs to expose a different method than most rules, because its callers need
-  // to be able to update their pointer to the new object returned by this rule.
-  // TODO(nserrino,philkuz) Refactor rules to be ID-based, not pointer-based, to improve
-  // composability with rules and make this exception unnecessary.
-  StatusOr<ExpressionIR*> Evaluate(ExpressionIR* ir_node) {
-    PL_ASSIGN_OR_RETURN(auto res, EvaluateExpr(ir_node));
-    PL_RETURN_IF_ERROR(EmptyDeleteQueue(ir_node->graph_ptr()));
-    return res;
-  }
+  explicit EvaluateCompileTimeExpr(CompilerState* compiler_state)
+      : compiler_state_(compiler_state) {}
 
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-  StatusOr<ExpressionIR*> EvaluateExpr(ExpressionIR* ir_node);
+  StatusOr<ExpressionIR*> Evaluate(ExpressionIR* ir_node);
+
+ private:
   StatusOr<IntIR*> EvalArithmetic(std::vector<ExpressionIR*> args, FuncIR* ir_node);
   StatusOr<IntIR*> EvalTimeNow(std::vector<ExpressionIR*> args, FuncIR* ir_node);
   StatusOr<IntIR*> EvalUnitTime(std::vector<ExpressionIR*> evaled_args, FuncIR* ir_node);
+
+  CompilerState* compiler_state_;
 };
 
 class RangeArgExpressionRule : public Rule {

@@ -1923,8 +1923,8 @@ TEST_F(RulesTest, eval_compile_time_test) {
   EXPECT_OK(hours_func->Init({FuncIR::Opcode::non_op, "", "hours"},
                              std::vector<ExpressionIR*>({mult_func})));
 
-  EvaluateCompileTimeExprRule rule(compiler_state_.get());
-  auto evaluted = rule.Evaluate(hours_func).ValueOrDie();
+  EvaluateCompileTimeExpr evaluator(compiler_state_.get());
+  auto evaluted = evaluator.Evaluate(hours_func).ValueOrDie();
   EXPECT_EQ(IRNodeType::kInt, evaluted->type());
   auto casted_int = static_cast<IntIR*>(evaluted);
   std::chrono::nanoseconds time_output = 190 * std::chrono::hours(1);
@@ -1947,8 +1947,8 @@ TEST_F(RulesTest, eval_partial_compile_time_test) {
   EXPECT_OK(not_hours_func->Init({FuncIR::Opcode::non_op, "", "not_hours"},
                                  std::vector<ExpressionIR*>({mult_func})));
 
-  EvaluateCompileTimeExprRule rule(compiler_state_.get());
-  auto evaluted = rule.Evaluate(not_hours_func).ValueOrDie();
+  EvaluateCompileTimeExpr evaluator(compiler_state_.get());
+  auto evaluted = evaluator.Evaluate(not_hours_func).ValueOrDie();
   EXPECT_EQ(IRNodeType::kFunc, evaluted->type());
   auto casted = static_cast<FuncIR*>(evaluted);
   EXPECT_EQ(1, casted->args().size());

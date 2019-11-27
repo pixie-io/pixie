@@ -471,15 +471,7 @@ StatusOr<bool> OperatorRelationRule::SetOther(OperatorIR* operator_ir) const {
   return true;
 }
 
-// EvaluateCompileTimeExprRule currently needs to be treated as a special case until we move to
-// ID-based rule application rather than pointer-based rule applications. It shouldn't be invoked
-// with Apply() until that happens, because the caller needs to be able to overwrite its input
-// with the result of Evaluate().
-StatusOr<bool> EvaluateCompileTimeExprRule::Apply(IRNode* ir_node) {
-  return ir_node->CreateIRNodeError("Unexpected invocation of EvaluateCompileTimeExprRule.");
-}
-
-StatusOr<ExpressionIR*> EvaluateCompileTimeExprRule::EvaluateExpr(ExpressionIR* ir_node) {
+StatusOr<ExpressionIR*> EvaluateCompileTimeExpr::Evaluate(ExpressionIR* ir_node) {
   if (!Match(ir_node, Func())) {
     return ir_node;
   }
@@ -488,11 +480,9 @@ StatusOr<ExpressionIR*> EvaluateCompileTimeExprRule::EvaluateExpr(ExpressionIR* 
 
   std::vector<ExpressionIR*> evaled_args;
   for (const auto& arg : func_ir->args()) {
-    PL_ASSIGN_OR_RETURN(auto new_arg, EvaluateExpr(arg));
+    PL_ASSIGN_OR_RETURN(auto new_arg, Evaluate(arg));
     evaled_args.push_back(new_arg);
   }
-
-  DeferNodeDeletion(func_ir->id());
 
   if (Match(func_ir, CompileTimeIntegerArithmetic())) {
     return EvalArithmetic(evaled_args, func_ir);
@@ -516,8 +506,8 @@ StatusOr<ExpressionIR*> EvaluateCompileTimeExprRule::EvaluateExpr(ExpressionIR* 
   return new_func;
 }
 
-StatusOr<IntIR*> EvaluateCompileTimeExprRule::EvalArithmetic(std::vector<ExpressionIR*> args,
-                                                             FuncIR* func_ir) {
+StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalArithmetic(std::vector<ExpressionIR*> args,
+                                                         FuncIR* func_ir) {
   if (args.size() != 2) {
     return func_ir->CreateIRNodeError("Expected 2 argument to $0 call, got $1.",
                                       func_ir->carnot_op_name(), args.size());
@@ -553,16 +543,16 @@ StatusOr<IntIR*> EvaluateCompileTimeExprRule::EvalArithmetic(std::vector<Express
   return func_ir->graph_ptr()->CreateNode<IntIR>(func_ir->ast_node(), result);
 }
 
-StatusOr<IntIR*> EvaluateCompileTimeExprRule::EvalTimeNow(std::vector<ExpressionIR*> args,
-                                                          FuncIR* func_ir) {
+StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalTimeNow(std::vector<ExpressionIR*> args,
+                                                      FuncIR* func_ir) {
   CHECK_EQ(args.size(), 0U) << "Received unexpected args for " << func_ir->carnot_op_name()
                             << " function";
   return func_ir->graph_ptr()->CreateNode<IntIR>(func_ir->ast_node(),
                                                  compiler_state_->time_now().val);
 }
 
-StatusOr<IntIR*> EvaluateCompileTimeExprRule::EvalUnitTime(std::vector<ExpressionIR*> args,
-                                                           FuncIR* func_ir) {
+StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalUnitTime(std::vector<ExpressionIR*> args,
+                                                       FuncIR* func_ir) {
   CHECK_EQ(args.size(), 1U) << "Expected exactly 1 arg for " << func_ir->carnot_op_name()
                             << " function";
   auto fn_type_iter = kUnitTimeFnStr.find(func_ir->carnot_op_name());
@@ -635,7 +625,7 @@ StatusOr<IntIR*> RangeArgExpressionRule::EvalExpression(IRNode* node) {
   }
   PL_ASSIGN_OR_RETURN(auto updated_node, EvalStringTimes(static_cast<ExpressionIR*>(node)));
 
-  EvaluateCompileTimeExprRule evaluator(compiler_state_);
+  EvaluateCompileTimeExpr evaluator(compiler_state_);
   PL_ASSIGN_OR_RETURN(ExpressionIR * evaluated, evaluator.Evaluate(updated_node));
 
   if (Match(evaluated, Int())) {
