@@ -1,6 +1,7 @@
+import './format-data.scss';
+
 import * as numeral from 'numeral';
 import * as React from 'react';
-import './format-data.scss';
 
 const JSON_INDENT_PX = 16;
 
@@ -74,7 +75,7 @@ export function JSONData(props) {
     return (
       <span className='formatted_data--json'>
         {'{ '}
-        {props.multiline ? <br/> : null}
+        {props.multiline ? <br /> : null}
         {
           Object.keys(data).map((key, idx) => {
             return (
@@ -82,10 +83,10 @@ export function JSONData(props) {
                 key={key + '-' + indentation}
                 style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
               >
-                <span className='formatted_data--json-key'>{key + ': ' }</span>
-                <JSONData  data={data[key]} multiline={props.multiline} indentation={indentation + 1}/>
-                { idx !== Object.keys(data).length - 1 ? ', ' : ''}
-                {props.multiline ? <br/> : null}
+                <span className='formatted_data--json-key'>{key + ': '}</span>
+                <JSONData data={data[key]} multiline={props.multiline} indentation={indentation + 1} />
+                {idx !== Object.keys(data).length - 1 ? ', ' : ''}
+                {props.multiline ? <br /> : null}
               </span>
             );
           })
@@ -110,4 +111,27 @@ export function LatencyData(data: string) {
 
 export function AlertData(data: string) {
   return <div className={'formatted_data--alert-' + data}>{data}</div>;
+}
+
+// Converts UInt128 to UUID formatted string.
+export function formatUInt128(high: string, low: string): string {
+  // TODO(zasgar/michelle): Revisit this to check and make sure endianness is correct.
+  // Each segment of the UUID is a hex value of 16 nibbles.
+  // Note: BigInt support only available in Chrome > 67, FF > 68.
+  const hexStrHigh = BigInt(high).toString(16).padStart(16, '0');
+  const hexStrLow = BigInt(low).toString(16).padStart(16, '0');
+
+  // Sample UUID: 123e4567-e89b-12d3-a456-426655440000.
+  // Format is 8-4-4-4-12.
+  let uuidStr = '';
+  uuidStr += hexStrHigh.substr(0, 8);
+  uuidStr += '-';
+  uuidStr += hexStrHigh.substr(8, 4);
+  uuidStr += '-';
+  uuidStr += hexStrHigh.substr(12, 4);
+  uuidStr += '-';
+  uuidStr += hexStrLow.substr(0, 4);
+  uuidStr += '-';
+  uuidStr += hexStrLow.substr(4);
+  return uuidStr;
 }

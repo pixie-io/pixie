@@ -2,6 +2,7 @@ import './content.scss';
 
 import {vizierGQLClient} from 'common/vizier-gql-client';
 import {LineChart} from 'components/chart/line-chart';
+import {ScatterPlot} from 'components/chart/scatter';
 import {CodeEditor} from 'components/code-editor';
 import {EXECUTE_QUERY, ExecuteQueryResult} from 'gql-types';
 import * as React from 'react';
@@ -62,12 +63,26 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
                   <Nav.Link eventKey='table'>RESULTS</Nav.Link>
                 </Nav.Item>
                 <Nav.Item>
+                  <Nav.Link eventKey='plot'>PLOT</Nav.Link>
+                </Nav.Item>
+                <Nav.Item>
                   <Nav.Link eventKey='chart'>CHART</Nav.Link>
                 </Nav.Item>
               </Nav>
               <Tab.Content>
                 <Tab.Pane eventKey='table'>
                   <QueryResultViewer data={data.ExecuteQuery} />
+                </Tab.Pane>
+                <Tab.Pane eventKey='plot' className='pixie-editor--tab-pane-chart'>
+                  <AutoSizer>
+                    {({ height, width }) => (
+                      <ScatterPlot
+                        data={data.ExecuteQuery}
+                        height={height}
+                        width={width}
+                      />
+                    )}
+                  </AutoSizer>
                 </Tab.Pane>
                 <Tab.Pane eventKey='chart' className='pixie-editor--tab-pane-chart'>
                   <AutoSizer>

@@ -1,48 +1,27 @@
 import * as moment from 'moment';
 import * as numeral from 'numeral';
 import * as React from 'react';
-import {HorizontalGridLines, LineSeries, XAxis, XYPlot, YAxis} from 'react-vis';
+import {LineSeries, XAxis, XYPlot, YAxis} from 'react-vis';
 
 import {GQLQueryResult} from '../../../../vizier/services/api/controller/schema/schema';
-
-interface LineChartProps {
-  data: GQLQueryResult;
-  height: number;
-  width: number;
-}
+import {ChartProps} from './chart';
+import {extractData} from './data';
 
 interface Point {
   x: number | Date;
   y: number | bigint;
 }
 
-interface LineSeriesData {
+interface LineSeries {
   name: string;
   data: Point[];
 }
 
-// Formats int64 data, the input type is a string because JS does not
-// natively support 64-bit data.
-function formatInt64Data(val: string): string {
-  return numeral(val).format('0,0');
-}
-
-function extractData(type: string, col): any[] {
-  switch (type) {
-    case 'TIME64NS':
-      return col.time64nsData.data.map((d) => new Date(parseFloat(d) / 1000000));
-    case 'INT64':
-      return col.int64Data.data.map((d) => BigInt(d));
-    case 'FLOAT64':
-      return col.float64Data.data.map((d) => parseFloat(d));
-    default:
-      throw (new Error('Unknown data type: ' + type));
-  }
-}
+const COLORS = ['red', 'yellow', 'blue'];
 
 const SUPPORTED_TYPES = new Set(['INT64', 'FLOAT64', 'TIME64NS']);
 
-function parseData(data: GQLQueryResult): LineSeriesData[] {
+export function parseData(data: GQLQueryResult): LineSeries[] {
   try {
     let timeColName = '';
     const relation = data.table.relation;
@@ -89,9 +68,7 @@ function parseData(data: GQLQueryResult): LineSeriesData[] {
   }
 }
 
-const COLORS = ['red', 'yellow', 'blue'];
-
-export const LineChart: React.FC<LineChartProps> = ({ data, height, width }) => {
+export const LineChart: React.FC<ChartProps> = ({ data, height, width }) => {
   const lines = parseData(data);
   return (
     <XYPlot

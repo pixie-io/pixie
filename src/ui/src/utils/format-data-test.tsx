@@ -148,3 +148,9 @@ describe('formatFloat64Data test', () => {
     expect(FormatData.formatFloat64Data(123.456789101)).toEqual('123.46');
   });
 });
+
+describe('formatUint128 test', () => {
+  it('should format to an uuid string', () => {
+    expect(FormatData.formatUInt128('77311094061', '34858981')).toEqual('00000012-0019-ad2d-0000-00000213e7e5');
+  });
+});
