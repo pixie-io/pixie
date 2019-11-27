@@ -77,6 +77,54 @@ TEST_F(PatternMatchTest, compile_time_func_test) {
   EXPECT_FALSE(Match(add_func_no_args, CompileTimeFunc()));
 }
 
+TEST_F(PatternMatchTest, contains_compile_time_func_test) {
+  auto c1 = graph->MakeNode<IntIR>(ast).ValueOrDie();
+  EXPECT_OK(c1->Init(10));
+  auto c2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
+  EXPECT_OK(c2->Init(9));
+  auto col1 = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
+  EXPECT_OK(col1->Init("z", /* parent_op_idx */ 0));
+
+  // 10 + 9 -> true
+  auto ct_add = graph
+                    ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("+")->second,
+                                         std::vector<ExpressionIR*>({c1, c2}))
+                    .ConsumeValueOrDie();
+  EXPECT_TRUE(Match(ct_add, ContainsCompileTimeFunc()));
+
+  // pl.not_compile_time(10 + 9) -> true
+  auto rt_func =
+      graph
+          ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "not_compile_time"},
+                               std::vector<ExpressionIR*>({ct_add}))
+          .ConsumeValueOrDie();
+  EXPECT_TRUE(Match(rt_func, ContainsCompileTimeFunc()));
+
+  // 10 + t1['foo'] -> false
+  auto rt_add = graph
+                    ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("+")->second,
+                                         std::vector<ExpressionIR*>({c1, col1}))
+                    .ConsumeValueOrDie();
+  EXPECT_FALSE(Match(rt_add, ContainsCompileTimeFunc()));
+
+  // pl.not_compile_time(10) + pl.not_compile_time(9) -> false
+  auto rt_func_1 =
+      graph
+          ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "not_compile_time"},
+                               std::vector<ExpressionIR*>({c1}))
+          .ConsumeValueOrDie();
+  auto rt_func_2 =
+      graph
+          ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "not_compile_time"},
+                               std::vector<ExpressionIR*>({c1}))
+          .ConsumeValueOrDie();
+  auto rt_add_2 = graph
+                      ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("+")->second,
+                                           std::vector<ExpressionIR*>({rt_func_1, rt_func_2}))
+                      .ConsumeValueOrDie();
+  EXPECT_FALSE(Match(rt_add_2, ContainsCompileTimeFunc()));
+}
+
 // This bin op test makes sure that non_op doesn't throw errors
 // while pattern matching
 TEST_F(PatternMatchTest, arbitrary_bin_op_test) {

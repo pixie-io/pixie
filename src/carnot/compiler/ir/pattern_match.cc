@@ -62,6 +62,21 @@ bool CompileTimeUnitTime::Match(const IRNode* node) const {
   return Int().Match(arg) || CompileTimeIntegerArithmetic().Match(arg);
 }
 
+bool ContainsCompileTimeFunc::Match(const IRNode* node) const {
+  if (!Func().Match(node)) {
+    return false;
+  }
+  if (CompileTimeFunc().Match(node)) {
+    return true;
+  }
+  for (const auto& arg : static_cast<const FuncIR*>(node)->args()) {
+    if (Match(arg)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

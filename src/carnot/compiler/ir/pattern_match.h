@@ -475,6 +475,14 @@ inline CompileTimeFuncMatch<true> CompileTimeFunc() { return CompileTimeFuncMatc
 inline CompileTimeFuncMatch<false> RunTimeFunc() { return CompileTimeFuncMatch<false>(); }
 
 /**
+ * @brief Match any function that contains a compile time function inside.
+ */
+struct ContainsCompileTimeFunc : public ParentMatch {
+  ContainsCompileTimeFunc() : ParentMatch(IRNodeType::kFunc) {}
+  bool Match(const IRNode* node) const override;
+};
+
+/**
  * @brief Match any function with arguments that satisfy argMatcher and matches the specified
  * Resolution and CompileTime values.
  *
