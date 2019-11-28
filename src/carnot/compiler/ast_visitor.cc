@@ -79,7 +79,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataframeOp(const pypa::AstPtr& ast
         args.default_subbed_args().contains("end_time"))) {
     ExpressionIR* start_time_expr = static_cast<ExpressionIR*>(start_time);
     ExpressionIR* end_time_expr = static_cast<ExpressionIR*>(end_time);
-    mem_source_op->SetTimeExpressions(start_time_expr, end_time_expr);
+    PL_RETURN_IF_ERROR(mem_source_op->SetTimeExpressions(start_time_expr, end_time_expr));
   }
 
   return StatusOr(std::make_shared<Dataframe>(mem_source_op));

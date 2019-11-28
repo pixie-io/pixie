@@ -161,14 +161,14 @@ distributedpb::DistributedState LoadDistributedStatePb(const std::string& distri
   return distributed_state_pb;
 }
 
-table_store::schemapb::Schema LoadSchemaPb(const std::string& schema_str) {
+table_store::schemapb::Schema LoadSchemaPb(std::string_view schema_str) {
   table_store::schemapb::Schema schema_pb;
-  CHECK(google::protobuf::TextFormat::MergeFromString(schema_str, &schema_pb));
+  CHECK(google::protobuf::TextFormat::MergeFromString(schema_str.data(), &schema_pb));
   return schema_pb;
 }
 
 distributedpb::LogicalPlannerState LoadLogicalPlannerStatePB(
-    const std::string& distributed_state_str, const std::string& schema_str) {
+    const std::string& distributed_state_str, std::string_view schema_str) {
   distributedpb::LogicalPlannerState logical_planner_state_pb;
   *(logical_planner_state_pb.mutable_distributed_state()) =
       LoadDistributedStatePb(distributed_state_str);
@@ -206,7 +206,7 @@ std::string MakeDistributedState(const std::vector<std::string>& carnot_info_str
   return absl::StrJoin(carnot_info_proto_strs, "\n");
 }
 
-distributedpb::LogicalPlannerState CreateTwoAgentsPlannerState() {
+distributedpb::LogicalPlannerState CreateTwoAgentsPlannerState(std::string_view schema) {
   distributedpb::LogicalPlannerState plan;
   std::string table_name = "table1";
   std::string tabletization_key = "upid";
@@ -215,7 +215,11 @@ distributedpb::LogicalPlannerState CreateTwoAgentsPlannerState() {
   std::string distributed_state_proto = MakeDistributedState(
       {MakeAgentCarnotInfo("agent1", {table_info1}), MakeAgentCarnotInfo("agent2", {table_info2})});
 
-  return LoadLogicalPlannerStatePB(distributed_state_proto, kSchema);
+  return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
+}
+
+distributedpb::LogicalPlannerState CreateTwoAgentsPlannerState() {
+  return CreateTwoAgentsPlannerState(kSchema);
 }
 
 distributedpb::LogicalPlannerState CreateOneAgentOneKelvinPlannerState() {

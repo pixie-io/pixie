@@ -45,7 +45,7 @@ TEST(IRTest, CreateSource) {
   std::string table_str = "tableName";
 
   EXPECT_OK(src->Init(table_str, {"testCol"}));
-  src->SetTimeExpressions(start_rng_str, stop_rng_str);
+  EXPECT_OK(src->SetTimeExpressions(start_rng_str, stop_rng_str));
 
   EXPECT_EQ(src->start_time_expr(), start_rng_str);
   EXPECT_EQ(src->end_time_expr(), stop_rng_str);

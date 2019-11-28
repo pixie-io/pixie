@@ -147,6 +147,64 @@ TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
   EXPECT_OK(plan_or_s);
 }
 
+const char* kCompileTimeQuery = R"pxl(
+t1 = dataframe(table='http_events', start_time='-120s')
+
+t1['service'] = t1.attr['service']
+t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
+t1['failure'] = t1['http_resp_status'] >= 400
+t1['range_group'] = t1['time_'] - pl.modulo(t1['time_'], 2000000000)
+t1['s'] = pl.bin(t1['time_'],pl.seconds(3))
+
+quantiles_agg = t1.groupby('service').agg(
+  latency_quantiles=('http_resp_latency_ms', pl.quantiles),
+  errors=('failure', pl.mean),
+  throughput_total=('http_resp_status', pl.count),
+)
+
+quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p50')
+quantiles_agg['latency_p90'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
+quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
+quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
+
+# The Range aggregate to calcualte the requests per second.
+range_agg = t1.groupby(['service', 'range_group']).agg(
+  requests_per_window=('http_resp_status', pl.count),
+)
+
+rps_table = range_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
+
+joined_table = quantiles_table.merge(rps_table,
+                                     how='inner',
+                                     left_on=['service'],
+                                     right_on=['service'],
+                                     suffixes=['', '_x'])
+
+joined_table['latency(p50)'] = joined_table['latency_p50']
+joined_table['latency(p90)'] = joined_table['latency_p90']
+joined_table['latency(p99)'] = joined_table['latency_p99']
+joined_table['throughput (rps)'] = joined_table['rps']
+joined_table['throughput total'] = joined_table['throughput_total']
+
+joined_table = joined_table[[
+  'service',
+  'latency(p50)',
+  'latency(p90)',
+  'latency(p99)',
+  'errors',
+  'throughput (rps)',
+  'throughput total']]
+joined_table['asid'] = pl.asid()
+joined_table[joined_table['service'] != '' and pl.asid() == 3870].result(name='out')
+)pxl";
+
+TEST_F(LogicalPlannerTest, duplicate_int) {
+  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto plan_or_s = planner->Plan(distributedpb::testutils::CreateTwoAgentsPlannerState(
+                                     distributedpb::testutils::kHttpEventsSchema),
+                                 kCompileTimeQuery);
+  EXPECT_OK(plan_or_s);
+}
 }  // namespace logical_planner
 }  // namespace compiler
 }  // namespace carnot

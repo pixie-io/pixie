@@ -33,6 +33,9 @@ Status IR::DeleteEdge(int64_t from_node, int64_t to_node) {
   dag_.DeleteEdge(from_node, to_node);
   return Status::OK();
 }
+Status IR::DeleteEdge(IRNode* from_node, IRNode* to_node) {
+  return DeleteEdge(from_node->id(), to_node->id());
+}
 
 Status IR::DeleteNode(int64_t node) {
   if (!dag_.HasNode(node)) {
@@ -246,6 +249,10 @@ Status MapIR::SetupMapExpressions(LambdaIR* map_func) {
 }
 
 Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
+  for (const ColumnExpression& mapped_expression : col_exprs_) {
+    ExpressionIR* expr = mapped_expression.node;
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, expr));
+  }
   col_exprs_ = exprs;
   for (const ColumnExpression& mapped_expression : col_exprs_) {
     ExpressionIR* expr = mapped_expression.node;

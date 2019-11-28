@@ -968,7 +968,7 @@ TEST_F(CompilerTimeExpressionTest, mem_src_one_argument_function) {
   auto start = MakeConstantAddition(4, 6);
   auto stop = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init(13));
-  mem_src->SetTimeExpressions(start, stop);
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
 
   OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
@@ -984,7 +984,7 @@ TEST_F(CompilerTimeExpressionTest, mem_src_one_argument_function) {
 TEST_F(CompilerTimeExpressionTest, two_argument_function) {
   auto start = MakeConstantAddition(4, 6);
   auto stop = MakeConstantAddition(123, 321);
-  mem_src->SetTimeExpressions(start, stop);
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
   OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
@@ -1007,7 +1007,7 @@ TEST_F(CompilerTimeExpressionTest, range_one_argument_string) {
   auto start = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(start->Init(10));
 
-  mem_src->SetTimeExpressions(start, stop);
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
   OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
@@ -1035,7 +1035,7 @@ TEST_F(CompilerTimeExpressionTest, two_argument_string) {
   auto stop = graph->MakeNode<StringIR>(ast).ValueOrDie();
   EXPECT_OK(stop->Init(stop_str_repr));
 
-  mem_src->SetTimeExpressions(start, stop);
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
   OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
@@ -1055,7 +1055,7 @@ TEST_F(CompilerTimeExpressionTest, nested_function) {
   EXPECT_OK(stop->Init({FuncIR::Opcode::add, "+", "add"},
                        std::vector<ExpressionIR*>({MakeConstantAddition(123, 321), constant})));
 
-  mem_src->SetTimeExpressions(start, stop);
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
   OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
@@ -1077,7 +1077,7 @@ TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
   EXPECT_OK(stop->Init({FuncIR::Opcode::sub, "-", "subtract"},
                        std::vector<ExpressionIR*>({constant1, constant2})));
 
-  mem_src->SetTimeExpressions(start, stop);
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
   OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
@@ -1099,7 +1099,7 @@ TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
   EXPECT_OK(stop->Init({FuncIR::Opcode::mult, "*", "multiply"},
                        std::vector<ExpressionIR*>({constant1, constant2})));
 
-  mem_src->SetTimeExpressions(start, stop);
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
   OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
@@ -1116,7 +1116,7 @@ TEST_F(CompilerTimeExpressionTest, already_completed) {
   IntIR* constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
   EXPECT_OK(constant2->Init(8));
 
-  mem_src->SetTimeExpressions(constant1, constant2);
+  EXPECT_OK(mem_src->SetTimeExpressions(constant1, constant2));
   // The rule does this.
   mem_src->SetTimeValuesNS(24, 8);
   OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());

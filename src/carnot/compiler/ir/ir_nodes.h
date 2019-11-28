@@ -258,6 +258,7 @@ class IR {
   Status AddEdge(IRNode* from_node, IRNode* to_node);
   bool HasEdge(IRNode* from_node, IRNode* to_node);
   Status DeleteEdge(int64_t from_node, int64_t to_node);
+  Status DeleteEdge(IRNode* from_node, IRNode* to_node);
   Status DeleteNode(int64_t node);
   Status DeleteNodeAndChildren(int64_t node);
   plan::DAG& dag() { return dag_; }
@@ -839,7 +840,8 @@ class FuncIR : public ExpressionIR {
         << "Tried to update arg of index greater than number of args.";
     ExpressionIR* old_arg = args_[idx];
     args_[idx] = arg;
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(id(), old_arg->id()));
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_arg));
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, arg));
     return Status::OK();
   }
 
@@ -887,6 +889,10 @@ class IntIR : public DataIR {
   int64_t val() const { return val_; }
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
+  std::string DebugString() const override {
+    return absl::Substitute("$0, $1)", DataIR::DebugString(), val());
+  }
 
  private:
   int64_t val_;
@@ -988,10 +994,19 @@ class MemorySourceIR : public OperatorIR {
 
   std::string table_name() const { return table_name_; }
 
-  void SetTimeExpressions(ExpressionIR* start_time_expr, ExpressionIR* end_time_expr) {
+  Status SetTimeExpressions(ExpressionIR* start_time_expr, ExpressionIR* end_time_expr) {
+    if (start_time_expr_) {
+      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, start_time_expr_));
+    }
+    if (end_time_expr_) {
+      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, end_time_expr_));
+    }
     start_time_expr_ = start_time_expr;
     end_time_expr_ = end_time_expr;
     has_time_expressions_ = true;
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, start_time_expr));
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, end_time_expr));
+    return Status::OK();
   }
 
   // Sets the time expressions that eventually get converted
@@ -1037,8 +1052,8 @@ class MemorySourceIR : public OperatorIR {
   std::string table_name_;
 
   bool has_time_expressions_ = false;
-  ExpressionIR* start_time_expr_;
-  ExpressionIR* end_time_expr_;
+  ExpressionIR* start_time_expr_ = nullptr;
+  ExpressionIR* end_time_expr_ = nullptr;
 
   bool time_set_ = false;
   int64_t time_start_ns_;
