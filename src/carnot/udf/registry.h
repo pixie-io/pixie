@@ -114,8 +114,9 @@ class Registry : public BaseUDFRegistry {
 
     auto key = RegistryKey(name, udf_def->RegistryArgTypes());
     if (map_.find(key) != map_.end()) {
-      return error::AlreadyExists("The UDF with name \"$0\" already exists with same exec args.",
-                                  name);
+      return error::AlreadyExists(
+          "The UDF with name \"$0\" already exists with same exec args \"$1\".", name,
+          key.DebugString());
     }
     map_[key] = std::move(udf_def);
     return Status::OK();

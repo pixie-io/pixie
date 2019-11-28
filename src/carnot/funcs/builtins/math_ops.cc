@@ -17,6 +17,8 @@ void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
       "pl.add");
   registry->RegisterOrDie<AddUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
       "pl.add");
+  registry->RegisterOrDie<AddUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>(
+      "pl.add");
   // Subtraction
   registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
       "pl.subtract");

@@ -605,14 +605,12 @@ StatusOr<ExpressionIR*> OperatorCompileTimeExpressionRule::EvalCompileTimeSubExp
   auto func = static_cast<FuncIR*>(expr);
   std::vector<ExpressionIR*> evaled_args;
 
-  for (size_t i = 0; i < func->args().size(); ++i) {
-    auto arg = func->args()[i];
+  for (const auto& [idx, arg] : Enumerate(func->args())) {
     if (!Match(arg, ContainsCompileTimeFunc())) {
       continue;
     }
     PL_ASSIGN_OR_RETURN(auto evaled, EvalCompileTimeSubExpressions(arg));
-    DCHECK_NE(evaled, arg);
-    PL_RETURN_IF_ERROR(func->UpdateArg(i, evaled));
+    PL_RETURN_IF_ERROR(func->UpdateArg(idx, evaled));
   }
 
   return func;

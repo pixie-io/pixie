@@ -756,6 +756,43 @@ TEST_F(AnalyzerTest, drop_to_map_nonexistent_test) {
   EXPECT_THAT(analyzer_status,
               HasCompilerError("Column 'thiscoldoesnotexist' not found in parent dataframe"));
 }
+const char* kTwoWindowQuery = R"query(
+t1 = dataframe(table='http_events', start_time='-300s')
+t1['service'] = t1.attr['service']
+t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
+# edit this to increase/decrease window. Dont go lower than 1 second.
+t1['window1'] = pl.bin(t1['time_'], pl.seconds(10))
+t1['window2'] = pl.bin(t1['time_'] + pl.seconds(5), pl.seconds(10))
+# groupby 1sec intervals per window
+window1_agg = t1.groupby(['service', 'window1']).agg(
+  quantiles=('http_resp_latency_ms', pl.quantiles),
+)
+window1_agg['p50'] = pl.pluck(window1_agg['quantiles'], 'p50')
+window1_agg['p90'] = pl.pluck(window1_agg['quantiles'], 'p90')
+window1_agg['p99'] = pl.pluck(window1_agg['quantiles'], 'p99')
+window1_agg['time_'] = window1_agg['window1']
+# window1_agg = window1_agg.drop('window1')
+
+window2_agg = t1.groupby(['service', 'window2']).agg(
+  quantiles=('http_resp_latency_ms', pl.quantiles),
+)
+window2_agg['p50'] = pl.pluck(window2_agg['quantiles'], 'p50')
+window2_agg['p90'] = pl.pluck(window2_agg['quantiles'], 'p90')
+window2_agg['p99'] = pl.pluck(window2_agg['quantiles'], 'p99')
+window2_agg['time_'] = window2_agg['window2']
+# window2_agg = window2_agg.drop('window2')
+
+window2_agg[window2_agg['service'] != ''].result(name='dd')
+# union_quantiles = window1_agg.union(window2_agg)
+# union_quantiles[union_quantiles['service'] != ''].result(name='out')
+)query";
+TEST_F(AnalyzerTest, eval_compile_time_function) {
+  auto ir_graph_status = CompileGraph(kTwoWindowQuery);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_OK(analyzer_status);
+}
 
 }  // namespace compiler
 }  // namespace carnot

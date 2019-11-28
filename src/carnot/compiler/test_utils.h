@@ -51,6 +51,12 @@ scalar_udfs {
   return_type:  INT64
 }
 scalar_udfs {
+  name: "pl.add"
+  exec_arg_types: TIME64NS
+  exec_arg_types: INT64
+  return_type:  INT64
+}
+scalar_udfs {
   name: "pl.equal"
   exec_arg_types: STRING
   exec_arg_types: STRING
@@ -66,6 +72,12 @@ scalar_udfs {
   name: "pl.equal"
   exec_arg_types: INT64
   exec_arg_types: INT64
+  return_type: BOOLEAN
+}
+scalar_udfs {
+  name: "pl.notEqual"
+  exec_arg_types: STRING
+  exec_arg_types: STRING
   return_type: BOOLEAN
 }
 scalar_udfs {
@@ -101,6 +113,24 @@ scalar_udfs {
   exec_arg_types: STRING
   return_type: STRING
 }
+scalar_udfs {
+  name: "pl.bin"
+  exec_arg_types: TIME64NS
+  exec_arg_types: INT64
+  return_type: TIME64NS
+}
+scalar_udfs {
+  name: "pl.bin"
+  exec_arg_types: INT64
+  exec_arg_types: INT64
+  return_type: INT64
+}
+scalar_udfs {
+  name: "pl.pluck"
+  exec_arg_types: FLOAT64
+  exec_arg_types: STRING
+  return_type: FLOAT64
+}
 udas {
   name: "pl.count"
   update_arg_types: FLOAT64
@@ -128,6 +158,11 @@ udas {
 }
 udas {
   name: "pl.mean"
+  update_arg_types: FLOAT64
+  finalize_type:  FLOAT64
+}
+udas {
+  name: "pl.quantiles"
   update_arg_types: FLOAT64
   finalize_type:  FLOAT64
 }
@@ -631,6 +666,25 @@ class ASTVisitorTest : public ::testing::Test {
     network_relation.AddColumn(types::INT64, "bytes_out");
     network_relation.AddColumn(types::INT64, "agent_id");
     relation_map_->emplace("network", network_relation);
+
+    Relation http_events_relation;
+    http_events_relation.AddColumn(types::TIME64NS, "time_");
+    http_events_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
+    http_events_relation.AddColumn(types::STRING, "remote_addr");
+    http_events_relation.AddColumn(types::INT64, "remote_port");
+    http_events_relation.AddColumn(types::INT64, "http_major_version");
+    http_events_relation.AddColumn(types::INT64, "http_minor_version");
+    http_events_relation.AddColumn(types::INT64, "http_content_type");
+    http_events_relation.AddColumn(types::STRING, "http_req_headers");
+    http_events_relation.AddColumn(types::STRING, "http_req_method");
+    http_events_relation.AddColumn(types::STRING, "http_req_path");
+    http_events_relation.AddColumn(types::STRING, "http_req_body");
+    http_events_relation.AddColumn(types::STRING, "http_resp_headers");
+    http_events_relation.AddColumn(types::INT64, "http_resp_status");
+    http_events_relation.AddColumn(types::STRING, "http_resp_message");
+    http_events_relation.AddColumn(types::STRING, "http_resp_body");
+    http_events_relation.AddColumn(types::INT64, "http_resp_latency_ns");
+    relation_map_->emplace("http_events", http_events_relation);
 
     compiler_state_ =
         std::make_unique<CompilerState>(std::move(relation_map_), registry_info_.get(), time_now);
