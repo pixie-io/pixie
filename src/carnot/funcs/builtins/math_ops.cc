@@ -142,6 +142,7 @@ void RegisterMathOpsOrDie(udf::UDARegistry* registry) {
   // Sum
   registry->RegisterOrDie<SumUDA<types::Float64Value>>("pl.sum");
   registry->RegisterOrDie<SumUDA<types::Int64Value>>("pl.sum");
+  registry->RegisterOrDie<SumUDA<types::BoolValue>>("pl.sum");
   // Max
   registry->RegisterOrDie<MaxUDA<types::Float64Value>>("pl.max");
   registry->RegisterOrDie<MaxUDA<types::Int64Value>>("pl.max");
