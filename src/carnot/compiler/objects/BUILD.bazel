@@ -87,3 +87,12 @@ pl_cc_test(
         ":test_utils",
     ],
 )
+
+pl_cc_test(
+    name = "default_arguments_test",
+    srcs = ["default_arguments_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)

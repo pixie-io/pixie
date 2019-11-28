@@ -97,12 +97,7 @@ StatusOr<IRNode*> FuncObject::GetDefault(std::string_view arg, ASTVisitor* ast_v
   if (!defaults_.contains(arg)) {
     return error::InvalidArgument("");
   }
-  const std::string& arg_str = defaults_.find(arg)->second;
-  Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(arg_str));
-
-  // TODO(philkuz) remove compiler state argument as it is no longer in use.
-  return ast_visitor->ProcessSingleExpressionModule(ast);
+  return ast_visitor->ParseAndProcessSingleExpression(defaults_.find(arg)->second);
 }
 
 std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> args) {

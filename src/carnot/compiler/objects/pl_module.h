@@ -24,7 +24,6 @@ class PLModule : public QLObject {
 
   StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
                                                        const std::string& name) const override;
-  bool HasAttributeImpl(const std::string& name) const override;
 
  private:
   IR* graph_;

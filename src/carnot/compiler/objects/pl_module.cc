@@ -13,17 +13,21 @@ StatusOr<std::shared_ptr<PLModule>> PLModule::Create(IR* graph, CompilerState* c
   return module;
 }
 
-Status PLModule::Init() { return Status::OK(); }
+Status PLModule::Init() {
+  // TODO(philkuz) (PL-1189) remove this when the udf names no longer have the 'pl.' prefix.
+  for (const auto& name : compiler_state_->registry_info()->func_names()) {
+    attributes_.emplace(absl::StripPrefix(name, "pl."));
+  }
+  // TODO(philkuz) (PL-1189) enable this.
+  // attributes_ = compiler_state_->registry_info()->func_names()
 
-bool PLModule::HasAttributeImpl(const std::string& name) const {
-  std::string new_name = absl::Substitute("pl.$0", name);
-  return compiler_state_->registry_info()->func_names().contains(new_name);
+  return Status::OK();
 }
 
 StatusOr<QLObjectPtr> PLModule::GetAttributeImpl(const pypa::AstPtr& ast,
                                                  const std::string& name) const {
   // If this gets to this point, should fail here.
-  DCHECK(HasAttributeImpl(name));
+  DCHECK(HasNonMethodAttribute(name));
 
   PL_ASSIGN_OR_RETURN(FuncIR * func,
                       graph_->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", name},

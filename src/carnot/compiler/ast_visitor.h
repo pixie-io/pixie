@@ -130,6 +130,15 @@ class ASTVisitorImpl : public ASTVisitor {
    */
   StatusOr<IRNode*> ProcessSingleExpressionModule(const pypa::AstModulePtr& m) override;
 
+  /**
+   * @brief Parses and processes out a single expression in the form of an IRNode.
+   *
+   * @param str the input string
+   * @return StatusOr<IRNode*> the IR of the expression or an error if something fails during
+   * processing.
+   */
+  StatusOr<IRNode*> ParseAndProcessSingleExpression(std::string_view str) override;
+
   IR* ir_graph() const { return ir_graph_; }
 
   // Constants for the run-time (UDF) and compile-time fn prefixes.

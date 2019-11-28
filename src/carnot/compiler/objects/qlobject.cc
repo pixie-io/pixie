@@ -16,7 +16,7 @@ void QLObject::AddSubscriptMethod(std::shared_ptr<FuncObject> func_object) {
 
 StatusOr<std::shared_ptr<QLObject>> QLObject::GetAttribute(const pypa::AstPtr& ast,
                                                            const std::string& name) const {
-  if (HasAttributeImpl(name)) {
+  if (HasNonMethodAttribute(name)) {
     return GetAttributeImpl(ast, name);
   }
 

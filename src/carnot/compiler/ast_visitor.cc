@@ -140,6 +140,13 @@ StatusOr<IRNode*> ASTVisitorImpl::ProcessSingleExpressionModule(const pypa::AstM
     }
   }
 }
+StatusOr<IRNode*> ASTVisitorImpl::ParseAndProcessSingleExpression(
+    std::string_view single_expr_str) {
+  Parser parser;
+  // TODO(philkuz) switch over parser to std::string_view.
+  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(single_expr_str.data()));
+  return ProcessSingleExpressionModule(ast);
+}
 
 Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
   pypa::AstStmtList items_list = m->body->items;

@@ -137,6 +137,21 @@ TEST_F(PyFuncTest, DefaultArgsExecute) {
   EXPECT_EQ(test_obj->value(), 1234);
 }
 
+// This test is the unit to make sure we can get all of the defaults of any method for any object we
+// choose to test.
+TEST_F(PyFuncTest, TestDefaultArgsCanBeAccessed) {
+  std::shared_ptr<FuncObject> func_obj(
+      new FuncObject("func", {"simple"}, {{"simple", "1234"}}, /*has_kwargs*/ false,
+                     std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
+
+  ASSERT_TRUE(func_obj->defaults().contains("simple"));
+  auto default_str_repr = func_obj->defaults().find("simple")->second;
+  auto expr_or_s = ast_visitor->ParseAndProcessSingleExpression(default_str_repr);
+  ASSERT_OK(expr_or_s);
+  auto expr = expr_or_s.ConsumeValueOrDie();
+  EXPECT_TRUE(Match(expr, Int(1234)));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

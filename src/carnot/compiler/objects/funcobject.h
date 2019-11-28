@@ -103,6 +103,9 @@ class FuncObject : public QLObject {
 
   const std::vector<std::string>& arguments() const { return arguments_; }
 
+  // Exposing this publicly to enable testing of default arguments.
+  const absl::flat_hash_map<std::string, DefaultType>& defaults() const { return defaults_; }
+
  private:
   StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast,
                                    ASTVisitor* ast_visitor);

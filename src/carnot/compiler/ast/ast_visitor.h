@@ -42,6 +42,15 @@ class ASTVisitor {
    * operator fails.
    */
   virtual StatusOr<IRNode*> ProcessSingleExpressionModule(const pypa::AstModulePtr& m) = 0;
+
+  /**
+   * @brief Parses and processes out a single expression in the form of an IRNode.
+   *
+   * @param str the input string
+   * @return StatusOr<IRNode*> the IR of the expression or an error if something fails during
+   * processing.
+   */
+  virtual StatusOr<IRNode*> ParseAndProcessSingleExpression(std::string_view str) = 0;
 };
 
 }  // namespace compiler

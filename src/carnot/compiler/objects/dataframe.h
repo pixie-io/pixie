@@ -57,7 +57,6 @@ class Dataframe : public QLObject {
  protected:
   StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
                                                        const std::string& name) const override;
-  bool HasAttributeImpl(const std::string& name) const override;
 
  private:
   OperatorIR* op_;

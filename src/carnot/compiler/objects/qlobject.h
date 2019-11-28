@@ -98,8 +98,15 @@ class QLObject {
                                                    const std::string& name) const;
 
   bool HasAttribute(const std::string& name) const {
-    return HasAttributeImpl(name) || HasMethod(name);
+    return HasNonMethodAttribute(name) || HasMethod(name);
   }
+
+  /**
+   * @brief Returns the name of all attributes that are not methods.
+   *
+   * @return const absl::flat_hash_set<std::string>&  the set of all attributes.
+   */
+  const absl::flat_hash_set<std::string>& AllAttributes() const { return attributes_; }
 
   const TypeDescriptor& type_descriptor() { return type_descriptor_; }
   IRNode* node() const { return node_; }
@@ -128,6 +135,11 @@ class QLObject {
       return CreateAstError(ast_, args...);
     }
     return error::InvalidArgument(args...);
+  }
+
+  // Methods are all of the methods available. Exposed to make testing easier.
+  const absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>>& methods() const {
+    return methods_;
   }
 
  protected:
@@ -196,18 +208,14 @@ class QLObject {
     return error::Unimplemented("");
   }
 
-  /**
-   * @brief NVI for HasAttribute(). Only override if your object contains attributes you want to
-   * serve up. By default, QLObjects will return false.
-   *
-   * @return true
-   * @return false
-   */
-  virtual bool HasAttributeImpl(const std::string&) const { return false; }
+  bool HasNonMethodAttribute(std::string_view name) const { return AllAttributes().contains(name); }
 
   // Reserved keyword for call.
   inline static constexpr char kCallMethodName[] = "__call__";
   inline static constexpr char kSubscriptMethodName[] = "__getitem__";
+
+  // Attributes set.
+  absl::flat_hash_set<std::string> attributes_;
 
  private:
   absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> methods_;

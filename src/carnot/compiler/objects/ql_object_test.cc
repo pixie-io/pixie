@@ -125,21 +125,21 @@ class TestQLObject2 : public QLObject {
         std::bind(&TestQLObject2::SimpleFunc, this, std::placeholders::_1, std::placeholders::_2)));
     AddSubscriptMethod(func_obj);
     AddCallMethod(func_obj);
+    attributes_.emplace(kSpecialAttr);
   }
 
   StatusOr<QLObjectPtr> SimpleFunc(const pypa::AstPtr&, const ParsedArgs&) {
     auto out_obj = std::make_shared<TestQLObject2>();
     return StatusOr<QLObjectPtr>(out_obj);
   }
+
   StatusOr<QLObjectPtr> GetAttributeImpl(const pypa::AstPtr&,
                                          const std::string& name) const override {
-    DCHECK(HasAttributeImpl(name));
+    DCHECK(HasNonMethodAttribute(name));
     auto out_obj = std::make_shared<TestQLObject2>();
     out_obj->SetName(name);
     return StatusOr<QLObjectPtr>(out_obj);
   }
-
-  bool HasAttributeImpl(const std::string& name) const override { return name == kSpecialAttr; }
 
   void SetName(const std::string& name) { name_ = name; }
   const std::string& name() const { return name_; }
