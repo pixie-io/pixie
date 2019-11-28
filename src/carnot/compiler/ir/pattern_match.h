@@ -135,6 +135,7 @@ inline ClassMatch<IRNodeType::kGRPCSourceGroup> GRPCSourceGroup() {
 inline ClassMatch<IRNodeType::kGRPCSink> GRPCSink() { return ClassMatch<IRNodeType::kGRPCSink>(); }
 
 inline ClassMatch<IRNodeType::kJoin> Join() { return ClassMatch<IRNodeType::kJoin>(); }
+inline ClassMatch<IRNodeType::kUnion> Union() { return ClassMatch<IRNodeType::kUnion>(); }
 inline ClassMatch<IRNodeType::kTabletSourceGroup> TabletSourceGroup() {
   return ClassMatch<IRNodeType::kTabletSourceGroup>();
 }
@@ -669,64 +670,39 @@ struct AnyRelationResolvedOpMatch : public ParentMatch {
 };
 
 /**
- * @brief Match a specific operator that matches the Relation Init status and the parent's
+ * @brief Match an operator of type Matcher that matches the Relation Init status and the parent's
  * relation init status.
  *
- * @tparam op: the type of operator.
+ * @tparam Matcher: the type of the matcher for the op.
  * @tparam ResolvedRelation: whether this operator should have a resolved relation.
  * @tparam ParentsOpResolved: whether the parent op relation should be resolved.
  */
-template <IRNodeType op, bool ResolvedRelation = false, bool ParentOpResolved = false>
-struct RelationResolvedOpMatch : public ParentMatch {
-  RelationResolvedOpMatch() : ParentMatch(op) {}
+template <typename Matcher, bool ResolvedRelation = false, bool ParentOpResolved = false>
+struct RelationResolvedOpSpecialMatch : public ParentMatch {
+  explicit RelationResolvedOpSpecialMatch(Matcher matcher)
+      : ParentMatch(IRNodeType::kAny), matcher_(matcher) {}
   bool Match(const IRNode* node) const override {
-    if (node->type() == op) {
+    if (matcher_.Match(node)) {
       return AnyRelationResolvedOpMatch<ResolvedRelation, ParentOpResolved>().Match(node);
     }
     return false;
   }
+  Matcher matcher_;
 };
 
-/**
- * @brief Match a BlockingAggregate that doesn't have a relation but the parent does.
- */
-inline RelationResolvedOpMatch<IRNodeType::kBlockingAgg, false, true> UnresolvedReadyBlockingAgg() {
-  return RelationResolvedOpMatch<IRNodeType::kBlockingAgg, false, true>();
-}
-
-/**
- * @brief Match a Map that doesn't have a relation but the parent does.
- */
-inline RelationResolvedOpMatch<IRNodeType::kMap, false, true> UnresolvedReadyMap() {
-  return RelationResolvedOpMatch<IRNodeType::kMap, false, true>();
-}
-
-/**
- * @brief Match a MetadataResolver node that doesn't have a relation but the parent does.
- */
-inline RelationResolvedOpMatch<IRNodeType::kMetadataResolver, false, true>
-UnresolvedReadyMetadataResolver() {
-  return RelationResolvedOpMatch<IRNodeType::kMetadataResolver, false, true>();
-}
-
-/**
- * @brief Match a Union node that doesn't have a relation but it's parents do.
- */
-inline RelationResolvedOpMatch<IRNodeType::kUnion, false, true> UnresolvedReadyUnion() {
-  return RelationResolvedOpMatch<IRNodeType::kUnion, false, true>();
-}
-
-/**
- * @brief Match a Join node that doesn't have a relation but it's parents do.
- */
-inline RelationResolvedOpMatch<IRNodeType::kJoin, false, true> UnresolvedReadyJoin() {
-  return RelationResolvedOpMatch<IRNodeType::kJoin, false, true>();
-}
 /**
  * @brief Match Any operator that doesn't have a relation but the parent does.
  */
 inline AnyRelationResolvedOpMatch<false, true> UnresolvedReadyOp() {
   return AnyRelationResolvedOpMatch<false, true>();
+}
+
+/**
+ * @brief Match a Join node that doesn't have a relation but it's parents do.
+ */
+template <typename Matcher>
+inline RelationResolvedOpSpecialMatch<Matcher, false, true> UnresolvedReadyOp(Matcher m) {
+  return RelationResolvedOpSpecialMatch<Matcher, false, true>(m);
 }
 
 struct MatchAnyOp : public ParentMatch {

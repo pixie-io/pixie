@@ -184,21 +184,33 @@ StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
 }
 
 StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) {
-  if (Match(ir_node, UnresolvedReadyBlockingAgg())) {
+  if (Match(ir_node, UnresolvedReadyOp(BlockingAgg()))) {
     return SetBlockingAgg(static_cast<BlockingAggIR*>(ir_node));
-  } else if (Match(ir_node, UnresolvedReadyMap())) {
+  } else if (Match(ir_node, UnresolvedReadyOp(Map()))) {
     return SetMap(static_cast<MapIR*>(ir_node));
-  } else if (Match(ir_node, UnresolvedReadyMetadataResolver())) {
+  } else if (Match(ir_node, UnresolvedReadyOp(MetadataResolver()))) {
     return SetMetadataResolver(static_cast<MetadataResolverIR*>(ir_node));
-  } else if (Match(ir_node, UnresolvedReadyUnion())) {
+  } else if (Match(ir_node, UnresolvedReadyOp(Union()))) {
     return SetUnion(static_cast<UnionIR*>(ir_node));
-  } else if (Match(ir_node, UnresolvedReadyJoin())) {
+  } else if (Match(ir_node, UnresolvedReadyOp(Join()))) {
     JoinIR* join_node = static_cast<JoinIR*>(ir_node);
     if (Match(ir_node, UnsetOutputColumnsJoin())) {
       PL_RETURN_IF_ERROR(SetJoinOutputColumns(join_node));
     }
     return SetOldJoin(join_node);
+  } else if (Match(ir_node, UnresolvedReadyOp(Drop()))) {
+    // Another rule handles this.
+    // TODO(philkuz) unify this rule with the drop to map rule.
+    return false;
+  } else if (Match(ir_node, UnresolvedReadyOp(Limit())) ||
+             Match(ir_node, UnresolvedReadyOp(Filter())) ||
+             Match(ir_node, UnresolvedReadyOp(GroupBy())) ||
+             Match(ir_node, UnresolvedReadyOp(MemorySink()))) {
+    // Explicitly match because the general matcher keeps causing problems.
+    return SetOther(static_cast<OperatorIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedReadyOp())) {
+    // Fails in this path because future writers should specify the op.
+    DCHECK(false) << ir_node->DebugString();
     return SetOther(static_cast<OperatorIR*>(ir_node));
   }
   return false;
@@ -1048,7 +1060,7 @@ Status MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_resolver
 }
 
 StatusOr<bool> DropToMapOperatorRule::Apply(IRNode* ir_node) {
-  if (Match(ir_node, Drop())) {
+  if (Match(ir_node, UnresolvedReadyOp(Drop()))) {
     return DropToMap(static_cast<DropIR*>(ir_node));
   }
   return false;
@@ -1071,14 +1083,11 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
   }
 
   ColExpressionVector col_exprs;
-  std::unordered_set<std::string> col_names;
-
   for (size_t i = 0; i < parent_relation.NumColumns(); ++i) {
     auto input_col_name = parent_relation.GetColumnName(i);
     if (dropped_columns.contains(input_col_name)) {
       continue;
     }
-    col_names.insert(input_col_name);
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir,
                         ir_graph->CreateNode<ColumnIR>(drop_ir->ast_node(), input_col_name,
                                                        /*parent_op_idx*/ 0));

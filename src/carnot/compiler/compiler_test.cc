@@ -84,6 +84,24 @@ class CompilerTest : public ::testing::Test {
     rel_map->emplace("network", Relation({types::UINT128, types::INT64, types::INT64, types::INT64},
                                          {MetadataProperty::kUniquePIDColumn, "bytes_in",
                                           "bytes_out", "agent_id"}));
+    Relation http_events_relation;
+    http_events_relation.AddColumn(types::TIME64NS, "time_");
+    http_events_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
+    http_events_relation.AddColumn(types::STRING, "remote_addr");
+    http_events_relation.AddColumn(types::INT64, "remote_port");
+    http_events_relation.AddColumn(types::INT64, "http_major_version");
+    http_events_relation.AddColumn(types::INT64, "http_minor_version");
+    http_events_relation.AddColumn(types::INT64, "http_content_type");
+    http_events_relation.AddColumn(types::STRING, "http_req_headers");
+    http_events_relation.AddColumn(types::STRING, "http_req_method");
+    http_events_relation.AddColumn(types::STRING, "http_req_path");
+    http_events_relation.AddColumn(types::STRING, "http_req_body");
+    http_events_relation.AddColumn(types::STRING, "http_resp_headers");
+    http_events_relation.AddColumn(types::INT64, "http_resp_status");
+    http_events_relation.AddColumn(types::STRING, "http_resp_message");
+    http_events_relation.AddColumn(types::STRING, "http_resp_body");
+    http_events_relation.AddColumn(types::INT64, "http_resp_latency_ns");
+    rel_map->emplace("http_events", http_events_relation);
 
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
 
@@ -2828,6 +2846,50 @@ TEST_F(CompilerTest, missing_result) {
 
   EXPECT_THAT(missing_result_status.status().msg(),
               ContainsRegex("query does not output a result, please add a print.* statement"));
+}
+
+const char* kBadDropQuery = R"pxl(
+t1 = dataframe(table='http_events', start_time='-300s')
+t1['service'] = t1.attr['service']
+t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
+t1['failure'] = t1['http_resp_status'] >= 400
+# edit this to increase/decrease window. Dont go lower than 1 second.
+t1['window1'] = pl.bin(t1['time_'], pl.seconds(10))
+t1['window2'] = pl.bin(t1['time_'] + pl.seconds(5), pl.seconds(10))
+window1_agg = t1.groupby(['service', 'window1']).agg(
+  quantiles=('http_resp_latency_ms', pl.quantiles),
+)
+window1_agg['p50'] = pl.pluck_float64(window1_agg['quantiles'], 'p50')
+window1_agg['p90'] = pl.pluck_float64(window1_agg['quantiles'], 'p90')
+window1_agg['p99'] = pl.pluck_float64(window1_agg['quantiles'], 'p99')
+window1_agg['time_'] = window1_agg['window1']
+window1_agg = window1_agg.drop(['window1', 'quantiles'])
+window1_agg[window1_agg['service'] != ''].result(name='dd')
+)pxl";
+
+TEST_F(CompilerTest, BadDropQuery) {
+  auto graph_or_s = compiler_.CompileToIR(kBadDropQuery, compiler_state_.get());
+  ASSERT_OK(graph_or_s);
+
+  MemorySinkIR* mem_sink;
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  for (int64_t i : graph->dag().TopologicalSort()) {
+    auto node = graph->Get(i);
+    if (Match(node, MemorySink())) {
+      mem_sink = static_cast<MemorySinkIR*>(node);
+      break;
+    }
+  }
+  ASSERT_NE(mem_sink, nullptr);
+  Relation expected_relation(
+      {types::STRING, types::FLOAT64, types::FLOAT64, types::FLOAT64, types::TIME64NS},
+      {"service", "p50", "p90", "p99", "time_"});
+  EXPECT_EQ(mem_sink->relation(), expected_relation);
+  ASSERT_TRUE(Match(mem_sink->parents()[0], Filter()));
+  FilterIR* filter = static_cast<FilterIR*>(mem_sink->parents()[0]);
+  ASSERT_TRUE(Match(filter->parents()[0], Map()));
+  MapIR* map = static_cast<MapIR*>(filter->parents()[0]);
+  EXPECT_EQ(map->relation(), expected_relation);
 }
 
 }  // namespace compiler

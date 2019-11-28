@@ -200,31 +200,31 @@ TEST_F(PatternMatchTest, relation_status_operator_match) {
   EXPECT_OK(filter->AddParent(mem_src));
 
   // Unresolved blocking aggregate with unresolved parent.
-  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp(BlockingAgg())));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp(Map())));
   EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp()));
   // Unesolved map with unresolved parent.
-  EXPECT_FALSE(Match(map, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(Match(map, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(map, UnresolvedReadyOp(BlockingAgg())));
+  EXPECT_FALSE(Match(map, UnresolvedReadyOp(Map())));
   EXPECT_FALSE(Match(map, UnresolvedReadyOp()));
   // Unresolved Filter with unresolved parent.
-  EXPECT_FALSE(Match(filter, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(Match(filter, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyOp(BlockingAgg())));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyOp(Map())));
   EXPECT_FALSE(Match(filter, UnresolvedReadyOp()));
 
   // Resolve parent.
   EXPECT_OK(mem_src->SetRelation(test_relation));
   // Unresolved blocking aggregate with resolved parent.
-  EXPECT_TRUE(Match(blocking_agg, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyMap()));
+  EXPECT_TRUE(Match(blocking_agg, UnresolvedReadyOp(BlockingAgg())));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp(Map())));
   EXPECT_TRUE(Match(blocking_agg, UnresolvedReadyOp()));
   // Unresolved map with resolved parent.
-  EXPECT_FALSE(Match(map, UnresolvedReadyBlockingAgg()));
-  EXPECT_TRUE(Match(map, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(map, UnresolvedReadyOp(BlockingAgg())));
+  EXPECT_TRUE(Match(map, UnresolvedReadyOp(Map())));
   EXPECT_TRUE(Match(map, UnresolvedReadyOp()));
   // Unresolved Filter with resolved parent.
-  EXPECT_FALSE(Match(filter, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(Match(filter, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyOp(BlockingAgg())));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyOp(Map())));
   EXPECT_TRUE(Match(filter, UnresolvedReadyOp()));
 
   // Resolve children.
@@ -232,16 +232,16 @@ TEST_F(PatternMatchTest, relation_status_operator_match) {
   EXPECT_OK(map->SetRelation(test_relation));
   EXPECT_OK(filter->SetRelation(test_relation));
   // Resolved blocking aggregate with resolved parent.
-  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp(BlockingAgg())));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp(Map())));
   EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp()));
   // Resolved map with resolved parent.
-  EXPECT_FALSE(Match(map, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(Match(map, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(map, UnresolvedReadyOp(BlockingAgg())));
+  EXPECT_FALSE(Match(map, UnresolvedReadyOp(Map())));
   EXPECT_FALSE(Match(map, UnresolvedReadyOp()));
   // Resolved Filter with resolved parent.
-  EXPECT_FALSE(Match(filter, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(Match(filter, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyOp(BlockingAgg())));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyOp(Map())));
   EXPECT_FALSE(Match(filter, UnresolvedReadyOp()));
 }
 
@@ -251,16 +251,16 @@ TEST_F(PatternMatchTest, relation_status_union_test) {
 
   UnionIR* union_op = MakeUnion({mem_src1, mem_src2});
 
-  EXPECT_FALSE(Match(union_op, UnresolvedReadyUnion()));
+  EXPECT_FALSE(Match(union_op, UnresolvedReadyOp(Union())));
 
   EXPECT_OK(mem_src1->SetRelation(MakeRelation()));
 
   // Check to make sure that one parent doesn't set it off.
-  EXPECT_FALSE(Match(union_op, UnresolvedReadyUnion()));
+  EXPECT_FALSE(Match(union_op, UnresolvedReadyOp(Union())));
 
   EXPECT_OK(mem_src2->SetRelation(MakeRelation()));
   // Check to make sure that setting both parents does set it off.
-  EXPECT_TRUE(Match(union_op, UnresolvedReadyUnion()));
+  EXPECT_TRUE(Match(union_op, UnresolvedReadyOp(Union())));
 }
 
 TEST_F(PatternMatchTest, OpWithParentMatch) {

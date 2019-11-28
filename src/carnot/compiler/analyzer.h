@@ -50,6 +50,7 @@ class Analyzer : public RuleExecutor {
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
     intermediate_resolution_batch->AddRule<DataTypeRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<OperatorRelationRule>(compiler_state_);
+    intermediate_resolution_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }
 
   void CreateOperatorCompileTimeExpressionRuleBatch() {
@@ -68,7 +69,6 @@ class Analyzer : public RuleExecutor {
     RuleBatch* remove_ir_only_nodes_batch = CreateRuleBatch<FailOnMax>("RemoveIROnlyNodes", 2);
     remove_ir_only_nodes_batch->AddRule<MetadataResolverConversionRule>(compiler_state_);
     remove_ir_only_nodes_batch->AddRule<RemoveGroupByRule>();
-    remove_ir_only_nodes_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }
 
   Status Init() {
