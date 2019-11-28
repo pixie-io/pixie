@@ -6,6 +6,7 @@ import * as React from 'react';
 import {Button, Nav, Tab, Tabs} from 'react-bootstrap';
 import * as uuid from 'uuid/v1';
 
+import {Drawer} from '../../components/drawer/drawer';
 import {EditorContent} from './content';
 
 const NEW_TAB = 'new-tab';
@@ -91,37 +92,43 @@ export const Editor: React.FC = () => {
   };
 
   return (
-    <Tab.Container
-      activeKey={state.activeTab}
-      onSelect={selectTab}
-      mountOnEnter={true}
-      unmountOnExit={false}
-      id='pixie-editor-tabs'>
-      <Nav variant='tabs' className='pixie-editor-tabs-nav'>
-        {state.tabs.map((tab) =>
-          <Nav.Item key={tab.id}>
-            <Nav.Link eventKey={tab.id}>
-              <EditorTabTitle {...tab} onClose={(id) => deleteTab(id)} />
-            </Nav.Link>
-          </Nav.Item>,
-        )}
-        <Nav.Item>
-          <Nav.Link eventKey={NEW_TAB}>
-            <img src={newTabIcon} />
-          </Nav.Link>
-        </Nav.Item>
-      </Nav>
-      <Tab.Content style={{ flex: 1, position: 'relative' }}>
-        {state.tabs.map((tab) =>
-          <Tab.Pane
-            eventKey={tab.id}
-            key={tab.id}
-            style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
-            <EditorContent {...tab} />
-          </Tab.Pane>,
-        )}
-      </Tab.Content>
-    </Tab.Container >
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
+      <Drawer openedWidth='15vw'>
+      </Drawer>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Tab.Container
+          activeKey={state.activeTab}
+          onSelect={selectTab}
+          mountOnEnter={true}
+          unmountOnExit={false}
+          id='pixie-editor-tabs'>
+          <Nav variant='tabs' className='pixie-editor-tabs-nav'>
+            {state.tabs.map((tab) =>
+              <Nav.Item key={tab.id}>
+                <Nav.Link eventKey={tab.id}>
+                  <EditorTabTitle {...tab} onClose={(id) => deleteTab(id)} />
+                </Nav.Link>
+              </Nav.Item>,
+            )}
+            <Nav.Item>
+              <Nav.Link eventKey={NEW_TAB}>
+                <img src={newTabIcon} />
+              </Nav.Link>
+            </Nav.Item>
+          </Nav>
+          <Tab.Content style={{ flex: 1, position: 'relative' }}>
+            {state.tabs.map((tab) =>
+              <Tab.Pane
+                eventKey={tab.id}
+                key={tab.id}
+                style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
+                <EditorContent {...tab} />
+              </Tab.Pane>,
+            )}
+          </Tab.Content>
+        </Tab.Container>
+      </div>
+    </div>
   );
 };
 
