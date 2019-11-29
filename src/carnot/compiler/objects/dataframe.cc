@@ -86,18 +86,6 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       std::bind(&OldResultHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kSinkOpId, old_sink_fn);
 
-  // TODO(philkuz) (PL-1086) update when new range_agg behavior comes into play.
-  /**
-   * # Equivalent to the python method method syntax:
-   * def range_agg(self, by, fn, size):
-   *     ...
-   */
-  std::shared_ptr<FuncObject> old_range_agg_fn(new FuncObject(
-      kRangeAggOpId, {"by", "fn", "size"}, {},
-      /* has_variable_len_kwargs */ false,
-      std::bind(&OldRangeAggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  AddMethod(kRangeAggOpId, old_range_agg_fn);
-
   /**
    *
    * # Equivalent to the python method method syntax:
@@ -482,96 +470,6 @@ StatusOr<QLObjectPtr> OldResultHandler::Eval(Dataframe* df, const pypa::AstPtr& 
   PL_ASSIGN_OR_RETURN(MemorySinkIR * sink_op, df->graph()->CreateNode<MemorySinkIR>(
                                                   ast, df->op(), name, std::vector<std::string>{}));
   return StatusOr(std::make_shared<NoneObject>(sink_op));
-}
-
-StatusOr<QLObjectPtr> OldRangeAggHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
-                                               const ParsedArgs& args) {
-  // Creates the Map->Agg sequence that mimics RangeAgg.
-  IRNode* by_func = args.GetArg("by");
-  IRNode* fn_func = args.GetArg("fn");
-  IRNode* size_node = args.GetArg("size");
-
-  if (!Match(by_func, Lambda())) {
-    return by_func->CreateIRNodeError("'by' must be a lambda");
-  }
-  if (!Match(fn_func, Lambda())) {
-    return fn_func->CreateIRNodeError("'fn' must be a lambda");
-  }
-  if (!Match(size_node, Int())) {
-    return size_node->CreateIRNodeError("'size' must be a lambda");
-  }
-
-  LambdaIR* fn = static_cast<LambdaIR*>(fn_func);
-  PL_RETURN_IF_ERROR(VerifyLambda(fn, "fn", 1, /* should_have_dict_body */ true));
-
-  LambdaIR* by = static_cast<LambdaIR*>(by_func);
-  PL_RETURN_IF_ERROR(VerifyLambda(by, "by", 1, /* should_have_dict_body */ false));
-
-  IntIR* size = static_cast<IntIR*>(size_node);
-
-  PL_ASSIGN_OR_RETURN(ExpressionIR * by_expr, by->GetDefaultExpr());
-  PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> groups, OldAggHandler::SetupGroups(by_expr));
-
-  if (groups.size() != 1) {
-    return by_expr->CreateIRNodeError("expected 1 column to group by, received $0", groups.size());
-  }
-
-  ColumnIR* range_agg_col = groups[0];
-
-  PL_ASSIGN_OR_RETURN(FuncIR * group_expression,
-                      MakeRangeAggGroupExpression(range_agg_col, size, ast, df->graph()));
-
-  ColExpressionVector map_exprs{{"group", group_expression}};
-  // TODO(philkuz/nserrino) when D2570 lands, add copy columns as init arg instead of doing this.
-  for (const auto& name : fn->expected_column_names()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col_node,
-                        df->graph()->CreateNode<ColumnIR>(ast, name, /* parent_op_idx */ 0));
-    map_exprs.push_back({name, col_node});
-  }
-
-  PL_ASSIGN_OR_RETURN(MapIR * map, df->graph()->CreateNode<MapIR>(ast, df->op(), map_exprs));
-
-  // Make the Blocking Agg prerequisite nodes.
-
-  PL_ASSIGN_OR_RETURN(ColumnIR * agg_group_by_col,
-                      df->graph()->CreateNode<ColumnIR>(ast, "group", /*parent_op_idx*/ 0));
-
-  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg,
-                      df->graph()->CreateNode<BlockingAggIR>(
-                          ast, map, std::vector<ColumnIR*>{agg_group_by_col}, fn->col_exprs()));
-
-  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(by->id()));
-  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(fn->id()));
-  return StatusOr(std::make_shared<Dataframe>(agg));
-}
-
-StatusOr<FuncIR*> OldRangeAggHandler::MakeRangeAggGroupExpression(ColumnIR* range_agg_col,
-                                                                  IntIR* size_expr,
-                                                                  const pypa::AstPtr& ast,
-                                                                  IR* graph) {
-  auto op_map_iter = FuncIR::op_map.find("%");
-  DCHECK(op_map_iter != FuncIR::op_map.end());
-  FuncIR::Op mod_op = op_map_iter->second;
-
-  PL_ASSIGN_OR_RETURN(
-      FuncIR * mod_ir_node,
-      graph->CreateNode<FuncIR>(ast, mod_op, std::vector<ExpressionIR*>{range_agg_col, size_expr}));
-
-  PL_ASSIGN_OR_RETURN(
-      ColumnIR * range_agg_col_copy,
-      graph->CreateNode<ColumnIR>(ast, range_agg_col->col_name(), /* parent_op_idx */ 0));
-
-  op_map_iter = FuncIR::op_map.find("-");
-  DCHECK(op_map_iter != FuncIR::op_map.end());
-  FuncIR::Op sub_op = op_map_iter->second;
-
-  // pl.subtract(by_col, pl.mod(by_col, size)).
-  PL_ASSIGN_OR_RETURN(
-      FuncIR * sub_ir_node,
-      graph->CreateNode<FuncIR>(ast, sub_op,
-                                std::vector<ExpressionIR*>{range_agg_col_copy, mod_ir_node}));
-
-  return sub_ir_node;
 }
 
 StatusOr<QLObjectPtr> SubscriptHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,

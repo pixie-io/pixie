@@ -153,7 +153,6 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kRangeOpId[] = "range";
   inline static constexpr char kMapOpId[] = "map";
   inline static constexpr char kBlockingAggOpId[] = "agg";
-  inline static constexpr char kRangeAggOpId[] = "range_agg";
   inline static constexpr char kSinkOpId[] = "result";
   inline static constexpr char kFilterOpId[] = "filter";
   inline static constexpr char kLimitOpId[] = "head";

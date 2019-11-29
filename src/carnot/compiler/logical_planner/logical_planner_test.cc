@@ -110,11 +110,11 @@ quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99
 quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
 
 # The Range aggregate to calcualte the requests per second.
-range_agg = t1.groupby(['service', 'range_group']).agg(
+requests_agg = t1.groupby(['service', 'range_group']).agg(
   requests_per_window=('http_resp_status', pl.count),
 )
 
-rps_table = range_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
+rps_table = requests_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
 
 joined_table = quantiles_table.merge(rps_table,
                                      how='inner',
@@ -168,11 +168,11 @@ quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99
 quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
 
 # The Range aggregate to calcualte the requests per second.
-range_agg = t1.groupby(['service', 'range_group']).agg(
+requests_agg = t1.groupby(['service', 'range_group']).agg(
   requests_per_window=('http_resp_status', pl.count),
 )
 
-rps_table = range_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
+rps_table = requests_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
 
 joined_table = quantiles_table.merge(rps_table,
                                      how='inner',

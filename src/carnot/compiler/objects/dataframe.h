@@ -46,7 +46,6 @@ class Dataframe : public QLObject {
   inline static constexpr char kDropOpId[] = "drop";
   inline static constexpr char kFilterOpId[] = "filter";
   inline static constexpr char kBlockingAggOpId[] = "agg";
-  inline static constexpr char kRangeAggOpId[] = "range_agg";
   inline static constexpr char kLimitOpId[] = "head";
   inline static constexpr char kMergeOpId[] = "merge";
   inline static constexpr char kSinkOpId[] = "result";
@@ -256,29 +255,6 @@ class OldResultHandler {
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
-};
-
-// TODO(philkuz) (PL-1086) Update range agg to new pandas way.
-/**
- * @brief Implements the old range_agg operator logic. This will be deprecated soon, but we have
- * this to reduce the complexity of switching to the pyobject model.
- *
- */
-class OldRangeAggHandler {
- public:
-  /**
-   * @brief Evaluates the old range_agg function.
-   *
-   * @param df the dataframe that's a parent to the range_agg function.
-   * @param ast the ast node that signifies where the query was written.
-   * @param args the arguments for range_agg()
-   * @return StatusOr<QLObjectPtr>
-   */
-  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
-
- private:
-  static StatusOr<FuncIR*> MakeRangeAggGroupExpression(ColumnIR* range_agg_col, IntIR* size_expr,
-                                                       const pypa::AstPtr& ast, IR* graph);
 };
 
 class SubscriptHandler {
