@@ -34,17 +34,6 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
   // TODO(philkuz) (PL-1036) remove this upon availability of new syntax.
   /**
    * # Equivalent to the python method method syntax:
-   * def map(self, fn):
-   *     ...
-   */
-  std::shared_ptr<FuncObject> mapfn(new FuncObject(
-      kMapOpId, {"fn"}, {}, /* has_variable_len_kwargs */ false,
-      std::bind(&OldMapHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  AddMethod(kMapOpId, mapfn);
-
-  // TODO(philkuz) (PL-1036) remove this upon availability of new syntax.
-  /**
-   * # Equivalent to the python method method syntax:
    * def drop(self, fn):
    *     ...
    */
@@ -52,17 +41,6 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       kDropOpId, {"columns"}, {}, /* has_kwargs */ false,
       std::bind(&DropHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kDropOpId, dropfn);
-
-  // TODO(philkuz) (PL-1038) remove this upon availability of new syntax.
-  /**
-   * # Equivalent to the python method method syntax:
-   * def filter(self, fn):
-   *     ...
-   */
-  std::shared_ptr<FuncObject> filterfn(new FuncObject(
-      kFilterOpId, {"fn"}, {}, /* has_variable_len_kwargs */ false,
-      std::bind(&OldFilterHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  AddMethod(kFilterOpId, filterfn);
 
   /**
    * # Equivalent to the python method method syntax:
@@ -305,41 +283,6 @@ Status VerifyLambda(LambdaIR* lambda, const std::string& arg_name, int64_t num_p
   }
 
   return Status::OK();
-}
-
-StatusOr<QLObjectPtr> OldMapHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
-                                          const ParsedArgs& args) {
-  IRNode* lambda_func = args.GetArg("fn");
-  if (!Match(lambda_func, Lambda())) {
-    return lambda_func->CreateIRNodeError("'fn' must be a lambda");
-  }
-  LambdaIR* lambda = static_cast<LambdaIR*>(lambda_func);
-  PL_RETURN_IF_ERROR(VerifyLambda(lambda, "fn", 1, /* should_have_dict_body */ true));
-
-  PL_ASSIGN_OR_RETURN(MapIR * map_op,
-                      df->graph()->CreateNode<MapIR>(ast, df->op(), lambda->col_exprs()));
-  // Delete the lambda.
-  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(lambda->id()));
-  return StatusOr(std::make_shared<Dataframe>(map_op));
-}
-
-StatusOr<QLObjectPtr> OldFilterHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
-                                             const ParsedArgs& args) {
-  IRNode* lambda_func = args.GetArg("fn");
-  if (!Match(lambda_func, Lambda())) {
-    return lambda_func->CreateIRNodeError("'fn' must be a lambda");
-  }
-
-  LambdaIR* lambda = static_cast<LambdaIR*>(lambda_func);
-  PL_RETURN_IF_ERROR(VerifyLambda(lambda, "fn", 1, /* should_have_dict_body */ false));
-
-  // Have to remove the edges from the Lambda
-  PL_ASSIGN_OR_RETURN(ExpressionIR * expr, lambda->GetDefaultExpr());
-
-  PL_ASSIGN_OR_RETURN(FilterIR * filter_op, df->graph()->CreateNode<FilterIR>(ast, df->op(), expr));
-  // Delete the lambda.
-  PL_RETURN_IF_ERROR(df->graph()->DeleteNode(lambda->id()));
-  return StatusOr(std::make_shared<Dataframe>(filter_op));
 }
 
 StatusOr<QLObjectPtr> LimitHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
