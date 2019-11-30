@@ -292,8 +292,8 @@ TEST_F(AggTest, not_allowed_agg_fn) {
   EXPECT_THAT(status.status(), HasCompilerError("Unexpected aggregate function"));
   std::string single_col_dict_by_not_pl = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
-          "rangeDF = queryDF.agg(by=lambda r : r.cpu0, fn=notpl.count)",
+          "queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'],start_time=0, end_time=10)",
+          "rangeDF = queryDF.agg(outcol=('cpu0', notpl.sum))",
       },
       "\n");
 
@@ -504,29 +504,6 @@ TEST_F(AggTest, not_allowed_by_arguments) {
   ASSERT_NOT_OK(ir_graph_status);
 
   EXPECT_THAT(ir_graph_status.status(), HasCompilerError("expected string or list of strings"));
-}
-
-const char* kJoinDuplicatedLambdaQuery = R"query(
-src1 = dataframe(table='cpu', select=['upid', 'cpu0','cpu1'])
-src2 = dataframe(table='network', select=['upid', 'bytes_in', 'bytes_out'])
-join = src1.merge(src2,  type='inner',
-                      cond=lambda r, r: r1.upid == r2.upid,
-                      cols=lambda r1, r2: {
-                        'upid': r1.upid,
-                        'bytes_in': r2.bytes_in,
-                        'bytes_out': r2.bytes_out,
-                        'cpu0': r1.cpu0,
-                        'cpu1': r1.cpu1,
-                      })
-join.result(name='joined')
-)query";
-
-using LambdaTest = ASTVisitorTest;
-TEST_F(LambdaTest, duplicate_arguments) {
-  auto ir_graph_status = CompileGraph(kJoinDuplicatedLambdaQuery);
-  EXPECT_NOT_OK(ir_graph_status);
-  EXPECT_THAT(ir_graph_status.status(),
-              HasCompilerError("Duplicate argument 'r' in lambda definition."));
 }
 
 const char* kInnerJoinQuery = R"query(

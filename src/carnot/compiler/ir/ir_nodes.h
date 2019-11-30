@@ -61,7 +61,6 @@ enum class IRNodeType {
   kFunc,
   kList,
   kTuple,
-  kLambda,
   kColumn,
   kTime,
   kMetadata,
@@ -92,7 +91,6 @@ static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "Func",
                                                  "List",
                                                  "Tuple",
-                                                 "Lambda",
                                                  "Column",
                                                  "Time",
                                                  "Metadata",
@@ -732,50 +730,6 @@ struct ColumnExpression {
   ExpressionIR* node;
 };
 using ColExpressionVector = std::vector<ColumnExpression>;
-
-/**
- * @brief IR representation for a Lambda
- * function. Should contain an expected
- * Relation based on which columns are called
- * within the contained relation.
- *
- */
-class LambdaIR : public IRNode {
- public:
-  LambdaIR() = delete;
-  explicit LambdaIR(int64_t id) : IRNode(id, IRNodeType::kLambda) {}
-  Status Init(std::unordered_set<std::string> column_names, const ColExpressionVector& col_exprs,
-              int64_t number_of_parents);
-  /**
-   * @brief Init for the Lambda called elsewhere. Uses a default value for the key to the
-   * expression map.
-   */
-  Status Init(std::unordered_set<std::string> expected_column_names, ExpressionIR* node,
-              int64_t number_of_parents);
-  /**
-   * @brief Returns the one_expr_ if it has only one expr in the col_expr_map, otherwise returns
-   * an error.
-   *
-   * @return StatusOr<IRNode*>
-   */
-  StatusOr<ExpressionIR*> GetDefaultExpr();
-  bool HasDictBody() const;
-
-  bool IsOperator() const override { return false; }
-  bool IsExpression() const override { return false; }
-  std::unordered_set<std::string> expected_column_names() const { return expected_column_names_; }
-  ColExpressionVector col_exprs() const { return col_exprs_; }
-
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
-  int64_t number_of_parents() const { return number_of_parents_; }
-
- private:
-  static constexpr const char* default_key = "_default";
-  std::unordered_set<std::string> expected_column_names_;
-  ColExpressionVector col_exprs_;
-  bool has_dict_body_;
-  int64_t number_of_parents_ = 0;
-};
 
 /**
  * @brief Represents functions with arbitrary number of values

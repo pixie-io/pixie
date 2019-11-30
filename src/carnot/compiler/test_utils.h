@@ -340,29 +340,6 @@ class OperatorTests : public ::testing::Test {
     return map;
   }
 
-  // TODO(philkuz) deprecate this when we remove Lambda support.
-  LambdaIR* MakeLambda(ExpressionIR* expr, int64_t num_parents) {
-    return MakeLambda(expr, {}, num_parents);
-  }
-
-  LambdaIR* MakeLambda(ExpressionIR* expr, const std::unordered_set<std::string>& expected_cols,
-                       int64_t num_parents) {
-    LambdaIR* lambda =
-        graph->CreateNode<LambdaIR>(ast, expected_cols, expr, num_parents).ConsumeValueOrDie();
-    return lambda;
-  }
-
-  LambdaIR* MakeLambda(const ColExpressionVector& expr,
-                       const std::unordered_set<std::string>& expected_cols, int64_t num_parents) {
-    LambdaIR* lambda =
-        graph->CreateNode<LambdaIR>(ast, expected_cols, expr, num_parents).ConsumeValueOrDie();
-    return lambda;
-  }
-
-  LambdaIR* MakeLambda(const ColExpressionVector& expr, int64_t num_parents) {
-    return MakeLambda(expr, {}, num_parents);
-  }
-
   MemorySinkIR* MakeMemSink(OperatorIR* parent, std::string name,
                             const std::vector<std::string>& out_cols) {
     auto sink = graph->CreateNode<MemorySinkIR>(ast, parent, name, out_cols).ConsumeValueOrDie();

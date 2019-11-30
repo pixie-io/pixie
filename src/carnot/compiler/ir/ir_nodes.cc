@@ -244,11 +244,7 @@ Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
   col_exprs_ = exprs;
   for (const ColumnExpression& mapped_expression : col_exprs_) {
     ExpressionIR* expr = mapped_expression.node;
-    // TODO(nserrino): SetColExprs will be called twice for subscript maps, because the input
-    // column expansion uses it as well. Once lambda maps are deprecated, clean up this logic.
-    if (!graph_ptr()->HasEdge(this, expr)) {
-      PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
-    }
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
   }
   return Status::OK();
 }
@@ -578,45 +574,6 @@ Status CollectionIR::Init(std::vector<ExpressionIR*> children) {
   return Status::OK();
 }
 
-bool LambdaIR::HasDictBody() const { return has_dict_body_; }
-
-Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
-                      const ColExpressionVector& col_exprs, int64_t number_of_parents) {
-  number_of_parents_ = number_of_parents;
-  expected_column_names_ = expected_column_names;
-  col_exprs_ = col_exprs;
-  for (const ColumnExpression& col_expr : col_exprs) {
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, col_expr.node));
-  }
-  has_dict_body_ = true;
-  return Status::OK();
-}
-
-Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, ExpressionIR* node,
-                      int64_t number_of_parents) {
-  expected_column_names_ = expected_column_names;
-  col_exprs_.push_back(ColumnExpression{default_key, node});
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, node));
-  number_of_parents_ = number_of_parents;
-  has_dict_body_ = false;
-  return Status::OK();
-}
-
-StatusOr<ExpressionIR*> LambdaIR::GetDefaultExpr() {
-  if (HasDictBody()) {
-    return error::InvalidArgument(
-        "Couldn't return the default expression, Lambda initialized as dict.");
-  }
-  for (const auto& col_expr : col_exprs_) {
-    if (col_expr.name == default_key) {
-      return col_expr.node;
-    }
-  }
-  return error::InvalidArgument(
-      "Couldn't return the default expression, no default expression in column expression "
-      "vector.");
-}
-
 std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
     {"*", {FuncIR::Opcode::mult, "*", "multiply"}},
     {"+", {FuncIR::Opcode::add, "+", "add"}},
@@ -791,12 +748,6 @@ StatusOr<IRNode*> ListIR::DeepCloneIntoImpl(IR* graph) const {
 StatusOr<IRNode*> TupleIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(CollectionIR * collection, graph->MakeNode<TupleIR>(id()));
   return DeepCloneIntoCollection(graph, collection);
-}
-
-StatusOr<IRNode*> LambdaIR::DeepCloneIntoImpl(IR* graph) const {
-  CHECK(false) << "Lambda is a temporary node, how the hell are you copying it.";
-  PL_ASSIGN_OR_RETURN(LambdaIR * lambda, graph->MakeNode<LambdaIR>(id()));
-  return lambda;
 }
 
 StatusOr<IRNode*> FuncIR::DeepCloneIntoImpl(IR* graph) const {

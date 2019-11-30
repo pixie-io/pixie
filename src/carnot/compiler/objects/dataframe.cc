@@ -254,37 +254,6 @@ StatusOr<QLObjectPtr> RangeHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
   return StatusOr(std::make_shared<Dataframe>(range_op));
 }
 
-/**
- * @brief Returns error if the lambda doens't have the number of parents specified.
- *
- * @param lambda
- * @return Status
- */
-Status VerifyLambda(LambdaIR* lambda, const std::string& arg_name, int64_t num_parents,
-                    bool should_have_dict_body) {
-  // Check to see if expectations matches the lambda reality.
-  if (should_have_dict_body != lambda->HasDictBody()) {
-    if (should_have_dict_body) {
-      return lambda->CreateIRNodeError("'$0' argument error, lambda must have a dictionary body",
-                                       arg_name);
-    }
-
-    return lambda->CreateIRNodeError("'$0' argument error, lambda cannot have a dictionary body",
-                                     arg_name);
-  }
-
-  if (lambda->number_of_parents() != num_parents) {
-    std::string parent_name = "parents";
-    if (num_parents == 1) {
-      parent_name = "parent";
-    }
-    return lambda->CreateIRNodeError("'$0' operator expects $0 $2, received $1", num_parents,
-                                     lambda->number_of_parents(), parent_name);
-  }
-
-  return Status::OK();
-}
-
 StatusOr<QLObjectPtr> LimitHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
                                          const ParsedArgs& args) {
   // TODO(philkuz) (PL-1161) Add support for compile time evaluation of Limit argument.
@@ -347,9 +316,6 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(Dataframe* df, const pypa::AstP
   PL_ASSIGN_OR_RETURN(
       MapIR * map_op,
       df->graph()->CreateNode<MapIR>(ast, df->op(), keep_exprs, /* keep_input_columns */ false));
-  // TODO(nserrino): Refactor this once lambda maps are deprecated.
-  // Technically not needed but here for explicitness until the refactor.
-  map_op->set_keep_input_columns(false);
   return StatusOr(std::make_shared<Dataframe>(map_op));
 }
 
