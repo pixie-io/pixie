@@ -214,11 +214,10 @@ Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr
   auto expr = static_cast<ExpressionIR*>(result);
 
   // Pull in all columns needed in fn.
-  ColExpressionVector map_exprs{{col_name, expr}};
+  ColExpressionVector map_exprs{{col_name, expr}}; /*keep_input_cols*/
 
-  PL_ASSIGN_OR_RETURN(MapIR * ir_node,
-                      ir_graph_->CreateNode<MapIR>(expr_node, parent_op, map_exprs));
-  ir_node->set_keep_input_columns(true);
+  PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->CreateNode<MapIR>(expr_node, parent_op, map_exprs,
+                                                                    /* keep_input_columns */ true));
 
   var_table_[assign_name_string] = std::make_shared<Dataframe>(ir_node);
 

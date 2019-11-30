@@ -39,21 +39,23 @@ class RuleExecutorTest : public OperatorTests {
     SetupGraph();
   }
   void SetupGraph() {
-    map = graph->MakeNode<MapIR>(ast).ValueOrDie();
-    int_constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
-    PL_CHECK_OK(int_constant->Init(10));
-    int_constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
-    PL_CHECK_OK(int_constant2->Init(12));
-    col = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
-    PL_CHECK_OK(col->Init("count", /* parent_op_idx */ 0));
-    func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    func2 = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"},
-                           std::vector<ExpressionIR*>({int_constant, col})));
-    PL_CHECK_OK(func2->Init({FuncIR::Opcode::add, "+", "add"},
-                            std::vector<ExpressionIR*>({int_constant2, func})));
-    PL_CHECK_OK(map->Init(mem_src, {{"func", func2}}));
+    int_constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
+    int_constant2 = graph->CreateNode<IntIR>(ast, 12).ValueOrDie();
+    col = graph->CreateNode<ColumnIR>(ast, "count", /* parent_op_idx */ 0).ValueOrDie();
+    func = graph
+               ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
+                                    std::vector<ExpressionIR*>({int_constant, col}))
+               .ValueOrDie();
+    func2 = graph
+                ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
+                                     std::vector<ExpressionIR*>({int_constant2, func}))
+                .ValueOrDie();
+    map = graph
+              ->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"func", func2}},
+                                  /* keep_input_columns */ false)
+              .ValueOrDie();
   }
+
   std::unique_ptr<CompilerState> compiler_state_;
   std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;

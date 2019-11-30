@@ -105,14 +105,14 @@ class DataTypeRuleTest : public RulesTest {
 
 // Simple map function.
 TEST_F(DataTypeRuleTest, map_function) {
-  auto map = graph->MakeNode<MapIR>(ast).ValueOrDie();
-  auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
-  EXPECT_OK(constant->Init(10));
+  auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = MakeColumn("count", /* parent_op_idx */ 0);
-  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-  EXPECT_OK(
-      func->Init({FuncIR::Opcode::add, "+", "add"}, std::vector<ExpressionIR*>({constant, col})));
-  EXPECT_OK(map->Init(mem_src, {{"func", func}}));
+  auto func = graph
+                  ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
+                                       std::vector<ExpressionIR*>({constant, col}))
+                  .ValueOrDie();
+  EXPECT_OK(graph->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"func", func}},
+                                     /* keep_input_columns */ false));
 
   // No rule has been run, don't expect any of these to be evaluated.
   EXPECT_FALSE(func->IsDataTypeEvaluated());
@@ -181,14 +181,14 @@ TEST_F(DataTypeRuleTest, compiler_function_no_match) {
 
 // The DataType shouldn't be resolved for a function without a name.
 TEST_F(DataTypeRuleTest, missing_udf_name) {
-  auto map = graph->MakeNode<MapIR>(ast).ValueOrDie();
-  auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
-  EXPECT_OK(constant->Init(10));
+  auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = MakeColumn("count", /* parent_op_idx */ 0);
-  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "gobeldy"},
-                       std::vector<ExpressionIR*>({constant, col})));
-  EXPECT_OK(map->Init(mem_src, {{"func", func}}));
+  auto func = graph
+                  ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "gobeldy"},
+                                       std::vector<ExpressionIR*>({constant, col}))
+                  .ValueOrDie();
+  EXPECT_OK(graph->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"func", func}},
+                                     /* keep_input_columns */ false));
 
   // Expect the data_rule to successfully change columnir.
   DataTypeRule data_rule(compiler_state_.get());
@@ -233,20 +233,19 @@ TEST_F(DataTypeRuleTest, function_in_agg) {
 
 // Checks to make sure that nested functions are evaluated as expected.
 TEST_F(DataTypeRuleTest, nested_functions) {
-  auto map = graph->MakeNode<MapIR>(ast).ValueOrDie();
-  auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
-  EXPECT_OK(constant->Init(10));
-  auto constant2 = graph->MakeNode<IntIR>(ast).ValueOrDie();
-  EXPECT_OK(constant2->Init(12));
+  auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
+  auto constant2 = graph->CreateNode<IntIR>(ast, 12).ValueOrDie();
   auto col = MakeColumn("count", /* parent_op_idx */ 0);
-  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-  auto func2 = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-  EXPECT_OK(
-      func->Init({FuncIR::Opcode::add, "+", "add"}, std::vector<ExpressionIR*>({constant, col})));
-
-  EXPECT_OK(func2->Init({FuncIR::Opcode::add, "-", "subtract"},
-                        std::vector<ExpressionIR*>({constant2, func})));
-  EXPECT_OK(map->Init(mem_src, {{"col_name", func2}}));
+  auto func = graph
+                  ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
+                                       std::vector<ExpressionIR*>({constant, col}))
+                  .ValueOrDie();
+  auto func2 = graph
+                   ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "-", "subtract"},
+                                        std::vector<ExpressionIR*>({constant2, func}))
+                   .ValueOrDie();
+  EXPECT_OK(graph->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"col_name", func2}},
+                                     /* keep_input_columns */ false));
 
   // No rule has been run, don't expect any of these to be evaluated.
   EXPECT_FALSE(func->IsDataTypeEvaluated());
@@ -481,9 +480,11 @@ class MapRuleTest : public RulesTest {
       func_2->SetOutputDataType(func_data_type);
     }
 
-    map = graph->MakeNode<MapIR>(ast).ValueOrDie();
-    ASSERT_OK(map->Init(mem_src, {{new_col_name, func_1}, {old_col_name, func_2}}));
-    map->set_keep_input_columns(keep_input_columns);
+    map = graph
+              ->CreateNode<MapIR>(
+                  ast, mem_src, ColExpressionVector{{new_col_name, func_1}, {old_col_name, func_2}},
+                  keep_input_columns)
+              .ValueOrDie();
   }
   MemorySourceIR* mem_src;
   MapIR* map;
@@ -907,7 +908,8 @@ TEST_F(CompilerTimeExpressionTest, map_nested) {
   auto int_node = MakeInt(2);
 
   ColExpressionVector exprs{{"top", top_level}, {"nested", nested}, {"int", int_node}};
-  auto map = graph->CreateNode<MapIR>(ast, mem_src, exprs).ValueOrDie();
+  auto map =
+      graph->CreateNode<MapIR>(ast, mem_src, exprs, /* keep_input_columns */ false).ValueOrDie();
 
   OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
   auto result = compiler_expr_rule.Execute(graph.get());
@@ -1401,8 +1403,10 @@ class CheckRelationRule : public RulesTest {
 
   MapIR* MakeMap(OperatorIR* parent, std::string column_name) {
     auto map_func = MakeAddFunc(MakeInt(10), MakeInt(12));
-    MapIR* map = graph->MakeNode<MapIR>(ast).ValueOrDie();
-    EXPECT_OK(map->Init(parent, {{column_name, map_func}}));
+    MapIR* map = graph
+                     ->CreateNode<MapIR>(ast, parent, ColExpressionVector{{column_name, map_func}},
+                                         /* keep_input_columns */ false)
+                     .ValueOrDie();
     return map;
   }
 
@@ -1474,13 +1478,14 @@ class MetadataResolverConversionTest : public RulesTest {
   }
 
   MapIR* MakeMap(OperatorIR* parent) {
-    auto agg_func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-    EXPECT_OK(agg_func->Init({FuncIR::Opcode::add, "+", "add"},
-                             std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)})));
-
-    MapIR* agg = graph->MakeNode<MapIR>(ast).ValueOrDie();
-    EXPECT_OK(agg->Init(parent, {{"agg_fn", agg_func}}));
-    return agg;
+    auto map_func = graph
+                        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
+                                             std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)}))
+                        .ValueOrDie();
+    return graph
+        ->CreateNode<MapIR>(ast, parent, ColExpressionVector{{"map_fn", map_func}},
+                            /* keep_input_columns */ false)
+        .ValueOrDie();
   }
 
   MemorySourceIR* mem_src;

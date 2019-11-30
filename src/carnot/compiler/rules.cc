@@ -1006,7 +1006,8 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
                                             std::make_move_iterator(relation.col_names().end()));
   DCHECK_EQ(col_exprs.size(), md_resolver->relation().NumColumns());
   PL_ASSIGN_OR_RETURN(MapIR * map,
-                      graph->CreateNode<MapIR>(md_resolver->ast_node(), parent_op, col_exprs));
+                      graph->CreateNode<MapIR>(md_resolver->ast_node(), parent_op, col_exprs,
+                                               /* keep_input_columns */ false));
   return map;
 }
 
@@ -1089,7 +1090,8 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
 
   // Init the map from the drop.
   PL_ASSIGN_OR_RETURN(MapIR * map_ir,
-                      ir_graph->CreateNode<MapIR>(drop_ir->ast_node(), parent_op, col_exprs));
+                      ir_graph->CreateNode<MapIR>(drop_ir->ast_node(), parent_op, col_exprs,
+                                                  /* keep_input_columns */ false));
   PL_RETURN_IF_ERROR(map_ir->SetRelation(RelationFromExprs(map_ir->col_exprs())));
 
   // Update all of drop's dependencies to point to src.

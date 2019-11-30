@@ -446,7 +446,9 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(Dataframe* df, const pypa::AstP
     keep_exprs.emplace_back(col_name, keep_col);
   }
 
-  PL_ASSIGN_OR_RETURN(MapIR * map_op, df->graph()->CreateNode<MapIR>(ast, df->op(), keep_exprs));
+  PL_ASSIGN_OR_RETURN(
+      MapIR * map_op,
+      df->graph()->CreateNode<MapIR>(ast, df->op(), keep_exprs, /* keep_input_columns */ false));
   // TODO(nserrino): Refactor this once lambda maps are deprecated.
   // Technically not needed but here for explicitness until the refactor.
   map_op->set_keep_input_columns(false);

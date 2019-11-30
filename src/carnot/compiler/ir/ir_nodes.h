@@ -1156,7 +1156,7 @@ class MapIR : public OperatorIR {
   MapIR() = delete;
   explicit MapIR(int64_t id) : OperatorIR(id, IRNodeType::kMap, true, false) {}
 
-  Status Init(OperatorIR* parent, const ColExpressionVector& col_exprs);
+  Status Init(OperatorIR* parent, const ColExpressionVector& col_exprs, bool keep_input_columns);
 
   const ColExpressionVector& col_exprs() const { return col_exprs_; }
   Status SetColExprs(const ColExpressionVector& exprs);
@@ -1164,12 +1164,9 @@ class MapIR : public OperatorIR {
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   bool keep_input_columns() const { return keep_input_columns_; }
-
-  // TODO(nserrino): Remove when lambda maps are deprecated.
-  void set_keep_input_columns(bool keep) { keep_input_columns_ = keep; }
+  void set_keep_input_columns(bool keep_input_columns) { keep_input_columns_ = keep_input_columns; }
 
  private:
-  Status SetupMapExpressions(LambdaIR* map_func);
   // The map from new column_names to expressions.
   ColExpressionVector col_exprs_;
   bool keep_input_columns_ = false;

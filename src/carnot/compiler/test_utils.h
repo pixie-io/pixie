@@ -298,8 +298,10 @@ class OperatorTests : public ::testing::Test {
     return mem_source;
   }
 
-  MapIR* MakeMap(OperatorIR* parent, const ColExpressionVector& col_map) {
-    MapIR* map = graph->CreateNode<MapIR>(ast, parent, col_map).ConsumeValueOrDie();
+  MapIR* MakeMap(OperatorIR* parent, const ColExpressionVector& col_map,
+                 bool keep_input_columns = false) {
+    MapIR* map =
+        graph->CreateNode<MapIR>(ast, parent, col_map, keep_input_columns).ConsumeValueOrDie();
     return map;
   }
 

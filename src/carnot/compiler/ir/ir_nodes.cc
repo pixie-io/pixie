@@ -236,18 +236,6 @@ Status RangeIR::ToProto(planpb::Operator*) const {
   return error::Unimplemented("$0 does not have a protobuf.", type_string());
 }
 
-Status MapIR::SetupMapExpressions(LambdaIR* map_func) {
-  if (!map_func->HasDictBody()) {
-    return map_func->CreateIRNodeError("Expected lambda func to have dictionary body.");
-  }
-  for (const ColumnExpression& mapped_expression : col_exprs_) {
-    ExpressionIR* expr = mapped_expression.node;
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(map_func->id(), expr->id()));
-  }
-  PL_RETURN_IF_ERROR(SetColExprs(map_func->col_exprs()));
-  return graph_ptr()->DeleteNode(map_func->id());
-}
-
 Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
   for (const ColumnExpression& mapped_expression : col_exprs_) {
     ExpressionIR* expr = mapped_expression.node;
@@ -265,10 +253,11 @@ Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
   return Status::OK();
 }
 
-// TODO(nserrino): Have keep_input_columns as an argument here once InitImpl is deprecated.
-Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs) {
+Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs,
+                   bool keep_input_columns) {
   PL_RETURN_IF_ERROR(AddParent(parent));
   PL_RETURN_IF_ERROR(SetColExprs(col_exprs));
+  keep_input_columns_ = keep_input_columns;
   return Status::OK();
 }
 

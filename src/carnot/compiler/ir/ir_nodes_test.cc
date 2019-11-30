@@ -185,7 +185,7 @@ const char* kExpectedMapPb = R"(
         }
         args {
           column {
-            node: 0
+            node: 3
             index: 4
           }
         }
@@ -197,19 +197,24 @@ const char* kExpectedMapPb = R"(
 TEST(ToProto, map_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
-  auto mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
-  auto map = graph->MakeNode<MapIR>(ast).ValueOrDie();
-  auto constant = graph->MakeNode<IntIR>(ast).ValueOrDie();
-  EXPECT_OK(constant->Init(10));
-  auto col = graph->MakeNode<ColumnIR>(ast).ValueOrDie();
-  EXPECT_OK(col->Init("col_name", /*parent_op_idx*/ 0));
+  auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
+  auto col = graph->CreateNode<ColumnIR>(ast, "col4", /*parent_op_idx*/ 0).ValueOrDie();
   col->ResolveColumn(4, types::INT64);
-  auto func = graph->MakeNode<FuncIR>(ast).ValueOrDie();
-  EXPECT_OK(
-      func->Init({FuncIR::Opcode::add, "+", "add"}, std::vector<ExpressionIR*>({constant, col})));
+  auto func = graph
+                  ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
+                                       std::vector<ExpressionIR*>({constant, col}))
+                  .ValueOrDie();
   func->set_func_id(1);
 
-  EXPECT_OK(map->Init(mem_src, {{"col_name", func}}));
+  auto mem_src =
+      graph
+          ->CreateNode<MemorySourceIR>(
+              ast, "table_name", std::vector<std::string>{"col0", "col1", "col2", "col3", "col4"})
+          .ValueOrDie();
+  auto map = graph
+                 ->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"col_name", func}},
+                                     /* keep_input_columns */ false)
+                 .ValueOrDie();
 
   planpb::Operator pb;
   EXPECT_OK(map->ToProto(&pb));
