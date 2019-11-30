@@ -28,17 +28,17 @@ using table_store::schema::RowDescriptor;
 const char* kGroupByNoneQuery =
     R"(
 queryDF = dataframe(table='test_table', select=['col0', 'col1']))"
-    R"(.agg(fn=lambda r: { 'sum': pl.sum(r.col1)}).result(name='$0'))";
+    R"(.agg(sum=('col1', pl.sum)).result(name='$0'))";
 
 const char* kGroupByOneQuery =
     R"(
 queryDF = dataframe(table='test_table', select=['col0', 'col1']))"
-    R"(.agg(by=lambda r: [r.col0], fn=lambda r: { 'sum': pl.sum(r.col1)}).result(name='$0'))";
+    R"(.groupby('col0').agg(sum=('col1', pl.sum)).result(name='$0'))";
 
 const char* kGroupByTwoQuery =
     R"(
 queryDF = dataframe(table='test_table', select=['col0', 'col1', 'col2']))"
-    R"(.agg(by=lambda r: [r.col0, r.col1], fn=lambda r: { 'sum': pl.sum(r.col2)}).result(name='$0'))";
+    R"(.groupby(['col0', 'col1']).agg(sum=('col2', pl.sum)).result(name='$0'))";
 
 std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> table_store) {
   auto carnot_or_s = Carnot::Create(table_store, exec::MockKelvinStubGenerator);
