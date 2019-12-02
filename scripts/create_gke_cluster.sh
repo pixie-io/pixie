@@ -7,8 +7,8 @@
 ##################
 
 set_default_values() {
-  NUM_NODES=4
-  MACHINE_TYPE=n1-standard-4
+  NUM_NODES=2
+  MACHINE_TYPE=n1-standard-1
   IMAGE_NAME=UBUNTU
   DISK_SIZE=100
   ZONE=us-west1-a
