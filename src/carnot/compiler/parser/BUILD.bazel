@@ -29,3 +29,9 @@ pl_cc_test(
     srcs = ["string_reader_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "parser_test",
+    srcs = ["parser_test.cc"],
+    deps = [":cc_library", "//src/carnot/compiler:test_utils"],
+)

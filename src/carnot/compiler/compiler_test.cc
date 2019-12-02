@@ -2892,6 +2892,17 @@ TEST_F(CompilerTest, BadDropQuery) {
   EXPECT_EQ(map->relation(), expected_relation);
 }
 
+TEST_F(CompilerTest, AndExpressionFailsGracefully) {
+  auto query = absl::StrJoin(
+      {"df = dataframe('bar')", "df[df['service'] != '' && pl.asid() != 10].result(name='out')"},
+      "\n");
+  auto ir_graph_or_s = compiler_.Compile(query, compiler_state_.get());
+  ASSERT_NOT_OK(ir_graph_or_s);
+
+  EXPECT_THAT(ir_graph_or_s.status(),
+              HasCompilerError("SyntaxError: Expected expression after operator"));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
