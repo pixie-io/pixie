@@ -36,7 +36,7 @@ interface Auth0LoginState {
 function onLoginAuthenticated(authResult) {
   this._lock.getUserInfo(authResult.accessToken, (error, profile) => {
     this._lock.hide();
-    if (this.localMode) {
+    if (this.cliAuthMode === 'manual') {
       this.setState({
         token: authResult.accessToken,
       });
@@ -140,7 +140,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
   private siteName: string;
   private auth0Redirect: string;
   private redirectPath: string;
-  private localMode: boolean;
+  private cliAuthMode: '' | 'auto' | 'manual' = '';
   private responseMode: string;
 
   constructor(props) {
@@ -172,10 +172,11 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
 
     // If localMode is on, redirect to the given location.
     if (localMode === 'true' && localModeRedirect !== '') {
+      this.cliAuthMode = 'auto';
       this.auth0Redirect = localModeRedirect;
       this.responseMode = 'form_post';
     } else if (localMode === 'true') {
-      this.localMode = true;
+      this.cliAuthMode = 'manual';
       this.auth0Redirect = this.auth0Redirect + '&local_mode=true';
     }
   }
@@ -213,7 +214,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
       allowedConnections: ['google-oauth2'],
     });
 
-    if (this.isAuthenticated()) {
+    if (!this.cliAuthMode && this.isAuthenticated()) {
       RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
     }
 
