@@ -150,6 +150,9 @@ StatusOr<IRNode*> ASTVisitorImpl::ParseAndProcessSingleExpression(
 
 Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
   pypa::AstStmtList items_list = m->body->items;
+  if (items_list.size() == 0) {
+    return CreateAstError(m, "No runnable code found");
+  }
   // iterate through all the items on this list.
   std::vector<Status> status_vector;
   for (pypa::AstStmt stmt : items_list) {

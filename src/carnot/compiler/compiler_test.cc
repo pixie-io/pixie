@@ -2903,6 +2903,13 @@ TEST_F(CompilerTest, AndExpressionFailsGracefully) {
               HasCompilerError("SyntaxError: Expected expression after operator"));
 }
 
+TEST_F(CompilerTest, CommentOnlyCodeShouldFailGracefullly) {
+  auto query = "# this is a comment";
+  auto ir_graph_or_s = compiler_.Compile(query, compiler_state_.get());
+  ASSERT_NOT_OK(ir_graph_or_s);
+
+  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("No runnable code found"));
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
