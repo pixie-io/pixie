@@ -497,28 +497,21 @@ class OperatorTests : public ::testing::Test {
   }
 
   JoinIR* MakeJoin(const std::vector<OperatorIR*>& parents, const std::string& join_type,
-                   ExpressionIR* equality_condition, const ColExpressionVector& output_columns) {
-    // t1.Join(type="inner", cond=lambda a,b: a.col1 == b.col2, cols = lambda a,b:{
-    // "col1", a.col1,
-    // "col2", b.col2})
-
-    auto eq_conditions = JoinIR::ParseCondition(equality_condition).ConsumeValueOrDie();
-    JoinIR* join_node =
-        graph
-            ->CreateNode<JoinIR>(ast, parents, join_type, eq_conditions.left_on_cols,
-                                 eq_conditions.right_on_cols, std::vector<std::string>{})
-            .ConsumeValueOrDie();
-
-    std::vector<std::string> output_column_names;
-    std::vector<ColumnIR*> output_column_values;
-    for (const auto& [name, node] : output_columns) {
-      output_column_names.push_back(name);
-      CHECK(Match(node, ColumnNode()));
-      output_column_values.push_back(static_cast<ColumnIR*>(node));
+                   const Relation& left_relation, const Relation& right_relation,
+                   const std::vector<std::string> left_on_col_names,
+                   const std::vector<std::string>& right_on_col_names,
+                   const std::vector<std::string>& suffix_strs = std::vector<std::string>{}) {
+    std::vector<ColumnIR*> left_on_cols;
+    std::vector<ColumnIR*> right_on_cols;
+    for (const auto& left_name : left_on_col_names) {
+      left_on_cols.push_back(MakeColumn(left_name, 0, left_relation));
     }
-
-    PL_CHECK_OK(join_node->SetOutputColumns(output_column_names, output_column_values));
-    return join_node;
+    for (const auto& right_name : right_on_col_names) {
+      right_on_cols.push_back(MakeColumn(right_name, 1, right_relation));
+    }
+    return graph
+        ->CreateNode<JoinIR>(ast, parents, join_type, left_on_cols, right_on_cols, suffix_strs)
+        .ConsumeValueOrDie();
   }
 
   // Use this if you need a relation but don't care about the contents.

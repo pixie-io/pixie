@@ -218,7 +218,6 @@ Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr
 
   PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->CreateNode<MapIR>(expr_node, parent_op, map_exprs,
                                                                     /* keep_input_columns */ true));
-
   var_table_[assign_name_string] = std::make_shared<Dataframe>(ir_node);
 
   return Status::OK();

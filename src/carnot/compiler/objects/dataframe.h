@@ -156,49 +156,6 @@ class LimitHandler {
   static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
 };
 
-// TODO(philkuz) (PL-1128) Remove this after successful integration with the rest of the compiler.
-/**
- * @brief Implements the old agg operator logic. This will be deprecated soon, but we have this to
- * reduce the complexity of switching to the pyobject model.
- *
- */
-class OldAggHandler {
- public:
-  /**
-   * @brief Evaluates the old agg function.
-   *
-   * @param df the dataframe that's a parent to the agg function.
-   * @param ast the ast node that signifies where the query was written
-   * @param args the arguments for agg()
-   * @return StatusOr<QLObjectPtr>
-   */
-
-  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
-
-  static StatusOr<std::vector<ColumnIR*>> SetupGroups(ExpressionIR* group_by_expr);
-};
-
-// TODO(philkuz) (PL-1128) Remove this after successful integration with the rest of the compiler.
-/**
- * @brief Implements the old join operator logic. This will be deprecated soon, but we have this to
- * reduce the complexity of switching to the pyobject model.
- *
- */
-class OldJoinHandler {
- public:
-  /**
-   * @brief Evaluates the old join function.
-   *
-   * @param df the dataframe that's a parent to the join function.
-   * @param ast the ast node that signifies where the query was written
-   * @param args the arguments for join()
-   * @return StatusOr<QLObjectPtr>
-   */
-
-  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
-};
-
-// TODO(philkuz) (PL-1128) Remove this after successful integration with the rest of the compiler.
 /**
  * @brief Implements the old result operator logic. This will be deprecated soon, but we have this
  * to reduce the complexity of switching to the pyobject model.

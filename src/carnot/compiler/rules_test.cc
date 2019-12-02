@@ -113,7 +113,6 @@ TEST_F(DataTypeRuleTest, map_function) {
                   .ValueOrDie();
   EXPECT_OK(graph->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"func", func}},
                                      /* keep_input_columns */ false));
-
   // No rule has been run, don't expect any of these to be evaluated.
   EXPECT_FALSE(func->IsDataTypeEvaluated());
   EXPECT_FALSE(col->IsDataTypeEvaluated());
@@ -189,7 +188,6 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
                   .ValueOrDie();
   EXPECT_OK(graph->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"func", func}},
                                      /* keep_input_columns */ false));
-
   // Expect the data_rule to successfully change columnir.
   DataTypeRule data_rule(compiler_state_.get());
   auto result = data_rule.Execute(graph.get());
@@ -246,7 +244,6 @@ TEST_F(DataTypeRuleTest, nested_functions) {
                    .ValueOrDie();
   EXPECT_OK(graph->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"col_name", func2}},
                                      /* keep_input_columns */ false));
-
   // No rule has been run, don't expect any of these to be evaluated.
   EXPECT_FALSE(func->IsDataTypeEvaluated());
   EXPECT_FALSE(func2->IsDataTypeEvaluated());
@@ -1894,18 +1891,9 @@ TEST_F(RulesTest, setup_join_type_rule) {
                      {"right_only", "col1", "col2", "col3", "col4"});
   auto mem_src2 = MakeMemSource(relation1);
 
-  auto left_only_col = MakeColumn("left_only", 0, relation0);
-  auto right_only_col = MakeColumn("right_only", 1, relation1);
   auto join_op =
-      MakeJoin({mem_src1, mem_src2}, "right",
-               MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
-               {{"left_only", left_only_col},
-                {"col4", MakeColumn("col4", 1, relation1)},
-                {"col1", MakeColumn("col1", 0, relation0)},
-                {"right_only", right_only_col}});
-
-  EXPECT_EQ(left_only_col->container_op_parent_idx(), 0);
-  EXPECT_EQ(right_only_col->container_op_parent_idx(), 1);
+      MakeJoin({mem_src1, mem_src2}, "right", relation0, relation1,
+               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
 
   SetupJoinTypeRule rule;
   auto result = rule.Execute(graph.get());
@@ -1914,8 +1902,6 @@ TEST_F(RulesTest, setup_join_type_rule) {
 
   EXPECT_EQ(join_op->parents()[0], mem_src2);
   EXPECT_EQ(join_op->parents()[1], mem_src1);
-  EXPECT_EQ(left_only_col->container_op_parent_idx(), 1);
-  EXPECT_EQ(right_only_col->container_op_parent_idx(), 0);
 }
 
 TEST_F(RulesTest, eval_compile_time_test) {

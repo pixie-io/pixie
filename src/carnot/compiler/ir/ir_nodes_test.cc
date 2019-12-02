@@ -726,16 +726,9 @@ TEST_F(CloneTests, join_clone) {
                      {"right_only", "col1", "col2", "col3", "col4"});
   auto mem_src2 = MakeMemSource(relation1);
 
-  auto join_op = MakeJoin(
-      {mem_src1, mem_src2}, "inner",
-      MakeAndFunc(
-          MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
-          MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
-      {{{"left_only", MakeColumn("left_only", 0, relation0)},
-        {"col4", MakeColumn("col4", 1, relation1)},
-        {"col1", MakeColumn("col1", 0, relation0)},
-        {"right_only", MakeColumn("right_only", 1, relation1)}},
-       {}});
+  auto join_op =
+      MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
+               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
 
   auto out = graph->Clone();
 
@@ -991,16 +984,15 @@ TEST_F(ToProtoTests, inner_join) {
                      {"right_only", "col1", "col2", "col3", "col4"});
   auto mem_src2 = MakeMemSource(relation1);
 
-  auto join_op = MakeJoin(
-      {mem_src1, mem_src2}, "inner",
-      MakeAndFunc(
-          MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
-          MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
-      {{{"left_only", MakeColumn("left_only", 0, relation0)},
-        {"col4", MakeColumn("col4", 1, relation1)},
-        {"col1", MakeColumn("col1", 0, relation0)},
-        {"right_only", MakeColumn("right_only", 1, relation1)}},
-       {}});
+  auto join_op =
+      MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
+               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
+
+  std::vector<std::string> col_names{"left_only", "col4", "col1", "right_only"};
+  std::vector<ColumnIR*> cols{MakeColumn("left_only", 0, relation0),
+                              MakeColumn("col4", 1, relation1), MakeColumn("col1", 0, relation0),
+                              MakeColumn("right_only", 1, relation1)};
+  EXPECT_OK(join_op->SetOutputColumns(col_names, cols));
 
   planpb::Operator pb;
   EXPECT_OK(join_op->ToProto(&pb));
@@ -1054,16 +1046,14 @@ TEST_F(ToProtoTests, left_join) {
                      {"right_only", "col1", "col2", "col3", "col4"});
   auto mem_src2 = MakeMemSource(relation1);
 
-  auto join_op = MakeJoin(
-      {mem_src1, mem_src2}, "left",
-      MakeAndFunc(
-          MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
-          MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
-      {{{"left_only", MakeColumn("left_only", 0, relation0)},
-        {"col4", MakeColumn("col4", 1, relation1)},
-        {"col1", MakeColumn("col1", 0, relation0)},
-        {"right_only", MakeColumn("right_only", 1, relation1)}},
-       {}});
+  auto join_op =
+      MakeJoin({mem_src1, mem_src2}, "left", relation0, relation1,
+               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
+  std::vector<std::string> col_names{"left_only", "col4", "col1", "right_only"};
+  std::vector<ColumnIR*> cols{MakeColumn("left_only", 0, relation0),
+                              MakeColumn("col4", 1, relation1), MakeColumn("col1", 0, relation0),
+                              MakeColumn("right_only", 1, relation1)};
+  EXPECT_OK(join_op->SetOutputColumns(col_names, cols));
 
   planpb::Operator pb;
   EXPECT_OK(join_op->ToProto(&pb));
@@ -1117,16 +1107,14 @@ TEST_F(ToProtoTests, full_outer) {
                      {"right_only", "col1", "col2", "col3", "col4"});
   auto mem_src2 = MakeMemSource(relation1);
 
-  auto join_op = MakeJoin(
-      {mem_src1, mem_src2}, "outer",
-      MakeAndFunc(
-          MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
-          MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
-      {{{"left_only", MakeColumn("left_only", 0, relation0)},
-        {"col4", MakeColumn("col4", 1, relation1)},
-        {"col1", MakeColumn("col1", 0, relation0)},
-        {"right_only", MakeColumn("right_only", 1, relation1)}},
-       {}});
+  auto join_op =
+      MakeJoin({mem_src1, mem_src2}, "outer", relation0, relation1,
+               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
+  std::vector<std::string> col_names{"left_only", "col4", "col1", "right_only"};
+  std::vector<ColumnIR*> cols{MakeColumn("left_only", 0, relation0),
+                              MakeColumn("col4", 1, relation1), MakeColumn("col1", 0, relation0),
+                              MakeColumn("right_only", 1, relation1)};
+  EXPECT_OK(join_op->SetOutputColumns(col_names, cols));
 
   planpb::Operator pb;
   EXPECT_OK(join_op->ToProto(&pb));

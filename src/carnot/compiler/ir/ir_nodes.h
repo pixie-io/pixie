@@ -1222,10 +1222,6 @@ class BlockingAggIR : public OperatorIR {
   }
 
  private:
-  // TODO(philkuz) (PL-1081) remove this on removing the init stuff.
-  Status SetupGroupBy(LambdaIR* by_lambda);
-  Status SetupAggFunctions(LambdaIR* agg_lambda);
-
   // contains group_names and groups columns.
   std::vector<ColumnIR*> groups_;
   // The map from value_names to values
@@ -1532,32 +1528,9 @@ class JoinIR : public OperatorIR {
     return Status::OK();
   }
 
-  // The equality condition columns, used by Parse Condition.
-  struct EqConditionColumns {
-    std::vector<ColumnIR*> left_on_cols;
-    std::vector<ColumnIR*> right_on_cols;
-  };
-
-  // TODO(philkuz) (PL-1128) deprecate the api and remove the static methods used by this.
-  /**
-   *
-   * @brief Parses the expression into left and right columns. Eventually we will deprecate this API
-   * so I'm just putting it in JoinIR for convenience
-   *
-   * @param expr
-   * @return StatusOr<EqConditionColumns>
-   */
-  static StatusOr<EqConditionColumns> ParseCondition(ExpressionIR* expr);
   bool specified_as_right() const { return specified_as_right_; }
 
  private:
-  static Status ParseConditionImpl(ExpressionIR* expr, EqConditionColumns* eq_condition);
-  static Status AddColumns(ColumnIR* arg0, ColumnIR* arg1, EqConditionColumns* eq_condition);
-  Status SetupConditionFromLambda(LambdaIR* condition);
-  Status SetupOutputColumns(LambdaIR* output_columns);
-
-  Status ConnectColumns(const std::vector<ColumnIR*>& columns);
-
   /**
    * @brief Converts the string type to JoinIR::JoinType or errors out if it doesn't exist.
    *
