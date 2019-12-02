@@ -694,7 +694,7 @@ class CollectionIR : public ExpressionIR {
  public:
   CollectionIR() = delete;
   CollectionIR(int64_t id, IRNodeType type) : ExpressionIR(id, type) {}
-  Status Init(std::vector<ExpressionIR*> children);
+  Status Init(const std::vector<ExpressionIR*>& children);
 
   std::vector<ExpressionIR*> children() const { return children_; }
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override = 0;
@@ -705,6 +705,8 @@ class CollectionIR : public ExpressionIR {
 
  protected:
   StatusOr<IRNode*> DeepCloneIntoCollection(IR* graph, CollectionIR* collection) const;
+
+  Status SetChildren(const std::vector<ExpressionIR*>& children);
 
  private:
   std::vector<ExpressionIR*> children_;
@@ -915,16 +917,19 @@ class MetadataLiteralIR : public ExpressionIR {
   explicit MetadataLiteralIR(int64_t id) : ExpressionIR(id, IRNodeType::kMetadataLiteral) {}
   Status Init(DataIR* literal);
 
-  IRNodeType literal_type() const { return literal_type_; }
+  IRNodeType literal_type() const {
+    CHECK(literal_ != nullptr);
+    return literal_->type();
+  }
   DataIR* literal() const { return literal_; }
   bool IsDataTypeEvaluated() const override { return literal_->IsDataTypeEvaluated(); }
   types::DataType EvaluatedDataType() const override { return literal_->EvaluatedDataType(); }
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status SetLiteral(DataIR* literal);
 
  private:
   DataIR* literal_;
-  IRNodeType literal_type_;
 };
 
 /**
@@ -1154,7 +1159,6 @@ class DropIR : public OperatorIR {
  */
 class BlockingAggIR : public OperatorIR {
  public:
-  // TODO(philkuz) delete when we rebase init.
   BlockingAggIR() = delete;
   explicit BlockingAggIR(int64_t id) : OperatorIR(id, IRNodeType::kBlockingAgg, true, false) {}
 
@@ -1177,7 +1181,10 @@ class BlockingAggIR : public OperatorIR {
   }
 
  private:
-  // contains group_names and groups columns.
+  Status SetAggExprs(const ColExpressionVector& agg_expr);
+  Status SetGroups(const std::vector<ColumnIR*>& groups);
+
+  // Contains group_names and groups columns.
   std::vector<ColumnIR*> groups_;
   // The map from value_names to values
   ColExpressionVector aggregate_expressions_;
@@ -1197,6 +1204,7 @@ class GroupByIR : public OperatorIR {
   }
 
  private:
+  Status SetGroups(const std::vector<ColumnIR*>& groups);
   // contains group_names and groups columns.
   std::vector<ColumnIR*> groups_;
 };
@@ -1447,8 +1455,8 @@ class JoinIR : public OperatorIR {
    * @param suffix_strs
    * @return Status
    */
-  Status Init(std::vector<OperatorIR*> parents, const std::string& how_type,
-              const std::vector<ColumnIR*> left_on_cols,
+  Status Init(const std::vector<OperatorIR*>& parents, const std::string& how_type,
+              const std::vector<ColumnIR*>& left_on_cols,
               const std::vector<ColumnIR*>& right_on_cols,
               const std::vector<std::string>& suffix_strs);
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
@@ -1501,6 +1509,9 @@ class JoinIR : public OperatorIR {
    * @return planpb::JoinOperator::JoinType
    */
   static planpb::JoinOperator::JoinType GetPbJoinEnum(JoinType join_type);
+
+  Status SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
+                        const std::vector<ColumnIR*>& right_columns);
 
   // Join type
   JoinType join_type_;

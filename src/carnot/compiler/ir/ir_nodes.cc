@@ -360,11 +360,11 @@ Status FilterIR::Init(OperatorIR* parent, ExpressionIR* expr) {
 }
 
 Status FilterIR::SetFilterExpr(ExpressionIR* expr) {
-  filter_expr_ = expr;
-  if (!graph_ptr()->HasEdge(this, filter_expr_)) {
-    return graph_ptr()->AddEdge(this, filter_expr_);
+  if (filter_expr_) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, filter_expr_));
   }
-  return Status::OK();
+  filter_expr_ = expr;
+  return graph_ptr()->AddEdge(this, filter_expr_);
 }
 
 Status FilterIR::ToProto(planpb::Operator* op) const {
@@ -410,11 +410,20 @@ Status LimitIR::ToProto(planpb::Operator* op) const {
 Status BlockingAggIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
                            const ColExpressionVector& agg_expr) {
   PL_RETURN_IF_ERROR(AddParent(parent));
+  PL_RETURN_IF_ERROR(SetGroups(groups));
+  return SetAggExprs(agg_expr);
+}
+
+Status BlockingAggIR::SetGroups(const std::vector<ColumnIR*>& groups) {
   groups_ = groups;
-  aggregate_expressions_ = agg_expr;
   for (auto g : groups_) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
   }
+  return Status::OK();
+}
+
+Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_expr) {
+  aggregate_expressions_ = agg_expr;
   for (const auto& expr : aggregate_expressions_) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr.node));
   }
@@ -423,6 +432,10 @@ Status BlockingAggIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& gro
 
 Status GroupByIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups) {
   PL_RETURN_IF_ERROR(AddParent(parent));
+  return SetGroups(groups);
+}
+
+Status GroupByIR::SetGroups(const std::vector<ColumnIR*>& groups) {
   groups_ = groups;
   for (auto g : groups_) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
@@ -432,11 +445,13 @@ Status GroupByIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups)
 
 StatusOr<IRNode*> GroupByIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(GroupByIR * group_by, graph->MakeNode<GroupByIR>(id()));
+  std::vector<ColumnIR*> new_groups;
   for (const ColumnIR* column : groups_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_column, column->DeepCloneInto(graph));
     DCHECK(Match(new_column, ColumnNode()));
-    group_by->groups_.push_back(static_cast<ColumnIR*>(new_column));
+    new_groups.push_back(static_cast<ColumnIR*>(new_column));
   }
+  PL_RETURN_IF_ERROR(group_by->SetGroups(new_groups));
   return group_by;
 }
 
@@ -562,11 +577,16 @@ Status StringIR::Init(std::string str) {
   return Status::OK();
 }
 
-Status CollectionIR::Init(std::vector<ExpressionIR*> children) {
+Status CollectionIR::Init(const std::vector<ExpressionIR*>& children) {
+  return SetChildren(children);
+}
+
+Status CollectionIR::SetChildren(const std::vector<ExpressionIR*>& children) {
   if (!children_.empty()) {
-    return error::AlreadyExists(
+    return CreateIRNodeError(
         "CollectionIR already has children and likely has been created already.");
   }
+
   for (auto child : children) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, child));
   }
@@ -645,11 +665,11 @@ Status MetadataIR::ResolveMetadataColumn(MetadataResolverIR* resolver_op,
 }
 
 /* MetadataLiteral IR */
-Status MetadataLiteralIR::Init(DataIR* literal) {
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, literal));
+Status MetadataLiteralIR::Init(DataIR* literal) { return SetLiteral(literal); }
+
+Status MetadataLiteralIR::SetLiteral(DataIR* literal) {
   literal_ = literal;
-  literal_type_ = literal->type();
-  return Status::OK();
+  return graph_ptr()->AddEdge(this, literal);
 }
 
 bool MetadataResolverIR::HasMetadataColumn(const std::string& col_name) {
@@ -732,11 +752,13 @@ StatusOr<IRNode*> StringIR::DeepCloneIntoImpl(IR* graph) const {
 }
 
 StatusOr<IRNode*> CollectionIR::DeepCloneIntoCollection(IR* graph, CollectionIR* collection) const {
+  std::vector<ExpressionIR*> new_children;
   for (ExpressionIR* child : collection->children()) {
     PL_ASSIGN_OR_RETURN(IRNode * new_child, child->DeepCloneInto(graph));
     DCHECK(Match(new_child, Expression()));
-    collection->children_.push_back(static_cast<ExpressionIR*>(new_child));
+    new_children.push_back(static_cast<ExpressionIR*>(new_child));
   }
+  PL_RETURN_IF_ERROR(collection->SetChildren(new_children));
   return collection;
 }
 
@@ -763,7 +785,7 @@ StatusOr<IRNode*> FuncIR::DeepCloneIntoImpl(IR* graph) const {
   for (ExpressionIR* arg : args_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_arg, arg->DeepCloneInto(graph));
     DCHECK(Match(new_arg, Expression()));
-    func->args_.push_back(static_cast<ExpressionIR*>(new_arg));
+    PL_RETURN_IF_ERROR(func->AddArg(static_cast<ExpressionIR*>(new_arg)));
   }
   return func;
 }
@@ -802,8 +824,7 @@ StatusOr<IRNode*> MetadataLiteralIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(MetadataLiteralIR * metadata, graph->MakeNode<MetadataLiteralIR>(id()));
   PL_ASSIGN_OR_RETURN(IRNode * new_literal, literal_->DeepCloneInto(graph));
   DCHECK(Match(new_literal, DataNode())) << new_literal->DebugString();
-  metadata->literal_ = static_cast<DataIR*>(new_literal);
-  metadata->literal_type_ = literal_type_;
+  PL_RETURN_IF_ERROR(metadata->SetLiteral(static_cast<DataIR*>(new_literal)));
   return metadata;
 }
 
@@ -821,10 +842,10 @@ StatusOr<IRNode*> MemorySourceIR::DeepCloneIntoImpl(IR* graph) const {
   if (has_time_expressions_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_start_expr, start_time_expr_->DeepCloneInto(graph));
     DCHECK(Match(new_start_expr, Expression()));
-    mem->start_time_expr_ = static_cast<ExpressionIR*>(new_start_expr);
     PL_ASSIGN_OR_RETURN(IRNode * new_stop_expr, end_time_expr_->DeepCloneInto(graph));
     DCHECK(Match(new_stop_expr, Expression()));
-    mem->end_time_expr_ = static_cast<ExpressionIR*>(new_stop_expr);
+    PL_RETURN_IF_ERROR(mem->SetTimeExpressions(static_cast<ExpressionIR*>(new_start_expr),
+                                               static_cast<ExpressionIR*>(new_stop_expr)));
   }
   return mem;
 }
@@ -864,11 +885,15 @@ StatusOr<IRNode*> OperatorIR::DeepCloneInto(IR* graph) const {
 
 StatusOr<IRNode*> MapIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(MapIR * map, graph->MakeNode<MapIR>(id()));
+  ColExpressionVector new_col_exprs;
   for (const ColumnExpression& col_expr : col_exprs_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr.node->DeepCloneInto(graph));
     DCHECK(Match(new_node, Expression()));
-    map->col_exprs_.push_back({col_expr.name, static_cast<ExpressionIR*>(new_node)});
+    new_col_exprs.push_back({col_expr.name, static_cast<ExpressionIR*>(new_node)});
   }
+
+  PL_RETURN_IF_ERROR(map->SetColExprs(new_col_exprs));
+  map->keep_input_columns_ = keep_input_columns_;
   return map;
 }
 
@@ -880,17 +905,23 @@ StatusOr<IRNode*> DropIR::DeepCloneIntoImpl(IR* graph) const {
 
 StatusOr<IRNode*> BlockingAggIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(BlockingAggIR * blocking_agg, graph->MakeNode<BlockingAggIR>(id()));
+  ColExpressionVector new_agg_exprs;
   for (const ColumnExpression& col_expr : aggregate_expressions_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr.node->DeepCloneInto(graph));
     DCHECK(Match(new_node, Expression()));
-    blocking_agg->aggregate_expressions_.push_back(
-        {col_expr.name, static_cast<ExpressionIR*>(new_node)});
+    new_agg_exprs.push_back({col_expr.name, static_cast<ExpressionIR*>(new_node)});
   }
+
+  std::vector<ColumnIR*> new_groups;
   for (const ColumnIR* column : groups_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_column, column->DeepCloneInto(graph));
     DCHECK(Match(new_column, ColumnNode()));
-    blocking_agg->groups_.push_back(static_cast<ColumnIR*>(new_column));
+    new_groups.push_back(static_cast<ColumnIR*>(new_column));
   }
+
+  PL_RETURN_IF_ERROR(blocking_agg->SetAggExprs(new_agg_exprs));
+  PL_RETURN_IF_ERROR(blocking_agg->SetGroups(new_groups));
+
   return blocking_agg;
 }
 
@@ -898,7 +929,7 @@ StatusOr<IRNode*> FilterIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(FilterIR * filter, graph->MakeNode<FilterIR>(id()));
   PL_ASSIGN_OR_RETURN(IRNode * new_node, filter_expr_->DeepCloneInto(graph));
   DCHECK(Match(new_node, Expression()));
-  filter->filter_expr_ = static_cast<ExpressionIR*>(new_node);
+  PL_RETURN_IF_ERROR(filter->SetFilterExpr(static_cast<ExpressionIR*>(new_node)));
   return filter;
 }
 
@@ -1183,8 +1214,8 @@ Status JoinIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
-Status JoinIR::Init(std::vector<OperatorIR*> parents, const std::string& how_type,
-                    const std::vector<ColumnIR*> left_on_cols,
+Status JoinIR::Init(const std::vector<OperatorIR*>& parents, const std::string& how_type,
+                    const std::vector<ColumnIR*>& left_on_cols,
                     const std::vector<ColumnIR*>& right_on_cols,
                     const std::vector<std::string>& suffix_strs) {
   if (left_on_cols.size() != right_on_cols.size()) {
@@ -1194,42 +1225,54 @@ Status JoinIR::Init(std::vector<OperatorIR*> parents, const std::string& how_typ
   for (auto* p : parents) {
     PL_RETURN_IF_ERROR(AddParent(p));
   }
-  left_on_columns_ = left_on_cols;
-  right_on_columns_ = right_on_cols;
-  suffix_strs_ = suffix_strs;
 
+  PL_RETURN_IF_ERROR(SetJoinColumns(left_on_cols, right_on_cols));
+
+  suffix_strs_ = suffix_strs;
+  return SetJoinType(how_type);
+}
+
+Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
+                              const std::vector<ColumnIR*>& right_columns) {
+  left_on_columns_ = left_columns;
   for (auto g : left_on_columns_) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
   }
+
+  right_on_columns_ = right_columns;
   for (auto g : right_on_columns_) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
   }
-  return SetJoinType(how_type);
+  return Status::OK();
 }
 
 StatusOr<IRNode*> JoinIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(JoinIR * join_node, graph->MakeNode<JoinIR>(id()));
   join_node->join_type_ = join_type_;
-  join_node->column_names_ = column_names_;
 
+  std::vector<ColumnIR*> new_output_columns;
   for (ColumnIR* col_expr : output_columns_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr->DeepCloneInto(graph));
     DCHECK(Match(new_node, ColumnNode()));
-    join_node->output_columns_.push_back(static_cast<ColumnIR*>(new_node));
+    new_output_columns.push_back(static_cast<ColumnIR*>(new_node));
   }
+  PL_RETURN_IF_ERROR(join_node->SetOutputColumns(column_names_, new_output_columns));
 
+  std::vector<ColumnIR*> new_left_columns;
   for (ColumnIR* col_expr : left_on_columns_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr->DeepCloneInto(graph));
     DCHECK(Match(new_node, ColumnNode()));
-    join_node->left_on_columns_.push_back(static_cast<ColumnIR*>(new_node));
+    new_left_columns.push_back(static_cast<ColumnIR*>(new_node));
   }
 
+  std::vector<ColumnIR*> new_right_columns;
   for (ColumnIR* col_expr : right_on_columns_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr->DeepCloneInto(graph));
     DCHECK(Match(new_node, ColumnNode()));
-    join_node->right_on_columns_.push_back(static_cast<ColumnIR*>(new_node));
+    new_right_columns.push_back(static_cast<ColumnIR*>(new_node));
   }
 
+  PL_RETURN_IF_ERROR(join_node->SetJoinColumns(new_left_columns, new_right_columns));
   join_node->suffix_strs_ = suffix_strs_;
 
   return join_node;
