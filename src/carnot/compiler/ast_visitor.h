@@ -85,6 +85,7 @@ class ASTVisitorImpl : public ASTVisitor {
 
   // Constants for operators in the query language.
   inline static constexpr char kDataframeOpId[] = "dataframe";
+  inline static constexpr char kDisplayOpId[] = "display";
   inline static constexpr char kRangeOpId[] = "range";
   inline static constexpr char kMapOpId[] = "map";
   inline static constexpr char kBlockingAggOpId[] = "agg";
@@ -95,8 +96,6 @@ class ASTVisitorImpl : public ASTVisitor {
 
   // Constant for the modules.
   inline static constexpr char kPLModuleObjName[] = "pl";
-  // TODO(philkuz) (PL-1038) figure out naming for Print syntax to get around special casing in the
-  // parser. inline static constexpr char kPrintOpId[] = "print";
 
   // Reserved column names.
   inline static constexpr char kTimeConstantColumnName[] = "time_";
@@ -215,13 +214,13 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> ProcessDataframeOp(const pypa::AstPtr& ast, const ParsedArgs& args);
 
   /**
-   * @brief Create a MemorySink Operator declared by a Print() statement.
+   * @brief Create a MemorySink Operator declared by a display() statement.
    *
    * @param ast the ast node that creates the print op.
    * @param args the arguments to create the print op.
    * @return The object created by print() or an error.
    */
-  StatusOr<QLObjectPtr> ProcessPrint(const pypa::AstPtr& ast, const ParsedArgs& args);
+  StatusOr<QLObjectPtr> ProcessDisplay(const pypa::AstPtr& ast, const ParsedArgs& args);
 
   /**
    * @brief Processes an Attribute value, the left side of the attribute data structure.

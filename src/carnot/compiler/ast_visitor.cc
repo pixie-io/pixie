@@ -38,12 +38,11 @@ Status ASTVisitorImpl::Init() {
 
   PL_ASSIGN_OR_RETURN(var_table_[kPLModuleObjName], PLModule::Create(ir_graph_, compiler_state_));
 
-  // TODO(philkuz) (PL-1038) figure out naming for Print syntax to get around parser.
-  // var_table_[kPrintOpId] = std::shared_ptr<FuncObject>(new FuncObject(
-  //     kPrintOpId, {"out", "name", "cols"}, {{"name", ""}, {"cols", "[]"}},
-  //     /*has_variable_len_kwargs*/ false, std::bind(&ASTVisitorImpl::ProcessPrint, this,
-  //     std::placeholders::_1,
-  //               std::placeholders::_2)));
+  var_table_[kDisplayOpId] = std::shared_ptr<FuncObject>(
+      new FuncObject(kDisplayOpId, {"out", "name", "cols"}, {{"name", "''"}, {"cols", "[]"}},
+                     /*has_variable_len_kwargs*/ false,
+                     std::bind(&ASTVisitorImpl::ProcessDisplay, this, std::placeholders::_1,
+                               std::placeholders::_2)));
   return Status::OK();
 }
 
@@ -85,11 +84,10 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataframeOp(const pypa::AstPtr& ast
   return StatusOr(std::make_shared<Dataframe>(mem_source_op));
 }
 
-StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessPrint(const pypa::AstPtr& ast,
-                                                   const ParsedArgs& args) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDisplay(const pypa::AstPtr& ast,
+                                                     const ParsedArgs& args) {
   IRNode* out = args.GetArg("out");
   IRNode* name = args.GetArg("name");
-  IRNode* cols = args.GetArg("cols");
 
   if (!Match(out, Operator())) {
     return out->CreateIRNodeError("'out' must be a dataframe", out->type_string());
@@ -99,14 +97,17 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessPrint(const pypa::AstPtr& ast,
     return name->CreateIRNodeError("'name' must be a string");
   }
 
-  if (!Match(cols, ListWithChildren(String()))) {
-    return cols->CreateIRNodeError("'cols' must be a list of strings.");
-  }
-
   OperatorIR* out_op = static_cast<OperatorIR*>(out);
   std::string out_name = static_cast<StringIR*>(name)->str();
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
-                      ParseStringsFromCollection(static_cast<ListIR*>(cols)));
+  std::vector<std::string> columns;
+
+  // TODO(PL-1197) support output columns.
+  // IRNode* cols = args.GetArg("cols");
+  // if (!Match(cols, ListWithChildren(String()))) {
+  //   return cols->CreateIRNodeError("'cols' must be a list of strings.");
+  // }
+  // PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
+  //                     ParseStringsFromCollection(static_cast<ListIR*>(cols)));
 
   PL_ASSIGN_OR_RETURN(MemorySinkIR * mem_sink_op,
                       ir_graph_->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));

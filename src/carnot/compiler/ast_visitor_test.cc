@@ -749,6 +749,41 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndStop) {
   EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 100);
 }
 
+TEST_F(ASTVisitorTest, DisplayTest) {
+  std::string query = "df = dataframe('bar')\ndisplay(df)";
+  auto ir_graph_or_s = CompileGraph(query);
+  ASSERT_OK(ir_graph_or_s);
+  auto graph = ir_graph_or_s.ConsumeValueOrDie();
+  auto node_or_s = FindNodeType(graph, IRNodeType::kMemorySink);
+  ASSERT_OK(node_or_s);
+
+  auto node = node_or_s.ConsumeValueOrDie();
+  auto mem_sink = static_cast<MemorySinkIR*>(node);
+  EXPECT_EQ(mem_sink->name(), "");
+
+  ASSERT_EQ(mem_sink->parents().size(), 1);
+  ASSERT_TRUE(Match(mem_sink->parents()[0], MemorySource()));
+  auto mem_src = static_cast<MemorySourceIR*>(mem_sink->parents()[0]);
+  EXPECT_EQ(mem_src->table_name(), "bar");
+}
+
+TEST_F(ASTVisitorTest, DisplayArgumentsTest) {
+  std::string query("df = dataframe('bar')\ndisplay(df, name='foo')");
+  auto ir_graph_or_s = CompileGraph(query);
+  ASSERT_OK(ir_graph_or_s);
+  auto graph = ir_graph_or_s.ConsumeValueOrDie();
+  auto node_or_s = FindNodeType(graph, IRNodeType::kMemorySink);
+  ASSERT_OK(node_or_s);
+
+  auto node = node_or_s.ConsumeValueOrDie();
+  auto mem_sink = static_cast<MemorySinkIR*>(node);
+  EXPECT_EQ(mem_sink->name(), "foo");
+
+  ASSERT_EQ(mem_sink->parents().size(), 1);
+  ASSERT_TRUE(Match(mem_sink->parents()[0], MemorySource()));
+  auto mem_src = static_cast<MemorySourceIR*>(mem_sink->parents()[0]);
+  EXPECT_EQ(mem_src->table_name(), "bar");
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

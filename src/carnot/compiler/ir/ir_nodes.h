@@ -1041,6 +1041,7 @@ class MemorySinkIR : public OperatorIR {
               const std::vector<std::string> out_columns);
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  const std::vector<std::string>& out_columns() const { return out_columns_; }
   bool IsBlocking() const override { return true; }
 
  private:
