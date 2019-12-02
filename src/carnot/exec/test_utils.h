@@ -275,7 +275,7 @@ class ExecNodeTester {
         .WillRepeatedly(::testing::Return(error));
 
     auto retval = exec_node_->ConsumeNext(exec_state_, rb, parent_id);
-    EXPECT_FALSE(retval.ok());
+    EXPECT_NOT_OK(retval);
 
     return *this;
   }

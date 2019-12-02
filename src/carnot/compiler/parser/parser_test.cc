@@ -16,9 +16,10 @@ class ParserTest : public ::testing::Test {};
 
 // Test sh
 TEST_F(ParserTest, AndExpressionFailsGracefully) {
-  auto query = absl::StrJoin(
-      {"df = dataframe('bar')", "df[df['service'] != '' && pl.asid() != 10].result(name='out')"},
-      "\n");
+  auto query =
+      absl::StrJoin({"df = dataframe('bar')", "df = df[df['service'] != '' && pl.asid() != 10]",
+                     "display(df, 'out')"},
+                    "\n");
   Parser parser;
   auto ast_or_s = parser.Parse(query);
   ASSERT_NOT_OK(ast_or_s);

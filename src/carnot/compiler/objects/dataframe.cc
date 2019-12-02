@@ -31,7 +31,6 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       std::bind(&AggHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kBlockingAggOpId, aggfn);
 
-  // TODO(philkuz) (PL-1036) remove this upon availability of new syntax.
   /**
    * # Equivalent to the python method method syntax:
    * def drop(self, fn):
@@ -51,18 +50,6 @@ Dataframe::Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {
       kLimitOpId, {"n"}, {{"n", "5"}}, /* has_variable_len_kwargs */ false,
       std::bind(&LimitHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kLimitOpId, limitfn);
-
-  // TODO(philkuz) (PL-1128) disable this when new result syntax is supported.
-  /**
-   * # Equivalent to the python method method syntax:
-   * def result(self, name):
-   *     ...
-   */
-  std::shared_ptr<FuncObject> old_sink_fn(new FuncObject(
-      kSinkOpId, {"name"}, {},
-      /* has_variable_len_kwargs */ false,
-      std::bind(&OldResultHandler::Eval, this, std::placeholders::_1, std::placeholders::_2)));
-  AddMethod(kSinkOpId, old_sink_fn);
 
   /**
    *
@@ -268,18 +255,6 @@ StatusOr<QLObjectPtr> LimitHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
   // Delete the integer node.
   PL_RETURN_IF_ERROR(df->graph()->DeleteNode(rows_node->id()));
   return StatusOr(std::make_shared<Dataframe>(limit_op));
-}
-
-StatusOr<QLObjectPtr> OldResultHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,
-                                             const ParsedArgs& args) {
-  IRNode* name_node = args.GetArg("name");
-  if (!Match(name_node, String())) {
-    return name_node->CreateIRNodeError("'name' must be a str");
-  }
-  std::string name = static_cast<StringIR*>(name_node)->str();
-  PL_ASSIGN_OR_RETURN(MemorySinkIR * sink_op, df->graph()->CreateNode<MemorySinkIR>(
-                                                  ast, df->op(), name, std::vector<std::string>{}));
-  return StatusOr(std::make_shared<NoneObject>(sink_op));
 }
 
 StatusOr<QLObjectPtr> SubscriptHandler::Eval(Dataframe* df, const pypa::AstPtr& ast,

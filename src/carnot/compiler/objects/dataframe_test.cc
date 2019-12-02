@@ -396,64 +396,6 @@ TEST_F(DataframeTest, LimitCall) {
   EXPECT_FALSE(graph->HasNode(limit_int_node_id));
 }
 
-using OldResultTest = DataframeTest;
-
-TEST_F(OldResultTest, SimpleResultCall) {
-  MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
-
-  ParsedArgs args;
-  args.AddArg("name", MakeString("foo"));
-
-  auto status = OldResultHandler::Eval(srcdf.get(), ast, args);
-  ASSERT_OK(status);
-
-  QLObjectPtr ql_object = status.ConsumeValueOrDie();
-  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kNone);
-  auto none_obj = std::static_pointer_cast<NoneObject>(ql_object);
-
-  ASSERT_TRUE(none_obj->HasNode());
-  ASSERT_TRUE(Match(none_obj->node(), MemorySink()));
-  MemorySinkIR* sink = static_cast<MemorySinkIR*>(none_obj->node());
-  EXPECT_THAT(sink->parents(), ElementsAre(src));
-  EXPECT_EQ(sink->name(), "foo");
-}
-
-TEST_F(OldResultTest, ResultCallWrongNameType) {
-  MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
-
-  ParsedArgs args;
-  args.AddArg("name", MakeInt(123));
-
-  auto status = OldResultHandler::Eval(srcdf.get(), ast, args);
-  ASSERT_NOT_OK(status);
-  EXPECT_THAT(status.status(), HasCompilerError("'name' must be a str"));
-}
-
-TEST_F(DataframeTest, ResultCall) {
-  MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
-
-  ArgMap args{{}, {MakeString("foo")}};
-
-  auto get_method_status = srcdf->GetMethod(Dataframe::kSinkOpId);
-  ASSERT_OK(get_method_status);
-  auto func_obj = get_method_status.ConsumeValueOrDie();
-  auto status = func_obj->Call(args, ast, ast_visitor.get());
-  ASSERT_OK(status);
-
-  QLObjectPtr ql_object = status.ConsumeValueOrDie();
-  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kNone);
-  auto none_obj = std::static_pointer_cast<NoneObject>(ql_object);
-
-  ASSERT_TRUE(none_obj->HasNode());
-  ASSERT_TRUE(Match(none_obj->node(), MemorySink()));
-  MemorySinkIR* sink = static_cast<MemorySinkIR*>(none_obj->node());
-  EXPECT_THAT(sink->parents(), ElementsAre(src));
-  EXPECT_EQ(sink->name(), "foo");
-}
-
 class SubscriptTest : public DataframeTest {
  protected:
   void SetUp() override {

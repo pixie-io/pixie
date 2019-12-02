@@ -136,7 +136,8 @@ joined_table = joined_table[[
   'errors',
   'throughput (rps)',
   'throughput total']]
-joined_table[joined_table['service'] != ''].result(name='out')
+df = joined_table[joined_table['service'] != '']
+display(df)
 )pxl";
 
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
@@ -195,7 +196,8 @@ joined_table = joined_table[[
   'throughput (rps)',
   'throughput total']]
 joined_table['asid'] = pl.asid()
-joined_table[joined_table['service'] != '' and pl.asid() == 3870].result(name='out')
+joined_table = joined_table[joined_table['service'] != '' and pl.asid() == 3870]
+display(joined_table)
 )pxl";
 
 TEST_F(LogicalPlannerTest, duplicate_int) {
@@ -232,9 +234,8 @@ window2_agg['p99'] = pl.pluck(window2_agg['quantiles'], 'p99')
 window2_agg['time_'] = window2_agg['window2']
 # window2_agg = window2_agg.drop('window2')
 
-window2_agg[window2_agg['service'] != ''].result(name='dd')
-# union_quantiles = window1_agg.union(window2_agg)
-# union_quantiles[union_quantiles['service'] != ''].result(name='out')
+df = window2_agg[window2_agg['service'] != '']
+display(df)
 )query";
 TEST_F(LogicalPlannerTest, NestedCompileTime) {
   auto planner = LogicalPlanner::Create().ConsumeValueOrDie();

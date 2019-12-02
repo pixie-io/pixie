@@ -6,6 +6,7 @@
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
+#include "src/common/base/test_utils.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {
@@ -154,7 +155,7 @@ TEST_F(OperatorTest, from_proto_union_out_of_range_1) {
   auto union_pb = planpb::testutils::CreateTestUnionOutOfRange1();
   auto union_op = std::make_unique<UnionOperator>(1);
   auto s = union_op->Init(union_pb.union_op());
-  EXPECT_FALSE(s.ok());
+  EXPECT_NOT_OK(s);
   EXPECT_EQ(
       s.msg(),
       "Inconsistent number of columns in UnionOperator, expected 2 but received 1 for input 0.");
@@ -164,7 +165,7 @@ TEST_F(OperatorTest, from_proto_union_out_of_range_2) {
   auto union_pb = planpb::testutils::CreateTestUnionOutOfRange2();
   auto union_op = std::make_unique<UnionOperator>(1);
   auto s = union_op->Init(union_pb.union_op());
-  EXPECT_FALSE(s.ok());
+  EXPECT_NOT_OK(s);
   EXPECT_EQ(
       s.msg(),
       "Inconsistent number of columns in UnionOperator, expected 2 but received 3 for input 0.");
@@ -196,7 +197,7 @@ TEST_F(OperatorTest, from_proto_join_full_outer_time_ordered_error) {
   auto join_pb = planpb::testutils::CreateTestErrorJoin1PB();
   auto join_op = std::make_unique<JoinOperator>(1);
   auto s = join_op->Init(join_pb.join_op());
-  EXPECT_FALSE(s.ok());
+  EXPECT_NOT_OK(s);
   EXPECT_EQ(s.msg(), "For time ordered joins, full outer join is not supported.");
 }
 
@@ -204,7 +205,7 @@ TEST_F(OperatorTest, from_proto_join_left_outer_time_ordered_error) {
   auto join_pb = planpb::testutils::CreateTestErrorJoin2PB();
   auto join_op = std::make_unique<JoinOperator>(1);
   auto s = join_op->Init(join_pb.join_op());
-  EXPECT_FALSE(s.ok());
+  EXPECT_NOT_OK(s);
   EXPECT_EQ(
       s.msg(),
       "For time ordered joins, left join is only supported when time_ comes from the left table.");
@@ -237,7 +238,7 @@ TEST_F(OperatorTest, output_relation_source_inputs) {
   auto src_op = Operator::FromProto(src_pb, 1);
 
   auto rel = src_op->OutputRelation(schema_, *state_, std::vector<int64_t>({1}));
-  EXPECT_FALSE(rel.ok());
+  EXPECT_NOT_OK(rel);
   EXPECT_EQ(rel.msg(), "Source operator cannot have any inputs");
 }
 
@@ -260,7 +261,7 @@ TEST_F(OperatorTest, output_relation_map_no_input) {
   auto map_pb = planpb::testutils::CreateTestMap1PB();
   auto map_op = Operator::FromProto(map_pb, 1);
   auto rel = map_op->OutputRelation(schema_, *state_, std::vector<int64_t>({}));
-  EXPECT_FALSE(rel.ok());
+  EXPECT_NOT_OK(rel);
   EXPECT_EQ(rel.msg(), "Map operator must have exactly one input");
 }
 
@@ -268,7 +269,7 @@ TEST_F(OperatorTest, output_relation_map_missing_rel) {
   auto map_pb = planpb::testutils::CreateTestMap1PB();
   auto map_op = Operator::FromProto(map_pb, 1);
   auto rel = map_op->OutputRelation(schema_, *state_, std::vector<int64_t>({10}));
-  EXPECT_FALSE(rel.ok());
+  EXPECT_NOT_OK(rel);
   EXPECT_EQ(rel.msg(), "Missing relation (10) for input of Map");
 }
 
@@ -276,7 +277,7 @@ TEST_F(OperatorTest, output_relation_blocking_agg_no_input) {
   auto agg_pb = planpb::testutils::CreateTestBlockingAgg1PB();
   auto agg_op = Operator::FromProto(agg_pb, 1);
   auto rel = agg_op->OutputRelation(schema_, *state_, std::vector<int64_t>({}));
-  EXPECT_FALSE(rel.ok());
+  EXPECT_NOT_OK(rel);
   EXPECT_EQ(rel.msg(), "BlockingAgg operator must have exactly one input");
 }
 
@@ -284,7 +285,7 @@ TEST_F(OperatorTest, output_relation_blocking_agg_missing_rel) {
   auto agg_pb = planpb::testutils::CreateTestBlockingAgg1PB();
   auto agg_op = Operator::FromProto(agg_pb, 1);
   auto rel = agg_op->OutputRelation(schema_, *state_, std::vector<int64_t>({10}));
-  EXPECT_FALSE(rel.ok());
+  EXPECT_NOT_OK(rel);
   EXPECT_EQ(rel.msg(), "Missing relation (10) for input of BlockingAggregateOperator");
 }
 
@@ -325,7 +326,7 @@ TEST_F(OperatorTest, output_relation_union_mismatched) {
   auto union_op = Operator::FromProto(union_pb, 4);
 
   auto rel = union_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 4}));
-  EXPECT_FALSE(rel.ok());
+  EXPECT_NOT_OK(rel);
   EXPECT_EQ(rel.msg(), "Conflicting types for column (abc) in UnionOperator");
 }
 
@@ -334,7 +335,7 @@ TEST_F(OperatorTest, output_relation_union_out_of_range) {
   auto union_op = Operator::FromProto(union_pb, 4);
 
   auto rel = union_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 5}));
-  EXPECT_FALSE(rel.ok());
+  EXPECT_NOT_OK(rel);
   EXPECT_EQ(rel.msg(), "Missing column 1 of input 1 in UnionOperator");
 }
 

@@ -134,11 +134,11 @@ nodes {
     }
     nodes {
       id: 23
-      sorted_children: 25
+      sorted_children: 26
       sorted_parents: 10
     }
     nodes {
-      id: 25
+      id: 26
       sorted_parents: 23
     }
   }
@@ -232,7 +232,7 @@ nodes {
     }
   }
   nodes {
-    id: 25
+    id: 26
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -256,8 +256,8 @@ TEST_F(CompilerTest, test_general_compilation) {
           "queryDF['quotient'] = queryDF['cpu1'] / queryDF['cpu0']",
           "aggDF = queryDF.groupby(['cpu0']).agg(",
           "quotient_mean=('quotient', pl.mean),",
-          "cpu1_mean=('cpu1', pl.mean)",
-          ").result(name='cpu2')",
+          "cpu1_mean=('cpu1', pl.mean))",
+          "display(aggDF, 'cpu2')",
       },
       "\n");
   auto plan_status = compiler_.Compile(query, compiler_state_.get());
@@ -307,13 +307,13 @@ nodes {
 TEST_F(CompilerTest, select_order_test) {
   auto query = absl::StrJoin(
       {
-          "queryDF = dataframe(table='cpu', select=['cpu2', 'count', "
-          "'cpu1']).result(name='cpu_out')",
+          "queryDF = dataframe(table='cpu', select=['cpu2', 'count', 'cpu1'])",
+          "display(queryDF, 'cpu_out')",
       },
       "\n");
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
-  EXPECT_OK(plan);
+  ASSERT_OK(plan);
 
   EXPECT_THAT(plan.ConsumeValueOrDie(), Partially(EqualsProto(kSelectOrderLogicalPlan)));
 }
@@ -361,7 +361,7 @@ TEST_F(CompilerTest, range_now_test) {
       {
           "queryDF = dataframe(table='sequences', select=['time_', 'xmod10'], start_time=0, "
           "end_time=plc.now())",
-          "queryDF.result(name='range_table')",
+          "display(queryDF,'range_table')",
       },
       "\n");
 
@@ -420,7 +420,7 @@ class CompilerTimeFnTest
     std::tie(time_function, chrono_ns) = GetParam();
     query = absl::StrJoin({"queryDF = dataframe(table='sequences', select=['time_', "
                            "'xmod10'], start_time=plc.now() - $1, end_time=plc.now())",
-                           "queryDF.result(name='$0')"},
+                           "display(queryDF, '$0')"},
                           "\n");
     query = absl::Substitute(query, table_name_, time_function);
     VLOG(2) << query;
@@ -510,12 +510,12 @@ TEST_F(CompilerTest, group_by_all) {
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='cpu', select=['cpu1', 'cpu0'])",
-          "queryDF.agg(mean=('cpu0', pl.mean)).result(name='cpu_out')",
+          "aggDF = queryDF.agg(mean=('cpu0', pl.mean))",
+          "display(aggDF, 'cpu_out')",
       },
       "\n");
 
   auto plan_status = compiler_.Compile(query, compiler_state_.get());
-  // EXPECT_OK(plan_status);
   ASSERT_OK(plan_status);
   auto logical_plan = plan_status.ConsumeValueOrDie();
   VLOG(2) << logical_plan.DebugString();
@@ -526,13 +526,13 @@ TEST_F(CompilerTest, multiple_group_by_agg_test) {
   std::string query =
       absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
-                     "queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', pl.count),",
-                     "cpu_mean=('cpu1', pl.mean)).result(name='cpu_out')"},
+                     "aggDF = queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', pl.count),",
+                     "cpu_mean=('cpu1', pl.mean))", "display(aggDF, 'cpu_out')"},
                     "\n");
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
-  EXPECT_OK(plan);
+  ASSERT_OK(plan);
 }
 
 TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
@@ -540,13 +540,13 @@ TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
       absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
                      "queryDF['cpu_sum'] = queryDF['cpu1'] + queryDF['cpu2']",
-                     "queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', pl.count),",
-                     "cpu_mean=('cpu1', pl.mean)).result(name='cpu_out')"},
+                     "aggDF = queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', pl.count),",
+                     "cpu_mean=('cpu1', pl.mean))", "display(aggDF, 'cpu_out')"},
                     "\n");
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
-  EXPECT_OK(plan);
+  ASSERT_OK(plan);
 }
 
 TEST_F(CompilerTest, rename_then_group_by_test) {
@@ -555,12 +555,12 @@ TEST_F(CompilerTest, rename_then_group_by_test) {
                      "queryDF['res'] = queryDF['PIx']", "queryDF['c1'] = queryDF['xmod10']",
                      "map_out = queryDF[['res', 'c1']]",
                      "agg_out = map_out.groupby(['res', 'c1']).agg(count=('c1', pl.count))",
-                     "agg_out.result(name='t15')"},
+                     "display(agg_out, 't15')"},
                     "\n");
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
-  EXPECT_OK(plan);
+  ASSERT_OK(plan);
 }
 
 // Test to see whether comparisons work.
@@ -572,12 +572,12 @@ TEST_F(CompilerTest, comparison_test) {
        "queryDF['gte'] = queryDF['PIx'] >= 1.0", "queryDF['lte'] = queryDF['PIx'] <= 1.0",
        "queryDF['eq'] = queryDF['PIx'] == 1.0",
        "map_out = queryDF[['res', 'c1', 'gt', 'lt', 'gte', 'lte', 'eq']]",
-       "map_out.result(name='t15')"},
+       "display(map_out, 't15')"},
       "\n");
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
-  EXPECT_OK(plan);
+  ASSERT_OK(plan);
 }
 
 const char* kFilterPlan = R"(
@@ -646,11 +646,10 @@ class FilterTest : public CompilerTest,
   void SetUp() {
     CompilerTest::SetUp();
     std::tie(compare_op_, compare_op_proto_) = GetParam();
-    query =
-        absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
-                       "'cpu1'])",
-                       "queryDF = queryDF[queryDF['cpu0'] $0 0.5]", "queryDF.result(name='$1')"},
-                      "\n");
+    query = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
+                           "'cpu1'])",
+                           "queryDF = queryDF[queryDF['cpu0'] $0 0.5]", "display(queryDF, '$1')"},
+                          "\n");
     query = absl::Substitute(query, compare_op_, table_name_);
     VLOG(2) << query;
     expected_plan = absl::Substitute(kFilterPlan, compare_op_proto_, table_name_);
@@ -678,15 +677,16 @@ TEST_P(FilterTest, basic) {
 
 INSTANTIATE_TEST_SUITE_P(FilterTestSuite, FilterTest, ::testing::ValuesIn(comparison_fns));
 
+// TODO(nserrino/phlkuz) create expectations for filter errors.
 TEST_F(CompilerTest, filter_errors) {
   std::string non_bool_filter =
       absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
-                     "queryDF = queryDF[queryDF['cpu0'] + 0.5]", "queryDF.result(name='blah')"},
+                     "queryDF = queryDF[queryDF['cpu0'] + 0.5]", "display(queryDF, 'blah')"},
                     "\n");
   EXPECT_NOT_OK(compiler_.Compile(non_bool_filter, compiler_state_.get()));
 
   std::string int_val = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', 'cpu1'])",
-                                       "queryDF[1].result(name='filtered')"},
+                                       "d = queryDF[1]", "display(d, 'filtered')"},
                                       "\n");
   EXPECT_NOT_OK(compiler_.Compile(int_val, compiler_state_.get()));
 }
@@ -725,7 +725,6 @@ nodes {
     }
   }
   nodes {
-    id: 10
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -743,7 +742,7 @@ nodes {
 TEST_F(CompilerTest, limit_test) {
   std::string query = absl::StrJoin({"queryDF = dataframe(table='cpu', select=['cpu0', "
                                      "'cpu1']).head(n=1000)",
-                                     "queryDF.result(name='out_table')"},
+                                     "display(queryDF, 'out_table')"},
                                     "\n");
   auto plan_or_s = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan_or_s);
@@ -757,7 +756,7 @@ TEST_F(CompilerTest, reused_result) {
           "queryDF = dataframe(table='http_table', select=['time_', 'upid', 'http_resp_status', "
           "'http_resp_latency_ns'], start_time='-1m')",
           "x = queryDF[queryDF['http_resp_latency_ns'] < 1000000]",
-          "result_= queryDF.result(name='out');",
+          "display(queryDF, 'out');",
       },
 
       "\n");
@@ -790,12 +789,12 @@ TEST_F(CompilerTest, multiple_result_sinks) {
           "queryDF = dataframe(table='http_table', select=['time_', 'upid', 'http_resp_status', "
           "'http_resp_latency_ns'], start_time='-1m')",
           "x = queryDF[queryDF['http_resp_latency_ns'] < "
-          "1000000].result(name='filtered_result')",
-          "result_= queryDF.result(name='result');",
+          "1000000]",
+          "display(x, 'filtered_result')",
+          "display(queryDF, 'result');",
       },
       "\n");
   auto plan_status = compiler_.Compile(query, compiler_state_.get());
-  auto plan = plan_status.ConsumeValueOrDie();
   ASSERT_OK(plan_status);
 }
 
@@ -860,9 +859,8 @@ nodes {
 }
 )proto";
 TEST_F(CompilerTest, from_select_default_arg) {
-  std::string no_select_arg = "dataframe(table='cpu').result(name='out')";
+  std::string no_select_arg = "df = dataframe(table='cpu')\ndisplay(df, 'out')";
   auto plan_status = compiler_.Compile(no_select_arg, compiler_state_.get());
-  VLOG(2) << plan_status.ToString();
   ASSERT_OK(plan_status);
   auto plan = plan_status.ValueOrDie();
   VLOG(2) << plan.DebugString();
@@ -875,7 +873,7 @@ TEST_F(CompilerTest, from_select_default_arg) {
 }
 
 const char* kExpectedFilterMetadataPlan = R"proto(
-  dag {
+dag {
   nodes {
     id: 1
   }
@@ -885,20 +883,20 @@ nodes {
   dag {
     nodes {
       id: 4
-      sorted_children: 21
+      sorted_children: 22
     }
     nodes {
-      id: 21
+      id: 22
       sorted_children: 9
       sorted_parents: 4
     }
     nodes {
       id: 9
-      sorted_children: 11
-      sorted_parents: 21
+      sorted_children: 12
+      sorted_parents: 22
     }
     nodes {
-      id: 11
+      id: 12
       sorted_parents: 9
     }
   }
@@ -927,7 +925,7 @@ nodes {
     }
   }
   nodes {
-    id: 21
+    id: 22
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -992,7 +990,7 @@ nodes {
             name: "pl.equal"
             args {
               column {
-                node: 21
+                node: 22
                 index: 5
               }
             }
@@ -1007,33 +1005,33 @@ nodes {
           }
         }
         columns {
-          node: 21
+          node: 22
         }
         columns {
-          node: 21
+          node: 22
           index: 1
         }
         columns {
-          node: 21
+          node: 22
           index: 2
         }
         columns {
-          node: 21
+          node: 22
           index: 3
         }
         columns {
-          node: 21
+          node: 22
           index: 4
         }
         columns {
-          node: 21
+          node: 22
           index: 5
         }
       }
     }
   }
   nodes {
-    id: 11
+    id: 12
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1057,7 +1055,7 @@ nodes {
 )proto";
 
 const char* kExpectedMapMetadataPlan = R"proto(
-  dag {
+dag {
   nodes {
     id: 1
   }
@@ -1067,25 +1065,25 @@ nodes {
   dag {
     nodes {
       id: 4
-      sorted_children: 28
+      sorted_children: 29
     }
     nodes {
-      id: 28
+      id: 29
       sorted_children: 7
       sorted_parents: 4
     }
     nodes {
       id: 7
       sorted_children: 11
-      sorted_parents: 28
+      sorted_parents: 29
     }
     nodes {
       id: 11
-      sorted_children: 13
+      sorted_children: 14
       sorted_parents: 7
     }
     nodes {
-      id: 13
+      id: 14
       sorted_parents: 11
     }
   }
@@ -1114,7 +1112,7 @@ nodes {
     }
   }
   nodes {
-    id: 28
+    id: 29
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1175,42 +1173,42 @@ nodes {
       map_op {
         expressions {
           column {
-            node: 28
+            node: 29
           }
         }
         expressions {
           column {
-            node: 28
+            node: 29
             index: 1
           }
         }
         expressions {
           column {
-            node: 28
+            node: 29
             index: 2
           }
         }
         expressions {
           column {
-            node: 28
+            node: 29
             index: 3
           }
         }
         expressions {
           column {
-            node: 28
+            node: 29
             index: 4
           }
         }
         expressions {
           column {
-            node: 28
+            node: 29
             index: 5
           }
         }
         expressions {
           column {
-            node: 28
+            node: 29
             index: 5
           }
         }
@@ -1240,7 +1238,7 @@ nodes {
     }
   }
   nodes {
-    id: 13
+    id: 14
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1254,7 +1252,7 @@ nodes {
 )proto";
 
 const char* kExpectedAgg1MetadataPlan = R"proto(
-  dag {
+dag {
   nodes {
     id: 1
   }
@@ -1264,25 +1262,25 @@ nodes {
   dag {
     nodes {
       id: 4
-      sorted_children: 33
+      sorted_children: 34
     }
     nodes {
-      id: 33
+      id: 34
       sorted_children: 7
       sorted_parents: 4
     }
     nodes {
       id: 7
       sorted_children: 15
-      sorted_parents: 33
+      sorted_parents: 34
     }
     nodes {
       id: 15
-      sorted_children: 17
+      sorted_children: 18
       sorted_parents: 7
     }
     nodes {
-      id: 17
+      id: 18
       sorted_parents: 15
     }
   }
@@ -1311,7 +1309,7 @@ nodes {
     }
   }
   nodes {
-    id: 33
+    id: 34
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1372,42 +1370,42 @@ nodes {
       map_op {
         expressions {
           column {
-            node: 33
+            node: 34
           }
         }
         expressions {
           column {
-            node: 33
+            node: 34
             index: 1
           }
         }
         expressions {
           column {
-            node: 33
+            node: 34
             index: 2
           }
         }
         expressions {
           column {
-            node: 33
+            node: 34
             index: 3
           }
         }
         expressions {
           column {
-            node: 33
+            node: 34
             index: 4
           }
         }
         expressions {
           column {
-            node: 33
+            node: 34
             index: 5
           }
         }
         expressions {
           column {
-            node: 33
+            node: 34
             index: 5
           }
         }
@@ -1446,7 +1444,7 @@ nodes {
     }
   }
   nodes {
-    id: 17
+    id: 18
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1462,7 +1460,7 @@ nodes {
 )proto";
 
 const char* kExpectedAgg2MetadataPlan = R"proto(
-  dag {
+dag {
   nodes {
     id: 1
   }
@@ -1472,25 +1470,25 @@ nodes {
   dag {
     nodes {
       id: 4
-      sorted_children: 37
+      sorted_children: 38
     }
     nodes {
-      id: 37
+      id: 38
       sorted_children: 7
       sorted_parents: 4
     }
     nodes {
       id: 7
       sorted_children: 18
-      sorted_parents: 37
+      sorted_parents: 38
     }
     nodes {
       id: 18
-      sorted_children: 20
+      sorted_children: 21
       sorted_parents: 7
     }
     nodes {
-      id: 20
+      id: 21
       sorted_parents: 18
     }
   }
@@ -1519,7 +1517,7 @@ nodes {
     }
   }
   nodes {
-    id: 37
+    id: 38
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1580,42 +1578,42 @@ nodes {
       map_op {
         expressions {
           column {
-            node: 37
+            node: 38
           }
         }
         expressions {
           column {
-            node: 37
+            node: 38
             index: 1
           }
         }
         expressions {
           column {
-            node: 37
+            node: 38
             index: 2
           }
         }
         expressions {
           column {
-            node: 37
+            node: 38
             index: 3
           }
         }
         expressions {
           column {
-            node: 37
+            node: 38
             index: 4
           }
         }
         expressions {
           column {
-            node: 37
+            node: 38
             index: 5
           }
         }
         expressions {
           column {
-            node: 37
+            node: 38
             index: 5
           }
         }
@@ -1659,7 +1657,7 @@ nodes {
     }
   }
   nodes {
-    id: 20
+    id: 21
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1677,7 +1675,7 @@ nodes {
 )proto";
 
 const char* kExpectedAggFilter1MetadataPlan = R"proto(
-  dag {
+dag {
   nodes {
     id: 1
   }
@@ -1687,35 +1685,35 @@ nodes {
   dag {
     nodes {
       id: 4
-      sorted_children: 44
+      sorted_children: 45
     }
     nodes {
-      id: 44
+      id: 45
       sorted_children: 7
       sorted_parents: 4
     }
     nodes {
       id: 7
       sorted_children: 18
-      sorted_parents: 44
+      sorted_parents: 45
     }
     nodes {
       id: 18
-      sorted_children: 50
+      sorted_children: 51
       sorted_parents: 7
     }
     nodes {
-      id: 50
+      id: 51
       sorted_children: 23
       sorted_parents: 18
     }
     nodes {
       id: 23
-      sorted_children: 25
-      sorted_parents: 50
+      sorted_children: 26
+      sorted_parents: 51
     }
     nodes {
-      id: 25
+      id: 26
       sorted_parents: 23
     }
   }
@@ -1744,7 +1742,7 @@ nodes {
     }
   }
   nodes {
-    id: 44
+    id: 45
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1806,42 +1804,42 @@ nodes {
       map_op {
         expressions {
           column {
-            node: 44
+            node: 45
           }
         }
         expressions {
           column {
-            node: 44
+            node: 45
             index: 1
           }
         }
         expressions {
           column {
-            node: 44
+            node: 45
             index: 2
           }
         }
         expressions {
           column {
-            node: 44
+            node: 45
             index: 3
           }
         }
         expressions {
           column {
-            node: 44
+            node: 45
             index: 4
           }
         }
         expressions {
           column {
-            node: 44
+            node: 45
             index: 5
           }
         }
         expressions {
           column {
-            node: 44
+            node: 45
             index: 5
           }
         }
@@ -1885,7 +1883,7 @@ nodes {
     }
   }
   nodes {
-    id: 50
+    id: 51
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1935,7 +1933,7 @@ nodes {
             name: "pl.equal"
             args {
               column {
-                node: 50
+                node: 51
                 index: 3
               }
             }
@@ -1950,25 +1948,25 @@ nodes {
           }
         }
         columns {
-          node: 50
+          node: 51
         }
         columns {
-          node: 50
+          node: 51
           index: 1
         }
         columns {
-          node: 50
+          node: 51
           index: 2
         }
         columns {
-          node: 50
+          node: 51
           index: 3
         }
       }
     }
   }
   nodes {
-    id: 25
+    id: 26
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2417,7 +2415,7 @@ TEST_P(MetadataSingleOps, valid_filter_metadata_proto) {
   ASSERT_TRUE(expected_pb_iter != metadata_name_to_plan_map.end()) << expected_pb_name;
   std::string expected_pb = expected_pb_iter->second;
   std::string valid_query =
-      absl::StrJoin({"queryDF = dataframe(table='cpu') ", "$0.result(name='out')"}, "\n");
+      absl::StrJoin({"df = dataframe(table='cpu') ", "$0", "display(df, 'out')"}, "\n");
   valid_query = absl::Substitute(valid_query, op_call);
 
   auto plan_status = compiler_.Compile(valid_query, compiler_state_.get());
@@ -2430,17 +2428,17 @@ TEST_P(MetadataSingleOps, valid_filter_metadata_proto) {
 
 // Indirectly maps to metadata_name_to_plan_map
 std::vector<std::tuple<std::string, std::string>> metadata_operators{
-    {"queryDF[queryDF.attr['service'] == 'pl/orders']", "filter_metadata_plan"},
-    {"queryDF['service'] = queryDF.attr['service']\nqueryDF[['service']]", "map_metadata_plan"},
-    {"queryDF['service'] =  queryDF.attr['service']\n"
-     "queryDF.groupby('service').agg(mean_cpu = ('cpu0', pl.mean))",
+    {"df = df[df.attr['service'] == 'pl/orders']", "filter_metadata_plan"},
+    {"df['service'] = df.attr['service']\ndf = df[['service']]", "map_metadata_plan"},
+    {"df['service'] =  df.attr['service']\n"
+     "df = df.groupby('service').agg(mean_cpu = ('cpu0', pl.mean))",
      "agg_metadata_plan1"},
-    {"queryDF['service'] =  queryDF.attr['service']\n"
-     "queryDF.groupby(['cpu0', 'service']).agg(mean_cpu = ('cpu0', pl.mean))",
+    {"df['service'] =  df.attr['service']\n"
+     "df = df.groupby(['cpu0', 'service']).agg(mean_cpu = ('cpu0', pl.mean))",
      "agg_metadata_plan2"},
-    {"queryDF['service'] =  queryDF.attr['service']\n"
-     "aggDF = queryDF.groupby(['upid', 'service']).agg(mean_cpu = ('cpu0', pl.mean))\n"
-     "aggDF[aggDF.attr['service'] == 'pl/service-name']",
+    {"df['service'] =  df.attr['service']\n"
+     "aggDF = df.groupby(['upid', 'service']).agg(mean_cpu = ('cpu0', pl.mean))\n"
+     "df =aggDF[aggDF.attr['service'] == 'pl/service-name']",
      "agg_filter_metadata_plan1"}};
 
 INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
@@ -2450,12 +2448,10 @@ TEST_F(CompilerTest, cgroups_pod_id) {
   std::string query =
       absl::StrJoin({"queryDF = dataframe(table='cgroups')",
                      "range_out = queryDF[queryDF.attr['pod_name'] == 'pl/pl-nats-1']",
-                     "range_out.result(name='out')"},
+                     "display(range_out, 'out')"},
                     "\n");
   auto plan_status = compiler_.Compile(query, compiler_state_.get());
-  VLOG(2) << plan_status.ToString();
-  EXPECT_OK(plan_status);
-  VLOG(2) << plan_status.ValueOrDie().DebugString();
+  ASSERT_OK(plan_status);
 }
 
 const char* kJoinInnerQueryPlan = R"proto(
@@ -2483,11 +2479,11 @@ nodes {
     }
     nodes {
       id: 38
-      sorted_children: 40
+      sorted_children: 41
       sorted_parents: 26
     }
     nodes {
-      id: 40
+      id: 41
       sorted_parents: 38
     }
   }
@@ -2607,7 +2603,7 @@ nodes {
     }
   }
   nodes {
-    id: 40
+    id: 41
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2633,7 +2629,7 @@ src1 = dataframe(table='cpu', select=['cpu0', 'upid', 'cpu1'])
 src2 = dataframe(table='http_table', select=['http_resp_status', 'upid',  'http_resp_latency_ns'])
 join = src1.merge(src2, how='$0', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
 output = join[["upid", "http_resp_status", "http_resp_latency_ns", "cpu0", "cpu1"]]
-output.result(name='joined')
+display(output, 'joined')
 )query";
 
 TEST_F(CompilerTest, inner_join) {
@@ -2669,11 +2665,11 @@ nodes {
     }
     nodes {
       id: 38
-      sorted_children: 40
+      sorted_children: 41
       sorted_parents: 26
     }
     nodes {
-      id: 40
+      id: 41
       sorted_parents: 38
     }
   }
@@ -2794,7 +2790,7 @@ nodes {
     }
   }
   nodes {
-    id: 40
+    id: 41
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2832,7 +2828,7 @@ TEST_F(CompilerTest, syntax_error_test) {
 
 TEST_F(CompilerTest, indentation_error_test) {
   auto indent_error_query =
-      absl::StrJoin({"t = dataframe(table='blah')", "    t.result(name='blah')"}, "\n");
+      absl::StrJoin({"t = dataframe(table='blah')", "    display(t, 'blah')"}, "\n");
   auto plan_status = compiler_.Compile(indent_error_query, compiler_state_.get());
   ASSERT_NOT_OK(plan_status);
   EXPECT_THAT(plan_status.status(), HasCompilerError("SyntaxError: invalid syntax"));
@@ -2864,7 +2860,8 @@ window1_agg['p90'] = pl.pluck_float64(window1_agg['quantiles'], 'p90')
 window1_agg['p99'] = pl.pluck_float64(window1_agg['quantiles'], 'p99')
 window1_agg['time_'] = window1_agg['window1']
 window1_agg = window1_agg.drop(['window1', 'quantiles'])
-window1_agg[window1_agg['service'] != ''].result(name='dd')
+window = window1_agg[window1_agg['service'] != '']
+display(window)
 )pxl";
 
 TEST_F(CompilerTest, BadDropQuery) {
@@ -2894,7 +2891,7 @@ TEST_F(CompilerTest, BadDropQuery) {
 
 TEST_F(CompilerTest, AndExpressionFailsGracefully) {
   auto query = absl::StrJoin(
-      {"df = dataframe('bar')", "df[df['service'] != '' && pl.asid() != 10].result(name='out')"},
+      {"df = dataframe('bar')", "df[df['service'] != '' && pl.asid() != 10]", "display(df, 'out')"},
       "\n");
   auto ir_graph_or_s = compiler_.Compile(query, compiler_state_.get());
   ASSERT_NOT_OK(ir_graph_or_s);

@@ -74,7 +74,7 @@ func TestPlanner_Simple(t *testing.T) {
 	c := logicalplanner.New()
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
-	query := "dataframe(table='table1').result(name='out')"
+	query := "df = dataframe(table='table1')\ndisplay(df, 'out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
 	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
 	plannerResultPB, err := c.Plan(plannerStatePB, query)
@@ -144,7 +144,7 @@ func TestPlanner_MissingTable(t *testing.T) {
 	c := logicalplanner.New()
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
-	query := "dataframe(table='bad_table').result(name='out')"
+	query := "df = dataframe(table='bad_table')\ndisplay(df, 'out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
 	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
 	plannerResultPB, err := c.Plan(plannerStatePB, query)

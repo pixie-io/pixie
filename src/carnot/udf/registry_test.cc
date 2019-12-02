@@ -93,7 +93,7 @@ TEST(ScalarUDFRegistry, double_register) {
   registry.RegisterOrDie<ScalarUDF1>("scalar1");
   registry.RegisterOrDie<ScalarUDF1>("scalar1WithInit");
   auto status = registry.Register<ScalarUDF1>("scalar1");
-  EXPECT_FALSE(status.ok());
+  EXPECT_NOT_OK(status);
   EXPECT_TRUE(error::IsAlreadyExists(status));
   EXPECT_TRUE(absl::StrContains(status.msg(), "scalar1"));
   EXPECT_TRUE(absl::StrContains(status.msg(), "already exists"));
@@ -104,7 +104,7 @@ TEST(ScalarUDFRegistry, no_such_udf) {
   registry.RegisterOrDie<ScalarUDF1>("scalar1");
   auto statusor =
       registry.GetDefinition("scalar1", std::vector<types::DataType>({types::DataType::INT64}));
-  EXPECT_FALSE(statusor.ok());
+  EXPECT_NOT_OK(statusor);
 }
 
 TEST(ScalarUDFRegistryDeathTest, double_register) {
@@ -158,7 +158,7 @@ TEST(UDARegistry, double_register) {
   registry.RegisterOrDie<UDA1>("uda1");
   registry.RegisterOrDie<UDA1>("uda2");
   auto status = registry.Register<UDA1>("uda1");
-  EXPECT_FALSE(status.ok());
+  EXPECT_NOT_OK(status);
   EXPECT_TRUE(error::IsAlreadyExists(status));
   EXPECT_TRUE(absl::StrContains(status.msg(), "uda1"));
   EXPECT_TRUE(absl::StrContains(status.msg(), "already exists"));
@@ -169,7 +169,7 @@ TEST(UDARegistry, no_such_uda) {
   registry.RegisterOrDie<UDA1>("uda1");
   auto statusor =
       registry.GetDefinition("uda1", std::vector<types::DataType>({types::DataType::FLOAT64}));
-  EXPECT_FALSE(statusor.ok());
+  EXPECT_NOT_OK(statusor);
 }
 
 TEST(UDARegistryDeathTest, double_register) {

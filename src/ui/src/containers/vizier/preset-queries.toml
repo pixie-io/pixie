@@ -46,7 +46,8 @@ joined_table = joined_table[[
   'errors',
   'throughput (rps)',
   'throughput total']]
-joined_table[joined_table['service'] != ''].result(name='out')
+joined_table = joined_table[joined_table['service'] != '']
+display(joined_table)
 """
 ],
 ["Pod Resource Usage In Time Interval",
@@ -123,7 +124,7 @@ pod_aggop['Characters written (mb)'] = pod_aggop['wchar_bytes_mb']
 keep_columns = pod_aggop[['pod_name', 'status', 'Created on', 'CPU User time (s)', 'CPU System time (s)',
                           'Virtual Memory (mb)', 'Average Memory (mb)', 'Read to IO (mb)', 'Write to IO (mb)',
                           'Characters Read (mb)', 'Characters written (mb)']]
-keep_columns.result(name='out')
+display(keep_columns)
 """],
 ["Total Resource Usage During Pod Lifetime",
 """
@@ -183,24 +184,27 @@ pod_aggop['Characters written (mb)'] = pod_aggop['wchar_bytes_mb']
 keep_columns = pod_aggop[['pod_name', 'status', 'Created on', 'CPU User time (s)', 'CPU System time (s)',
                           'Virtual Memory (mb)', 'Average Memory (mb)', 'Read to IO (mb)', 'Write to IO (mb)',
                           'Characters Read (mb)', 'Characters written (mb)']]
-keep_columns.result(name='out')
+display(keep_columns)
 """],
 ["Sample HTTP Data",
 """
 t1 = dataframe(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns'], start_time='-30s')
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
-t2 = t1.drop(columns=['http_resp_latency_ns']).head(n=100).result(name='resp_table')
+t2 = t1.drop(columns=['http_resp_latency_ns']).head(n=100)
+display(t2)
 """],
 ["Sample MySQL Data",
 """
 t1 = dataframe(table='mysql_events', select=['time_', 'remote_addr', 'remote_port', 'req_cmd', 'req_body', 'resp_status', 'resp_body', 'latency_ns'], start_time='-30s')
 t1['latency_ms'] = t1['latency_ns'] / 1.0E6
-t2 = t1.drop(columns=['latency_ns']).head(n=100).result(name='resp_table')
+t2 = t1.drop(columns=['latency_ns']).head(n=100)
+display(t2)
 """],
 ["Network Stats",
 """
 t1 = dataframe(table='network_stats', select=['time_', 'pod_id', 'rx_bytes', 'rx_packets', 'rx_errors',
                                          'rx_drops', 'tx_bytes', 'tx_packets', 'tx_errors', 'tx_drops'], start_time='-30s')
-t2 = t1.head(n=100).result(name='stats')
+t2 = t1.head(n=100)
+display(t2)
 """]
 ]

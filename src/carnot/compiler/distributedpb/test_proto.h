@@ -152,7 +152,7 @@ const char* kTabletValueTpl = R"proto(
 tablets: "$0"
 )proto";
 
-const char* kQueryForTwoAgents = "dataframe(table = 'table1').result(name = 'out')";
+const char* kQueryForTwoAgents = "df = dataframe(table = 'table1')\ndisplay(df, 'out')";
 
 distributedpb::DistributedState LoadDistributedStatePb(const std::string& distributed_state_str) {
   distributedpb::DistributedState distributed_state_pb;
@@ -256,26 +256,26 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 9
-          sorted_children: 10
-        }
-        nodes {
-          id: 8
-          sorted_children: 10
-        }
-        nodes {
           id: 10
-          sorted_children: 6
-          sorted_parents: 8
-          sorted_parents: 9
+          sorted_children: 11
         }
         nodes {
-          id: 6
+          id: 9
+          sorted_children: 11
+        }
+        nodes {
+          id: 11
+          sorted_children: 7
+          sorted_parents: 9
           sorted_parents: 10
+        }
+        nodes {
+          id: 7
+          sorted_parents: 11
         }
       }
       nodes {
-        id: 9
+        id: 10
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -285,7 +285,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 8
+        id: 9
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -295,7 +295,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 10
+        id: 11
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -316,7 +316,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 6
+        id: 7
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {
@@ -334,26 +334,26 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 9
-          sorted_children: 10
-        }
-        nodes {
-          id: 8
-          sorted_children: 10
-        }
-        nodes {
           id: 10
-          sorted_children: 6
-          sorted_parents: 8
-          sorted_parents: 9
+          sorted_children: 11
         }
         nodes {
-          id: 6
+          id: 9
+          sorted_children: 11
+        }
+        nodes {
+          id: 11
+          sorted_children: 7
+          sorted_parents: 9
           sorted_parents: 10
+        }
+        nodes {
+          id: 7
+          sorted_parents: 11
         }
       }
       nodes {
-        id: 9
+        id: 10
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -363,7 +363,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 8
+        id: 9
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -373,7 +373,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 10
+        id: 11
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -394,7 +394,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 6
+        id: 7
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {

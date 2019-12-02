@@ -48,7 +48,6 @@ class Dataframe : public QLObject {
   inline static constexpr char kBlockingAggOpId[] = "agg";
   inline static constexpr char kLimitOpId[] = "head";
   inline static constexpr char kMergeOpId[] = "merge";
-  inline static constexpr char kSinkOpId[] = "result";
   inline static constexpr char kGroupByOpId[] = "groupby";
   // Attribute names.
   inline static constexpr char kMetadataAttrName[] = "attr";
@@ -153,24 +152,6 @@ class LimitHandler {
    * @return StatusOr<QLObjectPtr>
    */
 
-  static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
-};
-
-/**
- * @brief Implements the old result operator logic. This will be deprecated soon, but we have this
- * to reduce the complexity of switching to the pyobject model.
- *
- */
-class OldResultHandler {
- public:
-  /**
-   * @brief Evaluates the old result function.
-   *
-   * @param df the dataframe that's a parent to the result function.
-   * @param ast the ast node that signifies where the query was written.
-   * @param args the arguments for result()
-   * @return StatusOr<QLObjectPtr>
-   */
   static StatusOr<QLObjectPtr> Eval(Dataframe* df, const pypa::AstPtr& ast, const ParsedArgs& args);
 };
 

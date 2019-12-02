@@ -40,7 +40,7 @@ TEST(RegistryInfo, basic) {
   EXPECT_OK(info.Init(info_pb));
   EXPECT_EQ(types::INT64,
             info.GetUDA("uda1", std::vector<types::DataType>({types::INT64})).ConsumeValueOrDie());
-  EXPECT_FALSE(info.GetUDA("uda2", std::vector<types::DataType>({types::INT64})).ok());
+  EXPECT_NOT_OK(info.GetUDA("uda2", std::vector<types::DataType>({types::INT64})));
   EXPECT_EQ(types::INT64,
             info.GetUDF("scalar1", std::vector<types::DataType>({types::BOOLEAN, types::INT64}))
                 .ConsumeValueOrDie());

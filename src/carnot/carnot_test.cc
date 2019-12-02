@@ -49,8 +49,8 @@ TEST_F(CarnotTest, basic) {
 
   auto query = absl::StrJoin(
       {
-          "queryDF = dataframe(table='test_table', select=['col1', "
-          "'col2']).result(name='test_output')",
+          "df = dataframe(table='test_table', select=['col1','col2'])",
+          "display(df, 'test_output')",
       },
       "\n");
   // No time column, doesn't use a time parameter.
@@ -89,8 +89,8 @@ TEST_F(CarnotTest, register_metadata) {
 
   auto query = absl::StrJoin(
       {
-          "queryDF = dataframe(table='test_table', select=['col1', "
-          "'col2']).result(name='test_output')",
+          "df = dataframe(table='test_table', select=['col1', 'col2'])",
+          "display(df, 'test_output')",
       },
       "\n");
   auto query_uuid = sole::uuid4();
@@ -107,7 +107,7 @@ TEST_F(CarnotTest, map_test) {
 
   auto query = absl::StrJoin({"queryDF = dataframe(table='test_table', select=['col1', 'col2'])",
                               "queryDF['res'] = pl.add(queryDF['col1'], queryDF['col2'])",
-                              "queryDF[['res']].result(name='test_output')"},
+                              "df = queryDF[['res']]", "display(df, 'test_output')"},
                              "\n");
 
   // No time column, doesn't use a time parameter.
@@ -133,7 +133,7 @@ TEST_F(CarnotTest, subscript_map_test) {
 
   auto query = absl::StrJoin(
       {"queryDF = dataframe(table='test_table', select=['col1', 'col2'])",
-       "queryDF['res'] = queryDF['col1'] + queryDF['col2']", "queryDF.result(name='test_output')"},
+       "queryDF['res'] = queryDF['col1'] + queryDF['col2']", "display(queryDF, 'test_output')"},
       "\n");
 
   auto uuid = sole::uuid4();
@@ -158,52 +158,56 @@ TEST_F(CarnotTest, subscript_map_test) {
 // Test whether the compiler will handle issues nicely
 TEST_F(CarnotTest, bad_syntax) {
   // Missing paranethesis
-  auto bad_syntax = "queryDF = dataframe(.result(name='test_output')";
+  auto bad_syntax = "queryDF = dataframe(";
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   auto bad_syntax_status = carnot_->ExecuteQuery(bad_syntax, query_uuid, 0);
   VLOG(1) << bad_syntax_status.ToString();
-  EXPECT_FALSE(bad_syntax_status.ok());
+  EXPECT_NOT_OK(bad_syntax_status);
 }
 
 TEST_F(CarnotTest, wrong_args) {
   // select -> sel (wrong arg for Form).
-  auto wrong_arg_names =
-      "queryDF = dataframe(table='test_table', sel=['col2', 'col2']).result(name='test_output')";
+  auto wrong_arg_names = absl::StrJoin(
+      {"df = dataframe(table='test_table', sel=['col2', 'col2'])", "display(df, 'test_output')"},
+      "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   auto wrong_arg_status = carnot_->ExecuteQuery(wrong_arg_names, query_uuid, 0);
   VLOG(1) << wrong_arg_status.ToString();
-  EXPECT_FALSE(wrong_arg_status.ok());
+  EXPECT_NOT_OK(wrong_arg_status);
 }
 
 TEST_F(CarnotTest, wrong_columns) {
   // Adding extra column that doesn't exist in the schema.
   auto wrong_columns =
-      "queryDF = dataframe(table='test_table', select=['col1', 'col2', "
-      "'bunk_column']).result(name='test_output')";
+      absl::StrJoin({"df = dataframe(table='test_table', select=['col1', 'col2', 'bunk_column'])",
+                     "display(df, 'test_output')"},
+                    "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   auto wrong_columns_status = carnot_->ExecuteQuery(wrong_columns, query_uuid, 0);
   VLOG(1) << wrong_columns_status.ToString();
-  EXPECT_FALSE(wrong_columns_status.ok());
+  EXPECT_NOT_OK(wrong_columns_status);
 }
 
 // See whether executor is tolerant to receiving the wrong table name.
 TEST_F(CarnotTest, wrong_table_name) {
-  auto wrong_table_name =
-      "queryDF = dataframe(table='bunk_table', select=['col1', 'col2']).result(name='test_output')";
+  auto wrong_table_name = absl::StrJoin(
+      {"df = dataframe(table='bunk_table', select=['col1', 'col2'])", "display(df, 'test_output')"},
+      "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   auto wrong_table_status = carnot_->ExecuteQuery(wrong_table_name, query_uuid, 0);
   VLOG(1) << wrong_table_status.ToString();
-  EXPECT_FALSE(wrong_table_status.ok());
+  EXPECT_NOT_OK(wrong_table_status);
+  // TODO(philkuz) refactor all of these failure tests to verify that we get the expected errors.
 }
 
 // Select no columns which should be acceptable.
 TEST_F(CarnotTest, no_columns) {
   auto no_columns_name =
-      "queryDF = dataframe(table='test_table', select=[]).result(name='test_output')";
+      "df = dataframe(table='test_table', select=[])\ndisplay(df, 'test_output')";
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   auto no_columns_status = carnot_->ExecuteQuery(no_columns_name, query_uuid, 0);
@@ -215,14 +219,14 @@ TEST_F(CarnotTest, empty_query_test) {
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   auto s = carnot_->ExecuteQuery("", query_uuid, 0);
-  EXPECT_FALSE(s.ok());
+  ASSERT_NOT_OK(s);
 }
 
 TEST_F(CarnotTest, map_op_udf_add) {
   auto add_query =
       absl::StrJoin({"queryDF = dataframe(table='test_table', select=['col1', 'col2'])",
-                     "queryDF['sum'] = queryDF['col1'] + queryDF['col2']",
-                     "queryDF[['sum']].result(name='test_output')"},
+                     "queryDF['sum'] = queryDF['col1'] + queryDF['col2']", "df = queryDF[['sum']]",
+                     "display(df, 'test_output')"},
                     "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
@@ -233,7 +237,7 @@ TEST_F(CarnotTest, map_op_udf_mult) {
   auto mult_query =
       absl::StrJoin({"queryDF = dataframe(table='test_table', select=['col1', 'col2'])",
                      "queryDF['mult'] = queryDF['col1'] * queryDF['col2']",
-                     "queryDF[['mult']].result(name='test_output')"},
+                     "df = queryDF[['mult']]", "display(df, 'test_output')"},
                     "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
@@ -243,8 +247,8 @@ TEST_F(CarnotTest, map_op_udf_mult) {
 TEST_F(CarnotTest, map_op_udf_sub) {
   auto sub_query =
       absl::StrJoin({"queryDF = dataframe(table='test_table', select=['col1', 'col2'])",
-                     "queryDF['sub'] = queryDF['col1'] - queryDF['col2']",
-                     "queryDF[['sub']].result(name='test_output')"},
+                     "queryDF['sub'] = queryDF['col1'] - queryDF['col2']", "df = queryDF[['sub']]",
+                     "display(df, 'test_output')"},
                     "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
@@ -254,8 +258,8 @@ TEST_F(CarnotTest, map_op_udf_sub) {
 TEST_F(CarnotTest, map_op_udf_div) {
   auto div_query =
       absl::StrJoin({"queryDF = dataframe(table='test_table', select=['col1', 'col2'])",
-                     "queryDF['div'] = queryDF['col1'] / queryDF['col2']",
-                     "queryDF[['div']].result(name='test_output')"},
+                     "queryDF['div'] = queryDF['col1'] / queryDF['col2']", "df = queryDF[['div']]",
+                     "display(df, 'test_output')"},
                     "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
@@ -266,7 +270,7 @@ TEST_F(CarnotTest, order_test) {
   auto query = absl::StrJoin(
       {"queryDF = dataframe(table='big_test_table', select=['time_', 'col2', 'col3'])",
        "queryDF['res'] = pl.add(queryDF['col3'], queryDF['col2'])", "queryDF['a'] = 1",
-       "queryDF['b'] = 2", "queryDF[['res', 'a', 'b']].result(name='test_output')"},
+       "queryDF['b'] = 2", "df = queryDF[['res', 'a', 'b']]", "display(df, 'test_output')"},
       "\n");
   // Time Column unused, doesn't matter what value is.
   auto uuid = sole::uuid4();
@@ -306,7 +310,8 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2', "
-          "'col3'], start_time=$0, end_time=$1).result(name='range_output')",
+          "'col3'], start_time=$0, end_time=$1)",
+          "display(queryDF, 'range_output')",
       },
       "\n");
   query = absl::Substitute(query, start_time, stop_time);
@@ -367,7 +372,8 @@ TEST_F(CarnotTest, range_test_single_rb) {
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2', "
-          "'col3'], start_time=$0, end_time=$1).result(name='range_output')",
+          "'col3'], start_time=$0, end_time=$1)",
+          "display(queryDF, 'range_output')",
       },
       "\n");
   int64_t start_time = 9;
@@ -408,7 +414,8 @@ TEST_F(CarnotTest, empty_range_test) {
   auto query = absl::StrJoin(
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2', "
-          "'col3'], start_time=$0, end_time=$1).result(name='range_output')",
+          "'col3'], start_time=$0, end_time=$1)",
+          "display(queryDF, 'range_output')",
       },
       "\n");
   auto time_col = CarnotTestUtils::big_test_col1;
@@ -439,7 +446,7 @@ class CarnotRangeTest
     std::tie(sub_time, num_batches, start_at_now) = GetParam();
     query =
         "queryDF = dataframe(table='big_test_table', select=['time_', 'col2'], start_time=$0, "
-        "end_time=$1).result(name='range_output')";
+        "end_time=$1)\ndisplay(queryDF, 'range_output')";
     if (start_at_now) {
       query = absl::Substitute(query, "plc.now()", sub_time.val);
     } else {
@@ -482,7 +489,7 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2', 'col3'])",
           "aggDF = queryDF.agg($0)",
-          "aggDF.result(name='test_output')",
+          "display(aggDF, 'test_output')",
       },
       "\n");
   query = absl::Substitute(query, agg_dict);
@@ -544,7 +551,7 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col3', 'num_groups'])",
           "aggDF = queryDF.groupby('num_groups').agg(sum=('col3', pl.sum))",
-          "aggDF.result(name='test_output')",
+          "display(aggDF, 'test_output')",
       },
       "\n");
   // now() not called, doesn't matter what now is.
@@ -582,7 +589,7 @@ TEST_F(CarnotTest, multiple_group_by_test) {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col3', 'num_groups', "
           "'string_groups'])",
           "aggDF = queryDF.groupby(['num_groups', 'string_groups']).agg(sum=('col3', pl.sum))",
-          "aggDF.result(name='test_output')",
+          "display(aggDF, 'test_output')",
       },
       "\n");
   // now() not called, doesn't matter what now is.
@@ -637,7 +644,8 @@ TEST_F(CarnotTest, comparison_tests) {
           "'string_groups'])",
           "queryDF['lt'] = queryDF['col3'] < $0",
           "queryDF['gt'] = queryDF['num_groups'] > $1",
-          "queryDF[['lt', 'gt']].result(name='test_output')",
+          "df = queryDF[['lt', 'gt']]",
+          "display(df, 'test_output')",
       },
       "\n");
   // Values to test on.
@@ -675,7 +683,7 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
           "'string_groups'])",
           "queryDF['is_large'] = queryDF['col3'] > $0",
           "aggDF = queryDF.groupby('is_large').agg(count=('num_groups', pl.count))",
-          "aggDF.result(name='test_output')",
+          "display(aggDF, 'test_output')",
       },
       "\n");
   // Value to test on.
@@ -754,7 +762,7 @@ TEST_P(CarnotFilterTest, int_filter) {
           "'num_groups', "
           "'string_groups'])",
           "mapDF = queryDF[queryDF['$2'] $1 $0]",
-          "mapDF.result(name='test_output')",
+          "display(mapDF, 'test_output')",
       },
       "\n");
   // these three parameters don't package well.
@@ -813,7 +821,7 @@ TEST_F(CarnotTest, string_filter) {
           "'num_groups', "
           "'string_groups'])",
           "mapDF = queryDF[queryDF['$2'] $1 '$0']",
-          "mapDF.result(name='test_output')",
+          "display(mapDF, 'test_output')",
       },
       "\n");
 
@@ -875,7 +883,7 @@ TEST_P(CarnotLimitTest, limit) {
       {
           "queryDF = dataframe(table='big_test_table', select=['time_', 'col2'])",
           "mapDF = queryDF.head(n=$0)",
-          "mapDF.result(name='test_output')",
+          "display(mapDF, 'test_output')",
       },
       "\n");
   int64_t num_rows;
@@ -927,7 +935,8 @@ TEST_F(CarnotTest, reused_result) {
           "mapDF = queryDF[['col3', 'num_groups']]",
           "mapDF['is_large'] = mapDF['col3'] > 30",
           "x = queryDF[queryDF['num_groups'] > 2]",
-          "mapDF[['is_large', 'num_groups']].result(name='test_output')",
+          "y= mapDF[['is_large', 'num_groups']]",
+          "display(y, 'test_output')",
       },
       "\n");
   auto query_uuid = sole::uuid4();
@@ -963,8 +972,10 @@ TEST_F(CarnotTest, multiple_result_calls) {
           "mapDF = queryDF[['col3', 'num_groups']]",
           "mapDF['lt'] = mapDF['col3'] < $0",
           "mapDF['gt'] = mapDF['num_groups'] > $1",
-          "mapDF[['lt', 'gt']].result(name='test_output')",
-          "x = queryDF[queryDF['num_groups'] > $2].result(name='filtered_output')",
+          "df = mapDF[['lt', 'gt']]",
+          "display(df, 'test_output')",
+          "x = queryDF[queryDF['num_groups'] > $2]",
+          "display(x, 'filtered_output')",
       },
       "\n");
   // Values to test on.
@@ -1037,7 +1048,8 @@ TEST_F(CarnotTest, pass_logical_plan) {
       {
           "queryDF = dataframe(table='test_table', select=['col1', 'col2'])",
           "queryDF['res'] = pl.add(queryDF['col1'], queryDF['col2'])",
-          "queryDF[['res']].result(name='$0')",
+          "df = queryDF[['res']]",
+          "display(df, '$0')",
       },
       "\n");
   compiler::Compiler compiler;
@@ -1095,7 +1107,7 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
           "df = dataframe(table='big_test_table', select=['string_groups', '_attr_pod_id'])",
           "df['pod_name'] = df.attr['pod_name']",
           "bdf = df[df['pod_name'] == 'pl/name']",
-          "cdf = bdf.result(name='logical_plan')",
+          "display(bdf, 'logical_plan')",
       },
       "\n");
   compiler::Compiler compiler;

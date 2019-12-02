@@ -25,20 +25,23 @@ using table_store::Column;
 using table_store::Table;
 using table_store::schema::RowDescriptor;
 
-const char* kGroupByNoneQuery =
-    R"(
-queryDF = dataframe(table='test_table', select=['col0', 'col1']))"
-    R"(.agg(sum=('col1', pl.sum)).result(name='$0'))";
+const char* kGroupByNoneQuery = R"pxl(
+df = dataframe(table='test_table', select=['col0', 'col1'])
+df = df.agg(sum=('col1', pl.sum))
+display(df, '$0')
+)pxl";
 
-const char* kGroupByOneQuery =
-    R"(
-queryDF = dataframe(table='test_table', select=['col0', 'col1']))"
-    R"(.groupby('col0').agg(sum=('col1', pl.sum)).result(name='$0'))";
+const char* kGroupByOneQuery = R"pxl(
+df = dataframe(table='test_table', select=['col0', 'col1'])
+df = df.groupby('col0').agg(sum=('col1', pl.sum))
+display(df, '$0')
+)pxl";
 
-const char* kGroupByTwoQuery =
-    R"(
-queryDF = dataframe(table='test_table', select=['col0', 'col1', 'col2']))"
-    R"(.groupby(['col0', 'col1']).agg(sum=('col2', pl.sum)).result(name='$0'))";
+const char* kGroupByTwoQuery = R"pxl(
+df = dataframe(table='test_table', select=['col0', 'col1', 'col2'])
+df = df.groupby(['col0', 'col1']).agg(sum=('col2', pl.sum))
+display(df, '$0')
+)pxl";
 
 std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> table_store) {
   auto carnot_or_s = Carnot::Create(table_store, exec::MockKelvinStubGenerator);
@@ -95,6 +98,7 @@ const std::unique_ptr<const datagen::DistributionParams> sample_selection_params
 const std::unique_ptr<const datagen::DistributionParams> sample_length_params =
     std::make_unique<const datagen::UniformParams>(0, 255);
 
+// TODO(philkuz) delete if this is a duplicate of L117.
 BENCHMARK_CAPTURE(BM_Query_String, eval_group_by_one_uniform_string,
                   {types::DataType::STRING, types::DataType::INT64},
                   {datagen::DistributionType::kZipfian, datagen::DistributionType::kUniform},
@@ -117,13 +121,15 @@ BENCHMARK_CAPTURE(BM_Query_String, eval_group_by_one_uniform_string,
     ->RangeMultiplier(2)
     ->Range(1, 1 << 16);
 
-BENCHMARK_CAPTURE(BM_Query_String, eval_group_by_one_uniform_string,
-                  {types::DataType::STRING, types::DataType::STRING, types::DataType::INT64},
-                  {datagen::DistributionType::kZipfian, datagen::DistributionType::kUniform,
-                   datagen::DistributionType::kUniform},
-                  kGroupByTwoQuery, 20, sample_selection_params.get(), sample_length_params.get())
-    ->RangeMultiplier(2)
-    ->Range(1, 1 << 16);
+// TODO(philkuz) fails in table.cc because batch size > table size.
+// BENCHMARK_CAPTURE(BM_Query_String, eval_group_by_one_uniform_string_two_data_cols,
+//                   {types::DataType::STRING, types::DataType::STRING, types::DataType::INT64},
+//                   {datagen::DistributionType::kZipfian, datagen::DistributionType::kUniform,
+//                    datagen::DistributionType::kUniform},
+//                   kGroupByTwoQuery, 20, sample_selection_params.get(),
+//                   sample_length_params.get())
+//     ->RangeMultiplier(2)
+//     ->Range(1, 1 << 16);
 
 // Group By Int Tests
 BENCHMARK_CAPTURE(BM_Query_Int, eval_group_by_none,

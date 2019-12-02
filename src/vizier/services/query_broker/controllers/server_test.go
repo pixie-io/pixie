@@ -152,11 +152,13 @@ response {
 `
 
 const testQuery = `
-queryDF = dataframe(table='perf_and_http', select=['_time']).result(name='out')
+df = dataframe(table='perf_and_http', select=['_time'])
+display(df, 'out')
 `
 
 const badQuery = `
-queryDF = dataframe(table='', select=['_time']).result(name='out')
+df = dataframe(table='', select=['_time'])
+display(df, 'out')
 `
 
 const testLogicalPlan = `

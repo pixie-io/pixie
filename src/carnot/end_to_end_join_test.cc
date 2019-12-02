@@ -43,7 +43,8 @@ TEST_F(JoinTest, basic) {
       "suffixes=['', '_x'])\n"
       "join['left_col1'] = join['col1']\n"
       "join['right_col2'] = join['col2']\n"
-      "join[['left_col1', 'right_col2']].result(name='unused_param')";
+      "df = join[['left_col1', 'right_col2']]\n"
+      "display(df, 'unused_param')";
 
   auto query = absl::StrJoin({queryString}, "\n");
   auto query_id = sole::uuid4();
