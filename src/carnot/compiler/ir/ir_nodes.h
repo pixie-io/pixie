@@ -369,6 +369,12 @@ class OperatorIR : public IRNode {
   explicit OperatorIR(int64_t id, IRNodeType type, bool has_parents, bool is_source)
       : IRNode(id, type), is_source_(is_source), can_have_parents_(has_parents) {}
 
+  /**
+   * @brief Support for operators that have the same parent multiple times, like a self-join.
+   */
+  StatusOr<std::vector<OperatorIR*>> HandleDuplicateParents(
+      const std::vector<OperatorIR*>& parents);
+
  private:
   bool is_source_ = false;
   bool relation_init_ = false;
@@ -1405,12 +1411,7 @@ class UnionIR : public OperatorIR {
   bool IsBlocking() const override { return true; }
 
   Status ToProto(planpb::Operator*) const override;
-  Status Init(const std::vector<OperatorIR*>& parents) {
-    for (auto p : parents) {
-      PL_RETURN_IF_ERROR(AddParent(p));
-    }
-    return Status::OK();
-  }
+  Status Init(const std::vector<OperatorIR*>& parents);
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   Status SetRelationFromParents();
   bool HasColumnMappings() const { return column_mappings_.size() == parents().size(); }

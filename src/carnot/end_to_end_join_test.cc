@@ -74,5 +74,42 @@ TEST_F(JoinTest, basic) {
       rb1->ColumnAt(1)->Equals(types::ToArrow(expected_col2, arrow::default_memory_pool())));
 }
 
+TEST_F(JoinTest, self_join) {
+  std::string queryString =
+      "src1 = dataframe(table='left_table', select=['col1', 'col2'])\n"
+      "join = src1.merge(src1, how='inner', left_on=['col1'], right_on=['col1'], "
+      "suffixes=['', '_x'])\n"
+      "join['left_col1'] = join['col1']\n"
+      "join['right_col2'] = join['col2_x']\n"
+      "join[['left_col1', 'right_col2']].result(name='unused_param')";
+
+  auto query = absl::StrJoin({queryString}, "\n");
+  auto query_id = sole::uuid4();
+  // No time column, doesn't use a time parameter.
+  auto s = carnot_->ExecuteQuery(query, query_id, 0);
+  ASSERT_OK(s);
+  auto res = s.ConsumeValueOrDie();
+  EXPECT_EQ(5, res.rows_processed);
+  EXPECT_EQ(5 * sizeof(double) + 5 * sizeof(int64_t), res.bytes_processed);
+  EXPECT_GT(res.compile_time_ns, 0);
+  EXPECT_GT(res.exec_time_ns, 0);
+
+  // TODO(nserrino/philkuz): Move this logic somewhere more reusable.
+  auto table_id = absl::Substitute("$0_$1", query_id.str(), 0);
+
+  auto output_table = table_store_->GetTable(table_id);
+  EXPECT_EQ(1, output_table->NumBatches());
+
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  std::vector<types::Float64Value> expected_col1 = {0.5, 1.2, 5.3, 0.1, 5.1};
+  std::vector<types::Int64Value> expected_col2 = {1, 2, 3, 5, 6};
+  EXPECT_TRUE(
+      rb1->ColumnAt(0)->Equals(types::ToArrow(expected_col1, arrow::default_memory_pool())));
+  EXPECT_TRUE(
+      rb1->ColumnAt(1)->Equals(types::ToArrow(expected_col2, arrow::default_memory_pool())));
+}
+
 }  // namespace carnot
 }  // namespace pl

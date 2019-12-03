@@ -2810,12 +2810,163 @@ nodes {
   }
 }
 )proto";
+
 TEST_F(CompilerTest, right_join) {
   auto plan_status =
       compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "right"), compiler_state_.get());
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
   EXPECT_THAT(plan, EqualsProto(kJoinRightQueryPlan)) << plan.DebugString();
+}
+
+const char* kSelfJoinQueryPlan = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 7
+      sorted_children: 19
+      sorted_children: 18
+    }
+    nodes {
+      id: 19
+      sorted_children: 18
+      sorted_parents: 7
+    }
+    nodes {
+      id: 18
+      sorted_children: 21
+      sorted_parents: 7
+      sorted_parents: 19
+    }
+    nodes {
+      id: 21
+      sorted_parents: 18
+    }
+  }
+  nodes {
+    id: 7
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 1
+        column_idxs: 4
+        column_idxs: 2
+        column_names: "cpu0"
+        column_names: "upid"
+        column_names: "cpu1"
+        column_types: FLOAT64
+        column_types: UINT128
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    id: 19
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+            node: 7
+          }
+        }
+        expressions {
+          column {
+            node: 7
+            index: 1
+          }
+        }
+        expressions {
+          column {
+            node: 7
+            index: 2
+          }
+        }
+        column_names: "cpu0"
+        column_names: "upid"
+        column_names: "cpu1"
+      }
+    }
+  }
+  nodes {
+    id: 18
+    op {
+      op_type: JOIN_OPERATOR
+      join_op {
+        equality_conditions {
+          left_column_index: 1
+          right_column_index: 1
+        }
+        output_columns {
+        }
+        output_columns {
+          column_index: 1
+        }
+        output_columns {
+          column_index: 2
+        }
+        output_columns {
+          parent_index: 1
+        }
+        output_columns {
+          parent_index: 1
+          column_index: 1
+        }
+        output_columns {
+          parent_index: 1
+          column_index: 2
+        }
+        column_names: "cpu0"
+        column_names: "upid"
+        column_names: "cpu1"
+        column_names: "cpu0_x"
+        column_names: "upid_x"
+        column_names: "cpu1_x"
+      }
+    }
+  }
+  nodes {
+    id: 21
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "joined"
+        column_types: FLOAT64
+        column_types: UINT128
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: UINT128
+        column_types: FLOAT64
+        column_names: "cpu0"
+        column_names: "upid"
+        column_names: "cpu1"
+        column_names: "cpu0_x"
+        column_names: "upid_x"
+        column_names: "cpu1_x"
+      }
+    }
+  }
+}
+)proto";
+
+const char* kSelfJoinQuery = R"query(
+src1 = dataframe(table='cpu', select=['cpu0', 'upid', 'cpu1'])
+join = src1.merge(src1, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
+join.result(name='joined')
+)query";
+
+TEST_F(CompilerTest, self_join) {
+  auto plan_status = compiler_.Compile(kSelfJoinQuery, compiler_state_.get());
+  ASSERT_OK(plan_status);
+  auto plan = plan_status.ConsumeValueOrDie();
+  EXPECT_THAT(plan, EqualsProto(kSelfJoinQueryPlan)) << "ACTUAL PLAN: " << plan.DebugString();
 }
 
 // Test to make sure syntax errors are properly parsed.

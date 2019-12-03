@@ -1237,6 +1237,44 @@ TEST_F(OperatorTests, join_node_mismatched_columns) {
                                 {MakeColumn("col1", 1)}, {}));
 }
 
+TEST_F(OperatorTests, join_duplicate_parents) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src = MakeMemSource(relation0);
+
+  auto join_node =
+      MakeJoin({mem_src, mem_src}, "inner", relation0, relation0, {"col1"}, {"col1"}, {"_x", "_y"});
+
+  auto map_node_status = FindNodeType(graph, IRNodeType::kMap);
+  EXPECT_OK(map_node_status);
+  auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  EXPECT_THAT(join_node->parents(), ElementsAre(mem_src, map_node));
+}
+
+TEST_F(OperatorTests, union_duplicate_parents) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+  auto union_op = MakeUnion({mem_src2, mem_src1, mem_src1, mem_src1});
+
+  std::vector<OperatorIR*> maps;
+  for (size_t i = 0; i < 2; ++i) {
+    auto map_node_status = FindNodeType(graph, IRNodeType::kMap, i);
+    EXPECT_OK(map_node_status);
+    auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+    maps.push_back(map_node);
+  }
+
+  EXPECT_THAT(union_op->parents(), ElementsAre(mem_src2, mem_src1, maps[0], maps[1]));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

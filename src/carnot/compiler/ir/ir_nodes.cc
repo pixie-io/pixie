@@ -123,9 +123,32 @@ Status OperatorIR::ReplaceParent(OperatorIR* old_parent, OperatorIR* new_parent)
   return CreateIRNodeError("Couldn't find specified parent $0 for $1. Found [$2].",
                            old_parent->DebugString(), DebugString(), ParentsDebugString());
 }
+
+// Adds a no-op map in front of duplicate parents for multi-parent operators.
+// The DAG structure we use doesn't support multiple edges between the same parents, but we
+// also want to support use cases like self join and self union.
+StatusOr<std::vector<OperatorIR*>> OperatorIR::HandleDuplicateParents(
+    const std::vector<OperatorIR*>& parents) {
+  absl::flat_hash_set<OperatorIR*> parent_set;
+  std::vector<OperatorIR*> new_parents;
+  for (OperatorIR* parent : parents) {
+    if (!parent_set.contains(parent)) {
+      parent_set.insert(parent);
+      new_parents.push_back(parent);
+      continue;
+    }
+    PL_ASSIGN_OR_RETURN(MapIR * map,
+                        graph_ptr()->CreateNode<MapIR>(ast_node(), parent, ColExpressionVector{},
+                                                       /*keep_input_columns*/ true));
+    new_parents.push_back(map);
+  }
+  return new_parents;
+}
+
 std::string IRNode::DebugString() const {
   return absl::Substitute("$0(id=$1)", type_string(), id());
 }
+
 std::string OperatorIR::ParentsDebugString() {
   return absl::StrJoin(parents(), ",", [](std::string* out, IRNode* in) {
     absl::StrAppend(out, in->DebugString());
@@ -1153,6 +1176,15 @@ Status UnionIR::SetRelationFromParents() {
   return Status::OK();
 }
 
+Status UnionIR::Init(const std::vector<OperatorIR*>& parents) {
+  // Support joining a table against itself by calling HandleDuplicateParents.
+  PL_ASSIGN_OR_RETURN(auto transformed_parents, HandleDuplicateParents(parents));
+  for (auto p : transformed_parents) {
+    PL_RETURN_IF_ERROR(AddParent(p));
+  }
+  return Status::OK();
+}
+
 StatusOr<JoinIR::JoinType> JoinIR::GetJoinEnum(const std::string& join_type_str) const {
   // TODO(philkuz) (PL-1136) convert to enum library friendly version.
   absl::flat_hash_map<std::string, JoinType> join_key_mapping = {{"inner", JoinType::kInner},
@@ -1222,7 +1254,9 @@ Status JoinIR::Init(const std::vector<OperatorIR*>& parents, const std::string& 
     return CreateIRNodeError("'left_on' and 'right_on' must contain the same number of elements.");
   }
 
-  for (auto* p : parents) {
+  // Support joining a table against itself by calling HandleDuplicateParents.
+  PL_ASSIGN_OR_RETURN(auto transformed_parents, HandleDuplicateParents(parents));
+  for (auto* p : transformed_parents) {
     PL_RETURN_IF_ERROR(AddParent(p));
   }
 
