@@ -37,8 +37,8 @@ class JoinTest : public ::testing::Test {
 
 TEST_F(JoinTest, basic) {
   std::string queryString =
-      "src1 = dataframe(table='left_table', select=['col1', 'col2'])\n"
-      "src2 = dataframe(table='right_table', select=['col1', 'col2'])\n"
+      "src1 = pl.DataFrame(table='left_table', select=['col1', 'col2'])\n"
+      "src2 = pl.DataFrame(table='right_table', select=['col1', 'col2'])\n"
       "join = src1.merge(src2, how='inner', left_on=['col1'], right_on=['col1'], "
       "suffixes=['', '_x'])\n"
       "join['left_col1'] = join['col1']\n"
@@ -76,7 +76,7 @@ TEST_F(JoinTest, basic) {
 
 TEST_F(JoinTest, self_join) {
   std::string queryString =
-      "src1 = dataframe(table='left_table', select=['col1', 'col2'])\n"
+      "src1 = pl.DataFrame(table='left_table', select=['col1', 'col2'])\n"
       "join = src1.merge(src1, how='inner', left_on=['col1'], right_on=['col1'], "
       "suffixes=['', '_x'])\n"
       "join['left_col1'] = join['col1']\n"

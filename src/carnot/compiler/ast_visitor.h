@@ -84,7 +84,6 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kMDKeyword[] = "attr";
 
   // Constants for operators in the query language.
-  inline static constexpr char kDataframeOpId[] = "dataframe";
   inline static constexpr char kDisplayOpId[] = "display";
 
   // Constant for the modules.

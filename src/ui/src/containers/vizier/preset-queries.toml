@@ -1,7 +1,7 @@
 queries = [
 ["HTTP Requests Statistics per Service",
 """
-t1 = dataframe(table='http_events', start_time='-30s')
+t1 = pl.DataFrame(table='http_events', start_time='-30s')
 
 t1['service'] = t1.attr['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
@@ -55,7 +55,7 @@ display(joined_table)
 # 
 # Returns the Resource Usage for each pod during an interval.
 # 
-t1 = dataframe(table='process_stats', start_time='-60s')
+t1 = pl.DataFrame(table='process_stats', start_time='-60s')
 
 # Convert to better units.
 t1['cpu_utime_s'] = t1['cpu_utime_ns'] / 1.0E9
@@ -131,7 +131,7 @@ display(keep_columns)
 # 
 # Returns the Total Resource Usage for each pod.
 # 
-t1 = dataframe(table='process_stats', start_time='-60s')
+t1 = pl.DataFrame(table='process_stats', start_time='-60s')
 
 # Convert to better units.
 t1['cpu_utime_s'] = t1['cpu_utime_ns'] / 1.0E9
@@ -188,21 +188,21 @@ display(keep_columns)
 """],
 ["Sample HTTP Data",
 """
-t1 = dataframe(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns'], start_time='-30s')
+t1 = pl.DataFrame(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns'], start_time='-30s')
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t2 = t1.drop(columns=['http_resp_latency_ns']).head(n=100)
 display(t2)
 """],
 ["Sample MySQL Data",
 """
-t1 = dataframe(table='mysql_events', select=['time_', 'remote_addr', 'remote_port', 'req_cmd', 'req_body', 'resp_status', 'resp_body', 'latency_ns'], start_time='-30s')
+t1 = pl.DataFrame(table='mysql_events', select=['time_', 'remote_addr', 'remote_port', 'req_cmd', 'req_body', 'resp_status', 'resp_body', 'latency_ns'], start_time='-30s')
 t1['latency_ms'] = t1['latency_ns'] / 1.0E6
 t2 = t1.drop(columns=['latency_ns']).head(n=100)
 display(t2)
 """],
 ["Network Stats",
 """
-t1 = dataframe(table='network_stats', select=['time_', 'pod_id', 'rx_bytes', 'rx_packets', 'rx_errors',
+t1 = pl.DataFrame(table='network_stats', select=['time_', 'pod_id', 'rx_bytes', 'rx_packets', 'rx_errors',
                                          'rx_drops', 'tx_bytes', 'tx_packets', 'tx_errors', 'tx_drops'], start_time='-30s')
 t2 = t1.head(n=100)
 display(t2)

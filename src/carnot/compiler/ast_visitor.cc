@@ -29,12 +29,6 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
 
 Status ASTVisitorImpl::Init() {
   var_table_ = VarTable();
-  var_table_[kDataframeOpId] = std::shared_ptr<FuncObject>(new FuncObject(
-      kDataframeOpId, {"table", "select", "start_time", "end_time"},
-      {{"select", "[]"}, {"start_time", "0"}, {"end_time", "plc.now()"}},
-      /*has_variable_len_kwargs*/ false,
-      std::bind(&DataFrameHandler::Eval, ir_graph_, std::placeholders::_1, std::placeholders::_2)));
-
   PL_ASSIGN_OR_RETURN(var_table_[kPLModuleObjName], PLModule::Create(ir_graph_, compiler_state_));
 
   var_table_[kDisplayOpId] = std::shared_ptr<FuncObject>(

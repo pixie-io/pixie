@@ -49,7 +49,7 @@ StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string plann
 // TODO(philkuz/zasgar) (PL-873) remove or disable this test when enabling kelvin support.
 TEST_F(PlannerExportTest, two_agents_query_test) {
   int result_len;
-  std::string query = "df = dataframe(table='table1')\ndisplay(df, 'out')";
+  std::string query = "df = pl.DataFrame(table='table1')\ndisplay(df, 'out')";
 
   auto logical_planner_state = distributedpb::testutils::CreateTwoAgentsPlannerState();
   auto interface_result =
@@ -68,7 +68,7 @@ TEST_F(PlannerExportTest, two_agents_query_test) {
 // TODO(philkuz/zasgar) (PL-873) enable this test when switching to use Kelvin.
 TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
   int result_len;
-  std::string query = "df = dataframe(table='table1')\ndisplay(df, 'out')";
+  std::string query = "df = pl.DataFrame(table='table1')\ndisplay(df, 'out')";
 
   auto logical_planner_state = distributedpb::testutils::CreateTwoAgentsOneKelvinPlannerState();
   auto interface_result =
@@ -88,7 +88,7 @@ TEST_F(PlannerExportTest, bad_queries) {
   int result_len;
   // Bad table name query that should yield a compiler error.
   std::string bad_table_query =
-      "df = dataframe(table='bad_table_name')\n"
+      "df = pl.DataFrame(table='bad_table_name')\n"
       "display(df, 'out')";
   auto logical_planner_state = distributedpb::testutils::CreateTwoAgentsPlannerState();
   auto interface_result =
@@ -102,7 +102,7 @@ TEST_F(PlannerExportTest, bad_queries) {
 }
 
 const char* kUDFQuery = R"query(
-t1 = dataframe(table='table1', start_time='-30s')
+t1 = pl.DataFrame(table='table1', start_time='-30s')
 t1 = t1[t1['cpu_cycles'] >= 0]
 display(t1)
 )query";

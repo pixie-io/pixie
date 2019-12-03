@@ -30,7 +30,7 @@ TEST(IRTypes, types_enum_test) {
 /**
  * Creates IR Graph that is the following query compiled
  *
- * `dataframe(table="tableName", select=["testCol"], start_time"-2m")`
+ * `pl.DataFrame(table="tableName", select=["testCol"], start_time"-2m")`
  */
 
 TEST(IRTest, CreateSource) {
