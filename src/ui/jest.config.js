@@ -17,7 +17,7 @@ module.exports = {
     'tsx',
   ],
   moduleDirectories: [
-    '<rootDir>/node_modules',
+    'node_modules',
     '<rootDir>/src',
   ],
   moduleNameMapper: {
