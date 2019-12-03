@@ -200,8 +200,11 @@ export class QueryResultViewer extends React.Component<QueryResultViewerProps, {
       return formatError(data.error);
     }
 
-    const relation = data.table.relation;
-    const tableData = JSON.parse(data.table.data);
+    // TODO: Determine how we should render multiple tables in a table-view. For now, if we receive more than one
+    // table, just render the first table.
+    const relation = data.table instanceof Array ? data.table[0].relation : (data.table as any).relation;
+    const tableData = data.table instanceof Array ?
+      JSON.parse(data.table[0].data) : JSON.parse((data.table as any).data);
     const parsedTable = parseDataTable(relation, tableData);
     const colWidthRatio = computeColumnWidthRatios(relation, parsedTable);
 

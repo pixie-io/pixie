@@ -241,20 +241,26 @@ func (q *QueryResultResolver) ID() graphql.ID {
 }
 
 // Table returns a resolver for a table. Selects first returned table.
-func (q *QueryResultResolver) Table() *QueryResultTableResolver {
-	// Always select first table.
+func (q *QueryResultResolver) Table() *[]*QueryResultTableResolver {
+	tables := make([]*QueryResultTableResolver, len(q.Result.Tables))
+
 	if len(q.Result.Tables) == 0 {
 		return nil
 	}
-	selectedTable := q.Result.Tables[0]
-	names := []string{}
-	types := []string{}
-	for _, col := range selectedTable.Relation.Columns {
-		names = append(names, col.ColumnName)
-		types = append(types, col.ColumnType.String())
+
+	for i, table := range q.Result.Tables {
+		selectedTable := table
+		names := []string{}
+		types := []string{}
+		for _, col := range selectedTable.Relation.Columns {
+			names = append(names, col.ColumnName)
+			types = append(types, col.ColumnType.String())
+		}
+		relation := QueryResultTableRelationResolver{&names, &types}
+		tables[i] = &QueryResultTableResolver{relation, selectedTable}
 	}
-	relation := QueryResultTableRelationResolver{&names, &types}
-	return &QueryResultTableResolver{relation, selectedTable}
+
+	return &tables
 }
 
 /**

@@ -129,7 +129,11 @@ const QueryInfo = (props: QueryInfoProps) => {
               () => {
                 const download = document.createElement('a');
                 download.setAttribute('type', 'hidden');
-                const blob = new Blob([ResultDataUtils.ResultsToCsv(props.data.ExecuteQuery.table.data)],
+                // TODO: Determine how we should render multiple tables in a table-view.
+                //  For now, if we receive more than one table, just download the first table.
+                const tableResults = props.data.ExecuteQuery.table instanceof Array ?
+                  props.data.ExecuteQuery.table[0].data : (props.data.ExecuteQuery.table as any).data;
+                const blob = new Blob([ResultDataUtils.ResultsToCsv(tableResults)],
                   { type: 'octet/stream' });
                 const url = window.URL.createObjectURL(blob);
                 download.setAttribute('href', url);

@@ -15,7 +15,7 @@ interface Point {
 
 export function parseData(data: GQLQueryResult): Point[] {
   try {
-    const relation = data.table.relation;
+    const relation = data.table instanceof Array ? data.table[0].relation : (data.table as any).relation;
     if (relation.colNames.length < 2) {
       // There should be at least 2 columns.
       return [];
@@ -24,7 +24,8 @@ export function parseData(data: GQLQueryResult): Point[] {
       (relation.colTypes[1] !== 'INT64' && relation.colTypes[1] !== 'FLOAT64')) {
       return [];
     }
-    const { rowBatches } = JSON.parse(data.table.data);
+    const { rowBatches } = data.table instanceof Array ?
+      JSON.parse(data.table[0].data) : JSON.parse((data.table as any).data);
     const out: Point[] = [];
     for (const batch of rowBatches) {
       const cols = batch.cols.map((col, i) => {

@@ -24,7 +24,7 @@ const SUPPORTED_TYPES = new Set(['INT64', 'FLOAT64', 'TIME64NS']);
 export function parseData(data: GQLQueryResult): LineSeries[] {
   try {
     let timeColName = '';
-    const relation = data.table.relation;
+    const relation = data.table instanceof Array ? data.table[0].relation : (data.table as any).relation;
     const columns = new Map<string, any[]>();
     relation.colNames.forEach((name, i) => {
       const type = relation.colTypes[i];
@@ -39,7 +39,8 @@ export function parseData(data: GQLQueryResult): LineSeries[] {
     if (!timeColName) {
       return [];
     }
-    const { rowBatches } = JSON.parse(data.table.data);
+    const { rowBatches } = data.table instanceof Array ?
+      JSON.parse(data.table[0].data) : JSON.parse((data.table as any).data);
     for (const batch of rowBatches) {
       batch.cols.forEach((col, i) => {
         const name = relation.colNames[i];

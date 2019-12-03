@@ -52,7 +52,7 @@ type CompilerErrors {
 # The result of a query.
 type QueryResult {
   id: ID!
-  table: DataTable
+  table: [DataTable!]
   error: QueryErrors
 }
 

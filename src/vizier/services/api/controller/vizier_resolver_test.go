@@ -230,6 +230,32 @@ func TestVizierExecuteQuery(t *testing.T) {
 							},
 						},
 					},
+					{
+						Relation: &schemapb.Relation{
+							Columns: []*schemapb.Relation_ColumnInfo{
+								{
+									ColumnName: "aCol",
+									ColumnType: typespb.STRING,
+								},
+							},
+						},
+						RowBatches: []*schemapb.RowBatchData{
+							{
+								Cols: []*schemapb.Column{
+									{
+										ColData: &schemapb.Column_StringData{
+											StringData: &schemapb.StringColumn{
+												Data: []schemapb_types.StringData{
+													[]byte("abc"),
+													[]byte("def"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -273,19 +299,32 @@ func TestVizierExecuteQuery(t *testing.T) {
 				{
 				   "ExecuteQuery":{
 					  "id":"65294d6a-6ceb-48a7-96b0-9a1eb7d467cb",
-					  "table":{
-						 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"scolE\",\"columnType\":\"BOOLEAN\"},{\"columnName\":\"scolI\",\"columnType\":\"STRING\"}]},\"rowBatches\":[{\"cols\":[{\"stringData\":{\"data\":[\"hello\",\"test\"]}}]}]}",
-						 "relation":{
-							"colNames":[
-							   "scolE",
-							   "scolI"
-							],
-							"colTypes":[
-							   "BOOLEAN",
-							   "STRING"
-							]
-						 }
-					  },
+					  "table": [
+						  {
+							 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"scolE\",\"columnType\":\"BOOLEAN\"},{\"columnName\":\"scolI\",\"columnType\":\"STRING\"}]},\"rowBatches\":[{\"cols\":[{\"stringData\":{\"data\":[\"hello\",\"test\"]}}]}]}",
+							 "relation":{
+								"colNames":[
+								   "scolE",
+								   "scolI"
+								],
+								"colTypes":[
+								   "BOOLEAN",
+								   "STRING"
+								]
+							 }
+						  },
+						  {
+							 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"aCol\",\"columnType\":\"STRING\"}]},\"rowBatches\":[{\"cols\":[{\"stringData\":{\"data\":[\"abc\",\"def\"]}}]}]}",
+							 "relation":{
+								"colNames":[
+								   "aCol"
+								],
+								"colTypes":[
+								   "STRING"
+								]
+							 }
+						  }						  
+					  ],
 					  "error":{
 							"compilerError": null 
 						}
