@@ -7,7 +7,9 @@ import {Button, Nav, Tab, Tabs} from 'react-bootstrap';
 import * as uuid from 'uuid/v1';
 
 import {Drawer} from '../../components/drawer/drawer';
+import {saveCodeToStorage} from './code-utils';
 import {EditorContent} from './content';
+import {PresetQueries} from './preset-queries';
 
 const NEW_TAB = 'new-tab';
 const PIXIE_EDITOR_TABS_KEY = 'pixie-editor-tabs';
@@ -81,12 +83,15 @@ export const Editor: React.FC = () => {
     });
   };
 
-  const createNewTab = () => {
+  const createNewTab = (query?) => {
+    const newTab = {
+      title: (query && query.name) || 'untitled',
+      id: uuid(),
+    };
+    if (query && query.code) {
+      saveCodeToStorage(newTab.id, query.code);
+    }
     setState(({ tabs }) => {
-      const newTab = {
-        title: 'untitled',
-        id: uuid(),
-      };
       return { tabs: [...tabs, newTab], activeTab: newTab.id };
     });
   };
@@ -94,6 +99,7 @@ export const Editor: React.FC = () => {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
       <Drawer openedWidth='15vw'>
+        <PresetQueries onQuerySelect={createNewTab} />
       </Drawer>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Tab.Container

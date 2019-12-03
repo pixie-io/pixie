@@ -13,9 +13,9 @@ import {AutoSizer} from 'react-virtualized';
 import {useMutation} from '@apollo/react-hooks';
 
 import {QueryResultViewer} from '../vizier/query-result-viewer';
+import {getCodeFromStorage, saveCodeToStorage} from './code-utils';
 import {EditorTabInfo} from './editor';
 
-const PIXIE_EDITOR_CODE_KEY_PREFIX = 'px-';
 const DEFAULT_CODE = '# Enter Query Here\n';
 
 export const EditorContent: React.FC<EditorTabInfo> = (props) => {
@@ -104,15 +104,3 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
     </div>
   );
 };
-
-function codeIdToKey(id: string): string {
-  return `${PIXIE_EDITOR_CODE_KEY_PREFIX}${id}`;
-}
-
-function saveCodeToStorage(id: string, code: string) {
-  localStorage.setItem(codeIdToKey(id), code);
-}
-
-function getCodeFromStorage(id: string): string {
-  return localStorage.getItem(codeIdToKey(id)) || '';
-}
