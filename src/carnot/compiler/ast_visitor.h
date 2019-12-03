@@ -84,7 +84,6 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kMDKeyword[] = "attr";
 
   // Constants for operators in the query language.
-  inline static constexpr char kDisplayOpId[] = "display";
 
   // Constant for the modules.
   inline static constexpr char kPLModuleObjName[] = "pl";
@@ -195,15 +194,6 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return the operator contained by the subscript.
    */
   StatusOr<QLObjectPtr> ProcessSubscriptCall(const pypa::AstSubscriptPtr& node);
-
-  /**
-   * @brief Create a MemorySink Operator declared by a display() statement.
-   *
-   * @param ast the ast node that creates the print op.
-   * @param args the arguments to create the print op.
-   * @return The object created by print() or an error.
-   */
-  StatusOr<QLObjectPtr> ProcessDisplay(const pypa::AstPtr& ast, const ParsedArgs& args);
 
   /**
    * @brief Processes an Attribute value, the left side of the attribute data structure.

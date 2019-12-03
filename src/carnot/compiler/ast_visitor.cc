@@ -31,42 +31,11 @@ Status ASTVisitorImpl::Init() {
   var_table_ = VarTable();
   PL_ASSIGN_OR_RETURN(var_table_[kPLModuleObjName], PLModule::Create(ir_graph_, compiler_state_));
 
-  var_table_[kDisplayOpId] = std::shared_ptr<FuncObject>(
-      new FuncObject(kDisplayOpId, {"out", "name", "cols"}, {{"name", "''"}, {"cols", "[]"}},
-                     /*has_variable_len_kwargs*/ false,
-                     std::bind(&ASTVisitorImpl::ProcessDisplay, this, std::placeholders::_1,
-                               std::placeholders::_2)));
+  var_table_[PLModule::kDisplayOpId] = std::shared_ptr<FuncObject>(new FuncObject(
+      PLModule::kDisplayOpId, {"out", "name", "cols"}, {{"name", "''"}, {"cols", "[]"}},
+      /*has_variable_len_kwargs*/ false,
+      std::bind(&DisplayHandler::Eval, ir_graph_, std::placeholders::_1, std::placeholders::_2)));
   return Status::OK();
-}
-
-StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDisplay(const pypa::AstPtr& ast,
-                                                     const ParsedArgs& args) {
-  IRNode* out = args.GetArg("out");
-  IRNode* name = args.GetArg("name");
-
-  if (!Match(out, Operator())) {
-    return out->CreateIRNodeError("'out' must be a dataframe", out->type_string());
-  }
-
-  if (!Match(name, String())) {
-    return name->CreateIRNodeError("'name' must be a string");
-  }
-
-  OperatorIR* out_op = static_cast<OperatorIR*>(out);
-  std::string out_name = static_cast<StringIR*>(name)->str();
-  std::vector<std::string> columns;
-
-  // TODO(PL-1197) support output columns.
-  // IRNode* cols = args.GetArg("cols");
-  // if (!Match(cols, ListWithChildren(String()))) {
-  //   return cols->CreateIRNodeError("'cols' must be a list of strings.");
-  // }
-  // PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
-  //                     ParseStringsFromCollection(static_cast<ListIR*>(cols)));
-
-  PL_ASSIGN_OR_RETURN(MemorySinkIR * mem_sink_op,
-                      ir_graph_->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
-  return StatusOr(std::make_shared<NoneObject>(mem_sink_op));
 }
 
 Status ASTVisitorImpl::ProcessExprStmtNode(const pypa::AstExpressionStatementPtr& e) {

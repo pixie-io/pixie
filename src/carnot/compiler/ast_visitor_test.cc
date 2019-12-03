@@ -66,7 +66,7 @@ TEST_F(ASTVisitorTest, missing_one_argument) {
 }
 
 TEST_F(ASTVisitorTest, from_select_default_arg) {
-  std::string no_select_arg = "df = pl.DataFrame(table='cpu')\ndisplay(df)";
+  std::string no_select_arg = "df = pl.DataFrame(table='cpu')\npl.display(df)";
   EXPECT_OK(CompileGraph(no_select_arg));
 }
 

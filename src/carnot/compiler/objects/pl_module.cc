@@ -2,6 +2,7 @@
 
 #include "src/carnot/compiler/objects/dataframe.h"
 #include "src/carnot/compiler/objects/expr_object.h"
+#include "src/carnot/compiler/objects/none_object.h"
 #include "src/carnot/compiler/objects/pl_module.h"
 
 namespace pl {
@@ -30,6 +31,12 @@ Status PLModule::Init() {
       /*has_variable_len_kwargs*/ false,
       std::bind(&DataFrameHandler::Eval, graph_, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kDataframeOpId, dataframe_fn);
+
+  std::shared_ptr<FuncObject> display_fn = std::shared_ptr<FuncObject>(new FuncObject(
+      kDisplayOpId, {"out", "name", "cols"}, {{"name", "''"}, {"cols", "[]"}},
+      /*has_variable_len_kwargs*/ false,
+      std::bind(&DisplayHandler::Eval, graph_, std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kDisplayOpId, display_fn);
 
   return Status::OK();
 }
@@ -81,6 +88,36 @@ StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,
   }
 
   return StatusOr(std::make_shared<Dataframe>(mem_source_op));
+}
+
+StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
+                                           const ParsedArgs& args) {
+  IRNode* out = args.GetArg("out");
+  IRNode* name = args.GetArg("name");
+
+  if (!Match(out, Operator())) {
+    return out->CreateIRNodeError("'out' must be a dataframe", out->type_string());
+  }
+
+  if (!Match(name, String())) {
+    return name->CreateIRNodeError("'name' must be a string");
+  }
+
+  OperatorIR* out_op = static_cast<OperatorIR*>(out);
+  std::string out_name = static_cast<StringIR*>(name)->str();
+  std::vector<std::string> columns;
+
+  // TODO(PL-1197) support output columns in the analyzer rules.
+  // IRNode* cols = args.GetArg("cols");
+  // if (!Match(cols, ListWithChildren(String()))) {
+  //   return cols->CreateIRNodeError("'cols' must be a list of strings.");
+  // }
+  // PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
+  //                     ParseStringsFromCollection(static_cast<ListIR*>(cols)));
+
+  PL_ASSIGN_OR_RETURN(MemorySinkIR * mem_sink_op,
+                      graph->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
+  return StatusOr(std::make_shared<NoneObject>(mem_sink_op));
 }
 
 }  // namespace compiler
