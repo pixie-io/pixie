@@ -171,6 +171,17 @@ def _com_github_threadstacks():
         path = "third_party/threadstacks",
     )
 
+def _com_github_skystrife_cpptoml():
+    name = "com_github_skystrife_cpptoml"
+    location = REPOSITORY_LOCATIONS[name]
+    http_archive(
+        name = name,
+        urls = location["urls"],
+        sha256 = location["sha256"],
+        strip_prefix = location.get("strip_prefix", ""),
+        build_file = "//third_party:cpptoml.BUILD",
+    )
+
 def _cc_deps():
     _repository_impl(name = "com_google_benchmark")
     _repository_impl(
@@ -193,6 +204,7 @@ def _cc_deps():
     _com_github_cameron314_concurrentqueue()
     _com_github_serge1_elfio()
     _com_github_threadstacks()
+    _com_github_skystrife_cpptoml()
 
 def _go_deps():
     # Add go specific imports here when necessary.

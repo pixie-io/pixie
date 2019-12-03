@@ -73,6 +73,24 @@ pl_cc_test(
     ],
 )
 
+# This test needs to run as root, because stirling needs root in order to create the http and mysql events table.
+# Jenkins will run this test as root, but to run it locally, build it and then execute the bazel-bin file with sudo.
+pl_cc_test(
+    name = "preset_queries_test",
+    srcs = ["preset_queries_test.cc"],
+    data = ["//src/ui:preset_queries"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/funcs/metadata:cc_library",
+        "//src/carnot/planpb:plan_testutils",
+        "//src/carnot/udf_exporter:cc_library",
+        "//src/shared/schema:cc_library",
+        "//src/stirling:cc_library",
+        "@com_github_skystrife_cpptoml//:cpptoml",
+    ],
+)
+
 pl_cc_test(
     name = "analyzer_test",
     srcs = ["analyzer_test.cc"],

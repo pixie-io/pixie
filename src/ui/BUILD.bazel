@@ -149,3 +149,9 @@ genrule(
         "ui_build",
     ],
 )
+
+filegroup(
+    name = "preset_queries",
+    srcs = ["src/containers/vizier/preset-queries.toml"],
+    visibility = ["//visibility:public"],
+)

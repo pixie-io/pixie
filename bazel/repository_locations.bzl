@@ -173,4 +173,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "ELFIO-580da2467b3d7da4c817d45a99a367e4b0d6d326",
         urls = ["https://github.com/serge1/ELFIO/archive/580da2467b3d7da4c817d45a99a367e4b0d6d326.tar.gz"],
     ),
+    com_github_skystrife_cpptoml = dict(
+        sha256 = "7bd5ce29434cc24ed8fc87093f031124cd33a84858b309855a0b5dc3f72e0bd5",
+        strip_prefix = "cpptoml-fededad7169e538ca47e11a9ee9251bc361a9a65",
+        urls = ["https://github.com/skystrife/cpptoml/archive/fededad7169e538ca47e11a9ee9251bc361a9a65.tar.gz"],
+    ),
 )
