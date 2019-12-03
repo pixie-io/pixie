@@ -1,5 +1,6 @@
 package(default_visibility = ["//src/stirling:__pkg__"])
 
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource", "pl_cc_resource", "pl_cc_resource_impl")
 load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
 
@@ -8,6 +9,15 @@ filegroup(
     srcs = glob([
         "system-headers/**",
     ]),
+    visibility = ["//experimental/bpf:__subpackages__"],
+)
+
+filegroup(
+    name = "utils",
+    srcs = [
+        "logging.h",
+        "utils.h",
+    ],
     visibility = ["//experimental/bpf:__subpackages__"],
 )
 
