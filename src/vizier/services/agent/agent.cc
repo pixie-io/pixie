@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
   AgentDeathHandler death_handler(controller.get());
   signal_action->RegisterFatalErrorHandler(death_handler);
 
-  PL_CHECK_OK(controller->InitThrowaway());
+  PL_CHECK_OK(controller->InitSchemas());
   PL_CHECK_OK(stirling_ptr->RunAsThread());
   PL_CHECK_OK(controller->Run());
 

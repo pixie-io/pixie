@@ -378,7 +378,7 @@ Status Controller::Run() {
   return Status::OK();
 }
 
-Status Controller::InitThrowaway() {
+Status Controller::InitSchemas() {
   pl::stirling::stirlingpb::Publish publish_pb;
   stirling_->GetPublishProto(&publish_pb);
   auto subscribe_pb = stirling::SubscribeToAllInfoClasses(publish_pb);

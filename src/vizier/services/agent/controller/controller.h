@@ -74,7 +74,7 @@ class Controller : public NotCopyable {
 
   // TODO(zasgar): Remove me. Throwaway code for demo. We can't call this from Init because
   // it will break tests and there is no way to stub out stirling.
-  Status InitThrowaway();
+  Status InitSchemas();
 
  protected:
   Controller(sole::uuid agent_id, std::unique_ptr<QBStub> queryBrokerChan,
