@@ -81,7 +81,8 @@ TEST_F(JoinTest, self_join) {
       "suffixes=['', '_x'])\n"
       "join['left_col1'] = join['col1']\n"
       "join['right_col2'] = join['col2_x']\n"
-      "join[['left_col1', 'right_col2']].result(name='unused_param')";
+      "output = join[['left_col1', 'right_col2']]\n"
+      "display(output)";
 
   auto query = absl::StrJoin({queryString}, "\n");
   auto query_id = sole::uuid4();

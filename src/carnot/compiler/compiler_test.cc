@@ -2840,12 +2840,12 @@ nodes {
     }
     nodes {
       id: 18
-      sorted_children: 21
+      sorted_children: 22
       sorted_parents: 7
       sorted_parents: 19
     }
     nodes {
-      id: 21
+      id: 22
       sorted_parents: 18
     }
   }
@@ -2933,7 +2933,7 @@ nodes {
     }
   }
   nodes {
-    id: 21
+    id: 22
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2959,7 +2959,7 @@ nodes {
 const char* kSelfJoinQuery = R"query(
 src1 = dataframe(table='cpu', select=['cpu0', 'upid', 'cpu1'])
 join = src1.merge(src1, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
-join.result(name='joined')
+display(join, 'joined')
 )query";
 
 TEST_F(CompilerTest, self_join) {
