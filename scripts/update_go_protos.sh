@@ -13,7 +13,7 @@ fi
 
 function label_to_path() {
   path="${1#"//"}"
-  echo "${path/:/"/"}"
+  echo "${path/://}"
 }
 
 function update_one_build_label() {
