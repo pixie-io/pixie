@@ -29,12 +29,11 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
 
 Status ASTVisitorImpl::Init() {
   var_table_ = VarTable();
-  var_table_[kDataframeOpId] = std::shared_ptr<FuncObject>(
-      new FuncObject(kDataframeOpId, {"table", "select", "start_time", "end_time"},
-                     {{"select", "[]"}, {"start_time", "0"}, {"end_time", "plc.now()"}},
-                     /*has_variable_len_kwargs*/ false,
-                     std::bind(&ASTVisitorImpl::ProcessDataframeOp, this, std::placeholders::_1,
-                               std::placeholders::_2)));
+  var_table_[kDataframeOpId] = std::shared_ptr<FuncObject>(new FuncObject(
+      kDataframeOpId, {"table", "select", "start_time", "end_time"},
+      {{"select", "[]"}, {"start_time", "0"}, {"end_time", "plc.now()"}},
+      /*has_variable_len_kwargs*/ false,
+      std::bind(&DataFrameHandler::Eval, ir_graph_, std::placeholders::_1, std::placeholders::_2)));
 
   PL_ASSIGN_OR_RETURN(var_table_[kPLModuleObjName], PLModule::Create(ir_graph_, compiler_state_));
 
@@ -44,44 +43,6 @@ Status ASTVisitorImpl::Init() {
                      std::bind(&ASTVisitorImpl::ProcessDisplay, this, std::placeholders::_1,
                                std::placeholders::_2)));
   return Status::OK();
-}
-
-StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataframeOp(const pypa::AstPtr& ast,
-                                                         const ParsedArgs& args) {
-  IRNode* table = args.GetArg("table");
-  IRNode* select = args.GetArg("select");
-  IRNode* start_time = args.GetArg("start_time");
-  IRNode* end_time = args.GetArg("end_time");
-  if (!Match(table, String())) {
-    return table->CreateIRNodeError("'table' must be a string, got $0", table->type_string());
-  }
-
-  if (!Match(select, ListWithChildren(String()))) {
-    return select->CreateIRNodeError("'select' must be a list of strings.");
-  }
-
-  if (!start_time->IsExpression()) {
-    return start_time->CreateIRNodeError("'start_time' must be an expression");
-  }
-
-  if (!end_time->IsExpression()) {
-    return start_time->CreateIRNodeError("'end_time' must be an expression");
-  }
-
-  std::string table_name = static_cast<StringIR*>(table)->str();
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
-                      ParseStringsFromCollection(static_cast<ListIR*>(select)));
-  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
-                      ir_graph_->CreateNode<MemorySourceIR>(ast, table_name, columns));
-  // If both start_time and end_time are default arguments, then we don't substitute them.
-  if (!(args.default_subbed_args().contains("start_time") &&
-        args.default_subbed_args().contains("end_time"))) {
-    ExpressionIR* start_time_expr = static_cast<ExpressionIR*>(start_time);
-    ExpressionIR* end_time_expr = static_cast<ExpressionIR*>(end_time);
-    PL_RETURN_IF_ERROR(mem_source_op->SetTimeExpressions(start_time_expr, end_time_expr));
-  }
-
-  return StatusOr(std::make_shared<Dataframe>(mem_source_op));
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDisplay(const pypa::AstPtr& ast,
@@ -208,7 +169,7 @@ Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr
 
   // Maps can only assign to the same table as the input table when of the form:
   // df['foo'] = df['bar'] + 2
-  OperatorContext op_context{{parent_op}, kMapOpId, {assign_name_string}};
+  OperatorContext op_context{{parent_op}, Dataframe::kMapOpId, {assign_name_string}};
   PL_ASSIGN_OR_RETURN(auto result, ProcessData(expr_node, op_context));
   if (!result->IsExpression()) {
     return CreateAstError(

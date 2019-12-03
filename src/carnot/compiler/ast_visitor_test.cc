@@ -19,10 +19,9 @@ using ::testing::ElementsAreArray;
 
 // Checks whether we can actually compile into a graph.
 TEST_F(ASTVisitorTest, compilation_test) {
-  std::string from_expr = "dataframe(table='cpu', select=['cpu0', 'cpu1'])";
+  std::string from_expr = "pl.dataframe(table='cpu', select=['cpu0', 'cpu1'])";
   auto ig_status = CompileGraph(from_expr);
   EXPECT_OK(ig_status);
-  auto ig = ig_status.ValueOrDie();
   // check the connection of ig
   std::string from_range_expr =
       "dataframe(table='cpu', select=['cpu0'], start_time=0, end_time=10)";
@@ -67,7 +66,7 @@ TEST_F(ASTVisitorTest, missing_one_argument) {
 }
 
 TEST_F(ASTVisitorTest, from_select_default_arg) {
-  std::string no_select_arg = "df = dataframe(table='cpu')\ndisplay(df)";
+  std::string no_select_arg = "df = pl.dataframe(table='cpu')\ndisplay(df)";
   EXPECT_OK(CompileGraph(no_select_arg));
 }
 

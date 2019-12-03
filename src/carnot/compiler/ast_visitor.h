@@ -86,13 +86,6 @@ class ASTVisitorImpl : public ASTVisitor {
   // Constants for operators in the query language.
   inline static constexpr char kDataframeOpId[] = "dataframe";
   inline static constexpr char kDisplayOpId[] = "display";
-  inline static constexpr char kRangeOpId[] = "range";
-  inline static constexpr char kMapOpId[] = "map";
-  inline static constexpr char kBlockingAggOpId[] = "agg";
-  inline static constexpr char kSinkOpId[] = "result";
-  inline static constexpr char kFilterOpId[] = "filter";
-  inline static constexpr char kLimitOpId[] = "head";
-  inline static constexpr char kJoinOpId[] = "merge";
 
   // Constant for the modules.
   inline static constexpr char kPLModuleObjName[] = "pl";
@@ -203,15 +196,6 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return the operator contained by the subscript.
    */
   StatusOr<QLObjectPtr> ProcessSubscriptCall(const pypa::AstSubscriptPtr& node);
-
-  /**
-   * @brief Create a MemorySource Operator declared by a dataframe() statement.
-   *
-   * @param ast the ast node that creates the From op.
-   * @param args the arguments to create the from op.
-   * @return The object created by from() or an error.
-   */
-  StatusOr<QLObjectPtr> ProcessDataframeOp(const pypa::AstPtr& ast, const ParsedArgs& args);
 
   /**
    * @brief Create a MemorySink Operator declared by a display() statement.
