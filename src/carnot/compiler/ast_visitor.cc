@@ -30,11 +30,6 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
 Status ASTVisitorImpl::Init() {
   var_table_ = VarTable();
   PL_ASSIGN_OR_RETURN(var_table_[kPLModuleObjName], PLModule::Create(ir_graph_, compiler_state_));
-
-  var_table_[PLModule::kDisplayOpId] = std::shared_ptr<FuncObject>(new FuncObject(
-      PLModule::kDisplayOpId, {"out", "name", "cols"}, {{"name", "''"}, {"cols", "[]"}},
-      /*has_variable_len_kwargs*/ false,
-      std::bind(&DisplayHandler::Eval, ir_graph_, std::placeholders::_1, std::placeholders::_2)));
   return Status::OK();
 }
 

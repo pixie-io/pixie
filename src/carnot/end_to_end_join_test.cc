@@ -44,7 +44,8 @@ TEST_F(JoinTest, basic) {
       "join['left_col1'] = join['col1']\n"
       "join['right_col2'] = join['col2']\n"
       "df = join[['left_col1', 'right_col2']]\n"
-      "display(df, 'unused_param')";
+      "# fix this\n"
+      "pl.display(df, 'unused_param')";
 
   auto query = absl::StrJoin({queryString}, "\n");
   auto query_id = sole::uuid4();
@@ -82,7 +83,7 @@ TEST_F(JoinTest, self_join) {
       "join['left_col1'] = join['col1']\n"
       "join['right_col2'] = join['col2_x']\n"
       "output = join[['left_col1', 'right_col2']]\n"
-      "display(output)";
+      "pl.display(output)";
 
   auto query = absl::StrJoin({queryString}, "\n");
   auto query_id = sole::uuid4();
