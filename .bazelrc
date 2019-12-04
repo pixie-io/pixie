@@ -94,6 +94,7 @@ build:bpf --config=clang
 build:bpf --build_tag_filters=requires_bpf
 test:bpf --test_tag_filters=requires_bpf
 
+coverage --config=gcc
 coverage --cxxopt -fprofile-arcs
 coverage --cxxopt -ftest-coverage
 coverage --instrument_test_targets
