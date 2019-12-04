@@ -19,7 +19,8 @@ namespace utils {
  *
  * @return vector of probe names.
  */
-StatusOr<std::vector<std::string>> SearchForAttachedProbes(std::string_view marker);
+Status SearchForAttachedProbes(const char* file_path, std::string_view marker,
+                               std::vector<std::string>* leaked_probes);
 
 /**
  * Removes the specified probes using the provided names.
@@ -31,7 +32,7 @@ StatusOr<std::vector<std::string>> SearchForAttachedProbes(std::string_view mark
  * @param probes vector of probes to remove.
  * @return error if there were issues accessing sysfs.
  */
-Status RemoveProbes(std::vector<std::string> probes);
+Status RemoveProbes(const char* file_path, std::vector<std::string> probes);
 
 /**
  * Searches for and removes any kprobe with the specified marker.

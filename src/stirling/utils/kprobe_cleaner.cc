@@ -12,21 +12,21 @@ namespace pl {
 namespace stirling {
 namespace utils {
 
-const char kAttachedProbesFile[] = "/sys/kernel/debug/tracing/kprobe_events";
+const char kAttachedKProbesFile[] = "/sys/kernel/debug/tracing/kprobe_events";
+const char kAttachedUProbesFile[] = "/sys/kernel/debug/tracing/uprobe_events";
 
-StatusOr<std::vector<std::string>> SearchForAttachedProbes(std::string_view marker) {
-  std::vector<std::string> leaked_probes;
-
-  std::ifstream infile(kAttachedProbesFile);
+Status SearchForAttachedProbes(const char* file_path, std::string_view marker,
+                               std::vector<std::string>* leaked_probes) {
+  std::ifstream infile(file_path);
   if (!infile.good()) {
-    return error::Internal("Failed to open file for reading: $0", kAttachedProbesFile);
+    return error::Internal("Failed to open file for reading: $0", file_path);
   }
   std::string line;
   while (std::getline(infile, line)) {
     if (absl::StrContains(line, marker)) {
       std::vector<std::string> split = absl::StrSplit(line, ' ');
       if (split.size() != 2) {
-        return error::Internal("Unexpected format when reading file: $0", kAttachedProbesFile);
+        return error::Internal("Unexpected format when reading file: $0", file_path);
       }
 
       std::string probe = std::move(split[0]);
@@ -38,20 +38,19 @@ StatusOr<std::vector<std::string>> SearchForAttachedProbes(std::string_view mark
         return error::Internal("Unexpected probe string: $0", probe);
       }
 
-      leaked_probes.push_back(std::move(probe));
+      leaked_probes->push_back(std::move(probe));
     }
   }
-
-  return leaked_probes;
+  return Status::OK();
 }
 
-Status RemoveProbes(std::vector<std::string> probes) {
+Status RemoveProbes(const char* file_path, std::vector<std::string> probes) {
   // Unfortunately std::ofstream doesn't properly append to /sys/kernel/debug/tracing/kprobe_events.
   // It appears related to its use of fopen() instead of open().
   // So doing the write in old-school C-style.
-  int fd = open(kAttachedProbesFile, O_WRONLY | O_APPEND, 0);
+  int fd = open(file_path, O_WRONLY | O_APPEND, 0);
   if (fd < 0) {
-    return error::Internal("Failed to open file for writing: $0", kAttachedProbesFile);
+    return error::Internal("Failed to open file for writing: $0", file_path);
   }
 
   std::vector<std::string> errors;
@@ -62,7 +61,7 @@ Status RemoveProbes(std::vector<std::string> probes) {
     VLOG(1) << absl::Substitute("Writing $0", probe);
 
     if (write(fd, probe.data(), probe.size()) < 0) {
-      return error::Internal("Failed to write to file: $0", kAttachedProbesFile);
+      return error::Internal("Failed to write to file: $0", file_path);
     }
     // Note that even if write succeeds, it doesn't confirm that the probe was properly removed.
     // We can only confirm that we wrote to the file.
@@ -73,22 +72,32 @@ Status RemoveProbes(std::vector<std::string> probes) {
   return Status::OK();
 }
 
-Status KprobeCleaner(std::string_view marker) {
-  LOG(INFO) << absl::Substitute("Cleaning probes with the following marker: $0", marker);
+namespace {
+
+Status CleanProbesFromSysFile(const char* file_path, std::string_view marker) {
+  LOG(INFO) << absl::Substitute("Cleaning probes from $0 with the following marker: $1", file_path,
+                                marker);
 
   std::vector<std::string> leaked_probes;
-  PL_ASSIGN_OR_RETURN(leaked_probes, SearchForAttachedProbes(marker));
-  PL_RETURN_IF_ERROR(RemoveProbes(leaked_probes));
+  PL_RETURN_IF_ERROR(SearchForAttachedProbes(file_path, marker, &leaked_probes));
+  PL_RETURN_IF_ERROR(RemoveProbes(file_path, leaked_probes));
 
   std::vector<std::string> leaked_probes_after;
-  PL_ASSIGN_OR_RETURN(leaked_probes_after, SearchForAttachedProbes(marker));
-  if (leaked_probes_after.size() != 0) {
+  PL_RETURN_IF_ERROR(SearchForAttachedProbes(file_path, marker, &leaked_probes_after));
+  if (!leaked_probes_after.empty()) {
     return error::Internal("Wasn't able to remove all probes. Initial count=$0, final count=$1",
                            leaked_probes.size(), leaked_probes_after.size());
   }
+  LOG(INFO) << absl::Substitute("Cleaned up $0 kprobes", leaked_probes.size());
 
-  LOG(INFO) << absl::Substitute("Cleaned up $0 probes", leaked_probes.size());
+  return Status::OK();
+}
 
+}  // namespace
+
+Status KprobeCleaner(std::string_view marker) {
+  PL_RETURN_IF_ERROR(CleanProbesFromSysFile(kAttachedKProbesFile, marker));
+  PL_RETURN_IF_ERROR(CleanProbesFromSysFile(kAttachedUProbesFile, marker));
   return Status::OK();
 }
 
