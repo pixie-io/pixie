@@ -15,10 +15,43 @@ startup --host_jvm_args=-Xmx1g
 # Which reset the filter to empty.
 build --test_tag_filters=-requires_root,-requires_bpf
 
+# Sets the default Apple platform to macOS.
+build --apple_platform_type=macos
+
+# Build for Clang:
+build:clang --linkopt -fuse-ld=lld
+build:clang --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
+build:clang --action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
+# We need this to ensure that external projects are built with
+# C++17 support. This is needed in some libraries like absl which
+# have different behavior with C++17.
+build:clang --action_env=BAZEL_CXXOPTS=-std=c++17
+build:clang --action_env=BAZEL_COMPILER=clang
+build:clang --action_env=CC=clang
+build:clang --action_env=CXX=clang++
+
+# Build for GCC.
+build:gcc --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
+build:gcc --action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
+# We need this to ensure that external projects are built with
+# C++17 support. This is needed in some libraries like absl which
+# have different behavior with C++17.
+build:gcc --action_env=BAZEL_CXXOPTS=-std=c++17
+build:gcc --action_env=BAZEL_COMPILER=gcc
+build:gcc --action_env=CC=gcc
+build:gcc --action_env=CXX=g++
+
 # Default build opts:
-build --linkopt -fuse-ld=lld
+build --config=clang
+
+# Default mac config. Same as clang except we can't statically link,
+# and mac does not use libstdc++.
+build:macos --config=clang
+build:macos --action_env=BAZEL_LINKLIBS
+build:macos --action_env=BAZEL_LINKOPTS
 
 # bazel build --config asan ...
+build:asan --config=clang
 build:asan --define PL_CONFIG_ASAN=1
 build:asan --copt -D__SANITIZE_ADDRESS__
 build:asan --copt -fsanitize=address,undefined
@@ -34,8 +67,6 @@ build:asan --define signal_trace=disabled
 build:asan --copt -DADDRESS_SANITIZER=1
 build:asan --test_env=ASAN_SYMBOLIZER_PATH
 build:asan --test_env=ASAN_OPTIONS=handle_abort=1:allow_addr2line=true
-build:asan --linkopt -fuse-ld=lld
-build:asan --cxxopt -std=c++17
 build:asan --define tcmalloc=disabled
 
 # bazel build --config msan
@@ -46,29 +77,22 @@ build:msan --define tcmalloc=disabled
 build:asan --build_tag_filters=-no_msan,-manual
 build:msan --test_tag_filters=-no_msan,-requires_root,-requires_bpf
 build:msan --copt -fsanitize-memory-track-origins=2
-build:msan --linkopt -fuse-ld=lld
-build:msan --cxxopt -std=c++17
 build:msan --define tcmalloc=disabled
 
 # bazel build --config tsan
+build:tsan --config=clang
 build:tsan --define PL_CONFIG_TSAN=1
 build:tsan --copt -fsanitize=thread
 build:tsan --linkopt -fsanitize=thread
 build:tsan --define tcmalloc=disabled
 build:asan --build_tag_filters=-no_tsan,-manual
 build:tsan --test_tag_filters=-no_tsan,-requires_root,-requires_bpf
-build:tsan --linkopt -fuse-ld=lld
-build:tsan --cxxopt -std=c++17
 build:tsan --define tcmalloc=disabled
 
 # bazel build --config bpf
+build:bpf --config=clang
 build:bpf --build_tag_filters=requires_bpf
 test:bpf --test_tag_filters=requires_bpf
-
-# We need this to ensure that external projects are built with
-# C++17 support. This is needed in some libraries like absl which
-# have different behavior with C++17.
-build --cxxopt -std=c++17
 
 coverage --cxxopt -fprofile-arcs
 coverage --cxxopt -ftest-coverage

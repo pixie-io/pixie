@@ -23,12 +23,6 @@ def pl_copts():
         "//conditions:default": [],
     })
 
-def pl_static_link_libstdcpp_linkopts():
-    return select({
-        "@bazel_tools//tools/osx:darwin": [],
-        "//conditions:default": ["-static-libstdc++", "-static-libgcc"],
-    })
-
 # Compute the final linkopts based on various options.
 def pl_linkopts():
     return select({
@@ -42,7 +36,7 @@ def pl_linkopts():
             "-lstdc++fs",
             "-Wl,--hash-style=gnu",
         ],
-    }) + pl_static_link_libstdcpp_linkopts()
+    })
 
 # Compute the test linkopts.
 def pl_test_linkopts():

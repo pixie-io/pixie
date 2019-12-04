@@ -44,13 +44,10 @@ load("//bazel:pl_workspace.bzl", "pl_workspace_setup")
 
 pl_workspace_setup()
 
-load("//bazel:cc_configure.bzl", "cc_configure")
 load("//bazel:gogo.bzl", "gogo_grpc_proto")
 load("@rules_foreign_cc//:workspace_definitions.bzl", "rules_foreign_cc_dependencies")
 
 rules_foreign_cc_dependencies()
-
-cc_configure()
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 

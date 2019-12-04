@@ -459,7 +459,7 @@ builders['Build & Test All (opt + UI)'] = {
 
 builders['Build & Test (gcc:opt)'] = {
   WithSourceCode {
-    dockerStepWithBazelCmd("CC=gcc CXX=g++ bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-gcc-opt')
+    dockerStepWithBazelCmd("bazel test --config=gcc --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-gcc-opt')
   }
 }
 
