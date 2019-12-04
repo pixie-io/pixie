@@ -114,7 +114,7 @@ TEST_F(ASTVisitorTest, assign_error_checking) {
   std::string bad_assign_str = "queryDF = 'str'";
   graph_or_s = CompileGraph(bad_assign_str);
   ASSERT_NOT_OK(graph_or_s);
-  EXPECT_THAT(graph_or_s.status(), HasCompilerError("Assign value must be a function call"));
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("Expression node 'Str' not defined"));
 }
 
 using MapTest = ASTVisitorTest;

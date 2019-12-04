@@ -104,6 +104,14 @@ class ASTVisitorImpl : public ASTVisitor {
   Status Init();
 
   /**
+   * @brief Processes any expression node into a QLObjectPtr.
+   *
+   * @param node
+   * @return StatusOr<QLObjectPtr>
+   */
+  StatusOr<QLObjectPtr> Process(const pypa::AstExpr& node);
+
+  /**
    * @brief ProcessArgs traverses an arg_ast tree, converts the expressions into IR and then returns
    * a data structure of positional and keyword arguments representing the arguments in IR.
    *
@@ -205,13 +213,21 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> ProcessAttributeValue(const pypa::AstAttributePtr& node);
 
   /**
+   * @brief
+   *
+   * @param node
+   * @return StatusOr<QLObjectPtr>
+   */
+  StatusOr<QLObjectPtr> ProcessAttribute(const pypa::AstAttributePtr& node);
+
+  /**
    * @brief Gets the string name of the attribute in an attribute struvct.
    * (AstAttribute := <value>.<attribute>; `abc.blah()` -> `blah` is the attribute of `abc.blah`)
    *
    * @param attr the attribute struct to grab the attribute field from as a string.
    * @return the string representation of the attribute in the attribute structure.
    */
-  StatusOr<std::string> GetAttribute(const pypa::AstAttributePtr& attr);
+  StatusOr<std::string> GetAttributeStr(const pypa::AstAttributePtr& attr);
 
   /**
    * @brief Helper function for processing lists and tuples children into IR nodes.
