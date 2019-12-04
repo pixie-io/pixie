@@ -85,7 +85,7 @@ build:tsan --define PL_CONFIG_TSAN=1
 build:tsan --copt -fsanitize=thread
 build:tsan --linkopt -fsanitize=thread
 build:tsan --define tcmalloc=disabled
-build:asan --build_tag_filters=-no_tsan,-manual
+build:tsan --build_tag_filters=-no_tsan,-manual
 build:tsan --test_tag_filters=-no_tsan,-requires_root,-requires_bpf
 build:tsan --define tcmalloc=disabled
 
