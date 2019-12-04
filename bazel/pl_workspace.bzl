@@ -31,12 +31,8 @@ def _package_manager_setup():
         packages = [
             "libc6",
             "libelf1",
-            "libgcc1",
-            "libgomp1",
             "liblzma5",
-            "libstdc++6",
             "libtinfo5",
-            "libunwind8",
             "zlib1g",
         ],
         sources = ["@debian_buster//file:Packages.json"],

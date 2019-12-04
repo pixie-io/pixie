@@ -70,12 +70,8 @@ load("@package_bundle//file:packages.bzl", "packages")
 pl_cc_base_packages = [
     packages["libc6"],
     packages["libelf1"],
-    packages["libgcc1"],
-    packages["libgomp1"],
     packages["liblzma5"],
-    packages["libstdc++6"],
     packages["libtinfo5"],
-    packages["libunwind8"],
     packages["zlib1g"],
 ]
 
