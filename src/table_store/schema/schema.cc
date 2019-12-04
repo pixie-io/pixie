@@ -41,6 +41,17 @@ StatusOr<const Relation> Schema::GetRelation(int64_t id) const {
   return relations_.at(id);
 }
 
+Status Schema::ToProto(schemapb::Schema* schema,
+                       const absl::flat_hash_map<std::string, schema::Relation>& relation_map) {
+  CHECK(schema != nullptr);
+  auto map = schema->mutable_relation_map();
+  for (auto& [table_name, relation] : relation_map) {
+    schemapb::Relation* relation_pb = &(*map)[table_name];
+    PL_RETURN_IF_ERROR(relation.ToProto(relation_pb));
+  }
+  return Status::OK();
+}
+
 }  // namespace schema
 }  // namespace table_store
 }  // namespace pl

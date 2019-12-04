@@ -11,6 +11,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/hash_utils.h"
 #include "src/table_store/schema/relation.h"
+#include "src/table_store/schema/schema.h"
 #include "src/table_store/table/table.h"
 #include "src/table_store/table/tablets_group.h"
 

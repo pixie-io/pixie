@@ -1,5 +1,7 @@
 #pragma once
 
+#include "absl/container/flat_hash_map.h"
+
 #include <map>
 #include <string>
 #include <vector>
@@ -30,6 +32,9 @@ class Schema {
 
   // Get the debug string of the schema.
   std::string DebugString() const;
+
+  static Status ToProto(schemapb::Schema* schema,
+                        const absl::flat_hash_map<std::string, schema::Relation>& relation_map);
 
  private:
   // We use an ordered map here to make sure lookups and ids always return the

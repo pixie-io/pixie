@@ -104,13 +104,7 @@ Status TableStore::AddTable(uint64_t table_id, const std::string& table_name,
 }
 
 Status TableStore::SchemaAsProto(schemapb::Schema* schema) const {
-  CHECK(schema != nullptr);
-  auto map = schema->mutable_relation_map();
-  for (auto& [table_name, relation] : name_to_relation_map_) {
-    schemapb::Relation* relation_pb = &(*map)[table_name];
-    PL_RETURN_IF_ERROR(relation.ToProto(relation_pb));
-  }
-  return Status::OK();
+  return schema::Schema::ToProto(schema, name_to_relation_map_);
 }
 
 void TableStore::AddRelation(uint64_t table_id, const std::string& table_name,
