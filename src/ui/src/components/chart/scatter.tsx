@@ -1,14 +1,12 @@
-import * as moment from 'moment';
-import * as numeral from 'numeral';
 import * as React from 'react';
-import {
-    DiscreteColorLegend, Highlight, Hint, LineSeries, MarkSeries, XAxis, XYPlot, YAxis,
-} from 'react-vis';
+import {Highlight, Hint, LineSeries, MarkSeries, XYPlot} from 'react-vis';
 
 import {
     GQLDataTable, GQLQueryResult,
 } from '../../../../vizier/services/api/controller/schema/schema';
-import {ChartProps, LineSeriesData, paletteColorByIndex} from './chart';
+import {
+    ChartProps, LineSeriesData, LineSeriesLegends, paletteColorByIndex, TimeValueAxis,
+} from './chart';
 import {extractData, parseLineData} from './data';
 
 interface Point {
@@ -99,11 +97,6 @@ export const ScatterPlot: React.FC<ChartProps> = ({ data, height, width }) => {
       color={paletteColorByIndex(i)}
     />
   ));
-  const legends = series.lines.map((lineData, i) => ({
-    title: lineData.name,
-    color: paletteColorByIndex(i),
-    strokeStyle: 'dashed',
-  }));
   return (
     <XYPlot
       style={{ position: 'relative' }}
@@ -122,16 +115,12 @@ export const ScatterPlot: React.FC<ChartProps> = ({ data, height, width }) => {
         enableY={false}
         onBrushEnd={(br) => setBrush(br)}
       />
-      <XAxis tickFormat={(val) => moment(val).format('hh:mm:ss')} />
-      <YAxis tickFormat={(val) => numeral(val).format('0a')} />
-
-      {legends.length > 0 ?
-        <DiscreteColorLegend
-          orientation='horizontal'
-          items={legends}
-          style={{ position: 'absolute', right: 0 }}
-        /> :
-        null}
+      {...TimeValueAxis()}
+      <LineSeriesLegends
+        lines={series.lines}
+        style={{ position: 'absolute', right: 0, top: '-2.5rem' }}
+        stroke={{ strokeStyle: 'dashed' }}
+      />
     </XYPlot >
   );
 };

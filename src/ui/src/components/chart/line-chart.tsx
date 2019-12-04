@@ -1,11 +1,9 @@
-import * as moment from 'moment';
-import * as numeral from 'numeral';
 import * as React from 'react';
-import {LineSeries, XAxis, XYPlot, YAxis} from 'react-vis';
+import {DiscreteColorLegend, LineSeries, XAxis, XYPlot} from 'react-vis';
 
 import {GQLQueryResult} from '../../../../vizier/services/api/controller/schema/schema';
-import {ChartProps} from './chart';
-import {extractData} from './data';
+import {ChartProps, LineSeriesLegends, paletteColorByIndex, TimeValueAxis} from './chart';
+import {parseLineData} from './data';
 
 interface Point {
   x: number | Date;
@@ -17,53 +15,17 @@ interface LineSeries {
   data: Point[];
 }
 
-const COLORS = ['red', 'yellow', 'blue'];
-
 const SUPPORTED_TYPES = new Set(['INT64', 'FLOAT64', 'TIME64NS']);
 
 export function parseData(data: GQLQueryResult): LineSeries[] {
   try {
-    let timeColName = '';
-    const relation = data.table instanceof Array ? data.table[0].relation : (data.table as any).relation;
-    const columns = new Map<string, any[]>();
-    relation.colNames.forEach((name, i) => {
-      const type = relation.colTypes[i];
-      if (!SUPPORTED_TYPES.has(type)) {
-        return;
-      }
-      if (type === 'TIME64NS') {
-        timeColName = name;
-      }
-      columns.set(name, []);
-    });
-    if (!timeColName) {
-      return [];
+    const tables = [];
+    if (Array.isArray(data.table)) {
+      tables.push(...data.table);
+    } else {
+      tables.push(data.table);
     }
-    const { rowBatches } = data.table instanceof Array ?
-      JSON.parse(data.table[0].data) : JSON.parse((data.table as any).data);
-    for (const batch of rowBatches) {
-      batch.cols.forEach((col, i) => {
-        const name = relation.colNames[i];
-        if (!columns.has(name)) {
-          return;
-        }
-        const type = relation.colTypes[i];
-        columns.get(name).push(...extractData(type, col));
-      });
-    }
-    const timestamps = columns.get(timeColName);
-    const timeseries = [];
-    for (const [name, col] of columns) {
-      if (name === timeColName) {
-        continue;
-      }
-      const points = [];
-      for (let i = 1; i < col.length; i++) {
-        points.push({ x: timestamps[i], y: Number(col[i] - col[i - 1]) });
-      }
-      timeseries.push({ data: points, name });
-    }
-    return timeseries;
+    return tables.reduce((lines, table) => [...lines, ...parseLineData(table)], []);
   } catch (e) {
     return [];
   }
@@ -75,18 +37,22 @@ export const LineChart: React.FC<ChartProps> = ({ data, height, width }) => {
     <XYPlot
       height={height}
       width={width}
+      style={{ position: 'relative' }}
     >
       {
         lines.map((line, i) => (
           <LineSeries
             key={line.name}
             data={line.data}
-            color={COLORS[i % COLORS.length]}
+            color={paletteColorByIndex(i)}
           />
         ))
       }
-      <XAxis tickFormat={(value) => moment(value).format('hh:mm:ss')} />
-      <YAxis tickFormat={(value) => numeral(value).format('0a')} />
+      <LineSeriesLegends
+        lines={lines}
+        style={{ position: 'absolute', right: 0, top: '-2.5rem' }}
+      />
+      {...TimeValueAxis()}
     </XYPlot>
   );
 };
