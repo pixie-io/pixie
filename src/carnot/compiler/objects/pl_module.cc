@@ -33,7 +33,7 @@ Status PLModule::Init() {
   AddMethod(kDataframeOpId, dataframe_fn);
 
   std::shared_ptr<FuncObject> display_fn = std::shared_ptr<FuncObject>(new FuncObject(
-      kDisplayOpId, {"out", "name", "cols"}, {{"name", "''"}, {"cols", "[]"}},
+      kDisplayOpId, {"out", "name", "cols"}, {{"name", "'output'"}, {"cols", "[]"}},
       /*has_variable_len_kwargs*/ false,
       std::bind(&DisplayHandler::Eval, graph_, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kDisplayOpId, display_fn);

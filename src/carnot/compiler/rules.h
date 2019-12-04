@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/compiler/compiler_state/registry_info.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
@@ -380,6 +382,22 @@ class RemoveGroupByRule : public Rule {
 
  private:
   StatusOr<bool> RemoveGroupBy(GroupByIR* ir_node);
+};
+
+/**
+ * @brief This rule ensures that all sinks have unique names by appending
+ * '_1', '_2', and so on ... to duplicates.
+ *
+ */
+class UniqueSinkNameRule : public Rule {
+ public:
+  UniqueSinkNameRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  absl::flat_hash_map<std::string, int64_t> sink_names_count_;
 };
 
 }  // namespace compiler

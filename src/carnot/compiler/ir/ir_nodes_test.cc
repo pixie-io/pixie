@@ -457,7 +457,7 @@ class CloneTests : public OperatorTests {
   void CompareClonedMemorySink(MemorySinkIR* new_ir, MemorySinkIR* old_ir,
                                const std::string& err_string) {
     EXPECT_EQ(new_ir->name(), old_ir->name()) << err_string;
-    EXPECT_EQ(new_ir->name_set(), old_ir->name_set()) << err_string;
+    EXPECT_EQ(new_ir->out_columns(), old_ir->out_columns()) << err_string;
   }
   void CompareClonedFilter(FilterIR* new_ir, FilterIR* old_ir, const std::string& err_string) {
     CompareClonedExpression(new_ir->filter_expr(), old_ir->filter_expr(), err_string);

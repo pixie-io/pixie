@@ -765,7 +765,7 @@ TEST_F(ASTVisitorTest, DisplayTest) {
 
   auto node = node_or_s.ConsumeValueOrDie();
   auto mem_sink = static_cast<MemorySinkIR*>(node);
-  EXPECT_EQ(mem_sink->name(), "");
+  EXPECT_EQ(mem_sink->name(), "output");
 
   ASSERT_EQ(mem_sink->parents().size(), 1);
   ASSERT_TRUE(Match(mem_sink->parents()[0], MemorySource()));

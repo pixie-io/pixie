@@ -2244,6 +2244,27 @@ TEST_F(RulesTest, MergeAndRemove_GroupByOnMetadataColumns) {
   EXPECT_TRUE(Match(agg->groups()[1], ColumnNode()));
 }
 
+TEST_F(RulesTest, UniqueSinkNameRule) {
+  MemorySourceIR* mem_src = MakeMemSource();
+  MemorySinkIR* foo1 = MakeMemSink(mem_src, "foo");
+  MemorySinkIR* foo2 = MakeMemSink(mem_src, "foo");
+  MemorySinkIR* foo3 = MakeMemSink(mem_src, "foo");
+  MemorySinkIR* bar1 = MakeMemSink(mem_src, "bar");
+  MemorySinkIR* bar2 = MakeMemSink(mem_src, "bar");
+  MemorySinkIR* abc = MakeMemSink(mem_src, "abc");
+
+  UniqueSinkNameRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  std::vector<std::string> expected_sink_names{"foo", "foo_1", "foo_2", "bar", "bar_1", "abc"};
+  std::vector<MemorySinkIR*> sinks{foo1, foo2, foo3, bar1, bar2, abc};
+  for (const auto& [idx, sink] : Enumerate(sinks)) {
+    EXPECT_EQ(sink->name(), expected_sink_names[idx]);
+  }
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

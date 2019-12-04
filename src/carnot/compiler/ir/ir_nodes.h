@@ -1044,8 +1044,8 @@ class MemorySinkIR : public OperatorIR {
   explicit MemorySinkIR(int64_t id)
       : OperatorIR(id, IRNodeType::kMemorySink, /* has_parents */ true, /* is_source */ false) {}
 
-  bool name_set() const { return name_set_; }
   std::string name() const { return name_; }
+  void set_name(const std::string& name) { name_ = name; }
   Status ToProto(planpb::Operator*) const override;
 
   Status Init(OperatorIR* parent, const std::string& name,
@@ -1057,7 +1057,6 @@ class MemorySinkIR : public OperatorIR {
 
  private:
   std::string name_;
-  bool name_set_ = false;
   std::vector<std::string> out_columns_;
 };
 

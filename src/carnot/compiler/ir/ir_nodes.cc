@@ -205,7 +205,6 @@ Status MemorySinkIR::Init(OperatorIR* parent, const std::string& name,
                           const std::vector<std::string> out_columns) {
   PL_RETURN_IF_ERROR(AddParent(parent));
   name_ = name;
-  name_set_ = true;
   out_columns_ = out_columns;
   return Status::OK();
 }
@@ -876,7 +875,7 @@ StatusOr<IRNode*> MemorySourceIR::DeepCloneIntoImpl(IR* graph) const {
 StatusOr<IRNode*> MemorySinkIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(MemorySinkIR * mem, graph->MakeNode<MemorySinkIR>(id()));
   mem->name_ = name_;
-  mem->name_set_ = name_set_;
+  mem->out_columns_ = out_columns_;
   return mem;
 }
 

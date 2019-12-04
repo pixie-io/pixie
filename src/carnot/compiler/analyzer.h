@@ -45,6 +45,11 @@ class Analyzer : public RuleExecutor {
     verify_user_columns_batch->AddRule<CheckMetadataColumnNamingRule>(compiler_state_);
   }
 
+  void CreateUniqueSinkNamesBatch() {
+    RuleBatch* unique_sink_names = CreateRuleBatch<FailOnMax>("UniqueSinkNames", 1);
+    unique_sink_names->AddRule<UniqueSinkNameRule>();
+  }
+
   void CreateOperatorCompileTimeExpressionRuleBatch() {
     RuleBatch* intermediate_resolution_batch =
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
@@ -75,6 +80,7 @@ class Analyzer : public RuleExecutor {
     md_handler_ = MetadataHandler::Create();
     CreateSourceAndMetadataResolutionBatch();
     CreateVerifyUserDefinedColumnsBatch();
+    CreateUniqueSinkNamesBatch();
     CreateOperatorCompileTimeExpressionRuleBatch();
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();

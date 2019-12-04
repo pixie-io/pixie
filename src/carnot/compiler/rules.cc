@@ -1215,6 +1215,21 @@ StatusOr<bool> RemoveGroupByRule::RemoveGroupBy(GroupByIR* groupby) {
   return true;
 }
 
+StatusOr<bool> UniqueSinkNameRule::Apply(IRNode* ir_node) {
+  if (!Match(ir_node, MemorySink())) {
+    return false;
+  }
+  auto sink = static_cast<MemorySinkIR*>(ir_node);
+  bool changed_name = false;
+  if (sink_names_count_.contains(sink->name())) {
+    sink->set_name(absl::Substitute("$0_$1", sink->name(), sink_names_count_[sink->name()]++));
+    changed_name = true;
+  } else {
+    sink_names_count_[sink->name()] = 1;
+  }
+  return changed_name;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
