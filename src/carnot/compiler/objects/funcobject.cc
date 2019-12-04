@@ -5,15 +5,23 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+// TODO(PL-1211) Remove this old constructor and refactor all the other references.
 FuncObject::FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
                        const absl::flat_hash_map<std::string, DefaultType>& defaults,
                        bool has_variable_len_kwargs, FunctionType impl)
+    : FuncObject(name, arguments, defaults, /* has_variable_len_args */ false,
+                 has_variable_len_kwargs, impl) {}
+
+FuncObject::FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
+                       const absl::flat_hash_map<std::string, DefaultType>& defaults,
+                       bool has_variable_len_args, bool has_variable_len_kwargs, FunctionType impl)
     : QLObject(FuncType),
       name_(name),
       arguments_(arguments),
       defaults_(defaults),
       impl_(impl),
-      has_variable_len_kwargs_(has_variable_len_kwargs) {
+      has_variable_len_kwargs_(has_variable_len_kwargs),
+      has_variable_len_args_(has_variable_len_args) {
 #if DCHECK_IS_ON()
   for (const auto& arg : defaults) {
     DCHECK(std::find(arguments.begin(), arguments.end(), arg.first) != arguments.end())
@@ -35,18 +43,29 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
 
   // If the number of args is greater than all args, then we throw an error.
   int64_t input_nargs = static_cast<int64_t>(args.args.size());
-  if (input_nargs > NumArgs()) {
-    std::string err_msg = absl::Substitute("$0() takes $1 arguments but $2 were given.", name(),
-                                           NumArgs(), args.args.size());
-    return CreateAstError(ast, err_msg);
+  if (!has_variable_len_args_ && input_nargs > NumArgs()) {
+    return CreateAstError(ast, "$0() takes $1 arguments but $2 were given.", name(), NumArgs(),
+                          args.args.size());
   }
 
   for (const auto& [idx, node] : Enumerate(args.args)) {
+    // Once we've exceeded the number of arguments, we add to variable arguments.
+    // The error check above makes sure that this only happens if the Function can take variable
+    // length arguments.
+    if (idx >= arguments_.size()) {
+      parsed_args.AddVariableArg(node);
+      continue;
+    }
     std::string arg_name = arguments_[idx];
     parsed_args.AddArg(arg_name, node);
   }
 
-  absl::flat_hash_set<std::string> missing_args(arguments_.begin() + input_nargs, arguments_.end());
+  absl::flat_hash_set<std::string> missing_args;
+
+  if (input_nargs < NumArgs()) {
+    missing_args =
+        absl::flat_hash_set<std::string>(arguments_.begin() + input_nargs, arguments_.end());
+  }
   // Parse through the keyword args.
   for (const auto& [arg, node] : args.kwargs) {
     if (parsed_args.HasArgOrKwarg(arg)) {

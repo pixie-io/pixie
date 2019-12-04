@@ -51,6 +51,29 @@ StatusOr<QLObjectPtr> SimpleFunc(const pypa::AstPtr&, const ParsedArgs& args) {
   return StatusOr<QLObjectPtr>(out_obj);
 }
 
+StatusOr<QLObjectPtr> SimpleFuncForVarArgs(const pypa::AstPtr&, const ParsedArgs& args) {
+  IRNode* node = args.GetArg("simple");
+  if (!Match(node, Int())) {
+    return node->CreateIRNodeError("Expected int");
+  }
+  auto out_obj = std::make_shared<TestQLObject>(static_cast<IntIR*>(node)->val());
+  for (const auto& [idx, value] : Enumerate(args.variable_args())) {
+    if (!Match(value, String())) {
+      return value->CreateIRNodeError("Expected string $0", value->DebugString());
+    }
+    out_obj->AddKwargValue(absl::Substitute("arg$0", idx), static_cast<StringIR*>(value)->str());
+  }
+
+  for (const auto& [arg, value] : args.kwargs()) {
+    if (!Match(value, String())) {
+      return value->CreateIRNodeError("Expected string $0", value->DebugString());
+    }
+    out_obj->AddKwargValue(arg, static_cast<StringIR*>(value)->str());
+  }
+
+  return StatusOr<QLObjectPtr>(out_obj);
+}
+
 TEST_F(PyFuncTest, PosArgsExecute) {
   std::shared_ptr<FuncObject> func_obj(
       new FuncObject("func", {"simple"}, {}, /*has_kwargs*/ false,
@@ -150,6 +173,41 @@ TEST_F(PyFuncTest, TestDefaultArgsCanBeAccessed) {
   ASSERT_OK(expr_or_s);
   auto expr = expr_or_s.ConsumeValueOrDie();
   EXPECT_TRUE(Match(expr, Int(1234)));
+}
+
+// This test makes sure we use variable args.
+TEST_F(PyFuncTest, TestVariableArgs) {
+  std::shared_ptr<FuncObject> func_obj(new FuncObject(
+      "func", {"simple"}, {{"simple", "1234"}}, /* has_variable_args_len */ true,
+      /* has_kwargs */ false,
+      std::bind(&SimpleFuncForVarArgs, std::placeholders::_1, std::placeholders::_2)));
+
+  ArgMap args{{}, {MakeInt(123), MakeString("str123"), MakeString("str321")}};
+  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
+  ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kMisc);
+  auto test_obj = static_cast<TestQLObject*>(obj.get());
+  EXPECT_EQ(test_obj->value(), 123);
+
+  EXPECT_THAT(test_obj->kwarg_names(), ElementsAre("arg0", "arg1"));
+  EXPECT_THAT(test_obj->kwarg_values(), ElementsAre("str123", "str321"));
+}
+
+// This test makes sure variable args and variable kwargs both work when used together.
+TEST_F(PyFuncTest, VariableArgsAndKwargs) {
+  std::shared_ptr<FuncObject> func_obj(new FuncObject(
+      "func", {"simple"}, {{"simple", "1234"}}, /* has_variable_args_len */ true,
+      /* has_kwargs */ true,
+      std::bind(&SimpleFuncForVarArgs, std::placeholders::_1, std::placeholders::_2)));
+
+  ArgMap args{{{"kwarg1", MakeString("str222")}, {"kwarg2", MakeString("str333")}},
+              {MakeInt(123), MakeString("str123"), MakeString("str321")}};
+  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
+  ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kMisc);
+  auto test_obj = static_cast<TestQLObject*>(obj.get());
+  EXPECT_EQ(test_obj->value(), 123);
+
+  EXPECT_THAT(test_obj->kwarg_names(), ElementsAre("arg0", "arg1", "kwarg1", "kwarg2"));
+  EXPECT_THAT(test_obj->kwarg_values(), ElementsAre("str123", "str321", "str222", "str333"));
 }
 
 }  // namespace compiler

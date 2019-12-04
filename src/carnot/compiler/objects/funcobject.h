@@ -41,8 +41,11 @@ class ParsedArgs {
     kwargs_.emplace_back(arg_name, node);
   }
 
+  void AddVariableArg(IRNode* node) { variable_args_.push_back(node); }
+
   const std::vector<NameToNode>& kwargs() const { return kwargs_; }
   const absl::flat_hash_map<std::string, IRNode*>& args() const { return args_; }
+  const std::vector<IRNode*>& variable_args() const { return variable_args_; }
   const absl::flat_hash_set<std::string>& default_subbed_args() const {
     return default_subbed_args_;
   }
@@ -58,10 +61,12 @@ class ParsedArgs {
     return false;
   }
 
-  // The mapping of specified arguments to the ir representation.
+  // The mapping of named, non-variable arguments to the ir representation.
   absl::flat_hash_map<std::string, IRNode*> args_;
   // Holder for extra kw args if the function has a **kwargs argument.
   std::vector<NameToNode> kwargs_;
+  // Variable arguments that are passed in.
+  std::vector<IRNode*> variable_args_;
   // The set of arguments that wer substituted with defaults.
   absl::flat_hash_set<std::string> default_subbed_args_;
 };
@@ -89,6 +94,10 @@ class FuncObject : public QLObject {
   FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
              const absl::flat_hash_map<std::string, DefaultType>& defaults,
              bool has_variable_len_kwargs, FunctionType impl);
+
+  FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
+             const absl::flat_hash_map<std::string, DefaultType>& defaults,
+             bool has_variable_len_args, bool has_variable_len_kwargs, FunctionType impl);
 
   /**
    * @brief Call this function with the args.
@@ -122,7 +131,11 @@ class FuncObject : public QLObject {
   std::vector<std::string> arguments_;
   absl::flat_hash_map<std::string, DefaultType> defaults_;
   FunctionType impl_;
+
+  // Whether the function takes **kwargs as an argument.
   bool has_variable_len_kwargs_;
+  // Whether the function takes *args as an argument.
+  bool has_variable_len_args_;
 };
 
 }  // namespace compiler
