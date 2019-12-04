@@ -30,7 +30,8 @@ def pl_linkopts():
         "@bazel_tools//tools/osx:darwin": [],
         "//conditions:default": [
             "-pthread",
-            "-lunwind",
+            "-l:libunwind.a",
+            "-llzma",
             "-lrt",
             "-ldl",
             "-lstdc++fs",
@@ -44,7 +45,8 @@ def pl_test_linkopts():
         "@bazel_tools//tools/osx:darwin": [],
         "//conditions:default": [
             "-pthread",
-            "-lunwind",
+            "-l:libunwind.a",
+            "-llzma",
             "-lrt",
             "-ldl",
             "-lstdc++fs",
