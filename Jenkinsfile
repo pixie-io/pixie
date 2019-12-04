@@ -388,6 +388,7 @@ def InitializeRepoState(String stashName = SRC_STASH_NAME) {
  * Checkout the source code, record git info and stash sources.
  */
 def checkoutAndInitialize() {
+  deleteDir()
   checkout scm
   InitializeRepoState()
 }
