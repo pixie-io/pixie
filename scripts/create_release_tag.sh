@@ -154,7 +154,7 @@ else
     done
 
     branch_name=$(git rev-parse --abbrev-ref HEAD)
-    sanitized_branch=$(echo "$branch_name" | sed -r 's/[._\/]+/-/g')
+    sanitized_branch=$(echo "$branch_name" | sed -E 's/[._\/]+/-/g')
 
     new_version_str=$(update_pre "$version_str" "$commit_count" "$sanitized_branch")
 fi
