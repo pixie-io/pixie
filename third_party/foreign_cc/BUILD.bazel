@@ -52,6 +52,8 @@ cmake_external(
     name = "libuv",
     cache_entries = {
         "BUILD_TESTING": "OFF",
+        "USING_UV_SHARE": "OFF",
+        "BUILDING_UV_SHARED": "OFF",
     },
     generate_crosstool_file = True,
     lib_name = "libuv_a",

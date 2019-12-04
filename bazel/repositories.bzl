@@ -125,6 +125,8 @@ def _com_github_libuv_libuv():
     http_archive(
         name = "com_github_libuv_libuv",
         build_file_content = BUILD_ALL_CONTENT,
+        patches = ["//third_party:libuv.patch"],
+        patch_args = ["-p1"],
         **location
     )
 
