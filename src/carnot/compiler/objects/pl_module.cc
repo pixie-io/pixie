@@ -27,7 +27,7 @@ Status PLModule::Init() {
   // Setup methods.
   std::shared_ptr<FuncObject> dataframe_fn = std::shared_ptr<FuncObject>(new FuncObject(
       kDataframeOpId, {"table", "select", "start_time", "end_time"},
-      {{"select", "[]"}, {"start_time", "0"}, {"end_time", "plc.now()"}},
+      {{"select", "[]"}, {"start_time", "0"}, {"end_time", "pl.now()"}},
       /*has_variable_len_kwargs*/ false,
       std::bind(&DataFrameHandler::Eval, graph_, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kDataframeOpId, dataframe_fn);

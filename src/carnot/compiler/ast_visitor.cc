@@ -544,7 +544,7 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCall(const pypa::AstCallPtr& 
   if (attr_fn_name->type != AstType::Name) {
     return CreateAstError(attr_fn_name, "Expected Name attr not $0", GetAstTypeName(fn->type));
   }
-  // attr parent must be plc.
+  // attr parent must be pl.
   auto attr_parent_str = GetNameAsString(attr_parent);
   if (attr_parent_str != kCompileTimeFuncPrefix && attr_parent_str != kRunTimeFuncPrefix) {
     return CreateAstError(attr_parent, "Namespace '$0' not found.", attr_parent_str);

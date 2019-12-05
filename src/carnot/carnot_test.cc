@@ -450,9 +450,9 @@ class CarnotRangeTest
         "queryDF = pl.DataFrame(table='big_test_table', select=['time_', 'col2'], start_time=$0, "
         "end_time=$1)\npl.display(queryDF, 'range_output')";
     if (start_at_now) {
-      query = absl::Substitute(query, "plc.now()", sub_time.val);
+      query = absl::Substitute(query, "pl.now()", sub_time.val);
     } else {
-      query = absl::Substitute(query, sub_time.val, "plc.now()");
+      query = absl::Substitute(query, sub_time.val, "pl.now()");
     }
 
     auto max_time = CarnotTestUtils::big_test_col1[CarnotTestUtils::big_test_col1.size() - 1];

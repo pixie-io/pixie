@@ -189,7 +189,7 @@ class OperatorCompileTimeExpressionRule : public Rule {
    * @brief OperatorCompileTimeExpressionRule handles basic constant folding.
    *
    * ie
-   * df['foo'] = pl.not_compile_time(plc.now() - plc.minutes(2))
+   * df['foo'] = pl.not_compile_time(pl.now() - pl.minutes(2))
    * should be evaluated to the following.
    * df['foo'] = pl.not_compile_time(15191289803)
    *

@@ -78,7 +78,7 @@ class ASTVisitorImpl : public ASTVisitor {
 
   // Constants for the run-time (UDF) and compile-time fn prefixes.
   inline static constexpr char kRunTimeFuncPrefix[] = "pl";
-  inline static constexpr char kCompileTimeFuncPrefix[] = "plc";
+  inline static constexpr char kCompileTimeFuncPrefix[] = "pl";
 
   // Constant for the metadata attribute keyword.
   inline static constexpr char kMDKeyword[] = "attr";

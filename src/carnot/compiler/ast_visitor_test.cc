@@ -337,16 +337,15 @@ TEST_F(OptionalArgs, map_copy_relation) {
 using RangeValueTests = ASTVisitorTest;
 TEST_F(RangeValueTests, time_range_compilation) {
   // now doesn't accept args.
-  std::string stop_expr =
-      absl::StrJoin({"queryDF = pl.DataFrame(table='cpu', select=['cpu0', "
-                     "'cpu1'], start_time=0, end_time=plc.now()-plc.seconds(2))",
-                     "pl.display(queryDF, 'mapped')"},
-                    "\n");
+  std::string stop_expr = absl::StrJoin({"queryDF = pl.DataFrame(table='cpu', select=['cpu0', "
+                                         "'cpu1'], start_time=0, end_time=pl.now()-pl.seconds(2))",
+                                         "pl.display(queryDF, 'mapped')"},
+                                        "\n");
   EXPECT_OK(CompileGraph(stop_expr));
 
   std::string start_and_stop_expr = absl::StrJoin(
       {"queryDF = pl.DataFrame(table='cpu', select=['cpu0', "
-       "'cpu1'], start_time=plc.now() - plc.minutes(2), end_time=plc.now()-plc.seconds(2))",
+       "'cpu1'], start_time=pl.now() - pl.minutes(2), end_time=pl.now()-pl.seconds(2))",
        "pl.display(queryDF, 'mapped')"},
       "\n");
   EXPECT_OK(CompileGraph(start_and_stop_expr));
@@ -355,7 +354,7 @@ TEST_F(RangeValueTests, time_range_compilation) {
 TEST_F(RangeValueTests, implied_stop_params) {
   std::string start_expr_only =
       absl::StrJoin({"queryDF = pl.DataFrame(table='cpu', select=['cpu0', "
-                     "'cpu1'], start_time=plc.now() - plc.minutes(2))",
+                     "'cpu1'], start_time=pl.now() - pl.minutes(2))",
                      "pl.display(queryDF, 'mapped')"},
                     "\n");
   EXPECT_OK(CompileGraph(start_expr_only));

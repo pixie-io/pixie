@@ -360,7 +360,7 @@ TEST_F(CompilerTest, range_now_test) {
   auto query = absl::StrJoin(
       {
           "queryDF = pl.DataFrame(table='sequences', select=['time_', 'xmod10'], start_time=0, "
-          "end_time=plc.now())",
+          "end_time=pl.now())",
           "pl.display(queryDF,'range_table')",
       },
       "\n");
@@ -419,7 +419,7 @@ class CompilerTimeFnTest
     CompilerTest::SetUp();
     std::tie(time_function, chrono_ns) = GetParam();
     query = absl::StrJoin({"queryDF = pl.DataFrame(table='sequences', select=['time_', "
-                           "'xmod10'], start_time=plc.now() - $1, end_time=plc.now())",
+                           "'xmod10'], start_time=pl.now() - $1, end_time=pl.now())",
                            "pl.display(queryDF, '$0')"},
                           "\n");
     query = absl::Substitute(query, table_name_, time_function);
@@ -441,12 +441,12 @@ class CompilerTimeFnTest
 };
 
 std::vector<std::tuple<std::string, std::chrono::nanoseconds>> compiler_time_data = {
-    {"plc.minutes(2)", std::chrono::minutes(2)},
-    {"plc.hours(2)", std::chrono::hours(2)},
-    {"plc.seconds(2)", std::chrono::seconds(2)},
-    {"plc.days(2)", std::chrono::hours(2 * 24)},
-    {"plc.microseconds(2)", std::chrono::microseconds(2)},
-    {"plc.milliseconds(2)", std::chrono::milliseconds(2)}};
+    {"pl.minutes(2)", std::chrono::minutes(2)},
+    {"pl.hours(2)", std::chrono::hours(2)},
+    {"pl.seconds(2)", std::chrono::seconds(2)},
+    {"pl.days(2)", std::chrono::hours(2 * 24)},
+    {"pl.microseconds(2)", std::chrono::microseconds(2)},
+    {"pl.milliseconds(2)", std::chrono::milliseconds(2)}};
 
 TEST_P(CompilerTimeFnTest, range_now_keyword_test) {
   auto plan = compiler_.Compile(query, compiler_state_.get());
