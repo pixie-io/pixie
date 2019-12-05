@@ -21,7 +21,9 @@ using DataframeTest = QLObjectTest;
 TEST_F(DataframeTest, MergeTest) {
   MemorySourceIR* left = MakeMemSource();
   MemorySourceIR* right = MakeMemSource();
-  std::shared_ptr<QLObject> test = std::make_shared<Dataframe>(left);
+  auto df_or_s = Dataframe::Create(left);
+  ASSERT_OK(df_or_s);
+  std::shared_ptr<QLObject> test = df_or_s.ConsumeValueOrDie();
   auto get_method_status = test->GetMethod("merge");
   ASSERT_OK(get_method_status);
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
@@ -55,7 +57,6 @@ using JoinHandlerTest = DataframeTest;
 TEST_F(JoinHandlerTest, MergeTest) {
   MemorySourceIR* left = MakeMemSource();
   MemorySourceIR* right = MakeMemSource();
-  std::shared_ptr<Dataframe> test = std::make_shared<Dataframe>(left);
 
   ParsedArgs args;
   args.AddArg("suffixes", MakeList(MakeString("_x"), MakeString("_y")));
@@ -64,7 +65,7 @@ TEST_F(JoinHandlerTest, MergeTest) {
   args.AddArg("left_on", MakeList(MakeString("a"), MakeString("b")));
   args.AddArg("right_on", MakeList(MakeString("b"), MakeString("c")));
 
-  auto status = JoinHandler::Eval(test.get(), ast, args);
+  auto status = JoinHandler::Eval(graph.get(), left, ast, args);
   ASSERT_OK(status);
   std::shared_ptr<QLObject> obj = status.ConsumeValueOrDie();
   // Add compartor for type() and Dataframe.
@@ -91,10 +92,9 @@ TEST_F(JoinHandlerTest, MergeTest) {
 using DropHandlerTest = DataframeTest;
 TEST_F(DropHandlerTest, DropTest) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
   ParsedArgs args;
   args.AddArg("columns", MakeList(MakeString("foo"), MakeString("bar")));
-  auto status = DropHandler::Eval(srcdf.get(), ast, args);
+  auto status = DropHandler::Eval(graph.get(), src, ast, args);
   ASSERT_OK(status);
 
   std::shared_ptr<QLObject> obj = status.ConsumeValueOrDie();
@@ -112,10 +112,9 @@ TEST_F(DropHandlerTest, DropTest) {
 
 TEST_F(DropHandlerTest, DropTestNonString) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
   ParsedArgs args;
   args.AddArg("columns", MakeList(MakeInt(1)));
-  auto status = DropHandler::Eval(srcdf.get(), ast, args);
+  auto status = DropHandler::Eval(graph.get(), src, ast, args);
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(), HasCompilerError("The elements of the list must be Strings, not"));
 }
@@ -123,7 +122,11 @@ TEST_F(DropHandlerTest, DropTestNonString) {
 // TODO(philkuz) (PL-1128) re-enable when we switch from old agg to new agg.
 TEST_F(DataframeTest, DISABLED_AggTest) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<QLObject> srcdf = std::make_shared<Dataframe>(src);
+
+  auto df_or_s = Dataframe::Create(src);
+  ASSERT_OK(df_or_s);
+  std::shared_ptr<QLObject> srcdf = df_or_s.ConsumeValueOrDie();
+
   auto get_method_status = srcdf->GetMethod("agg");
   ASSERT_OK(get_method_status);
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
@@ -162,7 +165,11 @@ TEST_F(DataframeTest, DISABLED_AggTest) {
 
 TEST_F(DataframeTest, DISABLED_AggFailsWithPosArgs) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<QLObject> srcdf = std::make_shared<Dataframe>(src);
+
+  auto df_or_s = Dataframe::Create(src);
+  ASSERT_OK(df_or_s);
+  std::shared_ptr<QLObject> srcdf = df_or_s.ConsumeValueOrDie();
+
   auto get_method_status = srcdf->GetMethod("agg");
   ASSERT_OK(get_method_status);
   FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
@@ -178,10 +185,14 @@ using AggHandlerTest = DataframeTest;
 
 TEST_F(AggHandlerTest, NonTupleKwarg) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto df_or_s = Dataframe::Create(src);
+  ASSERT_OK(df_or_s);
+  std::shared_ptr<QLObject> srcdf = df_or_s.ConsumeValueOrDie();
+
   ParsedArgs args;
   args.AddKwarg("outcol1", MakeString("fail"));
-  auto status = AggHandler::Eval(srcdf.get(), ast, args);
+  auto status = AggHandler::Eval(graph.get(), src, ast, args);
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(),
               HasCompilerError("Expected 'agg' kwarg argument to be a tuple, not"));
@@ -189,20 +200,24 @@ TEST_F(AggHandlerTest, NonTupleKwarg) {
 
 TEST_F(AggHandlerTest, NonStrFirstTupleArg) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
+  auto df_or_s = Dataframe::Create(src);
+  ASSERT_OK(df_or_s);
+  std::shared_ptr<QLObject> srcdf = df_or_s.ConsumeValueOrDie();
+
   ParsedArgs args;
   args.AddKwarg("outcol1", MakeTuple(MakeInt(1), MakeMeanFunc()));
-  auto status = AggHandler::Eval(srcdf.get(), ast, args);
+  auto status = AggHandler::Eval(graph.get(), src, ast, args);
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(), HasCompilerError("Expected 'str' for first tuple argument"));
 }
 
 TEST_F(AggHandlerTest, NonFuncSecondTupleArg) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
   ParsedArgs args;
   args.AddKwarg("outcol1", MakeTuple(MakeString("ll"), MakeString("dd")));
-  auto status = AggHandler::Eval(srcdf.get(), ast, args);
+  auto status = AggHandler::Eval(graph.get(), src, ast, args);
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(),
               HasCompilerError("Expected 'func' for second tuple argument. Received"));
@@ -210,10 +225,10 @@ TEST_F(AggHandlerTest, NonFuncSecondTupleArg) {
 
 TEST_F(AggHandlerTest, NonZeroArgFuncKwarg) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+
   ParsedArgs args;
   args.AddKwarg("outcol1", MakeTuple(MakeString("ll"), MakeMeanFunc(MakeColumn("str", 0))));
-  auto status = AggHandler::Eval(srcdf.get(), ast, args);
+  auto status = AggHandler::Eval(graph.get(), src, ast, args);
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(), HasCompilerError("Unexpected aggregate function"));
 }
@@ -221,13 +236,12 @@ TEST_F(AggHandlerTest, NonZeroArgFuncKwarg) {
 using RangeHandlerTest = DataframeTest;
 TEST_F(RangeHandlerTest, IntArgs) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   ParsedArgs args;
   args.AddArg("start", MakeInt(12));
   args.AddArg("stop", MakeInt(24));
 
-  auto status = RangeHandler::Eval(srcdf.get(), ast, args);
+  auto status = RangeHandler::Eval(graph.get(), src, ast, args);
   ASSERT_OK(status);
 
   QLObjectPtr ql_object = status.ConsumeValueOrDie();
@@ -246,7 +260,6 @@ TEST_F(RangeHandlerTest, IntArgs) {
 
 TEST_F(RangeHandlerTest, CompileTimeFuncArgs) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   auto start = MakeSubFunc(MakeFunc("now", {}), MakeFunc("hours", {MakeInt(8)}));
   auto stop = MakeFunc("now", {});
@@ -255,7 +268,7 @@ TEST_F(RangeHandlerTest, CompileTimeFuncArgs) {
   args.AddArg("start", start);
   args.AddArg("stop", stop);
 
-  auto status = RangeHandler::Eval(srcdf.get(), ast, args);
+  auto status = RangeHandler::Eval(graph.get(), src, ast, args);
   ASSERT_OK(status);
   QLObjectPtr ql_object = status.ConsumeValueOrDie();
 
@@ -274,7 +287,6 @@ TEST_F(RangeHandlerTest, CompileTimeFuncArgs) {
 
 TEST_F(RangeHandlerTest, StringArgs) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   auto start = MakeString("-2m");
   auto stop = MakeString("-1m");
@@ -283,7 +295,7 @@ TEST_F(RangeHandlerTest, StringArgs) {
   args.AddArg("start", start);
   args.AddArg("stop", stop);
 
-  auto status = RangeHandler::Eval(srcdf.get(), ast, args);
+  auto status = RangeHandler::Eval(graph.get(), src, ast, args);
   ASSERT_OK(status);
   QLObjectPtr ql_object = status.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -302,7 +314,6 @@ TEST_F(RangeHandlerTest, StringArgs) {
 
 TEST_F(RangeHandlerTest, OpArgumentCausesErrorEnd) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   auto start = MakeString("-2m");
   auto stop = MakeMap(src, {});
@@ -311,14 +322,13 @@ TEST_F(RangeHandlerTest, OpArgumentCausesErrorEnd) {
   args.AddArg("start", start);
   args.AddArg("stop", stop);
 
-  auto status = RangeHandler::Eval(srcdf.get(), ast, args);
+  auto status = RangeHandler::Eval(graph.get(), src, ast, args);
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(), HasCompilerError("'stop' must be an expression"));
 }
 
 TEST_F(RangeHandlerTest, OpArgumentCausesErrorStart) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   auto stop = MakeString("-2m");
   auto start = MakeMap(src, {});
@@ -327,7 +337,7 @@ TEST_F(RangeHandlerTest, OpArgumentCausesErrorStart) {
   args.AddArg("start", start);
   args.AddArg("stop", stop);
 
-  auto status = RangeHandler::Eval(srcdf.get(), ast, args);
+  auto status = RangeHandler::Eval(graph.get(), src, ast, args);
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(), HasCompilerError("'start' must be an expression"));
 }
@@ -336,7 +346,6 @@ using LimitTest = DataframeTest;
 
 TEST_F(LimitTest, CreateLimit) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   auto limit_value = MakeInt(1234);
 
@@ -344,7 +353,7 @@ TEST_F(LimitTest, CreateLimit) {
   ParsedArgs args;
   args.AddArg("n", limit_value);
 
-  auto status = LimitHandler::Eval(srcdf.get(), ast, args);
+  auto status = LimitHandler::Eval(graph.get(), src, ast, args);
   ASSERT_OK(status);
   QLObjectPtr ql_object = status.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -359,21 +368,22 @@ TEST_F(LimitTest, CreateLimit) {
 
 TEST_F(LimitTest, LimitNonIntArgument) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
 
   auto limit_value = MakeString("1234");
 
   ParsedArgs args;
   args.AddArg("n", limit_value);
 
-  auto status = LimitHandler::Eval(srcdf.get(), ast, args);
+  auto status = LimitHandler::Eval(graph.get(), src, ast, args);
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(), HasCompilerError("'n' must be an int"));
 }
 
 TEST_F(DataframeTest, LimitCall) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<Dataframe> srcdf = std::make_shared<Dataframe>(src);
+  auto df_or_s = Dataframe::Create(src);
+  ASSERT_OK(df_or_s);
+  std::shared_ptr<QLObject> srcdf = df_or_s.ConsumeValueOrDie();
 
   auto limit_value = MakeInt(1234);
 
@@ -401,7 +411,9 @@ class SubscriptTest : public DataframeTest {
   void SetUp() override {
     DataframeTest::SetUp();
     src = MakeMemSource();
-    srcdf = std::make_shared<Dataframe>(src);
+    auto df_or_s = Dataframe::Create(src);
+    PL_CHECK_OK(df_or_s);
+    srcdf = df_or_s.ConsumeValueOrDie();
   }
 
   std::shared_ptr<Dataframe> srcdf;
@@ -413,7 +425,7 @@ TEST_F(SubscriptTest, FilterCanTakeExpr) {
   auto eq_func = MakeEqualsFunc(MakeColumn("service", 0), MakeString("blah"));
   parsed_args.AddArg("key", eq_func);
 
-  auto qlo_or_s = SubscriptHandler::Eval(srcdf.get(), ast, parsed_args);
+  auto qlo_or_s = SubscriptHandler::Eval(graph.get(), src, ast, parsed_args);
   ASSERT_OK(qlo_or_s);
   QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -446,7 +458,7 @@ TEST_F(SubscriptTest, KeepTest) {
   auto keep_list = MakeList(MakeString("foo"), MakeString("bar"));
   parsed_args.AddArg("key", keep_list);
 
-  auto qlo_or_s = SubscriptHandler::Eval(srcdf.get(), ast, parsed_args);
+  auto qlo_or_s = SubscriptHandler::Eval(graph.get(), src, ast, parsed_args);
   ASSERT_OK(qlo_or_s);
   QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -483,7 +495,7 @@ TEST_F(SubscriptTest, SubscriptCanHandleErrorInput) {
   auto node = MakeMemSource();
   parsed_args.AddArg("key", node);
 
-  auto qlo_or_s = SubscriptHandler::Eval(srcdf.get(), ast, parsed_args);
+  auto qlo_or_s = SubscriptHandler::Eval(graph.get(), src, ast, parsed_args);
   ASSERT_NOT_OK(qlo_or_s);
 
   EXPECT_THAT(qlo_or_s.status(),
@@ -495,7 +507,9 @@ class GroupByTest : public DataframeTest {
   void SetUp() override {
     DataframeTest::SetUp();
     src = MakeMemSource();
-    srcdf = std::make_shared<Dataframe>(src);
+    auto df_or_s = Dataframe::Create(src);
+    ASSERT_OK(df_or_s);
+    srcdf = df_or_s.ConsumeValueOrDie();
   }
 
   std::shared_ptr<Dataframe> srcdf;
@@ -506,7 +520,7 @@ TEST_F(GroupByTest, GroupByList) {
   auto list = MakeList(MakeString("col1"), MakeString("col2"));
   ParsedArgs parsed_args;
   parsed_args.AddArg("by", list);
-  auto qlo_or_s = GroupByHandler::Eval(srcdf.get(), ast, parsed_args);
+  auto qlo_or_s = GroupByHandler::Eval(graph.get(), src, ast, parsed_args);
 
   ASSERT_OK(qlo_or_s);
 
@@ -525,7 +539,7 @@ TEST_F(GroupByTest, GroupByString) {
   auto str = MakeString("col1");
   ParsedArgs parsed_args;
   parsed_args.AddArg("by", str);
-  auto qlo_or_s = GroupByHandler::Eval(srcdf.get(), ast, parsed_args);
+  auto qlo_or_s = GroupByHandler::Eval(graph.get(), src, ast, parsed_args);
 
   ASSERT_OK(qlo_or_s);
 
@@ -543,7 +557,7 @@ TEST_F(GroupByTest, GroupByMixedListElementTypesCausesError) {
   auto list = MakeList(MakeString("col1"), MakeInt(2));
   ParsedArgs parsed_args;
   parsed_args.AddArg("by", list);
-  auto qlo_or_s = GroupByHandler::Eval(srcdf.get(), ast, parsed_args);
+  auto qlo_or_s = GroupByHandler::Eval(graph.get(), src, ast, parsed_args);
 
   ASSERT_NOT_OK(qlo_or_s);
   EXPECT_THAT(qlo_or_s.status(), HasCompilerError("'by' expected string or list of strings"));
@@ -571,7 +585,11 @@ TEST_F(GroupByTest, GroupByInDataframe) {
 
 TEST_F(DataframeTest, AttributeMetadataSubscriptTest) {
   MemorySourceIR* src = MakeMemSource();
-  std::shared_ptr<QLObject> test = std::make_shared<Dataframe>(src);
+
+  auto df_or_s = Dataframe::Create(src);
+  ASSERT_OK(df_or_s);
+  std::shared_ptr<QLObject> test = df_or_s.ConsumeValueOrDie();
+
   EXPECT_TRUE(test->HasAttribute(Dataframe::kMetadataAttrName));
   auto attr_or_s = test->GetAttribute(ast, Dataframe::kMetadataAttrName);
 

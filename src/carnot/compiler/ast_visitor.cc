@@ -140,7 +140,7 @@ Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr
   ColExpressionVector map_exprs{{col_name, expr}};
   PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->CreateNode<MapIR>(expr_node, parent_op, map_exprs,
                                                                     /*keep_input_cols*/ true));
-  var_table_[assign_name_string] = std::make_shared<Dataframe>(ir_node);
+  PL_ASSIGN_OR_RETURN(var_table_[assign_name_string], Dataframe::Create(ir_node));
 
   return Status::OK();
 }

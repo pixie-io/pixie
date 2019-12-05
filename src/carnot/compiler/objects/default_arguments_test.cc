@@ -101,7 +101,9 @@ TEST_F(DefaultArgumentsTest, PLModule) {
 }
 
 TEST_F(DefaultArgumentsTest, Dataframe) {
-  QLObjectPtr obj = std::make_shared<Dataframe>(MakeMemSource());
+  auto dataframe_or_s = Dataframe::Create(MakeMemSource());
+  ASSERT_OK(dataframe_or_s);
+  QLObjectPtr obj = dataframe_or_s.ConsumeValueOrDie();
   {
     SCOPED_TRACE("Dataframe");
     VerifyObjectDefaults(obj, "Dataframe");

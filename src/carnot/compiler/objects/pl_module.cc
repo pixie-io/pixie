@@ -87,7 +87,7 @@ StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,
     PL_RETURN_IF_ERROR(mem_source_op->SetTimeExpressions(start_time_expr, end_time_expr));
   }
 
-  return StatusOr(std::make_shared<Dataframe>(mem_source_op));
+  return Dataframe::Create(mem_source_op);
 }
 
 StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
