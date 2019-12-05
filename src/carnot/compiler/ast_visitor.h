@@ -206,6 +206,16 @@ class ASTVisitorImpl : public ASTVisitor {
                                              const OperatorContext& op_context);
 
   /**
+   * @brief Validates whether the value you subscript on is valid. Only does this if on the
+   * MapContext.
+   *
+   * @param node
+   * @param op_context
+   * @return StatusOr<QLObjectPtr>
+   */
+  Status ValidateSubscriptValue(const pypa::AstExpr& node, const OperatorContext& op_context);
+
+  /**
    * @brief Processes an Attribute and returns the QLObject that the attribute references.
    *
    * @param node
@@ -241,16 +251,6 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<IRNode*> the IR representation of the list.
    */
   StatusOr<ListIR*> ProcessList(const pypa::AstListPtr& ast, const OperatorContext& op_context);
-
-  /**
-   * @brief Processes a column subscript ptr into a column IR node.
-   *
-   * @param ast
-   * @param op_context: The context of the operator which this is contained within.
-   * @return StatusOr<ColumnIR*> the IR representation of the column.
-   */
-  StatusOr<ColumnIR*> ProcessSubscriptColumn(const pypa::AstSubscriptPtr& ast,
-                                             const OperatorContext& op_context);
 
   /**
    * @brief Processes a tuple ptr into an IR node.
@@ -350,9 +350,6 @@ class ASTVisitorImpl : public ASTVisitor {
     return LookupVariable(name, name->id);
   }
   StatusOr<IRNode*> ProcessDataForAttribute(const pypa::AstAttributePtr& attr);
-
-  StatusOr<ColumnIR*> ProcessSubscriptColumnWithAttribute(const pypa::AstSubscriptPtr& subscript,
-                                                          const OperatorContext& op_context);
 
   static bool IsUnitTimeFn(const std::string& fn_name);
   IR* ir_graph_;

@@ -664,8 +664,7 @@ pl.display(df, 'ld')
 TEST_F(FilterTest, InvalidChainedFilterQuery) {
   auto ir_graph_or_s = CompileGraph(kInvalidFilterChainQuery);
   ASSERT_NOT_OK(ir_graph_or_s);
-  EXPECT_THAT(ir_graph_or_s.status(),
-              HasCompilerError("name 'df' is not available in this context"));
+  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("name 'df' is not defined"));
 }
 
 const char* kFilterWithNewMetadataQuery = R"query(
@@ -827,6 +826,28 @@ TEST_F(ASTVisitorTest, NonExistantUDFs) {
 
   ir_graph_status = CompileGraph(missing_uda);
   EXPECT_THAT(ir_graph_status.status(), HasCompilerError("'pl' object has no attribute 'punt'"));
+}
+
+TEST_F(ASTVisitorTest, CantCopyColumnsBetweenDataframes) {
+  std::string query = absl::StrJoin(
+      {"df1 = pl.DataFrame(table='http_events').drop(['upid'])",
+       "df2 = pl.DataFrame(table='http_events')", "df1['upid'] = df2['upid']", "pl.display(df1)"},
+      "\n");
+  auto ir_graph_status = CompileGraph(query);
+  ASSERT_NOT_OK(ir_graph_status);
+  EXPECT_THAT(ir_graph_status.status(),
+              HasCompilerError("name 'df2' is not available in this context"));
+}
+
+TEST_F(ASTVisitorTest, CantCopyMetadataBetweenDataframes) {
+  std::string query = absl::StrJoin(
+      {"df1 = pl.DataFrame(table='http_events')", "df2 = pl.DataFrame(table='http_events')",
+       "df1['service'] = df2.attr['service']", "pl.display(df1)"},
+      "\n");
+  auto ir_graph_status = CompileGraph(query);
+  ASSERT_NOT_OK(ir_graph_status);
+  EXPECT_THAT(ir_graph_status.status(),
+              HasCompilerError("name 'df2' is not available in this context"));
 }
 
 }  // namespace compiler

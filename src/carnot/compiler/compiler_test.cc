@@ -115,7 +115,7 @@ class CompilerTest : public ::testing::Test {
 };
 
 const char* kExpectedLogicalPlan = R"(
-dag {
+  dag {
   nodes {
     id: 1
   }
@@ -125,21 +125,21 @@ nodes {
   dag {
     nodes {
       id: 6
-      sorted_children: 10
+      sorted_children: 12
     }
     nodes {
-      id: 10
-      sorted_children: 23
+      id: 12
+      sorted_children: 25
       sorted_parents: 6
     }
     nodes {
-      id: 23
-      sorted_children: 26
-      sorted_parents: 10
+      id: 25
+      sorted_children: 28
+      sorted_parents: 12
     }
     nodes {
-      id: 26
-      sorted_parents: 23
+      id: 28
+      sorted_parents: 25
     }
   }
   nodes {
@@ -158,7 +158,7 @@ nodes {
     }
   }
   nodes {
-    id: 10
+    id: 12
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -198,7 +198,7 @@ nodes {
     }
   }
   nodes {
-    id: 23
+    id: 25
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -206,7 +206,7 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 10
+              node: 12
               index: 2
             }
           }
@@ -216,14 +216,14 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 10
+              node: 12
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 10
+          node: 12
         }
         group_names: "cpu0"
         value_names: "quotient_mean"
@@ -232,7 +232,7 @@ nodes {
     }
   }
   nodes {
-    id: 26
+    id: 28
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
