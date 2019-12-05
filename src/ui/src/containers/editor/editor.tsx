@@ -1,3 +1,5 @@
+import './editor.scss';
+
 // @ts-ignore : TS does not like image files.
 import * as closeIcon from 'images/icons/cross.svg';
 // @ts-ignore : TS does not like image files.
@@ -110,10 +112,8 @@ export const Editor: React.FC = () => {
           id='pixie-editor-tabs'>
           <Nav variant='tabs' className='pixie-editor-tabs-nav'>
             {state.tabs.map((tab) =>
-              <Nav.Item key={tab.id}>
-                <Nav.Link eventKey={tab.id}>
-                  <EditorTabTitle {...tab} onClose={(id) => deleteTab(id)} />
-                </Nav.Link>
+              <Nav.Item key={tab.id} as={Nav.Link} eventKey={tab.id}>
+                <EditorTabTitle {...tab} onClose={(id) => deleteTab(id)} />
               </Nav.Item>,
             )}
             <Nav.Item>

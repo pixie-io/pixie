@@ -1,3 +1,6 @@
+// TODO(malthus): Figure out how to resolve this properly with webpack.
+@import '../../theme.scss';
+
 .pixie-editor--result-viewer {
   .query-results,
   .query-results--compiler-error {
@@ -6,6 +9,18 @@
     display: flex;
     flex-direction: column;
   }
+
+  .tab-content {
+    flex: 1;
+  }
+
+  .tab-pane {
+    height: 100%;
+  }
+
+  .pixie-editor--tab-pane-chart {
+    padding: 20px;
+  }
 }
 
 .pixie-editor--result-viewer {
@@ -13,22 +28,15 @@
   flex-direction: column;
 }
 
-.pixie-editor--result-viewer .tab-content {
-  flex: 1;
+.gutter:hover {
+  cursor: row-resize;
 }
 
-.pixie-editor--result-viewer .tab-pane {
-  height: 100%;
-}
-
-.pixie-editor--result-viewer .pixie-editor--tab-pane-chart {
-  padding: 20px;
-}
-
-.pixie-editor--result-viewer .tab-content {
-  flex: 1;
-}
-
-.pixie-editor--result-viewer .tab-pane {
-  height: 100%;
+.pixie-editor--content-title-row {
+  height: 3rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid $border-color;
 }

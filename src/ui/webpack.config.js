@@ -1,8 +1,8 @@
-const { resolve, join } = require('path');
-const { execSync } = require('child_process');
+const {resolve, join} = require('path');
+const {execSync} = require('child_process');
 
 const webpack = require('webpack');
-const { CheckerPlugin } = require('awesome-typescript-loader');
+const {CheckerPlugin} = require('awesome-typescript-loader');
 const ArchivePlugin = require('webpack-archive-plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
@@ -35,7 +35,7 @@ let plugins = [
     filename: 'subdomain-index.html',
   }),
   new CopyPlugin([
-    { from: 'segment.js', to: 'assets/segment.js' },
+    {from: 'segment.js', to: 'assets/segment.js'},
   ]),
   new HtmlWebpackHarddiskPlugin(),
 ];
@@ -71,11 +71,11 @@ var webpackConfig = {
     publicPath: '/',
     historyApiFallback: {
       rewrites: [
-        { from: /logout/, to: '/subdomain-index.html' },
-        { from: /login/, to: '/subdomain-index.html' },
-        { from: /create-site/, to: '/subdomain-index.html' },
-        { from: /vizier/, to: '/subdomain-index.html' },
-        { from: /(.*)/, to: '/index.html' },
+        {from: /logout/, to: '/subdomain-index.html'},
+        {from: /login/, to: '/subdomain-index.html'},
+        {from: /create-site/, to: '/subdomain-index.html'},
+        {from: /vizier/, to: '/subdomain-index.html'},
+        {from: /(.*)/, to: '/index.html'},
       ],
     },
     proxy: [],
@@ -222,7 +222,7 @@ module.exports = (env) => {
   if (process.env.SELFSIGN_CERT_FILE && process.env.SELFSIGN_CERT_KEY) {
     const cert = fs.readFileSync(process.env.SELFSIGN_CERT_FILE);
     const key = fs.readFileSync(process.env.SELFSIGN_CERT_KEY);
-    webpackConfig.devServer.https = { key, cert };
+    webpackConfig.devServer.https = {key, cert};
   } else {
     let credsEnv = environment === 'base' ? 'dev' : environment;
     let certsPath =

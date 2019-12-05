@@ -8,7 +8,7 @@ import {Link, NavLink} from 'react-router-dom';
 
 export function VizierTopNav() {
   return (
-    <Navbar style={{ height: '48px' }} variant='dark' bg='dark'>
+    <Navbar style={{ height: '48px' }} variant='dark' bg='primary'>
       <Navbar.Brand as={Link} to='/'>
         <img src={logoImage} />
       </Navbar.Brand>

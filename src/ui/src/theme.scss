@@ -1,15 +1,3 @@
-$theme-colors: (
-  "primary": #323942
-);
-
-$body-bg: #0F222D;
-// Slate 4.3.1
-// Bootswatch
-
-//
-// Color system
-//
-
 $white:    #fff !default;
 $gray-100: #f8f9fa !default;
 $gray-150: #F5F7F9 !default;
@@ -36,21 +24,27 @@ $teal:    #20c997 !default;
 $cyan:    #5bc0de !default;
 $navy:    #0f1c2d !default;
 
-$primary:       $gray-800 !default;
-$secondary:     #71EFCE !default;
+$primary:       #253238 !default; // Oceanic
+$secondary:     #1d282c !default; // Dark oceanic
 $success:       $green !default;
 $info:          #5ABFA5 !default;
 $warning:       $yellow !default;
 $danger:        #cc3b2d !default;
 $light:         #6C6D7A !default;
 $lighter:       #9395a7 !default;
-$dark:          #253238 !default;
+
+$theme-colors: (
+  "primary": #253238,
+  "secondary": #1d282c,
+  "light": #5bbc7d,
+);
 
 // Body
 
-$body-bg:                   $gray-900 !default;
-$body-color:                #aaa !default;
-$content-bg: #0B1420 !default;
+$body-bg: #161e21;    // Not so deep oceanic
+$body-color: #748790; // Pale Teal Oceanic
+$content-bg: #0e1518; // Deep Oceanic
+$border-color: #253238; // Light Oceanic
 
 // Links
 
@@ -113,8 +107,9 @@ $dropdown-link-hover-bg:            $body-bg !default;
 
 // Navs
 
-$nav-tabs-border-color:             rgba($black, 0.6) !default;
+$nav-tabs-border-color:             $border-color !default;
 $nav-tabs-link-hover-border-color:  $nav-tabs-border-color !default;
+$nav-tabs-link-active-bg:           $content-bg !default;
 $nav-tabs-link-active-color:        $white !default;
 $nav-tabs-link-active-border-color: $nav-tabs-border-color !default;
 

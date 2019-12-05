@@ -34,7 +34,7 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ height: '48px', display: 'flex', alignItems: 'center' }}>
+      <div className='pixie-editor--content-title-row'>
         <div>{props.title}</div>
         <div className='spacer'></div>
         <Button
