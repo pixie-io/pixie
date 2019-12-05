@@ -45,18 +45,18 @@ class Analyzer : public RuleExecutor {
     verify_user_columns_batch->AddRule<CheckMetadataColumnNamingRule>(compiler_state_);
   }
 
+  void CreateOperatorCompileTimeExpressionRuleBatch() {
+    RuleBatch* intermediate_resolution_batch =
+        CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
+    intermediate_resolution_batch->AddRule<OperatorCompileTimeExpressionRule>(compiler_state_);
+  }
+
   void CreateDataTypeResolutionBatch() {
     RuleBatch* intermediate_resolution_batch =
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
     intermediate_resolution_batch->AddRule<DataTypeRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<OperatorRelationRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
-  }
-
-  void CreateOperatorCompileTimeExpressionRuleBatch() {
-    RuleBatch* intermediate_resolution_batch =
-        CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
-    intermediate_resolution_batch->AddRule<OperatorCompileTimeExpressionRule>(compiler_state_);
   }
 
   void CreateResolutionVerificationBatch() {
