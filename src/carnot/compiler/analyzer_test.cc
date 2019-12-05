@@ -336,7 +336,7 @@ TEST_F(AnalyzerTest, nonexistent_udfs) {
   ASSERT_NOT_OK(handle_status);
   // TODO(philkuz) convert all data udfs to be attributes of pl rather than something resolved in
   // Analyzer.
-  EXPECT_THAT(handle_status.msg(), ContainsRegex("Could not find.*'pl.sus'"));
+  EXPECT_THAT(handle_status.status(), HasCompilerError("Could not find.*'pl.sus'"));
   // EXPECT_THAT(handle_status.status(), HasCompilerError("'pl' object has no attribute 'sus'"));
   std::string missing_uda = absl::StrJoin(
       {"queryDF = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",

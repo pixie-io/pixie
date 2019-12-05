@@ -191,7 +191,7 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
   // Expect the data_rule to successfully change columnir.
   DataTypeRule data_rule(compiler_state_.get());
   auto result = data_rule.Execute(graph.get());
-  EXPECT_OK(result);
+  ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
   // Expect the data_rule to change something.
@@ -200,6 +200,10 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
 
   // The function should not be evaluated, the function was not matched.
   EXPECT_FALSE(func->IsDataTypeEvaluated());
+  auto result_or_s = data_rule.Execute(graph.get());
+  ASSERT_NOT_OK(result_or_s);
+  EXPECT_THAT(result_or_s.status(),
+              HasCompilerError("Could not find function 'pl.gobeldy' with arguments .*"));
 }
 
 // Checks to make sure that agg functions work properly.

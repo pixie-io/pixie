@@ -61,8 +61,12 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(FuncIR* func) const {
   IRNodeType containing_op_type = containing_op->type();
   if (containing_op_type != IRNodeType::kBlockingAgg) {
     // Attempt to resolve UDF function for non-Aggregate nodes.
-    PL_ASSIGN_OR_RETURN(types::DataType data_type, compiler_state_->registry_info()->GetUDF(
-                                                       func->func_name(), children_data_types));
+    auto data_type_or_s =
+        compiler_state_->registry_info()->GetUDF(func->func_name(), children_data_types);
+    if (!data_type_or_s.status().ok()) {
+      return func->CreateIRNodeError(data_type_or_s.status().msg());
+    }
+    types::DataType data_type = data_type_or_s.ConsumeValueOrDie();
     func->set_func_id(
         compiler_state_->GetUDFID(RegistryKey(func->func_name(), children_data_types)));
     func->SetOutputDataType(data_type);
