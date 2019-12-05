@@ -1,5 +1,6 @@
 #include "src/carnot/compiler/objects/dataframe.h"
 #include "src/carnot/compiler/ir/ast_utils.h"
+#include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/metadata_object.h"
 #include "src/carnot/compiler/objects/none_object.h"
 
@@ -270,6 +271,9 @@ StatusOr<QLObjectPtr> SubscriptHandler::Eval(IR* graph, OperatorIR* op, const py
     return key->CreateIRNodeError("subscript argument must have an expression. '$0' not allowed",
                                   key->type_string());
   }
+  if (Match(key, String())) {
+    return EvalColumn(graph, op, ast, static_cast<StringIR*>(key));
+  }
   if (Match(key, List())) {
     return EvalKeep(graph, op, ast, static_cast<ListIR*>(key));
   }
@@ -280,6 +284,13 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalFilter(IR* graph, OperatorIR* op,
                                                    const pypa::AstPtr& ast, ExpressionIR* expr) {
   PL_ASSIGN_OR_RETURN(FilterIR * filter_op, graph->CreateNode<FilterIR>(ast, op, expr));
   return Dataframe::Create(filter_op);
+}
+
+StatusOr<QLObjectPtr> SubscriptHandler::EvalColumn(IR* graph, OperatorIR*, const pypa::AstPtr&,
+                                                   StringIR* expr) {
+  PL_ASSIGN_OR_RETURN(ColumnIR * column, graph->CreateNode<ColumnIR>(expr->ast_node(), expr->str(),
+                                                                     /* parent_op_idx */ 0));
+  return ExprObject::Create(column);
 }
 
 StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,

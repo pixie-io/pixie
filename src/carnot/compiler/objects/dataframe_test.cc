@@ -502,6 +502,22 @@ TEST_F(SubscriptTest, SubscriptCanHandleErrorInput) {
               HasCompilerError("subscript argument must have an expression. '.*' not allowed"));
 }
 
+TEST_F(SubscriptTest, SubscriptCreateColumn) {
+  ParsedArgs parsed_args;
+  auto node = MakeString("col1");
+  parsed_args.AddArg("key", node);
+
+  auto qlo_or_s = SubscriptHandler::Eval(graph.get(), src, ast, parsed_args);
+  ASSERT_OK(qlo_or_s);
+  QLObjectPtr ql_object = qlo_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kExpr);
+  ASSERT_TRUE(ql_object->HasNode());
+  auto maybe_col_node = ql_object->node();
+  ASSERT_TRUE(Match(maybe_col_node, ColumnNode()));
+  ColumnIR* col_node = static_cast<ColumnIR*>(maybe_col_node);
+  EXPECT_EQ(col_node->col_name(), "col1");
+}
+
 class GroupByTest : public DataframeTest {
  protected:
   void SetUp() override {

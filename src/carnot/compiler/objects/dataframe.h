@@ -180,6 +180,8 @@ class SubscriptHandler {
                                           ExpressionIR* expr);
   static StatusOr<QLObjectPtr> EvalKeep(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                         ListIR* cols);
+  static StatusOr<QLObjectPtr> EvalColumn(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                          StringIR* cols);
 };
 
 /**
