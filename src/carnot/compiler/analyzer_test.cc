@@ -321,32 +321,6 @@ TEST_F(AnalyzerTest, test_from_select) {
   EXPECT_TRUE(RelationEquality(sink_node->relation(), test_relation));
 }
 
-// Test to make sure the system detects udfs/udas that don't exist.
-TEST_F(AnalyzerTest, nonexistent_udfs) {
-  std::string missing_udf = absl::StrJoin(
-      {"queryDF = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
-       "queryDF['cpu_sum'] = pl.sus(queryDF['cpu0'], queryDF['cpu1'])", "df = queryDF[['cpu_sum']]",
-       "pl.display(df, 'cpu_out')"},
-      "\n");
-
-  auto ir_graph_status = CompileGraph(missing_udf);
-  ASSERT_OK(ir_graph_status);
-  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  auto handle_status = HandleRelation(ir_graph);
-  ASSERT_NOT_OK(handle_status);
-  // TODO(philkuz) convert all data udfs to be attributes of pl rather than something resolved in
-  // Analyzer.
-  EXPECT_THAT(handle_status.status(), HasCompilerError("Could not find.*'pl.sus'"));
-  // EXPECT_THAT(handle_status.status(), HasCompilerError("'pl' object has no attribute 'sus'"));
-  std::string missing_uda = absl::StrJoin(
-      {"queryDF = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
-       "aggDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', pl.punt))", "pl.display(aggDF)"},
-      "\n");
-
-  ir_graph_status = CompileGraph(missing_uda);
-  EXPECT_THAT(ir_graph_status.status(), HasCompilerError("'pl' object has no attribute 'punt'"));
-}
-
 TEST_F(AnalyzerTest, nonexistent_cols) {
   // Test for columns used in map function that don't exist in relation.
   std::string wrong_column_map_func = absl::StrJoin(

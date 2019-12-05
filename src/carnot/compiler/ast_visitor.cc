@@ -34,7 +34,8 @@ Status ASTVisitorImpl::Init() {
 }
 
 Status ASTVisitorImpl::ProcessExprStmtNode(const pypa::AstExpressionStatementPtr& e) {
-  return Process(e->expr).status();
+  OperatorContext op_context({}, "", {});
+  return Process(e->expr, op_context).status();
 }
 
 StatusOr<IRNode*> ASTVisitorImpl::ProcessSingleExpressionModule(const pypa::AstModulePtr& module) {
@@ -133,17 +134,17 @@ Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr
   return Status::OK();
 }
 
-StatusOr<QLObjectPtr> ASTVisitorImpl::Process(const pypa::AstExpr& node) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::Process(const pypa::AstExpr& node,
+                                              const OperatorContext& op_context) {
   switch (node->type) {
     case AstType::Call:
-      // return ProcessCallNode(PYPA_PTR_CAST(Call, node));
-      return ProcessOpCallNode(PYPA_PTR_CAST(Call, node));
+      return ProcessCallNode(PYPA_PTR_CAST(Call, node), op_context);
     case AstType::Subscript:
-      return ProcessSubscriptCall(PYPA_PTR_CAST(Subscript, node));
+      return ProcessSubscriptCall(PYPA_PTR_CAST(Subscript, node), op_context);
     case AstType::Name:
       return LookupVariable(PYPA_PTR_CAST(Name, node));
     case AstType::Attribute:
-      return ProcessAttribute(PYPA_PTR_CAST(Attribute, node));
+      return ProcessAttribute(PYPA_PTR_CAST(Attribute, node), op_context);
     default:
       return CreateAstError(node, "Expression node '$0' not defined", GetAstTypeName(node->type));
   }
@@ -167,12 +168,14 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   }
 
   std::string assign_name = GetNameAsString(target_node);
-  PL_ASSIGN_OR_RETURN(var_table_[assign_name], Process(node->value));
+  OperatorContext op_context({}, "", {});
+  PL_ASSIGN_OR_RETURN(var_table_[assign_name], Process(node->value, op_context));
   return Status::OK();
 }
 
-StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSubscriptCall(const pypa::AstSubscriptPtr& node) {
-  PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->value));
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSubscriptCall(const pypa::AstSubscriptPtr& node,
+                                                           const OperatorContext& op_context) {
+  PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->value, op_context));
   if (!pyobject->HasSubscriptMethod()) {
     return pyobject->CreateError("$0 object is not subscriptable");
   }
@@ -183,14 +186,14 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSubscriptCall(const pypa::AstSubscr
     return CreateAstError(slice, "'$0' object cannot be an index", GetAstTypeName(slice->type));
   }
 
-  std::vector<std::string> dfs;
+  std::vector<std::string> dfs = op_context.referenceable_dataframes;
   if (node->value->type == AstType::Name) {
     dfs.push_back(GetNameAsString(node->value));
   }
 
-  OperatorContext op_context({}, "", dfs);
+  OperatorContext new_op_context(op_context.parent_ops, op_context.operator_name, dfs);
   PL_ASSIGN_OR_RETURN(IRNode * ir_node,
-                      ProcessData(PYPA_PTR_CAST(Index, slice)->value, op_context));
+                      ProcessData(PYPA_PTR_CAST(Index, slice)->value, new_op_context));
   ArgMap args;
   args.args.push_back(ir_node);
   return func_object->Call(args, node, this);
@@ -268,28 +271,11 @@ StatusOr<OperatorIR*> ASTVisitorImpl::LookupName(const pypa::AstNamePtr& name_no
   return static_cast<OperatorIR*>(node);
 }
 
-StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessAttribute(const pypa::AstAttributePtr& node) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessAttribute(const pypa::AstAttributePtr& node,
+                                                       const OperatorContext& op_context) {
   PL_ASSIGN_OR_RETURN(std::string attr_name, GetAttributeStr(node));
-  PL_ASSIGN_OR_RETURN(QLObjectPtr value_obj, Process(node->value));
+  PL_ASSIGN_OR_RETURN(QLObjectPtr value_obj, Process(node->value, op_context));
   return value_obj->GetAttribute(node, attr_name);
-}
-
-StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessAttributeValue(const pypa::AstAttributePtr& node) {
-  switch (node->value->type) {
-    case AstType::Call: {
-      return ProcessOpCallNode(PYPA_PTR_CAST(Call, node->value));
-    }
-    case AstType::Name: {
-      return LookupVariable(PYPA_PTR_CAST(Name, node->value));
-    }
-    case AstType::Subscript: {
-      return ProcessSubscriptCall(PYPA_PTR_CAST(Subscript, node->value));
-    }
-    default: {
-      return CreateAstError(node->value, "Can't handle the attribute of type $0",
-                            GetAstTypeName(node->type));
-    }
-  }
 }
 
 StatusOr<std::string> ASTVisitorImpl::GetAttributeStr(const pypa::AstAttributePtr& attr) {
@@ -299,19 +285,18 @@ StatusOr<std::string> ASTVisitorImpl::GetAttributeStr(const pypa::AstAttributePt
   return GetNameAsString(attr->attribute);
 }
 
-StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessOpCallNode(const pypa::AstCallPtr& node) {
-  // TODO(philkuz) need to unify this somehow with ProcessAttributeValue, ProcessSubscript, and
-  // Assign.
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessCallNode(const pypa::AstCallPtr& node,
+                                                      const OperatorContext& op_context) {
   std::shared_ptr<FuncObject> func_object;
   // pyobject declared up here because we need this object to be allocated when
   // func_object->Call() is made.
-  PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->function));
+  PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->function, op_context));
   if (pyobject->type_descriptor().type() != QLObjectType::kFunction) {
     PL_ASSIGN_OR_RETURN(func_object, pyobject->GetCallMethod());
   } else {
     func_object = std::static_pointer_cast<FuncObject>(pyobject);
   }
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node));
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, op_context));
   return func_object->Call(args, node, this);
 }
 
@@ -451,17 +436,12 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCompare(const pypa::AstCompar
 
 StatusOr<ColumnIR*> ASTVisitorImpl::ProcessSubscriptColumnWithAttribute(
     const pypa::AstSubscriptPtr& subscript, const OperatorContext& op_context) {
-  QLObjectPtr ptr;
   if (subscript->value->type != AstType::Attribute) {
     return CreateAstError(subscript, "expected attribute, got $0",
                           GetAstTypeName(subscript->value->type));
   }
 
-  auto attr = PYPA_PTR_CAST(Attribute, subscript->value);
-  PL_ASSIGN_OR_RETURN(QLObjectPtr attribute_value_ptr, ProcessAttributeValue(attr));
-
-  PL_ASSIGN_OR_RETURN(
-      ptr, attribute_value_ptr->GetAttribute(attr->attribute, GetNameAsString(attr->attribute)));
+  PL_ASSIGN_OR_RETURN(QLObjectPtr ptr, Process(subscript->value, op_context));
 
   // TODO(philkuz) check the line, column of this error to make sure it's here, otherwise call the
   // error here.
@@ -490,8 +470,6 @@ StatusOr<ColumnIR*> ASTVisitorImpl::ProcessSubscriptColumnWithAttribute(
 
 StatusOr<ColumnIR*> ASTVisitorImpl::ProcessSubscriptColumn(const pypa::AstSubscriptPtr& subscript,
                                                            const OperatorContext& op_context) {
-  auto value_ir = ProcessData(subscript->value, op_context);
-
   // TODO(philkuz) generalize this approach by support "load" subscripts for Dataframes.
   if (subscript->value->type == AstType::Attribute) {
     return ProcessSubscriptColumnWithAttribute(subscript, op_context);
@@ -527,45 +505,6 @@ StatusOr<ColumnIR*> ASTVisitorImpl::ProcessSubscriptColumn(const pypa::AstSubscr
   return ir_graph_->CreateNode<ColumnIR>(subscript, col_name, /* parent_op_idx */ 0);
 }
 
-StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCall(const pypa::AstCallPtr& node,
-                                                        const OperatorContext& op_context) {
-  auto fn = node->function;
-  if (fn->type != AstType::Attribute) {
-    return CreateAstError(fn, "Expected any function calls to be made an attribute, not as a $0",
-                          GetAstTypeName(fn->type));
-  }
-  auto fn_attr = PYPA_PTR_CAST(Attribute, fn);
-  auto attr_parent = fn_attr->value;
-  auto attr_fn_name = fn_attr->attribute;
-  if (attr_parent->type != AstType::Name) {
-    return CreateAstError(attr_parent, "Nested calls not allowed. Expected Name attr not $0",
-                          GetAstTypeName(fn->type));
-  }
-  if (attr_fn_name->type != AstType::Name) {
-    return CreateAstError(attr_fn_name, "Expected Name attr not $0", GetAstTypeName(fn->type));
-  }
-  // attr parent must be pl.
-  auto attr_parent_str = GetNameAsString(attr_parent);
-  if (attr_parent_str != kCompileTimeFuncPrefix && attr_parent_str != kRunTimeFuncPrefix) {
-    return CreateAstError(attr_parent, "Namespace '$0' not found.", attr_parent_str);
-  }
-  auto attr_fn_str = GetNameAsString(attr_fn_name);
-
-  std::vector<ExpressionIR*> func_args;
-  // TODO(nserrino,philkuz) support keyword args in data calls once PyObjects land.
-  for (const auto& pypa_arg : node->arglist.arguments) {
-    PL_ASSIGN_OR_RETURN(auto result, ProcessData(pypa_arg, op_context));
-    if (!result->IsExpression()) {
-      return CreateAstError(pypa_arg, "Expected argument to function '$0' to be an expression",
-                            attr_fn_str);
-    }
-    func_args.push_back(static_cast<ExpressionIR*>(result));
-  }
-
-  FuncIR::Op op{FuncIR::Opcode::non_op, "", attr_fn_str};
-  return ir_graph_->CreateNode<FuncIR>(node, op, func_args);
-}
-
 StatusOr<IRNode*> ASTVisitorImpl::ProcessDataForAttribute(const pypa::AstAttributePtr& attr) {
   if (attr->value->type != AstType::Name) {
     // TODO(philkuz) support more complex cases here when they come
@@ -576,7 +515,20 @@ StatusOr<IRNode*> ASTVisitorImpl::ProcessDataForAttribute(const pypa::AstAttribu
   std::string attr_str = GetNameAsString(attr->attribute);
   PL_ASSIGN_OR_RETURN(QLObjectPtr attr_object, object->GetAttribute(attr->attribute, attr_str));
   if (!attr_object->HasNode()) {
-    return CreateAstError(attr->attribute, "does not return a usable value");
+    // TODO(philkuz) refactor ArgMap/ParsedArgs to push the function calls to the handler instead of
+    // this hack that only works for pl modules.
+    QLObjectType ql_object_type = object->type_descriptor().type();
+    QLObjectType attr_object_type = attr_object->type_descriptor().type();
+    if (ql_object_type != QLObjectType::kPLModule && attr_object_type != QLObjectType::kFunction) {
+      return CreateAstError(attr->attribute, "does not return a usable value");
+    }
+
+    PL_ASSIGN_OR_RETURN(
+        attr_object,
+        std::static_pointer_cast<FuncObject>(attr_object)->Call({}, attr->attribute, this));
+    if (!attr_object->HasNode()) {
+      return CreateAstError(attr->attribute, "does not return a usable value");
+    }
   }
   return attr_object->node();
 }
@@ -597,7 +549,10 @@ StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
       return ProcessTuple(PYPA_PTR_CAST(Tuple, ast), op_context);
     }
     case AstType::Call: {
-      return ProcessDataCall(PYPA_PTR_CAST(Call, ast), op_context);
+      PL_ASSIGN_OR_RETURN(QLObjectPtr call_result,
+                          ProcessCallNode(PYPA_PTR_CAST(Call, ast), op_context));
+      DCHECK(call_result->HasNode());
+      return call_result->node();
     }
     case AstType::BinOp: {
       return ProcessDataBinOp(PYPA_PTR_CAST(BinOp, ast), op_context);

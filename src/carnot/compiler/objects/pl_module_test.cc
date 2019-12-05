@@ -14,7 +14,7 @@ scalar_udfs {
   return_type: BOOLEAN
 }
 )proto";
-class PLModuleTest : public OperatorTests {
+class PLModuleTest : public QLObjectTest {
  protected:
   std::unique_ptr<compiler::RegistryInfo> SetUpRegistryInfo() {
     udfspb::UDFInfo udf_proto;
@@ -38,7 +38,7 @@ class PLModuleTest : public OperatorTests {
   }
 
   void SetUp() override {
-    OperatorTests::SetUp();
+    QLObjectTest::SetUp();
     info_ = SetUpRegistryInfo();
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
     module_ = PLModule::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
@@ -54,9 +54,14 @@ TEST_F(PLModuleTest, ModuleFindAttributeFromRegistryInfo) {
   auto attr_or_s = module_->GetAttribute(ast, "equals");
 
   ASSERT_OK(attr_or_s);
-  QLObjectPtr ql_object = attr_or_s.ConsumeValueOrDie();
+  QLObjectPtr attr_object = attr_or_s.ConsumeValueOrDie();
 
-  ASSERT_TRUE(ql_object->HasNode());
+  ASSERT_FALSE(attr_object->HasNode());
+  ASSERT_TRUE(attr_object->type_descriptor().type() == QLObjectType::kFunction);
+  auto result_or_s =
+      std::static_pointer_cast<FuncObject>(attr_object)->Call({}, ast, ast_visitor.get());
+  ASSERT_OK(result_or_s);
+  auto ql_object = result_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(Match(ql_object->node(), Func()));
 
   FuncIR* func = static_cast<FuncIR*>(ql_object->node());

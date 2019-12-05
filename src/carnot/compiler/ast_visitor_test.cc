@@ -109,7 +109,8 @@ TEST_F(ASTVisitorTest, assign_error_checking) {
       "queryDF,haha = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'])";
   auto graph_or_s = CompileGraph(bad_assign_mult_values);
   ASSERT_NOT_OK(graph_or_s);
-  EXPECT_THAT(graph_or_s.status(), HasCompilerError("Assignment target must be a Name"));
+  EXPECT_THAT(graph_or_s.status(),
+              HasCompilerError("Assignment target must be a Name or Subscript"));
 
   std::string bad_assign_str = "queryDF = 'str'";
   graph_or_s = CompileGraph(bad_assign_str);
@@ -131,7 +132,7 @@ TEST_F(MapTest, single_col_map) {
   std::string single_col_div_map_query = absl::StrJoin(
       {
           "queryDF = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
-          "queryDF['div'] = pl.div(queryDF['cpu0'], queryDF['cpu1'])",
+          "queryDF['div'] = pl.divide(queryDF['cpu0'], queryDF['cpu1'])",
           "rangeDF = queryDF[['div']]",
       },
       "\n");
@@ -220,7 +221,7 @@ TEST_F(MapTest, nested_expr_map) {
   std::string nested_fn = absl::StrJoin(
       {
           "queryDF = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
-          "queryDF['div'] = pl.div(queryDF['cpu0'] + queryDF['cpu1'], queryDF['cpu2'])",
+          "queryDF['div'] = pl.divide(queryDF['cpu0'] + queryDF['cpu1'], queryDF['cpu2'])",
       },
       "\n");
   EXPECT_OK(CompileGraph(nested_fn));
@@ -789,6 +790,43 @@ TEST_F(ASTVisitorTest, DisplayArgumentsTest) {
   ASSERT_TRUE(Match(mem_sink->parents()[0], MemorySource()));
   auto mem_src = static_cast<MemorySourceIR*>(mem_sink->parents()[0]);
   EXPECT_EQ(mem_src->table_name(), "bar");
+}
+
+// Tests whether we can evaluate operators in the argument.
+TEST_F(ASTVisitorTest, DisplayWithSetupDataframe) {
+  std::string query("pl.display(pl.DataFrame('bar'))");
+  ASSERT_OK(CompileGraph(query));
+}
+
+// Tests whether we can evaluate operators in the argument.
+TEST_F(ASTVisitorTest, DISABLED_AssignStringValueAndUseArgument) {
+  std::string query("a='bar'\npl.DataFrame(table=a)");
+  ASSERT_OK(CompileGraph(query));
+}
+
+// Tests whether we can evaluate operators in the argument.
+TEST_F(ASTVisitorTest, DISABLED_AssignListAndUseArgument) {
+  std::string query("columns=['foo', 'bar', 'baz']\npl.DataFrame('cpu', columns)");
+  ASSERT_OK(CompileGraph(query));
+}
+
+TEST_F(ASTVisitorTest, NonExistantUDFs) {
+  std::string missing_udf = absl::StrJoin(
+      {"queryDF = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+       "queryDF['cpu_sum'] = pl.sus(queryDF['cpu0'], queryDF['cpu1'])", "df = queryDF[['cpu_sum']]",
+       "pl.display(df, 'cpu_out')"},
+      "\n");
+
+  auto ir_graph_status = CompileGraph(missing_udf);
+  EXPECT_THAT(ir_graph_status.status(), HasCompilerError("'pl' object has no attribute 'sus'"));
+
+  std::string missing_uda = absl::StrJoin(
+      {"queryDF = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+       "aggDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', pl.punt))", "pl.display(aggDF)"},
+      "\n");
+
+  ir_graph_status = CompileGraph(missing_uda);
+  EXPECT_THAT(ir_graph_status.status(), HasCompilerError("'pl' object has no attribute 'punt'"));
 }
 
 }  // namespace compiler

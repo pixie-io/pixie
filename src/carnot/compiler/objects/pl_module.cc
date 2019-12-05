@@ -8,6 +8,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
+constexpr const char* const PLModule::kTimeFuncs[];
 
 StatusOr<std::shared_ptr<PLModule>> PLModule::Create(IR* graph, CompilerState* compiler_state) {
   auto module = std::shared_ptr<PLModule>(new PLModule(graph, compiler_state));
@@ -16,13 +17,49 @@ StatusOr<std::shared_ptr<PLModule>> PLModule::Create(IR* graph, CompilerState* c
   return module;
 }
 
-Status PLModule::Init() {
+void PLModule::RegisterUDFFuncs() {
   // TODO(philkuz) (PL-1189) remove this when the udf names no longer have the 'pl.' prefix.
   for (const auto& name : compiler_state_->registry_info()->func_names()) {
-    attributes_.emplace(absl::StripPrefix(name, "pl."));
+    std::string_view stripped_name = absl::StripPrefix(name, "pl.");
+    // attributes_.emplace(stripped_name);
+
+    std::shared_ptr<FuncObject> fn_obj = std::shared_ptr<FuncObject>(
+        new FuncObject(stripped_name, {}, {},
+                       /*has_variable_len_args*/ true,
+                       /*has_variable_len_kwargs*/ false,
+                       std::bind(&UDFHandler::Eval, graph_, stripped_name.data(),
+                                 std::placeholders::_1, std::placeholders::_2)));
+
+    AddMethod(stripped_name.data(), fn_obj);
   }
   // TODO(philkuz) (PL-1189) enable this.
   // attributes_ = compiler_state_->registry_info()->func_names()
+}
+
+void PLModule::RegisterCompileTimeFuncs() {
+  std::shared_ptr<FuncObject> now_fn = std::shared_ptr<FuncObject>(
+      new FuncObject(kNowOpId, {}, {},
+                     /*has_variable_len_args*/ false, /* has_variable_len_kwargs */ false,
+                     std::bind(&CompileTimeFuncHandler::NowEval, graph_, std::placeholders::_1,
+                               std::placeholders::_2)));
+  AddMethod(kNowOpId, now_fn);
+  for (const auto& time : kTimeFuncs) {
+    RegisterCompileTimeUnitFunction(time);
+  }
+}
+
+void PLModule::RegisterCompileTimeUnitFunction(std::string name) {
+  std::shared_ptr<FuncObject> now_fn = std::shared_ptr<FuncObject>(
+      new FuncObject(name, {"unit"}, {},
+                     /*has_variable_len_args*/ false, /* has_variable_len_kwargs */ false,
+                     std::bind(&CompileTimeFuncHandler::TimeEval, graph_, name,
+                               std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(name.data(), now_fn);
+}
+
+Status PLModule::Init() {
+  RegisterUDFFuncs();
+  RegisterCompileTimeFuncs();
 
   // Setup methods.
   std::shared_ptr<FuncObject> dataframe_fn = std::shared_ptr<FuncObject>(new FuncObject(
@@ -118,6 +155,44 @@ StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
   PL_ASSIGN_OR_RETURN(MemorySinkIR * mem_sink_op,
                       graph->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
   return StatusOr(std::make_shared<NoneObject>(mem_sink_op));
+}
+
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::NowEval(IR* graph, const pypa::AstPtr& ast,
+                                                      const ParsedArgs&) {
+  // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
+  FuncIR::Op op{FuncIR::Opcode::non_op, "", PLModule::kNowOpId};
+  PL_ASSIGN_OR_RETURN(FuncIR * node,
+                      graph->CreateNode<FuncIR>(ast, op, std::vector<ExpressionIR*>{}));
+  return ExprObject::Create(node);
+}
+
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, const std::string& time_name,
+                                                       const pypa::AstPtr& ast,
+                                                       const ParsedArgs& args) {
+  // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
+  std::vector<ExpressionIR*> expr_args;
+  IRNode* unit = args.GetArg("unit");
+  if (!Match(unit, Expression())) {
+    return unit->CreateIRNodeError("Argument must be an expression, got a $0", unit->type_string());
+  }
+  expr_args.push_back(static_cast<ExpressionIR*>(unit));
+  FuncIR::Op op{FuncIR::Opcode::non_op, "", time_name};
+  PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
+  return ExprObject::Create(node);
+}
+
+StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, const std::string& name, const pypa::AstPtr& ast,
+                                       const ParsedArgs& args) {
+  std::vector<ExpressionIR*> expr_args;
+  for (const auto& arg : args.variable_args()) {
+    if (!Match(arg, Expression())) {
+      return arg->CreateIRNodeError("Argument must be an expression, got a $0", arg->type_string());
+    }
+    expr_args.push_back(static_cast<ExpressionIR*>(arg));
+  }
+  FuncIR::Op op{FuncIR::Opcode::non_op, "", name};
+  PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
+  return ExprObject::Create(node);
 }
 
 }  // namespace compiler

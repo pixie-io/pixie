@@ -109,7 +109,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param node
    * @return StatusOr<QLObjectPtr>
    */
-  StatusOr<QLObjectPtr> Process(const pypa::AstExpr& node);
+  StatusOr<QLObjectPtr> Process(const pypa::AstExpr& node, const OperatorContext& op_context);
 
   /**
    * @brief ProcessArgs traverses an arg_ast tree, converts the expressions into IR and then returns
@@ -193,7 +193,8 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param node
    * @return the op contained by the call ast.
    */
-  StatusOr<QLObjectPtr> ProcessOpCallNode(const pypa::AstCallPtr& node);
+  StatusOr<QLObjectPtr> ProcessCallNode(const pypa::AstCallPtr& node,
+                                        const OperatorContext& op_context);
 
   /**
    * @brief Processes a subscript call.
@@ -201,24 +202,17 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param node
    * @return the operator contained by the subscript.
    */
-  StatusOr<QLObjectPtr> ProcessSubscriptCall(const pypa::AstSubscriptPtr& node);
+  StatusOr<QLObjectPtr> ProcessSubscriptCall(const pypa::AstSubscriptPtr& node,
+                                             const OperatorContext& op_context);
 
   /**
-   * @brief Processes an Attribute value, the left side of the attribute data structure.
-   * (AstAttribute := <value>.<attribute>; `abc.blah()` -> `abc` is the value of `abc.blah`)
-   *
-   * @param node attribute node
-   * @return  The object of the attribute value or an error if one occurs.
-   */
-  StatusOr<QLObjectPtr> ProcessAttributeValue(const pypa::AstAttributePtr& node);
-
-  /**
-   * @brief
+   * @brief Processes an Attribute and returns the QLObject that the attribute references.
    *
    * @param node
    * @return StatusOr<QLObjectPtr>
    */
-  StatusOr<QLObjectPtr> ProcessAttribute(const pypa::AstAttributePtr& node);
+  StatusOr<QLObjectPtr> ProcessAttribute(const pypa::AstAttributePtr& node,
+                                         const OperatorContext& op_context);
 
   /**
    * @brief Gets the string name of the attribute in an attribute struvct.
@@ -345,14 +339,6 @@ class ASTVisitorImpl : public ASTVisitor {
    */
   StatusOr<ExpressionIR*> ProcessDataCompare(const pypa::AstComparePtr& node,
                                              const OperatorContext& op_context);
-  /**
-   * @brief Handler for functions that are called as args in the data.
-   *
-   * @param ast
-   * @return StatusOr<ExpressionIR*> the ir representation of the data processed by the AST.
-   */
-  StatusOr<ExpressionIR*> ProcessDataCall(const pypa::AstCallPtr& node,
-                                          const OperatorContext& op_context);
   /**
    * @brief  Returns the variable specified by the name pointer.
    * @param node the ast node to run this on.

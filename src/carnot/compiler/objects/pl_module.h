@@ -20,11 +20,17 @@ class PLModule : public QLObject {
   // Constants for operators in the query language.
   inline static constexpr char kDataframeOpId[] = "DataFrame";
   inline static constexpr char kDisplayOpId[] = "display";
+  inline static constexpr char kNowOpId[] = "now";
+  static const constexpr char* const kTimeFuncs[] = {"minutes", "hours",        "seconds",
+                                                     "days",    "microseconds", "milliseconds"};
 
  protected:
   explicit PLModule(IR* graph, CompilerState* compiler_state)
       : QLObject(PLModuleType), graph_(graph), compiler_state_(compiler_state) {}
   Status Init();
+  void RegisterUDFFuncs();
+  void RegisterCompileTimeFuncs();
+  void RegisterCompileTimeUnitFunction(std::string name);
 
   StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
                                                        const std::string& name) const override;
@@ -32,10 +38,11 @@ class PLModule : public QLObject {
  private:
   IR* graph_;
   CompilerState* compiler_state_;
+  absl::flat_hash_set<std::string> compiler_time_fns_;
 };
 
 /**
- * @brief Implements the pl.DataFrame() logic
+ * @brief Implements the pl.DataFrame() logic.
  *
  */
 class DataFrameHandler {
@@ -44,12 +51,33 @@ class DataFrameHandler {
 };
 
 /**
- * @brief Implements the pl.display() logic
+ * @brief Implements the pl.display() logic.
  *
  */
 class DisplayHandler {
  public:
   static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args);
+};
+
+/**
+ * @brief Implements the pl.now() and pl.minutes,pl.hours, etc.
+ *
+ */
+class CompileTimeFuncHandler {
+ public:
+  static StatusOr<QLObjectPtr> NowEval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args);
+  static StatusOr<QLObjectPtr> TimeEval(IR* graph, const std::string& name, const pypa::AstPtr& ast,
+                                        const ParsedArgs& args);
+};
+
+/**
+ * @brief Implements the udf logic.
+ *
+ */
+class UDFHandler {
+ public:
+  static StatusOr<QLObjectPtr> Eval(IR* graph, const std::string& name, const pypa::AstPtr& ast,
+                                    const ParsedArgs& args);
 };
 
 }  // namespace compiler
