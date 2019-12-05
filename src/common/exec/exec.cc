@@ -1,7 +1,5 @@
 #include "src/common/exec/exec.h"
 
-#include <sys/wait.h>
-
 #include <memory>
 
 #include "src/common/base/error.h"
