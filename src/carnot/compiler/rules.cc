@@ -1,12 +1,13 @@
-#include "absl/container/flat_hash_set.h"
+#include "src/carnot/compiler/rules.h"
 
 #include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "src/carnot/compiler/ast_visitor.h"
-#include "src/carnot/compiler/rules.h"
+
 namespace pl {
 namespace carnot {
 namespace compiler {

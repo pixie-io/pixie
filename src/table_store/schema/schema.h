@@ -1,10 +1,10 @@
 #pragma once
 
-#include "absl/container/flat_hash_map.h"
-
 #include <map>
 #include <string>
 #include <vector>
+
+#include "absl/container/flat_hash_map.h"
 
 #include "src/common/base/base.h"
 #include "src/table_store/schema/relation.h"

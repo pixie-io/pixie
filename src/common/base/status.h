@@ -142,7 +142,6 @@ inline Status StatusAdapter<pl::statuspb::Status>(const pl::statuspb::Status& s)
 #define PL_RETURN_IF_ERROR(__status) \
   PL_RETURN_IF_ERROR_IMPL(PL_CONCAT_NAME(__status__, __COUNTER__), __status)
 
-
 #define PL_CHECK_OK_PREPEND(to_call, msg)             \
   do {                                                \
     auto _s = (to_call);                              \

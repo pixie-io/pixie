@@ -10,4 +10,3 @@ struct TimeSpan {
 
 }  // namespace stirling
 }  // namespace pl
-

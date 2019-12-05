@@ -1,9 +1,9 @@
 #pragma once
 
+#include <google/protobuf/util/delimited_message_util.h>
+
 #include <iostream>
 #include <memory>
-
-#include <google/protobuf/util/delimited_message_util.h>
 
 namespace pl {
 namespace rio {
