@@ -6,7 +6,7 @@
 #include <utility>
 
 #include "src/common/base/base.h"
-#include "src/stirling/utils/kprobe_cleaner.h"
+#include "src/stirling/bpf_tools/probe_cleaner.h"
 
 namespace pl {
 namespace stirling {

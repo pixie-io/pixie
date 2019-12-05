@@ -8,6 +8,7 @@ pl_cc_library(
         ["*.cc"],
         exclude = [
             "**/*_test.cc",
+            "probe_cleaner_standalone.cc",
         ],
     ),
     hdrs = glob(
@@ -24,4 +25,10 @@ pl_cc_library(
         ],
         "//conditions:default": [],
     }),
+)
+
+pl_cc_binary(
+    name = "probe_cleaner_standalone",
+    srcs = ["probe_cleaner_standalone.cc"],
+    deps = [":cc_library"],
 )

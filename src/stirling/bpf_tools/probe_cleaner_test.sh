@@ -2,21 +2,21 @@
 
 # Note: This script will ask for root privileges.
 #
-# This script tests the kprobe_cleaner functions.
+# This script tests the probe_cleaner functions.
 # It runs an instance of stirling_wrapper, and then does a SIGKILL to ensure it leaks probes.
 # Then it runs the cleaner to clean those probes up.
 
 if [ -z "$1" ]; then
     stirling_wrapper_bin=$(bazel info bazel-bin)/src/stirling/stirling_wrapper
-    kprobe_cleaner_bin=$(bazel info bazel-bin)/src/stirling/utils/kprobe_cleaner_standalone
+    probe_cleaner_bin=$(bazel info bazel-bin)/src/stirling/utils/probe_cleaner_standalone
 else
     stirling_wrapper_bin=$1
-    kprobe_cleaner_bin=$2
+    probe_cleaner_bin=$2
 fi
 
 # Switch to root user.
 if [[ $EUID -ne 0 ]]; then
-   sudo $0 $stirling_wrapper_bin $kprobe_cleaner_bin
+   sudo $0 $stirling_wrapper_bin $probe_cleaner_bin
    exit
 fi
 
@@ -50,7 +50,7 @@ function test_setup() {
 }
 
 function test() {
-    $kprobe_cleaner_bin
+    $probe_cleaner_bin
     if [ $? -ne 0 ]; then
         echo "FAILED: Cannot run cleaner"
         return 1

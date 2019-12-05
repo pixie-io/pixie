@@ -1,5 +1,5 @@
 #include "src/common/base/base.h"
-#include "src/stirling/utils/kprobe_cleaner.h"
+#include "src/stirling/bpf_tools/probe_cleaner.h"
 
 // This is the string inserted by our modified BCC into the name
 // of all kprobes. We use it to look for leaked probes.

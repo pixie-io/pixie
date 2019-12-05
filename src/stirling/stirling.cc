@@ -11,13 +11,13 @@
 
 #include "absl/base/internal/spinlock.h"
 #include "src/common/base/base.h"
+#include "src/stirling/bpf_tools/probe_cleaner.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_connector.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
-#include "src/stirling/utils/kprobe_cleaner.h"
 
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/proc_stat_connector.h"

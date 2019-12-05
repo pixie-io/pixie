@@ -26,9 +26,3 @@ pl_cc_test(
     srcs = ["json_test.cc"],
     deps = [":cc_library"],
 )
-
-pl_cc_binary(
-    name = "kprobe_cleaner_standalone",
-    srcs = ["kprobe_cleaner_standalone.cc"],
-    deps = [":cc_library"],
-)
