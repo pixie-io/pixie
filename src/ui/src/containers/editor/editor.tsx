@@ -108,7 +108,6 @@ export const Editor: React.FC = () => {
           activeKey={state.activeTab}
           onSelect={selectTab}
           mountOnEnter={true}
-          unmountOnExit={false}
           id='pixie-editor-tabs'>
           <Nav variant='tabs' className='pixie-editor-tabs-nav'>
             {state.tabs.map((tab) =>
@@ -127,6 +126,7 @@ export const Editor: React.FC = () => {
               <Tab.Pane
                 eventKey={tab.id}
                 key={tab.id}
+                unmountOnExit={false}
                 style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
                 <EditorContent {...tab} />
               </Tab.Pane>,
