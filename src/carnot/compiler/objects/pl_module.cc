@@ -17,62 +17,74 @@ StatusOr<std::shared_ptr<PLModule>> PLModule::Create(IR* graph, CompilerState* c
   return module;
 }
 
-void PLModule::RegisterUDFFuncs() {
+Status PLModule::RegisterUDFFuncs() {
   // TODO(philkuz) (PL-1189) remove this when the udf names no longer have the 'pl.' prefix.
   for (const auto& name : compiler_state_->registry_info()->func_names()) {
     std::string_view stripped_name = absl::StripPrefix(name, "pl.");
     // attributes_.emplace(stripped_name);
 
-    std::shared_ptr<FuncObject> fn_obj = std::shared_ptr<FuncObject>(
-        new FuncObject(stripped_name, {}, {},
-                       /*has_variable_len_args*/ true,
-                       /*has_variable_len_kwargs*/ false,
-                       std::bind(&UDFHandler::Eval, graph_, stripped_name.data(),
-                                 std::placeholders::_1, std::placeholders::_2)));
+    PL_ASSIGN_OR_RETURN(
+        std::shared_ptr<FuncObject> fn_obj,
+        FuncObject::Create(stripped_name, {}, {},
+                           /* has_variable_len_args */ true,
+                           /* has_variable_len_kwargs */ false,
+                           std::bind(&UDFHandler::Eval, graph_, stripped_name.data(),
+                                     std::placeholders::_1, std::placeholders::_2)));
 
     AddMethod(stripped_name.data(), fn_obj);
   }
   // TODO(philkuz) (PL-1189) enable this.
   // attributes_ = compiler_state_->registry_info()->func_names()
+  return Status::OK();
 }
 
-void PLModule::RegisterCompileTimeFuncs() {
-  std::shared_ptr<FuncObject> now_fn = std::shared_ptr<FuncObject>(
-      new FuncObject(kNowOpId, {}, {},
-                     /*has_variable_len_args*/ false, /* has_variable_len_kwargs */ false,
-                     std::bind(&CompileTimeFuncHandler::NowEval, graph_, std::placeholders::_1,
-                               std::placeholders::_2)));
+Status PLModule::RegisterCompileTimeFuncs() {
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> now_fn,
+      FuncObject::Create(kNowOpId, {}, {},
+                         /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+                         std::bind(&CompileTimeFuncHandler::NowEval, graph_, std::placeholders::_1,
+                                   std::placeholders::_2)));
   AddMethod(kNowOpId, now_fn);
   for (const auto& time : kTimeFuncs) {
-    RegisterCompileTimeUnitFunction(time);
+    PL_RETURN_IF_ERROR(RegisterCompileTimeUnitFunction(time));
   }
+  return Status::OK();
 }
 
-void PLModule::RegisterCompileTimeUnitFunction(std::string name) {
-  std::shared_ptr<FuncObject> now_fn = std::shared_ptr<FuncObject>(
-      new FuncObject(name, {"unit"}, {},
-                     /*has_variable_len_args*/ false, /* has_variable_len_kwargs */ false,
-                     std::bind(&CompileTimeFuncHandler::TimeEval, graph_, name,
-                               std::placeholders::_1, std::placeholders::_2)));
+Status PLModule::RegisterCompileTimeUnitFunction(std::string name) {
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> now_fn,
+      FuncObject::Create(name, {"unit"}, {},
+                         /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+                         std::bind(&CompileTimeFuncHandler::TimeEval, graph_, name,
+                                   std::placeholders::_1, std::placeholders::_2)));
   AddMethod(name.data(), now_fn);
+  return Status::OK();
 }
 
 Status PLModule::Init() {
-  RegisterUDFFuncs();
-  RegisterCompileTimeFuncs();
+  PL_RETURN_IF_ERROR(RegisterUDFFuncs());
+  PL_RETURN_IF_ERROR(RegisterCompileTimeFuncs());
 
   // Setup methods.
-  std::shared_ptr<FuncObject> dataframe_fn = std::shared_ptr<FuncObject>(new FuncObject(
-      kDataframeOpId, {"table", "select", "start_time", "end_time"},
-      {{"select", "[]"}, {"start_time", "0"}, {"end_time", "pl.now()"}},
-      /*has_variable_len_kwargs*/ false,
-      std::bind(&DataFrameHandler::Eval, graph_, std::placeholders::_1, std::placeholders::_2)));
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> dataframe_fn,
+      FuncObject::Create(kDataframeOpId, {"table", "select", "start_time", "end_time"},
+                         {{"select", "[]"}, {"start_time", "0"}, {"end_time", "pl.now()"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&DataFrameHandler::Eval, graph_, std::placeholders::_1,
+                                   std::placeholders::_2)));
   AddMethod(kDataframeOpId, dataframe_fn);
 
-  std::shared_ptr<FuncObject> display_fn = std::shared_ptr<FuncObject>(new FuncObject(
-      kDisplayOpId, {"out", "name", "cols"}, {{"name", "'output'"}, {"cols", "[]"}},
-      /*has_variable_len_kwargs*/ false,
-      std::bind(&DisplayHandler::Eval, graph_, std::placeholders::_1, std::placeholders::_2)));
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> display_fn,
+      FuncObject::Create(
+          kDisplayOpId, {"out", "name", "cols"}, {{"name", "'output'"}, {"cols", "[]"}},
+          /* has_variable_len_args */ false,
+          /* has_variable_len_kwargs */ false,
+          std::bind(&DisplayHandler::Eval, graph_, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kDisplayOpId, display_fn);
 
   return Status::OK();

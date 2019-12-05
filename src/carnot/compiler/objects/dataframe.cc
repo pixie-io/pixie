@@ -20,11 +20,14 @@ Status Dataframe::Init() {
    * def merge(self, right, how, left_on, right_on, suffixes=('_x', '_y')):
    *     ...
    */
-  std::shared_ptr<FuncObject> mergefn(new FuncObject(
-      kMergeOpId, {"right", "how", "left_on", "right_on", "suffixes"},
-      {{"suffixes", "('_x', '_y')"}},
-      /* has_variable_len_kwargs */ false,
-      std::bind(&JoinHandler::Eval, graph(), op(), std::placeholders::_1, std::placeholders::_2)));
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> mergefn,
+      FuncObject::Create(kMergeOpId, {"right", "how", "left_on", "right_on", "suffixes"},
+                         {{"suffixes", "('_x', '_y')"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&JoinHandler::Eval, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2)));
   AddMethod(kMergeOpId, mergefn);
 
   /**
@@ -32,10 +35,12 @@ Status Dataframe::Init() {
    * def agg(self, **kwargs):
    *     ...
    */
-  std::shared_ptr<FuncObject> aggfn(new FuncObject(
-      kBlockingAggOpId, {}, {},
-      /* has_variable_len_kwargs */ true,
-      std::bind(&AggHandler::Eval, graph(), op(), std::placeholders::_1, std::placeholders::_2)));
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> aggfn,
+                      FuncObject::Create(kBlockingAggOpId, {}, {},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ true,
+                                         std::bind(&AggHandler::Eval, graph(), op(),
+                                                   std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kBlockingAggOpId, aggfn);
 
   /**
@@ -43,9 +48,12 @@ Status Dataframe::Init() {
    * def drop(self, fn):
    *     ...
    */
-  std::shared_ptr<FuncObject> dropfn(new FuncObject(
-      kDropOpId, {"columns"}, {}, /* has_kwargs */ false,
-      std::bind(&DropHandler::Eval, graph(), op(), std::placeholders::_1, std::placeholders::_2)));
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> dropfn,
+      FuncObject::Create(kDropOpId, {"columns"}, {}, /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&DropHandler::Eval, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2)));
   AddMethod(kDropOpId, dropfn);
 
   /**
@@ -53,9 +61,12 @@ Status Dataframe::Init() {
    * def head(self, n=5):
    *     ...
    */
-  std::shared_ptr<FuncObject> limitfn(new FuncObject(
-      kLimitOpId, {"n"}, {{"n", "5"}}, /* has_variable_len_kwargs */ false,
-      std::bind(&LimitHandler::Eval, graph(), op(), std::placeholders::_1, std::placeholders::_2)));
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> limitfn,
+                      FuncObject::Create(kLimitOpId, {"n"}, {{"n", "5"}},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ false,
+                                         std::bind(&LimitHandler::Eval, graph(), op(),
+                                                   std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kLimitOpId, limitfn);
 
   /**
@@ -68,6 +79,7 @@ Status Dataframe::Init() {
    */
   std::shared_ptr<FuncObject> subscript_fn(
       new FuncObject(kSubscriptMethodName, {"key"}, {},
+                     /* has_variable_len_args */ false,
                      /* has_variable_len_kwargs */ false,
                      std::bind(&SubscriptHandler::Eval, graph(), op(), std::placeholders::_1,
                                std::placeholders::_2)));
@@ -75,6 +87,7 @@ Status Dataframe::Init() {
 
   std::shared_ptr<FuncObject> group_by_fn(
       new FuncObject(kGroupByOpId, {"by"}, {},
+                     /* has_variable_len_args */ false,
                      /* has_variable_len_kwargs */ false,
                      std::bind(&GroupByHandler::Eval, graph(), op(), std::placeholders::_1,
                                std::placeholders::_2)));

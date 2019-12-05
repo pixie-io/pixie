@@ -28,9 +28,9 @@ class PLModule : public QLObject {
   explicit PLModule(IR* graph, CompilerState* compiler_state)
       : QLObject(PLModuleType), graph_(graph), compiler_state_(compiler_state) {}
   Status Init();
-  void RegisterUDFFuncs();
-  void RegisterCompileTimeFuncs();
-  void RegisterCompileTimeUnitFunction(std::string name);
+  Status RegisterUDFFuncs();
+  Status RegisterCompileTimeFuncs();
+  Status RegisterCompileTimeUnitFunction(std::string name);
 
   StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
                                                        const std::string& name) const override;

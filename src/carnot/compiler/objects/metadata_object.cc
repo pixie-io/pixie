@@ -16,7 +16,8 @@ StatusOr<std::shared_ptr<MetadataObject>> MetadataObject::Create(OperatorIR* op)
 
 Status MetadataObject::Init() {
   std::shared_ptr<FuncObject> subscript_fn(
-      new FuncObject(kSubscriptMethodName, {"key"}, {}, /* has_variable_len_kwargs */ false,
+      new FuncObject(kSubscriptMethodName, {"key"}, {}, /* has_variable_len_args */ false,
+                     /* has_variable_len_kwargs */ false,
                      std::bind(&MetadataObject::SubscriptHandler, this, std::placeholders::_1,
                                std::placeholders::_2)));
   AddSubscriptMethod(subscript_fn);

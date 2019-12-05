@@ -5,12 +5,13 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-// TODO(PL-1211) Remove this old constructor and refactor all the other references.
-FuncObject::FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
-                       const absl::flat_hash_map<std::string, DefaultType>& defaults,
-                       bool has_variable_len_kwargs, FunctionType impl)
-    : FuncObject(name, arguments, defaults, /* has_variable_len_args */ false,
-                 has_variable_len_kwargs, impl) {}
+StatusOr<std::shared_ptr<FuncObject>> FuncObject::Create(
+    const std::string_view name, const std::vector<std::string>& arguments,
+    const absl::flat_hash_map<std::string, DefaultType>& defaults, bool has_variable_len_args,
+    bool has_variable_len_kwargs, FunctionType impl) {
+  return std::make_shared<FuncObject>(name, arguments, defaults, has_variable_len_args,
+                                      has_variable_len_kwargs, impl);
+}
 
 FuncObject::FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
                        const absl::flat_hash_map<std::string, DefaultType>& defaults,

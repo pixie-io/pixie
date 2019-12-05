@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -81,6 +82,12 @@ class FuncObject : public QLObject {
   };
   // The default type. I haven't completely decided this API so using an alias for now.
   using DefaultType = std::string;
+
+  static StatusOr<std::shared_ptr<FuncObject>> Create(
+      const std::string_view name, const std::vector<std::string>& arguments,
+      const absl::flat_hash_map<std::string, DefaultType>& defaults, bool has_variable_len_args,
+      bool has_variable_len_kwargs, FunctionType impl);
+
   /**
    * @brief Construct a new Python Function.
    *
@@ -88,13 +95,10 @@ class FuncObject : public QLObject {
    * @param arguments the list of all argument names.
    * @param defaults the list of all defaults. Each key must be a part of arguments, otherwise will
    * fail.
+   * @param has_variable_len_args whether or not this supports generic positional arguments.
    * @param has_variable_len_kwargs whether or not this supports generic keyword arguments.
    * @param impl the implementation of the function.
    */
-  FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
-             const absl::flat_hash_map<std::string, DefaultType>& defaults,
-             bool has_variable_len_kwargs, FunctionType impl);
-
   FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
              const absl::flat_hash_map<std::string, DefaultType>& defaults,
              bool has_variable_len_args, bool has_variable_len_kwargs, FunctionType impl);

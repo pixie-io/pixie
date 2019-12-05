@@ -143,9 +143,13 @@ class TestQLObject : public QLObject {
   };
 
   explicit TestQLObject(bool has_attr) : QLObject(TestQLObjectType) {
-    std::shared_ptr<FuncObject> func_obj(new FuncObject(
-        "default_func", {"arg"}, {{"arg", "d("}}, /*has_kwargs*/ false,
-        std::bind(&TestQLObject::SimpleFunc, this, std::placeholders::_1, std::placeholders::_2)));
+    std::shared_ptr<FuncObject> func_obj =
+        FuncObject::Create("default_func", {"arg"}, {{"arg", "d("}},
+                           /* has_variable_len_args */ false,
+                           /* has_variable_len_kwargs */ false,
+                           std::bind(&TestQLObject::SimpleFunc, this, std::placeholders::_1,
+                                     std::placeholders::_2))
+            .ConsumeValueOrDie();
     AddMethod("default_func", func_obj);
     if (has_attr) {
       attributes_.emplace(kSpecialAttr);

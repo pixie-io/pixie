@@ -22,9 +22,12 @@ class TestQLObject : public QLObject {
   };
 
   TestQLObject() : QLObject(TestQLObjectType) {
-    std::shared_ptr<FuncObject> func_obj(new FuncObject(
-        "func", {}, {}, /*has_kwargs*/ false,
-        std::bind(&TestQLObject::SimpleFunc, this, std::placeholders::_1, std::placeholders::_2)));
+    std::shared_ptr<FuncObject> func_obj =
+        FuncObject::Create("func", {}, {}, /* has_variable_len_args */ false,
+                           /* has_variable_len_kwargs */ false,
+                           std::bind(&TestQLObject::SimpleFunc, this, std::placeholders::_1,
+                                     std::placeholders::_2))
+            .ConsumeValueOrDie();
     AddMethod("func", func_obj);
   }
 
@@ -120,9 +123,12 @@ class TestQLObject2 : public QLObject {
   };
 
   TestQLObject2() : QLObject(TestQLObjectType) {
-    std::shared_ptr<FuncObject> func_obj(new FuncObject(
-        kSubscriptMethodName, {"key"}, {}, /*has_kwargs*/ false,
-        std::bind(&TestQLObject2::SimpleFunc, this, std::placeholders::_1, std::placeholders::_2)));
+    std::shared_ptr<FuncObject> func_obj =
+        FuncObject::Create(kSubscriptMethodName, {"key"}, {}, /* has_variable_len_args */ false,
+                           /* has_variable_len_kwargs */ false,
+                           std::bind(&TestQLObject2::SimpleFunc, this, std::placeholders::_1,
+                                     std::placeholders::_2))
+            .ConsumeValueOrDie();
     AddSubscriptMethod(func_obj);
     AddCallMethod(func_obj);
     attributes_.emplace(kSpecialAttr);

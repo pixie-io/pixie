@@ -75,9 +75,11 @@ StatusOr<QLObjectPtr> SimpleFuncForVarArgs(const pypa::AstPtr&, const ParsedArgs
 }
 
 TEST_F(PyFuncTest, PosArgsExecute) {
-  std::shared_ptr<FuncObject> func_obj(
-      new FuncObject("func", {"simple"}, {}, /*has_kwargs*/ false,
-                     std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
+  std::shared_ptr<FuncObject> func_obj =
+      FuncObject::Create("func", {"simple"}, {}, /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
+          .ConsumeValueOrDie();
 
   ArgMap args{{}, {MakeInt(123)}};
   std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
@@ -90,9 +92,11 @@ TEST_F(PyFuncTest, PosArgsExecute) {
 }
 
 TEST_F(PyFuncTest, MissingArgument) {
-  std::shared_ptr<FuncObject> func_obj(
-      new FuncObject("func", {"simple"}, {}, /*has_kwargs*/ false,
-                     std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
+  std::shared_ptr<FuncObject> func_obj =
+      FuncObject::Create("func", {"simple"}, {}, /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
+          .ConsumeValueOrDie();
 
   ArgMap args;
   auto status = func_obj->Call(args, ast, ast_visitor.get());
@@ -102,9 +106,11 @@ TEST_F(PyFuncTest, MissingArgument) {
 }
 
 TEST_F(PyFuncTest, ExtraPosArg) {
-  std::shared_ptr<FuncObject> func_obj(
-      new FuncObject("func", {"simple"}, {}, /*has_kwargs*/ false,
-                     std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
+  std::shared_ptr<FuncObject> func_obj =
+      FuncObject::Create("func", {"simple"}, {}, /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
+          .ConsumeValueOrDie();
 
   ArgMap args{{}, {MakeInt(1), MakeInt(2)}};
   auto status = func_obj->Call(args, ast, ast_visitor.get());
@@ -112,9 +118,11 @@ TEST_F(PyFuncTest, ExtraPosArg) {
   EXPECT_THAT(status.status(), HasCompilerError("func.* takes 1 arguments but 2 were given."));
 
   // Should do the same with kwarg support enabled.
-  std::shared_ptr<FuncObject> func_obj2(
-      new FuncObject("func", {"simple"}, {}, /*has_kwargs*/ true,
-                     std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
+  std::shared_ptr<FuncObject> func_obj2 =
+      FuncObject::Create("func", {"simple"}, {}, /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ true,
+                         std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
+          .ConsumeValueOrDie();
 
   auto status2 = func_obj2->Call(args, ast, ast_visitor.get());
   ASSERT_NOT_OK(status2);
@@ -122,9 +130,11 @@ TEST_F(PyFuncTest, ExtraPosArg) {
 }
 
 TEST_F(PyFuncTest, ExtraKwargNoKwargsSupport) {
-  std::shared_ptr<FuncObject> func_obj(
-      new FuncObject("func", {"simple"}, {}, /*has_kwargs*/ false,
-                     std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
+  std::shared_ptr<FuncObject> func_obj =
+      FuncObject::Create("func", {"simple"}, {}, /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
+          .ConsumeValueOrDie();
 
   ArgMap args{{{"blah", MakeString("blah")}}, {MakeInt(1)}};
   auto status = func_obj->Call(args, ast, ast_visitor.get());
@@ -134,9 +144,11 @@ TEST_F(PyFuncTest, ExtraKwargNoKwargsSupport) {
 }
 
 TEST_F(PyFuncTest, ExtraKwargWithKwargsSupport) {
-  std::shared_ptr<FuncObject> func_obj(
-      new FuncObject("func", {"simple"}, {}, /*has_kwargs*/ true,
-                     std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
+  std::shared_ptr<FuncObject> func_obj =
+      FuncObject::Create("func", {"simple"}, {}, /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ true,
+                         std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
+          .ConsumeValueOrDie();
 
   ArgMap args{{{"blah1", MakeString("blah2")}}, {MakeInt(123)}};
   std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
@@ -149,9 +161,12 @@ TEST_F(PyFuncTest, ExtraKwargWithKwargsSupport) {
 }
 
 TEST_F(PyFuncTest, DefaultArgsExecute) {
-  std::shared_ptr<FuncObject> func_obj(
-      new FuncObject("func", {"simple"}, {{"simple", "1234"}}, /*has_kwargs*/ false,
-                     std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
+  std::shared_ptr<FuncObject> func_obj =
+      FuncObject::Create("func", {"simple"}, {{"simple", "1234"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
+          .ConsumeValueOrDie();
 
   ArgMap args;
   std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
@@ -163,9 +178,12 @@ TEST_F(PyFuncTest, DefaultArgsExecute) {
 // This test is the unit to make sure we can get all of the defaults of any method for any object we
 // choose to test.
 TEST_F(PyFuncTest, TestDefaultArgsCanBeAccessed) {
-  std::shared_ptr<FuncObject> func_obj(
-      new FuncObject("func", {"simple"}, {{"simple", "1234"}}, /*has_kwargs*/ false,
-                     std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2)));
+  std::shared_ptr<FuncObject> func_obj =
+      FuncObject::Create("func", {"simple"}, {{"simple", "1234"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
+          .ConsumeValueOrDie();
 
   ASSERT_TRUE(func_obj->defaults().contains("simple"));
   auto default_str_repr = func_obj->defaults().find("simple")->second;
@@ -177,10 +195,12 @@ TEST_F(PyFuncTest, TestDefaultArgsCanBeAccessed) {
 
 // This test makes sure we use variable args.
 TEST_F(PyFuncTest, TestVariableArgs) {
-  std::shared_ptr<FuncObject> func_obj(new FuncObject(
-      "func", {"simple"}, {{"simple", "1234"}}, /* has_variable_args_len */ true,
-      /* has_kwargs */ false,
-      std::bind(&SimpleFuncForVarArgs, std::placeholders::_1, std::placeholders::_2)));
+  std::shared_ptr<FuncObject> func_obj =
+      FuncObject::Create(
+          "func", {"simple"}, {{"simple", "1234"}}, /* has_variable_args_len */ true,
+          /* has_kwargs */ false,
+          std::bind(&SimpleFuncForVarArgs, std::placeholders::_1, std::placeholders::_2))
+          .ConsumeValueOrDie();
 
   ArgMap args{{}, {MakeInt(123), MakeString("str123"), MakeString("str321")}};
   std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
@@ -194,10 +214,12 @@ TEST_F(PyFuncTest, TestVariableArgs) {
 
 // This test makes sure variable args and variable kwargs both work when used together.
 TEST_F(PyFuncTest, VariableArgsAndKwargs) {
-  std::shared_ptr<FuncObject> func_obj(new FuncObject(
-      "func", {"simple"}, {{"simple", "1234"}}, /* has_variable_args_len */ true,
-      /* has_kwargs */ true,
-      std::bind(&SimpleFuncForVarArgs, std::placeholders::_1, std::placeholders::_2)));
+  std::shared_ptr<FuncObject> func_obj =
+      FuncObject::Create(
+          "func", {"simple"}, {{"simple", "1234"}}, /* has_variable_args_len */ true,
+          /* has_kwargs */ true,
+          std::bind(&SimpleFuncForVarArgs, std::placeholders::_1, std::placeholders::_2))
+          .ConsumeValueOrDie();
 
   ArgMap args{{{"kwarg1", MakeString("str222")}, {"kwarg2", MakeString("str333")}},
               {MakeInt(123), MakeString("str123"), MakeString("str321")}};
