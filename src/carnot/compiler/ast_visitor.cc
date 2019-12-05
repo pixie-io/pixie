@@ -2,6 +2,7 @@
 
 #include "src/carnot/compiler/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
+#include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/none_object.h"
 #include "src/carnot/compiler/objects/pl_module.h"
 #include "src/carnot/compiler/parser/parser.h"
@@ -145,6 +146,27 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::Process(const pypa::AstExpr& node,
       return LookupVariable(PYPA_PTR_CAST(Name, node));
     case AstType::Attribute:
       return ProcessAttribute(PYPA_PTR_CAST(Attribute, node), op_context);
+    case AstType::Str: {
+      return ProcessStr(PYPA_PTR_CAST(Str, node));
+    }
+    case AstType::Number: {
+      return ProcessNumber(PYPA_PTR_CAST(Number, node));
+    }
+    case AstType::List: {
+      return ProcessList(PYPA_PTR_CAST(List, node), op_context);
+    }
+    case AstType::Tuple: {
+      return ProcessTuple(PYPA_PTR_CAST(Tuple, node), op_context);
+    }
+    case AstType::BinOp: {
+      return ProcessDataBinOp(PYPA_PTR_CAST(BinOp, node), op_context);
+    }
+    case AstType::BoolOp: {
+      return ProcessDataBoolOp(PYPA_PTR_CAST(BoolOp, node), op_context);
+    }
+    case AstType::Compare: {
+      return ProcessDataCompare(PYPA_PTR_CAST(Compare, node), op_context);
+    }
     default:
       return CreateAstError(node, "Expression node '$0' not defined", GetAstTypeName(node->type));
   }
@@ -249,11 +271,6 @@ StatusOr<std::string> ASTVisitorImpl::GetFuncName(const pypa::AstCallPtr& node) 
   return func_name;
 }
 
-StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast) {
-  OperatorContext op_context({}, "");
-  return ProcessArgs(call_ast, op_context);
-}
-
 StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast,
                                              const OperatorContext& op_context) {
   auto arg_ast = call_ast->arglist;
@@ -326,9 +343,10 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessCallNode(const pypa::AstCallPtr& no
   return func_object->Call(args, node, this);
 }
 
-StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessStr(const pypa::AstStrPtr& ast) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessStr(const pypa::AstStrPtr& ast) {
   PL_ASSIGN_OR_RETURN(auto str_value, GetStrAstValue(ast));
-  return ir_graph_->CreateNode<StringIR>(ast, str_value);
+  PL_ASSIGN_OR_RETURN(StringIR * node, ir_graph_->CreateNode<StringIR>(ast, str_value));
+  return ExprObject::Create(node);
 }
 
 StatusOr<std::vector<ExpressionIR*>> ASTVisitorImpl::ProcessCollectionChildren(
@@ -345,36 +363,40 @@ StatusOr<std::vector<ExpressionIR*>> ASTVisitorImpl::ProcessCollectionChildren(
   return children;
 }
 
-StatusOr<ListIR*> ASTVisitorImpl::ProcessList(const pypa::AstListPtr& ast,
-                                              const OperatorContext& op_context) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessList(const pypa::AstListPtr& ast,
+                                                  const OperatorContext& op_context) {
   PL_ASSIGN_OR_RETURN(std::vector<ExpressionIR*> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
-  return ir_graph_->CreateNode<ListIR>(ast, expr_vec);
+  PL_ASSIGN_OR_RETURN(ListIR * node, ir_graph_->CreateNode<ListIR>(ast, expr_vec));
+  return ExprObject::Create(node);
 }
 
-StatusOr<TupleIR*> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
-                                                const OperatorContext& op_context) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
+                                                   const OperatorContext& op_context) {
   PL_ASSIGN_OR_RETURN(std::vector<ExpressionIR*> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
-  return ir_graph_->CreateNode<TupleIR>(ast, expr_vec);
+  PL_ASSIGN_OR_RETURN(TupleIR * node, ir_graph_->CreateNode<TupleIR>(ast, expr_vec));
+  return ExprObject::Create(node);
 }
 
-StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& node) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& node) {
   switch (node->num_type) {
     case pypa::AstNumber::Type::Float: {
-      return ir_graph_->CreateNode<FloatIR>(node, node->floating);
+      PL_ASSIGN_OR_RETURN(FloatIR * ir_node, ir_graph_->CreateNode<FloatIR>(node, node->floating));
+      return ExprObject::Create(ir_node);
     }
     case pypa::AstNumber::Type::Integer:
     case pypa::AstNumber::Type::Long: {
-      return ir_graph_->CreateNode<IntIR>(node, node->integer);
+      PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->CreateNode<IntIR>(node, node->integer));
+      return ExprObject::Create(ir_node);
     }
     default:
       return CreateAstError(node, "Couldn't find number type $0", node->num_type);
   }
 }
 
-StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr& node,
-                                                         const OperatorContext& op_context) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr& node,
+                                                       const OperatorContext& op_context) {
   std::string op_str = pypa::to_string(node->op);
 
   PL_ASSIGN_OR_RETURN(IRNode * left, ProcessData(node->left, op_context));
@@ -397,11 +419,12 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
   std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
                                             static_cast<ExpressionIR*>(right)};
-  return ir_graph_->CreateNode<FuncIR>(node, op, expressions);
+  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
+  return ExprObject::Create(ir_node);
 }
 
-StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataBoolOp(const pypa::AstBoolOpPtr& node,
-                                                          const OperatorContext& op_context) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBoolOp(const pypa::AstBoolOpPtr& node,
+                                                        const OperatorContext& op_context) {
   std::string op_str = pypa::to_string(node->op);
   if (node->values.size() != 2) {
     return CreateAstError(node, "Expected two arguments to '$0'.", op_str);
@@ -427,11 +450,12 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataBoolOp(const pypa::AstBoolOpP
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
   std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
                                             static_cast<ExpressionIR*>(right)};
-  return ir_graph_->CreateNode<FuncIR>(node, op, expressions);
+  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
+  return ExprObject::Create(ir_node);
 }
 
-StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCompare(const pypa::AstComparePtr& node,
-                                                           const OperatorContext& op_context) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataCompare(const pypa::AstComparePtr& node,
+                                                         const OperatorContext& op_context) {
   DCHECK_EQ(node->operators.size(), 1ULL);
   std::string op_str = pypa::to_string(node->operators[0]);
   if (node->comparators.size() != 1) {
@@ -457,82 +481,29 @@ StatusOr<ExpressionIR*> ASTVisitorImpl::ProcessDataCompare(const pypa::AstCompar
   }
 
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
-  return ir_graph_->CreateNode<FuncIR>(node, op, expressions);
-}
-
-StatusOr<IRNode*> ASTVisitorImpl::ProcessDataForAttribute(const pypa::AstAttributePtr& attr) {
-  if (attr->value->type != AstType::Name) {
-    // TODO(philkuz) support more complex cases here when they come
-    return CreateAstError(attr, "Attributes can only be one layer deep for now");
-  }
-
-  PL_ASSIGN_OR_RETURN(QLObjectPtr object, LookupVariable(PYPA_PTR_CAST(Name, attr->value)));
-  std::string attr_str = GetNameAsString(attr->attribute);
-  PL_ASSIGN_OR_RETURN(QLObjectPtr attr_object, object->GetAttribute(attr->attribute, attr_str));
-  if (!attr_object->HasNode()) {
-    // TODO(philkuz) refactor ArgMap/ParsedArgs to push the function calls to the handler instead
-    // of this hack that only works for pl modules.
-    QLObjectType ql_object_type = object->type_descriptor().type();
-    QLObjectType attr_object_type = attr_object->type_descriptor().type();
-    if (ql_object_type != QLObjectType::kPLModule && attr_object_type != QLObjectType::kFunction) {
-      return CreateAstError(attr->attribute, "does not return a usable value");
-    }
-
-    PL_ASSIGN_OR_RETURN(
-        attr_object,
-        std::static_pointer_cast<FuncObject>(attr_object)->Call({}, attr->attribute, this));
-    if (!attr_object->HasNode()) {
-      return CreateAstError(attr->attribute, "does not return a usable value");
-    }
-  }
-  return attr_object->node();
+  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
+  return ExprObject::Create(ir_node);
 }
 
 StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
                                               const OperatorContext& op_context) {
-  switch (ast->type) {
-    case AstType::Str: {
-      return ProcessStr(PYPA_PTR_CAST(Str, ast));
+  PL_ASSIGN_OR_RETURN(QLObjectPtr ql_object, Process(PYPA_PTR_CAST(Call, ast), op_context));
+  if (!ql_object->HasNode()) {
+    // TODO(philkuz) refactor ArgMap/ParsedArgs to push the function calls to the handler instead
+    // of this hack that only works for pl modules.
+    QLObjectType attr_object_type = ql_object->type_descriptor().type();
+    if (attr_object_type != QLObjectType::kFunction) {
+      return CreateAstError(ast, "does not return a usable value");
     }
-    case AstType::Number: {
-      return ProcessNumber(PYPA_PTR_CAST(Number, ast));
-    }
-    case AstType::List: {
-      return ProcessList(PYPA_PTR_CAST(List, ast), op_context);
-    }
-    case AstType::Tuple: {
-      return ProcessTuple(PYPA_PTR_CAST(Tuple, ast), op_context);
-    }
-    case AstType::Call: {
-      PL_ASSIGN_OR_RETURN(QLObjectPtr call_result, Process(PYPA_PTR_CAST(Call, ast), op_context));
-      DCHECK(call_result->HasNode());
-      return call_result->node();
-    }
-    case AstType::BinOp: {
-      return ProcessDataBinOp(PYPA_PTR_CAST(BinOp, ast), op_context);
-    }
-    case AstType::BoolOp: {
-      return ProcessDataBoolOp(PYPA_PTR_CAST(BoolOp, ast), op_context);
-    }
-    case AstType::Compare: {
-      return ProcessDataCompare(PYPA_PTR_CAST(Compare, ast), op_context);
-    }
-    case AstType::Name: {
-      return LookupName(PYPA_PTR_CAST(Name, ast));
-    }
-    case AstType::Subscript: {
-      PL_ASSIGN_OR_RETURN(QLObjectPtr call_result,
-                          Process(PYPA_PTR_CAST(Subscript, ast), op_context));
-      DCHECK(call_result->HasNode());
-      return call_result->node();
-    }
-    case AstType::Attribute: {
-      return ProcessDataForAttribute(PYPA_PTR_CAST(Attribute, ast));
-    }
-    default: {
-      return CreateAstError(ast, "Couldn't find $0 in ProcessData", GetAstTypeName(ast->type));
+
+    PL_ASSIGN_OR_RETURN(ql_object,
+                        std::static_pointer_cast<FuncObject>(ql_object)->Call({}, ast, this));
+    if (!ql_object->HasNode()) {
+      return CreateAstError(ast, "does not return a usable value");
     }
   }
+  DCHECK(ql_object->HasNode());
+  return ql_object->node();
 }
 }  // namespace compiler
 }  // namespace carnot

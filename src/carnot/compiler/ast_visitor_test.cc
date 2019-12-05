@@ -111,11 +111,6 @@ TEST_F(ASTVisitorTest, assign_error_checking) {
   ASSERT_NOT_OK(graph_or_s);
   EXPECT_THAT(graph_or_s.status(),
               HasCompilerError("Assignment target must be a Name or Subscript"));
-
-  std::string bad_assign_str = "queryDF = 'str'";
-  graph_or_s = CompileGraph(bad_assign_str);
-  ASSERT_NOT_OK(graph_or_s);
-  EXPECT_THAT(graph_or_s.status(), HasCompilerError("Expression node 'Str' not defined"));
 }
 
 using MapTest = ASTVisitorTest;
@@ -798,13 +793,13 @@ TEST_F(ASTVisitorTest, DisplayWithSetupDataframe) {
 }
 
 // Tests whether we can evaluate operators in the argument.
-TEST_F(ASTVisitorTest, DISABLED_AssignStringValueAndUseArgument) {
+TEST_F(ASTVisitorTest, AssignStringValueAndUseArgument) {
   std::string query("a='bar'\npl.DataFrame(table=a)");
   ASSERT_OK(CompileGraph(query));
 }
 
 // Tests whether we can evaluate operators in the argument.
-TEST_F(ASTVisitorTest, DISABLED_AssignListAndUseArgument) {
+TEST_F(ASTVisitorTest, AssignListAndUseArgument) {
   std::string query("columns=['foo', 'bar', 'baz']\npl.DataFrame('cpu', columns)");
   ASSERT_OK(CompileGraph(query));
 }

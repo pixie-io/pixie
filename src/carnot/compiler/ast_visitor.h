@@ -76,15 +76,6 @@ class ASTVisitorImpl : public ASTVisitor {
 
   IR* ir_graph() const { return ir_graph_; }
 
-  // Constants for the run-time (UDF) and compile-time fn prefixes.
-  inline static constexpr char kRunTimeFuncPrefix[] = "pl";
-  inline static constexpr char kCompileTimeFuncPrefix[] = "pl";
-
-  // Constant for the metadata attribute keyword.
-  inline static constexpr char kMDKeyword[] = "attr";
-
-  // Constants for operators in the query language.
-
   // Constant for the modules.
   inline static constexpr char kPLModuleObjName[] = "pl";
 
@@ -121,16 +112,6 @@ class ASTVisitorImpl : public ASTVisitor {
    * IRNode.
    */
   StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast, const OperatorContext& op_context);
-
-  /**
-   * @brief ProcessArgs traverses an arg_ast tree, converts the expressions into IR and then returns
-   * a data structure of positional and keyword arguments representing the arguments in IR.
-   *
-   * @param call_ast the ast node that calls the arguments.
-   * @return StatusOr<ArgMap> a mapping of arguments (positional and kwargs) to the resulting
-   * IRNode.
-   */
-  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast);
 
   /**
    * @brief ProcessExprStmtNode handles full lines that are expression statements.
@@ -250,7 +231,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param op_context: The context of the operator which this is contained within.
    * @return StatusOr<IRNode*> the IR representation of the list.
    */
-  StatusOr<ListIR*> ProcessList(const pypa::AstListPtr& ast, const OperatorContext& op_context);
+  StatusOr<QLObjectPtr> ProcessList(const pypa::AstListPtr& ast, const OperatorContext& op_context);
 
   /**
    * @brief Processes a tuple ptr into an IR node.
@@ -259,7 +240,8 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param op_context: The context of the operator which this is contained within.
    * @return StatusOr<IRNode*> the IR representation of the liset.
    */
-  StatusOr<TupleIR*> ProcessTuple(const pypa::AstTuplePtr& ast, const OperatorContext& op_context);
+  StatusOr<QLObjectPtr> ProcessTuple(const pypa::AstTuplePtr& ast,
+                                     const OperatorContext& op_context);
 
   /**
    * @brief Processes a number into an IR Node.
@@ -267,7 +249,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param node
    * @return StatusOr<ExpressionIR*> the IR representation of the number.
    */
-  StatusOr<ExpressionIR*> ProcessNumber(const pypa::AstNumberPtr& node);
+  StatusOr<QLObjectPtr> ProcessNumber(const pypa::AstNumberPtr& node);
 
   /**
    * @brief Processes a str ast ptr into an IR node.
@@ -275,7 +257,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param ast
    * @return StatusOr<ExpressionIR*> the ir representation of the string.
    */
-  StatusOr<ExpressionIR*> ProcessStr(const pypa::AstStrPtr& ast);
+  StatusOr<QLObjectPtr> ProcessStr(const pypa::AstStrPtr& ast);
 
   /**
    * @brief ProcessData takes in what are typically function arguments and returns the
@@ -317,8 +299,8 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param op_context: The context of the operator which this is contained within.
    * @return StatusOr<ExpressionIR*>
    */
-  StatusOr<ExpressionIR*> ProcessDataBinOp(const pypa::AstBinOpPtr& node,
-                                           const OperatorContext& op_context);
+  StatusOr<QLObjectPtr> ProcessDataBinOp(const pypa::AstBinOpPtr& node,
+                                         const OperatorContext& op_context);
 
   /**
    * @brief Handler for Bool operations.
@@ -327,8 +309,8 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param op_context: The context of the operator which this is contained within.
    * @return StatusOr<ExpressionIR*>
    */
-  StatusOr<ExpressionIR*> ProcessDataBoolOp(const pypa::AstBoolOpPtr& node,
-                                            const OperatorContext& op_context);
+  StatusOr<QLObjectPtr> ProcessDataBoolOp(const pypa::AstBoolOpPtr& node,
+                                          const OperatorContext& op_context);
 
   /**
    * @brief Processes compare nodes
@@ -337,8 +319,8 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param op_context
    * @return the evaluated data compare object.
    */
-  StatusOr<ExpressionIR*> ProcessDataCompare(const pypa::AstComparePtr& node,
-                                             const OperatorContext& op_context);
+  StatusOr<QLObjectPtr> ProcessDataCompare(const pypa::AstComparePtr& node,
+                                           const OperatorContext& op_context);
   /**
    * @brief  Returns the variable specified by the name pointer.
    * @param node the ast node to run this on.
@@ -349,9 +331,7 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> LookupVariable(const pypa::AstNamePtr& name) {
     return LookupVariable(name, name->id);
   }
-  StatusOr<IRNode*> ProcessDataForAttribute(const pypa::AstAttributePtr& attr);
 
-  static bool IsUnitTimeFn(const std::string& fn_name);
   IR* ir_graph_;
   VarTable var_table_;
   CompilerState* compiler_state_;
