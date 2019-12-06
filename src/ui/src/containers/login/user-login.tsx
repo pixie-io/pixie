@@ -141,6 +141,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
   private auth0Redirect: string;
   private redirectPath: string;
   private cliAuthMode: '' | 'auto' | 'manual' = '';
+  private noCache = false;
   private responseMode: string;
 
   constructor(props) {
@@ -160,6 +161,10 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     const localMode = typeof queryParams.local_mode === 'string' ? queryParams.local_mode : '';
     const localModeRedirect = typeof queryParams.redirect_uri === 'string' ? queryParams.redirect_uri : '';
 
+    this.noCache = typeof queryParams.no_cache === 'string' && queryParams.no_cache === 'true';
+    if (this.noCache) {
+      this.clearSession();
+    }
     this.siteName = siteName;
     this.redirectPath = locationParam;
 
@@ -214,7 +219,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
       allowedConnections: ['google-oauth2'],
     });
 
-    if (!this.cliAuthMode && this.isAuthenticated()) {
+    if (!this.cliAuthMode && !this.noCache && this.isAuthenticated()) {
       RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
     }
 
@@ -239,6 +244,10 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
       id_token: authResult.idToken,
       expires_at: expiresAt,
     }));
+  }
+
+  clearSession() {
+    localStorage.removeItem('auth');
   }
 
   isAuthenticated = () => {
