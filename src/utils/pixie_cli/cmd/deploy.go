@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 
@@ -261,6 +262,9 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	clusterID, _ := cmd.Flags().GetString("cluster_id")
 	devCloudNS, _ := cmd.Flags().GetString("dev_cloud_namespace")
 
+	if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
+		cloudAddr = cloudAddr + ":443"
+	}
 	// Get grpc connection to cloud.
 	cloudConn, err := getCloudClientConnection(cloudAddr)
 	if err != nil {
