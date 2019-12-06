@@ -71,7 +71,7 @@ distributed_state {
 func TestPlanner_Simple(t *testing.T) {
 
 	// Create the compiler.
-	c := logicalplanner.New(false)
+	c := logicalplanner.New(true)
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	query := "df = pl.DataFrame(table='table1')\npl.display(df, 'out')"
@@ -88,7 +88,20 @@ func TestPlanner_Simple(t *testing.T) {
 	assert.Equal(t, status.ErrCode, statuspb.OK)
 
 	planPB := plannerResultPB.Plan
-	assert.Equal(t, 2, len(planPB.Dag.GetNodes()))
+
+	kelvinPlan := planPB.QbAddressToPlan["kelvin"]
+	kelvinGRPCSourceParentNode1 := kelvinPlan.Nodes[0].Nodes[0]
+	kelvinGRPCSourceParentNode2 := kelvinPlan.Nodes[0].Nodes[1]
+	kelvinGRPCSource1 := kelvinGRPCSourceParentNode1.Op.GetGRPCSourceOp()
+	kelvinGRPCSource2 := kelvinGRPCSourceParentNode2.Op.GetGRPCSourceOp()
+	if !assert.NotNil(t, kelvinGRPCSource1) {
+		t.FailNow()
+	}
+	if !assert.NotNil(t, kelvinGRPCSource2) {
+		t.FailNow()
+	}
+
+	assert.Equal(t, 3, len(planPB.Dag.GetNodes()))
 	agent1Plan := planPB.QbAddressToPlan["agent1"]
 	agent1MemSrc1 := agent1Plan.Nodes[0].Nodes[0].Op.GetMemSourceOp()
 	agent1MemSrc2 := agent1Plan.Nodes[0].Nodes[1].Op.GetMemSourceOp()
@@ -113,30 +126,18 @@ func TestPlanner_Simple(t *testing.T) {
 	}
 	assert.Equal(t, agent2MemSrc1.Tablet, "4")
 	assert.Equal(t, agent2MemSrc2.Tablet, "3")
-	// TODO(philkuz) (PL-873) uncomment these when Kelvin is enabled.
-	// agent1GRPCSink := agent1Plan.Nodes[0].Nodes[len(agent1Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
-	// if !assert.NotNil(t, agent1GRPCSink) {
-	// 	t.FailNow()
-	// }
-	// assert.Equal(t, agent1GRPCSink.Address, "1111")
-	// assert.Equal(t, agent1GRPCSink.DestinationId, "agent1:0")
-	// agent2GRPCSink := agent2Plan.Nodes[0].Nodes[len(agent2Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
-	// if !assert.NotNil(t, agent2GRPCSink) {
-	// 	t.FailNow()
-	// }
-	// assert.Equal(t, agent2GRPCSink.Address, "1111")
-	// assert.Equal(t, agent2GRPCSink.DestinationId, "agent2:0")
-	// agent3Plan := planPB.QbAddressToPlan["kelvin"]
-	// agent3GRPCSource1 := agent3Plan.Nodes[0].Nodes[0].Op.GetGRPCSourceOp()
-	// agent3GRPCSource2 := agent3Plan.Nodes[0].Nodes[1].Op.GetGRPCSourceOp()
-	// if !assert.NotNil(t, agent3GRPCSource1) {
-	// 	t.FailNow()
-	// }
-	// if !assert.NotNil(t, agent3GRPCSource2) {
-	// 	t.FailNow()
-	// }
-	// assert.Equal(t, agent3GRPCSource1.SourceId, "agent1:0")
-	// assert.Equal(t, agent3GRPCSource2.SourceId, "agent2:0")
+	agent1GRPCSink := agent1Plan.Nodes[0].Nodes[len(agent1Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
+	if !assert.NotNil(t, agent1GRPCSink) {
+		t.FailNow()
+	}
+	assert.Equal(t, agent1GRPCSink.Address, "1111")
+	assert.Equal(t, agent1GRPCSink.DestinationId, kelvinGRPCSourceParentNode1.Id)
+	agent2GRPCSink := agent2Plan.Nodes[0].Nodes[len(agent2Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
+	if !assert.NotNil(t, agent2GRPCSink) {
+		t.FailNow()
+	}
+	assert.Equal(t, agent2GRPCSink.Address, "1111")
+	assert.Equal(t, agent2GRPCSink.DestinationId, kelvinGRPCSourceParentNode2.Id)
 }
 
 func TestPlanner_MissingTable(t *testing.T) {

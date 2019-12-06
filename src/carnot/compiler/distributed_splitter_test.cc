@@ -312,7 +312,6 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, two_blocking_children) {
   // EXPECT_EQ(grpc_source1->source_id(), grpc_sink1->destination_id());
 }
 
-// TODO(philkuz) (PL-751) Add this test when we have a join operator in play
 // TODO(philkuz) (PL-846) optimize this case to only have one GRPCBridge.
 /** Tests the following graph.
  *    T1
@@ -321,15 +320,13 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, two_blocking_children) {
  *   \   /
  *    Join
  */
-TEST_F(BlockingOperatorGRPCBridgeRuleTest, DISABLED_agg_join_children) {
+TEST_F(BlockingOperatorGRPCBridgeRuleTest, agg_join_children) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto blocking_agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
                                       {{"cpu0_mean", MakeMeanFunc(MakeColumn("cpu0", 0))}});
-
-  // auto join = MakeJoin(mem_src, blocking_agg, {{MakeColumn("count", 0), MakeColumn("count",
-  // 1)}});
-  // TODO(philkuz) remove this call when we have a join operator and uncomment the above.
-  auto join = MakeMap(blocking_agg, {{"count", MakeColumn("count", 0)}});
+  auto join = MakeJoin({mem_src, blocking_agg}, "inner", MakeRelation(),
+                       Relation({types::INT64, types::FLOAT64}, {"count", "cpu0_mean"}), {"count"},
+                       {"count"});
   MakeMemSink(join, "out");
 
   EXPECT_EQ(mem_src->Children().size(), 2);

@@ -58,7 +58,6 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> single_node_plan,
                       compiler_.CompileToIR(query, compiler_state.get()));
   // Create the distributed plan.
-  // TODO(philkuz) (PL-873) uncomment this and remove the temporary input.
   PL_ASSIGN_OR_RETURN(std::unique_ptr<distributed::DistributedPlan> distributed_plan,
                       distributed_planner_->Plan(logical_state.distributed_state(),
                                                  compiler_state.get(), single_node_plan.get()));

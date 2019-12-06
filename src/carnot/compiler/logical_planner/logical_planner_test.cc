@@ -66,10 +66,7 @@ class LogicalPlannerTest : public ::testing::Test {
  protected:
 };
 
-// Future test when we actually start using kelvin nodes in the system (dependent upon a later
-// diff (PL-873)).
-// TODO(zasgar) (PL-873) enable test and disable/remove many_agents test.
-TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
+TEST_F(LogicalPlannerTest, two_agents_one_kelvin) {
   auto planner = LogicalPlanner::Create(true).ConsumeValueOrDie();
   auto plan = planner
                   ->Plan(distributedpb::testutils::CreateTwoAgentsOneKelvinPlannerState(),
@@ -77,7 +74,8 @@ TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
                   .ConsumeValueOrDie();
   auto out_pb = plan->ToProto().ConsumeValueOrDie();
   EXPECT_THAT(out_pb,
-              Partially(EqualsProto(distributedpb::testutils::kExpectedPlanTwoAgentOneKelvin)));
+              Partially(EqualsProto(distributedpb::testutils::kExpectedPlanTwoAgentOneKelvin)))
+      << out_pb.DebugString();
 }
 
 TEST_F(LogicalPlannerTest, many_agents) {

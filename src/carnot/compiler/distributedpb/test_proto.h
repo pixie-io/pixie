@@ -441,35 +441,34 @@ dag {
 }
 )proto";
 
-// TODO(philkuz/zasgar/michelle) need to update these values.
 const char* kExpectedPlanTwoAgentOneKelvin = R"proto(
-qb_address_to_plan {
+  qb_address_to_plan {
   key: "agent1"
   value {
     nodes {
       id: 1
       dag {
         nodes {
-          id: 7
-          sorted_children: 9
+          id: 12
+          sorted_children: 13
         }
         nodes {
-          id: 5
+          id: 11
+          sorted_children: 13
+        }
+        nodes {
+          id: 13
           sorted_children: 9
+          sorted_parents: 11
+          sorted_parents: 12
         }
         nodes {
           id: 9
-          sorted_children: 3
-          sorted_parents: 5
-          sorted_parents: 7
-        }
-        nodes {
-          id: 3
-          sorted_parents: 9
+          sorted_parents: 13
         }
       }
       nodes {
-        id: 7
+        id: 12
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -479,7 +478,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 5
+        id: 11
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -489,7 +488,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 9
+        id: 13
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -510,12 +509,12 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 3
+        id: 9
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: "agent1:0"
+            destination_id: 10
           }
         }
       }
@@ -529,26 +528,26 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 7
-          sorted_children: 9
+          id: 12
+          sorted_children: 13
         }
         nodes {
-          id: 5
+          id: 11
+          sorted_children: 13
+        }
+        nodes {
+          id: 13
           sorted_children: 9
+          sorted_parents: 11
+          sorted_parents: 12
         }
         nodes {
           id: 9
-          sorted_children: 3
-          sorted_parents: 5
-          sorted_parents: 7
-        }
-        nodes {
-          id: 3
-          sorted_parents: 9
+          sorted_parents: 13
         }
       }
       nodes {
-        id: 7
+        id: 12
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -558,7 +557,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 5
+        id: 11
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -568,7 +567,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 9
+        id: 13
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -589,12 +588,12 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 3
+        id: 9
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: "agent2:0"
+            destination_id: 9
           }
         }
       }
@@ -613,29 +612,29 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 4
-          sorted_children: 5
+          id: 10
+          sorted_children: 11
         }
         nodes {
-          id: 3
-          sorted_children: 5
+          id: 9
+          sorted_children: 11
         }
         nodes {
-          id: 5
-          sorted_children: 0
-          sorted_parents: 3
-          sorted_parents: 4
+          id: 11
+          sorted_children: 7
+          sorted_parents: 9
+          sorted_parents: 10
         }
         nodes {
-          sorted_parents: 5
+          id: 7
+          sorted_parents: 11
         }
       }
       nodes {
-        id: 4
+        id: 10
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
-            source_id: "agent1:0"
             column_types: TIME64NS
             column_types: INT64
             column_types: UINT128
@@ -646,11 +645,10 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 3
+        id: 9
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
-            source_id: "agent2:0"
             column_types: TIME64NS
             column_types: INT64
             column_types: UINT128
@@ -661,7 +659,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 5
+        id: 11
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -682,6 +680,7 @@ qb_address_to_plan {
         }
       }
       nodes {
+        id: 7
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {
