@@ -6,13 +6,19 @@ import * as React from 'react';
 import {Button} from 'react-bootstrap';
 
 interface DrawerProps {
+  defaultOpened?: boolean;
   openedWidth?: string;
   closedWidth?: string;
 }
 
 export const Drawer = React.memo<React.PropsWithChildren<DrawerProps>>(
-  ({ children, openedWidth = '10rem', closedWidth = '2rem' }) => {
-    const [opened, setOpened] = React.useState<boolean>(false);
+  ({
+    children,
+    openedWidth = '10rem',
+    closedWidth = '2rem',
+    defaultOpened = true,
+  }) => {
+    const [opened, setOpened] = React.useState<boolean>(defaultOpened);
     const toggleOpened = () => setOpened((isOpened) => !isOpened);
 
     return (
