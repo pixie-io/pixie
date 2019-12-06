@@ -34,7 +34,8 @@ class RuleExecutorTest : public OperatorTests {
 
     ast = MakeTestAstPtr();
     graph = std::make_shared<IR>();
-    mem_src = graph->MakeNode<MemorySourceIR>(ast).ValueOrDie();
+    mem_src =
+        graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
     SetupGraph();
   }

@@ -397,6 +397,12 @@ class OperatorTests : public ::testing::Test {
                              std::vector<ExpressionIR*>({left, right}))
         .ConsumeValueOrDie();
   }
+  FuncIR* MakeMultFunc(ExpressionIR* left, ExpressionIR* right) {
+    return graph
+        ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("*")->second,
+                             std::vector<ExpressionIR*>({left, right}))
+        .ConsumeValueOrDie();
+  }
 
   FuncIR* MakeEqualsFunc(ExpressionIR* left, ExpressionIR* right) {
     return graph
