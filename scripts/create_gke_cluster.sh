@@ -44,24 +44,19 @@ usage() {
   # Reset to default values, so we can print them.
   set_default_values
 
-  echo "Usage: $0 <cluster_name> [-p] [-b] [-m <machine_type>] [-n <num_nodes>] [-i <image>]"
+  echo "Usage: $0 [-c <cluster_name>] [-p] [-b] [-m <machine_type>] [-n <num_nodes>] [-i <image>]"
+  echo " -c <string> : name of your cluster. [default: dev-cluster-${USER}]"
   echo " -p          : Prod cluster config, must appear as first argument. [default: ${PROD_MODE}]"
   echo " -n <int>    : number of nodes in the cluster [default: ${NUM_NODES}]"
-  echo " -m string>> : machine type [default: ${MACHINE_TYPE}]"
+  echo " -m <string> : machine type [default: ${MACHINE_TYPE}]"
   echo " -i <string> : base image [default: ${IMAGE_NAME}] (can also use COS)"
   echo " -d <int>    : disk size per node (GB) [default: ${DISK_SIZE}]"
-  echo "Example: $0 dev-cluster-000 -n 4 -i UBUNTU"
+  echo "Example: $0 -c dev-cluster-000 -n 4 -i UBUNTU"
   exit
 }
 
 parse_args() {
-  if [ $# -lt 1 ]; then
-    usage
-  fi
-
-  # Positional arguments (required).
-  CLUSTER_NAME=$1
-  shift
+  CLUSTER_NAME="dev-cluster-${USER}"
 
   echo "${CLUSTER_NAME:0:1}"
   # Make sure the cluster name does not start with dash.
@@ -78,8 +73,11 @@ parse_args() {
 
   local OPTIND
   # Process the command line arguments.
-  while getopts "n:m:i:d:" opt; do
+  while getopts "c:n:m:i:d:" opt; do
     case ${opt} in
+      c)
+        CLUSTER_NAME=$OPTARG
+        ;;
       n)
         NUM_NODES=$OPTARG
         ;;
