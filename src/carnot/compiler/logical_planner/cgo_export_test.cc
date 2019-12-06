@@ -26,7 +26,7 @@ using pl::testing::proto::Partially;
 class PlannerExportTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    planner_ = PlannerNew();
+    planner_ = PlannerNew(0);
     // Setup the schema from a proto.
   }
   void TearDown() override { PlannerFree(planner_); }

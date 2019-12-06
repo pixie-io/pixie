@@ -4,8 +4,8 @@ package logicalplanner
 // // If you delete it, the planner will break.
 // #include "src/carnot/compiler/logical_planner/cgo_export.h"
 //
-// PlannerPtr PlannerNewGoStr() {
-//   return PlannerNew();
+// PlannerPtr PlannerNewGoStr(bool distributed) {
+//   return PlannerNew(distributed);
 // }
 //
 // char* PlannerPlanGoStr(PlannerPtr planner_ptr,
@@ -38,9 +38,11 @@ type GoPlanner struct {
 }
 
 // New creates a new GoPlanner object.
-func New() GoPlanner {
+func New(distributed bool) GoPlanner {
 	var ret GoPlanner
-	ret.planner = C.PlannerNewGoStr()
+
+	ret.planner = C.PlannerNewGoStr(C.bool(distributed))
+
 	return ret
 }
 

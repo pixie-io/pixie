@@ -3,13 +3,15 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
+
 typedef void* PlannerPtr;
 
 /**
  * @brief Makes a new planner object.
  * @return PlannePtr - pointer to the planner object.
  */
-PlannerPtr PlannerNew();
+PlannerPtr PlannerNew(bool distributed);
 
 /**
  * @brief Takes in the planner object and the schema, uses this to setup the planner and

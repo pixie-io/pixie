@@ -245,7 +245,12 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb
 
 // ExecuteQuery executes a query on multiple agents and compute node.
 func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
-	planner := logicalplanner.New()
+	flags, err := ParseQueryFlags(req.QueryStr)
+	if err != nil {
+		return nil, err
+	}
+
+	planner := logicalplanner.New(flags.GetBool("distributed_query"))
 	defer planner.Free()
 	return s.ExecuteQueryWithPlanner(ctx, req, planner)
 }

@@ -71,7 +71,7 @@ distributed_state {
 func TestPlanner_Simple(t *testing.T) {
 
 	// Create the compiler.
-	c := logicalplanner.New()
+	c := logicalplanner.New(false)
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	query := "df = pl.DataFrame(table='table1')\npl.display(df, 'out')"
@@ -141,7 +141,7 @@ func TestPlanner_Simple(t *testing.T) {
 
 func TestPlanner_MissingTable(t *testing.T) {
 	// Create the compiler.
-	c := logicalplanner.New()
+	c := logicalplanner.New(false)
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	query := "df = pl.DataFrame(table='bad_table')\npl.display(df, 'out')"

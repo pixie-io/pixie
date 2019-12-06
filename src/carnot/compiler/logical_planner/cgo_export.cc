@@ -57,8 +57,8 @@ char* ExitEarly(const std::string& err, int* result_len) {
 
 }  // namespace
 
-PlannerPtr PlannerNew() {
-  auto planner_or_s = pl::carnot::compiler::logical_planner::LogicalPlanner::Create();
+PlannerPtr PlannerNew(bool distributed) {
+  auto planner_or_s = pl::carnot::compiler::logical_planner::LogicalPlanner::Create(distributed);
   if (!planner_or_s.ok()) {
     return nullptr;
   }

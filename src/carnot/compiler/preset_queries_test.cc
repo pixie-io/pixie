@@ -95,7 +95,7 @@ TEST_F(PresetQueriesTest, PresetQueries) {
 
   // Test single agent planning
   for (const auto& query : preset_queries_) {
-    auto planner = logical_planner::LogicalPlanner::Create().ConsumeValueOrDie();
+    auto planner = logical_planner::LogicalPlanner::Create(false).ConsumeValueOrDie();
     auto multi_agent_state = distributedpb::testutils::CreateOneAgentOneKelvinPlannerState(schema_);
     auto plan_or_s = planner->Plan(multi_agent_state, query.second);
     EXPECT_OK(plan_or_s) << "Query '" << query.first << "' failed";
@@ -103,7 +103,7 @@ TEST_F(PresetQueriesTest, PresetQueries) {
 
   // Test multi agent planning
   for (const auto& query : preset_queries_) {
-    auto planner = logical_planner::LogicalPlanner::Create().ConsumeValueOrDie();
+    auto planner = logical_planner::LogicalPlanner::Create(false).ConsumeValueOrDie();
     auto multi_agent_state = distributedpb::testutils::CreateTwoAgentsPlannerState(schema_);
     auto plan_or_s = planner->Plan(multi_agent_state, query.second);
     EXPECT_OK(plan_or_s) << "Query '" << query.first << "' failed";

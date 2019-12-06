@@ -70,7 +70,7 @@ class LogicalPlannerTest : public ::testing::Test {
 // diff (PL-873)).
 // TODO(zasgar) (PL-873) enable test and disable/remove many_agents test.
 TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
-  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create(true).ConsumeValueOrDie();
   auto plan = planner
                   ->Plan(distributedpb::testutils::CreateTwoAgentsOneKelvinPlannerState(),
                          distributedpb::testutils::kQueryForTwoAgents)
@@ -81,7 +81,7 @@ TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
 }
 
 TEST_F(LogicalPlannerTest, many_agents) {
-  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
   auto plan = planner
                   ->Plan(distributedpb::testutils::CreateTwoAgentsPlannerState(),
                          distributedpb::testutils::kQueryForTwoAgents)
@@ -141,7 +141,7 @@ pl.display(df)
 )pxl";
 
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
-  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
   auto plan_or_s = planner->Plan(distributedpb::testutils::CreateTwoAgentsOneKelvinPlannerState(
                                      distributedpb::testutils::kHttpEventsSchema),
                                  kHttpRequestStats);
@@ -201,7 +201,7 @@ pl.display(joined_table)
 )pxl";
 
 TEST_F(LogicalPlannerTest, duplicate_int) {
-  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
   auto plan_or_s = planner->Plan(distributedpb::testutils::CreateTwoAgentsPlannerState(
                                      distributedpb::testutils::kHttpEventsSchema),
                                  kCompileTimeQuery);
@@ -238,7 +238,7 @@ df = window2_agg[window2_agg['service'] != '']
 pl.display(df)
 )query";
 TEST_F(LogicalPlannerTest, NestedCompileTime) {
-  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
   auto plan_or_s = planner->Plan(distributedpb::testutils::CreateTwoAgentsPlannerState(
                                      distributedpb::testutils::kHttpEventsSchema),
                                  kTwoWindowQuery);
