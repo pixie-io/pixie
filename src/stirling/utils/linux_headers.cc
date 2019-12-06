@@ -1,19 +1,30 @@
 #ifdef __linux__
 
+#include "src/stirling/utils/linux_headers.h"
+
 #include <sys/utsname.h>
-#include <fstream>
 #include <sstream>
+#include <vector>
 
 #include "absl/strings/numbers.h"
 #include "src/common/base/file.h"
 #include "src/stirling/utils/fs_wrapper.h"
-#include "src/stirling/utils/linux_headers.h"
 
 namespace pl {
 namespace stirling {
 namespace utils {
 
 namespace fs = std::experimental::filesystem;
+
+StatusOr<std::string> GetUname() {
+  // The following effectively runs `uname -r`.
+  struct utsname buffer;
+  if (uname(&buffer) != 0) {
+    LOG(ERROR) << "Could not determine kernel version";
+    return error::Internal("Could not determine kernel version (uname -r)");
+  }
+  return std::string(buffer.release);
+}
 
 StatusOr<uint32_t> ParseUname(const std::string& linux_release) {
   uint32_t kernel_version;
@@ -56,48 +67,79 @@ Status ModifyKernelVersion(const fs::path& linux_headers_base, const std::string
   return Status::OK();
 }
 
-Status FindOrInstallLinuxHeaders() {
-  // The following effectively runs `uname -r`.
-  struct utsname buffer;
-  if (uname(&buffer) != 0) {
-    LOG(ERROR) << "Could not determine kernel version";
-    return error::Internal("Could not determine kernel version (uname -r)");
-  }
-  std::string uname = buffer.release;
-  LOG(INFO) << absl::Substitute("Detected kernel release (name -r): $0", uname);
+fs::path FindLinuxHeadersDirectory(const fs::path& lib_modules_dir) {
+  // bcc/loader.cc looks for Linux headers in the following order:
+  //   /lib/modules/<uname>/source
+  //   /lib/modules/<uname>/build
 
-  // /lib/modules/<uname>/build is where BCC looks for Linux headers.
-  fs::path lib_modules_dir = "/lib/modules/" + uname;
+  fs::path lib_modules_source_dir = lib_modules_dir / "source";
   fs::path lib_modules_build_dir = lib_modules_dir / "build";
 
-  // Case 1: Linux headers are already accessible (we must be running directly on host).
-  if (fs::exists(lib_modules_build_dir)) {
-    LOG(INFO) << absl::Substitute("Using linux headers found at $0",
-                                  lib_modules_build_dir.string());
-    return Status::OK();
+  fs::path lib_modules_kdir;
+  if (fs::exists(lib_modules_source_dir)) {
+    lib_modules_kdir = lib_modules_source_dir;
+  } else if (fs::exists(lib_modules_build_dir)) {
+    lib_modules_kdir = lib_modules_build_dir;
   }
 
-  // Case 2: Linux headers found in /host (we must be running in a container).
-  fs::path mounted_usr_src_headers = "/host/usr/src/linux-headers-" + uname;
+  return lib_modules_kdir;
+}
+
+Status LinkHostLinuxHeaders(const fs::path& lib_modules_dir) {
+  // Host dir is where we must mount host directories into the container.
+  const fs::path kHostDir = "/host";
+
+  fs::path host_lib_modules_dir = kHostDir / lib_modules_dir;
   LOG(INFO) << absl::Substitute("Looking for host mounted headers at $0",
-                                mounted_usr_src_headers.string());
-  if (fs::exists(mounted_usr_src_headers)) {
-    PL_RETURN_IF_ERROR(CreateDirectories(lib_modules_dir));
-    PL_RETURN_IF_ERROR(CreateSymlink(mounted_usr_src_headers, lib_modules_build_dir));
-    LOG(INFO) << absl::Substitute("Using linked linux headers found at $0",
-                                  mounted_usr_src_headers.string());
-    return Status::OK();
+                                host_lib_modules_dir.string());
+
+  fs::path host_lib_modules_source_dir = host_lib_modules_dir / "source";
+  fs::path host_lib_modules_build_dir = host_lib_modules_dir / "build";
+  fs::path lib_modules_source_dir = lib_modules_dir / "source";
+  fs::path lib_modules_build_dir = lib_modules_dir / "build";
+
+  // Since the host directory is assumed to be a mount, any symlinks will be broken.
+  // Adjust these symlinks by prepending kHostDir in hopes of fixing them.
+
+  std::error_code ec;
+  if (fs::is_symlink(host_lib_modules_source_dir, ec)) {
+    host_lib_modules_source_dir = kHostDir / fs::read_symlink(host_lib_modules_source_dir, ec);
+    ECHECK(!ec);
+  }
+  if (fs::is_symlink(host_lib_modules_build_dir, ec)) {
+    host_lib_modules_build_dir = kHostDir / fs::read_symlink(host_lib_modules_build_dir, ec);
+    ECHECK(!ec);
   }
 
-  // Case 3: No Linux headers found (we may or may not be running in container).
-  // Try to install packaged headers (will only work if we're in a container image with packaged
-  // headers).
+  VLOG(1) << absl::Substitute("source_dir $0", host_lib_modules_source_dir.string());
+  VLOG(1) << absl::Substitute("build_dir $0", host_lib_modules_build_dir.string());
+
+  if (fs::exists(host_lib_modules_source_dir)) {
+    PL_RETURN_IF_ERROR(CreateSymlink(host_lib_modules_source_dir, lib_modules_source_dir));
+    LOG(INFO) << absl::Substitute("Linked linux headers found at $0",
+                                  host_lib_modules_source_dir.string());
+  }
+
+  if (fs::exists(host_lib_modules_build_dir)) {
+    PL_RETURN_IF_ERROR(CreateSymlink(host_lib_modules_build_dir, lib_modules_build_dir));
+    LOG(INFO) << absl::Substitute("Linked linux headers found at $0",
+                                  host_lib_modules_build_dir.string());
+  }
+
+  return Status::OK();
+}
+
+Status InstallPackagedLinuxHeaders(const fs::path& lib_modules_dir, const std::string& uname) {
+  fs::path lib_modules_build_dir = lib_modules_dir / "build";
+
+  LOG(INFO) << absl::Substitute("Attempting to install packaged headers to $0",
+                                lib_modules_build_dir.string());
+
   // TODO(oazizi): /usr/src/linux-headers-4.14.104-pl is tied to our container build. Too brittle.
   fs::path packaged_headers = "/usr/src/linux-headers-4.14.104-pl";
   LOG(INFO) << absl::Substitute("Looking for packed headers at $0", packaged_headers.string());
   if (fs::exists(packaged_headers)) {
     PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers, uname));
-    PL_RETURN_IF_ERROR(CreateDirectories(lib_modules_dir));
     PL_RETURN_IF_ERROR(CreateSymlink(packaged_headers, lib_modules_build_dir));
     LOG(INFO) << "Successfully installed packaged copy of headers.";
     return Status::OK();
@@ -105,6 +147,43 @@ Status FindOrInstallLinuxHeaders() {
 
   return error::Internal("Could not find packaged headers to install. Search location: $0",
                          packaged_headers.string());
+}
+
+Status FindOrInstallLinuxHeaders(const std::vector<LinuxHeaderStrategy>& attempt_order) {
+  PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
+  LOG(INFO) << absl::Substitute("Detected kernel release (uname -r): $0", uname);
+
+  fs::path lib_modules_dir = "/lib/modules/" + uname;
+  fs::path headers_dir;
+
+  // Some strategies require the base directory to be present.
+  // This does nothing if the directory already exists.
+  PL_RETURN_IF_ERROR(CreateDirectories(lib_modules_dir));
+
+  for (const auto& attempt : attempt_order) {
+    // Some attempts require linking or installing headers. Do this first.
+    switch (attempt) {
+      case LinuxHeaderStrategy::kSearchLocalHeaders:
+        // Nothing to link or install.
+        break;
+      case LinuxHeaderStrategy::kLinkHostHeaders: {
+        PL_RETURN_IF_ERROR(LinkHostLinuxHeaders(lib_modules_dir));
+      } break;
+      case LinuxHeaderStrategy::kInstallPackagedHeaders: {
+        PL_RETURN_IF_ERROR(InstallPackagedLinuxHeaders(lib_modules_dir, uname));
+        break;
+      }
+    }
+
+    // Now check for a healthy set of headers.
+    headers_dir = FindLinuxHeadersDirectory(lib_modules_dir);
+    if (!headers_dir.empty()) {
+      LOG(INFO) << absl::Substitute("Using linux headers found at $0", headers_dir.string());
+      return Status::OK();
+    }
+  }
+
+  return error::Internal("Could not find any linux headers to use.");
 }
 
 }  // namespace utils

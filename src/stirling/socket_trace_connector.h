@@ -43,6 +43,7 @@ DECLARE_bool(stirling_enable_http_tracing);
 DECLARE_bool(stirling_enable_grpc_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
+DECLARE_bool(stirling_use_packaged_headers);
 
 BCC_SRC_STRVIEW(http_trace_bcc_script, socket_trace);
 

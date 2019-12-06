@@ -88,7 +88,7 @@ Status CleanProbesFromSysFile(const char* file_path, std::string_view marker) {
     return error::Internal("Wasn't able to remove all probes. Initial count=$0, final count=$1",
                            leaked_probes.size(), leaked_probes_after.size());
   }
-  LOG(INFO) << absl::Substitute("Cleaned up $0 kprobes", leaked_probes.size());
+  LOG(INFO) << absl::Substitute("Cleaned up $0 probes", leaked_probes.size());
 
   return Status::OK();
 }

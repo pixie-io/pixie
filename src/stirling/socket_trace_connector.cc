@@ -60,6 +60,9 @@ DEFINE_bool(stirling_enable_mysql_tracing, true,
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will trace and process syscalls made by itself.");
 
+// This flag is for survivability only, in case the host's located headers don't work.
+DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
+
 namespace pl {
 namespace stirling {
 
@@ -77,7 +80,12 @@ using ::pl::stirling::utils::WriteMapAsJSON;
 namespace fs = std::experimental::filesystem;
 
 Status SocketTraceConnector::InitImpl() {
-  PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders());
+  std::vector<utils::LinuxHeaderStrategy> linux_header_search_order =
+      utils::kDefaultHeaderSearchOrder;
+  if (FLAGS_stirling_use_packaged_headers) {
+    linux_header_search_order = {utils::LinuxHeaderStrategy::kInstallPackagedHeaders};
+  }
+  PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders(linux_header_search_order));
 
   constexpr uint64_t kNanosPerSecond = 1000 * 1000 * 1000;
   if (kNanosPerSecond % sysconfig_.KernelTicksPerSecond() != 0) {
