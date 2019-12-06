@@ -49,8 +49,8 @@ class VizierAuthLink {
   getLink(): ApolloLink {
     return ApolloLink.from([
       this.withAuthLink,
-      this.retryWithAuthLink,
       this.retryVizierModeLink,
+      this.retryWithAuthLink,
       this.saveVizierModeLink,
       this.withVizierAddrLink,
       createHttpLink({ fetch: fetchWithTimeout(TIMEOUT_MS) }),
@@ -91,6 +91,7 @@ class VizierAuthLink {
         ...oldCtx,
         mode,
       });
+      return forward(operation);
     });
   }
 

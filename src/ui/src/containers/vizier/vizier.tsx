@@ -34,7 +34,11 @@ export const GET_CLUSTER = gql`
 
 export const CHECK_VIZIER = gql`
 {
-  vizier
+  vizier {
+    agents {
+      state
+    }
+  }
 }`;
 
 const PATH_TO_HEADER_TITLE = {
@@ -74,16 +78,25 @@ const ClusterInstructions = (props: ClusterInstructionsProps) => (
   </div>
 );
 
-export class VizierMain extends React.Component<VizierMainProps, {}> {
+export class VizierMain extends React.Component<VizierMainProps, { loaded: boolean }> {
+  constructor(props) {
+    super(props);
+    this.state = { loaded: false };
+  }
+
   render() {
     return (
       <Query client={vizierGQLClient} query={CHECK_VIZIER} pollInterval={2500}>
-        {({ loading, error, data }) => {
-          if (loading || (error && error.networkError)) {
+        {({ loading, error }) => {
+          const loaded = this.state.loaded || (!loading && !error) || (error && !error.networkError);
+          if (!loaded) {
             // TODO(michelle): Make a separate HTTP request to Vizier so we can get a better error message
             // for Vizier's status.
             const dnsMsg = 'Setting up DNS records for cluster...';
             return <ClusterInstructions message={dnsMsg} />;
+          }
+          if (!this.state.loaded) {
+            this.setState({ loaded });
           }
 
           return (
