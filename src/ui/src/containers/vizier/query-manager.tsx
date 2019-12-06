@@ -6,9 +6,8 @@ import 'codemirror/theme/monokai.css';
 import {OperationVariables} from 'apollo-client';
 import {vizierGQLClient} from 'common/vizier-gql-client';
 import {ContentBox} from 'components/content-box/content-box';
+import {Spinner} from 'components/spinner/spinner';
 import gql from 'graphql-tag';
-// @ts-ignore : TS does not like image files.
-import * as loadingSvg from 'images/icons/Loading.svg';
 import * as React from 'react';
 import {Mutation, MutationFn, Query} from 'react-apollo';
 import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
@@ -111,7 +110,7 @@ const ResultDisplay = (props: ResultDisplayProps) => {
   if (props.error) {
     body = <div>{props.error}</div>;
   } else if (props.loading) {
-    body = <img className='spinner' src={loadingSvg} />;
+    body = <Spinner />;
   }
   return <div className='query-results--empty'>{body}</div>;
 };

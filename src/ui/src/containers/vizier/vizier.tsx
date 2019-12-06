@@ -2,6 +2,7 @@ import './vizier.scss';
 
 import {vizierGQLClient} from 'common/vizier-gql-client';
 import {DialogBox} from 'components/dialog-box/dialog-box';
+import {Spinner} from 'components/spinner/spinner';
 import {Editor} from 'containers/editor';
 import gql from 'graphql-tag';
 // @ts-ignore : TS does not like image files.
@@ -72,7 +73,7 @@ const ClusterInstructions = (props: ClusterInstructionsProps) => (
       <div className='cluster-instructions--content'>
         {props.message}
         <p></p>
-        <img className='spinner' src={loadingSvg} />
+        <Spinner variant='dark' />
       </div>
     </DialogBox>
   </div>
