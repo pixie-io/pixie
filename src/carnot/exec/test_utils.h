@@ -314,6 +314,7 @@ class ExecNodeTester {
   ExecNodeTester& ExpectRowBatch(const table_store::schema::RowBatch& expected_rb,
                                  bool ordered = true, int64_t time_column_idx = -1) {
     if (ordered) {
+      DCHECK(current_row_batches_.size());
       ValidateRowBatch(expected_rb, *current_row_batches_.front().get());
     } else {
       ValidateUnorderedRowBatch(expected_rb, *current_row_batches_.front().get());

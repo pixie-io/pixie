@@ -63,7 +63,7 @@ class UnionNode : public ProcessingNode {
   Status InitializeColumnBuilders();
   types::Time64NSValue GetTimeAtParentCursor(size_t parent_index) const;
   Status AppendRow(size_t parent);
-  Status FlushRowBatch(ExecState* exec_state);
+  Status OptionallyFlushRowBatch(ExecState* exec_state);
   Status MergeData(ExecState* exec_state);
 
   // output_rows_per_batch is only used in the ordered case, because in the unordered case,
@@ -73,8 +73,8 @@ class UnionNode : public ProcessingNode {
   // Column builders will flush a batch once they hit output_rows_per_batch_ rows.
   std::vector<std::unique_ptr<arrow::ArrayBuilder>> column_builders_;
 
-  // For each parent, mark whether we have started that particular stream.
-  std::vector<bool> started_streams_;
+  // For each parent, mark whether we have received any rows for that particular stream.
+  std::vector<bool> received_rows_;
   // Hold onto the input row batches for every parent until we copy all of their data.
   std::vector<std::vector<table_store::schema::RowBatch>> parent_row_batches_;
   // Keep track of where we are in the stream for each parent.

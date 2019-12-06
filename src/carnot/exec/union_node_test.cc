@@ -249,6 +249,165 @@ TEST_F(UnionNodeTest, ordered_full_overlap) {
       .Close();
 }
 
+TEST_F(UnionNodeTest, no_rows_parent) {
+  auto op_proto = planpb::testutils::CreateTestUnionOrderedPB();
+  plan_node_ = plan::UnionOperator::FromProto(op_proto, /*id*/ 1);
+
+  RowDescriptor input_rd_0({types::DataType::STRING, types::DataType::TIME64NS});
+  RowDescriptor input_rd_1({types::DataType::TIME64NS, types::DataType::STRING});
+
+  RowDescriptor output_rd({types::DataType::STRING, types::DataType::TIME64NS});
+
+  auto tester = exec::ExecNodeTester<UnionNode, plan::UnionOperator>(
+      *plan_node_, output_rd, {input_rd_0, input_rd_1}, exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::StringValue>({"A", "B", "C", "D"})
+                       .AddColumn<types::Time64NSValue>({0, 1, 2, 3})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 0, true, true)
+                       .AddColumn<types::Time64NSValue>({})
+                       .AddColumn<types::StringValue>({})
+                       .get(),
+                   1, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 1, true, true)
+                       .AddColumn<types::StringValue>({"H"})
+                       .AddColumn<types::Time64NSValue>({100})
+                       .get(),
+                   0, 1)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, true, true)
+                          .AddColumn<types::StringValue>({"A", "B", "C", "D", "H"})
+                          .AddColumn<types::Time64NSValue>({0, 1, 2, 3, 100})
+                          .get())
+      .Close();
+}
+
+TEST_F(UnionNodeTest, many_empty_rbs) {
+  auto op_proto = planpb::testutils::CreateTestUnionOrderedPB();
+  plan_node_ = plan::UnionOperator::FromProto(op_proto, /*id*/ 1);
+
+  RowDescriptor input_rd_0({types::DataType::STRING, types::DataType::TIME64NS});
+  RowDescriptor input_rd_1({types::DataType::TIME64NS, types::DataType::STRING});
+
+  RowDescriptor output_rd({types::DataType::STRING, types::DataType::TIME64NS});
+
+  auto tester = exec::ExecNodeTester<UnionNode, plan::UnionOperator>(
+      *plan_node_, output_rd, {input_rd_0, input_rd_1}, exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 2, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::StringValue>({"A", "B"})
+                       .AddColumn<types::Time64NSValue>({0, 1})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 0, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::StringValue>({})
+                       .AddColumn<types::Time64NSValue>({})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 0, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::StringValue>({})
+                       .AddColumn<types::Time64NSValue>({})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 2, false, false)
+                       .AddColumn<types::Time64NSValue>({1, 2})
+                       .AddColumn<types::StringValue>({"b", "c"})
+                       .get(),
+                   1, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 0, false, false)
+                       .AddColumn<types::Time64NSValue>({})
+                       .AddColumn<types::StringValue>({})
+                       .get(),
+                   1, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 8, true, true)
+                       .AddColumn<types::StringValue>({"E", "F", "G", "H", "I", "J", "K", "L"})
+                       .AddColumn<types::Time64NSValue>({4, 5, 6, 7, 8, 9, 10, 11})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 2, false, false)
+                       .AddColumn<types::Time64NSValue>({4, 5})
+                       .AddColumn<types::StringValue>({"e", "f"})
+                       .get(),
+                   1, 1)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, false, false)
+                          .AddColumn<types::StringValue>({"A", "B", "b", "c", "E"})
+                          .AddColumn<types::Time64NSValue>({0, 1, 1, 2, 4})
+                          .get())
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 1, false, false)
+                       .AddColumn<types::Time64NSValue>({11})
+                       .AddColumn<types::StringValue>({"l"})
+                       .get(),
+                   1, 2)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, false, false)
+                          .AddColumn<types::StringValue>({"e", "F", "f", "G", "H"})
+                          .AddColumn<types::Time64NSValue>({4, 5, 5, 6, 7})
+                          .get())
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, false, false)
+                          .AddColumn<types::StringValue>({"I", "J", "K", "L", "l"})
+                          .AddColumn<types::Time64NSValue>({8, 9, 10, 11, 11})
+                          .get())
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 0, false, false)
+                       .AddColumn<types::Time64NSValue>({})
+                       .AddColumn<types::StringValue>({})
+                       .get(),
+                   1, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 0, true, true)
+                       .AddColumn<types::Time64NSValue>({})
+                       .AddColumn<types::StringValue>({})
+                       .get(),
+                   1, 1)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 0, true, true)
+                          .AddColumn<types::StringValue>({})
+                          .AddColumn<types::Time64NSValue>({})
+                          .get())
+      .Close();
+}
+
+TEST_F(UnionNodeTest, all_empty_rbs) {
+  auto op_proto = planpb::testutils::CreateTestUnionOrderedPB();
+  plan_node_ = plan::UnionOperator::FromProto(op_proto, /*id*/ 1);
+
+  RowDescriptor input_rd_0({types::DataType::STRING, types::DataType::TIME64NS});
+  RowDescriptor input_rd_1({types::DataType::TIME64NS, types::DataType::STRING});
+
+  RowDescriptor output_rd({types::DataType::STRING, types::DataType::TIME64NS});
+
+  auto tester = exec::ExecNodeTester<UnionNode, plan::UnionOperator>(
+      *plan_node_, output_rd, {input_rd_0, input_rd_1}, exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 0, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::StringValue>({})
+                       .AddColumn<types::Time64NSValue>({})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 0, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::StringValue>({})
+                       .AddColumn<types::Time64NSValue>({})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 0, /*eow*/ true, /*eos*/ true)
+                       .AddColumn<types::Time64NSValue>({})
+                       .AddColumn<types::StringValue>({})
+                       .get(),
+                   1, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 0, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::StringValue>({})
+                       .AddColumn<types::Time64NSValue>({})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 0, /*eow*/ true, /*eos*/ true)
+                       .AddColumn<types::StringValue>({})
+                       .AddColumn<types::Time64NSValue>({})
+                       .get(),
+                   0, 1)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 0, true, true)
+                          .AddColumn<types::StringValue>({})
+                          .AddColumn<types::Time64NSValue>({})
+                          .get())
+      .Close();
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

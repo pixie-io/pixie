@@ -50,7 +50,7 @@ Status UnionNode::PrepareImpl(ExecState*) {
   if (plan_node_->order_by_time()) {
     // Set up parent stream state.
     parent_row_batches_.resize(num_parents_);
-    started_streams_.resize(num_parents_);
+    received_rows_.resize(num_parents_);
     row_cursors_.resize(num_parents_);
     time_columns_.resize(num_parents_);
     data_columns_.resize(num_parents_, std::vector<arrow::Array*>(num_output_cols));
@@ -88,7 +88,7 @@ bool UnionNode::ReadyToMerge() {
       continue;
     }
     // Return if we still need more data from one of the input streams.
-    if (!started_streams_[parent] || !parent_row_batches_[parent].size()) {
+    if (!received_rows_[parent] || !parent_row_batches_[parent].size()) {
       return false;
     }
   }
@@ -115,7 +115,7 @@ Status UnionNode::AppendRow(size_t parent) {
   return Status::OK();
 }
 
-Status UnionNode::FlushRowBatch(ExecState* exec_state) {
+Status UnionNode::OptionallyFlushRowBatch(ExecState* exec_state) {
   bool eos = InputsComplete();
   int64_t output_rows = column_builders_[0]->length();
   if (output_rows < static_cast<int64_t>(output_rows_per_batch_) && !eos) {
@@ -128,6 +128,11 @@ Status UnionNode::FlushRowBatch(ExecState* exec_state) {
 }
 
 Status UnionNode::MergeData(ExecState* exec_state) {
+  // This will happen if the last remaining row batches in a stream were all empty.
+  if (InputsComplete()) {
+    return OptionallyFlushRowBatch(exec_state);
+  }
+
   while (ReadyToMerge() && !InputsComplete()) {
     // Get the smallest time out of all of the current streams.
     std::vector<size_t> parent_streams;
@@ -138,6 +143,9 @@ Status UnionNode::MergeData(ExecState* exec_state) {
         parent_streams.push_back(parent);
       }
     }
+
+    // ReadyToMerge() shouldn't return true if this could happen.
+    DCHECK(parent_streams.size());
 
     std::sort(parent_streams.begin(), parent_streams.end(),
               [this](size_t parent_a, size_t parent_b) {
@@ -159,30 +167,43 @@ Status UnionNode::MergeData(ExecState* exec_state) {
           break;
         }
       }
+
       PL_RETURN_IF_ERROR(AppendRow(parent));
 
+      // Mark whether or not we hit the eos for this stream, and whether the row batch needs to be
+      // popped.
       const auto& rb = parent_row_batches_[parent][0];
-      if (++row_cursors_[parent] == static_cast<size_t>(rb.num_rows())) {
+      bool pop_row_batch = ++row_cursors_[parent] == static_cast<size_t>(rb.num_rows());
+      if (pop_row_batch && rb.eos()) {
+        parent_eoses_[parent] = true;
+      }
+
+      // Flush the current RowBatch if necessary.
+      PL_RETURN_IF_ERROR(OptionallyFlushRowBatch(exec_state));
+
+      if (pop_row_batch) {
         // Delete the row batch from our buffer and update the cursor.
         parent_row_batches_[parent].erase(parent_row_batches_[parent].begin());
         row_cursors_[parent] = 0;
-        if (rb.eos()) {
-          parent_eoses_[parent] = true;
-        }
         CacheNextRowBatch(parent);
       }
-
-      PL_RETURN_IF_ERROR(FlushRowBatch(exec_state));
     }
   }
+
   return Status::OK();
 }
 
 void UnionNode::CacheNextRowBatch(size_t parent) {
+  // Purge all of the 0-row RowBatches.
+  while (parent_row_batches_[parent].size() && parent_row_batches_[parent][0].num_rows() == 0) {
+    if (parent_row_batches_[parent][0].eos()) {
+      parent_eoses_[parent] = true;
+    }
+    parent_row_batches_[parent].erase(parent_row_batches_[parent].begin());
+  }
   if (!parent_row_batches_[parent].size()) {
     return;
   }
-
   const auto& next_rb = parent_row_batches_[parent][0];
   time_columns_[parent] = next_rb.ColumnAt(plan_node_->time_column_index(parent)).get();
 
@@ -193,8 +214,8 @@ void UnionNode::CacheNextRowBatch(size_t parent) {
 
 Status UnionNode::ConsumeNextOrdered(ExecState* exec_state, const RowBatch& rb,
                                      size_t parent_index) {
-  if (!started_streams_[parent_index]) {
-    started_streams_[parent_index] = true;
+  if (rb.num_rows() > 0) {
+    received_rows_[parent_index] = true;
   }
   parent_row_batches_[parent_index].push_back(rb);
   CacheNextRowBatch(parent_index);
