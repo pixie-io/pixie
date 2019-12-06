@@ -20,9 +20,9 @@ function package_and_encrypt_certs(){
   PARENTPATH=${OUTCERTS}/${TYPE}
   OUTFILE_UNENC=${PARENTPATH}/certs_unenc.yaml
   OUTFILE_ENC=${PARENTPATH}/certs.yaml
-  python ${workspace}/src/cloud/dnsmgr/scripts/assemble_cert_yaml.py $CERTSDIR $ADDRESS $OUTFILE_UNENC
-  sops --encrypt $OUTFILE_UNENC >> $OUTFILE_ENC
-  rm $OUTFILE_UNENC
+  python "${workspace}"/src/cloud/dnsmgr/scripts/assemble_cert_yaml.py "$CERTSDIR" "$ADDRESS" "$OUTFILE_UNENC"
+  sops --encrypt "$OUTFILE_UNENC" >> "$OUTFILE_ENC"
+  rm "$OUTFILE_UNENC"
 }
 
 package_and_encrypt_certs "dev" "clusters.dev.withpixie.dev"

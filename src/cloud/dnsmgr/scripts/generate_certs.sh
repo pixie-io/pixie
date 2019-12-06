@@ -23,14 +23,14 @@ function create_cert() {
 
   FNAME_PREFIX="_.${ID}.${MIDDOMAIN}"
 
-  EXISTING_FILES=$(ls ${OUTDIR}/certificates/* | grep ${FNAME_PREFIX} | wc -l)
-  if [ $EXISTING_FILES -ne 0 ]; then
+  EXISTING_FILES=$(find "${OUTDIR}"/certificates -name "*${FNAME_PREFIX}*" | wc -l)
+  if [ "$EXISTING_FILES" -ne 0 ]; then
     echo "Found ${EXISTING_FILES} files with same ID: ${ID}";
     exit 1;
   fi
 
 
-  $LEGO --email=$EMAIL --domains=$DOMAIN --dns='gcloud' --path=${OUTDIR} -a run
+  $LEGO --email="$EMAIL" --domains="$DOMAIN" --dns='gcloud' --path="${OUTDIR}" -a run
 }
 
 function create_uuid_certs() {
@@ -39,7 +39,7 @@ function create_uuid_certs() {
     exit 1
   fi
   SUBDOMAIN=$1
-  for i in $(seq 1 ${NUMCERTS})
+  for i in $(seq 1 "${NUMCERTS}")
   do
     echo "Creating $i for $SUBDOMAIN"
     UUID=$(uuidgen)
@@ -69,4 +69,4 @@ create_uuid_certs "clusters.withpixie.ai"
 
 
 # # Return to the original GCP project.
-gcloud config set project ${ORIGINAL_GCP_PROJECT}
+gcloud config set project "${ORIGINAL_GCP_PROJECT}"

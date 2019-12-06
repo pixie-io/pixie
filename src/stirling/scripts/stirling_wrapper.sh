@@ -10,7 +10,7 @@ bazel build //src/stirling:stirling_wrapper
 cmd=$(bazel info bazel-bin)/src/stirling/stirling_wrapper
 
 if [[ $EUID -ne 0 ]]; then
-   sudo $cmd
+   sudo "$cmd"
 else
    $cmd
 fi

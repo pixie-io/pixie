@@ -28,7 +28,8 @@ parse_args() {
 # Script execution starts here
 
 # Always run in the script directory, regardless of where the script is called from.
-cd $(dirname $0)
+scriptdir=$(dirname "$0")
+cd "$scriptdir"
 
 NAMESPACE=pl-${USER}
 
@@ -47,7 +48,8 @@ echo "-------------------------------------------"
 echo "Delete any old instances"
 echo "-------------------------------------------"
 
-if [ $(kubectl get pods -n ${NAMESPACE} | grep ^stirling-wrapper | wc -l) -ne 0 ]; then
+stirling_wrapper_pod_count=$(kubectl get pods -n "${NAMESPACE}" | grep -c ^stirling-wrapper)
+if [ "$stirling_wrapper_pod_count" -ne 0 ]; then
   make delete_stirling_daemonset
   sleep 5
 fi
@@ -64,15 +66,15 @@ echo "-------------------------------------------"
 echo "Waiting ${T} seconds to collect data"
 echo "-------------------------------------------"
 
-sleep $T
+sleep "$T"
 
 echo ""
 echo "-------------------------------------------"
 echo "Listing pods"
 echo "-------------------------------------------"
 
-kubectl get pods -n ${NAMESPACE} | grep ^stirling-wrapper
-pods=$(kubectl get pods -n ${NAMESPACE} | grep ^stirling-wrapper | grep Running | cut -f1 -d' ')
+kubectl get pods -n "${NAMESPACE}" | grep ^stirling-wrapper
+pods=$(kubectl get pods -n "${NAMESPACE}" | grep ^stirling-wrapper | grep Running | cut -f1 -d' ')
 
 echo ""
 echo "-------------------------------------------"
@@ -82,8 +84,8 @@ echo "-------------------------------------------"
 timestamp=$(date +%s)
 for pod in $pods; do
   filename=log$timestamp.$pod
-  kubectl logs -n ${NAMESPACE} $pod > $filename
-  echo $filename
+  kubectl logs -n "${NAMESPACE}" "$pod" > "$filename"
+  echo "$filename"
 done
 
 echo ""

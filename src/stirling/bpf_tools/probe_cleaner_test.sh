@@ -16,7 +16,7 @@ fi
 
 # Switch to root user.
 if [[ $EUID -ne 0 ]]; then
-   sudo $0 $stirling_wrapper_bin $probe_cleaner_bin
+   sudo "$0" "$stirling_wrapper_bin" "$probe_cleaner_bin"
    exit
 fi
 
@@ -43,7 +43,7 @@ function test_setup() {
     num_probes=$(cat /sys/kernel/debug/tracing/kprobe_events | grep $marker | wc -l)
     echo "Number of leaked probes: $num_probes"
 
-    if [ $num_probes -eq 0 ]; then
+    if [ "$num_probes" -eq 0 ]; then
       echo "Test setup failed: Expected to leave leaked probes."
       return 1
     fi
@@ -59,7 +59,7 @@ function test() {
     num_probes=$(cat /sys/kernel/debug/tracing/kprobe_events | grep $marker | wc -l)
     echo "Number of leaked probes: $num_probes"
 
-    if [ $num_probes -ne 0 ]; then
+    if [ "$num_probes" -ne 0 ]; then
       echo "Test FAILED: Found $num_probes that were not cleaned up."
       return 1
     else

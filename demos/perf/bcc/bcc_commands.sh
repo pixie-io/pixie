@@ -34,26 +34,26 @@ done
 
 mount -t debugfs none /sys/kernel/debug
 mkdir -p bcc_data
-mkdir -p $outdir
+mkdir -p "$outdir"
 
-env > ./$outdir/env.txt
-timeout -s SIGINT $capture_secs ./cachestat -T $interval_secs > ./$outdir/cachestat.txt &
-timeout -s SIGINT $capture_secs ./execsnoop > ./$outdir/execsnoop.txt &
-./opensnoop -d $capture_secs > ./$outdir/opensnoop.txt &
-timeout -s SIGINT $capture_secs ./ext4slower > ./$outdir/ext4slower.txt &
-timeout -s SIGINT $capture_secs ./biolatency > ./$outdir/biolatency.txt &
-timeout -s SIGINT $capture_secs ./biosnoop > ./$outdir/biosnoop.txt &
-timeout -s SIGINT $capture_secs ./tcpconnect > ./$outdir/tcpconnect.txt &
-timeout -s SIGINT $capture_secs ./tcpaccept > ./$outdir/tcpaccept.txt &
-timeout -s SIGINT $capture_secs ./tcpretrans > ./$outdir/tcpretrans.txt &
-timeout -s SIGINT $capture_secs ./runqlat > ./$outdir/runqlat.txt &
-timeout -s SIGINT $capture_secs ./profile > ./$outdir/profile.txt &
-timeout -s SIGINT $capture_secs ./funccount 'vfs_*' > ./$outdir/funccount_vfs.txt &
-timeout -s SIGINT $capture_secs ./funccount 'c:malloc_*' > ./$outdir/funccount_malloc.txt &
+env > ./"$outdir"/env.txt
+timeout -s SIGINT "$capture_secs" ./cachestat -T "$interval_secs" > ./"$outdir"/cachestat.txt &
+timeout -s SIGINT "$capture_secs" ./execsnoop > ./"$outdir"/execsnoop.txt &
+./opensnoop -d "$capture_secs" > ./"$outdir"/opensnoop.txt &
+timeout -s SIGINT "$capture_secs" ./ext4slower > ./"$outdir"/ext4slower.txt &
+timeout -s SIGINT "$capture_secs" ./biolatency > ./"$outdir"/biolatency.txt &
+timeout -s SIGINT "$capture_secs" ./biosnoop > ./"$outdir"/biosnoop.txt &
+timeout -s SIGINT "$capture_secs" ./tcpconnect > ./"$outdir"/tcpconnect.txt &
+timeout -s SIGINT "$capture_secs" ./tcpaccept > ./"$outdir"/tcpaccept.txt &
+timeout -s SIGINT "$capture_secs" ./tcpretrans > ./"$outdir"/tcpretrans.txt &
+timeout -s SIGINT "$capture_secs" ./runqlat > ./"$outdir"/runqlat.txt &
+timeout -s SIGINT "$capture_secs" ./profile > ./"$outdir"/profile.txt &
+timeout -s SIGINT "$capture_secs" ./funccount 'vfs_*' > ./"$outdir"/funccount_vfs.txt &
+timeout -s SIGINT "$capture_secs" ./funccount 'c:malloc_*' > ./"$outdir"/funccount_malloc.txt &
 
 sleep `expr $capture_secs + 30`
-mkdir -p bcc_data/$outdir
+mkdir -p bcc_data/"$outdir"
 # gcsfuse takes its sweet time to create a directory
 sleep 10
-cp -rf $outdir/*.txt bcc_data/$outdir/
-sync -f bcc_data/$outdir/*.txt
+cp -rf "$outdir"/*.txt bcc_data/"$outdir"/
+sync -f bcc_data/"$outdir"/*.txt

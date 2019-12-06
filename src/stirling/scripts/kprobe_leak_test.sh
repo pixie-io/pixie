@@ -31,7 +31,7 @@ test_cmd=$1
 
 # Switch to root user.
 if [[ $EUID -ne 0 ]]; then
-   sudo $0 $test_cmd
+   sudo "$0" "$test_cmd"
    exit
 fi
 
@@ -74,7 +74,7 @@ function test() {
     num_probes=$(cat /sys/kernel/debug/tracing/kprobe_events | grep bcc_$pid | wc -l)
     echo "Final number of probes: $num_probes"
 
-    if [ $num_probes -ne 0 ]; then
+    if [ "$num_probes" -ne 0 ]; then
       echo "Test FAILED: Program is leaking BPF probes"
       return 1
     fi
@@ -97,4 +97,4 @@ else
     echo "All tests PASSED"
 fi
 
-exit $errors
+exit

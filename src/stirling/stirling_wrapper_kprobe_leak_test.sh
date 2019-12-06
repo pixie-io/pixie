@@ -13,4 +13,4 @@ if [ -z "$BUILD_WORKSPACE_DIRECTORY" ]; then
 fi
 
 # Main test run.
-./scripts/kprobe_leak_test.sh $BIN_DIR/stirling_wrapper
+./scripts/kprobe_leak_test.sh "$BIN_DIR"/stirling_wrapper
