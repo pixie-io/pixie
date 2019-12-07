@@ -70,6 +70,16 @@ bool LibuvTimer::Enabled() {
   return uv_is_active(reinterpret_cast<const uv_handle_t*>(&timer_)) != 0;
 }
 
+LibuvTimer::~LibuvTimer() {
+  if (Enabled()) {
+    DisableTimer();
+  }
+  auto h = reinterpret_cast<uv_handle_t*>(&timer_);
+  if (!uv_is_closing(h)) {
+    uv_close(h, nullptr);
+  }
+}
+
 //----- Scheduler
 
 TimerUPtr LibuvScheduler::CreateTimer(const TimerCB& cb, Dispatcher*) {

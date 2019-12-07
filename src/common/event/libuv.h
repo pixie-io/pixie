@@ -24,6 +24,7 @@ class API;
 class LibuvTimer : public Timer {
  public:
   LibuvTimer(TimerCB cb, uv_loop_t* loop);
+  ~LibuvTimer() override;
 
   void DisableTimer() override;
   void EnableTimer(const std::chrono::milliseconds& ms) override;
@@ -69,6 +70,7 @@ class LibuvDispatcher : public Dispatcher {
   MonotonicTimePoint ApproximateMonotonicTime() const override;
   void UpdateMonotonicTime() override;
   std::string LogEntry(std::string_view entry);
+  uv_loop_t* uv_loop() { return base_scheduler_.uv_loop(); }
 
  private:
   bool IsCorrectThread() {

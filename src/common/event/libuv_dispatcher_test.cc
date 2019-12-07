@@ -3,6 +3,7 @@
 #include "src/common/base/base.h"
 #include "src/common/event/api.h"
 #include "src/common/event/event.h"
+#include "src/common/event/nats.h"
 
 using pl::event::APIImpl;
 using pl::event::RealTimeSystem;
