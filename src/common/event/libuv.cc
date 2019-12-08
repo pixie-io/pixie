@@ -2,6 +2,10 @@
 
 #include <uv.h>
 
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include "src/common/base/base.h"
 #include "src/common/event/api.h"
 
@@ -14,7 +18,8 @@ namespace {
  */
 class LibuvRunnableAsyncTask : public RunnableAsyncTask {
  public:
-  LibuvRunnableAsyncTask(uv_loop_t* loop, AsyncTask* task) : RunnableAsyncTask(task), loop_(loop) {
+  LibuvRunnableAsyncTask(uv_loop_t* loop, std::unique_ptr<AsyncTask> task)
+      : RunnableAsyncTask(std::move(task)), loop_(loop) {
     work_.data = this;
   }
 
@@ -141,8 +146,8 @@ void LibuvScheduler::Stop() {
   CHECK(rc == 0) << "Failed to stop scheduler";
 }
 
-RunnableAsyncTaskUPtr LibuvScheduler::CreateAsyncTask(AsyncTask* task) {
-  return std::make_unique<LibuvRunnableAsyncTask>(&uv_loop_, task);
+RunnableAsyncTaskUPtr LibuvScheduler::CreateAsyncTask(std::unique_ptr<AsyncTask> task) {
+  return std::make_unique<LibuvRunnableAsyncTask>(&uv_loop_, std::move(task));
 }
 
 std::string LibuvScheduler::LogEntry(std::string_view entry) {
@@ -169,6 +174,14 @@ void LibuvDispatcher::Post(PostCB cb) {
   }
 }
 
+void LibuvDispatcher::DeferredDelete(DeferredDeletableUPtr&& to_delete) {
+  CHECK(IsCorrectThread());
+  current_to_delete_->emplace_back(std::move(to_delete));
+  if (current_to_delete_->size() == 1) {
+    deferred_delete_timer_->EnableTimer(std::chrono::milliseconds{0});
+  }
+}
+
 void LibuvDispatcher::Run(Dispatcher::RunType type) {
   run_tid_ = std::this_thread::get_id();
 
@@ -191,7 +204,9 @@ LibuvDispatcher::LibuvDispatcher(std::string_view name, const API& api, TimeSyst
       api_(api),
       base_scheduler_(name),
       scheduler_(time_system->CreateScheduler(&base_scheduler_)),
-      post_timer_(CreateTimer([this]() { RunPostCallbacks(); })) {
+      post_timer_(CreateTimer([this]() { RunPostCallbacks(); })),
+      current_to_delete_(&to_delete_1_),
+      deferred_delete_timer_(CreateTimer([this]() { DoDeferredDelete(); })) {
   UpdateMonotonicTime();
 }
 
@@ -217,12 +232,37 @@ void LibuvDispatcher::RunPostCallbacks() {
 
 void LibuvDispatcher::Stop() { base_scheduler_.Stop(); }
 
-RunnableAsyncTaskUPtr LibuvDispatcher::CreateAsyncTask(AsyncTask* task) {
-  return base_scheduler_.CreateAsyncTask(task);
+RunnableAsyncTaskUPtr LibuvDispatcher::CreateAsyncTask(std::unique_ptr<AsyncTask> task) {
+  return base_scheduler_.CreateAsyncTask(std::move(task));
 }
 
 std::string LibuvDispatcher::LogEntry(std::string_view entry) {
   return base_scheduler_.LogEntry(entry);
+}
+
+void LibuvDispatcher::DoDeferredDelete() {
+  std::vector<DeferredDeletableUPtr>& to_delete = *current_to_delete_;
+
+  // Nothing to delete, or delete in progress.
+  size_t num_to_delete = to_delete.size();
+  if (deferred_deleting_ || !num_to_delete) {
+    return;
+  }
+
+  // Double buffer swap to allow deletes to call other deleters.
+  if (current_to_delete_ == &to_delete_1_) {
+    current_to_delete_ = &to_delete_2_;
+  } else {
+    current_to_delete_ = &to_delete_1_;
+  }
+
+  // Loop through to delete to make sure deletion is done in the right order.
+  deferred_deleting_ = true;
+  for (size_t i = 0; i < to_delete.size(); ++i) {
+    to_delete[i].reset();
+  }
+  to_delete.clear();
+  deferred_deleting_ = false;
 }
 
 }  // namespace event

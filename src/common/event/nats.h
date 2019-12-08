@@ -1,12 +1,10 @@
 #pragma once
 
 #include <nats/nats.h>
+#include "src/common/event/libuv.h"
 
 #include <memory>
 #include <string>
-#include <utility>
-
-#include "src/common/event/libuv.h"
 
 namespace pl {
 namespace event {

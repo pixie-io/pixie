@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 
+#include "src/common/event/deferred_delete.h"
 #include "src/common/event/task.h"
 #include "src/common/event/time_system.h"
 #include "src/common/event/timer.h"
@@ -55,6 +56,12 @@ class Dispatcher {
   virtual void Post(PostCB callback) = 0;
 
   /**
+   * Will delete the passed in pointer in a future event loop.
+   * This allows us to delete unique_ptr, with a clear ownership model.
+   */
+  virtual void DeferredDelete(DeferredDeletableUPtr&& to_delete) = 0;
+
+  /**
    * RunType specifies the run loop.
    */
   enum class RunType {
@@ -73,10 +80,11 @@ class Dispatcher {
 
   /**
    * Create and async task that can be scheduled on the thread pool.
-   * @param task the task to run.
-   * @return runnable task.
+   * @param task the task to run. It will be owned by the returned RunnableAsyncTask.
+   * @return runnable task. The lifetime of this needs to exceed the Run/Done functions.
+   * It is best to mark it as deferred delete in the Done function.
    */
-  virtual RunnableAsyncTaskUPtr CreateAsyncTask(AsyncTask* task) = 0;
+  virtual RunnableAsyncTaskUPtr CreateAsyncTask(std::unique_ptr<AsyncTask> task) = 0;
 
   /**
    * Returns a recently cached MonotonicTime value. Updates on every iteration of the event loop.

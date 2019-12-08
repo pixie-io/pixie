@@ -9,6 +9,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include "absl/base/attributes.h"
 #include "absl/base/thread_annotations.h"
@@ -42,7 +43,7 @@ class LibuvScheduler : public Scheduler {
   TimerUPtr CreateTimer(const TimerCB& cb, Dispatcher* dispatcher) override;
   void Stop();
   void Run(Dispatcher::RunType type);
-  RunnableAsyncTaskUPtr CreateAsyncTask(AsyncTask* task);
+  RunnableAsyncTaskUPtr CreateAsyncTask(std::unique_ptr<AsyncTask> task);
   uv_loop_t* uv_loop() { return &uv_loop_; }
 
   /**
@@ -65,8 +66,9 @@ class LibuvDispatcher : public Dispatcher {
   void Stop() override;
   void Exit() override;
   void Post(PostCB callback) override;
+  void DeferredDelete(DeferredDeletableUPtr&& to_delete) override;
   void Run(RunType type) override;
-  RunnableAsyncTaskUPtr CreateAsyncTask(AsyncTask* task) override;
+  RunnableAsyncTaskUPtr CreateAsyncTask(std::unique_ptr<AsyncTask> task) override;
   MonotonicTimePoint ApproximateMonotonicTime() const override;
   void UpdateMonotonicTime() override;
   std::string LogEntry(std::string_view entry);
@@ -80,6 +82,7 @@ class LibuvDispatcher : public Dispatcher {
   }
 
   void RunPostCallbacks();
+  void DoDeferredDelete();
 
   const std::string name_;
   std::thread::id run_tid_;
@@ -92,6 +95,14 @@ class LibuvDispatcher : public Dispatcher {
   SchedulerUPtr scheduler_;
   MonotonicTimePoint approximate_monotonic_time_;
   TimerUPtr post_timer_;
+
+  // We maintain two deletion lists (double buffer), so that we support deleters calling other
+  // deleters.
+  std::vector<DeferredDeletableUPtr> to_delete_1_;
+  std::vector<DeferredDeletableUPtr> to_delete_2_;
+  std::vector<DeferredDeletableUPtr>* current_to_delete_ = nullptr;
+  bool deferred_deleting_ = false;
+  TimerUPtr deferred_delete_timer_;
 };
 
 }  // namespace event

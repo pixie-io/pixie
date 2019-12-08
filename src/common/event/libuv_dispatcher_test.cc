@@ -11,10 +11,14 @@ using pl::event::RealTimeSystem;
 namespace pl {
 namespace event {
 
+int g_compute_pi_destructor_count = 0;
+
 namespace {
 
 class ComputePi : public pl::event::AsyncTask {
  public:
+  ~ComputePi() { ++g_compute_pi_destructor_count; }
+
   void Work() override {
     ++work_call_count_;
     VLOG(1) << "PI_ID : " << std::this_thread::get_id();
@@ -109,14 +113,23 @@ TEST_F(LibuvDispatcherTest, test_timed_events) {
 
 TEST_F(LibuvDispatcherTest, threadpool) {
   auto task = std::make_unique<ComputePi>();
-  auto runnable = dispatcher_->CreateAsyncTask(task.get());
+  // Store the pointer so that we can access the results later.
+  auto task_ptr = task.get();
+  auto runnable = dispatcher_->CreateAsyncTask(std::move(task));
   runnable->Run();
 
   dispatcher_->Run(Dispatcher::RunType::RunUntilExit);
-  dispatcher_->Exit();
 
-  EXPECT_EQ(1, task->work_call_count());
-  EXPECT_EQ(1, task->done_call_count());
+  EXPECT_EQ(1, task_ptr->work_call_count());
+  EXPECT_EQ(1, task_ptr->done_call_count());
+
+  EXPECT_EQ(0, g_compute_pi_destructor_count);
+
+  dispatcher_->DeferredDelete(std::move(runnable));
+  dispatcher_->Run(Dispatcher::RunType::NonBlock);
+  EXPECT_EQ(1, g_compute_pi_destructor_count);
+
+  dispatcher_->Exit();
 }
 
 }  // namespace event

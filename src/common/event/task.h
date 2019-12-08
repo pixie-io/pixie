@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "src/common/base/base.h"
+#include "src/common/event/deferred_delete.h"
 
 namespace pl {
 namespace event {
@@ -34,15 +35,15 @@ using AsyncTaskUPtr = std::unique_ptr<AsyncTask>;
  * The lifetime of the contained task must execeed the lifetime of this class.
  * TODO(zasgar): Explore using packaged tasks.
  */
-class RunnableAsyncTask {
+class RunnableAsyncTask : public DeferredDeletable {
  public:
-  explicit RunnableAsyncTask(AsyncTask* task) : task_(task) {}
+  explicit RunnableAsyncTask(std::unique_ptr<AsyncTask> task) : task_(std::move(task)) {}
   virtual ~RunnableAsyncTask() = default;
 
   virtual void Run() = 0;
 
  protected:
-  AsyncTask* task_;
+  std::unique_ptr<AsyncTask> task_;
 };
 using RunnableAsyncTaskUPtr = std::unique_ptr<RunnableAsyncTask>;
 
