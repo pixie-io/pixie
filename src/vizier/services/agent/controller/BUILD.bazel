@@ -26,8 +26,8 @@ pl_cc_library(
 )
 
 pl_cc_test(
-    name = "relation_info_mgr_test",
-    srcs = ["relation_info_mgr_test.cc"],
+    name = "relation_info_manager_test",
+    srcs = ["relation_info_manager_test.cc"],
     deps = [
         ":cc_library",
     ],

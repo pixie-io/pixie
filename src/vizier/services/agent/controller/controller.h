@@ -13,7 +13,7 @@
 #include "src/carnot/carnot.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/stirling.h"
-#include "src/vizier/services/agent/controller/relation_info_mgr.h"
+#include "src/vizier/services/agent/controller/relation_info_manager.h"
 
 #include "src/common/base/base.h"
 #include "src/common/nats/nats.h"

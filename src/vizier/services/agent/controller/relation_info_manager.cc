@@ -1,4 +1,4 @@
-#include "src/vizier/services/agent/controller/relation_info_mgr.h"
+#include "src/vizier/services/agent/controller/relation_info_manager.h"
 
 namespace pl {
 namespace vizier {

@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <memory>
 
-#include "src/vizier/services/agent/controller/relation_info_mgr.h"
+#include "src/vizier/services/agent/controller/relation_info_manager.h"
 
 #include "src/common/testing/testing.h"
 
