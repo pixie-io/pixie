@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <string>
 #include <vector>
@@ -36,10 +37,11 @@ class GRPCSourceNode : public SourceNode {
   Status GenerateNextImpl(ExecState* exec_state) override;
 
  private:
-  void OptionallyPopRowBatch();
+  Status OptionallyPopRowBatch();
 
+  static constexpr std::chrono::microseconds grpc_timeout_us_{300 * 1000};
   bool sent_eos_ = false;
-  std::unique_ptr<carnotpb::RowBatchRequest> next_up_;
+  std::unique_ptr<table_store::schema::RowBatch> next_up_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<carnotpb::RowBatchRequest>> row_batch_queue_;
 
   std::unique_ptr<plan::GRPCSourceOperator> plan_node_;
