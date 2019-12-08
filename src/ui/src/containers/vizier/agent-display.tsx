@@ -3,10 +3,12 @@ import './vizier.scss';
 import {vizierGQLClient} from 'common/vizier-gql-client';
 import {ContentBox} from 'components/content-box/content-box';
 import {AutoSizedScrollableTable} from 'components/table/scrollable-table';
+import {VersionInfo} from 'components/version-info/version-info';
 import {distanceInWords, subSeconds} from 'date-fns';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import {Query} from 'react-apollo';
+import {isProd} from 'utils/env';
 import {pluralize} from 'utils/pluralize';
 
 export const GET_AGENTS = gql`
@@ -96,6 +98,7 @@ const AgentDisplayContent = ({ agents }) => {
       <div className='agent-display-table'>
         <AutoSizedScrollableTable data={mappedData} columnInfo={agentTableCols}></AutoSizedScrollableTable>
       </div>
+      {isProd() ? <VersionInfo /> : null}
     </ContentBox>
   );
 };

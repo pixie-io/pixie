@@ -38,6 +38,13 @@ let plugins = [
     {from: 'segment.js', to: 'assets/segment.js'},
   ]),
   new HtmlWebpackHarddiskPlugin(),
+  new webpack.EnvironmentPlugin([
+    'BUILD_ENV',
+    'BUILD_NUMBER',
+    'BUILD_SCM_REVISION',
+    'BUILD_SCM_STATUS',
+    'BUILD_TIMESTAMP',
+  ]),
 ];
 
 let entryFiles = [];
