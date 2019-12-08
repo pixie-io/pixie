@@ -467,10 +467,9 @@ class OperatorTests : public ::testing::Test {
     return grpc_sink;
   }
 
-  GRPCSourceIR* MakeGRPCSource(const std::string& source_id,
-                               const table_store::schema::Relation& relation) {
+  GRPCSourceIR* MakeGRPCSource(const table_store::schema::Relation& relation) {
     GRPCSourceIR* grpc_src_group =
-        graph->CreateNode<GRPCSourceIR>(ast, source_id, relation).ConsumeValueOrDie();
+        graph->CreateNode<GRPCSourceIR>(ast, relation).ConsumeValueOrDie();
     return grpc_src_group;
   }
 

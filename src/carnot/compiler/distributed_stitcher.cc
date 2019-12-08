@@ -106,8 +106,6 @@ StatusOr<bool> SetSourceGroupGRPCAddressRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, GRPCSourceGroup())) {
     static_cast<GRPCSourceGroupIR*>(ir_node)->SetGRPCAddress(grpc_address_);
     return true;
-  } else if (Match(ir_node, GRPCSink())) {
-    static_cast<GRPCSinkIR*>(ir_node)->SetDistributedID(query_broker_address_);
   }
 
   return false;

@@ -18,37 +18,6 @@ StatusOr<bool> GRPCSourceGroupConversionRule::Apply(IRNode* ir_node) {
   return false;
 }
 
-StatusOr<GRPCSourceIR*> GRPCSourceGroupConversionRule::CreateGRPCSource(
-    GRPCSourceGroupIR* group_ir, const std::string& remote_id) {
-  DCHECK(group_ir->IsRelationInit());
-  IR* graph = group_ir->graph_ptr();
-  return graph->CreateNode<GRPCSourceIR>(group_ir->ast_node(), remote_id, group_ir->relation());
-}
-
-StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
-    GRPCSourceGroupIR* group_ir) {
-  auto group_ids = group_ir->remote_string_ids();
-  if (group_ids.size() == 0) {
-    return group_ir->CreateIRNodeError("$0 must be affiliated with remote sinks.",
-                                       group_ir->DebugString());
-  }
-  // IF only one GRPCSource, no need for a union.
-  if (group_ids.size() == 1) {
-    return CreateGRPCSource(group_ir, group_ids[0]);
-  }
-  // Create the GRPCSources, then a union.
-  std::vector<OperatorIR*> grpc_sources;
-  for (const auto& remote_id : group_ids) {
-    PL_ASSIGN_OR_RETURN(GRPCSourceIR * new_grpc_source, CreateGRPCSource(group_ir, remote_id));
-    grpc_sources.push_back(new_grpc_source);
-  }
-  IR* graph = group_ir->graph_ptr();
-  PL_ASSIGN_OR_RETURN(UnionIR * union_op,
-                      graph->CreateNode<UnionIR>(group_ir->ast_node(), grpc_sources));
-  PL_RETURN_IF_ERROR(union_op->SetRelationFromParents());
-  return union_op;
-}
-
 StatusOr<bool> GRPCSourceGroupConversionRule::ExpandGRPCSourceGroup(GRPCSourceGroupIR* group_ir) {
   // Get the new parent.
   PL_ASSIGN_OR_RETURN(OperatorIR * new_parent, ConvertGRPCSourceGroup(group_ir));
@@ -61,10 +30,47 @@ StatusOr<bool> GRPCSourceGroupConversionRule::ExpandGRPCSourceGroup(GRPCSourceGr
   PL_RETURN_IF_ERROR(graph->DeleteNode(group_ir->id()));
   return true;
 }
-Status GRPCSourceGroupConversionRule::RemoveGRPCSourceGroup(
-    GRPCSourceGroupIR* grpc_source_group) const {
-  PL_UNUSED(grpc_source_group);
+
+StatusOr<GRPCSourceIR*> GRPCSourceGroupConversionRule::CreateGRPCSource(
+    GRPCSourceGroupIR* group_ir) {
+  DCHECK(group_ir->IsRelationInit());
+  IR* graph = group_ir->graph_ptr();
+  return graph->CreateNode<GRPCSourceIR>(group_ir->ast_node(), group_ir->relation());
+}
+
+Status UpdateSink(GRPCSourceIR* source, GRPCSinkIR* sink) {
+  sink->SetDestinationID(source->id());
   return Status::OK();
+}
+
+StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
+    GRPCSourceGroupIR* group_ir) {
+  auto ir_graph = group_ir->graph_ptr();
+  auto sinks = group_ir->dependent_sinks();
+
+  if (sinks.size() == 0) {
+    return group_ir->CreateIRNodeError("$0 must be affiliated with remote sinks.",
+                                       group_ir->DebugString());
+  }
+
+  // Don't add an unnecessary union node if there is only one sink.
+  if (sinks.size() == 1) {
+    PL_ASSIGN_OR_RETURN(auto new_grpc_source, CreateGRPCSource(group_ir));
+    PL_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sinks[0]));
+    return new_grpc_source;
+  }
+
+  std::vector<OperatorIR*> grpc_sources;
+  for (GRPCSinkIR* sink : sinks) {
+    PL_ASSIGN_OR_RETURN(GRPCSourceIR * new_grpc_source, CreateGRPCSource(group_ir));
+    PL_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sink));
+    grpc_sources.push_back(new_grpc_source);
+  }
+
+  PL_ASSIGN_OR_RETURN(UnionIR * union_op,
+                      ir_graph->CreateNode<UnionIR>(group_ir->ast_node(), grpc_sources));
+  PL_RETURN_IF_ERROR(union_op->SetRelationFromParents());
+  return union_op;
 }
 
 }  // namespace distributed

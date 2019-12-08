@@ -32,8 +32,7 @@ class GRPCSourceGroupConversionRule : public Rule {
    * @param remote_id: the string remote id.
    * @return StatusOr<GRPCSourceIR*>:  the GRPCSourceIR;
    */
-  StatusOr<GRPCSourceIR*> CreateGRPCSource(GRPCSourceGroupIR* group_ir,
-                                           const std::string& remote_id);
+  StatusOr<GRPCSourceIR*> CreateGRPCSource(GRPCSourceGroupIR* group_ir);
 
   /**
    * @brief Converts the group ir into either a single GRPCSource or a union of GRPPCSources,

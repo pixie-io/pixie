@@ -106,7 +106,6 @@ qb_address_to_plan {
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
-            destination_id: ":0"
           }
         }
       }
@@ -138,7 +137,6 @@ qb_address_to_plan {
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
-            source_id: "0"
             column_types: INT64
             column_types: FLOAT64
             column_types: FLOAT64
@@ -263,7 +261,6 @@ const char* kThreeAgentsOneKelvinDistributedPlan = R"proto(
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
-            destination_id: ":0"
           }
         }
       }
@@ -298,7 +295,6 @@ qb_address_to_plan {
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
-            destination_id: ":0"
           }
         }
       }
@@ -333,7 +329,6 @@ qb_address_to_plan {
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
-            destination_id: ":0"
           }
         }
       }
@@ -484,7 +479,6 @@ qb_address_to_plan {
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
-            destination_id: ":0"
           }
         }
       }

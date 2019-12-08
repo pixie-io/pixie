@@ -95,7 +95,7 @@ qb_address_to_plan {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: "agent:0"
+            destination_id: 3
           }
         }
       }
@@ -127,7 +127,6 @@ qb_address_to_plan {
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
-            source_id: "agent:0"
             column_types: INT64
             column_types: FLOAT64
             column_types: FLOAT64
@@ -260,7 +259,7 @@ qb_address_to_plan {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: "agent1:0"
+            destination_id: 5
           }
         }
       }
@@ -300,7 +299,7 @@ qb_address_to_plan {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: "agent2:0"
+            destination_id: 4
           }
         }
       }
@@ -340,7 +339,7 @@ qb_address_to_plan {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: "agent3:0"
+            destination_id: 3
           }
         }
       }
@@ -387,7 +386,6 @@ qb_address_to_plan {
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
-            source_id: "agent1:0"
             column_types: INT64
             column_types: FLOAT64
             column_types: FLOAT64
@@ -404,7 +402,6 @@ qb_address_to_plan {
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
-            source_id: "agent2:0"
             column_types: INT64
             column_types: FLOAT64
             column_types: FLOAT64
@@ -421,7 +418,6 @@ qb_address_to_plan {
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
-            source_id: "agent3:0"
             column_types: INT64
             column_types: FLOAT64
             column_types: FLOAT64

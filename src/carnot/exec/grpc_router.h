@@ -42,7 +42,7 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
   /**
    * Adds the specified source node to the router.
    */
-  Status AddGRPCSourceNode(sole::uuid query_id, GRPCSourceNode* source_node);
+  Status AddGRPCSourceNode(sole::uuid query_id, int64_t source_id, GRPCSourceNode* source_node);
 
   /**
    * Delete all the metadata and backlog data for a query. Deleting a non-existing query is ignored.
@@ -70,7 +70,7 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
    */
   struct QueryTracker {
     QueryTracker() : create_time(std::chrono::steady_clock::now()) {}
-    absl::node_hash_map<std::string, SourceNodeTracker> source_node_trackers;
+    absl::node_hash_map<int64_t, SourceNodeTracker> source_node_trackers;
     std::chrono::steady_clock::time_point create_time;
   };
 

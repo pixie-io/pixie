@@ -228,12 +228,11 @@ column_types: BOOLEAN
 )";
 
 const char* kGRPCSourceOperator1 = R"(
-source_id: "agent1_2"
 )";
 
 const char* kGRPCSinkOperator1 = R"(
 address: "localhost:1234"
-destination_id: "agent1_2"
+destination_id: 0
 )";
 
 const char* kMapOperator1 = R"(

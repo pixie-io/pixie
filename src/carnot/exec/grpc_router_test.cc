@@ -63,6 +63,7 @@ class FakeGRPCSourceNode : public pl::carnot::exec::GRPCSourceNode {
 };
 
 TEST_F(GRPCRouterTest, no_node_router_test) {
+  int64_t grpc_source_node_id = 1;
   ResetStub();
   auto query_id_str = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
 
@@ -74,7 +75,7 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   auto rb_req1 = carnotpb::RowBatchRequest();
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_row_batch()));
   rb_req1.set_address("localhost");
-  rb_req1.set_destination_id("agent1_2");
+  rb_req1.set_destination_id(grpc_source_node_id);
   auto query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
 
@@ -84,7 +85,7 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   auto rb_req2 = carnotpb::RowBatchRequest();
   EXPECT_OK(rb2.ToProto(rb_req2.mutable_row_batch()));
   rb_req2.set_address("localhost");
-  rb_req2.set_destination_id("agent1_2");
+  rb_req2.set_destination_id(grpc_source_node_id);
   query_id = rb_req2.mutable_query_id();
   query_id->set_data(query_id_str);
 
@@ -101,11 +102,11 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   auto query_uuid = sole::rebuild(query_id_str);
   auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
   std::unique_ptr<pl::carnot::plan::Operator> plan_node =
-      plan::GRPCSourceOperator::FromProto(op_proto, 1);
+      plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
 
-  auto s = service_->AddGRPCSourceNode(query_uuid, &source_node);
+  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node);
   ASSERT_OK(s);
   EXPECT_EQ(2, source_node.row_batches.size());
   EXPECT_EQ(1, source_node.row_batches.at(0)->row_batch().cols(0).int64_data().data(0));
@@ -113,6 +114,7 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
 }
 
 TEST_F(GRPCRouterTest, basic_router_test) {
+  int64_t grpc_source_node_id = 1;
   ResetStub();
   auto query_id_str = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
 
@@ -122,10 +124,10 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   // Add source node to GRPC router.
   auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
   std::unique_ptr<pl::carnot::plan::Operator> plan_node =
-      plan::GRPCSourceOperator::FromProto(op_proto, 1);
+      plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
-  auto s = service_->AddGRPCSourceNode(query_uuid, &source_node);
+  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node);
   ASSERT_OK(s);
   EXPECT_EQ(0, source_node.row_batches.size());
 
@@ -136,7 +138,7 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   auto rb_req1 = carnotpb::RowBatchRequest();
   EXPECT_OK(rb1.ToProto(rb_req1.mutable_row_batch()));
   rb_req1.set_address("localhost");
-  rb_req1.set_destination_id("agent1_2");
+  rb_req1.set_destination_id(grpc_source_node_id);
   auto query_id = rb_req1.mutable_query_id();
   query_id->set_data(query_id_str);
 
@@ -146,7 +148,7 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   auto rb_req2 = carnotpb::RowBatchRequest();
   EXPECT_OK(rb2.ToProto(rb_req2.mutable_row_batch()));
   rb_req2.set_address("localhost");
-  rb_req2.set_destination_id("agent1_2");
+  rb_req2.set_destination_id(grpc_source_node_id);
   query_id = rb_req2.mutable_query_id();
   query_id->set_data(query_id_str);
 
@@ -165,17 +167,18 @@ TEST_F(GRPCRouterTest, basic_router_test) {
 }
 
 TEST_F(GRPCRouterTest, delete_node_router_test) {
+  int64_t grpc_source_node_id = 1;
   ResetStub();
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::BOOLEAN});
   auto query_uuid = sole::rebuild("ea8aa095-697f-49f1-b127-d50e5b6e2645");
 
   auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
   std::unique_ptr<pl::carnot::plan::Operator> plan_node =
-      plan::GRPCSourceOperator::FromProto(op_proto, 1);
+      plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
 
-  auto s = service_->AddGRPCSourceNode(query_uuid, &source_node);
+  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node);
   ASSERT_OK(s);
 
   service_->DeleteQuery(query_uuid);
@@ -220,7 +223,7 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
       auto rb_req = carnotpb::RowBatchRequest();
       EXPECT_OK(rb.ToProto(rb_req.mutable_row_batch()));
       rb_req.set_address("localhost");
-      rb_req.set_destination_id("agent1_2");
+      rb_req.set_destination_id(0);
       auto query_id = rb_req.mutable_query_id();
       query_id->set_data(query_id_str);
       writer->Write(rb_req);
@@ -235,7 +238,7 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
   std::thread read_thread([&] {
     auto idx = 0;
 
-    auto s = service_->AddGRPCSourceNode(query_uuid, &source_node);
+    auto s = service_->AddGRPCSourceNode(query_uuid, /* source_id */ 0, &source_node);
     ASSERT_OK(s);
     do {
       auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& rb, int64_t) {

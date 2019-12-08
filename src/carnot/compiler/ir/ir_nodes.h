@@ -1281,25 +1281,7 @@ class GRPCSinkIR : public OperatorIR {
    * Once the Distributed Plan is established, you should use DistributedDestinationID().
    */
   int64_t destination_id() const { return destination_id_; }
-
-  /**
-   * @brief Set the Distributed ID of this node. This should be the same
-   * string used to map mesage
-   *
-   * @param physical_source_id
-   */
-  void SetDistributedID(const std::string& physical_id) { physical_id_ = physical_id; }
-
-  bool DistributedIDSet() const { return physical_id_ != ""; }
-
-  /**
-   * @brief An id that is used to map the batches from this sink when received at a source.
-   *
-   * @return std::string
-   */
-  std::string DistributedDestinationID() const {
-    return absl::Substitute("$0:$1", physical_id_, destination_id_);
-  }
+  void SetDestinationID(int64_t destination_id) { destination_id_ = destination_id; }
   void SetDestinationAddress(const std::string& address) { destination_address_ = address; }
 
   const std::string& destination_address() const { return destination_address_; }
@@ -1311,7 +1293,6 @@ class GRPCSinkIR : public OperatorIR {
 
  private:
   int64_t destination_id_ = -1;
-  std::string physical_id_ = "";
   std::string destination_address_ = "";
 };
 
@@ -1330,22 +1311,13 @@ class GRPCSourceIR : public OperatorIR {
   /**
    * @brief Special Init that skips around the Operator init function.
    *
-   * @param source_id
+   * @param relation
    * @return Status
    */
-  Status Init(const std::string& remote_source_id, const table_store::schema::Relation& relation) {
-    remote_source_id_ = remote_source_id;
-    return SetRelation(relation);
-  }
-
-  const std::string& remote_source_id() const { return remote_source_id_; }
+  Status Init(const table_store::schema::Relation& relation) { return SetRelation(relation); }
 
  protected:
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
-
- private:
-  // The id to map any incoming batches to this node.
-  std::string remote_source_id_;
 };
 
 /**
@@ -1383,18 +1355,18 @@ class GRPCSourceGroupIR : public OperatorIR {
    * @return Status: error if this->source_id and sink_op->destination_id don't line up.
    */
   Status AddGRPCSink(GRPCSinkIR* sink_op);
-  const std::vector<std::string>& remote_string_ids() const { return remote_string_ids_; }
   bool GRPCAddressSet() const { return grpc_address_ != ""; }
   const std::string& grpc_address() const { return grpc_address_; }
   int64_t source_id() const { return source_id_; }
+  std::vector<GRPCSinkIR*> dependent_sinks() { return dependent_sinks_; }
 
  protected:
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
   int64_t source_id_ = -1;
-  std::vector<std::string> remote_string_ids_;
   std::string grpc_address_ = "";
+  std::vector<GRPCSinkIR*> dependent_sinks_;
 };
 
 struct ColumnMapping {

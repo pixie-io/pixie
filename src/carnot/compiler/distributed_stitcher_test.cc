@@ -104,7 +104,6 @@ TEST_F(StitcherTest, one_agent_one_kelvin) {
     IRNode* ir_node = agent_plan->Get(node_i);
     if (Match(ir_node, GRPCSink())) {
       auto grpc_sink = static_cast<GRPCSinkIR*>(ir_node);
-      EXPECT_FALSE(grpc_sink->DistributedIDSet());
       EXPECT_FALSE(grpc_sink->DestinationAddressSet());
     }
   }
@@ -120,8 +119,10 @@ TEST_F(StitcherTest, one_agent_one_kelvin) {
   // Execute the stitcher.
   auto stitcher = Stitcher::Create(compiler_state_.get()).ConsumeValueOrDie();
   EXPECT_OK(stitcher->Stitch(physical_plan.get()));
-  std::string agent_physical_id =
-      absl::Substitute("$0:$1", agent->carnot_info().query_broker_address(), 0);
+
+  std::vector<int64_t> source_ids;
+  std::vector<int64_t> destination_ids;
+
   // In the Kelvin plan, make sure GRPCSourceGroups don't show up in the resulting plan.
   for (int64_t node_i : kelvin_plan->dag().TopologicalSort()) {
     IRNode* ir_node = kelvin_plan->Get(node_i);
@@ -130,8 +131,7 @@ TEST_F(StitcherTest, one_agent_one_kelvin) {
         ir_node->DebugString());
     // Test GRPCSources for whether they have the expected input set.
     if (Match(ir_node, GRPCSource())) {
-      auto source = static_cast<GRPCSourceIR*>(ir_node);
-      EXPECT_EQ(source->remote_source_id(), agent_physical_id);
+      source_ids.emplace_back(ir_node->id());
     }
   }
 
@@ -142,10 +142,11 @@ TEST_F(StitcherTest, one_agent_one_kelvin) {
       // Test GRPCSinks for expected GRPC destination address, as well as the proper physical id
       // being set, as well as being set to the correct value.
       EXPECT_TRUE(sink->DestinationAddressSet());
-      EXPECT_TRUE(sink->DistributedIDSet());
-      EXPECT_EQ(sink->DistributedDestinationID(), agent_physical_id);
+      destination_ids.emplace_back(sink->destination_id());
     }
   }
+
+  EXPECT_THAT(source_ids, UnorderedElementsAreArray(destination_ids));
 }
 
 const char* kThreeAgentsOneKelvinDistributedState = R"proto(
@@ -193,14 +194,12 @@ TEST_F(StitcherTest, three_agents_one_kelvin) {
 
   std::vector<CarnotInstance*> agents;
   std::vector<IR*> agent_plans;
-  std::vector<std::string> agent_physical_ids;
   for (int64_t agent_id = 1; agent_id <= 3; ++agent_id) {
-    CarnotInstance* agent = physical_plan->Get(1);
+    CarnotInstance* agent = physical_plan->Get(agent_id);
     // Quick check to make sure agents are valid.
     ASSERT_THAT(agent->carnot_info().query_broker_address(), HasSubstr("agent"));
     agents.push_back(agent);
     agent_plans.push_back(agent->plan());
-    agent_physical_ids.push_back(absl::Substitute("$0$1:$2", "agent", agent_id, 0));
   }
 
   // Make sure none of the functionality si taken care of so we can detect that it does get tatken
@@ -210,7 +209,6 @@ TEST_F(StitcherTest, three_agents_one_kelvin) {
       IRNode* ir_node = agent_plan->Get(node_i);
       if (Match(ir_node, GRPCSink())) {
         auto grpc_sink = static_cast<GRPCSinkIR*>(ir_node);
-        EXPECT_FALSE(grpc_sink->DistributedIDSet());
         EXPECT_FALSE(grpc_sink->DestinationAddressSet());
       }
     }
@@ -228,7 +226,9 @@ TEST_F(StitcherTest, three_agents_one_kelvin) {
   auto stitcher = Stitcher::Create(compiler_state_.get()).ConsumeValueOrDie();
   EXPECT_OK(stitcher->Stitch(physical_plan.get()));
   // Save the remote source ids from the operators.
-  std::vector<std::string> remote_source_ids;
+  std::vector<int64_t> source_ids;
+  std::vector<int64_t> destination_ids;
+
   // In the Kelvin plan, make sure GRPCSourceGroups don't show up in the resulting plan.
   for (int64_t node_i : kelvin_plan->dag().TopologicalSort()) {
     IRNode* ir_node = kelvin_plan->Get(node_i);
@@ -238,12 +238,9 @@ TEST_F(StitcherTest, three_agents_one_kelvin) {
     // Test GRPCSources for whether they have the expected input set.
     if (Match(ir_node, GRPCSource())) {
       auto source = static_cast<GRPCSourceIR*>(ir_node);
-      remote_source_ids.push_back(source->remote_source_id());
+      source_ids.push_back(source->id());
     }
   }
-
-  // Check to see that all of the physical ids are in the remote_source_ids.
-  EXPECT_THAT(remote_source_ids, UnorderedElementsAreArray(agent_physical_ids));
 
   for (const auto& agent_plan : agent_plans) {
     for (int64_t node_i : agent_plan->dag().TopologicalSort()) {
@@ -253,11 +250,13 @@ TEST_F(StitcherTest, three_agents_one_kelvin) {
         // Test GRPCSinks for expected GRPC destination address, as well as the proper physical id
         // being set, as well as being set to the correct value.
         EXPECT_TRUE(sink->DestinationAddressSet());
-        EXPECT_TRUE(sink->DistributedIDSet());
-        EXPECT_THAT(agent_physical_ids, Contains(sink->DistributedDestinationID()));
+        destination_ids.push_back(sink->destination_id());
       }
     }
   }
+
+  // Check to see that all of the physical ids are in the remote_source_ids.
+  EXPECT_THAT(source_ids, UnorderedElementsAreArray(destination_ids));
 }
 
 }  // namespace distributed

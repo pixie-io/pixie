@@ -14,7 +14,7 @@ namespace exec {
 using table_store::schema::RowBatch;
 
 std::string GRPCSourceNode::DebugStringImpl() {
-  return absl::Substitute("Exec::GRPCSourceNode: <id: $0, output: $1>", plan_node_->source_id(),
+  return absl::Substitute("Exec::GRPCSourceNode: <id: $0, output: $1>", plan_node_->id(),
                           output_descriptor_->DebugString());
 }
 

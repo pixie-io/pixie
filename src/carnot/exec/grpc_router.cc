@@ -54,11 +54,11 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
   return ::grpc::Status::OK;
 }
 
-Status GRPCRouter::AddGRPCSourceNode(sole::uuid query_id, GRPCSourceNode* source_node) {
+Status GRPCRouter::AddGRPCSourceNode(sole::uuid query_id, int64_t source_id,
+                                     GRPCSourceNode* source_node) {
   // We need to check and see if there is backlog data, if so flush it from the vector.
-  auto id = source_node->destination_id();
   absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
-  auto& snt = query_node_map_[query_id].source_node_trackers[id];
+  auto& snt = query_node_map_[query_id].source_node_trackers[source_id];
   absl::base_internal::SpinLockHolder snt_lock(&snt.node_lock);
   snt.source_node = source_node;
   if (snt.response_backlog.size() > 0) {

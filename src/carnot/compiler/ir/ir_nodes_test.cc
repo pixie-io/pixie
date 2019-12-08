@@ -353,7 +353,6 @@ TEST_F(OperatorTests, grpc_ops) {
   int64_t grpc_id = 123;
   std::string source_grpc_address = "1111";
   std::string sink_physical_id = "agent-xyz";
-  std::string expected_physical_dest_id = absl::Substitute("$0:$1", sink_physical_id, grpc_id);
 
   MemorySourceIR* mem_src = MakeMemSource();
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_src, grpc_id);
@@ -367,11 +366,9 @@ TEST_F(OperatorTests, grpc_ops) {
   MakeMemSink(grpc_src_group, "out");
 
   grpc_src_group->SetGRPCAddress(source_grpc_address);
-  grpc_sink->SetDistributedID(sink_physical_id);
-  EXPECT_EQ(grpc_sink->DistributedDestinationID(), expected_physical_dest_id);
+  EXPECT_EQ(grpc_sink->destination_id(), grpc_id);
   EXPECT_OK(grpc_src_group->AddGRPCSink(grpc_sink));
-  EXPECT_EQ(grpc_src_group->remote_string_ids(),
-            std::vector<std::string>({expected_physical_dest_id}));
+  EXPECT_EQ(grpc_src_group->source_id(), grpc_id);
 }
 
 class CloneTests : public OperatorTests {
@@ -489,7 +486,6 @@ class CloneTests : public OperatorTests {
   void CompareClonedGRPCSourceGroup(GRPCSourceGroupIR* new_ir, GRPCSourceGroupIR* old_ir,
                                     const std::string& err_string) {
     EXPECT_EQ(new_ir->source_id(), old_ir->source_id()) << err_string;
-    EXPECT_EQ(new_ir->remote_string_ids(), old_ir->remote_string_ids()) << err_string;
     EXPECT_EQ(new_ir->grpc_address(), old_ir->grpc_address()) << err_string;
     EXPECT_EQ(new_ir->GRPCAddressSet(), old_ir->GRPCAddressSet()) << err_string;
   }
@@ -497,16 +493,12 @@ class CloneTests : public OperatorTests {
   void CompareClonedGRPCSink(GRPCSinkIR* new_ir, GRPCSinkIR* old_ir,
                              const std::string& err_string) {
     EXPECT_EQ(new_ir->destination_id(), old_ir->destination_id()) << err_string;
-    EXPECT_EQ(new_ir->DistributedDestinationID(), old_ir->DistributedDestinationID()) << err_string;
-    EXPECT_EQ(new_ir->DistributedIDSet(), old_ir->DistributedIDSet()) << err_string;
     EXPECT_EQ(new_ir->destination_address(), old_ir->destination_address()) << err_string;
     EXPECT_EQ(new_ir->DestinationAddressSet(), old_ir->DestinationAddressSet()) << err_string;
   }
 
-  void CompareClonedGRPCSource(GRPCSourceIR* new_ir, GRPCSourceIR* old_ir,
-                               const std::string& err_string) {
-    EXPECT_EQ(new_ir->remote_source_id(), old_ir->remote_source_id()) << err_string;
-  }
+  void CompareClonedGRPCSource(GRPCSourceIR* /*new_ir*/, GRPCSourceIR* /*old_ir*/,
+                               const std::string& /*err_string*/) {}
 
   void CompareClonedJoin(JoinIR* new_ir, JoinIR* old_ir, const std::string& err_string) {
     ASSERT_EQ(new_ir->join_type(), old_ir->join_type());
@@ -675,7 +667,6 @@ TEST_F(CloneTests, clone_grpc_source_group_and_sink) {
   // Build graph 2.
   auto mem_source = MakeMemSource();
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_source, 123);
-  grpc_sink->SetDistributedID("agent-aa");
   grpc_sink->SetDestinationAddress("1111");
 
   EXPECT_OK(grpc_source->AddGRPCSink(grpc_sink));
@@ -704,7 +695,7 @@ TEST_F(CloneTests, clone_grpc_source_group_and_sink) {
 }
 
 TEST_F(CloneTests, grpc_source) {
-  auto grpc_source = MakeGRPCSource("source_id/0", MakeRelation());
+  auto grpc_source = MakeGRPCSource(MakeRelation());
   MakeMemSink(grpc_source, "sup");
   auto out = graph->Clone();
   EXPECT_OK(out.status());
@@ -751,7 +742,6 @@ class ToProtoTests : public OperatorTests {};
 const char* kExpectedGRPCSourcePb = R"proto(
   op_type: GRPC_SOURCE_OPERATOR
   grpc_source_op {
-    source_id: "$0"
     column_types: INT64
     column_types: FLOAT64
     column_types: FLOAT64
@@ -764,21 +754,20 @@ const char* kExpectedGRPCSourcePb = R"proto(
 )proto";
 
 TEST_F(ToProtoTests, grpc_source_ir) {
-  std::string source_id = "grpc_source_name";
-  auto grpc_src = MakeGRPCSource(source_id, MakeRelation());
+  auto grpc_src = MakeGRPCSource(MakeRelation());
   MakeMemSink(grpc_src, "sink");
 
   planpb::Operator pb;
   ASSERT_OK(grpc_src->ToProto(&pb));
 
-  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedGRPCSourcePb, source_id)));
+  EXPECT_THAT(pb, EqualsProto(kExpectedGRPCSourcePb));
 }
 
 const char* kExpectedGRPCSinkPb = R"proto(
   op_type: GRPC_SINK_OPERATOR
   grpc_sink_op {
     address: "$0"
-    destination_id: "$1"
+    destination_id: $1
   }
 )proto";
 
@@ -788,15 +777,12 @@ TEST_F(ToProtoTests, grpc_sink_ir) {
   std::string physical_id = "agent-aa";
   auto mem_src = MakeMemSource();
   auto grpc_sink = MakeGRPCSink(mem_src, destination_id);
-  grpc_sink->SetDistributedID(physical_id);
   grpc_sink->SetDestinationAddress(grpc_address);
 
   planpb::Operator pb;
   ASSERT_OK(grpc_sink->ToProto(&pb));
 
-  EXPECT_THAT(
-      pb, EqualsProto(absl::Substitute(kExpectedGRPCSinkPb, grpc_address,
-                                       absl::Substitute("$0:$1", physical_id, destination_id))));
+  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedGRPCSinkPb, grpc_address, destination_id)));
 }
 
 const char* kIRProto = R"proto(

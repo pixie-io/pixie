@@ -965,7 +965,6 @@ StatusOr<IRNode*> LimitIR::DeepCloneIntoImpl(IR* graph) const {
 StatusOr<IRNode*> GRPCSinkIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, graph->MakeNode<GRPCSinkIR>(id()));
   grpc_sink->destination_id_ = destination_id_;
-  grpc_sink->physical_id_ = physical_id_;
   grpc_sink->destination_address_ = destination_address_;
   return grpc_sink;
 }
@@ -974,14 +973,13 @@ StatusOr<IRNode*> GRPCSourceGroupIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
                       graph->MakeNode<GRPCSourceGroupIR>(id()));
   grpc_source_group->source_id_ = source_id_;
-  grpc_source_group->remote_string_ids_ = remote_string_ids_;
   grpc_source_group->grpc_address_ = grpc_address_;
+  grpc_source_group->dependent_sinks_ = dependent_sinks_;
   return grpc_source_group;
 }
 
 StatusOr<IRNode*> GRPCSourceIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(GRPCSourceIR * grpc_source, graph->MakeNode<GRPCSourceIR>(id()));
-  grpc_source->remote_source_id_ = remote_source_id_;
   return grpc_source;
 }
 
@@ -989,8 +987,6 @@ Status GRPCSourceGroupIR::ToProto(planpb::Operator* op) const {
   // Note this is more for testing.
   auto pb = op->mutable_grpc_source_op();
   op->set_op_type(planpb::GRPC_SOURCE_OPERATOR);
-
-  pb->set_source_id(absl::StrCat(source_id_));
   auto types = relation().col_types();
   auto names = relation().col_names();
 
@@ -1005,17 +1001,14 @@ Status GRPCSourceGroupIR::ToProto(planpb::Operator* op) const {
 Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_grpc_sink_op();
   op->set_op_type(planpb::GRPC_SINK_OPERATOR);
-
   pb->set_address(destination_address());
-  pb->set_destination_id(DistributedDestinationID());
+  pb->set_destination_id(destination_id());
   return Status::OK();
 }
 
 Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_grpc_source_op();
   op->set_op_type(planpb::GRPC_SOURCE_OPERATOR);
-
-  pb->set_source_id(remote_source_id_);
   auto types = relation().col_types();
   auto names = relation().col_names();
 
@@ -1089,12 +1082,8 @@ Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
     return DExitOrIRNodeError("$0 doesn't have a physical agent associated with it.",
                               DebugString());
   }
-  if (!sink_op->DistributedIDSet()) {
-    return DExitOrIRNodeError("$0 doesn't have a physical agent associated with it.",
-                              sink_op->DebugString());
-  }
-  remote_string_ids_.push_back(sink_op->DistributedDestinationID());
   sink_op->SetDestinationAddress(grpc_address_);
+  dependent_sinks_.emplace_back(sink_op);
   return Status::OK();
 }
 

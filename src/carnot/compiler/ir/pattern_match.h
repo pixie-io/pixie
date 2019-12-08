@@ -144,6 +144,19 @@ inline ClassMatch<IRNodeType::kList> List() { return ClassMatch<IRNodeType::kLis
 inline ClassMatch<IRNodeType::kTuple> Tuple() { return ClassMatch<IRNodeType::kTuple>(); }
 inline ClassMatch<IRNodeType::kGroupBy> GroupBy() { return ClassMatch<IRNodeType::kGroupBy>(); }
 
+/* Match GRPCSink with a specific source ID */
+struct GRPCSinkWithSourceID : public ParentMatch {
+  explicit GRPCSinkWithSourceID(int64_t source_id)
+      : ParentMatch(IRNodeType::kGRPCSink), source_id_(source_id) {}
+  bool Match(const IRNode* node) const override {
+    return GRPCSink().Match(node) &&
+           static_cast<const GRPCSinkIR*>(node)->destination_id() == source_id_;
+  }
+
+ private:
+  int64_t source_id_;
+};
+
 /**
  * @brief Match a specific integer value.
  */
