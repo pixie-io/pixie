@@ -170,7 +170,6 @@ void LibuvDispatcher::Post(PostCB cb) {
   }
 
   if (activate) {
-    LOG(INFO) << "Activating post";
     int rc = uv_async_send(&post_async_handler_);
     CHECK(rc == 0) << "Failed to schedule post processing";
   }
