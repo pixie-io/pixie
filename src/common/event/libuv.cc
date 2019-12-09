@@ -170,7 +170,9 @@ void LibuvDispatcher::Post(PostCB cb) {
   }
 
   if (activate) {
-    post_timer_->EnableTimer(std::chrono::milliseconds(0));
+    LOG(INFO) << "Activating post";
+    int rc = uv_async_send(&post_async_handler_);
+    CHECK(rc == 0) << "Failed to schedule post processing";
   }
 }
 
@@ -204,10 +206,17 @@ LibuvDispatcher::LibuvDispatcher(std::string_view name, const API& api, TimeSyst
       api_(api),
       base_scheduler_(name),
       scheduler_(time_system->CreateScheduler(&base_scheduler_)),
-      post_timer_(CreateTimer([this]() { RunPostCallbacks(); })),
       current_to_delete_(&to_delete_1_),
       deferred_delete_timer_(CreateTimer([this]() { DoDeferredDelete(); })) {
   UpdateMonotonicTime();
+
+  post_async_handler_.data = this;
+  uv_async_init(base_scheduler_.uv_loop(), &post_async_handler_, [](uv_async_t* h) {
+    LibuvDispatcher* d = reinterpret_cast<LibuvDispatcher*>(h->data);
+    d->RunPostCallbacks();
+  });
+  // Don't block the event loop if this is the only reference.
+  uv_unref(reinterpret_cast<uv_handle_t*>(&post_async_handler_));
 }
 
 TimerUPtr LibuvDispatcher::CreateTimer(TimerCB cb) {
@@ -230,7 +239,10 @@ void LibuvDispatcher::RunPostCallbacks() {
   }
 }
 
-void LibuvDispatcher::Stop() { base_scheduler_.Stop(); }
+void LibuvDispatcher::Stop() {
+  uv_close(reinterpret_cast<uv_handle_t*>(&post_async_handler_), nullptr);
+  base_scheduler_.Stop();
+}
 
 RunnableAsyncTaskUPtr LibuvDispatcher::CreateAsyncTask(std::unique_ptr<AsyncTask> task) {
   return base_scheduler_.CreateAsyncTask(std::move(task));

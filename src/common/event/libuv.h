@@ -89,12 +89,12 @@ class LibuvDispatcher : public Dispatcher {
 
   absl::Mutex post_lock_;
   std::list<PostCB> post_callbacks_ ABSL_GUARDED_BY(post_lock_);
+  uv_async_t post_async_handler_;
 
   const API& api_;
   LibuvScheduler base_scheduler_;
   SchedulerUPtr scheduler_;
   MonotonicTimePoint approximate_monotonic_time_;
-  TimerUPtr post_timer_;
 
   // We maintain two deletion lists (double buffer), so that we support deleters calling other
   // deleters.
