@@ -1,0 +1,51 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc", "*_main.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/vizier/services/agent/manager:cc_library",
+    ],
+)
+
+pl_cc_binary(
+    name = "pem",
+    srcs = ["pem_main.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/signal:cc_library",
+        "//src/shared/version:cc_library",
+    ],
+)
+
+cc_image(
+    name = "pem_image",
+    base = "//:pl_cc_bpf_image",
+    binary = ":pem",
+)
+
+container_push(
+    name = "push_pem_image",
+    format = "Docker",
+    image = ":pem_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/vizier/pem_image",
+    tag = "{STABLE_BUILD_TAG}",
+)
+
+container_push(
+    name = "push_test_pem_image",
+    format = "Docker",
+    image = ":pem_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/vizier/pem_image",
+    tag = "{BUILD_USER}",
+)
