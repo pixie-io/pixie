@@ -168,6 +168,9 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 		return
 	}
 
+	log.WithField("agents", agents).WithField("hostnames", hostnames).
+		WithField("update", updatePb).Infof("Adding update to agent queue for agents")
+
 	allAgents := *agents
 	if !nodeSpecific {
 		// This update is not for a specific node. Send to Kelvins as well.
@@ -177,6 +180,7 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 		} else {
 			allAgents = append(allAgents, kelvinIDs...)
 		}
+		log.WithField("kelvins", kelvinIDs).WithField("update", updatePb).Infof("Adding update to agent queue for kelvins")
 	}
 
 	var failedHostnames []string

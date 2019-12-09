@@ -177,6 +177,8 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 		return
 	}
 
+	log.WithField("agent", agentID.String()).Infof("Received AgentRegisterRequest for agent")
+
 	// Create agent in agent manager.
 	agentInfo := &agentpb.Agent{
 		Info:            m.Info,
@@ -213,6 +215,8 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 		log.WithError(err).Error("Could not get metadata updates.")
 		return
 	}
+
+	log.WithField("agent", agentID.String()).WithField("updates", updates).Infof("Queuing up initial updates for agent")
 
 	err = mc.agentManager.AddUpdatesToAgentQueue(agentID, updates)
 	if err != nil {
