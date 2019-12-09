@@ -14,6 +14,7 @@
 #include "src/common/base/mixins.h"         // IWYU pragma: export
 #include "src/common/base/status.h"         // IWYU pragma: export
 #include "src/common/base/statusor.h"       // IWYU pragma: export
+#include "src/common/base/thread.h"         // IWYU pragma: export
 #include "src/common/base/time.h"           // IWYU pragma: export
 #include "src/common/base/types.h"          // IWYU pragma: export
 #include "src/common/base/utils.h"          // IWYU pragma: export
