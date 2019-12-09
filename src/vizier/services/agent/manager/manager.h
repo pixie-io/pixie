@@ -1,4 +1,5 @@
 #pragma once
+#include <grpcpp/grpcpp.h>
 
 #include <chrono>
 #include <memory>
@@ -14,6 +15,10 @@
 #include "src/shared/metadata/metadata.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
 #include "src/vizier/services/agent/manager/relation_info_manager.h"
+
+PL_SUPPRESS_WARNINGS_START()
+#include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
+PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
 namespace vizier {
@@ -42,7 +47,10 @@ class Manager : public pl::NotCopyable {
   using VizierNATSTLSConfig = pl::event::NATSTLSConfig;
   using VizierNATSConnector = pl::event::NATSConnector<pl::vizier::messages::VizierMessage>;
   using MsgCase = messages::VizierMessage::MsgCase;
+  using QueryBrokerService = pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService;
+  using QueryBrokerServiceSPtr = std::shared_ptr<Manager::QueryBrokerService::Stub>;
 
+  Manager() = delete;
   virtual ~Manager() = default;
 
   // Forward decleration to prevent circular dependency on MessageHandler.
@@ -69,7 +77,9 @@ class Manager : public pl::NotCopyable {
 
  protected:
   // Protect constructor since we need to use Init on this class.
-  Manager(sole::uuid agent_id, std::unique_ptr<VizierNATSConnector> nats_connector);
+  Manager(sole::uuid agent_id, std::string_view nats_url, std::string_view qb_url);
+  Manager(sole::uuid agent_id, std::string_view qb_url,
+          std::unique_ptr<VizierNATSConnector> nats_connector);
   Status Init();
 
   void NATSMessageHandler(VizierNATSConnector::MsgType msg);
@@ -78,6 +88,14 @@ class Manager : public pl::NotCopyable {
                                 bool override = false);
   Status RegisterBackgroundHelpers();
 
+  // ************************************************************
+  // Static utility functions.
+  // ************************************************************
+  static std::unique_ptr<VizierNATSConnector> CreateDefaultNATSConnector(const sole::uuid& agent_id,
+                                                                         std::string_view nats_url);
+
+  static QueryBrokerServiceSPtr CreateDefaultQueryBrokerStub(
+      std::string_view query_broker_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds);
   // ************************************************************
   // Interfaces that need to be implemented for the derived variants
   // of the agent.
@@ -102,6 +120,14 @@ class Manager : public pl::NotCopyable {
   pl::event::Dispatcher* dispatcher() { return dispatcher_.get(); }
 
  private:
+  std::shared_ptr<grpc::ChannelCredentials> grpc_channel_creds_;
+  Manager::QueryBrokerServiceSPtr qb_stub_;
+
+  // The time system to use (real or simulated).
+  std::unique_ptr<pl::event::TimeSystem> time_system_;
+  pl::event::APIUPtr api_;
+  pl::event::DispatcherUPtr dispatcher_;
+
   Info info_;
   std::unique_ptr<VizierNATSConnector> nats_connector_;
 
@@ -118,14 +144,6 @@ class Manager : public pl::NotCopyable {
   // same message handler can be used for multiple different types of messages.
   absl::flat_hash_map<MsgCase, std::shared_ptr<MessageHandler>> message_handlers_;
 
-  // Timeout for registration ACK.
-  static constexpr std::chrono::seconds kRegistrationPeriod{5};
-
-  // The time system to use (real or simulated).
-  std::unique_ptr<pl::event::TimeSystem> time_system_;
-  pl::event::APIUPtr api_;
-  pl::event::DispatcherUPtr dispatcher_;
-
   // Only accessed from the event loop. So they don't need to be guarded by a mutex.
   bool agent_registered_ = false;
   pl::event::TimerUPtr registration_timeout_;
@@ -134,6 +152,14 @@ class Manager : public pl::NotCopyable {
 
   // The timer to manage metadata updates.
   pl::event::TimerUPtr metadata_update_timer_;
+
+  bool stop_called_ = false;
+  // ************************************************************
+  // Static constants used in this class
+  // ************************************************************
+
+  // Timeout for registration ACK.
+  static constexpr std::chrono::seconds kRegistrationPeriod{5};
 };
 
 /**
