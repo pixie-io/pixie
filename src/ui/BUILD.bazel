@@ -93,6 +93,7 @@ genrule(
       cp dist/bundle.tar.gz $${OUTPUT_PATH}
     """ + UI_SCRIPT_END,
     output_to_bindir = 1,  # We treat "outputs" as binaries.
+    stamp = True,
     tags = [
         "ui_build",
     ],
@@ -116,6 +117,7 @@ genrule(
       tar -czf $${OUTPUT_PATH}/bundle_storybook.tar.gz storybook_static
     """ + UI_SCRIPT_END,
     output_to_bindir = 1,  # We treat "outputs" as binaries.
+    stamp = True,
     tags = [
         "ui_build",
     ],
