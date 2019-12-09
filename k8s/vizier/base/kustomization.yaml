@@ -24,6 +24,8 @@ resources:
 - certmgr_service.yaml
 - cloud_connector_deployment.yaml
 - cloud_connector_service.yaml
+- kelvin_deployment.yaml
+- kelvin_service.yaml
 - metadata_deployment.yaml
 - metadata_service.yaml
 - metadata_role.yaml

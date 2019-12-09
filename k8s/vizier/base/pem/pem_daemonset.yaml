@@ -19,7 +19,7 @@ spec:
       - name: pl-image-secret
       containers:
       - name: pem
-        image: gcr.io/pl-dev-infra/vizier/agent_image:latest
+        image: gcr.io/pl-dev-infra/vizier/pem_image:latest
         args: ["--stirling_enable_parsing_protobufs=true"]
         env:
         - name: PL_CLIENT_TLS_CERT

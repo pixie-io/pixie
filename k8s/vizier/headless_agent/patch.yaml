@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: agent
+  name: pem
 spec:
   template:
     spec:
       containers:
-      - name: agent
-        image: gcr.io/pl-dev-infra/vizier/agent_image:{{USER}}
+      - name: pem
+        image: gcr.io/pl-dev-infra/vizier/pem_image:{{USER}}
         imagePullPolicy: Always
         args:
         - "--disable_SSL=true"

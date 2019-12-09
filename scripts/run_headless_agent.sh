@@ -9,7 +9,7 @@ usage() {
 }
 
 parse_args() {
-  if [[ $# < 1 ]]; then
+  if [[ $# -lt 1 ]]; then
     usage
     echo "Needs at least 1 argument for running time, exit ..."
     exit 1
@@ -27,7 +27,7 @@ echo "-------------------------------------------"
 echo "Building and pushing agent image"
 echo "-------------------------------------------"
 
-bazel run //src/vizier/services/agent:push_test_agent_image
+bazel run //src/vizier/services/agent:push_test_pem_image
 
 if [[ "$(kubectl get namespace ${NAMESPACE} 2>/dev/null | grep ^${NAMESPACE} | wc -l)" != "0" ]];
 then

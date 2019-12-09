@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kelvin
+spec:
+  selector:
+    matchLabels:
+      name: kelvin
+  template:
+    metadata:
+      labels:
+        name: kelvin
+    spec:
+      imagePullSecrets:
+      - name: pl-image-secret
+      containers:
+      - name: kelvin
+        image: gcr.io/pl-dev-infra/vizier/kelvin_image:latest
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
+        env:
+        - name: PL_PROC_PATH
+          value: "/host/proc"
+        - name: PL_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        ports:
+        - containerPort: 59300
+          hostPort: 59300
+        volumeMounts:
+        - mountPath: /certs
+          name: certs
+        - name: sys
+          mountPath: /sys
+          readOnly: true
+        resources:
+          limits:
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - name: sys
+        hostPath:
+          path: /sys
+          type: Directory
