@@ -30,6 +30,19 @@ DEFINE_bool(stirling_bpf_enable_logging, false, "If true, BPF logging facilities
 namespace pl {
 namespace bpf_tools {
 
+namespace {
+std::string_view ProbeAttachTypeString(bpf_probe_attach_type type) {
+  switch (type) {
+    case BPF_PROBE_ENTRY:
+      return "entry";
+    case BPF_PROBE_RETURN:
+      return "return";
+    default:
+      return "unknown";
+  }
+}
+}  // namespace
+
 // TODO(yzhao): Read CPU count during runtime and set maxactive to Multiplier * N_CPU. That way, we
 // can be relatively more secure against increase of CPU count. Note the default multiplier is 2,
 // which is not sufficient, as indicated in Hipster shop.
@@ -57,9 +70,12 @@ Status BCCWrapper::InitBPFCode(const std::vector<std::string>& cflags) {
 }
 
 Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
+  LOG(INFO) << absl::StrFormat("Deploying kprobe:\n   type=%s\n   kernel_fn=%s\n   trace_fn=%s",
+                               ProbeAttachTypeString(probe.attach_type), probe.kernel_fn_short_name,
+                               probe.probe_fn);
   ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
-      bpf_.get_syscall_fnname(std::string(probe.kernel_fn_short_name)),
-      std::string(probe.trace_fn_name), 0 /* offset */, probe.attach_type, kKprobeMaxActive);
+      bpf_.get_syscall_fnname(std::string(probe.kernel_fn_short_name)), std::string(probe.probe_fn),
+      0 /* offset */, probe.attach_type, kKprobeMaxActive);
   if (attach_status.code() != 0) {
     return error::Internal("Failed to attach kprobe to kernel function: $0, error message: $1",
                            probe.kernel_fn_short_name, attach_status.msg());
@@ -73,6 +89,9 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
 constexpr uint64_t kIgnoredSymbolAddr = 0;
 
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
+  LOG(INFO) << absl::StrFormat(
+      "Deploying uprobe:\n   type=%s\n   binary=%s\n   symbol=%s\n   trace_fn=%s",
+      ProbeAttachTypeString(probe.attach_type), probe.binary_path, probe.symbol, probe.probe_fn);
   ebpf::StatusTuple attach_status =
       bpf().attach_uprobe(probe.binary_path, std::string(probe.symbol), std::string(probe.probe_fn),
                           kIgnoredSymbolAddr, probe.attach_type);

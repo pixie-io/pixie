@@ -39,7 +39,7 @@ struct KProbeSpec {
   std::string_view kernel_fn_short_name;
 
   // Name of user-provided function to run when event is triggered.
-  std::string_view trace_fn_name;
+  std::string_view probe_fn;
 
   // Whether this is an ENTRY or RETURN probe.
   bpf_probe_attach_type attach_type;

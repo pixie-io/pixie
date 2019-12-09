@@ -1,3 +1,7 @@
+#include <sys/syscall.h>
+#include <unistd.h>
+#define gettid() syscall(SYS_gettid)
+
 #include <ctime>
 #include <iomanip>
 #include <thread>
@@ -154,7 +158,7 @@ int main(int argc, char** argv) {
   signal(SIGHUP, SignalHandler);
 
   pl::InitEnvironmentOrDie(&argc, argv);
-  LOG(INFO) << "Stirling Wrapper PID: " << getpid() << " TID: " << std::this_thread::get_id();
+  LOG(INFO) << "Stirling Wrapper PID: " << getpid() << " TID: " << gettid();
 
   // Make Stirling.
   std::unique_ptr<SourceRegistry> registry = FLAGS_all_sources

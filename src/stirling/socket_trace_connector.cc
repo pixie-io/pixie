@@ -101,6 +101,7 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFCode(cflags));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
+  LOG(INFO) << "Probes successfully deployed";
   if (protocol_transfer_specs_[kProtocolHTTP].enabled) {
     PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
   }
