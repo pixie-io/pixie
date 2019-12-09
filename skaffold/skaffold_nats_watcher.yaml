@@ -1,3 +1,4 @@
+---
 apiVersion: skaffold/v1beta13
 kind: Config
 build:
@@ -6,16 +7,18 @@ build:
     context: .
     bazel:
       target: //src/vizier/utils/nats_watcher:nats_watcher_image.tar
+  tagPolicy:
+    dateTime: {}
 deploy:
   kustomize:
     path: k8s/utils/dev
 profiles:
-  - name: minikube
-    activation:
-      - kubeContext: minikube
-    patches:
-      # Don't push images in the minikube build.
-      - op: replace
-        path: /build/local
-        value:
-          push: false
+- name: minikube
+  activation:
+  - kubeContext: minikube
+  patches:
+  # Don't push images in the minikube build.
+  - op: replace
+    path: /build/local
+    value:
+      push: false
