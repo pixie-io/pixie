@@ -13,7 +13,7 @@
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
-#include "src/vizier/services/agent/controller/relation_info_manager.h"
+#include "src/vizier/services/agent/manager/relation_info_manager.h"
 
 namespace pl {
 namespace vizier {
