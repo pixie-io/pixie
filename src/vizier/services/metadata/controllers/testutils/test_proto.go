@@ -36,7 +36,7 @@ info {
     hostname: "testhost"
   }
   capabilities {
-    collects_data: false
+    collects_data: true
   }
 }
 create_time_ns: 0
@@ -53,7 +53,7 @@ info {
     hostname: "anotherhost"
   }
   capabilities {
-    collects_data: false
+    collects_data: true
   }
 }
 create_time_ns: 0
@@ -70,7 +70,7 @@ info {
     hostname: "abcd"
   }
   capabilities {
-    collects_data: true
+    collects_data: false
   }
 }
 create_time_ns: 0

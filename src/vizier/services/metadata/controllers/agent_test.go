@@ -61,7 +61,7 @@ func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 		t.Fatal("Unable to add agentData to etcd.")
 	}
 
-	if info.Info.Capabilities.CollectsData {
+	if !info.Info.Capabilities.CollectsData {
 		_, err = client.Put(context.Background(), controllers.GetKelvinAgentKey(agentID), agentID)
 		if err != nil {
 			t.Fatal("Unable to add kelvin data to etcd.")
@@ -163,7 +163,7 @@ func TestRegisterKelvinAgent(t *testing.T) {
 			},
 			AgentID: upb,
 			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: true,
+				CollectsData: false,
 			},
 		},
 		LastHeartbeatNS: 1,
@@ -220,7 +220,7 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 			},
 			AgentID: upb,
 			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: false,
+				CollectsData: true,
 			},
 		},
 		LastHeartbeatNS: 1,
@@ -454,7 +454,7 @@ func TestGetActiveAgents(t *testing.T) {
 				Hostname: "testhost",
 			},
 			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: false,
+				CollectsData: true,
 			},
 		},
 	}
@@ -469,7 +469,7 @@ func TestGetActiveAgents(t *testing.T) {
 				Hostname: "anotherhost",
 			},
 			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: false,
+				CollectsData: true,
 			},
 		},
 	}

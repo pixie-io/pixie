@@ -237,7 +237,7 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 	ops[0] = clientv3.OpPut(GetHostnameAgentKey(info.HostInfo.Hostname), aUUID.String())
 	ops[1] = clientv3.OpPut(GetAgentKeyFromUUID(aUUID), string(i))
 
-	if collectsData {
+	if !collectsData {
 		ops = append(ops, clientv3.OpPut(GetKelvinAgentKey(aUUID.String()), aUUID.String()))
 	}
 
@@ -306,7 +306,7 @@ func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, host
 	ops[0] = clientv3.OpDelete(GetHostnameAgentKey(hostname))
 	ops[1] = clientv3.OpDelete(GetAgentSchemasKey(agentID), clientv3.WithPrefix())
 
-	if collectsData {
+	if !collectsData {
 		ops = append(ops, clientv3.OpDelete(GetKelvinAgentKey(agentID)))
 	}
 
