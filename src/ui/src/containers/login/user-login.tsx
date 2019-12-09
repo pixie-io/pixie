@@ -64,7 +64,7 @@ function onLoginAuthenticated(authResult) {
       }
       analytics.track('Login success');
 
-      RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
+      RedirectUtils.redirect(this.siteName, this.redirectPath || '/', {});
     }).catch((err) => {
       analytics.track('Login failed', { error: err.response.data });
       this.setState({
@@ -96,7 +96,7 @@ function onCreateAuthenticated(authResult) {
       analytics.track('Site created', { siteName: this.siteName });
 
     }).then((results) => {
-      RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
+      RedirectUtils.redirect(this.siteName, this.redirectPath || '/', {});
     }).catch((err) => {
       analytics.track('Site create failed', { error: err.response.data });
       this.setState({
@@ -220,7 +220,7 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
     });
 
     if (!this.cliAuthMode && !this.noCache && this.isAuthenticated()) {
-      RedirectUtils.redirect(this.siteName, this.redirectPath || '/vizier/query', {});
+      RedirectUtils.redirect(this.siteName, this.redirectPath || '/', {});
     }
 
     this._lock.show();

@@ -13,10 +13,10 @@ export function VizierTopNav() {
         <img src={logoImage} />
       </Navbar.Brand>
       <Nav style={{ marginRight: 'auto' }}>
-        <Nav.Link as={NavLink} to='/vizier/query' activeClassName='active-nav-link'>Console</Nav.Link>
+        <Nav.Link as={NavLink} to='/console' activeClassName='pixie-nav-link-active'>Console</Nav.Link>
       </Nav>
       <NavDropdown alignRight title={<img src={userImage} />} id='profile-icon-dropdown'>
-        <NavDropdown.Item as={NavLink} to='/vizier/agents'>Admin</NavDropdown.Item>
+        <NavDropdown.Item as={NavLink} to='/agents'>Admin</NavDropdown.Item>
         <NavDropdown.Item href='/docs/getting-started' target='_blank'>Docs</NavDropdown.Item>
         <Dropdown.Divider />
         <NavDropdown.Item as={NavLink} to='/logout'>Logout</NavDropdown.Item>

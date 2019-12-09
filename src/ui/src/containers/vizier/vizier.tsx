@@ -9,7 +9,7 @@ import gql from 'graphql-tag';
 import * as loadingSvg from 'images/icons/loading-dark.svg';
 import * as React from 'react';
 import {ApolloConsumer, Query} from 'react-apollo';
-import {Route, Switch} from 'react-router-dom';
+import {Redirect, Route, Switch} from 'react-router-dom';
 
 import {AgentDisplay} from './agent-display';
 import {DeployInstructions} from './deploy-instructions';
@@ -104,9 +104,9 @@ export class VizierMain extends React.Component<VizierMainProps, { loaded: boole
             <>
               <VizierTopNav />
               <Switch>
-                <Route path={`/vizier/agents`} component={AgentDisplay} />
-                <Route path={'/vizier/script'} component={Editor} />
-                <Route path={`/`} component={QueryManager} />
+                <Route path='/agents' component={AgentDisplay} />
+                <Route path='/console' component={Editor} />
+                <Redirect from='/*' to='/console' />
               </Switch>
             </>
           );

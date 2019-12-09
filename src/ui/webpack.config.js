@@ -78,11 +78,10 @@ var webpackConfig = {
     publicPath: '/',
     historyApiFallback: {
       rewrites: [
-        {from: /logout/, to: '/subdomain-index.html'},
-        {from: /login/, to: '/subdomain-index.html'},
-        {from: /create-site/, to: '/subdomain-index.html'},
-        {from: /vizier/, to: '/subdomain-index.html'},
-        {from: /(.*)/, to: '/index.html'},
+        // TODO(malthus): This doesn't fully work for the dev server right
+        // now, because navigating to root always goes to index.html.
+        {from: /^\/(create(?!-site)|auth_success)$/, to: '/index.html'},
+        {from: /.*/, to: '/subdomain-index.html'},
       ],
     },
     proxy: [],
