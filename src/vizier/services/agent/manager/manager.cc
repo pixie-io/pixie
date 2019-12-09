@@ -91,9 +91,9 @@ Status Manager::Init() {
       }
       LOG(FATAL) << "Timeout waiting for registration ack";
     });
-    registration_timeout_->EnableTimer(kRegistrationPeriod);
     // Send the agent info.
     PL_RETURN_IF_ERROR(RegisterAgent());
+    registration_timeout_->EnableTimer(kRegistrationPeriod);
   }
 
   return InitImpl();

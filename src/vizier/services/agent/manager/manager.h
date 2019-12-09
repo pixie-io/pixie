@@ -166,7 +166,7 @@ class Manager : public pl::NotCopyable {
   // ************************************************************
 
   // Timeout for registration ACK.
-  static constexpr std::chrono::seconds kRegistrationPeriod{5};
+  static constexpr std::chrono::seconds kRegistrationPeriod{30};
 };
 
 /**
