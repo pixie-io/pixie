@@ -94,20 +94,6 @@ func TestServer_CreateUser(t *testing.T) {
 			respID:     nil,
 		},
 		{
-			name:      "invalid last name",
-			makesCall: false,
-			userInfo: &profile.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(&testOrgUUID),
-				Username:  "foobar",
-				FirstName: "foo",
-				LastName:  "",
-				Email:     "foo@bar.com",
-			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-			respID:     nil,
-		},
-		{
 			name:      "empty email",
 			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
@@ -357,24 +343,6 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 			expectCode: codes.InvalidArgument,
 		},
 		{
-			name:      "invalid last name",
-			makesCall: false,
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "hulu.com",
-				},
-				User: &profile.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "",
-					Email:     "foo@bar.com",
-				},
-			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-		},
-		{
 			name:      "missing email",
 			makesCall: false,
 			req: &profile.CreateOrgAndUserRequest{
@@ -421,7 +389,7 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 				User: &profile.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
 					FirstName: "foo",
-					LastName:  "bar",
+					LastName:  "",
 					Email:     "foo@gmail.com",
 				},
 			},

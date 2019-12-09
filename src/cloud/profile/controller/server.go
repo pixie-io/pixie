@@ -149,9 +149,6 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profile.CreateOrgAnd
 	if len(userInfo.FirstName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid firstname")
 	}
-	if len(userInfo.LastName) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "invalid lastname")
-	}
 	if err := checkValidEmail(userInfo.Email); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
