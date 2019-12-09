@@ -52,14 +52,14 @@ void SystemStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx, Data
     // PID.
     auto s1 = proc_parser_->ParseProcPIDStat(pid, &stats);
     if (!s1.ok()) {
-      LOG(ERROR) << absl::Substitute(
+      VLOG(1) << absl::Substitute(
           "Failed to fetch cpu stat info for PID ($0). Error=\"$1\" skipping.", pid, s1.msg());
       continue;
     }
 
     auto s2 = proc_parser_->ParseProcPIDStatIO(pid, &stats);
     if (!s2.ok()) {
-      LOG(ERROR) << absl::Substitute(
+      VLOG(1) << absl::Substitute(
           "Failed to fetch IO stat info for PID ($0). Error=\"$1\" skipping.", pid, s2.msg());
       continue;
     }
@@ -112,7 +112,7 @@ void SystemStatsConnector::TransferNetworkStatsTable(ConnectorContext* ctx, Data
     auto s = GetNetworkStatsForPod(*proc_parser_, *pod_info, k8s_md, &stats);
 
     if (!s.ok()) {
-      LOG(ERROR) << absl::StrCat("Failed to get Pod network stats: ", s.msg());
+      VLOG(1) << absl::StrCat("Failed to get Pod network stats: ", s.msg());
       continue;
     }
 
