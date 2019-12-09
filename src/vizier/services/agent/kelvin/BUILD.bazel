@@ -12,14 +12,13 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/stirling:cc_library",
         "//src/vizier/services/agent/manager:cc_library",
     ],
 )
 
 pl_cc_binary(
-    name = "pem",
-    srcs = ["pem_main.cc"],
+    name = "kelvin",
+    srcs = ["kelvin_main.cc"],
     deps = [
         ":cc_library",
         "//src/common/signal:cc_library",
@@ -28,25 +27,25 @@ pl_cc_binary(
 )
 
 cc_image(
-    name = "pem_image",
-    base = "//:pl_cc_bpf_image",
-    binary = ":pem",
+    name = "kelvin_image",
+    base = "//:pl_cc_base_image",
+    binary = ":kelvin",
 )
 
 container_push(
-    name = "push_pem_image",
+    name = "push_kelvin_image",
     format = "Docker",
-    image = ":pem_image",
+    image = ":kelvin_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/vizier/pem_image",
+    repository = "pl-dev-infra/vizier/kelvin_image",
     tag = "{STABLE_BUILD_TAG}",
 )
 
 container_push(
-    name = "push_test_pem_image",
+    name = "push_test_kelvin_image",
     format = "Docker",
-    image = ":pem_image",
+    image = ":kelvin_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/vizier/pem_image",
+    repository = "pl-dev-infra/vizier/kelvin_image",
     tag = "{BUILD_USER}",
 )

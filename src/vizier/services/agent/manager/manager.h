@@ -35,6 +35,7 @@ struct Info {
   // Agent short Id.
   uint32_t asid = 0;
   std::string hostname;
+  std::string address;
 };
 
 /**
@@ -74,12 +75,14 @@ class Manager : public pl::NotCopyable {
    * It's invoked on the event thread.
    */
   virtual Status PostRegisterHook() { return Status::OK(); }
+  const Info* info() const { return &info_; }
 
  protected:
   // Protect constructor since we need to use Init on this class.
-  Manager(sole::uuid agent_id, std::string_view nats_url, std::string_view qb_url);
-  Manager(sole::uuid agent_id, std::string_view qb_url,
-          std::unique_ptr<VizierNATSConnector> nats_connector);
+  Manager(sole::uuid agent_id, services::shared::agent::AgentCapabilities capabilities,
+          std::string_view nats_url, std::string_view qb_url);
+  Manager(sole::uuid agent_id, services::shared::agent::AgentCapabilities capabilities,
+          std::string_view qb_url, std::unique_ptr<VizierNATSConnector> nats_connector);
   Status Init();
 
   void NATSMessageHandler(VizierNATSConnector::MsgType msg);
@@ -119,7 +122,11 @@ class Manager : public pl::NotCopyable {
   pl::event::TimeSystem* time_system() { return time_system_.get(); }
   pl::event::Dispatcher* dispatcher() { return dispatcher_.get(); }
 
+  Info* info() { return &info_; }
+
  private:
+  // The agent capabilities.
+  services::shared::agent::AgentCapabilities capabilities_;
   std::shared_ptr<grpc::ChannelCredentials> grpc_channel_creds_;
   Manager::QueryBrokerServiceSPtr qb_stub_;
 

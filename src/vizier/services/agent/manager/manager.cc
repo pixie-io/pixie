@@ -30,12 +30,15 @@ namespace vizier {
 namespace agent {
 using ::pl::event::Dispatcher;
 
-Manager::Manager(sole::uuid agent_id, std::string_view nats_url, std::string_view qb_url)
-    : Manager(agent_id, qb_url, Manager::CreateDefaultNATSConnector(agent_id, nats_url)) {}
+Manager::Manager(sole::uuid agent_id, services::shared::agent::AgentCapabilities capabilities,
+                 std::string_view nats_url, std::string_view qb_url)
+    : Manager(agent_id, std::move(capabilities), qb_url,
+              Manager::CreateDefaultNATSConnector(agent_id, nats_url)) {}
 
-Manager::Manager(sole::uuid agent_id, std::string_view qb_url,
-                 std::unique_ptr<VizierNATSConnector> nats_connector)
-    : grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
+Manager::Manager(sole::uuid agent_id, services::shared::agent::AgentCapabilities capabilities,
+                 std::string_view qb_url, std::unique_ptr<VizierNATSConnector> nats_connector)
+    : capabilities_(std::move(capabilities)),
+      grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
       qb_stub_(Manager::CreateDefaultQueryBrokerStub(qb_url, grpc_channel_creds_)),
       time_system_(std::make_unique<pl::event::RealTimeSystem>()),
       api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
@@ -51,10 +54,10 @@ Status Manager::RegisterAgent() {
   messages::VizierMessage req;
   auto agent_info = req.mutable_register_agent_request()->mutable_info();
   ToProto(info_.agent_id, agent_info->mutable_agent_id());
+  agent_info->set_ip_address(info_.address);
   auto host_info = agent_info->mutable_host_info();
   host_info->set_hostname(info_.hostname);
-
-  agent_info->mutable_capabilities()->set_collects_data(true);
+  *agent_info->mutable_capabilities() = capabilities_;
   PL_RETURN_IF_ERROR(nats_connector_->Publish(req));
   return Status::OK();
 }

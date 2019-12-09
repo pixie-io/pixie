@@ -30,7 +30,8 @@ class PEMManager : public Manager {
 
   PEMManager(sole::uuid agent_id, std::string_view nats_url, std::string_view qb_url,
              std::unique_ptr<stirling::Stirling> stirling)
-      : Manager(agent_id, nats_url, qb_url), stirling_(std::move(stirling)) {}
+      : Manager(agent_id, PEMManager::Capabilities(), nats_url, qb_url),
+        stirling_(std::move(stirling)) {}
 
   Status InitImpl() override;
   Status PostRegisterHook() override;
@@ -38,6 +39,11 @@ class PEMManager : public Manager {
 
  private:
   Status InitSchemas();
+  static services::shared::agent::AgentCapabilities Capabilities() {
+    services::shared::agent::AgentCapabilities capabilities;
+    capabilities.set_collects_data(true);
+    return capabilities;
+  }
 
   std::unique_ptr<stirling::Stirling> stirling_;
 };

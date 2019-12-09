@@ -3,7 +3,7 @@
 
 #include <sole.hpp>
 
-#include "src/vizier/services/agent/pem/pem_manager.h"
+#include "src/vizier/services/agent/kelvin/kelvin_manager.h"
 
 #include "src/common/base/base.h"
 #include "src/common/event/nats.h"
@@ -17,9 +17,13 @@ DEFINE_string(query_broker_addr,
               gflags::StringFromEnv("PL_QUERY_BROKER_ADDR", "vizier-query-broker.pl.svc:50300"),
               "The host address of Query Broker");
 
-using ::pl::stirling::Stirling;
+DEFINE_string(pod_ip, gflags::StringFromEnv("PL_POD_IP", ""),
+              "The IP address of the pod this controller is running on");
+
+DEFINE_int32(rpc_port, gflags::Int32FromEnv("PL_RPC_PORT", 59300), "The port of the RPC server");
+
+using ::pl::vizier::agent::KelvinManager;
 using ::pl::vizier::agent::Manager;
-using ::pl::vizier::agent::PEMManager;
 
 class AgentDeathHandler : public pl::FatalErrorHandlerInterface {
  public:
@@ -48,11 +52,15 @@ int main(int argc, char** argv) {
   signal_action->RegisterFatalErrorHandler(err_handler);
 
   sole::uuid agent_id = sole::uuid4();
-  LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1", pl::VersionInfo::VersionString(),
-                                agent_id.str());
+  LOG(INFO) << absl::Substitute("Pixie Kelvin. Version: $0, id: $1",
+                                pl::VersionInfo::VersionString(), agent_id.str());
+  if (FLAGS_pod_ip.length() == 0) {
+    LOG(FATAL) << "The POD_IP must be specified";
+  }
+  std::string addr = absl::Substitute("$0:$1", FLAGS_pod_ip, FLAGS_rpc_port);
 
-  auto manager =
-      PEMManager::Create(agent_id, FLAGS_nats_url, FLAGS_query_broker_addr).ConsumeValueOrDie();
+  auto manager = KelvinManager::Create(agent_id, addr, FLAGS_nats_url, FLAGS_query_broker_addr)
+                     .ConsumeValueOrDie();
 
   err_handler.set_manager(manager.get());
 
