@@ -193,7 +193,7 @@ void Manager::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
 void Manager::HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessage> msg) {
   LOG_IF(FATAL, !msg->has_register_agent_response())
       << "Did not get register agent response. Got: " << msg->DebugString();
-  CHECK(agent_registered_) << "Agent already registered, but got another registration response.";
+  CHECK(!agent_registered_) << "Agent already registered, but got another registration response.";
   info_.asid = msg->register_agent_response().asid();
 
   mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
