@@ -11,6 +11,8 @@ import {Query} from 'react-apollo';
 import {isProd} from 'utils/env';
 import {pluralize} from 'utils/pluralize';
 
+import {useQuery} from '@apollo/react-hooks';
+
 export const GET_AGENTS = gql`
 {
   vizier {
@@ -64,20 +66,20 @@ const agentString = (agentCount: number) => {
   return `${agentCount} ${pluralize('agent', agentCount)} available`;
 };
 
-export class AgentDisplay extends React.Component {
-  private loaded = false;
-
-  render() {
-    return <Query client={vizierGQLClient} query={GET_AGENTS} pollInterval={2500}>
-      {({ loading, error, data }) => {
-        if (loading && !this.loaded) { return 'Loading...'; }
-        if (error) { return `Error! ${error.message}`; }
-        this.loaded = true;
-        return <AgentDisplayContent agents={data.vizier.agents} />;
-      }}
-    </Query>;
+export const AgentDisplay = () => {
+  const [agents, setAgents] = React.useState([]);
+  const { error } = useQuery(GET_AGENTS, {
+    client: vizierGQLClient,
+    pollInterval: 2500,
+    onCompleted: (data) => {
+      setAgents(data && data.vizier && data.vizier.agents ? data.vizier.agents : []);
+    },
+  });
+  if (error) {
+    return <span>Error! {error.message}</span>;
   }
-}
+  return <AgentDisplayContent agents={agents} />;
+};
 
 const AgentDisplayContent = ({ agents }) => {
   const now = new Date();
