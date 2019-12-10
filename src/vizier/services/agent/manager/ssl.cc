@@ -46,6 +46,18 @@ std::unique_ptr<NATSTLSConfig> SSL::DefaultNATSCreds() {
   return tls_config;
 }
 
+std::shared_ptr<grpc::ServerCredentials> SSL::DefaultGRPCServerCreds() {
+  if (!SSL::Enabled()) {
+    return grpc::InsecureServerCredentials();
+  }
+  grpc::SslServerCredentialsOptions ssl_opts;
+  ssl_opts.pem_root_certs = pl::FileContentsOrDie(FLAGS_tls_ca_crt);
+  auto pem_key = pl::FileContentsOrDie(FLAGS_client_tls_key);
+  auto pem_cert = pl::FileContentsOrDie(FLAGS_client_tls_cert);
+  ssl_opts.pem_key_cert_pairs.push_back({pem_key, pem_cert});
+  return grpc::SslServerCredentials(ssl_opts);
+}
+
 }  // namespace agent
 }  // namespace vizier
 }  // namespace pl

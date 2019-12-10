@@ -28,6 +28,12 @@ class SSL {
    * Returns the default GRPC client credentials.
    */
   static std::shared_ptr<grpc::ChannelCredentials> DefaultGRPCClientCreds();
+
+  /**
+   * Returns the default GRPC server credentials.
+   */
+  static std::shared_ptr<grpc::ServerCredentials> DefaultGRPCServerCreds();
+
   /*
    * Returns the defaul creds for NATS.
    */
