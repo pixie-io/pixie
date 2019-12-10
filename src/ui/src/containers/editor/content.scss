@@ -33,6 +33,10 @@
   justify-content: center;
 }
 
+.gutter {
+  background-color: $border-color;
+}
+
 .gutter:hover {
   cursor: row-resize;
 }

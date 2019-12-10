@@ -1,0 +1,7 @@
+@import '../../theme.scss';
+
+.pixie-nav-link-active {
+  background-color: $secondary;
+  color: $white;
+  border-bottom: 2px solid $info;
+}

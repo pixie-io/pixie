@@ -58,6 +58,7 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
       <Split
         style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
         sizes={[50, 50]}
+        gutterSize={5}
         direction='vertical' >
         <CodeEditor
           code={code}

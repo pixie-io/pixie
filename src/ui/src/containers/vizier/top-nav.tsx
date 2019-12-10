@@ -1,3 +1,5 @@
+import './top-nav.scss';
+
 // @ts-ignore : TS does not like image files.
 import * as userImage from 'images/icons/user.svg';
 // @ts-ignore : TS does not like image files.

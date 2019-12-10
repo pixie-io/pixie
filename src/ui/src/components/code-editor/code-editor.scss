@@ -1,12 +1,15 @@
 @import '../../theme.scss';
 
 .pl-code-editor.pl-code-editor {
-  .CodeMirror,
+  .CodeMirror {
+    background-color: $content-bg;
+  }
+
   .CodeMirror-gutters {
-      background: $content-bg;
+    background-color: $body-bg;
   }
 
   .CodeMirror-linenumber {
-      color: $white;
+    color: $white;
   }
 }
