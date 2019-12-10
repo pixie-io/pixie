@@ -1,0 +1,11 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
+
+pl_cc_binary(
+    name = "dummy_exe",
+    srcs = ["dummy_exe.cc"],
+    # This binary is only meant to be used to search for symbols,
+    # So turn off all optimizations when building it.
+    copts = ["-O0"],
+)

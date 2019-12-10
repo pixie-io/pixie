@@ -36,13 +36,13 @@ namespace fs = std::experimental::filesystem;
  */
 struct KProbeSpec {
   // Name of kernel function to probe (currently must be syscall).
-  std::string_view kernel_fn_short_name;
-
-  // Name of user-provided function to run when event is triggered.
-  std::string_view probe_fn;
+  std::string_view kernel_fn;
 
   // Whether this is an ENTRY or RETURN probe.
   bpf_probe_attach_type attach_type;
+
+  // Name of user-provided function to run when event is triggered.
+  std::string_view probe_fn;
 };
 
 /**
@@ -52,8 +52,8 @@ struct UProbeSpec {
   // The canonical path to the binary to which this uprobe is attached.
   fs::path binary_path;
   std::string symbol;
-  std::string probe_fn;
   bpf_probe_attach_type attach_type;
+  std::string probe_fn;
 };
 
 /**

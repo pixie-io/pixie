@@ -71,14 +71,14 @@ Status BCCWrapper::InitBPFCode(const std::vector<std::string>& cflags) {
 
 Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
   LOG(INFO) << absl::StrFormat("Deploying kprobe:\n   type=%s\n   kernel_fn=%s\n   trace_fn=%s",
-                               ProbeAttachTypeString(probe.attach_type), probe.kernel_fn_short_name,
+                               ProbeAttachTypeString(probe.attach_type), probe.kernel_fn,
                                probe.probe_fn);
   ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
-      bpf_.get_syscall_fnname(std::string(probe.kernel_fn_short_name)), std::string(probe.probe_fn),
+      bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), std::string(probe.probe_fn),
       0 /* offset */, probe.attach_type, kKprobeMaxActive);
   if (attach_status.code() != 0) {
     return error::Internal("Failed to attach kprobe to kernel function: $0, error message: $1",
-                           probe.kernel_fn_short_name, attach_status.msg());
+                           probe.kernel_fn, attach_status.msg());
   }
   kprobes_.push_back(probe);
   ++num_attached_kprobes_;
@@ -119,12 +119,12 @@ Status BCCWrapper::AttachUProbes(const ArrayView<UProbeSpec>& probes) {
 }
 
 Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
-  ebpf::StatusTuple detach_status = bpf().detach_kprobe(
-      bpf_.get_syscall_fnname(std::string(probe.kernel_fn_short_name)), probe.attach_type);
+  ebpf::StatusTuple detach_status =
+      bpf().detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), probe.attach_type);
 
   if (detach_status.code() != 0) {
     return error::Internal("Failed to detach kprobe to kernel function: $0, error message: $1",
-                           probe.kernel_fn_short_name, detach_status.msg());
+                           probe.kernel_fn, detach_status.msg());
   }
   --num_attached_kprobes_;
   return Status::OK();
