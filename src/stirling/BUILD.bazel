@@ -42,8 +42,6 @@ pl_cc_library(
         "@bazel_tools//src/conditions:linux_x86_64": [
             "//src/stirling/bcc_bpf:socket_trace",
             "//src/stirling/bcc_bpf:pidruntime",
-            "//third_party/foreign_cc:bcc",
-            "@com_llvm_lib//:llvm",
         ],
         "//conditions:default": [],
     }),

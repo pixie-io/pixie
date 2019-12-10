@@ -128,6 +128,7 @@ def pl_cc_binary(
         stamped = False,
         tags = [],
         deps = [],
+        copts = [],
         linkopts = []):
     if not linkopts:
         linkopts = pl_linkopts()
@@ -136,7 +137,7 @@ def pl_cc_binary(
         name = name,
         srcs = srcs,
         data = data,
-        copts = pl_copts(),
+        copts = pl_copts() + copts,
         linkopts = linkopts,
         testonly = testonly,
         linkstatic = 1,
