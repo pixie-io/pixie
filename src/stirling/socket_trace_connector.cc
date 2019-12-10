@@ -16,6 +16,7 @@
 #include "src/common/base/utils.h"
 #include "src/common/protobufs/recordio.h"
 #include "src/shared/metadata/metadata.h"
+#include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/http2/grpc.h"
@@ -53,7 +54,8 @@ DEFINE_string(perf_buffer_events_output_path, "",
 // TODO(oazizi/yzhao): Re-enable grpc and mysql tracing once stable.
 DEFINE_bool(stirling_enable_http_tracing, true,
             "If true, stirling will trace and process HTTP messages");
-DEFINE_bool(stirling_enable_grpc_tracing, true,
+// TODO(yzhao): We are not going to need this. Turn default to false.
+DEFINE_bool(stirling_enable_grpc_kprobe_tracing, true,
             "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
@@ -62,6 +64,10 @@ DEFINE_bool(stirling_disable_self_tracing, true,
 
 // This flag is for survivability only, in case the host's located headers don't work.
 DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
+
+// TODO(yzhao): We should not need this in production environment. Revise or remove.
+DEFINE_string(binary_file, "",
+              "A particular binary file to trace. If not specified, all binaries searched/traced.");
 
 namespace pl {
 namespace stirling {
@@ -100,6 +106,25 @@ Status SocketTraceConnector::InitImpl() {
   }
   PL_RETURN_IF_ERROR(InitBPFCode(cflags));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
+
+  // TODO(yzhao): Finalize what interface to use.
+  // TODO(yzhao): Add else branch.
+  if (!FLAGS_binary_file.empty()) {
+    std::error_code ec;
+    std::string path = fs::canonical(FLAGS_binary_file, ec);
+    ECHECK(!ec) << absl::Substitute("Failed to resolve file path for $0: $1", FLAGS_binary_file,
+                                    ec.message());
+    for (const auto& tmpl : kUProbeTmpls) {
+      // TODO(yzhao): Add symbol search.
+      const bpf_tools::UProbeSpec spec = {
+          .binary_path = path,
+          .symbol = std::string(tmpl.symbol),
+          .probe_fn = std::string(tmpl.probe_fn),
+          .attach_type = tmpl.attach_type,
+      };
+      PL_RETURN_IF_ERROR(AttachUProbe(spec));
+    }
+  }
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << "Probes successfully deployed";
   if (protocol_transfer_specs_[kProtocolHTTP].enabled) {
@@ -247,6 +272,15 @@ void SocketTraceConnector::HandleControlEvent(void* cb_cookie, void* data, int /
 
 void SocketTraceConnector::HandleControlEventsLoss(void* /*cb_cookie*/, uint64_t lost) {
   LOG(WARNING) << ProbeLossMessage("socket_control_events", lost);
+}
+
+void SocketTraceConnector::HandleHeaderEvent(void* /*cb_cookie*/, void* data, int /*data_size*/) {
+  const auto& event = *static_cast<const go_grpc_http2_header_event_t*>(data);
+  LOG(INFO) << "go_grpc_http2_header_even::value: " << event.value;
+}
+
+void SocketTraceConnector::HandleHeaderEventLoss(void* /*cb_cookie*/, uint64_t lost) {
+  LOG(WARNING) << ProbeLossMessage("go_grpc_header_events", lost);
 }
 
 //-----------------------------------------------------------------------------

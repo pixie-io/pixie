@@ -131,8 +131,8 @@ Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
 }
 
 Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
-  ebpf::StatusTuple detach_status = bpf().detach_uprobe(
-      probe.binary_path, std::string(probe.symbol), kIgnoredSymbolAddr, probe.attach_type);
+  ebpf::StatusTuple detach_status =
+      bpf().detach_uprobe(probe.binary_path, probe.symbol, kIgnoredSymbolAddr, probe.attach_type);
 
   if (detach_status.code() != 0) {
     return error::Internal("Failed to detach uprobe from binary $0 on symbol $1, error message: $2",

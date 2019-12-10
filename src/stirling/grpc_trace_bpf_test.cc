@@ -92,6 +92,11 @@ class GRPCTraceGoTest : public ::testing::Test {
         ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
 
   void SetUp() override {
+    FLAGS_stirling_enable_grpc_kprobe_tracing = true;
+    Init();
+  }
+
+  void Init() {
     CHECK(!FLAGS_go_greeter_client_path.empty())
         << "--go_greeter_client_path cannot be empty. You should run this test with bazel.";
     CHECK(fs::exists(fs::path(FLAGS_go_greeter_client_path))) << FLAGS_go_greeter_client_path;
@@ -185,29 +190,33 @@ TEST_F(GRPCTraceGoTest, TestGolangGrpcService) {
               EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
 }
 
-class GRPCTraceGoDisabledThroughFlagTest : public GRPCTraceGoTest {
+class GRPCTraceUprobingTest : public GRPCTraceGoTest {
  protected:
   void SetUp() override {
-    FLAGS_stirling_enable_grpc_tracing = false;
-    GRPCTraceGoTest::SetUp();
+    FLAGS_stirling_enable_grpc_kprobe_tracing = false;
+    FLAGS_binary_file = FLAGS_go_greeter_client_path;
+    GRPCTraceGoTest::Init();
   }
 };
 
-TEST_F(GRPCTraceGoDisabledThroughFlagTest, DISABLED_NoDataCaptured) {
+TEST_F(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   SubProcess c;
   EXPECT_OK(c.Start({client_path_, "-name=PixieLabs", "-once"}));
 
-  // Avoid the noise from HTTP traffic.
   EXPECT_OK(socket_trace_connector_->TestOnlySetTargetPID(c.child_pid()));
 
   EXPECT_EQ(0, c.Wait()) << "Client should exit normally.";
 
+  types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
+
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
 
-  for (const auto& col : *data_table_.ActiveRecordBatch()) {
-    // Sometimes connect() returns 0, so we might have data from requester and responder.
-    EXPECT_EQ(0, col->Size());
-  }
+  const std::vector<size_t> target_record_indices =
+      FindRecordIdxMatchesPid(record_batch, c.child_pid());
+  EXPECT_THAT(target_record_indices, IsEmpty());
+
+  // TODO(yzhao): We should have the same check on the trace record as
+  // GRPCTraceGoTest.TestGolangGrpcService.
 }
 
 class GRPCCppTest : public ::testing::Test {
@@ -221,7 +230,7 @@ class GRPCCppTest : public ::testing::Test {
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
     FLAGS_stirling_enable_parsing_protobufs = false;
-    FLAGS_stirling_enable_grpc_tracing = true;
+    FLAGS_stirling_enable_grpc_kprobe_tracing = true;
     FLAGS_stirling_disable_self_tracing = false;
 
     source_ = SocketTraceConnector::Create("bcc_grpc_trace");

@@ -35,12 +35,14 @@ pl_bpf_cc_resource(
     hdrs = [
         "logging.h",
         "utils.h",
+        "go_grpc.c",
         "//src/stirling/bcc_bpf_interface:headers",
     ],
     syshdrs = ":dummy_system_headers",
 )
 
 # Debug target, so output of preprocessing can be viewed.
+# Must keep in sync with :socket_trace.
 # Do not use as a dependency.
 pl_bpf_preprocess(
     name = "socket_trace_preprocess_debug",
@@ -48,6 +50,7 @@ pl_bpf_preprocess(
     hdrs = [
         "logging.h",
         "utils.h",
+        "go_grpc.c",
         "//src/stirling/bcc_bpf_interface:headers",
     ],
     syshdrs = ":dummy_system_headers",

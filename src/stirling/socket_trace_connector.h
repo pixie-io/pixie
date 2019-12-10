@@ -40,10 +40,11 @@ DECLARE_bool(stirling_enable_parsing_protobufs);
 DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
 DECLARE_string(perf_buffer_events_output_path);
 DECLARE_bool(stirling_enable_http_tracing);
-DECLARE_bool(stirling_enable_grpc_tracing);
+DECLARE_bool(stirling_enable_grpc_kprobe_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_bool(stirling_use_packaged_headers);
+DECLARE_string(binary_file);
 
 BCC_SRC_STRVIEW(http_trace_bcc_script, socket_trace);
 
@@ -64,6 +65,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr std::string_view kHTTPPerfBufferNames[] = {
       "socket_control_events",
       "socket_data_events",
+      "go_grpc_header_events",
   };
 
   // Used in ReadPerfBuffer to drain the relevant perf buffers.
@@ -134,6 +136,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static void HandleDataEventsLoss(void* cb_cookie, uint64_t lost);
   static void HandleControlEvent(void* cb_cookie, void* data, int data_size);
   static void HandleControlEventsLoss(void* cb_cookie, uint64_t lost);
+  static void HandleHeaderEvent(void* cb_cookie, void* data, int data_size);
+  static void HandleHeaderEventLoss(void* cb_cookie, uint64_t lost);
 
   static constexpr bpf_tools::KProbeSpec kProbeSpecsArray[] = {
       {"connect", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_connect"},
@@ -170,6 +174,12 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   };
   static constexpr auto kProbeSpecs = ArrayView<bpf_tools::KProbeSpec>(kProbeSpecsArray);
 
+  inline static constexpr bpf_tools::UProbeTmpl kUProbeTmplsArray[] = {
+      {"google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
+       bpf_tools::SymbolMatchType::kSuffix, "dummy_uprobe", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+  };
+  static constexpr auto kUProbeTmpls = ArrayView<bpf_tools::UProbeTmpl>(kUProbeTmplsArray);
+
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
@@ -177,11 +187,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   static constexpr bpf_tools::PerfBufferSpec kPerfBufferSpecsArray[] = {
       // For data events. The order must be consistent with output tables.
-      {"socket_data_events", &SocketTraceConnector::HandleDataEvent,
-       &SocketTraceConnector::HandleDataEventsLoss},
+      {"socket_data_events", HandleDataEvent, HandleDataEventsLoss},
       // For non-data events. Must not mix with the above perf buffers for data events.
-      {"socket_control_events", &SocketTraceConnector::HandleControlEvent,
-       &SocketTraceConnector::HandleControlEventsLoss},
+      {"socket_control_events", HandleControlEvent, HandleControlEventsLoss},
+      {"go_grpc_header_events", HandleHeaderEvent, HandleHeaderEventLoss},
   };
   static constexpr auto kPerfBufferSpecs =
       ArrayView<bpf_tools::PerfBufferSpec>(kPerfBufferSpecsArray);
@@ -203,7 +212,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     netlink_socket_prober_ = std::make_unique<system::NetlinkSocketProber>();
 
     protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
-    protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_tracing;
+    protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_kprobe_tracing;
     protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
   }
 

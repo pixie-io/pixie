@@ -56,6 +56,25 @@ struct UProbeSpec {
   std::string probe_fn;
 };
 
+// TODO(yzhao): This should be removed once D2829 is landed.
+enum class SymbolMatchType { kExact, kSuffix, kAny };
+
+/**
+ * Describes a uprobe template.
+ *
+ * As uprobes can be attached to arbitrary binary matching certain symbol pattern, it is not
+ * meaningful to include binary_path.
+ *
+ * Also this allows to use literal types, so we can keep these as constexpr.
+ */
+// TODO(yzhao): This should be updated after D2844 is landed.
+struct UProbeTmpl {
+  std::string_view symbol;
+  SymbolMatchType match_type;
+  std::string_view probe_fn;
+  bpf_probe_attach_type attach_type;
+};
+
 /**
  * Describes a perf buffer used in BCC code, through which data is returned to user-space.
  */
