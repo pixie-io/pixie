@@ -2,18 +2,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "mock_query_executor.gen.go",
-        "plan_mock_gen.go",
-        "planner_mock_gen.go",
-    ],
+    srcs = ["mock_query_executor.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/compiler/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
-        "//src/table_store/proto:schema_pl_go_proto",
         "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",
         "@com_github_golang_mock//gomock:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",

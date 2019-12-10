@@ -45,7 +45,7 @@ type Server struct {
 	env         querybrokerenv.QueryBrokerEnv
 	mdsClient   metadatapb.MetadataServiceClient
 	natsConn    *nats.Conn
-	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID) Executor
+	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID, bool) Executor
 	executors   map[uuid.UUID]Executor
 	// Mutex is used for managing query executor instances.
 	mux sync.Mutex
@@ -59,7 +59,7 @@ func NewServer(env querybrokerenv.QueryBrokerEnv, mdsClient metadatapb.MetadataS
 func newServer(env querybrokerenv.QueryBrokerEnv,
 	mdsClient metadatapb.MetadataServiceClient,
 	natsConn *nats.Conn,
-	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID) Executor) (*Server, error) {
+	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID, bool) Executor) (*Server, error) {
 
 	return &Server{
 		env:         env,
@@ -148,7 +148,7 @@ func makePlannerState(pemInfo []*agentpb.AgentInfo, kelvinList []*agentpb.AgentI
 }
 
 // ExecuteQueryWithPlanner executes a query with the provided planner.
-func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb.QueryRequest, planner Planner) (*querybrokerpb.VizierQueryResponse, error) {
+func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb.QueryRequest, planner Planner, distributed bool) (*querybrokerpb.VizierQueryResponse, error) {
 	// Get the table schema that is presumably shared across agents.
 	mdsSchemaReq := &metadatapb.SchemaRequest{}
 	mdsSchemaResp, err := s.mdsClient.GetSchemas(ctx, mdsSchemaReq)
@@ -215,12 +215,12 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb
 		planMap[u] = agentPlan
 	}
 
-	planCarnotList := make([]uuid.UUID, 0, len(planMap))
-	for carnotID := range planMap {
-		planCarnotList = append(planCarnotList, carnotID)
+	pemIDs := make([]uuid.UUID, len(pemList))
+	for i, p := range pemList {
+		pemIDs[i] = utils.UUIDFromProtoOrNil(p.AgentID)
 	}
 
-	queryExecutor := s.newExecutor(s.natsConn, queryID, &planCarnotList)
+	queryExecutor := s.newExecutor(s.natsConn, queryID, &pemIDs, distributed)
 
 	s.trackExecutorForQuery(queryExecutor)
 
@@ -250,9 +250,11 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 		return nil, err
 	}
 
-	planner := logicalplanner.New(flags.GetBool("distributed_query"))
+	distributed := flags.GetBool("distributed_query")
+
+	planner := logicalplanner.New(distributed)
 	defer planner.Free()
-	return s.ExecuteQueryWithPlanner(ctx, req, planner)
+	return s.ExecuteQueryWithPlanner(ctx, req, planner, distributed)
 }
 
 // GetSchemas returns the schemas in the system.

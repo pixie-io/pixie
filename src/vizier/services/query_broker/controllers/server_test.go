@@ -333,7 +333,7 @@ func TestServerExecuteQuery(t *testing.T) {
 		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
 		Return(getSchemaPB, nil)
 
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID, distributed bool) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		expectedMap := make(map[uuid.UUID]*planpb.Plan)
 		plannerResultPB := new(distributedpb.LogicalPlannerResult)
@@ -399,7 +399,7 @@ func TestServerExecuteQuery(t *testing.T) {
 	s, err := newServer(env, mds, nc, createExecutorMock)
 	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
-	}, planner)
+	}, planner, false)
 
 	if !assert.Nil(t, err) {
 		t.Fatalf(err.Error())
@@ -469,7 +469,7 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 
 	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
-	}, planner)
+	}, planner, false)
 	if err != nil {
 		t.Fatal("Failed to return results from ExecuteQuery.")
 	}
@@ -668,7 +668,7 @@ func TestPlannerErrorResult(t *testing.T) {
 		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
 		Return(getSchemaPB, nil)
 
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID, distributed bool) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		return mc
 	}
@@ -702,7 +702,7 @@ func TestPlannerErrorResult(t *testing.T) {
 	s, err := newServer(env, mds, nc, createExecutorMock)
 	result, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
-	}, planner)
+	}, planner, false)
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Cannot execute query.")
@@ -759,7 +759,7 @@ func TestPlannerExcludesSomeAgents(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID, _ bool) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		expectedMap := make(map[uuid.UUID]*planpb.Plan)
 
@@ -824,7 +824,7 @@ func TestPlannerExcludesSomeAgents(t *testing.T) {
 	// _, err = s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
 	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
-	}, planner)
+	}, planner, false)
 
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -869,7 +869,7 @@ func TestErrorInStatusResult(t *testing.T) {
 		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
 		Return(getSchemaPB, nil)
 
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID, _ bool) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		return mc
 	}
@@ -904,7 +904,7 @@ func TestErrorInStatusResult(t *testing.T) {
 
 	result, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
-	}, planner)
+	}, planner, false)
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Error while executing query.")

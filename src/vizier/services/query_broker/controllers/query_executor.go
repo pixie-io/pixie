@@ -24,15 +24,17 @@ type QueryExecutor struct {
 	conn            *nats.Conn
 	mux             sync.Mutex
 	done            chan bool
+	distributed     bool
 }
 
 // NewQueryExecutor creates a Query Executor for a specific query.
-func NewQueryExecutor(natsConn *nats.Conn, queryID uuid.UUID, agentList *[]uuid.UUID) Executor {
+func NewQueryExecutor(natsConn *nats.Conn, queryID uuid.UUID, agentList *[]uuid.UUID, distributed bool) Executor {
 	return &QueryExecutor{
-		queryID:   queryID,
-		agentList: agentList,
-		conn:      natsConn,
-		done:      make(chan bool, 1),
+		queryID:     queryID,
+		agentList:   agentList,
+		conn:        natsConn,
+		done:        make(chan bool, 1),
+		distributed: distributed,
 	}
 }
 
@@ -131,7 +133,12 @@ func (e *QueryExecutor) AddResult(res *querybrokerpb.AgentQueryResultRequest) {
 		Response: res.Result,
 	})
 
-	if len(e.responseByAgent) == len(*e.agentList) {
+	done := len(e.responseByAgent) == len(*e.agentList)
+	if e.distributed {
+		done = len(e.responseByAgent) == 1
+	}
+
+	if done {
 		// Got responses from all the agents. We can send the reply.
 		e.done <- true
 	}
