@@ -45,10 +45,13 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
                                      req_.query_str());
     }
 
-    // No query broken, means we don't need to ship data back. It's probably handleed by the query.
-    if (!qb_stub_) {
+    if (req_.plan().distributed() && agent_info_->capabilities.collects_data()) {
+      // In distributed mode only non data collecting nodes send data.
       return;
     }
+
+    CHECK(qb_stub_ != nullptr);
+
     // RPC the results to the query broker.
     AgentQueryResultResponse res_resp;
     ToProto(agent_info_->agent_id, res_req.mutable_agent_id());
@@ -66,8 +69,8 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
 
  private:
   Status ExecuteQueryInternal(AgentQueryResponse* resp) {
-    LOG(INFO) << absl::StrFormat("Executing query: id=%s, query=%s", query_id_.str(),
-                                 req_.query_str());
+    LOG(INFO) << absl::StrFormat("Executing query: id=%s, query=%s, distributed=%d",
+                                 query_id_.str(), req_.query_str(), req_.plan().distributed());
 
     {
       ScopedTimer query_timer("query timer");
@@ -89,7 +92,6 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
       PL_RETURN_IF_ERROR(result_or_s.ConsumeValueOrDie().ToProto(resp->mutable_query_result()));
     }
     *resp->mutable_status() = Status::OK().ToProto();
-
     return Status::OK();
   }
 

@@ -36,6 +36,7 @@ struct Info {
   uint32_t asid = 0;
   std::string hostname;
   std::string address;
+  services::shared::agent::AgentCapabilities capabilities;
 };
 
 /**
@@ -79,10 +80,12 @@ class Manager : public pl::NotCopyable {
 
  protected:
   // Protect constructor since we need to use Init on this class.
-  Manager(sole::uuid agent_id, services::shared::agent::AgentCapabilities capabilities,
-          std::string_view nats_url, std::string_view qb_url);
-  Manager(sole::uuid agent_id, services::shared::agent::AgentCapabilities capabilities,
-          std::string_view qb_url, std::unique_ptr<VizierNATSConnector> nats_connector);
+  Manager(sole::uuid agent_id, int grpc_server_port,
+          services::shared::agent::AgentCapabilities capabilities, std::string_view nats_url,
+          std::string_view qb_url);
+  Manager(sole::uuid agent_id, int grpc_server_port,
+          services::shared::agent::AgentCapabilities capabilities, std::string_view qb_url,
+          std::unique_ptr<VizierNATSConnector> nats_connector);
   Status Init();
 
   void NATSMessageHandler(VizierNATSConnector::MsgType msg);

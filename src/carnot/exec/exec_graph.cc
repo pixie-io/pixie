@@ -7,6 +7,8 @@
 #include "src/carnot/exec/exec_graph.h"
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/filter_node.h"
+#include "src/carnot/exec/grpc_sink_node.h"
+#include "src/carnot/exec/grpc_source_node.h"
 #include "src/carnot/exec/limit_node.h"
 #include "src/carnot/exec/map_node.h"
 #include "src/carnot/exec/memory_sink_node.h"
@@ -59,7 +61,18 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
       .OnJoin([&](auto& node) {
         return OnOperatorImpl<plan::JoinOperator, EquijoinNode>(node, &descriptors);
       })
+      .OnGRPCSource([&](auto& node) {
+        sources_.emplace_back(node.id());
+        auto s = OnOperatorImpl<plan::GRPCSourceOperator, GRPCSourceNode>(node, &descriptors);
+        PL_RETURN_IF_ERROR(s);
+        return exec_state->grpc_router()->AddGRPCSourceNode(
+            exec_state->query_id(), node.id(), static_cast<GRPCSourceNode*>(nodes_[node.id()]));
+      })
+      .OnGRPCSink([&](auto& node) {
+        return OnOperatorImpl<plan::GRPCSinkOperator, GRPCSinkNode>(node, &descriptors);
+      })
       .Walk(pf_);
+
   return Status::OK();
 }
 

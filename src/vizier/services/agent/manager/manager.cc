@@ -30,23 +30,37 @@ namespace vizier {
 namespace agent {
 using ::pl::event::Dispatcher;
 
-Manager::Manager(sole::uuid agent_id, services::shared::agent::AgentCapabilities capabilities,
-                 std::string_view nats_url, std::string_view qb_url)
-    : Manager(agent_id, std::move(capabilities), qb_url,
+Manager::Manager(sole::uuid agent_id, int grpc_server_port,
+                 services::shared::agent::AgentCapabilities capabilities, std::string_view nats_url,
+                 std::string_view qb_url)
+    : Manager(agent_id, grpc_server_port, std::move(capabilities), qb_url,
               Manager::CreateDefaultNATSConnector(agent_id, nats_url)) {}
 
-Manager::Manager(sole::uuid agent_id, services::shared::agent::AgentCapabilities capabilities,
-                 std::string_view qb_url, std::unique_ptr<VizierNATSConnector> nats_connector)
-    : capabilities_(std::move(capabilities)),
-      grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
+Manager::Manager(sole::uuid agent_id, int grpc_server_port,
+                 services::shared::agent::AgentCapabilities capabilities, std::string_view qb_url,
+                 std::unique_ptr<VizierNATSConnector> nats_connector)
+    : grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
       qb_stub_(Manager::CreateDefaultQueryBrokerStub(qb_url, grpc_channel_creds_)),
       time_system_(std::make_unique<pl::event::RealTimeSystem>()),
       api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
       nats_connector_(std::move(nats_connector)),
       table_store_(std::make_shared<table_store::TableStore>()),
-      carnot_(pl::carnot::Carnot::Create(table_store_, nullptr).ConsumeValueOrDie()) {
+      // TODO(zasgar/nserrino): abstract away the stub generator.
+      carnot_(pl::carnot::Carnot::Create(
+                  table_store_,
+                  [&](const std::string& remote_addr)
+                      -> std::unique_ptr<pl::carnotpb::KelvinService::StubInterface> {
+                    grpc::ChannelArguments args;
+                    args.SetSslTargetNameOverride("kelvin.pl.svc");
+
+                    auto chan = grpc::CreateCustomChannel(remote_addr, grpc_channel_creds_, args);
+                    return pl::carnotpb::KelvinService::NewStub(chan);
+                  },
+                  grpc_server_port, SSL::DefaultGRPCServerCreds())
+                  .ConsumeValueOrDie()) {
   info_.agent_id = agent_id;
+  info_.capabilities = std::move(capabilities);
 }
 
 Status Manager::RegisterAgent() {
@@ -57,7 +71,7 @@ Status Manager::RegisterAgent() {
   agent_info->set_ip_address(info_.address);
   auto host_info = agent_info->mutable_host_info();
   host_info->set_hostname(info_.hostname);
-  *agent_info->mutable_capabilities() = capabilities_;
+  *agent_info->mutable_capabilities() = info_.capabilities;
   PL_RETURN_IF_ERROR(nats_connector_->Publish(req));
   return Status::OK();
 }

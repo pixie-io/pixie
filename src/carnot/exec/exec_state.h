@@ -10,6 +10,7 @@
 
 #include <sole.hpp>
 
+#include "src/carnot/exec/grpc_router.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnotpb/carnot.pb.h"
 #include "src/common/base/base.h"
@@ -27,6 +28,9 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
+using KelvinStubGenerator = std::function<std::unique_ptr<carnotpb::KelvinService::StubInterface>(
+    const std::string& address)>;
+
 /**
  * ExecState manages the execution state for a single query. A new one will
  * be constructed for every query executed in Carnot and it will not be reused.
@@ -34,19 +38,25 @@ namespace exec {
  * The purpose of this class is to keep track of resources required for the query
  * and provide common resources (UDFs, UDA, etc) the operators within the query.
  */
-using KelvinStubGenerator = std::function<std::unique_ptr<carnotpb::KelvinService::StubInterface>(
-    const std::string& address)>;
-
 class ExecState {
  public:
+  ExecState() = delete;
   explicit ExecState(udf::ScalarUDFRegistry* scalar_udf_registry, udf::UDARegistry* uda_registry,
                      std::shared_ptr<table_store::TableStore> table_store,
-                     const KelvinStubGenerator& stub_generator, const sole::uuid& query_id)
+                     const KelvinStubGenerator& stub_generator, const sole::uuid& query_id,
+                     GRPCRouter* grpc_router = nullptr)
       : scalar_udf_registry_(scalar_udf_registry),
         uda_registry_(uda_registry),
         table_store_(std::move(table_store)),
         stub_generator_(stub_generator),
-        query_id_(query_id) {}
+        query_id_(query_id),
+        grpc_router_(grpc_router) {}
+
+  ~ExecState() {
+    if (grpc_router_ != nullptr) {
+      grpc_router_->DeleteQuery(query_id_);
+    }
+  }
   arrow::MemoryPool* exec_mem_pool() {
     // TOOD(zasgar): Make this the correct pool.
     return arrow::default_memory_pool();
@@ -101,6 +111,8 @@ class ExecState {
     metadata_state_ = metadata_state;
   }
 
+  GRPCRouter* grpc_router() { return grpc_router_; }
+
  private:
   udf::ScalarUDFRegistry* scalar_udf_registry_;
   udf::UDARegistry* uda_registry_;
@@ -111,6 +123,7 @@ class ExecState {
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
   const sole::uuid query_id_;
   bool keep_running_ = true;
+  GRPCRouter* grpc_router_ = nullptr;
 };
 
 }  // namespace exec

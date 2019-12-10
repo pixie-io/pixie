@@ -59,8 +59,9 @@ int main(int argc, char** argv) {
   }
   std::string addr = absl::Substitute("$0:$1", FLAGS_pod_ip, FLAGS_rpc_port);
 
-  auto manager = KelvinManager::Create(agent_id, addr, FLAGS_nats_url, FLAGS_query_broker_addr)
-                     .ConsumeValueOrDie();
+  auto manager =
+      KelvinManager::Create(agent_id, addr, FLAGS_rpc_port, FLAGS_nats_url, FLAGS_query_broker_addr)
+          .ConsumeValueOrDie();
 
   err_handler.set_manager(manager.get());
 

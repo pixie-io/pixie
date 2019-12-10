@@ -21,8 +21,9 @@ std::unique_ptr<PlanFragment> PlanFragment::FromProto(const planpb::PlanFragment
 
 template <typename T, typename TWalkFunc>
 void PlanFragmentWalker::CallAs(const TWalkFunc& fn, const Operator& op) {
-  if (!fn) {
-    VLOG(google::WARNING) << "fn does not exist";
+  DCHECK(fn) << "fn does not exist for op: " << op.DebugString();
+  if (fn == nullptr) {
+    return;
   }
   return fn(static_cast<const T&>(op));
 }

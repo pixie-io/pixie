@@ -23,9 +23,9 @@ class KelvinManager : public Manager {
 
  protected:
   KelvinManager() = delete;
-  KelvinManager(sole::uuid agent_id, std::string_view addr, std::string_view nats_url,
-                std::string_view qb_url)
-      : Manager(agent_id, KelvinManager::Capabilities(), nats_url, qb_url) {
+  KelvinManager(sole::uuid agent_id, std::string_view addr, int grpc_server_port,
+                std::string_view nats_url, std::string_view qb_url)
+      : Manager(agent_id, grpc_server_port, KelvinManager::Capabilities(), nats_url, qb_url) {
     info()->address = std::string(addr);
   }
 

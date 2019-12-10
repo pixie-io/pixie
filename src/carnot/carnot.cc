@@ -36,14 +36,17 @@ Status CarnotQueryResult::ToProto(queryresultspb::QueryResult* query_result) con
 
 class CarnotImpl final : public Carnot {
  public:
+  ~CarnotImpl() override;
   /**
    * Initializes the engine with the state necessary to compile and execute a query.
    * This includes the tables, udf registries, and the stub generator for generating stubs
    * to the Kelvin GRPC service.
+   * grpc_server_port of 0 disables the GRPC server.
    * @return a status of whether initialization was successful.
    */
   Status Init(std::shared_ptr<table_store::TableStore> table_store,
-              const exec::KelvinStubGenerator& stub_generator);
+              const exec::KelvinStubGenerator& stub_generator, int grpc_server_port = 0,
+              std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
 
   StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query, const sole::uuid& query_id,
                                            types::Time64NSValue time_now) override;
@@ -72,6 +75,8 @@ class CarnotImpl final : public Carnot {
     return agent_md_callback_();
   }
 
+  void GRPCServerFunc();
+
   /**
    * @brief This rewrites the logical plan's sinks to be related to the query id, removing a bug
    * that we encountered when you write a table with the same output name but different relation.
@@ -85,11 +90,29 @@ class CarnotImpl final : public Carnot {
   AgentMetadataCallbackFunc agent_md_callback_;
   compiler::Compiler compiler_;
   std::unique_ptr<EngineState> engine_state_;
+
+  std::shared_ptr<grpc::ServerCredentials> grpc_server_creds_;
+  // GRPC server setup.
+  // TODO(zasgar/nserrino): Pull these out to another class that we can inject into Carnot.
+  // TODO(zasgar/nserrino): GRPC server should not need threads and we should be able to use
+  // pl::event instead.
+  std::unique_ptr<std::thread> grpc_server_thread_;
+  std::unique_ptr<grpc::Server> grpc_server_;
+  std::unique_ptr<exec::GRPCRouter> grpc_router_;
+  int grpc_server_port_;
 };
 
 Status CarnotImpl::Init(std::shared_ptr<table_store::TableStore> table_store,
-                        const exec::KelvinStubGenerator& stub_generator) {
-  PL_ASSIGN_OR_RETURN(engine_state_, EngineState::CreateDefault(table_store, stub_generator));
+                        const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
+                        std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
+  grpc_server_creds_ = grpc_server_creds;
+  grpc_server_port_ = grpc_server_port;
+  grpc_router_ = std::make_unique<exec::GRPCRouter>();
+  if (grpc_server_port_ > 0) {
+    grpc_server_thread_ = std::make_unique<std::thread>(&CarnotImpl::GRPCServerFunc, this);
+  }
+  PL_ASSIGN_OR_RETURN(engine_state_,
+                      EngineState::CreateDefault(table_store, stub_generator, grpc_router_.get()));
   return Status::OK();
 }
 
@@ -146,7 +169,10 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
       .OnMemorySource([&](const auto&) {})
       .OnUnion([&](const auto&) {})
       .OnJoin([&](const auto&) {})
+      .OnGRPCSource([&](const auto&) {})
+      .OnGRPCSink([&](const auto&) {})
       .Walk(pf);
+
   return Status::OK();
 }
 
@@ -189,6 +215,21 @@ planpb::Plan CarnotImpl::InterceptSinksInPlan(const planpb::Plan& logical_plan,
   }
 
   return modified_logical_plan;
+}
+
+void CarnotImpl::GRPCServerFunc() {
+  CHECK(grpc_router_ != nullptr);
+  CHECK(grpc_server_creds_ != nullptr);
+
+  std::string server_address(absl::Substitute("0.0.0.0:$0", grpc_server_port_));
+  grpc::ServerBuilder builder;
+
+  builder.AddListeningPort(server_address, grpc_server_creds_);
+  builder.RegisterService(grpc_router_.get());
+  grpc_server_ = builder.BuildAndStart();
+  std::cout << "Server listening on " << server_address << std::endl;
+  CHECK(grpc_server_ != nullptr);
+  grpc_server_->Wait();
 }
 
 StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan,
@@ -250,12 +291,22 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
                            exec_time_ns};
 }
 
+CarnotImpl::~CarnotImpl() {
+  if (grpc_server_ && grpc_server_thread_) {
+    grpc_server_->Shutdown();
+    if (grpc_server_thread_->joinable()) {
+      grpc_server_thread_->join();
+    }
+  }
+}
+
 StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
     std::shared_ptr<table_store::TableStore> table_store,
-    const exec::KelvinStubGenerator& stub_generator) {
+    const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
+    std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
   std::unique_ptr<Carnot> carnot_impl(new CarnotImpl());
-  PL_RETURN_IF_ERROR(
-      static_cast<CarnotImpl*>(carnot_impl.get())->Init(table_store, stub_generator));
+  PL_RETURN_IF_ERROR(static_cast<CarnotImpl*>(carnot_impl.get())
+                         ->Init(table_store, stub_generator, grpc_server_port, grpc_server_creds));
   return carnot_impl;
 }
 

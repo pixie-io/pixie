@@ -35,8 +35,8 @@ class Carnot : public NotCopyable {
  public:
   static StatusOr<std::unique_ptr<Carnot>> Create(
       std::shared_ptr<table_store::TableStore> table_store,
-      const exec::KelvinStubGenerator& stub_generator);
-
+      const exec::KelvinStubGenerator& stub_generator, int grpc_server_port = 0,
+      std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
   using AgentMetadataCallbackFunc = std::function<std::shared_ptr<const md::AgentMetadataState>()>;
 
   virtual ~Carnot() = default;
