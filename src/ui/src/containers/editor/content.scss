@@ -28,6 +28,11 @@
   flex-direction: column;
 }
 
+.pixie-editor--result-viewer.center-content {
+  align-items: center;
+  justify-content: center;
+}
+
 .gutter:hover {
   cursor: row-resize;
 }
