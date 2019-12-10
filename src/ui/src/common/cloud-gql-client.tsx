@@ -51,7 +51,9 @@ const GET_CLUSTER_CONN = gql`
   }
 }`;
 
-export function getClusterConnection() {
-  return cloudGQLClient.query<GetClusterConnResults>({ query: GET_CLUSTER_CONN })
-    .then(({ data }) => data.clusterConnection);
+export function getClusterConnection(noCache: boolean = false) {
+  return cloudGQLClient.query<GetClusterConnResults>({
+    query: GET_CLUSTER_CONN,
+    fetchPolicy: noCache ? 'network-only' : 'cache-first',
+  }).then(({ data }) => data.clusterConnection);
 }

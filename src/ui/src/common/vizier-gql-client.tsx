@@ -18,28 +18,15 @@ const gqlCache = new InMemoryCache();
 
 interface VizierAuth {
   token: string;
-  address: string;
+  ipAddress: string;
 }
 
 type VizierMode = 'vizier' | 'proxy' | '';
 
 class VizierAuthLink {
-  private authCache: VizierAuth = {
-    token: '',
-    address: '',
-  };
-
   private vizierMode: VizierMode = 'vizier';
 
   constructor() {
-    try {
-      const auth: VizierAuth = JSON.parse(localStorage.getItem(VIZIER_AUTH_KEY));
-      if (auth) {
-        this.authCache = auth;
-      }
-    } catch (e) {
-      //
-    }
     const mode = localStorage.getItem(VIZIER_MODE_KEY);
     if (mode === 'vizier' || mode === 'proxy') {
       this.vizierMode = mode;
@@ -68,6 +55,7 @@ class VizierAuthLink {
         .flatMap((auth) => {
           const oldHeaders = operation.getContext().headers;
           operation.setContext({
+            vizierAddr: auth.ipAddress,
             headers: {
               ...oldHeaders,
               authorization: `Bearer ${auth.token}`,
@@ -109,7 +97,7 @@ class VizierAuthLink {
       return this.getAuth().then((auth) => {
         return {
           mode: this.vizierMode,
-          vizierAddr: this.authCache.address,
+          vizierAddr: auth.ipAddress,
           headers: {
             ...headers,
             authorization: `Bearer ${auth.token}`,
@@ -130,26 +118,7 @@ class VizierAuthLink {
   }
 
   private getAuth(noCache?: boolean): Promise<VizierAuth> {
-    if (!noCache && this.authCache && this.authCache.token && this.authCache.address) {
-      return Promise.resolve(this.authCache);
-    }
-    return getClusterConnection()
-      .then(({ token, ipAddress }) => {
-        this.auth = {
-          token,
-          address: ipAddress,
-        };
-        return this.auth;
-      });
-  }
-
-  private set auth(auth: VizierAuth) {
-    this.authCache = auth;
-    localStorage.setItem(VIZIER_AUTH_KEY, JSON.stringify(auth));
-  }
-
-  private get auth(): VizierAuth {
-    return this.authCache;
+    return getClusterConnection(noCache);
   }
 
   private set mode(mode: VizierMode) {
