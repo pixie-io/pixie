@@ -66,7 +66,12 @@ Status HeartbeatMessageHandler::SendHeartbeatInternal() {
   auto* update_info = hb->mutable_update_info();
   // TODO(zasgar/michelle): Maybe consider moving to threadpool.
   ConsumeAgentPIDUpdates(update_info);
-  relation_info_manager_->AddSchemaToUpdateInfo(update_info);
+  if (heartbeat_info_.last_sent_seq_num == 0) {
+    // TODO(michelle): Currently we are only sending the schema in the first heartbeat.
+    // In the future, we should update this so that the schema is sent every time there
+    // is a change.
+    relation_info_manager_->AddSchemaToUpdateInfo(update_info);
+  }
 
   VLOG(1) << "Sending heartbeat message: " << req.DebugString();
   heartbeat_info_.last_heartbeat_send_time_ = time_source_.MonotonicTime();
