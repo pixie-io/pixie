@@ -57,15 +57,18 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
 Status GRPCRouter::AddGRPCSourceNode(sole::uuid query_id, int64_t source_id,
                                      GRPCSourceNode* source_node) {
   // We need to check and see if there is backlog data, if so flush it from the vector.
-  absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
-  auto& snt = query_node_map_[query_id].source_node_trackers[source_id];
-  absl::base_internal::SpinLockHolder snt_lock(&snt.node_lock);
-  snt.source_node = source_node;
-  if (snt.response_backlog.size() > 0) {
-    for (auto& rb : snt.response_backlog) {
-      PL_RETURN_IF_ERROR(snt.source_node->EnqueueRowBatch(std::move(rb)));
+  SourceNodeTracker* snt = nullptr;
+  {
+    absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
+    snt = &(query_node_map_[query_id].source_node_trackers[source_id]);
+  }
+  absl::base_internal::SpinLockHolder snt_lock(&snt->node_lock);
+  snt->source_node = source_node;
+  if (snt->response_backlog.size() > 0) {
+    for (auto& rb : snt->response_backlog) {
+      PL_RETURN_IF_ERROR(snt->source_node->EnqueueRowBatch(std::move(rb)));
     }
-    snt.response_backlog.clear();
+    snt->response_backlog.clear();
   }
   return Status::OK();
 }
@@ -75,7 +78,8 @@ void GRPCRouter::DeleteQuery(sole::uuid query_id) {
   VLOG(1) << "Deleting query ID from GRPC Router: " << query_id.str();
   auto it = query_node_map_.find(query_id);
   if (it == query_node_map_.end()) {
-    LOG(ERROR) << "No such query when deleting" << query_id.str();
+    VLOG(1) << "No such query when deleting: " << query_id.str()
+            << "(this is expected if no grpc sources are present)";
     return;
   }
   query_node_map_.erase(it);
