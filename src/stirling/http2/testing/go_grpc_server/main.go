@@ -1,35 +1,16 @@
-/*
- *
- * Copyright 2015 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
 package main
 
 import (
+	"crypto/tls"
+	"flag"
 	"log"
 	"net"
+	"strconv"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	pb "pixielabs.ai/pixielabs/src/stirling/http2/testing/proto"
-)
-
-const (
-	port = ":50051"
 )
 
 // server is used to implement helloworld.GreeterServer.
@@ -45,12 +26,36 @@ func (s *server) SayHelloAgain(ctx context.Context, in *pb.HelloRequest) (*pb.He
 }
 
 func main() {
-	log.Printf("Starting server on port : %s", port)
-	_ = pb.HelloRequest{}
-	lis, err := net.Listen("tcp", port)
+	var port = flag.Int("port", 50051, "The port to listen.")
+	var https = flag.Bool("https", false, "Whether or not to use https")
+	var keyPairBase = flag.String(
+		"keyPairBase", "src/stirling/http2/testing/go_grpc_server",
+		"The path to the directory that contains a .crt and .key files.")
+
+	flag.Parse()
+
+	portStr := ":" + strconv.Itoa(*port)
+
+	var lis net.Listener
+	var err error
+	if *https {
+		cert, err := tls.LoadX509KeyPair(*keyPairBase+"/https-server.crt", *keyPairBase+"/https-server.key")
+		if err != nil {
+			log.Fatalf("failed to load certs: %v", err)
+		}
+		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
+
+		log.Printf("Starting https server on port : %s", portStr)
+		lis, err = tls.Listen("tcp", portStr, tlsConfig)
+	} else {
+		log.Printf("Starting http server on port : %s", portStr)
+		lis, err = net.Listen("tcp", portStr)
+	}
+
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
 	s := grpc.NewServer()
 	pb.RegisterGreeterServer(s, &server{})
 	// Register reflection service on gRPC server.
