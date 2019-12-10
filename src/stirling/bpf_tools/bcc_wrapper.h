@@ -97,13 +97,13 @@ struct PerfBufferSpec {
  */
 struct PerfEventSpec {
   // The type of perf event (e.g. PERF_TYPE_HARDWARE, PERF_TYPE_SOFTWARE, etc.)
-  uint32_t event_type;
+  uint32_t type;
 
   // The actual event to be counted (e.g. PERF_COUNT_HW_CPU_CYCLES).
-  uint32_t event_config;
+  uint32_t config;
 
   // Name of user-provided function to run when event is triggered.
-  std::string_view probe_func;
+  std::string_view probe_fn;
 
   // Sampling period in number of events.
   // Mutually exclusive with sample_freq.

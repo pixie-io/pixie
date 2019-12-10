@@ -119,6 +119,8 @@ Status BCCWrapper::AttachUProbes(const ArrayView<UProbeSpec>& probes) {
 }
 
 Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
+  LOG(INFO) << absl::Substitute("Detaching kprobe:\n   kernel_fn=$0\n   trace_fn=$1",
+                                probe.kernel_fn, probe.probe_fn);
   ebpf::StatusTuple detach_status =
       bpf().detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), probe.attach_type);
 
@@ -131,6 +133,8 @@ Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
 }
 
 Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
+  LOG(INFO) << absl::Substitute("Detaching uprobe:\n   binary=$0\n   symbol=$1\n   trace_fn=$2",
+                                probe.binary_path.string(), probe.symbol, probe.probe_fn);
   ebpf::StatusTuple detach_status =
       bpf().detach_uprobe(probe.binary_path, probe.symbol, kIgnoredSymbolAddr, probe.attach_type);
 
@@ -159,6 +163,7 @@ void BCCWrapper::DetachUProbes() {
 }
 
 Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
+  LOG(INFO) << "Opening perf buffer: " << perf_buffer.name;
   ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
       std::string(perf_buffer.name), perf_buffer.probe_output_fn, perf_buffer.probe_loss_fn,
       cb_cookie, FLAGS_stirling_bpf_perf_buffer_page_count);
@@ -179,6 +184,7 @@ Status BCCWrapper::OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers
 }
 
 Status BCCWrapper::ClosePerfBuffer(const PerfBufferSpec& perf_buffer) {
+  LOG(INFO) << "Closing perf buffer: " << perf_buffer.name;
   ebpf::StatusTuple close_status = bpf_.close_perf_buffer(std::string(perf_buffer.name));
   if (close_status.code() != 0) {
     return error::Internal("Failed to close perf buffer: $0, error message: $1", perf_buffer.name,
@@ -196,10 +202,33 @@ void BCCWrapper::ClosePerfBuffers() {
   perf_buffers_.clear();
 }
 
+namespace {
+
+std::string PerfTypeName(uint32_t type) {
+  switch (type) {
+    case PERF_TYPE_HARDWARE:
+      return "PERF_TYPE_HARDWARE";
+    case PERF_TYPE_SOFTWARE:
+      return "PERF_TYPE_SOFTWARE";
+    case PERF_TYPE_TRACEPOINT:
+      return "PERF_TYPE_TRACEPOINT";
+    case PERF_TYPE_HW_CACHE:
+      return "PERF_TYPE_HW_CACHE";
+    case PERF_TYPE_RAW:
+      return "PERF_TYPE_RAW";
+    default:
+      return absl::StrCat("type: ", type);
+  }
+}
+
+}  // namespace
+
 Status BCCWrapper::AttachPerfEvent(const PerfEventSpec& perf_event) {
-  auto attach_res = bpf_.attach_perf_event(perf_event.event_type, perf_event.event_config,
-                                           std::string(perf_event.probe_func),
-                                           perf_event.sample_period, perf_event.sample_freq);
+  LOG(INFO) << absl::Substitute("Attaching perf event:\n   type=$0\n   probe_fn=$1",
+                                PerfTypeName(perf_event.type), perf_event.probe_fn);
+  auto attach_res =
+      bpf_.attach_perf_event(perf_event.type, perf_event.config, std::string(perf_event.probe_fn),
+                             perf_event.sample_period, perf_event.sample_freq);
   if (attach_res.code() != 0) {
     return error::Internal("Unable to attach perf event, error message $0", attach_res.msg());
   }
@@ -216,7 +245,9 @@ Status BCCWrapper::AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events)
 }
 
 Status BCCWrapper::DetachPerfEvent(const PerfEventSpec& perf_event) {
-  auto detach_res = bpf_.detach_perf_event(perf_event.event_type, perf_event.event_config);
+  LOG(INFO) << absl::Substitute("Detaching perf event:\n   type=$0\n   probe_fn=$1",
+                                PerfTypeName(perf_event.type), perf_event.probe_fn);
+  auto detach_res = bpf_.detach_perf_event(perf_event.type, perf_event.config);
   if (detach_res.code() != 0) {
     return error::Internal("Unable to detach perf event, error_message $0", detach_res.msg());
   }
@@ -226,7 +257,7 @@ Status BCCWrapper::DetachPerfEvent(const PerfEventSpec& perf_event) {
 
 void BCCWrapper::DetachPerfEvents() {
   // TODO(kgandhi): PL-453  Figure out a fix for below warning.
-  // WARNING: Detaching perf events based on event_type_ and event_config_ might
+  // WARNING: Detaching perf events based on type and config might
   // end up removing the perf event if there was another source with the same perf event and
   // config. Should be rare but may still be an issue.
 
