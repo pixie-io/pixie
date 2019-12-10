@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"reflect"
 	"strings"
 
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -64,6 +66,9 @@ type MetadataHandler struct {
 	agentUpdateCh chan *UpdateMessage
 	clock         utils.Clock
 	isLeader      *bool
+
+	// This is a cache of all the leader election message.
+	leaderMsgs map[k8stypes.UID]*v1.Endpoints
 }
 
 // NewMetadataHandlerWithClock creates a new metadata handler with a clock.
@@ -77,6 +82,7 @@ func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, clock utils.
 		agentUpdateCh: agentUpdateCh,
 		clock:         clock,
 		isLeader:      isLeader,
+		leaderMsgs:    make(map[k8stypes.UID]*v1.Endpoints),
 	}
 
 	go mh.MetadataListener()
@@ -205,6 +211,32 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 
 func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 	e := o.(*v1.Endpoints)
+	// kube-scheduler and kube-controller-manager endpoints (and
+	// any endpoint with leader election) are
+	// updated almost every second, leading to terrible noise,
+	// and hence constant listener invocation. So, here we
+	// ignore endpoint updates that contain changes to only leader annotation.
+	// More:
+	// https://github.com/kubernetes/kubernetes/issues/41635
+	// https://github.com/kubernetes/kubernetes/issues/34627
+	const leaderAnnotation = "control-plane.alpha.kubernetes.io/leader"
+	_, exists := e.Annotations[leaderAnnotation]
+	if exists {
+		delete(e.Annotations, leaderAnnotation)
+		e.ResourceVersion = ""
+		storedMsg, exists := mh.leaderMsgs[e.UID]
+		if exists {
+			// Check if the message is the same as before except for the annotation.
+			if reflect.DeepEqual(e, storedMsg) {
+				log.
+					WithField("uid", e.UID).
+					Trace("Dropping message because it only mismatches on leader annotation")
+				return
+			}
+		} else {
+			mh.leaderMsgs[e.UID] = e
+		}
+	}
 
 	// Don't record the endpoint if there is no nodename.
 	if len(e.Subsets) > 0 && len(e.Subsets[0].Addresses) > 0 && e.Subsets[0].Addresses[0].NodeName == nil {
@@ -282,7 +314,6 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 
 func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object) {
 	e := o.(*v1.Service)
-
 	pb, err := protoutils.ServiceToProto(e)
 	if err != nil {
 		log.WithError(err).Fatal("Could not convert service object to protobuf.")
