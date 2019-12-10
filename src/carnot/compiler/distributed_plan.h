@@ -83,10 +83,13 @@ class DistributedPlan {
 
   const plan::DAG& dag() const { return dag_; }
 
+  void SetDistributed(bool distributed) { distributed_ = distributed; }
+
  private:
   plan::DAG dag_;
   absl::flat_hash_map<int64_t, std::unique_ptr<CarnotInstance>> id_to_node_map_;
   int64_t id_counter_ = 0;
+  bool distributed_ = false;
 };
 
 }  // namespace distributed

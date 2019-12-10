@@ -19,6 +19,7 @@ StatusOr<distributedpb::DistributedPlan> DistributedPlan::ToProto() const {
     PL_ASSIGN_OR_RETURN((*qb_address_to_plan_pb)[carnot->QueryBrokerAddress()],
                         carnot->PlanProto());
     (*qb_address_to_dag_id_pb)[carnot->QueryBrokerAddress()] = i;
+    (*qb_address_to_plan_pb)[carnot->QueryBrokerAddress()].set_distributed(distributed_);
   }
   dag_.ToProto(physical_plan_dag);
   return physical_plan_pb;

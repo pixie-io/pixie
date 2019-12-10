@@ -15,6 +15,8 @@ message Plan {
   DAG dag = 1;
   // List of plan fragments referenced by the DAG.
   repeated PlanFragment nodes = 2;
+  // Whether or not the plan is a distributed plan.
+  bool distributed = 3;
 }
 
 // Each plan fragment is a DAG represented in a format similar to an adjacency
