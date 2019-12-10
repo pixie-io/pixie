@@ -69,11 +69,12 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
 
  private:
   Status ExecuteQueryInternal(AgentQueryResponse* resp) {
-    LOG(INFO) << absl::StrFormat("Executing query: id=%s, query=%s, distributed=%d",
-                                 query_id_.str(), req_.query_str(), req_.plan().distributed());
+    LOG(INFO) << absl::Substitute("Executing query: id=$0, distributed=$1", query_id_.str(),
+                                  req_.plan().distributed());
+    VLOG(1) << absl::Substitute("Query Plan: $0=$1", query_id_.str(), req_.plan().DebugString());
 
     {
-      ScopedTimer query_timer("query timer");
+      ScopedTimer query_timer(absl::Substitute("query timer: id=$0", query_id_.str()));
       StatusOr<carnot::CarnotQueryResult> result_or_s;
       if (req_.has_plan()) {
         result_or_s = carnot_->ExecutePlan(req_.plan(), query_id_);
