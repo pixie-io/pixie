@@ -16,13 +16,6 @@ class EventsFixture : public ::testing::Test {
   static constexpr uint32_t kFD = 3;
   static constexpr uint64_t kPIDStartTimeTicks = 112358;
 
-  void SetUp() {
-    generation_ = 0;
-    send_seq_num_ = 0;
-    recv_seq_num_ = 0;
-    current_ts_ns_ = 0;
-  }
-
   struct socket_control_event_t InitConn(TrafficProtocol protocol) {
     struct socket_control_event_t conn_event {};
     conn_event.type = kConnOpen;

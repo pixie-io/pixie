@@ -25,8 +25,6 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
   static constexpr uint32_t kASID = 1;
 
   void SetUp() override {
-    testing::EventsFixture::SetUp();
-
     // Create and configure the connector.
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
