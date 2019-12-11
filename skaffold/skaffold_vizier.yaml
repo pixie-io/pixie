@@ -3,44 +3,60 @@ apiVersion: skaffold/v1beta13
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/pl-dev-infra/vizier/agent_image
+  - image: gcr.io/pl-dev-infra/vizier/pem_image
     context: .
     bazel:
-      target: //src/vizier/services/agent:agent_image.tar
+      target: //src/vizier/services/agent/pem:pem_image.tar
+      args: ["--compilation_mode=dbg"]
+
+  - image: gcr.io/pl-dev-infra/vizier/kelvin_image
+    context: .
+    bazel:
+      target: //src/vizier/services/agent/kelvin:kelvin_image.tar
+      args: ["--compilation_mode=dbg"]
 
   - image: gcr.io/pl-dev-infra/vizier/metadata_server_image
     context: .
     bazel:
       target: //src/vizier/services/metadata:metadata_server_image.tar
+      args: ["--compilation_mode=dbg"]
 
   - image: gcr.io/pl-dev-infra/vizier/query_broker_server_image
     context: .
     bazel:
       target: //src/vizier/services/query_broker:query_broker_server_image.tar
+      args: ["--compilation_mode=dbg"]
 
   - image: gcr.io/pl-dev-infra/vizier/api_server_image
     context: .
     bazel:
       target: //src/vizier/services/api:api_server_image.tar
+      args: ["--compilation_mode=dbg"]
 
   - image: gcr.io/pl-dev-infra/vizier/proxy_server_image
     context: .
     bazel:
       target: //src/vizier/services/proxy:proxy_server_prod_image.tar
+      args: ["--compilation_mode=dbg"]
 
   - image: gcr.io/pl-dev-infra/vizier/logtailer_image
     context: .
     bazel:
       target: //src/vizier/utils/logtailer:logtailer_image.tar
+      args: ["--compilation_mode=dbg"]
 
   - image: gcr.io/pl-dev-infra/vizier/cloud_connector_server_image
     context: .
     bazel:
       target: //src/vizier/services/cloud_connector:cloud_connector_server_image.tar
+      args: ["--compilation_mode=dbg"]
+
   - image: gcr.io/pl-dev-infra/vizier/certmgr_server_image
     context: .
     bazel:
       target: //src/vizier/services/certmgr:certmgr_server_image.tar
+      args: ["--compilation_mode=dbg"]
+
   local:
     push: true
   tagPolicy:
@@ -48,40 +64,32 @@ build:
 deploy:
   kustomize:
     path: k8s/vizier/dev
-profiles:
-- name: dev
-  activation:
-  - command: dev
-  patches:
-  # Set compilation to debug so we get symbols.
-  - op: add
-    path: /build/artifacts/context=./bazel/args
-    value: ["--compilation_mode=dbg"]
 
-  # Use default tag policy (hash) for dev builds.
-  # Don't push images in the dev build.
+profiles:
+- name: minikube
+  activation:
+  - kubeContext: minikube
+  patches:
+  # Don't push images in the minikube build.
   - op: replace
     path: /build/local
     value:
       push: false
-- name: nightly
-  activation:
-  - env: PL_BUILD_TYPE=nightly
+
+- name: opt
   patches:
-  # Set compilation to be opt build.
   - op: add
     path: /build/artifacts/context=./bazel/args
     value: ["--compilation_mode=opt"]
 
+- name: asan
+  patches:
   - op: add
-    path: /build/tagPolicy
-    value:
-      envTemplate:
-        template: "{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}"
-      dateTime: null
+    path: /build/artifacts/context=./bazel/args
+    value: ["--config=asan"]
 
-# Set path to be nightly yamls.
-  - op: replace
-    path: /deploy/kustomize
-    value:
-      path: k8s/vizier/nightly
+- name: tsan
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value: ["--config=tsan"]
