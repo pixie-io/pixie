@@ -177,7 +177,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   inline static constexpr bpf_tools::UProbeTmpl kUProbeTmplsArray[] = {
       {"google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
-       bpf_tools::SymbolMatchType::kSuffix, "dummy_uprobe", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+       bpf_tools::SymbolMatchType::kSuffix, "probe_http2_client_operate_headers",
+       bpf_probe_attach_type::BPF_PROBE_ENTRY},
   };
   static constexpr auto kUProbeTmpls = ArrayView<bpf_tools::UProbeTmpl>(kUProbeTmplsArray);
 

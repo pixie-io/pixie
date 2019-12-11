@@ -10,13 +10,11 @@
 
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
+#include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/data_stream.h"
 #include "src/stirling/mysql/mysql_parse.h"
 #include "src/stirling/socket_resolver.h"
-
-// TODO(oazizi): Remove this once experimental definitions are moved into stirling.
-#include "experimental/bpf/tracers/http2_prober_types.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
 DECLARE_bool(infer_conn_info);

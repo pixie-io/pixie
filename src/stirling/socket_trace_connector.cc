@@ -276,9 +276,33 @@ void SocketTraceConnector::HandleControlEventsLoss(void* /*cb_cookie*/, uint64_t
   LOG(WARNING) << ProbeLossMessage("socket_control_events", lost);
 }
 
+namespace {
+
+std::string_view TypeName(EventType type) {
+  switch (type) {
+    case kUnknown:
+      return "unknown";
+    case kGRPCWriteHeader:
+      return "write_header";
+    case kGRPCOperateHeaders:
+      return "operate_headers";
+    default:
+      return "for_gcc";
+  }
+}
+
+}  // namespace
+
 void SocketTraceConnector::HandleHeaderEvent(void* /*cb_cookie*/, void* data, int /*data_size*/) {
-  const auto& event = *static_cast<const go_grpc_http2_header_event_t*>(data);
-  LOG(INFO) << "go_grpc_http2_header_even::value: " << event.value;
+  auto event = std::make_unique<go_grpc_http2_header_event_t>();
+  memcpy(event.get(), data, sizeof(go_grpc_http2_header_event_t));
+  LOG(INFO) << absl::Substitute("t=$0 pid=$1 tid=$2 type=$3 fd=$4 stream_id=$5 name=$6 value=$7",
+                                event->entry_probe.timestamp_ns, event->entry_probe.pid,
+                                event->entry_probe.tid, TypeName(event->type), event->fd,
+                                event->stream_id,
+                                std::string_view(event->name.msg, event->name.size),
+                                std::string_view(event->value.msg, event->value.size));
+  // TODO(yzhao): Call SocketTraceConnector API to insert this event.
 }
 
 void SocketTraceConnector::HandleHeaderEventLoss(void* /*cb_cookie*/, uint64_t lost) {
