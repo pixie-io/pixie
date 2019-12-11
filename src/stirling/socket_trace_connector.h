@@ -179,6 +179,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
        bpf_tools::SymbolMatchType::kSuffix, "probe_http2_client_operate_headers",
        bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader",
+       bpf_tools::SymbolMatchType::kSuffix, "probe_loopy_writer_write_header",
+       bpf_probe_attach_type::BPF_PROBE_ENTRY},
   };
   static constexpr auto kUProbeTmpls = ArrayView<bpf_tools::UProbeTmpl>(kUProbeTmplsArray);
 

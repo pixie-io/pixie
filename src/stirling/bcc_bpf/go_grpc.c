@@ -159,6 +159,77 @@ static __inline void fill_probe_info(struct ProbeInfo* probe_info) {
   probe_info->tid = current_pid_tgid & 0xffffffff;
 }
 
+// Probes (*loopyWriter).writeHeader(uint32, bool, []hpack.HeaderField, func()) inside gRPC-go,
+// which writes HTTP2 headers to the server.
+int probe_loopy_writer_write_header(struct pt_regs* ctx) {
+  // The following code tries to extract the file descriptor held by the loopyWriter object, when
+  // probing the (*loopyWriter).writeHeader() function call. The whole structure looks like:
+  // type loopyWriter struct {
+  //   ...  // 40 bytes offset
+  //   framer *framer
+  //   type framer struct {
+  //     writer *bufWriter
+  //     type bufWriter struct {
+  //       ...  // 40 bytes offset
+  //       conn net.Conn
+  //       type net.Conn interface {
+  //         ...  // 8 bytes offset
+  //         data  // An pointer to *net.TCPConn, which implements the net.Conn interface.
+  //         type TCPConn struct {
+  //           conn  // conn is embedded inside TCPConn, which is defined as follows.
+  //           type conn struct {
+  //             fd *netFD
+  //             type netFD struct {
+  //               pfd poll.FD
+  //               type FD struct {
+  //                 ...  // 16 bytes offset
+  //                 Sysfd int
+  //               }
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+  const void* sp = (const void*)PT_REGS_SP(ctx);
+  const int kLoopyWriterParamOffset = 8;
+  const void* loopy_writer_ptr = *(const void**)(sp + kLoopyWriterParamOffset);
+
+  const int kFramerFieldOffset = 40;
+  const void* framer_ptr = *(const void**)(loopy_writer_ptr + kFramerFieldOffset);
+  const void* framer_writer_ptr = *(const void**)framer_ptr;
+
+  const int kConnFieldOffset = 40;
+  const void* framer_writer_conn_ptr = framer_writer_ptr + kConnFieldOffset;
+  const int32_t fd = conn_fd(framer_writer_conn_ptr);
+
+  const int kStreamIDParamOffset = 16;
+  const uint32_t stream_id = *(uint32_t*)(sp + kStreamIDParamOffset);
+
+  struct go_grpc_http2_header_event_t event = {
+      .type = kGRPCWriteHeader,
+      .fd = fd,
+      .stream_id = stream_id,
+  };
+  fill_probe_info(&event.entry_probe);
+
+  const int kHeaderFieldSliceParamOffset = 24;
+  const struct go_ptr_array fields =
+      *(const struct go_ptr_array*)(sp + kHeaderFieldSliceParamOffset);
+  const struct HPackHeaderField* fields_ptr = fields.ptr;
+
+  // Using 'int i' below seems prevent loop getting rolled.
+  // TODO(yzhao): Investigate and fix.
+#pragma unroll
+  for (unsigned int i = 0, pos = 0; i < LOOP_LIMIT && i < fields.len; ++i) {
+    fill_header_field(&event, fields_ptr + i);
+    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+  }
+
+  return 0;
+}
+
 // Probes (*http2Client).operateHeaders(*http2.MetaHeadersFrame) inside gRPC-go, which processes
 // HTTP2 headers of the received responses.
 int probe_http2_client_operate_headers(struct pt_regs* ctx) {
