@@ -116,11 +116,13 @@ Status SocketTraceConnector::InitImpl() {
                                     ec.message());
     for (const auto& tmpl : kUProbeTmpls) {
       // TODO(yzhao): Add symbol search.
+      // Note that GCC is sensitive to the order of designated initializers,
+      // so need to make sure the order is the same as in the UprobeSpec struct definition.
       const bpf_tools::UProbeSpec spec = {
           .binary_path = path,
           .symbol = std::string(tmpl.symbol),
-          .probe_fn = std::string(tmpl.probe_fn),
           .attach_type = tmpl.attach_type,
+          .probe_fn = std::string(tmpl.probe_fn),
       };
       PL_RETURN_IF_ERROR(AttachUProbe(spec));
     }
