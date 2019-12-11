@@ -206,5 +206,104 @@ t1 = pl.DataFrame(table='network_stats', select=['time_', 'pod_id', 'rx_bytes', 
                                          'rx_drops', 'tx_bytes', 'tx_packets', 'tx_errors', 'tx_drops'], start_time='-30s')
 t2 = t1.head(n=100)
 pl.display(t2)
-"""]
+"""],
+["Memory Usage of Pods",
+"""
+# 
+# Get the Virtual memory usage and average memory for all pods in the k8s cluster.
+# 
+t1 = pl.DataFrame(table='process_stats', start_time='-30m')
+t1['vsize_mb'] = t1['vsize_bytes'] / 1024.0 / 1024.0
+t1['rss_bytes_mb'] = t1['rss_bytes'] / 1024.0 / 1024.0
+t1['timestamp'] = pl.bin(t1['time_'], pl.seconds(10))
+t1['pod']  = t1.attr['pod']
+# uncomment and replace service_name to filter on a specific service.
+#t1 = t1[pl.contains(t1['service'], 'service_name')]
+upid_aggop = t1.groupby(['upid', 'pod', 'timestamp']).agg(
+  vsize_mb=('vsize_mb', pl.mean),
+  rss_bytes_mb=('rss_bytes_mb', pl.mean),
+)
+# For this aggregate, we sum up the values as we've already calculated the average/usage 
+# for the upids already, just need to do it for the entire pod.
+pod_aggop = upid_aggop.groupby(['pod', 'timestamp']).agg(
+  vsize_mb=('vsize_mb', pl.sum),
+  rss_bytes_mb=('rss_bytes_mb', pl.sum),
+)
+# Format column names.
+pod_aggop['Virtual Memory (mb)'] = pod_aggop['vsize_mb']
+pod_aggop['Average Memory (mb)'] = pod_aggop['rss_bytes_mb']
+keep_columns = pod_aggop[[
+  'pod', 
+  'timestamp', 
+  'Virtual Memory (mb)', 
+  'Average Memory (mb)'
+]]
+pl.display(keep_columns)
+"""],
+["Memory Usage of Services",
+"""
+# 
+# Get the Virtual memory usage and average memory for all services in the k8s cluster.
+# 
+t1 = pl.DataFrame(table='process_stats', start_time='-30m')
+t1['vsize_mb'] = t1['vsize_bytes'] / 1024.0 / 1024.0
+t1['rss_bytes_mb'] = t1['rss_bytes'] / 1024.0 / 1024.0
+t1['timestamp'] = pl.bin(t1['time_'], pl.seconds(10))
+t1['service']  = t1.attr['service']
+# uncomment and replace service_name to filter on a specific service.
+#t1 = t1[pl.contains(t1['service'], 'service_name')]
+upid_aggop = t1.groupby(['upid', 'service', 'timestamp']).agg(
+  vsize_mb=('vsize_mb', pl.mean),
+  rss_bytes_mb=('rss_bytes_mb', pl.mean),
+)
+# For this aggregate, we sum up the values as we've already calculated the average/usage 
+# for the upids already, just need to do it for the entire service.
+aggop = upid_aggop.groupby(['service', 'timestamp']).agg(
+  vsize_mb=('vsize_mb', pl.sum),
+  rss_bytes_mb=('rss_bytes_mb', pl.sum),
+)
+# Format column names.
+aggop['Virtual Memory (mb)'] = aggop['vsize_mb']
+aggop['Average Memory (mb)'] = aggop['rss_bytes_mb']
+keep_columns = aggop[[
+  'service', 
+  'timestamp', 
+  'Virtual Memory (mb)', 
+  'Average Memory (mb)'
+]]
+pl.display(keep_columns)
+"""],
+["Memory Usage of Processes",
+"""
+# 
+# Get the Virtual memory usage and average memory for all processes in the k8s cluster.
+# 
+t1 = pl.DataFrame(table='process_stats', start_time='-30s')
+pl.display(t1, 'dkdk')
+t1['vsize_mb'] = t1['vsize_bytes'] / 1024.0 / 1024.0
+t1['rss_bytes_mb'] = t1['rss_bytes'] / 1024.0 / 1024.0
+t1['timestamp'] = pl.bin(t1['time_'], pl.seconds(10))
+# uncomment and replace service_name to filter on a specific service.
+#t1 = t1[pl.contains(t1['upid'], 'service_name')]
+aggop = t1.groupby(['upid', 'timestamp']).agg(
+  vsize_mb=('vsize_mb', pl.mean),
+  rss_bytes_mb=('rss_bytes_mb', pl.mean),
+)
+# Format column names.
+aggop['pid'] = pl.upid_to_pid(aggop['upid'])
+aggop['asid'] = pl.upid_to_asid(aggop['upid'])
+# uncomment and replace number to filter on a specific pid.
+#aggop = aggop[aggop['pid'] == 4862]
+aggop['Virtual Memory (mb)'] = aggop['vsize_mb']
+aggop['Average Memory (mb)'] = aggop['rss_bytes_mb']
+keep_columns = aggop[[
+  'upid', 
+  'timestamp', 
+  'Virtual Memory (mb)', 
+  'Average Memory (mb)'
+]]
+pl.display(keep_columns)
+"""
+]
+
 ]
