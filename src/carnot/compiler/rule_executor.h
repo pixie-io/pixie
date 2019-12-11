@@ -37,7 +37,8 @@ class FailOnMax : public Strategy {
  public:
   explicit FailOnMax(int64_t max_iterations) : Strategy(max_iterations) {}
   Status MaxIterationsHandler() override {
-    return error::DeadlineExceeded("Max iterations reached.");
+    return error::DeadlineExceeded("Reached max iterations for rule executor - $0",
+                                   max_iterations());
   }
 };
 

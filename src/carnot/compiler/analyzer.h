@@ -46,7 +46,7 @@ class Analyzer : public RuleExecutor {
   }
 
   void CreateUniqueSinkNamesBatch() {
-    RuleBatch* unique_sink_names = CreateRuleBatch<FailOnMax>("UniqueSinkNames", 1);
+    RuleBatch* unique_sink_names = CreateRuleBatch<TryUntilMax>("UniqueSinkNames", 1);
     unique_sink_names->AddRule<UniqueSinkNameRule>();
   }
 

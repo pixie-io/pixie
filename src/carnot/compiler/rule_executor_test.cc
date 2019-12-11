@@ -86,7 +86,7 @@ TEST(StrategyTest, fail_on_max) {
   EXPECT_EQ(s_down_cast->max_iterations(), num_iterations);
   Status status = s_down_cast->MaxIterationsHandler();
   EXPECT_NOT_OK(status);
-  EXPECT_EQ(status.msg(), "Max iterations reached.");
+  EXPECT_EQ(status.msg(), "Reached max iterations for rule executor - 10");
 }
 
 TEST(StrategyTest, try_until_max) {

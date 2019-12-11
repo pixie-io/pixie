@@ -770,6 +770,20 @@ TEST_F(AnalyzerTest, eval_compile_time_function) {
   ASSERT_OK(analyzer_status);
 }
 
+const char* kMultiDisplays = R"pxl(
+t1 = pl.DataFrame(table='http_events', start_time='-5m')
+pl.display(t1)
+pl.display(t1)
+)pxl";
+
+TEST_F(AnalyzerTest, multiple_displays_does_not_fail) {
+  auto ir_graph_status = CompileGraph(kMultiDisplays);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_OK(analyzer_status);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
