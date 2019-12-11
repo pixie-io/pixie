@@ -223,7 +223,10 @@ export class Auth0Login extends React.Component<Auth0LoginProps, Auth0LoginState
       RedirectUtils.redirect(this.siteName, this.redirectPath || '/', {});
     }
 
-    this._lock.show();
+    const options = this.cliAuthMode || this.noCache ?
+      { auth: { params: { prompt: 'select_account' } } } as Auth0LockShowOptions :
+      null;
+    this._lock.show(options);
     this._lock.on('authenticated', (auth) => {
       analytics.track('Auth success');
       this.props.onAuthenticated.call(this, auth);

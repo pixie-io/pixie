@@ -25,16 +25,17 @@ const pixieAuthFile = "auth.json"
 
 var errUserChallengeTimeout = errors.New("timeout waiting for user")
 var errBrowserFailed = errors.New("browser failed to open")
+var errTokenUnauthorized = errors.New("failed to obtain token")
 var localServerRedirectURL = "http://localhost:8085/auth_complete"
 var localServerPort = int32(8085)
 
-const authSuccessPage = `
+const authCompletePage = `
 <!DOCTYPE HTML>
 <html lang="en-US">
   <head>
     <meta charset="UTF-8">
     <script type="text/javascript">
-      window.location.href = "https://{{ .CloudAddr }}/auth_success"
+      window.location.href = "{{ .CloudAddr }}"
     </script>
     <title>Authentication Successful - Pixie</title>
   </head>
@@ -45,6 +46,9 @@ const authSuccessPage = `
   </body>
 </html>
 `
+
+// Template of the page to render when auth succeeds.
+var authCompleteTmpl = template.Must(template.New("authCompletePage").Parse(authCompletePage))
 
 // EnsureDefaultAuthFilePath returns and creates the file path is missing.
 func EnsureDefaultAuthFilePath() (string, error) {
@@ -111,34 +115,33 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 	// and wait for the challenge to complete and call a HTTP server that we started.
 	// The second one is to perform a manual auth.
 	// Unless manual mode is specified we will try perform the browser based auth and fallback to manual auth.
-	var accessToken string
-	var err error
 	if !p.ManualMode {
-		if accessToken, err = p.tryBrowserAuth(); err != nil {
-			// Handle errors.
-			switch err {
-			case errUserChallengeTimeout:
-				log.Fatal("Timeout waiting for response from browser. Perhaps try --manual mode.")
-			case errBrowserFailed:
-				fallthrough
-			default:
-				log.Info("Failed to perform browser based auth. Will try manual auth")
-			}
+		refreshToken, err := p.tryBrowserAuth()
+		// Handle errors.
+		switch err {
+		case nil:
+			return refreshToken, nil
+		case errUserChallengeTimeout:
+			log.Fatal("Timeout waiting for response from browser. Perhaps try --manual mode.")
+		case errBrowserFailed:
+			fallthrough
+		default:
+			log.Infof("err: %v", err)
+			log.Info("Failed to perform browser based auth. Will try manual auth")
 		}
 	}
 
-	if accessToken == "" {
-		// Try to request using manual mode
-		if accessToken, err = p.getAuthStringManually(); err != nil {
-			return nil, err
-		}
-		log.Info("Fetching refresh token")
+	// Try to request using manual mode
+	accessToken, err := p.getAuthStringManually()
+	if err != nil {
+		return nil, err
 	}
+	log.Info("Fetching refresh token")
 
 	return p.getRefreshToken(accessToken)
 }
 
-func (p *PixieCloudLogin) tryBrowserAuth() (string, error) {
+func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	// Browser auth starts up a server on localhost to do the user challenge
 	// and get the authentication token.
 	authURL := getAuthURL(p.CloudAddr, p.Site)
@@ -147,21 +150,18 @@ func (p *PixieCloudLogin) tryBrowserAuth() (string, error) {
 	authURL.RawQuery = q.Encode()
 
 	type result struct {
-		Token string
+		Token *RefreshToken
 		err   error
 	}
 
 	// The token/ error is returned on this channel. A closed channel also implies error.
 	results := make(chan result, 1)
 
-	// Template of the page to render when auth succeeds.
-	okPageTmpl := template.Must(template.New("okPage").Parse(authSuccessPage))
-
 	mux := http.DefaultServeMux
 	// Start up HTTP server to intercept the browser data.
 	mux.HandleFunc("/auth_complete", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			results <- result{"", errors.New("wrong method on HTTP request, assuming auth failed")}
+			results <- result{nil, errors.New("wrong method on HTTP request, assuming auth failed")}
 			close(results)
 			return
 		}
@@ -173,20 +173,29 @@ func (p *PixieCloudLogin) tryBrowserAuth() (string, error) {
 
 		accessToken := r.Form.Get("access_token")
 		if accessToken == "" {
-			results <- result{"", errors.New("missing code, assuming auth failed")}
+			results <- result{nil, errors.New("missing code, assuming auth failed")}
 			close(results)
 			return
 		}
 
+		refreshToken, err := p.getRefreshToken(accessToken)
+
 		// Fill out the template with the correct data.
 		templateParams := struct {
 			CloudAddr string
-		}{p.CloudAddr}
+		}{getAuthCompleteURL(p.CloudAddr, p.Site, err)}
+
 		// Write out the page to the handler.
-		okPageTmpl.Execute(w, templateParams)
+		authCompleteTmpl.Execute(w, templateParams)
+
+		if err != nil {
+			results <- result{nil, err}
+			close(results)
+			return
+		}
 
 		// Sucessful auth.
-		results <- result{accessToken, nil}
+		results <- result{refreshToken, nil}
 		close(results)
 	})
 
@@ -210,7 +219,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (string, error) {
 		log.Info("Starting browser")
 		err := open.Run(authURL.String())
 		if err != nil {
-			results <- result{"", errBrowserFailed}
+			results <- result{nil, errBrowserFailed}
 			close(results)
 		}
 	}()
@@ -221,10 +230,10 @@ func (p *PixieCloudLogin) tryBrowserAuth() (string, error) {
 	for {
 		select {
 		case <-ctx.Done():
-			return "", errUserChallengeTimeout
+			return nil, errUserChallengeTimeout
 		case res, ok := <-results:
 			if !ok {
-				return "", errUserChallengeTimeout
+				return nil, errUserChallengeTimeout
 			}
 			// TODO(zasgar): This is a hack, figure out why this function takes so long to exit.
 			log.Info("Fetching refresh token ...")
@@ -270,8 +279,8 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, errors.New("invalid token")
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusBadRequest {
+		return nil, errTokenUnauthorized
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Request for token failed with status %d", resp.StatusCode)
@@ -308,5 +317,25 @@ func getAuthAPIURL(cloudAddr string) string {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to parse cloud addr.")
 	}
+	return authURL.String()
+}
+
+func getAuthCompleteURL(cloudAddr, siteName string, err error) string {
+	authURL := &url.URL{
+		Scheme: "https",
+		Host:   cloudAddr,
+		Path:   "/auth-complete",
+	}
+	if err == nil {
+		return authURL.String()
+	}
+	params := url.Values{}
+	if err == errTokenUnauthorized {
+		params.Add("err", "token")
+		params.Add("siteName", siteName)
+	} else {
+		params.Add("err", "true")
+	}
+	authURL.RawQuery = params.Encode()
 	return authURL.String()
 }

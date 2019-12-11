@@ -80,7 +80,7 @@ var webpackConfig = {
       rewrites: [
         // TODO(malthus): This doesn't fully work for the dev server right
         // now, because navigating to root always goes to index.html.
-        {from: /^\/(create(?!-site)|auth_success)$/, to: '/index.html'},
+        {from: /^\/(create(?!-site)|auth-complete)$/, to: '/index.html'},
         {from: /.*/, to: '/subdomain-index.html'},
       ],
     },
