@@ -66,8 +66,9 @@ t1['read_bytes_mb'] = t1['read_bytes'] / 1024.0 / 1024.0
 t1['write_bytes_mb'] = t1['write_bytes'] / 1024.0 / 1024.0
 t1['rchar_bytes_mb'] = t1['rchar_bytes'] / 1024.0 / 1024.0
 t1['wchar_bytes_mb'] = t1['wchar_bytes'] / 1024.0 / 1024.0
+t1['pod'] = t1.attr['pod']
 
-upid_aggop = t1.groupby('upid').agg(
+upid_aggop = t1.groupby(['upid', 'pod']).agg(
   vsize_mb=('vsize_mb', pl.mean),
   rss_bytes_mb=('rss_bytes_mb', pl.mean),
   # The following columns are all counters, so we diff the value at the beginning 
@@ -93,7 +94,6 @@ upid_aggop['read_bytes_mb'] = upid_aggop['read_bytes_mb_end'] - upid_aggop['read
 upid_aggop['write_bytes_mb'] = upid_aggop['write_bytes_mb_end'] - upid_aggop['write_bytes_mb_start']
 upid_aggop['rchar_bytes_mb'] = upid_aggop['rchar_bytes_mb_end'] - upid_aggop['rchar_bytes_mb_start']
 upid_aggop['wchar_bytes_mb'] = upid_aggop['wchar_bytes_mb_end'] - upid_aggop['wchar_bytes_mb_start']
-upid_aggop['pod'] = upid_aggop.attr['pod']
 
 # For this aggregate, we sum up the values as we've already calculated the average/usage 
 # for the upids already.
@@ -142,8 +142,9 @@ t1['read_bytes_mb'] = t1['read_bytes'] / 1024.0 / 1024.0
 t1['write_bytes_mb'] = t1['write_bytes'] / 1024.0 / 1024.0
 t1['rchar_bytes_mb'] = t1['rchar_bytes'] / 1024.0 / 1024.0
 t1['wchar_bytes_mb'] = t1['wchar_bytes'] / 1024.0 / 1024.0
+t1['pod']  = t1.attr['pod']
 
-upid_aggop = t1.groupby('upid').agg(
+upid_aggop = t1.groupby(['upid', 'pod']).agg(
   vsize_mb=('vsize_mb', pl.mean),
   rss_bytes_mb=('rss_bytes_mb', pl.mean),
   # The following columns are all counters, so we take the maximum value.
@@ -156,7 +157,6 @@ upid_aggop = t1.groupby('upid').agg(
 )
 # For this aggregate, we sum up the values as we've already calculated the average/usage 
 # for the upids already.
-upid_aggop['pod'] = upid_aggop.attr['pod']
 pod_aggop = upid_aggop.groupby('pod').agg(
   cpu_utime_s=('cpu_utime_s', pl.sum),
   cpu_ktime_s=('cpu_ktime_s', pl.sum),
