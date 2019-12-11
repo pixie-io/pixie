@@ -26,11 +26,11 @@ UI_SCRIPT_START = """
 
       cp -aL $${BASE_PATH}/* $${TMPPATH}
 
-      pushd $${TMPPATH}/src/ui
+      pushd $${TMPPATH}/src/ui &> /dev/null
 """
 
 UI_SCRIPT_END = """
-      popd;
+      popd &> /dev/null
       rm -rf $${TMPPATH}
     """
 
@@ -43,8 +43,11 @@ genrule(
         "deps.tar",
     ],
     cmd = UI_SCRIPT_START + """
-      pushd $${TMPPATH}/src/ui
-      yarn install --prefer_offline
+      pushd $${TMPPATH}/src/ui &> /dev/null
+
+      trap 'cat build.log' ERR
+
+      yarn install --prefer_offline &> build.log
 
       tar -czf $${OUTPUT_PATH}/deps.tar node_modules .
       """ + UI_SCRIPT_END,
@@ -65,7 +68,9 @@ genrule(
     cmd = UI_SCRIPT_START + """
       tar -xf $${BASE_PATH}/$(location //src/ui:ui-deps)
 
-      jest --coverage
+      trap 'cat build.log' ERR
+
+      jest --coverage &> build.log
 
       cp junit.xml $${OUTPUT_PATH}
       cp coverage/lcov.info $${OUTPUT_PATH}
@@ -86,8 +91,10 @@ genrule(
     cmd = UI_SCRIPT_START + """
       tar -zxf $${BASE_PATH}/$(location //src/ui:ui-deps)
 
+      trap 'cat build.log' ERR
+
       # Build the prod bundle.
-      yarn build_prod;
+      yarn build_prod &> build.log;
 
       # Write the outputs to the correct location so Bazel can find them.
       cp dist/bundle.tar.gz $${OUTPUT_PATH}
@@ -110,8 +117,10 @@ genrule(
     cmd = UI_SCRIPT_START + """
       tar -xf $${BASE_PATH}/$(location //src/ui:ui-deps)
 
+      trap 'cat build.log' ERR
+
       # Build the prod bundle.
-      yarn storybook_static
+      yarn storybook_static &> build.log
 
       # Write the outputs to the correct location so Bazel can find them.
       tar -czf $${OUTPUT_PATH}/bundle_storybook.tar.gz storybook_static
@@ -138,12 +147,13 @@ genrule(
     cmd = UI_SCRIPT_START + """
       tar -xf $${BASE_PATH}/$(location //src/ui:ui-deps)
 
+      trap 'cat build.log' ERR
       # License check
-      yarn license-checker --json --out $@
+      yarn license-checker --json --out $@ &> build.log
       cp $@ $${OUTPUT_PATH}
 
-      popd
-      python "$(location :tools/licenses/npm_license_extractor.py)" "$@" "$@" --override_license "$(location :tools/licenses/override_license.json)"
+      popd &> /dev/null
+      python "$(location :tools/licenses/npm_license_extractor.py)" "$@" "$@" --override_license "$(location :tools/licenses/override_license.json)" &> build.log
       rm -rf $${TMPPATH}
     """,
     output_to_bindir = 1,  # We treat "outputs" as binaries.

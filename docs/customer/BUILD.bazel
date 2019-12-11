@@ -22,13 +22,15 @@ genrule(
       export TMPPATH=`mktemp -d`
 
       cp -aL `pwd`/* $${TMPPATH}
-      pushd $${TMPPATH}/docs/customer
+      pushd $${TMPPATH}/docs/customer >& /dev/null
 
-      yarn install;
-      yarn build;
+      trap 'cat build.log' ERR
 
-      tar -czvvf $${PL_DIST_BUNDLE_OUTPUT}/bundle.tar.gz public;
-      popd;
+      yarn install &> build.log
+      yarn build &>> build.log
+
+      tar -czf $${PL_DIST_BUNDLE_OUTPUT}/bundle.tar.gz public;
+      popd &> /dev/null
 
       rm -rf $${TMPPATH}
     """,
