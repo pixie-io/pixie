@@ -1,5 +1,7 @@
 #pragma once
 
+#include <absl/base/macros.h>
+
 #include <deque>
 #include <map>
 #include <string>
@@ -7,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/macros.h"
 #include "src/common/base/base.h"
 #include "src/stirling/common/parse_state.h"
 #include "src/stirling/common/socket_trace.h"

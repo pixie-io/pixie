@@ -1,5 +1,7 @@
 #pragma once
 
+#include <absl/strings/str_cat.h>
+#include <absl/strings/substitute.h>
 #include <grpcpp/grpcpp.h>
 
 #include <chrono>
@@ -8,8 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/str_cat.h"
-#include "absl/strings/substitute.h"
 #include "src/common/base/macros.h"
 PL_SUPPRESS_WARNINGS_START()
 #include "src/stirling/http2/testing/proto/greet.grpc.pb.h"

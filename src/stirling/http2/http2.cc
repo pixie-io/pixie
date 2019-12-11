@@ -1,5 +1,6 @@
 #include "src/stirling/http2/http2.h"
 
+#include <absl/strings/str_cat.h>
 #include <arpa/inet.h>
 extern "C" {
 #include <nghttp2/nghttp2_frame.h>
@@ -13,7 +14,6 @@ extern "C" {
 #include <variant>
 #include <vector>
 
-#include "absl/strings/str_cat.h"
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
 #include "src/common/grpcutils/utils.h"

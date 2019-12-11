@@ -1,5 +1,7 @@
 #ifdef __linux__
 
+#include <absl/strings/str_split.h>
+
 #include <experimental/filesystem>
 
 #include <algorithm>
@@ -11,7 +13,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/str_split.h"
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
 #include "src/shared/metadata/metadata.h"

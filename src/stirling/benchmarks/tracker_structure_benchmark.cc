@@ -1,3 +1,5 @@
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/node_hash_map.h>
 #include <benchmark/benchmark.h>
 
 #include <sys/socket.h>
@@ -7,9 +9,6 @@
 #include <queue>
 #include <random>
 #include <vector>
-
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/node_hash_map.h"
 
 #include "src/common/base/base.h"
 #include "src/stirling/connection_tracker.h"

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <absl/base/macros.h>
 #include <picohttpparser.h>
 
 #include <chrono>
@@ -10,7 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/macros.h"
 #include "src/common/base/base.h"
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/http/message.h"

@@ -1,5 +1,6 @@
 #include "src/stirling/connection_tracker.h"
 
+#include <absl/strings/numbers.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -10,8 +11,6 @@
 #include <chrono>
 #include <numeric>
 #include <vector>
-
-#include "absl/strings/numbers.h"
 
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/socket_info.h"

@@ -15,7 +15,11 @@ def pl_copts():
         "-Wfloat-conversion",
     ]
 
-    return posix_options + select({
+    # Since abseil's BUILD.bazel doesn't provide any system 'includes', add them in manually here.
+    # In contrast, libraries like googletest do provide includes, so no need to add those.
+    manual_system_includes = ["-isystem external/com_google_absl"]
+
+    return posix_options + manual_system_includes + select({
         "@pl//bazel:disable_tcmalloc": ["-DABSL_MALLOC_HOOK_MMAP_DISABLE=1"],
         "//conditions:default": ["-DTCMALLOC=1"],
     }) + select({
