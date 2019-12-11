@@ -20,8 +20,7 @@
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
 DEFINE_bool(infer_conn_info, true,
-            "Whether to attempt connection information inference when remote endpoint information "
-            "is missing.");
+            "Whether to attempt connection inference when remote endpoint information is missing.");
 
 namespace pl {
 namespace stirling {
@@ -121,6 +120,40 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
       recv_data_.AddEvent(std::move(event));
       ++num_recv_events_;
     } break;
+  }
+}
+
+void ConnectionTracker::AddHTTP2Data(const struct conn_id_t& conn_id, const DataFrameInfo& data) {
+  // A disabled tracker doesn't collect data events.
+  if (disabled_) {
+    return;
+  }
+
+  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
+      << absl::Substitute(
+             "Did not expect to receive Data event more than 1 sampling iteration after Close "
+             "[pid=$0 fd=$1 gen=$2].",
+             conn_id.pid, conn_id.fd, conn_id.generation);
+
+  UpdateTimestamps(data.attr.entry_probe.timestamp_ns);
+  SetPID(conn_id);
+
+  SetTrafficClass({
+      .protocol = kProtocolHTTP2,
+      .role = kRoleUnknown,
+  });
+
+  switch (data.attr.type) {
+    case EventType::kWriteData: {
+      send_data_.Messages<DataFrameInfo>().push_back(data);
+      ++num_send_events_;
+    } break;
+    case EventType::kReadData: {
+      recv_data_.Messages<DataFrameInfo>().push_back(data);
+      ++num_recv_events_;
+    } break;
+    default:
+      LOG(WARNING) << "Unexpected event type";
   }
 }
 

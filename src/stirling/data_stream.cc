@@ -255,5 +255,7 @@ template std::deque<http::HTTPMessage>& DataStream::ExtractMessages(MessageType 
 template std::deque<http2::Frame>& DataStream::ExtractMessages(MessageType type);
 template std::deque<mysql::Packet>& DataStream::ExtractMessages(MessageType type);
 
+template std::deque<DataFrameInfo>& DataStream::Messages();
+
 }  // namespace stirling
 }  // namespace pl

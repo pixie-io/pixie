@@ -285,6 +285,22 @@ void SocketTraceConnector::HandleHeaderEventLoss(void* /*cb_cookie*/, uint64_t l
   LOG(WARNING) << ProbeLossMessage("go_grpc_header_events", lost);
 }
 
+void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*data_size*/) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  auto& data_frame_info = *static_cast<DataFrameInfo*>(data);
+  LOG(INFO) << absl::Substitute(
+      "t=$0 pid=$1 tid=$2 type=$3 fd=$4 stream_id=$5 data=$6",
+      data_frame_info.attr.entry_probe.timestamp_ns, data_frame_info.attr.entry_probe.pid,
+      data_frame_info.attr.entry_probe.tid, TypeName(data_frame_info.attr.type),
+      data_frame_info.attr.fd, data_frame_info.attr.stream_id,
+      std::string_view(data_frame_info.data, data_frame_info.attr.data_len));
+  data_frame_info.attr.entry_probe.timestamp_ns +=
+      system::Config::GetInstance().ClockRealTimeOffset();
+  connector->AcceptHTTP2Data(data_frame_info);
+}
+
 //-----------------------------------------------------------------------------
 // Connection Tracker Events
 //-----------------------------------------------------------------------------
@@ -350,6 +366,22 @@ void SocketTraceConnector::AcceptControlEvent(const socket_control_event_t& even
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.open.conn_id.generation];
   tracker.AddControlEvent(event);
+}
+
+void SocketTraceConnector::AcceptHTTP2Data(const DataFrameInfo& data) {
+  uint32_t data_fd = static_cast<uint32_t>(data.attr.fd);
+
+  struct conn_id_t conn_id;
+  conn_id.pid = data.attr.entry_probe.pid;
+  conn_id.pid_start_time_ticks = data.attr.entry_probe.pid_start_time_ticks;
+  conn_id.fd = data_fd;
+  conn_id.generation = data.attr.generation;
+
+  // conn_id is a common field of open & close.
+  const uint64_t conn_map_key = GetConnMapKey(conn_id);
+  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][data.attr.generation];
+  tracker.AddHTTP2Data(conn_id, data);
 }
 
 const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(

@@ -138,6 +138,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static void HandleControlEventsLoss(void* cb_cookie, uint64_t lost);
   static void HandleHeaderEvent(void* cb_cookie, void* data, int data_size);
   static void HandleHeaderEventLoss(void* cb_cookie, uint64_t lost);
+  static void HandleHTTP2Data(void* cb_cookie, void* data, int data_size);
 
   static constexpr bpf_tools::KProbeSpec kProbeSpecsArray[] = {
       {"connect", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_connect"},
@@ -222,6 +223,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   //                     objects, and these functions should take unique_ptrs.
   void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);
   void AcceptControlEvent(const socket_control_event_t& event);
+
+  void AcceptHTTP2Data(const DataFrameInfo& data);
 
   void UpdateActiveConnections();
 

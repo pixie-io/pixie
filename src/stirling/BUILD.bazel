@@ -38,6 +38,8 @@ pl_cc_library(
         "//src/stirling/proto:sock_event_pl_cc_proto",
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/bpf_tools:cc_library",
+        #TODO(oazizi): Remove this once experimental definitions are moved into stirling.
+        "//experimental/bpf/tracers:types",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
             "//src/stirling/bcc_bpf:socket_trace",

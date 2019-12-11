@@ -15,6 +15,9 @@
 #include "src/stirling/mysql/mysql_parse.h"
 #include "src/stirling/socket_resolver.h"
 
+// TODO(oazizi): Remove this once experimental definitions are moved into stirling.
+#include "experimental/bpf/tracers/http2_prober_types.h"
+
 DECLARE_bool(enable_unix_domain_sockets);
 DECLARE_bool(infer_conn_info);
 
@@ -62,6 +65,8 @@ class ConnectionTracker {
    * @param event The data event from BPF.
    */
   void AddDataEvent(std::unique_ptr<SocketDataEvent> event);
+
+  void AddHTTP2Data(const struct conn_id_t& conn_id, const DataFrameInfo& data);
 
   /**
    * @brief Attempts to infer the remote endpoint of a connection.
