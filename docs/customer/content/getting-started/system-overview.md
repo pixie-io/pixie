@@ -42,5 +42,4 @@ Pixie Control Cloud enables Pixie's connected on-premises deployment of the moni
 - The cloud connector on the Command Module side will send aggregated metrics, heartbeats, etc. to the Pixie Control Cloud system.
 
 
-
 ![](pixiedocs_pixiecloud_architecture_v4.png)

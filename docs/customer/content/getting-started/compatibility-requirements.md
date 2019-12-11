@@ -14,6 +14,18 @@ Pixie is designed for Linux environments on Kubernetes clusters.
 | Linux   | Supported       | v4.14+            |
 | Windows | Not Supported   | Not in roadmap    |
 
+
+#### Linux Distributions
+
+|              | Support                  | Version              |
+|:-----------  | :--------------------    | :-----------------   |
+| Ubuntu       | Supported                | 18.04+               |
+| Debian       | Supported                | 10+                  |    
+| RHEL         | Supported                | 8+                   |   
+
+
+**Note:** Linux headers need to be installed for all distributions. 
+
 #### Container Orchestrator
 |               | Support       | Version                   |
 | :------------ | :------------ | :----------------------   |

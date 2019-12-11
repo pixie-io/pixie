@@ -5,7 +5,7 @@ metaDescription: "Pixie is ..."
 ---
 
 #### Slack 
-Pixie support teams will create site specific Slack groups with each Beta customer team for 24X7 support
+You can reach Pixie engineers on the [Pixie Community Channel] (https://join.slack.com/t/pixie-community/shared_invite/enQtODY3NjU5MTc4OTY0LTFhYjc3MWY1NDBkZTc5YTdjNzM0OGYxZmNmODU2MDE5NzYyN2Q1NmIxMmEyN2YwNmM5MjU4NGY2NDBjOWFjY2E) for 24X7 support. 
 
 #### Bug Report & Feature Requests
 You can file bug and features requests via Slack, email or in-person conversations with Pixie engineers. 

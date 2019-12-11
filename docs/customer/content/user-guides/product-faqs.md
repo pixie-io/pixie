@@ -4,6 +4,12 @@ metaTitle: "User Guides| Pixie"
 metaDescription: "Commonly asked questions about to deploy and use Pixie"
 ---
 
+
+#### Can you give me a high level overview of the company?
+
+You can review this [slide deck](https://docsend.com/view/r9s8wxe) for an overview of our story. 
+
+
 #### Does Pixie support Thrift?
 
 We currently do not support Thrift and are prioritizing support for HTTP and gRPC traffic.
