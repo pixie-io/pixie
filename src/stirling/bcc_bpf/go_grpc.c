@@ -1,3 +1,5 @@
+// LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
+
 #include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 
 BPF_PERF_OUTPUT(go_grpc_header_events);

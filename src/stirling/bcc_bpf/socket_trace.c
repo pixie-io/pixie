@@ -1,3 +1,5 @@
+// LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
+
 #include <linux/errno.h>
 #include <linux/in6.h>
 #include <linux/ptrace.h>
