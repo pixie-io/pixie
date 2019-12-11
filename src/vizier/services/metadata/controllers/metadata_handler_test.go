@@ -74,7 +74,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		UpdateEndpoints(expectedPb).
+		UpdateEndpoints(expectedPb, false).
 		Return(nil)
 
 	mockMds.
@@ -292,7 +292,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		UpdateEndpoints(expectedPb).
+		UpdateEndpoints(expectedPb, false).
 		Return(nil)
 
 	mockMds.
@@ -479,7 +479,7 @@ func TestKubernetesEndpointHandler(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		UpdateEndpoints(gomock.Any()).
+		UpdateEndpoints(gomock.Any(), false).
 		Times(0)
 
 	// Create endpoints object.
@@ -550,8 +550,8 @@ func TestObjectToServiceProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		UpdateService(expectedPb).
-		DoAndReturn(func(*metadatapb.Service) error {
+		UpdateService(expectedPb, false).
+		DoAndReturn(func(*metadatapb.Service, bool) error {
 			wg.Done()
 			return nil
 		})
@@ -641,12 +641,12 @@ func TestObjectToPodProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		UpdatePod(expectedPb).
+		UpdatePod(expectedPb, false).
 		Return(nil)
 
 	mockMds.
 		EXPECT().
-		UpdateContainersFromPod(expectedPb).
+		UpdateContainersFromPod(expectedPb, false).
 		Return(nil)
 
 	mockMds.
@@ -950,12 +950,12 @@ func TestSyncPodData(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		UpdatePod(deletedUndeadPodPb).
+		UpdatePod(deletedUndeadPodPb, false).
 		Return(nil)
 
 	mockMds.
 		EXPECT().
-		UpdatePod(anotherDeletedUndeadPodPb).
+		UpdatePod(anotherDeletedUndeadPodPb, false).
 		Return(nil)
 
 	mockMds.
@@ -1187,7 +1187,7 @@ func TestSyncEndpointsData(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		UpdateEndpoints(deletedUndeadEpPb).
+		UpdateEndpoints(deletedUndeadEpPb, false).
 		Return(nil)
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
@@ -1322,7 +1322,7 @@ func TestSyncServicesData(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		UpdateService(deletedUndeadServicePb).
+		UpdateService(deletedUndeadServicePb, false).
 		Return(nil)
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))

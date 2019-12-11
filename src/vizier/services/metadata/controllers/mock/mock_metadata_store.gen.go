@@ -37,39 +37,39 @@ func (m *MockMetadataStore) EXPECT() *MockMetadataStoreMockRecorder {
 }
 
 // UpdateEndpoints mocks base method
-func (m *MockMetadataStore) UpdateEndpoints(arg0 *metadatapb.Endpoints) error {
-	ret := m.ctrl.Call(m, "UpdateEndpoints", arg0)
+func (m *MockMetadataStore) UpdateEndpoints(arg0 *metadatapb.Endpoints, arg1 bool) error {
+	ret := m.ctrl.Call(m, "UpdateEndpoints", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateEndpoints indicates an expected call of UpdateEndpoints
-func (mr *MockMetadataStoreMockRecorder) UpdateEndpoints(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).UpdateEndpoints), arg0)
+func (mr *MockMetadataStoreMockRecorder) UpdateEndpoints(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).UpdateEndpoints), arg0, arg1)
 }
 
 // UpdatePod mocks base method
-func (m *MockMetadataStore) UpdatePod(arg0 *metadatapb.Pod) error {
-	ret := m.ctrl.Call(m, "UpdatePod", arg0)
+func (m *MockMetadataStore) UpdatePod(arg0 *metadatapb.Pod, arg1 bool) error {
+	ret := m.ctrl.Call(m, "UpdatePod", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdatePod indicates an expected call of UpdatePod
-func (mr *MockMetadataStoreMockRecorder) UpdatePod(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePod", reflect.TypeOf((*MockMetadataStore)(nil).UpdatePod), arg0)
+func (mr *MockMetadataStoreMockRecorder) UpdatePod(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePod", reflect.TypeOf((*MockMetadataStore)(nil).UpdatePod), arg0, arg1)
 }
 
 // UpdateService mocks base method
-func (m *MockMetadataStore) UpdateService(arg0 *metadatapb.Service) error {
-	ret := m.ctrl.Call(m, "UpdateService", arg0)
+func (m *MockMetadataStore) UpdateService(arg0 *metadatapb.Service, arg1 bool) error {
+	ret := m.ctrl.Call(m, "UpdateService", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateService indicates an expected call of UpdateService
-func (mr *MockMetadataStoreMockRecorder) UpdateService(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateService", reflect.TypeOf((*MockMetadataStore)(nil).UpdateService), arg0)
+func (mr *MockMetadataStoreMockRecorder) UpdateService(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateService", reflect.TypeOf((*MockMetadataStore)(nil).UpdateService), arg0, arg1)
 }
 
 // UpdateContainer mocks base method
@@ -85,15 +85,15 @@ func (mr *MockMetadataStoreMockRecorder) UpdateContainer(arg0 interface{}) *gomo
 }
 
 // UpdateContainersFromPod mocks base method
-func (m *MockMetadataStore) UpdateContainersFromPod(arg0 *metadatapb.Pod) error {
-	ret := m.ctrl.Call(m, "UpdateContainersFromPod", arg0)
+func (m *MockMetadataStore) UpdateContainersFromPod(arg0 *metadatapb.Pod, arg1 bool) error {
+	ret := m.ctrl.Call(m, "UpdateContainersFromPod", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateContainersFromPod indicates an expected call of UpdateContainersFromPod
-func (mr *MockMetadataStoreMockRecorder) UpdateContainersFromPod(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContainersFromPod", reflect.TypeOf((*MockMetadataStore)(nil).UpdateContainersFromPod), arg0)
+func (mr *MockMetadataStoreMockRecorder) UpdateContainersFromPod(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContainersFromPod", reflect.TypeOf((*MockMetadataStore)(nil).UpdateContainersFromPod), arg0, arg1)
 }
 
 // UpdateSchemas mocks base method

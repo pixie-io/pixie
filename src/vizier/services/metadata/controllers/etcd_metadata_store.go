@@ -44,7 +44,11 @@ func NewEtcdMetadataStoreWithExpiryTime(client *clientv3.Client, expiryDuration 
 }
 
 // UpdateEndpoints adds or updates the given endpoint in the metadata store.
-func (mds *EtcdMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints) error {
+func (mds *EtcdMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints, deleted bool) error {
+	if deleted && e.Metadata.DeletionTimestampNS == 0 {
+		e.Metadata.DeletionTimestampNS = time.Now().UnixNano()
+	}
+
 	val, err := e.Marshal()
 	if err != nil {
 		return errors.New("Unable to marshal endpoints pb")
@@ -132,7 +136,11 @@ func getEndpointKey(e *metadatapb.Endpoints) string {
 }
 
 // UpdatePod adds or updates the given pod in the metadata store.
-func (mds *EtcdMetadataStore) UpdatePod(p *metadatapb.Pod) error {
+func (mds *EtcdMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
+	if deleted && p.Metadata.DeletionTimestampNS == 0 {
+		p.Metadata.DeletionTimestampNS = time.Now().UnixNano()
+	}
+
 	val, err := p.Marshal()
 	if err != nil {
 		return errors.New("Unable to marshal endpoints pb")
@@ -255,7 +263,11 @@ func GetAgentSchemasKey(agentID string) string {
 }
 
 // UpdateService adds or updates the given service in the metadata store.
-func (mds *EtcdMetadataStore) UpdateService(s *metadatapb.Service) error {
+func (mds *EtcdMetadataStore) UpdateService(s *metadatapb.Service, deleted bool) error {
+	if deleted && s.Metadata.DeletionTimestampNS == 0 {
+		s.Metadata.DeletionTimestampNS = time.Now().UnixNano()
+	}
+
 	val, err := s.Marshal()
 	if err != nil {
 		return errors.New("Unable to marshal endpoints pb")
@@ -279,7 +291,7 @@ func (mds *EtcdMetadataStore) UpdateContainer(c *metadatapb.ContainerInfo) error
 }
 
 // UpdateContainersFromPod updates the containers from the given pod in the metadata store.
-func (mds *EtcdMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod) error {
+func (mds *EtcdMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod, deleted bool) error {
 	containers := make([]*metadatapb.ContainerStatus, 0)
 	for _, status := range pod.Status.ContainerStatuses {
 		if status.ContainerID != "" {
@@ -291,11 +303,17 @@ func (mds *EtcdMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod) error
 	for i, container := range containers {
 		cid := formatContainerID(container.ContainerID)
 		key := getContainerKeyFromStrings(cid)
+
+		stopTime := container.StopTimestampNS
+		if deleted && stopTime == 0 {
+			stopTime = time.Now().UnixNano()
+		}
+
 		cInfo := metadatapb.ContainerInfo{
 			Name:             container.Name,
 			UID:              cid,
 			StartTimestampNS: container.StartTimestampNS,
-			StopTimestampNS:  container.StopTimestampNS,
+			StopTimestampNS:  stopTime,
 			PodUID:           pod.Metadata.UID,
 			Namespace:        getNamespaceFromMetadata(pod.Metadata),
 		}

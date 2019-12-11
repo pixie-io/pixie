@@ -9,6 +9,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -21,11 +22,11 @@ const maxAgentUpdates = 10000
 
 // MetadataStore is the interface for our metadata store.
 type MetadataStore interface {
-	UpdateEndpoints(*metadatapb.Endpoints) error
-	UpdatePod(*metadatapb.Pod) error
-	UpdateService(*metadatapb.Service) error
+	UpdateEndpoints(*metadatapb.Endpoints, bool) error
+	UpdatePod(*metadatapb.Pod, bool) error
+	UpdateService(*metadatapb.Service, bool) error
 	UpdateContainer(*metadatapb.ContainerInfo) error
-	UpdateContainersFromPod(*metadatapb.Pod) error
+	UpdateContainersFromPod(*metadatapb.Pod, bool) error
 	UpdateSchemas(uuid.UUID, []*metadatapb.SchemaInfo) error
 	UpdateProcesses([]*metadatapb.ProcessInfo) error
 	GetAgentsForHostnames(*[]string) (*[]string, error)
@@ -50,6 +51,7 @@ type MetadataStore interface {
 type K8sMessage struct {
 	Object     runtime.Object
 	ObjectType string
+	EventType  watch.EventType
 }
 
 // UpdateMessage is an update message for a specific hostname.
@@ -148,13 +150,13 @@ func (mh *MetadataHandler) MetadataListener() {
 
 		switch msg.ObjectType {
 		case "endpoints":
-			mh.handleEndpointsMetadata(msg.Object)
+			mh.handleEndpointsMetadata(msg.Object, msg.EventType)
 		case "services":
-			mh.handleServiceMetadata(msg.Object)
+			mh.handleServiceMetadata(msg.Object, msg.EventType)
 		case "pods":
-			mh.handlePodMetadata(msg.Object)
+			mh.handlePodMetadata(msg.Object, msg.EventType)
 		case "nodes":
-			mh.handleNodeMetadata(msg.Object)
+			mh.handleNodeMetadata(msg.Object, msg.EventType)
 		default:
 			log.Error("Received unknown metadata message with type: " + msg.ObjectType)
 		}
@@ -209,7 +211,7 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 	}
 }
 
-func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
+func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType watch.EventType) {
 	e := o.(*v1.Endpoints)
 	// kube-scheduler and kube-controller-manager endpoints (and
 	// any endpoint with leader election) are
@@ -248,7 +250,7 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 	if err != nil {
 		log.WithError(err).Fatal("Could not convert endpoints object to protobuf.")
 	}
-	err = mh.mds.UpdateEndpoints(pb)
+	err = mh.mds.UpdateEndpoints(pb, eventType == watch.Deleted)
 	if err != nil {
 		log.WithError(err).Fatal("Could not write endpoints protobuf to metadata store.")
 	}
@@ -274,7 +276,7 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 	}
 }
 
-func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
+func (mh *MetadataHandler) handlePodMetadata(o runtime.Object, eventType watch.EventType) {
 	e := o.(*v1.Pod)
 
 	pb, err := protoutils.PodToProto(e)
@@ -282,12 +284,12 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 		log.WithError(err).Fatal("Could not convert pod object to protobuf.")
 	}
 
-	err = mh.mds.UpdatePod(pb)
+	err = mh.mds.UpdatePod(pb, eventType == watch.Deleted)
 	if err != nil {
 		log.WithError(err).Fatal("Could not write pod protobuf to metadata store.")
 	}
 
-	err = mh.mds.UpdateContainersFromPod(pb)
+	err = mh.mds.UpdateContainersFromPod(pb, eventType == watch.Deleted)
 	if err != nil {
 		log.WithError(err).Fatal("Could not write container protobufs to metadata store.")
 	}
@@ -312,19 +314,19 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 	}
 }
 
-func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object) {
+func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object, eventType watch.EventType) {
 	e := o.(*v1.Service)
 	pb, err := protoutils.ServiceToProto(e)
 	if err != nil {
 		log.WithError(err).Fatal("Could not convert service object to protobuf.")
 	}
-	err = mh.mds.UpdateService(pb)
+	err = mh.mds.UpdateService(pb, eventType == watch.Deleted)
 	if err != nil {
 		log.WithError(err).Fatal("Could not write service protobuf to metadata store.")
 	}
 }
 
-func (mh *MetadataHandler) handleNodeMetadata(o runtime.Object) {
+func (mh *MetadataHandler) handleNodeMetadata(o runtime.Object, eType watch.EventType) {
 	// Do nothing for now.
 }
 
@@ -464,7 +466,7 @@ func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
 				}
 			}
 			if touched {
-				err := mh.mds.UpdatePod(pod)
+				err := mh.mds.UpdatePod(pod, false)
 				if err != nil {
 					log.WithError(err).Error("Could not update pod during sync.")
 				}
@@ -517,7 +519,7 @@ func (mh *MetadataHandler) SyncEndpointsData(epList *v1.EndpointsList) {
 		// If there an endpoint in etcd that is not active, and is not marked as dead, mark it as dead.
 		if !exists && ep.Metadata.DeletionTimestampNS == 0 {
 			ep.Metadata.DeletionTimestampNS = currentTime
-			err := mh.mds.UpdateEndpoints(ep)
+			err := mh.mds.UpdateEndpoints(ep, false)
 			if err != nil {
 				log.WithError(err).Error("Could not update endpoint during sync.")
 			}
@@ -551,7 +553,7 @@ func (mh *MetadataHandler) SyncServiceData(sList *v1.ServiceList) {
 		// If there a service in etcd that is not active, and is not marked as dead, mark it as dead.
 		if !exists && service.Metadata.DeletionTimestampNS == 0 {
 			service.Metadata.DeletionTimestampNS = currentTime
-			err := mh.mds.UpdateService(service)
+			err := mh.mds.UpdateService(service, false)
 			if err != nil {
 				log.WithError(err).Error("Could not update service during sync.")
 			}

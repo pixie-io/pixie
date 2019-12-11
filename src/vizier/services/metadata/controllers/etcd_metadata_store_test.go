@@ -69,7 +69,7 @@ func TestUpdateEndpoints(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	err = mds.UpdateEndpoints(expectedPb)
+	err = mds.UpdateEndpoints(expectedPb, false)
 	if err != nil {
 		t.Fatal("Could not update endpoints.")
 	}
@@ -89,6 +89,39 @@ func TestUpdateEndpoints(t *testing.T) {
 	}
 	assert.Equal(t, 1, len(mapResp.Kvs))
 	assert.Equal(t, "abcd,efgh", string(mapResp.Kvs[0].Value))
+
+	// Test that deletion timestamp gets set.
+	err = mds.UpdateEndpoints(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update endpoints.")
+	}
+
+	// Check that correct endpoint info is in etcd.
+	resp, err = etcdClient.Get(context.Background(), "/endpoints/a_namespace/ijkl")
+	if err != nil {
+		t.Fatal("Failed to get endpoints.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	pb = &metadatapb.Endpoints{}
+	proto.Unmarshal(resp.Kvs[0].Value, pb)
+	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
+
+	// Test that deletion timestamp is not set again if it is already set.
+	expectedPb.Metadata.DeletionTimestampNS = 10
+	err = mds.UpdateEndpoints(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update endpoints.")
+	}
+
+	// Check that correct endpoint info is in etcd.
+	resp, err = etcdClient.Get(context.Background(), "/endpoints/a_namespace/ijkl")
+	if err != nil {
+		t.Fatal("Failed to get endpoints.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	pb = &metadatapb.Endpoints{}
+	proto.Unmarshal(resp.Kvs[0].Value, pb)
+	assert.Equal(t, int64(10), pb.Metadata.DeletionTimestampNS)
 }
 
 func TestUpdatePod(t *testing.T) {
@@ -105,7 +138,7 @@ func TestUpdatePod(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	err = mds.UpdatePod(expectedPb)
+	err = mds.UpdatePod(expectedPb, false)
 	if err != nil {
 		t.Fatal("Could not update pod.")
 	}
@@ -120,6 +153,39 @@ func TestUpdatePod(t *testing.T) {
 	proto.Unmarshal(resp.Kvs[0].Value, pb)
 
 	assert.Equal(t, expectedPb, pb)
+
+	// Test that deletion timestamp gets set.
+	err = mds.UpdatePod(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update pod.")
+	}
+
+	// Check that correct pod info is in etcd.
+	resp, err = etcdClient.Get(context.Background(), "/pod/default/ijkl")
+	if err != nil {
+		t.Fatal("Failed to get pod.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	pb = &metadatapb.Pod{}
+	proto.Unmarshal(resp.Kvs[0].Value, pb)
+	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
+
+	// Test that deletion timestamp is not set again if it is already set.
+	expectedPb.Metadata.DeletionTimestampNS = 10
+	err = mds.UpdatePod(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update pod.")
+	}
+
+	// Check that correct pod info is in etcd.
+	resp, err = etcdClient.Get(context.Background(), "/pod/default/ijkl")
+	if err != nil {
+		t.Fatal("Failed to get pod.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	pb = &metadatapb.Pod{}
+	proto.Unmarshal(resp.Kvs[0].Value, pb)
+	assert.Equal(t, int64(10), pb.Metadata.DeletionTimestampNS)
 }
 
 func TestUpdateService(t *testing.T) {
@@ -136,7 +202,7 @@ func TestUpdateService(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	err = mds.UpdateService(expectedPb)
+	err = mds.UpdateService(expectedPb, false)
 	if err != nil {
 		t.Fatal("Could not update service.")
 	}
@@ -151,6 +217,39 @@ func TestUpdateService(t *testing.T) {
 	proto.Unmarshal(resp.Kvs[0].Value, pb)
 
 	assert.Equal(t, expectedPb, pb)
+
+	// Test that deletion timestamp gets set.
+	err = mds.UpdateService(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+
+	// Check that correct service info is in etcd.
+	resp, err = etcdClient.Get(context.Background(), "/service/a_namespace/ijkl")
+	if err != nil {
+		t.Fatal("Failed to get service.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	pb = &metadatapb.Service{}
+	proto.Unmarshal(resp.Kvs[0].Value, pb)
+	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
+
+	// Test that deletion timestamp is not set again if it is already set.
+	expectedPb.Metadata.DeletionTimestampNS = 10
+	err = mds.UpdateService(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+
+	// Check that correct service info is in etcd.
+	resp, err = etcdClient.Get(context.Background(), "/service/a_namespace/ijkl")
+	if err != nil {
+		t.Fatal("Failed to get service.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	pb = &metadatapb.Service{}
+	proto.Unmarshal(resp.Kvs[0].Value, pb)
+	assert.Equal(t, int64(10), pb.Metadata.DeletionTimestampNS)
 }
 
 func TestUpdateContainer(t *testing.T) {
@@ -198,7 +297,7 @@ func TestUpdateContainersFromPod(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	err = mds.UpdateContainersFromPod(podInfo)
+	err = mds.UpdateContainersFromPod(podInfo, false)
 	assert.Nil(t, err)
 
 	containerResp, err := etcdClient.Get(context.Background(), "/containers/test/info")
@@ -212,6 +311,20 @@ func TestUpdateContainersFromPod(t *testing.T) {
 	assert.Equal(t, "container1", containerPb.Name)
 	assert.Equal(t, "test", containerPb.UID)
 	assert.Equal(t, "ijkl", containerPb.PodUID)
+
+	// Test that deletion timestamp gets set.
+	err = mds.UpdateContainersFromPod(podInfo, true)
+	assert.Nil(t, err)
+
+	containerResp, err = etcdClient.Get(context.Background(), "/containers/test/info")
+	if err != nil {
+		t.Fatal("Unable to get container from etcd")
+	}
+
+	assert.Equal(t, 1, len(containerResp.Kvs))
+	containerPb = &metadatapb.ContainerInfo{}
+	proto.Unmarshal(containerResp.Kvs[0].Value, containerPb)
+	assert.NotEqual(t, int64(0), containerPb.StopTimestampNS)
 }
 
 func TestUpdateContainersFromPendingPod(t *testing.T) {
@@ -228,7 +341,7 @@ func TestUpdateContainersFromPendingPod(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	err = mds.UpdateContainersFromPod(podInfo)
+	err = mds.UpdateContainersFromPod(podInfo, false)
 	assert.Nil(t, err)
 
 	containerResp, err := etcdClient.Get(context.Background(), "/containers/", clientv3.WithPrefix())

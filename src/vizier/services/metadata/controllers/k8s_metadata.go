@@ -83,6 +83,7 @@ func (mc *K8sMetadataController) startWatcher(resource string) {
 		msg := &K8sMessage{
 			Object:     c.Object,
 			ObjectType: resource,
+			EventType:  c.Type,
 		}
 		mc.mdHandler.GetChannel() <- msg
 	}
