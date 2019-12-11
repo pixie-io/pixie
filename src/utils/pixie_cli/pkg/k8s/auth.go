@@ -23,6 +23,8 @@ var kubeconfig *string
 func init() {
 	if home := homeDir(); home != "" {
 		kubeconfig = pflag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else if k := os.Getenv("KUBECONFIG"); k != "" {
+		kubeconfig = pflag.String("kubeconfig", k, "(optional) absolute path to the kubeconfig file")
 	} else {
 		kubeconfig = pflag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}

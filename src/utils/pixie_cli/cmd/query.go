@@ -50,7 +50,11 @@ var QueryCmd = &cobra.Command{
 				err = formatAsJSON(res)
 			}
 		case "pb":
-			fmt.Print(res)
+			var b []byte
+			b, err = res.Marshal()
+			if err == nil {
+				fmt.Printf("%s", string(b))
+			}
 		case "pbtxt":
 			fmt.Print(res.String())
 		default:

@@ -359,6 +359,7 @@ func getCurrentCluster() string {
 	kcmd := exec.Command("kubectl", "config", "current-context")
 	var out bytes.Buffer
 	kcmd.Stdout = &out
+	kcmd.Stderr = os.Stderr
 	err := kcmd.Run()
 
 	if err != nil {
