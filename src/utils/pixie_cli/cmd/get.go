@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/olekukonko/tablewriter"
@@ -71,15 +70,13 @@ func formatAgentResultsAsTable(r *querybrokerpb.AgentInfoResponse) {
 	fmt.Printf("Number of agents: %d\n", len(r.Info))
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"AgentID", "Hostname", "Last Heartbeat (seconds)", "State"})
+	table.SetHeader([]string{"Agent ID", "Hostname", "Last Heartbeat (ms)", "State"})
 	for _, agentInfo := range r.Info {
 		id := uuid.FromStringOrNil(string(agentInfo.Agent.Info.AgentID.Data))
-		hbTime := time.Unix(0, agentInfo.Status.NSSinceLastHeartbeat)
-		currentTime := time.Now()
-		hbInterval := currentTime.Sub(hbTime).Seconds()
+		hbTime := agentInfo.Status.NSSinceLastHeartbeat
 		table.Append([]string{id.String(),
 			agentInfo.Agent.Info.HostInfo.Hostname,
-			fmt.Sprintf("%.2f", hbInterval),
+			fmt.Sprintf("%d", int(hbTime/1000000)),
 			agentInfo.Status.State.String(),
 		})
 	}
