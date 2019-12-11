@@ -143,18 +143,36 @@ void ConnectionTracker::AddHTTP2Data(const struct conn_id_t& conn_id, const Data
       .role = kRoleUnknown,
   });
 
+  std::deque<http2::Stream>* messages_ptr = nullptr;
   switch (data.attr.type) {
     case EventType::kWriteData: {
-      send_data_.Messages<DataFrameInfo>().push_back(data);
-      ++num_send_events_;
+      auto& messages = send_data_.Messages<http2::Stream>();
+      messages_ptr = &messages;
     } break;
     case EventType::kReadData: {
-      recv_data_.Messages<DataFrameInfo>().push_back(data);
-      ++num_recv_events_;
+      auto& messages = recv_data_.Messages<http2::Stream>();
+      messages_ptr = &messages;
     } break;
     default:
       LOG(WARNING) << "Unexpected event type";
+      return;
   }
+
+  // Don't trace any control messages.
+  if (data.attr.stream_id == 0) {
+    return;
+  }
+
+  // Don't trace any server-initiated streams.
+  if (data.attr.stream_id % 2 == 0) {
+    return;
+  }
+
+  uint32_t index = data.attr.stream_id / 2;
+
+  messages_ptr->resize(std::max(messages_ptr->size(), static_cast<size_t>(index)));
+
+  (*messages_ptr)[index].data += std::string_view(data.data, data.attr.data_len);
 }
 
 template <typename TMessageType>

@@ -38,6 +38,13 @@ struct HTTP2Message {
   }
 };
 
+struct Stream {
+  NVMap headers;
+  std::string data;
+  NVMap trailers;
+  bool end_stream;
+};
+
 }  // namespace http2
 }  // namespace stirling
 }  // namespace pl
