@@ -67,17 +67,14 @@ const agentString = (agentCount: number) => {
 };
 
 export const AgentDisplay = () => {
-  const [agents, setAgents] = React.useState([]);
-  const { error } = useQuery(GET_AGENTS, {
+  const { error, data } = useQuery(GET_AGENTS, {
     client: vizierGQLClient,
     pollInterval: 2500,
-    onCompleted: (data) => {
-      setAgents(data && data.vizier && data.vizier.agents ? data.vizier.agents : []);
-    },
   });
   if (error) {
     return <span>Error! {error.message}</span>;
   }
+  const agents = data && data.vizier && data.vizier.agents ? data.vizier.agents : [];
   return <AgentDisplayContent agents={agents} />;
 };
 
