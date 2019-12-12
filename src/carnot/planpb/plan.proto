@@ -58,6 +58,7 @@ enum OperatorType {
   // Source operators are rangs 1000 - 2000.
   MEMORY_SOURCE_OPERATOR = 1000;
   GRPC_SOURCE_OPERATOR = 1100;
+  UDTF_SOURCE_OPERATOR = 1200;
   // Regular operators are range 2000 - 10000.
   MAP_OPERATOR = 2000;
   AGGREGATE_OPERATOR = 2100;
@@ -96,6 +97,8 @@ message Operator {
     // Operator that performs a join based on column equality and/or time_ columns within a certain
     // range of each other.
     JoinOperator join_op = 11;
+    // Operator that represents the UDTF source.
+    UDTFSourceOperator udtf_source_op = 12;
   }
 }
 
@@ -236,6 +239,16 @@ message JoinOperator {
   // These are the names are the output columns.
   repeated string column_names = 4;
   uint64 rows_per_batch = 5;
+}
+
+// UDTFSourceOperator represents a table generating function.
+message UDTFSourceOperator {
+  // The name of the UDTF.
+  string name = 1;
+  // The names of the arguments. Must be the same length as arg_values.
+  repeated string arg_names = 2;
+  // The values to assign the arguments. Must be the same length as arg_name.
+  repeated ScalarValue arg_values = 3;
 }
 
 // Scalar expression is any single valued expression.
