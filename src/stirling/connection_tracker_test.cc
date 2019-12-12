@@ -19,13 +19,13 @@ using ConnectionTrackerTest = testing::EventsFixture;
 TEST_F(ConnectionTrackerTest, timestamp_test) {
   ConnectionTracker tracker;
 
-  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> event0 = InitSendEvent("event0");
-  std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent("event1");
-  std::unique_ptr<SocketDataEvent> event2 = InitSendEvent("event2");
-  std::unique_ptr<SocketDataEvent> event3 = InitRecvEvent("event3");
-  std::unique_ptr<SocketDataEvent> event4 = InitSendEvent("event4");
-  std::unique_ptr<SocketDataEvent> event5 = InitRecvEvent("event5");
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> event0 = InitSendEvent<kProtocolHTTP>("event0");
+  std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent<kProtocolHTTP>("event1");
+  std::unique_ptr<SocketDataEvent> event2 = InitSendEvent<kProtocolHTTP>("event2");
+  std::unique_ptr<SocketDataEvent> event3 = InitRecvEvent<kProtocolHTTP>("event3");
+  std::unique_ptr<SocketDataEvent> event4 = InitSendEvent<kProtocolHTTP>("event4");
+  std::unique_ptr<SocketDataEvent> event5 = InitRecvEvent<kProtocolHTTP>("event5");
   struct socket_control_event_t close_event = InitClose();
 
   EXPECT_EQ(0, tracker.last_bpf_timestamp_ns());
@@ -51,10 +51,10 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
 TEST_F(ConnectionTrackerTest, info_string) {
   ConnectionTracker tracker;
 
-  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> event0 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent(kHTTPResp0);
-  std::unique_ptr<SocketDataEvent> event2 = InitSendEvent(kHTTPReq1);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> event0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> event2 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
 
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(event0));
@@ -97,13 +97,13 @@ send queue
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
   ConnectionTracker tracker;
 
-  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
-  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
-  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent<kProtocolHTTP>(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent<kProtocolHTTP>(kHTTPResp2);
   struct socket_control_event_t close_event = InitClose();
 
   tracker.AddControlEvent(conn);
@@ -133,13 +133,13 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
 TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
   ConnectionTracker tracker;
 
-  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
-  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
-  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
-  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent<kProtocolHTTP>(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent<kProtocolHTTP>(kHTTPResp2);
   struct socket_control_event_t close_event = InitClose();
 
   tracker.AddControlEvent(conn);
@@ -169,13 +169,13 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   ConnectionTracker tracker;
 
-  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
-  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
-  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent<kProtocolHTTP>(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent<kProtocolHTTP>(kHTTPResp2);
   struct socket_control_event_t close_event = InitClose();
 
   tracker.AddControlEvent(conn);
@@ -205,13 +205,13 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   ConnectionTracker tracker;
 
-  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
-  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
-  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent<kProtocolHTTP>(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent<kProtocolHTTP>(kHTTPResp2);
   struct socket_control_event_t close_event = InitClose();
 
   tracker.AddControlEvent(conn);
@@ -244,15 +244,15 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   ConnectionTracker tracker;
   std::vector<http::Record> req_resp_pairs;
 
-  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
-  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent("hello");
-  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent("hello to you too");
-  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent("good-bye");
-  std::unique_ptr<SocketDataEvent> resp3 = InitRecvEvent("good-bye to you too");
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent<kProtocolHTTP>(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>("hello");
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent<kProtocolHTTP>("hello to you too");
+  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent<kProtocolHTTP>("good-bye");
+  std::unique_ptr<SocketDataEvent> resp3 = InitRecvEvent<kProtocolHTTP>("good-bye to you too");
   struct socket_control_event_t close_event = InitClose();
 
   tracker.AddControlEvent(conn);
@@ -292,15 +292,15 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   ConnectionTracker tracker;
   std::vector<http::Record> req_resp_pairs;
 
-  struct socket_control_event_t conn = InitConn(kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPUpgradeReq);
-  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPUpgradeResp);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq1);
-  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp1);
-  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent("good-bye");
-  std::unique_ptr<SocketDataEvent> resp3 = InitRecvEvent("good-bye to you too");
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPUpgradeReq);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent<kProtocolHTTP>(kHTTPUpgradeResp);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent<kProtocolHTTP>(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent<kProtocolHTTP>("good-bye");
+  std::unique_ptr<SocketDataEvent> resp3 = InitRecvEvent<kProtocolHTTP>("good-bye to you too");
   struct socket_control_event_t close_event = InitClose();
 
   tracker.AddControlEvent(conn);
@@ -356,14 +356,14 @@ TEST_F(ConnectionTrackerTest, stats_counter) {
 TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
   ConnectionTracker tracker;
 
-  auto frame0 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
-  auto frame1 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
+  auto frame0 = InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
+  auto frame1 = InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
 
-  auto frame2 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
-  auto frame3 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+  auto frame2 = InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
+  auto frame3 = InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
 
-  auto frame4 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
-  auto frame5 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+  auto frame4 = InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
+  auto frame5 = InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
 
   tracker.AddDataEvent(std::move(frame0));
   tracker.ProcessMessages<http2::Record>();
@@ -397,11 +397,11 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedUpAfterBreakingSizeLimit) {
   FLAGS_messages_size_limit_bytes = 10000;
   ConnectionTracker tracker;
 
-  auto frame0 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
-  auto frame1 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+  auto frame0 = InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
+  auto frame1 = InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
 
-  auto frame2 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
-  auto frame3 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+  auto frame2 = InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
+  auto frame3 = InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
 
   tracker.AddDataEvent(std::move(frame0));
   tracker.ProcessMessages<http2::Record>();
@@ -435,11 +435,11 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesErasedAfterExpiration) {
   FLAGS_messages_size_limit_bytes = 10000;
   ConnectionTracker tracker;
 
-  auto frame0 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
-  auto frame1 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+  auto frame0 = InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
+  auto frame1 = InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
 
-  auto frame2 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
-  auto frame3 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+  auto frame2 = InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
+  auto frame3 = InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
 
   FLAGS_messages_expiration_duration_secs = 10000;
 
@@ -473,10 +473,10 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesErasedAfterExpiration) {
 
 TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
   // Intentionally use non-HTTP data so make it stuck.
-  auto frame0 = InitSendEvent("aaaaaaaaa");
-  auto frame1 = InitSendEvent("aaaaaaaaa");
-  auto frame2 = InitRecvEvent("bbbbbbbbb");
-  auto frame3 = InitRecvEvent("bbbbbbbbb");
+  auto frame0 = InitSendEvent<kProtocolHTTP>("aaaaaaaaa");
+  auto frame1 = InitSendEvent<kProtocolHTTP>("aaaaaaaaa");
+  auto frame2 = InitRecvEvent<kProtocolHTTP>("bbbbbbbbb");
+  auto frame3 = InitRecvEvent<kProtocolHTTP>("bbbbbbbbb");
 
   ConnectionTracker tracker;
   {
@@ -518,10 +518,10 @@ TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
 TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
   FLAGS_messages_size_limit_bytes = 10000;
 
-  auto frame0 = InitSendEvent(kHTTPReq0);
-  auto frame1 = InitRecvEvent(kHTTPResp0);
-  auto frame2 = InitSendEvent(kHTTPReq0);
-  auto frame3 = InitRecvEvent(kHTTPResp0);
+  auto frame0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  auto frame1 = InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  auto frame2 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  auto frame3 = InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
 
   ConnectionTracker tracker;
 
@@ -543,7 +543,7 @@ TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
 TEST_F(ConnectionTrackerTest, MySQLMessagesErasedAfterExpiration) {
   FLAGS_messages_size_limit_bytes = 10000;
 
-  auto msg0 = InitSendEvent(mysql::testutils::GenRawPacket(0, "\x03SELECT"));
+  auto msg0 = InitSendEvent<kProtocolMySQL>(mysql::testutils::GenRawPacket(0, "\x03SELECT"));
 
   ConnectionTracker tracker;
 

@@ -167,11 +167,11 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
 }
 
 TEST_F(SocketTraceConnectorTest, End2End) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> event0_json = InitRecvEvent(kJSONResp);
-  std::unique_ptr<SocketDataEvent> event1_text = InitRecvEvent(kTextResp);
-  std::unique_ptr<SocketDataEvent> event2_text = InitRecvEvent(kTextResp);
-  std::unique_ptr<SocketDataEvent> event3_json = InitRecvEvent(kJSONResp);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> event0_json = InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  std::unique_ptr<SocketDataEvent> event1_text = InitRecvEvent<kProtocolHTTP>(kTextResp);
+  std::unique_ptr<SocketDataEvent> event2_text = InitRecvEvent<kProtocolHTTP>(kTextResp);
+  std::unique_ptr<SocketDataEvent> event3_json = InitRecvEvent<kProtocolHTTP>(kJSONResp);
   struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -239,9 +239,9 @@ TEST_F(SocketTraceConnectorTest, End2End) {
 }
 
 TEST_F(SocketTraceConnectorTest, UPIDCheck) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> event0_json = InitRecvEvent(kJSONResp);
-  std::unique_ptr<SocketDataEvent> event1_json = InitRecvEvent(kJSONResp);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> event0_json = InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  std::unique_ptr<SocketDataEvent> event1_json = InitRecvEvent<kProtocolHTTP>(kJSONResp);
   struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -270,11 +270,12 @@ TEST_F(SocketTraceConnectorTest, UPIDCheck) {
 }
 
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> event0 =
-      InitRecvEvent(absl::StrCat(kResp0, kResp1.substr(0, kResp1.length() / 2)));
-  std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent(kResp1.substr(kResp1.length() / 2));
-  std::unique_ptr<SocketDataEvent> event2 = InitRecvEvent(kResp2);
+      InitRecvEvent<kProtocolHTTP>(absl::StrCat(kResp0, kResp1.substr(0, kResp1.length() / 2)));
+  std::unique_ptr<SocketDataEvent> event1 =
+      InitRecvEvent<kProtocolHTTP>(kResp1.substr(kResp1.length() / 2));
+  std::unique_ptr<SocketDataEvent> event2 = InitRecvEvent<kProtocolHTTP>(kResp2);
   struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -293,8 +294,8 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
 }
 
 TEST_F(SocketTraceConnectorTest, NoEvents) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> event0 = InitRecvEvent(kResp0);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> event0 = InitRecvEvent<kProtocolHTTP>(kResp0);
   struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -319,13 +320,13 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
 }
 
 TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
-  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
-  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
-  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
-  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
-  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent<kProtocolHTTP>(kResp2);
   struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -349,15 +350,15 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
 }
 
 TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
-  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
-  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
-  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
-  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
-  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
-  std::unique_ptr<SocketDataEvent> req_event3 = InitSendEvent(kReq0);
-  std::unique_ptr<SocketDataEvent> resp_event3 = InitRecvEvent(kResp0);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent<kProtocolHTTP>(kResp2);
+  std::unique_ptr<SocketDataEvent> req_event3 = InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> resp_event3 = InitRecvEvent<kProtocolHTTP>(kResp0);
   // No Close event (connection still active).
 
   DataTable data_table(kHTTPTable);
@@ -386,13 +387,13 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
-  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
-  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
-  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
-  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
-  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent<kProtocolHTTP>(kResp2);
   struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -431,13 +432,13 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
-  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
-  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
-  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
-  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
-  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent<kProtocolHTTP>(kResp2);
   struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -468,15 +469,15 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
-  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
-  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
-  std::unique_ptr<SocketDataEvent> req_event3 = InitSendEvent(kReq0);
-  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
-  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
-  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
-  std::unique_ptr<SocketDataEvent> resp_event3 = InitRecvEvent(kResp2);
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> req_event3 = InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent<kProtocolHTTP>(kResp2);
+  std::unique_ptr<SocketDataEvent> resp_event3 = InitRecvEvent<kProtocolHTTP>(kResp2);
   struct socket_control_event_t close_event = InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -503,19 +504,19 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
-  struct socket_control_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> conn0_req_event = InitSendEvent(kReq0);
-  std::unique_ptr<SocketDataEvent> conn0_resp_event = InitRecvEvent(kResp0);
+  struct socket_control_event_t conn0 = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> conn0_req_event = InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> conn0_resp_event = InitRecvEvent<kProtocolHTTP>(kResp0);
   struct socket_control_event_t conn0_close = InitClose();
 
-  struct socket_control_event_t conn1 = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> conn1_req_event = InitSendEvent(kReq1);
-  std::unique_ptr<SocketDataEvent> conn1_resp_event = InitRecvEvent(kResp1);
+  struct socket_control_event_t conn1 = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> conn1_req_event = InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> conn1_resp_event = InitRecvEvent<kProtocolHTTP>(kResp1);
   struct socket_control_event_t conn1_close = InitClose();
 
-  struct socket_control_event_t conn2 = InitConn(TrafficProtocol::kProtocolHTTP);
-  std::unique_ptr<SocketDataEvent> conn2_req_event = InitSendEvent(kReq2);
-  std::unique_ptr<SocketDataEvent> conn2_resp_event = InitRecvEvent(kResp2);
+  struct socket_control_event_t conn2 = InitConn<kProtocolHTTP>();
+  std::unique_ptr<SocketDataEvent> conn2_req_event = InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> conn2_resp_event = InitRecvEvent<kProtocolHTTP>(kResp2);
   struct socket_control_event_t conn2_close = InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -550,7 +551,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
-  struct socket_control_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn0 = InitConn<kProtocolHTTP>();
   struct socket_control_event_t conn0_close = InitClose();
 
   conn0.open.traffic_class.protocol = kProtocolUnknown;
@@ -580,13 +581,13 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   // Note that max PID bits in Linux is 22 bits.
   uint32_t impossible_pid = 1 << 23;
 
-  struct socket_control_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn0 = InitConn<kProtocolHTTP>();
   conn0.open.conn_id.pid = impossible_pid;
 
-  std::unique_ptr<SocketDataEvent> conn0_req_event = InitSendEvent(kReq0);
+  std::unique_ptr<SocketDataEvent> conn0_req_event = InitSendEvent<kProtocolHTTP>(kReq0);
   conn0_req_event->attr.conn_id.pid = impossible_pid;
 
-  std::unique_ptr<SocketDataEvent> conn0_resp_event = InitRecvEvent(kResp0);
+  std::unique_ptr<SocketDataEvent> conn0_resp_event = InitRecvEvent<kProtocolHTTP>(kResp0);
   conn0_resp_event->attr.conn_id.pid = impossible_pid;
 
   struct socket_control_event_t conn0_close = InitClose();
@@ -624,12 +625,13 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   uint32_t real_pid = getpid();
   uint32_t real_fd = 1;
 
-  struct socket_control_event_t conn0 = InitConn(TrafficProtocol::kProtocolHTTP);
+  struct socket_control_event_t conn0 = InitConn<kProtocolHTTP>();
   conn0.open.conn_id.pid = real_pid;
   conn0.open.conn_id.fd = real_fd;
 
   // An incomplete message means it shouldn't be parseable (we don't want TranfserData to succeed).
-  std::unique_ptr<SocketDataEvent> conn0_req_event = InitSendEvent("GET /index.html HTTP/1.1\r\n");
+  std::unique_ptr<SocketDataEvent> conn0_req_event =
+      InitSendEvent<kProtocolHTTP>("GET /index.html HTTP/1.1\r\n");
   conn0_req_event->attr.conn_id.pid = real_pid;
   conn0_req_event->attr.conn_id.fd = real_fd;
 
@@ -670,17 +672,19 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
-  std::unique_ptr<SocketDataEvent> prepare_req_event = InitSendEvent(mysql_stmt_prepare_req);
+  struct socket_control_event_t conn = InitConn<kProtocolMySQL>();
+  std::unique_ptr<SocketDataEvent> prepare_req_event =
+      InitSendEvent<kProtocolMySQL>(mysql_stmt_prepare_req);
   std::vector<std::unique_ptr<SocketDataEvent>> prepare_resp_events;
   for (std::string resp_packet : mysql_stmt_prepare_resp) {
-    prepare_resp_events.push_back(InitRecvEvent(resp_packet));
+    prepare_resp_events.push_back(InitRecvEvent<kProtocolMySQL>(resp_packet));
   }
 
-  std::unique_ptr<SocketDataEvent> execute_req_event = InitSendEvent(mysql_stmt_execute_req);
+  std::unique_ptr<SocketDataEvent> execute_req_event =
+      InitSendEvent<kProtocolMySQL>(mysql_stmt_execute_req);
   std::vector<std::unique_ptr<SocketDataEvent>> execute_resp_events;
   for (std::string resp_packet : mysql_stmt_execute_resp) {
-    execute_resp_events.push_back(InitRecvEvent(resp_packet));
+    execute_resp_events.push_back(InitRecvEvent<kProtocolMySQL>(resp_packet));
   }
 
   source_->AcceptControlEvent(conn);
@@ -721,9 +725,12 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
               ElementsAre("", "Resultset rows = 2"));
 
   // Test execute fail after close. It should create an entry with the Error.
-  std::unique_ptr<SocketDataEvent> close_req_event = InitSendEvent(mysql_stmt_close_req);
-  std::unique_ptr<SocketDataEvent> execute_req_event2 = InitSendEvent(mysql_stmt_execute_req);
-  std::unique_ptr<SocketDataEvent> execute_resp_event2 = InitRecvEvent(mysql_err_resp);
+  std::unique_ptr<SocketDataEvent> close_req_event =
+      InitSendEvent<kProtocolMySQL>(mysql_stmt_close_req);
+  std::unique_ptr<SocketDataEvent> execute_req_event2 =
+      InitSendEvent<kProtocolMySQL>(mysql_stmt_execute_req);
+  std::unique_ptr<SocketDataEvent> execute_resp_event2 =
+      InitRecvEvent<kProtocolMySQL>(mysql_err_resp);
 
   source_->AcceptDataEvent(std::move(close_req_event));
   source_->AcceptDataEvent(std::move(execute_req_event2));
@@ -747,11 +754,11 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
-  std::unique_ptr<SocketDataEvent> query_req_event = InitSendEvent(mysql_query_req);
+  struct socket_control_event_t conn = InitConn<kProtocolMySQL>();
+  std::unique_ptr<SocketDataEvent> query_req_event = InitSendEvent<kProtocolMySQL>(mysql_query_req);
   std::vector<std::unique_ptr<SocketDataEvent>> query_resp_events;
   for (std::string resp_packet : mysql_query_resp) {
-    query_resp_events.push_back(InitRecvEvent(resp_packet));
+    query_resp_events.push_back(InitRecvEvent<kProtocolMySQL>(resp_packet));
   }
 
   source_->AcceptControlEvent(conn);
@@ -776,15 +783,15 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
+  struct socket_control_event_t conn = InitConn<kProtocolMySQL>();
 
   // The following is a captured trace while running a script on a real instance of MySQL.
   std::vector<std::unique_ptr<SocketDataEvent>> events;
   events.push_back(
-      InitSendEvent({ConstStringView("\x21\x00\x00\x00"
-                                     "\x03"
-                                     "select @@version_comment limit 1")}));
-  events.push_back(InitRecvEvent({ConstStringView(
+      InitSendEvent<kProtocolMySQL>({ConstStringView("\x21\x00\x00\x00"
+                                                     "\x03"
+                                                     "select @@version_comment limit 1")}));
+  events.push_back(InitRecvEvent<kProtocolMySQL>({ConstStringView(
       "\x01\x00\x00\x01"
       "\x01\x27\x00\x00\x02\x03"
       "def"
@@ -794,24 +801,24 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
       "(Ubuntu)"
       "\x07\x00\x00\x04\xFE\x00\x00\x02\x00\x00\x00")}));
   events.push_back(
-      InitSendEvent({ConstStringView("\x22\x00\x00\x00"
-                                     "\x03"
-                                     "DROP DATABASE IF EXISTS employees")}));
+      InitSendEvent<kProtocolMySQL>({ConstStringView("\x22\x00\x00\x00"
+                                                     "\x03"
+                                                     "DROP DATABASE IF EXISTS employees")}));
   events.push_back(
-      InitRecvEvent({ConstStringView("\x07\x00\x00\x01"
-                                     "\x00\x00\x00\x02\x01\x00\x00")}));
+      InitRecvEvent<kProtocolMySQL>({ConstStringView("\x07\x00\x00\x01"
+                                                     "\x00\x00\x00\x02\x01\x00\x00")}));
   events.push_back(
-      InitSendEvent({ConstStringView("\x28\x00\x00\x00"
-                                     "\x03"
-                                     "CREATE DATABASE IF NOT EXISTS employees")}));
+      InitSendEvent<kProtocolMySQL>({ConstStringView("\x28\x00\x00\x00"
+                                                     "\x03"
+                                                     "CREATE DATABASE IF NOT EXISTS employees")}));
   events.push_back(
-      InitRecvEvent({ConstStringView("\x07\x00\x00\x01"
-                                     "\x00\x01\x00\x02\x00\x00\x00")}));
+      InitRecvEvent<kProtocolMySQL>({ConstStringView("\x07\x00\x00\x01"
+                                                     "\x00\x01\x00\x02\x00\x00\x00")}));
   events.push_back(
-      InitSendEvent({ConstStringView("\x12\x00\x00\x00"
-                                     "\x03"
-                                     "SELECT DATABASE()")}));
-  events.push_back(InitRecvEvent(
+      InitSendEvent<kProtocolMySQL>({ConstStringView("\x12\x00\x00\x00"
+                                                     "\x03"
+                                                     "SELECT DATABASE()")}));
+  events.push_back(InitRecvEvent<kProtocolMySQL>(
       {ConstStringView("\x01\x00\x00\x01"
                        "\x01\x20\x00\x00\x02\x03"
                        "def"
@@ -820,18 +827,18 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
                        "\x00\x0C\x21\x00\x66\x00\x00\x00\xFD\x00\x00\x1F\x00\x00\x01\x00\x00\x03"
                        "\xFB\x07\x00\x00\x04\xFE\x00\x00\x02\x00\x00\x00")}));
   events.push_back(
-      InitSendEvent({ConstStringView("\x0A\x00\x00\x00"
-                                     "\x02"
-                                     "employees")}));
-  events.push_back(
-      InitRecvEvent({ConstStringView("\x15\x00\x00\x01"
-                                     "\x00\x00\x00\x02\x40\x00\x00\x00\x0C\x01\x0A\x09"
-                                     "employees")}));
-  events.push_back(
-      InitSendEvent({ConstStringView("\x2f\x00\x00\x00"
-                                     "\x03"
-                                     "SELECT 'CREATING DATABASE STRUCTURE' as 'INFO'")}));
-  events.push_back(InitRecvEvent({ConstStringView(
+      InitSendEvent<kProtocolMySQL>({ConstStringView("\x0A\x00\x00\x00"
+                                                     "\x02"
+                                                     "employees")}));
+  events.push_back(InitRecvEvent<kProtocolMySQL>(
+      {ConstStringView("\x15\x00\x00\x01"
+                       "\x00\x00\x00\x02\x40\x00\x00\x00\x0C\x01\x0A\x09"
+                       "employees")}));
+  events.push_back(InitSendEvent<kProtocolMySQL>(
+      {ConstStringView("\x2f\x00\x00\x00"
+                       "\x03"
+                       "SELECT 'CREATING DATABASE STRUCTURE' as 'INFO'")}));
+  events.push_back(InitRecvEvent<kProtocolMySQL>({ConstStringView(
       "\x01\x00\x00\x01"
       "\x01\x1A\x00\x00\x02\x03"
       "def"
@@ -841,29 +848,29 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
       "CREATING DATABASE STRUCTURE"
       "\x07\x00\x00\x04\xFE\x00\x00\x02\x00\x00\x00")}));
   events.push_back(
-      InitSendEvent({ConstStringView("\xC1\x00\x00\x00"
-                                     "\x03"
-                                     "DROP TABLE IF EXISTS dept_emp,\n"
-                                     "                     dept_manager,\n"
-                                     "                     titles,\n"
-                                     "                     salaries, \n"
-                                     "                     employees, \n"
-                                     "                     departments")}));
+      InitSendEvent<kProtocolMySQL>({ConstStringView("\xC1\x00\x00\x00"
+                                                     "\x03"
+                                                     "DROP TABLE IF EXISTS dept_emp,\n"
+                                                     "                     dept_manager,\n"
+                                                     "                     titles,\n"
+                                                     "                     salaries, \n"
+                                                     "                     employees, \n"
+                                                     "                     departments")}));
   events.push_back(
-      InitRecvEvent({ConstStringView("\x07\x00\x00\x01"
-                                     "\x00\x00\x00\x02\x00\x06\x00")}));
+      InitRecvEvent<kProtocolMySQL>({ConstStringView("\x07\x00\x00\x01"
+                                                     "\x00\x00\x00\x02\x00\x06\x00")}));
   events.push_back(
-      InitSendEvent({ConstStringView("\x1C\x00\x00\x00"
-                                     "\x03"
-                                     "set storage_engine = InnoDB")}));
+      InitSendEvent<kProtocolMySQL>({ConstStringView("\x1C\x00\x00\x00"
+                                                     "\x03"
+                                                     "set storage_engine = InnoDB")}));
   events.push_back(
-      InitRecvEvent({ConstStringView("\x31\x00\x00\x01"
-                                     "\xFF\xA9\x04\x23"
-                                     "HY000"
-                                     "Unknown system variable 'storage_engine'")}));
+      InitRecvEvent<kProtocolMySQL>({ConstStringView("\x31\x00\x00\x01"
+                                                     "\xFF\xA9\x04\x23"
+                                                     "HY000"
+                                                     "Unknown system variable 'storage_engine'")}));
   events.push_back(
-      InitSendEvent({ConstStringView("\x01\x00\x00\x00"
-                                     "\x01")}));
+      InitSendEvent<kProtocolMySQL>({ConstStringView("\x01\x00\x00\x00"
+                                                     "\x01")}));
 
   source_->AcceptControlEvent(conn);
   for (auto& event : events) {
@@ -949,21 +956,21 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
 // Inspired from real traced query.
 // Number of resultset rows is large enough to cause a sequence ID rollover.
 TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
+  struct socket_control_event_t conn = InitConn<kProtocolMySQL>();
 
   // The following is a captured trace while running a script on a real instance of MySQL.
   std::vector<std::unique_ptr<SocketDataEvent>> events;
-  events.push_back(InitSendEvent(mysql::testutils::GenRequestPacket(
+  events.push_back(InitSendEvent<kProtocolMySQL>(mysql::testutils::GenRequestPacket(
       mysql::MySQLEventType::kQuery, "SELECT emp_no FROM employees WHERE emp_no < 15000;")));
 
   // Sequence ID of zero is the request.
   int seq_id = 1;
 
   // First packet: number of columns in the query.
-  events.push_back(InitRecvEvent(
+  events.push_back(InitRecvEvent<kProtocolMySQL>(
       mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedInt(1))));
   // The column def packet (a bunch of length-encoded strings).
-  events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(
+  events.push_back(InitRecvEvent<kProtocolMySQL>(mysql::testutils::GenRawPacket(
       seq_id++, mysql::testutils::LengthEncodedString("def") +
                     mysql::testutils::LengthEncodedString("employees") +
                     mysql::testutils::LengthEncodedString("employees") +
@@ -974,11 +981,11 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
                         ConstStringView("\x3F\x00\x0B\x00\x00\x00\x03\x03\x50\x00\x00\x00")))));
   // A bunch of resultset rows.
   for (int id = 10001; id < 19999; ++id) {
-    events.push_back(InitRecvEvent(
+    events.push_back(InitRecvEvent<kProtocolMySQL>(
         mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedInt(id))));
   }
   // Final OK/EOF packet.
-  events.push_back(InitRecvEvent(
+  events.push_back(InitRecvEvent<kProtocolMySQL>(
       mysql::testutils::GenRawPacket(seq_id++, ConstStringView("\xFE\x00\x00\x02\x00\x00\x00"))));
 
   source_->AcceptControlEvent(conn);
@@ -1018,11 +1025,11 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
 //    CALL multi();
 //    DROP TABLE ins;
 TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
-  struct socket_control_event_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
+  struct socket_control_event_t conn = InitConn<kProtocolMySQL>();
 
   // The following is a captured trace while running a script on a real instance of MySQL.
   std::vector<std::unique_ptr<SocketDataEvent>> events;
-  events.push_back(InitSendEvent(
+  events.push_back(InitSendEvent<kProtocolMySQL>(
       mysql::testutils::GenRequestPacket(mysql::MySQLEventType::kQuery, "CALL multi()")));
 
   // Sequence ID of zero is the request.
@@ -1031,43 +1038,43 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
   // First resultset.
   {
     // First packet: number of columns in the query.
-    events.push_back(InitRecvEvent(
+    events.push_back(InitRecvEvent<kProtocolMySQL>(
         mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedInt(1))));
     // The column def packet (a bunch of length-encoded strings).
-    events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(
+    events.push_back(InitRecvEvent<kProtocolMySQL>(mysql::testutils::GenRawPacket(
         seq_id++,
         mysql::testutils::LengthEncodedString("def") +
             ConstString(
                 "\x00\x00\x00\x01\x31\x00\x0C\x3F\x00\x01\x00\x00\x00\x08\x81\x00\x00\x00\x00"))));
     // A resultset row.
-    events.push_back(InitRecvEvent(
+    events.push_back(InitRecvEvent<kProtocolMySQL>(
         mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedString("1"))));
     // OK/EOF packet with SERVER_MORE_RESULTS_EXISTS flag set.
-    events.push_back(InitRecvEvent(
+    events.push_back(InitRecvEvent<kProtocolMySQL>(
         mysql::testutils::GenRawPacket(seq_id++, ConstStringView("\xFE\x00\x00\x0A\x00\x00\x00"))));
   }
 
   // Second resultset.
   {
     // First packet: number of columns in the query.
-    events.push_back(InitRecvEvent(
+    events.push_back(InitRecvEvent<kProtocolMySQL>(
         mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedInt(1))));
     // The column def packet (a bunch of length-encoded strings).
-    events.push_back(InitRecvEvent(mysql::testutils::GenRawPacket(
+    events.push_back(InitRecvEvent<kProtocolMySQL>(mysql::testutils::GenRawPacket(
         seq_id++,
         mysql::testutils::LengthEncodedString("def") +
             ConstString(
                 "\x00\x00\x00\x01\x31\x00\x0C\x3F\x00\x01\x00\x00\x00\x08\x81\x00\x00\x00\x00"))));
     // A resultset row.
-    events.push_back(InitRecvEvent(
+    events.push_back(InitRecvEvent<kProtocolMySQL>(
         mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedString("1"))));
     // OK/EOF packet with SERVER_MORE_RESULTS_EXISTS flag set.
-    events.push_back(InitRecvEvent(
+    events.push_back(InitRecvEvent<kProtocolMySQL>(
         mysql::testutils::GenRawPacket(seq_id++, ConstStringView("\xFE\x00\x00\x0A\x00\x00\x00"))));
   }
 
   // Final OK packet, signaling end of multi-resultset.
-  events.push_back(InitRecvEvent(
+  events.push_back(InitRecvEvent<kProtocolMySQL>(
       mysql::testutils::GenRawPacket(seq_id++, ConstStringView("\x00\x01\x00\x02\x00\x00\x00"))));
 
   source_->AcceptControlEvent(conn);

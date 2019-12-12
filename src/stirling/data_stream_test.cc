@@ -15,12 +15,12 @@ using DataStreamTest = testing::EventsFixture;
 TEST_F(DataStreamTest, LostEvent) {
   DataStream stream;
 
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req4 = InitSendEvent(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req5 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req4 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req5 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
 
   std::deque<http::HTTPMessage> requests;
 
@@ -55,9 +55,10 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryStuckStream) {
   DataStream stream;
 
   // First request is missing a few bytes from its start.
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0.substr(5, kHTTPReq0.length()));
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
+  std::unique_ptr<SocketDataEvent> req0 =
+      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(5, kHTTPReq0.length()));
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
 
   stream.AddEvent(std::move(req0));
   stream.AddEvent(std::move(req1));
@@ -81,9 +82,10 @@ TEST_F(DataStreamTest, AttemptHTTPRespRecoveryStuckStream) {
   DataStream stream;
 
   // First response is missing a few bytes from its start.
-  std::unique_ptr<SocketDataEvent> resp0 = InitSendEvent(kHTTPResp0.substr(5, kHTTPResp0.length()));
-  std::unique_ptr<SocketDataEvent> resp1 = InitSendEvent(kHTTPResp1);
-  std::unique_ptr<SocketDataEvent> resp2 = InitSendEvent(kHTTPResp2);
+  std::unique_ptr<SocketDataEvent> resp0 =
+      InitSendEvent<kProtocolHTTP>(kHTTPResp0.substr(5, kHTTPResp0.length()));
+  std::unique_ptr<SocketDataEvent> resp1 = InitSendEvent<kProtocolHTTP>(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> resp2 = InitSendEvent<kProtocolHTTP>(kHTTPResp2);
 
   stream.AddEvent(std::move(resp0));
   stream.AddEvent(std::move(resp1));
@@ -106,12 +108,12 @@ TEST_F(DataStreamTest, AttemptHTTPRespRecoveryStuckStream) {
 TEST_F(DataStreamTest, AttemptHTTPReqRecoveryPartialMessage) {
   DataStream stream;
 
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req1a =
-      InitSendEvent(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
   std::unique_ptr<SocketDataEvent> req1b =
-      InitSendEvent(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
+      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
 
   stream.AddEvent(std::move(req0));
   stream.AddEvent(std::move(req1a));
@@ -128,12 +130,12 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryPartialMessage) {
 TEST_F(DataStreamTest, AttemptHTTPRespRecoveryPartialMessage) {
   DataStream stream;
 
-  std::unique_ptr<SocketDataEvent> resp0 = InitSendEvent(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitSendEvent<kProtocolHTTP>(kHTTPResp0);
   std::unique_ptr<SocketDataEvent> resp1a =
-      InitSendEvent(kHTTPResp1.substr(0, kHTTPResp1.length() / 2));
+      InitSendEvent<kProtocolHTTP>(kHTTPResp1.substr(0, kHTTPResp1.length() / 2));
   std::unique_ptr<SocketDataEvent> resp1b =
-      InitSendEvent(kHTTPResp1.substr(kHTTPResp1.length() / 2, kHTTPResp1.length()));
-  std::unique_ptr<SocketDataEvent> resp2 = InitSendEvent(kHTTPResp2);
+      InitSendEvent<kProtocolHTTP>(kHTTPResp1.substr(kHTTPResp1.length() / 2, kHTTPResp1.length()));
+  std::unique_ptr<SocketDataEvent> resp2 = InitSendEvent<kProtocolHTTP>(kHTTPResp2);
 
   stream.AddEvent(std::move(resp0));
   stream.AddEvent(std::move(resp1a));
@@ -151,15 +153,15 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryHeadAndMiddleMissing) {
   DataStream stream;
 
   std::unique_ptr<SocketDataEvent> req0b =
-      InitSendEvent(kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
   std::unique_ptr<SocketDataEvent> req1a =
-      InitSendEvent(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
   std::unique_ptr<SocketDataEvent> req1b =
-      InitSendEvent(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
   std::unique_ptr<SocketDataEvent> req2a =
-      InitSendEvent(kHTTPReq2.substr(0, kHTTPReq2.length() / 2));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(0, kHTTPReq2.length() / 2));
   std::unique_ptr<SocketDataEvent> req2b =
-      InitSendEvent(kHTTPReq2.substr(kHTTPReq2.length() / 2, kHTTPReq2.length()));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(kHTTPReq2.length() / 2, kHTTPReq2.length()));
 
   stream.AddEvent(std::move(req0b));
   stream.AddEvent(std::move(req1a));
@@ -181,25 +183,25 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryAggressiveMode) {
   DataStream stream;
 
   std::unique_ptr<SocketDataEvent> req0a =
-      InitSendEvent(kHTTPReq0.substr(0, kHTTPReq0.length() / 2));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() / 2));
   std::unique_ptr<SocketDataEvent> req0b =
-      InitSendEvent(kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
   std::unique_ptr<SocketDataEvent> req1a =
-      InitSendEvent(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
   std::unique_ptr<SocketDataEvent> req1b =
-      InitSendEvent(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
   std::unique_ptr<SocketDataEvent> req2a =
-      InitSendEvent(kHTTPReq2.substr(0, kHTTPReq2.length() / 2));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(0, kHTTPReq2.length() / 2));
   std::unique_ptr<SocketDataEvent> req2b =
-      InitSendEvent(kHTTPReq2.substr(kHTTPReq2.length() / 2, kHTTPReq2.length()));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(kHTTPReq2.length() / 2, kHTTPReq2.length()));
   std::unique_ptr<SocketDataEvent> req3a =
-      InitSendEvent(kHTTPReq0.substr(0, kHTTPReq0.length() / 2));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() / 2));
   std::unique_ptr<SocketDataEvent> req3b =
-      InitSendEvent(kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
   std::unique_ptr<SocketDataEvent> req4a =
-      InitSendEvent(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
   std::unique_ptr<SocketDataEvent> req4b =
-      InitSendEvent(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
+      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
 
   std::deque<http::HTTPMessage> requests;
 

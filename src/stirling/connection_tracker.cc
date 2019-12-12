@@ -390,9 +390,9 @@ void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
   if (traffic_class_.protocol == kProtocolUnknown) {
     traffic_class_ = traffic_class;
   } else if (traffic_class.protocol != kProtocolUnknown) {
-    DCHECK_EQ(traffic_class.protocol, traffic_class.protocol)
+    DCHECK_EQ(traffic_class_.protocol, traffic_class.protocol)
         << "Not allowed to change the protocol of an active ConnectionTracker";
-    DCHECK_EQ(traffic_class.role, traffic_class.role)
+    DCHECK_EQ(traffic_class_.role, traffic_class.role)
         << "Not allowed to change the role of an active ConnectionTracker";
   }
 }

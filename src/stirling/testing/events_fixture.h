@@ -16,7 +16,8 @@ class EventsFixture : public ::testing::Test {
   static constexpr uint32_t kFD = 3;
   static constexpr uint64_t kPIDStartTimeTicks = 112358;
 
-  struct socket_control_event_t InitConn(TrafficProtocol protocol) {
+  template <TrafficProtocol TProtocol>
+  struct socket_control_event_t InitConn() {
     struct socket_control_event_t conn_event {};
     conn_event.type = kConnOpen;
     conn_event.open.timestamp_ns = ++current_ts_ns_;
@@ -25,37 +26,27 @@ class EventsFixture : public ::testing::Test {
     conn_event.open.conn_id.generation = ++generation_;
     conn_event.open.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
     conn_event.open.addr.sin6_family = AF_INET;
-    conn_event.open.traffic_class.protocol = protocol;
+    conn_event.open.traffic_class.protocol = TProtocol;
     conn_event.open.traffic_class.role = kRoleRequestor;
     return conn_event;
   }
 
+  template <TrafficProtocol TProtocol>
   std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg) {
-    return InitDataEvent(TrafficDirection::kEgress, TrafficProtocol::kProtocolHTTP, send_seq_num_++,
-                         msg);
+    return InitDataEvent<TProtocol>(TrafficDirection::kEgress, send_seq_num_++, msg);
   }
 
+  template <TrafficProtocol TProtocol>
   std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg) {
-    return InitDataEvent(TrafficDirection::kIngress, TrafficProtocol::kProtocolHTTP,
-                         recv_seq_num_++, msg);
+    return InitDataEvent<TProtocol>(TrafficDirection::kIngress, recv_seq_num_++, msg);
   }
 
-  std::unique_ptr<SocketDataEvent> InitHTTP2SendEvent(std::string_view msg) {
-    return InitDataEvent(TrafficDirection::kEgress, TrafficProtocol::kProtocolHTTP2,
-                         send_seq_num_++, msg);
-  }
-
-  std::unique_ptr<SocketDataEvent> InitHTTP2RecvEvent(std::string_view msg) {
-    return InitDataEvent(TrafficDirection::kIngress, TrafficProtocol::kProtocolHTTP2,
-                         recv_seq_num_++, msg);
-  }
-
-  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction,
-                                                 TrafficProtocol protocol, uint64_t seq_num,
+  template <TrafficProtocol TProtocol>
+  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, uint64_t seq_num,
                                                  std::string_view msg) {
     socket_data_event_t event = {};
     event.attr.direction = direction;
-    event.attr.traffic_class.protocol = protocol;
+    event.attr.traffic_class.protocol = TProtocol;
     event.attr.traffic_class.role = kRoleRequestor;
     event.attr.return_timestamp_ns = ++current_ts_ns_;
     event.attr.conn_id.pid = kPID;
