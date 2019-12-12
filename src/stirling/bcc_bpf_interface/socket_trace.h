@@ -2,6 +2,8 @@
 
 #include <linux/in6.h>
 
+#include "src/stirling/bcc_bpf_interface/common.h"
+
 const char kControlMapName[] = "control_map";
 const uint64_t kSocketTraceNothing = 0;
 
@@ -9,64 +11,6 @@ const int64_t kTraceAllTGIDs = -1;
 const char kControlValuesArrayName[] = "control_values";
 
 // TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
-
-typedef enum {
-  kEgress,
-  kIngress,
-} TrafficDirection;
-
-// Protocol being used on a connection (HTTP, MySQL, etc.).
-typedef enum {
-  kProtocolUnknown,
-  kProtocolHTTP,
-  kProtocolHTTP2,
-  kProtocolMySQL,
-  kNumProtocols
-} TrafficProtocol;
-
-// The direction of traffic expected on a probe. Values are used in bit masks.
-typedef enum {
-  kRoleUnknown = 1 << 0,
-  kRoleRequestor = 1 << 1,
-  kRoleResponder = 1 << 2
-} ReqRespRole;
-
-// Specifies the corresponding indexes of the entries of a per-cpu array.
-typedef enum {
-  // This specify one pid to monitor. This is used during test to eliminate noise.
-  // TODO(yzhao): We need a more robust mechanism for production use, which should be able to:
-  // * Specify multiple pids up to a certain limit, let's say 1024.
-  // * Support efficient lookup inside bpf to minimize overhead.
-  kTargetTGIDIndex = 0,
-  kStirlingTGIDIndex,
-  kNumControlValues,
-} ControlValueIndex;
-
-struct traffic_class_t {
-  // The protocol of traffic on the connection (HTTP, MySQL, etc.).
-  TrafficProtocol protocol;
-  // Classify traffic as requests, responses or mixed.
-  ReqRespRole role;
-};
-
-struct conn_id_t {
-  // Comes from the process from which this is captured.
-  // See https://stackoverflow.com/a/9306150 for details.
-  // Use union to give it two names. We use tgid in kernel-space, pid in user-space.
-  union {
-    uint32_t tgid;
-    uint32_t pid;
-  };
-  // The start time of the PID, so we can disambiguate PIDs.
-  union {
-    uint64_t tgid_start_time_ticks;
-    uint64_t pid_start_time_ticks;
-  };
-  // The file descriptor to the opened network connection.
-  uint32_t fd;
-  // Generation number of the FD (increments on each FD reuse in the TGID).
-  uint32_t generation;
-};
 
 // This struct contains information collected when a connection is established,
 // via an accept() syscall.
@@ -164,7 +108,7 @@ struct socket_data_event_t {
     struct traffic_class_t traffic_class;
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
-    TrafficDirection direction;
+    enum TrafficDirection direction;
     // A 0-based sequence number for this event on the connection.
     // Note that write/send have separate sequences than read/recv.
     uint64_t seq_num;

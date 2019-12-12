@@ -1,5 +1,6 @@
 #pragma once
 
+#include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/bcc_bpf_interface/go_types.h"
 
 // Must be a power of two, otherwise masking will break.
@@ -23,19 +24,6 @@ enum EventType {
   kWriteData,
 };
 
-struct ProbeInfo {
-  union {
-    uint32_t tgid;
-    uint32_t pid;
-  };
-  union {
-    uint64_t tgid_start_time_ticks;
-    uint64_t pid_start_time_ticks;
-  };
-  uint32_t tid;
-  uint64_t timestamp_ns;
-};
-
 struct header_field_t {
   uint32_t size;
   char msg[HEADER_FIELD_STR_SIZE];
@@ -43,7 +31,7 @@ struct header_field_t {
 
 struct go_grpc_http2_header_event_t {
   enum EventType type;
-  struct ProbeInfo entry_probe;
+  struct probe_info_t entry_probe;
   int32_t fd;
   uint32_t stream_id;
   struct header_field_t name;
@@ -59,7 +47,7 @@ struct conn_symaddrs_t {
 struct DataFrameInfo {
   struct {
     enum EventType type;
-    struct ProbeInfo entry_probe;
+    struct probe_info_t entry_probe;
     uint32_t fd;
     uint32_t generation;
     uint32_t stream_id;

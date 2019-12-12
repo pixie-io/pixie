@@ -17,7 +17,7 @@ static __inline uint32_t bpf_ntohl_chars(const char* buf) {
 }
 
 // Parses buf as length-prefixed frames, and updates bookkeeping parameters in conn_info.
-static __inline void update_http2_frame_offset(TrafficDirection direction, const char* buf,
+static __inline void update_http2_frame_offset(enum TrafficDirection direction, const char* buf,
                                                size_t buf_size, struct conn_info_t* conn_info) {
   uint64_t buf_offset = 0;
   switch (direction) {

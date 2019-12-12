@@ -252,7 +252,7 @@ static __inline bool should_trace_tgid(const u32 tgid) {
   return test_only_should_trace_target_tgid(tgid) && !is_stirling_tgid(tgid);
 }
 
-static __inline struct socket_data_event_t* fill_event(TrafficDirection direction,
+static __inline struct socket_data_event_t* fill_event(enum TrafficDirection direction,
                                                        const struct data_info_t* data_info,
                                                        const struct conn_info_t* conn_info) {
   u32 kZero = 0;
@@ -366,8 +366,8 @@ static __inline bool is_http2_connection_preface(const char* buf, size_t count) 
   return buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I';
 }
 
-static __inline struct traffic_class_t infer_traffic(TrafficDirection direction, const char* buf,
-                                                     size_t count) {
+static __inline struct traffic_class_t infer_traffic(enum TrafficDirection direction,
+                                                     const char* buf, size_t count) {
   struct traffic_class_t traffic_class;
   traffic_class.protocol = kProtocolUnknown;
   traffic_class.role = kRoleUnknown;
@@ -396,8 +396,9 @@ static __inline struct traffic_class_t infer_traffic(TrafficDirection direction,
 
 // TODO(oazizi): This function should go away once the protocol is identified externally.
 //               Also, could move this function into the header file, so we can test it.
-static __inline void update_traffic_class(struct conn_info_t* conn_info, TrafficDirection direction,
-                                          const char* buf, size_t count) {
+static __inline void update_traffic_class(struct conn_info_t* conn_info,
+                                          enum TrafficDirection direction, const char* buf,
+                                          size_t count) {
   // TODO(oazizi): Future architecture should have user-land provide the traffic_class.
   // TODO(oazizi): conn_info currently works only if tracing on the send or recv side of a process,
   //               but not both simultaneously, because we need to mark two traffic classes.
@@ -473,7 +474,7 @@ static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t*
 //
 // Returns the bytes output from the input buf. Note that is not the total bytes submitted to the
 // perf buffer, which includes additional metadata.
-static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirection direction,
+static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDirection direction,
                                        const char* buf, const size_t buf_size,
                                        struct conn_info_t* conn_info,
                                        struct socket_data_event_t* event) {
@@ -532,7 +533,7 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
   return msg_submit_size;
 }
 
-static __inline void perf_submit_wrapper(struct pt_regs* ctx, const TrafficDirection direction,
+static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum TrafficDirection direction,
                                          const char* buf, const size_t buf_size,
                                          struct conn_info_t* conn_info,
                                          struct socket_data_event_t* event) {
@@ -571,7 +572,7 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx, const TrafficDirec
   }
 }
 
-static __inline void perf_submit_iovecs(struct pt_regs* ctx, const TrafficDirection direction,
+static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficDirection direction,
                                         const struct iovec* iov, const size_t iovlen,
                                         const size_t total_size, struct conn_info_t* conn_info,
                                         struct socket_data_event_t* event) {
