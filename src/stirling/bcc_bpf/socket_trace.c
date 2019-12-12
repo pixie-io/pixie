@@ -13,10 +13,6 @@
 #include "src/stirling/bcc_bpf/logging.h"
 #include "src/stirling/bcc_bpf/utils.h"
 
-// This is how Linux converts nanoseconds to clock ticks.
-// Used to report PID start times in clock ticks, just like /proc/<pid>/stat does.
-static __inline u64 pl_nsec_to_clock_t(u64 x) { return div_u64(x, NSEC_PER_SEC / USER_HZ); }
-
 // TODO(yzhao): Investigate the performance overhead of active_*_info_map.delete(id), when id is not
 // in the map. If it's significant, change to only call delete() after knowing that id is in the
 // map.
@@ -135,11 +131,6 @@ BPF_PERCPU_ARRAY(control_values, s64, kNumControlValues);
  * General helper functions
  ***********************************************************/
 
-static __inline uint64_t get_tgid_start_time() {
-  struct task_struct* task = (struct task_struct*)bpf_get_current_task();
-  return pl_nsec_to_clock_t(task->group_leader->start_time);
-}
-
 static __inline uint32_t get_tgid_fd_generation(u64 tgid_fd) {
   u32 init_tgid_fd_generation = 0;
   u32* tgid_fd_generation = proc_conn_map.lookup_or_init(&tgid_fd, &init_tgid_fd_generation);
@@ -172,10 +163,10 @@ static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
   memset(&new_conn_info, 0, sizeof(struct conn_info_t));
   struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
   // Use TGID zero to detect that a new conn_info was initialized.
-  if (conn_info->conn_id.tgid == 0) {
+  if (conn_info->conn_id.upid.tgid == 0) {
     // If lookup_or_init initialized a new conn_info, we need to set some fields.
-    conn_info->conn_id.tgid = tgid;
-    conn_info->conn_id.tgid_start_time_ticks = get_tgid_start_time();
+    conn_info->conn_id.upid.tgid = tgid;
+    conn_info->conn_id.upid.start_time_ticks = get_tgid_start_time();
     conn_info->conn_id.fd = fd;
     // Note that many calls to this function are not for socket descriptors,
     // so we are actually "wasting" generations numbers.
@@ -437,8 +428,8 @@ static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
   conn_info.traffic_class.role = kRoleUnknown;
   conn_info.wr_seq_num = 0;
   conn_info.rd_seq_num = 0;
-  conn_info.conn_id.tgid = tgid;
-  conn_info.conn_id.tgid_start_time_ticks = get_tgid_start_time();
+  conn_info.conn_id.upid.tgid = tgid;
+  conn_info.conn_id.upid.start_time_ticks = get_tgid_start_time();
   conn_info.conn_id.fd = fd;
   conn_info.conn_id.generation = get_tgid_fd_generation(tgid_fd);
 

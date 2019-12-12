@@ -26,19 +26,26 @@ struct traffic_class_t {
   enum ReqRespRole role;
 };
 
-struct conn_id_t {
+// UPID stands for unique pid.
+// Since PIDs can be reused, this attaches the start time of the PID,
+// so that the identifier becomes unique.
+// Note that this version is node specific; there is also a 'class UPID'
+// definition under shared which also includes an Agent ID (ASID),
+// to uniquely identify PIDs across a cluster. The ASID is not required here.
+struct upid_t {
   // Comes from the process from which this is captured.
   // See https://stackoverflow.com/a/9306150 for details.
   // Use union to give it two names. We use tgid in kernel-space, pid in user-space.
   union {
-    uint32_t tgid;
     uint32_t pid;
+    uint32_t tgid;
   };
-  // The start time of the PID, so we can disambiguate PIDs.
-  union {
-    uint64_t tgid_start_time_ticks;
-    uint64_t pid_start_time_ticks;
-  };
+  uint64_t start_time_ticks;
+};
+
+struct conn_id_t {
+  // The unique identifier of the pid/tgid.
+  struct upid_t upid;
   // The file descriptor to the opened network connection.
   uint32_t fd;
   // Generation number of the FD (increments on each FD reuse in the TGID).
@@ -47,14 +54,7 @@ struct conn_id_t {
 
 // TODO(oazizi): Reconcile probe_info_t and conn_id_t.
 struct probe_info_t {
-  union {
-    uint32_t tgid;
-    uint32_t pid;
-  };
-  union {
-    uint64_t tgid_start_time_ticks;
-    uint64_t pid_start_time_ticks;
-  };
+  struct upid_t upid;
   uint32_t tid;
   uint64_t timestamp_ns;
 };

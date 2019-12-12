@@ -155,7 +155,8 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
 static __inline void fill_probe_info(struct probe_info_t* probe_info) {
   uint64_t current_pid_tgid = bpf_get_current_pid_tgid();
   probe_info->timestamp_ns = bpf_ktime_get_ns();
-  probe_info->tgid = current_pid_tgid >> 32;
+  probe_info->upid.tgid = current_pid_tgid >> 32;
+  probe_info->upid.start_time_ticks = get_tgid_start_time();
   probe_info->tid = current_pid_tgid & 0xffffffff;
 }
 

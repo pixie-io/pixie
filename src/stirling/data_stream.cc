@@ -33,7 +33,7 @@ void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
     DCHECK_EQ(res.first->first, seq_num);
     std::unique_ptr<SocketDataEvent>& orig_event = res.first->second;
     LOG(ERROR) << absl::Substitute("Clobbering data event [seq_num=$0 pid=$1 fd=$2 gen=$3].",
-                                   seq_num, orig_event->attr.conn_id.pid,
+                                   seq_num, orig_event->attr.conn_id.upid.pid,
                                    orig_event->attr.conn_id.fd,
                                    orig_event->attr.conn_id.generation);
   }

@@ -185,8 +185,8 @@ TEST_F(SocketTraceConnectorTest, End2End) {
   ASSERT_THAT(source_->NumActiveConnections(), 1);
 
   conn_id_t search_conn_id;
-  search_conn_id.pid = kPID;
-  search_conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
+  search_conn_id.upid.pid = kPID;
+  search_conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
   search_conn_id.fd = kFD;
   search_conn_id.generation = 1;
   const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
@@ -582,16 +582,16 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   uint32_t impossible_pid = 1 << 23;
 
   struct socket_control_event_t conn0 = InitConn<kProtocolHTTP>();
-  conn0.open.conn_id.pid = impossible_pid;
+  conn0.open.conn_id.upid.pid = impossible_pid;
 
   std::unique_ptr<SocketDataEvent> conn0_req_event = InitSendEvent<kProtocolHTTP>(kReq0);
-  conn0_req_event->attr.conn_id.pid = impossible_pid;
+  conn0_req_event->attr.conn_id.upid.pid = impossible_pid;
 
   std::unique_ptr<SocketDataEvent> conn0_resp_event = InitRecvEvent<kProtocolHTTP>(kResp0);
-  conn0_resp_event->attr.conn_id.pid = impossible_pid;
+  conn0_resp_event->attr.conn_id.upid.pid = impossible_pid;
 
   struct socket_control_event_t conn0_close = InitClose();
-  conn0_close.close.conn_id.pid = impossible_pid;
+  conn0_close.close.conn_id.upid.pid = impossible_pid;
 
   DataTable data_table(kHTTPTable);
 
@@ -626,13 +626,13 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   uint32_t real_fd = 1;
 
   struct socket_control_event_t conn0 = InitConn<kProtocolHTTP>();
-  conn0.open.conn_id.pid = real_pid;
+  conn0.open.conn_id.upid.pid = real_pid;
   conn0.open.conn_id.fd = real_fd;
 
   // An incomplete message means it shouldn't be parseable (we don't want TranfserData to succeed).
   std::unique_ptr<SocketDataEvent> conn0_req_event =
       InitSendEvent<kProtocolHTTP>("GET /index.html HTTP/1.1\r\n");
-  conn0_req_event->attr.conn_id.pid = real_pid;
+  conn0_req_event->attr.conn_id.upid.pid = real_pid;
   conn0_req_event->attr.conn_id.fd = real_fd;
 
   DataTable data_table(kHTTPTable);
@@ -648,7 +648,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   }
 
   conn_id_t search_conn_id;
-  search_conn_id.pid = real_pid;
+  search_conn_id.upid.pid = real_pid;
   search_conn_id.fd = real_fd;
   search_conn_id.generation = 1;
   const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);

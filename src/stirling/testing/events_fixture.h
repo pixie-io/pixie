@@ -21,10 +21,10 @@ class EventsFixture : public ::testing::Test {
     struct socket_control_event_t conn_event {};
     conn_event.type = kConnOpen;
     conn_event.open.timestamp_ns = ++current_ts_ns_;
-    conn_event.open.conn_id.pid = kPID;
+    conn_event.open.conn_id.upid.pid = kPID;
     conn_event.open.conn_id.fd = kFD;
     conn_event.open.conn_id.generation = ++generation_;
-    conn_event.open.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
+    conn_event.open.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     conn_event.open.addr.sin6_family = AF_INET;
     conn_event.open.traffic_class.protocol = TProtocol;
     conn_event.open.traffic_class.role = kRoleRequestor;
@@ -49,10 +49,10 @@ class EventsFixture : public ::testing::Test {
     event.attr.traffic_class.protocol = TProtocol;
     event.attr.traffic_class.role = kRoleRequestor;
     event.attr.return_timestamp_ns = ++current_ts_ns_;
-    event.attr.conn_id.pid = kPID;
+    event.attr.conn_id.upid.pid = kPID;
     event.attr.conn_id.fd = kFD;
     event.attr.conn_id.generation = generation_;
-    event.attr.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
+    event.attr.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     event.attr.seq_num = seq_num;
     event.attr.msg_size = msg.size();
     msg.copy(event.msg, msg.size());
@@ -63,10 +63,10 @@ class EventsFixture : public ::testing::Test {
     struct socket_control_event_t close_event {};
     close_event.type = kConnClose;
     close_event.close.timestamp_ns = ++current_ts_ns_;
-    close_event.close.conn_id.pid = kPID;
+    close_event.close.conn_id.upid.pid = kPID;
     close_event.close.conn_id.fd = kFD;
     close_event.close.conn_id.generation = generation_;
-    close_event.close.conn_id.pid_start_time_ticks = kPIDStartTimeTicks;
+    close_event.close.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     close_event.close.rd_seq_num = recv_seq_num_;
     close_event.close.wr_seq_num = send_seq_num_;
     return close_event;

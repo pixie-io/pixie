@@ -124,14 +124,14 @@ class ConnectionTracker {
    *
    * @return PID.
    */
-  uint64_t pid() const { return conn_id_.pid; }
+  uint64_t pid() const { return conn_id_.upid.pid; }
 
   /**
    * Get start_time of the PID. Used to disambiguate reusued PIDs.
    *
    * @return start time.
    */
-  uint64_t pid_start_time_ticks() const { return conn_id_.pid_start_time_ticks; }
+  uint64_t pid_start_time_ticks() const { return conn_id_.upid.start_time_ticks; }
 
   /**
    * Get FD of the connection.

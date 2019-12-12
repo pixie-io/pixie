@@ -297,7 +297,7 @@ void SocketTraceConnector::HandleHeaderEvent(void* /*cb_cookie*/, void* data, in
   auto event = std::make_unique<go_grpc_http2_header_event_t>();
   memcpy(event.get(), data, sizeof(go_grpc_http2_header_event_t));
   LOG(INFO) << absl::Substitute("t=$0 pid=$1 tid=$2 type=$3 fd=$4 stream_id=$5 name=$6 value=$7",
-                                event->entry_probe.timestamp_ns, event->entry_probe.pid,
+                                event->entry_probe.timestamp_ns, event->entry_probe.upid.pid,
                                 event->entry_probe.tid, TypeName(event->type), event->fd,
                                 event->stream_id,
                                 std::string_view(event->name.msg, event->name.size),
@@ -316,7 +316,7 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
   auto& data_frame_info = *static_cast<DataFrameInfo*>(data);
   LOG(INFO) << absl::Substitute(
       "t=$0 pid=$1 tid=$2 type=$3 fd=$4 stream_id=$5 data=$6",
-      data_frame_info.attr.entry_probe.timestamp_ns, data_frame_info.attr.entry_probe.pid,
+      data_frame_info.attr.entry_probe.timestamp_ns, data_frame_info.attr.entry_probe.upid.pid,
       data_frame_info.attr.entry_probe.tid, TypeName(data_frame_info.attr.type),
       data_frame_info.attr.fd, data_frame_info.attr.stream_id,
       std::string_view(data_frame_info.data, data_frame_info.attr.data_len));
@@ -332,14 +332,15 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
 namespace {
 
 uint64_t GetConnMapKey(struct conn_id_t conn_id) {
-  return (static_cast<uint64_t>(conn_id.pid) << 32) | conn_id.fd;
+  return (static_cast<uint64_t>(conn_id.upid.pid) << 32) | conn_id.fd;
 }
 
 void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEvent* pb) {
   pb->mutable_attr()->set_entry_timestamp_ns(event.attr.entry_timestamp_ns);
   pb->mutable_attr()->set_return_timestamp_ns(event.attr.return_timestamp_ns);
-  pb->mutable_attr()->mutable_conn_id()->set_pid(event.attr.conn_id.pid);
-  pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(event.attr.conn_id.pid_start_time_ticks);
+  pb->mutable_attr()->mutable_conn_id()->set_pid(event.attr.conn_id.upid.pid);
+  pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(
+      event.attr.conn_id.upid.start_time_ticks);
   pb->mutable_attr()->mutable_conn_id()->set_fd(event.attr.conn_id.fd);
   pb->mutable_attr()->mutable_conn_id()->set_generation(event.attr.conn_id.generation);
   pb->mutable_attr()->mutable_traffic_class()->set_protocol(event.attr.traffic_class.protocol);
@@ -396,8 +397,8 @@ void SocketTraceConnector::AcceptHTTP2Data(const DataFrameInfo& data) {
   uint32_t data_fd = static_cast<uint32_t>(data.attr.fd);
 
   struct conn_id_t conn_id;
-  conn_id.pid = data.attr.entry_probe.pid;
-  conn_id.pid_start_time_ticks = data.attr.entry_probe.pid_start_time_ticks;
+  conn_id.upid.pid = data.attr.entry_probe.upid.pid;
+  conn_id.upid.start_time_ticks = data.attr.entry_probe.upid.start_time_ticks;
   conn_id.fd = data_fd;
   conn_id.generation = data.attr.generation;
 
