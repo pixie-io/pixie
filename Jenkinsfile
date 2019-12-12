@@ -469,17 +469,30 @@ def dockerArgsForBPFTest = '--privileged --pid=host --volume /lib/modules:/lib/m
 
 def bazelBaseArgsForBPFTest = 'bazel test --compilation_mode=opt --strategy=TestRunner=standalone'
 
-builders['Build & Test (bpf tests)'] = {
+builders['Build & Test (bpf tests - opt)'] = {
   WithSourceCode {
     dockerStep(dockerArgsForBPFTest, {
       bazelCmd(
         bazelBaseArgsForBPFTest + " --config=bpf ${BAZEL_SRC_FILES_PATH}",
         'build-bpf')
+    })
+  }
+}
 
+
+builders['Build & Test (bpf tests - asan)'] = {
+  WithSourceCode {
+    dockerStep(dockerArgsForBPFTest, {
       bazelCmd(
         bazelBaseArgsForBPFTest + " --config=asan --config=bpf ${BAZEL_SRC_FILES_PATH}",
         'build-bpf-asan')
+    })
+  }
+}
 
+builders['Build & Test (bpf tests - tsan)'] = {
+  WithSourceCode {
+    dockerStep(dockerArgsForBPFTest, {
       bazelCmd(
         bazelBaseArgsForBPFTest + " --config=tsan --config=bpf ${BAZEL_SRC_FILES_PATH}",
         'build-bpf-tsan')
