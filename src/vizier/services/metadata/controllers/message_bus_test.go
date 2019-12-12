@@ -629,6 +629,65 @@ func TestAgentHeartbeat(t *testing.T) {
 	assert.Equal(t, m.Data, respPb)
 }
 
+func TestAgentHeartbeat_Failed(t *testing.T) {
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	// Create request and expected response protos.
+	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	u, err := uuid.FromString(uuidStr)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+
+	mockAgtMgr.
+		EXPECT().
+		UpdateHeartbeat(u).
+		DoAndReturn(func(agentID uuid.UUID) error {
+			wg.Done()
+			return errors.New("Could not update heartbeat")
+		})
+
+	// Create Metadata Service controller.
+	isLeader := true
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+
+	// Listen for response.
+	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
+	if err != nil {
+		t.Fatal("Could not subscribe to NATS.")
+	}
+
+	req := new(messages.VizierMessage)
+	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	reqPb, err := req.Marshal()
+
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_HeartbeatNack{
+			HeartbeatNack: &messages.HeartbeatNack{},
+		},
+	}
+	respPb, err := resp.Marshal()
+
+	// Send update.
+	nc.Publish("agent_update", reqPb)
+
+	// Wait and read reponse.
+	wg.Wait()
+	m, err := sub.NextMsg(time.Second)
+	assert.Equal(t, m.Data, respPb)
+}
+
 func TestAgentHeartbeatInvalidUUID(t *testing.T) {
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
@@ -676,82 +735,6 @@ func TestAgentHeartbeatInvalidUUID(t *testing.T) {
 	nc.Publish("agent_update", reqPb)
 
 	// Wait and read reponse.
-	_, err = sub.NextMsg(time.Second)
-}
-
-func TestUpdateHeartbeatFailed(t *testing.T) {
-	port, cleanup := testingutils.StartNATS(t)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(3)
-
-	// Create request and expected response protos.
-	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-	u, err := uuid.FromString(uuidStr)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-
-	mockAgtMgr.
-		EXPECT().
-		UpdateHeartbeat(u).
-		DoAndReturn(func(agentID uuid.UUID) error {
-			wg.Done()
-			return errors.New("could not update heartbeat")
-		})
-
-	updates := []*metadatapb.ResourceUpdate{}
-	mockAgtMgr.
-		EXPECT().
-		GetFromAgentQueue(uuidStr).
-		DoAndReturn(func(string) ([]*metadatapb.ResourceUpdate, error) {
-			wg.Done()
-			return updates, nil
-		})
-
-	createdProcesses := make([]*metadatapb.ProcessCreated, 1)
-	createdProcesses[0] = &metadatapb.ProcessCreated{
-		PID: 1,
-	}
-	agentUpdatePb := &messages.AgentUpdateInfo{
-		ProcessCreated: createdProcesses,
-	}
-
-	mockAgtMgr.
-		EXPECT().
-		AddToUpdateQueue(u, agentUpdatePb).
-		DoAndReturn(func(uuid.UUID, *messages.AgentUpdateInfo) {
-			wg.Done()
-			return
-		})
-
-	// Create Metadata Service controller.
-	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
-
-	// Listen for response.
-	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
-	if err != nil {
-		t.Fatal("Could not subscribe to NATS.")
-	}
-
-	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	reqPb, err := req.Marshal()
-
-	// Send update.
-	nc.Publish("agent_update", reqPb)
-
-	// Wait and read reponse.
-	wg.Wait()
 	_, err = sub.NextMsg(time.Second)
 }
 

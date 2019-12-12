@@ -132,6 +132,19 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 		log.WithError(err).Error("Could not parse UUID from proto.")
 	}
 
+	// Update agent's heartbeat in agent manager.
+	err = mc.agentManager.UpdateHeartbeat(agentID)
+	if err != nil {
+		log.WithError(err).Error("Could not update agent heartbeat.")
+		resp := messages.VizierMessage{
+			Msg: &messages.VizierMessage_HeartbeatNack{
+				HeartbeatNack: &messages.HeartbeatNack{},
+			},
+		}
+		mc.sendMessageToAgent(agentID, resp)
+		return
+	}
+
 	// Get any queued agent updates.
 	updates, err := mc.agentManager.GetFromAgentQueue(agentID.String())
 
@@ -155,12 +168,6 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 		for i := len(updates) - 1; i >= 0; i-- {
 			mc.agentManager.AddToFrontOfAgentQueue(agentID.String(), updates[i])
 		}
-	}
-
-	// Update agent's heartbeat in agent manager.
-	err = mc.agentManager.UpdateHeartbeat(agentID)
-	if err != nil {
-		log.WithError(err).Error("Could not update agent heartbeat.")
 	}
 
 	// Get agent's container/schema updates and add to update queue.
