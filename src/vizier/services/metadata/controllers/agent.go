@@ -6,7 +6,6 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/clientv3util"
-	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
 
 	uuid "github.com/satori/go.uuid"
@@ -62,24 +61,17 @@ type AgentManagerImpl struct {
 	clock    utils.Clock
 	mds      MetadataStore
 	updateCh chan *AgentUpdate
-	sess     *concurrency.Session
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
 func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, clock utils.Clock) *AgentManagerImpl {
 	c := make(chan *AgentUpdate)
 
-	sess, err := concurrency.NewSession(client, concurrency.WithContext(context.Background()))
-	if err != nil {
-		log.WithError(err).Fatal("Could not create new session for etcd")
-	}
-
 	agentManager := &AgentManagerImpl{
 		client:   client,
 		clock:    clock,
 		mds:      mds,
 		updateCh: c,
-		sess:     sess,
 	}
 
 	go agentManager.processAgentUpdates()
@@ -227,10 +219,6 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 		return 0, errors.New("Unable to marshal agentData pb")
 	}
 
-	mu := concurrency.NewMutex(m.sess, GetUpdateKey())
-	mu.Lock(ctx)
-	defer mu.Unlock(context.Background())
-
 	hostnameDNE := clientv3util.KeyMissing(GetHostnameAgentKey(info.HostInfo.Hostname))
 
 	ops := make([]clientv3.Op, 2)
@@ -274,9 +262,6 @@ func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 	proto.Unmarshal(resp.Kvs[0].Value, pb)
 	pb.LastHeartbeatNS = m.clock.Now().UnixNano()
 
-	mu := concurrency.NewMutex(m.sess, GetUpdateKey())
-	mu.Lock(ctx)
-	defer mu.Unlock(context.Background())
 	err = updateAgentData(agentID, pb, m.client)
 	if err != nil {
 		log.WithError(err).Fatal("Could not update agent data in etcd")
@@ -292,10 +277,6 @@ func (m *AgentManagerImpl) UpdateAgent(info *agentpb.Agent) error {
 }
 
 func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, hostname string, collectsData bool) error {
-	mu := concurrency.NewMutex(m.sess, GetUpdateKey())
-	mu.Lock(ctx)
-	defer mu.Unlock(context.Background())
-
 	_, err := m.client.Delete(ctx, GetAgentKey(agentID))
 	if err != nil {
 		return err

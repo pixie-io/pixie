@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -26,7 +25,6 @@ import (
 // EtcdMetadataStore is the implementation of our metadata store in etcd.
 type EtcdMetadataStore struct {
 	client         *clientv3.Client
-	sess           *concurrency.Session
 	expiryDuration time.Duration
 }
 
@@ -37,14 +35,8 @@ func NewEtcdMetadataStore(client *clientv3.Client) (*EtcdMetadataStore, error) {
 
 // NewEtcdMetadataStoreWithExpiryTime creates a new etcd metadata store with the given expiry time.
 func NewEtcdMetadataStoreWithExpiryTime(client *clientv3.Client, expiryDuration time.Duration) (*EtcdMetadataStore, error) {
-	sess, err := concurrency.NewSession(client, concurrency.WithContext(context.Background()))
-	if err != nil {
-		log.WithError(err).Fatal("Could not create new session for etcd")
-	}
-
 	mds := &EtcdMetadataStore{
 		client:         client,
-		sess:           sess,
 		expiryDuration: expiryDuration,
 	}
 
@@ -288,10 +280,6 @@ func (mds *EtcdMetadataStore) UpdateContainer(c *metadatapb.ContainerInfo) error
 
 // UpdateContainersFromPod updates the containers from the given pod in the metadata store.
 func (mds *EtcdMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod) error {
-	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
-	mu.Lock(context.Background())
-	defer mu.Unlock(context.Background())
-
 	containers := make([]*metadatapb.ContainerStatus, 0)
 	for _, status := range pod.Status.ContainerStatuses {
 		if status.ContainerID != "" {
@@ -335,10 +323,6 @@ func (mds *EtcdMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod) error
 
 // UpdateSchemas updates the given schemas in the metadata store.
 func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
-	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
-	mu.Lock(context.Background())
-	defer mu.Unlock(context.Background())
-
 	ops := make([]clientv3.Op, len(schemas))
 	computedSchemaOps := make([]clientv3.Op, len(schemas))
 	for i, schemaPb := range schemas {
@@ -438,10 +422,6 @@ func getProcessKey(upid string) string {
 }
 
 func (mds *EtcdMetadataStore) updateValue(key string, value string, expire bool) error {
-	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
-	mu.Lock(context.Background())
-	defer mu.Unlock(context.Background())
-
 	leaseID := clientv3.NoLease
 	if expire {
 		resp, err := mds.client.Grant(context.TODO(), int64(mds.expiryDuration.Seconds()))
@@ -493,14 +473,14 @@ func (mds *EtcdMetadataStore) GetAgentsForHostnames(hostnames *[]string) (*[]str
 
 // AddToAgentUpdateQueue adds the given value to the agent's update queue.
 func (mds *EtcdMetadataStore) AddToAgentUpdateQueue(agentID string, value string) error {
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID), mds.sess, GetUpdateKey())
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
 
 	return q.Enqueue(value)
 }
 
 // AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
 func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *metadatapb.ResourceUpdate) error {
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID), mds.sess, GetUpdateKey())
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
 
 	i, err := value.Marshal()
 	if err != nil {
@@ -514,7 +494,7 @@ func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *meta
 func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) ([]*metadatapb.ResourceUpdate, error) {
 	var pbs []*metadatapb.ResourceUpdate
 
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID), mds.sess, GetUpdateKey())
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
 	resp, err := q.DequeueAll()
 	if err != nil {
 		return pbs, err
@@ -540,7 +520,7 @@ func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) ([]*metadatapb.R
 
 // AddUpdatesToAgentQueue adds all updates to the agent's queue in etcd.
 func (mds *EtcdMetadataStore) AddUpdatesToAgentQueue(agentID string, updates []*metadatapb.ResourceUpdate) error {
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID), mds.sess, GetUpdateKey())
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
 
 	var updateStrs []string
 	for _, update := range updates {
@@ -658,10 +638,6 @@ func (mds *EtcdMetadataStore) GetProcesses(upids []*types.UInt128) ([]*metadatap
 
 // UpdateProcesses updates the given processes in the metadata store.
 func (mds *EtcdMetadataStore) UpdateProcesses(processes []*metadatapb.ProcessInfo) error {
-	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
-	mu.Lock(context.Background())
-	defer mu.Unlock(context.Background())
-
 	ops := make([]clientv3.Op, len(processes))
 
 	for i, processPb := range processes {
@@ -692,5 +668,4 @@ func (mds *EtcdMetadataStore) UpdateProcesses(processes []*metadatapb.ProcessInf
 
 // Close cleans up the etcd metadata store, such as its etcd session.
 func (mds *EtcdMetadataStore) Close() {
-	mds.sess.Close()
 }

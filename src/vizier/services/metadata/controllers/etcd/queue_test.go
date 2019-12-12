@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -16,13 +15,9 @@ func TestEnqueue(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
-	if err != nil {
-		t.Fatal("Could not create new session for etcd")
-	}
-	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
+	q := etcd.NewQueue(etcdClient, "test")
 
-	err = q.Enqueue("abcd")
+	err := q.Enqueue("abcd")
 	assert.Nil(t, err)
 
 	resp, err := etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
@@ -59,13 +54,9 @@ func TestDequeueMultiple(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
-	if err != nil {
-		t.Fatal("Could not create new session for etcd")
-	}
-	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
+	q := etcd.NewQueue(etcdClient, "test")
 
-	err = q.Enqueue("abcd")
+	err := q.Enqueue("abcd")
 	assert.Nil(t, err)
 
 	err = q.Enqueue("efgh")
@@ -95,11 +86,7 @@ func TestDequeueEmpty(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
-	if err != nil {
-		t.Fatal("Could not create new session for etcd")
-	}
-	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
+	q := etcd.NewQueue(etcdClient, "test")
 
 	resp, err := q.Dequeue()
 	assert.Nil(t, err)
@@ -110,13 +97,9 @@ func TestDequeueAll(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
-	if err != nil {
-		t.Fatal("Could not create new session for etcd")
-	}
-	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
+	q := etcd.NewQueue(etcdClient, "test")
 
-	err = q.Enqueue("abcd")
+	err := q.Enqueue("abcd")
 	assert.Nil(t, err)
 
 	err = q.Enqueue("efgh")
@@ -125,7 +108,7 @@ func TestDequeueAll(t *testing.T) {
 	err = q.Enqueue("ijkl")
 	assert.Nil(t, err)
 
-	q1 := etcd.NewQueue(etcdClient, "test2", sess, "/updateKey")
+	q1 := etcd.NewQueue(etcdClient, "test2")
 
 	err = q1.Enqueue("abcd")
 	assert.Nil(t, err)
@@ -153,13 +136,9 @@ func TestEnqueueAtFront(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
-	if err != nil {
-		t.Fatal("Could not create new session for etcd")
-	}
-	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
+	q := etcd.NewQueue(etcdClient, "test")
 
-	err = q.Enqueue("abcd")
+	err := q.Enqueue("abcd")
 	assert.Nil(t, err)
 
 	resp, err := etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
@@ -209,13 +188,9 @@ func TestEnqueueAll(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
-	if err != nil {
-		t.Fatal("Could not create new session for etcd")
-	}
-	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
+	q := etcd.NewQueue(etcdClient, "test")
 
-	err = q.Enqueue("abcd")
+	err := q.Enqueue("abcd")
 	assert.Nil(t, err)
 
 	resp, err := etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
@@ -290,13 +265,9 @@ func TestEnqueueAllDequeueAll(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
-	if err != nil {
-		t.Fatal("Could not create new session for etcd")
-	}
-	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
+	q := etcd.NewQueue(etcdClient, "test")
 
-	err = q.Enqueue("abcd")
+	err := q.Enqueue("abcd")
 	assert.Nil(t, err)
 
 	resp, err := etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -407,12 +406,7 @@ func TestAddToAgentQueue(t *testing.T) {
 	err = mds.AddToAgentUpdateQueue("agent1", "test")
 	assert.Nil(t, err)
 
-	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
-	if err != nil {
-		t.Fatal("Could not create new session for etcd")
-	}
-
-	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates", sess, controllers.GetUpdateKey())
+	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates")
 	resp, err := q.Dequeue()
 	assert.Nil(t, err)
 	assert.Equal(t, "test", resp)
@@ -517,12 +511,7 @@ func TestGetFromAgentQueue(t *testing.T) {
 	assert.Equal(t, 1, len(resp))
 	assert.Equal(t, "podUid", resp[0].GetPodUpdate().UID)
 
-	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
-	if err != nil {
-		t.Fatal("Could not create new session for etcd")
-	}
-
-	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates", sess, controllers.GetUpdateKey())
+	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates")
 	dequeueResp, err := q.Dequeue()
 	assert.Nil(t, err)
 	assert.Equal(t, "", dequeueResp)
