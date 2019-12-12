@@ -2,6 +2,7 @@
 
 #include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/bcc_bpf_interface/go_types.h"
+#include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
 // Must be a power of two, otherwise masking will break.
 #define HEADER_FIELD_STR_SIZE 128
@@ -57,6 +58,8 @@ struct conn_symaddrs_t {
   int64_t tcp_conn;
 };
 
+enum DataFrameEventType { kDataFrameEventUnknown, kDataFrameEventRead, kDataFrameEventWrite };
+
 struct go_grpc_data_event_t {
   struct data_attr_t {
     enum EventType type;
@@ -65,6 +68,14 @@ struct go_grpc_data_event_t {
     uint32_t generation;
     uint32_t stream_id;
     uint32_t data_len;
+
+    // TODO(oazizi): The fields below must be reconciled with the fields above.
+    //---------------------
+    uint64_t timestamp_ns;
+    struct conn_id_t conn_id;
+    struct traffic_class_t traffic_class;
+    enum DataFrameEventType ftype;
+    //---------------------
   } attr;
   char data[MAX_DATA_SIZE];
 };

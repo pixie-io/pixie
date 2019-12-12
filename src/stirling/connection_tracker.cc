@@ -124,11 +124,13 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
-void ConnectionTracker::AddHTTP2Data(const struct conn_id_t& conn_id, const HTTP2DataEvent& data) {
+void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
   // A disabled tracker doesn't collect data events.
   if (disabled_) {
     return;
   }
+
+  const conn_id_t& conn_id = data.attr.conn_id;
 
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
@@ -136,7 +138,7 @@ void ConnectionTracker::AddHTTP2Data(const struct conn_id_t& conn_id, const HTTP
              "[pid=$0 fd=$1 gen=$2].",
              conn_id.upid.pid, conn_id.fd, conn_id.generation);
 
-  UpdateTimestamps(data.attr.entry_probe.timestamp_ns);
+  UpdateTimestamps(data.attr.timestamp_ns);
   SetPID(conn_id);
 
   SetTrafficClass({
@@ -145,12 +147,12 @@ void ConnectionTracker::AddHTTP2Data(const struct conn_id_t& conn_id, const HTTP
   });
 
   std::deque<http2::Stream>* messages_ptr = nullptr;
-  switch (data.attr.type) {
-    case EventType::kWriteData: {
+  switch (data.attr.ftype) {
+    case DataFrameEventType::kDataFrameEventWrite: {
       auto& messages = send_data_.Messages<http2::Stream>();
       messages_ptr = &messages;
     } break;
-    case EventType::kReadData: {
+    case DataFrameEventType::kDataFrameEventRead: {
       auto& messages = recv_data_.Messages<http2::Stream>();
       messages_ptr = &messages;
     } break;

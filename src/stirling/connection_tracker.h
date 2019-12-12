@@ -65,7 +65,7 @@ class ConnectionTracker {
    */
   void AddDataEvent(std::unique_ptr<SocketDataEvent> event);
 
-  void AddHTTP2Data(const struct conn_id_t& conn_id, const HTTP2DataEvent& data);
+  void AddHTTP2Data(const HTTP2DataEvent& data);
 
   /**
    * @brief Attempts to infer the remote endpoint of a connection.

@@ -28,6 +28,18 @@
 #include "src/stirling/utils/json.h"
 #include "src/stirling/utils/linux_headers.h"
 
+// TODO(oazizi): Replace with magic_enum, when it's enabled.
+inline std::string_view DataFrameEventTypeName(DataFrameEventType type) {
+  switch (type) {
+    case DataFrameEventType::kDataFrameEventWrite:
+      return "write_data";
+    case DataFrameEventType::kDataFrameEventRead:
+      return "read_data";
+    default:
+      return "unknown";
+  }
+}
+
 // TODO(yzhao): Consider simplify the semantic by filtering entirely on content type.
 DEFINE_string(http_response_header_filters, "Content-Type:json",
               "Comma-separated strings to specify the substrings should be included for a header. "
@@ -399,19 +411,10 @@ void SocketTraceConnector::AcceptControlEvent(const socket_control_event_t& even
 }
 
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
-  uint32_t data_fd = static_cast<uint32_t>(event->attr.fd);
-
-  struct conn_id_t conn_id;
-  conn_id.upid.pid = event->attr.entry_probe.upid.pid;
-  conn_id.upid.start_time_ticks = event->attr.entry_probe.upid.start_time_ticks;
-  conn_id.fd = data_fd;
-  conn_id.generation = event->attr.generation;
-
-  // conn_id is a common field of open & close.
-  const uint64_t conn_map_key = GetConnMapKey(conn_id);
+  const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.generation];
-  tracker.AddHTTP2Data(conn_id, *event);
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
+  tracker.AddHTTP2Data(*event);
 }
 
 const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
