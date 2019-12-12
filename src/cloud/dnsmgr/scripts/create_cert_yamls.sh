@@ -10,5 +10,5 @@ fi
 EMAIL=$1
 OUTDIR=$2
 NUMCERTS=$3
-"${curdirectory}"/generate_certs.sh "${EMAIL}" "${OUTDIR}" "${NUMCERTS}"
-"${curdirectory}"/convert_certs_to_yaml.sh "${OUTDIR}"/certificates ./certs
+"${curdirectory}/generate_certs.sh" "${EMAIL}" "${OUTDIR}" "${NUMCERTS}"
+"${curdirectory}/convert_certs_to_yaml.sh" "${OUTDIR}/certificates" "${workspace}/credentials/certs"

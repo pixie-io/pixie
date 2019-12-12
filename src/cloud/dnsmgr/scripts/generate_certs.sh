@@ -57,7 +57,6 @@ gcloud config set project pl-dev-infra
 export GCE_PROJECT="pl-dev-infra"
 create_cert "default" "clusters.dev.withpixie.dev"
 create_cert "default" "clusters.testing.withpixie.dev"
-create_cert "default" "clusters.nightly.withpixie.dev"
 
 
 echo "Creating the production certificates."
