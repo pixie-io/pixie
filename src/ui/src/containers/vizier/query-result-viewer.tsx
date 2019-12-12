@@ -1,21 +1,18 @@
-import { AutoSizedScrollableTable, TableColumnInfo } from 'components/table/scrollable-table';
-import { ParseCompilerErrors } from 'utils/parse-compiler-errors';
+import './vizier.scss';
+
+import {
+    AutoSizedScrollableTable, AutoSizedScrollableTableProps, TableColumnInfo,
+} from 'components/table/scrollable-table';
 import * as numeral from 'numeral';
 import * as React from 'react';
 import * as FormatData from 'utils/format-data';
+import {ParseCompilerErrors} from 'utils/parse-compiler-errors';
 
 // TODO(zasgar/michelle): Figure out how to import schema properly
 import {
-  GQLDataColTypes,
-  GQLDataTable,
-  GQLDataTableRelation,
-  GQLCompilerErrors,
-  GQLQueryErrors,
-  GQLQuery,
-  GQLQueryResult,
+    GQLCompilerErrors, GQLDataColTypes, GQLDataTable, GQLDataTableRelation, GQLQuery,
+    GQLQueryErrors, GQLQueryResult,
 } from '../../../../vizier/services/api/controller/schema/schema';
-
-import './vizier.scss';
 
 export interface QueryResultViewerProps {
   data: GQLQueryResult;
@@ -71,9 +68,9 @@ function extractData(colType: string, col: any, rowIdx): string {
     case 'FLOAT64':
       return FormatData.formatFloat64Data(col.float64Data.data[rowIdx]);
     case 'BOOLEAN':
-       return col.booleanData.data[rowIdx] ? 'true' : 'false';
+      return col.booleanData.data[rowIdx] ? 'true' : 'false';
     default:
-      throw(new Error('Unknown data type: ' + colType));
+      throw (new Error('Unknown data type: ' + colType));
   }
 }
 
@@ -102,21 +99,21 @@ function parseDataTable(relation: GQLDataTableRelation, tableData): any {
 }
 
 function computeColumnWidthRatios(relation: GQLDataTableRelation, parsedTable: any): any {
-    // Compute the average data width of a column (by name).
-    const aveColWidth = {};
-    let totalWidth = 0;
-    relation.colNames.forEach((colName) => {
-      aveColWidth[colName] = parsedTable.reduce((acc, val) => (
-        acc + (val[colName].length / parsedTable.length)), 0);
-      totalWidth += aveColWidth[colName];
-    });
+  // Compute the average data width of a column (by name).
+  const aveColWidth = {};
+  let totalWidth = 0;
+  relation.colNames.forEach((colName) => {
+    aveColWidth[colName] = parsedTable.reduce((acc, val) => (
+      acc + (val[colName].length / parsedTable.length)), 0);
+    totalWidth += aveColWidth[colName];
+  });
 
-    const colWidthRatio = {};
-    relation.colNames.forEach((colName) => {
-      colWidthRatio[colName] = aveColWidth[colName] / totalWidth;
-    });
+  const colWidthRatio = {};
+  relation.colNames.forEach((colName) => {
+    colWidthRatio[colName] = aveColWidth[colName] / totalWidth;
+  });
 
-    return colWidthRatio;
+  return colWidthRatio;
 }
 
 function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
@@ -148,91 +145,89 @@ function ExpandedRowRenderer(rowData) {
 }
 
 function formatError(error: GQLQueryErrors) {
-    const parsedErrors = ParseCompilerErrors(error.compilerError);
-    const colInfo: TableColumnInfo[] = [
-      {
-        dataKey: 'line',
-        label: 'Line',
-        type: 'INT64',
-        flexGrow: 8,
-        width: 10,
-      }, {
-        dataKey: 'col',
-        label: 'Column',
-        type: 'INT64',
-        flexGrow: 8,
-        width: 10,
-      }, {
-        dataKey: 'msg',
-        label: 'Message',
-        type: 'STRING',
-        flexGrow: 8,
-        width: 600,
-      },
-    ];
+  const parsedErrors = ParseCompilerErrors(error.compilerError);
+  const colInfo: TableColumnInfo[] = [
+    {
+      dataKey: 'line',
+      label: 'Line',
+      type: 'INT64',
+      flexGrow: 8,
+      width: 10,
+    }, {
+      dataKey: 'col',
+      label: 'Column',
+      type: 'INT64',
+      flexGrow: 8,
+      width: 10,
+    }, {
+      dataKey: 'msg',
+      label: 'Message',
+      type: 'STRING',
+      flexGrow: 8,
+      width: 600,
+    },
+  ];
 
-    return (
-      <div className='query-results--compiler-error'>
-        <AutoSizedScrollableTable
-          data={parsedErrors}
-          columnInfo={colInfo}
-          cellRenderer={ResultCellRenderer}
-          expandable={true}
-          expandRenderer={ExpandedRowRenderer}
-          resizableCols={false}
-        />
-      </div>);
+  return (
+    <div className='query-results--compiler-error'>
+      <AutoSizedScrollableTable
+        data={parsedErrors}
+        columnInfo={colInfo}
+        cellRenderer={ResultCellRenderer}
+        expandable={true}
+        expandRenderer={ExpandedRowRenderer}
+        resizableCols={false}
+      />
+    </div>);
 }
 
-export class QueryResultViewer extends React.Component<QueryResultViewerProps, {}> {
-  constructor(props) {
-    super(props);
-    this.state = {};
-  }
+function parseTable(table: GQLDataTable): AutoSizedScrollableTableProps {
+  // TODO(malthus): Figure out how to handle multiple tables. Render only the first table for now.
+  const relation = table.relation;
+  const tableData = JSON.parse(table.data);
+  const parsedTable = parseDataTable(relation, tableData);
+  const colWidthRatio = computeColumnWidthRatios(relation, parsedTable);
 
-  render() {
-    const data = this.props.data;
-    if (!data) {
-      return <div>No Data Available</div>;
-    }
-
-    if (data.error.compilerError) {
-      return formatError(data.error);
-    }
-
-    // TODO: Determine how we should render multiple tables in a table-view. For now, if we receive more than one
-    // table, just render the first table.
-    const relation = data.table instanceof Array ? data.table[0].relation : (data.table as any).relation;
-    const tableData = data.table instanceof Array ?
-      JSON.parse(data.table[0].data) : JSON.parse((data.table as any).data);
-    const parsedTable = parseDataTable(relation, tableData);
-    const colWidthRatio = computeColumnWidthRatios(relation, parsedTable);
-
-    // TODO(zasgar/michelle): Clean this up and make sure it's consistent with the
-    // CSS.
-    const colWidth = 600;
-    const minColWidth = 200;
-    const colInfo: TableColumnInfo[] = relation.colNames.map((colName, idx) => {
-      return {
-        dataKey: colName,
-        label: colName,
-        type: relation.colTypes[idx],
-        flexGrow: 8,
-        width: Math.max(minColWidth, colWidthRatio[colName] * colWidth),
-      };
-    });
-
-    return (
-      <div className='query-results'>
-        <AutoSizedScrollableTable
-          data={parsedTable}
-          columnInfo={colInfo}
-          cellRenderer={ResultCellRenderer}
-          expandable={true}
-          expandRenderer={ExpandedRowRenderer}
-          resizableCols={true}
-        />
-      </div>
-    );
-  }
+  // TODO(zasgar/michelle): Clean this up and make sure it's consistent with the
+  // CSS.
+  const colWidth = 600;
+  const minColWidth = 200;
+  const columnInfo: TableColumnInfo[] = relation.colNames.map((colName, idx) => {
+    return {
+      dataKey: colName,
+      label: colName,
+      type: relation.colTypes[idx],
+      flexGrow: 8,
+      width: Math.max(minColWidth, colWidthRatio[colName] * colWidth),
+    };
+  });
+  return {
+    data: parsedTable,
+    columnInfo,
+    cellRenderer: ResultCellRenderer,
+    expandable: true,
+    expandRenderer: ExpandedRowRenderer,
+    resizableCols: true,
+  };
 }
+
+export const QueryResultViewer = React.memo<QueryResultViewerProps>(({ data }) => {
+  if (!data) {
+    return <div>No Data Available</div>;
+  }
+
+  if (data.error.compilerError) {
+    return formatError(data.error);
+  }
+
+  // TODO(malthus): Figure out how to handle multiple tables. Render only the first table for now.
+  const table = Array.isArray(data.table) ? data.table[0] : data.table;
+  const tableData = React.useMemo(() => parseTable(table), [table]);
+  return (
+    <div className='query-results'>
+      <AutoSizedScrollableTable
+        {...tableData}
+      />
+    </div>
+  );
+});

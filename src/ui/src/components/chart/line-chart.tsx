@@ -31,8 +31,8 @@ export function parseData(data: GQLQueryResult): LineSeries[] {
   }
 }
 
-export const LineChart: React.FC<ChartProps> = ({ data, height, width }) => {
-  const lines = parseData(data);
+export const LineChart = React.memo<ChartProps>(({ data, height, width }) => {
+  const lines = React.useMemo(() => parseData(data), [data]);
   return (
     <XYPlot
       height={height}
@@ -55,4 +55,4 @@ export const LineChart: React.FC<ChartProps> = ({ data, height, width }) => {
       {...TimeValueAxis()}
     </XYPlot>
   );
-};
+});

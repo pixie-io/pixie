@@ -81,8 +81,8 @@ function formatHint(value: Point) {
   return hints;
 }
 
-export const ScatterPlot: React.FC<ChartProps> = ({ data, height, width }) => {
-  const series = parseData(data);
+export const ScatterPlot = React.memo<ChartProps>(({ data, height, width }) => {
+  const series = React.useMemo(() => parseData(data), [data]);
   if (!series || series.points.length === 0) {
     return null;
   }
@@ -123,4 +123,4 @@ export const ScatterPlot: React.FC<ChartProps> = ({ data, height, width }) => {
       />
     </XYPlot >
   );
-};
+});
