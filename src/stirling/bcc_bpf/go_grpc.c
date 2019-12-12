@@ -5,6 +5,16 @@
 #define HEADER_COUNT 64
 
 BPF_PERF_OUTPUT(go_grpc_header_events);
+BPF_PERF_OUTPUT(go_grpc_data_events);
+
+// BPF programs are limited to a 512-byte stack. We store this value per CPU
+// and use it as a heap allocated value.
+BPF_PERCPU_ARRAY(data_event_buffer_heap, struct go_grpc_data_event_t, 1);
+static __inline struct go_grpc_data_event_t* get_data_event() {
+  u32 kZero = 0;
+  return data_event_buffer_heap.lookup(&kZero);
+}
+
 // Key: TGID
 // Value: Symbol addresses for the binary with that TGID.
 BPF_HASH(symaddrs_map, uint32_t, struct conn_symaddrs_t);
@@ -41,6 +51,32 @@ struct FD {
   uint64_t fdmu0;
   uint64_t fdmu1;
   int64_t sysfd;
+};
+
+// C Implementation from FrameHeader struct from golang source code:
+// type FrameHeader struct {
+//   valid bool  // 1 byte
+//   Type FrameType  // 1 byte
+//   Flags Flags  // 1 byte, a bit mask
+//   Length uint32  // 4 bytes
+//   StreamID uint32  // 4 bytes
+//}
+struct FrameHeader {
+  bool valid;
+  uint8_t frame_type;
+  uint8_t flags;
+  uint32_t length;
+  uint32_t stream_id;
+};
+
+// C Implementation of the DataFrame struct from golang source:
+// type DataFrame struct {
+//   FrameHeader
+//   data []byte
+// }
+struct DataFrame {
+  struct FrameHeader header;
+  struct go_byte_array data;
 };
 
 static __inline int32_t conn_fd2(const void* framer_ptr) {
@@ -271,6 +307,97 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   for (unsigned int i = 0, pos = 0; i < HEADER_COUNT && i < fields.len; ++i) {
     fill_header_field(&event, fields_ptr + i);
     go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+  }
+
+  return 0;
+}
+
+// Probe for the http2 library's frame writer.
+//
+// Function signature:
+//   func (f *Framer) WriteData(streamID uint32, endStream bool, data []byte) error
+//   func (f *Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte) error
+//
+// Verified to be stable from go1.7 to t go.1.13.
+// This probe extracts the header field, which is the 1st argument.
+int probe_framer_write_data(struct pt_regs* ctx) {
+  const char* sp = (const char*)ctx->sp;
+  if (sp == NULL) {
+    return 0;
+  }
+
+  void* framer_ptr = *(void**)(sp + 8);
+  uint32_t stream_id = *(uint32_t*)(sp + 16);
+  struct go_byte_array data = *(struct go_byte_array*)(sp + 24);
+
+  struct go_grpc_data_event_t* info = get_data_event();
+  if (info == NULL) {
+    return 0;
+  }
+
+  info->attr.type = kWriteData;
+  fill_probe_info(&info->attr.entry_probe);
+  info->attr.fd = conn_fd(framer_ptr);
+  info->attr.stream_id = stream_id;
+  uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
+  info->attr.data_len = data_len;
+  bpf_probe_read(info->data, info->attr.data_len, data.ptr);
+
+  // Replacing data_len with info->attr.data_len causes BPF verifier to reject the statement below.
+  // Possibly because it lost track of the value because of the indirect access to info->attr.
+  // TODO(yzhao): This could be one reason to prefer flat data structure to grouped attributes,
+  // as its simplicity is more friendly to BPF verifier.
+  go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_len);
+
+  return 0;
+}
+
+// Probe for the http2 library's frame reader.
+// As a proxy for the return probe on ReadFrame(), we currently probe checkFrameOrder,
+// since return probes don't work for Go.
+//
+// Function signature:
+//   func (fr *Framer) checkFrameOrder(f Frame) error
+//
+// Verified to be stable from at least go1.6 to t go.1.13.
+int probe_framer_check_frame_order(struct pt_regs* ctx) {
+  const char* sp = (const char*)ctx->sp;
+  if (sp == NULL) {
+    return 0;
+  }
+
+  // Param 0 is the Receiver (fr *Framer).
+  const int kParam0Offset = 8;
+
+  // Param 1 is the first argument (f Frame).
+  const int kParam1Offset = 16;
+
+  struct go_interface* frame_interface_ptr = (struct go_interface*)(sp + kParam1Offset);
+
+  // All frames types start with a frame header, so this is safe.
+  struct FrameHeader* frame_header_ptr = (struct FrameHeader*)frame_interface_ptr->ptr;
+
+  // Consider only data frames (0).
+  if (frame_header_ptr->frame_type == 0) {
+    void* framer_ptr = *(void**)(sp + kParam0Offset);
+    // Reinterpret as data frame.
+    struct DataFrame* data_frame_ptr = (struct DataFrame*)frame_header_ptr;
+    struct go_byte_array data = data_frame_ptr->data;
+
+    struct go_grpc_data_event_t* info = get_data_event();
+    if (info == NULL) {
+      return 0;
+    }
+
+    info->attr.type = kReadData;
+    fill_probe_info(&info->attr.entry_probe);
+    info->attr.fd = conn_fd(framer_ptr);
+    info->attr.stream_id = frame_header_ptr->stream_id;
+    uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
+    info->attr.data_len = data_len;
+    bpf_probe_read(info->data, data_len, data.ptr);
+
+    go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_len);
   }
 
   return 0;

@@ -11,6 +11,7 @@
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
+#include "src/stirling/common/go_grpc.h"
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/data_stream.h"
 #include "src/stirling/mysql/mysql_parse.h"
@@ -64,7 +65,7 @@ class ConnectionTracker {
    */
   void AddDataEvent(std::unique_ptr<SocketDataEvent> event);
 
-  void AddHTTP2Data(const struct conn_id_t& conn_id, const DataFrameInfo& data);
+  void AddHTTP2Data(const struct conn_id_t& conn_id, const HTTP2DataEvent& data);
 
   /**
    * @brief Attempts to infer the remote endpoint of a connection.

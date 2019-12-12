@@ -66,6 +66,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       "socket_control_events",
       "socket_data_events",
       "go_grpc_header_events",
+      "go_grpc_data_events",
   };
 
   // Used in ReadPerfBuffer to drain the relevant perf buffers.
@@ -139,6 +140,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static void HandleHeaderEvent(void* cb_cookie, void* data, int data_size);
   static void HandleHeaderEventLoss(void* cb_cookie, uint64_t lost);
   static void HandleHTTP2Data(void* cb_cookie, void* data, int data_size);
+  static void HandleHTTP2DataLoss(void* cb_cookie, uint64_t lost);
 
   static constexpr bpf_tools::KProbeSpec kProbeSpecsArray[] = {
       {"connect", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_connect"},
@@ -177,11 +179,16 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   inline static constexpr bpf_tools::UProbeTmpl kUProbeTmplsArray[] = {
       {"google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
+       // TODO(yzhao): Move suffix matching. This is currently ignored.
        bpf_tools::SymbolMatchType::kSuffix, "probe_http2_client_operate_headers",
        bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader",
        bpf_tools::SymbolMatchType::kSuffix, "probe_loopy_writer_write_header",
        bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"golang.org/x/net/http2.(*Framer).WriteDataPadded", bpf_tools::SymbolMatchType::kSuffix,
+       "probe_framer_write_data", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"golang.org/x/net/http2.(*Framer).checkFrameOrder", bpf_tools::SymbolMatchType::kSuffix,
+       "probe_framer_check_frame_order", bpf_probe_attach_type::BPF_PROBE_ENTRY},
   };
   static constexpr auto kUProbeTmpls = ArrayView<bpf_tools::UProbeTmpl>(kUProbeTmplsArray);
 
@@ -196,6 +203,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       // For non-data events. Must not mix with the above perf buffers for data events.
       {"socket_control_events", HandleControlEvent, HandleControlEventsLoss},
       {"go_grpc_header_events", HandleHeaderEvent, HandleHeaderEventLoss},
+      {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss},
   };
   static constexpr auto kPerfBufferSpecs =
       ArrayView<bpf_tools::PerfBufferSpec>(kPerfBufferSpecsArray);
@@ -228,7 +236,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);
   void AcceptControlEvent(const socket_control_event_t& event);
 
-  void AcceptHTTP2Data(const DataFrameInfo& data);
+  void AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event);
 
   void UpdateActiveConnections();
 

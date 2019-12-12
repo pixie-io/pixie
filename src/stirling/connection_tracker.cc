@@ -15,6 +15,7 @@
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
+#include "src/stirling/common/go_grpc.h"
 #include "src/stirling/message_types.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
 
@@ -123,7 +124,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
-void ConnectionTracker::AddHTTP2Data(const struct conn_id_t& conn_id, const DataFrameInfo& data) {
+void ConnectionTracker::AddHTTP2Data(const struct conn_id_t& conn_id, const HTTP2DataEvent& data) {
   // A disabled tracker doesn't collect data events.
   if (disabled_) {
     return;
@@ -170,9 +171,11 @@ void ConnectionTracker::AddHTTP2Data(const struct conn_id_t& conn_id, const Data
 
   uint32_t index = data.attr.stream_id / 2;
 
-  messages_ptr->resize(std::max(messages_ptr->size(), static_cast<size_t>(index)));
+  // TODO(oazizi/yzhao): Seems we need also shrink messages list when there isn't many items inside
+  // the messages_ptr.
+  messages_ptr->resize(std::max(messages_ptr->size(), static_cast<size_t>(index) + 1));
 
-  (*messages_ptr)[index].data += std::string_view(data.data, data.attr.data_len);
+  (*messages_ptr)[index].data += data.payload;
 }
 
 template <typename TMessageType>
