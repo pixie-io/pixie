@@ -40,6 +40,7 @@ func init() {
 	pflag.String("certs_path", "../../../../credentials/certs", "The path to the certs")
 	pflag.String("env_type", "dev", "The env type (dev, testing, nightly, staging, prod")
 	pflag.String("domain_name_suffix", "clusters.dev.withpixie.dev", "The suffix of the domain name to strip out")
+	pflag.Bool("update_only", false, "Whether the script should update_only")
 }
 
 func fileExists(filename string) bool {
@@ -61,6 +62,13 @@ func getCertFilePath() string {
 	return filepath.Join(absPath, envType, "certs.yaml")
 }
 
+func getQuery(updateOnly bool) string {
+	if updateOnly {
+		return `UPDATE ssl_certs SET cert=cert, key=key WHERE cname=cname VALUES (:cname, :cert, :key)`
+	}
+	return `INSERT INTO ssl_certs(cname, cert, key) VALUES (:cname, :cert, :key)`
+}
+
 func loadCerts(db *sqlx.DB) {
 	certFilePath := getCertFilePath()
 	if !fileExists(certFilePath) {
@@ -68,7 +76,7 @@ func loadCerts(db *sqlx.DB) {
 			Fatal("File does not exist")
 	}
 
-	log.WithField("certFile", certFilePath).
+	log.WithField("certFile", certFilePath).WithField("update_only", viper.GetBool("update_only")).
 		Info("Deploying certs")
 
 	out, err := exec.Command("sops", "--decrypt", certFilePath).Output()
@@ -88,7 +96,8 @@ func loadCerts(db *sqlx.DB) {
 		if !strings.HasSuffix(fullCname, domainSuffix) {
 			log.Fatal("certificate suffix does not match the supplied domain")
 		}
-		query := `INSERT INTO ssl_certs(cname, cert, key) VALUES (:cname, :cert, :key)`
+
+		query := getQuery(viper.GetBool("update_only"))
 		cname := strings.TrimSuffix(fullCname, domainSuffix)
 		// Remove the wildcard char.
 		cname = strings.TrimPrefix(cname, "_.")
