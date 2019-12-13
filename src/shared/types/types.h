@@ -168,6 +168,8 @@ struct StringValue : BaseValueType, public std::string {
   // from functions.
   // NOLINTNEXTLINE: implicit constructor.
   StringValue(std::string&& str) : std::string(std::move(str)) {}
+  // NOLINTNEXTLINE: implicit constructor.
+  StringValue(const std::string& str) : std::string(str) {}
   int64_t bytes() const { return sizeof(char) * this->length(); }
 };
 

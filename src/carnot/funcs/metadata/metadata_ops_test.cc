@@ -282,6 +282,16 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
   EXPECT_EQ(std::string(udf.Exec(function_ctx.get(), "pl/terminating_pod")), "Terminated");
 }
 
+TEST_F(MetadataOpsTest, upid_to_cmdline) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+
+  UPIDToCmdLineUDF udf;
+  auto upid1 = md::UPID(123, 567, 89101);
+  EXPECT_EQ(udf.Exec(function_ctx.get(), upid1.value()), "test");
+  auto upid2 = md::UPID(123, 567, 468);
+  EXPECT_EQ(udf.Exec(function_ctx.get(), upid2.value()), "cmdline");
+}
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot

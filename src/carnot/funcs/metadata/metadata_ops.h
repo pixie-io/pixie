@@ -447,6 +447,27 @@ class PodNameToPodStatusUDF : public ScalarUDF {
   }
 };
 
+class UPIDToCmdLineUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the cmdline for the upid.
+   *
+   * @param ctx: The function context.
+   * @param upid_value: The UPID value
+   * @return types::StringValue: the cmdline for the UPID.
+   */
+  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
+    auto upid = md::UPID(upid_uint128);
+    auto pid_info = md->GetPIDByUPID(upid);
+    if (pid_info == nullptr) {
+      return "";
+    }
+    return pid_info->cmdline();
+  }
+};
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot
