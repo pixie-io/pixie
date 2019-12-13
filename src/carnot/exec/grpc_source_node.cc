@@ -37,9 +37,6 @@ Status GRPCSourceNode::GenerateNextImpl(ExecState* exec_state) {
   if (sent_eos_) {
     return Status::OK();
   }
-  if (!NextBatchReady()) {
-    return Status::OK();
-  }
   PL_RETURN_IF_ERROR(OptionallyPopRowBatch());
 
   PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *next_up_));
