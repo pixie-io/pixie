@@ -373,6 +373,7 @@ TEST_F(UnionNodeTest, all_empty_rbs) {
 
   RowDescriptor output_rd({types::DataType::STRING, types::DataType::TIME64NS});
 
+  // Multiple empty
   auto tester = exec::ExecNodeTester<UnionNode, plan::UnionOperator>(
       *plan_node_, output_rd, {input_rd_0, input_rd_1}, exec_state_.get());
   tester
@@ -396,6 +397,26 @@ TEST_F(UnionNodeTest, all_empty_rbs) {
                        .AddColumn<types::Time64NSValue>({})
                        .get(),
                    0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 0, /*eow*/ true, /*eos*/ true)
+                       .AddColumn<types::StringValue>({})
+                       .AddColumn<types::Time64NSValue>({})
+                       .get(),
+                   0, 1)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 0, true, true)
+                          .AddColumn<types::StringValue>({})
+                          .AddColumn<types::Time64NSValue>({})
+                          .get())
+      .Close();
+
+  // One from each
+  auto tester2 = exec::ExecNodeTester<UnionNode, plan::UnionOperator>(
+      *plan_node_, output_rd, {input_rd_0, input_rd_1}, exec_state_.get());
+  tester2
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 0, /*eow*/ true, /*eos*/ true)
+                       .AddColumn<types::Time64NSValue>({})
+                       .AddColumn<types::StringValue>({})
+                       .get(),
+                   1, 0)
       .ConsumeNext(RowBatchBuilder(input_rd_0, 0, /*eow*/ true, /*eos*/ true)
                        .AddColumn<types::StringValue>({})
                        .AddColumn<types::Time64NSValue>({})

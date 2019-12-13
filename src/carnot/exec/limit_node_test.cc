@@ -63,6 +63,25 @@ TEST_F(LimitNodeTest, single_batch) {
       .Close();
 }
 
+TEST_F(LimitNodeTest, single_empty_batch) {
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<LimitNode, plan::LimitOperator>(*plan_node_, output_rd,
+                                                                     {input_rd}, exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 0, /*eow*/ true, /*eos*/ true)
+                       .AddColumn<types::Int64Value>({})
+                       .AddColumn<types::Int64Value>({})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 0, true, true)
+                          .AddColumn<types::Int64Value>({})
+                          .AddColumn<types::Int64Value>({})
+                          .get())
+      .Close();
+}
+
 TEST_F(LimitNodeTest, single_batch_exact_boundary) {
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64});
