@@ -124,6 +124,104 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
+// Need three pieces of information to classify a frame as part of request or response stream:
+// ROLE, STREAM_ID, EVENT_TYPE -> classification
+// client, client-initiated (odd) stream, write  -> request
+// client, client-initiated (odd) stream, read   -> response
+// client, server-initiated (even) stream, write -> response
+// client, server-initiated (even) stream, read  -> request
+// server, client-initiated (odd) stream, write  -> response
+// server, client-initiated (odd) stream, read   -> request
+// server, server-initiated (even) stream, write -> request
+// server, server-initiated (even) stream, read  -> response
+http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool client_role,
+                                                    bool write_event) {
+  // Check for both client-initiated (odd stream_ids) and server-initiated (even stream_ids)
+  // streams.
+  std::deque<http2::Stream>* streams_deque_ptr;
+  uint32_t* oldest_active_stream_id_ptr;
+
+  bool client_stream = (stream_id % 2 == 1);
+
+  if (client_stream) {
+    streams_deque_ptr = &(client_streams_.Messages<http2::Stream>());
+    oldest_active_stream_id_ptr = &oldest_active_client_stream_id_;
+  } else {
+    streams_deque_ptr = &(server_streams_.Messages<http2::Stream>());
+    oldest_active_stream_id_ptr = &oldest_active_server_stream_id_;
+  }
+
+  // Update the head index.
+  if (streams_deque_ptr->empty()) {
+    *oldest_active_stream_id_ptr = stream_id;
+  }
+
+  ECHECK_GE(stream_id, *oldest_active_stream_id_ptr);
+  size_t index = (stream_id - *oldest_active_stream_id_ptr) / 2;
+  size_t new_size = std::max(streams_deque_ptr->size(), index + 1);
+  streams_deque_ptr->resize(new_size);
+
+  // Logical XOR (!=) counts the toggles and identifies request or response.
+  bool is_request = (client_role != client_stream) != write_event;
+  http2::HalfStream* half_stream_ptr =
+      is_request ? &(*streams_deque_ptr)[index].req : &(*streams_deque_ptr)[index].resp;
+  return half_stream_ptr;
+}
+
+void ConnectionTracker::AddHTTP2Header(const go_grpc_http2_header_event_t& hdr) {
+  // A disabled tracker doesn't collect data events.
+  if (disabled_) {
+    return;
+  }
+
+  const conn_id_t& conn_id = hdr.conn_id;
+
+  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
+      << absl::Substitute(
+             "Did not expect to receive Data event more than 1 sampling iteration after Close "
+             "[pid=$0 fd=$1 gen=$2].",
+             conn_id.upid.pid, conn_id.fd, conn_id.generation);
+
+  UpdateTimestamps(hdr.timestamp_ns);
+  SetPID(conn_id);
+  SetTrafficClass(hdr.traffic_class);
+
+  // Don't trace any control messages.
+  if (hdr.stream_id == 0) {
+    return;
+  }
+
+  bool client_role = false;
+  switch (hdr.traffic_class.role) {
+    case kRoleRequestor:
+      client_role = true;
+      break;
+    case kRoleResponder:
+      client_role = false;
+      break;
+    default:
+      LOG(WARNING) << "Unexpected role";
+      return;
+  }
+
+  bool write_event = false;
+  switch (hdr.htype) {
+    case HeaderEventType::kHeaderEventWrite:
+      write_event = true;
+      break;
+    case HeaderEventType::kHeaderEventRead:
+      write_event = false;
+      break;
+    default:
+      LOG(WARNING) << "Unexpected event type";
+      return;
+  }
+
+  http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr.stream_id, client_role, write_event);
+  half_stream_ptr->headers.emplace(std::string(hdr.name.msg, hdr.name.size),
+                                   std::string(hdr.value.msg, hdr.value.size));
+}
+
 void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
   // A disabled tracker doesn't collect data events.
   if (disabled_) {
@@ -146,44 +244,6 @@ void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
   if (data.attr.stream_id == 0) {
     return;
   }
-
-  // Check for both client-initiated (odd stream_ids) and server-initiated (even stream_ids)
-  // streams.
-  std::deque<http2::Stream>* streams_deque_ptr;
-  uint32_t* oldest_active_stream_id_ptr;
-
-  bool client_stream = (data.attr.stream_id % 2 == 1);
-
-  if (client_stream) {
-    streams_deque_ptr = &(client_streams_.Messages<http2::Stream>());
-    oldest_active_stream_id_ptr = &oldest_active_client_stream_id_;
-  } else {
-    streams_deque_ptr = &(server_streams_.Messages<http2::Stream>());
-    oldest_active_stream_id_ptr = &oldest_active_server_stream_id_;
-  }
-
-  // Update the head index.
-  if (streams_deque_ptr->empty()) {
-    *oldest_active_stream_id_ptr = data.attr.stream_id;
-  }
-
-  ECHECK_GE(data.attr.stream_id, *oldest_active_stream_id_ptr);
-  size_t index = (data.attr.stream_id - *oldest_active_stream_id_ptr) / 2;
-  size_t new_size = std::max(streams_deque_ptr->size(), index + 1);
-  streams_deque_ptr->resize(new_size);
-
-  http2::HalfStream* half_stream_ptr;
-
-  // Need three pieces of information to classify a frame as part of request or response stream:
-  // ROLE, STREAM_ID, EVENT_TYPE -> classification
-  // client, client-initiated (odd) stream, write  -> request
-  // client, client-initiated (odd) stream, read   -> response
-  // client, server-initiated (even) stream, write -> response
-  // client, server-initiated (even) stream, read  -> request
-  // server, client-initiated (odd) stream, write  -> response
-  // server, client-initiated (odd) stream, read   -> request
-  // server, server-initiated (even) stream, write -> request
-  // server, server-initiated (even) stream, read  -> response
 
   bool client_role = false;
   switch (data.attr.traffic_class.role) {
@@ -211,10 +271,7 @@ void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
       return;
   }
 
-  // Logical XOR (!=) counts the toggles and identifies request or response.
-  bool is_request = (client_role != client_stream) != write_event;
-  half_stream_ptr =
-      is_request ? &(*streams_deque_ptr)[index].req : &(*streams_deque_ptr)[index].resp;
+  http2::HalfStream* half_stream_ptr = HalfStreamPtr(data.attr.stream_id, client_role, write_event);
   half_stream_ptr->data += data.payload;
 }
 

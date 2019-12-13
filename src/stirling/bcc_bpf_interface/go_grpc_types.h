@@ -43,6 +43,8 @@ struct header_field_t {
   char msg[HEADER_FIELD_STR_SIZE];
 };
 
+enum HeaderEventType { kHeaderEventUnknown, kHeaderEventRead, kHeaderEventWrite };
+
 struct go_grpc_http2_header_event_t {
   enum EventType type;
   struct probe_info_t entry_probe;
@@ -50,6 +52,14 @@ struct go_grpc_http2_header_event_t {
   uint32_t stream_id;
   struct header_field_t name;
   struct header_field_t value;
+
+  // TODO(oazizi): The fields below must be reconciled with the fields above.
+  //---------------------
+  uint64_t timestamp_ns;
+  struct conn_id_t conn_id;
+  struct traffic_class_t traffic_class;
+  enum HeaderEventType htype;
+  //---------------------
 };
 
 struct conn_symaddrs_t {

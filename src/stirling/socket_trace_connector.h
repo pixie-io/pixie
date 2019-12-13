@@ -137,8 +137,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static void HandleDataEventsLoss(void* cb_cookie, uint64_t lost);
   static void HandleControlEvent(void* cb_cookie, void* data, int data_size);
   static void HandleControlEventsLoss(void* cb_cookie, uint64_t lost);
-  static void HandleHeaderEvent(void* cb_cookie, void* data, int data_size);
-  static void HandleHeaderEventLoss(void* cb_cookie, uint64_t lost);
+  static void HandleHTTP2HeaderEvent(void* cb_cookie, void* data, int data_size);
+  static void HandleHTTP2HeaderEventLoss(void* cb_cookie, uint64_t lost);
   static void HandleHTTP2Data(void* cb_cookie, void* data, int data_size);
   static void HandleHTTP2DataLoss(void* cb_cookie, uint64_t lost);
 
@@ -202,7 +202,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"socket_data_events", HandleDataEvent, HandleDataEventsLoss},
       // For non-data events. Must not mix with the above perf buffers for data events.
       {"socket_control_events", HandleControlEvent, HandleControlEventsLoss},
-      {"go_grpc_header_events", HandleHeaderEvent, HandleHeaderEventLoss},
+      {"go_grpc_header_events", HandleHTTP2HeaderEvent, HandleHTTP2HeaderEventLoss},
       {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss},
   };
   static constexpr auto kPerfBufferSpecs =
@@ -236,6 +236,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);
   void AcceptControlEvent(const socket_control_event_t& event);
 
+  void AcceptHTTP2Header(const go_grpc_http2_header_event_t& event);
   void AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event);
 
   void UpdateActiveConnections();

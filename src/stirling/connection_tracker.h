@@ -65,6 +65,22 @@ class ConnectionTracker {
    */
   void AddDataEvent(std::unique_ptr<SocketDataEvent> event);
 
+  /**
+   * Add a recorded HTTP2 header (name-value pair).
+   * The struct should contain stream ID and other meta-data so it can matched with other HTTP2
+   * header events and data frames.
+   *
+   * @param data The event from BPF uprobe.
+   */
+  void AddHTTP2Header(const go_grpc_http2_header_event_t& data);
+
+  /**
+   * Add a recorded HTTP2 data frame.
+   * The struct should contain stream ID and other meta-data so it can matched with other HTTP2
+   * header events and data frames.
+   *
+   * @param data The event from BPF uprobe.
+   */
   void AddHTTP2Data(const HTTP2DataEvent& data);
 
   /**
@@ -399,6 +415,9 @@ class ConnectionTracker {
   // Tracks oldest active stream ID for retiring the head of send_data_/recv_data_ deques.
   uint32_t oldest_active_client_stream_id_;
   uint32_t oldest_active_server_stream_id_;
+
+  // Access the appropriate HalfStream object for the given stream ID.
+  http2::HalfStream* HalfStreamPtr(uint32_t stream_id, bool client_role, bool write_event);
 
   // The connection close info.
   SocketClose close_info_;
