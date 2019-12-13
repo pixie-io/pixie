@@ -389,8 +389,16 @@ class ConnectionTracker {
   DataStream send_data_;
   DataStream recv_data_;
 
-  // For HTTP2 only. Indicates the stream_id/2 of the stream at index 0 of the deque.
-  uint32_t oldest_active_stream_id_;
+  // HTTP2 uses a different scheme, where it holds client and server-initiated streams,
+  // instead of send and recv messages.
+  // As such, we create aliases for HTTP2.
+  DataStream& client_streams_ = send_data_;
+  DataStream& server_streams_ = recv_data_;
+
+  // For HTTP2 only.
+  // Tracks oldest active stream ID for retiring the head of send_data_/recv_data_ deques.
+  uint32_t oldest_active_client_stream_id_;
+  uint32_t oldest_active_server_stream_id_;
 
   // The connection close info.
   SocketClose close_info_;

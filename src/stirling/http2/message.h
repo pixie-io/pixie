@@ -45,6 +45,11 @@ struct HalfStream {
   bool end_stream;
 };
 
+struct Stream {
+  HalfStream req;
+  HalfStream resp;
+};
+
 }  // namespace http2
 }  // namespace stirling
 }  // namespace pl

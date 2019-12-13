@@ -147,38 +147,75 @@ void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
     return;
   }
 
-  // Don't trace any server-initiated streams.
-  if (data.attr.stream_id % 2 == 0) {
-    return;
-  }
+  // Check for both client-initiated (odd stream_ids) and server-initiated (even stream_ids)
+  // streams.
+  std::deque<http2::Stream>* streams_deque_ptr;
+  uint32_t* oldest_active_stream_id_ptr;
 
-  auto& send_streams = send_data_.Messages<http2::HalfStream>();
-  auto& recv_streams = recv_data_.Messages<http2::HalfStream>();
+  bool client_stream = (data.attr.stream_id % 2 == 1);
+
+  if (client_stream) {
+    streams_deque_ptr = &(client_streams_.Messages<http2::Stream>());
+    oldest_active_stream_id_ptr = &oldest_active_client_stream_id_;
+  } else {
+    streams_deque_ptr = &(server_streams_.Messages<http2::Stream>());
+    oldest_active_stream_id_ptr = &oldest_active_server_stream_id_;
+  }
 
   // Update the head index.
-  if (send_streams.empty()) {
-    DCHECK(recv_streams.empty());
-    oldest_active_stream_id_ = data.attr.stream_id;
+  if (streams_deque_ptr->empty()) {
+    *oldest_active_stream_id_ptr = data.attr.stream_id;
   }
 
-  ECHECK_GE(data.attr.stream_id, oldest_active_stream_id_);
-  size_t index = (data.attr.stream_id - oldest_active_stream_id_) / 2;
-  size_t new_size = std::max(send_streams.size(), index + 1);
+  ECHECK_GE(data.attr.stream_id, *oldest_active_stream_id_ptr);
+  size_t index = (data.attr.stream_id - *oldest_active_stream_id_ptr) / 2;
+  size_t new_size = std::max(streams_deque_ptr->size(), index + 1);
+  streams_deque_ptr->resize(new_size);
 
-  // For HTTP2, always keep the send and recv deques in sync.
-  send_streams.resize(new_size);
-  recv_streams.resize(new_size);
+  http2::HalfStream* half_stream_ptr;
 
+  // Need three pieces of information to classify a frame as part of request or response stream:
+  // ROLE, STREAM_ID, EVENT_TYPE -> classification
+  // client, client-initiated (odd) stream, write  -> request
+  // client, client-initiated (odd) stream, read   -> response
+  // client, server-initiated (even) stream, write -> response
+  // client, server-initiated (even) stream, read  -> request
+  // server, client-initiated (odd) stream, write  -> response
+  // server, client-initiated (odd) stream, read   -> request
+  // server, server-initiated (even) stream, write -> request
+  // server, server-initiated (even) stream, read  -> response
+
+  bool client_role = false;
+  switch (data.attr.traffic_class.role) {
+    case kRoleRequestor:
+      client_role = true;
+      break;
+    case kRoleResponder:
+      client_role = false;
+      break;
+    default:
+      LOG(WARNING) << "Unexpected role";
+      return;
+  }
+
+  bool write_event = false;
   switch (data.attr.ftype) {
     case DataFrameEventType::kDataFrameEventWrite:
-      send_streams[index].data += data.payload;
+      write_event = true;
       break;
     case DataFrameEventType::kDataFrameEventRead:
-      recv_streams[index].data += data.payload;
+      write_event = false;
       break;
     default:
       LOG(WARNING) << "Unexpected event type";
+      return;
   }
+
+  // Logical XOR (!=) counts the toggles and identifies request or response.
+  bool is_request = (client_role != client_stream) != write_event;
+  half_stream_ptr =
+      is_request ? &(*streams_deque_ptr)[index].req : &(*streams_deque_ptr)[index].resp;
+  half_stream_ptr->data += data.payload;
 }
 
 template <typename TMessageType>
@@ -328,26 +365,29 @@ std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
   return trace_records;
 }
 
+namespace {
+void ProcessHTTP2Streams(DataStream* stream_ptr, uint32_t* oldest_active_stream_id_ptr,
+                         std::vector<http2::NewRecord>* trace_records) {
+  auto& http2_streams = stream_ptr->Messages<http2::Stream>();
+  for (auto iter = http2_streams.begin(); iter != http2_streams.end(); ++iter) {
+    http2::Stream& stream = *iter;
+
+    // TODO(oazizi): This placeholder just moves everything, whether it's complete or not.
+    trace_records->emplace_back(http2::NewRecord{std::move(stream)});
+    http2_streams.pop_front();
+    *oldest_active_stream_id_ptr += 2;
+  }
+}
+}  // namespace
+
 template <>
 std::vector<http2::NewRecord> ConnectionTracker::ProcessMessagesImpl() {
   // TODO(oazizi): ECHECK that raw events are empty.
 
-  auto& req_messages = req_data()->Messages<http2::HalfStream>();
-  auto& resp_messages = resp_data()->Messages<http2::HalfStream>();
-
   std::vector<http2::NewRecord> trace_records;
 
-  for (auto req_iter = req_messages.begin(), resp_iter = resp_messages.begin();
-       req_iter != req_messages.end(); ++req_iter, ++resp_iter) {
-    http2::HalfStream& req = *req_iter;
-    http2::HalfStream& resp = *resp_iter;
-
-    // TODO(oazizi): This placeholder just moves everything, whether it's complete or not.
-    trace_records.emplace_back(http2::NewRecord{std::move(req), std::move(resp)});
-    req_messages.pop_front();
-    resp_messages.pop_front();
-    oldest_active_stream_id_ += 2;
-  }
+  ProcessHTTP2Streams(&client_streams_, &oldest_active_client_stream_id_, &trace_records);
+  ProcessHTTP2Streams(&server_streams_, &oldest_active_server_stream_id_, &trace_records);
 
   return trace_records;
 }

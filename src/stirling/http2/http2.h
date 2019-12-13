@@ -69,7 +69,7 @@ ParseState InflateHeaderBlock(nghttp2_hd_inflater* inflater, u8string_view buf, 
 ParseState UnpackFrame(std::string_view* buf, Frame* frame);
 
 using Record = ReqRespPair<HTTP2Message, HTTP2Message>;
-using NewRecord = ReqRespPair<HalfStream, HalfStream>;
+using NewRecord = Stream;
 
 /**
  * @brief Stitches frames to create header blocks and inflate them.

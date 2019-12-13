@@ -46,9 +46,11 @@ TEST_F(ConnectionTrackerHTTP2Test, Basic) {
     tracker.AddHTTP2Data(data_frame);
   }
 
-  std::vector<http2::NewRecord> req_resp_pairs = tracker.ProcessMessages<http2::NewRecord>();
+  std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
 
-  EXPECT_EQ(req_resp_pairs.size(), 1);
+  EXPECT_EQ(records.size(), 1);
+  EXPECT_EQ(records[0].req.data, "Request");
+  EXPECT_EQ(records[0].resp.data, "Response");
 }
 
 }  // namespace stirling
