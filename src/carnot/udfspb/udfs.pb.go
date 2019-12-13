@@ -10,7 +10,9 @@ import (
 	math "math"
 	math_bits "math/bits"
 	proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
+	proto2 "pixielabs.ai/pixielabs/src/table_store/proto"
 	reflect "reflect"
+	strconv "strconv"
 	strings "strings"
 )
 
@@ -24,6 +26,42 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+
+type UDTFSourceExecutor int32
+
+const (
+	UDTF_UNSPECIFIED   UDTFSourceExecutor = 0
+	UDTF_ALL_AGENTS    UDTFSourceExecutor = 1
+	UDTF_ALL_PEM       UDTFSourceExecutor = 2
+	UDTF_ALL_KELVIN    UDTFSourceExecutor = 3
+	UDTF_SUBSET_PEM    UDTFSourceExecutor = 4
+	UDTF_SUBSET_KELVIN UDTFSourceExecutor = 5
+	UDTF_ONE_KELVIN    UDTFSourceExecutor = 6
+)
+
+var UDTFSourceExecutor_name = map[int32]string{
+	0: "UDTF_UNSPECIFIED",
+	1: "UDTF_ALL_AGENTS",
+	2: "UDTF_ALL_PEM",
+	3: "UDTF_ALL_KELVIN",
+	4: "UDTF_SUBSET_PEM",
+	5: "UDTF_SUBSET_KELVIN",
+	6: "UDTF_ONE_KELVIN",
+}
+
+var UDTFSourceExecutor_value = map[string]int32{
+	"UDTF_UNSPECIFIED":   0,
+	"UDTF_ALL_AGENTS":    1,
+	"UDTF_ALL_PEM":       2,
+	"UDTF_ALL_KELVIN":    3,
+	"UDTF_SUBSET_PEM":    4,
+	"UDTF_SUBSET_KELVIN": 5,
+	"UDTF_ONE_KELVIN":    6,
+}
+
+func (UDTFSourceExecutor) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{0}
+}
 
 type UDASpec struct {
 	Name           string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -160,8 +198,9 @@ func (m *ScalarUDFSpec) GetReturnType() proto1.DataType {
 }
 
 type UDFInfo struct {
-	Udas       []*UDASpec       `protobuf:"bytes,1,rep,name=udas,proto3" json:"udas,omitempty"`
-	ScalarUdfs []*ScalarUDFSpec `protobuf:"bytes,2,rep,name=scalar_udfs,json=scalarUdfs,proto3" json:"scalar_udfs,omitempty"`
+	Udas       []*UDASpec        `protobuf:"bytes,1,rep,name=udas,proto3" json:"udas,omitempty"`
+	ScalarUdfs []*ScalarUDFSpec  `protobuf:"bytes,2,rep,name=scalar_udfs,json=scalarUdfs,proto3" json:"scalar_udfs,omitempty"`
+	Udtfs      []*UDTFSourceSpec `protobuf:"bytes,3,rep,name=udtfs,proto3" json:"udtfs,omitempty"`
 }
 
 func (m *UDFInfo) Reset()      { *m = UDFInfo{} }
@@ -210,42 +249,331 @@ func (m *UDFInfo) GetScalarUdfs() []*ScalarUDFSpec {
 	return nil
 }
 
+func (m *UDFInfo) GetUdtfs() []*UDTFSourceSpec {
+	if m != nil {
+		return m.Udtfs
+	}
+	return nil
+}
+
+type UDTFSourceSpec struct {
+	Name     string                   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Args     []*UDTFSourceSpec_Arg    `protobuf:"bytes,2,rep,name=args,proto3" json:"args,omitempty"`
+	Executor UDTFSourceExecutor       `protobuf:"varint,3,opt,name=executor,proto3,enum=pl.carnot.udfspb.UDTFSourceExecutor" json:"executor,omitempty"`
+	Filters  []*UDTFSourceSpec_Filter `protobuf:"bytes,4,rep,name=filters,proto3" json:"filters,omitempty"`
+	Relation *proto2.Relation         `protobuf:"bytes,5,opt,name=relation,proto3" json:"relation,omitempty"`
+}
+
+func (m *UDTFSourceSpec) Reset()      { *m = UDTFSourceSpec{} }
+func (*UDTFSourceSpec) ProtoMessage() {}
+func (*UDTFSourceSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{3}
+}
+func (m *UDTFSourceSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UDTFSourceSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UDTFSourceSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UDTFSourceSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UDTFSourceSpec.Merge(m, src)
+}
+func (m *UDTFSourceSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *UDTFSourceSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_UDTFSourceSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UDTFSourceSpec proto.InternalMessageInfo
+
+func (m *UDTFSourceSpec) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *UDTFSourceSpec) GetArgs() []*UDTFSourceSpec_Arg {
+	if m != nil {
+		return m.Args
+	}
+	return nil
+}
+
+func (m *UDTFSourceSpec) GetExecutor() UDTFSourceExecutor {
+	if m != nil {
+		return m.Executor
+	}
+	return UDTF_UNSPECIFIED
+}
+
+func (m *UDTFSourceSpec) GetFilters() []*UDTFSourceSpec_Filter {
+	if m != nil {
+		return m.Filters
+	}
+	return nil
+}
+
+func (m *UDTFSourceSpec) GetRelation() *proto2.Relation {
+	if m != nil {
+		return m.Relation
+	}
+	return nil
+}
+
+type UDTFSourceSpec_Arg struct {
+	Name         string              `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	ArgType      proto1.DataType     `protobuf:"varint,2,opt,name=arg_type,json=argType,proto3,enum=pl.types.DataType" json:"arg_type,omitempty"`
+	SemanticType proto1.SemanticType `protobuf:"varint,3,opt,name=semantic_type,json=semanticType,proto3,enum=pl.types.SemanticType" json:"semantic_type,omitempty"`
+}
+
+func (m *UDTFSourceSpec_Arg) Reset()      { *m = UDTFSourceSpec_Arg{} }
+func (*UDTFSourceSpec_Arg) ProtoMessage() {}
+func (*UDTFSourceSpec_Arg) Descriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{3, 0}
+}
+func (m *UDTFSourceSpec_Arg) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UDTFSourceSpec_Arg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UDTFSourceSpec_Arg.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UDTFSourceSpec_Arg) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UDTFSourceSpec_Arg.Merge(m, src)
+}
+func (m *UDTFSourceSpec_Arg) XXX_Size() int {
+	return m.Size()
+}
+func (m *UDTFSourceSpec_Arg) XXX_DiscardUnknown() {
+	xxx_messageInfo_UDTFSourceSpec_Arg.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UDTFSourceSpec_Arg proto.InternalMessageInfo
+
+func (m *UDTFSourceSpec_Arg) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *UDTFSourceSpec_Arg) GetArgType() proto1.DataType {
+	if m != nil {
+		return m.ArgType
+	}
+	return proto1.DATA_TYPE_UNKNOWN
+}
+
+func (m *UDTFSourceSpec_Arg) GetSemanticType() proto1.SemanticType {
+	if m != nil {
+		return m.SemanticType
+	}
+	return proto1.ST_UNSPECIFIED
+}
+
+type UDTFSourceSpec_SemanticArgFilter struct {
+	Idx int64 `protobuf:"varint,1,opt,name=idx,proto3" json:"idx,omitempty"`
+}
+
+func (m *UDTFSourceSpec_SemanticArgFilter) Reset()      { *m = UDTFSourceSpec_SemanticArgFilter{} }
+func (*UDTFSourceSpec_SemanticArgFilter) ProtoMessage() {}
+func (*UDTFSourceSpec_SemanticArgFilter) Descriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{3, 1}
+}
+func (m *UDTFSourceSpec_SemanticArgFilter) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UDTFSourceSpec_SemanticArgFilter) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UDTFSourceSpec_SemanticArgFilter.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UDTFSourceSpec_SemanticArgFilter) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UDTFSourceSpec_SemanticArgFilter.Merge(m, src)
+}
+func (m *UDTFSourceSpec_SemanticArgFilter) XXX_Size() int {
+	return m.Size()
+}
+func (m *UDTFSourceSpec_SemanticArgFilter) XXX_DiscardUnknown() {
+	xxx_messageInfo_UDTFSourceSpec_SemanticArgFilter.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UDTFSourceSpec_SemanticArgFilter proto.InternalMessageInfo
+
+func (m *UDTFSourceSpec_SemanticArgFilter) GetIdx() int64 {
+	if m != nil {
+		return m.Idx
+	}
+	return 0
+}
+
+type UDTFSourceSpec_Filter struct {
+	// Types that are valid to be assigned to Filter:
+	//	*UDTFSourceSpec_Filter_SemanticFilter
+	Filter isUDTFSourceSpec_Filter_Filter `protobuf_oneof:"filter"`
+}
+
+func (m *UDTFSourceSpec_Filter) Reset()      { *m = UDTFSourceSpec_Filter{} }
+func (*UDTFSourceSpec_Filter) ProtoMessage() {}
+func (*UDTFSourceSpec_Filter) Descriptor() ([]byte, []int) {
+	return fileDescriptor_870a8b723557d52e, []int{3, 2}
+}
+func (m *UDTFSourceSpec_Filter) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UDTFSourceSpec_Filter) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UDTFSourceSpec_Filter.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UDTFSourceSpec_Filter) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UDTFSourceSpec_Filter.Merge(m, src)
+}
+func (m *UDTFSourceSpec_Filter) XXX_Size() int {
+	return m.Size()
+}
+func (m *UDTFSourceSpec_Filter) XXX_DiscardUnknown() {
+	xxx_messageInfo_UDTFSourceSpec_Filter.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UDTFSourceSpec_Filter proto.InternalMessageInfo
+
+type isUDTFSourceSpec_Filter_Filter interface {
+	isUDTFSourceSpec_Filter_Filter()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type UDTFSourceSpec_Filter_SemanticFilter struct {
+	SemanticFilter *UDTFSourceSpec_SemanticArgFilter `protobuf:"bytes,1,opt,name=semantic_filter,json=semanticFilter,proto3,oneof"`
+}
+
+func (*UDTFSourceSpec_Filter_SemanticFilter) isUDTFSourceSpec_Filter_Filter() {}
+
+func (m *UDTFSourceSpec_Filter) GetFilter() isUDTFSourceSpec_Filter_Filter {
+	if m != nil {
+		return m.Filter
+	}
+	return nil
+}
+
+func (m *UDTFSourceSpec_Filter) GetSemanticFilter() *UDTFSourceSpec_SemanticArgFilter {
+	if x, ok := m.GetFilter().(*UDTFSourceSpec_Filter_SemanticFilter); ok {
+		return x.SemanticFilter
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*UDTFSourceSpec_Filter) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*UDTFSourceSpec_Filter_SemanticFilter)(nil),
+	}
+}
+
 func init() {
+	proto.RegisterEnum("pl.carnot.udfspb.UDTFSourceExecutor", UDTFSourceExecutor_name, UDTFSourceExecutor_value)
 	proto.RegisterType((*UDASpec)(nil), "pl.carnot.udfspb.UDASpec")
 	proto.RegisterType((*ScalarUDFSpec)(nil), "pl.carnot.udfspb.ScalarUDFSpec")
 	proto.RegisterType((*UDFInfo)(nil), "pl.carnot.udfspb.UDFInfo")
+	proto.RegisterType((*UDTFSourceSpec)(nil), "pl.carnot.udfspb.UDTFSourceSpec")
+	proto.RegisterType((*UDTFSourceSpec_Arg)(nil), "pl.carnot.udfspb.UDTFSourceSpec.Arg")
+	proto.RegisterType((*UDTFSourceSpec_SemanticArgFilter)(nil), "pl.carnot.udfspb.UDTFSourceSpec.SemanticArgFilter")
+	proto.RegisterType((*UDTFSourceSpec_Filter)(nil), "pl.carnot.udfspb.UDTFSourceSpec.Filter")
 }
 
 func init() { proto.RegisterFile("src/carnot/udfspb/udfs.proto", fileDescriptor_870a8b723557d52e) }
 
 var fileDescriptor_870a8b723557d52e = []byte{
-	// 374 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x92, 0x3f, 0x4f, 0xfa, 0x40,
-	0x18, 0xc7, 0x7b, 0x3f, 0x08, 0xbf, 0x78, 0x85, 0x86, 0xdc, 0x54, 0x8d, 0x39, 0x1b, 0x26, 0x16,
-	0xdb, 0x04, 0x06, 0x19, 0x18, 0xc4, 0x10, 0x12, 0xd7, 0x22, 0x8b, 0x0b, 0x39, 0xda, 0x2b, 0x36,
-	0xa9, 0xed, 0xe5, 0xae, 0x4d, 0x84, 0xc9, 0x97, 0xe0, 0xcb, 0xf0, 0xa5, 0x38, 0x18, 0xc3, 0xc8,
-	0x28, 0x65, 0x71, 0xe4, 0x25, 0x98, 0xde, 0x29, 0xf1, 0x4f, 0x88, 0x2e, 0x4e, 0xbd, 0xcb, 0xf3,
-	0xf9, 0x3c, 0xcd, 0xf7, 0x79, 0x0e, 0x1e, 0x0a, 0xee, 0x39, 0x1e, 0xe1, 0x71, 0x92, 0x3a, 0x99,
-	0x1f, 0x08, 0x36, 0x91, 0x1f, 0x9b, 0xf1, 0x24, 0x4d, 0x50, 0x9d, 0x45, 0xb6, 0x2a, 0xda, 0xaa,
-	0x78, 0xd0, 0x28, 0x78, 0x71, 0x45, 0x38, 0xf5, 0x9d, 0x74, 0xc6, 0xa8, 0x70, 0x24, 0xa9, 0xce,
-	0xca, 0x6a, 0x3c, 0x01, 0xf8, 0x7f, 0xd4, 0xef, 0x0d, 0x19, 0xf5, 0x10, 0x82, 0xe5, 0x98, 0x5c,
-	0x53, 0x13, 0x58, 0xa0, 0xb9, 0xe7, 0xca, 0x33, 0xea, 0x40, 0x23, 0x8c, 0xc3, 0x74, 0x4c, 0xf8,
-	0x74, 0x2c, 0x3d, 0xf3, 0x9f, 0x55, 0x6a, 0x1a, 0x2d, 0x64, 0xb3, 0xc8, 0x56, 0x8d, 0xfa, 0x24,
-	0x25, 0x17, 0x33, 0x46, 0xdd, 0x6a, 0x41, 0xf6, 0xf8, 0xb4, 0xb8, 0x08, 0xd4, 0x85, 0xf5, 0x8c,
-	0xf9, 0x24, 0xa5, 0x1f, 0xdc, 0xd2, 0x4e, 0xd7, 0x50, 0xec, 0xd6, 0x3e, 0x81, 0xb5, 0x20, 0x8c,
-	0x49, 0x14, 0xce, 0xa9, 0x74, 0xcd, 0xb2, 0x05, 0x76, 0xfd, 0xf6, 0x1d, 0x2c, 0x6e, 0x8d, 0x47,
-	0x00, 0x6b, 0x43, 0x8f, 0x44, 0x84, 0x8f, 0xfa, 0x83, 0x3f, 0x88, 0xd5, 0x81, 0x06, 0xbd, 0xa1,
-	0xde, 0xaf, 0x42, 0x55, 0x0b, 0x72, 0x6b, 0xb6, 0xa1, 0xce, 0x69, 0x9a, 0xf1, 0xf8, 0xa7, 0x40,
-	0x50, 0x61, 0x32, 0xce, 0xbc, 0x58, 0xcf, 0xe0, 0x3c, 0x0e, 0x12, 0x74, 0x0c, 0xcb, 0x99, 0x4f,
-	0x84, 0x09, 0xac, 0x52, 0x53, 0x6f, 0xed, 0xdb, 0x5f, 0xf7, 0x6d, 0xbf, 0xed, 0xd1, 0x95, 0x18,
-	0x3a, 0x85, 0xba, 0x90, 0x73, 0x18, 0x17, 0x65, 0x99, 0x4f, 0x6f, 0x1d, 0x7d, 0xb7, 0x3e, 0x0d,
-	0xcb, 0x85, 0xca, 0x19, 0xf9, 0x81, 0x38, 0xeb, 0x2e, 0x56, 0x58, 0x5b, 0xae, 0xb0, 0xb6, 0x59,
-	0x61, 0x70, 0x9b, 0x63, 0x70, 0x9f, 0x63, 0xf0, 0x90, 0x63, 0xb0, 0xc8, 0x31, 0x78, 0xce, 0x31,
-	0x78, 0xc9, 0xb1, 0xb6, 0xc9, 0x31, 0xb8, 0x5b, 0x63, 0x6d, 0xb1, 0xc6, 0xda, 0x72, 0x8d, 0xb5,
-	0xcb, 0x8a, 0xea, 0x3b, 0xa9, 0xc8, 0x07, 0xd6, 0x7e, 0x0d, 0x00, 0x00, 0xff, 0xff, 0x8b, 0x92,
-	0x7a, 0x72, 0xb6, 0x02, 0x00, 0x00,
+	// 712 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x94, 0x41, 0x6f, 0xd3, 0x48,
+	0x14, 0xc7, 0x3d, 0x75, 0x9a, 0x66, 0x5f, 0xda, 0xd4, 0x3b, 0xbb, 0xaa, 0xbc, 0xd1, 0xca, 0x9b,
+	0x8d, 0x76, 0xb5, 0xd1, 0x4a, 0x75, 0xa4, 0x54, 0x82, 0x4a, 0x14, 0xa9, 0x2e, 0x71, 0x20, 0xa2,
+	0x84, 0xca, 0x4e, 0x38, 0x20, 0xa1, 0x68, 0xe2, 0x4c, 0x52, 0x4b, 0xa9, 0x6d, 0xc6, 0x8e, 0xd4,
+	0x72, 0xe2, 0xc2, 0x9d, 0x8f, 0xd1, 0x33, 0x9f, 0x81, 0x03, 0x07, 0x84, 0x7a, 0xec, 0x91, 0xa6,
+	0x17, 0x8e, 0xfd, 0x08, 0xc8, 0x33, 0xb1, 0xdb, 0xd2, 0x86, 0x70, 0xe1, 0x14, 0xcf, 0x7b, 0xbf,
+	0xff, 0x3c, 0xbf, 0xff, 0x7b, 0x0e, 0xfc, 0x19, 0x32, 0xa7, 0xea, 0x10, 0xe6, 0xf9, 0x51, 0x75,
+	0xdc, 0x1f, 0x84, 0x41, 0x8f, 0xff, 0xe8, 0x01, 0xf3, 0x23, 0x1f, 0x2b, 0xc1, 0x48, 0x17, 0x49,
+	0x5d, 0x24, 0x8b, 0xe5, 0x98, 0x0f, 0xf7, 0x09, 0xa3, 0xfd, 0x6a, 0x74, 0x14, 0xd0, 0xb0, 0xca,
+	0x49, 0xf1, 0x2c, 0x54, 0x82, 0x89, 0x48, 0x6f, 0x44, 0xbb, 0x61, 0xe4, 0x33, 0x3a, 0x45, 0x42,
+	0x67, 0x9f, 0x1e, 0x10, 0xc1, 0x94, 0x3f, 0x21, 0x58, 0xea, 0xd4, 0x0d, 0x3b, 0xa0, 0x0e, 0xc6,
+	0x90, 0xf1, 0xc8, 0x01, 0x55, 0x51, 0x09, 0x55, 0x7e, 0xb1, 0xf8, 0x33, 0xde, 0x84, 0x82, 0xeb,
+	0xb9, 0x51, 0x97, 0xb0, 0x61, 0x97, 0xdf, 0xad, 0x2e, 0x94, 0xe4, 0x4a, 0xa1, 0x86, 0xf5, 0x60,
+	0xa4, 0x8b, 0x62, 0x75, 0x12, 0x91, 0xf6, 0x51, 0x40, 0xad, 0xe5, 0x98, 0x34, 0xd8, 0x30, 0x3e,
+	0x84, 0x78, 0x0b, 0x94, 0x71, 0xd0, 0x27, 0x11, 0xbd, 0xa2, 0x95, 0x67, 0x6a, 0x0b, 0x82, 0x4d,
+	0xd5, 0x77, 0x61, 0x65, 0xe0, 0x7a, 0x64, 0xe4, 0xbe, 0xa2, 0x5c, 0xab, 0x66, 0x4a, 0x68, 0x56,
+	0xd9, 0x04, 0x8c, 0x4f, 0xe5, 0x8f, 0x08, 0x56, 0x6c, 0x87, 0x8c, 0x08, 0xeb, 0xd4, 0x1b, 0x3f,
+	0xa1, 0xad, 0x4d, 0x28, 0xd0, 0x43, 0xea, 0xfc, 0x50, 0x53, 0xcb, 0x31, 0x99, 0x2a, 0x37, 0x20,
+	0xcf, 0x68, 0x34, 0x66, 0xde, 0xbc, 0x86, 0x40, 0x60, 0xbc, 0x9d, 0x77, 0x7c, 0x3e, 0x8d, 0xa6,
+	0x37, 0xf0, 0xf1, 0x3a, 0x64, 0xc6, 0x7d, 0x12, 0xaa, 0xa8, 0x24, 0x57, 0xf2, 0xb5, 0x3f, 0xf4,
+	0x6f, 0x97, 0x42, 0x9f, 0x0e, 0xd2, 0xe2, 0x18, 0xde, 0x86, 0x7c, 0xc8, 0x8d, 0xe8, 0xc6, 0x69,
+	0xde, 0x60, 0xbe, 0xf6, 0xd7, 0x4d, 0xd5, 0x35, 0xb7, 0x2c, 0x10, 0x9a, 0x4e, 0x7f, 0x10, 0xe2,
+	0x3b, 0xb0, 0x38, 0xee, 0x47, 0x03, 0xd1, 0x62, 0xbe, 0x56, 0xba, 0xad, 0x62, 0xbb, 0x61, 0xfb,
+	0x63, 0xe6, 0x50, 0x2e, 0x16, 0x78, 0xf9, 0x7d, 0x06, 0x0a, 0xd7, 0x33, 0x33, 0x86, 0x90, 0x21,
+	0x6c, 0x98, 0xbc, 0xd9, 0x3f, 0xf3, 0x6e, 0xd7, 0x0d, 0x36, 0xb4, 0xb8, 0x02, 0x6f, 0x43, 0x2e,
+	0xb6, 0x76, 0x1c, 0xf9, 0x4c, 0x95, 0xb9, 0x8f, 0xdf, 0x55, 0x9b, 0x53, 0xd6, 0x4a, 0x55, 0xd8,
+	0x80, 0xa5, 0x81, 0x3b, 0x8a, 0x28, 0x0b, 0xd5, 0x0c, 0x2f, 0xff, 0xdf, 0xdc, 0xf2, 0x0d, 0xce,
+	0x5b, 0x89, 0x0e, 0xdf, 0x87, 0x1c, 0xa3, 0x23, 0x12, 0xb9, 0xbe, 0xa7, 0x2e, 0x96, 0x50, 0x25,
+	0x5f, 0xfb, 0x9b, 0x0f, 0xf3, 0xf2, 0x83, 0xd3, 0xc5, 0xa7, 0x16, 0xf4, 0x74, 0x6b, 0x0a, 0x5a,
+	0xa9, 0xa4, 0xf8, 0x06, 0x81, 0x6c, 0xb0, 0xe1, 0xad, 0xce, 0xac, 0x43, 0x2e, 0xd9, 0x2f, 0x75,
+	0x61, 0xe6, 0x9e, 0x2c, 0x11, 0xb1, 0x5a, 0xf8, 0x1e, 0xac, 0x84, 0xf4, 0x80, 0x78, 0x91, 0xeb,
+	0x08, 0x8d, 0xf0, 0x64, 0xed, 0x52, 0x63, 0x4f, 0xd3, 0x62, 0x2d, 0xc3, 0x2b, 0xa7, 0xe2, 0xbf,
+	0xf0, 0x6b, 0x92, 0x35, 0xd8, 0x50, 0x34, 0x89, 0x15, 0x90, 0xdd, 0xfe, 0x21, 0x7f, 0x27, 0xd9,
+	0x8a, 0x1f, 0x8b, 0x2f, 0x21, 0x3b, 0xcd, 0xbd, 0x80, 0xd5, 0xb4, 0x9a, 0xf0, 0x82, 0x73, 0xf9,
+	0x5a, 0x6d, 0xae, 0x85, 0x37, 0x0a, 0x3d, 0x92, 0xac, 0x42, 0x72, 0x99, 0x88, 0xec, 0xe4, 0x20,
+	0x2b, 0x6e, 0xfd, 0xff, 0x18, 0x01, 0xbe, 0x39, 0x44, 0xfc, 0x3b, 0x28, 0x71, 0xb4, 0xdb, 0x69,
+	0xd9, 0x7b, 0xe6, 0x83, 0x66, 0xa3, 0x69, 0xd6, 0x15, 0x09, 0xff, 0x06, 0xab, 0x3c, 0x6a, 0xec,
+	0xee, 0x76, 0x8d, 0x87, 0x66, 0xab, 0x6d, 0x2b, 0x08, 0x2b, 0xb0, 0x9c, 0x06, 0xf7, 0xcc, 0x27,
+	0xca, 0xc2, 0x35, 0xec, 0xb1, 0xb9, 0xfb, 0xac, 0xd9, 0x52, 0xe4, 0x34, 0x68, 0x77, 0x76, 0x6c,
+	0xb3, 0xcd, 0xc9, 0x0c, 0x5e, 0x13, 0xc5, 0x93, 0xe0, 0x14, 0x5e, 0x4c, 0xe1, 0xa7, 0x2d, 0x33,
+	0x09, 0x66, 0x77, 0xb6, 0x4e, 0xce, 0x34, 0xe9, 0xf4, 0x4c, 0x93, 0x2e, 0xce, 0x34, 0xf4, 0x7a,
+	0xa2, 0xa1, 0xe3, 0x89, 0x86, 0x3e, 0x4c, 0x34, 0x74, 0x32, 0xd1, 0xd0, 0xe7, 0x89, 0x86, 0xbe,
+	0x4c, 0x34, 0xe9, 0x62, 0xa2, 0xa1, 0xb7, 0xe7, 0x9a, 0x74, 0x72, 0xae, 0x49, 0xa7, 0xe7, 0x9a,
+	0xf4, 0x3c, 0x2b, 0x5c, 0xea, 0x65, 0xf9, 0x7f, 0xf1, 0xc6, 0xd7, 0x00, 0x00, 0x00, 0xff, 0xff,
+	0xda, 0x11, 0x6f, 0xe2, 0x05, 0x06, 0x00, 0x00,
 }
 
+func (x UDTFSourceExecutor) String() string {
+	s, ok := UDTFSourceExecutor_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
 func (this *UDASpec) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -367,6 +695,168 @@ func (this *UDFInfo) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if len(this.Udtfs) != len(that1.Udtfs) {
+		return false
+	}
+	for i := range this.Udtfs {
+		if !this.Udtfs[i].Equal(that1.Udtfs[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *UDTFSourceSpec) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UDTFSourceSpec)
+	if !ok {
+		that2, ok := that.(UDTFSourceSpec)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.Args) != len(that1.Args) {
+		return false
+	}
+	for i := range this.Args {
+		if !this.Args[i].Equal(that1.Args[i]) {
+			return false
+		}
+	}
+	if this.Executor != that1.Executor {
+		return false
+	}
+	if len(this.Filters) != len(that1.Filters) {
+		return false
+	}
+	for i := range this.Filters {
+		if !this.Filters[i].Equal(that1.Filters[i]) {
+			return false
+		}
+	}
+	if !this.Relation.Equal(that1.Relation) {
+		return false
+	}
+	return true
+}
+func (this *UDTFSourceSpec_Arg) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UDTFSourceSpec_Arg)
+	if !ok {
+		that2, ok := that.(UDTFSourceSpec_Arg)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.ArgType != that1.ArgType {
+		return false
+	}
+	if this.SemanticType != that1.SemanticType {
+		return false
+	}
+	return true
+}
+func (this *UDTFSourceSpec_SemanticArgFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UDTFSourceSpec_SemanticArgFilter)
+	if !ok {
+		that2, ok := that.(UDTFSourceSpec_SemanticArgFilter)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Idx != that1.Idx {
+		return false
+	}
+	return true
+}
+func (this *UDTFSourceSpec_Filter) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UDTFSourceSpec_Filter)
+	if !ok {
+		that2, ok := that.(UDTFSourceSpec_Filter)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if that1.Filter == nil {
+		if this.Filter != nil {
+			return false
+		}
+	} else if this.Filter == nil {
+		return false
+	} else if !this.Filter.Equal(that1.Filter) {
+		return false
+	}
+	return true
+}
+func (this *UDTFSourceSpec_Filter_SemanticFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UDTFSourceSpec_Filter_SemanticFilter)
+	if !ok {
+		that2, ok := that.(UDTFSourceSpec_Filter_SemanticFilter)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.SemanticFilter.Equal(that1.SemanticFilter) {
+		return false
+	}
 	return true
 }
 func (this *UDASpec) GoString() string {
@@ -399,7 +889,7 @@ func (this *UDFInfo) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&udfspb.UDFInfo{")
 	if this.Udas != nil {
 		s = append(s, "Udas: "+fmt.Sprintf("%#v", this.Udas)+",\n")
@@ -407,8 +897,73 @@ func (this *UDFInfo) GoString() string {
 	if this.ScalarUdfs != nil {
 		s = append(s, "ScalarUdfs: "+fmt.Sprintf("%#v", this.ScalarUdfs)+",\n")
 	}
+	if this.Udtfs != nil {
+		s = append(s, "Udtfs: "+fmt.Sprintf("%#v", this.Udtfs)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
+}
+func (this *UDTFSourceSpec) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&udfspb.UDTFSourceSpec{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Args != nil {
+		s = append(s, "Args: "+fmt.Sprintf("%#v", this.Args)+",\n")
+	}
+	s = append(s, "Executor: "+fmt.Sprintf("%#v", this.Executor)+",\n")
+	if this.Filters != nil {
+		s = append(s, "Filters: "+fmt.Sprintf("%#v", this.Filters)+",\n")
+	}
+	if this.Relation != nil {
+		s = append(s, "Relation: "+fmt.Sprintf("%#v", this.Relation)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UDTFSourceSpec_Arg) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&udfspb.UDTFSourceSpec_Arg{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "ArgType: "+fmt.Sprintf("%#v", this.ArgType)+",\n")
+	s = append(s, "SemanticType: "+fmt.Sprintf("%#v", this.SemanticType)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UDTFSourceSpec_SemanticArgFilter) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&udfspb.UDTFSourceSpec_SemanticArgFilter{")
+	s = append(s, "Idx: "+fmt.Sprintf("%#v", this.Idx)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UDTFSourceSpec_Filter) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&udfspb.UDTFSourceSpec_Filter{")
+	if this.Filter != nil {
+		s = append(s, "Filter: "+fmt.Sprintf("%#v", this.Filter)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *UDTFSourceSpec_Filter_SemanticFilter) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&udfspb.UDTFSourceSpec_Filter_SemanticFilter{` +
+		`SemanticFilter:` + fmt.Sprintf("%#v", this.SemanticFilter) + `}`}, ", ")
+	return s
 }
 func valueToGoStringUdfs(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
@@ -580,6 +1135,20 @@ func (m *UDFInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Udtfs) > 0 {
+		for iNdEx := len(m.Udtfs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Udtfs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintUdfs(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
 	if len(m.ScalarUdfs) > 0 {
 		for iNdEx := len(m.ScalarUdfs) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -611,6 +1180,201 @@ func (m *UDFInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *UDTFSourceSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UDTFSourceSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UDTFSourceSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Relation != nil {
+		{
+			size, err := m.Relation.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintUdfs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.Filters) > 0 {
+		for iNdEx := len(m.Filters) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Filters[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintUdfs(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.Executor != 0 {
+		i = encodeVarintUdfs(dAtA, i, uint64(m.Executor))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Args) > 0 {
+		for iNdEx := len(m.Args) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Args[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintUdfs(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UDTFSourceSpec_Arg) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UDTFSourceSpec_Arg) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UDTFSourceSpec_Arg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.SemanticType != 0 {
+		i = encodeVarintUdfs(dAtA, i, uint64(m.SemanticType))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.ArgType != 0 {
+		i = encodeVarintUdfs(dAtA, i, uint64(m.ArgType))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintUdfs(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UDTFSourceSpec_SemanticArgFilter) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UDTFSourceSpec_SemanticArgFilter) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UDTFSourceSpec_SemanticArgFilter) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Idx != 0 {
+		i = encodeVarintUdfs(dAtA, i, uint64(m.Idx))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UDTFSourceSpec_Filter) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UDTFSourceSpec_Filter) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UDTFSourceSpec_Filter) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Filter != nil {
+		{
+			size := m.Filter.Size()
+			i -= size
+			if _, err := m.Filter.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UDTFSourceSpec_Filter_SemanticFilter) MarshalTo(dAtA []byte) (int, error) {
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+}
+
+func (m *UDTFSourceSpec_Filter_SemanticFilter) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.SemanticFilter != nil {
+		{
+			size, err := m.SemanticFilter.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintUdfs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
 func encodeVarintUdfs(dAtA []byte, offset int, v uint64) int {
 	offset -= sovUdfs(v)
 	base := offset
@@ -700,6 +1464,100 @@ func (m *UDFInfo) Size() (n int) {
 			n += 1 + l + sovUdfs(uint64(l))
 		}
 	}
+	if len(m.Udtfs) > 0 {
+		for _, e := range m.Udtfs {
+			l = e.Size()
+			n += 1 + l + sovUdfs(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *UDTFSourceSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	if len(m.Args) > 0 {
+		for _, e := range m.Args {
+			l = e.Size()
+			n += 1 + l + sovUdfs(uint64(l))
+		}
+	}
+	if m.Executor != 0 {
+		n += 1 + sovUdfs(uint64(m.Executor))
+	}
+	if len(m.Filters) > 0 {
+		for _, e := range m.Filters {
+			l = e.Size()
+			n += 1 + l + sovUdfs(uint64(l))
+		}
+	}
+	if m.Relation != nil {
+		l = m.Relation.Size()
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	return n
+}
+
+func (m *UDTFSourceSpec_Arg) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovUdfs(uint64(l))
+	}
+	if m.ArgType != 0 {
+		n += 1 + sovUdfs(uint64(m.ArgType))
+	}
+	if m.SemanticType != 0 {
+		n += 1 + sovUdfs(uint64(m.SemanticType))
+	}
+	return n
+}
+
+func (m *UDTFSourceSpec_SemanticArgFilter) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Idx != 0 {
+		n += 1 + sovUdfs(uint64(m.Idx))
+	}
+	return n
+}
+
+func (m *UDTFSourceSpec_Filter) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Filter != nil {
+		n += m.Filter.Size()
+	}
+	return n
+}
+
+func (m *UDTFSourceSpec_Filter_SemanticFilter) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.SemanticFilter != nil {
+		l = m.SemanticFilter.Size()
+		n += 1 + l + sovUdfs(uint64(l))
+	}
 	return n
 }
 
@@ -749,9 +1607,81 @@ func (this *UDFInfo) String() string {
 		repeatedStringForScalarUdfs += strings.Replace(f.String(), "ScalarUDFSpec", "ScalarUDFSpec", 1) + ","
 	}
 	repeatedStringForScalarUdfs += "}"
+	repeatedStringForUdtfs := "[]*UDTFSourceSpec{"
+	for _, f := range this.Udtfs {
+		repeatedStringForUdtfs += strings.Replace(f.String(), "UDTFSourceSpec", "UDTFSourceSpec", 1) + ","
+	}
+	repeatedStringForUdtfs += "}"
 	s := strings.Join([]string{`&UDFInfo{`,
 		`Udas:` + repeatedStringForUdas + `,`,
 		`ScalarUdfs:` + repeatedStringForScalarUdfs + `,`,
+		`Udtfs:` + repeatedStringForUdtfs + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UDTFSourceSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForArgs := "[]*UDTFSourceSpec_Arg{"
+	for _, f := range this.Args {
+		repeatedStringForArgs += strings.Replace(fmt.Sprintf("%v", f), "UDTFSourceSpec_Arg", "UDTFSourceSpec_Arg", 1) + ","
+	}
+	repeatedStringForArgs += "}"
+	repeatedStringForFilters := "[]*UDTFSourceSpec_Filter{"
+	for _, f := range this.Filters {
+		repeatedStringForFilters += strings.Replace(fmt.Sprintf("%v", f), "UDTFSourceSpec_Filter", "UDTFSourceSpec_Filter", 1) + ","
+	}
+	repeatedStringForFilters += "}"
+	s := strings.Join([]string{`&UDTFSourceSpec{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Args:` + repeatedStringForArgs + `,`,
+		`Executor:` + fmt.Sprintf("%v", this.Executor) + `,`,
+		`Filters:` + repeatedStringForFilters + `,`,
+		`Relation:` + strings.Replace(fmt.Sprintf("%v", this.Relation), "Relation", "proto2.Relation", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UDTFSourceSpec_Arg) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UDTFSourceSpec_Arg{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`ArgType:` + fmt.Sprintf("%v", this.ArgType) + `,`,
+		`SemanticType:` + fmt.Sprintf("%v", this.SemanticType) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UDTFSourceSpec_SemanticArgFilter) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UDTFSourceSpec_SemanticArgFilter{`,
+		`Idx:` + fmt.Sprintf("%v", this.Idx) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UDTFSourceSpec_Filter) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UDTFSourceSpec_Filter{`,
+		`Filter:` + fmt.Sprintf("%v", this.Filter) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UDTFSourceSpec_Filter_SemanticFilter) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UDTFSourceSpec_Filter_SemanticFilter{`,
+		`SemanticFilter:` + strings.Replace(fmt.Sprintf("%v", this.SemanticFilter), "UDTFSourceSpec_SemanticArgFilter", "UDTFSourceSpec_SemanticArgFilter", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1344,6 +2274,531 @@ func (m *UDFInfo) Unmarshal(dAtA []byte) error {
 			if err := m.ScalarUdfs[len(m.ScalarUdfs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Udtfs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Udtfs = append(m.Udtfs, &UDTFSourceSpec{})
+			if err := m.Udtfs[len(m.Udtfs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipUdfs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UDTFSourceSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowUdfs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UDTFSourceSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UDTFSourceSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Args", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Args = append(m.Args, &UDTFSourceSpec_Arg{})
+			if err := m.Args[len(m.Args)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Executor", wireType)
+			}
+			m.Executor = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Executor |= UDTFSourceExecutor(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Filters", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Filters = append(m.Filters, &UDTFSourceSpec_Filter{})
+			if err := m.Filters[len(m.Filters)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Relation", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Relation == nil {
+				m.Relation = &proto2.Relation{}
+			}
+			if err := m.Relation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipUdfs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UDTFSourceSpec_Arg) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowUdfs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Arg: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Arg: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ArgType", wireType)
+			}
+			m.ArgType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ArgType |= proto1.DataType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SemanticType", wireType)
+			}
+			m.SemanticType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SemanticType |= proto1.SemanticType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipUdfs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UDTFSourceSpec_SemanticArgFilter) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowUdfs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SemanticArgFilter: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SemanticArgFilter: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Idx", wireType)
+			}
+			m.Idx = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Idx |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipUdfs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UDTFSourceSpec_Filter) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowUdfs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Filter: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Filter: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SemanticFilter", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUdfs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthUdfs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &UDTFSourceSpec_SemanticArgFilter{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Filter = &UDTFSourceSpec_Filter_SemanticFilter{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

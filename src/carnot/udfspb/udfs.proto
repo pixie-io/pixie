@@ -1,5 +1,6 @@
 syntax = "proto3";
 import "src/shared/types/proto/types.proto";
+import "src/table_store/proto/schema.proto";
 
 package pl.carnot.udfspb;
 
@@ -37,4 +38,50 @@ message UDFInfo {
   repeated UDASpec udas = 1;
   // A list of the ScalarUDFs.
   repeated ScalarUDFSpec scalar_udfs = 2;
+  // A description of the UDTFs.
+  repeated UDTFSourceSpec udtfs = 3;
+}
+
+// The type of the table func to write.
+enum UDTFSourceExecutor {
+  UDTF_UNSPECIFIED = 0;
+  UDTF_ALL_AGENTS = 1;
+  UDTF_ALL_PEM = 2;
+  UDTF_ALL_KELVIN = 3;
+  UDTF_SUBSET_PEM = 4;
+  UDTF_SUBSET_KELVIN = 5;
+  UDTF_ONE_KELVIN = 6;
+}
+
+// UDTFSourceSpec stores the information necessary to execute a UDTFSource.
+message UDTFSourceSpec {
+  // Argument object that contains name, and arg_type and the list.
+  message Arg {
+    string name = 1;
+    pl.types.DataType arg_type = 2;
+    pl.types.SemanticType semantic_type = 3;
+  }
+
+  // The type of filter to use on the semantic argument.
+  // At the current moment specifying this means that you want to exactly match
+  // the user's passed in argument to filter.
+  message SemanticArgFilter {
+    // The index of the argument that is semantic.
+    int64 idx = 1;
+  }
+  message Filter {
+    oneof filter {
+      SemanticArgFilter semantic_filter = 1;
+    }
+  }
+  // Name of the UDTFSource.
+  string name = 1;
+  // The types of the arguments of the UDTFSource. Must be the same length as arg_names.
+  repeated Arg args = 2;
+  // Which agents the table function should execute on.
+  UDTFSourceExecutor executor = 3;
+  // The filter to use when the executor uses a subset.
+  repeated Filter filters = 4;
+  // The relation that this UDTF generates.
+  pl.table_store.schemapb.Relation relation = 5;
 }
