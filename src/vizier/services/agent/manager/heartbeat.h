@@ -18,7 +18,6 @@ class HeartbeatMessageHandler : public Manager::MessageHandler {
 
   ~HeartbeatMessageHandler() override = default;
 
- protected:
   Status HandleMessage(std::unique_ptr<messages::VizierMessage> msg) override;
 
  private:

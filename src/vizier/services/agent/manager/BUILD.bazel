@@ -31,3 +31,14 @@ pl_cc_test(
         ":cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "heartbeat_test",
+    srcs = ["heartbeat_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/event:cc_library",
+        "//src/common/testing/event:cc_library",
+        "//src/common/system:cc_library_mock",
+    ],
+)
