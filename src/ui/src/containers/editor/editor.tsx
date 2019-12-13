@@ -115,10 +115,8 @@ export const Editor: React.FC = () => {
                 <EditorTabTitle {...tab} onClose={(id) => deleteTab(id)} />
               </Nav.Item>,
             )}
-            <Nav.Item>
-              <Nav.Link eventKey={NEW_TAB}>
-                <img src={newTabIcon} />
-              </Nav.Link>
+            <Nav.Item as={Nav.Link} eventKey={NEW_TAB}>
+              <img src={newTabIcon} />
             </Nav.Item>
           </Nav>
           <Tab.Content style={{ flex: 1, position: 'relative' }}>

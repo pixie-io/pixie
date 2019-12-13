@@ -2,4 +2,26 @@
 
 .pixie-drawer {
   background-color: $primary;
+
+  .list-group-item-action {
+    color: $light;
+
+    &:hover {
+      color: $lighter;
+    }
+  }
+}
+
+.pixie-editor-tabs-nav.nav-tabs {
+  border-color: $border-color;
+
+  .nav-item {
+    color: $light;
+
+    &.active,
+    &:hover {
+      color: $lighter;
+      border-color: $border-color;
+    }
+  }
 }

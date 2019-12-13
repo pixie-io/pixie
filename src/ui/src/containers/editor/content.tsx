@@ -45,11 +45,11 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className='pixie-editor--content-title-row'>
-        <div>{props.title}</div>
+        <div className='text-lighter'>{props.title}</div>
         <div className='spacer'></div>
         <Button
           size='sm'
-          variant='light'
+          variant='secondary'
           disabled={loading}
           onClick={() => executeQuery(code)}>
           Execute
@@ -74,15 +74,15 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
               error ? <span>{error}</span> :
                 !!data ? (
                   <Tab.Container defaultActiveKey='table' id='query-results-tabs'>
-                    <Nav variant='pills'>
-                      <Nav.Item>
-                        <Nav.Link eventKey='table'>RESULTS</Nav.Link>
+                    <Nav variant='tabs' className='pixie-editor--tabs'>
+                      <Nav.Item as={Nav.Link} eventKey='table'>
+                        RESULTS
                       </Nav.Item>
-                      <Nav.Item>
-                        <Nav.Link eventKey='plot'>PLOT</Nav.Link>
+                      <Nav.Item as={Nav.Link} eventKey='plot'>
+                        PLOT
                       </Nav.Item>
-                      <Nav.Item>
-                        <Nav.Link eventKey='chart'>CHART</Nav.Link>
+                      <Nav.Item as={Nav.Link} eventKey='chart'>
+                        CHART
                       </Nav.Item>
                     </Nav>
                     <Tab.Content>

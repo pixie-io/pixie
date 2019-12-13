@@ -26,19 +26,19 @@
 .pixie-editor--result-viewer {
   display: flex;
   flex-direction: column;
-}
 
-.pixie-editor--result-viewer.center-content {
-  align-items: center;
-  justify-content: center;
+  &.center-content {
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .gutter {
   background-color: $border-color;
-}
 
-.gutter:hover {
-  cursor: row-resize;
+  &:hover {
+    cursor: row-resize;
+  }
 }
 
 .pixie-editor--content-title-row {
@@ -48,4 +48,16 @@
   align-items: center;
   padding: 0 1.5rem;
   border-bottom: 1px solid $border-color;
+}
+
+.pixie-editor--tabs {
+  .nav-item.nav-link {
+    &.active {
+      border-bottom: solid 2px $secondary;
+    }
+
+    &:hover {
+      color: $lighter;
+    }
+  }
 }

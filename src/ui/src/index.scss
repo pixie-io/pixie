@@ -25,5 +25,11 @@
   background: #0f222d;
 }
 
+// Remove the focus outline. TODO(malthus): We make sure this doesn't affect
+// forms, when we actually have forms.
+:focus {
+  outline: none;
+}
+
 @import "~bootstrap/scss/bootstrap.scss";
 @import "~react-vis/dist/style";
