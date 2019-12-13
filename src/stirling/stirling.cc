@@ -1,5 +1,3 @@
-#include <absl/base/internal/spinlock.h>
-
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -10,6 +8,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include <absl/base/internal/spinlock.h>
 
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/probe_cleaner.h"

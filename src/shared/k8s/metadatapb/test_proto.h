@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/substitute.h"
+#include <absl/strings/substitute.h>
 #include "src/common/base/base.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 

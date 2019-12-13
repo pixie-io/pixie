@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/str_format.h"
+#include <absl/strings/str_format.h>
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"

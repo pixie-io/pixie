@@ -2,8 +2,8 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/str_format.h"
-#include "absl/strings/str_join.h"
+#include <absl/strings/str_format.h>
+#include <absl/strings/str_join.h>
 #include "src/carnot/exec/memory_source_node.h"
 #include "src/carnot/planpb/plan.pb.h"
 namespace pl {

@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
+#include <absl/container/flat_hash_map.h>
 #include "src/carnot/compiler/distributed_coordinator.h"
 #include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/distributed_splitter.h"

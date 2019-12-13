@@ -2,12 +2,13 @@
 
 #include "src/stirling/utils/linux_headers.h"
 
-#include <absl/strings/numbers.h>
 #include <sys/utsname.h>
 
 #include <fstream>
 #include <sstream>
 #include <vector>
+
+#include <absl/strings/numbers.h>
 
 #include "src/common/base/file.h"
 #include "src/stirling/utils/fs_wrapper.h"

@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/numeric/int128.h"
+#include <absl/numeric/int128.h>
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"

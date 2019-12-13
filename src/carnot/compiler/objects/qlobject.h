@@ -2,9 +2,9 @@
 #include <memory>
 #include <string>
 
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 #include <pypa/ast/ast.hh>
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 
 #include "src/carnot/compiler/ir/ast_utils.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"

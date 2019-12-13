@@ -2,7 +2,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/internal/spinlock.h"
+#include <absl/base/internal/spinlock.h>
 #include "src/shared/metadata/state_manager.h"
 
 namespace pl {

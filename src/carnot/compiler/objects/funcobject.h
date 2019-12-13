@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 #include <pypa/ast/ast.hh>
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 
 #include "src/carnot/compiler/ast/ast_visitor.h"
 #include "src/carnot/compiler/objects/qlobject.h"

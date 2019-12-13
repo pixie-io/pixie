@@ -1,11 +1,9 @@
 #ifdef __linux__
-
-#include <absl/strings/str_split.h>
-
-#include <experimental/filesystem>
+#include "src/stirling/system_stats_connector.h"
 
 #include <algorithm>
 #include <chrono>
+#include <experimental/filesystem>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -13,10 +11,11 @@
 #include <utility>
 #include <vector>
 
+#include <absl/strings/str_split.h>
+
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
 #include "src/shared/metadata/metadata.h"
-#include "src/stirling/system_stats_connector.h"
 
 namespace pl {
 namespace stirling {

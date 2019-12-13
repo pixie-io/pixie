@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <memory>
 
-#include "absl/container/flat_hash_map.h"
+#include <absl/container/flat_hash_map.h>
 
 #include "src/carnot/compiler/objects/funcobject.h"
 #include "src/carnot/compiler/objects/test_utils.h"

@@ -1,6 +1,6 @@
 #include <string>
 
-#include "absl/strings/str_format.h"
+#include <absl/strings/str_format.h>
 #include "src/carnot/plan/utils.h"
 #include "src/common/base/base.h"
 

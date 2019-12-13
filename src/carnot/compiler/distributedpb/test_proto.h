@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/substitute.h"
+#include <absl/strings/substitute.h>
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan_fragment.h"

@@ -2,7 +2,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/str_format.h"
+#include <absl/strings/str_format.h>
 #include "src/carnot/exec/grpc_sink_node.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/uuid/uuid_utils.h"

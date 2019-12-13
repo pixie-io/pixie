@@ -1,8 +1,8 @@
 #include "src/stirling/grpc_message_classifier/trial_parser.h"
 
-#include <absl/memory/memory.h>
-
 #include <string>
+
+#include <absl/memory/memory.h>
 
 #include "src/common/base/logging.h"
 

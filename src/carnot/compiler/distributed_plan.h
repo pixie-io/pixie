@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
+#include <absl/container/flat_hash_map.h>
 #include "src/carnot/compiler/compiler_state/registry_info.h"
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"

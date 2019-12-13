@@ -3,8 +3,8 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/str_format.h"
-#include "absl/strings/str_join.h"
+#include <absl/strings/str_format.h>
+#include <absl/strings/str_join.h>
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"

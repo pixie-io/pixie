@@ -3,8 +3,8 @@
 #include <string>
 #include <tuple>
 
+#include <absl/strings/str_join.h>
 #include <iostream>
-#include "absl/strings/str_join.h"
 #include "src/carnot/plan/dag.h"
 
 namespace pl {

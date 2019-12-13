@@ -4,8 +4,8 @@
 #include <utility>
 #include <vector>
 
+#include <absl/strings/str_format.h>
 #include "../../shared/types/types.h"
-#include "absl/strings/str_format.h"
 
 namespace pl {
 namespace table_store {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "absl/strings/substitute.h"
+#include <absl/strings/substitute.h>
 
 #include "src/common/base/proto/status.pb.h"
 #include "src/common/base/status.h"

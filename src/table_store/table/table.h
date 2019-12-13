@@ -9,8 +9,8 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/internal/spinlock.h"
-#include "absl/strings/str_format.h"
+#include <absl/base/internal/spinlock.h>
+#include <absl/strings/str_format.h>
 #include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"

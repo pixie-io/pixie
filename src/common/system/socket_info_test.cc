@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <string>
 
-#include "absl/strings/numbers.h"
+#include <absl/strings/numbers.h>
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"

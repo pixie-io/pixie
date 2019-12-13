@@ -4,9 +4,9 @@
 #include <string>
 #include <utility>
 
-#include "absl/base/internal/spinlock.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
+#include <absl/base/internal/spinlock.h>
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 
 #include "src/common/base/base.h"                // IWYU pragma: export
 #include "src/shared/metadata/base_types.h"      // IWYU pragma: export

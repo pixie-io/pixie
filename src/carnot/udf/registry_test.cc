@@ -2,7 +2,7 @@
 #include <google/protobuf/util/message_differencer.h>
 #include <type_traits>
 
-#include "absl/strings/match.h"
+#include <absl/strings/match.h>
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"

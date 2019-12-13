@@ -4,8 +4,8 @@
 
 #include <string>
 
-#include "absl/base/attributes.h"
-#include "absl/synchronization/mutex.h"
+#include <absl/base/attributes.h>
+#include <absl/synchronization/mutex.h>
 #include "threadstacks/signal_handler.h"
 
 namespace pl {

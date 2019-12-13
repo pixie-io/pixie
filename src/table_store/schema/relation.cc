@@ -2,7 +2,7 @@
 #include <string>
 #include <utility>
 
-#include "absl/strings/str_join.h"
+#include <absl/strings/str_join.h>
 
 #include "src/common/base/base.h"
 #include "src/shared/types/type_utils.h"

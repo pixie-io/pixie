@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "absl/container/flat_hash_map.h"
+#include <absl/container/flat_hash_map.h>
 #include "src/carnot/exec/grpc_router.h"
 #include "src/carnot/exec/grpc_source_node.h"
 #include "src/common/base/base.h"

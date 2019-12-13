@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 
-#include "absl/strings/str_format.h"
+#include <absl/strings/str_format.h>
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
 

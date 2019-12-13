@@ -6,7 +6,7 @@
 #include <string>
 #include <utility>
 
-#include "absl/strings/str_format.h"
+#include <absl/strings/str_format.h>
 #include "src/carnot/udf/udf.h"
 #include "src/shared/types/types.h"
 

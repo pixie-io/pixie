@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/container/flat_hash_set.h"
+#include <absl/container/flat_hash_set.h>
 #include "src/common/system/config_mock.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"

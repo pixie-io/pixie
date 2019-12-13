@@ -2,8 +2,8 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/str_join.h"
-#include "absl/strings/substitute.h"
+#include <absl/strings/str_join.h>
+#include <absl/strings/substitute.h>
 #include "src/carnot/exec/filter_node.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/shared/types/arrow_adapter.h"

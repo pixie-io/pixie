@@ -6,8 +6,8 @@
 #include <set>
 #include <thread>
 
-#include "absl/base/thread_annotations.h"
-#include "absl/synchronization/mutex.h"
+#include <absl/base/thread_annotations.h>
+#include <absl/synchronization/mutex.h>
 
 #include "src/common/event/dispatcher.h"
 #include "src/common/event/time_system.h"

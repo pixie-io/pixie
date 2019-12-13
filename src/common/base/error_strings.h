@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "absl/strings/str_cat.h"
-#include "absl/strings/substitute.h"
+#include <absl/strings/str_cat.h>
+#include <absl/strings/substitute.h>
 
 #include "src/common/base/proto/status.pb.h"
 

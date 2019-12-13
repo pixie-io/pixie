@@ -1,8 +1,8 @@
 #include <string>
 
-#include "absl/strings/numbers.h"
-#include "absl/strings/substitute.h"
-#include "absl/time/time.h"
+#include <absl/strings/numbers.h>
+#include <absl/strings/substitute.h>
+#include <absl/time/time.h>
 #include "src/shared/version/version.h"
 
 extern const char* kBuildSCMStatus;

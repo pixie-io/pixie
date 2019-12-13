@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/str_format.h"
+#include <absl/strings/str_format.h>
 #include "src/carnot/plan/plan_node.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/planpb/plan.pb.h"

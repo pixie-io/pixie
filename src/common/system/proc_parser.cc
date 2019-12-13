@@ -5,8 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/numbers.h"
-#include "absl/strings/substitute.h"
+#include <absl/strings/numbers.h>
+#include <absl/strings/substitute.h>
 #include "src/common/system/proc_parser.h"
 
 namespace pl {

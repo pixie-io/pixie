@@ -1,6 +1,6 @@
 #include <string>
 
-#include "absl/strings/substitute.h"
+#include <absl/strings/substitute.h>
 #include "src/shared/metadata/k8s_objects.h"
 
 namespace pl {

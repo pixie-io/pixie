@@ -2,7 +2,7 @@
 #include <memory>
 #include <vector>
 
-#include "absl/base/internal/spinlock.h"
+#include <absl/base/internal/spinlock.h>
 #include "src/common/base/base.h"
 
 namespace pl {

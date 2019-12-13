@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/str_join.h"
+#include <absl/strings/str_join.h>
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/distributedpb/test_proto.h"

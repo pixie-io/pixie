@@ -3,9 +3,9 @@
 
 #include <vector>
 
+#include <absl/strings/str_join.h>
 #include <pypa/parser/parser.hh>
 
-#include "absl/strings/str_join.h"
 #include "src/carnot/compiler/parser/string_reader.h"
 
 namespace pl {

@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "absl/strings/str_format.h"
+#include <absl/strings/str_format.h>
 #include "src/common/base/base.h"
 #include "src/table_store/schema/schema.h"
 

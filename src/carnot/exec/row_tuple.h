@@ -5,6 +5,8 @@
 #include <variant>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 #include <libcuckoo/cuckoohash_map.hh>
 
 #include "src/common/base/base.h"
@@ -14,9 +16,6 @@
 #include "src/shared/types/hash_utils.h"
 #include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
-
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 
 namespace pl {
 namespace carnot {

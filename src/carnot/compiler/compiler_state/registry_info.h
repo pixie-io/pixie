@@ -6,8 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_set.h"
-#include "absl/strings/str_format.h"
+#include <absl/container/flat_hash_set.h>
+#include <absl/strings/str_format.h>
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"

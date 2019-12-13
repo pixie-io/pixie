@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "absl/container/flat_hash_set.h"
+#include <absl/container/flat_hash_set.h>
 #include "src/carnot/compiler/ast_visitor.h"
 
 namespace pl {

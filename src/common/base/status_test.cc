@@ -3,7 +3,7 @@
 #include <google/protobuf/util/message_differencer.h>
 #include <iostream>
 
-#include "absl/strings/str_format.h"
+#include <absl/strings/str_format.h>
 #include "src/common/base/testproto/test.pb.h"
 #include "src/common/testing/testing.h"
 

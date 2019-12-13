@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "absl/container/flat_hash_map.h"
+#include <absl/container/flat_hash_map.h>
 #include "src/vizier/services/agent/manager/manager.h"
 
 namespace pl {
