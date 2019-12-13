@@ -16,6 +16,7 @@
 #include "src/carnot/metadatapb/metadata.pb.h"
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
+#include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 
@@ -73,6 +74,7 @@ enum class IRNodeType {
   kJoin,
   kTabletSourceGroup,
   kGroupBy,
+  kUDTFSource,
   number_of_types  // This is not a real type, but is used to verify strings are inline
                    // with enums.
 };
@@ -101,7 +103,8 @@ static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "Union",
                                                  "Join",
                                                  "TabletSourceGroup",
-                                                 "GroupBy"};
+                                                 "GroupBy",
+                                                 "UDTFSource"};
 inline std::ostream& operator<<(std::ostream& out, IRNodeType node_type) {
   return out << kIRNodeStrings[static_cast<int64_t>(node_type)];
 }
@@ -1558,6 +1561,44 @@ class TabletSourceGroupIR : public OperatorIR {
   std::vector<types::TabletID> tablets_;
   // The memory source that this node replaces. Deleted from the graph when this node is deleted.
   MemorySourceIR* memory_source_ir_;
+};
+
+class UDTFSourceIR : public OperatorIR {
+ public:
+  UDTFSourceIR() = delete;
+  explicit UDTFSourceIR(int64_t id)
+      : OperatorIR(id, IRNodeType::kUDTFSource, /* has_parents */ false,
+                   /* is_source */ true) {}
+
+  Status Init(std::string_view func_name, const std::vector<std::string>& arg_names,
+              const std::vector<ExpressionIR*>& arg_values,
+              const udfspb::UDTFSourceSpec& udtf_spec);
+
+  Status SetArgValues(const std::vector<ExpressionIR*>& arg_values);
+
+  Status ToProto(planpb::Operator*) const override;
+  std::string func_name() const { return func_name_; }
+  udfspb::UDTFSourceSpec udtf_spec() const { return udtf_spec_; }
+
+  Status ArgElementToProto(planpb::ScalarValue* value_pb, DataIR* node) const;
+
+  Status CopyFromNodeImpl(const IRNode* source,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+  const std::vector<DataIR*>& arg_values() const { return arg_values_; }
+
+ private:
+  /**
+   * @brief Subroutine for SetArgValues that converts expression into a vector.
+   *
+   * @param expr
+   * @return StatusOr<DataIR*> the data that the expr represents, or an error if it
+   * doesn't fit a format.
+   */
+  StatusOr<DataIR*> ProcessArgValue(ExpressionIR* expr);
+  std::string func_name_;
+  std::vector<std::string> arg_names_;
+  std::vector<DataIR*> arg_values_;
+  udfspb::UDTFSourceSpec udtf_spec_;
 };
 
 }  // namespace compiler

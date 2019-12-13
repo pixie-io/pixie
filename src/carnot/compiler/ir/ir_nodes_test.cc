@@ -1140,6 +1140,39 @@ TEST_F(OperatorTests, union_duplicate_parents) {
   EXPECT_THAT(union_op->parents(), ElementsAre(mem_src2, mem_src1, maps[0], maps[1]));
 }
 
+const char* kExpectedUDTFPb = R"proto(
+  op_type: UDTF_SOURCE_OPERATOR
+  udtf_source_op {
+    name: "GetOpenNetworkConnections"
+    arg_names: "upid"
+    arg_values {
+      data_type: STRING
+      string_value: "5525adaadadadadad"
+    }
+  }
+)proto";
+
+TEST_F(OperatorTests, UDTFTest) {
+  auto upid_str = MakeString("5525adaadadadadad");
+
+  udfspb::UDTFSourceSpec udtf_spec;
+  Relation relation{{types::INT64, types::STRING}, {"fd", "name"}};
+  ASSERT_OK(relation.ToProto(udtf_spec.mutable_relation()));
+
+  auto udtf_or_s = graph->CreateNode<UDTFSourceIR>(ast, "GetOpenNetworkConnections",
+                                                   std::vector<std::string>{"upid"},
+                                                   std::vector<ExpressionIR*>{upid_str}, udtf_spec);
+  ASSERT_OK(udtf_or_s);
+  UDTFSourceIR* udtf = udtf_or_s.ConsumeValueOrDie();
+  planpb::Operator pb;
+  EXPECT_OK(udtf->ToProto(&pb));
+
+  EXPECT_THAT(pb, EqualsProto(kExpectedUDTFPb)) << pb.DebugString();
+
+  EXPECT_TRUE(udtf->IsRelationInit());
+  EXPECT_EQ(udtf->relation(), relation);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

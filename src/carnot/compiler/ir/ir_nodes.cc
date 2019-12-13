@@ -114,6 +114,8 @@ StatusOr<IRNode*> MakeNodeWithType(IR* graph, IRNodeType node_type, int64_t new_
       return graph->MakeNode<TabletSourceGroupIR>(new_node_id);
     case IRNodeType::kGroupBy:
       return graph->MakeNode<GroupByIR>(new_node_id);
+    case IRNodeType::kUDTFSource:
+      return graph->MakeNode<UDTFSourceIR>(new_node_id);
     case IRNodeType::kAny:
     case IRNodeType::number_of_types:
       break;
@@ -1416,6 +1418,112 @@ Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
                         graph_ptr()->OptionallyCloneWithEdge(this, right_columns[i]));
   }
   return Status::OK();
+}
+
+Status UDTFSourceIR::Init(std::string_view func_name, const std::vector<std::string>& arg_names,
+                          const std::vector<ExpressionIR*>& arg_values,
+                          const udfspb::UDTFSourceSpec& udtf_spec) {
+  func_name_ = func_name;
+  arg_names_ = arg_names;
+  udtf_spec_ = udtf_spec;
+  table_store::schema::Relation relation;
+  PL_RETURN_IF_ERROR(relation.FromProto(&udtf_spec_.relation()));
+  PL_RETURN_IF_ERROR(SetRelation(relation));
+  return SetArgValues(arg_values);
+}
+
+Status UDTFSourceIR::ToProto(planpb::Operator* op) const {
+  op->set_op_type(planpb::UDTF_SOURCE_OPERATOR);
+
+  auto pb = op->mutable_udtf_source_op();
+  pb->set_name(func_name_);
+  for (const std::string& arg_name : arg_names_) {
+    pb->add_arg_names(arg_name);
+  }
+
+  for (const auto& arg_value : arg_values_) {
+    auto arg_value_pb = pb->add_arg_values();
+    PL_RETURN_IF_ERROR(ArgElementToProto(arg_value_pb, arg_value));
+  }
+
+  return Status::OK();
+}
+
+StatusOr<DataIR*> UDTFSourceIR::ProcessArgValue(ExpressionIR* arg_expr) {
+  if (!arg_expr->IsData()) {
+    return CreateIRNodeError("expected scalar value, received '$0'", arg_expr->type_string());
+  }
+  return static_cast<DataIR*>(arg_expr);
+}
+
+Status UDTFSourceIR::SetArgValues(const std::vector<ExpressionIR*>& arg_values) {
+  for (const auto& arg : arg_values) {
+    if (Match(arg, Collection())) {
+      DCHECK(false);
+      return CreateIRNodeError("Collections not supported for now.");
+    }
+    PL_ASSIGN_OR_RETURN(DataIR * data, ProcessArgValue(arg));
+    arg_values_.push_back(data);
+  }
+  return Status::OK();
+}
+
+// TODO(philkuz) incorporate this into OperatorIR and make a subroutine for ExpressionEvalutor and
+// AggregateExpressionEvaluator.
+Status UDTFSourceIR::ArgElementToProto(planpb::ScalarValue* value, DataIR* data_node) const {
+  switch (data_node->type()) {
+    case IRNodeType::kInt: {
+      auto casted_ir = static_cast<IntIR*>(data_node);
+      value->set_data_type(types::DataType::INT64);
+      value->set_int64_value(casted_ir->val());
+      break;
+    }
+    case IRNodeType::kString: {
+      auto casted_ir = static_cast<StringIR*>(data_node);
+      value->set_data_type(types::DataType::STRING);
+      value->set_string_value(casted_ir->str());
+      break;
+    }
+    case IRNodeType::kFloat: {
+      auto casted_ir = static_cast<FloatIR*>(data_node);
+      value->set_data_type(types::DataType::FLOAT64);
+      value->set_float64_value(casted_ir->val());
+      break;
+    }
+    case IRNodeType::kBool: {
+      auto casted_ir = static_cast<BoolIR*>(data_node);
+      value->set_data_type(types::DataType::BOOLEAN);
+      value->set_bool_value(casted_ir->val());
+      break;
+    }
+    case IRNodeType::kTime: {
+      auto casted_ir = static_cast<TimeIR*>(data_node);
+      value->set_data_type(types::DataType::TIME64NS);
+      value->set_time64_ns_value(static_cast<::google::protobuf::int64>(casted_ir->val()));
+      break;
+    }
+    default: {
+      return CreateIRNodeError("Can't serialize data type '$0'", data_node->type_string());
+    }
+  }
+  return Status::OK();
+}
+
+// StatusOr<IRNode*> UDTFSourceIR::DeepCloneIntoImpl(IR* graph) const {
+Status UDTFSourceIR::CopyFromNodeImpl(
+    const IRNode* source, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+  const UDTFSourceIR* udtf = static_cast<const UDTFSourceIR*>(source);
+  func_name_ = udtf->func_name_;
+  arg_names_ = udtf->arg_names_;
+  udtf_spec_ = udtf->udtf_spec_;
+  std::vector<ExpressionIR*> arg_values;
+  for (const DataIR* arg_element : udtf->arg_values_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_arg_element,
+                        graph_ptr()->CopyNode(arg_element, copied_nodes_map));
+    DCHECK(Match(new_arg_element, DataNode()));
+    arg_values.push_back(static_cast<DataIR*>(new_arg_element));
+  }
+  return SetArgValues(arg_values);
 }
 
 }  // namespace compiler

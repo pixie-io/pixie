@@ -378,6 +378,28 @@ TEST_F(SourceRelationTest, missing_columns) {
               HasCompilerError("Columns \\{$0\\} are missing in table.", missing_column));
 }
 
+TEST_F(SourceRelationTest, UDTFDoesNothing) {
+  auto upid_str = MakeString("5525adaadadadadad");
+
+  udfspb::UDTFSourceSpec udtf_spec;
+  Relation relation{{types::INT64, types::STRING}, {"fd", "name"}};
+  ASSERT_OK(relation.ToProto(udtf_spec.mutable_relation()));
+
+  auto udtf = graph
+                  ->CreateNode<UDTFSourceIR>(ast, "GetOpenNetworkConnections",
+                                             std::vector<std::string>{"upid"},
+                                             std::vector<ExpressionIR*>{upid_str}, udtf_spec)
+                  .ConsumeValueOrDie();
+
+  EXPECT_TRUE(udtf->IsRelationInit());
+
+  SourceRelationRule source_relation_rule(compiler_state_.get());
+  auto did_change_or_s = source_relation_rule.Execute(graph.get());
+  ASSERT_OK(did_change_or_s);
+  // Should not change.
+  EXPECT_FALSE(did_change_or_s.ConsumeValueOrDie());
+}
+
 class BlockingAggRuleTest : public RulesTest {
  protected:
   void SetUp() override { RulesTest::SetUp(); }
