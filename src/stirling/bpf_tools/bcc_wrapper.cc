@@ -70,9 +70,9 @@ Status BCCWrapper::InitBPFCode(const std::vector<std::string>& cflags) {
 }
 
 Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
-  LOG(INFO) << absl::StrFormat("Deploying kprobe:\n   type=%s\n   kernel_fn=%s\n   trace_fn=%s",
-                               ProbeAttachTypeString(probe.attach_type), probe.kernel_fn,
-                               probe.probe_fn);
+  VLOG(1) << absl::StrFormat("Deploying kprobe:\n   type=%s\n   kernel_fn=%s\n   trace_fn=%s",
+                             ProbeAttachTypeString(probe.attach_type), probe.kernel_fn,
+                             probe.probe_fn);
   ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
       bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), std::string(probe.probe_fn),
       0 /* offset */, probe.attach_type, kKprobeMaxActive);
@@ -89,7 +89,7 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
 constexpr uint64_t kIgnoredSymbolAddr = 0;
 
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
-  LOG(INFO) << absl::StrFormat(
+  VLOG(1) << absl::StrFormat(
       "Deploying uprobe:\n   type=%s\n   binary=%s\n   symbol=%s\n   trace_fn=%s",
       ProbeAttachTypeString(probe.attach_type), probe.binary_path, probe.symbol, probe.probe_fn);
   ebpf::StatusTuple attach_status =
@@ -119,8 +119,8 @@ Status BCCWrapper::AttachUProbes(const ArrayView<UProbeSpec>& probes) {
 }
 
 Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
-  LOG(INFO) << absl::Substitute("Detaching kprobe:\n   kernel_fn=$0\n   trace_fn=$1",
-                                probe.kernel_fn, probe.probe_fn);
+  VLOG(1) << absl::Substitute("Detaching kprobe:\n   kernel_fn=$0\n   trace_fn=$1", probe.kernel_fn,
+                              probe.probe_fn);
   ebpf::StatusTuple detach_status =
       bpf().detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), probe.attach_type);
 
@@ -133,8 +133,8 @@ Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
 }
 
 Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
-  LOG(INFO) << absl::Substitute("Detaching uprobe:\n   binary=$0\n   symbol=$1\n   trace_fn=$2",
-                                probe.binary_path.string(), probe.symbol, probe.probe_fn);
+  VLOG(1) << absl::Substitute("Detaching uprobe:\n   binary=$0\n   symbol=$1\n   trace_fn=$2",
+                              probe.binary_path.string(), probe.symbol, probe.probe_fn);
   ebpf::StatusTuple detach_status =
       bpf().detach_uprobe(probe.binary_path, probe.symbol, kIgnoredSymbolAddr, probe.attach_type);
 
@@ -163,7 +163,7 @@ void BCCWrapper::DetachUProbes() {
 }
 
 Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
-  LOG(INFO) << "Opening perf buffer: " << perf_buffer.name;
+  VLOG(1) << "Opening perf buffer: " << perf_buffer.name;
   ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
       std::string(perf_buffer.name), perf_buffer.probe_output_fn, perf_buffer.probe_loss_fn,
       cb_cookie, FLAGS_stirling_bpf_perf_buffer_page_count);
@@ -184,7 +184,7 @@ Status BCCWrapper::OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers
 }
 
 Status BCCWrapper::ClosePerfBuffer(const PerfBufferSpec& perf_buffer) {
-  LOG(INFO) << "Closing perf buffer: " << perf_buffer.name;
+  VLOG(1) << "Closing perf buffer: " << perf_buffer.name;
   ebpf::StatusTuple close_status = bpf_.close_perf_buffer(std::string(perf_buffer.name));
   if (close_status.code() != 0) {
     return error::Internal("Failed to close perf buffer: $0, error message: $1", perf_buffer.name,
@@ -224,8 +224,8 @@ std::string PerfTypeName(uint32_t type) {
 }  // namespace
 
 Status BCCWrapper::AttachPerfEvent(const PerfEventSpec& perf_event) {
-  LOG(INFO) << absl::Substitute("Attaching perf event:\n   type=$0\n   probe_fn=$1",
-                                PerfTypeName(perf_event.type), perf_event.probe_fn);
+  VLOG(1) << absl::Substitute("Attaching perf event:\n   type=$0\n   probe_fn=$1",
+                              PerfTypeName(perf_event.type), perf_event.probe_fn);
   auto attach_res =
       bpf_.attach_perf_event(perf_event.type, perf_event.config, std::string(perf_event.probe_fn),
                              perf_event.sample_period, perf_event.sample_freq);
@@ -245,8 +245,8 @@ Status BCCWrapper::AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events)
 }
 
 Status BCCWrapper::DetachPerfEvent(const PerfEventSpec& perf_event) {
-  LOG(INFO) << absl::Substitute("Detaching perf event:\n   type=$0\n   probe_fn=$1",
-                                PerfTypeName(perf_event.type), perf_event.probe_fn);
+  VLOG(1) << absl::Substitute("Detaching perf event:\n   type=$0\n   probe_fn=$1",
+                              PerfTypeName(perf_event.type), perf_event.probe_fn);
   auto detach_res = bpf_.detach_perf_event(perf_event.type, perf_event.config);
   if (detach_res.code() != 0) {
     return error::Internal("Unable to detach perf event, error_message $0", detach_res.msg());
