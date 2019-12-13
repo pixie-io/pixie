@@ -30,6 +30,9 @@ func init() {
 	RootCmd.AddCommand(ProxyCmd)
 	RootCmd.AddCommand(QueryCmd)
 	RootCmd.AddCommand(GetCmd)
+
+	// Super secret flags for Pixies.
+	RootCmd.PersistentFlags().MarkHidden("cloud_addr")
 }
 
 // RootCmd is the base command for Cobra.

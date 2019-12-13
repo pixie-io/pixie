@@ -84,9 +84,6 @@ func init() {
 	DeployCmd.Flags().BoolP("check", "c", false, "Check whether the cluster can run Pixie")
 	viper.BindPFlag("check", DeployCmd.Flags().Lookup("check"))
 
-	DeployCmd.Flags().StringP("registration_key", "k", "", "The registration key to use for this cluster")
-	viper.BindPFlag("registration_key", DeployCmd.Flags().Lookup("registration_key"))
-
 	DeployCmd.Flags().StringP("credentials_file", "f", "", "Location of the Pixie credentials file")
 	viper.BindPFlag("credentials_file", DeployCmd.Flags().Lookup("credentials_file"))
 
@@ -98,12 +95,17 @@ func init() {
 
 	DeployCmd.Flags().StringP("cluster_id", "i", "", "The ID of the cluster")
 	viper.BindPFlag("cluster_id", DeployCmd.Flags().Lookup("cluster_id"))
+	DeployCmd.MarkFlagRequired("cluster_id")
 
 	DeployCmd.Flags().BoolP("deps_only", "d", false, "Deploy only the cluster dependencies, not the agents")
 	viper.BindPFlag("deps_only", DeployCmd.Flags().Lookup("deps_only"))
 
 	DeployCmd.Flags().StringP("dev_cloud_namespace", "m", "", "The namespace of Pixie Cloud, if running Cloud on minikube")
 	viper.BindPFlag("dev_cloud_namespace", DeployCmd.Flags().Lookup("dev_cloud_namespace"))
+
+	// Super secret flags for Pixies.
+	DeployCmd.Flags().MarkHidden("namespace")
+	DeployCmd.Flags().MarkHidden("dev_cloud_namespace")
 }
 
 func newVizAuthClient(conn *grpc.ClientConn) cloudapipb.VizierImageAuthorizationClient {
@@ -265,6 +267,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
 		cloudAddr = cloudAddr + ":443"
 	}
+
 	// Get grpc connection to cloud.
 	cloudConn, err := getCloudClientConnection(cloudAddr)
 	if err != nil {
