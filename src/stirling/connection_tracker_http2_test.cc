@@ -14,13 +14,13 @@ using ::testing::UnorderedElementsAre;
 
 using ConnectionTrackerHTTP2Test = testing::EventsFixture;
 
-class StreamFrameGenerator {
+class StreamEventGenerator {
  public:
-  StreamFrameGenerator(ReqRespRole role, upid_t upid, uint32_t fd, uint32_t stream_id)
+  StreamEventGenerator(ReqRespRole role, upid_t upid, uint32_t fd, uint32_t stream_id)
       : role_(role), upid_(upid), fd_(fd), stream_id_(stream_id) {}
 
   template <DataFrameEventType TType>
-  HTTP2DataEvent GenFrame(std::string_view body) {
+  HTTP2DataEvent GenDataFrame(std::string_view body) {
     HTTP2DataEvent frame;
     frame.attr.conn_id.upid = upid_;
     frame.attr.conn_id.fd = fd_;
@@ -65,13 +65,13 @@ class StreamFrameGenerator {
 TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
   ConnectionTracker tracker;
 
-  auto frame_generator = StreamFrameGenerator(kRoleRequestor, upid_t{{123}, 11000000}, 5, 7);
+  auto frame_generator = StreamEventGenerator(kRoleRequestor, upid_t{{123}, 11000000}, 5, 7);
   HTTP2DataEvent data_frame;
 
-  data_frame = frame_generator.GenFrame<kDataFrameEventWrite>("Request");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Request");
   tracker.AddHTTP2Data(data_frame);
 
-  data_frame = frame_generator.GenFrame<kDataFrameEventRead>("Response");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Response");
   tracker.AddHTTP2Data(data_frame);
 
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
@@ -84,7 +84,7 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
 TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
   ConnectionTracker tracker;
 
-  auto frame_generator = StreamFrameGenerator(kRoleRequestor, upid_t{{123}, 11000000}, 5, 7);
+  auto frame_generator = StreamEventGenerator(kRoleRequestor, upid_t{{123}, 11000000}, 5, 7);
   go_grpc_http2_header_event_t header_event;
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
@@ -103,19 +103,19 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
 TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   ConnectionTracker tracker;
 
-  auto frame_generator = StreamFrameGenerator(kRoleRequestor, upid_t{{123}, 11000000}, 5, 7);
+  auto frame_generator = StreamEventGenerator(kRoleRequestor, upid_t{{123}, 11000000}, 5, 7);
   HTTP2DataEvent data_frame;
 
-  data_frame = frame_generator.GenFrame<kDataFrameEventWrite>("Req");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
   tracker.AddHTTP2Data(data_frame);
 
-  data_frame = frame_generator.GenFrame<kDataFrameEventWrite>("uest");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest");
   tracker.AddHTTP2Data(data_frame);
 
-  data_frame = frame_generator.GenFrame<kDataFrameEventRead>("Resp");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
   tracker.AddHTTP2Data(data_frame);
 
-  data_frame = frame_generator.GenFrame<kDataFrameEventRead>("onse");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse");
   tracker.AddHTTP2Data(data_frame);
 
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
@@ -128,7 +128,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
 TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
   ConnectionTracker tracker;
 
-  auto frame_generator = StreamFrameGenerator(kRoleRequestor, upid_t{{123}, 11000000}, 5, 7);
+  auto frame_generator = StreamEventGenerator(kRoleRequestor, upid_t{{123}, 11000000}, 5, 7);
   HTTP2DataEvent data_frame;
   go_grpc_http2_header_event_t header_event;
 
@@ -141,16 +141,16 @@ TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic");
   tracker.AddHTTP2Header(header_event);
 
-  data_frame = frame_generator.GenFrame<kDataFrameEventWrite>("Req");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
   tracker.AddHTTP2Data(data_frame);
 
-  data_frame = frame_generator.GenFrame<kDataFrameEventWrite>("uest");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest");
   tracker.AddHTTP2Data(data_frame);
 
-  data_frame = frame_generator.GenFrame<kDataFrameEventRead>("Resp");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
   tracker.AddHTTP2Data(data_frame);
 
-  data_frame = frame_generator.GenFrame<kDataFrameEventRead>("onse");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse");
   tracker.AddHTTP2Data(data_frame);
 
   header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
