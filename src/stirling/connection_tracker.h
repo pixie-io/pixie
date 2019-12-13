@@ -389,6 +389,9 @@ class ConnectionTracker {
   DataStream send_data_;
   DataStream recv_data_;
 
+  // For HTTP2 only. Indicates the stream_id/2 of the stream at index 0 of the deque.
+  uint32_t oldest_active_stream_id_;
+
   // The connection close info.
   SocketClose close_info_;
 

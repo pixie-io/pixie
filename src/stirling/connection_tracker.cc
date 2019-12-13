@@ -140,26 +140,7 @@ void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
 
   UpdateTimestamps(data.attr.timestamp_ns);
   SetPID(conn_id);
-
-  SetTrafficClass({
-      .protocol = kProtocolHTTP2,
-      .role = kRoleUnknown,
-  });
-
-  std::deque<http2::Stream>* messages_ptr = nullptr;
-  switch (data.attr.ftype) {
-    case DataFrameEventType::kDataFrameEventWrite: {
-      auto& messages = send_data_.Messages<http2::Stream>();
-      messages_ptr = &messages;
-    } break;
-    case DataFrameEventType::kDataFrameEventRead: {
-      auto& messages = recv_data_.Messages<http2::Stream>();
-      messages_ptr = &messages;
-    } break;
-    default:
-      LOG(WARNING) << "Unexpected event type";
-      return;
-  }
+  SetTrafficClass(data.attr.traffic_class);
 
   // Don't trace any control messages.
   if (data.attr.stream_id == 0) {
@@ -171,13 +152,33 @@ void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
     return;
   }
 
-  uint32_t index = data.attr.stream_id / 2;
+  auto& send_streams = send_data_.Messages<http2::HalfStream>();
+  auto& recv_streams = recv_data_.Messages<http2::HalfStream>();
 
-  // TODO(oazizi/yzhao): Seems we need also shrink messages list when there isn't many items inside
-  // the messages_ptr.
-  messages_ptr->resize(std::max(messages_ptr->size(), static_cast<size_t>(index) + 1));
+  // Update the head index.
+  if (send_streams.empty()) {
+    DCHECK(recv_streams.empty());
+    oldest_active_stream_id_ = data.attr.stream_id;
+  }
 
-  (*messages_ptr)[index].data += data.payload;
+  ECHECK_GE(data.attr.stream_id, oldest_active_stream_id_);
+  size_t index = (data.attr.stream_id - oldest_active_stream_id_) / 2;
+  size_t new_size = std::max(send_streams.size(), index + 1);
+
+  // For HTTP2, always keep the send and recv deques in sync.
+  send_streams.resize(new_size);
+  recv_streams.resize(new_size);
+
+  switch (data.attr.ftype) {
+    case DataFrameEventType::kDataFrameEventWrite:
+      send_streams[index].data += data.payload;
+      break;
+    case DataFrameEventType::kDataFrameEventRead:
+      recv_streams[index].data += data.payload;
+      break;
+    default:
+      LOG(WARNING) << "Unexpected event type";
+  }
 }
 
 template <typename TMessageType>
@@ -323,6 +324,30 @@ std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
   // type than the type parameter. Figure out how to mitigate the conflicts, so this call can be
   // lifted to ProcessMessages().
   Cleanup<http2::Frame>();
+
+  return trace_records;
+}
+
+template <>
+std::vector<http2::NewRecord> ConnectionTracker::ProcessMessagesImpl() {
+  // TODO(oazizi): ECHECK that raw events are empty.
+
+  auto& req_messages = req_data()->Messages<http2::HalfStream>();
+  auto& resp_messages = resp_data()->Messages<http2::HalfStream>();
+
+  std::vector<http2::NewRecord> trace_records;
+
+  for (auto req_iter = req_messages.begin(), resp_iter = resp_messages.begin();
+       req_iter != req_messages.end(); ++req_iter, ++resp_iter) {
+    http2::HalfStream& req = *req_iter;
+    http2::HalfStream& resp = *resp_iter;
+
+    // TODO(oazizi): This placeholder just moves everything, whether it's complete or not.
+    trace_records.emplace_back(http2::NewRecord{std::move(req), std::move(resp)});
+    req_messages.pop_front();
+    resp_messages.pop_front();
+    oldest_active_stream_id_ += 2;
+  }
 
   return trace_records;
 }
@@ -608,6 +633,7 @@ std::string ConnectionTracker::DebugString(std::string_view prefix) const {
 template std::vector<http::Record> ConnectionTracker::ProcessMessages();
 template std::vector<http2::Record> ConnectionTracker::ProcessMessages();
 template std::vector<mysql::Record> ConnectionTracker::ProcessMessages();
+template std::vector<http2::NewRecord> ConnectionTracker::ProcessMessages();
 
 template std::string ConnectionTracker::DebugString<http::Record>(std::string_view prefix) const;
 template std::string ConnectionTracker::DebugString<http2::Record>(std::string_view prefix) const;

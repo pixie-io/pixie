@@ -186,7 +186,7 @@ class DataStream {
   // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
   std::variant<std::monostate, std::deque<http::HTTPMessage>, std::deque<http2::Frame>,
-               std::deque<http2::Stream>, std::deque<mysql::Packet>>
+               std::deque<http2::HalfStream>, std::deque<mysql::Packet>>
       messages_;
 
   // The following state keeps track of whether the raw events were touched or not since the last

@@ -38,7 +38,7 @@ struct HTTP2Message {
   }
 };
 
-struct Stream {
+struct HalfStream {
   NVMap headers;
   std::string data;
   NVMap trailers;
