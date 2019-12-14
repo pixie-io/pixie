@@ -67,7 +67,7 @@ namespace distributed {
  */
 class BlockingOperatorGRPCBridgeRule : public Rule {
  public:
-  explicit BlockingOperatorGRPCBridgeRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  BlockingOperatorGRPCBridgeRule() : Rule(nullptr) {}
 
  private:
   StatusOr<bool> Apply(IRNode* ir_node) override;
@@ -127,19 +127,17 @@ struct BlockingSplitNodeIDGroups {
  */
 class DistributedSplitter : public NotCopyable {
  public:
-  explicit DistributedSplitter(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
   /**
    * @brief The logical plan is split into two different pieces along blocking nodes lines.
    *
    * @param logical_plan: the input logical_plan
    * @return StatusOr<std::unique_ptr<BlockingSplitPLan>>: the plan split along blocking lines.
    */
-  StatusOr<std::unique_ptr<BlockingSplitPlan>> SplitAtBlockingNode(const IR* logical_plan);
+  static StatusOr<std::unique_ptr<BlockingSplitPlan>> SplitAtBlockingNode(const IR* logical_plan);
 
  private:
-  StatusOr<std::unique_ptr<IR>> ApplyGRPCBridgeRule(const IR* logical_plan);
-  BlockingSplitNodeIDGroups GetBlockingSplitGroupsFromIR(const IR* graph);
-  CompilerState* compiler_state_;
+  static StatusOr<std::unique_ptr<IR>> ApplyGRPCBridgeRule(const IR* logical_plan);
+  static BlockingSplitNodeIDGroups GetBlockingSplitGroupsFromIR(const IR* graph);
 };
 }  // namespace distributed
 }  // namespace compiler

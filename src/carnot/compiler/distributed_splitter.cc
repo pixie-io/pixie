@@ -53,7 +53,7 @@ Status BlockingOperatorGRPCBridgeRule::AddNewGRPCNodes(OperatorIR* parent_op,
 }
 
 StatusOr<std::unique_ptr<IR>> DistributedSplitter::ApplyGRPCBridgeRule(const IR* logical_plan) {
-  BlockingOperatorGRPCBridgeRule grpc_bridge_rule(compiler_state_);
+  BlockingOperatorGRPCBridgeRule grpc_bridge_rule;
   PL_ASSIGN_OR_RETURN(auto grpc_bridge_plan, logical_plan->Clone());
   PL_ASSIGN_OR_RETURN(bool execute_result, grpc_bridge_rule.Execute(grpc_bridge_plan.get()));
   if (!execute_result) {

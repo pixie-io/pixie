@@ -60,10 +60,8 @@ Status OneRemoteCoordinator::ProcessConfigImpl(const CarnotInfo& carnot_info) {
 
 StatusOr<std::unique_ptr<DistributedPlan>> OneRemoteCoordinator::CoordinateImpl(
     const IR* logical_plan) {
-  // TODO(philkuz) (PL-861) remove the reliance on compiler_state for rules, or at least physical
-  // splitter.
   PL_ASSIGN_OR_RETURN(std::unique_ptr<BlockingSplitPlan> split_plan,
-                      DistributedSplitter(nullptr).SplitAtBlockingNode(logical_plan));
+                      DistributedSplitter::SplitAtBlockingNode(logical_plan));
   auto physical_plan = std::make_unique<DistributedPlan>();
   DCHECK_GT(remote_processor_nodes_.size(), 0UL);
   int64_t remote_node_id = physical_plan->AddCarnot(remote_processor_nodes_[0]);

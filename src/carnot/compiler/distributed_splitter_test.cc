@@ -47,7 +47,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, blocking_agg_test) {
                              {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
   auto sink = MakeMemSink(agg, "out");
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule(compiler_state_.get());
+  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
   auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
@@ -85,7 +85,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, sink_only_test) {
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto sink = MakeMemSink(map2, "out");
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule(compiler_state_.get());
+  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
   auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
@@ -115,7 +115,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, sandwich_test) {
   auto map2 = MakeMap(agg, {{"count", MakeColumn("count", 0)}});
   MakeMemSink(map2, "out");
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule(compiler_state_.get());
+  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
   auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
@@ -151,7 +151,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, first_blocking_node_test) {
                               {{"mean2", MakeMeanFunc(MakeColumn("mean", 0))}});
   MakeMemSink(agg2, "out");
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule(compiler_state_.get());
+  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
   auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
@@ -189,7 +189,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, no_blocking_node_test) {
   auto map2 = MakeMap(map1, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
   EXPECT_OK(map2->SetRelation(MakeRelation()));
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule(compiler_state_.get());
+  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
   auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_FALSE(result.ConsumeValueOrDie());
@@ -208,7 +208,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, multiple_children_no_blocking_node_te
   auto map2 = MakeMap(map1, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
   EXPECT_OK(map2->SetRelation(MakeRelation()));
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule(compiler_state_.get());
+  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
   auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
@@ -226,7 +226,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, union_operator) {
     EXPECT_TRUE(Match(union_parent, MemorySource()));
   }
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule(compiler_state_.get());
+  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
   auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
@@ -274,7 +274,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, two_blocking_children) {
 
   EXPECT_EQ(mem_src->Children().size(), 2);
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule(compiler_state_.get());
+  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
   auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
@@ -331,7 +331,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, agg_join_children) {
 
   EXPECT_EQ(mem_src->Children().size(), 2);
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule(compiler_state_.get());
+  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
   auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
@@ -413,7 +413,7 @@ TEST_F(SplitterTest, simple_split_test) {
   EXPECT_OK(map1->SetRelation(MakeRelation()));
   auto mem_sink = MakeMemSink(map1, "out");
 
-  DistributedSplitter splitter(compiler_state_.get());
+  DistributedSplitter splitter;
   std::unique_ptr<BlockingSplitPlan> split_plan =
       splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
   auto before_blocking = split_plan->before_blocking.get();
@@ -443,7 +443,7 @@ TEST_F(SplitterTest, two_paths) {
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto mem_sink2 = MakeMemSink(map2, "out");
 
-  DistributedSplitter splitter(compiler_state_.get());
+  DistributedSplitter splitter;
   std::unique_ptr<BlockingSplitPlan> split_plan =
       splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
 
