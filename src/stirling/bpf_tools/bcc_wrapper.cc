@@ -13,6 +13,8 @@
 #include <string>
 
 #include "src/common/base/base.h"
+#include "src/stirling/obj_tools/elf_tools.h"
+#include "src/stirling/obj_tools/obj_tools.h"
 
 // TODO(yzhao): Do we need make this flag able to specify size for individual perf buffers?
 // At least, we should have different values for ones used for transferring data, and metadata.
@@ -27,8 +29,47 @@ DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 256,
 
 DEFINE_bool(stirling_bpf_enable_logging, false, "If true, BPF logging facilities are enabled.");
 
+// TODO(yzhao): We should not need this in production environment. Revise or remove.
+DEFINE_string(binary_file, "",
+              "A particular binary file to trace. If not specified, all binaries searched/traced.");
+
 namespace pl {
 namespace bpf_tools {
+
+using ::pl::stirling::elf_tools::ElfReader;
+using ::pl::stirling::obj_tools::GetActiveBinaries;
+
+StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(const ArrayView<UProbeTmpl>& tmpls) {
+  std::map<std::string, std::vector<int>> binaries;
+  if (!FLAGS_binary_file.empty()) {
+    std::error_code ec;
+    std::string path = fs::canonical(FLAGS_binary_file, ec);
+    ECHECK(!ec) << absl::Substitute("Failed to resolve file path for $0: $1", FLAGS_binary_file,
+                                    ec.message());
+    binaries[path] = {};
+  } else {
+    binaries = GetActiveBinaries("/proc");
+  }
+  std::vector<UProbeSpec> specs;
+  for (const auto& [binary, pid_vec] : binaries) {
+    PL_UNUSED(pid_vec);
+    VLOG(1) << absl::Substitute("Processing probes for $0", binary);
+    PL_ASSIGN_OR_RETURN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(binary));
+
+    for (const auto& tmpl : tmpls) {
+      // Non-trivial designated initializers not supported, as we need to do
+      // .probe_fn = std::string(tmpl.probe_fn).
+      bpf_tools::UProbeSpec spec = {binary, {}, tmpl.attach_type, std::string(tmpl.probe_fn)};
+      const std::vector<std::string> symbol_names =
+          elf_reader->ListSymbols(tmpl.symbol, tmpl.match_type);
+      for (auto& symbol : symbol_names) {
+        spec.symbol = symbol;
+        specs.push_back(spec);
+      }
+    }
+  }
+  return specs;
+}
 
 namespace {
 std::string_view ProbeAttachTypeString(bpf_probe_attach_type type) {

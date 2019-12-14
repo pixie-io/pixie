@@ -19,8 +19,8 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary
   return elf_reader;
 }
 
-StatusOr<std::vector<std::string>> ElfReader::ListSymbols(std::string_view search_symbol,
-                                                          SymbolMatchType match_type) {
+std::vector<std::string> ElfReader::ListSymbols(std::string_view search_symbol,
+                                                SymbolMatchType match_type) {
   std::vector<std::string> symbol_names;
   std::set<ELFIO::Elf64_Addr> symbol_addrs;
 

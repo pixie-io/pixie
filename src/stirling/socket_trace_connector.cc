@@ -71,6 +71,8 @@ DEFINE_bool(stirling_enable_http_tracing, true,
 // TODO(yzhao): We are not going to need this. Turn default to false.
 DEFINE_bool(stirling_enable_grpc_kprobe_tracing, true,
             "If true, stirling will trace and process gRPC RPCs.");
+DEFINE_bool(stirling_enable_grpc_uprobe_tracing, false,
+            "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
 DEFINE_bool(stirling_disable_self_tracing, true,
@@ -78,10 +80,6 @@ DEFINE_bool(stirling_disable_self_tracing, true,
 
 // This flag is for survivability only, in case the host's located headers don't work.
 DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
-
-// TODO(yzhao): We should not need this in production environment. Revise or remove.
-DEFINE_string(binary_file, "",
-              "A particular binary file to trace. If not specified, all binaries searched/traced.");
 
 namespace pl {
 namespace stirling {
@@ -114,6 +112,13 @@ Status SocketTraceConnector::InitImpl() {
         "timestamps in a way that matches how /proc/stat does it");
   }
 
+  if (FLAGS_stirling_enable_grpc_kprobe_tracing && FLAGS_stirling_enable_grpc_uprobe_tracing) {
+    LOG(DFATAL) << "--stirling_enable_grpc_kprobe_tracing and "
+                   "--stirling_enable_grpc_uprobe_tracing cannot be both true. "
+                   "--stirling_enable_grpc_kprobe_tracing is forced to false.";
+    FLAGS_stirling_enable_grpc_kprobe_tracing = false;
+  }
+
   std::vector<std::string> cflags;
   if (FLAGS_stirling_bpf_enable_logging) {
     cflags.emplace_back("-DENABLE_BPF_LOGGING");
@@ -121,25 +126,10 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFCode(cflags));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
 
-  // TODO(yzhao): Finalize what interface to use.
-  // TODO(yzhao): Add else branch.
-  if (!FLAGS_binary_file.empty()) {
-    std::error_code ec;
-    std::string path = fs::canonical(FLAGS_binary_file, ec);
-    ECHECK(!ec) << absl::Substitute("Failed to resolve file path for $0: $1", FLAGS_binary_file,
-                                    ec.message());
-    for (const auto& tmpl : kUProbeTmpls) {
-      // TODO(yzhao): Add symbol search.
-      // Note that GCC is sensitive to the order of designated initializers,
-      // so need to make sure the order is the same as in the UprobeSpec struct definition.
-      const bpf_tools::UProbeSpec spec = {
-          .binary_path = path,
-          .symbol = std::string(tmpl.symbol),
-          .attach_type = tmpl.attach_type,
-          .probe_fn = std::string(tmpl.probe_fn),
-      };
-      PL_RETURN_IF_ERROR(AttachUProbe(spec));
-    }
+  if (FLAGS_stirling_enable_grpc_uprobe_tracing) {
+    PL_ASSIGN_OR_RETURN(const std::vector<bpf_tools::UProbeSpec> specs,
+                        ResolveUProbeTmpls(kUProbeTmpls));
+    PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
   }
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << "Probes successfully deployed";
@@ -337,11 +327,11 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
   // go_grpc_data_event_t is 8-bytes aligned, data is 4-bytes.
   auto event = std::make_unique<HTTP2DataEvent>(data);
 
-  LOG(INFO) << absl::Substitute(
-      "t=$0 pid=$1 tid=$2 type=$3 fd=$4 stream_id=$5 data=$6", event->attr.entry_probe.timestamp_ns,
-      event->attr.entry_probe.upid.pid, event->attr.entry_probe.tid, TypeName(event->attr.type),
-      event->attr.fd, event->attr.stream_id, event->payload);
-  event->attr.entry_probe.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
+  LOG(INFO) << absl::Substitute("t=$0 pid=$1 fd=$2 type=$3 stream_id=$4 data=$5",
+                                event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
+                                event->attr.conn_id.fd, TypeName(event->attr.type),
+                                event->attr.stream_id, event->payload);
+  event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Data(std::move(event));
 }
 

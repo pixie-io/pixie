@@ -41,10 +41,10 @@ DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
 DECLARE_string(perf_buffer_events_output_path);
 DECLARE_bool(stirling_enable_http_tracing);
 DECLARE_bool(stirling_enable_grpc_kprobe_tracing);
+DECLARE_bool(stirling_enable_grpc_uprobe_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_bool(stirling_use_packaged_headers);
-DECLARE_string(binary_file);
 
 BCC_SRC_STRVIEW(http_trace_bcc_script, socket_trace);
 
@@ -179,15 +179,14 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   inline static constexpr bpf_tools::UProbeTmpl kUProbeTmplsArray[] = {
       {"google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
-       // TODO(yzhao): Move suffix matching. This is currently ignored.
-       bpf_tools::SymbolMatchType::kSuffix, "probe_http2_client_operate_headers",
+       elf_tools::SymbolMatchType::kSuffix, "probe_http2_client_operate_headers",
        bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader",
-       bpf_tools::SymbolMatchType::kSuffix, "probe_loopy_writer_write_header",
+       elf_tools::SymbolMatchType::kSuffix, "probe_loopy_writer_write_header",
        bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"golang.org/x/net/http2.(*Framer).WriteDataPadded", bpf_tools::SymbolMatchType::kSuffix,
+      {"golang.org/x/net/http2.(*Framer).WriteDataPadded", elf_tools::SymbolMatchType::kSuffix,
        "probe_framer_write_data", bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"golang.org/x/net/http2.(*Framer).checkFrameOrder", bpf_tools::SymbolMatchType::kSuffix,
+      {"golang.org/x/net/http2.(*Framer).checkFrameOrder", elf_tools::SymbolMatchType::kSuffix,
        "probe_framer_check_frame_order", bpf_probe_attach_type::BPF_PROBE_ENTRY},
   };
   static constexpr auto kUProbeTmpls = ArrayView<bpf_tools::UProbeTmpl>(kUProbeTmplsArray);

@@ -73,9 +73,6 @@ enum DataFrameEventType { kDataFrameEventUnknown, kDataFrameEventRead, kDataFram
 struct go_grpc_data_event_t {
   struct data_attr_t {
     enum EventType type;
-    struct probe_info_t entry_probe;
-    uint32_t fd;
-    uint32_t generation;
     uint32_t stream_id;
     uint32_t data_len;
 

@@ -91,11 +91,6 @@ class GRPCTraceGoTest : public ::testing::Test {
       : data_table_(kHTTPTable),
         ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
 
-  void SetUp() override {
-    FLAGS_stirling_enable_grpc_kprobe_tracing = true;
-    Init();
-  }
-
   void Init() {
     CHECK(!FLAGS_go_greeter_client_path.empty())
         << "--go_greeter_client_path cannot be empty. You should run this test with bazel.";
@@ -141,7 +136,16 @@ class GRPCTraceGoTest : public ::testing::Test {
   SocketTraceConnector* socket_trace_connector_;
 };
 
-TEST_F(GRPCTraceGoTest, TestGolangGrpcService) {
+class GoGRPCKProbeTraceTest : public GRPCTraceGoTest {
+ protected:
+  void SetUp() override {
+    FLAGS_stirling_enable_grpc_kprobe_tracing = true;
+    FLAGS_stirling_enable_grpc_uprobe_tracing = false;
+    GRPCTraceGoTest::Init();
+  }
+};
+
+TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
   // TODO(yzhao): Add a --count flag to greeter client so we can test the case of multiple RPC calls
   // (multiple HTTP2 streams).
   SubProcess c;
@@ -194,6 +198,7 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest {
  protected:
   void SetUp() override {
     FLAGS_stirling_enable_grpc_kprobe_tracing = false;
+    FLAGS_stirling_enable_grpc_uprobe_tracing = true;
     FLAGS_binary_file = FLAGS_go_greeter_client_path;
     GRPCTraceGoTest::Init();
   }
@@ -231,6 +236,10 @@ class GRPCCppTest : public ::testing::Test {
     // Also ensure test remain passing when the default changes.
     FLAGS_stirling_enable_parsing_protobufs = false;
     FLAGS_stirling_enable_grpc_kprobe_tracing = true;
+    // TODO(yzhao): Stirling DFATALs if kprobe and uprobe are working simultaneously, which would
+    // clobber the events. The default is already false, and Google test claims to restore flag
+    // values after each test. Not sure why this is needed.
+    FLAGS_stirling_enable_grpc_uprobe_tracing = false;
     FLAGS_stirling_disable_self_tracing = false;
 
     source_ = SocketTraceConnector::Create("bcc_grpc_trace");

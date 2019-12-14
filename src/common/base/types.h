@@ -72,6 +72,11 @@ class ArrayView {
   iterator end() const { return iterator(elements_ + size_); }
 };
 
+template <typename T>
+ArrayView<T> ToArrayView(const std::vector<T>& v) {
+  return ArrayView(&v[0], v.size());
+}
+
 /**
  * A read-only view into an container, with std library like interface.
  * Similar to how string_view is a view into a string.

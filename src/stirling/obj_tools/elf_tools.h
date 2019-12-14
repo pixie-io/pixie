@@ -39,8 +39,7 @@ class ElfReader {
    * @param search_symbol The symbol to search for.
    * @param match_type Type of search (e.g. exact match, subtring, suffix).
    */
-  StatusOr<std::vector<std::string>> ListSymbols(std::string_view search_symbol,
-                                                 SymbolMatchType match_type);
+  std::vector<std::string> ListSymbols(std::string_view search_symbol, SymbolMatchType match_type);
 
   /**
    * Returns the address of the specified symbol, if found.

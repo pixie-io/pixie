@@ -17,6 +17,7 @@ extern "C" {
 }
 
 #include "src/common/base/base.h"
+#include "src/stirling/obj_tools/elf_tools.h"
 
 // Macro to load BPF source code embedded in object files.
 // See 'pl_bpf_cc_resource' bazel rule to see how these are generated.
@@ -24,6 +25,7 @@ extern "C" {
 
 DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
 DECLARE_bool(stirling_bpf_enable_logging);
+DECLARE_string(binary_file);
 
 namespace pl {
 namespace bpf_tools {
@@ -56,9 +58,6 @@ struct UProbeSpec {
   std::string probe_fn;
 };
 
-// TODO(yzhao): This should be removed once D2829 is landed.
-enum class SymbolMatchType { kExact, kSuffix, kAny };
-
 /**
  * Describes a uprobe template.
  *
@@ -70,10 +69,16 @@ enum class SymbolMatchType { kExact, kSuffix, kAny };
 // TODO(yzhao): This should be updated after D2844 is landed.
 struct UProbeTmpl {
   std::string_view symbol;
-  SymbolMatchType match_type;
+  stirling::elf_tools::SymbolMatchType match_type;
   std::string_view probe_fn;
   bpf_probe_attach_type attach_type;
 };
+
+/**
+ * Looks up binaries under /proc, search for symbols matching the templates, and return
+ * fully-resolved specs.
+ */
+StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(const ArrayView<UProbeTmpl>& tmpls);
 
 /**
  * Describes a perf buffer used in BCC code, through which data is returned to user-space.
