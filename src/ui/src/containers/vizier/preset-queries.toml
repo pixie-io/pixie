@@ -279,25 +279,27 @@ pl.display(keep_columns)
 # Get the Virtual memory usage and average memory for all processes in the k8s cluster.
 # 
 t1 = pl.DataFrame(table='process_stats', start_time='-30s')
-pl.display(t1, 'dkdk')
 t1['vsize_mb'] = t1['vsize_bytes'] / 1024.0 / 1024.0
 t1['rss_bytes_mb'] = t1['rss_bytes'] / 1024.0 / 1024.0
 t1['timestamp'] = pl.bin(t1['time_'], pl.seconds(10))
-# uncomment and replace service_name to filter on a specific service.
-#t1 = t1[pl.contains(t1['upid'], 'service_name')]
-aggop = t1.groupby(['upid', 'timestamp']).agg(
+t1['cmdline'] = pl.upid_to_cmdline(t1['upid'])
+
+aggop = t1.groupby(['upid', 'timestamp', 'cmdline']).agg(
   vsize_mb=('vsize_mb', pl.mean),
   rss_bytes_mb=('rss_bytes_mb', pl.mean),
 )
 # Format column names.
 aggop['pid'] = pl.upid_to_pid(aggop['upid'])
 aggop['asid'] = pl.upid_to_asid(aggop['upid'])
+aggop['Process Name'] = aggop['cmdline'] 
 # uncomment and replace number to filter on a specific pid.
 #aggop = aggop[aggop['pid'] == 4862]
 aggop['Virtual Memory (mb)'] = aggop['vsize_mb']
 aggop['Average Memory (mb)'] = aggop['rss_bytes_mb']
 keep_columns = aggop[[
-  'upid', 
+  'pid',
+  'Process Name',
+  'asid',
   'timestamp', 
   'Virtual Memory (mb)', 
   'Average Memory (mb)'
