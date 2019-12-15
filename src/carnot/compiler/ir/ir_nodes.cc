@@ -58,6 +58,77 @@ Status IR::DeleteNodeAndChildren(int64_t node) {
   return DeleteNode(node);
 }
 
+StatusOr<IRNode*> MakeNodeWithType(IR* graph, IRNodeType node_type, int64_t new_node_id) {
+  switch (node_type) {
+    case IRNodeType::kMemorySource:
+      return graph->MakeNode<MemorySourceIR>(new_node_id);
+    case IRNodeType::kMemorySink:
+      return graph->MakeNode<MemorySinkIR>(new_node_id);
+    case IRNodeType::kRange:
+      return graph->MakeNode<RangeIR>(new_node_id);
+    case IRNodeType::kMap:
+      return graph->MakeNode<MapIR>(new_node_id);
+    case IRNodeType::kDrop:
+      return graph->MakeNode<DropIR>(new_node_id);
+    case IRNodeType::kBlockingAgg:
+      return graph->MakeNode<BlockingAggIR>(new_node_id);
+    case IRNodeType::kFilter:
+      return graph->MakeNode<FilterIR>(new_node_id);
+    case IRNodeType::kLimit:
+      return graph->MakeNode<LimitIR>(new_node_id);
+    case IRNodeType::kString:
+      return graph->MakeNode<StringIR>(new_node_id);
+    case IRNodeType::kFloat:
+      return graph->MakeNode<FloatIR>(new_node_id);
+    case IRNodeType::kInt:
+      return graph->MakeNode<IntIR>(new_node_id);
+    case IRNodeType::kBool:
+      return graph->MakeNode<BoolIR>(new_node_id);
+    case IRNodeType::kFunc:
+      return graph->MakeNode<FuncIR>(new_node_id);
+    case IRNodeType::kList:
+      return graph->MakeNode<ListIR>(new_node_id);
+    case IRNodeType::kTuple:
+      return graph->MakeNode<TupleIR>(new_node_id);
+    case IRNodeType::kColumn:
+      return graph->MakeNode<ColumnIR>(new_node_id);
+    case IRNodeType::kTime:
+      return graph->MakeNode<TimeIR>(new_node_id);
+    case IRNodeType::kMetadata:
+      return graph->MakeNode<MetadataIR>(new_node_id);
+    case IRNodeType::kMetadataResolver:
+      return graph->MakeNode<MetadataResolverIR>(new_node_id);
+    case IRNodeType::kMetadataLiteral:
+      return graph->MakeNode<MetadataLiteralIR>(new_node_id);
+    case IRNodeType::kGRPCSourceGroup:
+      return graph->MakeNode<GRPCSourceGroupIR>(new_node_id);
+    case IRNodeType::kGRPCSource:
+      return graph->MakeNode<GRPCSourceIR>(new_node_id);
+    case IRNodeType::kGRPCSink:
+      return graph->MakeNode<GRPCSinkIR>(new_node_id);
+    case IRNodeType::kUnion:
+      return graph->MakeNode<UnionIR>(new_node_id);
+    case IRNodeType::kJoin:
+      return graph->MakeNode<JoinIR>(new_node_id);
+    case IRNodeType::kTabletSourceGroup:
+      return graph->MakeNode<TabletSourceGroupIR>(new_node_id);
+    case IRNodeType::kGroupBy:
+      return graph->MakeNode<GroupByIR>(new_node_id);
+    case IRNodeType::kAny:
+    case IRNodeType::number_of_types:
+      break;
+  }
+  return error::Internal("Received unknown IRNode type");
+}
+
+StatusOr<IRNode*> IR::CopyNode(const IRNode* source) {
+  // Use the source's ID if we are copying in to a different graph.
+  auto new_node_id = this == source->graph_ptr() ? id_node_counter : source->id();
+  PL_ASSIGN_OR_RETURN(IRNode * new_node, MakeNodeWithType(this, source->type(), new_node_id));
+  PL_RETURN_IF_ERROR(new_node->CopyFromNode(source));
+  return new_node;
+}
+
 std::string IR::DebugString() {
   std::string debug_string = dag().DebugString() + "\n";
   for (auto const& a : id_node_map_) {
@@ -66,18 +137,12 @@ std::string IR::DebugString() {
   return debug_string;
 }
 
-StatusOr<IRNode*> IRNode::DeepCloneInto(IR* graph) const {
-  DCHECK(!graph->HasNode(id())) << absl::Substitute(
-      "Cannot clone $0. Target graph already has $1 with id $2", DebugString(),
-      graph->Get(id())->DebugString(), id());
-  PL_ASSIGN_OR_RETURN(IRNode * other, DeepCloneIntoImpl(graph));
-  DCHECK_EQ(other->id_, id_) << absl::Substitute(
-      "ids disagree for $0. Use MakeNode(int) instead of MakeNode()", other->type_string());
-  other->line_ = line_;
-  other->col_ = col_;
-  other->line_col_set_ = line_col_set_;
-  other->ast_node_ = ast_node_;
-  return other;
+Status IRNode::CopyFromNode(const IRNode* node) {
+  line_ = node->line_;
+  col_ = node->col_;
+  line_col_set_ = node->line_col_set_;
+  ast_node_ = node->ast_node_;
+  return CopyFromNodeImpl(node);
 }
 
 void IRNode::SetLineCol(int64_t line, int64_t col) {
@@ -465,16 +530,15 @@ Status GroupByIR::SetGroups(const std::vector<ColumnIR*>& groups) {
   return Status::OK();
 }
 
-StatusOr<IRNode*> GroupByIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(GroupByIR * group_by, graph->MakeNode<GroupByIR>(id()));
+Status GroupByIR::CopyFromNodeImpl(const IRNode* source) {
+  const GroupByIR* group_by = static_cast<const GroupByIR*>(source);
   std::vector<ColumnIR*> new_groups;
-  for (const ColumnIR* column : groups_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_column, column->DeepCloneInto(graph));
+  for (const ColumnIR* column : group_by->groups_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_column, graph_ptr()->CopyNode(column));
     DCHECK(Match(new_column, ColumnNode()));
     new_groups.push_back(static_cast<ColumnIR*>(new_column));
   }
-  PL_RETURN_IF_ERROR(group_by->SetGroups(new_groups));
-  return group_by;
+  return SetGroups(new_groups);
 }
 
 Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* expr,
@@ -711,6 +775,16 @@ Status MetadataResolverIR::AddMetadata(MetadataProperty* md_property) {
   return Status::OK();
 }
 
+Status OperatorIR::CopyFromNode(const IRNode* node) {
+  PL_RETURN_IF_ERROR(IRNode::CopyFromNode(node));
+  const OperatorIR* source = static_cast<const OperatorIR*>(node);
+
+  is_source_ = source->is_source_;
+  relation_ = source->relation_;
+  relation_init_ = source->relation_init_;
+  return Status::OK();
+}
+
 // Clone Functions
 StatusOr<std::unique_ptr<IR>> IR::Clone() const {
   auto new_ir = std::make_unique<IR>();
@@ -720,19 +794,23 @@ StatusOr<std::unique_ptr<IR>> IR::Clone() const {
     if (new_ir->HasNode(i) && new_ir->Get(i)->type() == node->type()) {
       continue;
     }
-    PL_RETURN_IF_ERROR(node->DeepCloneInto(new_ir.get()));
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, new_ir->CopyNode(node));
+    if (new_node->IsOperator()) {
+      PL_RETURN_IF_ERROR(static_cast<OperatorIR*>(new_node)->CopyParentsFrom(
+          static_cast<const OperatorIR*>(node)));
+    }
   }
   // TODO(philkuz) check to make sure these are the same.
   new_ir->dag_ = dag_;
   return new_ir;
 }
 
-Status OperatorIR::CopyParents(OperatorIR* new_op) const {
-  DCHECK_EQ(new_op->parents_.size(), 0UL);
-  for (const auto& parent : parents()) {
-    IRNode* new_parent = new_op->graph_ptr()->Get(parent->id());
+Status OperatorIR::CopyParentsFrom(const OperatorIR* source_op) {
+  DCHECK_EQ(parents_.size(), 0UL);
+  for (const auto& parent : source_op->parents()) {
+    IRNode* new_parent = graph_ptr()->Get(parent->id());
     DCHECK(Match(new_parent, Operator()));
-    PL_RETURN_IF_ERROR(new_op->AddParent(static_cast<OperatorIR*>(new_parent)));
+    PL_RETURN_IF_ERROR(AddParent(static_cast<OperatorIR*>(new_parent)));
   }
   return Status::OK();
 }
@@ -749,238 +827,252 @@ std::vector<OperatorIR*> OperatorIR::Children() const {
   return op_children;
 }
 
-StatusOr<IRNode*> ColumnIR::DeepCloneInto(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(IRNode * node, IRNode::DeepCloneInto(graph));
-  DCHECK(Match(node, ColumnNode()));
-  ColumnIR* column = static_cast<ColumnIR*>(node);
-  column->col_name_ = col_name_;
-  column->col_name_set_ = col_name_set_;
-  column->col_idx_ = col_idx_;
-  column->evaluated_data_type_ = evaluated_data_type_;
-  column->is_data_type_evaluated_ = is_data_type_evaluated_;
-  column->container_op_parent_idx_ = container_op_parent_idx_;
-  column->container_op_parent_idx_set_ = container_op_parent_idx_set_;
-  return column;
+Status ColumnIR::CopyFromNode(const IRNode* source) {
+  PL_RETURN_IF_ERROR(IRNode::CopyFromNode(source));
+  const ColumnIR* column = static_cast<const ColumnIR*>(source);
+  col_name_ = column->col_name_;
+  col_name_set_ = column->col_name_set_;
+  col_idx_ = column->col_idx_;
+  evaluated_data_type_ = column->evaluated_data_type_;
+  is_data_type_evaluated_ = column->is_data_type_evaluated_;
+  container_op_parent_idx_ = column->container_op_parent_idx_;
+  container_op_parent_idx_set_ = column->container_op_parent_idx_set_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> ColumnIR::DeepCloneIntoImpl(IR* graph) const {
-  return graph->MakeNode<ColumnIR>(id());
+Status ColumnIR::CopyFromNodeImpl(const IRNode*) { return Status::OK(); }
+
+Status StringIR::CopyFromNodeImpl(const IRNode* source) {
+  const StringIR* input = static_cast<const StringIR*>(source);
+  str_ = input->str_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> StringIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(StringIR * string_ir, graph->MakeNode<StringIR>(id()));
-  string_ir->str_ = str_;
-  return string_ir;
-}
-
-StatusOr<IRNode*> CollectionIR::DeepCloneIntoCollection(IR* graph, CollectionIR* collection) const {
+Status CollectionIR::CopyFromCollection(const CollectionIR* source) {
   std::vector<ExpressionIR*> new_children;
-  for (ExpressionIR* child : collection->children()) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_child, child->DeepCloneInto(graph));
-    DCHECK(Match(new_child, Expression()));
+  for (const ExpressionIR* child : source->children()) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_child, graph_ptr()->CopyNode(child));
+    CHECK(new_child->IsExpression());
     new_children.push_back(static_cast<ExpressionIR*>(new_child));
   }
-  PL_RETURN_IF_ERROR(collection->SetChildren(new_children));
-  return collection;
+  return SetChildren(new_children);
 }
 
-StatusOr<IRNode*> ListIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(CollectionIR * collection, graph->MakeNode<ListIR>(id()));
-  return DeepCloneIntoCollection(graph, collection);
+Status ListIR::CopyFromNodeImpl(const IRNode* source) {
+  return CopyFromCollection(static_cast<const ListIR*>(source));
 }
 
-StatusOr<IRNode*> TupleIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(CollectionIR * collection, graph->MakeNode<TupleIR>(id()));
-  return DeepCloneIntoCollection(graph, collection);
+Status TupleIR::CopyFromNodeImpl(const IRNode* source) {
+  return CopyFromCollection(static_cast<const TupleIR*>(source));
 }
 
-StatusOr<IRNode*> FuncIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(FuncIR * func, graph->MakeNode<FuncIR>(id()));
-  func->func_prefix_ = func_prefix_;
-  func->op_ = op_;
-  func->func_name_ = func_name_;
-  func->args_types_ = args_types_;
-  func->func_id_ = func_id_;
-  func->evaluated_data_type_ = evaluated_data_type_;
-  func->is_data_type_evaluated_ = is_data_type_evaluated_;
+Status FuncIR::CopyFromNodeImpl(const IRNode* node) {
+  const FuncIR* func = static_cast<const FuncIR*>(node);
+  func_prefix_ = func->func_prefix_;
+  op_ = func->op_;
+  func_name_ = func->func_name_;
+  args_types_ = func->args_types_;
+  func_id_ = func->func_id_;
+  evaluated_data_type_ = func->evaluated_data_type_;
+  is_data_type_evaluated_ = func->is_data_type_evaluated_;
 
-  for (ExpressionIR* arg : args_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_arg, arg->DeepCloneInto(graph));
-    DCHECK(Match(new_arg, Expression()));
-    PL_RETURN_IF_ERROR(func->AddArg(static_cast<ExpressionIR*>(new_arg)));
+  for (const ExpressionIR* arg : func->args_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_arg, graph_ptr()->CopyNode(arg));
+    CHECK(new_arg->IsExpression());
+    PL_RETURN_IF_ERROR(AddArg(static_cast<ExpressionIR*>(new_arg)));
   }
-  return func;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> FloatIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(FloatIR * float_ir, graph->MakeNode<FloatIR>(id()));
-  float_ir->val_ = val_;
-  return float_ir;
+Status FloatIR::CopyFromNodeImpl(const IRNode* node) {
+  const FloatIR* float_ir = static_cast<const FloatIR*>(node);
+  val_ = float_ir->val_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> IntIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(IntIR * int_ir, graph->MakeNode<IntIR>(id()));
-  int_ir->val_ = val_;
-  return int_ir;
+Status IntIR::CopyFromNodeImpl(const IRNode* node) {
+  const IntIR* int_ir = static_cast<const IntIR*>(node);
+  val_ = int_ir->val_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> BoolIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(BoolIR * bool_ir, graph->MakeNode<BoolIR>(id()));
-  bool_ir->val_ = val_;
-  return bool_ir;
+Status BoolIR::CopyFromNodeImpl(const IRNode* node) {
+  const BoolIR* bool_ir = static_cast<const BoolIR*>(node);
+  val_ = bool_ir->val_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> TimeIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(TimeIR * time_ir, graph->MakeNode<TimeIR>(id()));
-  time_ir->val_ = val_;
-  return time_ir;
+Status TimeIR::CopyFromNodeImpl(const IRNode* node) {
+  const TimeIR* time_ir = static_cast<const TimeIR*>(node);
+  val_ = time_ir->val_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> MetadataIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(MetadataIR * metadata, graph->MakeNode<MetadataIR>(id()));
-  metadata->metadata_name_ = metadata_name_;
-  return metadata;
+Status MetadataIR::CopyFromNodeImpl(const IRNode* node) {
+  const MetadataIR* metadata_ir = static_cast<const MetadataIR*>(node);
+  metadata_name_ = metadata_ir->metadata_name_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> MetadataLiteralIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(MetadataLiteralIR * metadata, graph->MakeNode<MetadataLiteralIR>(id()));
-  PL_ASSIGN_OR_RETURN(IRNode * new_literal, literal_->DeepCloneInto(graph));
+Status MetadataLiteralIR::CopyFromNodeImpl(const IRNode* node) {
+  const MetadataLiteralIR* literal_ir = static_cast<const MetadataLiteralIR*>(node);
+  PL_ASSIGN_OR_RETURN(IRNode * new_literal, graph_ptr()->CopyNode(literal_ir->literal_));
   DCHECK(Match(new_literal, DataNode())) << new_literal->DebugString();
-  PL_RETURN_IF_ERROR(metadata->SetLiteral(static_cast<DataIR*>(new_literal)));
-  return metadata;
+  return SetLiteral(static_cast<DataIR*>(new_literal));
 }
 
-StatusOr<IRNode*> MemorySourceIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem, graph->MakeNode<MemorySourceIR>(id()));
-  mem->table_name_ = table_name_;
-  mem->time_set_ = time_set_;
-  mem->time_start_ns_ = time_start_ns_;
-  mem->time_stop_ns_ = time_stop_ns_;
-  mem->column_names_ = column_names_;
-  mem->column_index_map_set_ = column_index_map_set_;
-  mem->column_index_map_ = column_index_map_;
-  mem->has_time_expressions_ = has_time_expressions_;
+Status MemorySourceIR::CopyFromNodeImpl(const IRNode* node) {
+  const MemorySourceIR* source_ir = static_cast<const MemorySourceIR*>(node);
+
+  table_name_ = source_ir->table_name_;
+  time_set_ = source_ir->time_set_;
+  time_start_ns_ = source_ir->time_start_ns_;
+  time_stop_ns_ = source_ir->time_stop_ns_;
+  column_names_ = source_ir->column_names_;
+  column_index_map_set_ = source_ir->column_index_map_set_;
+  column_index_map_ = source_ir->column_index_map_;
+  has_time_expressions_ = source_ir->has_time_expressions_;
 
   if (has_time_expressions_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_start_expr, start_time_expr_->DeepCloneInto(graph));
+    PL_ASSIGN_OR_RETURN(IRNode * new_start_expr,
+                        graph_ptr()->CopyNode(source_ir->start_time_expr_));
     DCHECK(Match(new_start_expr, Expression()));
-    PL_ASSIGN_OR_RETURN(IRNode * new_stop_expr, end_time_expr_->DeepCloneInto(graph));
+    PL_ASSIGN_OR_RETURN(IRNode * new_stop_expr, graph_ptr()->CopyNode(source_ir->end_time_expr_));
     DCHECK(Match(new_stop_expr, Expression()));
-    PL_RETURN_IF_ERROR(mem->SetTimeExpressions(static_cast<ExpressionIR*>(new_start_expr),
-                                               static_cast<ExpressionIR*>(new_stop_expr)));
+    PL_RETURN_IF_ERROR(SetTimeExpressions(static_cast<ExpressionIR*>(new_start_expr),
+                                          static_cast<ExpressionIR*>(new_stop_expr)));
   }
-  return mem;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> MemorySinkIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(MemorySinkIR * mem, graph->MakeNode<MemorySinkIR>(id()));
-  mem->name_ = name_;
-  mem->out_columns_ = out_columns_;
-  return mem;
+Status MemorySinkIR::CopyFromNodeImpl(const IRNode* node) {
+  const MemorySinkIR* sink_ir = static_cast<const MemorySinkIR*>(node);
+  name_ = sink_ir->name_;
+  out_columns_ = sink_ir->out_columns_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> RangeIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(RangeIR * range, graph->MakeNode<RangeIR>(id()));
-  PL_ASSIGN_OR_RETURN(range->start_repr_, start_repr_->DeepCloneInto(graph));
-  PL_ASSIGN_OR_RETURN(range->stop_repr_, stop_repr_->DeepCloneInto(graph));
-  return range;
+Status RangeIR::CopyFromNodeImpl(const IRNode* node) {
+  const RangeIR* range_ir = static_cast<const RangeIR*>(node);
+  PL_ASSIGN_OR_RETURN(start_repr_, graph_ptr()->CopyNode(range_ir->start_repr_));
+  PL_ASSIGN_OR_RETURN(stop_repr_, graph_ptr()->CopyNode(range_ir->stop_repr_));
+  return Status::OK();
 }
 
-StatusOr<IRNode*> MetadataResolverIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(MetadataResolverIR * metadata_resolver,
-                      graph->MakeNode<MetadataResolverIR>(id()));
-  metadata_resolver->metadata_columns_ = metadata_columns_;
-  return metadata_resolver;
+Status MetadataResolverIR::CopyFromNodeImpl(const IRNode* node) {
+  const MetadataResolverIR* resolver_ir = static_cast<const MetadataResolverIR*>(node);
+  metadata_columns_ = resolver_ir->metadata_columns_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> OperatorIR::DeepCloneInto(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(IRNode * node, IRNode::DeepCloneInto(graph));
-  DCHECK(node->IsOperator());
-  OperatorIR* new_op = static_cast<OperatorIR*>(node);
-  PL_RETURN_IF_ERROR(CopyParents(new_op));
-
-  new_op->is_source_ = is_source_;
-  new_op->relation_ = relation_;
-  new_op->relation_init_ = relation_init_;
-  return new_op;
-}
-
-StatusOr<IRNode*> MapIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(MapIR * map, graph->MakeNode<MapIR>(id()));
+Status MapIR::CopyFromNodeImpl(const IRNode* node) {
+  const MapIR* map_ir = static_cast<const MapIR*>(node);
   ColExpressionVector new_col_exprs;
-  for (const ColumnExpression& col_expr : col_exprs_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr.node->DeepCloneInto(graph));
+  for (const ColumnExpression& col_expr : map_ir->col_exprs_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col_expr.node));
     DCHECK(Match(new_node, Expression()));
     new_col_exprs.push_back({col_expr.name, static_cast<ExpressionIR*>(new_node)});
   }
-
-  PL_RETURN_IF_ERROR(map->SetColExprs(new_col_exprs));
-  map->keep_input_columns_ = keep_input_columns_;
-  return map;
+  keep_input_columns_ = map_ir->keep_input_columns_;
+  return SetColExprs(new_col_exprs);
 }
 
-StatusOr<IRNode*> DropIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(DropIR * drop, graph->MakeNode<DropIR>(id()));
-  drop->col_names_ = col_names_;
-  return drop;
+Status DropIR::CopyFromNodeImpl(const IRNode* node) {
+  const DropIR* drop = static_cast<const DropIR*>(node);
+  col_names_ = drop->col_names_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> BlockingAggIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(BlockingAggIR * blocking_agg, graph->MakeNode<BlockingAggIR>(id()));
+Status BlockingAggIR::CopyFromNodeImpl(const IRNode* node) {
+  const BlockingAggIR* blocking_agg = static_cast<const BlockingAggIR*>(node);
+
   ColExpressionVector new_agg_exprs;
-  for (const ColumnExpression& col_expr : aggregate_expressions_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr.node->DeepCloneInto(graph));
+  for (const ColumnExpression& col_expr : blocking_agg->aggregate_expressions_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col_expr.node));
     DCHECK(Match(new_node, Expression()));
     new_agg_exprs.push_back({col_expr.name, static_cast<ExpressionIR*>(new_node)});
   }
 
   std::vector<ColumnIR*> new_groups;
-  for (const ColumnIR* column : groups_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_column, column->DeepCloneInto(graph));
+  for (const ColumnIR* column : blocking_agg->groups_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_column, graph_ptr()->CopyNode(column));
     DCHECK(Match(new_column, ColumnNode()));
     new_groups.push_back(static_cast<ColumnIR*>(new_column));
   }
 
-  PL_RETURN_IF_ERROR(blocking_agg->SetAggExprs(new_agg_exprs));
-  PL_RETURN_IF_ERROR(blocking_agg->SetGroups(new_groups));
+  PL_RETURN_IF_ERROR(SetAggExprs(new_agg_exprs));
+  PL_RETURN_IF_ERROR(SetGroups(new_groups));
 
-  return blocking_agg;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> FilterIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(FilterIR * filter, graph->MakeNode<FilterIR>(id()));
-  PL_ASSIGN_OR_RETURN(IRNode * new_node, filter_expr_->DeepCloneInto(graph));
+Status FilterIR::CopyFromNodeImpl(const IRNode* node) {
+  const FilterIR* filter = static_cast<const FilterIR*>(node);
+  PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(filter->filter_expr_));
   DCHECK(Match(new_node, Expression()));
-  PL_RETURN_IF_ERROR(filter->SetFilterExpr(static_cast<ExpressionIR*>(new_node)));
-  return filter;
+  PL_RETURN_IF_ERROR(SetFilterExpr(static_cast<ExpressionIR*>(new_node)));
+  return Status::OK();
 }
 
-StatusOr<IRNode*> LimitIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(LimitIR * limit, graph->MakeNode<LimitIR>(id()));
-  limit->limit_value_ = limit_value_;
-  limit->limit_value_set_ = limit_value_set_;
-  return limit;
+Status LimitIR::CopyFromNodeImpl(const IRNode* node) {
+  const LimitIR* limit = static_cast<const LimitIR*>(node);
+  limit_value_ = limit->limit_value_;
+  limit_value_set_ = limit->limit_value_set_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> GRPCSinkIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, graph->MakeNode<GRPCSinkIR>(id()));
-  grpc_sink->destination_id_ = destination_id_;
-  grpc_sink->destination_address_ = destination_address_;
-  return grpc_sink;
+Status GRPCSinkIR::CopyFromNodeImpl(const IRNode* node) {
+  const GRPCSinkIR* grpc_sink = static_cast<const GRPCSinkIR*>(node);
+  destination_id_ = grpc_sink->destination_id_;
+  destination_address_ = grpc_sink->destination_address_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> GRPCSourceGroupIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
-                      graph->MakeNode<GRPCSourceGroupIR>(id()));
-  grpc_source_group->source_id_ = source_id_;
-  grpc_source_group->grpc_address_ = grpc_address_;
-  grpc_source_group->dependent_sinks_ = dependent_sinks_;
-  return grpc_source_group;
+Status GRPCSourceGroupIR::CopyFromNodeImpl(const IRNode* node) {
+  const GRPCSourceGroupIR* grpc_source_group = static_cast<const GRPCSourceGroupIR*>(node);
+  source_id_ = grpc_source_group->source_id_;
+  grpc_address_ = grpc_source_group->grpc_address_;
+  dependent_sinks_ = grpc_source_group->dependent_sinks_;
+  return Status::OK();
 }
 
-StatusOr<IRNode*> GRPCSourceIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(GRPCSourceIR * grpc_source, graph->MakeNode<GRPCSourceIR>(id()));
-  return grpc_source;
+Status GRPCSourceIR::CopyFromNodeImpl(const IRNode*) { return Status::OK(); }
+
+Status UnionIR::CopyFromNodeImpl(const IRNode* node) {
+  const UnionIR* union_node = static_cast<const UnionIR*>(node);
+  column_mappings_ = union_node->column_mappings_;
+  return Status::OK();
+}
+
+Status JoinIR::CopyFromNodeImpl(const IRNode* node) {
+  const JoinIR* join_node = static_cast<const JoinIR*>(node);
+  join_type_ = join_node->join_type_;
+
+  std::vector<ColumnIR*> new_output_columns;
+  for (const ColumnIR* col : join_node->output_columns_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col));
+    DCHECK(Match(new_node, ColumnNode()));
+    new_output_columns.push_back(static_cast<ColumnIR*>(new_node));
+  }
+  PL_RETURN_IF_ERROR(SetOutputColumns(join_node->column_names_, new_output_columns));
+
+  std::vector<ColumnIR*> new_left_columns;
+  for (const ColumnIR* col : join_node->left_on_columns_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col));
+    DCHECK(Match(new_node, ColumnNode()));
+    new_left_columns.push_back(static_cast<ColumnIR*>(new_node));
+  }
+
+  std::vector<ColumnIR*> new_right_columns;
+  for (const ColumnIR* col : join_node->right_on_columns_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col));
+    DCHECK(Match(new_node, ColumnNode()));
+    new_right_columns.push_back(static_cast<ColumnIR*>(new_node));
+  }
+
+  PL_RETURN_IF_ERROR(SetJoinColumns(new_left_columns, new_right_columns));
+  suffix_strs_ = join_node->suffix_strs_;
+  return Status::OK();
 }
 
 Status GRPCSourceGroupIR::ToProto(planpb::Operator* op) const {
@@ -1111,12 +1203,6 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
   // pb->set_rows_per_batch(1024);
 
   return Status::OK();
-}
-
-StatusOr<IRNode*> UnionIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(UnionIR * union_node, graph->MakeNode<UnionIR>(id()));
-  union_node->column_mappings_ = column_mappings_;
-  return union_node;
 }
 
 Status UnionIR::AddColumnMapping(const std::vector<int64_t>& column_mapping) {
@@ -1266,38 +1352,6 @@ Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
   }
   return Status::OK();
-}
-
-StatusOr<IRNode*> JoinIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(JoinIR * join_node, graph->MakeNode<JoinIR>(id()));
-  join_node->join_type_ = join_type_;
-
-  std::vector<ColumnIR*> new_output_columns;
-  for (ColumnIR* col_expr : output_columns_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr->DeepCloneInto(graph));
-    DCHECK(Match(new_node, ColumnNode()));
-    new_output_columns.push_back(static_cast<ColumnIR*>(new_node));
-  }
-  PL_RETURN_IF_ERROR(join_node->SetOutputColumns(column_names_, new_output_columns));
-
-  std::vector<ColumnIR*> new_left_columns;
-  for (ColumnIR* col_expr : left_on_columns_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr->DeepCloneInto(graph));
-    DCHECK(Match(new_node, ColumnNode()));
-    new_left_columns.push_back(static_cast<ColumnIR*>(new_node));
-  }
-
-  std::vector<ColumnIR*> new_right_columns;
-  for (ColumnIR* col_expr : right_on_columns_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr->DeepCloneInto(graph));
-    DCHECK(Match(new_node, ColumnNode()));
-    new_right_columns.push_back(static_cast<ColumnIR*>(new_node));
-  }
-
-  PL_RETURN_IF_ERROR(join_node->SetJoinColumns(new_left_columns, new_right_columns));
-  join_node->suffix_strs_ = suffix_strs_;
-
-  return join_node;
 }
 
 }  // namespace compiler

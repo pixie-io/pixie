@@ -168,27 +168,21 @@ class IRNode {
   }
 
   /*
-   * @brief DeepClone this node into a new graph. All children classes need to implement
-   * DeepCloneIntoImpl. If a child class is itself a parent of other classes, then it must override
-   * this class and call this method, followed by whatever operations that all of it's child
-   * classes must do during a DeepClone.
+   * @brief Copy data from the input node into this node. All children classes need to implement
+   * CopyFromNodeImpl. If a child class is itself a parent of other classes, then it must override
+   * this class and call this method, followed by whatever operations that all of its child
+   * classes must do during a CopyFromNode.
    *
-   * @param graph
-   * @return StatusOr<IRNode*>
+   * @param node
+   * @return Status
    */
-  virtual StatusOr<IRNode*> DeepCloneInto(IR* graph) const;
+  virtual Status CopyFromNode(const IRNode* node);
   void SetLineCol(int64_t line, int64_t col);
   void SetLineCol(const pypa::AstPtr& ast_node);
 
  protected:
   explicit IRNode(int64_t id, IRNodeType type) : type_(type), id_(id) {}
-  /**
-   * @brief The implementation of DeepCloneInto to be overridden by children of this class.
-   *
-   * @param graph
-   * @return StatusOr<IRNode*>
-   */
-  virtual StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const = 0;
+  virtual Status CopyFromNodeImpl(const IRNode* node) = 0;
 
   IRNodeType type_;
 
@@ -248,6 +242,8 @@ class IR {
     PL_RETURN_IF_ERROR(op->Init(args...));
     return op;
   }
+
+  StatusOr<IRNode*> CopyNode(const IRNode* source);
 
   Status AddEdge(int64_t from_node, int64_t to_node);
   bool HasEdge(int64_t from_node, int64_t to_node);
@@ -344,15 +340,12 @@ class OperatorIR : public IRNode {
   Status EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
   std::string ParentsDebugString();
-  Status CopyParents(OperatorIR* og_op) const;
+  Status CopyParentsFrom(const OperatorIR* og_op);
 
   /**
-   * @brief Override of DeepCloneInto that adds special handling for Operators.
-   *
-   * @param graph: the graph which to clone into. Should not be the same graph.
-   * @return StatusOr<IRNode*>: The copied node into the new graph.
+   * @brief Override of CopyFromNode that adds special handling for Operators.
    */
-  StatusOr<IRNode*> DeepCloneInto(IR* graph) const override;
+  Status CopyFromNode(const IRNode* node) override;
 
   virtual bool IsBlocking() const { return false; }
 
@@ -634,17 +627,13 @@ class ColumnIR : public ExpressionIR {
   bool container_op_parent_idx_set() const { return container_op_parent_idx_set_; }
 
   /**
-   * @brief Override DeepCloneInto to make sure all Column classes save the column attributes.
-   *
-   * @param graph
-   * @return StatusOr<IRNode*>
+   * @brief Override CopyFromNode to make sure all Column classes save the column attributes.
    */
-  StatusOr<IRNode*> DeepCloneInto(IR* graph) const override;
-
+  Status CopyFromNode(const IRNode* node) override;
   void SetContainingOperatorParentIdx(int64_t container_op_parent_idx);
 
  protected:
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
   /**
    * @brief Optional protected constructor for children types.
    */
@@ -684,8 +673,7 @@ class StringIR : public DataIR {
   explicit StringIR(int64_t id) : DataIR(id, IRNodeType::kString, types::DataType::STRING) {}
   Status Init(std::string str);
   std::string str() const { return str_; }
-
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   std::string str_;
@@ -703,15 +691,14 @@ class CollectionIR : public ExpressionIR {
   Status Init(const std::vector<ExpressionIR*>& children);
 
   std::vector<ExpressionIR*> children() const { return children_; }
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override = 0;
+  Status CopyFromNodeImpl(const IRNode* node) override = 0;
 
   bool IsCollection() const override { return true; }
   bool IsDataTypeEvaluated() const override { return true; }
   types::DataType EvaluatedDataType() const override { return types::DATA_TYPE_UNKNOWN; }
 
  protected:
-  StatusOr<IRNode*> DeepCloneIntoCollection(IR* graph, CollectionIR* collection) const;
-
+  Status CopyFromCollection(const CollectionIR* source);
   Status SetChildren(const std::vector<ExpressionIR*>& children);
 
  private:
@@ -722,14 +709,14 @@ class ListIR : public CollectionIR {
  public:
   ListIR() = delete;
   explicit ListIR(int64_t id) : CollectionIR(id, IRNodeType::kList) {}
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 };
 
 class TupleIR : public CollectionIR {
  public:
   TupleIR() = delete;
   explicit TupleIR(int64_t id) : CollectionIR(id, IRNodeType::kTuple) {}
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 };
 
 struct ColumnExpression {
@@ -811,8 +798,7 @@ class FuncIR : public ExpressionIR {
 
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
-
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   std::string func_prefix_ = kPLFuncPrefix;
@@ -835,8 +821,7 @@ class FloatIR : public DataIR {
   Status Init(double val);
 
   double val() const { return val_; }
-
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   double val_;
@@ -849,8 +834,7 @@ class IntIR : public DataIR {
   Status Init(int64_t val);
 
   int64_t val() const { return val_; }
-
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
   std::string DebugString() const override {
     return absl::Substitute("$0, $1)", DataIR::DebugString(), val());
@@ -867,8 +851,7 @@ class BoolIR : public DataIR {
   Status Init(bool val);
 
   bool val() const { return val_; }
-
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   bool val_;
@@ -881,8 +864,7 @@ class TimeIR : public DataIR {
   Status Init(int64_t val);
 
   bool val() const { return val_ != 0; }
-
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   int64_t val_;
@@ -903,7 +885,8 @@ class MetadataIR : public ColumnIR {
   MetadataResolverIR* resolver() const { return resolver_; }
   MetadataProperty* property() const { return property_; }
 
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
+
   std::string DebugString() const override;
 
  private:
@@ -931,7 +914,7 @@ class MetadataLiteralIR : public ExpressionIR {
   bool IsDataTypeEvaluated() const override { return literal_->IsDataTypeEvaluated(); }
   types::DataType EvaluatedDataType() const override { return literal_->EvaluatedDataType(); }
 
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
   Status SetLiteral(DataIR* literal);
 
  private:
@@ -1000,7 +983,7 @@ class MemorySourceIR : public OperatorIR {
 
   bool select_all() const { return column_names_.size() == 0; }
 
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
   const std::vector<std::string>& column_names() const { return column_names_; }
   void SetTabletValue(const types::TabletID& tablet_value) {
     tablet_value_ = tablet_value;
@@ -1051,7 +1034,7 @@ class MemorySinkIR : public OperatorIR {
   Status Init(OperatorIR* parent, const std::string& name,
               const std::vector<std::string> out_columns);
 
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
   const std::vector<std::string>& out_columns() const { return out_columns_; }
   bool IsBlocking() const override { return true; }
 
@@ -1076,8 +1059,7 @@ class RangeIR : public OperatorIR {
   IRNode* stop_repr() const { return stop_repr_; }
   Status SetStartStop(IRNode* start_repr, IRNode* stop_repr);
   Status ToProto(planpb::Operator*) const override;
-
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   // Start and Stop eventually evaluate to integers, but might be expressions.
@@ -1105,8 +1087,7 @@ class MetadataResolverIR : public OperatorIR {
   Status AddMetadata(MetadataProperty* md_property);
   bool HasMetadataColumn(const std::string& type);
   std::map<std::string, MetadataProperty*> metadata_columns() const { return metadata_columns_; }
-
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   std::map<std::string, MetadataProperty*> metadata_columns_;
@@ -1126,8 +1107,8 @@ class MapIR : public OperatorIR {
   const ColExpressionVector& col_exprs() const { return col_exprs_; }
   Status SetColExprs(const ColExpressionVector& exprs);
   Status ToProto(planpb::Operator*) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   bool keep_input_columns() const { return keep_input_columns_; }
   void set_keep_input_columns(bool keep_input_columns) { keep_input_columns_ = keep_input_columns; }
 
@@ -1151,7 +1132,7 @@ class DropIR : public OperatorIR {
 
   const std::vector<std::string>& col_names() const { return col_names_; }
 
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   // Names of the columns to drop.
@@ -1177,7 +1158,8 @@ class BlockingAggIR : public OperatorIR {
   Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
               const ColExpressionVector& agg_expr);
 
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
+
   inline bool IsBlocking() const override { return true; }
 
   Status AddGroup(ColumnIR* new_group) {
@@ -1200,7 +1182,8 @@ class GroupByIR : public OperatorIR {
   GroupByIR() = delete;
   explicit GroupByIR(int64_t id) : OperatorIR(id, IRNodeType::kGroupBy, true, false) {}
   Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups);
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
+
   std::vector<ColumnIR*> groups() const { return groups_; }
 
   // GroupBy does not exist as a protobuf object.
@@ -1225,7 +1208,7 @@ class FilterIR : public OperatorIR {
 
   Status Init(OperatorIR* parent, ExpressionIR* expr);
 
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   ExpressionIR* filter_expr_ = nullptr;
@@ -1246,7 +1229,7 @@ class LimitIR : public OperatorIR {
 
   Status Init(OperatorIR* parent, int64_t limit_value);
 
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   int64_t limit_value_;
@@ -1289,7 +1272,7 @@ class GRPCSinkIR : public OperatorIR {
   inline bool IsBlocking() const override { return true; }
 
  protected:
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   int64_t destination_id_ = -1;
@@ -1317,7 +1300,7 @@ class GRPCSourceIR : public OperatorIR {
   Status Init(const table_store::schema::Relation& relation) { return SetRelation(relation); }
 
  protected:
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 };
 
 /**
@@ -1361,7 +1344,7 @@ class GRPCSourceGroupIR : public OperatorIR {
   std::vector<GRPCSinkIR*> dependent_sinks() { return dependent_sinks_; }
 
  protected:
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
  private:
   int64_t source_id_ = -1;
@@ -1383,7 +1366,7 @@ class UnionIR : public OperatorIR {
 
   Status ToProto(planpb::Operator*) const override;
   Status Init(const std::vector<OperatorIR*>& parents);
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
   Status SetRelationFromParents();
   bool HasColumnMappings() const { return column_mappings_.size() == parents().size(); }
   const std::vector<ColumnMapping>& column_mappings() const { return column_mappings_; }
@@ -1431,7 +1414,7 @@ class JoinIR : public OperatorIR {
               const std::vector<ColumnIR*>& left_on_cols,
               const std::vector<ColumnIR*>& right_on_cols,
               const std::vector<std::string>& suffix_strs);
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status CopyFromNodeImpl(const IRNode* node) override;
 
   JoinType join_type() const { return join_type_; }
   const std::vector<ColumnIR*>& output_columns() const { return output_columns_; }
@@ -1534,9 +1517,9 @@ class TabletSourceGroupIR : public OperatorIR {
     return error::Unimplemented("$0::ToProto not implemented because no use found for it yet.",
                                 DebugString());
   }
-  StatusOr<IRNode*> DeepCloneIntoImpl(IR*) const override {
-    return error::Unimplemented(
-        "$0::DeepCloneInto not implemented because no use found for it yet.", DebugString());
+  Status CopyFromNodeImpl(const IRNode*) override {
+    return error::Unimplemented("$0::CopyFromNode not implemented because no use found for it yet.",
+                                DebugString());
   }
 
   const std::vector<types::TabletID>& tablets() const { return tablets_; }
