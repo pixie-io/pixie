@@ -671,20 +671,14 @@ StatusOr<bool> OperatorCompileTimeExpressionRule::EvalFilter(FilterIR* ir_node) 
   return true;
 }
 
-StatusOr<bool> OperatorCompileTimeExpressionRule::EvalMemorySource(MemorySourceIR* ir_node) {
-  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(ir_node);
+StatusOr<bool> OperatorCompileTimeExpressionRule::EvalMemorySource(MemorySourceIR* mem_src) {
   if (mem_src->IsTimeSet() || !mem_src->HasTimeExpressions()) {
     return false;
   }
 
   PL_ASSIGN_OR_RETURN(auto start, EvalCompileTimeSubExpressions(mem_src->start_time_expr()));
   PL_ASSIGN_OR_RETURN(auto stop, EvalCompileTimeSubExpressions(mem_src->end_time_expr()));
-
-  DCHECK(Match(start, Int()));
-  DCHECK(Match(stop, Int()));
-
-  // TOOD(nserrino): Break this out into its own rule.
-  mem_src->SetTimeValuesNS(static_cast<IntIR*>(start)->val(), static_cast<IntIR*>(stop)->val());
+  PL_RETURN_IF_ERROR(mem_src->SetTimeExpressions(start, stop));
   return true;
 }
 
@@ -767,6 +761,22 @@ StatusOr<ExpressionIR*> ConvertMemSourceStringTimesRule::ConvertStringTimes(Expr
     return func_node;
   }
   return node;
+}
+
+StatusOr<bool> SetMemSourceNsTimesRule::Apply(IRNode* node) {
+  if (!Match(node, MemorySource())) {
+    return false;
+  }
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(node);
+  if (mem_src->IsTimeSet() || !mem_src->HasTimeExpressions()) {
+    return false;
+  }
+
+  DCHECK(Match(mem_src->start_time_expr(), Int()));
+  DCHECK(Match(mem_src->end_time_expr(), Int()));
+  mem_src->SetTimeValuesNS(static_cast<IntIR*>(mem_src->start_time_expr())->val(),
+                           static_cast<IntIR*>(mem_src->end_time_expr())->val());
+  return true;
 }
 
 StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) {

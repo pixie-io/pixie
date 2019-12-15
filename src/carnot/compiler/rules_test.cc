@@ -964,6 +964,21 @@ TEST_F(CompilerTimeExpressionTest, mem_src_two_argument_string) {
   EXPECT_EQ(static_cast<IntIR*>(end_res)->val(), expected_stop_time);
 }
 
+TEST_F(CompilerTimeExpressionTest, mem_src_set_times) {
+  auto start = graph->CreateNode<IntIR>(ast, 19).ValueOrDie();
+  auto stop = graph->CreateNode<IntIR>(ast, 20).ValueOrDie();
+
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
+  SetMemSourceNsTimesRule times_rule;
+
+  auto result = times_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(mem_src->time_start_ns(), 19);
+  EXPECT_EQ(mem_src->time_stop_ns(), 20);
+}
+
 TEST_F(CompilerTimeExpressionTest, map_nested) {
   auto top_level = MakeConstantAddition(4, 6);
   auto nested =
@@ -1041,8 +1056,8 @@ TEST_F(CompilerTimeExpressionTest, mem_src_one_argument_function) {
   EXPECT_TRUE(result.ConsumeValueOrDie());
 
   // Make sure that we don't manipulate the start value.
-  EXPECT_EQ(mem_src->time_start_ns(), 10);
-  EXPECT_EQ(mem_src->time_stop_ns(), 13);
+  EXPECT_EQ(static_cast<IntIR*>(mem_src->start_time_expr())->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 13);
 }
 
 TEST_F(CompilerTimeExpressionTest, mem_src_two_argument_function) {
@@ -1055,8 +1070,8 @@ TEST_F(CompilerTimeExpressionTest, mem_src_two_argument_function) {
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  EXPECT_EQ(mem_src->time_start_ns(), 10);
-  EXPECT_EQ(mem_src->time_stop_ns(), 444);
+  EXPECT_EQ(static_cast<IntIR*>(mem_src->start_time_expr())->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 444);
 }
 
 TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
@@ -1075,8 +1090,8 @@ TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  EXPECT_EQ(mem_src->time_start_ns(), 10);
-  EXPECT_EQ(mem_src->time_stop_ns(), 100);
+  EXPECT_EQ(static_cast<IntIR*>(mem_src->start_time_expr())->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 100);
 }
 
 TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
@@ -1095,8 +1110,8 @@ TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
-  EXPECT_EQ(mem_src->time_start_ns(), 10);
-  EXPECT_EQ(mem_src->time_stop_ns(), 24);
+  EXPECT_EQ(static_cast<IntIR*>(mem_src->start_time_expr())->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 24);
 }
 
 TEST_F(CompilerTimeExpressionTest, already_completed) {

@@ -229,6 +229,20 @@ class ConvertMemSourceStringTimesRule : public Rule {
   StatusOr<ExpressionIR*> ConvertStringTimes(ExpressionIR* expr);
 };
 
+class SetMemSourceNsTimesRule : public Rule {
+  /**
+   * @brief SetMemSourceNsTimesRule is a simple rule to take the time expressions on memory sources
+   * (which should have already been evaluated to an Int by previous rules) and sets the nanosecond
+   * field that is used downstream.
+   *
+   */
+ public:
+  SetMemSourceNsTimesRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+};
+
 class VerifyFilterExpressionRule : public Rule {
   /**
    * @brief Quickly check to see whether filter expression returns True.

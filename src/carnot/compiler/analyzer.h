@@ -55,6 +55,7 @@ class Analyzer : public RuleExecutor {
     RuleBatch* intermediate_resolution_batch =
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
     intermediate_resolution_batch->AddRule<OperatorCompileTimeExpressionRule>(compiler_state_);
+    intermediate_resolution_batch->AddRule<SetMemSourceNsTimesRule>();
   }
 
   void CreateDataTypeResolutionBatch() {
