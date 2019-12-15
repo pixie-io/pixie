@@ -207,9 +207,26 @@ class OperatorCompileTimeExpressionRule : public Rule {
   StatusOr<bool> EvalMemorySource(MemorySourceIR* expr);
   StatusOr<ExpressionIR*> EvalCompileTimeSubExpressions(ExpressionIR* expr);
 
-  // Used to support taking strings like "-2m" into a range
-  StatusOr<ExpressionIR*> EvalStringTimes(ExpressionIR* ir_node);
   StatusOr<IntIR*> EvalExpression(IRNode* ir_node, bool convert_string_times);
+};
+
+class ConvertMemSourceStringTimesRule : public Rule {
+  /**
+   * @brief ConvertMemSourceStringTimesRuleUsed to support taking strings like "-2m"
+   * into a memory source. Currently special-cased in the system in order to provide
+   * an ergonomic way to specify times in a memory source without disrupting the more
+   * general constant-folding code in OperatorCompileTimeExpressionRule.
+   * TODO(nserrino/philkuz): figure out if users will want to pass strings in as expressions
+   * to memory sources that should NOT be converted to a time, and remove this rule if so.
+   *
+   */
+ public:
+  explicit ConvertMemSourceStringTimesRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+  bool HasStringTime(const ExpressionIR* expr);
+  StatusOr<ExpressionIR*> ConvertStringTimes(ExpressionIR* expr);
 };
 
 class VerifyFilterExpressionRule : public Rule {

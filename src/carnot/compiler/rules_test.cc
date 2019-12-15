@@ -911,6 +911,59 @@ class CompilerTimeExpressionTest : public RulesTest {
   MemorySourceIR* mem_src;
 };
 
+TEST_F(CompilerTimeExpressionTest, mem_src_one_argument_string) {
+  int64_t num_minutes_ago = 2;
+  std::chrono::nanoseconds exp_time = std::chrono::minutes(num_minutes_ago);
+  int64_t expected_time = time_now - exp_time.count();
+  std::string stop_str_repr = absl::Substitute("-$0m", num_minutes_ago);
+
+  auto stop = graph->CreateNode<StringIR>(ast, stop_str_repr).ValueOrDie();
+  auto start = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
+
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
+  ConvertMemSourceStringTimesRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  auto start_res = mem_src->start_time_expr();
+  auto end_res = mem_src->end_time_expr();
+  EXPECT_TRUE(Match(start_res, Int()));
+  EXPECT_TRUE(Match(end_res, Int()));
+  EXPECT_EQ(static_cast<IntIR*>(start_res)->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(end_res)->val(), expected_time);
+}
+
+TEST_F(CompilerTimeExpressionTest, mem_src_two_argument_string) {
+  int64_t start_num_minutes_ago = 2;
+  int64_t stop_num_minutes_ago = 1;
+  std::chrono::nanoseconds exp_stop_time = std::chrono::minutes(stop_num_minutes_ago);
+  int64_t expected_stop_time = time_now - exp_stop_time.count();
+  std::string stop_str_repr = absl::Substitute("-$0m", stop_num_minutes_ago);
+
+  std::chrono::nanoseconds exp_start_time = std::chrono::minutes(start_num_minutes_ago);
+  int64_t expected_start_time = time_now - exp_start_time.count();
+  std::string start_str_repr = absl::Substitute("-$0m", start_num_minutes_ago);
+
+  auto start = graph->CreateNode<StringIR>(ast, start_str_repr).ValueOrDie();
+  auto stop = graph->CreateNode<StringIR>(ast, stop_str_repr).ValueOrDie();
+
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
+  ConvertMemSourceStringTimesRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  auto start_res = mem_src->start_time_expr();
+  auto end_res = mem_src->end_time_expr();
+  EXPECT_TRUE(Match(start_res, Int()));
+  EXPECT_TRUE(Match(end_res, Int()));
+  EXPECT_EQ(static_cast<IntIR*>(start_res)->val(), expected_start_time);
+  EXPECT_EQ(static_cast<IntIR*>(end_res)->val(), expected_stop_time);
+}
+
 TEST_F(CompilerTimeExpressionTest, map_nested) {
   auto top_level = MakeConstantAddition(4, 6);
   auto nested =
@@ -992,7 +1045,7 @@ TEST_F(CompilerTimeExpressionTest, mem_src_one_argument_function) {
   EXPECT_EQ(mem_src->time_stop_ns(), 13);
 }
 
-TEST_F(CompilerTimeExpressionTest, two_argument_function) {
+TEST_F(CompilerTimeExpressionTest, mem_src_two_argument_function) {
   auto start = MakeConstantAddition(4, 6);
   auto stop = MakeConstantAddition(123, 321);
   EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
@@ -1004,71 +1057,6 @@ TEST_F(CompilerTimeExpressionTest, two_argument_function) {
 
   EXPECT_EQ(mem_src->time_start_ns(), 10);
   EXPECT_EQ(mem_src->time_stop_ns(), 444);
-}
-
-TEST_F(CompilerTimeExpressionTest, range_one_argument_string) {
-  int64_t num_minutes_ago = 2;
-  std::chrono::nanoseconds exp_time = std::chrono::minutes(num_minutes_ago);
-  int64_t expected_time = time_now - exp_time.count();
-  std::string stop_str_repr = absl::Substitute("-$0m", num_minutes_ago);
-
-  auto stop = graph->CreateNode<StringIR>(ast, stop_str_repr).ValueOrDie();
-  auto start = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
-
-  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
-  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
-
-  auto result = compiler_expr_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
-
-  EXPECT_EQ(mem_src->time_start_ns(), 10);
-  EXPECT_EQ(mem_src->time_stop_ns(), expected_time);
-}
-
-TEST_F(CompilerTimeExpressionTest, two_argument_string) {
-  int64_t start_num_minutes_ago = 2;
-  int64_t stop_num_minutes_ago = 1;
-  std::chrono::nanoseconds exp_stop_time = std::chrono::minutes(stop_num_minutes_ago);
-  int64_t expected_stop_time = time_now - exp_stop_time.count();
-  std::string stop_str_repr = absl::Substitute("-$0m", stop_num_minutes_ago);
-
-  std::chrono::nanoseconds exp_start_time = std::chrono::minutes(start_num_minutes_ago);
-  int64_t expected_start_time = time_now - exp_start_time.count();
-  std::string start_str_repr = absl::Substitute("-$0m", start_num_minutes_ago);
-
-  auto start = graph->CreateNode<StringIR>(ast, start_str_repr).ValueOrDie();
-  auto stop = graph->CreateNode<StringIR>(ast, stop_str_repr).ValueOrDie();
-
-  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
-  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
-
-  auto result = compiler_expr_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
-
-  EXPECT_EQ(mem_src->time_start_ns(), expected_start_time);
-  EXPECT_EQ(mem_src->time_stop_ns(), expected_stop_time);
-}
-
-TEST_F(CompilerTimeExpressionTest, nested_function) {
-  IntIR* constant = graph->CreateNode<IntIR>(ast, 111).ValueOrDie();
-  IntIR* start = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
-  FuncIR* stop =
-      graph
-          ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
-                               std::vector<ExpressionIR*>{MakeConstantAddition(123, 321), constant})
-          .ValueOrDie();
-
-  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
-  OperatorCompileTimeExpressionRule compiler_expr_rule(compiler_state_.get());
-
-  auto result = compiler_expr_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ValueOrDie());
-
-  EXPECT_EQ(mem_src->time_start_ns(), 10);
-  EXPECT_EQ(mem_src->time_stop_ns(), 555);
 }
 
 TEST_F(CompilerTimeExpressionTest, subtraction_handling) {

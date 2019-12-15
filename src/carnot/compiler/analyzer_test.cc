@@ -766,6 +766,34 @@ TEST_F(AnalyzerTest, eval_compile_time_function) {
   ASSERT_OK(analyzer_status);
 }
 
+// TODO(nserrino, philkuz): PL-1264 Add a  test case like start_time=a+a when that issue is fixed.
+const char* kCompileTimeStringFunc1 = R"pxl(
+t1 = pl.DataFrame(table='http_events', start_time='-5m' + '-1h')
+pl.display(t1)
+)pxl";
+const char* kCompileTimeStringFunc2 = R"pxl(
+a = '-5m'
+t1 = pl.DataFrame(table='http_events', start_time=a+'-10m')
+t2 = pl.DataFrame(table='http_events', start_time='-1h', end_time=a+'-15m')
+pl.display(t1)
+pl.display(t2)
+)pxl";
+
+TEST_F(AnalyzerTest, eval_compile_time_function_string_time_func) {
+  auto ir_graph_status = CompileGraph(kCompileTimeStringFunc1);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_OK(analyzer_status);
+}
+TEST_F(AnalyzerTest, eval_compile_time_function_string_time_repeat_arg_two_ops) {
+  auto ir_graph_status = CompileGraph(kCompileTimeStringFunc2);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_OK(analyzer_status);
+}
+
 const char* kMultiDisplays = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-5m')
 pl.display(t1)

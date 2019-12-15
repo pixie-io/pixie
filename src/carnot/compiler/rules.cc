@@ -677,22 +677,77 @@ StatusOr<bool> OperatorCompileTimeExpressionRule::EvalMemorySource(MemorySourceI
     return false;
   }
 
-  PL_ASSIGN_OR_RETURN(auto start_expr, EvalStringTimes(mem_src->start_time_expr()));
-  PL_ASSIGN_OR_RETURN(auto stop_expr, EvalStringTimes(mem_src->end_time_expr()));
-  PL_ASSIGN_OR_RETURN(auto start, EvalCompileTimeSubExpressions(start_expr));
-  PL_ASSIGN_OR_RETURN(auto stop, EvalCompileTimeSubExpressions(stop_expr));
+  PL_ASSIGN_OR_RETURN(auto start, EvalCompileTimeSubExpressions(mem_src->start_time_expr()));
+  PL_ASSIGN_OR_RETURN(auto stop, EvalCompileTimeSubExpressions(mem_src->end_time_expr()));
 
   DCHECK(Match(start, Int()));
   DCHECK(Match(stop, Int()));
 
+  // TOOD(nserrino): Break this out into its own rule.
   mem_src->SetTimeValuesNS(static_cast<IntIR*>(start)->val(), static_cast<IntIR*>(stop)->val());
   return true;
 }
 
-// Support taking strings like "-2m" into a MemorySource start/end time.
-// TODO(nserrino, philkuz) Generalize this so that it can work in other operators
+StatusOr<bool> ConvertMemSourceStringTimesRule::Apply(IRNode* node) {
+  if (!Match(node, MemorySource())) {
+    return false;
+  }
+
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(node);
+  if (mem_src->IsTimeSet() || !mem_src->HasTimeExpressions()) {
+    return false;
+  }
+
+  bool start_has_string_time = HasStringTime(mem_src->start_time_expr());
+  bool end_has_string_time = HasStringTime(mem_src->end_time_expr());
+
+  if (!start_has_string_time && !end_has_string_time) {
+    return false;
+  }
+
+  ExpressionIR* start_time = mem_src->start_time_expr();
+  ExpressionIR* end_time = mem_src->end_time_expr();
+
+  if (start_has_string_time) {
+    PL_ASSIGN_OR_RETURN(start_time, ConvertStringTimes(start_time));
+  }
+  if (end_has_string_time) {
+    PL_ASSIGN_OR_RETURN(end_time, ConvertStringTimes(end_time));
+  }
+
+  PL_RETURN_IF_ERROR(mem_src->SetTimeExpressions(start_time, end_time));
+  return true;
+}
+
+bool ConvertMemSourceStringTimesRule::HasStringTime(const ExpressionIR* node) {
+  if (Match(node, String())) {
+    return true;
+  }
+  if (Match(node, Func())) {
+    const FuncIR* func = static_cast<const FuncIR*>(node);
+    for (const ExpressionIR* arg : func->args()) {
+      bool has_string_time = HasStringTime(arg);
+      if (has_string_time) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Support taking strings like "-2m" into a memory source.
+// TODO(nserrino, philkuz) Figure out if we can generalize so that it can work in other operators
 // without polluting our approach to types.
-StatusOr<ExpressionIR*> OperatorCompileTimeExpressionRule::EvalStringTimes(ExpressionIR* node) {
+StatusOr<ExpressionIR*> ConvertMemSourceStringTimesRule::ConvertStringTimes(ExpressionIR* node) {
+  // Mem sources treat expressions differently than other nodes, so if we run into one with
+  // a shared parent, we should clone it to make sure that that operator doesn't get the same
+  // special case treatment of the expression.
+  if (node->graph_ptr()->dag().ParentsOf(node->id()).size() > 1) {
+    PL_ASSIGN_OR_RETURN(IRNode * copy, node->graph_ptr()->CopyNode(node));
+    CHECK(Match(copy, Expression()));
+    node = static_cast<ExpressionIR*>(copy);
+  }
+
   if (Match(node, String())) {
     auto str_node = static_cast<StringIR*>(node);
     PL_ASSIGN_OR_RETURN(int64_t int_val, StringToTimeInt(str_node->str()));
@@ -703,16 +758,13 @@ StatusOr<ExpressionIR*> OperatorCompileTimeExpressionRule::EvalStringTimes(Expre
     return out_node;
   } else if (Match(node, Func())) {
     auto func_node = static_cast<FuncIR*>(node);
-    std::vector<ExpressionIR*> evaled_args;
-    for (const auto arg : func_node->args()) {
-      PL_ASSIGN_OR_RETURN(auto eval_result, EvalStringTimes(arg));
-      evaled_args.push_back(eval_result);
+    for (const auto& [idx, arg] : Enumerate(func_node->args())) {
+      PL_ASSIGN_OR_RETURN(auto eval_result, ConvertStringTimes(arg));
+      if (eval_result != arg) {
+        PL_RETURN_IF_ERROR(func_node->UpdateArg(idx, eval_result));
+      }
     }
-    PL_ASSIGN_OR_RETURN(
-        FuncIR * converted_func,
-        node->graph_ptr()->CreateNode<FuncIR>(node->ast_node(), func_node->op(), evaled_args));
-    DeferNodeDeletion(node->id());
-    return converted_func;
+    return func_node;
   }
   return node;
 }
