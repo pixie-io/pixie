@@ -17,6 +17,7 @@ extern "C" {
 }
 
 #include "src/common/base/base.h"
+#include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
 // Macro to load BPF source code embedded in object files.
@@ -78,7 +79,9 @@ struct UProbeTmpl {
  * Looks up binaries under /proc, search for symbols matching the templates, and return
  * fully-resolved specs.
  */
-StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(const ArrayView<UProbeTmpl>& tmpls);
+// TODO(yzhao): The input data structures are too specific, consider using with more generic types.
+StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(
+    const std::map<std::string, std::vector<int>>& binaries, const ArrayView<UProbeTmpl>& tmpls);
 
 /**
  * Describes a perf buffer used in BCC code, through which data is returned to user-space.

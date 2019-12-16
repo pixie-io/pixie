@@ -17,13 +17,13 @@
 #include "src/common/base/utils.h"
 #include "src/common/protobufs/recordio.h"
 #include "src/shared/metadata/metadata.h"
-#include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/go_grpc.h"
 #include "src/stirling/http2/grpc.h"
 #include "src/stirling/http2/http2.h"
 #include "src/stirling/mysql/mysql_parse.h"
+#include "src/stirling/obj_tools/obj_tools.h"
 #include "src/stirling/proto/sock_event.pb.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/utils/json.h"
@@ -93,6 +93,8 @@ using ::pl::stirling::kMySQLTable;
 using ::pl::stirling::grpc::PBTextFormat;
 using ::pl::stirling::grpc::PBWireToText;
 using ::pl::stirling::http2::HTTP2Message;
+using ::pl::stirling::obj_tools::GetActiveBinaries;
+using ::pl::stirling::obj_tools::GetSymAddrs;
 using ::pl::stirling::utils::WriteMapAsJSON;
 
 namespace fs = std::experimental::filesystem;
@@ -127,8 +129,26 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
 
   if (FLAGS_stirling_enable_grpc_uprobe_tracing) {
+    // TODO(yzhao): Factor line 133-149 to a helper function.
+    std::map<std::string, std::vector<int>> binaries;
+    if (!FLAGS_binary_file.empty()) {
+      std::error_code ec;
+      std::string path = fs::canonical(FLAGS_binary_file, ec);
+      if (ec) {
+        return error::NotFound(absl::Substitute("Failed to resolve file path for $0: $1",
+                                                FLAGS_binary_file, ec.message()));
+      }
+      binaries[path] = {};
+    } else {
+      binaries = GetActiveBinaries("/proc");
+    }
+    ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
+        bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
+    for (const auto& [pid, symaddrs] : GetSymAddrs(binaries)) {
+      symaddrs_map.update_value(pid, symaddrs);
+    }
     PL_ASSIGN_OR_RETURN(const std::vector<bpf_tools::UProbeSpec> specs,
-                        ResolveUProbeTmpls(kUProbeTmpls));
+                        ResolveUProbeTmpls(binaries, kUProbeTmpls));
     PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
   }
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));

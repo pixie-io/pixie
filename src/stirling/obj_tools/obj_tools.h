@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 
 namespace pl {
 namespace stirling {
@@ -35,6 +36,13 @@ pl::StatusOr<std::experimental::filesystem::path> ResolveExe(
  * @return a set of all active binaries.
  */
 std::map<std::string, std::vector<int>> GetActiveBinaries(std::experimental::filesystem::path proc);
+
+/**
+ * Looks up specific symbols of the binaries, and returns a map from PIDs that execute the
+ * binaries to the symbol addresses.
+ */
+std::map<uint32_t, struct conn_symaddrs_t> GetSymAddrs(
+    const std::map<std::string, std::vector<int>>& binaries);
 
 }  // namespace obj_tools
 }  // namespace stirling

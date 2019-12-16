@@ -37,19 +37,9 @@ namespace pl {
 namespace bpf_tools {
 
 using ::pl::stirling::elf_tools::ElfReader;
-using ::pl::stirling::obj_tools::GetActiveBinaries;
 
-StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(const ArrayView<UProbeTmpl>& tmpls) {
-  std::map<std::string, std::vector<int>> binaries;
-  if (!FLAGS_binary_file.empty()) {
-    std::error_code ec;
-    std::string path = fs::canonical(FLAGS_binary_file, ec);
-    ECHECK(!ec) << absl::Substitute("Failed to resolve file path for $0: $1", FLAGS_binary_file,
-                                    ec.message());
-    binaries[path] = {};
-  } else {
-    binaries = GetActiveBinaries("/proc");
-  }
+StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(
+    const std::map<std::string, std::vector<int>>& binaries, const ArrayView<UProbeTmpl>& tmpls) {
   std::vector<UProbeSpec> specs;
   for (const auto& [binary, pid_vec] : binaries) {
     PL_UNUSED(pid_vec);

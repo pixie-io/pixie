@@ -17,6 +17,7 @@ pl_cc_library(
     ),
     deps = [
         "@com_github_serge1_elfio//:elfio",
+        "//src/stirling/bcc_bpf_interface:cc_library",
     ],
 )
 
@@ -24,6 +25,22 @@ pl_cc_test(
     name = "elf_tools_test",
     srcs = ["elf_tools_test.cc"],
     data = ["//src/stirling/obj_tools/testdata:dummy_exe"],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "obj_tools_test",
+    srcs = ["obj_tools_test.cc"],
+    args = [
+        "--go_greeter_client_path=$(location //src/stirling/http2/testing/go_grpc_client" +
+        ":greeter_client)",
+    ],
+    data = [
+        "//src/stirling/http2/testing/go_grpc_client:greeter_client",
+    ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",

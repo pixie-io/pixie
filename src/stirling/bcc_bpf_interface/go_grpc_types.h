@@ -25,19 +25,6 @@ enum EventType {
   kWriteData,
 };
 
-struct ProbeInfo {
-  union {
-    uint32_t tgid;
-    uint32_t pid;
-  };
-  union {
-    uint64_t tgid_start_time_ticks;
-    uint64_t pid_start_time_ticks;
-  };
-  uint32_t tid;
-  uint64_t timestamp_ns;
-};
-
 struct header_field_t {
   uint32_t size;
   char msg[HEADER_FIELD_STR_SIZE];
