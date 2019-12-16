@@ -30,6 +30,10 @@ struct HTTP2Message {
   }
 };
 
+// This struct represents the frames of interest transmitted on an HTTP2 stream.
+// It is called a HalfStream because it captures one direction only.
+// For example, the request is one HalfStream while the response is on another HalfStream,
+// both of which are on the same stream ID of the same connection.
 struct HalfStream {
   NVMap headers;
   std::string data;
@@ -37,6 +41,9 @@ struct HalfStream {
   bool end_stream;
 };
 
+// This struct represents an HTTP2 stream (https://http2.github.io/http2-spec/#StreamsLayer).
+// It is split out into a send and recv. Depending on whether we are tracing the requestor
+// or the responder, send and recv contain either the request or response.
 struct Stream {
   HalfStream send;
   HalfStream recv;

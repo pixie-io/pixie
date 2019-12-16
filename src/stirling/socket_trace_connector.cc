@@ -428,14 +428,14 @@ void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> e
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
-  tracker.AddHTTP2Header(*event);
+  tracker.AddHTTP2Header(std::move(event));
 }
 
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
-  tracker.AddHTTP2Data(*event);
+  tracker.AddHTTP2Data(std::move(event));
 }
 
 const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(

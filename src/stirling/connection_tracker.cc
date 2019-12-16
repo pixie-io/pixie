@@ -166,13 +166,13 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
 }
 
 // TODO(oazizi): Change from const reference to pointer, to make std::move meaningful.
-void ConnectionTracker::AddHTTP2Header(const HTTP2HeaderEvent& hdr) {
+void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   // A disabled tracker doesn't collect data events.
   if (disabled_) {
     return;
   }
 
-  const conn_id_t& conn_id = hdr.attr.conn_id;
+  const conn_id_t& conn_id = hdr->attr.conn_id;
 
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
@@ -180,16 +180,16 @@ void ConnectionTracker::AddHTTP2Header(const HTTP2HeaderEvent& hdr) {
              "[pid=$0 fd=$1 gen=$2].",
              conn_id.upid.pid, conn_id.fd, conn_id.generation);
 
-  UpdateTimestamps(hdr.attr.timestamp_ns);
+  UpdateTimestamps(hdr->attr.timestamp_ns);
   SetPID(conn_id);
 
   // Don't trace any control messages.
-  if (hdr.attr.stream_id == 0) {
+  if (hdr->attr.stream_id == 0) {
     return;
   }
 
   bool write_event = false;
-  switch (hdr.attr.htype) {
+  switch (hdr->attr.htype) {
     case HeaderEventType::kHeaderEventWrite:
       write_event = true;
       break;
@@ -201,18 +201,18 @@ void ConnectionTracker::AddHTTP2Header(const HTTP2HeaderEvent& hdr) {
       return;
   }
 
-  http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr.attr.stream_id, write_event);
-  half_stream_ptr->headers.emplace(std::move(hdr.name), std::move(hdr.value));
+  http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
+  half_stream_ptr->headers.emplace(std::move(hdr->name), std::move(hdr->value));
 }
 
 // TODO(oazizi): Change from const reference to pointer, and use std::move.
-void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
+void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   // A disabled tracker doesn't collect data events.
   if (disabled_) {
     return;
   }
 
-  const conn_id_t& conn_id = data.attr.conn_id;
+  const conn_id_t& conn_id = data->attr.conn_id;
 
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
@@ -220,16 +220,16 @@ void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
              "[pid=$0 fd=$1 gen=$2].",
              conn_id.upid.pid, conn_id.fd, conn_id.generation);
 
-  UpdateTimestamps(data.attr.timestamp_ns);
+  UpdateTimestamps(data->attr.timestamp_ns);
   SetPID(conn_id);
 
   // Don't trace any control messages.
-  if (data.attr.stream_id == 0) {
+  if (data->attr.stream_id == 0) {
     return;
   }
 
   bool write_event = false;
-  switch (data.attr.ftype) {
+  switch (data->attr.ftype) {
     case DataFrameEventType::kDataFrameEventWrite:
       write_event = true;
       break;
@@ -241,8 +241,8 @@ void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
       return;
   }
 
-  http2::HalfStream* half_stream_ptr = HalfStreamPtr(data.attr.stream_id, write_event);
-  half_stream_ptr->data += data.payload;
+  http2::HalfStream* half_stream_ptr = HalfStreamPtr(data->attr.stream_id, write_event);
+  half_stream_ptr->data += data->payload;
 }
 
 template <typename TMessageType>

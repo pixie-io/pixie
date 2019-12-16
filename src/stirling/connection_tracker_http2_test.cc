@@ -22,10 +22,10 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
   std::unique_ptr<HTTP2DataEvent> data_frame;
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Request");
-  tracker.AddHTTP2Data(*data_frame);
+  tracker.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Response");
-  tracker.AddHTTP2Data(*data_frame);
+  tracker.AddHTTP2Data(std::move(data_frame));
 
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
 
@@ -41,10 +41,10 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
   std::unique_ptr<HTTP2HeaderEvent> header_event;
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
-  tracker.AddHTTP2Header(*header_event);
+  tracker.AddHTTP2Header(std::move(header_event));
 
   header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
-  tracker.AddHTTP2Header(*header_event);
+  tracker.AddHTTP2Header(std::move(header_event));
 
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
 
@@ -60,16 +60,16 @@ TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   std::unique_ptr<HTTP2DataEvent> data_frame;
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
-  tracker.AddHTTP2Data(*data_frame);
+  tracker.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest");
-  tracker.AddHTTP2Data(*data_frame);
+  tracker.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
-  tracker.AddHTTP2Data(*data_frame);
+  tracker.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse");
-  tracker.AddHTTP2Data(*data_frame);
+  tracker.AddHTTP2Data(std::move(data_frame));
 
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
 
@@ -86,28 +86,28 @@ TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
   std::unique_ptr<HTTP2HeaderEvent> header_event;
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
-  tracker.AddHTTP2Header(*header_event);
+  tracker.AddHTTP2Header(std::move(header_event));
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
-  tracker.AddHTTP2Header(*header_event);
+  tracker.AddHTTP2Header(std::move(header_event));
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic");
-  tracker.AddHTTP2Header(*header_event);
+  tracker.AddHTTP2Header(std::move(header_event));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
-  tracker.AddHTTP2Data(*data_frame);
+  tracker.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest");
-  tracker.AddHTTP2Data(*data_frame);
+  tracker.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
-  tracker.AddHTTP2Data(*data_frame);
+  tracker.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse");
-  tracker.AddHTTP2Data(*data_frame);
+  tracker.AddHTTP2Data(std::move(data_frame));
 
   header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
-  tracker.AddHTTP2Header(*header_event);
+  tracker.AddHTTP2Header(std::move(header_event));
 
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
 

@@ -72,7 +72,7 @@ class ConnectionTracker {
    *
    * @param data The event from BPF uprobe.
    */
-  void AddHTTP2Header(const HTTP2HeaderEvent& data);
+  void AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> data);
 
   /**
    * Add a recorded HTTP2 data frame.
@@ -81,7 +81,7 @@ class ConnectionTracker {
    *
    * @param data The event from BPF uprobe.
    */
-  void AddHTTP2Data(const HTTP2DataEvent& data);
+  void AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data);
 
   /**
    * @brief Attempts to infer the remote endpoint of a connection.
