@@ -417,7 +417,7 @@ class ConnectionTracker {
   uint32_t oldest_active_server_stream_id_;
 
   // Access the appropriate HalfStream object for the given stream ID.
-  http2::HalfStream* HalfStreamPtr(uint32_t stream_id, bool client_role, bool write_event);
+  http2::HalfStream* HalfStreamPtr(uint32_t stream_id, bool write_event);
 
   // The connection close info.
   SocketClose close_info_;

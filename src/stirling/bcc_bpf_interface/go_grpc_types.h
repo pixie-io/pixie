@@ -34,18 +34,14 @@ enum HeaderEventType { kHeaderEventUnknown, kHeaderEventRead, kHeaderEventWrite 
 
 struct go_grpc_http2_header_event_t {
   struct header_attr_t {
+    // TODO(oazizi): The type fields below must be reconciled.
     enum EventType type;
-    struct probe_info_t entry_probe;
-    int32_t fd;
-    uint32_t stream_id;
-
-    // TODO(oazizi): The fields below must be reconciled with the fields above.
-    //---------------------
-    uint64_t timestamp_ns;
-    struct conn_id_t conn_id;
-    struct traffic_class_t traffic_class;
     enum HeaderEventType htype;
-    //---------------------
+    uint64_t timestamp_ns;
+    // TODO(oazizi): entry_probe and conn_id need to be reconciled.
+    struct probe_info_t entry_probe;
+    struct conn_id_t conn_id;
+    uint32_t stream_id;
   } attr;
 
   struct header_field_t name;
@@ -62,17 +58,15 @@ enum DataFrameEventType { kDataFrameEventUnknown, kDataFrameEventRead, kDataFram
 
 struct go_grpc_data_event_t {
   struct data_attr_t {
+    // TODO(oazizi): The type fields below must be reconciled.
     enum EventType type;
+    enum DataFrameEventType ftype;
+    uint64_t timestamp_ns;
+    // TODO(oazizi): entry_probe and conn_id need to be reconciled.
+    struct probe_info_t entry_probe;
+    struct conn_id_t conn_id;
     uint32_t stream_id;
     uint32_t data_len;
-
-    // TODO(oazizi): The fields below must be reconciled with the fields above.
-    //---------------------
-    uint64_t timestamp_ns;
-    struct conn_id_t conn_id;
-    struct traffic_class_t traffic_class;
-    enum DataFrameEventType ftype;
-    //---------------------
   } attr;
   char data[MAX_DATA_SIZE];
 };

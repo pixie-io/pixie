@@ -246,11 +246,18 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   const int kStreamIDParamOffset = 16;
   const uint32_t stream_id = *(uint32_t*)(sp + kStreamIDParamOffset);
 
+  uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
+  if (conn_info == NULL) {
+    return 0;
+  }
+
   struct go_grpc_http2_header_event_t event = {};
-  event.attr.type = kGRPCWriteHeader;
-  event.attr.fd = fd;
-  event.attr.stream_id = stream_id;
   fill_probe_info(&event.attr.entry_probe);
+  event.attr.type = kGRPCWriteHeader;
+  event.attr.timestamp_ns = bpf_ktime_get_ns();
+  event.attr.conn_id = conn_info->conn_id;
+  event.attr.stream_id = stream_id;
 
   const int kHeaderFieldSliceParamOffset = 24;
   const struct go_ptr_array fields =
@@ -295,11 +302,18 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
     return 0;
   }
 
+  uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
+  if (conn_info == NULL) {
+    return 0;
+  }
+
   struct go_grpc_http2_header_event_t event = {};
-  event.attr.type = kGRPCOperateHeaders;
-  event.attr.fd = fd;
-  event.attr.stream_id = stream_id;
   fill_probe_info(&event.attr.entry_probe);
+  event.attr.type = kGRPCOperateHeaders;
+  event.attr.timestamp_ns = bpf_ktime_get_ns();
+  event.attr.conn_id = conn_info->conn_id;
+  event.attr.stream_id = stream_id;
 
   // Using 'int i' below seems prevent loop getting rolled.
   // TODO(yzhao): Investigate and fix.
@@ -335,8 +349,6 @@ int probe_framer_write_data(struct pt_regs* ctx) {
     return 0;
   }
 
-  info->attr.type = kWriteData;
-
   // loopyWriter's framer is a wrapper of net/http2's Framer.
   // TODO(yzhao): This block for calling conn_fd needs to be replaced by conn_fd2(). Misses the
   // user-space symbol lookup code.
@@ -351,20 +363,17 @@ int probe_framer_write_data(struct pt_regs* ctx) {
                  io_writer_interface.ptr + kIOWriterConnOffset);
   u32 fd = conn_fd(&conn_interface);
 
-  u64 id = bpf_get_current_pid_tgid();
-  u32 tgid = id >> 32;
-
+  uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return 0;
   }
-  info->attr.conn_id = conn_info->conn_id;
 
-  info->attr.traffic_class.protocol = kProtocolHTTP2;
-  info->attr.traffic_class.role = kRoleRequestor;
+  fill_probe_info(&info->attr.entry_probe);
+  info->attr.type = kWriteData;
   info->attr.timestamp_ns = bpf_ktime_get_ns();
+  info->attr.conn_id = conn_info->conn_id;
   info->attr.stream_id = stream_id;
-
   uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
   info->attr.data_len = data_len;
   bpf_probe_read(info->data, info->attr.data_len, data.ptr);
@@ -415,8 +424,6 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
       return 0;
     }
 
-    info->attr.type = kReadData;
-
     // TODO(yzhao): This block for calling conn_fd needs to be replaced by conn_fd2(). Misses the
     // user-space symbol lookup code.
     const int kFramerIOWriterOffset = 112;
@@ -429,21 +436,15 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
                    io_writer_interface.ptr + kIOWriterConnOffset);
     u32 fd = conn_fd(&conn_interface);
 
-    u64 id = bpf_get_current_pid_tgid();
-    u32 tgid = id >> 32;
-
+    uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
     struct conn_info_t* conn_info = get_conn_info(tgid, fd);
     if (conn_info == NULL) {
       return 0;
     }
-    info->attr.conn_id = conn_info->conn_id;
 
-    // TODO(yzhao): These should be put into a helper function.
-    info->attr.traffic_class.protocol = kProtocolHTTP2;
-    info->attr.traffic_class.role = kRoleRequestor;
-    info->attr.timestamp_ns = bpf_ktime_get_ns();
+    fill_probe_info(&info->attr.entry_probe);
+    info->attr.type = kReadData;
     info->attr.stream_id = frame_header_ptr->stream_id;
-
     uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
     info->attr.data_len = data_len;
     bpf_probe_read(info->data, data_len, data.ptr);

@@ -324,11 +324,11 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
 
   auto event = std::make_unique<HTTP2HeaderEvent>(data);
 
-  LOG(INFO) << absl::Substitute("t=$0 pid=$1 tid=$2 type=$3 fd=$4 stream_id=$5 name=$6 value=$7",
-                                event->attr.entry_probe.timestamp_ns,
-                                event->attr.entry_probe.upid.pid, event->attr.entry_probe.tid,
-                                TypeName(event->attr.type), event->attr.fd, event->attr.stream_id,
-                                event->name, event->value);
+  LOG(INFO) << absl::Substitute(
+      "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 name=$6 value=$7",
+      event->attr.timestamp_ns, event->attr.conn_id.upid.pid, TypeName(event->attr.type),
+      event->attr.conn_id.fd, event->attr.conn_id.generation, event->attr.stream_id, event->name,
+      event->value);
   connector->AcceptHTTP2Header(std::move(event));
 }
 
@@ -344,11 +344,11 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
   // go_grpc_data_event_t is 8-bytes aligned, data is 4-bytes.
   auto event = std::make_unique<HTTP2DataEvent>(data);
 
-  LOG(INFO) << absl::Substitute("t=$0 pid=$1 fd=$2 type=$3 stream_id=$4 data=$5",
-                                event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
-                                event->attr.conn_id.fd, TypeName(event->attr.type),
-                                event->attr.stream_id, event->payload);
-  event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
+  LOG(INFO) << absl::Substitute(
+      "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 data=$6", event->attr.timestamp_ns,
+      event->attr.conn_id.upid.pid, TypeName(event->attr.type), event->attr.conn_id.fd,
+      event->attr.conn_id.generation, event->attr.stream_id, event->payload);
+  event->attr.entry_probe.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Data(std::move(event));
 }
 

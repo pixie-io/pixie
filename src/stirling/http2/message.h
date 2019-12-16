@@ -46,8 +46,8 @@ struct HalfStream {
 };
 
 struct Stream {
-  HalfStream req;
-  HalfStream resp;
+  HalfStream send;
+  HalfStream recv;
 };
 
 }  // namespace http2

@@ -134,8 +134,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 // server, client-initiated (odd) stream, read   -> request
 // server, server-initiated (even) stream, write -> request
 // server, server-initiated (even) stream, read  -> response
-http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool client_role,
-                                                    bool write_event) {
+http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool write_event) {
   // Check for both client-initiated (odd stream_ids) and server-initiated (even stream_ids)
   // streams.
   std::deque<http2::Stream>* streams_deque_ptr;
@@ -161,10 +160,8 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool cli
   size_t new_size = std::max(streams_deque_ptr->size(), index + 1);
   streams_deque_ptr->resize(new_size);
 
-  // Logical XOR (!=) counts the toggles and identifies request or response.
-  bool is_request = (client_role != client_stream) != write_event;
   http2::HalfStream* half_stream_ptr =
-      is_request ? &(*streams_deque_ptr)[index].req : &(*streams_deque_ptr)[index].resp;
+      write_event ? &(*streams_deque_ptr)[index].send : &(*streams_deque_ptr)[index].recv;
   return half_stream_ptr;
 }
 
@@ -185,24 +182,10 @@ void ConnectionTracker::AddHTTP2Header(const HTTP2HeaderEvent& hdr) {
 
   UpdateTimestamps(hdr.attr.timestamp_ns);
   SetPID(conn_id);
-  SetTrafficClass(hdr.attr.traffic_class);
 
   // Don't trace any control messages.
   if (hdr.attr.stream_id == 0) {
     return;
-  }
-
-  bool client_role = false;
-  switch (hdr.attr.traffic_class.role) {
-    case kRoleRequestor:
-      client_role = true;
-      break;
-    case kRoleResponder:
-      client_role = false;
-      break;
-    default:
-      LOG(WARNING) << "Unexpected role";
-      return;
   }
 
   bool write_event = false;
@@ -218,7 +201,7 @@ void ConnectionTracker::AddHTTP2Header(const HTTP2HeaderEvent& hdr) {
       return;
   }
 
-  http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr.attr.stream_id, client_role, write_event);
+  http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr.attr.stream_id, write_event);
   half_stream_ptr->headers.emplace(std::move(hdr.name), std::move(hdr.value));
 }
 
@@ -239,24 +222,10 @@ void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
 
   UpdateTimestamps(data.attr.timestamp_ns);
   SetPID(conn_id);
-  SetTrafficClass(data.attr.traffic_class);
 
   // Don't trace any control messages.
   if (data.attr.stream_id == 0) {
     return;
-  }
-
-  bool client_role = false;
-  switch (data.attr.traffic_class.role) {
-    case kRoleRequestor:
-      client_role = true;
-      break;
-    case kRoleResponder:
-      client_role = false;
-      break;
-    default:
-      LOG(WARNING) << "Unexpected role";
-      return;
   }
 
   bool write_event = false;
@@ -272,7 +241,7 @@ void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
       return;
   }
 
-  http2::HalfStream* half_stream_ptr = HalfStreamPtr(data.attr.stream_id, client_role, write_event);
+  http2::HalfStream* half_stream_ptr = HalfStreamPtr(data.attr.stream_id, write_event);
   half_stream_ptr->data += data.payload;
 }
 
