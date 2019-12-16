@@ -67,6 +67,7 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
             saveCodeToStorage(props.id, c);
           }}
           onSubmit={() => executeQuery(code)}
+          disabled={loading}
         />
         <div className={`pixie-editor--result-viewer ${loading || error || !data ? 'center-content' : ''}`}>
           {
