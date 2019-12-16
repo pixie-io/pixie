@@ -561,7 +561,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   HTTP2Message& resp_message = record.resp;
 
   int64_t resp_status;
-  ECHECK(absl::SimpleAtoi(resp_message.HeaderValue(":status", "-1"), &resp_status));
+  ECHECK(absl::SimpleAtoi(resp_message.headers.ValueByKey(":status", "-1"), &resp_status));
 
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());
@@ -577,8 +577,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_req_headers")>(WriteMapAsJSON(req_message.headers));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
   r.Append<r.ColIndex("http_resp_headers")>(WriteMapAsJSON(resp_message.headers));
-  r.Append<r.ColIndex("http_req_method")>(req_message.HeaderValue(":method"));
-  r.Append<r.ColIndex("http_req_path")>(req_message.HeaderValue(":path"));
+  r.Append<r.ColIndex("http_req_method")>(req_message.headers.ValueByKey(":method"));
+  r.Append<r.ColIndex("http_req_path")>(req_message.headers.ValueByKey(":path"));
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("http_resp_message")>("OK");

@@ -19,7 +19,18 @@ using u8string = std::basic_string<uint8_t>;
 // From https://http2.github.io/http2-spec/#HttpHeaders:
 // ... header field names MUST be converted to lowercase prior to their encoding in HTTP/2.
 // A request or response containing uppercase header field names MUST be treated as malformed.
-using NVMap = std::multimap<std::string, std::string>;
+class NVMap : public std::multimap<std::string, std::string> {
+ public:
+  using std::multimap<std::string, std::string>::multimap;
+
+  std::string ValueByKey(const std::string& key, const std::string& default_value = "") {
+    auto iter = find(key);
+    if (iter != end()) {
+      return iter->second;
+    }
+    return default_value;
+  }
+};
 
 /**
  * @brief A wrapper around  nghttp2_frame. nghttp2_frame misses some fields, for example, it has no

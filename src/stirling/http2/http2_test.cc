@@ -420,11 +420,11 @@ TEST(HeadersTest, GetHeaderValue) {
   req.headers.emplace(":path", "/pl.stirling.http2.testing.Greeter/SayHello");
   req.headers.emplace("foo", "200");
 
-  EXPECT_EQ(req.HeaderValue(":path"), "/pl.stirling.http2.testing.Greeter/SayHello");
-  EXPECT_EQ(req.HeaderValue("foo"), "200");
-  EXPECT_EQ(req.HeaderValue("foo", "-1"), "200");
-  EXPECT_EQ(req.HeaderValue("missing"), "");
-  EXPECT_EQ(req.HeaderValue("missing", "-1"), "-1");
+  EXPECT_EQ(req.headers.ValueByKey(":path"), "/pl.stirling.http2.testing.Greeter/SayHello");
+  EXPECT_EQ(req.headers.ValueByKey("foo"), "200");
+  EXPECT_EQ(req.headers.ValueByKey("foo", "-1"), "200");
+  EXPECT_EQ(req.headers.ValueByKey("missing"), "");
+  EXPECT_EQ(req.headers.ValueByKey("missing", "-1"), "-1");
 }
 
 struct BoundaryTestCase {
