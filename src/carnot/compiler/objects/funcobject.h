@@ -20,12 +20,12 @@ namespace compiler {
  */
 class ParsedArgs {
  public:
-  void AddArg(const std::string& arg_name, IRNode* node) {
+  void AddArg(std::string_view arg_name, IRNode* node) {
     DCHECK(!HasArgOrKwarg(arg_name));
     args_[arg_name] = node;
   }
 
-  void SubDefaultArg(const std::string& arg_name, IRNode* node) {
+  void SubDefaultArg(std::string_view arg_name, IRNode* node) {
     default_subbed_args_.emplace(arg_name);
     AddArg(arg_name, node);
   }
@@ -37,7 +37,7 @@ class ParsedArgs {
     return args_.find(arg_name)->second;
   }
 
-  void AddKwarg(const std::string& arg_name, IRNode* node) {
+  void AddKwarg(std::string_view arg_name, IRNode* node) {
     DCHECK(!HasArgOrKwarg(arg_name));
     kwargs_.emplace_back(arg_name, node);
   }
@@ -124,7 +124,7 @@ class FuncObject : public QLObject {
                                    ASTVisitor* ast_visitor);
 
   StatusOr<IRNode*> GetDefault(std::string_view arg, ASTVisitor* ast_visitor);
-  bool HasDefault(const std::string& arg);
+  bool HasDefault(std::string_view arg);
 
   std::string FormatArguments(const absl::flat_hash_set<std::string> args);
 

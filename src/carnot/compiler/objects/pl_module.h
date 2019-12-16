@@ -33,7 +33,7 @@ class PLModule : public QLObject {
   Status RegisterCompileTimeUnitFunction(std::string name);
 
   StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
-                                                       const std::string& name) const override;
+                                                       std::string_view name) const override;
 
  private:
   IR* graph_;
@@ -66,7 +66,7 @@ class DisplayHandler {
 class CompileTimeFuncHandler {
  public:
   static StatusOr<QLObjectPtr> NowEval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args);
-  static StatusOr<QLObjectPtr> TimeEval(IR* graph, const std::string& name, const pypa::AstPtr& ast,
+  static StatusOr<QLObjectPtr> TimeEval(IR* graph, std::string name, const pypa::AstPtr& ast,
                                         const ParsedArgs& args);
 };
 
@@ -76,7 +76,7 @@ class CompileTimeFuncHandler {
  */
 class UDFHandler {
  public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, const std::string& name, const pypa::AstPtr& ast,
+  static StatusOr<QLObjectPtr> Eval(IR* graph, std::string name, const pypa::AstPtr& ast,
                                     const ParsedArgs& args);
 };
 

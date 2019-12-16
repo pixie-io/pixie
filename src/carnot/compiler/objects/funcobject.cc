@@ -108,9 +108,7 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
   return parsed_args;
 }
 
-bool FuncObject::HasDefault(const std::string& arg) {
-  return defaults_.find(arg) != defaults_.end();
-}
+bool FuncObject::HasDefault(std::string_view arg) { return defaults_.find(arg) != defaults_.end(); }
 
 StatusOr<IRNode*> FuncObject::GetDefault(std::string_view arg, ASTVisitor* ast_visitor) {
   //  Check if the argument exists among the defaults.

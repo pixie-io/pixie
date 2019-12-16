@@ -98,7 +98,7 @@ Status Dataframe::Init() {
 }
 
 StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
-                                                  const std::string& name) const {
+                                                  std::string_view name) const {
   // If this gets to this point, should fail here.
   DCHECK(HasNonMethodAttribute(name));
 

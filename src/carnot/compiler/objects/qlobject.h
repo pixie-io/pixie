@@ -41,7 +41,7 @@ class QLObject {
    * @param name the method to grab
    * @return ptr to the method. nullptr if not found.
    */
-  StatusOr<std::shared_ptr<FuncObject>> GetMethod(const std::string& name) const {
+  StatusOr<std::shared_ptr<FuncObject>> GetMethod(std::string_view name) const {
     if (!methods_.contains(name)) {
       return CreateError("'$0' object has no attribute '$1'", type_descriptor_.name(), name);
     }
@@ -89,15 +89,15 @@ class QLObject {
    * @param name the string name of the method.
    * @return whether the object has the method.
    */
-  bool HasMethod(const std::string& name) const { return methods_.find(name) != methods_.end(); }
+  bool HasMethod(std::string_view name) const { return methods_.find(name) != methods_.end(); }
 
   bool HasSubscriptMethod() const { return HasMethod(kSubscriptMethodName); }
   bool HasCallMethod() const { return HasMethod(kCallMethodName); }
 
   StatusOr<std::shared_ptr<QLObject>> GetAttribute(const pypa::AstPtr& ast,
-                                                   const std::string& name) const;
+                                                   std::string_view name) const;
 
-  bool HasAttribute(const std::string& name) const {
+  bool HasAttribute(std::string_view name) const {
     return HasNonMethodAttribute(name) || HasMethod(name);
   }
 
@@ -169,7 +169,7 @@ class QLObject {
    * @param name name to reference for the method.
    * @param func_object the function object that represents the Method.
    */
-  void AddMethod(const std::string& name, std::shared_ptr<FuncObject> func_object) {
+  void AddMethod(std::string_view name, std::shared_ptr<FuncObject> func_object) {
     DCHECK(!HasMethod(name)) << "already exists.";
     methods_[name] = func_object;
   }
@@ -204,7 +204,7 @@ class QLObject {
    * @return StatusOr<std::shared_ptr<QLObject>>
    */
   virtual StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr&,
-                                                               const std::string&) const {
+                                                               std::string_view) const {
     return error::Unimplemented("");
   }
 

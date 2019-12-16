@@ -140,10 +140,10 @@ class TestQLObject2 : public QLObject {
   }
 
   StatusOr<QLObjectPtr> GetAttributeImpl(const pypa::AstPtr&,
-                                         const std::string& name) const override {
+                                         std::string_view name) const override {
     DCHECK(HasNonMethodAttribute(name));
     auto out_obj = std::make_shared<TestQLObject2>();
-    out_obj->SetName(name);
+    out_obj->SetName(std::string(name));
     return StatusOr<QLObjectPtr>(out_obj);
   }
 

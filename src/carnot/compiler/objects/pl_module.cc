@@ -91,13 +91,14 @@ Status PLModule::Init() {
 }
 
 StatusOr<QLObjectPtr> PLModule::GetAttributeImpl(const pypa::AstPtr& ast,
-                                                 const std::string& name) const {
+                                                 std::string_view name) const {
   // If this gets to this point, should fail here.
   DCHECK(HasNonMethodAttribute(name));
 
-  PL_ASSIGN_OR_RETURN(FuncIR * func,
-                      graph_->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", name},
-                                                 std::vector<ExpressionIR*>{}));
+  PL_ASSIGN_OR_RETURN(
+      FuncIR * func,
+      graph_->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", std::string(name)},
+                                 std::vector<ExpressionIR*>{}));
   return ExprObject::Create(func);
 }
 
@@ -178,7 +179,7 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::NowEval(IR* graph, const pypa::Ast
   return ExprObject::Create(node);
 }
 
-StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, const std::string& time_name,
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::string time_name,
                                                        const pypa::AstPtr& ast,
                                                        const ParsedArgs& args) {
   // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
@@ -193,7 +194,7 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, const std::str
   return ExprObject::Create(node);
 }
 
-StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, const std::string& name, const pypa::AstPtr& ast,
+StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, std::string name, const pypa::AstPtr& ast,
                                        const ParsedArgs& args) {
   std::vector<ExpressionIR*> expr_args;
   for (const auto& arg : args.variable_args()) {
