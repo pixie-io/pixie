@@ -246,12 +246,11 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   const int kStreamIDParamOffset = 16;
   const uint32_t stream_id = *(uint32_t*)(sp + kStreamIDParamOffset);
 
-  struct go_grpc_http2_header_event_t event = {
-      .type = kGRPCWriteHeader,
-      .fd = fd,
-      .stream_id = stream_id,
-  };
-  fill_probe_info(&event.entry_probe);
+  struct go_grpc_http2_header_event_t event = {};
+  event.attr.type = kGRPCWriteHeader;
+  event.attr.fd = fd;
+  event.attr.stream_id = stream_id;
+  fill_probe_info(&event.attr.entry_probe);
 
   const int kHeaderFieldSliceParamOffset = 24;
   const struct go_ptr_array fields =
@@ -296,12 +295,11 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
     return 0;
   }
 
-  struct go_grpc_http2_header_event_t event = {
-      .type = kGRPCOperateHeaders,
-      .fd = fd,
-      .stream_id = stream_id,
-  };
-  fill_probe_info(&event.entry_probe);
+  struct go_grpc_http2_header_event_t event = {};
+  event.attr.type = kGRPCOperateHeaders;
+  event.attr.fd = fd;
+  event.attr.stream_id = stream_id;
+  fill_probe_info(&event.attr.entry_probe);
 
   // Using 'int i' below seems prevent loop getting rolled.
   // TODO(yzhao): Investigate and fix.

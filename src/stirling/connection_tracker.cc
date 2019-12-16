@@ -168,13 +168,14 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool cli
   return half_stream_ptr;
 }
 
-void ConnectionTracker::AddHTTP2Header(const go_grpc_http2_header_event_t& hdr) {
+// TODO(oazizi): Change from const reference to pointer, to make std::move meaningful.
+void ConnectionTracker::AddHTTP2Header(const HTTP2HeaderEvent& hdr) {
   // A disabled tracker doesn't collect data events.
   if (disabled_) {
     return;
   }
 
-  const conn_id_t& conn_id = hdr.conn_id;
+  const conn_id_t& conn_id = hdr.attr.conn_id;
 
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
@@ -182,17 +183,17 @@ void ConnectionTracker::AddHTTP2Header(const go_grpc_http2_header_event_t& hdr) 
              "[pid=$0 fd=$1 gen=$2].",
              conn_id.upid.pid, conn_id.fd, conn_id.generation);
 
-  UpdateTimestamps(hdr.timestamp_ns);
+  UpdateTimestamps(hdr.attr.timestamp_ns);
   SetPID(conn_id);
-  SetTrafficClass(hdr.traffic_class);
+  SetTrafficClass(hdr.attr.traffic_class);
 
   // Don't trace any control messages.
-  if (hdr.stream_id == 0) {
+  if (hdr.attr.stream_id == 0) {
     return;
   }
 
   bool client_role = false;
-  switch (hdr.traffic_class.role) {
+  switch (hdr.attr.traffic_class.role) {
     case kRoleRequestor:
       client_role = true;
       break;
@@ -205,7 +206,7 @@ void ConnectionTracker::AddHTTP2Header(const go_grpc_http2_header_event_t& hdr) 
   }
 
   bool write_event = false;
-  switch (hdr.htype) {
+  switch (hdr.attr.htype) {
     case HeaderEventType::kHeaderEventWrite:
       write_event = true;
       break;
@@ -217,11 +218,11 @@ void ConnectionTracker::AddHTTP2Header(const go_grpc_http2_header_event_t& hdr) 
       return;
   }
 
-  http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr.stream_id, client_role, write_event);
-  half_stream_ptr->headers.emplace(std::string(hdr.name.msg, hdr.name.size),
-                                   std::string(hdr.value.msg, hdr.value.size));
+  http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr.attr.stream_id, client_role, write_event);
+  half_stream_ptr->headers.emplace(std::move(hdr.name), std::move(hdr.value));
 }
 
+// TODO(oazizi): Change from const reference to pointer, and use std::move.
 void ConnectionTracker::AddHTTP2Data(const HTTP2DataEvent& data) {
   // A disabled tracker doesn't collect data events.
   if (disabled_) {

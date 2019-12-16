@@ -322,17 +322,14 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
 
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
 
-  auto event = std::make_unique<go_grpc_http2_header_event_t>();
-  memcpy(event.get(), data, sizeof(go_grpc_http2_header_event_t));
+  auto event = std::make_unique<HTTP2HeaderEvent>(data);
 
   LOG(INFO) << absl::Substitute("t=$0 pid=$1 tid=$2 type=$3 fd=$4 stream_id=$5 name=$6 value=$7",
-                                event->entry_probe.timestamp_ns, event->entry_probe.upid.pid,
-                                event->entry_probe.tid, TypeName(event->type), event->fd,
-                                event->stream_id,
-                                std::string_view(event->name.msg, event->name.size),
-                                std::string_view(event->value.msg, event->value.size));
-  // TODO(yzhao): Call SocketTraceConnector API to insert this event.
-  connector->AcceptHTTP2Header(*event);
+                                event->attr.entry_probe.timestamp_ns,
+                                event->attr.entry_probe.upid.pid, event->attr.entry_probe.tid,
+                                TypeName(event->attr.type), event->attr.fd, event->attr.stream_id,
+                                event->name, event->value);
+  connector->AcceptHTTP2Header(std::move(event));
 }
 
 void SocketTraceConnector::HandleHTTP2HeaderEventLoss(void* /*cb_cookie*/, uint64_t lost) {
@@ -427,12 +424,11 @@ void SocketTraceConnector::AcceptControlEvent(const socket_control_event_t& even
   tracker.AddControlEvent(event);
 }
 
-void SocketTraceConnector::AcceptHTTP2Header(const go_grpc_http2_header_event_t& event) {
-  const uint64_t conn_map_key = GetConnMapKey(event.conn_id);
+void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
+  const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.conn_id.generation];
-  PL_UNUSED(tracker);
-  // tracker.AddHTTP2Header(event);
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
+  tracker.AddHTTP2Header(*event);
 }
 
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {

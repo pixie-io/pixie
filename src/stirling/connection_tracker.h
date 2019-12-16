@@ -72,7 +72,7 @@ class ConnectionTracker {
    *
    * @param data The event from BPF uprobe.
    */
-  void AddHTTP2Header(const go_grpc_http2_header_event_t& data);
+  void AddHTTP2Header(const HTTP2HeaderEvent& data);
 
   /**
    * Add a recorded HTTP2 data frame.

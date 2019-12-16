@@ -235,7 +235,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);
   void AcceptControlEvent(const socket_control_event_t& event);
 
-  void AcceptHTTP2Header(const go_grpc_http2_header_event_t& event);
+  void AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event);
   void AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event);
 
   void UpdateActiveConnections();

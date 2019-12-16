@@ -36,20 +36,18 @@ class StreamEventGenerator {
   }
 
   template <HeaderEventType TType>
-  go_grpc_http2_header_event_t GenHeader(std::string_view name, std::string_view value) {
-    go_grpc_http2_header_event_t hdr;
-    hdr.conn_id.upid = upid_;
-    hdr.conn_id.fd = fd_;
-    hdr.conn_id.generation = 0;
-    hdr.stream_id = stream_id_;
-    hdr.traffic_class.protocol = kProtocolHTTP2;
-    hdr.traffic_class.role = role_;
-    hdr.htype = TType;
-    hdr.timestamp_ns = ++ts_;
-    strncpy(hdr.name.msg, name.data(), name.length());
-    hdr.name.size = name.length();
-    strncpy(hdr.value.msg, value.data(), value.length());
-    hdr.value.size = value.length();
+  HTTP2HeaderEvent GenHeader(std::string_view name, std::string_view value) {
+    HTTP2HeaderEvent hdr;
+    hdr.attr.conn_id.upid = upid_;
+    hdr.attr.conn_id.fd = fd_;
+    hdr.attr.conn_id.generation = 0;
+    hdr.attr.stream_id = stream_id_;
+    hdr.attr.traffic_class.protocol = kProtocolHTTP2;
+    hdr.attr.traffic_class.role = role_;
+    hdr.attr.htype = TType;
+    hdr.attr.timestamp_ns = ++ts_;
+    hdr.name = name;
+    hdr.value = value;
     return hdr;
   }
 
@@ -85,7 +83,7 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
   ConnectionTracker tracker;
 
   auto frame_generator = StreamEventGenerator(kRoleRequestor, upid_t{{123}, 11000000}, 5, 7);
-  go_grpc_http2_header_event_t header_event;
+  HTTP2HeaderEvent header_event;
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
   tracker.AddHTTP2Header(header_event);
@@ -130,7 +128,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
 
   auto frame_generator = StreamEventGenerator(kRoleRequestor, upid_t{{123}, 11000000}, 5, 7);
   HTTP2DataEvent data_frame;
-  go_grpc_http2_header_event_t header_event;
+  HTTP2HeaderEvent header_event;
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
   tracker.AddHTTP2Header(header_event);
