@@ -13,6 +13,7 @@
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/testing/events_fixture.h"
+#include "src/stirling/testing/http2_stream_generator.h"
 
 namespace pl {
 namespace stirling {
@@ -671,6 +672,10 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   EXPECT_TRUE(tracker->send_data().Empty<http::HTTPMessage>());
 }
 
+//-----------------------------------------------------------------------------
+// MySQL specific tests
+//-----------------------------------------------------------------------------
+
 TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   struct socket_control_event_t conn = InitConn<kProtocolMySQL>();
   std::unique_ptr<SocketDataEvent> prepare_req_event =
@@ -1097,6 +1102,68 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
             static_cast<int>(mysql::MySQLEventType::kQuery));
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx).val, 9);
+}
+
+//-----------------------------------------------------------------------------
+// HTTP2 specific tests
+//-----------------------------------------------------------------------------
+
+TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
+  auto conn = InitConn<kProtocolHTTP2Uprobe>();
+
+  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
+
+  source_->AcceptControlEvent(conn);
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("Req"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("uest"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Resp"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+  source_->AcceptControlEvent(InitClose());
+
+  DataTable data_table(kHTTPTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  for (const auto& column : record_batch) {
+    ASSERT_EQ(1, column->Size());
+  }
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
+}
+
+// This test is like the previous one, but the read-write roles are reversed.
+// It represents the other end of the connection.
+TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
+  auto conn = InitConn<kProtocolHTTP2Uprobe>();
+
+  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
+
+  source_->AcceptControlEvent(conn);
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":method", "post"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":host", "pixie.ai"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":path", "/magic"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Req"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("uest"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("Resp"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("onse"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":status", "200"));
+  source_->AcceptControlEvent(InitClose());
+
+  DataTable data_table(kHTTPTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  for (const auto& column : record_batch) {
+    ASSERT_EQ(1, column->Size());
+  }
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
 }
 
 }  // namespace stirling

@@ -704,6 +704,8 @@ template std::vector<http2::NewRecord> ConnectionTracker::ProcessMessages();
 
 template std::string ConnectionTracker::DebugString<http::Record>(std::string_view prefix) const;
 template std::string ConnectionTracker::DebugString<http2::Record>(std::string_view prefix) const;
+template std::string ConnectionTracker::DebugString<http2::NewRecord>(
+    std::string_view prefix) const;
 template std::string ConnectionTracker::DebugString<mysql::Record>(std::string_view prefix) const;
 
 }  // namespace stirling

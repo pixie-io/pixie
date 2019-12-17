@@ -29,6 +29,11 @@ struct GetMessageType<http2::Record> {
 };
 
 template <>
+struct GetMessageType<http2::NewRecord> {
+  typedef http2::Stream type;
+};
+
+template <>
 struct GetMessageType<mysql::Record> {
   typedef mysql::Packet type;
 };
@@ -41,6 +46,8 @@ inline std::string_view ProtocolName(TrafficProtocol protocol) {
       return "HTTP";
     case kProtocolHTTP2:
       return "HTTP2";
+    case kProtocolHTTP2Uprobe:
+      return "HTTP2(Uprobe)";
     case kProtocolMySQL:
       return "MySQL";
     default:

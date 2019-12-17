@@ -607,6 +607,67 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
+                                         const ConnectionTracker& conn_tracker,
+                                         http2::NewRecord record, DataTable* data_table) {
+  DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
+
+  bool requestor_role = !record.send.headers.ValueByKey(":method", "").empty();
+
+  http2::HalfStream* req_stream;
+  http2::HalfStream* resp_stream;
+
+  // Depending on whether the traced entity was the requestor or responder,
+  // we need to flip the interpretation of the half-streams.
+  if (requestor_role) {
+    req_stream = &record.send;
+    resp_stream = &record.recv;
+  } else {
+    req_stream = &record.recv;
+    resp_stream = &record.send;
+  }
+
+  ECHECK(!req_stream->headers.ValueByKey(":method", "").empty());
+  ECHECK(!resp_stream->headers.ValueByKey(":status", "").empty());
+
+  // TODO(oazizi): Status should be in the trailers, not headers. But for now it is found in
+  // headers. Fix when this changes.
+  int64_t resp_status;
+  ECHECK(absl::SimpleAtoi(resp_stream->headers.ValueByKey(":status", "-1"), &resp_status));
+
+  md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
+                conn_tracker.pid_start_time_ticks());
+
+  RecordBuilder<&kHTTPTable> r(data_table);
+  r.Append<r.ColIndex("time_")>(req_stream->timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
+  r.Append<r.ColIndex("http_major_version")>(2);
+  // HTTP2 does not define minor version.
+  r.Append<r.ColIndex("http_minor_version")>(0);
+  r.Append<r.ColIndex("http_req_headers")>(WriteMapAsJSON(record.send.headers));
+  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
+  r.Append<r.ColIndex("http_resp_headers")>(WriteMapAsJSON(record.recv.headers));
+  r.Append<r.ColIndex("http_req_method")>(record.send.headers.ValueByKey(":method"));
+  r.Append<r.ColIndex("http_req_path")>(record.send.headers.ValueByKey(":path"));
+  r.Append<r.ColIndex("http_resp_status")>(resp_status);
+  // TODO(yzhao): Populate the following field from headers.
+  r.Append<r.ColIndex("http_resp_message")>("OK");
+
+  if (FLAGS_stirling_enable_parsing_protobufs) {
+    LOG(WARNING) << "Parsing protobufs not yet implemented. Dumping raw data instead.";
+    r.Append<r.ColIndex("http_req_body")>(std::move(req_stream->data));
+    r.Append<r.ColIndex("http_resp_body")>(std::move(resp_stream->data));
+  } else {
+    r.Append<r.ColIndex("http_req_body")>(std::move(req_stream->data));
+    r.Append<r.ColIndex("http_resp_body")>(std::move(resp_stream->data));
+  }
+  r.Append<r.ColIndex("http_resp_latency_ns")>(
+      CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns));
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker, mysql::Record entry,
                                          DataTable* data_table) {
   DCHECK_EQ(kMySQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
@@ -701,6 +762,9 @@ template void SocketTraceConnector::TransferStream<http::Record>(ConnectorContex
 template void SocketTraceConnector::TransferStream<http2::Record>(ConnectorContext* ctx,
                                                                   ConnectionTracker* tracker,
                                                                   DataTable* data_table);
+template void SocketTraceConnector::TransferStream<http2::NewRecord>(ConnectorContext* ctx,
+                                                                     ConnectionTracker* tracker,
+                                                                     DataTable* data_table);
 template void SocketTraceConnector::TransferStream<mysql::Record>(ConnectorContext* ctx,
                                                                   ConnectionTracker* tracker,
                                                                   DataTable* data_table);

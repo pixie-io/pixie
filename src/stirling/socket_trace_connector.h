@@ -225,6 +225,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
     protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
     protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_kprobe_tracing;
+    protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled = true;
     protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
   }
 
@@ -274,6 +275,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::map<TrafficProtocol, TransferSpec> protocol_transfer_specs_ = {
       {kProtocolHTTP, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http::Record>}},
       {kProtocolHTTP2, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2::Record>}},
+      {kProtocolHTTP2Uprobe,
+       {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2::NewRecord>}},
       {kProtocolMySQL, {kMySQLTableNum, &SocketTraceConnector::TransferStream<mysql::Record>}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,
       // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
@@ -312,6 +315,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   FRIEND_TEST(SocketTraceConnectorTest, MySQLMultipleCommands);
   FRIEND_TEST(SocketTraceConnectorTest, MySQLQueryWithLargeResultset);
   FRIEND_TEST(SocketTraceConnectorTest, MySQLMultiResultset);
+  FRIEND_TEST(SocketTraceConnectorTest, HTTP2ClientTest);
+  FRIEND_TEST(SocketTraceConnectorTest, HTTP2ServerTest);
 };
 
 }  // namespace stirling

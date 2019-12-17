@@ -35,6 +35,7 @@ struct HTTP2Message {
 // For example, the request is one HalfStream while the response is on another HalfStream,
 // both of which are on the same stream ID of the same connection.
 struct HalfStream {
+  uint64_t timestamp_ns = 0;
   NVMap headers;
   std::string data;
   NVMap trailers;
