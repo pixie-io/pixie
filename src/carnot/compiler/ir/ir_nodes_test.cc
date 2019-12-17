@@ -1,3 +1,5 @@
+#include <queue>
+
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
@@ -371,244 +373,7 @@ TEST_F(OperatorTests, grpc_ops) {
   EXPECT_EQ(grpc_src_group->source_id(), grpc_id);
 }
 
-class CloneTests : public OperatorTests {
- protected:
-  void CompareClonedColumn(ColumnIR* new_ir, ColumnIR* old_ir, const std::string& failure_string) {
-    if (new_ir->graph_ptr() != old_ir->graph_ptr()) {
-      EXPECT_NE(new_ir->ContainingOperator().ConsumeValueOrDie()->graph_ptr(),
-                old_ir->ContainingOperator().ConsumeValueOrDie()->graph_ptr())
-          << absl::Substitute(
-                 "'$1' and '$2' should have container ops that are in different graphs. $0.",
-                 failure_string, new_ir->DebugString(), old_ir->DebugString());
-    }
-    EXPECT_EQ(new_ir->ReferencedOperator().ConsumeValueOrDie()->id(),
-              old_ir->ReferencedOperator().ConsumeValueOrDie()->id())
-        << failure_string;
-    EXPECT_EQ(new_ir->col_name(), old_ir->col_name()) << failure_string;
-  }
-  void CompareClonedMap(MapIR* new_ir, MapIR* old_ir, const std::string& failure_string) {
-    std::vector<ColumnExpression> new_col_exprs = new_ir->col_exprs();
-    std::vector<ColumnExpression> old_col_exprs = old_ir->col_exprs();
-    ASSERT_EQ(new_col_exprs.size(), old_col_exprs.size()) << failure_string;
-    for (size_t i = 0; i < new_col_exprs.size(); ++i) {
-      ColumnExpression new_expr = new_col_exprs[i];
-      ColumnExpression old_expr = old_col_exprs[i];
-      EXPECT_EQ(new_expr.name, old_expr.name) << failure_string;
-      EXPECT_EQ(new_expr.node->type_string(), old_expr.node->type_string()) << failure_string;
-      EXPECT_EQ(new_expr.node->id(), old_expr.node->id()) << failure_string;
-    }
-  }
-
-  void CompareClonedBlockingAgg(BlockingAggIR* new_ir, BlockingAggIR* old_ir,
-                                const std::string& failure_string) {
-    std::vector<ColumnExpression> new_col_exprs = new_ir->aggregate_expressions();
-    std::vector<ColumnExpression> old_col_exprs = old_ir->aggregate_expressions();
-    ASSERT_EQ(new_col_exprs.size(), old_col_exprs.size()) << failure_string;
-    for (size_t i = 0; i < new_col_exprs.size(); ++i) {
-      ColumnExpression new_expr = new_col_exprs[i];
-      ColumnExpression old_expr = old_col_exprs[i];
-      EXPECT_EQ(new_expr.name, old_expr.name) << failure_string;
-      EXPECT_EQ(new_expr.node->type_string(), old_expr.node->type_string()) << failure_string;
-      EXPECT_EQ(new_expr.node->id(), old_expr.node->id()) << failure_string;
-    }
-
-    std::vector<ColumnIR*> new_groups = new_ir->groups();
-    std::vector<ColumnIR*> old_groups = old_ir->groups();
-    ASSERT_EQ(new_groups.size(), old_groups.size()) << failure_string;
-    for (size_t i = 0; i < new_groups.size(); ++i) {
-      CompareClonedColumn(new_groups[i], old_groups[i], failure_string);
-    }
-  }
-
-  void CompareClonedGroupBy(GroupByIR* new_ir, GroupByIR* old_ir,
-                            const std::string& failure_string) {
-    std::vector<ColumnIR*> new_groups = new_ir->groups();
-    std::vector<ColumnIR*> old_groups = old_ir->groups();
-    ASSERT_EQ(new_groups.size(), old_groups.size()) << failure_string;
-    for (size_t i = 0; i < new_groups.size(); ++i) {
-      CompareClonedColumn(new_groups[i], old_groups[i], failure_string);
-    }
-  }
-
-  void CompareClonedMetadata(MetadataIR* new_ir, MetadataIR* old_ir,
-                             const std::string& err_string) {
-    CompareClonedColumn(new_ir, old_ir, err_string);
-    EXPECT_EQ(new_ir->property(), old_ir->property())
-        << absl::Substitute("Expected Metadata properties to be the same. Got $1 vs $2. $0.",
-                            err_string, new_ir->property()->name(), old_ir->property()->name());
-    EXPECT_EQ(new_ir->name(), old_ir->name())
-        << absl::Substitute("Expected Metadata names to be the same. Got $1 vs $2. $0.", err_string,
-                            new_ir->name(), old_ir->name());
-  }
-  void CompareClonedMetadataLiteral(MetadataLiteralIR* new_ir, MetadataLiteralIR* old_ir,
-                                    const std::string& err_string) {
-    EXPECT_EQ(new_ir->literal_type(), old_ir->literal_type()) << err_string;
-    EXPECT_EQ(new_ir->literal()->id(), old_ir->literal()->id()) << err_string;
-  }
-  void CompareClonedMemorySource(MemorySourceIR* new_ir, MemorySourceIR* old_ir,
-                                 const std::string& err_string) {
-    EXPECT_EQ(new_ir->table_name(), old_ir->table_name()) << err_string;
-    EXPECT_EQ(new_ir->IsTimeSet(), old_ir->IsTimeSet()) << err_string;
-    EXPECT_EQ(new_ir->time_start_ns(), old_ir->time_start_ns()) << err_string;
-    EXPECT_EQ(new_ir->time_stop_ns(), old_ir->time_stop_ns()) << err_string;
-    EXPECT_EQ(new_ir->column_names(), old_ir->column_names()) << err_string;
-    EXPECT_EQ(new_ir->column_index_map_set(), old_ir->column_index_map_set()) << err_string;
-  }
-  void CompareClonedMemorySink(MemorySinkIR* new_ir, MemorySinkIR* old_ir,
-                               const std::string& err_string) {
-    EXPECT_EQ(new_ir->name(), old_ir->name()) << err_string;
-    EXPECT_EQ(new_ir->out_columns(), old_ir->out_columns()) << err_string;
-  }
-  void CompareClonedFilter(FilterIR* new_ir, FilterIR* old_ir, const std::string& err_string) {
-    CompareClonedExpression(new_ir->filter_expr(), old_ir->filter_expr(), err_string);
-  }
-  void CompareClonedLimit(LimitIR* new_ir, LimitIR* old_ir, const std::string& err_string) {
-    EXPECT_EQ(new_ir->limit_value(), old_ir->limit_value()) << err_string;
-    EXPECT_EQ(new_ir->limit_value_set(), old_ir->limit_value_set()) << err_string;
-  }
-  void CompareClonedFunc(FuncIR* new_ir, FuncIR* old_ir, const std::string& err_string) {
-    EXPECT_EQ(new_ir->func_name(), old_ir->func_name()) << err_string;
-    EXPECT_EQ(new_ir->op().op_code, old_ir->op().op_code) << err_string;
-    EXPECT_EQ(new_ir->op().python_op, old_ir->op().python_op) << err_string;
-    EXPECT_EQ(new_ir->op().carnot_op_name, old_ir->op().carnot_op_name) << err_string;
-    EXPECT_EQ(new_ir->func_id(), old_ir->func_id()) << err_string;
-    EXPECT_EQ(new_ir->IsDataTypeEvaluated(), old_ir->IsDataTypeEvaluated()) << err_string;
-    EXPECT_EQ(new_ir->EvaluatedDataType(), old_ir->EvaluatedDataType()) << err_string;
-
-    std::vector<ExpressionIR*> new_args = new_ir->args();
-    std::vector<ExpressionIR*> old_args = old_ir->args();
-    ASSERT_EQ(new_args.size(), old_args.size()) << err_string;
-    for (size_t i = 0; i < new_args.size(); ++i) {
-      CompareClonedExpression(new_args[i], old_args[i], err_string);
-    }
-  }
-
-  void CompareClonedGRPCSourceGroup(GRPCSourceGroupIR* new_ir, GRPCSourceGroupIR* old_ir,
-                                    const std::string& err_string) {
-    EXPECT_EQ(new_ir->source_id(), old_ir->source_id()) << err_string;
-    EXPECT_EQ(new_ir->grpc_address(), old_ir->grpc_address()) << err_string;
-    EXPECT_EQ(new_ir->GRPCAddressSet(), old_ir->GRPCAddressSet()) << err_string;
-  }
-
-  void CompareClonedGRPCSink(GRPCSinkIR* new_ir, GRPCSinkIR* old_ir,
-                             const std::string& err_string) {
-    EXPECT_EQ(new_ir->destination_id(), old_ir->destination_id()) << err_string;
-    EXPECT_EQ(new_ir->destination_address(), old_ir->destination_address()) << err_string;
-    EXPECT_EQ(new_ir->DestinationAddressSet(), old_ir->DestinationAddressSet()) << err_string;
-  }
-
-  void CompareClonedGRPCSource(GRPCSourceIR* /*new_ir*/, GRPCSourceIR* /*old_ir*/,
-                               const std::string& /*err_string*/) {}
-
-  void CompareClonedJoin(JoinIR* new_ir, JoinIR* old_ir, const std::string& err_string) {
-    ASSERT_EQ(new_ir->join_type(), old_ir->join_type());
-    EXPECT_THAT(new_ir->column_names(), ElementsAreArray(old_ir->column_names())) << err_string;
-    auto output_columns_new = new_ir->output_columns();
-    auto output_columns_old = old_ir->output_columns();
-    ASSERT_EQ(output_columns_new.size(), output_columns_old.size()) << err_string;
-
-    for (size_t i = 0; i < output_columns_new.size(); ++i) {
-      CompareClonedExpression(output_columns_new[i], output_columns_old[i],
-                              absl::Substitute("$0; in Join operator.", err_string));
-    }
-
-    EXPECT_THAT(new_ir->suffix_strs(), ElementsAreArray(old_ir->suffix_strs())) << err_string;
-
-    auto left_on_columns_new = new_ir->left_on_columns();
-    auto left_on_columns_old = old_ir->left_on_columns();
-    for (size_t i = 0; i < left_on_columns_new.size(); ++i) {
-      CompareClonedExpression(left_on_columns_new[i], left_on_columns_old[i],
-                              absl::Substitute("$0; in Join operator.", err_string));
-    }
-
-    auto right_on_columns_new = new_ir->right_on_columns();
-    auto right_on_columns_old = old_ir->right_on_columns();
-    for (size_t i = 0; i < right_on_columns_new.size(); ++i) {
-      CompareClonedExpression(right_on_columns_new[i], right_on_columns_old[i],
-                              absl::Substitute("$0; in Join operator.", err_string));
-    }
-  }
-
-  void CompareClonedExpression(ExpressionIR* new_ir, ExpressionIR* old_ir,
-                               const std::string& err_string) {
-    ASSERT_NE(new_ir, nullptr);
-    ASSERT_NE(old_ir, nullptr);
-    if (Match(new_ir, ColumnNode())) {
-      CompareClonedColumn(static_cast<ColumnIR*>(new_ir), static_cast<ColumnIR*>(old_ir),
-                          err_string);
-    } else if (Match(new_ir, Func())) {
-      CompareClonedFunc(static_cast<FuncIR*>(new_ir), static_cast<FuncIR*>(old_ir), err_string);
-
-    } else if (Match(new_ir, MetadataLiteral())) {
-      CompareClonedMetadataLiteral(static_cast<MetadataLiteralIR*>(new_ir),
-                                   static_cast<MetadataLiteralIR*>(old_ir), err_string);
-    } else if (Match(new_ir, Metadata())) {
-      CompareClonedMetadata(static_cast<MetadataIR*>(new_ir), static_cast<MetadataIR*>(old_ir),
-                            err_string);
-    }
-  }
-
-  void CompareClonedOperator(OperatorIR* new_ir, OperatorIR* old_ir,
-                             const std::string& err_string) {
-    std::string new_err_string =
-        absl::Substitute("$0. In $1 Operator.", err_string, new_ir->type_string());
-    if (Match(new_ir, MemorySource())) {
-      CompareClonedMemorySource(static_cast<MemorySourceIR*>(new_ir),
-                                static_cast<MemorySourceIR*>(old_ir), new_err_string);
-    } else if (Match(new_ir, MemorySink())) {
-      CompareClonedMemorySink(static_cast<MemorySinkIR*>(new_ir),
-                              static_cast<MemorySinkIR*>(old_ir), new_err_string);
-    } else if (Match(new_ir, Filter())) {
-      CompareClonedFilter(static_cast<FilterIR*>(new_ir), static_cast<FilterIR*>(old_ir),
-                          new_err_string);
-    } else if (Match(new_ir, Limit())) {
-      CompareClonedLimit(static_cast<LimitIR*>(new_ir), static_cast<LimitIR*>(old_ir),
-                         new_err_string);
-    } else if (Match(new_ir, Map())) {
-      CompareClonedMap(static_cast<MapIR*>(new_ir), static_cast<MapIR*>(old_ir), new_err_string);
-    } else if (Match(new_ir, BlockingAgg())) {
-      CompareClonedBlockingAgg(static_cast<BlockingAggIR*>(new_ir),
-                               static_cast<BlockingAggIR*>(old_ir), new_err_string);
-
-    } else if (Match(new_ir, GRPCSink())) {
-      CompareClonedGRPCSink(static_cast<GRPCSinkIR*>(new_ir), static_cast<GRPCSinkIR*>(old_ir),
-                            new_err_string);
-    } else if (Match(new_ir, GRPCSourceGroup())) {
-      CompareClonedGRPCSourceGroup(static_cast<GRPCSourceGroupIR*>(new_ir),
-                                   static_cast<GRPCSourceGroupIR*>(old_ir), new_err_string);
-    } else if (Match(new_ir, GRPCSource())) {
-      CompareClonedGRPCSource(static_cast<GRPCSourceIR*>(new_ir),
-                              static_cast<GRPCSourceIR*>(old_ir), new_err_string);
-    } else {
-      EXPECT_TRUE(false) << absl::Substitute("Couldn't check operator cloning for $0. $1",
-                                             new_ir->type_string(), err_string);
-    }
-
-    // Check relation status.
-    EXPECT_EQ(new_ir->IsRelationInit(), old_ir->IsRelationInit());
-    EXPECT_EQ(new_ir->relation().col_names(), old_ir->relation().col_names());
-    EXPECT_EQ(new_ir->relation().col_types(), old_ir->relation().col_types());
-
-    // Check parents.
-    ASSERT_EQ(new_ir->parents().size(), old_ir->parents().size());
-    for (size_t parent_idx = 0; parent_idx < new_ir->parents().size(); ++parent_idx) {
-      EXPECT_EQ(new_ir->parents()[parent_idx]->DebugString(),
-                old_ir->parents()[parent_idx]->DebugString());
-    }
-  }
-  void CompareClonedNodes(IRNode* new_ir, IRNode* old_ir, const std::string& err_string) {
-    EXPECT_NE(old_ir, new_ir) << err_string;
-    ASSERT_EQ(old_ir->type_string(), new_ir->type_string()) << err_string;
-    if (Match(new_ir, Expression())) {
-      CompareClonedExpression(static_cast<ExpressionIR*>(new_ir),
-                              static_cast<ExpressionIR*>(old_ir), err_string);
-    } else if (Match(new_ir, Operator())) {
-      CompareClonedOperator(static_cast<OperatorIR*>(new_ir), static_cast<OperatorIR*>(old_ir),
-                            err_string);
-    }
-  }
-};
-
+using CloneTests = OperatorTests;
 TEST_F(CloneTests, simple_clone) {
   auto mem_source = MakeMemSource();
   ColumnIR* col1 = MakeColumn("test1", 0);
@@ -626,7 +391,28 @@ TEST_F(CloneTests, simple_clone) {
 
   // Make sure that all of the columns are now part of the new graph.
   for (int64_t i : cloned_ir->dag().TopologicalSort()) {
-    CompareClonedNodes(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
+    CompareClone(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
+  }
+}
+
+TEST_F(CloneTests, repeated_exprs_clone) {
+  auto mem_source = MakeMemSource();
+  IntIR* intnode = MakeInt(105);
+  FuncIR* add_func = MakeAddFunc(intnode, MakeInt(3));
+  FuncIR* add_func2 = MakeAddFunc(intnode, add_func);
+  MapIR* map1 = MakeMap(mem_source, {{{"int", intnode}, {"add", add_func}}});
+  MapIR* map2 = MakeMap(map1, {{{"add1", add_func}, {"add2", add_func2}}});
+  MakeMemSink(map2, "out");
+
+  auto out = graph->Clone();
+  EXPECT_OK(out.status());
+  std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
+
+  ASSERT_EQ(graph->dag().TopologicalSort(), cloned_ir->dag().TopologicalSort());
+
+  // Make sure that all of the columns are now part of the new graph.
+  for (int64_t i : cloned_ir->dag().TopologicalSort()) {
+    CompareClone(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
   }
 }
 
@@ -651,7 +437,7 @@ TEST_F(CloneTests, all_op_clone) {
 
   // Make sure that all of the columns are now part of the new graph.
   for (int64_t i : cloned_ir->dag().TopologicalSort()) {
-    CompareClonedNodes(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
+    CompareClone(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
   }
 }
 
@@ -679,7 +465,7 @@ TEST_F(CloneTests, clone_grpc_source_group_and_sink) {
 
   // Make sure that all of the columns are now part of the new graph.
   for (int64_t i : cloned_ir1->dag().TopologicalSort()) {
-    CompareClonedNodes(cloned_ir1->Get(i), graph1->Get(i), absl::Substitute("For index $0", i));
+    CompareClone(cloned_ir1->Get(i), graph1->Get(i), absl::Substitute("For index $0", i));
   }
 
   out = graph2->Clone();
@@ -690,7 +476,7 @@ TEST_F(CloneTests, clone_grpc_source_group_and_sink) {
 
   // Make sure that all of the columns are now part of the new graph.
   for (int64_t i : cloned_ir2->dag().TopologicalSort()) {
-    CompareClonedNodes(cloned_ir2->Get(i), graph2->Get(i), absl::Substitute("For index $0", i));
+    CompareClone(cloned_ir2->Get(i), graph2->Get(i), absl::Substitute("For index $0", i));
   }
 }
 
@@ -705,7 +491,7 @@ TEST_F(CloneTests, grpc_source) {
 
   // Make sure that all of the columns are now part of the new graph.
   for (int64_t i : cloned_ir->dag().TopologicalSort()) {
-    CompareClonedNodes(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
+    CompareClone(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
   }
 }
 
@@ -735,7 +521,47 @@ TEST_F(CloneTests, join_clone) {
   ASSERT_EQ(maybe_join_clone->type(), IRNodeType::kJoin);
   JoinIR* join_clone = static_cast<JoinIR*>(maybe_join_clone);
 
-  CompareClonedJoin(join_clone, join_op, "");
+  CompareClone(join_clone, join_op, "");
+}
+
+TEST_F(CloneTests, copy_into_existing_dag) {
+  auto src = MakeMemSource();
+  IntIR* intnode = MakeInt(105);
+  FuncIR* add_func = MakeAddFunc(intnode, MakeInt(3));
+  FuncIR* add_func2 = MakeAddFunc(intnode, add_func);
+  MapIR* map = MakeMap(src, {{{"int", intnode}, {"add1", add_func}, {"add2", add_func2}}});
+
+  auto source_out = graph->CopyNode(src);
+  EXPECT_OK(source_out.status());
+  auto map_out = graph->CopyNode(map);
+  EXPECT_OK(source_out.status());
+  auto cmap = static_cast<OperatorIR*>(map_out.ConsumeValueOrDie());
+  auto csrc = static_cast<OperatorIR*>(source_out.ConsumeValueOrDie());
+  EXPECT_OK(cmap->AddParent(csrc));
+
+  std::queue<int64_t> original_q;
+  std::queue<int64_t> clone_q;
+  original_q.push(src->id());
+  clone_q.push(csrc->id());
+
+  int64_t subtree_node_count = 0;
+  while (original_q.size()) {
+    EXPECT_EQ(original_q.size(), clone_q.size());
+    auto original_id = original_q.front();
+    auto clone_id = clone_q.front();
+    original_q.pop();
+    clone_q.pop();
+    CompareClone(graph->Get(original_id), graph->Get(clone_id),
+                 absl::Substitute("For index $0", original_id));
+    for (auto original_child_id : graph->dag().DependenciesOf(original_id)) {
+      original_q.push(original_child_id);
+    }
+    for (auto clone_child_id : graph->dag().DependenciesOf(clone_id)) {
+      clone_q.push(clone_child_id);
+    }
+    subtree_node_count++;
+  }
+  CHECK_EQ(subtree_node_count, 11);
 }
 
 class ToProtoTests : public OperatorTests {};

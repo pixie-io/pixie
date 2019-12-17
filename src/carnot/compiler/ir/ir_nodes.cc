@@ -121,11 +121,19 @@ StatusOr<IRNode*> MakeNodeWithType(IR* graph, IRNodeType node_type, int64_t new_
   return error::Internal("Received unknown IRNode type");
 }
 
-StatusOr<IRNode*> IR::CopyNode(const IRNode* source) {
+StatusOr<IRNode*> IR::CopyNode(const IRNode* source,
+                               absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+  CHECK(copied_nodes_map != nullptr);
+  // If this node has already been copied over, don't copy it again. This will happen when a node
+  // has multiple nodes using it.
+  if (copied_nodes_map->contains(source)) {
+    return copied_nodes_map->at(source);
+  }
   // Use the source's ID if we are copying in to a different graph.
   auto new_node_id = this == source->graph_ptr() ? id_node_counter : source->id();
   PL_ASSIGN_OR_RETURN(IRNode * new_node, MakeNodeWithType(this, source->type(), new_node_id));
-  PL_RETURN_IF_ERROR(new_node->CopyFromNode(source));
+  PL_RETURN_IF_ERROR(new_node->CopyFromNode(source, copied_nodes_map));
+  copied_nodes_map->emplace(source, new_node);
   return new_node;
 }
 
@@ -137,12 +145,13 @@ std::string IR::DebugString() {
   return debug_string;
 }
 
-Status IRNode::CopyFromNode(const IRNode* node) {
+Status IRNode::CopyFromNode(const IRNode* node,
+                            absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   line_ = node->line_;
   col_ = node->col_;
   line_col_set_ = node->line_col_set_;
   ast_node_ = node->ast_node_;
-  return CopyFromNodeImpl(node);
+  return CopyFromNodeImpl(node, copied_nodes_map);
 }
 
 void IRNode::SetLineCol(int64_t line, int64_t col) {
@@ -530,11 +539,12 @@ Status GroupByIR::SetGroups(const std::vector<ColumnIR*>& groups) {
   return Status::OK();
 }
 
-Status GroupByIR::CopyFromNodeImpl(const IRNode* source) {
+Status GroupByIR::CopyFromNodeImpl(const IRNode* source,
+                                   absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const GroupByIR* group_by = static_cast<const GroupByIR*>(source);
   std::vector<ColumnIR*> new_groups;
   for (const ColumnIR* column : group_by->groups_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_column, graph_ptr()->CopyNode(column));
+    PL_ASSIGN_OR_RETURN(IRNode * new_column, graph_ptr()->CopyNode(column, copied_nodes_map));
     DCHECK(Match(new_column, ColumnNode()));
     new_groups.push_back(static_cast<ColumnIR*>(new_column));
   }
@@ -775,8 +785,9 @@ Status MetadataResolverIR::AddMetadata(MetadataProperty* md_property) {
   return Status::OK();
 }
 
-Status OperatorIR::CopyFromNode(const IRNode* node) {
-  PL_RETURN_IF_ERROR(IRNode::CopyFromNode(node));
+Status OperatorIR::CopyFromNode(const IRNode* node,
+                                absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+  PL_RETURN_IF_ERROR(IRNode::CopyFromNode(node, copied_nodes_map));
   const OperatorIR* source = static_cast<const OperatorIR*>(node);
 
   is_source_ = source->is_source_;
@@ -789,12 +800,13 @@ Status OperatorIR::CopyFromNode(const IRNode* node) {
 StatusOr<std::unique_ptr<IR>> IR::Clone() const {
   auto new_ir = std::make_unique<IR>();
   // Iterate through the children.
+  absl::flat_hash_map<const IRNode*, IRNode*> copied_nodes_map;
   for (int64_t i : dag().TopologicalSort()) {
     IRNode* node = Get(i);
     if (new_ir->HasNode(i) && new_ir->Get(i)->type() == node->type()) {
       continue;
     }
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, new_ir->CopyNode(node));
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, new_ir->CopyNode(node, &copied_nodes_map));
     if (new_node->IsOperator()) {
       PL_RETURN_IF_ERROR(static_cast<OperatorIR*>(new_node)->CopyParentsFrom(
           static_cast<const OperatorIR*>(node)));
@@ -827,8 +839,9 @@ std::vector<OperatorIR*> OperatorIR::Children() const {
   return op_children;
 }
 
-Status ColumnIR::CopyFromNode(const IRNode* source) {
-  PL_RETURN_IF_ERROR(IRNode::CopyFromNode(source));
+Status ColumnIR::CopyFromNode(const IRNode* source,
+                              absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+  PL_RETURN_IF_ERROR(IRNode::CopyFromNode(source, copied_nodes_map));
   const ColumnIR* column = static_cast<const ColumnIR*>(source);
   col_name_ = column->col_name_;
   col_name_set_ = column->col_name_set_;
@@ -840,33 +853,40 @@ Status ColumnIR::CopyFromNode(const IRNode* source) {
   return Status::OK();
 }
 
-Status ColumnIR::CopyFromNodeImpl(const IRNode*) { return Status::OK(); }
+Status ColumnIR::CopyFromNodeImpl(const IRNode*, absl::flat_hash_map<const IRNode*, IRNode*>*) {
+  return Status::OK();
+}
 
-Status StringIR::CopyFromNodeImpl(const IRNode* source) {
+Status StringIR::CopyFromNodeImpl(const IRNode* source,
+                                  absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const StringIR* input = static_cast<const StringIR*>(source);
   str_ = input->str_;
   return Status::OK();
 }
 
-Status CollectionIR::CopyFromCollection(const CollectionIR* source) {
+Status CollectionIR::CopyFromCollection(
+    const CollectionIR* source, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   std::vector<ExpressionIR*> new_children;
   for (const ExpressionIR* child : source->children()) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_child, graph_ptr()->CopyNode(child));
+    PL_ASSIGN_OR_RETURN(IRNode * new_child, graph_ptr()->CopyNode(child, copied_nodes_map));
     CHECK(new_child->IsExpression());
     new_children.push_back(static_cast<ExpressionIR*>(new_child));
   }
   return SetChildren(new_children);
 }
 
-Status ListIR::CopyFromNodeImpl(const IRNode* source) {
-  return CopyFromCollection(static_cast<const ListIR*>(source));
+Status ListIR::CopyFromNodeImpl(const IRNode* source,
+                                absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+  return CopyFromCollection(static_cast<const ListIR*>(source), copied_nodes_map);
 }
 
-Status TupleIR::CopyFromNodeImpl(const IRNode* source) {
-  return CopyFromCollection(static_cast<const TupleIR*>(source));
+Status TupleIR::CopyFromNodeImpl(const IRNode* source,
+                                 absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+  return CopyFromCollection(static_cast<const TupleIR*>(source), copied_nodes_map);
 }
 
-Status FuncIR::CopyFromNodeImpl(const IRNode* node) {
+Status FuncIR::CopyFromNodeImpl(const IRNode* node,
+                                absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const FuncIR* func = static_cast<const FuncIR*>(node);
   func_prefix_ = func->func_prefix_;
   op_ = func->op_;
@@ -877,51 +897,55 @@ Status FuncIR::CopyFromNodeImpl(const IRNode* node) {
   is_data_type_evaluated_ = func->is_data_type_evaluated_;
 
   for (const ExpressionIR* arg : func->args_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_arg, graph_ptr()->CopyNode(arg));
+    PL_ASSIGN_OR_RETURN(IRNode * new_arg, graph_ptr()->CopyNode(arg, copied_nodes_map));
     CHECK(new_arg->IsExpression());
     PL_RETURN_IF_ERROR(AddArg(static_cast<ExpressionIR*>(new_arg)));
   }
   return Status::OK();
 }
 
-Status FloatIR::CopyFromNodeImpl(const IRNode* node) {
+Status FloatIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const FloatIR* float_ir = static_cast<const FloatIR*>(node);
   val_ = float_ir->val_;
   return Status::OK();
 }
 
-Status IntIR::CopyFromNodeImpl(const IRNode* node) {
+Status IntIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const IntIR* int_ir = static_cast<const IntIR*>(node);
   val_ = int_ir->val_;
   return Status::OK();
 }
 
-Status BoolIR::CopyFromNodeImpl(const IRNode* node) {
+Status BoolIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const BoolIR* bool_ir = static_cast<const BoolIR*>(node);
   val_ = bool_ir->val_;
   return Status::OK();
 }
 
-Status TimeIR::CopyFromNodeImpl(const IRNode* node) {
+Status TimeIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const TimeIR* time_ir = static_cast<const TimeIR*>(node);
   val_ = time_ir->val_;
   return Status::OK();
 }
 
-Status MetadataIR::CopyFromNodeImpl(const IRNode* node) {
+Status MetadataIR::CopyFromNodeImpl(const IRNode* node,
+                                    absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const MetadataIR* metadata_ir = static_cast<const MetadataIR*>(node);
   metadata_name_ = metadata_ir->metadata_name_;
   return Status::OK();
 }
 
-Status MetadataLiteralIR::CopyFromNodeImpl(const IRNode* node) {
+Status MetadataLiteralIR::CopyFromNodeImpl(
+    const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const MetadataLiteralIR* literal_ir = static_cast<const MetadataLiteralIR*>(node);
-  PL_ASSIGN_OR_RETURN(IRNode * new_literal, graph_ptr()->CopyNode(literal_ir->literal_));
+  PL_ASSIGN_OR_RETURN(IRNode * new_literal,
+                      graph_ptr()->CopyNode(literal_ir->literal_, copied_nodes_map));
   DCHECK(Match(new_literal, DataNode())) << new_literal->DebugString();
   return SetLiteral(static_cast<DataIR*>(new_literal));
 }
 
-Status MemorySourceIR::CopyFromNodeImpl(const IRNode* node) {
+Status MemorySourceIR::CopyFromNodeImpl(
+    const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const MemorySourceIR* source_ir = static_cast<const MemorySourceIR*>(node);
 
   table_name_ = source_ir->table_name_;
@@ -935,9 +959,10 @@ Status MemorySourceIR::CopyFromNodeImpl(const IRNode* node) {
 
   if (has_time_expressions_) {
     PL_ASSIGN_OR_RETURN(IRNode * new_start_expr,
-                        graph_ptr()->CopyNode(source_ir->start_time_expr_));
+                        graph_ptr()->CopyNode(source_ir->start_time_expr_, copied_nodes_map));
     DCHECK(Match(new_start_expr, Expression()));
-    PL_ASSIGN_OR_RETURN(IRNode * new_stop_expr, graph_ptr()->CopyNode(source_ir->end_time_expr_));
+    PL_ASSIGN_OR_RETURN(IRNode * new_stop_expr,
+                        graph_ptr()->CopyNode(source_ir->end_time_expr_, copied_nodes_map));
     DCHECK(Match(new_stop_expr, Expression()));
     PL_RETURN_IF_ERROR(SetTimeExpressions(static_cast<ExpressionIR*>(new_start_expr),
                                           static_cast<ExpressionIR*>(new_stop_expr)));
@@ -945,31 +970,35 @@ Status MemorySourceIR::CopyFromNodeImpl(const IRNode* node) {
   return Status::OK();
 }
 
-Status MemorySinkIR::CopyFromNodeImpl(const IRNode* node) {
+Status MemorySinkIR::CopyFromNodeImpl(const IRNode* node,
+                                      absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const MemorySinkIR* sink_ir = static_cast<const MemorySinkIR*>(node);
   name_ = sink_ir->name_;
   out_columns_ = sink_ir->out_columns_;
   return Status::OK();
 }
 
-Status RangeIR::CopyFromNodeImpl(const IRNode* node) {
+Status RangeIR::CopyFromNodeImpl(const IRNode* node,
+                                 absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const RangeIR* range_ir = static_cast<const RangeIR*>(node);
-  PL_ASSIGN_OR_RETURN(start_repr_, graph_ptr()->CopyNode(range_ir->start_repr_));
-  PL_ASSIGN_OR_RETURN(stop_repr_, graph_ptr()->CopyNode(range_ir->stop_repr_));
+  PL_ASSIGN_OR_RETURN(start_repr_, graph_ptr()->CopyNode(range_ir->start_repr_, copied_nodes_map));
+  PL_ASSIGN_OR_RETURN(stop_repr_, graph_ptr()->CopyNode(range_ir->stop_repr_, copied_nodes_map));
   return Status::OK();
 }
 
-Status MetadataResolverIR::CopyFromNodeImpl(const IRNode* node) {
+Status MetadataResolverIR::CopyFromNodeImpl(const IRNode* node,
+                                            absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const MetadataResolverIR* resolver_ir = static_cast<const MetadataResolverIR*>(node);
   metadata_columns_ = resolver_ir->metadata_columns_;
   return Status::OK();
 }
 
-Status MapIR::CopyFromNodeImpl(const IRNode* node) {
+Status MapIR::CopyFromNodeImpl(const IRNode* node,
+                               absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const MapIR* map_ir = static_cast<const MapIR*>(node);
   ColExpressionVector new_col_exprs;
   for (const ColumnExpression& col_expr : map_ir->col_exprs_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col_expr.node));
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col_expr.node, copied_nodes_map));
     DCHECK(Match(new_node, Expression()));
     new_col_exprs.push_back({col_expr.name, static_cast<ExpressionIR*>(new_node)});
   }
@@ -977,25 +1006,26 @@ Status MapIR::CopyFromNodeImpl(const IRNode* node) {
   return SetColExprs(new_col_exprs);
 }
 
-Status DropIR::CopyFromNodeImpl(const IRNode* node) {
+Status DropIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const DropIR* drop = static_cast<const DropIR*>(node);
   col_names_ = drop->col_names_;
   return Status::OK();
 }
 
-Status BlockingAggIR::CopyFromNodeImpl(const IRNode* node) {
+Status BlockingAggIR::CopyFromNodeImpl(
+    const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const BlockingAggIR* blocking_agg = static_cast<const BlockingAggIR*>(node);
 
   ColExpressionVector new_agg_exprs;
   for (const ColumnExpression& col_expr : blocking_agg->aggregate_expressions_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col_expr.node));
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col_expr.node, copied_nodes_map));
     DCHECK(Match(new_node, Expression()));
     new_agg_exprs.push_back({col_expr.name, static_cast<ExpressionIR*>(new_node)});
   }
 
   std::vector<ColumnIR*> new_groups;
   for (const ColumnIR* column : blocking_agg->groups_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_column, graph_ptr()->CopyNode(column));
+    PL_ASSIGN_OR_RETURN(IRNode * new_column, graph_ptr()->CopyNode(column, copied_nodes_map));
     DCHECK(Match(new_column, ColumnNode()));
     new_groups.push_back(static_cast<ColumnIR*>(new_column));
   }
@@ -1006,29 +1036,33 @@ Status BlockingAggIR::CopyFromNodeImpl(const IRNode* node) {
   return Status::OK();
 }
 
-Status FilterIR::CopyFromNodeImpl(const IRNode* node) {
+Status FilterIR::CopyFromNodeImpl(const IRNode* node,
+                                  absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const FilterIR* filter = static_cast<const FilterIR*>(node);
-  PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(filter->filter_expr_));
+  PL_ASSIGN_OR_RETURN(IRNode * new_node,
+                      graph_ptr()->CopyNode(filter->filter_expr_, copied_nodes_map));
   DCHECK(Match(new_node, Expression()));
   PL_RETURN_IF_ERROR(SetFilterExpr(static_cast<ExpressionIR*>(new_node)));
   return Status::OK();
 }
 
-Status LimitIR::CopyFromNodeImpl(const IRNode* node) {
+Status LimitIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const LimitIR* limit = static_cast<const LimitIR*>(node);
   limit_value_ = limit->limit_value_;
   limit_value_set_ = limit->limit_value_set_;
   return Status::OK();
 }
 
-Status GRPCSinkIR::CopyFromNodeImpl(const IRNode* node) {
+Status GRPCSinkIR::CopyFromNodeImpl(const IRNode* node,
+                                    absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const GRPCSinkIR* grpc_sink = static_cast<const GRPCSinkIR*>(node);
   destination_id_ = grpc_sink->destination_id_;
   destination_address_ = grpc_sink->destination_address_;
   return Status::OK();
 }
 
-Status GRPCSourceGroupIR::CopyFromNodeImpl(const IRNode* node) {
+Status GRPCSourceGroupIR::CopyFromNodeImpl(const IRNode* node,
+                                           absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const GRPCSourceGroupIR* grpc_source_group = static_cast<const GRPCSourceGroupIR*>(node);
   source_id_ = grpc_source_group->source_id_;
   grpc_address_ = grpc_source_group->grpc_address_;
@@ -1036,21 +1070,24 @@ Status GRPCSourceGroupIR::CopyFromNodeImpl(const IRNode* node) {
   return Status::OK();
 }
 
-Status GRPCSourceIR::CopyFromNodeImpl(const IRNode*) { return Status::OK(); }
+Status GRPCSourceIR::CopyFromNodeImpl(const IRNode*, absl::flat_hash_map<const IRNode*, IRNode*>*) {
+  return Status::OK();
+}
 
-Status UnionIR::CopyFromNodeImpl(const IRNode* node) {
+Status UnionIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const UnionIR* union_node = static_cast<const UnionIR*>(node);
   column_mappings_ = union_node->column_mappings_;
   return Status::OK();
 }
 
-Status JoinIR::CopyFromNodeImpl(const IRNode* node) {
+Status JoinIR::CopyFromNodeImpl(const IRNode* node,
+                                absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const JoinIR* join_node = static_cast<const JoinIR*>(node);
   join_type_ = join_node->join_type_;
 
   std::vector<ColumnIR*> new_output_columns;
   for (const ColumnIR* col : join_node->output_columns_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col));
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col, copied_nodes_map));
     DCHECK(Match(new_node, ColumnNode()));
     new_output_columns.push_back(static_cast<ColumnIR*>(new_node));
   }
@@ -1058,14 +1095,14 @@ Status JoinIR::CopyFromNodeImpl(const IRNode* node) {
 
   std::vector<ColumnIR*> new_left_columns;
   for (const ColumnIR* col : join_node->left_on_columns_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col));
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col, copied_nodes_map));
     DCHECK(Match(new_node, ColumnNode()));
     new_left_columns.push_back(static_cast<ColumnIR*>(new_node));
   }
 
   std::vector<ColumnIR*> new_right_columns;
   for (const ColumnIR* col : join_node->right_on_columns_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col));
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, graph_ptr()->CopyNode(col, copied_nodes_map));
     DCHECK(Match(new_node, ColumnNode()));
     new_right_columns.push_back(static_cast<ColumnIR*>(new_node));
   }

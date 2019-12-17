@@ -176,13 +176,15 @@ class IRNode {
    * @param node
    * @return Status
    */
-  virtual Status CopyFromNode(const IRNode* node);
+  virtual Status CopyFromNode(const IRNode* node,
+                              absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map);
   void SetLineCol(int64_t line, int64_t col);
   void SetLineCol(const pypa::AstPtr& ast_node);
 
  protected:
   explicit IRNode(int64_t id, IRNodeType type) : type_(type), id_(id) {}
-  virtual Status CopyFromNodeImpl(const IRNode* node) = 0;
+  virtual Status CopyFromNodeImpl(
+      const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) = 0;
 
   IRNodeType type_;
 
@@ -243,7 +245,23 @@ class IR {
     return op;
   }
 
-  StatusOr<IRNode*> CopyNode(const IRNode* source);
+  StatusOr<IRNode*> CopyNode(const IRNode* source) {
+    absl::flat_hash_map<const IRNode*, IRNode*> mapping;
+    return CopyNode(source, &mapping);
+  }
+
+  /**
+   * @brief Copies a node into this IR. Uses the source's node ID if the source is from a different
+   * IR. Note that it does not set the parent of the copy, but children of this node will have their
+   * parents set.
+   *
+   * @param source the input node
+   * @param copied_nodes_map The mapping of nodes that have already been copied by other calls to
+   * CopyNode in the current top-level invocation.
+   * @return StatusOr<IRNode*> the copied node
+   */
+  StatusOr<IRNode*> CopyNode(const IRNode* source,
+                             absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map);
 
   Status AddEdge(int64_t from_node, int64_t to_node);
   bool HasEdge(int64_t from_node, int64_t to_node);
@@ -345,7 +363,8 @@ class OperatorIR : public IRNode {
   /**
    * @brief Override of CopyFromNode that adds special handling for Operators.
    */
-  Status CopyFromNode(const IRNode* node) override;
+  Status CopyFromNode(const IRNode* node,
+                      absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   virtual bool IsBlocking() const { return false; }
 
@@ -629,11 +648,13 @@ class ColumnIR : public ExpressionIR {
   /**
    * @brief Override CopyFromNode to make sure all Column classes save the column attributes.
    */
-  Status CopyFromNode(const IRNode* node) override;
+  Status CopyFromNode(const IRNode* node,
+                      absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   void SetContainingOperatorParentIdx(int64_t container_op_parent_idx);
 
  protected:
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   /**
    * @brief Optional protected constructor for children types.
    */
@@ -673,7 +694,8 @@ class StringIR : public DataIR {
   explicit StringIR(int64_t id) : DataIR(id, IRNodeType::kString, types::DataType::STRING) {}
   Status Init(std::string str);
   std::string str() const { return str_; }
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   std::string str_;
@@ -691,14 +713,17 @@ class CollectionIR : public ExpressionIR {
   Status Init(const std::vector<ExpressionIR*>& children);
 
   std::vector<ExpressionIR*> children() const { return children_; }
-  Status CopyFromNodeImpl(const IRNode* node) override = 0;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override =
+      0;
 
   bool IsCollection() const override { return true; }
   bool IsDataTypeEvaluated() const override { return true; }
   types::DataType EvaluatedDataType() const override { return types::DATA_TYPE_UNKNOWN; }
 
  protected:
-  Status CopyFromCollection(const CollectionIR* source);
+  Status CopyFromCollection(const CollectionIR* source,
+                            absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map);
   Status SetChildren(const std::vector<ExpressionIR*>& children);
 
  private:
@@ -709,14 +734,16 @@ class ListIR : public CollectionIR {
  public:
   ListIR() = delete;
   explicit ListIR(int64_t id) : CollectionIR(id, IRNodeType::kList) {}
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 };
 
 class TupleIR : public CollectionIR {
  public:
   TupleIR() = delete;
   explicit TupleIR(int64_t id) : CollectionIR(id, IRNodeType::kTuple) {}
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 };
 
 struct ColumnExpression {
@@ -763,7 +790,7 @@ class FuncIR : public ExpressionIR {
 
   // NOLINTNEXTLINE(readability/inheritance)
   virtual std::string DebugString() const override {
-    return absl::Substitute("$0($1)", func_name(),
+    return absl::Substitute("$0(id=$1, $2)", func_name(), id(),
                             absl::StrJoin(args_, ",", [](std::string* out, IRNode* in) {
                               absl::StrAppend(out, in->DebugString());
                             }));
@@ -798,7 +825,8 @@ class FuncIR : public ExpressionIR {
 
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   std::string func_prefix_ = kPLFuncPrefix;
@@ -821,7 +849,8 @@ class FloatIR : public DataIR {
   Status Init(double val);
 
   double val() const { return val_; }
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   double val_;
@@ -834,7 +863,8 @@ class IntIR : public DataIR {
   Status Init(int64_t val);
 
   int64_t val() const { return val_; }
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   std::string DebugString() const override {
     return absl::Substitute("$0, $1)", DataIR::DebugString(), val());
@@ -851,7 +881,8 @@ class BoolIR : public DataIR {
   Status Init(bool val);
 
   bool val() const { return val_; }
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   bool val_;
@@ -864,7 +895,8 @@ class TimeIR : public DataIR {
   Status Init(int64_t val);
 
   bool val() const { return val_ != 0; }
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   int64_t val_;
@@ -885,7 +917,8 @@ class MetadataIR : public ColumnIR {
   MetadataResolverIR* resolver() const { return resolver_; }
   MetadataProperty* property() const { return property_; }
 
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   std::string DebugString() const override;
 
@@ -914,7 +947,8 @@ class MetadataLiteralIR : public ExpressionIR {
   bool IsDataTypeEvaluated() const override { return literal_->IsDataTypeEvaluated(); }
   types::DataType EvaluatedDataType() const override { return literal_->EvaluatedDataType(); }
 
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   Status SetLiteral(DataIR* literal);
 
  private:
@@ -983,7 +1017,8 @@ class MemorySourceIR : public OperatorIR {
 
   bool select_all() const { return column_names_.size() == 0; }
 
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   const std::vector<std::string>& column_names() const { return column_names_; }
   void SetTabletValue(const types::TabletID& tablet_value) {
     tablet_value_ = tablet_value;
@@ -1034,7 +1069,8 @@ class MemorySinkIR : public OperatorIR {
   Status Init(OperatorIR* parent, const std::string& name,
               const std::vector<std::string> out_columns);
 
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   const std::vector<std::string>& out_columns() const { return out_columns_; }
   bool IsBlocking() const override { return true; }
 
@@ -1059,7 +1095,8 @@ class RangeIR : public OperatorIR {
   IRNode* stop_repr() const { return stop_repr_; }
   Status SetStartStop(IRNode* start_repr, IRNode* stop_repr);
   Status ToProto(planpb::Operator*) const override;
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   // Start and Stop eventually evaluate to integers, but might be expressions.
@@ -1087,7 +1124,8 @@ class MetadataResolverIR : public OperatorIR {
   Status AddMetadata(MetadataProperty* md_property);
   bool HasMetadataColumn(const std::string& type);
   std::map<std::string, MetadataProperty*> metadata_columns() const { return metadata_columns_; }
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   std::map<std::string, MetadataProperty*> metadata_columns_;
@@ -1107,7 +1145,8 @@ class MapIR : public OperatorIR {
   const ColExpressionVector& col_exprs() const { return col_exprs_; }
   Status SetColExprs(const ColExpressionVector& exprs);
   Status ToProto(planpb::Operator*) const override;
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   bool keep_input_columns() const { return keep_input_columns_; }
   void set_keep_input_columns(bool keep_input_columns) { keep_input_columns_ = keep_input_columns; }
@@ -1132,7 +1171,8 @@ class DropIR : public OperatorIR {
 
   const std::vector<std::string>& col_names() const { return col_names_; }
 
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   // Names of the columns to drop.
@@ -1158,7 +1198,8 @@ class BlockingAggIR : public OperatorIR {
   Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
               const ColExpressionVector& agg_expr);
 
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   inline bool IsBlocking() const override { return true; }
 
@@ -1182,7 +1223,8 @@ class GroupByIR : public OperatorIR {
   GroupByIR() = delete;
   explicit GroupByIR(int64_t id) : OperatorIR(id, IRNodeType::kGroupBy, true, false) {}
   Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups);
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   std::vector<ColumnIR*> groups() const { return groups_; }
 
@@ -1208,7 +1250,8 @@ class FilterIR : public OperatorIR {
 
   Status Init(OperatorIR* parent, ExpressionIR* expr);
 
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   ExpressionIR* filter_expr_ = nullptr;
@@ -1229,7 +1272,8 @@ class LimitIR : public OperatorIR {
 
   Status Init(OperatorIR* parent, int64_t limit_value);
 
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   int64_t limit_value_;
@@ -1272,7 +1316,8 @@ class GRPCSinkIR : public OperatorIR {
   inline bool IsBlocking() const override { return true; }
 
  protected:
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   int64_t destination_id_ = -1;
@@ -1300,7 +1345,8 @@ class GRPCSourceIR : public OperatorIR {
   Status Init(const table_store::schema::Relation& relation) { return SetRelation(relation); }
 
  protected:
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 };
 
 /**
@@ -1344,7 +1390,8 @@ class GRPCSourceGroupIR : public OperatorIR {
   std::vector<GRPCSinkIR*> dependent_sinks() { return dependent_sinks_; }
 
  protected:
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
  private:
   int64_t source_id_ = -1;
@@ -1366,7 +1413,8 @@ class UnionIR : public OperatorIR {
 
   Status ToProto(planpb::Operator*) const override;
   Status Init(const std::vector<OperatorIR*>& parents);
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   Status SetRelationFromParents();
   bool HasColumnMappings() const { return column_mappings_.size() == parents().size(); }
   const std::vector<ColumnMapping>& column_mappings() const { return column_mappings_; }
@@ -1414,7 +1462,8 @@ class JoinIR : public OperatorIR {
               const std::vector<ColumnIR*>& left_on_cols,
               const std::vector<ColumnIR*>& right_on_cols,
               const std::vector<std::string>& suffix_strs);
-  Status CopyFromNodeImpl(const IRNode* node) override;
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   JoinType join_type() const { return join_type_; }
   const std::vector<ColumnIR*>& output_columns() const { return output_columns_; }
@@ -1517,7 +1566,7 @@ class TabletSourceGroupIR : public OperatorIR {
     return error::Unimplemented("$0::ToProto not implemented because no use found for it yet.",
                                 DebugString());
   }
-  Status CopyFromNodeImpl(const IRNode*) override {
+  Status CopyFromNodeImpl(const IRNode*, absl::flat_hash_map<const IRNode*, IRNode*>*) override {
     return error::Unimplemented("$0::CopyFromNode not implemented because no use found for it yet.",
                                 DebugString());
   }
