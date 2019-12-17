@@ -138,17 +138,7 @@ Status SocketTraceConnector::InitImpl() {
     }
     PL_ASSIGN_OR_RETURN(const std::vector<bpf_tools::UProbeSpec> specs,
                         ResolveUProbeTmpls(binaries, kUProbeTmpls));
-    // This block was: PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
-    // But it caused undefined behavior sanitizer error. ToArrayView() uses &specs[0], specs.size()
-    // and were invalidated. It's not clear why the vector decides to do that.
-    //
-    // The test failure only shows on Jenkins, and cannot be reproduced locally.
-    //
-    // TODO(yzhao): Once we have C++20, we could use std::span to replace ArrayView, and uses
-    // concept to accept both std::span and std::vector to unify the interface of AttachUProbes().
-    for (const bpf_tools::UProbeSpec& p : specs) {
-      PL_RETURN_IF_ERROR(AttachUProbe(p));
-    }
+    PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
   }
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << "Probes successfully deployed";

@@ -74,7 +74,7 @@ class ArrayView {
 
 template <typename T>
 ArrayView<T> ToArrayView(const std::vector<T>& v) {
-  return ArrayView(&v[0], v.size());
+  return ArrayView(v.data(), v.size());
 }
 
 /**
