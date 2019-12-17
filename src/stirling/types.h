@@ -69,6 +69,7 @@ class DataTableSchema {
   constexpr ArrayView<DataElement> elements() const { return elements_; }
 
   // Warning: use at compile-time only!
+  // TODO(oazizi): Convert to consteval when C++20 is supported, to ensure compile-time use only.
   constexpr uint32_t ColIndex(std::string_view key) const {
     uint32_t i = 0;
     for (i = 0; i < elements_.size(); i++) {
@@ -82,7 +83,8 @@ class DataTableSchema {
     COMPILE_TIME_ASSERT(i != elements_.size(), "Could not find key");
 
     // Alternative form, but this one checks at run-time as well as compile-time.
-    // CHECK(i != elements_.size()) << "Could not find key";
+    // TODO(oazizi): Remove this line once function is converted to consteval (C++20).
+    CHECK(i != elements_.size()) << "Could not find key";
 
     return i;
   }
