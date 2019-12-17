@@ -289,6 +289,7 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
       event->attr.timestamp_ns, event->attr.conn_id.upid.pid, HeaderEventTypeName(event->attr.type),
       event->attr.conn_id.fd, event->attr.conn_id.generation, event->attr.stream_id, event->name,
       event->value);
+  event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Header(std::move(event));
 }
 
