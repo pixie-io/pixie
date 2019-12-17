@@ -489,10 +489,10 @@ std::vector<Record> MatchGRPCReqResp(std::map<uint32_t, HTTP2Message> reqs,
   return res;
 }
 
-MethodInputOutput GetProtobufMessages(const HTTP2Message& req, ServiceDescriptorDatabase* db) {
+MethodInputOutput GetProtobufMessages(const NVMap& headers, ServiceDescriptorDatabase* db) {
   const char kPathHeader[] = ":path";
-  auto iter = req.headers.find(kPathHeader);
-  if (iter == req.headers.end()) {
+  auto iter = headers.find(kPathHeader);
+  if (iter == headers.end()) {
     // No call path specified, bail out.
     return {};
   }

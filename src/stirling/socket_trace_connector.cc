@@ -15,6 +15,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
+#include "src/common/grpcutils/utils.h"
 #include "src/common/protobufs/recordio.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
@@ -57,9 +58,9 @@ DEFINE_string(perf_buffer_events_output_path, "",
 DEFINE_bool(stirling_enable_http_tracing, true,
             "If true, stirling will trace and process HTTP messages");
 // TODO(yzhao): We are not going to need this. Turn default to false.
-DEFINE_bool(stirling_enable_grpc_kprobe_tracing, true,
+DEFINE_bool(stirling_enable_grpc_kprobe_tracing, false,
             "If true, stirling will trace and process gRPC RPCs.");
-DEFINE_bool(stirling_enable_grpc_uprobe_tracing, false,
+DEFINE_bool(stirling_enable_grpc_uprobe_tracing, true,
             "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
@@ -78,6 +79,7 @@ using ::google::protobuf::TextFormat;
 using ::pl::grpc::MethodInputOutput;
 using ::pl::stirling::kHTTPTable;
 using ::pl::stirling::kMySQLTable;
+using ::pl::stirling::grpc::ParsePB;
 using ::pl::stirling::grpc::PBTextFormat;
 using ::pl::stirling::grpc::PBWireToText;
 using ::pl::stirling::http2::HTTP2Message;
@@ -528,6 +530,12 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());
 
+  if (FLAGS_stirling_enable_parsing_protobufs) {
+    MethodInputOutput rpc = GetProtobufMessages(req_message.headers, &grpc_desc_db_);
+    req_message.message = ParsePB(req_message.message, rpc.input.get());
+    resp_message.message = ParsePB(resp_message.message, rpc.output.get());
+  }
+
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
@@ -544,25 +552,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("http_resp_message")>("OK");
-
-  if (FLAGS_stirling_enable_parsing_protobufs) {
-    MethodInputOutput in_out = GetProtobufMessages(req_message, &grpc_desc_db_);
-    auto parse_pb = [](std::string_view str, Message* pb) -> std::string {
-      std::string text;
-      Status s;
-      Empty empty;
-      if (pb == nullptr) {
-        pb = &empty;
-      }
-      s = PBWireToText(str, PBTextFormat::kText, pb, &text);
-      return s.ok() ? text : s.ToString();
-    };
-    r.Append<r.ColIndex("http_req_body")>(parse_pb(req_message.message, in_out.input.get()));
-    r.Append<r.ColIndex("http_resp_body")>(parse_pb(resp_message.message, in_out.output.get()));
-  } else {
-    r.Append<r.ColIndex("http_req_body")>(std::move(req_message.message));
-    r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
-  }
+  r.Append<r.ColIndex("http_req_body")>(std::move(req_message.message));
+  r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 }
@@ -615,6 +606,12 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());
 
+  if (FLAGS_stirling_enable_parsing_protobufs) {
+    MethodInputOutput rpc = GetProtobufMessages(req_stream->headers, &grpc_desc_db_);
+    req_stream->data = ParsePB(req_stream->data, rpc.input.get());
+    resp_stream->data = ParsePB(resp_stream->data, rpc.output.get());
+  }
+
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(req_stream->timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
@@ -631,15 +628,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("http_resp_message")>("OK");
-
-  if (FLAGS_stirling_enable_parsing_protobufs) {
-    LOG(WARNING) << "Parsing protobufs not yet implemented. Dumping raw data instead.";
-    r.Append<r.ColIndex("http_req_body")>(std::move(req_stream->data));
-    r.Append<r.ColIndex("http_resp_body")>(std::move(resp_stream->data));
-  } else {
-    r.Append<r.ColIndex("http_req_body")>(std::move(req_stream->data));
-    r.Append<r.ColIndex("http_resp_body")>(std::move(resp_stream->data));
-  }
+  r.Append<r.ColIndex("http_req_body")>(std::move(req_stream->data));
+  r.Append<r.ColIndex("http_resp_body")>(std::move(resp_stream->data));
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns));
 }

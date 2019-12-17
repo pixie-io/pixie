@@ -34,6 +34,31 @@ TEST(ParseProtobufTest, VariousErrors) {
   EXPECT_THAT(text, StrEq("name: \"pixielabs\"\n"));
 }
 
+TEST(ParsePB, Basic) {
+  std::string s;
+  {
+    HelloRequest req;
+    req.set_name("pixielabs");
+    s = std::string(kGRPCMessageHeaderSizeInBytes, 'a') + req.SerializeAsString();
+  }
+
+  HelloRequest pb;
+  EXPECT_EQ(ParsePB(s, &pb), "name: \"pixielabs\"\n");
+  EXPECT_EQ(ParsePB(s, nullptr), "1 {\n  14: 105\n  15: 105\n  12: 0x7362616c\n}\n");
+}
+
+TEST(ParsePB, Nullptr) {
+  std::string s;
+  {
+    HelloRequest req;
+    req.set_name("pixielabs");
+    s = std::string(kGRPCMessageHeaderSizeInBytes, 'a') + req.SerializeAsString();
+  }
+
+  HelloRequest pb;
+  EXPECT_EQ(ParsePB(s, nullptr), "1 {\n  14: 105\n  15: 105\n  12: 0x7362616c\n}\n");
+}
+
 }  // namespace grpc
 }  // namespace stirling
 }  // namespace pl

@@ -265,11 +265,11 @@ TEST(StitchFramesToGRPCMessagesTest, InCompleteMessage) {
 }
 
 TEST(ParseProtobufsTest, GreeterServiceReqResp) {
-  HTTP2Message req;
-  req.headers.emplace(":path", "/pl.stirling.http2.testing.Greeter/SayHello");
+  NVMap headers;
+  headers.emplace(":path", "/pl.stirling.http2.testing.Greeter/SayHello");
 
   ServiceDescriptorDatabase db(GreetServiceFDSet());
-  MethodInputOutput in_out = GetProtobufMessages(req, &db);
+  MethodInputOutput in_out = GetProtobufMessages(headers, &db);
   ASSERT_NE(nullptr, in_out.input);
   ASSERT_NE(nullptr, in_out.output);
 }

@@ -114,7 +114,7 @@ inline void EraseConsumedFrames(std::deque<Frame>* frames) {
 /**
  * @brief Returns the dynamic protobuf messages for the called method in the request.
  */
-::pl::grpc::MethodInputOutput GetProtobufMessages(const HTTP2Message& req,
+::pl::grpc::MethodInputOutput GetProtobufMessages(const NVMap& headers,
                                                   ::pl::grpc::ServiceDescriptorDatabase* db);
 
 // TODO(yzhao): gRPC has a feature called bidirectional streaming:

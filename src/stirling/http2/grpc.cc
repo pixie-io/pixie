@@ -47,6 +47,17 @@ Status PBWireToText(std::string_view message, PBTextFormat fmt, google::protobuf
   return Status::OK();
 }
 
+std::string ParsePB(std::string_view str, Message* pb) {
+  std::string text;
+  Status s;
+  Empty empty;
+  if (pb == nullptr) {
+    pb = &empty;
+  }
+  s = PBWireToText(str, PBTextFormat::kText, pb, &text);
+  return s.ok() ? text : s.ToString();
+}
+
 }  // namespace grpc
 }  // namespace stirling
 }  // namespace pl
