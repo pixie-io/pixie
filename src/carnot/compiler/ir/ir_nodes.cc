@@ -740,7 +740,7 @@ std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
 Status FuncIR::Init(Op op, const std::vector<ExpressionIR*>& args) {
   op_ = op;
   for (auto a : args) {
-    PL_RETURN_IF_ERROR(AddArg(a));
+    PL_RETURN_IF_ERROR(AddOrCloneArg(a));
   }
   return Status::OK();
 }
@@ -751,6 +751,18 @@ Status FuncIR::AddArg(ExpressionIR* arg) {
   }
   args_.push_back(arg);
   return graph_ptr()->AddEdge(this, arg);
+}
+
+Status FuncIR::AddOrCloneArg(ExpressionIR* arg) {
+  if (arg == nullptr) {
+    return error::Internal("Argument for FuncIR is null.");
+  }
+  if (!graph_ptr()->HasEdge(this, arg)) {
+    return AddArg(arg);
+  }
+  PL_ASSIGN_OR_RETURN(auto cloned, graph_ptr()->CopyNode(arg));
+  CHECK(cloned->IsExpression());
+  return AddArg(static_cast<ExpressionIR*>(cloned));
 }
 
 /* Float IR */

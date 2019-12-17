@@ -845,6 +845,51 @@ TEST_F(ASTVisitorTest, CantCopyMetadataBetweenDataframes) {
               HasCompilerError("name 'df2' is not available in this context"));
 }
 
+const char* kRepeatedExprs = R"query(
+a = 10
+df = pl.DataFrame("bar", start_time=a+a)
+b = 20 * 20
+df = df[b * b > 10]
+c = pl.minutes(2) / pl.hours(1)
+df['foo'] = c + c
+pl.display(df, 'ld')
+)query";
+
+TEST_F(ASTVisitorTest, test_repeated_exprs) {
+  auto ir_graph_status = CompileGraph(kRepeatedExprs);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+
+  // Fetch the processed args for a + a
+  auto memsrc = FindNodeType(ir_graph, IRNodeType::kMemorySource).ConsumeValueOrDie();
+  auto expr1 = static_cast<MemorySourceIR*>(memsrc)->start_time_expr();
+  auto expr1_args = static_cast<FuncIR*>(expr1)->args();
+  // Make sure the clones are identical but distinct
+  EXPECT_EQ(2, expr1_args.size());
+  EXPECT_NE(expr1_args[0]->id(), expr1_args[1]->id());
+  CompareClone(expr1_args[0], expr1_args[1], "Start time expression in MemorySource node");
+
+  // Fetch the processed args for b * b > 10
+  auto filter = FindNodeType(ir_graph, IRNodeType::kFilter).ConsumeValueOrDie();
+  auto expr2 = static_cast<FilterIR*>(filter)->filter_expr();
+  auto expr2_args = static_cast<FuncIR*>(expr2)->args();
+  ASSERT_EQ(2, expr2_args.size());
+  auto expr2_subargs = static_cast<FuncIR*>(expr2_args[0])->args();
+  ASSERT_EQ(2, expr2_subargs.size());
+  // Make sure the clones are identical but distinct
+  EXPECT_NE(expr2_subargs[0]->id(), expr2_subargs[1]->id());
+  CompareClone(expr2_subargs[0], expr2_subargs[1], "Filter expression in Filter node");
+
+  // Fetch the processed args for c + c
+  auto map = FindNodeType(ir_graph, IRNodeType::kMap).ConsumeValueOrDie();
+  auto expr3 = static_cast<MapIR*>(map)->col_exprs()[0].node;
+  auto expr3_args = static_cast<FuncIR*>(expr3)->args();
+  // Make sure the clones are identical but distinct
+  EXPECT_EQ(2, expr3_args.size());
+  EXPECT_NE(expr3_args[0]->id(), expr3_args[1]->id());
+  CompareClone(expr3_args[0], expr3_args[1], "Column expression in Map node");
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

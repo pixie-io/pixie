@@ -807,6 +807,9 @@ class FuncIR : public ExpressionIR {
   }
 
   Status AddArg(ExpressionIR* arg);
+  // Adds the arg if it isn't already present in the func, otherwise clones it so that there is no
+  // duplicate edge.
+  Status AddOrCloneArg(ExpressionIR* arg);
 
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
