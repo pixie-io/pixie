@@ -38,6 +38,27 @@ Status PLModule::RegisterUDFFuncs() {
   return Status::OK();
 }
 
+Status PLModule::RegisterUDTFs() {
+  // TODO(philkuz) (PL-1189) remove this when the udf names no longer have the 'pl.' prefix.
+  for (const auto& udtf : compiler_state_->registry_info()->udtfs()) {
+    std::vector<std::string> argument_names;
+    for (const auto& arg : udtf.args()) {
+      argument_names.push_back(arg.name());
+    }
+
+    PL_ASSIGN_OR_RETURN(
+        std::shared_ptr<FuncObject> fn_obj,
+        FuncObject::Create(udtf.name(), argument_names, {},
+                           /* has_variable_len_args */ false,
+                           /* has_variable_len_kwargs */ false,
+                           std::bind(&UDTFSourceHandler::Eval, graph_, udtf, std::placeholders::_1,
+                                     std::placeholders::_2)));
+
+    AddMethod(udtf.name(), fn_obj);
+  }
+  return Status::OK();
+}
+
 Status PLModule::RegisterCompileTimeFuncs() {
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> now_fn,
@@ -66,6 +87,7 @@ Status PLModule::RegisterCompileTimeUnitFunction(std::string name) {
 Status PLModule::Init() {
   PL_RETURN_IF_ERROR(RegisterUDFFuncs());
   PL_RETURN_IF_ERROR(RegisterCompileTimeFuncs());
+  PL_RETURN_IF_ERROR(RegisterUDTFs());
 
   // Setup methods.
   PL_ASSIGN_OR_RETURN(
@@ -206,6 +228,40 @@ StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, std::string name, const pypa::
   FuncIR::Op op{FuncIR::Opcode::non_op, "", name};
   PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
   return ExprObject::Create(node);
+}
+
+StatusOr<ExpressionIR*> UDTFSourceHandler::EvaluateExpression(
+    IRNode* arg_node, const udfspb::UDTFSourceSpec::Arg& arg) {
+  // Processd for the data node instead.
+  if (!Match(arg_node, DataNode())) {
+    return arg_node->CreateIRNodeError("Expected '$0' to be of type $1, received a $2", arg.name(),
+                                       arg.arg_type(), arg_node->type_string());
+  }
+  DataIR* data_node = static_cast<DataIR*>(arg_node);
+  if (data_node->EvaluatedDataType() != arg.arg_type()) {
+    return arg_node->CreateIRNodeError("Expected '$0' to be a $1, received a $2", arg.name(),
+                                       arg.arg_type(), data_node->EvaluatedDataType());
+  }
+  return data_node;
+}
+
+StatusOr<QLObjectPtr> UDTFSourceHandler::Eval(IR* graph,
+                                              const udfspb::UDTFSourceSpec& udtf_source_spec,
+                                              const pypa::AstPtr& ast, const ParsedArgs& args) {
+  std::vector<std::string> arg_names;
+  std::vector<ExpressionIR*> arg_values;
+  for (const auto& arg : udtf_source_spec.args()) {
+    DCHECK(args.args().contains(arg.name()));
+    arg_names.push_back(arg.name());
+
+    IRNode* arg_node = args.GetArg(arg.name());
+    PL_ASSIGN_OR_RETURN(ExpressionIR * arg_expr, EvaluateExpression(arg_node, arg));
+    arg_values.push_back(arg_expr);
+  }
+  PL_ASSIGN_OR_RETURN(UDTFSourceIR * udtf_source,
+                      graph->CreateNode<UDTFSourceIR>(ast, udtf_source_spec.name(), arg_names,
+                                                      arg_values, udtf_source_spec));
+  return Dataframe::Create(udtf_source);
 }
 
 }  // namespace compiler

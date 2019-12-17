@@ -29,6 +29,7 @@ class PLModule : public QLObject {
       : QLObject(PLModuleType), graph_(graph), compiler_state_(compiler_state) {}
   Status Init();
   Status RegisterUDFFuncs();
+  Status RegisterUDTFs();
   Status RegisterCompileTimeFuncs();
   Status RegisterCompileTimeUnitFunction(std::string name);
 
@@ -78,6 +79,20 @@ class UDFHandler {
  public:
   static StatusOr<QLObjectPtr> Eval(IR* graph, std::string name, const pypa::AstPtr& ast,
                                     const ParsedArgs& args);
+};
+
+/**
+ * @brief Implements the logic that implements udtf_source_specification.
+ *
+ */
+class UDTFSourceHandler {
+ public:
+  static StatusOr<QLObjectPtr> Eval(IR* graph, const udfspb::UDTFSourceSpec& udtf_source_spec,
+                                    const pypa::AstPtr& ast, const ParsedArgs& args);
+
+ private:
+  static StatusOr<ExpressionIR*> EvaluateExpression(IRNode* arg_node,
+                                                    const udfspb::UDTFSourceSpec::Arg& arg);
 };
 
 }  // namespace compiler

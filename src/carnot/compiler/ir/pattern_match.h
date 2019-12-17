@@ -143,6 +143,9 @@ inline ClassMatch<IRNodeType::kTabletSourceGroup> TabletSourceGroup() {
 inline ClassMatch<IRNodeType::kList> List() { return ClassMatch<IRNodeType::kList>(); }
 inline ClassMatch<IRNodeType::kTuple> Tuple() { return ClassMatch<IRNodeType::kTuple>(); }
 inline ClassMatch<IRNodeType::kGroupBy> GroupBy() { return ClassMatch<IRNodeType::kGroupBy>(); }
+inline ClassMatch<IRNodeType::kUDTFSource> UDTFSource() {
+  return ClassMatch<IRNodeType::kUDTFSource>();
+}
 
 /* Match GRPCSink with a specific source ID */
 struct GRPCSinkWithSourceID : public ParentMatch {
@@ -969,6 +972,20 @@ struct OutputColumnsJoinMatcher : public ParentMatch {
 inline OutputColumnsJoinMatcher<false> UnsetOutputColumnsJoin() {
   return OutputColumnsJoinMatcher<false>();
 }
+
+struct DataOfType : public ParentMatch {
+  explicit DataOfType(types::DataType type) : ParentMatch(IRNodeType::kAny), type_(type) {}
+
+  bool Match(const IRNode* node) const override {
+    if (!DataNode().Match(node)) {
+      return false;
+    }
+    auto data = static_cast<const DataIR*>(node);
+    return data->EvaluatedDataType() == type_;
+  }
+
+  types::DataType type_;
+};
 
 }  // namespace compiler
 }  // namespace carnot

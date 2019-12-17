@@ -14,14 +14,47 @@ scalar_udfs {
   return_type: BOOLEAN
 }
 )proto";
+
+const char* kUDTFSourcePb = R"proto(
+name: "OpenNetworkConnections"
+args {
+  name: "upid"
+  arg_type: STRING
+  semantic_type: ST_UPID
+}
+executor: UDTF_SUBSET_PEM
+filters {
+  semantic_filter {
+    idx: 0
+  }
+}
+relation {
+  columns {
+    column_name: "time_"
+    column_type: TIME64NS
+  }
+  columns {
+    column_name: "fd"
+    column_type: INT64
+  }
+  columns {
+    column_name: "name"
+    column_type: STRING
+  }
+}
+)proto";
+
 class PLModuleTest : public QLObjectTest {
  protected:
   std::unique_ptr<compiler::RegistryInfo> SetUpRegistryInfo() {
     udfspb::UDFInfo udf_proto;
-    google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &udf_proto);
+    CHECK(google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &udf_proto));
 
     auto info = std::make_unique<compiler::RegistryInfo>();
     PL_CHECK_OK(info->Init(udf_proto));
+    udfspb::UDTFSourceSpec spec;
+    google::protobuf::TextFormat::MergeFromString(kUDTFSourcePb, &spec);
+    info->AddUDTF(spec);
     return info;
   }
 
@@ -74,6 +107,44 @@ TEST_F(PLModuleTest, AttributeNotFound) {
 
   ASSERT_NOT_OK(attr_or_s);
   EXPECT_THAT(attr_or_s.status(), HasCompilerError("'pl' object has no attribute .*$0", attribute));
+}
+
+TEST_F(PLModuleTest, GetUDTFMethod) {
+  auto upid_str = MakeString("5525adaadadadadad");
+  std::string network_conns_udtf_name = "OpenNetworkConnections";
+  auto method_or_s = module_->GetMethod(network_conns_udtf_name);
+
+  ASSERT_OK(method_or_s);
+  QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
+
+  ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
+  auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)
+                         ->Call({{{"upid", upid_str}}, {}}, ast, ast_visitor.get());
+  ASSERT_OK(result_or_s);
+  auto ql_object = result_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  ASSERT_TRUE(Match(ql_object->node(), UDTFSource()));
+
+  auto udtf = static_cast<UDTFSourceIR*>(ql_object->node());
+  EXPECT_EQ(udtf->func_name(), network_conns_udtf_name);
+  const auto& arg_values = udtf->arg_values();
+  ASSERT_EQ(arg_values.size(), 1);
+  EXPECT_EQ(upid_str, arg_values[0]);
+}
+
+TEST_F(PLModuleTest, GetUDTFMethodBadArguements) {
+  std::string network_conns_udtf_name = "OpenNetworkConnections";
+  auto method_or_s = module_->GetMethod(network_conns_udtf_name);
+
+  ASSERT_OK(method_or_s);
+  QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
+
+  ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
+  auto result_or_s =
+      std::static_pointer_cast<FuncObject>(method_object)->Call({}, ast, ast_visitor.get());
+  ASSERT_NOT_OK(result_or_s);
+  EXPECT_THAT(result_or_s.status(),
+              HasCompilerError("missing 1 required positional arguments 'upid'"));
 }
 
 }  // namespace compiler
