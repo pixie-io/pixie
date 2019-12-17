@@ -50,6 +50,10 @@ Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
     funcs_[udf.name()] = UDFType::kUDF;
   }
 
+  for (const auto& udtf : info.udtfs()) {
+    AddUDTF(udtf);
+  }
+
   return Status::OK();
 }
 

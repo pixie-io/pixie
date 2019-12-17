@@ -31,6 +31,34 @@ scalar_udfs {
   exec_arg_types: INT64
   return_type: INT64
 }
+udtfs {
+  name: "OpenNetworkConnections"
+  args {
+    name: "upid"
+    arg_type: STRING
+    semantic_type: ST_UPID
+  }
+  executor: UDTF_SUBSET_PEM
+  filters {
+    semantic_filter {
+      idx: 0
+    }
+  }
+  relation {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+    }
+    columns {
+      column_name: "fd"
+      column_type: INT64
+    }
+    columns {
+      column_name: "name"
+      column_type: STRING
+    }
+  }
+}
 )";
 
 TEST(RegistryInfo, basic) {
@@ -56,6 +84,9 @@ TEST(RegistryInfo, basic) {
                 .ConsumeValueOrDie());
 
   EXPECT_THAT(info.func_names(), UnorderedElementsAre("uda1", "add", "scalar1"));
+
+  ASSERT_EQ(info.udtfs().size(), 1);
+  EXPECT_EQ(info.udtfs()[0].name(), "OpenNetworkConnections");
 }
 
 }  // namespace compiler
