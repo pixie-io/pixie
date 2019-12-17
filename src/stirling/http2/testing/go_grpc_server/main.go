@@ -28,9 +28,9 @@ func (s *server) SayHelloAgain(ctx context.Context, in *pb.HelloRequest) (*pb.He
 func main() {
 	var port = flag.Int("port", 50051, "The port to listen.")
 	var https = flag.Bool("https", false, "Whether or not to use https")
-	var keyPairBase = flag.String(
-		"keyPairBase", "src/stirling/http2/testing/go_grpc_server",
-		"The path to the directory that contains a .crt and .key files.")
+	var cert = flag.String("cert", "", "Path to the .crt file.")
+	var key = flag.String("key", "", "Path to the .key file.")
+	const keyPairBase = "src/stirling/http2/testing/go_grpc_server"
 
 	flag.Parse()
 
@@ -39,13 +39,21 @@ func main() {
 	var lis net.Listener
 	var err error
 	if *https {
-		cert, err := tls.LoadX509KeyPair(*keyPairBase+"/https-server.crt", *keyPairBase+"/https-server.key")
+		certFile := keyPairBase + "/https-server.crt"
+		if len(*cert) > 0 {
+			certFile = *cert
+		}
+		keyFile := keyPairBase + "/https-server.key"
+		if len(*key) > 0 {
+			keyFile = *key
+		}
+		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 		if err != nil {
 			log.Fatalf("failed to load certs: %v", err)
 		}
 		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
 
-		log.Printf("Starting https server on port : %s", portStr)
+		log.Printf("Starting https server on port : %s cert: %s key: %s", portStr, certFile, keyFile)
 		lis, err = tls.Listen("tcp", portStr, tlsConfig)
 	} else {
 		log.Printf("Starting http server on port : %s", portStr)

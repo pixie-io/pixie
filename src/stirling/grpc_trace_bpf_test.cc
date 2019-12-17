@@ -91,7 +91,7 @@ class GRPCTraceGoTest : public ::testing::Test {
       : data_table_(kHTTPTable),
         ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
 
-  void Init() {
+  void Init(bool use_https) {
     CHECK(!FLAGS_go_greeter_client_path.empty())
         << "--go_greeter_client_path cannot be empty. You should run this test with bazel.";
     CHECK(fs::exists(fs::path(FLAGS_go_greeter_client_path))) << FLAGS_go_greeter_client_path;
@@ -103,8 +103,13 @@ class GRPCTraceGoTest : public ::testing::Test {
     server_path_ = FLAGS_go_greeter_server_path;
     client_path_ = FLAGS_go_greeter_client_path;
 
-    PL_CHECK_OK(s_.Start({server_path_}));
-    PL_CHECK_OK(c_.Start({client_path_}));
+    std::string https_flag = use_https ? "--https=true" : "--https=false";
+    PL_CHECK_OK(s_.Start({server_path_, https_flag}));
+    if (use_https) {
+      // HTTPs server takes longer to initialize, add a short delay to compensate for that.
+      sleep(2);
+    }
+    PL_CHECK_OK(c_.Start({client_path_, https_flag}));
 
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
@@ -145,7 +150,7 @@ class GoGRPCKProbeTraceTest : public GRPCTraceGoTest {
   void SetUp() override {
     FLAGS_stirling_enable_grpc_kprobe_tracing = true;
     FLAGS_stirling_enable_grpc_uprobe_tracing = false;
-    GRPCTraceGoTest::Init();
+    GRPCTraceGoTest::Init(/*use_https*/ false);
   }
 };
 
@@ -198,16 +203,16 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
               EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
 }
 
-class GRPCTraceUprobingTest : public GRPCTraceGoTest {
+class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithParamInterface<bool> {
  protected:
   void SetUp() override {
     FLAGS_stirling_enable_grpc_kprobe_tracing = false;
     FLAGS_stirling_enable_grpc_uprobe_tracing = true;
-    GRPCTraceGoTest::Init();
+    GRPCTraceGoTest::Init(GetParam());
   }
 };
 
-TEST_F(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
+TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   // Give some time for the client to execute and produce data into perf buffers.
   sleep(2);
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
@@ -220,6 +225,8 @@ TEST_F(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   // TODO(yzhao): We should have the same check on the trace record as
   // GRPCTraceGoTest.TestGolangGrpcService.
 }
+
+INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceUprobingTest, ::testing::Values(true, false));
 
 class GRPCCppTest : public ::testing::Test {
  protected:

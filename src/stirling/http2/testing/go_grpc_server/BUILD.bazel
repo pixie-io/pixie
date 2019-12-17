@@ -15,6 +15,10 @@ go_library(
 
 go_binary(
     name = "greeter_server",
+    data = [
+        "https-server.crt",
+        "https-server.key",
+    ],
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )
