@@ -44,6 +44,7 @@ constexpr int kHTTPRespHeadersIdx = kHTTPTable.ColIndex("http_resp_headers");
 constexpr int kHTTPRespStatusIdx = kHTTPTable.ColIndex("http_resp_status");
 constexpr int kHTTPRespMessageIdx = kHTTPTable.ColIndex("http_resp_message");
 constexpr int kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
+constexpr int kHTTPLatencyIdx = kHTTPTable.ColIndex("http_resp_latency_ns");
 
 }  // namespace stirling
 }  // namespace pl

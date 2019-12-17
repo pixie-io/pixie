@@ -1134,6 +1134,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
 }
 
 // This test is like the previous one, but the read-write roles are reversed.
@@ -1164,6 +1165,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
 }
 
 }  // namespace stirling

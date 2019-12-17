@@ -8,9 +8,6 @@ namespace testing {
 
 class StreamEventGenerator {
  public:
-  StreamEventGenerator(upid_t upid, uint32_t fd, uint32_t stream_id)
-      : conn_id_({.upid = upid, .fd = fd, .generation = 0}), stream_id_(stream_id) {}
-
   StreamEventGenerator(conn_id_t conn_id, uint32_t stream_id)
       : conn_id_(conn_id), stream_id_(stream_id) {}
 

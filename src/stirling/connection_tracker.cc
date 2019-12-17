@@ -203,6 +203,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
 
   http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
   half_stream_ptr->headers.emplace(std::move(hdr->name), std::move(hdr->value));
+  half_stream_ptr->UpdateTimestamp(hdr->attr.timestamp_ns);
 }
 
 // TODO(oazizi): Change from const reference to pointer, and use std::move.
@@ -243,6 +244,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
 
   http2::HalfStream* half_stream_ptr = HalfStreamPtr(data->attr.stream_id, write_event);
   half_stream_ptr->data += data->payload;
+  half_stream_ptr->UpdateTimestamp(data->attr.timestamp_ns);
 }
 
 template <typename TMessageType>

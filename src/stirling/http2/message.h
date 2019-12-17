@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -40,6 +41,14 @@ struct HalfStream {
   std::string data;
   NVMap trailers;
   bool end_stream;
+
+  void UpdateTimestamp(uint64_t t) {
+    if (timestamp_ns == 0) {
+      timestamp_ns = t;
+    } else {
+      timestamp_ns = std::min<uint64_t>(timestamp_ns, t);
+    }
+  }
 };
 
 // This struct represents an HTTP2 stream (https://http2.github.io/http2-spec/#StreamsLayer).

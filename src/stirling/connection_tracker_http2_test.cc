@@ -18,7 +18,10 @@ using ConnectionTrackerHTTP2Test = testing::EventsFixture;
 TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
   ConnectionTracker tracker;
 
-  auto frame_generator = testing::StreamEventGenerator(upid_t{{123}, 11000000}, 5, 7);
+  const conn_id_t kConnID = {
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+  const int kStreamID = 7;
+  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Request");
@@ -37,7 +40,10 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
 TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
   ConnectionTracker tracker;
 
-  auto frame_generator = testing::StreamEventGenerator(upid_t{{123}, 11000000}, 5, 7);
+  const conn_id_t kConnID = {
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+  const int kStreamID = 7;
+  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
   std::unique_ptr<HTTP2HeaderEvent> header_event;
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
@@ -56,7 +62,10 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
 TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   ConnectionTracker tracker;
 
-  auto frame_generator = testing::StreamEventGenerator(upid_t{{123}, 11000000}, 5, 7);
+  const conn_id_t kConnID = {
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+  const int kStreamID = 7;
+  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
@@ -81,7 +90,10 @@ TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
 TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
   ConnectionTracker tracker;
 
-  auto frame_generator = testing::StreamEventGenerator(upid_t{{123}, 11000000}, 5, 7);
+  const conn_id_t kConnID = {
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+  const int kStreamID = 7;
+  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
   std::unique_ptr<HTTP2HeaderEvent> header_event;
 
