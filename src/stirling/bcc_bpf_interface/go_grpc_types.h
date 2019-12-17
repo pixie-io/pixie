@@ -38,8 +38,6 @@ struct go_grpc_http2_header_event_t {
     enum EventType type;
     enum HeaderEventType htype;
     uint64_t timestamp_ns;
-    // TODO(oazizi): entry_probe and conn_id need to be reconciled.
-    struct probe_info_t entry_probe;
     struct conn_id_t conn_id;
     uint32_t stream_id;
   } attr;
@@ -62,8 +60,6 @@ struct go_grpc_data_event_t {
     enum EventType type;
     enum DataFrameEventType ftype;
     uint64_t timestamp_ns;
-    // TODO(oazizi): entry_probe and conn_id need to be reconciled.
-    struct probe_info_t entry_probe;
     struct conn_id_t conn_id;
     uint32_t stream_id;
     uint32_t data_len;

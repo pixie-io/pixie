@@ -92,7 +92,8 @@ std::map<std::string, std::vector<int>> GetActiveBinaries(fs::path proc) {
 
     pl::StatusOr<fs::path> s = ResolveExe(p);
     if (!s.ok()) {
-      LOG(WARNING) << absl::Substitute("Ignoring $0: $1", p.path().string(), s.msg());
+      LOG(WARNING) << absl::Substitute("Ignoring $0: Failed to resolve exe path, error message: $1",
+                                       p.path().string(), s.msg());
       continue;
     }
     fs::path exe = s.ConsumeValueOrDie();

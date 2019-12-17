@@ -104,6 +104,7 @@ class GRPCTraceGoTest : public ::testing::Test {
     client_path_ = FLAGS_go_greeter_client_path;
 
     PL_CHECK_OK(s_.Start({server_path_}));
+    PL_CHECK_OK(c_.Start({client_path_}));
 
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
@@ -119,6 +120,8 @@ class GRPCTraceGoTest : public ::testing::Test {
   }
 
   void TearDown() override {
+    c_.Kill();
+    c_.Wait();
     s_.Kill();
     EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
   }
@@ -130,6 +133,7 @@ class GRPCTraceGoTest : public ::testing::Test {
   static constexpr uint32_t kASID = 1;
 
   DataTable data_table_;
+  SubProcess c_;
   SubProcess s_;
   std::unique_ptr<ConnectorContext> ctx_;
   std::unique_ptr<SourceConnector> connector_;
@@ -199,25 +203,18 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest {
   void SetUp() override {
     FLAGS_stirling_enable_grpc_kprobe_tracing = false;
     FLAGS_stirling_enable_grpc_uprobe_tracing = true;
-    FLAGS_binary_file = FLAGS_go_greeter_client_path;
     GRPCTraceGoTest::Init();
   }
 };
 
 TEST_F(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
-  SubProcess c;
-  EXPECT_OK(c.Start({client_path_, "-name=PixieLabs", "-once"}));
-
-  EXPECT_OK(socket_trace_connector_->TestOnlySetTargetPID(c.child_pid()));
-
-  EXPECT_EQ(0, c.Wait()) << "Client should exit normally.";
-
-  types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
-
+  // Give some time for the client to execute and produce data into perf buffers.
+  sleep(2);
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
 
+  types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPid(record_batch, c.child_pid());
+      FindRecordIdxMatchesPid(record_batch, c_.child_pid());
   EXPECT_THAT(target_record_indices, IsEmpty());
 
   // TODO(yzhao): We should have the same check on the trace record as

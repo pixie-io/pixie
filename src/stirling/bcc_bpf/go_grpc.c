@@ -79,31 +79,30 @@ struct DataFrame {
   struct go_byte_array data;
 };
 
-static __inline int32_t conn_fd2(const void* framer_ptr) {
-  // This function accesses one of the following:
-  //   f.w.conn.conn.conn.fd.pfd.Sysfd
-  //   f.w.conn.conn.fd.pfd.Sysfd
-  //   f.w.conn.fd.pfd.Sysfd
-  // The right one to use depends on the context (e.g. whether the connection uses TLS or not).
-
-  // (gdb) x ($sp+8)
-  // 0xc000069e48:  0x000000c0001560e0
-  // (gdb) x/2gx (0x000000c0001560e0+112)
-  // 0xc000156150:  0x0000000000b2b1e0  0x000000c0000caf00
-  // (gdb) x 0x0000000000b2b1e0
-  // 0xb2b1e0 <go.itab.*google.golang.org/grpc/internal/transport.bufWriter,io.Writer>:
-  // 0x00000000009c9400 (gdb) x/2gx (0x000000c0000caf00+40) 0xc0000caf28:  0x0000000000b3bf60
-  // 0x000000c00000ec20 (gdb) x 0x0000000000b3bf60 0xb3bf60
-  // <go.itab.*google.golang.org/grpc/credentials/internal.syscallConn,net.Conn>: 0x00000000009f66c0
-  // (gdb) x/2gx 0x000000c00000ec20
-  // 0xc00000ec20:  0x0000000000b3bea0  0x000000c000059180
-  // (gdb) x 0x0000000000b3bea0
-  // 0xb3bea0 <go.itab.*crypto/tls.Conn,net.Conn>:  0x00000000009f66c0
-  // (gdb) x/2gx 0x000000c000059180
-  // 0xc000059180:  0x0000000000b3c020  0x000000c000010048
-  // (gdb) x 0x0000000000b3c020
-  // 0xb3c020 <go.itab.*net.TCPConn,net.Conn>:  0x00000000009f66c0
-
+// This function accesses one of the following:
+//   conn.conn.conn.fd.pfd.Sysfd
+//   conn.conn.fd.pfd.Sysfd
+//   conn.fd.pfd.Sysfd
+// The right one to use depends on the context (e.g. whether the connection uses TLS or not).
+//
+// (gdb) x ($sp+8)
+// 0xc000069e48:  0x000000c0001560e0
+// (gdb) x/2gx (0x000000c0001560e0+112)
+// 0xc000156150:  0x0000000000b2b1e0  0x000000c0000caf00
+// (gdb) x 0x0000000000b2b1e0
+// 0xb2b1e0 <go.itab.*google.golang.org/grpc/internal/transport.bufWriter,io.Writer>:
+// 0x00000000009c9400 (gdb) x/2gx (0x000000c0000caf00+40) 0xc0000caf28:  0x0000000000b3bf60
+// 0x000000c00000ec20 (gdb) x 0x0000000000b3bf60 0xb3bf60
+// <go.itab.*google.golang.org/grpc/credentials/internal.syscallConn,net.Conn>: 0x00000000009f66c0
+// (gdb) x/2gx 0x000000c00000ec20
+// 0xc00000ec20:  0x0000000000b3bea0  0x000000c000059180
+// (gdb) x 0x0000000000b3bea0
+// 0xb3bea0 <go.itab.*crypto/tls.Conn,net.Conn>:  0x00000000009f66c0
+// (gdb) x/2gx 0x000000c000059180
+// 0xc000059180:  0x0000000000b3c020  0x000000c000010048
+// (gdb) x 0x0000000000b3c020
+// 0xb3c020 <go.itab.*net.TCPConn,net.Conn>:  0x00000000009f66c0
+static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
   uint64_t current_pid_tgid = bpf_get_current_pid_tgid();
   uint32_t tgid = current_pid_tgid >> 32;
   struct conn_symaddrs_t* symaddrs = symaddrs_map.lookup(&tgid);
@@ -111,6 +110,32 @@ static __inline int32_t conn_fd2(const void* framer_ptr) {
     return 0;
   }
 
+  if (conn_intf.type == symaddrs->syscall_conn) {
+    const int kSyscallConnConnOffset = 0;
+    bpf_probe_read(&conn_intf, sizeof(conn_intf), conn_intf.ptr + kSyscallConnConnOffset);
+  }
+
+  if (conn_intf.type == symaddrs->tls_conn) {
+    const int kTLSConnConnOffset = 0;
+    bpf_probe_read(&conn_intf, sizeof(conn_intf), conn_intf.ptr + kTLSConnConnOffset);
+  }
+
+  if (conn_intf.type != symaddrs->tcp_conn) {
+    return 0;
+  }
+
+  void* fd_ptr;
+  bpf_probe_read(&fd_ptr, sizeof(fd_ptr), conn_intf.ptr);
+
+  struct FD fd;
+  const int kFDOffset = 0;
+  bpf_probe_read(&fd, sizeof(fd), fd_ptr + kFDOffset);
+
+  return fd.sysfd;
+}
+
+// Returns the file descriptor from a http2.Framer object.
+static __inline int32_t get_fd_from_http2_framer(const void* framer_ptr) {
   // From llvm-dwarfdump -n w ./client
   // 0x00070b39: DW_TAG_member
   //              DW_AT_name  ("w")
@@ -123,57 +148,10 @@ static __inline int32_t conn_fd2(const void* framer_ptr) {
                  framer_ptr + kFramerIOWriterOffset);
 
   const int kIOWriterConnOffset = 40;
-  struct go_interface conn_interface;
-  bpf_probe_read(&conn_interface, sizeof(conn_interface),
-                 io_writer_interface.ptr + kIOWriterConnOffset);
+  struct go_interface conn_intf = {};
+  bpf_probe_read(&conn_intf, sizeof(conn_intf), io_writer_interface.ptr + kIOWriterConnOffset);
 
-  if (conn_interface.type == symaddrs->syscall_conn) {
-    const int kSyscallConnConnOffset = 0;
-    bpf_probe_read(&conn_interface, sizeof(conn_interface),
-                   conn_interface.ptr + kSyscallConnConnOffset);
-  }
-
-  if (conn_interface.type == symaddrs->tls_conn) {
-    const int kTLSConnConnOffset = 0;
-    bpf_probe_read(&conn_interface, sizeof(conn_interface),
-                   conn_interface.ptr + kTLSConnConnOffset);
-  }
-
-  if (conn_interface.type != symaddrs->tcp_conn) {
-    return 0;
-  }
-
-  void* fd_ptr;
-  bpf_probe_read(&fd_ptr, sizeof(fd_ptr), conn_interface.ptr);
-
-  struct FD fd;
-  const int kFDOffset = 0;
-  // fd = *(struct FD*)(inner_conn_interface.ptr + kFDOffset);
-  bpf_probe_read(&fd, sizeof(fd), fd_ptr + kFDOffset);
-
-  return fd.sysfd;
-}
-
-// TODO(yzhao): Replace this with conn_fd2. conn_fd2() requires additional data from user-space;
-// so decide to do this so to limit the changes needed.
-static __inline int32_t conn_fd(const void* conn_ptr) {
-  // conn is an interface of net.Conn. The data is the 2nd pointer, which is after the 1st pointer.
-  // 'data' points to a *net.TCPConn object. So we need an additional dereferencing to get the
-  // pointer to the net.TCPConn object.
-  const int kDataFieldOffset = 8;
-  const void* framer_writer_conn_data_ptr = *(const void**)(conn_ptr + kDataFieldOffset);
-
-  // net.TCPConn is equivalent to net.conn, which includes a single field fd *net.netFD.
-  // To get the address of net.netFD, we need to dereference the ptr here.
-  const void* framer_writer_conn_data_fd_ptr = *(const void**)(framer_writer_conn_data_ptr);
-
-  // The Sysfd is the 2nd field of the fd field of net.netFD. The first field is 16 bytes.
-  // Sysfd is golang int type, which is platform dependent. It probably is safer to read as int32_t,
-  // which avoids reading beyond the valid range; and it's probably impossible to have file
-  // descriptor that is beyond the int32_t range.
-  const int kFDFieldOffset = 16;
-  const int32_t fd = *(int32_t*)(framer_writer_conn_data_fd_ptr + kFDFieldOffset);
-  return fd;
+  return get_fd_from_conn_intf(conn_intf);
 }
 
 static __inline void fill_header_field(struct go_grpc_http2_header_event_t* event,
@@ -188,13 +166,10 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
   bpf_probe_read(event->value.msg, event->value.size, field.value.ptr);
 }
 
-static __inline void fill_probe_info(struct probe_info_t* probe_info) {
-  uint64_t current_pid_tgid = bpf_get_current_pid_tgid();
-  probe_info->timestamp_ns = bpf_ktime_get_ns();
-  probe_info->upid.tgid = current_pid_tgid >> 32;
-  probe_info->upid.start_time_ticks = get_tgid_start_time();
-  probe_info->tid = current_pid_tgid & 0xffffffff;
-}
+struct go_grpc_framer_t {
+  void* writer;
+  void* http2_framer;
+};
 
 // Probes (*loopyWriter).writeHeader(uint32, bool, []hpack.HeaderField, func()) inside gRPC-go,
 // which writes HTTP2 headers to the server.
@@ -235,13 +210,10 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
 
   const int kFramerFieldOffset = 40;
   const void* framer_ptr = *(const void**)(loopy_writer_ptr + kFramerFieldOffset);
-  const void* framer_writer_ptr = *(const void**)framer_ptr;
+  struct go_grpc_framer_t go_grpc_framer = {};
+  bpf_probe_read(&go_grpc_framer, sizeof(go_grpc_framer), framer_ptr);
 
-  const int kConnFieldOffset = 40;
-  const void* framer_writer_conn_ptr = framer_writer_ptr + kConnFieldOffset;
-  // TODO(yzhao): This framer is a wrapper of net/http2's Framer, needs to extract the Framer and
-  // feed to conn_fd2().
-  const int32_t fd = conn_fd(framer_writer_conn_ptr);
+  const int32_t fd = get_fd_from_http2_framer(go_grpc_framer.http2_framer);
 
   const int kStreamIDParamOffset = 16;
   const uint32_t stream_id = *(uint32_t*)(sp + kStreamIDParamOffset);
@@ -253,7 +225,6 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   }
 
   struct go_grpc_http2_header_event_t event = {};
-  fill_probe_info(&event.attr.entry_probe);
   event.attr.type = kGRPCWriteHeader;
   event.attr.timestamp_ns = bpf_ktime_get_ns();
   event.attr.conn_id = conn_info->conn_id;
@@ -280,11 +251,6 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
 int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   const void* sp = (const void*)PT_REGS_SP(ctx);
 
-  const void* http2_client_ptr = *(const void**)(sp + 8);
-  const int kHTTP2ClientConnFieldOffset = 64;
-  const void* http2_client_conn_ptr = http2_client_ptr + kHTTP2ClientConnFieldOffset;
-  const uint32_t fd = conn_fd(http2_client_conn_ptr);
-
   const int kFieldsParamOffset = 16;
   const void* frame_ptr = *(const void**)(sp + kFieldsParamOffset);
 
@@ -303,13 +269,21 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   }
 
   uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
+
+  const int kHTTP2ClientParamOffset = 8;
+  const void* http2_client_ptr = *(const void**)(sp + kHTTP2ClientParamOffset);
+
+  struct go_interface conn_intf = {};
+  const int kHTTP2ClientConnFieldOffset = 64;
+  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_client_ptr + kHTTP2ClientConnFieldOffset);
+
+  const uint32_t fd = get_fd_from_conn_intf(conn_intf);
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return 0;
   }
 
   struct go_grpc_http2_header_event_t event = {};
-  fill_probe_info(&event.attr.entry_probe);
   event.attr.type = kGRPCOperateHeaders;
   event.attr.timestamp_ns = bpf_ktime_get_ns();
   event.attr.conn_id = conn_info->conn_id;
@@ -349,27 +323,15 @@ int probe_framer_write_data(struct pt_regs* ctx) {
     return 0;
   }
 
-  // loopyWriter's framer is a wrapper of net/http2's Framer.
-  // TODO(yzhao): This block for calling conn_fd needs to be replaced by conn_fd2(). Misses the
-  // user-space symbol lookup code.
-  // TODO(yzhao): Line 344-366 should be put into a helper function.
-  const int kFramerIOWriterOffset = 112;
-  struct go_interface io_writer_interface;
-  bpf_probe_read(&io_writer_interface, sizeof(io_writer_interface),
-                 framer_ptr + kFramerIOWriterOffset);
-  const int kIOWriterConnOffset = 40;
-  struct go_interface conn_interface;
-  bpf_probe_read(&conn_interface, sizeof(conn_interface),
-                 io_writer_interface.ptr + kIOWriterConnOffset);
-  u32 fd = conn_fd(&conn_interface);
+  info->attr.type = kWriteData;
 
-  uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
+  u32 tgid = bpf_get_current_pid_tgid() >> 32;
+  u32 fd = get_fd_from_http2_framer(framer_ptr);
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return 0;
   }
 
-  fill_probe_info(&info->attr.entry_probe);
   info->attr.type = kWriteData;
   info->attr.timestamp_ns = bpf_ktime_get_ns();
   info->attr.conn_id = conn_info->conn_id;
@@ -424,25 +386,17 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
       return 0;
     }
 
-    // TODO(yzhao): This block for calling conn_fd needs to be replaced by conn_fd2(). Misses the
-    // user-space symbol lookup code.
-    const int kFramerIOWriterOffset = 112;
-    struct go_interface io_writer_interface;
-    bpf_probe_read(&io_writer_interface, sizeof(io_writer_interface),
-                   framer_ptr + kFramerIOWriterOffset);
-    const int kIOWriterConnOffset = 40;
-    struct go_interface conn_interface;
-    bpf_probe_read(&conn_interface, sizeof(conn_interface),
-                   io_writer_interface.ptr + kIOWriterConnOffset);
-    u32 fd = conn_fd(&conn_interface);
+    info->attr.type = kReadData;
 
-    uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
+    u32 tgid = bpf_get_current_pid_tgid() >> 32;
+    u32 fd = get_fd_from_http2_framer(framer_ptr);
     struct conn_info_t* conn_info = get_conn_info(tgid, fd);
     if (conn_info == NULL) {
       return 0;
     }
+    info->attr.conn_id = conn_info->conn_id;
 
-    fill_probe_info(&info->attr.entry_probe);
+    info->attr.timestamp_ns = bpf_ktime_get_ns();
     info->attr.type = kReadData;
     info->attr.stream_id = frame_header_ptr->stream_id;
     uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);

@@ -29,10 +29,6 @@ DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 256,
 
 DEFINE_bool(stirling_bpf_enable_logging, false, "If true, BPF logging facilities are enabled.");
 
-// TODO(yzhao): We should not need this in production environment. Revise or remove.
-DEFINE_string(binary_file, "",
-              "A particular binary file to trace. If not specified, all binaries searched/traced.");
-
 namespace pl {
 namespace bpf_tools {
 

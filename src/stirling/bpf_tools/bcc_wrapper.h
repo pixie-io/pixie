@@ -26,7 +26,6 @@ extern "C" {
 
 DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
 DECLARE_bool(stirling_bpf_enable_logging);
-DECLARE_string(binary_file);
 
 namespace pl {
 namespace bpf_tools {

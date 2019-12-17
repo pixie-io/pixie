@@ -55,13 +55,6 @@ struct conn_id_t {
   uint32_t generation;
 };
 
-// TODO(oazizi): Reconcile probe_info_t and conn_id_t.
-struct probe_info_t {
-  struct upid_t upid;
-  uint32_t tid;
-  uint64_t timestamp_ns;
-};
-
 // Specifies the corresponding indexes of the entries of a per-cpu array.
 enum ControlValueIndex {
   // This specify one pid to monitor. This is used during test to eliminate noise.

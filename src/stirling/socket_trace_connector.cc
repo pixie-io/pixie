@@ -130,18 +130,7 @@ Status SocketTraceConnector::InitImpl() {
 
   if (FLAGS_stirling_enable_grpc_uprobe_tracing) {
     // TODO(yzhao): Factor line 133-149 to a helper function.
-    std::map<std::string, std::vector<int>> binaries;
-    if (!FLAGS_binary_file.empty()) {
-      std::error_code ec;
-      std::string path = fs::canonical(FLAGS_binary_file, ec);
-      if (ec) {
-        return error::NotFound(absl::Substitute("Failed to resolve file path for $0: $1",
-                                                FLAGS_binary_file, ec.message()));
-      }
-      binaries[path] = {};
-    } else {
-      binaries = GetActiveBinaries("/proc");
-    }
+    std::map<std::string, std::vector<int>> binaries = GetActiveBinaries("/proc");
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
         bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
     for (const auto& [pid, symaddrs] : GetSymAddrs(binaries)) {
@@ -149,7 +138,17 @@ Status SocketTraceConnector::InitImpl() {
     }
     PL_ASSIGN_OR_RETURN(const std::vector<bpf_tools::UProbeSpec> specs,
                         ResolveUProbeTmpls(binaries, kUProbeTmpls));
-    PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
+    // This block was: PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
+    // But it caused undefined behavior sanitizer error. ToArrayView() uses &specs[0], specs.size()
+    // and were invalidated. It's not clear why the vector decides to do that.
+    //
+    // The test failure only shows on Jenkins, and cannot be reproduced locally.
+    //
+    // TODO(yzhao): Once we have C++20, we could use std::span to replace ArrayView, and uses
+    // concept to accept both std::span and std::vector to unify the interface of AttachUProbes().
+    for (const bpf_tools::UProbeSpec& p : specs) {
+      PL_RETURN_IF_ERROR(AttachUProbe(p));
+    }
   }
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << "Probes successfully deployed";
@@ -348,7 +347,7 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
       "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 data=$6", event->attr.timestamp_ns,
       event->attr.conn_id.upid.pid, TypeName(event->attr.type), event->attr.conn_id.fd,
       event->attr.conn_id.generation, event->attr.stream_id, event->payload);
-  event->attr.entry_probe.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
+  event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Data(std::move(event));
 }
 
