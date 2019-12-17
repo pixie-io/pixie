@@ -724,7 +724,7 @@ StatusOr<std::unique_ptr<IR>> IR::Clone() const {
   }
   // TODO(philkuz) check to make sure these are the same.
   new_ir->dag_ = dag_;
-  return std::move(new_ir);
+  return new_ir;
 }
 
 Status OperatorIR::CopyParents(OperatorIR* new_op) const {
