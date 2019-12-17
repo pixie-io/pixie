@@ -182,6 +182,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
 
   UpdateTimestamps(hdr->attr.timestamp_ns);
   SetPID(conn_id);
+  traffic_class_.protocol = kProtocolHTTP2Uprobe;
 
   // Don't trace any control messages.
   if (hdr->attr.stream_id == 0) {
@@ -223,6 +224,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
 
   UpdateTimestamps(data->attr.timestamp_ns);
   SetPID(conn_id);
+  traffic_class_.protocol = kProtocolHTTP2Uprobe;
 
   // Don't trace any control messages.
   if (data->attr.stream_id == 0) {

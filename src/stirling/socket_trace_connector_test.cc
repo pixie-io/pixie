@@ -1168,5 +1168,32 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
   EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
 }
 
+// This test models capturing data mid-stream, where we may have missed the request headers.
+TEST_F(SocketTraceConnectorTest, HTTP2PartialStream) {
+  auto conn = InitConn<kProtocolHTTP2Uprobe>();
+
+  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
+
+  source_->AcceptControlEvent(conn);
+  // Request headers are missing to model mid-stream capture.
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("uest"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Resp"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+  source_->AcceptControlEvent(InitClose());
+
+  DataTable data_table(kHTTPTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  for (const auto& column : record_batch) {
+    ASSERT_EQ(1, column->Size());
+  }
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "uest");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 1);
+}
+
 }  // namespace stirling
 }  // namespace pl

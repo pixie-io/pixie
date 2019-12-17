@@ -284,7 +284,7 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
 
   auto event = std::make_unique<HTTP2HeaderEvent>(data);
 
-  LOG(INFO) << absl::Substitute(
+  VLOG(3) << absl::Substitute(
       "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 name=$6 value=$7",
       event->attr.timestamp_ns, event->attr.conn_id.upid.pid, HeaderEventTypeName(event->attr.type),
       event->attr.conn_id.fd, event->attr.conn_id.generation, event->attr.stream_id, event->name,
@@ -304,11 +304,11 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
   // go_grpc_data_event_t is 8-bytes aligned, data is 4-bytes.
   auto event = std::make_unique<HTTP2DataEvent>(data);
 
-  LOG(INFO) << absl::Substitute("t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 data=$6",
-                                event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
-                                DataFrameEventTypeName(event->attr.type), event->attr.conn_id.fd,
-                                event->attr.conn_id.generation, event->attr.stream_id,
-                                event->payload);
+  VLOG(3) << absl::Substitute("t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 data=$6",
+                              event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
+                              DataFrameEventTypeName(event->attr.type), event->attr.conn_id.fd,
+                              event->attr.conn_id.generation, event->attr.stream_id,
+                              event->payload);
   event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Data(std::move(event));
 }
@@ -572,7 +572,26 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          http2::NewRecord record, DataTable* data_table) {
   DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  bool requestor_role = !record.send.headers.ValueByKey(":method", "").empty();
+  bool send_has_method = !record.send.headers.ValueByKey(":method", "").empty();
+  bool recv_has_method = !record.recv.headers.ValueByKey(":method", "").empty();
+  bool send_has_status = !record.send.headers.ValueByKey(":status", "").empty();
+  bool recv_has_status = !record.recv.headers.ValueByKey(":status", "").empty();
+
+  LOG_IF(WARNING, send_has_method == recv_has_method)
+      << absl::Substitute(":method only expected in only one direction (total = $0).",
+                          send_has_method + recv_has_method);
+  LOG_IF(WARNING, send_has_status == recv_has_status)
+      << absl::Substitute(":status only expected in only one direction (total = $0).",
+                          send_has_status + recv_has_status);
+  LOG_IF(WARNING, send_has_method && send_has_status)
+      << ":method and :status not expected in same direction (send).";
+  LOG_IF(WARNING, recv_has_method && recv_has_status)
+      << ":method and :status not expected in same direction (recv).";
+
+  // Check for either :method in sender or :status in recv, for robustness.
+  // Since we can capture data mid-stream, the more robust option is looking for :status.
+  // But keep both in case of dropped perf buffer events.
+  bool requestor_role = send_has_method || recv_has_status;
 
   http2::HalfStream* req_stream;
   http2::HalfStream* resp_stream;
@@ -586,9 +605,6 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
     req_stream = &record.recv;
     resp_stream = &record.send;
   }
-
-  ECHECK(!req_stream->headers.ValueByKey(":method", "").empty());
-  ECHECK(!resp_stream->headers.ValueByKey(":status", "").empty());
 
   // TODO(oazizi): Status should be in the trailers, not headers. But for now it is found in
   // headers. Fix when this changes.
@@ -672,6 +688,10 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
     auto generation_it = tracker_generations.begin();
     while (generation_it != tracker_generations.end()) {
       auto& tracker = generation_it->second;
+
+      VLOG(3) << absl::Substitute("Connection pid=$0 fd=$1 generation=$2 protocol=$3\n",
+                                  tracker.pid(), tracker.fd(), tracker.generation(),
+                                  tracker.protocol());
 
       const TransferSpec& transfer_spec = protocol_transfer_specs_[tracker.protocol()];
 
