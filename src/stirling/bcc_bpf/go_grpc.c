@@ -226,6 +226,7 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
 
   struct go_grpc_http2_header_event_t event = {};
   event.attr.type = kGRPCWriteHeader;
+  event.attr.htype = kHeaderEventWrite;
   event.attr.timestamp_ns = bpf_ktime_get_ns();
   event.attr.conn_id = conn_info->conn_id;
   event.attr.stream_id = stream_id;
@@ -285,6 +286,7 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
 
   struct go_grpc_http2_header_event_t event = {};
   event.attr.type = kGRPCOperateHeaders;
+  event.attr.htype = kHeaderEventRead;
   event.attr.timestamp_ns = bpf_ktime_get_ns();
   event.attr.conn_id = conn_info->conn_id;
   event.attr.stream_id = stream_id;
@@ -333,6 +335,7 @@ int probe_framer_write_data(struct pt_regs* ctx) {
   }
 
   info->attr.type = kWriteData;
+  info->attr.ftype = kDataFrameEventWrite;
   info->attr.timestamp_ns = bpf_ktime_get_ns();
   info->attr.conn_id = conn_info->conn_id;
   info->attr.stream_id = stream_id;
@@ -398,6 +401,9 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
 
     info->attr.timestamp_ns = bpf_ktime_get_ns();
     info->attr.type = kReadData;
+    info->attr.ftype = kDataFrameEventRead;
+    info->attr.timestamp_ns = bpf_ktime_get_ns();
+    info->attr.conn_id = conn_info->conn_id;
     info->attr.stream_id = frame_header_ptr->stream_id;
     uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
     info->attr.data_len = data_len;

@@ -3,9 +3,7 @@
 #include <algorithm>
 #include <string>
 
-extern "C" {
 #include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
-}
 
 // perf_submit() uses PERF_RECORD_SAMPLE with PERF_SAMPLE_RAW, which has the following structure.
 //      struct {

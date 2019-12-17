@@ -25,12 +25,50 @@ enum EventType {
   kWriteData,
 };
 
+#ifdef __cplusplus
+inline std::string_view TypeName(EventType type) {
+  switch (type) {
+    case kUnknown:
+      return "unknown";
+    case kGRPCWriteHeader:
+      return "write_header";
+    case kGRPCOperateHeaders:
+      return "operate_headers";
+    case kReadData:
+      return "operate_headers";
+    case kWriteData:
+      return "operate_headers";
+    default:
+      DCHECK(false);
+      // For GCC.
+      return "unhandled";
+  }
+}
+#endif
+
 struct header_field_t {
   uint32_t size;
   char msg[HEADER_FIELD_STR_SIZE];
 };
 
 enum HeaderEventType { kHeaderEventUnknown, kHeaderEventRead, kHeaderEventWrite };
+
+#ifdef __cplusplus
+inline std::string_view HeaderEventTypeName(HeaderEventType type) {
+  switch (type) {
+    case kHeaderEventUnknown:
+      return "unknown";
+    case kHeaderEventRead:
+      return "header_read";
+    case kHeaderEventWrite:
+      return "header_write";
+    default:
+      DCHECK(false);
+      // For GCC.
+      return "unhandled";
+  }
+}
+#endif
 
 struct go_grpc_http2_header_event_t {
   struct header_attr_t {
@@ -53,6 +91,23 @@ struct conn_symaddrs_t {
 };
 
 enum DataFrameEventType { kDataFrameEventUnknown, kDataFrameEventRead, kDataFrameEventWrite };
+
+#ifdef __cplusplus
+inline std::string_view DataFrameEventTypeName(DataFrameEventType type) {
+  switch (type) {
+    case kDataFrameEventUnknown:
+      return "unknown";
+    case kDataFrameEventRead:
+      return "data_read";
+    case kDataFrameEventWrite:
+      return "data_write";
+    default:
+      DCHECK(false);
+      // For GCC.
+      return "unhandled";
+  }
+}
+#endif
 
 struct go_grpc_data_event_t {
   struct data_attr_t {

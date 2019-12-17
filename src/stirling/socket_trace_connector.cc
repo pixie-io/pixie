@@ -29,18 +29,6 @@
 #include "src/stirling/utils/json.h"
 #include "src/stirling/utils/linux_headers.h"
 
-// TODO(oazizi): Replace with magic_enum, when it's enabled.
-inline std::string_view DataFrameEventTypeName(DataFrameEventType type) {
-  switch (type) {
-    case DataFrameEventType::kDataFrameEventWrite:
-      return "write_data";
-    case DataFrameEventType::kDataFrameEventRead:
-      return "read_data";
-    default:
-      return "unknown";
-  }
-}
-
 // TODO(yzhao): Consider simplify the semantic by filtering entirely on content type.
 DEFINE_string(http_response_header_filters, "Content-Type:json",
               "Comma-separated strings to specify the substrings should be included for a header. "
@@ -289,23 +277,6 @@ void SocketTraceConnector::HandleControlEventsLoss(void* /*cb_cookie*/, uint64_t
   LOG(WARNING) << ProbeLossMessage("socket_control_events", lost);
 }
 
-namespace {
-
-std::string_view TypeName(EventType type) {
-  switch (type) {
-    case kUnknown:
-      return "unknown";
-    case kGRPCWriteHeader:
-      return "write_header";
-    case kGRPCOperateHeaders:
-      return "operate_headers";
-    default:
-      return "for_gcc";
-  }
-}
-
-}  // namespace
-
 void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
 
@@ -315,9 +286,9 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
 
   LOG(INFO) << absl::Substitute(
       "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 name=$6 value=$7",
-      event->attr.timestamp_ns, event->attr.conn_id.upid.pid, TypeName(event->attr.type),
-      event->attr.conn_id.fd, event->attr.conn_id.generation, event->attr.stream_id, event->name,
-      event->value);
+      event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
+      HeaderEventTypeName(event->attr.htype), event->attr.conn_id.fd,
+      event->attr.conn_id.generation, event->attr.stream_id, event->name, event->value);
   connector->AcceptHTTP2Header(std::move(event));
 }
 
@@ -333,10 +304,11 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
   // go_grpc_data_event_t is 8-bytes aligned, data is 4-bytes.
   auto event = std::make_unique<HTTP2DataEvent>(data);
 
-  LOG(INFO) << absl::Substitute(
-      "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 data=$6", event->attr.timestamp_ns,
-      event->attr.conn_id.upid.pid, TypeName(event->attr.type), event->attr.conn_id.fd,
-      event->attr.conn_id.generation, event->attr.stream_id, event->payload);
+  LOG(INFO) << absl::Substitute("t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 data=$6",
+                                event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
+                                DataFrameEventTypeName(event->attr.ftype), event->attr.conn_id.fd,
+                                event->attr.conn_id.generation, event->attr.stream_id,
+                                event->payload);
   event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Data(std::move(event));
 }
