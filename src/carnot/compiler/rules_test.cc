@@ -192,7 +192,7 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
   auto result_or_s = data_rule.Execute(graph.get());
   ASSERT_NOT_OK(result_or_s);
   EXPECT_THAT(result_or_s.status(),
-              HasCompilerError("Could not find function 'pl.gobeldy' with arguments .*"));
+              HasCompilerError("Could not find UDF 'pl.gobeldy' with arguments .*"));
 }
 
 // Checks to make sure that agg functions work properly.

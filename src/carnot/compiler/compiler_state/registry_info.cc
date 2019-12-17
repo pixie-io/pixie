@@ -14,8 +14,8 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-Status RegistryInfo::Init(const udfspb::UDFInfo info) {
-  for (auto uda : info.udas()) {
+Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
+  for (const auto& uda : info.udas()) {
     std::vector<types::DataType> arg_types;
     arg_types.reserve(uda.update_arg_types_size());
 
@@ -24,11 +24,15 @@ Status RegistryInfo::Init(const udfspb::UDFInfo info) {
     }
     auto key = RegistryKey(uda.name(), arg_types);
     uda_map_[key] = uda.finalize_type();
-    // Add uda to func_names_.
-    func_names_.insert(uda.name());
+    // Add uda to funcs_.
+    if (funcs_.contains(uda.name())) {
+      PL_ASSIGN_OR_RETURN(auto type, GetUDFType(uda.name()));
+      DCHECK(UDFType::kUDA == type);
+    }
+    funcs_[uda.name()] = UDFType::kUDA;
   }
 
-  for (auto udf : info.scalar_udfs()) {
+  for (const auto& udf : info.scalar_udfs()) {
     std::vector<types::DataType> arg_types;
     arg_types.reserve(udf.exec_arg_types_size());
 
@@ -38,11 +42,30 @@ Status RegistryInfo::Init(const udfspb::UDFInfo info) {
 
     auto key = RegistryKey(udf.name(), arg_types);
     udf_map_[key] = udf.return_type();
-    // Add udf to func_names_.
-    func_names_.insert(udf.name());
+    // Add udf to funcs_.
+    if (funcs_.contains(udf.name())) {
+      PL_ASSIGN_OR_RETURN(auto type, GetUDFType(udf.name()));
+      DCHECK(UDFType::kUDF == type);
+    }
+    funcs_[udf.name()] = UDFType::kUDF;
   }
 
   return Status::OK();
+}
+
+StatusOr<UDFType> RegistryInfo::GetUDFType(std::string_view name) {
+  if (!funcs_.contains(name)) {
+    return error::InvalidArgument("Could not find function '$0'.", name);
+  }
+  return funcs_[name];
+}
+
+absl::flat_hash_set<std::string> RegistryInfo::func_names() const {
+  absl::flat_hash_set<std::string> func_names;
+  for (const auto& pair : funcs_) {
+    func_names.insert(pair.first);
+  }
+  return func_names;
 }
 
 StatusOr<types::DataType> RegistryInfo::GetUDA(std::string name,
@@ -63,7 +86,7 @@ StatusOr<types::DataType> RegistryInfo::GetUDF(std::string name,
     for (const types::DataType& arg_data_type : exec_arg_types) {
       arg_data_type_strs.push_back(types::DataType_Name(arg_data_type));
     }
-    return error::InvalidArgument("Could not find function '$0' with arguments [$1].", name,
+    return error::InvalidArgument("Could not find UDF '$0' with arguments [$1].", name,
                                   absl::StrJoin(arg_data_type_strs, ","));
   }
   return udf->second;

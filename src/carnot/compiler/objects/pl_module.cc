@@ -28,10 +28,10 @@ Status PLModule::RegisterUDFFuncs() {
         FuncObject::Create(stripped_name, {}, {},
                            /* has_variable_len_args */ true,
                            /* has_variable_len_kwargs */ false,
-                           std::bind(&UDFHandler::Eval, graph_, stripped_name.data(),
+                           std::bind(&UDFHandler::Eval, graph_, std::string(stripped_name),
                                      std::placeholders::_1, std::placeholders::_2)));
 
-    AddMethod(stripped_name.data(), fn_obj);
+    AddMethod(std::string(stripped_name), fn_obj);
   }
   // TODO(philkuz) (PL-1189) enable this.
   // attributes_ = compiler_state_->registry_info()->func_names()

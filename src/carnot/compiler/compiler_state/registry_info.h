@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 #include <absl/strings/str_format.h>
 #include "src/carnot/udfspb/udfs.pb.h"
@@ -15,6 +16,8 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
+
+enum class UDFType { kUDA = 0, kUDF = 1 };
 
 /**
  * RegistryKey is the class used to uniquely refer to UDFs/UDAs in the registry.
@@ -58,17 +61,18 @@ class RegistryKey {
 
 class RegistryInfo {
  public:
-  Status Init(udfspb::UDFInfo info);
+  Status Init(const udfspb::UDFInfo& info);
   StatusOr<types::DataType> GetUDA(std::string name, std::vector<types::DataType> update_arg_types);
   StatusOr<types::DataType> GetUDF(std::string name, std::vector<types::DataType> exec_arg_types);
 
-  const absl::flat_hash_set<std::string>& func_names() const { return func_names_; }
+  StatusOr<UDFType> GetUDFType(std::string_view name);
+  absl::flat_hash_set<std::string> func_names() const;
 
  protected:
   std::map<RegistryKey, types::DataType> udf_map_;
   std::map<RegistryKey, types::DataType> uda_map_;
   // Union of udf and uda names.
-  absl::flat_hash_set<std::string> func_names_;
+  absl::flat_hash_map<std::string, UDFType> funcs_;
 };
 
 }  // namespace compiler

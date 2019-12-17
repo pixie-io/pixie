@@ -38,6 +38,11 @@ TEST(RegistryInfo, basic) {
   udfspb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   EXPECT_OK(info.Init(info_pb));
+
+  EXPECT_EQ(UDFType::kUDA, info.GetUDFType("uda1").ConsumeValueOrDie());
+  EXPECT_EQ(UDFType::kUDF, info.GetUDFType("scalar1").ConsumeValueOrDie());
+  EXPECT_NOT_OK(info.GetUDFType("dne"));
+
   EXPECT_EQ(types::INT64,
             info.GetUDA("uda1", std::vector<types::DataType>({types::INT64})).ConsumeValueOrDie());
   EXPECT_NOT_OK(info.GetUDA("uda2", std::vector<types::DataType>({types::INT64})));

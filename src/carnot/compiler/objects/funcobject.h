@@ -84,7 +84,7 @@ class FuncObject : public QLObject {
   using DefaultType = std::string;
 
   static StatusOr<std::shared_ptr<FuncObject>> Create(
-      const std::string_view name, const std::vector<std::string>& arguments,
+      std::string_view name, const std::vector<std::string>& arguments,
       const absl::flat_hash_map<std::string, DefaultType>& defaults, bool has_variable_len_args,
       bool has_variable_len_kwargs, FunctionType impl);
 
@@ -99,7 +99,7 @@ class FuncObject : public QLObject {
    * @param has_variable_len_kwargs whether or not this supports generic keyword arguments.
    * @param impl the implementation of the function.
    */
-  FuncObject(const std::string_view name, const std::vector<std::string>& arguments,
+  FuncObject(std::string_view name, const std::vector<std::string>& arguments,
              const absl::flat_hash_map<std::string, DefaultType>& defaults,
              bool has_variable_len_args, bool has_variable_len_kwargs, FunctionType impl);
 
