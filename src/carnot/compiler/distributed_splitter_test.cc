@@ -41,63 +41,104 @@ class BlockingOperatorGRPCBridgeRuleTest : public OperatorTests {
   table_store::schema::Relation cpu_relation;
 };
 
-TEST_F(BlockingOperatorGRPCBridgeRuleTest, blocking_agg_test) {
+class SplitterTest : public OperatorTests {
+ protected:
+  void SetUpImpl() override {
+    auto rel_map = std::make_unique<RelationMap>();
+    cpu_relation = table_store::schema::Relation(
+        std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
+                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
+        std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
+    rel_map->emplace("cpu", cpu_relation);
+
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
+  }
+  void HasGRPCSinkChild(int64_t id, IR* test_graph, const std::string& err_string) {
+    IRNode* maybe_op_node = test_graph->Get(id);
+    ASSERT_TRUE(Match(maybe_op_node, Operator())) << err_string;
+    OperatorIR* op = static_cast<OperatorIR*>(maybe_op_node);
+    ASSERT_EQ(op->Children().size(), 1) << err_string;
+    OperatorIR* map_child = op->Children()[0];
+    EXPECT_EQ(map_child->type(), IRNodeType::kGRPCSink) << err_string;
+  }
+  void HasGRPCSourceGroupParent(int64_t id, IR* test_graph, const std::string& err_string) {
+    IRNode* maybe_op_node = test_graph->Get(id);
+    ASSERT_TRUE(Match(maybe_op_node, Operator())) << err_string;
+    OperatorIR* op = static_cast<OperatorIR*>(maybe_op_node);
+    // TODO(philkuz) with multiple parents support check to see whether we can get
+    // check whether either has a parent. Maybe we just pass in an index?
+    ASSERT_EQ(op->parents().size(), 1);
+    OperatorIR* sink_parent = op->parents()[0];
+    EXPECT_EQ(sink_parent->type(), IRNodeType::kGRPCSourceGroup);
+  }
+
+  template <typename TIR>
+  TIR* GetEquivalentInNewPlan(IR* new_graph, TIR* old_node) {
+    DCHECK(new_graph->HasNode(old_node->id()));
+    IRNode* new_node = new_graph->Get(old_node->id());
+    DCHECK_EQ(new_node->type(), old_node->type());
+    return static_cast<TIR*>(new_node);
+  }
+
+  std::unique_ptr<CompilerState> compiler_state_;
+  std::unique_ptr<RegistryInfo> info_;
+  int64_t time_now = 1552607213931245000;
+  table_store::schema::Relation cpu_relation;
+};
+
+TEST_F(SplitterTest, blocking_agg_test) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
                              {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
   auto sink = MakeMemSink(agg, "out");
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
-  auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
-  EXPECT_OK(result);
-  EXPECT_TRUE(result.ConsumeValueOrDie());
+  DistributedSplitter splitter;
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
+
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
 
   // Verify the resultant graph.
-  plan::DAG dag = graph->dag();
-  std::vector<OperatorIR*> op_children;
-  for (int64_t d : dag.DependenciesOf(mem_src->id())) {
-    auto ir_node = graph->Get(d);
-    if (ir_node->IsOperator()) {
-      op_children.push_back(static_cast<OperatorIR*>(ir_node));
-    }
-  }
-  ASSERT_EQ(op_children.size(), 1UL);
-  OperatorIR* mem_src_child = op_children[0];
+  MemorySourceIR* new_mem_src = GetEquivalentInNewPlan(before_blocking, mem_src);
+  ASSERT_EQ(new_mem_src->Children().size(), 1UL);
+  OperatorIR* mem_src_child = new_mem_src->Children()[0];
   ASSERT_TRUE(Match(mem_src_child, GRPCSink()))
       << "Expected GRPCSink, got " << mem_src_child->type_string();
   GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(mem_src_child);
 
-  OperatorIR* agg_parent = agg->parents()[0];
+  OperatorIR* agg_parent = GetEquivalentInNewPlan(after_blocking, agg)->parents()[0];
   ASSERT_TRUE(Match(agg_parent, GRPCSourceGroup()))
       << "Expected GRPCSourceGroup, got " << agg_parent->type_string();
   GRPCSourceGroupIR* grpc_source_group = static_cast<GRPCSourceGroupIR*>(agg_parent);
 
   EXPECT_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
 
-  OperatorIR* sink_parent = sink->parents()[0];
+  OperatorIR* sink_parent = GetEquivalentInNewPlan(after_blocking, sink)->parents()[0];
   EXPECT_TRUE(Match(sink_parent, BlockingAgg()));
 }
 
-TEST_F(BlockingOperatorGRPCBridgeRuleTest, sink_only_test) {
+TEST_F(SplitterTest, sink_only_test) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
   auto map2 = MakeMap(map1, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto sink = MakeMemSink(map2, "out");
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
-  auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
-  EXPECT_OK(result);
-  EXPECT_TRUE(result.ConsumeValueOrDie());
+  DistributedSplitter splitter;
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
 
-  // Verify the resultant graph.
-  std::vector<OperatorIR*> op_children = map2->Children();
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+
+  std::vector<OperatorIR*> op_children = GetEquivalentInNewPlan(before_blocking, map2)->Children();
   ASSERT_EQ(op_children.size(), 1UL);
   OperatorIR* op_child = op_children[0];
   ASSERT_TRUE(Match(op_child, GRPCSink())) << "Expected GRPCSink, got " << op_child->type_string();
   GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(op_child);
 
-  OperatorIR* sink_parent = sink->parents()[0];
+  OperatorIR* sink_parent = GetEquivalentInNewPlan(after_blocking, sink)->parents()[0];
   ASSERT_TRUE(Match(sink_parent, GRPCSourceGroup()))
       << "Expected GRPCSourceGroup, got " << sink_parent->type_string();
   GRPCSourceGroupIR* grpc_source_group = static_cast<GRPCSourceGroupIR*>(sink_parent);
@@ -106,7 +147,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, sink_only_test) {
 }
 
 // Test to see whether splitting works when sandwiched between two separate ops.
-TEST_F(BlockingOperatorGRPCBridgeRuleTest, sandwich_test) {
+TEST_F(SplitterTest, sandwich_test) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto map = MakeMap(mem_src, {{"count", MakeColumn("count", 0)}});
   EXPECT_OK(map->SetRelation(MakeRelation()));
@@ -115,27 +156,22 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, sandwich_test) {
   auto map2 = MakeMap(agg, {{"count", MakeColumn("count", 0)}});
   MakeMemSink(map2, "out");
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
-  auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
-  EXPECT_OK(result);
-  EXPECT_TRUE(result.ConsumeValueOrDie());
+  DistributedSplitter splitter;
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
+
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
 
   // Verify the resultant graph.
-  plan::DAG dag = graph->dag();
-  std::vector<OperatorIR*> op_children;
-  for (int64_t d : dag.DependenciesOf(map->id())) {
-    auto ir_node = graph->Get(d);
-    if (ir_node->IsOperator()) {
-      op_children.push_back(static_cast<OperatorIR*>(ir_node));
-    }
-  }
-  ASSERT_EQ(op_children.size(), 1UL);
-  OperatorIR* map_src_child = op_children[0];
+  MapIR* new_map = GetEquivalentInNewPlan(before_blocking, map);
+  ASSERT_EQ(new_map->Children().size(), 1UL);
+  OperatorIR* map_src_child = new_map->Children()[0];
   ASSERT_TRUE(Match(map_src_child, GRPCSink()))
       << "Expected GRPCSink, got " << map_src_child->type_string();
   GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(map_src_child);
 
-  OperatorIR* agg_parent = agg->parents()[0];
+  OperatorIR* agg_parent = GetEquivalentInNewPlan(after_blocking, agg)->parents()[0];
   ASSERT_TRUE(Match(agg_parent, GRPCSourceGroup()))
       << "Expected GRPCSourceGroup, got " << agg_parent->type_string();
   GRPCSourceGroupIR* grpc_source_group = static_cast<GRPCSourceGroupIR*>(agg_parent);
@@ -143,7 +179,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, sandwich_test) {
   EXPECT_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
 }
 
-TEST_F(BlockingOperatorGRPCBridgeRuleTest, first_blocking_node_test) {
+TEST_F(SplitterTest, first_blocking_node_test) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
                              {{"mean", MakeMeanFunc(MakeColumn("cpu0", 0))}});
@@ -151,27 +187,22 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, first_blocking_node_test) {
                               {{"mean2", MakeMeanFunc(MakeColumn("mean", 0))}});
   MakeMemSink(agg2, "out");
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
-  auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
-  EXPECT_OK(result);
-  EXPECT_TRUE(result.ConsumeValueOrDie());
+  DistributedSplitter splitter;
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
+
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
 
   // Verify the resultant graph.
-  plan::DAG dag = graph->dag();
-  std::vector<OperatorIR*> op_children;
-  for (int64_t d : dag.DependenciesOf(mem_src->id())) {
-    auto ir_node = graph->Get(d);
-    if (ir_node->IsOperator()) {
-      op_children.push_back(static_cast<OperatorIR*>(ir_node));
-    }
-  }
-  ASSERT_EQ(op_children.size(), 1UL);
-  OperatorIR* mem_src_child = op_children[0];
+  MemorySourceIR* new_mem_src = GetEquivalentInNewPlan(before_blocking, mem_src);
+  ASSERT_EQ(new_mem_src->Children().size(), 1UL);
+  OperatorIR* mem_src_child = new_mem_src->Children()[0];
   ASSERT_TRUE(Match(mem_src_child, GRPCSink()))
       << "Expected GRPCSink, got " << mem_src_child->type_string();
   GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(mem_src_child);
 
-  OperatorIR* agg_parent = agg->parents()[0];
+  OperatorIR* agg_parent = GetEquivalentInNewPlan(after_blocking, agg)->parents()[0];
   ASSERT_TRUE(Match(agg_parent, GRPCSourceGroup()))
       << "Expected GRPCSourceGroup, got " << agg_parent->type_string();
   GRPCSourceGroupIR* grpc_source_group = static_cast<GRPCSourceGroupIR*>(agg_parent);
@@ -215,7 +246,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, multiple_children_no_blocking_node_te
 }
 
 // Test feeding into unions.
-TEST_F(BlockingOperatorGRPCBridgeRuleTest, union_operator) {
+TEST_F(SplitterTest, union_operator) {
   auto mem_src1 = MakeMemSource(MakeRelation());
   auto mem_src2 = MakeMemSource(MakeRelation());
   auto union_op = MakeUnion({mem_src1, mem_src2});
@@ -226,27 +257,29 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, union_operator) {
     EXPECT_TRUE(Match(union_parent, MemorySource()));
   }
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
-  auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ConsumeValueOrDie());
+  DistributedSplitter splitter;
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
+
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
 
   std::vector<int64_t> source_group_ids;
-  for (auto union_parent : union_op->parents()) {
+  for (auto union_parent : GetEquivalentInNewPlan(after_blocking, union_op)->parents()) {
     ASSERT_TRUE(Match(union_parent, GRPCSourceGroup()))
         << absl::Substitute("Expected node $0 to be GRPCSourceGroup.", union_parent->DebugString());
     source_group_ids.push_back(static_cast<GRPCSourceGroupIR*>(union_parent)->source_id());
   }
 
   std::vector<int64_t> sink_ids;
-  auto children1 = mem_src1->Children();
+  auto children1 = GetEquivalentInNewPlan(before_blocking, mem_src1)->Children();
   ASSERT_EQ(children1.size(), 1);
   ASSERT_TRUE(Match(children1[0], GRPCSink()))
       << absl::Substitute("Expected node $0 to be GRPCSink.", children1[0]->DebugString());
 
   sink_ids.push_back(static_cast<GRPCSinkIR*>(children1[0])->destination_id());
 
-  auto children2 = mem_src2->Children();
+  auto children2 = GetEquivalentInNewPlan(before_blocking, mem_src2)->Children();
   ASSERT_EQ(children2.size(), 1);
   EXPECT_TRUE(Match(children2[0], GRPCSink()))
       << absl::Substitute("Expected node $0 to be GRPCSink.", children2[0]->DebugString());
@@ -262,7 +295,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, union_operator) {
  *   /  \
  * Agg1   Agg2
  */
-TEST_F(BlockingOperatorGRPCBridgeRuleTest, two_blocking_children) {
+TEST_F(SplitterTest, two_blocking_children) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto blocking_agg1 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
                                        {{"cpu0_mean", MakeMeanFunc(MakeColumn("cpu0", 0))}});
@@ -274,25 +307,30 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, two_blocking_children) {
 
   EXPECT_EQ(mem_src->Children().size(), 2);
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
-  auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ConsumeValueOrDie());
+  DistributedSplitter splitter;
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
 
-  ASSERT_EQ(blocking_agg1->parents().size(), 1);
-  EXPECT_TRUE(Match(blocking_agg1->parents()[0], GRPCSourceGroup()));
-  auto grpc_source1 = static_cast<GRPCSourceGroupIR*>(blocking_agg1->parents()[0]);
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
 
-  ASSERT_EQ(blocking_agg2->parents().size(), 1);
-  EXPECT_TRUE(Match(blocking_agg2->parents()[0], GRPCSourceGroup()));
-  auto grpc_source2 = static_cast<GRPCSourceGroupIR*>(blocking_agg2->parents()[0]);
+  // Verify the resultant graph.
+  BlockingAggIR* new_blocking_agg1 = GetEquivalentInNewPlan(after_blocking, blocking_agg1);
+  ASSERT_EQ(new_blocking_agg1->parents().size(), 1);
+  EXPECT_TRUE(Match(new_blocking_agg1->parents()[0], GRPCSourceGroup()));
+  auto grpc_source1 = static_cast<GRPCSourceGroupIR*>(new_blocking_agg1->parents()[0]);
+
+  BlockingAggIR* new_blocking_agg2 = GetEquivalentInNewPlan(after_blocking, blocking_agg2);
+  ASSERT_EQ(new_blocking_agg2->parents().size(), 1);
+  EXPECT_TRUE(Match(new_blocking_agg2->parents()[0], GRPCSourceGroup()));
+  auto grpc_source2 = static_cast<GRPCSourceGroupIR*>(new_blocking_agg2->parents()[0]);
 
   // TODO(philkuz) (PL-846) replace the following with the commented out code.
   EXPECT_NE(grpc_source1->source_id(), grpc_source2->source_id());
-  auto source_children = mem_src->Children();
+  auto source_children = GetEquivalentInNewPlan(before_blocking, mem_src)->Children();
   ASSERT_EQ(source_children.size(), 2);
-  ASSERT_TRUE(Match(source_children[0], GRPCSink()));
-  ASSERT_TRUE(Match(source_children[1], GRPCSink()));
+  ASSERT_EQ(source_children[0]->type(), IRNodeType::kGRPCSink);
+  ASSERT_EQ(source_children[1]->type(), IRNodeType::kGRPCSink);
 
   auto grpc_sink1 = static_cast<GRPCSinkIR*>(source_children[0]);
   auto grpc_sink2 = static_cast<GRPCSinkIR*>(source_children[1]);
@@ -320,7 +358,7 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, two_blocking_children) {
  *   \   /
  *    Join
  */
-TEST_F(BlockingOperatorGRPCBridgeRuleTest, agg_join_children) {
+TEST_F(SplitterTest, agg_join_children) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto blocking_agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
                                       {{"cpu0_mean", MakeMeanFunc(MakeColumn("cpu0", 0))}});
@@ -331,23 +369,28 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, agg_join_children) {
 
   EXPECT_EQ(mem_src->Children().size(), 2);
 
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
-  auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ConsumeValueOrDie());
+  DistributedSplitter splitter;
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
 
-  ASSERT_EQ(blocking_agg->parents().size(), 1);
-  ASSERT_TRUE(Match(blocking_agg->parents()[0], GRPCSourceGroup()));
-  auto blocking_agg_parent = static_cast<GRPCSourceGroupIR*>(blocking_agg->parents()[0]);
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
 
-  ASSERT_EQ(join->parents().size(), 2);
+  auto new_blocking_agg = GetEquivalentInNewPlan(after_blocking, blocking_agg);
+  ASSERT_EQ(new_blocking_agg->parents().size(), 1);
+  ASSERT_TRUE(Match(new_blocking_agg->parents()[0], GRPCSourceGroup()));
+  auto blocking_agg_parent = static_cast<GRPCSourceGroupIR*>(new_blocking_agg->parents()[0]);
+
+  auto new_join = GetEquivalentInNewPlan(after_blocking, join);
+  ASSERT_EQ(new_join->parents().size(), 2);
   // Parent 1 should be the GRPCSourceGroup
-  ASSERT_TRUE(Match(join->parents()[0], GRPCSourceGroup()));
-  auto join_parent = static_cast<GRPCSourceGroupIR*>(join->parents()[0]);
+  ASSERT_TRUE(Match(new_join->parents()[0], GRPCSourceGroup()));
+  auto join_parent = static_cast<GRPCSourceGroupIR*>(new_join->parents()[0]);
 
   // TODO(philkuz) Replace the following with the commented out code with (PL-846).
   EXPECT_NE(join_parent->source_id(), blocking_agg_parent->source_id());
-  auto source_children = mem_src->Children();
+
+  auto source_children = GetEquivalentInNewPlan(before_blocking, mem_src)->Children();
   ASSERT_EQ(source_children.size(), 2);
   ASSERT_TRUE(Match(source_children[0], GRPCSink()));
   ASSERT_TRUE(Match(source_children[1], GRPCSink()));
@@ -370,42 +413,6 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, agg_join_children) {
 
   // EXPECT_EQ(join_parent->source_id(), grpc_sink->destination_id());
 }
-
-class SplitterTest : public OperatorTests {
- protected:
-  void SetUpImpl() override {
-    auto rel_map = std::make_unique<RelationMap>();
-    cpu_relation = table_store::schema::Relation(
-        std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
-                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
-        std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
-    rel_map->emplace("cpu", cpu_relation);
-
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
-  }
-  void HasGRPCSinkChild(int64_t id, IR* test_graph, const std::string& err_string) {
-    IRNode* maybe_op_node = test_graph->Get(id);
-    ASSERT_TRUE(Match(maybe_op_node, Operator())) << err_string;
-    OperatorIR* op = static_cast<OperatorIR*>(maybe_op_node);
-    ASSERT_EQ(op->Children().size(), 1) << err_string;
-    OperatorIR* map_child = op->Children()[0];
-    EXPECT_EQ(map_child->type(), IRNodeType::kGRPCSink) << err_string;
-  }
-  void HasGRPCSourceGroupParent(int64_t id, IR* test_graph, const std::string& err_string) {
-    IRNode* maybe_op_node = test_graph->Get(id);
-    ASSERT_TRUE(Match(maybe_op_node, Operator())) << err_string;
-    OperatorIR* op = static_cast<OperatorIR*>(maybe_op_node);
-    // TODO(philkuz) with multiple parents support check to see whether we can get
-    // check whether either has a parent. Maybe we just pass in an index?
-    ASSERT_EQ(op->parents().size(), 1);
-    OperatorIR* sink_parent = op->parents()[0];
-    EXPECT_EQ(sink_parent->type(), IRNodeType::kGRPCSourceGroup);
-  }
-  std::unique_ptr<CompilerState> compiler_state_;
-  std::unique_ptr<RegistryInfo> info_;
-  int64_t time_now = 1552607213931245000;
-  table_store::schema::Relation cpu_relation;
-};
 
 TEST_F(SplitterTest, simple_split_test) {
   auto mem_src = MakeMemSource(MakeRelation());
