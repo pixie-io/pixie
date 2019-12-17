@@ -17,35 +17,6 @@ static_assert((MAX_DATA_SIZE & (MAX_DATA_SIZE - 1)) == 0, "MAX_DATA_SIZE must be
 
 // TODO(yzhao): Consider follow C naming conventions.
 
-enum EventType {
-  kUnknown,
-  kGRPCWriteHeader,
-  kGRPCOperateHeaders,
-  kReadData,
-  kWriteData,
-};
-
-#ifdef __cplusplus
-inline std::string_view TypeName(EventType type) {
-  switch (type) {
-    case kUnknown:
-      return "unknown";
-    case kGRPCWriteHeader:
-      return "write_header";
-    case kGRPCOperateHeaders:
-      return "operate_headers";
-    case kReadData:
-      return "operate_headers";
-    case kWriteData:
-      return "operate_headers";
-    default:
-      DCHECK(false);
-      // For GCC.
-      return "unhandled";
-  }
-}
-#endif
-
 struct header_field_t {
   uint32_t size;
   char msg[HEADER_FIELD_STR_SIZE];
@@ -72,9 +43,7 @@ inline std::string_view HeaderEventTypeName(HeaderEventType type) {
 
 struct go_grpc_http2_header_event_t {
   struct header_attr_t {
-    // TODO(oazizi): The type fields below must be reconciled.
-    enum EventType type;
-    enum HeaderEventType htype;
+    enum HeaderEventType type;
     uint64_t timestamp_ns;
     struct conn_id_t conn_id;
     uint32_t stream_id;
@@ -111,9 +80,7 @@ inline std::string_view DataFrameEventTypeName(DataFrameEventType type) {
 
 struct go_grpc_data_event_t {
   struct data_attr_t {
-    // TODO(oazizi): The type fields below must be reconciled.
-    enum EventType type;
-    enum DataFrameEventType ftype;
+    enum DataFrameEventType type;
     uint64_t timestamp_ns;
     struct conn_id_t conn_id;
     uint32_t stream_id;

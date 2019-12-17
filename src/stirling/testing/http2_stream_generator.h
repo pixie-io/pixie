@@ -16,7 +16,7 @@ class StreamEventGenerator {
     auto frame = std::make_unique<HTTP2DataEvent>();
     frame->attr.conn_id = conn_id_;
     frame->attr.stream_id = stream_id_;
-    frame->attr.ftype = TType;
+    frame->attr.type = TType;
     frame->attr.timestamp_ns = ++ts_;
     frame->attr.data_len = body.length();
     frame->payload = body;
@@ -28,7 +28,7 @@ class StreamEventGenerator {
     auto hdr = std::make_unique<HTTP2HeaderEvent>();
     hdr->attr.conn_id = conn_id_;
     hdr->attr.stream_id = stream_id_;
-    hdr->attr.htype = TType;
+    hdr->attr.type = TType;
     hdr->attr.timestamp_ns = ++ts_;
     hdr->name = name;
     hdr->value = value;

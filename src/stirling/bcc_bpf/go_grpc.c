@@ -225,8 +225,7 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   }
 
   struct go_grpc_http2_header_event_t event = {};
-  event.attr.type = kGRPCWriteHeader;
-  event.attr.htype = kHeaderEventWrite;
+  event.attr.type = kHeaderEventWrite;
   event.attr.timestamp_ns = bpf_ktime_get_ns();
   event.attr.conn_id = conn_info->conn_id;
   event.attr.stream_id = stream_id;
@@ -285,8 +284,7 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   }
 
   struct go_grpc_http2_header_event_t event = {};
-  event.attr.type = kGRPCOperateHeaders;
-  event.attr.htype = kHeaderEventRead;
+  event.attr.type = kHeaderEventRead;
   event.attr.timestamp_ns = bpf_ktime_get_ns();
   event.attr.conn_id = conn_info->conn_id;
   event.attr.stream_id = stream_id;
@@ -325,8 +323,6 @@ int probe_framer_write_data(struct pt_regs* ctx) {
     return 0;
   }
 
-  info->attr.type = kWriteData;
-
   u32 tgid = bpf_get_current_pid_tgid() >> 32;
   u32 fd = get_fd_from_http2_framer(framer_ptr);
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
@@ -334,8 +330,7 @@ int probe_framer_write_data(struct pt_regs* ctx) {
     return 0;
   }
 
-  info->attr.type = kWriteData;
-  info->attr.ftype = kDataFrameEventWrite;
+  info->attr.type = kDataFrameEventWrite;
   info->attr.timestamp_ns = bpf_ktime_get_ns();
   info->attr.conn_id = conn_info->conn_id;
   info->attr.stream_id = stream_id;
@@ -389,8 +384,6 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
       return 0;
     }
 
-    info->attr.type = kReadData;
-
     u32 tgid = bpf_get_current_pid_tgid() >> 32;
     u32 fd = get_fd_from_http2_framer(framer_ptr);
     struct conn_info_t* conn_info = get_conn_info(tgid, fd);
@@ -400,8 +393,7 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
     info->attr.conn_id = conn_info->conn_id;
 
     info->attr.timestamp_ns = bpf_ktime_get_ns();
-    info->attr.type = kReadData;
-    info->attr.ftype = kDataFrameEventRead;
+    info->attr.type = kDataFrameEventRead;
     info->attr.timestamp_ns = bpf_ktime_get_ns();
     info->attr.conn_id = conn_info->conn_id;
     info->attr.stream_id = frame_header_ptr->stream_id;

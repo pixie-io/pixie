@@ -286,9 +286,9 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
 
   LOG(INFO) << absl::Substitute(
       "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 name=$6 value=$7",
-      event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
-      HeaderEventTypeName(event->attr.htype), event->attr.conn_id.fd,
-      event->attr.conn_id.generation, event->attr.stream_id, event->name, event->value);
+      event->attr.timestamp_ns, event->attr.conn_id.upid.pid, HeaderEventTypeName(event->attr.type),
+      event->attr.conn_id.fd, event->attr.conn_id.generation, event->attr.stream_id, event->name,
+      event->value);
   connector->AcceptHTTP2Header(std::move(event));
 }
 
@@ -306,7 +306,7 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
 
   LOG(INFO) << absl::Substitute("t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 data=$6",
                                 event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
-                                DataFrameEventTypeName(event->attr.ftype), event->attr.conn_id.fd,
+                                DataFrameEventTypeName(event->attr.type), event->attr.conn_id.fd,
                                 event->attr.conn_id.generation, event->attr.stream_id,
                                 event->payload);
   event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();

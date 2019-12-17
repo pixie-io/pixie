@@ -189,7 +189,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   }
 
   bool write_event = false;
-  switch (hdr->attr.htype) {
+  switch (hdr->attr.type) {
     case HeaderEventType::kHeaderEventWrite:
       write_event = true;
       break;
@@ -230,7 +230,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   }
 
   bool write_event = false;
-  switch (data->attr.ftype) {
+  switch (data->attr.type) {
     case DataFrameEventType::kDataFrameEventWrite:
       write_event = true;
       break;
