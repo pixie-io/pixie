@@ -7,6 +7,7 @@
 ##################
 
 set_default_values() {
+  CLUSTER_NAME="dev-cluster-${USER}"
   NUM_NODES=2
   MACHINE_TYPE=n1-standard-1
   IMAGE_NAME=UBUNTU
@@ -44,9 +45,9 @@ usage() {
   # Reset to default values, so we can print them.
   set_default_values
 
-  echo "Usage: $0 [-c <cluster_name>] [-p] [-b] [-m <machine_type>] [-n <num_nodes>] [-i <image>]"
-  echo " -c <string> : name of your cluster. [default: dev-cluster-${USER}]"
+  echo "Usage: $0 [-p] [-c <cluster_name>] [-b] [-m <machine_type>] [-n <num_nodes>] [-i <image>]"
   echo " -p          : Prod cluster config, must appear as first argument. [default: ${PROD_MODE}]"
+  echo " -c <string> : name of your cluster. [default: ${CLUSTER_NAME}]"
   echo " -n <int>    : number of nodes in the cluster [default: ${NUM_NODES}]"
   echo " -m <string> : machine type [default: ${MACHINE_TYPE}]"
   echo " -i <string> : base image [default: ${IMAGE_NAME}] (can also use COS)"
@@ -56,15 +57,6 @@ usage() {
 }
 
 parse_args() {
-  CLUSTER_NAME="dev-cluster-${USER}"
-
-  echo "${CLUSTER_NAME:0:1}"
-  # Make sure the cluster name does not start with dash.
-  # User is probably trying to pass a flag without the required positional argument.
-  if [ "${CLUSTER_NAME:0:1}" = "-" ]; then
-    usage
-  fi
-
   # Check to see if prod flag is specified so that we can change the defaults.
   if [ "$1" = "-p" ] ; then
     set_default_prod_values
