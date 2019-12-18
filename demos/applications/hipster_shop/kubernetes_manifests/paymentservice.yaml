@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: paymentservice
   namespace: hipster-shop
 spec:
+  selector:
+    matchLabels:
+      name: paymentservice
   template:
     metadata:
       labels:
-        app: paymentservice
+        name: paymentservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
