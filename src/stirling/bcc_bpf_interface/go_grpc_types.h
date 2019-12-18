@@ -46,6 +46,7 @@ struct go_grpc_http2_header_event_t {
     uint64_t timestamp_ns;
     struct conn_id_t conn_id;
     uint32_t stream_id;
+    bool end_stream;
   } attr;
 
   struct header_field_t name;
@@ -77,6 +78,7 @@ struct go_grpc_data_event_t {
     uint64_t timestamp_ns;
     struct conn_id_t conn_id;
     uint32_t stream_id;
+    bool end_stream;
     uint32_t data_len;
   } attr;
   char data[MAX_DATA_SIZE];

@@ -69,6 +69,11 @@ struct FrameHeader {
   uint32_t stream_id;
 };
 
+// Meaning of flag bits in FrameHeader flags.
+// https://github.com/golang/net/blob/master/http2/frame.go
+const uint8_t kFlagDataEndStream = 0x1;
+const uint8_t kFlagHeadersEndStream = 0x1;
+
 // C Implementation of the DataFrame struct from golang source:
 // type DataFrame struct {
 //   FrameHeader
@@ -171,8 +176,11 @@ struct go_grpc_framer_t {
   void* http2_framer;
 };
 
-// Probes (*loopyWriter).writeHeader(uint32, bool, []hpack.HeaderField, func()) inside gRPC-go,
-// which writes HTTP2 headers to the server.
+// Probes (*loopyWriter).writeHeader() inside gRPC-go, which writes HTTP2 headers to the server.
+//
+// Function signature:
+//     func (l *loopyWriter) writeHeader(streamID uint32, endStream bool, hf []hpack.HeaderField,
+//     onWrite func()) error
 int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   // The following code tries to extract the file descriptor held by the loopyWriter object, when
   // probing the (*loopyWriter).writeHeader() function call. The whole structure looks like:
@@ -208,15 +216,17 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   const int kLoopyWriterParamOffset = 8;
   const void* loopy_writer_ptr = *(const void**)(sp + kLoopyWriterParamOffset);
 
+  const int kStreamIDParamOffset = 16;
+  uint32_t stream_id = *(uint32_t*)(sp + kStreamIDParamOffset);
+
+  const int kEndStreamParamOffset = 20;
+  bool end_stream = *(bool*)(sp + kStreamIDParamOffset);
+
   const int kFramerFieldOffset = 40;
   const void* framer_ptr = *(const void**)(loopy_writer_ptr + kFramerFieldOffset);
   struct go_grpc_framer_t go_grpc_framer = {};
   bpf_probe_read(&go_grpc_framer, sizeof(go_grpc_framer), framer_ptr);
-
   const int32_t fd = get_fd_from_http2_framer(go_grpc_framer.http2_framer);
-
-  const int kStreamIDParamOffset = 16;
-  const uint32_t stream_id = *(uint32_t*)(sp + kStreamIDParamOffset);
 
   uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
@@ -243,6 +253,14 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
     go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
   }
 
+  // If end of stream, send one extra empty header with end-stream flag set.
+  if (end_stream) {
+    event.name.size = 0;
+    event.value.size = 0;
+    event.attr.end_stream = true;
+    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+  }
+
   return 0;
 }
 
@@ -255,6 +273,11 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   const void* frame_ptr = *(const void**)(sp + kFieldsParamOffset);
 
   const void* frame_header_ptr = *(const void**)frame_ptr;
+
+  const int kFlagsOffset = 3;
+  const uint8_t flags = *(const uint8_t*)(frame_header_ptr + kFlagsOffset);
+  const bool end_stream = flags & kFlagHeadersEndStream;
+
   const int kStreamIDOffset = 8;
   const uint32_t stream_id = *(const uint32_t*)(frame_header_ptr + kStreamIDOffset);
 
@@ -297,6 +320,14 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
     go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
   }
 
+  // If end of stream, send one extra empty header with end-stream flag set.
+  if (end_stream) {
+    event.name.size = 0;
+    event.value.size = 0;
+    event.attr.end_stream = true;
+    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+  }
+
   return 0;
 }
 
@@ -314,9 +345,22 @@ int probe_framer_write_data(struct pt_regs* ctx) {
     return 0;
   }
 
-  void* framer_ptr = *(void**)(sp + 8);
-  uint32_t stream_id = *(uint32_t*)(sp + 16);
-  struct go_byte_array data = *(struct go_byte_array*)(sp + 24);
+  // Param 0 (receiver) is (fr *Framer).
+  const int kParam0Offset = 8;
+
+  // Param 1 is (streamID uint32).
+  const int kParam1Offset = 16;
+
+  // Param 2 is (endStream bool).
+  const int kParam2Offset = 20;
+
+  // Param 3 is (data []byte).
+  const int kParam3Offset = 24;
+
+  void* framer_ptr = *(void**)(sp + kParam0Offset);
+  uint32_t stream_id = *(uint32_t*)(sp + kParam1Offset);
+  bool end_stream = *(bool*)(sp + kParam2Offset);
+  struct go_byte_array data = *(struct go_byte_array*)(sp + kParam3Offset);
 
   struct go_grpc_data_event_t* info = get_data_event();
   if (info == NULL) {
@@ -334,6 +378,7 @@ int probe_framer_write_data(struct pt_regs* ctx) {
   info->attr.timestamp_ns = bpf_ktime_get_ns();
   info->attr.conn_id = conn_info->conn_id;
   info->attr.stream_id = stream_id;
+  info->attr.end_stream = end_stream;
   uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
   info->attr.data_len = data_len;
   bpf_probe_read(info->data, info->attr.data_len, data.ptr);
@@ -361,16 +406,18 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
     return 0;
   }
 
-  // Param 0 is the Receiver (fr *Framer).
+  // Param 0 (receiver) is (fr *Framer).
   const int kParam0Offset = 8;
 
-  // Param 1 is the first argument (f Frame).
+  // Param 1 is (f Frame).
   const int kParam1Offset = 16;
 
   struct go_interface* frame_interface_ptr = (struct go_interface*)(sp + kParam1Offset);
 
   // All frames types start with a frame header, so this is safe.
   struct FrameHeader* frame_header_ptr = (struct FrameHeader*)frame_interface_ptr->ptr;
+
+  const bool end_stream = frame_header_ptr->flags & kFlagDataEndStream;
 
   // Consider only data frames (0).
   if (frame_header_ptr->frame_type == 0) {
@@ -397,6 +444,7 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
     info->attr.timestamp_ns = bpf_ktime_get_ns();
     info->attr.conn_id = conn_info->conn_id;
     info->attr.stream_id = frame_header_ptr->stream_id;
+    info->attr.end_stream = end_stream;
     uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
     info->attr.data_len = data_len;
     bpf_probe_read(info->data, data_len, data.ptr);

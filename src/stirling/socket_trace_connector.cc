@@ -287,10 +287,10 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
   auto event = std::make_unique<HTTP2HeaderEvent>(data);
 
   VLOG(3) << absl::Substitute(
-      "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 name=$6 value=$7",
+      "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 end_stream=$6 name=$7 value=$8",
       event->attr.timestamp_ns, event->attr.conn_id.upid.pid, HeaderEventTypeName(event->attr.type),
-      event->attr.conn_id.fd, event->attr.conn_id.generation, event->attr.stream_id, event->name,
-      event->value);
+      event->attr.conn_id.fd, event->attr.conn_id.generation, event->attr.stream_id,
+      event->attr.end_stream, event->name, event->value);
   event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Header(std::move(event));
 }
@@ -307,11 +307,12 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
   // go_grpc_data_event_t is 8-bytes aligned, data is 4-bytes.
   auto event = std::make_unique<HTTP2DataEvent>(data);
 
-  VLOG(3) << absl::Substitute("t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 data=$6",
-                              event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
-                              DataFrameEventTypeName(event->attr.type), event->attr.conn_id.fd,
-                              event->attr.conn_id.generation, event->attr.stream_id,
-                              event->payload);
+  VLOG(3) << absl::Substitute(
+      "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 end_stream=$6 data=$7",
+      event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
+      DataFrameEventTypeName(event->attr.type), event->attr.conn_id.fd,
+      event->attr.conn_id.generation, event->attr.stream_id, event->attr.end_stream,
+      event->payload);
   event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Data(std::move(event));
 }
