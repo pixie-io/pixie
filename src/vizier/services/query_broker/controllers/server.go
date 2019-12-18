@@ -102,10 +102,11 @@ func formatCompilerError(status *statuspb.Status) (string, error) {
 	return proto.MarshalTextString(&errorPB), nil
 }
 
-func makeAgentCarnotInfo(agentID uuid.UUID) *distributedpb.CarnotInfo {
+func makeAgentCarnotInfo(agentID uuid.UUID, asid uint32) *distributedpb.CarnotInfo {
 	// TODO(philkuz) (PL-910) need to update this to also contain table info.
 	return &distributedpb.CarnotInfo{
 		QueryBrokerAddress:   agentID.String(),
+		ASID:                 asid,
 		HasGRPCServer:        false,
 		HasDataStore:         true,
 		ProcessesData:        true,
@@ -113,9 +114,10 @@ func makeAgentCarnotInfo(agentID uuid.UUID) *distributedpb.CarnotInfo {
 	}
 }
 
-func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string) *distributedpb.CarnotInfo {
+func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string, asid uint32) *distributedpb.CarnotInfo {
 	return &distributedpb.CarnotInfo{
 		QueryBrokerAddress:   agentID.String(),
+		ASID:                 asid,
 		HasGRPCServer:        true,
 		GRPCAddress:          grpcAddress,
 		HasDataStore:         false,
@@ -124,18 +126,18 @@ func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string) *distributedpb.
 	}
 }
 
-func makePlannerState(pemInfo []*agentpb.AgentInfo, kelvinList []*agentpb.AgentInfo, schema *schemapb.Schema) (*distributedpb.LogicalPlannerState, error) {
+func makePlannerState(pemInfo []*agentpb.Agent, kelvinList []*agentpb.Agent, schema *schemapb.Schema) (*distributedpb.LogicalPlannerState, error) {
 	// TODO(philkuz) (PL-910) need to update this to pass table info.
 	carnotInfoList := make([]*distributedpb.CarnotInfo, 0)
 	for _, pem := range pemInfo {
-		pemID := utils.UUIDFromProtoOrNil(pem.AgentID)
-		carnotInfoList = append(carnotInfoList, makeAgentCarnotInfo(pemID))
+		pemID := utils.UUIDFromProtoOrNil(pem.Info.AgentID)
+		carnotInfoList = append(carnotInfoList, makeAgentCarnotInfo(pemID, pem.ASID))
 	}
 
 	for _, kelvin := range kelvinList {
-		kelvinID := utils.UUIDFromProtoOrNil(kelvin.AgentID)
-		kelvinGRPCAddress := kelvin.IPAddress
-		carnotInfoList = append(carnotInfoList, makeKelvinCarnotInfo(kelvinID, kelvinGRPCAddress))
+		kelvinID := utils.UUIDFromProtoOrNil(kelvin.Info.AgentID)
+		kelvinGRPCAddress := kelvin.Info.IPAddress
+		carnotInfoList = append(carnotInfoList, makeKelvinCarnotInfo(kelvinID, kelvinGRPCAddress, kelvin.ASID))
 	}
 
 	plannerState := distributedpb.LogicalPlannerState{
@@ -165,14 +167,14 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb
 		return nil, err
 	}
 
-	var kelvinList []*agentpb.AgentInfo
-	var pemList []*agentpb.AgentInfo
+	var kelvinList []*agentpb.Agent
+	var pemList []*agentpb.Agent
 
 	for _, m := range mdsResp.Info {
 		if m.Agent.Info.Capabilities == nil || m.Agent.Info.Capabilities.CollectsData {
-			pemList = append(pemList, m.Agent.Info)
+			pemList = append(pemList, m.Agent)
 		} else {
-			kelvinList = append(kelvinList, m.Agent.Info)
+			kelvinList = append(kelvinList, m.Agent)
 		}
 	}
 
@@ -217,7 +219,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb
 
 	pemIDs := make([]uuid.UUID, len(pemList))
 	for i, p := range pemList {
-		pemIDs[i] = utils.UUIDFromProtoOrNil(p.AgentID)
+		pemIDs[i] = utils.UUIDFromProtoOrNil(p.Info.AgentID)
 	}
 
 	queryExecutor := s.newExecutor(s.natsConn, queryID, &pemIDs, distributed)

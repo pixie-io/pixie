@@ -34,6 +34,7 @@ info {
 				collects_data: true
 			}
 		}
+		asid: 123
 	}
 	status {
 		state: 1
@@ -68,12 +69,14 @@ distributed_state: {
   carnot_info: {
     query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
     has_data_store: true
-    processes_data: true
+		processes_data: true
+		asid: 123
   }
   carnot_info: {
     query_broker_address: "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
     has_data_store: true
-    processes_data: true
+		processes_data: true
+		asid: 456
   }
 }
 `
@@ -93,7 +96,8 @@ distributed_state: {
   carnot_info: {
     query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
     has_data_store: true
-    processes_data: true
+		processes_data: true
+		asid: 123
   }
 }
 `
@@ -112,6 +116,7 @@ info {
 				collects_data: true
 			}
 		}
+		asid: 123
 	}
 	status {
 		state: 1
@@ -130,6 +135,7 @@ info {
 				collects_data: true
 			}
 		}
+		asid: 456
 	}
 	status {
 		state: 1

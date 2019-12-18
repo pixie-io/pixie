@@ -28,6 +28,10 @@ message CarnotInfo {
   bool accepts_remote_sources = 6;
   // Info about the tables for the Carnot instance.
   repeated TableInfo table_info = 7;
+  // The asid of the Agent running the Carnot.
+  uint32 asid = 8 [
+    (gogoproto.customname) = "ASID"
+    ];
 }
 
 // Information about the table structure as well as the tablet keys.
