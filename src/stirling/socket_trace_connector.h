@@ -321,6 +321,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   FRIEND_TEST(SocketTraceConnectorTest, HTTP2ClientTest);
   FRIEND_TEST(SocketTraceConnectorTest, HTTP2ServerTest);
   FRIEND_TEST(SocketTraceConnectorTest, HTTP2PartialStream);
+  FRIEND_TEST(SocketTraceConnectorTest, HTTP2ResponseOnly);
+  FRIEND_TEST(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData);
 };
 
 }  // namespace stirling

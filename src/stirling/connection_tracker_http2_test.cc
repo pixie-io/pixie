@@ -26,15 +26,15 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
   auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
 
-  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Request");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
   tracker.AddHTTP2Data(std::move(data_frame));
 
-  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Response");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Response", /* end_stream */ true);
   tracker.AddHTTP2Data(std::move(data_frame));
 
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
 
-  EXPECT_EQ(records.size(), 1);
+  ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data, "Request");
   EXPECT_EQ(records[0].recv.data, "Response");
 }
@@ -51,12 +51,18 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
   tracker.AddHTTP2Header(std::move(header_event));
 
+  header_event = frame_generator.GenEndStreamHeader<kHeaderEventWrite>();
+  tracker.AddHTTP2Header(std::move(header_event));
+
   header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
+  tracker.AddHTTP2Header(std::move(header_event));
+
+  header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
   tracker.AddHTTP2Header(std::move(header_event));
 
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
 
-  EXPECT_EQ(records.size(), 1);
+  ASSERT_EQ(records.size(), 1);
   EXPECT_THAT(records[0].send.headers, UnorderedElementsAre(Pair(":method", "post")));
   EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
 }
@@ -73,18 +79,18 @@ TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
   tracker.AddHTTP2Data(std::move(data_frame));
 
-  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true);
   tracker.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
   tracker.AddHTTP2Data(std::move(data_frame));
 
-  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse", /* end_stream */ true);
   tracker.AddHTTP2Data(std::move(data_frame));
 
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
 
-  EXPECT_EQ(records.size(), 1);
+  ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data, "Request");
   EXPECT_EQ(records[0].recv.data, "Response");
 }
@@ -111,7 +117,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
   tracker.AddHTTP2Data(std::move(data_frame));
 
-  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true);
   tracker.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
@@ -123,9 +129,12 @@ TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
   header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
   tracker.AddHTTP2Header(std::move(header_event));
 
+  header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
+  tracker.AddHTTP2Header(std::move(header_event));
+
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
 
-  EXPECT_EQ(records.size(), 1);
+  ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data, "Request");
   EXPECT_EQ(records[0].recv.data, "Response");
   EXPECT_THAT(records[0].send.headers,
@@ -150,7 +159,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
   tracker.AddHTTP2Data(std::move(data_frame));
 
-  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest");
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true);
   tracker.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
@@ -162,9 +171,12 @@ TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
   header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
   tracker.AddHTTP2Header(std::move(header_event));
 
+  header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
+  tracker.AddHTTP2Header(std::move(header_event));
+
   std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
 
-  EXPECT_EQ(records.size(), 1);
+  ASSERT_EQ(records.size(), 1);
   EXPECT_THAT(records[0].send.data, StrEq("Request"));
   EXPECT_THAT(records[0].recv.data, StrEq("Response"));
   EXPECT_THAT(records[0].send.headers, IsEmpty());

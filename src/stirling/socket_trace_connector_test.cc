@@ -1109,6 +1109,8 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
 //-----------------------------------------------------------------------------
 
 TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
+  DataTable data_table(kHTTPTable);
+
   auto conn = InitConn<kProtocolHTTP2Uprobe>();
 
   auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
@@ -1118,16 +1120,16 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("Req"));
-  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("uest"));
+  source_->AcceptHTTP2Data(
+      frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true));
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Resp"));
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+  source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventRead>());
   source_->AcceptControlEvent(InitClose());
 
-  DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
   for (const auto& column : record_batch) {
     ASSERT_EQ(1, column->Size());
   }
@@ -1140,6 +1142,8 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
 // This test is like the previous one, but the read-write roles are reversed.
 // It represents the other end of the connection.
 TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
+  DataTable data_table(kHTTPTable);
+
   auto conn = InitConn<kProtocolHTTP2Uprobe>();
 
   auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
@@ -1149,16 +1153,16 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":host", "pixie.ai"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":path", "/magic"));
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Req"));
-  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("uest"));
+  source_->AcceptHTTP2Data(
+      frame_generator.GenDataFrame<kDataFrameEventRead>("uest", /* end_stream */ true));
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("Resp"));
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("onse"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":status", "200"));
+  source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventWrite>());
   source_->AcceptControlEvent(InitClose());
 
-  DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
   for (const auto& column : record_batch) {
     ASSERT_EQ(1, column->Size());
   }
@@ -1170,22 +1174,24 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
 
 // This test models capturing data mid-stream, where we may have missed the request headers.
 TEST_F(SocketTraceConnectorTest, HTTP2PartialStream) {
+  DataTable data_table(kHTTPTable);
+
   auto conn = InitConn<kProtocolHTTP2Uprobe>();
 
   auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   // Request headers are missing to model mid-stream capture.
-  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("uest"));
+  source_->AcceptHTTP2Data(
+      frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true));
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Resp"));
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+  source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventRead>());
   source_->AcceptControlEvent(InitClose());
 
-  DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
   for (const auto& column : record_batch) {
     ASSERT_EQ(1, column->Size());
   }
@@ -1193,6 +1199,78 @@ TEST_F(SocketTraceConnectorTest, HTTP2PartialStream) {
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "uest");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 1);
+}
+
+// This test models capturing data mid-stream, where we may have missed the request entirely.
+TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
+  DataTable data_table(kHTTPTable);
+
+  auto conn = InitConn<kProtocolHTTP2Uprobe>();
+
+  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
+
+  source_->AcceptControlEvent(conn);
+  // Request missing to model mid-stream capture.
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+  source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventRead>());
+  source_->AcceptControlEvent(InitClose());
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  for (const auto& column : record_batch) {
+    ASSERT_EQ(0, column->Size());
+  }
+
+  // TODO(oazizi): Someday we will need to capture response only streams properly.
+  // In that case, we would expect certain values here.
+  // EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "onse");
+  // EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), TBD);
+}
+
+// This test models capturing data mid-stream, where we may have missed the request entirely.
+TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
+  DataTable data_table(kHTTPTable);
+
+  auto conn = InitConn<kProtocolHTTP2Uprobe>();
+
+  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
+
+  source_->AcceptControlEvent(conn);
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("Req"));
+  source_->AcceptHTTP2Data(
+      frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Resp"));
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  // The first TransferData should not push anything to the tables, because HTTP2 stream is still
+  // active.
+  {
+    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    for (const auto& column : record_batch) {
+      ASSERT_EQ(0, column->Size());
+    }
+  }
+
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+  source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventRead>());
+  source_->AcceptControlEvent(InitClose());
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  // This call to TransferData should push data to the tables, because HTTP2 stream has closed.
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  for (const auto& column : record_batch) {
+    ASSERT_EQ(1, column->Size());
+  }
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
 }
 
 }  // namespace stirling

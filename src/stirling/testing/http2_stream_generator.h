@@ -12,12 +12,13 @@ class StreamEventGenerator {
       : conn_id_(conn_id), stream_id_(stream_id) {}
 
   template <DataFrameEventType TType>
-  std::unique_ptr<HTTP2DataEvent> GenDataFrame(std::string_view body) {
+  std::unique_ptr<HTTP2DataEvent> GenDataFrame(std::string_view body, bool end_stream = false) {
     auto frame = std::make_unique<HTTP2DataEvent>();
     frame->attr.conn_id = conn_id_;
-    frame->attr.stream_id = stream_id_;
     frame->attr.type = TType;
     frame->attr.timestamp_ns = ++ts_;
+    frame->attr.stream_id = stream_id_;
+    frame->attr.end_stream = end_stream;
     frame->attr.data_len = body.length();
     frame->payload = body;
     return frame;
@@ -27,11 +28,25 @@ class StreamEventGenerator {
   std::unique_ptr<HTTP2HeaderEvent> GenHeader(std::string_view name, std::string_view value) {
     auto hdr = std::make_unique<HTTP2HeaderEvent>();
     hdr->attr.conn_id = conn_id_;
-    hdr->attr.stream_id = stream_id_;
     hdr->attr.type = TType;
     hdr->attr.timestamp_ns = ++ts_;
+    hdr->attr.stream_id = stream_id_;
+    hdr->attr.end_stream = false;
     hdr->name = name;
     hdr->value = value;
+    return hdr;
+  }
+
+  template <HeaderEventType TType>
+  std::unique_ptr<HTTP2HeaderEvent> GenEndStreamHeader() {
+    auto hdr = std::make_unique<HTTP2HeaderEvent>();
+    hdr->attr.conn_id = conn_id_;
+    hdr->attr.type = TType;
+    hdr->attr.timestamp_ns = ++ts_;
+    hdr->attr.stream_id = stream_id_;
+    hdr->attr.end_stream = true;
+    hdr->name = "";
+    hdr->value = "";
     return hdr;
   }
 

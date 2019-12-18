@@ -203,6 +203,20 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   }
 
   http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
+
+  // End stream flag is on a dummy header, so just record the end_stream, but don't add the headers.
+  if (hdr->attr.end_stream) {
+    // Expecting a dummy (empty) header since this is how it is done in BPF.
+    ECHECK(hdr->name.empty());
+    ECHECK(hdr->value.empty());
+
+    // Only expect one end_stream signal per stream direction.
+    ECHECK(!half_stream_ptr->end_stream);
+
+    half_stream_ptr->end_stream = true;
+    return;
+  }
+
   half_stream_ptr->headers.emplace(std::move(hdr->name), std::move(hdr->value));
   half_stream_ptr->UpdateTimestamp(hdr->attr.timestamp_ns);
 }
@@ -246,6 +260,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
 
   http2::HalfStream* half_stream_ptr = HalfStreamPtr(data->attr.stream_id, write_event);
   half_stream_ptr->data += data->payload;
+  half_stream_ptr->end_stream |= data->attr.end_stream;
   half_stream_ptr->UpdateTimestamp(data->attr.timestamp_ns);
 }
 
@@ -400,14 +415,31 @@ namespace {
 void ProcessHTTP2Streams(DataStream* stream_ptr, uint32_t* oldest_active_stream_id_ptr,
                          std::vector<http2::NewRecord>* trace_records) {
   auto& http2_streams = stream_ptr->Messages<http2::Stream>();
-  for (auto iter = http2_streams.begin(); iter != http2_streams.end(); ++iter) {
-    http2::Stream& stream = *iter;
 
-    // TODO(oazizi): This placeholder just moves everything, whether it's complete or not.
-    trace_records->emplace_back(http2::NewRecord{std::move(stream)});
-    http2_streams.pop_front();
-    *oldest_active_stream_id_ptr += 2;
+  int count_head_consumed = 0;
+  bool skipped = false;
+  for (auto& stream : http2_streams) {
+    if (stream.StreamEnded() && !stream.consumed) {
+      trace_records->emplace_back(http2::NewRecord{std::move(stream)});
+      stream.consumed = true;
+    }
+
+    // TODO(oazizi): If a stream is not ended, but looks stuck,
+    // we should force process it and mark it as consumed.
+    // Otherwise we will have a memory leak.
+
+    if (!stream.consumed) {
+      skipped = true;
+    }
+
+    if (!skipped && stream.consumed) {
+      ++count_head_consumed;
+    }
   }
+
+  // Erase contiguous set of consumed streams at head.
+  http2_streams.erase(http2_streams.begin(), http2_streams.begin() + count_head_consumed);
+  *oldest_active_stream_id_ptr += 2 * count_head_consumed;
 }
 }  // namespace
 
