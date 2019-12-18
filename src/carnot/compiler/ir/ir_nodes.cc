@@ -131,6 +131,16 @@ std::string IR::DebugString() {
   return debug_string;
 }
 
+std::vector<OperatorIR*> IR::GetSources() const {
+  std::vector<OperatorIR*> operators;
+  for (int64_t i : dag().TopologicalSort()) {
+    if (Match(Get(i), SourceOperator())) {
+      operators.push_back(static_cast<OperatorIR*>(Get(i)));
+    }
+  }
+  return operators;
+}
+
 Status IRNode::CopyFromNode(const IRNode* node,
                             absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   line_ = node->line_;

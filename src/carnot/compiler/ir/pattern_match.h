@@ -659,6 +659,17 @@ struct SourceHasRelationMatch : public ParentMatch {
 inline SourceHasRelationMatch<false> UnresolvedSource() { return SourceHasRelationMatch<false>(); }
 inline SourceHasRelationMatch<true> ResolvedSource() { return SourceHasRelationMatch<true>(); }
 
+struct SourceOperator : public ParentMatch {
+  SourceOperator() : ParentMatch(IRNodeType::kAny) {}
+  bool Match(const IRNode* node) const override {
+    if (!node->IsOperator()) {
+      return false;
+    }
+    const OperatorIR* op = static_cast<const OperatorIR*>(node);
+    return op->is_source();
+  }
+};
+
 /**
  * @brief Match any operator that matches the Relation Init status and the parent's
  * relation init status.

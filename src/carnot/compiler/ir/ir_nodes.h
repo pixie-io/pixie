@@ -333,6 +333,9 @@ class IR {
     }
     return nodes;
   }
+
+  std::vector<OperatorIR*> GetSources() const;
+
   StatusOr<std::unique_ptr<IR>> Clone() const;
 
   StatusOr<planpb::Plan> ToProto() const;

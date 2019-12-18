@@ -525,6 +525,13 @@ class OperatorTests : public ::testing::Test {
     return groupby;
   }
 
+  UDTFSourceIR* MakeUDTFSource(const udfspb::UDTFSourceSpec& udtf_spec,
+                               const std::vector<std::string>& arg_names,
+                               const std::vector<ExpressionIR*>& arg_values) {
+    return graph->CreateNode<UDTFSourceIR>(ast, udtf_spec.name(), arg_names, arg_values, udtf_spec)
+        .ConsumeValueOrDie();
+  }
+
   template <typename... Args>
   ListIR* MakeList(Args... args) {
     ListIR* list =
