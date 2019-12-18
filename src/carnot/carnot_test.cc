@@ -306,6 +306,45 @@ TEST_F(CarnotTest, order_test) {
   EXPECT_TRUE(rb3->ColumnAt(0)->Equals(types::ToArrow(col1_out3, arrow::default_memory_pool())));
 }
 
+TEST_F(CarnotTest, reused_expr) {
+  auto query = absl::StrJoin(
+      {"queryDF = pl.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3'])",
+       "queryDF['res'] = pl.add(queryDF['col3'], queryDF['col2'])", "a = 1 + 1",
+       "queryDF['a'] = a - 1", "queryDF['b'] = a + 0", "df = queryDF[['res', 'a', 'b']]",
+       "pl.display(df, 'test_output')"},
+      "\n");
+  // Time Column unused, doesn't matter what value is.
+  auto uuid = sole::uuid4();
+  auto s = carnot_->ExecuteQuery(query, uuid, 0);
+  ASSERT_OK(s);
+
+  auto output_table = table_store_->GetTable(GetTableName(uuid, 0));
+  EXPECT_EQ(3, output_table->NumBatches());
+  EXPECT_EQ(3, output_table->NumColumns());
+
+  std::vector<types::Float64Value> col0_out1 = {6.5, 3.2, 17.3};
+  std::vector<types::Float64Value> col0_out2 = {5.1, 65.1};
+  std::vector<types::Float64Value> col1_out3 = {61.2, 12.1, 20.3};
+  std::vector<types::Int64Value> col1_out1 = {1, 1, 1};
+  std::vector<types::Int64Value> col2_out1 = {2, 2, 2};
+
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
+
+  auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
+                 .ConsumeValueOrDie();
+  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
+
+  auto rb3 = output_table->GetRowBatch(2, std::vector<int64_t>({0}), arrow::default_memory_pool())
+                 .ConsumeValueOrDie();
+  EXPECT_TRUE(rb3->ColumnAt(0)->Equals(types::ToArrow(col1_out3, arrow::default_memory_pool())));
+}
+
 TEST_F(CarnotTest, range_test_multiple_rbs) {
   int64_t start_time = 2;
   int64_t stop_time = 12;

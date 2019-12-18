@@ -57,15 +57,17 @@ pl.display(joined_table)
 # 
 t1 = pl.DataFrame(table='process_stats', start_time='-60s')
 
+bytes_per_mb = 1024.0 * 1024.0
+
 # Convert to better units.
 t1['cpu_utime_s'] = t1['cpu_utime_ns'] / 1.0E9
 t1['cpu_ktime_s'] = t1['cpu_ktime_ns'] / 1.0E9
-t1['vsize_mb'] = t1['vsize_bytes'] / 1024.0 / 1024.0
-t1['rss_bytes_mb'] = t1['rss_bytes'] / 1024.0 / 1024.0
-t1['read_bytes_mb'] = t1['read_bytes'] / 1024.0 / 1024.0
-t1['write_bytes_mb'] = t1['write_bytes'] / 1024.0 / 1024.0
-t1['rchar_bytes_mb'] = t1['rchar_bytes'] / 1024.0 / 1024.0
-t1['wchar_bytes_mb'] = t1['wchar_bytes'] / 1024.0 / 1024.0
+t1['vsize_mb'] = t1['vsize_bytes'] / bytes_per_mb
+t1['rss_bytes_mb'] = t1['rss_bytes'] / bytes_per_mb
+t1['read_bytes_mb'] = t1['read_bytes'] / bytes_per_mb
+t1['write_bytes_mb'] = t1['write_bytes'] / bytes_per_mb
+t1['rchar_bytes_mb'] = t1['rchar_bytes'] / bytes_per_mb
+t1['wchar_bytes_mb'] = t1['wchar_bytes'] / bytes_per_mb
 t1['pod'] = t1.attr['pod']
 
 upid_aggop = t1.groupby(['upid', 'pod']).agg(
@@ -133,15 +135,17 @@ pl.display(keep_columns)
 # 
 t1 = pl.DataFrame(table='process_stats', start_time='-60s')
 
+bytes_per_mb = 1024.0 * 1024.0
+
 # Convert to better units.
 t1['cpu_utime_s'] = t1['cpu_utime_ns'] / 1.0E9
 t1['cpu_ktime_s'] = t1['cpu_ktime_ns'] / 1.0E9
-t1['vsize_mb'] = t1['vsize_bytes'] / 1024.0 / 1024.0
-t1['rss_bytes_mb'] = t1['rss_bytes'] / 1024.0 / 1024.0
-t1['read_bytes_mb'] = t1['read_bytes'] / 1024.0 / 1024.0
-t1['write_bytes_mb'] = t1['write_bytes'] / 1024.0 / 1024.0
-t1['rchar_bytes_mb'] = t1['rchar_bytes'] / 1024.0 / 1024.0
-t1['wchar_bytes_mb'] = t1['wchar_bytes'] / 1024.0 / 1024.0
+t1['vsize_mb'] = t1['vsize_bytes'] / bytes_per_mb
+t1['rss_bytes_mb'] = t1['rss_bytes'] / bytes_per_mb
+t1['read_bytes_mb'] = t1['read_bytes'] / bytes_per_mb
+t1['write_bytes_mb'] = t1['write_bytes'] / bytes_per_mb
+t1['rchar_bytes_mb'] = t1['rchar_bytes'] / bytes_per_mb
+t1['wchar_bytes_mb'] = t1['wchar_bytes'] / bytes_per_mb
 t1['pod']  = t1.attr['pod']
 
 upid_aggop = t1.groupby(['upid', 'pod']).agg(
@@ -213,8 +217,9 @@ pl.display(t2)
 # Get the Virtual memory usage and average memory for all pods in the k8s cluster.
 # 
 t1 = pl.DataFrame(table='process_stats', start_time='-30m')
-t1['vsize_mb'] = t1['vsize_bytes'] / 1024.0 / 1024.0
-t1['rss_bytes_mb'] = t1['rss_bytes'] / 1024.0 / 1024.0
+bytes_per_mb = 1024.0 * 1024.0
+t1['vsize_mb'] = t1['vsize_bytes'] / bytes_per_mb
+t1['rss_bytes_mb'] = t1['rss_bytes'] / bytes_per_mb
 t1['timestamp'] = pl.bin(t1['time_'], pl.seconds(10))
 t1['pod']  = t1.attr['pod']
 # uncomment and replace service_name to filter on a specific service.
@@ -246,8 +251,9 @@ pl.display(keep_columns)
 # Get the Virtual memory usage and average memory for all services in the k8s cluster.
 # 
 t1 = pl.DataFrame(table='process_stats', start_time='-30m')
-t1['vsize_mb'] = t1['vsize_bytes'] / 1024.0 / 1024.0
-t1['rss_bytes_mb'] = t1['rss_bytes'] / 1024.0 / 1024.0
+bytes_per_mb = 1024.0 * 1024.0
+t1['vsize_mb'] = t1['vsize_bytes'] / bytes_per_mb
+t1['rss_bytes_mb'] = t1['rss_bytes'] / bytes_per_mb
 t1['timestamp'] = pl.bin(t1['time_'], pl.seconds(10))
 t1['service']  = t1.attr['service']
 # uncomment and replace service_name to filter on a specific service.
@@ -279,8 +285,9 @@ pl.display(keep_columns)
 # Get the Virtual memory usage and average memory for all processes in the k8s cluster.
 # 
 t1 = pl.DataFrame(table='process_stats', start_time='-30s')
-t1['vsize_mb'] = t1['vsize_bytes'] / 1024.0 / 1024.0
-t1['rss_bytes_mb'] = t1['rss_bytes'] / 1024.0 / 1024.0
+bytes_per_mb = 1024.0 * 1024.0
+t1['vsize_mb'] = t1['vsize_bytes'] / bytes_per_mb
+t1['rss_bytes_mb'] = t1['rss_bytes'] / bytes_per_mb
 t1['timestamp'] = pl.bin(t1['time_'], pl.seconds(10))
 t1['cmdline'] = pl.upid_to_cmdline(t1['upid'])
 
