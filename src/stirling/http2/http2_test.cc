@@ -264,16 +264,6 @@ TEST(StitchFramesToGRPCMessagesTest, InCompleteMessage) {
   EXPECT_THAT(stream_msgs, IsEmpty()) << "There is no END_STREAM in frames, so there is no data";
 }
 
-TEST(ParseProtobufsTest, GreeterServiceReqResp) {
-  NVMap headers;
-  headers.emplace(":path", "/pl.stirling.http2.testing.Greeter/SayHello");
-
-  ServiceDescriptorDatabase db(GreetServiceFDSet());
-  MethodInputOutput in_out = GetProtobufMessages(headers, &db);
-  ASSERT_NE(nullptr, in_out.input);
-  ASSERT_NE(nullptr, in_out.output);
-}
-
 struct NV {
   std::string name;
   std::string value;

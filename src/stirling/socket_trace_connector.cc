@@ -530,8 +530,10 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());
 
+  std::string method = req_message.headers.ValueByKey(":method");
+
   if (FLAGS_stirling_enable_parsing_protobufs) {
-    MethodInputOutput rpc = GetProtobufMessages(req_message.headers, &grpc_desc_db_);
+    MethodInputOutput rpc = grpc_desc_db_.GetMethodInputOutput(::pl::grpc::MethodPath(method));
     req_message.message = ParsePB(req_message.message, rpc.input.get());
     resp_message.message = ParsePB(resp_message.message, rpc.output.get());
   }
@@ -547,7 +549,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_req_headers")>(WriteMapAsJSON(req_message.headers));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
   r.Append<r.ColIndex("http_resp_headers")>(WriteMapAsJSON(resp_message.headers));
-  r.Append<r.ColIndex("http_req_method")>(req_message.headers.ValueByKey(":method"));
+  r.Append<r.ColIndex("http_req_method")>(method);
   r.Append<r.ColIndex("http_req_path")>(req_message.headers.ValueByKey(":path"));
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
@@ -606,8 +608,10 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());
 
+  std::string method = record.send.headers.ValueByKey(":method");
+
   if (FLAGS_stirling_enable_parsing_protobufs) {
-    MethodInputOutput rpc = GetProtobufMessages(req_stream->headers, &grpc_desc_db_);
+    MethodInputOutput rpc = grpc_desc_db_.GetMethodInputOutput(::pl::grpc::MethodPath(method));
     req_stream->data = ParsePB(req_stream->data, rpc.input.get());
     resp_stream->data = ParsePB(resp_stream->data, rpc.output.get());
   }
@@ -623,7 +627,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_req_headers")>(WriteMapAsJSON(record.send.headers));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
   r.Append<r.ColIndex("http_resp_headers")>(WriteMapAsJSON(record.recv.headers));
-  r.Append<r.ColIndex("http_req_method")>(record.send.headers.ValueByKey(":method"));
+  r.Append<r.ColIndex("http_req_method")>(method);
   r.Append<r.ColIndex("http_req_path")>(record.send.headers.ValueByKey(":path"));
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.

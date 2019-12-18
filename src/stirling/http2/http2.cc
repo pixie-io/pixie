@@ -17,7 +17,6 @@ extern "C" {
 
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
-#include "src/common/grpcutils/utils.h"
 #include "src/stirling/bcc_bpf_interface/grpc.h"
 #include "src/stirling/http2/grpc.h"
 
@@ -25,9 +24,6 @@ namespace pl {
 namespace stirling {
 namespace http2 {
 
-using ::pl::grpc::MethodInputOutput;
-using ::pl::grpc::MethodPath;
-using ::pl::grpc::ServiceDescriptorDatabase;
 using ::pl::stirling::grpc::kGRPCMessageHeaderSizeInBytes;
 
 namespace {
@@ -487,16 +483,6 @@ std::vector<Record> MatchGRPCReqResp(std::map<uint32_t, HTTP2Message> reqs,
     }
   }
   return res;
-}
-
-MethodInputOutput GetProtobufMessages(const NVMap& headers, ServiceDescriptorDatabase* db) {
-  const char kPathHeader[] = ":path";
-  auto iter = headers.find(kPathHeader);
-  if (iter == headers.end()) {
-    // No call path specified, bail out.
-    return {};
-  }
-  return db->GetMethodInputOutput(MethodPath(iter->second));
 }
 
 ParseState DecodeInteger(u8string_view* buf, size_t prefix, uint32_t* res) {
