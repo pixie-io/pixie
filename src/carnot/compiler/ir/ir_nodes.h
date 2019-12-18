@@ -343,7 +343,7 @@ class IR {
    * @param ids_to_prune: the ids which to prune from the graph.
    * @return Status: error if something not found or missing.
    */
-  Status Prune(const std::unordered_set<int64_t>& ids_to_prune);
+  Status Prune(const absl::flat_hash_set<int64_t>& ids_to_prune);
 
   friend std::ostream& operator<<(std::ostream& os, const std::shared_ptr<IR>&) {
     return os << "ir";

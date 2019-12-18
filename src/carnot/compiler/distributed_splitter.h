@@ -116,8 +116,8 @@ struct BlockingSplitPlan {
  *
  */
 struct BlockingSplitNodeIDGroups {
-  std::unordered_set<int64_t> before_blocking_nodes;
-  std::unordered_set<int64_t> after_blocking_nodes;
+  absl::flat_hash_set<int64_t> before_blocking_nodes;
+  absl::flat_hash_set<int64_t> after_blocking_nodes;
 };
 
 /**

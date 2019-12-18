@@ -73,7 +73,7 @@ class DAG {
    *
    * @return const std::vector<const std::unordered_set<int64_t>&>&
    */
-  std::vector<std::unordered_set<int64_t>> IndependentGraphs() const;
+  std::vector<absl::flat_hash_set<int64_t>> IndependentGraphs() const;
 
  private:
   void AddForwardEdge(int64_t from_node, int64_t to_node);

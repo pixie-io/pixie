@@ -303,7 +303,7 @@ std::string DAG::DebugString() const {
 
 void DAG::Debug() { LOG(INFO) << "DAG Debug: \n" << DebugString(); }
 
-std::vector<std::unordered_set<int64_t>> DAG::IndependentGraphs() const {
+std::vector<absl::flat_hash_set<int64_t>> DAG::IndependentGraphs() const {
   // The list of source nodes.
   std::vector<int64_t> sources;
 
@@ -322,7 +322,7 @@ std::vector<std::unordered_set<int64_t>> DAG::IndependentGraphs() const {
   // set_parent of the other.
   std::unordered_map<int64_t, int64_t> set_parents;
   // The map that keeps track of the actual sets.
-  std::unordered_map<int64_t, std::unordered_set<int64_t>> out_map;
+  std::unordered_map<int64_t, absl::flat_hash_set<int64_t>> out_map;
   for (int64_t source : sources) {
     int64_t current_set_parent = source;
     set_parents[current_set_parent] = current_set_parent;
@@ -331,7 +331,7 @@ std::vector<std::unordered_set<int64_t>> DAG::IndependentGraphs() const {
     std::queue<int64_t> q;
     q.push(current_set_parent);
 
-    std::unordered_set<int64_t> current_set({current_set_parent});
+    absl::flat_hash_set<int64_t> current_set({current_set_parent});
     // Iterate through the children.
     while (!q.empty()) {
       auto children = forward_edges_by_node_.at(q.front());
@@ -359,7 +359,7 @@ std::vector<std::unordered_set<int64_t>> DAG::IndependentGraphs() const {
 
   CHECK_EQ(set_parents.size(), nodes_.size()) << "Cycle detected in graph " << sources.size();
 
-  std::vector<std::unordered_set<int64_t>> out_vec;
+  std::vector<absl::flat_hash_set<int64_t>> out_vec;
   for (const auto& out_map_item : out_map) {
     auto set = out_map_item.second;
     out_vec.push_back(set);

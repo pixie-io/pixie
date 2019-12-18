@@ -1189,7 +1189,7 @@ Status IR::OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node) cons
   return Status::OK();
 }
 
-Status IR::Prune(const std::unordered_set<int64_t>& ids_to_prune) {
+Status IR::Prune(const absl::flat_hash_set<int64_t>& ids_to_prune) {
   for (auto node : ids_to_prune) {
     for (auto child : dag_.DependenciesOf(node)) {
       PL_RETURN_IF_ERROR(DeleteEdge(node, child));
