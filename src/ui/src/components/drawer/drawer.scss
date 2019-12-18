@@ -1,0 +1,17 @@
+.pixie-drawer {
+  display: flex;
+  flex-direction: column;
+}
+
+.pixie-drawer-content {
+  flex: 1;
+
+  &.closed > * {
+    display: none;
+  }
+}
+
+.pixie-drawer-footer-row {
+  display: flex;
+  flex-direction: row;
+}

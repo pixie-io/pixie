@@ -1,3 +1,5 @@
+import './drawer.scss';
+
 // @ts-ignore : TS does not like image files.
 import * as collapseLeft from 'images/icons/collapse-left.svg';
 // @ts-ignore : TS does not like image files.
@@ -11,7 +13,7 @@ interface DrawerProps {
   closedWidth?: string;
 }
 
-export const Drawer = React.memo<React.PropsWithChildren<DrawerProps>>(
+export const Drawer =
   ({
     children,
     openedWidth = '10rem',
@@ -19,32 +21,27 @@ export const Drawer = React.memo<React.PropsWithChildren<DrawerProps>>(
     defaultOpened = true,
   }) => {
     const [opened, setOpened] = React.useState<boolean>(defaultOpened);
-    const toggleOpened = () => setOpened((isOpened) => !isOpened);
+    const toggleOpened = React.useCallback(
+      () => setOpened((isOpened) => !isOpened),
+      [setOpened]);
+    const styles = React.useMemo(() => ({
+      width: opened ? openedWidth : closedWidth,
+    }), [opened, openedWidth, closedWidth]);
 
     return (
       <div
-        className={`pixie-drawer ${opened ? 'opened' : 'closed'}`}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: opened ? openedWidth : closedWidth,
-        }}
+        className='pixie-drawer'
+        style={styles}
       >
-        <div
-          className='pixie-drawer-content'
-          style={{
-            flex: 1,
-            ...(opened ? {} : { visibility: 'hidden' }),
-          }}
-        >
-          {children}
+        <div className={`pixie-drawer-content ${opened ? 'opened' : 'closed'}`}>
+          <div>{children}</div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
-          <div style={{ flex: 1 }} />
+        <div className='pixie-drawer-footer-row'>
+          <div className='spacer' />
           <Button size='sm' onClick={toggleOpened}>
             <img src={opened ? collapseLeft : collapseRight} />
           </Button>
         </div>
       </div>
     );
-  });
+  };
