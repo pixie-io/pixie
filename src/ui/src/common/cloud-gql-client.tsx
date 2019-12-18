@@ -1,4 +1,5 @@
 import {InMemoryCache} from 'apollo-cache-inmemory';
+import {persistCache} from 'apollo-cache-persist';
 import {ApolloClient} from 'apollo-client';
 import {ApolloLink} from 'apollo-link';
 import {setContext} from 'apollo-link-context';
@@ -27,14 +28,31 @@ const loginRedirectLink = onError(({ networkError }) => {
   }
 });
 
-export const cloudGQLClient = new ApolloClient({
-  cache: new InMemoryCache(),
+const cache = new InMemoryCache();
+const client = new ApolloClient({
+  cache,
   link: ApolloLink.from([
     cloudAuthLink,
     loginRedirectLink,
     createHttpLink({ uri: '/api/graphql', fetch }),
   ]),
 });
+
+let loaded = false;
+
+export async function getCloudGQLClient() {
+  if (loaded) {
+    return client;
+  }
+
+  await persistCache({
+    cache,
+    storage: window.localStorage,
+  });
+  loaded = true;
+
+  return client;
+}
 
 interface GetClusterConnResults {
   clusterConnection: {
@@ -51,9 +69,11 @@ const GET_CLUSTER_CONN = gql`
   }
 }`;
 
-export function getClusterConnection(noCache: boolean = false) {
-  return cloudGQLClient.query<GetClusterConnResults>({
+export async function getClusterConnection(noCache: boolean = false) {
+  const gqlClient = await getCloudGQLClient();
+  const { data } = await gqlClient.query<GetClusterConnResults>({
     query: GET_CLUSTER_CONN,
     fetchPolicy: noCache ? 'network-only' : 'cache-first',
-  }).then(({ data }) => data.clusterConnection);
+  });
+  return data.clusterConnection;
 }
