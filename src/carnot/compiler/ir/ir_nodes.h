@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <queue>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -406,30 +407,6 @@ class ExpressionIR : public IRNode {
   virtual bool IsColumn() const { return false; }
   virtual bool IsData() const { return false; }
   virtual bool IsCollection() const { return false; }
-  StatusOr<OperatorIR*> ContainingOperator() const {
-    IR* graph = graph_ptr();
-    int64_t cur_id = id();
-    while (!graph->Get(cur_id)->IsOperator()) {
-      std::vector<int64_t> parents = graph->dag().ParentsOf(cur_id);
-      if (parents.size() > 1) {
-        std::vector<std::string> parent_strs;
-        for (const int64_t& p : parents) {
-          IRNode* parent = graph->Get(p);
-          parent_strs.push_back(parent->DebugString());
-        }
-        return CreateIRNodeError(
-            "Found more than one parent for $0 while searching for parent "
-            "operator. Parents:[$1]",
-            graph->Get(cur_id)->DebugString(), absl::StrJoin(parent_strs, ","));
-      }
-      if (parents.size() == 0) {
-        return CreateIRNodeError("Got no parents for $0 while searching for parent operator. ",
-                                 graph->Get(cur_id)->DebugString());
-      }
-      cur_id = parents[0];
-    }
-    return static_cast<OperatorIR*>(graph->Get(cur_id));
-  }
 
  protected:
   ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
@@ -622,6 +599,14 @@ class ColumnIR : public ExpressionIR {
     evaluated_data_type_ = type;
     is_data_type_evaluated_ = true;
   }
+
+  /**
+   * @brief The operators containing this column. There can be multiple, but all of these operators
+   * should share a common parent (ReferencedOperators).
+   *
+   * @return OperatorIR*: the operators containing this column
+   */
+  StatusOr<std::vector<OperatorIR*>> ContainingOperators() const;
 
   /**
    * @brief The operator that this column references. This should be the parent of the operator that

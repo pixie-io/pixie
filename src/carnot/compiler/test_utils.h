@@ -726,20 +726,27 @@ void CompareCloneNode(TNodeType* new_ir, TNodeType* /* old_ir */, const std::str
 template <>
 void CompareCloneNode(ColumnIR* new_ir, ColumnIR* old_ir, const std::string& err_string) {
   EXPECT_EQ(new_ir->col_name(), old_ir->col_name()) << err_string;
-  auto new_containing_op = new_ir->ContainingOperator().ConsumeValueOrDie();
-  auto old_containing_op = old_ir->ContainingOperator().ConsumeValueOrDie();
   auto new_referenced_op = new_ir->ReferencedOperator().ConsumeValueOrDie();
   auto old_referenced_op = old_ir->ReferencedOperator().ConsumeValueOrDie();
+  auto new_containing_ops = new_ir->ContainingOperators().ConsumeValueOrDie();
+  auto old_containing_ops = old_ir->ContainingOperators().ConsumeValueOrDie();
+
   if (new_ir->graph_ptr() != old_ir->graph_ptr()) {
-    EXPECT_NE(new_containing_op->graph_ptr(), old_containing_op->graph_ptr()) << absl::Substitute(
-        "'$1' and '$2' should have container ops that are in different graphs. $0.", err_string,
-        new_ir->DebugString(), old_ir->DebugString());
     EXPECT_NE(new_referenced_op->graph_ptr(), old_referenced_op->graph_ptr()) << absl::Substitute(
         "'$1' and '$2' should have referenced ops that are in different graphs. $0.", err_string,
         new_ir->DebugString(), old_ir->DebugString());
-    EXPECT_EQ(new_containing_op->id(), old_containing_op->id()) << err_string;
     EXPECT_EQ(new_referenced_op->id(), old_referenced_op->id()) << err_string;
+
+    for (size_t i = 0; i < new_containing_ops.size(); ++i) {
+      auto new_containing_op = new_containing_ops[i];
+      auto old_containing_op = old_containing_ops[i];
+      EXPECT_EQ(new_containing_op->id(), old_containing_op->id()) << err_string;
+      EXPECT_NE(new_containing_op->graph_ptr(), old_containing_op->graph_ptr()) << absl::Substitute(
+          "'$1' and '$2' should have container ops that are in different graphs. $0.", err_string,
+          new_ir->DebugString(), old_ir->DebugString());
+    }
   }
+  EXPECT_EQ(new_containing_ops.size(), old_containing_ops.size());
   CompareClone(new_referenced_op, old_referenced_op, err_string);
 }
 

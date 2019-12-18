@@ -662,10 +662,42 @@ void ColumnIR::SetContainingOperatorParentIdx(int64_t container_op_parent_idx) {
   container_op_parent_idx_set_ = true;
 }
 
+StatusOr<std::vector<OperatorIR*>> ColumnIR::ContainingOperators() const {
+  std::vector<OperatorIR*> parents;
+  IR* graph = graph_ptr();
+  std::queue<int64_t> cur_ids;
+  cur_ids.push(id());
+
+  while (cur_ids.size()) {
+    auto cur_id = cur_ids.front();
+    cur_ids.pop();
+    IRNode* cur_node = graph->Get(cur_id);
+    if (cur_node->IsOperator()) {
+      parents.push_back(static_cast<OperatorIR*>(cur_node));
+      continue;
+    }
+    std::vector<int64_t> parents = graph->dag().ParentsOf(cur_id);
+    for (auto parent_id : parents) {
+      cur_ids.push(parent_id);
+    }
+  }
+  return parents;
+}
+
 StatusOr<OperatorIR*> ColumnIR::ReferencedOperator() const {
   DCHECK(container_op_parent_idx_set_);
-  PL_ASSIGN_OR_RETURN(OperatorIR * containing_op, ContainingOperator());
-  return containing_op->parents()[container_op_parent_idx_];
+  PL_ASSIGN_OR_RETURN(std::vector<OperatorIR*> containing_ops, ContainingOperators());
+  if (!containing_ops.size()) {
+    return CreateIRNodeError(
+        "Got no containing operators for $0 when looking up referenced operator.", DebugString());
+  }
+  // While the column may be contained by multiple operators, it must always originate from the same
+  // dataframe.
+  OperatorIR* referenced = containing_ops[0]->parents()[container_op_parent_idx_];
+  for (OperatorIR* containing_op : containing_ops) {
+    DCHECK_EQ(referenced, containing_op->parents()[container_op_parent_idx_]);
+  }
+  return referenced;
 }
 
 Status StringIR::Init(std::string str) {

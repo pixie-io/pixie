@@ -57,27 +57,37 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(FuncIR* func) const {
     DCHECK(t != types::DataType::DATA_TYPE_UNKNOWN);
     children_data_types.push_back(t);
   }
-  PL_ASSIGN_OR_RETURN(IRNode * containing_op, func->ContainingOperator());
-  IRNodeType containing_op_type = containing_op->type();
-  if (containing_op_type != IRNodeType::kBlockingAgg) {
-    // Attempt to resolve UDF function for non-Aggregate nodes.
-    auto data_type_or_s =
-        compiler_state_->registry_info()->GetUDF(func->func_name(), children_data_types);
-    if (!data_type_or_s.status().ok()) {
-      return func->CreateIRNodeError(data_type_or_s.status().msg());
-    }
-    types::DataType data_type = data_type_or_s.ConsumeValueOrDie();
-    func->set_func_id(
-        compiler_state_->GetUDFID(RegistryKey(func->func_name(), children_data_types)));
-    func->SetOutputDataType(data_type);
-  } else {
-    // Attempt to resolve UDA function for Aggregate nodes.
-    PL_ASSIGN_OR_RETURN(types::DataType data_type, compiler_state_->registry_info()->GetUDA(
-                                                       func->func_name(), children_data_types));
-    func->set_func_id(
-        compiler_state_->GetUDAID(RegistryKey(func->func_name(), children_data_types)));
-    func->SetOutputDataType(data_type);
+
+  auto udftype_or_s = compiler_state_->registry_info()->GetUDFType(func->func_name());
+  if (!udftype_or_s.ok()) {
+    return func->CreateIRNodeError(udftype_or_s.status().msg());
   }
+  switch (udftype_or_s.ConsumeValueOrDie()) {
+    case UDFType::kUDF: {
+      auto data_type_or_s =
+          compiler_state_->registry_info()->GetUDF(func->func_name(), children_data_types);
+      if (!data_type_or_s.status().ok()) {
+        return func->CreateIRNodeError(data_type_or_s.status().msg());
+      }
+      types::DataType data_type = data_type_or_s.ConsumeValueOrDie();
+      func->set_func_id(
+          compiler_state_->GetUDFID(RegistryKey(func->func_name(), children_data_types)));
+      func->SetOutputDataType(data_type);
+      break;
+    }
+    case UDFType::kUDA: {
+      PL_ASSIGN_OR_RETURN(types::DataType data_type, compiler_state_->registry_info()->GetUDA(
+                                                         func->func_name(), children_data_types));
+      func->set_func_id(
+          compiler_state_->GetUDAID(RegistryKey(func->func_name(), children_data_types)));
+      func->SetOutputDataType(data_type);
+      break;
+    }
+    default: {
+      return error::Internal("Unsupported UDFType");
+    }
+  }
+
   func->SetArgsTypes(children_data_types);
   return true;
 }
@@ -752,7 +762,9 @@ StatusOr<bool> ResolveMetadataRule::HandleMetadata(MetadataIR* metadata) const {
   }
 
   // Get containing operator.
-  PL_ASSIGN_OR_RETURN(OperatorIR * container_op, metadata->ContainingOperator());
+  PL_ASSIGN_OR_RETURN(std::vector<OperatorIR*> container_ops, metadata->ContainingOperators());
+  DCHECK_EQ(container_ops.size(), 1UL);
+  OperatorIR* container_op = container_ops[0];
   if (!container_op->HasParents()) {
     return metadata->CreateIRNodeError(
         "No parent for operator $1(id=$2). Can't resolve column '$0'.", metadata->col_name(),
