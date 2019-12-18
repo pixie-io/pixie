@@ -17,7 +17,6 @@ extern "C" {
 }
 
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
 // Macro to load BPF source code embedded in object files.

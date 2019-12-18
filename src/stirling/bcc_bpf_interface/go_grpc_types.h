@@ -2,7 +2,6 @@
 
 #include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/bcc_bpf_interface/go_types.h"
-#include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
 // Must be a power of two, otherwise masking will break.
 #define HEADER_FIELD_STR_SIZE 128
@@ -51,12 +50,6 @@ struct go_grpc_http2_header_event_t {
 
   struct header_field_t name;
   struct header_field_t value;
-};
-
-struct conn_symaddrs_t {
-  int64_t syscall_conn;
-  int64_t tls_conn;
-  int64_t tcp_conn;
 };
 
 enum DataFrameEventType { kDataFrameEventUnknown, kDataFrameEventRead, kDataFrameEventWrite };

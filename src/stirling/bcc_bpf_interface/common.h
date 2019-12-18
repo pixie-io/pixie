@@ -65,3 +65,9 @@ enum ControlValueIndex {
   kStirlingTGIDIndex,
   kNumControlValues,
 };
+
+struct conn_symaddrs_t {
+  int64_t syscall_conn;
+  int64_t tls_conn;
+  int64_t tcp_conn;
+};

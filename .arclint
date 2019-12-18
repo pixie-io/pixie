@@ -3,7 +3,7 @@
     "(Doxyfile$)",
     "(src/ui/src/segment.js$)",
     "(chef/site-cookbooks/.*$)",
-    "(experimental/.*$)",
+    "(experimental/users/.*$)",
     "(^linters/.*$)",
     "(^src/ui/offline_package_cache)",
     "(^src/stirling/bcc_bpf/system-headers)",
@@ -67,7 +67,7 @@
           "(\\.go$)"
       ],
       "exclude": [
-          "(experimental/.*\\.go$)"
+          "(experimental/users/.*\\.go$)"
       ],
       "type": "golint"
     },
@@ -76,7 +76,7 @@
         "(\\.go$)"
       ],
       "exclude": [
-          "(experimental/.*\\.go$)"
+          "(experimental/users/.*\\.go$)"
       ],
       "type": "govet"
     },
