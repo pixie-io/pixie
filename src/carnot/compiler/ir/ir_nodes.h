@@ -49,7 +49,6 @@ enum class IRNodeType {
   kAny = -1,
   kMemorySource,
   kMemorySink,
-  kRange,
   kMap,
   kDrop,
   kBlockingAgg,
@@ -79,7 +78,6 @@ enum class IRNodeType {
 };
 static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "MemorySink",
-                                                 "Range",
                                                  "Map",
                                                  "Drop",
                                                  "BlockingAgg",
@@ -1065,31 +1063,6 @@ class MemorySinkIR : public OperatorIR {
  private:
   std::string name_;
   std::vector<std::string> out_columns_;
-};
-
-/**
- * @brief The RangeIR describe the range()
- * operator, which is combined with a Source
- * when converted to the Logical Plan.
- *
- */
-class RangeIR : public OperatorIR {
- public:
-  RangeIR() = delete;
-  explicit RangeIR(int64_t id) : OperatorIR(id, IRNodeType::kRange, true, false) {}
-  Status Init(OperatorIR* parent, IRNode* start_repr, IRNode* stop_repr);
-
-  IRNode* start_repr() const { return start_repr_; }
-  IRNode* stop_repr() const { return stop_repr_; }
-  Status SetStartStop(IRNode* start_repr, IRNode* stop_repr);
-  Status ToProto(planpb::Operator*) const override;
-  Status CopyFromNodeImpl(const IRNode* node,
-                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
-
- private:
-  // Start and Stop eventually evaluate to integers, but might be expressions.
-  IRNode* start_repr_ = nullptr;
-  IRNode* stop_repr_ = nullptr;
 };
 
 /**

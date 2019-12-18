@@ -116,8 +116,8 @@ class ASTVisitorImpl : public ASTVisitor {
   /**
    * @brief ProcessExprStmtNode handles full lines that are expression statements.
    * ie in the following lines
-   *  1: a =From(...)
-   *  2: a.Range(...)
+   *  1: a = pl.DataFrame(...)
+   *  2: a.drop(...)
    * Line 1 will be wrapped in an AstAssignNode
    * Line 2 will be wrapped in an AstExpressionStatementNode.
    *
@@ -142,8 +142,8 @@ class ASTVisitorImpl : public ASTVisitor {
   /**
    * @brief ProcessAssignNode handles lines where an expression is assigned to a value.
    * ie in the following lines
-   *  1: a =From(...)
-   *  2: a.Range(...)
+   *  1: a = pl.DataFrame(...)
+   *  2: a.drop(...)
    * Line 1 will be wrapped in an AstAssignNode
    * Line 2 will be wrapped in an AstExpressionStatementNode.
    *
@@ -165,7 +165,7 @@ class ASTVisitorImpl : public ASTVisitor {
   /**
    * @brief ProcessOpCallNode handles call nodes which are created for any function call
    * ie
-   *  Range(...)
+   *  drop(...)
    *
    * Meant to handle operators and only extracts the name of the function, then passes to
    * ProcessFunc.

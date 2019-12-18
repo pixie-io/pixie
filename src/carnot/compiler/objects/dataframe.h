@@ -40,7 +40,6 @@ class Dataframe : public QLObject {
   IR* graph() const { return op_->graph_ptr(); }
 
   // Method names.
-  inline static constexpr char kRangeOpId[] = "range";
   inline static constexpr char kMapOpId[] = "map";
   inline static constexpr char kDropOpId[] = "drop";
   inline static constexpr char kFilterOpId[] = "filter";
@@ -107,25 +106,6 @@ class AggHandler {
 };
 
 /**
- * @brief Implements the range operator logic
- *
- */
-class RangeHandler {
- public:
-  /**
-   * @brief Evaluates the range function by adding Range as a child of the df. The analyzer will
-   * remove the Range function afterwards.
-   *
-   * @param df the dataframe to operate on
-   * @param ast the ast node that signifies where the query was written
-   * @param args the arguments for range()
-   * @return StatusOr<QLObjectPtr>
-   */
-  static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args);
-};
-
-/**
  * @brief Implements the drop operator logic
  *
  */
@@ -136,7 +116,7 @@ class DropHandler {
    *
    * @param df the dataframe to operate on
    * @param ast the ast node that signifies where the query was written
-   * @param args the arguments for range()
+   * @param args the arguments for drop()
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,

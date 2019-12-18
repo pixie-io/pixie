@@ -689,7 +689,7 @@ StatusOr<bool> OperatorCompileTimeExpressionRule::EvalMemorySource(MemorySourceI
   return true;
 }
 
-// Support taking strings like "-2m" into a range
+// Support taking strings like "-2m" into a MemorySource start/end time.
 // TODO(nserrino, philkuz) Generalize this so that it can work in other operators
 // without polluting our approach to types.
 StatusOr<ExpressionIR*> OperatorCompileTimeExpressionRule::EvalStringTimes(ExpressionIR* node) {

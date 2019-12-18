@@ -242,26 +242,6 @@ StatusOr<QLObjectPtr> DropHandler::Eval(IR* graph, OperatorIR* op, const pypa::A
   return Dataframe::Create(drop_op);
 }
 
-StatusOr<QLObjectPtr> RangeHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                         const ParsedArgs& args) {
-  IRNode* start_repr = args.GetArg("start");
-  IRNode* stop_repr = args.GetArg("stop");
-  if (!Match(start_repr, Expression())) {
-    return start_repr->CreateIRNodeError("'start' must be an expression");
-  }
-
-  if (!Match(stop_repr, Expression())) {
-    return stop_repr->CreateIRNodeError("'stop' must be an expression");
-  }
-
-  ExpressionIR* start_expr = static_cast<ExpressionIR*>(start_repr);
-  ExpressionIR* stop_expr = static_cast<ExpressionIR*>(stop_repr);
-
-  PL_ASSIGN_OR_RETURN(RangeIR * range_op,
-                      graph->CreateNode<RangeIR>(ast, op, start_expr, stop_expr));
-  return Dataframe::Create(range_op);
-}
-
 StatusOr<QLObjectPtr> LimitHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                          const ParsedArgs& args) {
   // TODO(philkuz) (PL-1161) Add support for compile time evaluation of Limit argument.

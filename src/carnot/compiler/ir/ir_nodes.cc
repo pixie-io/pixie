@@ -64,8 +64,6 @@ StatusOr<IRNode*> MakeNodeWithType(IR* graph, IRNodeType node_type, int64_t new_
       return graph->MakeNode<MemorySourceIR>(new_node_id);
     case IRNodeType::kMemorySink:
       return graph->MakeNode<MemorySinkIR>(new_node_id);
-    case IRNodeType::kRange:
-      return graph->MakeNode<RangeIR>(new_node_id);
     case IRNodeType::kMap:
       return graph->MakeNode<MapIR>(new_node_id);
     case IRNodeType::kDrop:
@@ -304,32 +302,6 @@ Status MemorySinkIR::ToProto(planpb::Operator* op) const {
   }
 
   return Status::OK();
-}
-
-Status RangeIR::Init(OperatorIR* parent_node, IRNode* start_repr, IRNode* stop_repr) {
-  if (parent_node->type() != IRNodeType::kMemorySource) {
-    return CreateIRNodeError("Expected parent of Range to be a Memory Source, not a $0.",
-                             parent_node->type_string());
-  }
-  PL_RETURN_IF_ERROR(AddParent(parent_node));
-  return SetStartStop(start_repr, stop_repr);
-}
-
-Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
-  if (start_repr_ != nullptr) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(id(), start_repr_->id()));
-  }
-  if (stop_repr_ != nullptr) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(id(), stop_repr_->id()));
-  }
-  start_repr_ = start_repr;
-  stop_repr_ = stop_repr;
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, start_repr_));
-  return graph_ptr()->AddEdge(this, stop_repr_);
-}
-
-Status RangeIR::ToProto(planpb::Operator*) const {
-  return error::Unimplemented("$0 does not have a protobuf.", type_string());
 }
 
 Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
@@ -1019,14 +991,6 @@ Status MemorySinkIR::CopyFromNodeImpl(const IRNode* node,
   const MemorySinkIR* sink_ir = static_cast<const MemorySinkIR*>(node);
   name_ = sink_ir->name_;
   out_columns_ = sink_ir->out_columns_;
-  return Status::OK();
-}
-
-Status RangeIR::CopyFromNodeImpl(const IRNode* node,
-                                 absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
-  const RangeIR* range_ir = static_cast<const RangeIR*>(node);
-  PL_ASSIGN_OR_RETURN(start_repr_, graph_ptr()->CopyNode(range_ir->start_repr_, copied_nodes_map));
-  PL_ASSIGN_OR_RETURN(stop_repr_, graph_ptr()->CopyNode(range_ir->stop_repr_, copied_nodes_map));
   return Status::OK();
 }
 

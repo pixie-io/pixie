@@ -414,7 +414,8 @@ inline MetadataIRMatch<false> UnresolvedMetadataIR() { return MetadataIRMatch<fa
 
 /**
  * @brief Match Compile Time integer arithmetic
- * TODO(nserrino, philkuz) Generalize this better, currently just a special case for Range.
+ * TODO(nserrino, philkuz) Generalize this better, currently just a special case for MemorySource
+ * times.
  */
 struct CompileTimeIntegerArithmetic : public ParentMatch {
   CompileTimeIntegerArithmetic() : ParentMatch(IRNodeType::kFunc) {}
@@ -726,45 +727,6 @@ struct MatchAnyOp : public ParentMatch {
 };
 
 inline MatchAnyOp Operator() { return MatchAnyOp(); }
-
-/**
- * @brief Match Range based on the start stop arguments.
- *
- * @tparam LHS_t: the matcher of the lhs side.
- * @tparam RHS_t: the matcher of the rhs side.
- * @tparam Commutable: whether we can swap lhs and rhs.
- */
-template <typename LHS_t, typename RHS_t, bool Commutable = false>
-struct RangeArgMatch : public ParentMatch {
-  // The evaluation order is always stable, regardless of Commutability.
-  // The LHS is always matched first.
-  RangeArgMatch(const LHS_t& LHS, const RHS_t& RHS)
-      : ParentMatch(IRNodeType::kRange), L(LHS), R(RHS) {}
-
-  bool Match(const IRNode* node) const override {
-    if (node->type() == IRNodeType::kRange) {
-      auto* r = static_cast<const RangeIR*>(node);
-      return (L.Match(r->start_repr()) && R.Match(r->stop_repr())) ||
-             (Commutable && L.Match(r->start_repr()) && R.Match(r->stop_repr()));
-    }
-    return false;
-  }
-  LHS_t L;
-  RHS_t R;
-};
-
-/**
- * @brief Match range that has (start_repr,stop_repr) match (lhs, rhs).
- */
-template <typename LHS_t, typename RHS_t>
-inline RangeArgMatch<LHS_t, RHS_t, false> Range(LHS_t lhs, RHS_t rhs) {
-  return RangeArgMatch<LHS_t, RHS_t, false>(lhs, rhs);
-}
-
-/**
- * @brief Match range operator.
- */
-inline ClassMatch<IRNodeType::kRange> Range() { return ClassMatch<IRNodeType::kRange>(); }
 
 /**
  * @brief Match map operator.

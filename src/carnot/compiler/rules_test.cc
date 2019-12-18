@@ -154,7 +154,8 @@ TEST_F(DataTypeRuleTest, compiler_function_no_match) {
                                         std::vector<ExpressionIR*>{constant1, constant2})
                    .ValueOrDie();
 
-  EXPECT_OK(graph->CreateNode<RangeIR>(ast, mem_src, func2, constant3));
+  EXPECT_OK(graph->CreateNode<MapIR>(
+      ast, mem_src, ColExpressionVector{{"func", func2}, {"const", constant3}}, false));
 
   // No rule has been run, don't expect any of these to be evaluated.
   EXPECT_FALSE(func2->IsDataTypeEvaluated());
