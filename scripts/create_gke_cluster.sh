@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script is use to create a K8s cluster in either the dev/prod environments.
+# This script is use to create a K8s cluster in either the dev/prod/skylab environments.
 
 ##################
 # Arguments
@@ -8,7 +8,7 @@
 
 set_default_values() {
   CLUSTER_NAME="dev-cluster-${USER}"
-  NUM_NODES=2
+  NUM_NODES=3
   MACHINE_TYPE=n1-standard-1
   IMAGE_NAME=UBUNTU
   DISK_SIZE=100
@@ -27,9 +27,17 @@ set_default_prod_values() {
   SUBNETWORK=projects/pixie-prod/regions/us-west1/subnetworks/us-west-1-0
 }
 
+set_default_skylab_values() {
+  SKYLAB_MODE=true
+  PROJECT=pixie-skylab
+  NETWORK=projects/pixie-skylab/global/networks/default
+  SUBNETWORK=projects/pixie-skylab/regions/us-west1/subnetworks/default
+}
+
 print_config() {
   echo "Config: "
   echo "  PROD_MODE        : ${PROD_MODE}"
+  echo "  SKYLAB_MODE      : ${SKYLAB_MODE}"
   echo "  PROJECT          : ${PROJECT}"
   echo "  CLUSTER_NAME     : ${CLUSTER_NAME}"
   echo "  NUM_NODES        : ${NUM_NODES}"
@@ -47,6 +55,7 @@ usage() {
 
   echo "Usage: $0 [-p] [-c <cluster_name>] [-b] [-m <machine_type>] [-n <num_nodes>] [-i <image>]"
   echo " -p          : Prod cluster config, must appear as first argument. [default: ${PROD_MODE}]"
+  echo " -s          : Skylab cluster config, must appear as first argument. [default: ${SKYLAB_MODE}]"
   echo " -c <string> : name of your cluster. [default: ${CLUSTER_NAME}]"
   echo " -n <int>    : number of nodes in the cluster [default: ${NUM_NODES}]"
   echo " -m <string> : machine type [default: ${MACHINE_TYPE}]"
@@ -60,6 +69,12 @@ parse_args() {
   # Check to see if prod flag is specified so that we can change the defaults.
   if [ "$1" = "-p" ] ; then
     set_default_prod_values
+    shift
+  fi
+
+  # Check to see if skylaab  flag is specified so that we can change the defaults.
+  if [ "$1" = "-s" ] ; then
+    set_default_skylab_values
     shift
   fi
 
