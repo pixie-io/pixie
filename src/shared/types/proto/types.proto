@@ -40,3 +40,11 @@ message UInt128 {
   uint64 low = 1;
   uint64 high = 2;
 }
+
+// Semantic types can specify that a generic value has a specific context in Pixie.
+enum SemanticType {
+  ST_UNSPECIFIED = 0;
+  ST_NONE = 1;
+  ST_AGENT_UID = 100;
+  ST_UPID = 200;
+}
