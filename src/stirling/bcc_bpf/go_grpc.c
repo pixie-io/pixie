@@ -264,14 +264,12 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   return 0;
 }
 
-// Probes (*http2Client).operateHeaders(*http2.MetaHeadersFrame) inside gRPC-go, which processes
-// HTTP2 headers of the received responses.
-int probe_http2_client_operate_headers(struct pt_regs* ctx) {
-  const void* sp = (const void*)PT_REGS_SP(ctx);
-
-  const int kFieldsParamOffset = 16;
-  const void* frame_ptr = *(const void**)(sp + kFieldsParamOffset);
-
+// Shared helper function for:
+//   probe_http2_client_operate_headers()
+//   probe_http2_server_operate_headers()
+// The two probes are similar but the conn_intf location is specific to each struct.
+static int probe_http2_operate_headers(struct pt_regs* ctx, struct go_interface conn_intf,
+                                       const void* frame_ptr) {
   const void* frame_header_ptr = *(const void**)frame_ptr;
 
   const int kFlagsOffset = 3;
@@ -292,13 +290,6 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   }
 
   uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
-
-  const int kHTTP2ClientParamOffset = 8;
-  const void* http2_client_ptr = *(const void**)(sp + kHTTP2ClientParamOffset);
-
-  struct go_interface conn_intf = {};
-  const int kHTTP2ClientConnFieldOffset = 64;
-  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_client_ptr + kHTTP2ClientConnFieldOffset);
 
   const uint32_t fd = get_fd_from_conn_intf(conn_intf);
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
@@ -329,6 +320,47 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   }
 
   return 0;
+}
+
+// Probes (*http2Client).operateHeaders(*http2.MetaHeadersFrame) inside gRPC-go, which processes
+// HTTP2 headers of the received responses.
+//
+// Function signature:
+//   func (t *http2Client) operateHeaders(frame *http2.MetaHeadersFrame)
+int probe_http2_client_operate_headers(struct pt_regs* ctx) {
+  const void* sp = (const void*)PT_REGS_SP(ctx);
+
+  const int kHTTP2ClientParamOffset = 8;
+  const void* http2_client_ptr = *(const void**)(sp + kHTTP2ClientParamOffset);
+
+  const int kFrameParamOffset = 16;
+  const void* frame_ptr = *(const void**)(sp + kFrameParamOffset);
+
+  struct go_interface conn_intf = {};
+  const int kHTTP2ClientConnFieldOffset = 64;
+  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_client_ptr + kHTTP2ClientConnFieldOffset);
+
+  return probe_http2_operate_headers(ctx, conn_intf, frame_ptr);
+}
+
+// Function signature:
+//   func (t *http2Server) operateHeaders(frame *http2.MetaHeadersFrame, handle func(*Stream),
+//                                        traceCtx func(context.Context, string) context.Context
+//                                        (fatal bool)
+int probe_http2_server_operate_headers(struct pt_regs* ctx) {
+  const void* sp = (const void*)PT_REGS_SP(ctx);
+
+  const int kHTTP2ServerParamOffset = 8;
+  const void* http2_server_ptr = *(const void**)(sp + kHTTP2ServerParamOffset);
+
+  const int kFrameParamOffset = 16;
+  const void* frame_ptr = *(const void**)(sp + kFrameParamOffset);
+
+  struct go_interface conn_intf = {};
+  const int kHTTP2ServerConnFieldOffset = 32;
+  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_server_ptr + kHTTP2ServerConnFieldOffset);
+
+  return probe_http2_operate_headers(ctx, conn_intf, frame_ptr);
 }
 
 // Probe for the http2 library's frame writer.
