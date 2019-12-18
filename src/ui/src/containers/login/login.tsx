@@ -11,6 +11,7 @@ import {UserCreate, UserLogin} from './user-login';
 interface LoginProps {
   match: any;
 }
+
 export class Login extends React.Component<LoginProps, {}> {
   constructor(props) {
     super(props);
@@ -34,4 +35,3 @@ export class Login extends React.Component<LoginProps, {}> {
     );
   }
 }
-export default Login;

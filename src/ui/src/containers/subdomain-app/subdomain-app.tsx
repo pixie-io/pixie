@@ -2,8 +2,8 @@ import './subdomain-app.scss';
 
 import {getCloudGQLClient} from 'common/cloud-gql-client';
 import {VersionInfo} from 'components/version-info/version-info';
-import {Login} from 'containers/login';
-import {Vizier} from 'containers/vizier';
+import Login from 'containers/login';
+import Vizier from 'containers/vizier';
 import * as React from 'react';
 import {ApolloProvider} from 'react-apollo';
 import {Route, Router, Switch} from 'react-router-dom';

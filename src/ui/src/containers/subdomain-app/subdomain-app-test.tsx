@@ -1,13 +1,16 @@
-import {SidebarNav} from 'components/sidebar-nav/sidebar-nav';
-import {shallow} from 'enzyme';
 import * as React from 'react';
-import {BrowserRouter as Router, Route} from 'react-router-dom';
+import {Route} from 'react-router-dom';
+import {shallowAsync} from 'utils/testing';
 
 import {SubdomainApp} from './subdomain-app';
 
+jest.mock('common/cloud-gql-client', () => ({
+  getCloudGQLClient: jest.fn().mockResolvedValue({}),
+}));
+
 describe('<SubdomainApp/> test', () => {
-  it.skip('should have correct routes', () => {
-    const app = shallow(<SubdomainApp />);
+  it('should have correct routes', async () => {
+    const app = await shallowAsync(<SubdomainApp />);
 
     expect(app.find(Route)).toHaveLength(4);
   });

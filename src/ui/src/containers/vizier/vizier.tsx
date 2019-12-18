@@ -174,4 +174,3 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
     );
   }
 }
-export default Vizier;
