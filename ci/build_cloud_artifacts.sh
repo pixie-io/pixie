@@ -6,7 +6,7 @@
 printenv
 
 PL_BUILD_TYPE=prod
-PL_IMAGE_TAG=nightly-$(date +%s)-$(cat SOURCE_VERSION)
+PL_IMAGE_TAG=nightly-$(date +%s)-$(cat VERSION)
 GIT_COMMIT=$(cat GIT_COMMIT)
 
 export PL_BUILD_TYPE
