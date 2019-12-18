@@ -15,7 +15,7 @@ import (
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
@@ -53,6 +53,7 @@ func TestGetAgentInfo(t *testing.T) {
 					Hostname: "test_host",
 				},
 			},
+			ASID: 123,
 		},
 		&agentpb.Agent{
 			LastHeartbeatNS: 20,
@@ -63,6 +64,7 @@ func TestGetAgentInfo(t *testing.T) {
 					Hostname: "another_host",
 				},
 			},
+			ASID: 456,
 		},
 	}
 

@@ -209,10 +209,17 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.HostInfo.Hostname, collectsData)
 	}
 
+	// Get ASID for the new agent.
+	asid, err = m.mds.GetASID()
+	if err != nil {
+		return 0, err
+	}
+
 	infoPb := &agentpb.Agent{
 		Info:            info,
 		CreateTimeNS:    m.clock.Now().UnixNano(),
 		LastHeartbeatNS: m.clock.Now().UnixNano(),
+		ASID:            asid,
 	}
 	i, err := infoPb.Marshal()
 	if err != nil {
@@ -232,12 +239,6 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 	_, err = m.client.Txn(ctx).If(hostnameDNE).Then(ops...).Commit()
 	if err != nil {
 		log.WithError(err).Fatal("Could not update agent data in etcd")
-	}
-
-	// Get ASID for the new agent.
-	asid, err = m.mds.GetASID()
-	if err != nil {
-		return 0, err
 	}
 
 	return asid, nil

@@ -19,7 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
@@ -44,7 +44,7 @@ func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager
 func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb string) {
 	info := new(agentpb.Agent)
 	if err := proto.UnmarshalText(agentPb, info); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
+		t.Fatalf("Cannot Unmarshal protobuf for %s", agentID)
 	}
 	i, err := info.Marshal()
 	if err != nil {
@@ -97,7 +97,7 @@ func TestRegisterAgent(t *testing.T) {
 	mockMds.
 		EXPECT().
 		GetASID().
-		Return(uint32(1), nil)
+		Return(uint32(111), nil)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -115,7 +115,7 @@ func TestRegisterAgent(t *testing.T) {
 
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(1), id)
+	assert.Equal(t, uint32(111), id)
 
 	// Check that correct agent info is in etcd.
 	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
@@ -132,6 +132,7 @@ func TestRegisterAgent(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.NewAgentUUID, uid.String())
 	assert.Equal(t, "localhost", pb.Info.HostInfo.Hostname)
+	assert.Equal(t, uint32(111), pb.ASID)
 
 	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("localhost"))
 	if err != nil {
@@ -154,7 +155,7 @@ func TestRegisterKelvinAgent(t *testing.T) {
 	mockMds.
 		EXPECT().
 		GetASID().
-		Return(uint32(1), nil)
+		Return(uint32(111), nil)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -172,7 +173,7 @@ func TestRegisterKelvinAgent(t *testing.T) {
 
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(1), id)
+	assert.Equal(t, uint32(111), id)
 
 	// Check that correct agent info is in etcd.
 	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
@@ -211,7 +212,7 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 	mockMds.
 		EXPECT().
 		GetASID().
-		Return(uint32(1), nil)
+		Return(uint32(111), nil)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -229,7 +230,7 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(1), id)
+	assert.Equal(t, uint32(111), id)
 
 	// Check that correct agent info is in etcd.
 	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
@@ -246,6 +247,7 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.NewAgentUUID, uid.String())
 	assert.Equal(t, "testhost", pb.Info.HostInfo.Hostname)
+	assert.Equal(t, uint32(111), pb.ASID)
 
 	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("testhost"))
 	if err != nil {
@@ -297,6 +299,7 @@ func TestRegisterExistingAgent(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.ExistingAgentUUID, uid.String())
 	assert.Equal(t, "testhost", pb.Info.HostInfo.Hostname)
+	assert.Equal(t, uint32(123), pb.ASID)
 }
 
 func TestUpdateHeartbeat(t *testing.T) {
@@ -457,6 +460,7 @@ func TestGetActiveAgents(t *testing.T) {
 				CollectsData: true,
 			},
 		},
+		ASID: 123,
 	}
 	assert.Equal(t, agent1Info, agents[0])
 
@@ -472,6 +476,7 @@ func TestGetActiveAgents(t *testing.T) {
 				CollectsData: true,
 			},
 		},
+		ASID: 456,
 	}
 	assert.Equal(t, agent2Info, agents[1])
 }

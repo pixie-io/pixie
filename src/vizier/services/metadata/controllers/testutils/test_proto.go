@@ -1,7 +1,5 @@
 package testutils
 
-import ()
-
 // This file contains the protobufs used in vizier/services/metadata/controllers tests.
 
 // AgentInfo
@@ -41,6 +39,7 @@ info {
 }
 create_time_ns: 0
 last_heartbeat_ns: 65000000000
+asid: 123
 `
 
 // UnhealthyAgentInfo is the agent info for the unhealthy agent.
@@ -58,6 +57,7 @@ info {
 }
 create_time_ns: 0
 last_heartbeat_ns: 0
+asid: 456
 `
 
 // UnhealthyKelvinAgentInfo is the agent info for the unhealthy kelvin.
@@ -75,6 +75,7 @@ info {
 }
 create_time_ns: 0
 last_heartbeat_ns: 0
+asid: 789
 `
 
 // AgentStatus
@@ -92,6 +93,7 @@ agent {
   }
   last_heartbeat_ns: 10
   create_time_ns: 5
+  asid: 123
 }
 status {
   ns_since_last_heartbeat: 60
@@ -112,6 +114,7 @@ agent {
   }
   last_heartbeat_ns: 20
   create_time_ns: 0
+  asid: 456
 }
 status {
   ns_since_last_heartbeat: 50

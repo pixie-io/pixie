@@ -20,6 +20,7 @@ message AgentInfo {
                          (gogoproto.customname) = "IPAddress"
                          ];
     AgentCapabilities capabilities = 4;
+
 }
 
 // HostInfo contains the details for the host (OS, kernel, CPU, etc).
@@ -34,6 +35,10 @@ message Agent {
     int64 last_heartbeat_ns = 3 [
                                   (gogoproto.customname) = "LastHeartbeatNS"
                                 ];
+    // The agent counter used by the metadata service.
+    uint32 asid = 4 [
+                    (gogoproto.customname) = "ASID"
+                    ];
 }
 
 enum AgentState {
