@@ -6,6 +6,10 @@
 #include <absl/hash/hash.h>
 #include <absl/numeric/int128.h>
 #include <absl/strings/substitute.h>
+#include <sole.hpp>
+
+#include "src/common/base/error.h"
+#include "src/common/base/statusor.h"
 
 namespace pl {
 namespace md {
@@ -65,6 +69,13 @@ class UPID {
   template <typename H>
   friend H AbslHashValue(H h, const UPID& c) {
     return H::combine(std::move(h), c.value_);
+  }
+  static StatusOr<UPID> ParseFromUUIDString(const std::string& str) {
+    sole::uuid u = sole::rebuild(str);
+    if (u.ab == 0 && u.cd == 0) {
+      return error::InvalidArgument("'$0' is not a valid UUID", str);
+    }
+    return UPID(absl::MakeUint128(u.ab, u.cd));
   }
 
  private:
