@@ -1,12 +1,10 @@
 import * as moment from 'moment';
 
-const {
-  BUILD_ENV,
-  BUILD_NUMBER,
-  BUILD_SCM_REVISION,
-  BUILD_SCM_STATUS,
-  BUILD_TIMESTAMP,
-} = process.env;
+const BUILD_ENV = process.env.BUILD_ENV;
+const BUILD_NUMBER = process.env.BUILD_NUMBER;
+const BUILD_SCM_REVISION = process.env.BUILD_SCM_REVISION;
+const BUILD_SCM_STATUS = process.env.BUILD_SCM_STATUS;
+const BUILD_TIMESTAMP = process.env.BUILD_TIMESTAMP;
 
 const timestampSec = Number.parseInt(BUILD_TIMESTAMP, 10);
 const date = isNaN(timestampSec) ? new Date() : new Date(timestampSec * 1000);
