@@ -244,6 +244,7 @@ class IR {
     return op;
   }
 
+  // TODO(nserrino): Make this a template on source IRNode type.
   StatusOr<IRNode*> CopyNode(const IRNode* source) {
     absl::flat_hash_map<const IRNode*, IRNode*> mapping;
     return CopyNode(source, &mapping);
@@ -263,15 +264,37 @@ class IR {
                              absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map);
 
   Status AddEdge(int64_t from_node, int64_t to_node);
-  bool HasEdge(int64_t from_node, int64_t to_node);
-  bool HasNode(int64_t node_id) { return dag().HasNode(node_id); }
+  bool HasEdge(int64_t from_node, int64_t to_node) const;
+  bool HasNode(int64_t node_id) const { return dag().HasNode(node_id); }
 
-  Status AddEdge(IRNode* from_node, IRNode* to_node);
-  bool HasEdge(IRNode* from_node, IRNode* to_node);
+  Status AddEdge(const IRNode* from_node, const IRNode* to_node);
+  bool HasEdge(const IRNode* from_node, const IRNode* to_node) const;
   Status DeleteEdge(int64_t from_node, int64_t to_node);
   Status DeleteEdge(IRNode* from_node, IRNode* to_node);
   Status DeleteNode(int64_t node);
   Status DeleteNodeAndChildren(int64_t node);
+
+  /**
+   * @brief Adds an edge between the parent and child nodes in the DAG.
+   * If there is already a link between them, then the child is cloned and an edge is added between
+   * the parent and the clone instead.
+   *
+   * @param parent the parent node
+   * @param parent the child node
+   * @return StatusOr<IRNode*> the child that now has the edge (either a clone or the input child)
+   */
+  template <typename TChildType>
+  StatusOr<TChildType*> OptionallyCloneWithEdge(IRNode* parent, TChildType* child) {
+    IRNode* returned_child = child;
+    if (HasEdge(parent, child)) {
+      PL_ASSIGN_OR_RETURN(returned_child, CopyNode(child));
+    }
+    PL_RETURN_IF_ERROR(AddEdge(parent, returned_child));
+    // TODO(nserrino): When CopyNode is templatized, remove this check/cast.
+    CHECK_EQ(child->type(), returned_child->type());
+    return static_cast<TChildType*>(returned_child);
+  }
+
   plan::DAG& dag() { return dag_; }
   const plan::DAG& dag() const { return dag_; }
   std::string DebugString();
@@ -962,20 +985,7 @@ class MemorySourceIR : public OperatorIR {
 
   std::string table_name() const { return table_name_; }
 
-  Status SetTimeExpressions(ExpressionIR* start_time_expr, ExpressionIR* end_time_expr) {
-    if (start_time_expr_) {
-      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, start_time_expr_));
-    }
-    if (end_time_expr_) {
-      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, end_time_expr_));
-    }
-    start_time_expr_ = start_time_expr;
-    end_time_expr_ = end_time_expr;
-    has_time_expressions_ = true;
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, start_time_expr));
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, end_time_expr));
-    return Status::OK();
-  }
+  Status SetTimeExpressions(ExpressionIR* start_time_expr, ExpressionIR* end_time_expr);
 
   // Sets the time expressions that eventually get converted
   ExpressionIR* start_time_expr() const { return start_time_expr_; }

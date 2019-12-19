@@ -209,8 +209,8 @@ void DAG::ReplaceParentEdge(int64_t child_node, int64_t old_parent_node, int64_t
   AddForwardEdge(new_parent_node, child_node);
 }
 
-bool DAG::HasEdge(int64_t from_node, int64_t to_node) {
-  auto& forward_edges = forward_edges_by_node_[from_node];
+bool DAG::HasEdge(int64_t from_node, int64_t to_node) const {
+  const auto& forward_edges = forward_edges_by_node_.at(from_node);
   const auto& node = std::find(begin(forward_edges), end(forward_edges), to_node);
   return node != end(forward_edges);
 }

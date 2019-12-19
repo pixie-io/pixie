@@ -52,6 +52,52 @@ TEST(IRTest, CreateSource) {
   EXPECT_THAT(src->column_names(), ElementsAre("testCol"));
 }
 
+TEST(IRTest, CreateSourceSharedNodes) {
+  auto ast = MakeTestAstPtr();
+  auto ig = std::make_shared<IR>();
+  auto src = ig->CreateNode<MemorySourceIR>(ast, "table_str", std::vector<std::string>{"testCol"})
+                 .ValueOrDie();
+  auto time_expr = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
+
+  EXPECT_OK(src->SetTimeExpressions(time_expr, time_expr));
+  EXPECT_NE(src->start_time_expr()->id(), src->end_time_expr()->id());
+  CompareClone(src->start_time_expr(), src->end_time_expr(),
+               "MemorySource start/end time expression");
+}
+
+TEST(IRTest, MapSharedNodes) {
+  auto ast = MakeTestAstPtr();
+  auto ig = std::make_shared<IR>();
+  auto src =
+      ig->CreateNode<MemorySourceIR>(ast, "table", std::vector<std::string>{"col"}).ValueOrDie();
+  auto col_expr = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
+  auto map =
+      ig->CreateNode<MapIR>(ast, src, ColExpressionVector{{"col1", col_expr}, {"col2", col_expr}},
+                            /* keep_input_columns */ false)
+          .ValueOrDie();
+
+  ASSERT_EQ(2, map->col_exprs().size());
+  EXPECT_NE(map->col_exprs()[0].node->id(), map->col_exprs()[1].node->id());
+  CompareClone(map->col_exprs()[0].node, map->col_exprs()[1].node, "Map column expression");
+}
+
+TEST(IRTest, CollectionSharedNodes) {
+  auto ast = MakeTestAstPtr();
+  auto ig = std::make_shared<IR>();
+  auto expr = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
+  std::vector<ExpressionIR*> children{expr, expr};
+
+  auto list = ig->CreateNode<ListIR>(ast, children).ValueOrDie();
+  ASSERT_EQ(2, list->children().size());
+  EXPECT_NE(list->children()[0]->id(), list->children()[1]->id());
+  CompareClone(list->children()[0], list->children()[1], "List expression");
+
+  auto tuple = ig->CreateNode<TupleIR>(ast, children).ValueOrDie();
+  ASSERT_EQ(2, tuple->children().size());
+  EXPECT_NE(tuple->children()[0]->id(), tuple->children()[1]->id());
+  CompareClone(tuple->children()[0], tuple->children()[1], "Tuple expression");
+}
+
 const char* kExpectedMemSrcPb = R"(
   op_type: MEMORY_SOURCE_OPERATOR
   mem_source_op {

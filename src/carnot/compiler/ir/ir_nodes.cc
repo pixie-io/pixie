@@ -14,15 +14,17 @@ Status IR::AddEdge(int64_t from_node, int64_t to_node) {
   return Status::OK();
 }
 
-Status IR::AddEdge(IRNode* from_node, IRNode* to_node) {
+Status IR::AddEdge(const IRNode* from_node, const IRNode* to_node) {
   return AddEdge(from_node->id(), to_node->id());
 }
 
-bool IR::HasEdge(IRNode* from_node, IRNode* to_node) {
+bool IR::HasEdge(const IRNode* from_node, const IRNode* to_node) const {
   return HasEdge(from_node->id(), to_node->id());
 }
 
-bool IR::HasEdge(int64_t from_node, int64_t to_node) { return dag_.HasEdge(from_node, to_node); }
+bool IR::HasEdge(int64_t from_node, int64_t to_node) const {
+  return dag_.HasEdge(from_node, to_node);
+}
 
 Status IR::DeleteEdge(int64_t from_node, int64_t to_node) {
   DCHECK(dag_.HasEdge(from_node, to_node))
@@ -288,6 +290,25 @@ Status MemorySourceIR::Init(const std::string& table_name,
   return Status::OK();
 }
 
+Status MemorySourceIR::SetTimeExpressions(ExpressionIR* start_time_expr,
+                                          ExpressionIR* end_time_expr) {
+  CHECK(start_time_expr != nullptr);
+  CHECK(end_time_expr != nullptr);
+
+  if (start_time_expr_) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, start_time_expr_));
+  }
+  if (end_time_expr_) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, end_time_expr_));
+  }
+
+  PL_ASSIGN_OR_RETURN(start_time_expr_,
+                      graph_ptr()->OptionallyCloneWithEdge(this, start_time_expr));
+  PL_ASSIGN_OR_RETURN(end_time_expr_, graph_ptr()->OptionallyCloneWithEdge(this, end_time_expr));
+  has_time_expressions_ = true;
+  return Status::OK();
+}
+
 Status MemorySinkIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_mem_sink_op();
   pb->set_name(name_);
@@ -310,9 +331,9 @@ Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, expr));
   }
   col_exprs_ = exprs;
-  for (const ColumnExpression& mapped_expression : col_exprs_) {
-    ExpressionIR* expr = mapped_expression.node;
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
+  for (size_t i = 0; i < col_exprs_.size(); ++i) {
+    PL_ASSIGN_OR_RETURN(col_exprs_[i].node,
+                        graph_ptr()->OptionallyCloneWithEdge(this, col_exprs_[i].node));
   }
   return Status::OK();
 }
@@ -431,8 +452,8 @@ Status FilterIR::SetFilterExpr(ExpressionIR* expr) {
   if (filter_expr_) {
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, filter_expr_));
   }
-  filter_expr_ = expr;
-  return graph_ptr()->AddEdge(this, filter_expr_);
+  PL_ASSIGN_OR_RETURN(filter_expr_, graph_ptr()->OptionallyCloneWithEdge(this, expr));
+  return Status::OK();
 }
 
 Status FilterIR::ToProto(planpb::Operator* op) const {
@@ -483,17 +504,18 @@ Status BlockingAggIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& gro
 }
 
 Status BlockingAggIR::SetGroups(const std::vector<ColumnIR*>& groups) {
-  groups_ = groups;
-  for (auto g : groups_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
+  groups_.resize(groups.size());
+  for (size_t i = 0; i < groups.size(); ++i) {
+    PL_ASSIGN_OR_RETURN(groups_[i], graph_ptr()->OptionallyCloneWithEdge(this, groups[i]));
   }
   return Status::OK();
 }
 
-Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_expr) {
-  aggregate_expressions_ = agg_expr;
-  for (const auto& expr : aggregate_expressions_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr.node));
+Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_exprs) {
+  for (const auto& agg_expr : agg_exprs) {
+    PL_ASSIGN_OR_RETURN(auto updated_expr,
+                        graph_ptr()->OptionallyCloneWithEdge(this, agg_expr.node));
+    aggregate_expressions_.emplace_back(agg_expr.name, updated_expr);
   }
   return Status::OK();
 }
@@ -504,9 +526,9 @@ Status GroupByIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups)
 }
 
 Status GroupByIR::SetGroups(const std::vector<ColumnIR*>& groups) {
-  groups_ = groups;
-  for (auto g : groups_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
+  groups_.resize(groups.size());
+  for (size_t i = 0; i < groups.size(); ++i) {
+    PL_ASSIGN_OR_RETURN(groups_[i], graph_ptr()->OptionallyCloneWithEdge(this, groups[i]));
   }
   return Status::OK();
 }
@@ -686,11 +708,10 @@ Status CollectionIR::SetChildren(const std::vector<ExpressionIR*>& children) {
     return CreateIRNodeError(
         "CollectionIR already has children and likely has been created already.");
   }
-
-  for (auto child : children) {
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, child));
-  }
   children_ = children;
+  for (size_t i = 0; i < children_.size(); ++i) {
+    PL_ASSIGN_OR_RETURN(children_[i], graph_ptr()->OptionallyCloneWithEdge(this, children_[i]));
+  }
   return Status::OK();
 }
 
@@ -729,12 +750,9 @@ Status FuncIR::AddOrCloneArg(ExpressionIR* arg) {
   if (arg == nullptr) {
     return error::Internal("Argument for FuncIR is null.");
   }
-  if (!graph_ptr()->HasEdge(this, arg)) {
-    return AddArg(arg);
-  }
-  PL_ASSIGN_OR_RETURN(auto cloned, graph_ptr()->CopyNode(arg));
-  CHECK(cloned->IsExpression());
-  return AddArg(static_cast<ExpressionIR*>(cloned));
+  PL_ASSIGN_OR_RETURN(auto updated_arg, graph_ptr()->OptionallyCloneWithEdge(this, arg));
+  args_.push_back(updated_arg);
+  return Status::OK();
 }
 
 /* Float IR */
@@ -780,8 +798,8 @@ Status MetadataIR::ResolveMetadataColumn(MetadataResolverIR* resolver_op,
 Status MetadataLiteralIR::Init(DataIR* literal) { return SetLiteral(literal); }
 
 Status MetadataLiteralIR::SetLiteral(DataIR* literal) {
-  literal_ = literal;
-  return graph_ptr()->AddEdge(this, literal);
+  PL_ASSIGN_OR_RETURN(literal_, graph_ptr()->OptionallyCloneWithEdge(this, literal));
+  return Status::OK();
 }
 
 bool MetadataResolverIR::HasMetadataColumn(const std::string& col_name) {
@@ -1387,14 +1405,15 @@ Status JoinIR::Init(const std::vector<OperatorIR*>& parents, const std::string& 
 
 Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
                               const std::vector<ColumnIR*>& right_columns) {
-  left_on_columns_ = left_columns;
-  for (auto g : left_on_columns_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
+  left_on_columns_.resize(left_columns.size());
+  for (size_t i = 0; i < left_columns.size(); ++i) {
+    PL_ASSIGN_OR_RETURN(left_on_columns_[i],
+                        graph_ptr()->OptionallyCloneWithEdge(this, left_columns[i]));
   }
-
-  right_on_columns_ = right_columns;
-  for (auto g : right_on_columns_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
+  right_on_columns_.resize(right_columns.size());
+  for (size_t i = 0; i < right_columns.size(); ++i) {
+    PL_ASSIGN_OR_RETURN(right_on_columns_[i],
+                        graph_ptr()->OptionallyCloneWithEdge(this, right_columns[i]));
   }
   return Status::OK();
 }
