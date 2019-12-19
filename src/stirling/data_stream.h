@@ -142,12 +142,12 @@ class DataStream {
 
  private:
   template <typename TMessageType>
-  static void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TMessageType>* frames) {
-    auto iter = frames->begin();
-    for (; iter != frames->end(); ++iter) {
+  static void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TMessageType>* msgs) {
+    auto iter = msgs->begin();
+    for (; iter != msgs->end(); ++iter) {
       auto frame_age = std::chrono::duration_cast<std::chrono::seconds>(
           std::chrono::steady_clock::now() - iter->creation_timestamp);
-      // As frames are put into the list with monotonically increasing creation time stamp,
+      // As msgs are put into the list with monotonically increasing creation time stamp,
       // we can just stop at the first frame that is younger than the expiration duration.
       //
       // TODO(yzhao): Benchmark with binary search and pick the faster one.
@@ -155,7 +155,7 @@ class DataStream {
         break;
       }
     }
-    frames->erase(frames->begin(), iter);
+    msgs->erase(msgs->begin(), iter);
   }
 
   // Helper function that appends all contiguous events to the parser.
@@ -200,7 +200,11 @@ class DataStream {
   // A copy of the parse state from the last call to ExtractMessages().
   ParseState last_parse_state_ = ParseState::kInvalid;
 
-  // Only meaningful for HTTP2. See also Inflater().
+  // Only meaningful for kprobe HTTP2 tracing. Uprobe tracing extracts plain text header fields from
+  // http2 library, therefore does not need to inflate headers.
+  //
+  // See also Inflater().
+  //
   // TODO(yzhao): We can put this into a std::variant.
   std::unique_ptr<http2::Inflater> inflater_;
 };

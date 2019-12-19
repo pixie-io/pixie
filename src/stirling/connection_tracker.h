@@ -313,7 +313,7 @@ class ConnectionTracker {
    * @brief Return the currently configured duration, after which a connection is deemed to be
    * inactive.
    */
-  std::chrono::seconds InactivityDuration() { return inactivity_duration_; }
+  static std::chrono::seconds InactivityDuration() { return inactivity_duration_; }
 
   enum class CountStats {
     kDataEvent = 0,
@@ -411,7 +411,7 @@ class ConnectionTracker {
   DataStream& client_streams_ = send_data_;
   DataStream& server_streams_ = recv_data_;
 
-  // For HTTP2 only.
+  // For uprobe-based HTTP2 tracing only.
   // Tracks oldest active stream ID for retiring the head of send_data_/recv_data_ deques.
   uint32_t oldest_active_client_stream_id_;
   uint32_t oldest_active_server_stream_id_;
@@ -426,7 +426,8 @@ class ConnectionTracker {
   // Recorded as the latest timestamp on a BPF event.
   uint64_t last_bpf_timestamp_ns_ = 0;
 
-  // The timestamp of the last activity on this connection.
+  // The timestamp of the last update on this connection which alters the states.
+  //
   // Recorded as the latest touch time on the ConnectionTracker.
   // Currently using steady clock, so cannot be used meaningfully for logging real times.
   // This can be changed in the future if required.
