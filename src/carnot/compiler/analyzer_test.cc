@@ -215,27 +215,27 @@ TEST_F(AnalyzerTest, test_relation_results) {
   ASSERT_OK(handle_status);
 
   // Memory Source should copy the source relation.
-  auto source_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySource);
-  EXPECT_OK(source_node_status);
-  auto source_node = static_cast<MemorySourceIR*>(source_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> source_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  EXPECT_EQ(source_nodes.size(), 1);
+  auto source_node = static_cast<MemorySourceIR*>(source_nodes[0]);
   EXPECT_TRUE(RelationEquality(source_node->relation(), (*compiler_state_->relation_map())["cpu"]));
-  auto mem_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySink);
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
-  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 1);
-  EXPECT_OK(map_node_status);
-  auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
+  EXPECT_EQ(map_nodes.size(), 2);
+  // The map nodes are a different position.
+  auto map_node = static_cast<MapIR*>(map_nodes[1]);
   auto test_map_relation_s =
       (*compiler_state_->relation_map())["cpu"].MakeSubRelation({"cpu0", "cpu1"});
   EXPECT_OK(test_map_relation_s);
   table_store::schema::Relation test_map_relation = test_map_relation_s.ConsumeValueOrDie();
   test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
-  EXPECT_TRUE(RelationEquality(map_node->relation(), test_map_relation));
+  EXPECT_EQ(map_node->relation(), test_map_relation);
 
   // Agg should be a new relation with one column.
-  auto agg_node_status = FindNodeType(ir_graph, IRNodeType::kBlockingAgg);
-  EXPECT_OK(agg_node_status);
-  auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> agg_nodes = ir_graph->FindNodesOfType(IRNodeType::kBlockingAgg);
+  EXPECT_EQ(agg_nodes.size(), 1);
+  auto agg_node = static_cast<BlockingAggIR*>(agg_nodes[0]);
   table_store::schema::Relation test_agg_relation;
   test_agg_relation.AddColumn(types::INT64, "cpu_count");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
@@ -243,9 +243,9 @@ TEST_F(AnalyzerTest, test_relation_results) {
   EXPECT_TRUE(RelationEquality(agg_node->relation(), test_agg_relation));
 
   // Sink should have the same relation as before and be equivalent to its parent.
-  auto sink_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySink);
-  EXPECT_OK(sink_node_status);
-  auto sink_node = static_cast<MemorySinkIR*>(sink_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
+  EXPECT_EQ(sink_nodes.size(), 1);
+  auto sink_node = static_cast<MemorySinkIR*>(sink_nodes[0]);
   EXPECT_TRUE(RelationEquality(sink_node->relation(), test_agg_relation));
   EXPECT_TRUE(RelationEquality(sink_node->relation(), sink_node->parents()[0]->relation()));
 }  // namespace compiler
@@ -270,9 +270,9 @@ TEST_F(AnalyzerTest, test_relation_fails) {
   ASSERT_NOT_OK(handle_status);
 
   // Map should result just be the cpu_sum column.
-  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 1);
-  EXPECT_OK(map_node_status);
-  auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
+  EXPECT_EQ(map_nodes.size(), 2);
+  auto map_node = static_cast<MapIR*>(map_nodes[1]);
   table_store::schema::Relation test_map_relation;
   test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
   EXPECT_EQ(map_node->relation(), test_map_relation);
@@ -292,9 +292,9 @@ TEST_F(AnalyzerTest, test_relation_multi_col_agg) {
   VLOG(1) << handle_status.ToString();
   ASSERT_OK(handle_status);
 
-  auto agg_node_status = FindNodeType(ir_graph, IRNodeType::kBlockingAgg);
-  EXPECT_OK(agg_node_status);
-  auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> agg_nodes = ir_graph->FindNodesOfType(IRNodeType::kBlockingAgg);
+  EXPECT_EQ(agg_nodes.size(), 1);
+  auto agg_node = static_cast<BlockingAggIR*>(agg_nodes[0]);
   table_store::schema::Relation test_agg_relation;
   test_agg_relation.AddColumn(types::INT64, "cpu_count");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
@@ -315,9 +315,9 @@ TEST_F(AnalyzerTest, test_from_select) {
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
-  auto sink_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySink);
-  EXPECT_OK(sink_node_status);
-  auto sink_node = static_cast<MemorySinkIR*>(sink_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
+  EXPECT_EQ(sink_nodes.size(), 1);
+  auto sink_node = static_cast<MemorySinkIR*>(sink_nodes[0]);
   EXPECT_TRUE(RelationEquality(sink_node->relation(), test_relation));
 }
 
@@ -483,21 +483,17 @@ TEST_F(AnalyzerTest, assign_udf_func_ids) {
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
 
-  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 0);
-  EXPECT_OK(map_node_status);
-  auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
+  EXPECT_EQ(map_nodes.size(), 4);
+  auto map_node = static_cast<MapIR*>(map_nodes[0]);
   auto func_node = static_cast<FuncIR*>(map_node->col_exprs()[3].node);
   EXPECT_EQ(0, func_node->func_id());
 
-  map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 1);
-  EXPECT_OK(map_node_status);
-  map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  map_node = static_cast<MapIR*>(map_nodes[1]);
   func_node = static_cast<FuncIR*>(map_node->col_exprs()[4].node);
   EXPECT_EQ(1, func_node->func_id());
 
-  map_node_status = FindNodeType(ir_graph, IRNodeType::kMap, 2);
-  EXPECT_OK(map_node_status);
-  map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  map_node = static_cast<MapIR*>(map_nodes[2]);
   func_node = static_cast<FuncIR*>(map_node->col_exprs()[5].node);
   EXPECT_EQ(1, func_node->func_id());
 }
@@ -517,9 +513,9 @@ TEST_F(AnalyzerTest, assign_uda_func_ids) {
   EXPECT_OK(handle_status);
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
-  auto agg_node_status = FindNodeType(ir_graph, IRNodeType::kBlockingAgg);
-  EXPECT_OK(agg_node_status);
-  auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> agg_nodes = ir_graph->FindNodesOfType(IRNodeType::kBlockingAgg);
+  EXPECT_EQ(agg_nodes.size(), 1);
+  auto agg_node = static_cast<BlockingAggIR*>(agg_nodes[0]);
 
   auto func_node = static_cast<FuncIR*>(agg_node->aggregate_expressions()[0].node);
   EXPECT_EQ(0, func_node->func_id());
@@ -535,9 +531,9 @@ TEST_F(AnalyzerTest, select_all) {
   ASSERT_OK(HandleRelation(ir_graph));
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
-  auto sink_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySink);
-  EXPECT_OK(sink_node_status);
-  auto sink_node = static_cast<MemorySinkIR*>(sink_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
+  EXPECT_EQ(sink_nodes.size(), 1);
+  auto sink_node = static_cast<MemorySinkIR*>(sink_nodes[0]);
   auto relation_map = compiler_state_->relation_map();
   ASSERT_NE(relation_map->find("cpu"), relation_map->end());
   auto expected_relation = relation_map->find("cpu")->second;
@@ -708,12 +704,12 @@ TEST_F(AnalyzerTest, drop_to_map_test) {
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   ASSERT_OK(HandleRelation(ir_graph));
 
-  auto drop_node_status = FindNodeType(ir_graph, IRNodeType::kDrop);
-  EXPECT_NOT_OK(drop_node_status);
+  std::vector<IRNode*> drop_nodes = ir_graph->FindNodesOfType(IRNodeType::kDrop);
+  EXPECT_EQ(drop_nodes.size(), 0);
 
-  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap);
-  EXPECT_OK(map_node_status);
-  auto map = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
+  EXPECT_EQ(map_nodes.size(), 1);
+  auto map = static_cast<MapIR*>(map_nodes[0]);
   table_store::schema::Relation cpu0_relation;
   cpu0_relation.AddColumn(types::FLOAT64, "cpu0");
   EXPECT_EQ(map->relation(), cpu0_relation);

@@ -324,9 +324,9 @@ TEST_F(OptionalArgs, map_copy_relation) {
   auto graph_or_s = CompileGraph(map_query);
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
-  auto node_or_s = FindNodeType(graph, IRNodeType::kMap);
-  ASSERT_OK(node_or_s);
-  MapIR* map = static_cast<MapIR*>(node_or_s.ConsumeValueOrDie());
+  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
+  ASSERT_EQ(map_nodes.size(), 1);
+  MapIR* map = static_cast<MapIR*>(map_nodes[0]);
   EXPECT_TRUE(map->keep_input_columns());
 }
 
@@ -707,11 +707,10 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
-  auto node_or_s = FindNodeType(graph, IRNodeType::kMemorySource);
-  ASSERT_OK(node_or_s);
-  auto node = node_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_srcs = graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
 
-  auto mem_src = static_cast<MemorySourceIR*>(node);
+  auto mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_TRUE(mem_src->HasTimeExpressions());
   EXPECT_TRUE(Match(mem_src->start_time_expr(), String()));
   EXPECT_EQ(static_cast<StringIR*>(mem_src->start_time_expr())->str(), "-1m");
@@ -725,11 +724,10 @@ TEST_F(ASTVisitorTest, MemorySourceDefaultStartAndStop) {
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
-  auto node_or_s = FindNodeType(graph, IRNodeType::kMemorySource);
-  ASSERT_OK(node_or_s);
-  auto node = node_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_nodes.size(), 1);
 
-  auto mem_src = static_cast<MemorySourceIR*>(node);
+  auto mem_src = static_cast<MemorySourceIR*>(mem_nodes[0]);
   EXPECT_FALSE(mem_src->HasTimeExpressions());
 }
 
@@ -738,11 +736,10 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndStop) {
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
-  auto node_or_s = FindNodeType(graph, IRNodeType::kMemorySource);
-  ASSERT_OK(node_or_s);
-  auto node = node_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_srcs = graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
 
-  auto mem_src = static_cast<MemorySourceIR*>(node);
+  auto mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_TRUE(mem_src->HasTimeExpressions());
   EXPECT_TRUE(Match(mem_src->start_time_expr(), Int()));
   EXPECT_EQ(static_cast<IntIR*>(mem_src->start_time_expr())->val(), 12);
@@ -755,11 +752,11 @@ TEST_F(ASTVisitorTest, DisplayTest) {
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
-  auto node_or_s = FindNodeType(graph, IRNodeType::kMemorySink);
-  ASSERT_OK(node_or_s);
+  std::vector<IRNode*> mem_sinks = graph->FindNodesOfType(IRNodeType::kMemorySink);
 
-  auto node = node_or_s.ConsumeValueOrDie();
-  auto mem_sink = static_cast<MemorySinkIR*>(node);
+  ASSERT_EQ(mem_sinks.size(), 1);
+
+  auto mem_sink = static_cast<MemorySinkIR*>(mem_sinks[0]);
   EXPECT_EQ(mem_sink->name(), "output");
 
   ASSERT_EQ(mem_sink->parents().size(), 1);
@@ -773,11 +770,10 @@ TEST_F(ASTVisitorTest, DisplayArgumentsTest) {
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
-  auto node_or_s = FindNodeType(graph, IRNodeType::kMemorySink);
-  ASSERT_OK(node_or_s);
+  std::vector<IRNode*> mem_sinks = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(mem_sinks.size(), 1);
 
-  auto node = node_or_s.ConsumeValueOrDie();
-  auto mem_sink = static_cast<MemorySinkIR*>(node);
+  auto mem_sink = static_cast<MemorySinkIR*>(mem_sinks[0]);
   EXPECT_EQ(mem_sink->name(), "foo");
 
   ASSERT_EQ(mem_sink->parents().size(), 1);
@@ -861,8 +857,9 @@ TEST_F(ASTVisitorTest, test_repeated_exprs) {
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
 
   // Fetch the processed args for a + a
-  auto memsrc = FindNodeType(ir_graph, IRNodeType::kMemorySource).ConsumeValueOrDie();
-  auto expr1 = static_cast<MemorySourceIR*>(memsrc)->start_time_expr();
+  std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  EXPECT_EQ(mem_srcs.size(), 1);
+  auto expr1 = static_cast<MemorySourceIR*>(mem_srcs[0])->start_time_expr();
   auto expr1_args = static_cast<FuncIR*>(expr1)->args();
   // Make sure the clones are identical but distinct
   EXPECT_EQ(2, expr1_args.size());
@@ -870,8 +867,9 @@ TEST_F(ASTVisitorTest, test_repeated_exprs) {
   CompareClone(expr1_args[0], expr1_args[1], "Start time expression in MemorySource node");
 
   // Fetch the processed args for b * b > 10
-  auto filter = FindNodeType(ir_graph, IRNodeType::kFilter).ConsumeValueOrDie();
-  auto expr2 = static_cast<FilterIR*>(filter)->filter_expr();
+  std::vector<IRNode*> filters = ir_graph->FindNodesOfType(IRNodeType::kFilter);
+  EXPECT_EQ(filters.size(), 1);
+  auto expr2 = static_cast<FilterIR*>(filters[0])->filter_expr();
   auto expr2_args = static_cast<FuncIR*>(expr2)->args();
   ASSERT_EQ(2, expr2_args.size());
   auto expr2_subargs = static_cast<FuncIR*>(expr2_args[0])->args();
@@ -881,8 +879,9 @@ TEST_F(ASTVisitorTest, test_repeated_exprs) {
   CompareClone(expr2_subargs[0], expr2_subargs[1], "Filter expression in Filter node");
 
   // Fetch the processed args for c + c
-  auto map = FindNodeType(ir_graph, IRNodeType::kMap).ConsumeValueOrDie();
-  auto expr3 = static_cast<MapIR*>(map)->col_exprs()[0].node;
+  std::vector<IRNode*> maps = ir_graph->FindNodesOfType(IRNodeType::kMap);
+  EXPECT_EQ(maps.size(), 1);
+  auto expr3 = static_cast<MapIR*>(maps[0])->col_exprs()[0].node;
   auto expr3_args = static_cast<FuncIR*>(expr3)->args();
   // Make sure the clones are identical but distinct
   EXPECT_EQ(2, expr3_args.size());

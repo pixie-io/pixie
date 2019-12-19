@@ -52,11 +52,30 @@ TEST(IRTest, CreateSource) {
   EXPECT_THAT(src->column_names(), ElementsAre("testCol"));
 }
 
+TEST(IRTest, FindNodesOfType) {
+  auto ast = MakeTestAstPtr();
+  auto ig = std::make_shared<IR>();
+  auto src = ig->CreateNode<MemorySourceIR>(ast, "table_str", std::vector<std::string>{"testCol"})
+                 .ValueOrDie();
+  auto start_rng_str = ig->CreateNode<IntIR>(ast, 0).ValueOrDie();
+  auto stop_rng_str = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
+
+  EXPECT_OK(src->SetTimeExpressions(start_rng_str, stop_rng_str));
+
+  auto int_nodes = ig->FindNodesOfType(IRNodeType::kInt);
+  EXPECT_THAT(int_nodes, UnorderedElementsAre(start_rng_str, stop_rng_str));
+
+  // Shouldn't return anything when it doesn't have a type of node.
+  auto string_nodes = ig->FindNodesOfType(IRNodeType::kString);
+  EXPECT_EQ(string_nodes.size(), 0);
+}
+
 TEST(IRTest, CreateSourceSharedNodes) {
   auto ast = MakeTestAstPtr();
   auto ig = std::make_shared<IR>();
   auto src = ig->CreateNode<MemorySourceIR>(ast, "table_str", std::vector<std::string>{"testCol"})
                  .ValueOrDie();
+
   auto time_expr = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
 
   EXPECT_OK(src->SetTimeExpressions(time_expr, time_expr));
@@ -1111,9 +1130,9 @@ TEST_F(OperatorTests, join_duplicate_parents) {
   auto join_node =
       MakeJoin({mem_src, mem_src}, "inner", relation0, relation0, {"col1"}, {"col1"}, {"_x", "_y"});
 
-  auto map_node_status = FindNodeType(graph, IRNodeType::kMap);
-  EXPECT_OK(map_node_status);
-  auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
+  EXPECT_EQ(map_nodes.size(), 1);
+  auto map_node = static_cast<MapIR*>(map_nodes[0]);
   EXPECT_THAT(join_node->parents(), ElementsAre(mem_src, map_node));
 }
 
@@ -1129,13 +1148,8 @@ TEST_F(OperatorTests, union_duplicate_parents) {
   auto mem_src2 = MakeMemSource(relation1);
   auto union_op = MakeUnion({mem_src2, mem_src1, mem_src1, mem_src1});
 
-  std::vector<OperatorIR*> maps;
-  for (size_t i = 0; i < 2; ++i) {
-    auto map_node_status = FindNodeType(graph, IRNodeType::kMap, i);
-    EXPECT_OK(map_node_status);
-    auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
-    maps.push_back(map_node);
-  }
+  std::vector<IRNode*> maps = graph->FindNodesOfType(IRNodeType::kMap);
+  ASSERT_EQ(maps.size(), 2);
 
   EXPECT_THAT(union_op->parents(), ElementsAre(mem_src2, mem_src1, maps[0], maps[1]));
 }

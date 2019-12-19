@@ -766,9 +766,9 @@ TEST_F(CompilerTest, reused_result) {
   VLOG(2) << plan_status.ToString();
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
-  auto node_or_s = FindNodeType(plan, IRNodeType::kMemorySource);
-  ASSERT_OK(node_or_s);
-  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(node_or_s.ConsumeValueOrDie());
+  std::vector<IRNode*> mem_srcs = plan->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
 
   EXPECT_EQ(mem_src->Children().size(), 2);
 

@@ -1212,6 +1212,16 @@ Status IR::Prune(const absl::flat_hash_set<int64_t>& ids_to_prune) {
   return Status::OK();
 }
 
+std::vector<IRNode*> IR::FindNodesOfType(IRNodeType type) const {
+  std::vector<IRNode*> nodes;
+  for (auto& i : dag().TopologicalSort()) {
+    IRNode* node = Get(i);
+    if (node->type() == type) {
+      nodes.push_back(node);
+    }
+  }
+  return nodes;
+}
 Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
   if (sink_op->destination_id() != source_id_) {
     return DExitOrIRNodeError("Source id $0 and destination id $1 aren't equal.",

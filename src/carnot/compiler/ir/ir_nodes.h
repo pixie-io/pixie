@@ -348,6 +348,8 @@ class IR {
    */
   Status Prune(const absl::flat_hash_set<int64_t>& ids_to_prune);
 
+  std::vector<IRNode*> FindNodesOfType(IRNodeType type) const;
+
   friend std::ostream& operator<<(std::ostream& os, const std::shared_ptr<IR>&) {
     return os << "ir";
   }

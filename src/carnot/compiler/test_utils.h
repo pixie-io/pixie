@@ -169,30 +169,6 @@ udas {
 )";
 
 /**
- * @brief Finds the specified type in the graph and returns the node.
- *
- *
- * @param ir_graph
- * @param type
- * @return StatusOr<IRNode*> IRNode of type, otherwise returns an error.
- */
-StatusOr<IRNode*> FindNodeType(std::shared_ptr<IR> ir_graph, IRNodeType type,
-                               int64_t instance = 0) {
-  int found = 0;
-  for (auto& i : ir_graph->dag().TopologicalSort()) {
-    auto node = ir_graph->Get(i);
-    if (node->type() == type) {
-      if (found == instance) {
-        return node;
-      }
-      found++;
-    }
-  }
-  return error::NotFound("Couldn't find node of type $0 in ir_graph.",
-                         kIRNodeStrings[static_cast<int64_t>(type)]);
-}
-
-/**
  * @brief Makes a test ast ptr that makes testing IRnode
  * Init calls w/o queries not error out.
  *
@@ -682,7 +658,7 @@ class ASTVisitorTest : public ::testing::Test {
     return ir;
   }
 
-  // TODO(philkuz) remove this  -> we now have a function for this in the Relation class.
+  // TODO(philkuz) (PL-1286) remove this  -> we now have a function for this in the Relation class.
   bool RelationEquality(const table_store::schema::Relation& r1,
                         const table_store::schema::Relation& r2) {
     std::vector<std::string> r1_names;
