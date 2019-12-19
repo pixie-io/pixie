@@ -57,7 +57,6 @@ DEFINE_string(perf_buffer_events_output_path, "",
 // TODO(oazizi/yzhao): Re-enable grpc and mysql tracing once stable.
 DEFINE_bool(stirling_enable_http_tracing, true,
             "If true, stirling will trace and process HTTP messages");
-// TODO(yzhao): We are not going to need this. Turn default to false.
 DEFINE_bool(stirling_enable_grpc_kprobe_tracing, false,
             "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_grpc_uprobe_tracing, true,
@@ -566,6 +565,24 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker,
                                          http2::NewRecord record, DataTable* data_table) {
   DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
+
+  // With three pieces of information, we can classify a frame as part of request or response
+  // stream:
+  // ROLE, STREAM_ID, EVENT_TYPE -> classification
+  // client, client-initiated (odd) stream, write  -> request
+  // client, client-initiated (odd) stream, read   -> response
+  // client, server-initiated (even) stream, write -> response
+  // client, server-initiated (even) stream, read  -> request
+  // server, client-initiated (odd) stream, write  -> response
+  // server, client-initiated (odd) stream, read   -> request
+  // server, server-initiated (even) stream, write -> request
+  // server, server-initiated (even) stream, read  -> response
+  //
+  // While the STREAM_ID and EVENT_TYPE are easy to figure out, the ROLE is a bit harder
+  // in cases where the beginning of the connection was not recorded.
+  //
+  // So instead of this truth table, we instead just examine the headers to classify
+  // request/response streams. In particular, we look for :method and :status.
 
   bool send_has_method = !record.send.headers.ValueByKey(":method", "").empty();
   bool recv_has_method = !record.recv.headers.ValueByKey(":method", "").empty();

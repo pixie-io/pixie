@@ -1424,5 +1424,111 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
   EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 6);
 }
 
+// This test models an old stream appearing slightly late.
+TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
+  DataTable data_table(kHTTPTable);
+
+  std::vector<int> stream_ids = {7, 9, 5, 11};
+
+  auto conn = InitConn<kProtocolHTTP2Uprobe>();
+  source_->AcceptControlEvent(conn);
+
+  for (auto stream_id : stream_ids) {
+    auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, stream_id);
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("Req"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("uest"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>(
+        std::to_string(stream_id), /* end_stream */ true));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Resp"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
+    source_->AcceptHTTP2Data(
+        frame_generator.GenDataFrame<kDataFrameEventRead>(std::to_string(stream_id)));
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+    source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventRead>());
+  }
+
+  source_->AcceptControlEvent(InitClose());
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+
+  // Note that the order in which the events are emitted are actually ordered by stream ID,
+  // even though the events of stream ID 5 came late.
+  // This would not necessary have been the case if the late-arriving stream had been after
+  // a call to TransferData().
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request5");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response5");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 6);
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(1), "Request7");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1), "Response7");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 6);
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(2), "Request9");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(2), "Response9");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(2), 6);
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(3), "Request11");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(3), "Response11");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 6);
+}
+
+// This test models an old stream appearing out-of-nowhere.
+// Expectation is that we should be robust in such cases.
+TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
+  DataTable data_table(kHTTPTable);
+
+  std::vector<int> stream_ids = {117, 119, 3, 121};
+
+  auto conn = InitConn<kProtocolHTTP2Uprobe>();
+  source_->AcceptControlEvent(conn);
+
+  for (auto stream_id : stream_ids) {
+    auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, stream_id);
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("Req"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("uest"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>(
+        std::to_string(stream_id), /* end_stream */ true));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Resp"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
+    source_->AcceptHTTP2Data(
+        frame_generator.GenDataFrame<kDataFrameEventRead>(std::to_string(stream_id)));
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+    source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventRead>());
+
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  }
+
+  source_->AcceptControlEvent(InitClose());
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request117");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response117");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 6);
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(1), "Request119");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1), "Response119");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 6);
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(2), "Request3");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(2), "Response3");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(2), 6);
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(3), "Request121");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(3), "Response121");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 6);
+}
+
 }  // namespace stirling
 }  // namespace pl

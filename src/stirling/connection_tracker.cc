@@ -124,16 +124,6 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
-// Need three pieces of information to classify a frame as part of request or response stream:
-// ROLE, STREAM_ID, EVENT_TYPE -> classification
-// client, client-initiated (odd) stream, write  -> request
-// client, client-initiated (odd) stream, read   -> response
-// client, server-initiated (even) stream, write -> response
-// client, server-initiated (even) stream, read  -> request
-// server, client-initiated (odd) stream, write  -> response
-// server, client-initiated (odd) stream, read   -> request
-// server, server-initiated (even) stream, write -> request
-// server, server-initiated (even) stream, read  -> response
 http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool write_event) {
   // Check for both client-initiated (odd stream_ids) and server-initiated (even stream_ids)
   // streams.
@@ -155,10 +145,26 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
     *oldest_active_stream_id_ptr = stream_id;
   }
 
-  ECHECK_GE(stream_id, *oldest_active_stream_id_ptr);
-  size_t index = (stream_id - *oldest_active_stream_id_ptr) / 2;
-  size_t new_size = std::max(streams_deque_ptr->size(), index + 1);
-  streams_deque_ptr->resize(new_size);
+  size_t index;
+  if (stream_id < *oldest_active_stream_id_ptr) {
+    LOG(WARNING) << absl::Substitute(
+        "Stream ID ($0) is lower than the current head stream ID ($1). "
+        "Not expected, but will handle it anyways. If not a data race, "
+        "this could be indicative of a bug that could result in a memory leak.",
+        stream_id, *oldest_active_stream_id_ptr);
+    // Need to grow the deque at the front.
+    size_t new_size = streams_deque_ptr->size() + ((*oldest_active_stream_id_ptr - stream_id) / 2);
+    streams_deque_ptr->insert(streams_deque_ptr->begin(), new_size - streams_deque_ptr->size(),
+                              http2::Stream());
+    index = 0;
+    *oldest_active_stream_id_ptr = stream_id;
+  } else {
+    // Stream ID is after the front. We may or may not need to grow the deque,
+    // depending on its current size.
+    index = (stream_id - *oldest_active_stream_id_ptr) / 2;
+    size_t new_size = std::max(streams_deque_ptr->size(), index + 1);
+    streams_deque_ptr->resize(new_size);
+  }
 
   http2::HalfStream* half_stream_ptr =
       write_event ? &(*streams_deque_ptr)[index].send : &(*streams_deque_ptr)[index].recv;
