@@ -239,6 +239,7 @@ class IR {
     id_node_map_.emplace(node->id(), std::move(node));
     return raw;
   }
+  StatusOr<IRNode*> MakeNodeWithType(IRNodeType node_type, int64_t new_node_id);
 
   template <typename TOperator, typename... Args>
   StatusOr<TOperator*> CreateNode(const pypa::AstPtr& ast, Args... args) {
@@ -247,8 +248,8 @@ class IR {
     return op;
   }
 
-  // TODO(nserrino): Make this a template on source IRNode type.
-  StatusOr<IRNode*> CopyNode(const IRNode* source) {
+  template <typename TIRNodeType>
+  StatusOr<TIRNodeType*> CopyNode(const TIRNodeType* source) {
     absl::flat_hash_map<const IRNode*, IRNode*> mapping;
     return CopyNode(source, &mapping);
   }
@@ -263,8 +264,23 @@ class IR {
    * CopyNode in the current top-level invocation.
    * @return StatusOr<IRNode*> the copied node
    */
-  StatusOr<IRNode*> CopyNode(const IRNode* source,
-                             absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map);
+  template <typename TIRNodeType>
+  StatusOr<TIRNodeType*> CopyNode(const TIRNodeType* source,
+                                  absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+    CHECK(copied_nodes_map != nullptr);
+    // If this node has already been copied over, don't copy it again. This will happen when a node
+    // has multiple nodes using it.
+    if (copied_nodes_map->contains(source)) {
+      return static_cast<TIRNodeType*>(copied_nodes_map->at(source));
+    }
+    // Use the source's ID if we are copying in to a different graph.
+    auto new_node_id = this == source->graph_ptr() ? id_node_counter : source->id();
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, MakeNodeWithType(source->type(), new_node_id));
+    PL_RETURN_IF_ERROR(new_node->CopyFromNode(source, copied_nodes_map));
+    copied_nodes_map->emplace(source, new_node);
+    CHECK_EQ(new_node->type(), source->type());
+    return static_cast<TIRNodeType*>(new_node);
+  }
 
   Status AddEdge(int64_t from_node, int64_t to_node);
   bool HasEdge(int64_t from_node, int64_t to_node) const;
@@ -288,14 +304,12 @@ class IR {
    */
   template <typename TChildType>
   StatusOr<TChildType*> OptionallyCloneWithEdge(IRNode* parent, TChildType* child) {
-    IRNode* returned_child = child;
+    TChildType* returned_child = child;
     if (HasEdge(parent, child)) {
       PL_ASSIGN_OR_RETURN(returned_child, CopyNode(child));
     }
     PL_RETURN_IF_ERROR(AddEdge(parent, returned_child));
-    // TODO(nserrino): When CopyNode is templatized, remove this check/cast.
-    CHECK_EQ(child->type(), returned_child->type());
-    return static_cast<TChildType*>(returned_child);
+    return returned_child;
   }
 
   plan::DAG& dag() { return dag_; }

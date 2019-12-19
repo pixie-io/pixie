@@ -581,8 +581,8 @@ TEST_F(CloneTests, copy_into_existing_dag) {
   EXPECT_OK(source_out.status());
   auto map_out = graph->CopyNode(map);
   EXPECT_OK(source_out.status());
-  auto cmap = static_cast<OperatorIR*>(map_out.ConsumeValueOrDie());
-  auto csrc = static_cast<OperatorIR*>(source_out.ConsumeValueOrDie());
+  OperatorIR* cmap = map_out.ConsumeValueOrDie();
+  OperatorIR* csrc = source_out.ConsumeValueOrDie();
   EXPECT_OK(cmap->AddParent(csrc));
 
   std::queue<int64_t> original_q;
