@@ -1139,7 +1139,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
 
   auto conn = InitConn<kProtocolHTTP2Uprobe>();
 
-  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
+  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 8);
 
   source_->AcceptControlEvent(conn);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":method", "post"));
@@ -1234,8 +1234,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  // The first TransferData should not push anything to the tables, because HTTP2 stream is still
-  // active.
+  // TransferData should not have pushed data to the tables, because HTTP2 stream is still active.
   ASSERT_THAT(*data_table.ActiveRecordBatch(), Each(ColWrapperSizeIs(0)));
 
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
@@ -1245,12 +1244,184 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  // This call to TransferData should push data to the tables, because HTTP2 stream has closed.
+  // TransferData should now have pushed data to the tables, because HTTP2 stream has ended.
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
+}
+
+// This test models multiple streams back-to-back.
+TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
+  DataTable data_table(kHTTPTable);
+
+  std::vector<int> stream_ids = {7, 9, 11, 13};
+
+  auto conn = InitConn<kProtocolHTTP2Uprobe>();
+  source_->AcceptControlEvent(conn);
+
+  for (auto stream_id : stream_ids) {
+    auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, stream_id);
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("Req"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("uest"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>(
+        std::to_string(stream_id), /* end_stream */ true));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Resp"));
+    source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
+    source_->AcceptHTTP2Data(
+        frame_generator.GenDataFrame<kDataFrameEventRead>(std::to_string(stream_id)));
+    source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+    source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventRead>());
+  }
+
+  source_->AcceptControlEvent(InitClose());
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 6);
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(3), "Request13");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(3), "Response13");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 6);
+}
+
+// This test models multiple streams running in parallel.
+TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
+  DataTable data_table(kHTTPTable);
+
+  std::vector<uint32_t> stream_ids = {7, 9, 11, 13};
+  std::map<uint32_t, testing::StreamEventGenerator> frame_generators;
+
+  auto conn = InitConn<kProtocolHTTP2Uprobe>();
+  source_->AcceptControlEvent(conn);
+
+  for (auto stream_id : stream_ids) {
+    frame_generators.insert(
+        {stream_id, testing::StreamEventGenerator(conn.open.conn_id, stream_id)});
+  }
+
+  for (auto stream_id : stream_ids) {
+    source_->AcceptHTTP2Header(
+        frame_generators.at(stream_id).GenHeader<kHeaderEventWrite>(":method", "post"));
+    source_->AcceptHTTP2Header(
+        frame_generators.at(stream_id).GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
+  }
+  for (auto stream_id : stream_ids) {
+    source_->AcceptHTTP2Header(
+        frame_generators.at(stream_id).GenHeader<kHeaderEventWrite>(":path", "/magic"));
+    source_->AcceptHTTP2Data(
+        frame_generators.at(stream_id).GenDataFrame<kDataFrameEventWrite>("Req"));
+  }
+  for (auto stream_id : stream_ids) {
+    source_->AcceptHTTP2Data(
+        frame_generators.at(stream_id).GenDataFrame<kDataFrameEventWrite>("uest"));
+  }
+  for (auto stream_id : stream_ids) {
+    source_->AcceptHTTP2Data(frame_generators.at(stream_id).GenDataFrame<kDataFrameEventWrite>(
+        std::to_string(stream_id), /* end_stream */ true));
+    source_->AcceptHTTP2Data(
+        frame_generators.at(stream_id).GenDataFrame<kDataFrameEventRead>("Resp"));
+  }
+  for (auto stream_id : stream_ids) {
+    source_->AcceptHTTP2Data(
+        frame_generators.at(stream_id).GenDataFrame<kDataFrameEventRead>("onse"));
+    source_->AcceptHTTP2Data(frame_generators.at(stream_id).GenDataFrame<kDataFrameEventRead>(
+        std::to_string(stream_id)));
+  }
+  for (auto stream_id : stream_ids) {
+    source_->AcceptHTTP2Header(
+        frame_generators.at(stream_id).GenHeader<kHeaderEventRead>(":status", "200"));
+    source_->AcceptHTTP2Header(
+        frame_generators.at(stream_id).GenEndStreamHeader<kHeaderEventRead>());
+  }
+  source_->AcceptControlEvent(InitClose());
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 6);
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(3), "Request13");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(3), "Response13");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 6);
+}
+
+// This test models one stream start and ending within the span of a larger stream.
+// Random TransferData calls are interspersed just to make things more fun :)
+TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
+  DataTable data_table(kHTTPTable);
+
+  auto conn = InitConn<kProtocolHTTP2Uprobe>();
+  source_->AcceptControlEvent(conn);
+
+  uint32_t stream_id = 7;
+
+  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, stream_id);
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("Req"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>("uest"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventWrite>(
+      std::to_string(stream_id), /* end_stream */ true));
+
+  {
+    uint32_t stream_id2 = 9;
+    auto frame_generator2 = testing::StreamEventGenerator(conn.open.conn_id, stream_id2);
+    source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":method", "post"));
+    source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
+    source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":path", "/magic"));
+    source_->AcceptHTTP2Data(frame_generator2.GenDataFrame<kDataFrameEventWrite>("Req"));
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+    source_->AcceptHTTP2Data(frame_generator2.GenDataFrame<kDataFrameEventWrite>("uest"));
+    source_->AcceptHTTP2Data(frame_generator2.GenDataFrame<kDataFrameEventWrite>(
+        std::to_string(stream_id2), /* end_stream */ true));
+    source_->AcceptHTTP2Data(frame_generator2.GenDataFrame<kDataFrameEventRead>("Resp"));
+    source_->AcceptHTTP2Data(frame_generator2.GenDataFrame<kDataFrameEventRead>("onse"));
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+    source_->AcceptHTTP2Data(
+        frame_generator2.GenDataFrame<kDataFrameEventRead>(std::to_string(stream_id2)));
+    source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventRead>(":status", "200"));
+    source_->AcceptHTTP2Header(frame_generator2.GenEndStreamHeader<kHeaderEventRead>());
+  }
+
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("Resp"));
+  source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  source_->AcceptHTTP2Data(
+      frame_generator.GenDataFrame<kDataFrameEventRead>(std::to_string(stream_id)));
+  source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
+  source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventRead>());
+
+  source_->AcceptControlEvent(InitClose());
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  // Note that the records are pushed as soon as they complete. This is so
+  // a long-running stream does not block other shorter streams from being recorded.
+  // Notice, however, that this causes stream_id 9 to appear before stream_id 7.
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request9");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response9");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 6);
+
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(1), "Request7");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1), "Response7");
+  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 6);
 }
 
 }  // namespace stirling
