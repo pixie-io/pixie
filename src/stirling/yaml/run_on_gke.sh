@@ -48,7 +48,9 @@ echo "-------------------------------------------"
 echo "Delete any old instances"
 echo "-------------------------------------------"
 
-stirling_wrapper_pod_count=$(kubectl get pods -n "${NAMESPACE}" | grep -c ^stirling-wrapper)
+# Note that we have to append || true after the grep, because a grep with count 0
+# will return an exit status of 1, which will cause the script to abort with /bin/bash -e.
+stirling_wrapper_pod_count=$(kubectl get pods -n "${NAMESPACE}" 2> /dev/null | grep -c ^stirling-wrapper || true)
 if [ "$stirling_wrapper_pod_count" -ne 0 ]; then
   make delete_stirling_daemonset
   sleep 5
@@ -74,7 +76,7 @@ echo "Listing pods"
 echo "-------------------------------------------"
 
 kubectl get pods -n "${NAMESPACE}" | grep ^stirling-wrapper
-pods=$(kubectl get pods -n "${NAMESPACE}" | grep ^stirling-wrapper | grep Running | cut -f1 -d' ')
+pods=$(kubectl get pods -n "${NAMESPACE}" 2> /dev/null | grep ^stirling-wrapper | grep Running | cut -f1 -d' ')
 
 echo ""
 echo "-------------------------------------------"
