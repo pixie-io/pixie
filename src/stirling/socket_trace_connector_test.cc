@@ -18,6 +18,7 @@
 namespace pl {
 namespace stirling {
 
+using ::testing::Each;
 using ::testing::ElementsAre;
 using RecordBatch = types::ColumnWrapperRecordBatch;
 
@@ -166,6 +167,8 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
   }
   return result;
 }
+
+MATCHER_P(ColWrapperSizeIs, size, "") { return arg->Size() == static_cast<size_t>(size); }
 
 TEST_F(SocketTraceConnectorTest, End2End) {
   struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
@@ -741,10 +744,8 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   source_->AcceptDataEvent(std::move(execute_req_event2));
   source_->AcceptDataEvent(std::move(execute_resp_event2));
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-  for (const auto& column : record_batch) {
-    EXPECT_EQ(4, column->Size());
-  }
 
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
               ElementsAre(expected_entry0, expected_entry1, "", ""));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
@@ -759,6 +760,8 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {
+  DataTable data_table(kMySQLTable);
+
   struct socket_control_event_t conn = InitConn<kProtocolMySQL>();
   std::unique_ptr<SocketDataEvent> query_req_event = InitSendEvent<kProtocolMySQL>(mysql_query_req);
   std::vector<std::unique_ptr<SocketDataEvent>> query_resp_events;
@@ -772,13 +775,10 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
     source_->AcceptDataEvent(std::move(query_resp_event));
   }
 
-  DataTable data_table(kMySQLTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-  for (const auto& column : record_batch) {
-    EXPECT_EQ(1, column->Size());
-  }
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
 
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]), ElementsAre("SELECT name FROM tag;"));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre("Resultset rows = 3"));
@@ -788,6 +788,8 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
+  DataTable data_table(kMySQLTable);
+
   struct socket_control_event_t conn = InitConn<kProtocolMySQL>();
 
   // The following is a captured trace while running a script on a real instance of MySQL.
@@ -882,13 +884,10 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
     source_->AcceptDataEvent(std::move(event));
   }
 
-  DataTable data_table(kMySQLTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-  for (const auto& column : record_batch) {
-    EXPECT_EQ(8, column->Size());
-  }
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(8)));
 
   // In this test environment, latencies are the number of events.
 
@@ -961,6 +960,8 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
 // Inspired from real traced query.
 // Number of resultset rows is large enough to cause a sequence ID rollover.
 TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
+  DataTable data_table(kMySQLTable);
+
   struct socket_control_event_t conn = InitConn<kProtocolMySQL>();
 
   // The following is a captured trace while running a script on a real instance of MySQL.
@@ -998,14 +999,10 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
     source_->AcceptDataEvent(std::move(event));
   }
 
-  DataTable data_table(kMySQLTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-  for (const auto& column : record_batch) {
-    ASSERT_EQ(1, column->Size());
-  }
 
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   int idx = 0;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
             "SELECT emp_no FROM employees WHERE emp_no < 15000;");
@@ -1030,6 +1027,8 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
 //    CALL multi();
 //    DROP TABLE ins;
 TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
+  DataTable data_table(kMySQLTable);
+
   struct socket_control_event_t conn = InitConn<kProtocolMySQL>();
 
   // The following is a captured trace while running a script on a real instance of MySQL.
@@ -1087,14 +1086,10 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
     source_->AcceptDataEvent(std::move(event));
   }
 
-  DataTable data_table(kMySQLTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-  for (const auto& column : record_batch) {
-    ASSERT_EQ(1, column->Size());
-  }
 
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   int idx = 0;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "CALL multi()");
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx),
@@ -1129,11 +1124,9 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
   source_->AcceptControlEvent(InitClose());
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-  for (const auto& column : record_batch) {
-    ASSERT_EQ(1, column->Size());
-  }
 
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
@@ -1162,11 +1155,9 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
   source_->AcceptControlEvent(InitClose());
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-  for (const auto& column : record_batch) {
-    ASSERT_EQ(1, column->Size());
-  }
 
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
@@ -1191,11 +1182,9 @@ TEST_F(SocketTraceConnectorTest, HTTP2PartialStream) {
   source_->AcceptControlEvent(InitClose());
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-  for (const auto& column : record_batch) {
-    ASSERT_EQ(1, column->Size());
-  }
 
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "uest");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 1);
@@ -1218,9 +1207,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-  for (const auto& column : record_batch) {
-    ASSERT_EQ(0, column->Size());
-  }
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(0)));
 
   // TODO(oazizi): Someday we will need to capture response only streams properly.
   // In that case, we would expect certain values here.
@@ -1249,12 +1236,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
 
   // The first TransferData should not push anything to the tables, because HTTP2 stream is still
   // active.
-  {
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-    for (const auto& column : record_batch) {
-      ASSERT_EQ(0, column->Size());
-    }
-  }
+  ASSERT_THAT(*data_table.ActiveRecordBatch(), Each(ColWrapperSizeIs(0)));
 
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
@@ -1262,12 +1244,10 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   source_->AcceptControlEvent(InitClose());
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
   // This call to TransferData should push data to the tables, because HTTP2 stream has closed.
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-  for (const auto& column : record_batch) {
-    ASSERT_EQ(1, column->Size());
-  }
-
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
