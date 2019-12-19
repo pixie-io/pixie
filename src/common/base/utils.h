@@ -158,6 +158,22 @@ struct CaseInsensitiveLess {
   }
 };
 
+/**
+ * @breif creates and std::array based on passed in arguments.
+ *
+ * All arguments should be of the same time, or you get a compile time error.
+ *
+ * Usage:
+ *  constexpr auto arr = MakeArray(1, 2, 3, 4);
+ *     ---> arr = std::array<int, 4>(1, 2, 3, 4);
+ */
+template <typename... T>
+constexpr auto MakeArray(T&&... values)
+    -> std::array<typename std::decay<typename std::common_type<T...>::type>::type, sizeof...(T)> {
+  return std::array<typename std::decay<typename std::common_type<T...>::type>::type, sizeof...(T)>{
+      std::forward<T>(values)...};
+}
+
 }  // namespace pl
 
 // Provides a string view into a char array included in the binary via objcopy.

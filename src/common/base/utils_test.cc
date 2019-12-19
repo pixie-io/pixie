@@ -188,4 +188,10 @@ TEST(CaseInsensitiveCompare, MapKey) {
   EXPECT_EQ(str_key_map["fOo"], 2);
 }
 
+TEST(MakeArray, IntArrayTest) {
+  constexpr auto arr = MakeArray(1, 2, 3, 4);
+  static_assert(std::is_same_v<const std::array<int, 4>, decltype(arr)>, "array type check");
+  static_assert(arr.size() == 4, "array size");
+}
+
 }  // namespace pl
