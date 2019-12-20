@@ -381,7 +381,6 @@ ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
         if (IsEndStream(f->frame.hd)) {
           msg.type = MessageType::kRequest;
           msg.timestamp_ns = f->timestamp_ns;
-          msg.time_span.end_ns = f->time_span.end_ns;
           handle_end_stream();
         }
         break;
@@ -405,12 +404,7 @@ ParseState StitchGRPCMessageFrames(const std::vector<const Frame*>& frames,
         if (IsEndStream(f->frame.hd)) {
           msg.type = MessageType::kResponse;
           msg.timestamp_ns = f->timestamp_ns;
-          msg.time_span.end_ns = f->time_span.end_ns;
           handle_end_stream();
-        } else {
-          // gRPC request & response all start with HEADERS frame without END_STREAM flag. So set
-          // message time span begin if this HEADERS frame does not have END_STREAM flag.
-          msg.time_span.begin_ns = f->time_span.begin_ns;
         }
         break;
       default:

@@ -17,7 +17,6 @@ struct HTTP2Message {
   ParseState parse_state = ParseState::kUnknown;
   ParseState headers_parse_state = ParseState::kUnknown;
   MessageType type = MessageType::kUnknown;
-  TimeSpan time_span;
   uint64_t timestamp_ns = 0;
 
   NVMap headers;

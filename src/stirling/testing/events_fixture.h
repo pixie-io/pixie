@@ -135,10 +135,9 @@ class EventsFixture : public ::testing::Test {
       ConstStringView("\x0\x0\x0\x0\x1\x0\x0\x0\x1");
 };
 
-SocketDataEvent DataEventWithTimeSpan(std::string_view msg, TimeSpan time_span) {
+SocketDataEvent DataEventWithTimestamp(std::string_view msg, uint64_t timestamp) {
   SocketDataEvent event;
-  event.attr.entry_timestamp_ns = time_span.begin_ns;
-  event.attr.return_timestamp_ns = time_span.end_ns;
+  event.attr.return_timestamp_ns = timestamp;
   event.attr.msg_size = msg.size();
   event.msg = msg;
   return event;

@@ -49,7 +49,6 @@ struct Frame {
     }
   }
 
-  TimeSpan time_span;
   // TODO(yzhao): Remove this, as it's value is included in time_span already.
   uint64_t timestamp_ns;
   // The time stamp when this frame was created by socket tracer.

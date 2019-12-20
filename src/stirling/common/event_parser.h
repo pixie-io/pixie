@@ -151,7 +151,6 @@ class EventParser {
   void Append(const SocketDataEvent& event) {
     msgs_.push_back(event.msg);
     ts_nses_.push_back(event.attr.return_timestamp_ns);
-    time_spans_.push_back({event.attr.entry_timestamp_ns, event.attr.return_timestamp_ns});
     msgs_size_ += event.msg.size();
   }
 
@@ -209,13 +208,6 @@ class EventParser {
 
       auto& msg = (*messages)[prev_size + i];
       msg.timestamp_ns = ts_nses_[position.seq_num];
-      msg.time_span.begin_ns = time_spans_[position.seq_num].begin_ns;
-
-      size_t last_byte_pos = (i == result.start_positions.size() - 1)
-                                 ? result.end_position - 1
-                                 : result.start_positions[i + 1] - 1;
-      BufferPosition end_position = converter.Convert(msgs_, start_pos + last_byte_pos);
-      msg.time_span.end_ns = time_spans_[end_position.seq_num].end_ns;
     }
 
     BufferPosition end_position = converter.Convert(msgs_, start_pos + result.end_position);
@@ -223,7 +215,6 @@ class EventParser {
     // Reset all state. Call to ParseMessages() is destructive of Append() state.
     msgs_.clear();
     ts_nses_.clear();
-    time_spans_.clear();
     msgs_size_ = 0;
 
     return {std::move(positions), end_position, result.state};
@@ -240,9 +231,7 @@ class EventParser {
   }
 
   // ts_nses_ is the time stamp in nanosecond for the message in msgs_ with the same indexes.
-  // TODO(yzhao): Remove this, as time_spans_ has the same information.
   std::vector<uint64_t> ts_nses_;
-  std::vector<TimeSpan> time_spans_;
   std::vector<std::string_view> msgs_;
 
   // The total size of all strings in msgs_. Used to reserve memory space for concatenation.

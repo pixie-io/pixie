@@ -16,7 +16,6 @@ namespace http {
 using HTTPHeadersMap = std::multimap<std::string, std::string, CaseInsensitiveLess>;
 
 struct HTTPMessage {
-  TimeSpan time_span;
   uint64_t timestamp_ns;
   std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
   MessageType type = MessageType::kUnknown;

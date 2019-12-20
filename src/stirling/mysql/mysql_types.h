@@ -32,7 +32,6 @@ namespace mysql {
 //-----------------------------------------------------------------------------
 
 struct Packet {
-  TimeSpan time_span;
   uint64_t timestamp_ns = 0;
   std::chrono::time_point<std::chrono::steady_clock> creation_timestamp =
       std::chrono::steady_clock::now();

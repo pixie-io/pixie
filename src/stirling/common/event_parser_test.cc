@@ -11,7 +11,7 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::stirling::testing::DataEventWithTimeSpan;
+using ::pl::stirling::testing::DataEventWithTimestamp;
 using ::testing::ElementsAre;
 using ::testing::Pair;
 
@@ -23,7 +23,6 @@ using ::testing::Pair;
 
 struct TestFrame {
   std::string msg;
-  TimeSpan time_span;
   uint64_t timestamp_ns;
 };
 
@@ -97,11 +96,11 @@ TEST(EventParserTest, BasicPositionConversions) {
   EventParser<TestFrame> parser;
   std::deque<TestFrame> word_frames;
 
-  SocketDataEvent event0 = DataEventWithTimeSpan("jupiter,satu", {0, 1});
-  SocketDataEvent event1 = DataEventWithTimeSpan("rn,neptune,plu", {2, 3});
-  SocketDataEvent event2 = DataEventWithTimeSpan(",", {3, 4});
-  SocketDataEvent event3 = DataEventWithTimeSpan("aaa,", {4, 5});
-  SocketDataEvent event4 = DataEventWithTimeSpan("bbb,", {6, 7});
+  SocketDataEvent event0 = DataEventWithTimestamp("jupiter,satu", 0);
+  SocketDataEvent event1 = DataEventWithTimestamp("rn,neptune,plu", 2);
+  SocketDataEvent event2 = DataEventWithTimestamp(",", 3);
+  SocketDataEvent event3 = DataEventWithTimestamp("aaa,", 4);
+  SocketDataEvent event4 = DataEventWithTimestamp("bbb,", 6);
 
   parser.Append(event0);
   parser.Append(event1);
@@ -116,12 +115,11 @@ TEST(EventParserTest, BasicPositionConversions) {
                           BufferPosition{1, 11}, BufferPosition{3, 0}, BufferPosition{4, 0}));
   EXPECT_EQ((BufferPosition{5, 0}), res.end_position);
 
-  std::vector<std::pair<uint64_t, uint64_t>> time_spans;
+  std::vector<uint64_t> timestamps;
   for (const auto& frame : word_frames) {
-    time_spans.push_back({frame.time_span.begin_ns, frame.time_span.end_ns});
+    timestamps.push_back(frame.timestamp_ns);
   }
-  EXPECT_THAT(time_spans,
-              ElementsAre(Pair(0, 1), Pair(0, 3), Pair(2, 3), Pair(2, 4), Pair(4, 5), Pair(6, 7)));
+  EXPECT_THAT(timestamps, ElementsAre(0, 0, 2, 2, 4, 6));
 }
 
 }  // namespace stirling
