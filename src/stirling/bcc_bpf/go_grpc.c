@@ -220,7 +220,7 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   uint32_t stream_id = *(uint32_t*)(sp + kStreamIDParamOffset);
 
   const int kEndStreamParamOffset = 20;
-  bool end_stream = *(bool*)(sp + kStreamIDParamOffset);
+  bool end_stream = *(bool*)(sp + kEndStreamParamOffset);
 
   const int kFramerFieldOffset = 40;
   const void* framer_ptr = *(const void**)(loopy_writer_ptr + kFramerFieldOffset);
