@@ -11,19 +11,24 @@ interface DrawerProps {
   defaultOpened?: boolean;
   openedWidth?: string;
   closedWidth?: string;
+  onOpenedChanged?: (opened: boolean) => void;
 }
 
-export const Drawer =
+export const Drawer: React.FC<React.PropsWithChildren<DrawerProps>> =
   ({
     children,
     openedWidth = '10rem',
     closedWidth = '2rem',
     defaultOpened = true,
+    onOpenedChanged,
   }) => {
     const [opened, setOpened] = React.useState<boolean>(defaultOpened);
-    const toggleOpened = React.useCallback(
-      () => setOpened((isOpened) => !isOpened),
-      [setOpened]);
+    const toggleOpened = React.useCallback(() => {
+      setOpened((isOpened) => !isOpened);
+      if (onOpenedChanged) {
+        onOpenedChanged(!opened);
+      }
+    }, [setOpened]);
     const styles = React.useMemo(() => ({
       width: opened ? openedWidth : closedWidth,
     }), [opened, openedWidth, closedWidth]);

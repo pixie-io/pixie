@@ -28,6 +28,13 @@ const loginRedirectLink = onError(({ networkError }) => {
   }
 });
 
+export const QUERY_DRAWER_OPENED = gql`{ drawerOpened @client }`;
+export const MUTATE_DRAWER_OPENED = gql`
+  mutation UpdateDrawer($drawerOpened: Boolean) {
+    updateDrawer(drawerOpened: $drawerOpened) @client
+  }
+`;
+
 const cache = new InMemoryCache();
 const client = new ApolloClient({
   cache,
@@ -36,6 +43,26 @@ const client = new ApolloClient({
     loginRedirectLink,
     createHttpLink({ uri: '/api/graphql', fetch }),
   ]),
+  resolvers: {
+    Mutation: {
+      updateDrawer: (_, { drawerOpened }, { cache: c }) => {
+        c.writeQuery({
+          query: QUERY_DRAWER_OPENED,
+          data: { drawerOpened },
+        });
+        return drawerOpened;
+      },
+    },
+  },
+  typeDefs: gql`
+    extend type Mutation {
+      updateDrawer(drawerOpened: Boolean!): Boolean
+    }
+
+    extend type Query {
+      drawerOpened: Boolean
+    }
+  `,
 });
 
 let loaded = false;

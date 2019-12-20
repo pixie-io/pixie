@@ -1,5 +1,7 @@
 import './editor.scss';
 
+import {MUTATE_DRAWER_OPENED, QUERY_DRAWER_OPENED} from 'common/cloud-gql-client';
+import gql from 'graphql-tag';
 // @ts-ignore : TS does not like image files.
 import * as closeIcon from 'images/icons/cross.svg';
 // @ts-ignore : TS does not like image files.
@@ -7,6 +9,8 @@ import * as newTabIcon from 'images/icons/new-tab.svg';
 import * as React from 'react';
 import {Button, Nav, Tab, Tabs} from 'react-bootstrap';
 import * as uuid from 'uuid/v1';
+
+import {useMutation, useQuery} from '@apollo/react-hooks';
 
 import {Drawer} from '../../components/drawer/drawer';
 import {saveCodeToStorage} from './code-utils';
@@ -27,7 +31,7 @@ interface EditorState {
   activeTab: string;
 }
 
-export const Editor: React.FC = () => {
+export const Editor = ({ client }) => {
   let savedTabs: EditorTabInfo[] = [];
   try {
     const saved = JSON.parse(localStorage.getItem(PIXIE_EDITOR_TABS_KEY));
@@ -98,9 +102,19 @@ export const Editor: React.FC = () => {
     });
   };
 
+  const { data } = useQuery(QUERY_DRAWER_OPENED, { client });
+  const [updateDrawer] = useMutation(MUTATE_DRAWER_OPENED, { client });
+  const updateDrawerMemo = React.useCallback((opened) => {
+    updateDrawer({ variables: { drawerOpened: opened } });
+  }, []);
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
-      <Drawer openedWidth='15vw'>
+      <Drawer
+        openedWidth='15vw'
+        defaultOpened={data && data.drawerOpened}
+        onOpenedChanged={updateDrawerMemo}
+      >
         <PresetQueries onQuerySelect={createNewTab} />
       </Drawer>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>

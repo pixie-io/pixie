@@ -8,7 +8,7 @@ import gql from 'graphql-tag';
 // @ts-ignore : TS does not like image files.
 import * as loadingSvg from 'images/icons/loading-dark.svg';
 import * as React from 'react';
-import {ApolloConsumer, Query} from 'react-apollo';
+import {ApolloConsumer, Query, withApollo} from 'react-apollo';
 import {Redirect, Route, Switch} from 'react-router-dom';
 
 import {AgentDisplay} from './agent-display';
@@ -79,6 +79,14 @@ const ClusterInstructions = (props: ClusterInstructionsProps) => (
   </div>
 );
 
+/**
+ * This is need to get the apollo client to the editor, because ApolloProvider
+ * in SubdomainApp is provided by the 'react-apollo' package and it is
+ * incompatible with the hooks.
+ *  TODO(malthus): Refactor apollo usage to all use hooks.
+ */
+const EditorWithApollo = withApollo(Editor);
+
 export class VizierMain extends React.Component<VizierMainProps, { loaded: boolean }> {
   constructor(props) {
     super(props);
@@ -105,7 +113,7 @@ export class VizierMain extends React.Component<VizierMainProps, { loaded: boole
               <VizierTopNav />
               <Switch>
                 <Route path='/agents' component={AgentDisplay} />
-                <Route path='/console' component={Editor} />
+                <Route path='/console' component={EditorWithApollo} />
                 <Redirect from='/*' to='/console' />
               </Switch>
             </>
@@ -115,6 +123,7 @@ export class VizierMain extends React.Component<VizierMainProps, { loaded: boole
     );
   }
 }
+
 export class Vizier extends React.Component<VizierProps, VizierState> {
   constructor(props) {
     super(props);
