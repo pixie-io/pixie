@@ -69,14 +69,7 @@ struct Frame {
   ParseState headers_parse_state = ParseState::kUnknown;
   NVMap headers;
 
-  size_t ByteSize() const {
-    size_t res = sizeof(Frame) + u8payload.size();
-    for (const auto& [header, value] : headers) {
-      res += header.size();
-      res += value.size();
-    }
-    return res;
-  }
+  size_t ByteSize() const { return sizeof(Frame) + u8payload.size() + CountStringMapSize(headers); }
 };
 
 }  // namespace http2

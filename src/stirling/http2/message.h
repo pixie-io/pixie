@@ -48,17 +48,25 @@ struct HalfStream {
       timestamp_ns = std::min<uint64_t>(timestamp_ns, t);
     }
   }
+
+  size_t ByteSize() const {
+    return sizeof(HalfStream) + data.size() + CountStringMapSize(headers) +
+           CountStringMapSize(trailers);
+  }
 };
 
 // This struct represents an HTTP2 stream (https://http2.github.io/http2-spec/#StreamsLayer).
 // It is split out into a send and recv. Depending on whether we are tracing the requestor
 // or the responder, send and recv contain either the request or response.
 struct Stream {
+  // The time stamp when this frame was created by socket tracer.
+  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
   HalfStream send;
   HalfStream recv;
 
   bool StreamEnded() { return send.end_stream && recv.end_stream; }
   bool consumed = false;
+  size_t ByteSize() const { return send.ByteSize() + recv.ByteSize(); }
 };
 
 }  // namespace http2

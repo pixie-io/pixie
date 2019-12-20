@@ -112,6 +112,12 @@ class ConnectionTracker {
   std::deque<TMessageType>& req_messages() {
     return req_data()->Messages<TMessageType>();
   }
+  // TODO(yzhao): req_data() requires traffic_class_.role to be set. But HTTP2 uprobe tracing does
+  // not set that. So send_data() is created. Investigate more unified approach.
+  template <typename TMessageType>
+  const std::deque<TMessageType>& send_data() const {
+    return send_data_.Messages<TMessageType>();
+  }
 
   /**
    * @brief Returns reference to current set of unconsumed responses.
@@ -120,6 +126,10 @@ class ConnectionTracker {
   template <typename TMessageType>
   std::deque<TMessageType>& resp_messages() {
     return resp_data()->Messages<TMessageType>();
+  }
+  template <typename TMessageType>
+  const std::deque<TMessageType>& recv_data() const {
+    return recv_data_.Messages<TMessageType>();
   }
 
   /**
@@ -450,7 +460,7 @@ class ConnectionTracker {
   /**
    * Connection trackers need to keep a state because there can be information between
    * needed from previous requests/responses needed to parse or render current request.
-   * E.g. MySQL keeps a map of previously occured stmt prepare events as the state such
+   * E.g. MySQL keeps a map of previously occurred stmt prepare events as the state such
    * that future stmt execute events can match up with the correct one using stmt_id.
    */
   std::variant<std::monostate, std::unique_ptr<mysql::State>> state_;

@@ -166,8 +166,16 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
     streams_deque_ptr->resize(new_size);
   }
 
-  http2::HalfStream* half_stream_ptr =
-      write_event ? &(*streams_deque_ptr)[index].send : &(*streams_deque_ptr)[index].recv;
+  auto& stream = (*streams_deque_ptr)[index];
+
+  // TODO(yzhao): This is really tedious. But we do not want to create another bool flag inside
+  // Stream either. Investigate if there is easier way to check if creation_timestamp is initialized
+  // or not.
+  if (stream.creation_timestamp.time_since_epoch().count() == 0) {
+    stream.creation_timestamp = std::chrono::steady_clock::now();
+  }
+
+  http2::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
   return half_stream_ptr;
 }
 
@@ -457,6 +465,8 @@ std::vector<http2::NewRecord> ConnectionTracker::ProcessMessagesImpl() {
 
   ProcessHTTP2Streams(&client_streams_, &oldest_active_client_stream_id_, &trace_records);
   ProcessHTTP2Streams(&server_streams_, &oldest_active_server_stream_id_, &trace_records);
+
+  Cleanup<http2::Stream>();
 
   return trace_records;
 }

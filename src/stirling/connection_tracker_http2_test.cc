@@ -183,5 +183,58 @@ TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
   EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
 }
 
+TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
+  ConnectionTracker tracker;
+
+  const conn_id_t kConnID = {
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+  const int kStreamID = 7;
+  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  auto header_event1 = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
+  auto header_event2 = frame_generator.GenHeader<kHeaderEventWrite>(":scheme", "https");
+  // Events with even stream IDs are put on recv_data_.
+  header_event2->attr.stream_id = 8;
+
+  FLAGS_messages_size_limit_bytes = 10000;
+  tracker.AddHTTP2Header(std::move(header_event1));
+  tracker.AddHTTP2Header(std::move(header_event2));
+  tracker.ProcessMessages<http2::NewRecord>();
+
+  EXPECT_THAT(tracker.send_data<http2::Stream>(), ::testing::SizeIs(1));
+  EXPECT_THAT(tracker.recv_data<http2::Stream>(), ::testing::SizeIs(1));
+
+  FLAGS_messages_size_limit_bytes = 0;
+  tracker.ProcessMessages<http2::NewRecord>();
+  EXPECT_THAT(tracker.send_data<http2::Stream>(), ::testing::IsEmpty());
+  EXPECT_THAT(tracker.recv_data<http2::Stream>(), ::testing::IsEmpty());
+}
+
+TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
+  ConnectionTracker tracker;
+
+  const conn_id_t kConnID = {
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+  const int kStreamID = 7;
+  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  auto header_event1 = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
+  auto header_event2 = frame_generator.GenHeader<kHeaderEventWrite>(":scheme", "https");
+  // Change the second to be a different stream ID.
+  header_event2->attr.stream_id = 8;
+
+  FLAGS_messages_size_limit_bytes = 10000;
+  FLAGS_messages_expiration_duration_secs = 10000;
+  tracker.AddHTTP2Header(std::move(header_event1));
+  tracker.AddHTTP2Header(std::move(header_event2));
+  tracker.ProcessMessages<http2::NewRecord>();
+
+  EXPECT_THAT(tracker.send_data<http2::Stream>(), ::testing::SizeIs(1));
+  EXPECT_THAT(tracker.recv_data<http2::Stream>(), ::testing::SizeIs(1));
+
+  FLAGS_messages_expiration_duration_secs = 0;
+  tracker.ProcessMessages<http2::NewRecord>();
+  EXPECT_THAT(tracker.send_data<http2::Stream>(), ::testing::IsEmpty());
+  EXPECT_THAT(tracker.recv_data<http2::Stream>(), ::testing::IsEmpty());
+}
+
 }  // namespace stirling
 }  // namespace pl

@@ -50,6 +50,8 @@ class DataStream {
    */
   template <typename TMessageType>
   std::deque<TMessageType>& Messages();
+  template <typename TMessageType>
+  const std::deque<TMessageType>& Messages() const;
 
   /**
    * @brief Clears all unparsed and parsed data from the Datastream.
@@ -147,8 +149,14 @@ class DataStream {
     for (; iter != msgs->end(); ++iter) {
       auto frame_age = std::chrono::duration_cast<std::chrono::seconds>(
           std::chrono::steady_clock::now() - iter->creation_timestamp);
-      // As msgs are put into the list with monotonically increasing creation time stamp,
+      // As messages are put into the list with monotonically increasing creation time stamp,
       // we can just stop at the first frame that is younger than the expiration duration.
+      //
+      // NOTE:
+      // http2::Stream are not appended into the deque. http2::Stream is created when the first
+      // trace event with its stream ID is received. Therefore, their timestamps depend on the
+      // order streams are initiated inside application code. As HTTP2 spec forbids reducing stream
+      // IDs, it's very unlikely that http2::Stream would violate the above statement.
       //
       // TODO(yzhao): Benchmark with binary search and pick the faster one.
       if (frame_age < exp_dur) {

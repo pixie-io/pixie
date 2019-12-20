@@ -55,6 +55,13 @@ std::deque<TMessageType>& DataStream::Messages() {
 }
 
 template <typename TMessageType>
+const std::deque<TMessageType>& DataStream::Messages() const {
+  DCHECK(std::holds_alternative<std::deque<TMessageType>>(messages_))
+      << "Must hold the same type as requested.";
+  return std::get<std::deque<TMessageType>>(messages_);
+}
+
+template <typename TMessageType>
 size_t DataStream::AppendEvents(EventParser<TMessageType>* parser) const {
   size_t append_count = 0;
 
@@ -256,6 +263,7 @@ template std::deque<http2::Frame>& DataStream::ExtractMessages(MessageType type)
 template std::deque<mysql::Packet>& DataStream::ExtractMessages(MessageType type);
 
 template std::deque<http2::Stream>& DataStream::Messages();
+template const std::deque<http2::Stream>& DataStream::Messages() const;
 
 }  // namespace stirling
 }  // namespace pl

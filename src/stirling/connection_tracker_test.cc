@@ -393,7 +393,7 @@ TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
 }
 
 // TODO(yzhao): Add the same test for HTTPMessage.
-TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedUpAfterBreakingSizeLimit) {
+TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedUpAfterBreachingSizeLimit) {
   FLAGS_messages_size_limit_bytes = 10000;
   ConnectionTracker tracker;
 
