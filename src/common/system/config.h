@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "src/common/base/base.h"
 
@@ -51,10 +52,16 @@ class Config : public NotCopyable {
   virtual std::string_view sysfs_path() const = 0;
 
   /**
+   * Get the host root path.
+   * @return string the host root path.
+   */
+  virtual std::string_view host_path() const = 0;
+
+  /**
    * Get the proc path.
    * @return string the proc path.
    */
-  virtual std::string_view proc_path() const = 0;
+  virtual std::string proc_path() const = 0;
 
  protected:
   Config() {}

@@ -42,8 +42,8 @@ spec:
           mountPath: /sys
           readOnly: true
         env:
-        - name: PL_PROC_PATH
-          value: "/host/proc"
+        - name: PL_HOST_PATH
+          value: "/host"
       hostPID: true
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet

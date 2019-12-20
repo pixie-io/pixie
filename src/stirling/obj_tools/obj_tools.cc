@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "src/common/system/config.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
 namespace pl {
@@ -83,7 +84,7 @@ std::map<std::string, std::vector<int>> GetActiveBinaries(fs::path proc) {
   std::map<std::string, std::vector<int>> binaries;
 
   for (const auto& p : fs::directory_iterator(proc)) {
-    LOG(INFO) << absl::Substitute("Directory: $0", p.path().string());
+    VLOG(1) << absl::Substitute("Directory: $0", p.path().string());
     int pid = 0;
     if (!absl::SimpleAtoi(p.path().filename().string(), &pid)) {
       LOG(WARNING) << absl::Substitute("Ignoring $0: Failed to parse pid.", p.path().string());
@@ -98,6 +99,9 @@ std::map<std::string, std::vector<int>> GetActiveBinaries(fs::path proc) {
     }
     fs::path exe = s.ConsumeValueOrDie();
 
+    // If we're running in a container, convert exe to be relative to host.
+    exe = system::Config::GetInstance().host_path() / exe;
+
     if (fs::exists(exe)) {
       std::error_code ec;
       fs::path canonical_exe = fs::canonical(exe, ec);
@@ -106,6 +110,8 @@ std::map<std::string, std::vector<int>> GetActiveBinaries(fs::path proc) {
                                          exe.string());
         continue;
       }
+      LOG(INFO) << absl::Substitute("Found binary: $0 [proc source = $1]", exe.string(),
+                                    p.path().string());
       binaries[canonical_exe].push_back(pid);
     } else {
       LOG(WARNING) << absl::Substitute("Ignoring $0: Does not exist.", exe.string());

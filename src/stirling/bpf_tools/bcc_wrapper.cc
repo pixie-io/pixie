@@ -13,6 +13,7 @@
 #include <string>
 
 #include "src/common/base/base.h"
+#include "src/common/system/system.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/obj_tools/obj_tools.h"
 

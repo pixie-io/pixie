@@ -140,7 +140,7 @@ Status InstallPackagedLinuxHeaders(const fs::path& lib_modules_dir, const std::s
 
   // TODO(oazizi): /usr/src/linux-headers-4.14.104-pl is tied to our container build. Too brittle.
   fs::path packaged_headers = "/usr/src/linux-headers-4.14.104-pl";
-  LOG(INFO) << absl::Substitute("Looking for packed headers at $0", packaged_headers.string());
+  LOG(INFO) << absl::Substitute("Looking for packaged headers at $0", packaged_headers.string());
   if (fs::exists(packaged_headers)) {
     PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers, uname));
     PL_RETURN_IF_ERROR(CreateSymlink(packaged_headers, lib_modules_build_dir));

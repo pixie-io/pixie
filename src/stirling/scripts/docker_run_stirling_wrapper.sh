@@ -61,7 +61,7 @@ echo "Running image"
 docker run -it --init --rm \
  --mount type=bind,source=/,target=/host \
  --mount type=bind,source=/sys,target=/sys \
- --env PL_PROC_PATH=/host/proc \
+ --env PL_HOST_PATH=/host \
  --privileged \
  $flags \
  "$image_name"

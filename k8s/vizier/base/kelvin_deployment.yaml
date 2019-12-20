@@ -21,8 +21,8 @@ spec:
         - configMapRef:
             name: pl-tls-config
         env:
-        - name: PL_PROC_PATH
-          value: "/host/proc"
+        - name: PL_HOST_PATH
+          value: "/host"
         - name: PL_POD_IP
           valueFrom:
             fieldRef:

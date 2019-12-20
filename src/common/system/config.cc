@@ -11,11 +11,10 @@ namespace system {
 DEFINE_string(sysfs_path, gflags::StringFromEnv("PL_SYSFS_PATH", "/sys/fs"),
               "The path to the sysfs directory.");
 
-DEFINE_string(proc_path, gflags::StringFromEnv("PL_PROC_PATH", "/proc"),
-              "The path to the proc directory.");
+DEFINE_string(host_path, gflags::StringFromEnv("PL_HOST_PATH", ""),
+              "The path to the host root directory.");
 
 #ifdef __linux__
-#include <cstring>
 #include <ctime>
 
 class ConfigImpl final : public Config {
@@ -32,7 +31,9 @@ class ConfigImpl final : public Config {
 
   std::string_view sysfs_path() const override { return FLAGS_sysfs_path; }
 
-  std::string_view proc_path() const override { return FLAGS_proc_path; }
+  std::string_view host_path() const override { return FLAGS_host_path; }
+
+  std::string proc_path() const override { return absl::StrCat(FLAGS_host_path, "/proc"); }
 
  private:
   uint64_t real_time_offset_ = 0;
@@ -68,17 +69,17 @@ class ConfigImpl final : public Config {
     LOG(FATAL) << "ClockRealTimeOffset() is not implemented on this OS.";
   }
 
-  std::string_view ProcPath() const override {
-    LOG(FATAL) << "ProcPath() is not implemented on this OS.";
+  std::string proc_path() const override {
+    LOG(FATAL) << "proc_path() is not implemented on this OS.";
   }
 
-  std::string_view SysFSPath() const override {
-    LOG(FATAL) << "SysFSPath() is not implemented on this OS.";
+  std::string_view host_path() const override {
+    LOG(FATAL) << "host_path() is not implemented on this OS.";
   }
 
-  std::string_view sysfs_path() const override { return FLAGS_sysfs_path; }
-
-  std::string_view proc_path() const override { return FLAGS_proc_path; }
+  std::string_view sysfs_path() const override {
+    LOG(FATAL) << "sysfs_path() is not implemented on this OS.";
+  }
 };
 
 #endif

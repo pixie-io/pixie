@@ -30,8 +30,8 @@ spec:
           value: /certs/ca.crt
         - name: PL_DISABLE_SSL
           value: "false"
-        - name: PL_PROC_PATH
-          value: "/host/proc"
+        - name: PL_HOST_PATH
+          value: "/host"
         - name: PL_POD_NAME
           valueFrom:
             fieldRef:

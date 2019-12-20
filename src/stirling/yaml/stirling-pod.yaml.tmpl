@@ -30,8 +30,8 @@ spec:
          mountPath: /sys
          readOnly: true
     env:
-    - name: PL_PROC_PATH
-      value: "/host/proc"
+    - name: PL_HOST_PATH
+      value: "/host"
   terminationGracePeriodSeconds: 30
   restartPolicy: Never
   volumes:

@@ -59,7 +59,7 @@ DEFINE_bool(stirling_enable_http_tracing, true,
             "If true, stirling will trace and process HTTP messages");
 DEFINE_bool(stirling_enable_grpc_kprobe_tracing, false,
             "If true, stirling will trace and process gRPC RPCs.");
-DEFINE_bool(stirling_enable_grpc_uprobe_tracing, true,
+DEFINE_bool(stirling_enable_grpc_uprobe_tracing, false,
             "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
@@ -119,7 +119,8 @@ Status SocketTraceConnector::InitImpl() {
 
   if (FLAGS_stirling_enable_grpc_uprobe_tracing) {
     // TODO(yzhao): Factor line 133-149 to a helper function.
-    std::map<std::string, std::vector<int>> binaries = GetActiveBinaries("/proc");
+    std::map<std::string, std::vector<int>> binaries =
+        GetActiveBinaries(system::Config::GetInstance().proc_path());
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
         bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
     for (const auto& [pid, symaddrs] : GetSymAddrs(binaries)) {
