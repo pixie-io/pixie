@@ -25,6 +25,7 @@ struct CarnotQueryResult {
    */
   Status ToProto(queryresultspb::QueryResult* query_result) const;
   std::vector<table_store::Table*> output_tables_;
+  std::vector<std::string> table_names_;
   int64_t rows_processed = 0;
   int64_t bytes_processed = 0;
   int64_t compile_time_ns = 0;

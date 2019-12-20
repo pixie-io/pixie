@@ -1114,7 +1114,11 @@ TEST_F(CarnotTest, pass_logical_plan) {
   planpb::Plan plan = logical_plan_status.ConsumeValueOrDie();
   auto plan_uuid = sole::uuid4();
   auto query_uuid = sole::uuid4();
-  ASSERT_OK(carnot_->ExecutePlan(plan, plan_uuid));
+  auto resStatus = carnot_->ExecutePlan(plan, plan_uuid);
+  ASSERT_OK(resStatus);
+  auto res = resStatus.ConsumeValueOrDie();
+  ASSERT_EQ(1, res.table_names_.size());
+  ASSERT_EQ(logical_plan_table_name, res.table_names_[0]);
   // Run the parallel execution using the Query path.
   ASSERT_OK(
       carnot_->ExecuteQuery(absl::Substitute(query, query_table_name), query_uuid, current_time));

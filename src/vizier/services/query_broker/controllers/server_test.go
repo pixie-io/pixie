@@ -150,8 +150,10 @@ agent_id {
 response {
   query_result {
     tables {
-      relation {
-      }
+     relation {
+
+     }
+     name: "test"
     }
   }
 }

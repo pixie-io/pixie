@@ -75,6 +75,8 @@ message Table {
   Relation relation = 4;
   // A row batch of data.
   repeated RowBatchData row_batches = 5;
+  // The table name. Empty if the table is not associated with a name.
+  string name = 6;
 }
 
 message Schema {

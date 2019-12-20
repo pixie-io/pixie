@@ -56,6 +56,7 @@ export interface GQLQueryResult {
 export interface GQLDataTable {
   relation: GQLDataTableRelation;
   data: string;
+  name?: string;
 }
 
 export interface GQLDataTableRelation {
@@ -208,6 +209,7 @@ export interface QueryResultToErrorResolver<TParent = any, TResult = any> {
 export interface GQLDataTableTypeResolver<TParent = any> {
   relation?: DataTableToRelationResolver<TParent>;
   data?: DataTableToDataResolver<TParent>;
+  name?: DataTableToNameResolver<TParent>;
 }
 
 export interface DataTableToRelationResolver<TParent = any, TResult = any> {
@@ -215,6 +217,10 @@ export interface DataTableToRelationResolver<TParent = any, TResult = any> {
 }
 
 export interface DataTableToDataResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface DataTableToNameResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

@@ -288,6 +288,11 @@ func (q *QueryResultTableResolver) Relation() *QueryResultTableRelationResolver 
 	return &q.relation
 }
 
+// Name returns the resolver for the table name.
+func (q *QueryResultTableResolver) Name() *string {
+	return &q.TableData.Name
+}
+
 /**
  * Resolver that maps a table relation into GQL types.
  */

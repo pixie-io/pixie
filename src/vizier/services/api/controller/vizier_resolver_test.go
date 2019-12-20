@@ -201,6 +201,7 @@ func TestVizierExecuteQuery(t *testing.T) {
 
 				Tables: []*schemapb.Table{
 					{
+						Name: "table1",
 						Relation: &schemapb.Relation{
 							Columns: []*schemapb.Relation_ColumnInfo{
 								{
@@ -231,6 +232,7 @@ func TestVizierExecuteQuery(t *testing.T) {
 						},
 					},
 					{
+						Name: "abcd",
 						Relation: &schemapb.Relation{
 							Columns: []*schemapb.Relation_ColumnInfo{
 								{
@@ -277,6 +279,7 @@ func TestVizierExecuteQuery(t *testing.T) {
 					ExecuteQuery(queryStr: "the_query") {
 						id
 						table {
+							name
 							relation {
 								colNames
 								colTypes
@@ -301,7 +304,7 @@ func TestVizierExecuteQuery(t *testing.T) {
 					  "id":"65294d6a-6ceb-48a7-96b0-9a1eb7d467cb",
 					  "table": [
 						  {
-							 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"scolE\",\"columnType\":\"BOOLEAN\"},{\"columnName\":\"scolI\",\"columnType\":\"STRING\"}]},\"rowBatches\":[{\"cols\":[{\"stringData\":{\"data\":[\"hello\",\"test\"]}}]}]}",
+							 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"scolE\",\"columnType\":\"BOOLEAN\"},{\"columnName\":\"scolI\",\"columnType\":\"STRING\"}]},\"rowBatches\":[{\"cols\":[{\"stringData\":{\"data\":[\"hello\",\"test\"]}}]}],\"name\":\"table1\"}",
 							 "relation":{
 								"colNames":[
 								   "scolE",
@@ -311,10 +314,11 @@ func TestVizierExecuteQuery(t *testing.T) {
 								   "BOOLEAN",
 								   "STRING"
 								]
-							 }
+							 },
+							 "name": "table1"
 						  },
 						  {
-							 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"aCol\",\"columnType\":\"STRING\"}]},\"rowBatches\":[{\"cols\":[{\"stringData\":{\"data\":[\"abc\",\"def\"]}}]}]}",
+							 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"aCol\",\"columnType\":\"STRING\"}]},\"rowBatches\":[{\"cols\":[{\"stringData\":{\"data\":[\"abc\",\"def\"]}}]}],\"name\":\"abcd\"}",
 							 "relation":{
 								"colNames":[
 								   "aCol"
@@ -322,7 +326,8 @@ func TestVizierExecuteQuery(t *testing.T) {
 								"colTypes":[
 								   "STRING"
 								]
-							 }
+							 },
+							 "name": "abcd"
 						  }						  
 					  ],
 					  "error":{

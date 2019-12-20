@@ -38,6 +38,7 @@ type DataTable {
   relation: DataTableRelation!
   # The data is a JSON encoded string.
   data: String!
+  name: String
 }
 
 type QueryErrors {

@@ -28,8 +28,10 @@ Status CarnotQueryResult::ToProto(queryresultspb::QueryResult* query_result) con
   timing_info->set_execution_time_ns(exec_time_ns);
   timing_info->set_compilation_time_ns(compile_time_ns);
 
-  for (const auto table : output_tables_) {
-    PL_RETURN_IF_ERROR(table->ToProto(query_result->add_tables()));
+  for (size_t i = 0; i < output_tables_.size(); ++i) {
+    auto table = query_result->add_tables();
+    PL_RETURN_IF_ERROR(output_tables_[i]->ToProto(table));
+    table->set_name(table_names_[i]);
   }
   return Status::OK();
 }
@@ -85,7 +87,8 @@ class CarnotImpl final : public Carnot {
    * @param query_id: the query id to use as some form of the sink name.
    * @return planpb::Plan: the modified plan.
    */
-  planpb::Plan InterceptSinksInPlan(const planpb::Plan& logical_plan, const sole::uuid& query_id);
+  planpb::Plan InterceptSinksInPlan(const planpb::Plan& logical_plan, const sole::uuid& query_id,
+                                    absl::flat_hash_map<std::string, std::string>*);
 
   AgentMetadataCallbackFunc agent_md_callback_;
   compiler::Compiler compiler_;
@@ -198,8 +201,9 @@ Status CarnotImpl::WalkExpression(exec::ExecState* exec_state, const plan::Scala
   return Status::OK();
 }
 
-planpb::Plan CarnotImpl::InterceptSinksInPlan(const planpb::Plan& logical_plan,
-                                              const sole::uuid& query_id) {
+planpb::Plan CarnotImpl::InterceptSinksInPlan(
+    const planpb::Plan& logical_plan, const sole::uuid& query_id,
+    absl::flat_hash_map<std::string, std::string>* table_name_mapping) {
   planpb::Plan modified_logical_plan = logical_plan;
   int64_t sink_counter = 0;
   for (int64_t i = 0; i < modified_logical_plan.nodes_size(); ++i) {
@@ -208,7 +212,9 @@ planpb::Plan CarnotImpl::InterceptSinksInPlan(const planpb::Plan& logical_plan,
       auto plan_op = plan_fragment->mutable_nodes(frag_i);
       if (plan_op->op().op_type() == planpb::MEMORY_SINK_OPERATOR) {
         auto mem_sink = plan_op->mutable_op()->mutable_mem_sink_op();
-        *(mem_sink->mutable_name()) = absl::Substitute("$0_$1", query_id.str(), sink_counter);
+        auto new_name = absl::Substitute("$0_$1", query_id.str(), sink_counter);
+        (*table_name_mapping)[new_name] = mem_sink->name();
+        *(mem_sink->mutable_name()) = new_name;
         sink_counter += 1;
       }
     }
@@ -239,7 +245,9 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
 
   // Here we intercept the logical plan and remove all references to user specified table names.
   // TODO(philkuz) in the future when we remove the name argumetn from Results, rework this name.
-  PL_RETURN_IF_ERROR(plan.Init(InterceptSinksInPlan(logical_plan, query_id)));
+  absl::flat_hash_map<std::string, std::string> table_name_mapping;
+
+  PL_RETURN_IF_ERROR(plan.Init(InterceptSinksInPlan(logical_plan, query_id, &table_name_mapping)));
 
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
@@ -280,15 +288,24 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
 
   std::vector<table_store::Table*> output_tables;
   output_tables.reserve(output_table_strs.size());
+  std::vector<std::string> output_table_names;
+  output_table_names.reserve(output_table_strs.size());
   for (const auto& table_str : output_table_strs) {
+    auto table_name_mapping_iter = table_name_mapping.find(table_str);
+    if (table_name_mapping_iter == table_name_mapping.end()) {
+      output_table_names.push_back(table_str);
+    } else {
+      output_table_names.push_back(table_name_mapping_iter->second);
+    }
+
     output_tables.push_back(table_store()->GetTable(table_str));
   }
 
   // Compile time is not set for ExecutePlan.
   int64_t compile_time_ns = 0;
   // Get the output table names from the plan.
-  return CarnotQueryResult{output_tables, rows_processed, bytes_processed, compile_time_ns,
-                           exec_time_ns};
+  return CarnotQueryResult{output_tables,   output_table_names, rows_processed,
+                           bytes_processed, compile_time_ns,    exec_time_ns};
 }
 
 CarnotImpl::~CarnotImpl() {
