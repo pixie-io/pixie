@@ -194,4 +194,12 @@ TEST(MakeArray, IntArrayTest) {
   static_assert(arr.size() == 4, "array size");
 }
 
+TEST(ArrayTransform, LambdaFunc) {
+  constexpr auto arr = MakeArray(1, 2, 3, 4);
+  constexpr auto arr2 = ArrayTransform(arr, [](int x) { return x + 1; });
+  static_assert(std::is_same_v<const std::array<int, 4>, decltype(arr2)>, "array type check");
+  static_assert(arr2.size() == 4, "array size");
+  static_assert(arr2[0] == 2, "correct value");
+}
+
 }  // namespace pl

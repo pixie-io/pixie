@@ -174,4 +174,29 @@ constexpr auto MakeArray(T&&... values)
       std::forward<T>(values)...};
 }
 
+namespace internal {
+template <typename T, typename F, std::size_t... I>
+constexpr auto ArrayTransformHelper(const std::array<T, sizeof...(I)>& arr, F&& f,
+                                    std::index_sequence<I...>) {
+  return MakeArray(f(arr[I])...);
+}
+
+}  // namespace internal
+
+/**
+ * Transforms passed in array by applying the function over each element and returning a new array.
+ *
+ * Usage:
+ *   constexpr auto arr = MakeArray(1, 2, 3, 4);
+ *   constexpr auto arr2 = ArrayTransform(arr, [](int x) { return x + 1; });
+ *
+ * @param arr The array.
+ * @param f The function to apply.
+ * @return returns new array that has been transformed using the function specified.
+ */
+template <typename T, typename F, std::size_t N>
+constexpr auto ArrayTransform(const std::array<T, N>& arr, F&& f) {
+  return internal::ArrayTransformHelper(arr, f, std::make_index_sequence<N>{});
+}
+
 }  // namespace pl
