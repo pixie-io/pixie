@@ -352,7 +352,8 @@ Status ProcessStmtExecuteParam(std::string_view msg, size_t* type_offset, size_t
     case MySQLColType::kNull:
       break;
     default:
-      LOG(DFATAL) << absl::Substitute("Unexpected/unhandled column type $0", msg[*type_offset]);
+      LOG(DFATAL) << absl::Substitute("Unexpected/unhandled column type $0",
+                                      static_cast<int>(param->type));
   }
 
   return Status::OK();
