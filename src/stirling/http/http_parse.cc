@@ -19,7 +19,7 @@ void PreProcessMessage(HTTPMessage* message) {
   if (content_encoding_iter != message->http_headers.end() &&
       content_encoding_iter->second == "gzip") {
     std::string_view body_strview(message->http_msg_body);
-    auto bodyOrErr = pl::zlib::StrInflate(body_strview);
+    auto bodyOrErr = pl::zlib::Inflate(body_strview);
     if (!bodyOrErr.ok()) {
       LOG(WARNING) << "Unable to gunzip HTTP body.";
       message->http_msg_body = "<Stirling failed to gunzip body>";

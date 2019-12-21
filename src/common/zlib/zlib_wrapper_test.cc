@@ -24,16 +24,7 @@ class ZlibTest : public ::testing::Test {
 };
 
 TEST_F(ZlibTest, inflate_test) {
-  char decompress_buffer[100] = {};
-  std::string compressed_str = GetCompressedString();
-  auto err =
-      pl::zlib::Inflate(compressed_str.c_str(), compressed_str.size(), decompress_buffer, 100);
-  ASSERT_EQ(Z_STREAM_END, err);
-  EXPECT_EQ(decompress_buffer, GetExpectedResult());
-}
-
-TEST_F(ZlibTest, str_inflate_test) {
-  auto result = pl::zlib::StrInflate(GetCompressedString());
+  auto result = pl::zlib::Inflate(GetCompressedString());
   EXPECT_OK(result);
   EXPECT_EQ(result.ValueOrDie(), GetExpectedResult());
 }
