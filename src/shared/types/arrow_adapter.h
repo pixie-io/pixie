@@ -33,7 +33,7 @@ inline std::shared_ptr<arrow::Array> ToArrow(const std::vector<TUDFValue>& data,
 
   typename ValueTypeTraits<TUDFValue>::arrow_builder_type builder(mem_pool);
   PL_CHECK_OK(builder.Reserve(data.size()));
-  for (const auto v : data) {
+  for (const auto& v : data) {
     builder.UnsafeAppend(v.val);
   }
   std::shared_ptr<arrow::Array> arr;
@@ -54,7 +54,7 @@ inline std::shared_ptr<arrow::Array> ToArrow<StringValue>(const std::vector<Stri
   PL_CHECK_OK(builder.Reserve(data.size()));
   // This allocates space for the actual data.
   PL_CHECK_OK(builder.ReserveData(total_size));
-  for (const auto val : data) {
+  for (const auto& val : data) {
     builder.UnsafeAppend(val);
   }
   std::shared_ptr<arrow::Array> arr;
