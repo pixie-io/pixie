@@ -272,7 +272,12 @@ static int probe_http2_operate_headers(struct pt_regs* ctx, struct go_interface 
                                        const void* frame_ptr) {
   const void* frame_header_ptr = *(const void**)frame_ptr;
 
-  const int kFlagsOffset = 3;
+  // type FrameHeader {
+  //   valid bool      // 1 byte
+  //   Type FrameType  // 1 byte
+  //   Flags Flags     // We are looking for this field.
+  // }
+  const int kFlagsOffset = 2;
   const uint8_t flags = *(const uint8_t*)(frame_header_ptr + kFlagsOffset);
   const bool end_stream = flags & kFlagHeadersEndStream;
 
