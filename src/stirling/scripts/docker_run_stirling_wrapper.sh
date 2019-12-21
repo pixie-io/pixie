@@ -59,9 +59,14 @@ fi
 echo "Running image"
 # shellcheck disable=SC2086
 docker run -it --init --rm \
- --mount type=bind,source=/,target=/host \
- --mount type=bind,source=/sys,target=/sys \
+ -v /:/host \
+ -v /sys:/sys \
  --env PL_HOST_PATH=/host \
  --privileged \
  $flags \
  "$image_name"
+
+# Note: Under the new syntax, mounts should be the following:
+#  --mount type=bind,source=/,target=/host \
+#  --mount type=bind,source=/sys,target=/sys \
+# But we avoid the new syntax for compatibility with older docker versions.
