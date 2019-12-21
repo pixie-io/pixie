@@ -1130,6 +1130,15 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
+  EXPECT_EQ(record_batch[kHTTPReqMethodIdx]->Get<types::StringValue>(0), "post");
+  EXPECT_EQ(record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(0), "/magic");
+  EXPECT_EQ(record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(0), 200);
+  EXPECT_THAT(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(0),
+              ::testing::HasSubstr(R"(":method":"post")"));
+  EXPECT_THAT(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(0),
+              ::testing::HasSubstr(R"(":path":"/magic")"));
+  EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0),
+              ::testing::HasSubstr(R"(":status":"200")"));
 }
 
 // This test is like the previous one, but the read-write roles are reversed.
@@ -1161,6 +1170,15 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
   EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
+  EXPECT_EQ(record_batch[kHTTPReqMethodIdx]->Get<types::StringValue>(0), "post");
+  EXPECT_EQ(record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(0), "/magic");
+  EXPECT_EQ(record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(0), 200);
+  EXPECT_THAT(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(0),
+              ::testing::HasSubstr(R"(":method":"post")"));
+  EXPECT_THAT(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(0),
+              ::testing::HasSubstr(R"(":path":"/magic")"));
+  EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0),
+              ::testing::HasSubstr(R"(":status":"200")"));
 }
 
 // This test models capturing data mid-stream, where we may have missed the request headers.
