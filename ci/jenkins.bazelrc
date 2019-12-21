@@ -27,3 +27,6 @@ test --remote_retries=2
 test --test_output=errors
 # Other test args.
 test --verbose_failures
+
+build:clang --action_env=CC=/opt/clang-9.0/bin/clang
+build:clang --action_env=CXX=/opt/clang-9.0/bin/clang++

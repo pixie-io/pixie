@@ -24,7 +24,7 @@ class ZlibTest : public ::testing::Test {
 };
 
 TEST_F(ZlibTest, inflate_test) {
-  char decompress_buffer[100];
+  char decompress_buffer[100] = {};
   std::string compressed_str = GetCompressedString();
   auto err =
       pl::zlib::Inflate(compressed_str.c_str(), compressed_str.size(), decompress_buffer, 100);

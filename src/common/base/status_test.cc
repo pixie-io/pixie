@@ -82,7 +82,7 @@ std::unique_ptr<google::protobuf::Message> MakeTestMessage() {
   testpb::TestChildMessage* child_pb = parent_pb->add_child();
   child_pb->set_string_val("test_value");
 
-  return std::move(parent_pb);
+  return parent_pb;
 }
 
 TEST(Status, context_copy_tests) {

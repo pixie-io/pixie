@@ -8,9 +8,6 @@ def pl_copts():
         "-Wall",
         "-Werror",
         "-Wextra",
-        "-Wnon-virtual-dtor",
-        "-Woverloaded-virtual",
-        "-Wold-style-cast",
         "-Wimplicit-fallthrough",
         "-Wfloat-conversion",
     ]
@@ -19,13 +16,26 @@ def pl_copts():
     # In contrast, libraries like googletest do provide includes, so no need to add those.
     manual_system_includes = ["-isystem external/com_google_absl"]
 
-    return posix_options + manual_system_includes + select({
+    tcmalloc_flags = select({
         "@pl//bazel:disable_tcmalloc": ["-DABSL_MALLOC_HOOK_MMAP_DISABLE=1"],
         "//conditions:default": ["-DTCMALLOC=1"],
     }) + select({
         "@pl//bazel:debug_tcmalloc": ["-DPL_MEMORY_DEBUG_ENABLED=1"],
         "//conditions:default": [],
     })
+
+    # TODO(zasgar): Remove these flags as we cleanup the code.
+    compiler_dependent_flags = select({
+        "@pl//bazel:gcc_build": [
+            "-Wno-error=deprecated-declarations",
+            "-Wno-error=deprecated-copy",
+            "-Wno-error=class-memaccess",
+            "-Wno-error=redundant-move",
+        ],
+        "//conditions:default": [],
+    })
+
+    return posix_options + manual_system_includes + tcmalloc_flags + compiler_dependent_flags
 
 # Compute the final linkopts based on various options.
 def pl_linkopts():

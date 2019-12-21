@@ -37,5 +37,17 @@ apt_package apt_pkg_list do
   action :upgrade
 end
 
+apt_repository 'gcc-9.2-ppa' do
+   uri         'ppa:jonathonf/gcc-9.2'
+end
+
+apt_update 'update packages' do
+  action :update
+end
+
+apt_package ['gcc-9','g++-9'] do
+  action :upgrade
+end
+
 include_recipe 'pixielabs::linux_java'
 include_recipe 'pixielabs::linux_clang'
