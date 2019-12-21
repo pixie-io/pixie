@@ -75,7 +75,7 @@ class TestExecutor : public RuleExecutor {
  public:
   static StatusOr<std::unique_ptr<TestExecutor>> Create() {
     std::unique_ptr<TestExecutor> executor(new TestExecutor());
-    return std::move(executor);
+    return executor;
   }
 };
 

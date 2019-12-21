@@ -30,7 +30,6 @@ def pl_copts():
             "-Wno-error=deprecated-declarations",
             "-Wno-error=deprecated-copy",
             "-Wno-error=class-memaccess",
-            "-Wno-error=redundant-move",
         ],
         "//conditions:default": [],
     })
