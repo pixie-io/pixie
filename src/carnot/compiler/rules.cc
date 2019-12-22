@@ -1304,6 +1304,101 @@ StatusOr<bool> UniqueSinkNameRule::Apply(IRNode* ir_node) {
   return changed_name;
 }
 
+bool ContainsChildColumn(const ExpressionIR& expr,
+                         const absl::flat_hash_set<std::string>& colnames) {
+  if (Match(&expr, ColumnNode())) {
+    return colnames.contains(static_cast<const ColumnIR*>(&expr)->col_name());
+  }
+  if (Match(&expr, Func())) {
+    auto func = static_cast<const FuncIR*>(&expr);
+    for (const auto& arg : func->args()) {
+      if (ContainsChildColumn(*arg, colnames)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return false;
+}
+
+bool CombineConsecutiveMapsRule::ShouldCombineMaps(
+    MapIR* parent, MapIR* child, const absl::flat_hash_set<std::string>& parent_col_names) {
+  // This rule is targeted at combining maps of the following style:
+  // df.foo = 1
+  // df.bar = df.abc * 2
+  // The logic for combining maps where the child keeps input columns is different
+  // from the logic where the child does not keep input columns, so for simplicity we only
+  // solve the former case right now.
+  if (!child->keep_input_columns()) {
+    return false;
+  }
+  // If the parent has more than one child (one besides the child map), then we don't want
+  // to combine them together because it could affect the output of the other child.
+  if (parent->Children().size() > 1) {
+    return false;
+  }
+  for (const auto& child_expr : child->col_exprs()) {
+    if (ContainsChildColumn(*(child_expr.node), parent_col_names)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+Status CombineConsecutiveMapsRule::CombineMaps(
+    MapIR* parent, MapIR* child, const absl::flat_hash_set<std::string>& parent_col_names) {
+  // If the column name is simply being overwritten, that's ok.
+  for (const auto& child_col_expr : child->col_exprs()) {
+    ExpressionIR* child_expr = child_col_expr.node;
+
+    if (parent_col_names.contains(child_col_expr.name)) {
+      // Overwrite it in the parent with the child if it's a name reassignment.
+      for (const ColumnExpression& parent_col_expr : parent->col_exprs()) {
+        if (parent_col_expr.name == child_col_expr.name) {
+          PL_RETURN_IF_ERROR(parent->UpdateColExpr(parent_col_expr.name, child_expr));
+        }
+      }
+    } else {
+      // Otherwise just append it to the list.
+      PL_RETURN_IF_ERROR(parent->AddColExpr(child_col_expr));
+    }
+    PL_RETURN_IF_ERROR(child_expr->graph_ptr()->DeleteEdge(child, child_expr));
+  }
+
+  PL_RETURN_IF_ERROR(child->RemoveParent(parent));
+  for (auto grandchild : child->Children()) {
+    PL_RETURN_IF_ERROR(grandchild->ReplaceParent(child, parent));
+  }
+  DeferNodeDeletion(child->id());
+  return Status::OK();
+}
+
+StatusOr<bool> CombineConsecutiveMapsRule::Apply(IRNode* ir_node) {
+  // Roll the child into the parent so we only have to iterate over the graph once.
+  if (!Match(ir_node, Map())) {
+    return false;
+  }
+  auto child = static_cast<MapIR*>(ir_node);
+  CHECK_EQ(child->parents().size(), 1UL);
+  auto parent_op = child->parents()[0];
+
+  if (!Match(parent_op, Map())) {
+    return false;
+  }
+  auto parent = static_cast<MapIR*>(parent_op);
+
+  absl::flat_hash_set<std::string> parent_cols;
+  for (const auto& parent_expr : parent->col_exprs()) {
+    parent_cols.insert(parent_expr.name);
+  }
+
+  if (!ShouldCombineMaps(parent, child, parent_cols)) {
+    return false;
+  }
+  PL_RETURN_IF_ERROR(CombineMaps(parent, child, parent_cols));
+  return true;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

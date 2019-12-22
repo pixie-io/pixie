@@ -1148,6 +1148,8 @@ class MapIR : public OperatorIR {
 
   const ColExpressionVector& col_exprs() const { return col_exprs_; }
   Status SetColExprs(const ColExpressionVector& exprs);
+  Status AddColExpr(const ColumnExpression& expr);
+  Status UpdateColExpr(std::string_view name, ExpressionIR* expr);
   Status ToProto(planpb::Operator*) const override;
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;

@@ -431,6 +431,23 @@ class UniqueSinkNameRule : public Rule {
   absl::flat_hash_map<std::string, int64_t> sink_names_count_;
 };
 
+/**
+ * @brief This rule consolidates consecutive map nodes into a single node in cases where it is
+ * simple to do so.
+ *
+ */
+class CombineConsecutiveMapsRule : public Rule {
+ public:
+  CombineConsecutiveMapsRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+  bool ShouldCombineMaps(MapIR* parent, MapIR* child,
+                         const absl::flat_hash_set<std::string>& parent_col_names);
+  Status CombineMaps(MapIR* parent, MapIR* child,
+                     const absl::flat_hash_set<std::string>& parent_col_names);
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

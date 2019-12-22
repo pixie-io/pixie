@@ -327,12 +327,29 @@ Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
     ExpressionIR* expr = mapped_expression.node;
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, expr));
   }
-  col_exprs_ = exprs;
-  for (size_t i = 0; i < col_exprs_.size(); ++i) {
-    PL_ASSIGN_OR_RETURN(col_exprs_[i].node,
-                        graph_ptr()->OptionallyCloneWithEdge(this, col_exprs_[i].node));
+  col_exprs_.clear();
+  for (const auto& expr : exprs) {
+    PL_RETURN_IF_ERROR(AddColExpr(expr));
   }
   return Status::OK();
+}
+
+Status MapIR::AddColExpr(const ColumnExpression& expr) {
+  PL_ASSIGN_OR_RETURN(auto expr_node, graph_ptr()->OptionallyCloneWithEdge(this, expr.node));
+  col_exprs_.emplace_back(expr.name, expr_node);
+  return Status::OK();
+}
+
+Status MapIR::UpdateColExpr(std::string_view name, ExpressionIR* expr) {
+  PL_ASSIGN_OR_RETURN(auto expr_node, graph_ptr()->OptionallyCloneWithEdge(this, expr));
+  for (size_t i = 0; i < col_exprs_.size(); ++i) {
+    if (col_exprs_[i].name == name) {
+      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, col_exprs_[i].node));
+      col_exprs_[i].node = expr_node;
+      return Status::OK();
+    }
+  }
+  return error::Internal("Column $0 does not exist in Map", name);
 }
 
 Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs,

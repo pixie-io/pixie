@@ -84,6 +84,8 @@ class Analyzer : public RuleExecutor {
     CreateVerifyUserDefinedColumnsBatch();
     CreateUniqueSinkNamesBatch();
     CreateOperatorCompileTimeExpressionRuleBatch();
+    // TODO(nserrino): Add rule to consolidate consecutive maps here before OperatorRelationRule
+    // executes.
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();

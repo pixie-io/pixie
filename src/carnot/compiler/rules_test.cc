@@ -2263,6 +2263,162 @@ TEST_F(RulesTest, UniqueSinkNameRule) {
   }
 }
 
+TEST_F(RulesTest, CombineConsecutiveMapsRule_basic) {
+  MemorySourceIR* mem_src = MakeMemSource();
+
+  ColumnExpression parent_expr{"count_1", MakeColumn("count", 0)};
+  ColumnExpression child_expr{"cpu0_1", MakeColumn("cpu0", 0)};
+
+  auto map1 = MakeMap(mem_src, {parent_expr}, true);
+  auto map2 = MakeMap(map1, {child_expr}, true);
+  auto sink1 = MakeMemSink(map2, "abc");
+  auto sink2 = MakeMemSink(map2, "def");
+
+  CombineConsecutiveMapsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_TRUE(graph->HasNode(map1->id()));
+  EXPECT_FALSE(graph->HasNode(map2->id()));
+  EXPECT_THAT(map1->Children(), ElementsAre(sink1, sink2));
+
+  auto expected_map = MakeMap(mem_src, {parent_expr, child_expr}, true);
+  CompareClone(expected_map, map1, "Map node");
+}
+
+TEST_F(RulesTest, CombineConsecutiveMapsRule_multiple_with_break) {
+  MemorySourceIR* mem_src = MakeMemSource();
+
+  ColumnExpression expr1{"count_1", MakeColumn("count", 0)};
+  ColumnExpression expr2{"cpu0_1", MakeColumn("cpu0", 0)};
+  ColumnExpression expr3{"cpu_sum", MakeAddFunc(MakeColumn("cpu1", 0), MakeColumn("cpu2", 0))};
+  // Should break here because cpu_sum was used prior
+  ColumnExpression expr4{"cpu_sum_1", MakeColumn("cpu_sum", 0)};
+
+  auto map1 = MakeMap(mem_src, {expr1}, true);
+  auto map2 = MakeMap(map1, {expr2}, true);
+  auto map3 = MakeMap(map2, {expr3}, true);
+  auto map4 = MakeMap(map3, {expr4}, true);
+
+  auto sink1 = MakeMemSink(map4, "abc");
+  auto sink2 = MakeMemSink(map4, "def");
+
+  CombineConsecutiveMapsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_TRUE(graph->HasNode(map1->id()));
+  EXPECT_FALSE(graph->HasNode(map2->id()));
+  EXPECT_FALSE(graph->HasNode(map3->id()));
+  EXPECT_TRUE(graph->HasNode(map4->id()));
+  EXPECT_THAT(map1->Children(), ElementsAre(map4));
+  EXPECT_THAT(map4->Children(), ElementsAre(sink1, sink2));
+
+  auto expected_map = MakeMap(mem_src, {expr1, expr2, expr3}, true);
+  CompareClone(expected_map, map1, "Map node");
+}
+
+TEST_F(RulesTest, CombineConsecutiveMapsRule_name_reassignment) {
+  MemorySourceIR* mem_src = MakeMemSource();
+
+  ColumnExpression parent_expr{"count_1", MakeColumn("count", 0)};
+  ColumnExpression child_expr{"count_1", MakeColumn("count", 0)};
+
+  auto map1 = MakeMap(mem_src, {parent_expr}, false);
+  auto map2 = MakeMap(map1, {child_expr}, true);
+  auto sink1 = MakeMemSink(map2, "abc");
+  auto sink2 = MakeMemSink(map2, "def");
+
+  CombineConsecutiveMapsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_TRUE(graph->HasNode(map1->id()));
+  EXPECT_FALSE(graph->HasNode(map2->id()));
+  EXPECT_THAT(map1->Children(), ElementsAre(sink1, sink2));
+
+  auto expected_map = MakeMap(mem_src, {child_expr}, true);
+  CompareClone(expected_map, map1, "Map node");
+}
+
+TEST_F(RulesTest, CombineConsecutiveMapsRule_use_output_column) {
+  MemorySourceIR* mem_src = MakeMemSource();
+
+  ColumnExpression parent_expr{"count_1", MakeColumn("count", 0)};
+  ColumnExpression child_expr{"sum", MakeAddFunc(MakeColumn("count", 0), MakeColumn("count_1", 0))};
+
+  auto map1 = MakeMap(mem_src, {parent_expr}, false);
+  auto map2 = MakeMap(map1, {child_expr}, true);
+  MakeMemSink(map2, "abc");
+  MakeMemSink(map2, "def");
+
+  CombineConsecutiveMapsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_FALSE(result.ConsumeValueOrDie());
+}
+
+TEST_F(RulesTest, CombineConsecutiveMapsRule_dependencies) {
+  MemorySourceIR* mem_src = MakeMemSource();
+
+  ColumnExpression parent_expr{"count_1", MakeColumn("count", 0)};
+  ColumnExpression child_expr{"cpu0_1", MakeColumn("cpu0", 0)};
+
+  auto map1 = MakeMap(mem_src, {parent_expr}, true);
+  MakeMap(map1, {child_expr}, true);
+  MakeMemSink(map1, "abc");
+  MakeMemSink(map1, "def");
+
+  CombineConsecutiveMapsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_FALSE(result.ConsumeValueOrDie());
+}
+
+TEST_F(RulesTest, CombineConsecutiveMapsRule_parent_dont_keep_input_columns) {
+  MemorySourceIR* mem_src = MakeMemSource();
+
+  ColumnExpression parent_expr{"count_1", MakeColumn("count", 0)};
+  ColumnExpression child_expr{"cpu0_1", MakeColumn("cpu0", 0)};
+
+  auto map1 = MakeMap(mem_src, {parent_expr}, false);
+  auto map2 = MakeMap(map1, {child_expr}, true);
+  auto sink1 = MakeMemSink(map2, "abc");
+  auto sink2 = MakeMemSink(map2, "def");
+
+  CombineConsecutiveMapsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_TRUE(graph->HasNode(map1->id()));
+  EXPECT_FALSE(graph->HasNode(map2->id()));
+  EXPECT_THAT(map1->Children(), ElementsAre(sink1, sink2));
+
+  auto expected_map = MakeMap(mem_src, {parent_expr, child_expr}, true);
+  CompareClone(expected_map, map1, "Map node");
+}
+
+TEST_F(RulesTest, CombineConsecutiveMapsRule_child_dont_keep_input_columns) {
+  MemorySourceIR* mem_src = MakeMemSource();
+
+  ColumnExpression parent_expr{"count_1", MakeColumn("count", 0)};
+  ColumnExpression child_expr{"cpu0_1", MakeColumn("cpu0", 0)};
+
+  auto map1 = MakeMap(mem_src, {parent_expr}, true);
+  MakeMap(map1, {child_expr}, false);
+  MakeMemSink(map1, "abc");
+  MakeMemSink(map1, "def");
+
+  CombineConsecutiveMapsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_FALSE(result.ConsumeValueOrDie());
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
