@@ -48,7 +48,8 @@ struct RowTuple : public NotCopyable {
     // We set the values to zero since not all fixed size values are the same size.
     // Without this when we write values we might leave gaps that introduce mismatches during
     // comparisons, etc.
-    memset(fixed_values.data(), 0, sizeof(types::FixedSizeValueUnion) * fixed_values.size());
+    memset(reinterpret_cast<uint8_t*>(fixed_values.data()), 0,
+           sizeof(types::FixedSizeValueUnion) * fixed_values.size());
   }
 
   void Reset() {

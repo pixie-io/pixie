@@ -29,7 +29,6 @@ def pl_copts():
         "@pl//bazel:gcc_build": [
             "-Wno-error=deprecated-declarations",
             "-Wno-error=deprecated-copy",
-            "-Wno-error=class-memaccess",
         ],
         "//conditions:default": [],
     })
