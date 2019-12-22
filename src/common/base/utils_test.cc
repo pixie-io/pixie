@@ -194,6 +194,45 @@ TEST(MakeArray, IntArrayTest) {
   static_assert(arr.size() == 4, "array size");
 }
 
+TEST(MakeArray, InferTypeLimitations) {
+  struct Foo {
+    int a;
+    int b;
+  };
+
+  struct Bar {
+    int a;
+    int b;
+    constexpr Bar(int a, int b) : a(a), b(b) {}
+  };
+
+  {
+    constexpr auto kArray = MakeArray<Foo>({1, 1});
+    static_assert(std::is_same_v<decltype(kArray), const std::array<Foo, 1>>,
+                  "MakeArray can force the type on the first element.");
+  }
+
+  {
+    // The following is not valid, unfortunately:
+    // constexpr auto kArray = MakeArray<Foo>({1, 1}, {2, 2});
+    // static_assert(std::is_same_v<decltype(kArray), const std::array<Foo, 1>>, "MakeArray cannot
+    // force the type on all elements.");
+
+    // Instead one must specify the type of every element.
+    constexpr auto kArray = MakeArray(Foo{1, 1}, Foo{2, 2});
+    static_assert(
+        std::is_same_v<decltype(kArray), const std::array<Foo, 2>>,
+        "One must declare the type of every element for MakeArray to work with hard-coded values.");
+  }
+
+  {
+    constexpr auto kArray = MakeArray<Bar>(Bar(1, 1), Bar(2, 2));
+    static_assert(
+        std::is_same_v<decltype(kArray), const std::array<Bar, 2>>,
+        "A constructor has the same requirement, in that one must declare every element.");
+  }
+}
+
 TEST(ArrayTransform, LambdaFunc) {
   constexpr auto arr = MakeArray(1, 2, 3, 4);
   constexpr auto arr2 = ArrayTransform(arr, [](int x) { return x + 1; });
