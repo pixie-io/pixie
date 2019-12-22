@@ -39,6 +39,7 @@ struct GetMessageType<mysql::Record> {
 };
 
 inline std::string_view ProtocolName(TrafficProtocol protocol) {
+  // TODO(oazizi): MagicEnum?
   switch (protocol) {
     case kProtocolUnknown:
       return "Unknown";

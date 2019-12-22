@@ -32,14 +32,14 @@ TEST_F(SchemaTest, new_relations) {
   EXPECT_FALSE(s.HasRelation(0));
   EXPECT_TRUE(s.HasRelation(123));
   EXPECT_EQ(std::vector<int64_t>({123}), s.GetIDs());
-  EXPECT_EQ("Relation:\n  {123} : [abc:int64]\n", s.DebugString());
+  EXPECT_EQ("Relation:\n  {123} : [abc:INT64]\n", s.DebugString());
 
   s.AddRelation(256, rel2_);
   EXPECT_FALSE(s.HasRelation(0));
   EXPECT_TRUE(s.HasRelation(123));
   EXPECT_TRUE(s.HasRelation(256));
   EXPECT_EQ(std::vector<int64_t>({123, 256}), s.GetIDs());
-  EXPECT_EQ("Relation:\n  {123} : [abc:int64]\n  {256} : [def:string]\n", s.DebugString());
+  EXPECT_EQ("Relation:\n  {123} : [abc:INT64]\n  {256} : [def:STRING]\n", s.DebugString());
 }
 
 TEST_F(SchemaTest, overwrite_relation) {
@@ -49,7 +49,7 @@ TEST_F(SchemaTest, overwrite_relation) {
   EXPECT_FALSE(s.HasRelation(0));
   EXPECT_TRUE(s.HasRelation(123));
   EXPECT_EQ(std::vector<int64_t>({123}), s.GetIDs());
-  EXPECT_EQ("Relation:\n  {123} : [def:string]\n", s.DebugString());
+  EXPECT_EQ("Relation:\n  {123} : [def:STRING]\n", s.DebugString());
 }
 
 }  // namespace schema

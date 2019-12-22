@@ -1,6 +1,9 @@
 #pragma once
 
+#include <string>
+
 #include <absl/strings/substitute.h>
+#include <magic_enum.hpp>
 
 #include "src/common/base/proto/status.pb.h"
 #include "src/common/base/status.h"
@@ -31,6 +34,27 @@ DECLARE_ERROR(Unimplemented, UNIMPLEMENTED)
 DECLARE_ERROR(ResourceUnavailable, RESOURCE_UNAVAILABLE)
 
 #undef DECLARE_ERROR
+
+inline std::string CodeToString(pl::statuspb::Code code) {
+  std::string_view code_str_view = magic_enum::enum_name(code);
+  if (code_str_view.empty()) {
+    return "Unknown error_code";
+  }
+
+  std::string code_str(code_str_view);
+  // Example transformation: INVALID_ARGUMENT -> Invalid Argument
+  int last = ' ';
+  std::for_each(code_str.begin(), code_str.end(), [&last](char& c) {
+    if (c == '_') {
+      c = ' ';
+    } else {
+      c = (last == ' ') ? std::toupper(c) : std::tolower(c);
+    }
+    last = c;
+  });
+
+  return code_str;
+}
 
 }  // namespace error
 }  // namespace pl

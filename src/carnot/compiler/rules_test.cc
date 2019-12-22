@@ -1,15 +1,13 @@
-#include <gmock/gmock.h>
-#include <google/protobuf/text_format.h>
-#include <gtest/gtest.h>
-
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
+#include <google/protobuf/text_format.h>
+#include <gtest/gtest.h>
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
-#include "src/carnot/compiler/rule_mock.h"
 #include "src/carnot/compiler/rules.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
@@ -640,9 +638,9 @@ TEST_F(UnionRelationTest, union_relations_disagree) {
       HasCompilerError(
           "Table schema disagreement between parent ops MemorySource\\(id=[0-9]*\\) and "
           "MemorySource\\(id=[0-9]*\\) "
-          "of Union\\(id=[0-9]*\\). MemorySource\\(id=[0-9]*\\): \\[count:int64, cpu0:float64, "
-          "cpu1:float64, "
-          "cpu2:float64\\] vs MemorySource\\(id=[0-9]*\\): \\[count:int64, cpu0:float64\\]. "
+          "of Union\\(id=[0-9]*\\). MemorySource\\(id=[0-9]*\\): \\[count:INT64, cpu0:FLOAT64, "
+          "cpu1:FLOAT64, "
+          "cpu2:FLOAT64\\] vs MemorySource\\(id=[0-9]*\\): \\[count:INT64, cpu0:FLOAT64\\]. "
           "Column count wrong."));
 }
 

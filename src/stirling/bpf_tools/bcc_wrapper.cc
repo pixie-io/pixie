@@ -59,6 +59,7 @@ StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(
 }
 
 namespace {
+// TODO(oazizi): MagicEnum?
 std::string_view ProbeAttachTypeString(bpf_probe_attach_type type) {
   switch (type) {
     case BPF_PROBE_ENTRY:
@@ -233,6 +234,7 @@ void BCCWrapper::ClosePerfBuffers() {
 namespace {
 
 std::string PerfTypeName(uint32_t type) {
+  // TODO(oazizi): MagicEnum?
   switch (type) {
     case PERF_TYPE_HARDWARE:
       return "PERF_TYPE_HARDWARE";

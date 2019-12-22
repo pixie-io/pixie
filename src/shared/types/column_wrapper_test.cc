@@ -1,7 +1,6 @@
 #include <arrow/array.h>
 #include <arrow/buffer.h>
 #include <arrow/builder.h>
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <iostream>
@@ -133,11 +132,11 @@ TEST(ColumnWrapper, FromArrowString) {
   EXPECT_TRUE(converted_to_arrow->Equals(arr));
 }
 
-TEST(ColumnWrapperTest, AppendTypeMismatches) {
+TEST(ColumnWrapperDeathTest, AppendTypeMismatches) {
   auto wrapper = ColumnWrapper::Make(DataType::BOOLEAN, 1);
   ASSERT_EQ(1, wrapper->Size());
   EXPECT_DEATH(wrapper->Append<types::StringValue>("abc"),
-               R"(\(1 vs\. 5\) Expect bool got string)");
+               R"(\(1 vs\. 5\) Expect BOOLEAN got STRING)");
 }
 
 TEST(ColumnWrapperTest, FromVectorInt64) {

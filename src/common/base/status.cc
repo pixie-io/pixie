@@ -2,7 +2,9 @@
 
 #include <string>
 
-#include "src/common/base/error_strings.h"
+#include <absl/strings/str_cat.h>
+
+#include "src/common/base/error.h"
 
 namespace pl {
 
@@ -41,7 +43,7 @@ std::string Status::ToString() const {
     context_str = " Context: ";
     context_str += context()->DebugString();
   }
-  return pl::error::CodeToString(code()) + " : " + state_->msg + context_str;
+  return absl::StrCat(pl::error::CodeToString(code()), " : ", state_->msg + context_str);
 }
 
 pl::statuspb::Status Status::ToProto() const {

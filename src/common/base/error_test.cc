@@ -3,14 +3,13 @@
 #include <iostream>
 
 #include "src/common/base/error.h"
-#include "src/common/base/error_strings.h"
 #include "src/common/base/proto/status.pb.h"
 
 namespace pl {
 namespace error {
 
 TEST(CodeToString, strings) {
-  EXPECT_EQ("OK", CodeToString(pl::statuspb::OK));
+  EXPECT_EQ("Ok", CodeToString(pl::statuspb::OK));
   EXPECT_EQ("Cancelled", CodeToString(pl::statuspb::CANCELLED));
   EXPECT_EQ("Unknown", CodeToString(pl::statuspb::UNKNOWN));
   EXPECT_EQ("Invalid Argument", CodeToString(pl::statuspb::INVALID_ARGUMENT));

@@ -9,6 +9,7 @@ namespace carnot {
 namespace plan {
 
 std::string ToString(planpb::OperatorType op) {
+  // TODO(oazizi): MagicEnum?
   switch (op) {
     case planpb::MEMORY_SOURCE_OPERATOR:
       return "MemorySourceOperator";
@@ -26,6 +27,7 @@ std::string ToString(planpb::OperatorType op) {
 
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES
 std::string ToString(types::DataType dt) {
+  // TODO(oazizi): MagicEnum?
   switch (dt) {
     case types::BOOLEAN:
       return "bool";

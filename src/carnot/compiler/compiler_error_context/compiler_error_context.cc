@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include <absl/strings/str_join.h>
+
 namespace pl {
 namespace carnot {
 namespace compiler {

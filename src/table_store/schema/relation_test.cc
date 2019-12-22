@@ -19,7 +19,7 @@ TEST(RelationTest, empty_relation) {
 TEST(RelationTest, basic_tests) {
   Relation r({types::INT64, types::STRING}, {"abc", "def"});
   EXPECT_EQ(2, r.NumColumns());
-  EXPECT_EQ("[abc:int64, def:string]", r.DebugString());
+  EXPECT_EQ("[abc:INT64, def:STRING]", r.DebugString());
   EXPECT_EQ(ColTypeArray({types::INT64, types::STRING}), r.col_types());
   EXPECT_TRUE(r.HasColumn(0));
   EXPECT_TRUE(r.HasColumn(1));
@@ -70,7 +70,7 @@ TEST(RelationTest, from_proto_failure) {
 TEST(RelationTest, mutate_relation) {
   Relation r({types::INT64, types::STRING}, {"abc", "def"});
   r.AddColumn(types::BOOLEAN, "abcd");
-  EXPECT_EQ("[abc:int64, def:string, abcd:bool]", r.DebugString());
+  EXPECT_EQ("[abc:INT64, def:STRING, abcd:BOOLEAN]", r.DebugString());
   EXPECT_EQ(ColTypeArray({types::INT64, types::STRING, types::BOOLEAN}), r.col_types());
   EXPECT_EQ(types::BOOLEAN, r.GetColumnType(2));
   EXPECT_EQ("abcd", r.GetColumnName(2));

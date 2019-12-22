@@ -47,6 +47,7 @@ class PypaErrorHandler {
     int64_t line = err.cur.line;
     int64_t column = err.cur.column;
     std::string error_name;
+    // TODO(oazizi): MagicEnum?
     switch (err.type) {
       case pypa::ErrorType::IndentationError:
         error_name = "IndentationError:";

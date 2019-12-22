@@ -19,6 +19,7 @@ namespace udf {
 enum RegistryType { kScalarUDF = 1, kUDA };
 
 inline std::string ToString(const RegistryType& registry_type) {
+  // TODO(oazizi): MagicEnum?
   switch (registry_type) {
     case kScalarUDF:
       return "ScalarUDFRegistry";

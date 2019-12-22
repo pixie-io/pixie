@@ -24,6 +24,7 @@ struct header_field_t {
 enum HeaderEventType { kHeaderEventUnknown, kHeaderEventRead, kHeaderEventWrite };
 
 #ifdef __cplusplus
+// TODO(oazizi): MagicEnum?
 inline std::string_view HeaderEventTypeName(HeaderEventType type) {
   switch (type) {
     case kHeaderEventUnknown:
@@ -56,6 +57,7 @@ struct go_grpc_http2_header_event_t {
 enum DataFrameEventType { kDataFrameEventUnknown, kDataFrameEventRead, kDataFrameEventWrite };
 
 #ifdef __cplusplus
+// TODO(oazizi): MagicEnum?
 inline std::string_view DataFrameEventTypeName(DataFrameEventType type) {
   switch (type) {
     case kDataFrameEventUnknown:

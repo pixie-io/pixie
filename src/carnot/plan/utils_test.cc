@@ -15,11 +15,11 @@ TEST(OpToString, basic_tests) {
 }
 
 TEST(DataTypeToString, basic_tests) {
-  EXPECT_EQ("bool", types::ToString(types::BOOLEAN));
-  EXPECT_EQ("int64", types::ToString(types::INT64));
-  EXPECT_EQ("float64", types::ToString(types::FLOAT64));
-  EXPECT_EQ("string", types::ToString(types::STRING));
-  EXPECT_EQ("time64ns", types::ToString(types::TIME64NS));
+  EXPECT_EQ("BOOLEAN", types::ToString(types::BOOLEAN));
+  EXPECT_EQ("INT64", types::ToString(types::INT64));
+  EXPECT_EQ("FLOAT64", types::ToString(types::FLOAT64));
+  EXPECT_EQ("STRING", types::ToString(types::STRING));
+  EXPECT_EQ("TIME64NS", types::ToString(types::TIME64NS));
 }
 
 }  // namespace plan

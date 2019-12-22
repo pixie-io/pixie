@@ -12,25 +12,7 @@
 namespace pl {
 namespace types {
 
-inline std::string ToString(DataType type) {
-  switch (type) {
-    case DataType::BOOLEAN:
-      return "bool";
-    case DataType::INT64:
-      return "int64";
-    case DataType::UINT128:
-      return "uint128";
-    case DataType::FLOAT64:
-      return "float64";
-    case DataType::TIME64NS:
-      return "time64ns";
-    case DataType::STRING:
-      return "string";
-    default:
-      DCHECK(false) << "No ToString() for this DataType";
-      return "UNKNOWN";
-  }
-}
+inline std::string_view ToString(DataType type) { return magic_enum::enum_name(type); }
 
 inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
   switch (type) {

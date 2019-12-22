@@ -144,6 +144,7 @@ ParseState InflateHeaderBlock(nghttp2_hd_inflater* inflater, u8string_view buf, 
 }
 
 std::string_view FrameTypeName(uint8_t type) {
+  // TODO(oazizi): MagicEnum?
   switch (type) {
     case NGHTTP2_DATA:
       return "DATA";

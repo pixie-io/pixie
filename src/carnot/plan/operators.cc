@@ -457,6 +457,7 @@ int64_t UnionOperator::time_column_index(int64_t parent_index) const {
  */
 
 std::string JoinOperator::DebugString(planpb::JoinOperator::JoinType type) {
+  // TODO(oazizi): MagicEnum?
   switch (type) {
     case planpb::JoinOperator::INNER:
       return "inner";

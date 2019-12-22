@@ -22,6 +22,7 @@ class Column;
 enum Expression { kFunc, kColumn, kConstant, kAgg };
 
 inline std::string ToString(Expression expr) {
+  // TODO(oazizi): MagicEnum?
   switch (expr) {
     case Expression::kFunc:
       return "Function";
@@ -37,6 +38,7 @@ inline std::string ToString(Expression expr) {
 }
 
 inline std::string ToString(const planpb::ScalarExpression::ValueCase& exp) {
+  // TODO(oazizi): MagicEnum?
   switch (exp) {
     case planpb::ScalarExpression::kFunc:
       return "Function";
