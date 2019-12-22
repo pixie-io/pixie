@@ -129,16 +129,17 @@ class ASTVisitorImpl : public ASTVisitor {
   Status ProcessExprStmtNode(const pypa::AstExpressionStatementPtr& node);
 
   /**
-   * @brief ProcessSubscriptMapAssignment handles lines where a map is assigned via a statement like
+   * @brief ProcessMapAssignment handles lines where a map is assigned via a statement like
    *  1: a['foo'] = a['bar'] * 2 + a['abc']
    *   *
    * @param assign_node the target of the assignment
    * @param expr_node the expression of the assignment
    * @return Status whether the assignment worked or not.
    */
-  Status ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr& assign_node,
-                                       const pypa::AstPtr& expr_node);
-
+  Status ProcessMapAssignment(const pypa::AstSubscriptPtr& assign_node,
+                              const pypa::AstPtr& expr_node);
+  Status ProcessMapAssignment(const pypa::AstNamePtr& assign_name, IRNode* processed_column,
+                              const pypa::AstPtr& expr_node);
   /**
    * @brief ProcessAssignNode handles lines where an expression is assigned to a value.
    * ie in the following lines

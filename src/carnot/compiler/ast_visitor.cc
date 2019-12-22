@@ -90,30 +90,28 @@ Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
   return Status::OK();
 }
 
-Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr& subscript,
-                                                     const pypa::AstPtr& expr_node) {
-  if (subscript->value->type != AstType::Name) {
-    return CreateAstError(expr_node, "Subscript must be on a Name node, received: $0",
-                          GetAstTypeName(subscript->value->type));
+Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstSubscriptPtr& subscript,
+                                            const pypa::AstPtr& expr_node) {
+  OperatorContext process_column_context({}, "", {});
+  PL_ASSIGN_OR_RETURN(auto processed_column, Process(subscript, process_column_context));
+  return ProcessMapAssignment(PYPA_PTR_CAST(Name, subscript->value), processed_column->node(),
+                              expr_node);
+}
+
+Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstNamePtr& assign_name,
+                                            IRNode* processed_column,
+                                            const pypa::AstPtr& expr_node) {
+  if (!Match(processed_column, ColumnNode())) {
+    return CreateAstError(assign_name, "Can't assign to node of type $0",
+                          processed_column->type_string());
   }
-  auto assign_name = PYPA_PTR_CAST(Name, subscript->value);
-  auto assign_name_string = GetNameAsString(subscript->value);
+  ColumnIR* column = static_cast<ColumnIR*>(processed_column);
+  auto col_name = column->col_name();
+  PL_RETURN_IF_ERROR(ir_graph_->DeleteNode(column->id()));
 
   // Check to make sure this dataframe exists
   PL_ASSIGN_OR_RETURN(auto parent_op, LookupName(assign_name));
-
-  if (subscript->slice->type != AstType::Index) {
-    return CreateAstError(subscript->slice,
-                          "Expected to receive index as subscript slice, received $0.",
-                          GetAstTypeName(subscript->slice->type));
-  }
-  auto index = PYPA_PTR_CAST(Index, subscript->slice);
-  if (index->value->type != AstType::Str) {
-    return CreateAstError(index->value,
-                          "Expected to receive string as subscript index value, received $0.",
-                          GetAstTypeName(index->value->type));
-  }
-  auto col_name = PYPA_PTR_CAST(Str, index->value)->value;
+  auto assign_name_string = GetNameAsString(assign_name);
 
   // Maps can only assign to the same table as the input table when of the form:
   // df['foo'] = df['bar'] + 2
@@ -122,7 +120,7 @@ Status ASTVisitorImpl::ProcessSubscriptMapAssignment(const pypa::AstSubscriptPtr
   if (!result->IsExpression()) {
     return CreateAstError(
         expr_node, "Expected to receive expression as map subscript assignment value, received $0.",
-        GetAstTypeName(index->value->type));
+        result->type_string());
   }
   auto expr = static_cast<ExpressionIR*>(result);
 
@@ -181,8 +179,9 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   auto target_node = node->targets[0];
 
   // Special handler for this type of map statement: df['foo'] = df['bar']
+  // TODO(nserrino): Add support for assignment to a dataframe attribute like df.foo.
   if (target_node->type == AstType::Subscript) {
-    return ProcessSubscriptMapAssignment(PYPA_PTR_CAST(Subscript, node->targets[0]), node->value);
+    return ProcessMapAssignment(PYPA_PTR_CAST(Subscript, node->targets[0]), node->value);
   }
 
   if (target_node->type != AstType::Name) {

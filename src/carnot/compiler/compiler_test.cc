@@ -115,7 +115,7 @@ class CompilerTest : public ::testing::Test {
 };
 
 const char* kExpectedLogicalPlan = R"(
-  dag {
+dag {
   nodes {
     id: 1
   }
@@ -125,21 +125,21 @@ nodes {
   dag {
     nodes {
       id: 6
-      sorted_children: 12
+      sorted_children: 14
     }
     nodes {
-      id: 12
-      sorted_children: 25
+      id: 14
+      sorted_children: 27
       sorted_parents: 6
     }
     nodes {
-      id: 25
-      sorted_children: 28
-      sorted_parents: 12
+      id: 27
+      sorted_children: 30
+      sorted_parents: 14
     }
     nodes {
-      id: 28
-      sorted_parents: 25
+      id: 30
+      sorted_parents: 27
     }
   }
   nodes {
@@ -158,7 +158,7 @@ nodes {
     }
   }
   nodes {
-    id: 12
+    id: 14
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -198,7 +198,7 @@ nodes {
     }
   }
   nodes {
-    id: 25
+    id: 27
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -206,7 +206,7 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 12
+              node: 14
               index: 2
             }
           }
@@ -216,14 +216,14 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 12
+              node: 14
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 12
+          node: 14
         }
         group_names: "cpu0"
         value_names: "quotient_mean"
@@ -232,7 +232,7 @@ nodes {
     }
   }
   nodes {
-    id: 28
+    id: 30
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1067,26 +1067,26 @@ nodes {
   dag {
     nodes {
       id: 4
-      sorted_children: 29
+      sorted_children: 31
     }
     nodes {
-      id: 29
-      sorted_children: 7
+      id: 31
+      sorted_children: 9
       sorted_parents: 4
     }
     nodes {
-      id: 7
-      sorted_children: 11
-      sorted_parents: 29
+      id: 9
+      sorted_children: 13
+      sorted_parents: 31
     }
     nodes {
-      id: 11
-      sorted_children: 14
-      sorted_parents: 7
+      id: 13
+      sorted_children: 16
+      sorted_parents: 9
     }
     nodes {
-      id: 14
-      sorted_parents: 11
+      id: 16
+      sorted_parents: 13
     }
   }
   nodes {
@@ -1114,7 +1114,7 @@ nodes {
     }
   }
   nodes {
-    id: 29
+    id: 31
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1169,48 +1169,48 @@ nodes {
     }
   }
   nodes {
-    id: 7
+    id: 9
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 29
+            node: 31
           }
         }
         expressions {
           column {
-            node: 29
+            node: 31
             index: 1
           }
         }
         expressions {
           column {
-            node: 29
+            node: 31
             index: 2
           }
         }
         expressions {
           column {
-            node: 29
+            node: 31
             index: 3
           }
         }
         expressions {
           column {
-            node: 29
+            node: 31
             index: 4
           }
         }
         expressions {
           column {
-            node: 29
+            node: 31
             index: 5
           }
         }
         expressions {
           column {
-            node: 29
+            node: 31
             index: 5
           }
         }
@@ -1225,13 +1225,13 @@ nodes {
     }
   }
   nodes {
-    id: 11
+    id: 13
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 7
+            node: 9
             index: 6
           }
         }
@@ -1240,7 +1240,7 @@ nodes {
     }
   }
   nodes {
-    id: 14
+    id: 16
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1264,26 +1264,26 @@ nodes {
   dag {
     nodes {
       id: 4
-      sorted_children: 34
+      sorted_children: 36
     }
     nodes {
-      id: 34
-      sorted_children: 7
+      id: 36
+      sorted_children: 9
       sorted_parents: 4
     }
     nodes {
-      id: 7
-      sorted_children: 15
-      sorted_parents: 34
+      id: 9
+      sorted_children: 17
+      sorted_parents: 36
     }
     nodes {
-      id: 15
-      sorted_children: 18
-      sorted_parents: 7
+      id: 17
+      sorted_children: 20
+      sorted_parents: 9
     }
     nodes {
-      id: 18
-      sorted_parents: 15
+      id: 20
+      sorted_parents: 17
     }
   }
   nodes {
@@ -1311,7 +1311,7 @@ nodes {
     }
   }
   nodes {
-    id: 34
+    id: 36
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1366,48 +1366,48 @@ nodes {
     }
   }
   nodes {
-    id: 7
+    id: 9
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 34
+            node: 36
           }
         }
         expressions {
           column {
-            node: 34
+            node: 36
             index: 1
           }
         }
         expressions {
           column {
-            node: 34
+            node: 36
             index: 2
           }
         }
         expressions {
           column {
-            node: 34
+            node: 36
             index: 3
           }
         }
         expressions {
           column {
-            node: 34
+            node: 36
             index: 4
           }
         }
         expressions {
           column {
-            node: 34
+            node: 36
             index: 5
           }
         }
         expressions {
           column {
-            node: 34
+            node: 36
             index: 5
           }
         }
@@ -1422,7 +1422,7 @@ nodes {
     }
   }
   nodes {
-    id: 15
+    id: 17
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1430,14 +1430,14 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 7
+              node: 9
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 7
+          node: 9
           index: 6
         }
         group_names: "service"
@@ -1446,7 +1446,7 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 20
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1472,26 +1472,26 @@ nodes {
   dag {
     nodes {
       id: 4
-      sorted_children: 38
+      sorted_children: 40
     }
     nodes {
-      id: 38
-      sorted_children: 7
+      id: 40
+      sorted_children: 9
       sorted_parents: 4
     }
     nodes {
-      id: 7
-      sorted_children: 18
-      sorted_parents: 38
+      id: 9
+      sorted_children: 20
+      sorted_parents: 40
     }
     nodes {
-      id: 18
-      sorted_children: 21
-      sorted_parents: 7
+      id: 20
+      sorted_children: 23
+      sorted_parents: 9
     }
     nodes {
-      id: 21
-      sorted_parents: 18
+      id: 23
+      sorted_parents: 20
     }
   }
   nodes {
@@ -1519,7 +1519,7 @@ nodes {
     }
   }
   nodes {
-    id: 38
+    id: 40
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1574,48 +1574,48 @@ nodes {
     }
   }
   nodes {
-    id: 7
+    id: 9
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 38
+            node: 40
           }
         }
         expressions {
           column {
-            node: 38
+            node: 40
             index: 1
           }
         }
         expressions {
           column {
-            node: 38
+            node: 40
             index: 2
           }
         }
         expressions {
           column {
-            node: 38
+            node: 40
             index: 3
           }
         }
         expressions {
           column {
-            node: 38
+            node: 40
             index: 4
           }
         }
         expressions {
           column {
-            node: 38
+            node: 40
             index: 5
           }
         }
         expressions {
           column {
-            node: 38
+            node: 40
             index: 5
           }
         }
@@ -1630,7 +1630,7 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 20
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1638,18 +1638,18 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 7
+              node: 9
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 7
+          node: 9
           index: 1
         }
         groups {
-          node: 7
+          node: 9
           index: 6
         }
         group_names: "cpu0"
@@ -1659,7 +1659,7 @@ nodes {
     }
   }
   nodes {
-    id: 21
+    id: 23
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1687,36 +1687,36 @@ nodes {
   dag {
     nodes {
       id: 4
-      sorted_children: 45
+      sorted_children: 47
     }
     nodes {
-      id: 45
-      sorted_children: 7
+      id: 47
+      sorted_children: 9
       sorted_parents: 4
     }
     nodes {
-      id: 7
-      sorted_children: 18
-      sorted_parents: 45
+      id: 9
+      sorted_children: 20
+      sorted_parents: 47
     }
     nodes {
-      id: 18
-      sorted_children: 51
-      sorted_parents: 7
+      id: 20
+      sorted_children: 53
+      sorted_parents: 9
     }
     nodes {
-      id: 51
-      sorted_children: 23
-      sorted_parents: 18
+      id: 53
+      sorted_children: 25
+      sorted_parents: 20
     }
     nodes {
-      id: 23
-      sorted_children: 26
-      sorted_parents: 51
+      id: 25
+      sorted_children: 28
+      sorted_parents: 53
     }
     nodes {
-      id: 26
-      sorted_parents: 23
+      id: 28
+      sorted_parents: 25
     }
   }
   nodes {
@@ -1744,7 +1744,7 @@ nodes {
     }
   }
   nodes {
-    id: 45
+    id: 47
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1800,48 +1800,48 @@ nodes {
     }
   }
   nodes {
-    id: 7
+    id: 9
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 45
+            node: 47
           }
         }
         expressions {
           column {
-            node: 45
+            node: 47
             index: 1
           }
         }
         expressions {
           column {
-            node: 45
+            node: 47
             index: 2
           }
         }
         expressions {
           column {
-            node: 45
+            node: 47
             index: 3
           }
         }
         expressions {
           column {
-            node: 45
+            node: 47
             index: 4
           }
         }
         expressions {
           column {
-            node: 45
+            node: 47
             index: 5
           }
         }
         expressions {
           column {
-            node: 45
+            node: 47
             index: 5
           }
         }
@@ -1856,7 +1856,7 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 20
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1864,18 +1864,18 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              node: 7
+              node: 9
               index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 7
+          node: 9
           index: 4
         }
         groups {
-          node: 7
+          node: 9
           index: 6
         }
         group_names: "upid"
@@ -1885,24 +1885,24 @@ nodes {
     }
   }
   nodes {
-    id: 51
+    id: 53
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 18
+            node: 20
           }
         }
         expressions {
           column {
-            node: 18
+            node: 20
             index: 1
           }
         }
         expressions {
           column {
-            node: 18
+            node: 20
             index: 2
           }
         }
@@ -1911,7 +1911,7 @@ nodes {
             name: "pl.upid_to_service_name"
             args {
               column {
-                node: 18
+                node: 20
               }
             }
             id: 1
@@ -1926,7 +1926,7 @@ nodes {
     }
   }
   nodes {
-    id: 23
+    id: 25
     op {
       op_type: FILTER_OPERATOR
       filter_op {
@@ -1935,7 +1935,7 @@ nodes {
             name: "pl.equal"
             args {
               column {
-                node: 51
+                node: 53
                 index: 3
               }
             }
@@ -1950,25 +1950,25 @@ nodes {
           }
         }
         columns {
-          node: 51
+          node: 53
         }
         columns {
-          node: 51
+          node: 53
           index: 1
         }
         columns {
-          node: 51
+          node: 53
           index: 2
         }
         columns {
-          node: 51
+          node: 53
           index: 3
         }
       }
     }
   }
   nodes {
-    id: 26
+    id: 28
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
