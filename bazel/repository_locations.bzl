@@ -178,4 +178,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "cpptoml-fededad7169e538ca47e11a9ee9251bc361a9a65",
         urls = ["https://github.com/skystrife/cpptoml/archive/fededad7169e538ca47e11a9ee9251bc361a9a65.tar.gz"],
     ),
+    com_github_neargye_magic_enum = dict(
+        sha256 = "5399fe9cf4894f340eb8ba04852e5ef764ad5ac546adb9a7b6bf9d3e7d94423c",
+        strip_prefix = "magic_enum-0.6.3",
+        urls = ["https://github.com/Neargye/magic_enum/archive/v0.6.3.tar.gz"],
+    ),
 )

@@ -89,3 +89,9 @@ pl_cc_test(
     srcs = ["inet_utils_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "magic_enum_test",
+    srcs = ["magic_enum_test.cc"],
+    deps = [":cc_library"],
+)

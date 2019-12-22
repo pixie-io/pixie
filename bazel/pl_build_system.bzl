@@ -77,6 +77,7 @@ def _default_external_deps():
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/debugging:symbolize",
         "@com_google_absl//absl/debugging:failure_signal_handler",
+        "@com_github_neargye_magic_enum//:magic_enum",
     ]
 
 def _default_internal_deps():
