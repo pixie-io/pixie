@@ -111,7 +111,8 @@ isNightlyTestRegressionRun = (env.JOB_NAME == "pixielabs-master-nightly-test-reg
 isCLIBuildRun =  env.JOB_NAME.startsWith("pixielabs-master-cli-release-build/")
 isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-master-vizier-release-build/")
 
-runCoverageJob = isMasterRun
+// TODO(zasgar): Fix the coverage job which is broken due to GCC upgrade.
+runCoverageJob = false; // isMasterRun
 
 /**
   * @brief Add build info to harbormaster and badge to Jenkins.
