@@ -16,7 +16,7 @@ const plConfigPrefix = "#pl:set "
 // Default values for config flags. If a flag is not included in this map,
 // it is not considered a valid flag that can be set.
 var defaultQueryFlags = map[string]interface{}{
-	"distributed_query": false,
+	"distributed_query": true,
 	"explain":           false,
 	"analyze":           false,
 }

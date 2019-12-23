@@ -64,7 +64,7 @@ func TestParseQueryFlags_NoFlag(t *testing.T) {
 	assert.NotNil(t, qf)
 
 	val := qf.GetBool("distributed_query")
-	assert.Equal(t, false, val)
+	assert.Equal(t, true, val)
 
 	val = qf.GetBool("invalid_key")
 	assert.Equal(t, false, val)
