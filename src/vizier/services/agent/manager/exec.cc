@@ -45,7 +45,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
                                      req_.query_str());
     }
 
-    if (req_.plan().distributed() && agent_info_->capabilities.collects_data()) {
+    if (req_.plan().plan_options().distributed() && agent_info_->capabilities.collects_data()) {
       // In distributed mode only non data collecting nodes send data.
       return;
     }
@@ -70,7 +70,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
  private:
   Status ExecuteQueryInternal(AgentQueryResponse* resp) {
     LOG(INFO) << absl::Substitute("Executing query: id=$0, distributed=$1", query_id_.str(),
-                                  req_.plan().distributed());
+                                  req_.plan().plan_options().distributed());
     VLOG(1) << absl::Substitute("Query Plan: $0=$1", query_id_.str(), req_.plan().DebugString());
 
     {

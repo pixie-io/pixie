@@ -64,6 +64,7 @@ const char* kOneAgentOneKelvinDistributedPlan = R"proto(
 qb_address_to_plan {
   key: "agent"
   value {
+    plan_options {}
     dag {
       nodes {
         id: 1
@@ -115,6 +116,7 @@ qb_address_to_plan {
 qb_address_to_plan {
   key: "kelvin"
   value {
+    plan_options {}
     dag {
       nodes {
         id: 1

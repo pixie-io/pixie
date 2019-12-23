@@ -31,7 +31,6 @@ StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
   PL_ASSIGN_OR_RETURN(std::unique_ptr<DistributedPlan> distributed_plan,
                       coordinator->Coordinate(logical_plan));
   PL_RETURN_IF_ERROR(stitcher->Stitch(distributed_plan.get()));
-  distributed_plan->SetDistributed(true);
 
   return distributed_plan;
 }

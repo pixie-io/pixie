@@ -12,6 +12,7 @@
 #include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/rule_executor.h"
+#include "src/carnot/planpb/plan.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -83,13 +84,14 @@ class DistributedPlan {
 
   const plan::DAG& dag() const { return dag_; }
 
-  void SetDistributed(bool distributed) { distributed_ = distributed; }
+  void SetPlanOptions(planpb::PlanOptions plan_options) { plan_options_.CopyFrom(plan_options); }
 
  private:
   plan::DAG dag_;
   absl::flat_hash_map<int64_t, std::unique_ptr<CarnotInstance>> id_to_node_map_;
   int64_t id_counter_ = 0;
-  bool distributed_ = false;
+
+  planpb::PlanOptions plan_options_;
 };
 
 }  // namespace distributed

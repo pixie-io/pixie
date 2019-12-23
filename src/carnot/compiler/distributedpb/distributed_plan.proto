@@ -68,6 +68,8 @@ message LogicalPlannerState {
   pl.table_store.schemapb.Schema schema = 1;
   // The distributed state of all Carnot instances in the system.
   DistributedState distributed_state = 2;
+  // The query options for how the plans should be executed.
+  pl.carnot.planpb.PlanOptions plan_options = 3;
 }
 
 // The result for the planner. Contains a status to track any errors

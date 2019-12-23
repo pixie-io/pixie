@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cast"
+	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 )
 
 // The prefix which a PL Config line should begin with.
@@ -16,6 +17,8 @@ const plConfigPrefix = "#pl:set "
 // it is not considered a valid flag that can be set.
 var defaultQueryFlags = map[string]interface{}{
 	"distributed_query": false,
+	"explain":           false,
+	"analyze":           false,
 }
 
 // QueryFlags represents a set of Pixie configuration flags.
@@ -96,6 +99,15 @@ func (f *QueryFlags) set(key string, value string) error {
 	}
 
 	return fmt.Errorf("%s is not a valid flag", key)
+}
+
+// GetPlanOptions creates the plan option proto from the specified query flags.
+func (f *QueryFlags) GetPlanOptions() *planpb.PlanOptions {
+	return &planpb.PlanOptions{
+		Distributed: f.GetBool("distributed_query"),
+		Explain:     f.GetBool("explain"),
+		Analyze:     f.GetBool("analyze"),
+	}
 }
 
 // ParseQueryFlags takes a query string containing some config options and generates

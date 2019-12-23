@@ -10,6 +10,7 @@ import (
 // TODO(nserrino): Update service column once df.attr['service'] lands.
 const validQueryWithFlag = `
 #pl:set distributed_query=true
+#pl:set analyze=true
 
 t1 = dataframe(table='http_events').range(start='-30s')
 
@@ -81,4 +82,16 @@ func TestParseQueryFlags_InvalidFlag(t *testing.T) {
 	qf, err = controllers.ParseQueryFlags(nonexistentFlag)
 	assert.Nil(t, qf)
 	assert.NotNil(t, err)
+}
+
+func TestParseQueryFlags_PlanOptions(t *testing.T) {
+	qf, err := controllers.ParseQueryFlags(validQueryWithFlag)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, qf)
+
+	options := qf.GetPlanOptions()
+	assert.Equal(t, options.Distributed, true)
+	assert.Equal(t, options.Explain, false)
+	assert.Equal(t, options.Analyze, true)
 }

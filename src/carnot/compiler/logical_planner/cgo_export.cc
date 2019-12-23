@@ -99,6 +99,11 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
   // If the response is ok, then we can go ahead and set this up.
   pl::carnot::compiler::distributedpb::LogicalPlannerResult planner_result_pb;
   WrapStatus(&planner_result_pb, distributed_plan_status.status());
+  // In the future, if we actually have plan options that will actually determine how the plan is
+  // constructed, we may want to pass the planOptions to planner.Plan. However, this
+  // will need to go through many more layers (such as the coordinator), so this is fine for now.
+  distributed_plan->SetPlanOptions(planner_state_pb.plan_options());
+
   auto plan_pb_status = distributed_plan->ToProto();
   if (!plan_pb_status.ok()) {
     return ExitEarly(plan_pb_status.status(), resultLen);

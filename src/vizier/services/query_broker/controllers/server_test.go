@@ -79,6 +79,11 @@ distributed_state: {
 		asid: 456
   }
 }
+plan_options: {
+	distributed: false
+	explain: false
+	analyze: false
+}
 `
 
 const singleAgentDistributedState = `
@@ -99,6 +104,11 @@ distributed_state: {
 		processes_data: true
 		asid: 123
   }
+}
+plan_options: {
+	distributed: false
+	explain: false
+	analyze: true
 }
 `
 
@@ -407,7 +417,7 @@ func TestServerExecuteQuery(t *testing.T) {
 	s, err := newServer(env, mds, nc, createExecutorMock)
 	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
-	}, planner, false)
+	}, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
 		t.Fatalf(err.Error())
@@ -477,7 +487,7 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 
 	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
-	}, planner, false)
+	}, planner, &planpb.PlanOptions{Analyze: true})
 	if err != nil {
 		t.Fatal("Failed to return results from ExecuteQuery.")
 	}
@@ -710,7 +720,7 @@ func TestPlannerErrorResult(t *testing.T) {
 	s, err := newServer(env, mds, nc, createExecutorMock)
 	result, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
-	}, planner, false)
+	}, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Cannot execute query.")
@@ -832,7 +842,7 @@ func TestPlannerExcludesSomeAgents(t *testing.T) {
 	// _, err = s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
 	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
-	}, planner, false)
+	}, planner, &planpb.PlanOptions{})
 
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -912,7 +922,7 @@ func TestErrorInStatusResult(t *testing.T) {
 
 	result, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
-	}, planner, false)
+	}, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Error while executing query.")

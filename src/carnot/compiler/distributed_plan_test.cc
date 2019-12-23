@@ -11,6 +11,7 @@
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/test_utils.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/testing/protobuf.h"
 
 namespace pl {
@@ -106,6 +107,11 @@ qb_address_to_plan {
 qb_address_to_plan {
   key: "kelvin"
   value {
+    plan_options {
+      analyze: true
+      explain: true
+      distributed: false
+    }
     dag {
       nodes {
         id: 1
@@ -206,6 +212,11 @@ TEST_F(DistributedPlanTest, construction_test) {
   }
 
   physical_plan->AddEdge(physical_plan->Get(0), physical_plan->Get(1));
+
+  planpb::PlanOptions plan_opts;
+  plan_opts.set_analyze(true);
+  plan_opts.set_explain(true);
+  physical_plan->SetPlanOptions(plan_opts);
 
   auto physical_plan_proto = physical_plan->ToProto().ConsumeValueOrDie();
   EXPECT_THAT(physical_plan_proto, Partially(EqualsProto(kIRProto)));
