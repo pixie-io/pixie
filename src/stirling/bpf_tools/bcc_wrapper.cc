@@ -12,6 +12,8 @@
 #include <iostream>
 #include <string>
 
+#include <magic_enum.hpp>
+
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 #include "src/stirling/obj_tools/elf_tools.h"
@@ -58,20 +60,6 @@ StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(
   return specs;
 }
 
-namespace {
-// TODO(oazizi): MagicEnum?
-std::string_view ProbeAttachTypeString(bpf_probe_attach_type type) {
-  switch (type) {
-    case BPF_PROBE_ENTRY:
-      return "entry";
-    case BPF_PROBE_RETURN:
-      return "return";
-    default:
-      return "unknown";
-  }
-}
-}  // namespace
-
 // TODO(yzhao): Read CPU count during runtime and set maxactive to Multiplier * N_CPU. That way, we
 // can be relatively more secure against increase of CPU count. Note the default multiplier is 2,
 // which is not sufficient, as indicated in Hipster shop.
@@ -100,7 +88,7 @@ Status BCCWrapper::InitBPFCode(const std::vector<std::string>& cflags) {
 
 Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
   VLOG(1) << absl::StrFormat("Deploying kprobe:\n   type=%s\n   kernel_fn=%s\n   trace_fn=%s",
-                             ProbeAttachTypeString(probe.attach_type), probe.kernel_fn,
+                             magic_enum::enum_name(probe.attach_type), probe.kernel_fn,
                              probe.probe_fn);
   ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
       bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), std::string(probe.probe_fn),
@@ -120,7 +108,7 @@ constexpr uint64_t kIgnoredSymbolAddr = 0;
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
   VLOG(1) << absl::StrFormat(
       "Deploying uprobe:\n   type=%s\n   binary=%s\n   symbol=%s\n   trace_fn=%s",
-      ProbeAttachTypeString(probe.attach_type), probe.binary_path, probe.symbol, probe.probe_fn);
+      magic_enum::enum_name(probe.attach_type), probe.binary_path, probe.symbol, probe.probe_fn);
   ebpf::StatusTuple attach_status =
       bpf().attach_uprobe(probe.binary_path, std::string(probe.symbol), std::string(probe.probe_fn),
                           kIgnoredSymbolAddr, probe.attach_type);
@@ -231,31 +219,9 @@ void BCCWrapper::ClosePerfBuffers() {
   perf_buffers_.clear();
 }
 
-namespace {
-
-std::string PerfTypeName(uint32_t type) {
-  // TODO(oazizi): MagicEnum?
-  switch (type) {
-    case PERF_TYPE_HARDWARE:
-      return "PERF_TYPE_HARDWARE";
-    case PERF_TYPE_SOFTWARE:
-      return "PERF_TYPE_SOFTWARE";
-    case PERF_TYPE_TRACEPOINT:
-      return "PERF_TYPE_TRACEPOINT";
-    case PERF_TYPE_HW_CACHE:
-      return "PERF_TYPE_HW_CACHE";
-    case PERF_TYPE_RAW:
-      return "PERF_TYPE_RAW";
-    default:
-      return absl::StrCat("type: ", type);
-  }
-}
-
-}  // namespace
-
 Status BCCWrapper::AttachPerfEvent(const PerfEventSpec& perf_event) {
   VLOG(1) << absl::Substitute("Attaching perf event:\n   type=$0\n   probe_fn=$1",
-                              PerfTypeName(perf_event.type), perf_event.probe_fn);
+                              magic_enum::enum_name(perf_event.type), perf_event.probe_fn);
   auto attach_res =
       bpf_.attach_perf_event(perf_event.type, perf_event.config, std::string(perf_event.probe_fn),
                              perf_event.sample_period, perf_event.sample_freq);
@@ -276,7 +242,7 @@ Status BCCWrapper::AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events)
 
 Status BCCWrapper::DetachPerfEvent(const PerfEventSpec& perf_event) {
   VLOG(1) << absl::Substitute("Detaching perf event:\n   type=$0\n   probe_fn=$1",
-                              PerfTypeName(perf_event.type), perf_event.probe_fn);
+                              magic_enum::enum_name(perf_event.type), perf_event.probe_fn);
   auto detach_res = bpf_.detach_perf_event(perf_event.type, perf_event.config);
   if (detach_res.code() != 0) {
     return error::Internal("Unable to detach perf event, error_message $0", detach_res.msg());

@@ -2,6 +2,8 @@
 #include <cstring>
 #include <ctime>
 
+#include <magic_enum.hpp>
+
 #include "src/stirling/source_connector.h"
 
 namespace pl {
@@ -10,7 +12,7 @@ namespace stirling {
 Status SourceConnector::Init() {
   if (state_ != State::kUninitialized) {
     return error::Internal("Cannot re-initialize a connector [current state = $0].",
-                           StateName(state_));
+                           magic_enum::enum_name(state_));
   }
   Status s = InitImpl();
   state_ = s.ok() ? State::kActive : State::kErrors;
@@ -28,7 +30,7 @@ void SourceConnector::TransferData(ConnectorContext* ctx, uint32_t table_num,
 Status SourceConnector::Stop() {
   if (state_ != State::kActive) {
     return error::Internal("Cannot stop connector that is not active [current state = $0].",
-                           StateName(state_));
+                           magic_enum::enum_name(state_));
   }
   Status s = StopImpl();
   state_ = s.ok() ? State::kStopped : State::kErrors;

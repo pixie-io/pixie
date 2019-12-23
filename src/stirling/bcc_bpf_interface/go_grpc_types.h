@@ -23,24 +23,6 @@ struct header_field_t {
 
 enum HeaderEventType { kHeaderEventUnknown, kHeaderEventRead, kHeaderEventWrite };
 
-#ifdef __cplusplus
-// TODO(oazizi): MagicEnum?
-inline std::string_view HeaderEventTypeName(HeaderEventType type) {
-  switch (type) {
-    case kHeaderEventUnknown:
-      return "unknown";
-    case kHeaderEventRead:
-      return "header_read";
-    case kHeaderEventWrite:
-      return "header_write";
-    default:
-      DCHECK(false);
-      // For GCC.
-      return "unhandled";
-  }
-}
-#endif
-
 struct go_grpc_http2_header_event_t {
   struct header_attr_t {
     enum HeaderEventType type;
@@ -55,24 +37,6 @@ struct go_grpc_http2_header_event_t {
 };
 
 enum DataFrameEventType { kDataFrameEventUnknown, kDataFrameEventRead, kDataFrameEventWrite };
-
-#ifdef __cplusplus
-// TODO(oazizi): MagicEnum?
-inline std::string_view DataFrameEventTypeName(DataFrameEventType type) {
-  switch (type) {
-    case kDataFrameEventUnknown:
-      return "unknown";
-    case kDataFrameEventRead:
-      return "data_read";
-    case kDataFrameEventWrite:
-      return "data_write";
-    default:
-      DCHECK(false);
-      // For GCC.
-      return "unhandled";
-  }
-}
-#endif
 
 struct go_grpc_data_event_t {
   struct data_attr_t {

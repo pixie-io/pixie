@@ -111,7 +111,7 @@ struct PerfBufferSpec {
  */
 struct PerfEventSpec {
   // The type of perf event (e.g. PERF_TYPE_HARDWARE, PERF_TYPE_SOFTWARE, etc.)
-  uint32_t type;
+  perf_type_id type;
 
   // The actual event to be counted (e.g. PERF_COUNT_HW_CPU_CYCLES).
   uint32_t config;

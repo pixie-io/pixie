@@ -65,7 +65,7 @@ TEST_F(ConnectionTrackerTest, info_string) {
 
   std::string expected_output = R"(pid=12345 fd=3 gen=1
 remote_addr=0.0.0.0:0
-protocol=HTTP
+protocol=kProtocolHTTP
 recv queue
   raw events=1
   parsed messages=0
@@ -82,7 +82,7 @@ send queue
 
   expected_output = R"(pid=12345 fd=3 gen=1
 remote_addr=0.0.0.0:0
-protocol=HTTP
+protocol=kProtocolHTTP
 recv queue
   raw events=0
   parsed messages=0

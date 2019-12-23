@@ -14,6 +14,7 @@ extern "C" {
 #include <vector>
 
 #include <absl/strings/str_cat.h>
+#include <magic_enum.hpp>
 
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
@@ -143,38 +144,6 @@ ParseState InflateHeaderBlock(nghttp2_hd_inflater* inflater, u8string_view buf, 
   return ParseState::kSuccess;
 }
 
-std::string_view FrameTypeName(uint8_t type) {
-  // TODO(oazizi): MagicEnum?
-  switch (type) {
-    case NGHTTP2_DATA:
-      return "DATA";
-    case NGHTTP2_HEADERS:
-      return "HEADERS";
-    case NGHTTP2_PRIORITY:
-      return "PRIORITY";
-    case NGHTTP2_RST_STREAM:
-      return "RST_STREAM";
-    case NGHTTP2_SETTINGS:
-      return "SETTINGS";
-    case NGHTTP2_PUSH_PROMISE:
-      return "PUSH_PROMISE";
-    case NGHTTP2_PING:
-      return "PING";
-    case NGHTTP2_GOAWAY:
-      return "GOAWAY";
-    case NGHTTP2_WINDOW_UPDATE:
-      return "WINDOW_UPDATE";
-    case NGHTTP2_CONTINUATION:
-      return "CONTINUATION";
-    case NGHTTP2_ALTSVC:
-      return "ALTSVC";
-    case NGHTTP2_ORIGIN:
-      return "ORIGIN";
-    default:
-      return "unknown";
-  }
-}
-
 ParseState UnpackFrame(std::string_view* buf, Frame* frame) {
   if (buf->size() < kFrameHeaderSizeInBytes) {
     return ParseState::kNeedsMoreData;
@@ -196,7 +165,7 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame) {
   buf->remove_prefix(kFrameHeaderSizeInBytes + frame->frame.hd.length);
   u8_buf += kFrameHeaderSizeInBytes;
 
-  const uint8_t type = frame->frame.hd.type;
+  const auto type = static_cast<nghttp2_frame_type>(frame->frame.hd.type);
   switch (type) {
     case NGHTTP2_DATA:
       if (!UnpackData(u8_buf, frame).ok()) {
@@ -213,7 +182,7 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame) {
       break;
     default:
       VLOG(1) << "Ignoring frame that is not DATA, HEADERS, or CONTINUATION, got: "
-              << FrameTypeName(type);
+              << magic_enum::enum_name(type);
       return ParseState::kIgnored;
   }
   frame->creation_timestamp = std::chrono::steady_clock::now();

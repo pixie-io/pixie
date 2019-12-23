@@ -54,11 +54,6 @@ class Inflater {
 };
 
 /**
- * @brief Returns a string for a particular type.
- */
-std::string_view FrameTypeName(uint8_t type);
-
-/**
  * @brief Inflates a complete header block in the input buf, writes the header field to nv_map.
  */
 ParseState InflateHeaderBlock(nghttp2_hd_inflater* inflater, u8string_view buf, NVMap* nv_map);

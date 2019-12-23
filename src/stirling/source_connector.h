@@ -233,21 +233,6 @@ class SourceConnector : public NotCopyable {
    */
   enum class State { kUninitialized, kActive, kStopped, kErrors };
 
-  std::string_view StateName(State state) {
-    // TODO(oazizi): MagicEnum?
-    switch (state) {
-      case State::kUninitialized:
-        return "uninitialized";
-      case State::kActive:
-        return "active";
-      case State::kStopped:
-        return "stopped";
-      case State::kErrors:
-        return "errors";
-    }
-    return "impossible, needed for gcc build";
-  }
-
   State state_ = State::kUninitialized;
 
   const std::string source_name_;

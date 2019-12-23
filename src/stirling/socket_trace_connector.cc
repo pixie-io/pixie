@@ -8,10 +8,10 @@
 #include <utility>
 
 #include <absl/strings/match.h>
-
 #include <google/protobuf/empty.pb.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
+#include <magic_enum.hpp>
 
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
@@ -288,9 +288,10 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
 
   VLOG(3) << absl::Substitute(
       "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 end_stream=$6 name=$7 value=$8",
-      event->attr.timestamp_ns, event->attr.conn_id.upid.pid, HeaderEventTypeName(event->attr.type),
-      event->attr.conn_id.fd, event->attr.conn_id.generation, event->attr.stream_id,
-      event->attr.end_stream, event->name, event->value);
+      event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
+      magic_enum::enum_name(event->attr.type), event->attr.conn_id.fd,
+      event->attr.conn_id.generation, event->attr.stream_id, event->attr.end_stream, event->name,
+      event->value);
   event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Header(std::move(event));
 }
@@ -310,7 +311,7 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
   VLOG(3) << absl::Substitute(
       "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 end_stream=$6 data=$7",
       event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
-      DataFrameEventTypeName(event->attr.type), event->attr.conn_id.fd,
+      magic_enum::enum_name(event->attr.type), event->attr.conn_id.fd,
       event->attr.conn_id.generation, event->attr.stream_id, event->attr.end_stream,
       event->payload);
   event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();

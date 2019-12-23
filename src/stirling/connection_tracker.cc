@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <absl/strings/numbers.h>
+#include <magic_enum.hpp>
 
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/socket_info.h"
@@ -739,7 +740,7 @@ std::string ConnectionTracker::DebugString(std::string_view prefix) const {
   std::string info;
   info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, pid(), fd(), generation());
   info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, remote_addr(), remote_port());
-  info += absl::Substitute("$0protocol=$1\n", prefix, ProtocolName(protocol()));
+  info += absl::Substitute("$0protocol=$1\n", prefix, magic_enum::enum_name(protocol()));
   info += absl::Substitute("$0recv queue\n", prefix);
   info += recv_data().DebugString<typename GetMessageType<TEntryType>::type>(
       absl::StrCat(prefix, "  "));
