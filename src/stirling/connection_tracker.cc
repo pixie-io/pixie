@@ -27,6 +27,13 @@ DEFINE_bool(infer_conn_info, true,
 namespace pl {
 namespace stirling {
 
+namespace {
+std::string ToString(const conn_id_t& conn_id) {
+  return absl::Substitute("[pid=$0 start_time_ticks=$1 fd=$2 gen=$3]", conn_id.upid.pid,
+                          conn_id.upid.start_time_ticks, conn_id.fd, conn_id.generation);
+}
+}  // namespace
+
 //--------------------------------------------------------------
 // ConnectionTracker
 //--------------------------------------------------------------
@@ -56,19 +63,17 @@ void ConnectionTracker::AddControlEvent(const socket_control_event_t& event) {
 
 void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   if (open_info_.timestamp_ns != 0) {
-    LOG_FIRST_N(WARNING, 20) << absl::Substitute(
-        "[PL-985] Clobbering existing ConnOpenEvent [pid=$0 fd=$1 gen=$2].",
-        conn_event.conn_id.upid.pid, conn_event.conn_id.fd, conn_event.conn_id.generation);
+    LOG_FIRST_N(WARNING, 20) << absl::Substitute("[PL-985] Clobbering existing ConnOpenEvent $0.",
+                                                 ToString(conn_event.conn_id));
   }
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
-             "Did not expect to receive Open event more than 1 sampling iteration after Close "
-             "[pid=$0 fd=$1 gen=$2].",
-             conn_event.conn_id.upid.pid, conn_event.conn_id.fd, conn_event.conn_id.generation);
+             "Did not expect Open event more than 1 sampling iteration after Close $0.",
+             ToString(conn_event.conn_id));
 
   UpdateTimestamps(conn_event.timestamp_ns);
   SetTrafficClass(conn_event.traffic_class);
-  SetPID(conn_event.conn_id);
+  SetConnID(conn_event.conn_id);
 
   open_info_.timestamp_ns = conn_event.timestamp_ns;
   Status s = ParseSockAddr(*reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
@@ -82,13 +87,12 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
 
 void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
   if (close_info_.timestamp_ns != 0) {
-    LOG_FIRST_N(ERROR, 20) << absl::Substitute(
-        "Clobbering existing ConnCloseEvent [pid=$0 fd=$1 gen=$2].", close_event.conn_id.upid.pid,
-        close_event.conn_id.fd, close_event.conn_id.generation);
+    LOG_FIRST_N(ERROR, 20) << absl::Substitute("Clobbering existing ConnCloseEvent $0.",
+                                               ToString(close_event.conn_id));
   }
 
   UpdateTimestamps(close_event.timestamp_ns);
-  SetPID(close_event.conn_id);
+  SetConnID(close_event.conn_id);
 
   close_info_.timestamp_ns = close_event.timestamp_ns;
   close_info_.send_seq_num = close_event.wr_seq_num;
@@ -105,12 +109,11 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
-             "Did not expect to receive Data event more than 1 sampling iteration after Close "
-             "[pid=$0 fd=$1 gen=$2].",
-             event->attr.conn_id.upid.pid, event->attr.conn_id.fd, event->attr.conn_id.generation);
+             "Did not expect Data event more than 1 sampling iteration after Close $0.",
+             ToString(event->attr.conn_id));
 
   UpdateTimestamps(event->attr.return_timestamp_ns);
-  SetPID(event->attr.conn_id);
+  SetConnID(event->attr.conn_id);
   SetTrafficClass(event->attr.traffic_class);
 
   switch (event->attr.direction) {
@@ -191,12 +194,12 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
 
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
-             "Did not expect to receive Data event more than 1 sampling iteration after Close "
-             "[pid=$0 fd=$1 gen=$2].",
-             conn_id.upid.pid, conn_id.fd, conn_id.generation);
+             "Did not expect Data event more than 1 sampling iteration after Close $0.",
+             ToString(conn_id));
 
   UpdateTimestamps(hdr->attr.timestamp_ns);
-  SetPID(conn_id);
+  SetConnID(conn_id);
+
   traffic_class_.protocol = kProtocolHTTP2Uprobe;
 
   // Don't trace any control messages.
@@ -247,12 +250,11 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
 
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
-             "Did not expect to receive Data event more than 1 sampling iteration after Close "
-             "[pid=$0 fd=$1 gen=$2].",
-             conn_id.upid.pid, conn_id.fd, conn_id.generation);
+             "Did not expect Data event more than 1 sampling iteration after Close $0.",
+             ToString(conn_id));
 
   UpdateTimestamps(data->attr.timestamp_ns);
-  SetPID(conn_id);
+  SetConnID(conn_id);
   traffic_class_.protocol = kProtocolHTTP2Uprobe;
 
   // Don't trace any control messages.
@@ -514,24 +516,22 @@ bool ConnectionTracker::AllEventsReceived() const {
          (num_recv_events_ == close_info_.recv_seq_num);
 }
 
-void ConnectionTracker::SetPID(struct conn_id_t conn_id) {
-  DCHECK(conn_id_.upid.pid == 0 || conn_id_.upid.pid == conn_id.upid.pid);
-  DCHECK(conn_id_.fd == 0 || conn_id_.fd == conn_id.fd);
-  DCHECK(conn_id_.generation == 0 || conn_id_.generation == conn_id.generation)
-      << absl::Substitute("Mismatched generation pid=$0 fd=$1 old gen: $2 new gen: $3",
-                          conn_id_.upid.pid, conn_id_.fd, conn_id_.generation, conn_id.generation);
+void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
+  DCHECK(conn_id_.upid.pid == 0 || conn_id_.upid.pid == conn_id.upid.pid) << absl::Substitute(
+      "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
+  DCHECK(conn_id_.fd == 0 || conn_id_.fd == conn_id.fd) << absl::Substitute(
+      "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
+  DCHECK(conn_id_.generation == 0 || conn_id_.generation == conn_id.generation) << absl::Substitute(
+      "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
   DCHECK(conn_id_.upid.start_time_ticks == 0 ||
          conn_id_.upid.start_time_ticks == conn_id.upid.start_time_ticks)
-      << absl::Substitute(
-             "Mismatched PID start time ticks pid=$0 fd=$1 "
-             "old start time ticks: $2 new start time ticks: $3",
-             conn_id_.upid.pid, conn_id_.fd, conn_id_.upid.start_time_ticks,
-             conn_id.upid.start_time_ticks);
+      << absl::Substitute("Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_),
+                          ToString(conn_id));
 
-  conn_id_.upid.pid = conn_id.upid.pid;
-  conn_id_.upid.start_time_ticks = conn_id.upid.start_time_ticks;
-  conn_id_.fd = conn_id.fd;
-  conn_id_.generation = conn_id.generation;
+  conn_id_ = conn_id;
+
+  LOG(ERROR) << "FD==0, which usually means the FD was not captured correctly. conn=$1",
+      ToString(conn_id_);
 }
 
 void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {

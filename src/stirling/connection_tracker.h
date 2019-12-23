@@ -397,7 +397,7 @@ class ConnectionTracker {
   std::vector<TEntryType> ProcessMessagesImpl();
   template <typename TMessageType>
   Status ExtractReqResp();
-  void SetPID(struct conn_id_t conn_id);
+  void SetConnID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void HandleInactivity();
