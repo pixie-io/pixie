@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include <array>
 #include <bitset>
 #include <cstring>
 #include <string>
@@ -172,6 +173,40 @@ constexpr auto MakeArray(T&&... values)
     -> std::array<typename std::decay<typename std::common_type<T...>::type>::type, sizeof...(T)> {
   return std::array<typename std::decay<typename std::common_type<T...>::type>::type, sizeof...(T)>{
       std::forward<T>(values)...};
+}
+
+namespace internal {
+template <class T, std::size_t N, std::size_t... I>
+constexpr std::array<std::remove_cv_t<T>, N> MakeArrayImpl(T (&a)[N], std::index_sequence<I...>) {
+  return {{a[I]...}};
+}
+}  // namespace internal
+
+/**
+ * @brief creates an std::array based on passed in C-style array.
+ *
+ * This variant of MakeArray is useful in cases where an array of complex types
+ * is to be generated in an inline way.
+ *
+ * Example:
+ *
+ * struct Foo {
+ *  int a;
+ *  int b;
+ * };
+ *
+ * // With other MakeArray variant, you can do the following:
+ * constexpr auto kArray = MakeArray(Foo{1, 1}, Foo{2, 2});
+ *
+ * // With this variant you can instead use the form below,
+ * // which eliminates repetitive type declaration,
+ * // Note, however, the extra set of braces to declare the C-style array.
+ * constexpr auto kArray = MakeArray<Foo>({{1, 1}, {2, 2}});
+ */
+// TODO(oazizi): Use std::to_array instead, once that is supported in implementations of C++20.
+template <class T, std::size_t N>
+constexpr std::array<std::remove_cv_t<T>, N> MakeArray(const T (&a)[N]) {
+  return internal::MakeArrayImpl(a, std::make_index_sequence<N>{});
 }
 
 namespace internal {

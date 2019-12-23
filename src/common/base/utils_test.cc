@@ -194,7 +194,21 @@ TEST(MakeArray, IntArrayTest) {
   static_assert(arr.size() == 4, "array size");
 }
 
-TEST(MakeArray, InferTypeLimitations) {
+TEST(MakeArray, StringArrayTest) {
+  {
+    constexpr auto kArray = MakeArray("one", "two", "three", "four");
+    static_assert(std::is_same_v<decltype(kArray), const std::array<const char*, 4>>,
+                  "By default--and not surprisingly--MakeArray defaults to C-style strings.");
+  }
+
+  {
+    constexpr auto kArray = MakeArray<std::string_view>("one", "two", "three", "four");
+    static_assert(std::is_same_v<decltype(kArray), const std::array<std::string_view, 4>>,
+                  "You can make MakeArray use std::string_view.");
+  }
+}
+
+TEST(MakeArray, ComplexTypeArrayTest) {
   struct Foo {
     int a;
     int b;
@@ -207,17 +221,25 @@ TEST(MakeArray, InferTypeLimitations) {
   };
 
   {
-    constexpr auto kArray = MakeArray<Foo>({1, 1});
-    static_assert(std::is_same_v<decltype(kArray), const std::array<Foo, 1>>,
-                  "MakeArray can force the type on the first element.");
+    constexpr auto kArray = MakeArray<Bar>(Bar(1, 1), Bar(2, 2));
+    static_assert(std::is_same_v<decltype(kArray), const std::array<Bar, 2>>,
+                  "Where type is explicit, things work as expected.");
   }
 
   {
-    // The following is not valid, unfortunately:
-    // constexpr auto kArray = MakeArray<Foo>({1, 1}, {2, 2});
-    // static_assert(std::is_same_v<decltype(kArray), const std::array<Foo, 1>>, "MakeArray cannot
-    // force the type on all elements.");
+    constexpr auto kArray = MakeArray<Foo>({1, 1});
+    static_assert(std::is_same_v<decltype(kArray), const std::array<Foo, 1>>,
+                  "One can use the template argument to force the type on the first element.");
+  }
 
+  //  {
+  //    // The following is not valid, unfortunately:
+  //     constexpr auto kArray = MakeArray<Foo>({1, 1}, {2, 2});
+  //     static_assert(std::is_same_v<decltype(kArray), const std::array<Foo, 1>>, "MakeArray cannot
+  //     force the type on all elements.");
+  //  }
+
+  {
     // Instead one must specify the type of every element.
     constexpr auto kArray = MakeArray(Foo{1, 1}, Foo{2, 2});
     static_assert(
@@ -226,24 +248,11 @@ TEST(MakeArray, InferTypeLimitations) {
   }
 
   {
-    constexpr auto kArray = MakeArray<Bar>(Bar(1, 1), Bar(2, 2));
-    static_assert(
-        std::is_same_v<decltype(kArray), const std::array<Bar, 2>>,
-        "A constructor has the same requirement, in that one must declare every element.");
-  }
-}
-
-TEST(MakeArray, ForceStringViewType) {
-  {
-    constexpr auto kArray = MakeArray("one", "two", "three", "four");
-    static_assert(std::is_same_v<decltype(kArray), const std::array<const char*, 4>>,
-                  "By default--and not surprisingly--MakeArray defaults to C-style strings.");
-  }
-
-  {
-    constexpr auto kArray = MakeArray<std::string_view>("one", "two", "three", "four");
-    static_assert(std::is_same_v<decltype(kArray), const std::array<std::string_view, 4>>,
-                  "You can make MakeArray use std::string_view.");
+    // Alternatively, use the overloaded implementation of MakeArray that accepts C-arrays.
+    // Note the extra set of braces around all the elements.
+    constexpr auto kArray = MakeArray<Foo>({{1, 1}, {2, 2}});
+    static_assert(std::is_same_v<decltype(kArray), const std::array<Foo, 2>>,
+                  "This version makes what we're looking for");
   }
 }
 
