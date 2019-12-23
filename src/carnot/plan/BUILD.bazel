@@ -34,12 +34,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "utils_test",
-    srcs = ["utils_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
     name = "plan_fragment_test",
     srcs = ["plan_fragment_test.cc"],
     deps = [":cc_library"],

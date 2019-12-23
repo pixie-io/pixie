@@ -21,38 +21,6 @@ class Column;
 
 enum Expression { kFunc, kColumn, kConstant, kAgg };
 
-inline std::string ToString(Expression expr) {
-  // TODO(oazizi): MagicEnum?
-  switch (expr) {
-    case Expression::kFunc:
-      return "Function";
-    case Expression::kColumn:
-      return "Column";
-    case Expression ::kConstant:
-      return "Constant";
-    case Expression::kAgg:
-      return "Agg";
-    default:
-      return "UnknownExpression";
-  }
-}
-
-inline std::string ToString(const planpb::ScalarExpression::ValueCase& exp) {
-  // TODO(oazizi): MagicEnum?
-  switch (exp) {
-    case planpb::ScalarExpression::kFunc:
-      return "Function";
-    case planpb::ScalarExpression::kColumn:
-      return "Column";
-    case planpb::ScalarExpression::kConstant:
-      return "Value";
-    default:
-      std::string err_msg = absl::Substitute("Unknown expression type: $0", static_cast<int>(exp));
-      DCHECK(0) << err_msg;
-      LOG(ERROR) << err_msg;
-      return "UnknownExp";
-  }
-}
 /**
  * ScalarExpression is a pure-virtual interface class that defines an expression that can
  * have at most one output value. A ScalarExpression may contain other ScalarExpressions.

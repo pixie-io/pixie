@@ -2,7 +2,6 @@
 
 #include "src/carnot/exec/agg_node.h"
 #include "src/carnot/plan/scalar_expression.h"
-#include "src/carnot/plan/utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
@@ -359,7 +358,7 @@ StatusOr<types::DataType> AggNode::GetTypeOfDep(const plan::ScalarExpression& ex
       return static_cast<const plan::ScalarValue*>(&expr)->DataType();
     default:
       return error::InvalidArgument("Invalid expression type in agg: $0",
-                                    ToString(expr.ExpressionType()));
+                                    magic_enum::enum_name(expr.ExpressionType()));
   }
 }
 

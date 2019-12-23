@@ -7,6 +7,8 @@
 #include <vector>
 
 #include <absl/strings/str_format.h>
+#include <magic_enum.hpp>
+
 #include "src/carnot/udf/udf_definition.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
@@ -17,18 +19,6 @@ namespace carnot {
 namespace udf {
 
 enum RegistryType { kScalarUDF = 1, kUDA };
-
-inline std::string ToString(const RegistryType& registry_type) {
-  // TODO(oazizi): MagicEnum?
-  switch (registry_type) {
-    case kScalarUDF:
-      return "ScalarUDFRegistry";
-    case kUDA:
-      return "UDARegistry";
-    default:
-      return "UnknownRegistry";
-  }
-}
 
 /**
  * RegistryKey is the class used to uniquely refer to UDFs/UDAs in the registry.
@@ -152,7 +142,7 @@ class Registry : public BaseUDFRegistry {
 
   std::string DebugString() override {
     std::string debug_string;
-    debug_string += absl::Substitute("Registry($0): $1\n", ToString(Type()), name_);
+    debug_string += absl::Substitute("Registry($0): $1\n", magic_enum::enum_name(Type()), name_);
     for (const auto& entry : map_) {
       // TODO(zasgar): add arguments as well. Future Diff.
       debug_string += entry.first.name() + "\n";

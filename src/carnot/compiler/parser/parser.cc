@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 
+#include <magic_enum.hpp>
 #include <pypa/ast/ast.hh>
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
@@ -46,21 +47,7 @@ class PypaErrorHandler {
   void CreateLineColError(compilerpb::LineColError* line_col_err_pb, pypa::Error err) {
     int64_t line = err.cur.line;
     int64_t column = err.cur.column;
-    std::string error_name;
-    // TODO(oazizi): MagicEnum?
-    switch (err.type) {
-      case pypa::ErrorType::IndentationError:
-        error_name = "IndentationError:";
-        break;
-      case pypa::ErrorType::SyntaxError:
-        error_name = "SyntaxError:";
-        break;
-      case pypa::ErrorType::SyntaxWarning:
-        error_name = "SyntaxWarning:";
-        break;
-      default:
-        error_name = "";
-    }
+    std::string error_name = absl::StrCat(magic_enum::enum_name(err.type), ":");
     std::string message = absl::Substitute("$0 $1", error_name, err.message);
 
     line_col_err_pb->set_line(line);

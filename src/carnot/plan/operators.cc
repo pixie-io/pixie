@@ -4,9 +4,10 @@
 #include <vector>
 
 #include <absl/strings/str_format.h>
+#include <magic_enum.hpp>
+
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/scalar_expression.h"
-#include "src/carnot/plan/utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
@@ -52,7 +53,8 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
     case planpb::JOIN_OPERATOR:
       return CreateOperator<JoinOperator>(id, pb.join_op());
     default:
-      LOG(FATAL) << absl::Substitute("Unknown operator type: $0", ToString(pb.op_type()));
+      LOG(FATAL) << absl::Substitute("Unknown operator type: $0",
+                                     magic_enum::enum_name(pb.op_type()));
   }
 }
 
@@ -457,18 +459,7 @@ int64_t UnionOperator::time_column_index(int64_t parent_index) const {
  */
 
 std::string JoinOperator::DebugString(planpb::JoinOperator::JoinType type) {
-  // TODO(oazizi): MagicEnum?
-  switch (type) {
-    case planpb::JoinOperator::INNER:
-      return "inner";
-    case planpb::JoinOperator::LEFT_OUTER:
-      return "left outer";
-    case planpb::JoinOperator::FULL_OUTER:
-      return "full outer";
-    default:
-      LOG(ERROR) << absl::Substitute("Unknown Join Type: $0", static_cast<int>(type));
-      return absl::Substitute("UnknownJoinType:$0", static_cast<int>(type));
-  }
+  return std::string(magic_enum::enum_name(type));
 }
 
 std::string JoinOperator::DebugString(

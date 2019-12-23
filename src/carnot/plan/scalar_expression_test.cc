@@ -4,8 +4,8 @@
 #include <vector>
 
 #include <absl/strings/match.h>
+
 #include "src/carnot/plan/scalar_expression.h"
-#include "src/carnot/plan/utils.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
@@ -19,12 +19,6 @@ namespace plan {
 using google::protobuf::TextFormat;
 using table_store::schema::Relation;
 using table_store::schema::Schema;
-
-TEST(ToString, values) {
-  EXPECT_EQ("Function", ToString(planpb::ScalarExpression::kFunc));
-  EXPECT_EQ("Column", ToString(planpb::ScalarExpression::kColumn));
-  EXPECT_EQ("Value", ToString(planpb::ScalarExpression::kConstant));
-}
 
 class DummyTestUDF : public udf::ScalarUDF {
  public:

@@ -59,7 +59,7 @@ TEST(ScalarUDFRegistry, init_with_udfs) {
             def->exec_arguments());
 
   const char* expected_debug_str =
-      "Registry(ScalarUDFRegistry): test registry\n"
+      "Registry(kScalarUDF): test registry\n"
       "scalar1\n"
       "scalar1WithInit\n";
   EXPECT_EQ(expected_debug_str, registry.DebugString());
@@ -147,7 +147,7 @@ TEST(UDARegistry, init_with_udas) {
   EXPECT_EQ(types::DataType::INT64, def->finalize_return_type());
 
   const char* expected_debug_str =
-      "Registry(UDARegistry): test registry\n"
+      "Registry(kUDA): test registry\n"
       "uda1\n"
       "uda1\n";
   EXPECT_EQ(expected_debug_str, registry.DebugString());
