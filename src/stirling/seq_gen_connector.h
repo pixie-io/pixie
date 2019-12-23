@@ -42,8 +42,7 @@ class SeqGenConnector : public SourceConnector {
   static constexpr auto kSeq1Table =
       DataTableSchema("sequence_generator1", kElementsSeq1, kSeq1TabletizationKey);
 
-  static constexpr DataTableSchema kTablesArray[] = {kSeq0Table, kSeq1Table};
-  static constexpr auto kTables = ArrayView<DataTableSchema>(kTablesArray);
+  static constexpr auto kTables = MakeArray(kSeq0Table, kSeq1Table);
   static constexpr uint32_t kSeq0TableNum = SourceConnector::TableNum(kTables, kSeq0Table);
   static constexpr uint32_t kSeq1TableNum = SourceConnector::TableNum(kTables, kSeq1Table);
 

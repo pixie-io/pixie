@@ -45,8 +45,7 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
   // clang-format on
   static constexpr auto kTable = DataTableSchema("bcc_pid_cpu_usage", kElements);
 
-  static constexpr DataTableSchema kTablesArray[] = {kTable};
-  static constexpr auto kTables = ArrayView<DataTableSchema>(kTablesArray);
+  static constexpr auto kTables = MakeArray(kTable);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -69,10 +68,8 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
   static constexpr perf_sw_ids kEventConfig = perf_sw_ids::PERF_COUNT_SW_CPU_CLOCK;
   static constexpr char kFunctionName[] = "trace_pid_runtime";
   static constexpr uint64_t kSamplingFreq = 99;  // Freq. (in Hz) at which to trigger bpf func.
-
-  static constexpr bpf_tools::PerfEventSpec kPerfEventsArray[] = {
-      {kEventType, kEventConfig, kFunctionName, 0, kSamplingFreq}};
-  static constexpr auto kPerfEvents = ArrayView<bpf_tools::PerfEventSpec>(kPerfEventsArray);
+  static constexpr auto kPerfEvents = MakeArray<bpf_tools::PerfEventSpec>(
+      {kEventType, kEventConfig, kFunctionName, 0, kSamplingFreq});
 
   std::map<uint16_t, uint64_t> prev_run_time_map_;
   std::vector<std::pair<uint16_t, pidruntime_val_t> > table_;

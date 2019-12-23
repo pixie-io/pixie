@@ -51,6 +51,9 @@ class ArrayView {
   // NOLINTNEXTLINE: runtime/explicit
   constexpr ArrayView(const T (&a)[N]) : elements_(a), size_(N) {}
   constexpr ArrayView(const T* ptr, size_t size) : elements_(ptr), size_(size) {}
+  template <std::size_t N>
+  constexpr ArrayView(const std::array<T, N>& arr) : elements_(arr.data()), size_(arr.size()) {}
+
   constexpr size_t size() const { return size_; }
   constexpr const T& operator[](size_t i) const { return elements_[i]; }
 

@@ -30,7 +30,7 @@ class InfoClassManager;
   class NAME : public SourceConnector {                                     \
    public:                                                                  \
     static constexpr bool kAvailable = false;                               \
-    static constexpr auto kTables = ArrayView<DataTableSchema>();           \
+    static constexpr std::array<DataTableSchema, 0> kTables = {};           \
     static std::unique_ptr<SourceConnector> Create(std::string_view name) { \
       PL_UNUSED(name);                                                      \
       return nullptr;                                                       \

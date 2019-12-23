@@ -70,8 +70,7 @@ class SystemStatsConnector : public SourceConnector {
   static constexpr auto kNetworkStatsTable =
       DataTableSchema("network_stats", kNetworkStatsElements);
 
-  static constexpr DataTableSchema kTablesArray[] = {kProcessStatsTable, kNetworkStatsTable};
-  static constexpr auto kTables = ArrayView<DataTableSchema>(kTablesArray);
+  static constexpr auto kTables = MakeArray(kProcessStatsTable, kNetworkStatsTable);
 
   SystemStatsConnector() = delete;
   ~SystemStatsConnector() override = default;

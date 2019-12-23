@@ -159,7 +159,7 @@ struct CaseInsensitiveLess {
 };
 
 /**
- * @breif creates and std::array based on passed in arguments.
+ * @brief creates an std::array based on passed in arguments.
  *
  * All arguments should be of the same time, or you get a compile time error.
  *

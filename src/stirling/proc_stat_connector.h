@@ -21,8 +21,7 @@ class ProcStatConnector : public SourceConnector {
   // clang-format on
   static constexpr auto kTable = DataTableSchema("proc_stat", kElements);
 
-  static constexpr DataTableSchema kTablesArray[] = {kTable};
-  static constexpr auto kTables = ArrayView<DataTableSchema>(kTablesArray);
+  static constexpr auto kTables = MakeArray(kTable);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};

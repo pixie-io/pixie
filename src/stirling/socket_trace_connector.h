@@ -62,38 +62,26 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
  public:
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
-  static constexpr std::string_view kHTTPPerfBufferNames[] = {
-      "socket_control_events",
-      "socket_data_events",
-      "go_grpc_header_events",
-      "go_grpc_data_events",
-  };
-
   // Used in ReadPerfBuffer to drain the relevant perf buffers.
-  static constexpr auto kHTTPPerfBuffers = ArrayView<std::string_view>(kHTTPPerfBufferNames);
+  static constexpr auto kHTTPPerfBuffers =
+      MakeArray<std::string_view>("socket_control_events", "socket_data_events",
+                                  "go_grpc_header_events", "go_grpc_data_events");
 
-  static constexpr std::string_view kMySQLPerfBufferNames[] = {
-      "socket_control_events",
-      "socket_data_events",
-  };
+  static constexpr auto kMySQLPerfBuffers =
+      MakeArray<std::string_view>("socket_control_events", "socket_data_events");
 
-  static constexpr auto kMySQLPerfBuffers = ArrayView<std::string_view>(kMySQLPerfBufferNames);
-
-  static constexpr DataTableSchema kTablesArray[] = {kHTTPTable, kMySQLTable};
-  static constexpr auto kTables = ArrayView<DataTableSchema>(kTablesArray);
+  static constexpr auto kTables = MakeArray(kHTTPTable, kMySQLTable);
   static constexpr uint32_t kHTTPTableNum = SourceConnector::TableNum(kTables, kHTTPTable);
   static constexpr uint32_t kMySQLTableNum = SourceConnector::TableNum(kTables, kMySQLTable);
 
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   // Dim 0: DataTables; dim 1: perfBuffer Names
-  static constexpr ArrayView<std::string_view> perfBufferNames[] = {kHTTPPerfBuffers,
-                                                                    kMySQLPerfBuffers};
   // TODO(yzhao/oazizi): This is no longer necessary because different tables now pull data from the
   // same set of perf buffers. But we'd need to think about how to adapt the APIs with the table_num
   // argument.
   static constexpr auto kTablePerfBufferMap =
-      ArrayView<ArrayView<std::string_view> >(perfBufferNames);
+      MakeArray<ArrayView<std::string_view> >(kHTTPPerfBuffers, kMySQLPerfBuffers);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
@@ -142,73 +130,103 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static void HandleHTTP2Data(void* cb_cookie, void* data, int data_size);
   static void HandleHTTP2DataLoss(void* cb_cookie, uint64_t lost);
 
-  static constexpr bpf_tools::KProbeSpec kProbeSpecsArray[] = {
-      {"connect", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_connect"},
-      {"connect", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_connect"},
-      {"accept", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_accept"},
-      {"accept", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_accept"},
-      {"accept4", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_accept4"},
-      {"accept4", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_accept4"},
-      {"open", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_open"},
-      {"creat", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_open"},
-      {"openat", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_open"},
-      {"write", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_write"},
-      {"write", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_write"},
-      {"writev", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_writev"},
-      {"writev", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_writev"},
-      {"send", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_send"},
-      {"send", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_send"},
-      {"sendto", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_sendto"},
-      {"sendto", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_sendto"},
-      {"sendmsg", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_sendmsg"},
-      {"sendmsg", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_sendmsg"},
-      {"read", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_read"},
-      {"read", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_read"},
-      {"readv", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_readv"},
-      {"readv", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_readv"},
-      {"recv", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_recv"},
-      {"recv", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_recv"},
-      {"recvfrom", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_recv"},
-      {"recvfrom", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_recv"},
-      {"recvmsg", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_recvmsg"},
-      {"recvmsg", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_recvmsg"},
-      {"close", bpf_probe_attach_type::BPF_PROBE_ENTRY, "syscall__probe_entry_close"},
-      {"close", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_close"},
-  };
-  static constexpr auto kProbeSpecs = ArrayView<bpf_tools::KProbeSpec>(kProbeSpecsArray);
+  static constexpr auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
+      bpf_tools::KProbeSpec{"connect", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_connect"},
+      bpf_tools::KProbeSpec{"connect", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_connect"},
+      bpf_tools::KProbeSpec{"accept", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_accept"},
+      bpf_tools::KProbeSpec{"accept", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_accept"},
+      bpf_tools::KProbeSpec{"accept4", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_accept4"},
+      bpf_tools::KProbeSpec{"accept4", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_accept4"},
+      bpf_tools::KProbeSpec{"open", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_open"},
+      bpf_tools::KProbeSpec{"creat", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_open"},
+      bpf_tools::KProbeSpec{"openat", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_open"},
+      bpf_tools::KProbeSpec{"write", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_write"},
+      bpf_tools::KProbeSpec{"write", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_write"},
+      bpf_tools::KProbeSpec{"writev", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_writev"},
+      bpf_tools::KProbeSpec{"writev", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_writev"},
+      bpf_tools::KProbeSpec{"send", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_send"},
+      bpf_tools::KProbeSpec{"send", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_send"},
+      bpf_tools::KProbeSpec{"sendto", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_sendto"},
+      bpf_tools::KProbeSpec{"sendto", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_sendto"},
+      bpf_tools::KProbeSpec{"sendmsg", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_sendmsg"},
+      bpf_tools::KProbeSpec{"sendmsg", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_sendmsg"},
+      bpf_tools::KProbeSpec{"read", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_read"},
+      bpf_tools::KProbeSpec{"read", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_read"},
+      bpf_tools::KProbeSpec{"readv", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_readv"},
+      bpf_tools::KProbeSpec{"readv", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_readv"},
+      bpf_tools::KProbeSpec{"recv", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_recv"},
+      bpf_tools::KProbeSpec{"recv", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_recv"},
+      bpf_tools::KProbeSpec{"recvfrom", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_recv"},
+      bpf_tools::KProbeSpec{"recvfrom", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_recv"},
+      bpf_tools::KProbeSpec{"recvmsg", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_recvmsg"},
+      bpf_tools::KProbeSpec{"recvmsg", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_recvmsg"},
+      bpf_tools::KProbeSpec{"close", bpf_probe_attach_type::BPF_PROBE_ENTRY,
+                            "syscall__probe_entry_close"},
+      bpf_tools::KProbeSpec{"close", bpf_probe_attach_type::BPF_PROBE_RETURN,
+                            "syscall__probe_ret_close"});
 
-  inline static constexpr bpf_tools::UProbeTmpl kUProbeTmplsArray[] = {
-      {"google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
-       elf_tools::SymbolMatchType::kSuffix, "probe_http2_client_operate_headers",
-       bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders",
-       elf_tools::SymbolMatchType::kSuffix, "probe_http2_server_operate_headers",
-       bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader",
-       elf_tools::SymbolMatchType::kSuffix, "probe_loopy_writer_write_header",
-       bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"golang.org/x/net/http2.(*Framer).WriteDataPadded", elf_tools::SymbolMatchType::kSuffix,
-       "probe_framer_write_data", bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"golang.org/x/net/http2.(*Framer).checkFrameOrder", elf_tools::SymbolMatchType::kSuffix,
-       "probe_framer_check_frame_order", bpf_probe_attach_type::BPF_PROBE_ENTRY},
-  };
-  static constexpr auto kUProbeTmpls = ArrayView<bpf_tools::UProbeTmpl>(kUProbeTmplsArray);
+  inline static constexpr auto kUProbeTmpls = MakeArray(
+      bpf_tools::UProbeTmpl{
+          "google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
+          elf_tools::SymbolMatchType::kSuffix, "probe_http2_client_operate_headers",
+          bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      bpf_tools::UProbeTmpl{
+          "google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders",
+          elf_tools::SymbolMatchType::kSuffix, "probe_http2_server_operate_headers",
+          bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      bpf_tools::UProbeTmpl{"google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader",
+                            elf_tools::SymbolMatchType::kSuffix, "probe_loopy_writer_write_header",
+                            bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      bpf_tools::UProbeTmpl{"golang.org/x/net/http2.(*Framer).WriteDataPadded",
+                            elf_tools::SymbolMatchType::kSuffix, "probe_framer_write_data",
+                            bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      bpf_tools::UProbeTmpl{"golang.org/x/net/http2.(*Framer).checkFrameOrder",
+                            elf_tools::SymbolMatchType::kSuffix, "probe_framer_check_frame_order",
+                            bpf_probe_attach_type::BPF_PROBE_ENTRY});
 
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
   //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
 
-  static constexpr bpf_tools::PerfBufferSpec kPerfBufferSpecsArray[] = {
+  static constexpr auto kPerfBufferSpecs = MakeArray(
       // For data events. The order must be consistent with output tables.
-      {"socket_data_events", HandleDataEvent, HandleDataEventsLoss},
+      bpf_tools::PerfBufferSpec{"socket_data_events", HandleDataEvent, HandleDataEventsLoss},
       // For non-data events. Must not mix with the above perf buffers for data events.
-      {"socket_control_events", HandleControlEvent, HandleControlEventsLoss},
-      {"go_grpc_header_events", HandleHTTP2HeaderEvent, HandleHTTP2HeaderEventLoss},
-      {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss},
-  };
-  static constexpr auto kPerfBufferSpecs =
-      ArrayView<bpf_tools::PerfBufferSpec>(kPerfBufferSpecsArray);
+      bpf_tools::PerfBufferSpec{"socket_control_events", HandleControlEvent,
+                                HandleControlEventsLoss},
+      bpf_tools::PerfBufferSpec{"go_grpc_header_events", HandleHTTP2HeaderEvent,
+                                HandleHTTP2HeaderEventLoss},
+      bpf_tools::PerfBufferSpec{"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss});
 
   inline static http::HTTPHeaderFilter http_response_header_filter_;
   // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.

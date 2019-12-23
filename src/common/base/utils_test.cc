@@ -233,6 +233,20 @@ TEST(MakeArray, InferTypeLimitations) {
   }
 }
 
+TEST(MakeArray, ForceStringViewType) {
+  {
+    constexpr auto kArray = MakeArray("one", "two", "three", "four");
+    static_assert(std::is_same_v<decltype(kArray), const std::array<const char*, 4>>,
+                  "By default--and not surprisingly--MakeArray defaults to C-style strings.");
+  }
+
+  {
+    constexpr auto kArray = MakeArray<std::string_view>("one", "two", "three", "four");
+    static_assert(std::is_same_v<decltype(kArray), const std::array<std::string_view, 4>>,
+                  "You can make MakeArray use std::string_view.");
+  }
+}
+
 TEST(ArrayTransform, LambdaFunc) {
   constexpr auto arr = MakeArray(1, 2, 3, 4);
   constexpr auto arr2 = ArrayTransform(arr, [](int x) { return x + 1; });
