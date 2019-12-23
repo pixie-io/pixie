@@ -64,6 +64,17 @@ constexpr char kUpdate2_1Pbtxt[] = R"(
   }
 )";
 
+constexpr char kUpdate2_2Pbtxt[] = R"(
+  pod_update {
+    name: "pod3"
+    namespace: "pl"
+    uid: "pod_id3"
+    start_timestamp_ns: 1200
+    qos_class: QOS_CLASS_UNKNOWN
+    phase: FAILED
+  }
+)";
+
 class FakePIDData : public MockCGroupMetadataReader {
  public:
   Status ReadPIDs(PodQOSClass qos, std::string_view pod_id, std::string_view container_id,
@@ -137,6 +148,10 @@ void GenerateTestUpdateEventsForNonExistentPod(
   auto update2_1 = std::make_unique<ResourceUpdate>();
   CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate2_1Pbtxt, update2_1.get()));
   updates->enqueue(std::move(update2_1));
+
+  auto update2_2 = std::make_unique<ResourceUpdate>();
+  CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate2_2Pbtxt, update2_2.get()));
+  updates->enqueue(std::move(update2_2));
 }
 
 class AgentMetadataStateTest : public ::testing::Test {
@@ -201,7 +216,7 @@ TEST_F(AgentMetadataStateTest, remove_dead_pods) {
   const PodInfo* pod_info;
 
   // Check state before call to RemoveDeadPods().
-  EXPECT_EQ(state->pods_by_name().size(), 2);
+  EXPECT_EQ(state->pods_by_name().size(), 3);
 
   pod_info = state->PodInfoByID("pod_id1");
   ASSERT_NE(nullptr, pod_info);
@@ -211,10 +226,14 @@ TEST_F(AgentMetadataStateTest, remove_dead_pods) {
   ASSERT_NE(nullptr, pod_info);
   EXPECT_EQ(0, pod_info->stop_time_ns());
 
+  pod_info = state->PodInfoByID("pod_id3");
+  ASSERT_NE(nullptr, pod_info);
+  EXPECT_EQ(0, pod_info->stop_time_ns());
+
   AgentMetadataStateManager::RemoveDeadPods(/*ts*/ 100, &metadata_state_, &md_reader);
 
   // Expected state after call to RemoveDeadPods().
-  EXPECT_EQ(state->pods_by_name().size(), 2);
+  EXPECT_EQ(state->pods_by_name().size(), 3);
 
   // This pod should still be alive, as indicated by stop_time_ns == 0.
   pod_info = state->PodInfoByID("pod_id1");
@@ -225,6 +244,11 @@ TEST_F(AgentMetadataStateTest, remove_dead_pods) {
   pod_info = state->PodInfoByID("pod_id2");
   ASSERT_NE(nullptr, pod_info);
   EXPECT_NE(0, pod_info->stop_time_ns());
+
+  // This pod should still be alive.
+  pod_info = state->PodInfoByID("pod_id3");
+  ASSERT_NE(nullptr, pod_info);
+  EXPECT_EQ(0, pod_info->stop_time_ns());
 }
 
 TEST_F(AgentMetadataStateTest, pid_created) {

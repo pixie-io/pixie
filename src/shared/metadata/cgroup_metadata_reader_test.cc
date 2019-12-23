@@ -86,7 +86,7 @@ TEST_F(CGroupMetadataReaderTest, cgroup_proc_file_path) {
 }
 
 TEST_F(CGroupMetadataReaderTest, cgroup_pod_exists) {
-  PodInfo pod_info("abcd", "namespace", "pod-name", PodQOSClass::kBestEffort);
+  PodInfo pod_info("abcd", "namespace", "pod-name", PodQOSClass::kBestEffort, PodPhase::kRunning);
   EXPECT_TRUE(md_reader_->PodDirExists(pod_info));
 }
 

@@ -7,7 +7,7 @@ namespace pl {
 namespace md {
 
 TEST(PodInfo, basic_accessors) {
-  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed);
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kSucceeded);
   pod_info.set_start_time_ns(123);
   pod_info.set_stop_time_ns(256);
 
@@ -15,6 +15,7 @@ TEST(PodInfo, basic_accessors) {
   EXPECT_EQ("pl", pod_info.ns());
   EXPECT_EQ("pod1", pod_info.name());
   EXPECT_EQ(PodQOSClass::kGuaranteed, pod_info.qos_class());
+  EXPECT_EQ(PodPhase::kSucceeded, pod_info.phase());
 
   EXPECT_EQ(123, pod_info.start_time_ns());
   EXPECT_EQ(256, pod_info.stop_time_ns());
@@ -23,7 +24,7 @@ TEST(PodInfo, basic_accessors) {
 }
 
 TEST(PodInfo, debug_string) {
-  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed);
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kRunning);
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(absl::Substitute("$0<Pod:ns=pl:name=pod1:uid=123:state=R>", Indent(i)),
               pod_info.DebugString(i));
@@ -34,7 +35,7 @@ TEST(PodInfo, debug_string) {
 }
 
 TEST(PodInfo, add_delete_containers) {
-  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed);
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kRunning);
   pod_info.AddContainer("ABCD");
   pod_info.AddContainer("ABCD2");
   pod_info.AddContainer("ABCD3");
@@ -47,7 +48,7 @@ TEST(PodInfo, add_delete_containers) {
 }
 
 TEST(PodInfo, clone) {
-  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kBurstable);
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kBurstable, PodPhase::kRunning);
   pod_info.set_start_time_ns(123);
   pod_info.set_stop_time_ns(256);
   pod_info.AddContainer("ABCD");

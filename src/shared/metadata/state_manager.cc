@@ -136,7 +136,8 @@ void AgentMetadataStateManager::RemoveDeadPods(int64_t ts, AgentMetadataState* m
     // Only doing it this way here because this is a temporary function.
     PodInfo* pod_info = const_cast<PodInfo*>(md_state->PodInfoByID(uid));
 
-    if (pod_info->stop_time_ns() == 0 && !md_reader->PodDirExists(*pod_info)) {
+    if (pod_info->stop_time_ns() == 0 && pod_info->phase() != PodPhase::kFailed &&
+        !md_reader->PodDirExists(*pod_info)) {
       LOG(WARNING) << absl::Substitute(
           "Marking pod and its containers as dead. Likely didn't belong to this node to begin "
           "with. [pod_id=$0]",

@@ -105,19 +105,41 @@ inline PodQOSClass ConvertToPodQOsClass(pl::shared::k8s::metadatapb::PodQOSClass
   }
 }
 
+enum class PodPhase : uint8_t { kUnknown = 0, kPending, kRunning, kSucceeded, kFailed };
+
+inline PodPhase ConvertToPodPhase(pl::shared::k8s::metadatapb::PodPhase pb_enum) {
+  using phase_pb = pl::shared::k8s::metadatapb::PodPhase;
+  switch (pb_enum) {
+    case phase_pb::PENDING:
+      return PodPhase::kPending;
+    case phase_pb::RUNNING:
+      return PodPhase::kRunning;
+    case phase_pb::SUCCEEDED:
+      return PodPhase::kSucceeded;
+    case phase_pb::FAILED:
+      return PodPhase::kFailed;
+    default:
+      return PodPhase::kUnknown;
+  }
+}
+
 /**
  * PodInfo contains information about K8s pods.
  */
 class PodInfo : public K8sMetadataObject {
  public:
-  PodInfo(UID uid, std::string_view ns, std::string_view name, PodQOSClass qos_class)
-      : K8sMetadataObject(K8sObjectType::kPod, std::move(uid), ns, name), qos_class_(qos_class) {}
+  PodInfo(UID uid, std::string_view ns, std::string_view name, PodQOSClass qos_class,
+          PodPhase phase)
+      : K8sMetadataObject(K8sObjectType::kPod, std::move(uid), ns, name),
+        qos_class_(qos_class),
+        phase_(phase) {}
 
   explicit PodInfo(const pl::shared::k8s::metadatapb::PodUpdate& pod_update_info)
       : K8sMetadataObject(K8sObjectType::kPod, pod_update_info.uid(), pod_update_info.namespace_(),
                           pod_update_info.name(), pod_update_info.start_timestamp_ns(),
                           pod_update_info.stop_timestamp_ns()),
-        qos_class_(ConvertToPodQOsClass(pod_update_info.qos_class())) {}
+        qos_class_(ConvertToPodQOsClass(pod_update_info.qos_class())),
+        phase_(ConvertToPodPhase(pod_update_info.phase())) {}
 
   virtual ~PodInfo() = default;
 
@@ -127,6 +149,7 @@ class PodInfo : public K8sMetadataObject {
   void AddService(UIDView uid) { services_.emplace(uid); }
   void RmService(UIDView uid) { services_.erase(uid); }
   PodQOSClass qos_class() const { return qos_class_; }
+  PodPhase phase() const { return phase_; }
 
   const absl::flat_hash_set<std::string>& containers() const { return containers_; }
   const absl::flat_hash_set<std::string>& services() const { return services_; }
@@ -143,6 +166,7 @@ class PodInfo : public K8sMetadataObject {
 
  private:
   PodQOSClass qos_class_;
+  PodPhase phase_;
   /**
    * Set of containers that are running on this pod.
    *

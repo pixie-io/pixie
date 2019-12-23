@@ -353,6 +353,7 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 				StopTimestampNS:  pod.Metadata.DeletionTimestampNS,
 				QOSClass:         pod.Status.QOSClass,
 				ContainerIDs:     containers,
+				Phase:            pod.Status.Phase,
 			},
 		},
 	}

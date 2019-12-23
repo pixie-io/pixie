@@ -478,6 +478,9 @@ message PodUpdate {
   PodQOSClass qos_class = 7 [
                             (gogoproto.customname) = "QOSClass"
                             ];
+
+  // The pod's current phase.
+  PodPhase phase = 8;
 }
 
 // ContainerUpdate contains information about running containers.

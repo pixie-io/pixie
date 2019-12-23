@@ -26,6 +26,7 @@ var podPhaseObjToPbMap = map[v1.PodPhase]metadatapb.PodPhase{
 	v1.PodPending:   metadatapb.PENDING,
 	v1.PodRunning:   metadatapb.RUNNING,
 	v1.PodSucceeded: metadatapb.SUCCEEDED,
+	v1.PodFailed:    metadatapb.FAILED,
 	v1.PodUnknown:   metadatapb.PHASE_UNKNOWN,
 }
 
@@ -33,6 +34,7 @@ var podPhasePbToObjMap = map[metadatapb.PodPhase]v1.PodPhase{
 	metadatapb.PENDING:       v1.PodPending,
 	metadatapb.RUNNING:       v1.PodRunning,
 	metadatapb.SUCCEEDED:     v1.PodSucceeded,
+	metadatapb.FAILED:        v1.PodFailed,
 	metadatapb.PHASE_UNKNOWN: v1.PodUnknown,
 }
 

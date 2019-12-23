@@ -762,6 +762,7 @@ func TestGetResourceUpdateFromPod(t *testing.T) {
 	assert.Equal(t, int64(6), podUpdate.StopTimestampNS)
 	assert.Equal(t, "test", podUpdate.ContainerIDs[0])
 	assert.Equal(t, metadatapb.QOS_CLASS_BURSTABLE, podUpdate.QOSClass)
+	assert.Equal(t, metadatapb.RUNNING, podUpdate.Phase)
 }
 
 func TestGetResourceUpdateFromEndpoints(t *testing.T) {
