@@ -4,6 +4,7 @@
 #include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/none_object.h"
 #include "src/carnot/compiler/objects/pl_module.h"
+#include "src/shared/metadata/base_types.h"
 
 namespace pl {
 namespace carnot {
@@ -39,7 +40,6 @@ Status PLModule::RegisterUDFFuncs() {
 }
 
 Status PLModule::RegisterUDTFs() {
-  // TODO(philkuz) (PL-1189) remove this when the udf names no longer have the 'pl.' prefix.
   for (const auto& udtf : compiler_state_->registry_info()->udtfs()) {
     std::vector<std::string> argument_names;
     for (const auto& arg : udtf.args()) {
@@ -242,7 +242,31 @@ StatusOr<ExpressionIR*> UDTFSourceHandler::EvaluateExpression(
     return arg_node->CreateIRNodeError("Expected '$0' to be a $1, received a $2", arg.name(),
                                        arg.arg_type(), data_node->EvaluatedDataType());
   }
-  return data_node;
+  switch (arg.semantic_type()) {
+    case types::ST_NONE: {
+      return data_node;
+    }
+    case types::ST_UPID: {
+      DCHECK_EQ(arg.arg_type(), types::STRING);
+      if (!Match(data_node, String())) {
+        return arg_node->CreateIRNodeError("UPID only handled with Strings.");
+      }
+      // If the parse fails, then we don't have a properly formatted upid.
+      PL_RETURN_IF_ERROR(md::UPID::ParseFromUUIDString(static_cast<StringIR*>(data_node)->str()));
+      return data_node;
+    }
+    case types::ST_AGENT_UID: {
+      DCHECK_EQ(arg.arg_type(), types::STRING);
+      if (!Match(data_node, String())) {
+        return arg_node->CreateIRNodeError("Agent UID must be a string.");
+      }
+      return data_node;
+    }
+    case types::ST_UNSPECIFIED:
+    default:
+      return arg_node->CreateIRNodeError(
+          "error in arg definition of UDTF: semantic type must at least be specified as ST_NONE");
+  }
 }
 
 StatusOr<QLObjectPtr> UDTFSourceHandler::Eval(IR* graph,

@@ -128,7 +128,8 @@ has_grpc_server: false
 has_data_store: true
 processes_data: true
 accepts_remote_sources: false
-$1
+asid: $1
+$2
 )proto";
 
 const char* kKelvinCarnotInfoTpl = R"proto(
@@ -138,6 +139,7 @@ has_grpc_server: true
 has_data_store: false
 processes_data: true
 accepts_remote_sources: true
+asid: $2
 )proto";
 
 const char* kTableInfoTpl = R"proto(
@@ -191,13 +193,14 @@ std::string MakeTableInfoStr(const std::string& table_name, const std::string& t
                           absl::StrJoin(formatted_tablets, "\n"));
 }
 
-std::string MakeAgentCarnotInfo(const std::string& agent_name,
+std::string MakeAgentCarnotInfo(const std::string& agent_name, uint32_t asid,
                                 const std::vector<std::string>& table_info) {
-  return absl::Substitute(kAgentCarnotInfoTpl, agent_name, absl::StrJoin(table_info, "\n"));
+  return absl::Substitute(kAgentCarnotInfoTpl, agent_name, asid, absl::StrJoin(table_info, "\n"));
 }
 
-std::string MakeKelvinCarnotInfo(const std::string& kelvin_name, const std::string& grpc_address) {
-  return absl::Substitute(kKelvinCarnotInfoTpl, kelvin_name, grpc_address);
+std::string MakeKelvinCarnotInfo(const std::string& kelvin_name, const std::string& grpc_address,
+                                 uint32_t asid) {
+  return absl::Substitute(kKelvinCarnotInfoTpl, kelvin_name, grpc_address, asid);
 }
 
 std::string MakeDistributedState(const std::vector<std::string>& carnot_info_strs) {
@@ -218,8 +221,9 @@ distributedpb::LogicalPlannerState CreateTwoAgentsPlannerState(
   std::string tabletization_key = "upid";
   std::string table_info1 = MakeTableInfoStr(table_name, tabletization_key, {"1", "2"});
   std::string table_info2 = MakeTableInfoStr(table_name, tabletization_key, {"3", "4"});
-  std::string distributed_state_proto = MakeDistributedState(
-      {MakeAgentCarnotInfo("agent1", {table_info1}), MakeAgentCarnotInfo("agent2", {table_info2})});
+  std::string distributed_state_proto =
+      MakeDistributedState({MakeAgentCarnotInfo("agent1", 123, {table_info1}),
+                            MakeAgentCarnotInfo("agent2", 456, {table_info2})});
 
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
@@ -236,8 +240,9 @@ distributedpb::LogicalPlannerState CreateOneAgentOneKelvinPlannerState(
     table_store::schemapb::Schema schema) {
   distributedpb::LogicalPlannerState plan;
   std::string table_info1 = MakeTableInfoStr("table1", "upid", {"1", "2"});
-  std::string distributed_state_proto = MakeDistributedState(
-      {MakeAgentCarnotInfo("agent", {table_info1}), MakeKelvinCarnotInfo("agent", "1111")});
+  std::string distributed_state_proto =
+      MakeDistributedState({MakeAgentCarnotInfo("agent", 123, {table_info1}),
+                            MakeKelvinCarnotInfo("agent", "1111", 456)});
 
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
@@ -256,9 +261,10 @@ distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState(const st
   std::string tabletization_key = "upid";
   std::string table_info1 = MakeTableInfoStr(table_name, tabletization_key, {"1", "2"});
   std::string table_info2 = MakeTableInfoStr(table_name, tabletization_key, {"3", "4"});
-  std::string distributed_state_proto = MakeDistributedState(
-      {MakeAgentCarnotInfo("agent1", {table_info1}), MakeAgentCarnotInfo("agent2", {table_info2}),
-       MakeKelvinCarnotInfo("kelvin", "1111")});
+  std::string distributed_state_proto =
+      MakeDistributedState({MakeAgentCarnotInfo("agent1", 123, {table_info1}),
+                            MakeAgentCarnotInfo("agent2", 456, {table_info2}),
+                            MakeKelvinCarnotInfo("kelvin", "1111", 789)});
 
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
@@ -722,6 +728,100 @@ dag {
     sorted_parents: 1
     sorted_parents: 2
   }
+}
+)proto";
+
+const char* kThreeAgentsOneKelvinDistributedState = R"proto(
+carnot_info {
+  query_broker_address: "agent1"
+  has_grpc_server: false
+  has_data_store: true
+  processes_data: true
+  accepts_remote_sources: false
+  asid: 123
+}
+carnot_info {
+  query_broker_address: "agent2"
+  has_grpc_server: false
+  has_data_store: true
+  processes_data: true
+  accepts_remote_sources: false
+  asid: 789
+}
+carnot_info {
+  query_broker_address: "agent3"
+  has_grpc_server: false
+  has_data_store: true
+  processes_data: true
+  accepts_remote_sources: false
+  asid: 111
+}
+carnot_info {
+  query_broker_address: "kelvin"
+  grpc_address: "1111"
+  has_grpc_server: true
+  has_data_store: false
+  processes_data: true
+  accepts_remote_sources: true
+  asid: 456
+}
+)proto";
+
+const char* kOneAgentOneKelvinDistributedState = R"proto(
+carnot_info {
+  query_broker_address: "agent"
+  has_grpc_server: false
+  has_data_store: true
+  processes_data: true
+  accepts_remote_sources: false
+  asid: 123
+}
+carnot_info {
+  query_broker_address: "kelvin"
+  grpc_address: "1111"
+  has_grpc_server: true
+  has_data_store: false
+  processes_data: true
+  accepts_remote_sources: true
+  asid: 456
+}
+)proto";
+
+const char* kOneAgentThreeKelvinsDistributedState = R"proto(
+carnot_info {
+  query_broker_address: "agent"
+  has_grpc_server: false
+  has_data_store: true
+  processes_data: true
+  accepts_remote_sources: false
+  asid: 123
+}
+carnot_info {
+  query_broker_address: "kelvin1"
+  grpc_address: "1111"
+  has_grpc_server: true
+  has_data_store: false
+  processes_data: true
+  accepts_remote_sources: true
+  asid: 456
+}
+carnot_info {
+  query_broker_address: "kelvin2"
+  grpc_address: "1112"
+  has_grpc_server: true
+  has_data_store: false
+  processes_data: true
+  accepts_remote_sources: true
+  asid: 222
+}
+carnot_info {
+  query_broker_address: "kelvin3"
+  grpc_address: "1113"
+  has_grpc_server: true
+  has_data_store: false
+  processes_data: true
+  accepts_remote_sources: true
+  asid: 333
 }
 )proto";
 

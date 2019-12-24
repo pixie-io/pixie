@@ -1,5 +1,6 @@
 #include "src/carnot/compiler/objects/pl_module.h"
 #include "src/carnot/compiler/objects/test_utils.h"
+#include "src/shared/metadata/base_types.h"
 
 namespace pl {
 namespace carnot {
@@ -110,7 +111,8 @@ TEST_F(PLModuleTest, AttributeNotFound) {
 }
 
 TEST_F(PLModuleTest, GetUDTFMethod) {
-  auto upid_str = MakeString("5525adaadadadadad");
+  std::string upid_value = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c";
+  auto upid_str = MakeString(upid_value);
   std::string network_conns_udtf_name = "OpenNetworkConnections";
   auto method_or_s = module_->GetMethod(network_conns_udtf_name);
 

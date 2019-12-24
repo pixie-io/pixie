@@ -76,6 +76,57 @@ class OneRemoteCoordinator : public Coordinator {
 };
 
 /**
+ * @brief This coordinator creates a plan layout with 1 remote processor getting data
+ * from N sources. If the passed in plan has special conditions, it will split differntly.
+ *
+ */
+class CoordinatorImpl : public Coordinator {
+ protected:
+  StatusOr<std::unique_ptr<DistributedPlan>> CoordinateImpl(const IR* logical_plan) override;
+  Status InitImpl(const distributedpb::DistributedState& physical_state) override;
+  Status ProcessConfigImpl(const CarnotInfo& carnot_info) override;
+
+ private:
+  const distributedpb::CarnotInfo& GetRemoteProcessor() const;
+  bool HasExecutableNodes(const IR* plan);
+  Status PrunePlan(IR* plan, const distributedpb::CarnotInfo& carnot_info);
+  bool KeepSource(OperatorIR* source, const distributedpb::CarnotInfo& carnot_info);
+
+  /**
+   * @brief Removes the sources and any operators depending on that source. Operators that depend on
+   * the source not only means the Transitive dependents, but also any parents of those Transitive
+   * dependents that are not dependents of the sources to be deleted but don't feed data anywhere
+   * else as a result of the source being deleted.
+   *
+   * For example in the following graph with UDTFSrc set for
+   * removal:
+   *
+   * UDTFSrc   MemSrc
+   *        \  /
+   *         \/
+   *        Join
+   *
+   * We would delete the entire graph by first marking UDTFsrc and Join for removal, pushing
+   * MemSrc into the extra_parents queue and then marking it for removal after.  However, in the
+   * following graph, we would only want to delete UDTF->Join, as MemSrc->GRPCSink should still be
+   * data we would want to collect.
+   *
+   *  UDTFSrc   MemSrc
+   *        \  /      \
+   *         \/        \
+   *        Join       GRPCSink
+   *
+   */
+  Status RemoveSourcesAndDependentOperators(IR* plan,
+                                            const std::vector<OperatorIR*>& sources_to_remove);
+  bool UDTFMatchesFilters(UDTFSourceIR* source, const distributedpb::CarnotInfo& carnot_info);
+  // Nodes that have a source of data.
+  std::vector<CarnotInfo> data_store_nodes_;
+  // Nodes that remotely prcoess data.
+  std::vector<CarnotInfo> remote_processor_nodes_;
+};
+
+/**
  * @brief This corodinator createsa a plan laytout with no remote processors and N data sources.
  *
  */
@@ -93,6 +144,7 @@ class NoRemoteCoordinator : public Coordinator {
   // Nodes that have a source of data.
   std::vector<CarnotInfo> data_store_nodes_;
 };
+
 }  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot

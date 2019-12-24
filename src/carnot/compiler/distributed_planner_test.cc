@@ -8,6 +8,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/distributed_planner.h"
+#include "src/carnot/compiler/distributedpb/test_proto.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/rule_mock.h"
@@ -20,7 +21,11 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 namespace distributed {
+using distributedpb::testutils::kThreeAgentsOneKelvinDistributedState;
 using pl::testing::proto::EqualsProto;
+using ::testing::ContainsRegex;
+using ::testing::ElementsAre;
+using ::testing::UnorderedElementsAreArray;
 
 const char* kOneAgentOneKelvinDistributedState = R"proto(
 carnot_info {
@@ -52,131 +57,6 @@ class DistributedPlannerTest : public OperatorTests {
   std::unique_ptr<CompilerState> compiler_state_;
 };
 
-const char* kOneAgentOneKelvinDistributedPlan = R"proto(
-qb_address_to_plan {
-  key: "agent"
-  value {
-    dag {
-      nodes {
-        id: 1
-      }
-    }
-    nodes {
-      id: 1
-      dag {
-        nodes {
-          id: 0
-          sorted_children: 3
-        }
-        nodes {
-          id: 3
-          sorted_parents: 0
-        }
-      }
-      nodes {
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table"
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-            column_types: INT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-          }
-        }
-      }
-      nodes {
-        id: 3
-        op {
-          op_type: GRPC_SINK_OPERATOR
-          grpc_sink_op {
-            address: "1111"
-            destination_id: 3
-          }
-        }
-      }
-    }
-  }
-}
-qb_address_to_plan {
-  key: "kelvin"
-  value {
-    dag {
-      nodes {
-        id: 1
-      }
-    }
-    nodes {
-      id: 1
-      dag {
-        nodes {
-          id: 3
-          sorted_children: 1
-        }
-        nodes {
-          id: 1
-          sorted_parents: 3
-        }
-      }
-      nodes {
-        id: 3
-        op {
-          op_type: GRPC_SOURCE_OPERATOR
-          grpc_source_op {
-            column_types: INT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-          }
-        }
-      }
-      nodes {
-        id: 1
-        op {
-          op_type: MEMORY_SINK_OPERATOR
-          mem_sink_op {
-            name: "out"
-            column_types: INT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-          }
-        }
-      }
-    }
-  }
-}
-qb_address_to_dag_id {
-  key: "agent"
-  value: 1
-}
-qb_address_to_dag_id {
-  key: "kelvin"
-  value: 0
-}
-dag {
-  nodes {
-    id: 1
-    sorted_children: 0
-  }
-  nodes {
-    sorted_parents: 1
-  }
-}
-)proto";
-
 TEST_F(DistributedPlannerTest, one_agent_one_kelvin) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto mem_sink = MakeMemSink(mem_src, "out");
@@ -189,335 +69,31 @@ TEST_F(DistributedPlannerTest, one_agent_one_kelvin) {
   // TODO(philkuz) fix nullptr for compiler_state.
   std::unique_ptr<DistributedPlan> physical_plan =
       physical_planner->Plan(ps_pb, compiler_state_.get(), graph.get()).ConsumeValueOrDie();
-  EXPECT_THAT(physical_plan->ToProto().ConsumeValueOrDie(),
-              Partially(EqualsProto(kOneAgentOneKelvinDistributedPlan)));
+
+  ASSERT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
+
+  // Agent should be plan 1.
+  auto agent_instance = physical_plan->Get(1);
+  EXPECT_THAT(agent_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
+
+  std::vector<IRNode*> grpc_sinks = agent_instance->plan()->FindNodesOfType(IRNodeType::kGRPCSink);
+  ASSERT_EQ(grpc_sinks.size(), 1);
+  auto grpc_sink = static_cast<GRPCSinkIR*>(grpc_sinks[0]);
+
+  auto kelvin_instance = physical_plan->Get(0);
+  EXPECT_THAT(kelvin_instance->carnot_info().query_broker_address(), ContainsRegex("kelvin"));
+
+  std::vector<IRNode*> grpc_sources =
+      kelvin_instance->plan()->FindNodesOfType(IRNodeType::kGRPCSource);
+  EXPECT_EQ(grpc_sources.size(), 1);
+  ASSERT_EQ(grpc_sources[0]->type(), IRNodeType::kGRPCSource);
+
+  auto grpc_source = static_cast<GRPCSourceIR*>(grpc_sources[0]);
+  // Make sure that the destinations are setup properly.
+  EXPECT_THAT(grpc_sink->destination_id(), grpc_source->id());
 }
 
-const char* kThreeAgentsOneKelvinDistributedState = R"proto(
-carnot_info {
-  query_broker_address: "agent1"
-  has_grpc_server: false
-  has_data_store: true
-  processes_data: true
-  accepts_remote_sources: false
-}
-carnot_info {
-  query_broker_address: "agent2"
-  has_grpc_server: false
-  has_data_store: true
-  processes_data: true
-  accepts_remote_sources: false
-}
-carnot_info {
-  query_broker_address: "agent3"
-  has_grpc_server: false
-  has_data_store: true
-  processes_data: true
-  accepts_remote_sources: false
-}
-carnot_info {
-  query_broker_address: "kelvin"
-  grpc_address: "1111"
-  has_grpc_server: true
-  has_data_store: false
-  processes_data: true
-  accepts_remote_sources: true
-}
-)proto";
-
-const char* kThreeAgentsOneKelvinDistributedPlan = R"proto(
-qb_address_to_plan {
-  key: "agent1"
-  value {
-    dag {
-      nodes {
-        id: 1
-      }
-    }
-    nodes {
-      id: 1
-      dag {
-        nodes {
-          sorted_children: 3
-        }
-        nodes {
-          id: 3
-          sorted_parents: 0
-        }
-      }
-      nodes {
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table"
-          }
-        }
-      }
-      nodes {
-        id: 3
-        op {
-          op_type: GRPC_SINK_OPERATOR
-          grpc_sink_op {
-            address: "1111"
-            destination_id: 5
-          }
-        }
-      }
-    }
-  }
-}
-qb_address_to_plan {
-  key: "agent2"
-  value {
-    dag {
-      nodes {
-        id: 1
-      }
-    }
-    nodes {
-      id: 1
-      dag {
-        nodes {
-          sorted_children: 3
-        }
-        nodes {
-          id: 3
-          sorted_parents: 0
-        }
-      }
-      nodes {
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table"
-          }
-        }
-      }
-      nodes {
-        id: 3
-        op {
-          op_type: GRPC_SINK_OPERATOR
-          grpc_sink_op {
-            address: "1111"
-            destination_id: 4
-          }
-        }
-      }
-    }
-  }
-}
-qb_address_to_plan {
-  key: "agent3"
-  value {
-    dag {
-      nodes {
-        id: 1
-      }
-    }
-    nodes {
-      id: 1
-      dag {
-        nodes {
-          sorted_children: 3
-        }
-        nodes {
-          id: 3
-          sorted_parents: 0
-        }
-      }
-      nodes {
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table"
-          }
-        }
-      }
-      nodes {
-        id: 3
-        op {
-          op_type: GRPC_SINK_OPERATOR
-          grpc_sink_op {
-            address: "1111"
-            destination_id: 3
-          }
-        }
-      }
-    }
-  }
-}
-qb_address_to_plan {
-  key: "kelvin"
-  value {
-    dag {
-      nodes {
-        id: 1
-      }
-    }
-    nodes {
-      id: 1
-      dag {
-        nodes {
-          id: 5
-          sorted_children: 6
-        }
-        nodes {
-          id: 4
-          sorted_children: 6
-        }
-        nodes {
-          id: 3
-          sorted_children: 6
-        }
-        nodes {
-          id: 6
-          sorted_children: 1
-          sorted_parents: 3
-          sorted_parents: 4
-          sorted_parents: 5
-        }
-        nodes {
-          id: 1
-          sorted_parents: 6
-        }
-      }
-      nodes {
-        id: 5
-        op {
-          op_type: GRPC_SOURCE_OPERATOR
-          grpc_source_op {
-            column_types: INT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-          }
-        }
-      }
-      nodes {
-        id: 4
-        op {
-          op_type: GRPC_SOURCE_OPERATOR
-          grpc_source_op {
-            column_types: INT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-          }
-        }
-      }
-      nodes {
-        id: 3
-        op {
-          op_type: GRPC_SOURCE_OPERATOR
-          grpc_source_op {
-            column_types: INT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-          }
-        }
-      }
-      nodes {
-        id: 6
-        op {
-          op_type: UNION_OPERATOR
-          union_op {
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-              column_indexes: 3
-            }
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-              column_indexes: 3
-            }
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-              column_indexes: 3
-            }
-          }
-        }
-      }
-      nodes {
-        id: 1
-        op {
-          op_type: MEMORY_SINK_OPERATOR
-          mem_sink_op {
-            name: "out"
-            column_types: INT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_types: FLOAT64
-            column_names: "count"
-            column_names: "cpu0"
-            column_names: "cpu1"
-            column_names: "cpu2"
-          }
-        }
-      }
-    }
-  }
-}
-qb_address_to_dag_id {
-  key: "agent1"
-  value: 1
-}
-qb_address_to_dag_id {
-  key: "agent2"
-  value: 2
-}
-qb_address_to_dag_id {
-  key: "agent3"
-  value: 3
-}
-qb_address_to_dag_id {
-  key: "kelvin"
-  value: 0
-}
-dag {
-  nodes {
-    id: 3
-    sorted_children: 0
-  }
-  nodes {
-    id: 2
-    sorted_children: 0
-  }
-  nodes {
-    id: 1
-    sorted_children: 0
-  }
-  nodes {
-    sorted_parents: 1
-    sorted_parents: 2
-    sorted_parents: 3
-  }
-}
-)proto";
-
-// TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
-TEST_F(DistributedPlannerTest, DISABLED_three_agent_one_kelvin) {
+TEST_F(DistributedPlannerTest, three_agents_one_kelvin) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto mem_sink = MakeMemSink(mem_src, "out");
   PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
@@ -528,8 +104,39 @@ TEST_F(DistributedPlannerTest, DISABLED_three_agent_one_kelvin) {
       DistributedPlanner::Create().ConsumeValueOrDie();
   std::unique_ptr<DistributedPlan> physical_plan =
       physical_planner->Plan(ps_pb, compiler_state_.get(), graph.get()).ConsumeValueOrDie();
-  EXPECT_THAT(physical_plan->ToProto().ConsumeValueOrDie(),
-              Partially(EqualsProto(kThreeAgentsOneKelvinDistributedPlan)));
+
+  ASSERT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(3, 2, 1, 0));
+
+  // Agents should be ids 1,2,3.
+  std::vector<int64_t> grpc_sink_destinations;
+  for (int64_t i = 1; i <= 3; ++i) {
+    SCOPED_TRACE(absl::Substitute("agent id = $0", i));
+    auto agent_instance = physical_plan->Get(i);
+    EXPECT_THAT(agent_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
+
+    std::vector<IRNode*> grpc_sinks =
+        agent_instance->plan()->FindNodesOfType(IRNodeType::kGRPCSink);
+    ASSERT_EQ(grpc_sinks.size(), 1);
+    auto grpc_sink = static_cast<GRPCSinkIR*>(grpc_sinks[0]);
+    grpc_sink_destinations.push_back(grpc_sink->destination_id());
+  }
+
+  auto kelvin_instance = physical_plan->Get(0);
+  EXPECT_THAT(kelvin_instance->carnot_info().query_broker_address(), ContainsRegex("kelvin"));
+
+  std::vector<IRNode*> nodes = kelvin_instance->plan()->FindNodesOfType(IRNodeType::kUnion);
+  ASSERT_EQ(nodes.size(), 1);
+  UnionIR* kelvin_union = static_cast<UnionIR*>(nodes[0]);
+  EXPECT_EQ(kelvin_union->parents().size(), 3);
+  std::vector<int64_t> grpc_source_ids;
+  for (OperatorIR* union_parent : kelvin_union->parents()) {
+    ASSERT_EQ(union_parent->type(), IRNodeType::kGRPCSource);
+    auto grpc_source = static_cast<GRPCSourceIR*>(union_parent);
+    grpc_source_ids.push_back(grpc_source->id());
+  }
+
+  // Make sure that the destinations are setup properly.
+  EXPECT_THAT(grpc_sink_destinations, UnorderedElementsAreArray(grpc_source_ids));
 }
 
 }  // namespace distributed

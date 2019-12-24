@@ -890,6 +890,15 @@ TEST_F(ASTVisitorTest, test_repeated_exprs) {
   CompareClone(expr3_args[0], expr3_args[1], "Column expression in Map node");
 }
 
+TEST_F(ASTVisitorTest, CanAccessUDTF) {
+  std::string query =
+      absl::StrJoin({"df1 = pl.OpenNetworkConnections('11285cdd-1de9-4ab1-ae6a-0ba08c8c676c')",
+                     "pl.display(df1)"},
+                    "\n");
+  auto ir_graph_status = CompileGraph(query);
+  ASSERT_OK(ir_graph_status);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

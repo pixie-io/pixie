@@ -70,6 +70,24 @@ TEST(IRTest, FindNodesOfType) {
   EXPECT_EQ(string_nodes.size(), 0);
 }
 
+TEST(IRTest, FindNodesThatMatch) {
+  auto ast = MakeTestAstPtr();
+  auto ig = std::make_shared<IR>();
+  auto src = ig->CreateNode<MemorySourceIR>(ast, "table_str", std::vector<std::string>{"testCol"})
+                 .ValueOrDie();
+  auto start_rng_str = ig->CreateNode<IntIR>(ast, 0).ValueOrDie();
+  auto stop_rng_str = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
+
+  EXPECT_OK(src->SetTimeExpressions(start_rng_str, stop_rng_str));
+
+  auto int_nodes = ig->FindNodesThatMatch(Int());
+  EXPECT_THAT(int_nodes, UnorderedElementsAre(start_rng_str, stop_rng_str));
+
+  // Shouldn't return anything when it doesn't have a type of node.
+  auto string_nodes = ig->FindNodesThatMatch(String());
+  EXPECT_EQ(string_nodes.size(), 0);
+}
+
 TEST(IRTest, CreateSourceSharedNodes) {
   auto ast = MakeTestAstPtr();
   auto ig = std::make_shared<IR>();

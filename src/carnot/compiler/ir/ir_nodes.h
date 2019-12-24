@@ -350,6 +350,17 @@ class IR {
 
   std::vector<IRNode*> FindNodesOfType(IRNodeType type) const;
 
+  template <typename Matcher>
+  std::vector<IRNode*> FindNodesThatMatch(Matcher matcher) const {
+    std::vector<IRNode*> nodes;
+    for (int64_t i : dag().TopologicalSort()) {
+      if (Match(Get(i), matcher)) {
+        nodes.push_back(Get(i));
+      }
+    }
+    return nodes;
+  }
+
   friend std::ostream& operator<<(std::ostream& os, const std::shared_ptr<IR>&) {
     return os << "ir";
   }
@@ -1614,6 +1625,7 @@ class UDTFSourceIR : public OperatorIR {
    * doesn't fit a format.
    */
   StatusOr<DataIR*> ProcessArgValue(ExpressionIR* expr);
+
   std::string func_name_;
   std::vector<std::string> arg_names_;
   std::vector<DataIR*> arg_values_;

@@ -592,6 +592,35 @@ inline ::testing::PolymorphicMatcher<HasEdgeMatcher> HasEdge(IRNode* from, IRNod
   return ::testing::MakePolymorphicMatcher(HasEdgeMatcher(from, to));
 }
 
+const char* kUDTFOpenNetworkConnections = R"proto(
+name: "OpenNetworkConnections"
+args {
+  name: "upid"
+  arg_type: STRING
+  semantic_type: ST_UPID
+}
+executor: UDTF_SUBSET_PEM
+filters {
+  semantic_filter {
+    idx: 0
+  }
+}
+relation {
+  columns {
+    column_name: "time_"
+    column_type: TIME64NS
+  }
+  columns {
+    column_name: "fd"
+    column_type: INT64
+  }
+  columns {
+    column_name: "name"
+    column_type: STRING
+  }
+}
+)proto";
+
 class ASTVisitorTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -602,6 +631,11 @@ class ASTVisitorTest : public ::testing::Test {
     udfspb::UDFInfo info_pb;
     google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
     EXPECT_OK(registry_info_->Init(info_pb));
+    // TODO(philkuz) remove this when we have a udtf registry.
+    udfspb::UDTFSourceSpec spec;
+    google::protobuf::TextFormat::MergeFromString(kUDTFOpenNetworkConnections, &spec);
+    registry_info_->AddUDTF(spec);
+    // TODO(philkuz) remove end.
     table_store::schema::Relation cpu_relation;
     relation_map_ = std::make_unique<RelationMap>();
     cpu_relation.AddColumn(types::FLOAT64, "cpu0");

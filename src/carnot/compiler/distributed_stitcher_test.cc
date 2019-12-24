@@ -11,6 +11,7 @@
 #include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/distributed_planner.h"
 #include "src/carnot/compiler/distributed_stitcher.h"
+#include "src/carnot/compiler/distributedpb/test_proto.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/rule_mock.h"
@@ -22,29 +23,14 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 namespace distributed {
+using distributedpb::testutils::kOneAgentOneKelvinDistributedState;
+using distributedpb::testutils::kOneAgentThreeKelvinsDistributedState;
+using distributedpb::testutils::kThreeAgentsOneKelvinDistributedState;
 using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
-
-const char* kOneAgentOneKelvinDistributedState = R"proto(
-carnot_info {
-  query_broker_address: "agent"
-  has_grpc_server: false
-  has_data_store: true
-  processes_data: true
-  accepts_remote_sources: false
-}
-carnot_info {
-  query_broker_address: "kelvin"
-  grpc_address: "1111"
-  has_grpc_server: true
-  has_data_store: false
-  processes_data: true
-  accepts_remote_sources: true
-}
-)proto";
 
 class StitcherTest : public OperatorTests {
  protected:
@@ -148,38 +134,6 @@ TEST_F(StitcherTest, one_agent_one_kelvin) {
 
   EXPECT_THAT(source_ids, UnorderedElementsAreArray(destination_ids));
 }
-
-const char* kThreeAgentsOneKelvinDistributedState = R"proto(
-carnot_info {
-  query_broker_address: "agent1"
-  has_grpc_server: false
-  has_data_store: true
-  processes_data: true
-  accepts_remote_sources: false
-}
-carnot_info {
-  query_broker_address: "agent2"
-  has_grpc_server: false
-  has_data_store: true
-  processes_data: true
-  accepts_remote_sources: false
-}
-carnot_info {
-  query_broker_address: "agent3"
-  has_grpc_server: false
-  has_data_store: true
-  processes_data: true
-  accepts_remote_sources: false
-}
-carnot_info {
-  query_broker_address: "kelvin"
-  grpc_address: "1111"
-  has_grpc_server: true
-  has_data_store: false
-  processes_data: true
-  accepts_remote_sources: true
-}
-)proto";
 
 TEST_F(StitcherTest, three_agents_one_kelvin) {
   auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);

@@ -2,6 +2,7 @@
 
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
+#include "src/shared/metadata/base_types.h"
 
 namespace pl {
 namespace carnot {
