@@ -98,6 +98,14 @@ Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstSubscriptPtr& subscri
                               expr_node);
 }
 
+Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstAttributePtr& attribute,
+                                            const pypa::AstPtr& expr_node) {
+  OperatorContext process_column_context({}, "", {});
+  PL_ASSIGN_OR_RETURN(auto processed_column, Process(attribute, process_column_context));
+  return ProcessMapAssignment(PYPA_PTR_CAST(Name, attribute->value), processed_column->node(),
+                              expr_node);
+}
+
 Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstNamePtr& assign_name,
                                             IRNode* processed_column,
                                             const pypa::AstPtr& expr_node) {
@@ -179,9 +187,11 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   auto target_node = node->targets[0];
 
   // Special handler for this type of map statement: df['foo'] = df['bar']
-  // TODO(nserrino): Add support for assignment to a dataframe attribute like df.foo.
   if (target_node->type == AstType::Subscript) {
     return ProcessMapAssignment(PYPA_PTR_CAST(Subscript, node->targets[0]), node->value);
+  }
+  if (target_node->type == AstType::Attribute) {
+    return ProcessMapAssignment(PYPA_PTR_CAST(Attribute, node->targets[0]), node->value);
   }
 
   if (target_node->type != AstType::Name) {

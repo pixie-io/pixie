@@ -130,13 +130,16 @@ class ASTVisitorImpl : public ASTVisitor {
 
   /**
    * @brief ProcessMapAssignment handles lines where a map is assigned via a statement like
-   *  1: a['foo'] = a['bar'] * 2 + a['abc']
+   *  1: a['foo'] = a['bar'] * 2 + a.abc
+   *  1: a.foo = a.bar * 2 + a['col with space']
    *   *
    * @param assign_node the target of the assignment
    * @param expr_node the expression of the assignment
    * @return Status whether the assignment worked or not.
    */
   Status ProcessMapAssignment(const pypa::AstSubscriptPtr& assign_node,
+                              const pypa::AstPtr& expr_node);
+  Status ProcessMapAssignment(const pypa::AstAttributePtr& assign_node,
                               const pypa::AstPtr& expr_node);
   Status ProcessMapAssignment(const pypa::AstNamePtr& assign_name, IRNode* processed_column,
                               const pypa::AstPtr& expr_node);

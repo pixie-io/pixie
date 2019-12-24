@@ -208,7 +208,9 @@ class QLObject {
     return error::Unimplemented("");
   }
 
-  bool HasNonMethodAttribute(std::string_view name) const { return AllAttributes().contains(name); }
+  virtual bool HasNonMethodAttribute(std::string_view name) const {
+    return AllAttributes().contains(name);
+  }
 
   // Reserved keyword for call.
   inline static constexpr char kCallMethodName[] = "__call__";

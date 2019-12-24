@@ -106,8 +106,10 @@ StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
     return MetadataObject::Create(op());
   }
 
-  // Shouldn't ever be hit, but will appear here anyways.
-  return CreateAstError(ast, "'$0' object has no attribute '$1'", name);
+  // We evaluate schemas in the analyzer, so at this point assume 'name' is a valid column.
+  PL_ASSIGN_OR_RETURN(ColumnIR * column,
+                      graph()->CreateNode<ColumnIR>(ast, std::string(name), /* parent_op_idx */ 0));
+  return ExprObject::Create(column);
 }
 
 StatusOr<QLObjectPtr> JoinHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,

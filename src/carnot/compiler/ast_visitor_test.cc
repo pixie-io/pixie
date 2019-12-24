@@ -92,8 +92,7 @@ TEST_F(ASTVisitorTest, nonexistant_operator_names) {
       "pl.DataFrame(table='cpu', select=['cpu0']).brange(start=0,stop=10)";
   graph_or_s = CompileGraph(wrong_range_op_name);
   ASSERT_NOT_OK(graph_or_s);
-  EXPECT_THAT(graph_or_s.status(),
-              HasCompilerError("'Dataframe' object has no attribute 'brange'"));
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("'expression' object is not callable"));
 }
 
 TEST_F(ASTVisitorTest, assign_functionality) {
@@ -134,32 +133,34 @@ TEST_F(MapTest, single_col_map) {
   EXPECT_OK(CompileGraph(single_col_div_map_query));
 }
 
-TEST_F(MapTest, single_col_map_subscript) {
-  std::string single_col_map_sum = absl::StrJoin(
+TEST_F(MapTest, single_col_map_subscript_attribute) {
+  std::string single_col_map = absl::StrJoin(
       {
-          "queryDF = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
-          "queryDF['cpu2'] = queryDF['cpu0'] + queryDF['cpu1']",
+          "s = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+          "s['cpu2'] = s['cpu0'] + s['cpu1']",
+
+          "a = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+          "a['cpu2'] = a['cpu0'] + a['cpu1']",
       },
       "\n");
-  auto result_s = CompileGraph(single_col_map_sum);
+
+  auto result_s = CompileGraph(single_col_map);
   ASSERT_OK(result_s);
   auto result = result_s.ConsumeValueOrDie();
 
-  MapIR* map;
-  for (const auto node_id : result->dag().nodes()) {
-    if (result->Get(node_id)->type() == IRNodeType::kMap) {
-      map = static_cast<MapIR*>(result->Get(node_id));
-      break;
-    }
-  }
-  EXPECT_NE(map, nullptr);
-  EXPECT_TRUE(map->keep_input_columns());
+  auto mapnodes = result->FindNodesOfType(IRNodeType::kMap);
+  auto map1 = static_cast<MapIR*>(mapnodes[0]);
+  auto map2 = static_cast<MapIR*>(mapnodes[1]);
+
+  CompareClone(map1, map2, "Map assignment");
+
+  EXPECT_NE(map1, nullptr);
+  EXPECT_TRUE(map1->keep_input_columns());
 
   std::vector<std::string> output_columns;
-  for (const ColumnExpression& expr : map->col_exprs()) {
+  for (const ColumnExpression& expr : map1->col_exprs()) {
     output_columns.push_back(expr.name);
   }
-
   EXPECT_EQ(output_columns, std::vector<std::string>{"cpu2"});
 }
 

@@ -1057,8 +1057,8 @@ class MemorySourceIR : public OperatorIR {
   ExpressionIR* end_time_expr_ = nullptr;
 
   bool time_set_ = false;
-  int64_t time_start_ns_;
-  int64_t time_stop_ns_;
+  int64_t time_start_ns_ = 0;
+  int64_t time_stop_ns_ = 0;
 
   // Hold of columns in the order that they are selected.
   std::vector<std::string> column_names_;

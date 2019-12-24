@@ -56,6 +56,7 @@ class Dataframe : public QLObject {
                                                        std::string_view name) const override;
 
   Status Init();
+  bool HasNonMethodAttribute(std::string_view /* name */) const override { return true; }
 
  private:
   OperatorIR* op_;
