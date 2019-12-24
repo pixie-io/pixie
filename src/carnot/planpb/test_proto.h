@@ -49,6 +49,15 @@ constant {
     int64_value: 1337
 })";
 
+const char* kScalarUInt128ValuePbtxt = R"(
+constant {
+    data_type: UINT128
+    uint128_value : {
+      high: 123
+      low: 456
+    }
+})";
+
 /*
  * Template for a ScalarFunc.
  * $1: A ScalarExpression representing the args used during evaluation.

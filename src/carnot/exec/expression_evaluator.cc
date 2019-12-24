@@ -75,6 +75,8 @@ std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState* exec_state, const pla
       return EvalScalar<DataType::STRING>(mem_pool, val.StringValue(), count);
     case types::TIME64NS:
       return EvalScalar<DataType::TIME64NS>(mem_pool, val.Time64NSValue(), count);
+    case types::UINT128:
+      return EvalScalar<DataType::UINT128>(mem_pool, val.UInt128Value(), count);
     default:
       CHECK(0) << "Unknown data type";
   }
@@ -86,7 +88,7 @@ std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState*, const plan:
                                                          size_t count) {
   switch (val.DataType()) {
     case types::BOOLEAN:
-      return std::make_shared<BoolValueColumnWrapper>(count, val.BoolValue());
+      return std::make_shared<types::BoolValueColumnWrapper>(count, val.BoolValue());
     case types::INT64:
       return std::make_shared<types::Int64ValueColumnWrapper>(count, val.Int64Value());
     case types::FLOAT64:
@@ -94,8 +96,10 @@ std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState*, const plan:
     case types::STRING:
       return std::make_shared<types::StringValueColumnWrapper>(count, val.StringValue());
     case types::TIME64NS:
-      return std::make_shared<Time64NSValueColumnWrapper>(
+      return std::make_shared<types::Time64NSValueColumnWrapper>(
           count, types::Time64NSValue(val.Time64NSValue()));
+    case types::UINT128:
+      return std::make_shared<types::UInt128ValueColumnWrapper>(count, val.UInt128Value());
     default:
       CHECK(0) << "Unknown data type";
   }

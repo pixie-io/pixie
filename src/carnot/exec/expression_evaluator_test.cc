@@ -26,6 +26,7 @@ using pl::carnot::planpb::testutils::kAddScalarFuncConstPbtxt;
 using pl::carnot::planpb::testutils::kAddScalarFuncNestedPbtxt;
 using pl::carnot::planpb::testutils::kAddScalarFuncPbtxt;
 using pl::carnot::planpb::testutils::kScalarInt64ValuePbtxt;
+using pl::carnot::planpb::testutils::kScalarUInt128ValuePbtxt;
 using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 using types::Int64Value;
@@ -47,9 +48,17 @@ std::shared_ptr<plan::ScalarExpression> AddScalarExpr() {
   return s_or_se.ConsumeValueOrDie();
 }
 
-std::shared_ptr<plan::ScalarExpression> ConstScalarExpr() {
+std::shared_ptr<plan::ScalarExpression> Int64ConstScalarExpr() {
   planpb::ScalarExpression se_pb;
   google::protobuf::TextFormat::MergeFromString(kScalarInt64ValuePbtxt, &se_pb);
+  auto s_or_se = plan::ScalarExpression::FromProto(se_pb);
+  EXPECT_TRUE(s_or_se.ok());
+  return s_or_se.ConsumeValueOrDie();
+}
+
+std::shared_ptr<plan::ScalarExpression> UInt128ConstScalarExpr() {
+  planpb::ScalarExpression se_pb;
+  google::protobuf::TextFormat::MergeFromString(kScalarUInt128ValuePbtxt, &se_pb);
   auto s_or_se = plan::ScalarExpression::FromProto(se_pb);
   EXPECT_TRUE(s_or_se.ok());
   return s_or_se.ConsumeValueOrDie();
@@ -125,7 +134,7 @@ TEST_P(ScalarExpressionTest, eval_constant) {
   RowDescriptor rd_output({types::DataType::INT64});
   RowBatch output_rb(rd_output, input_rb_->num_rows());
 
-  auto se = ConstScalarExpr();
+  auto se = Int64ConstScalarExpr();
   RunEvaluator({se}, &output_rb);
 
   auto out_col = output_rb.ColumnAt(0);
@@ -164,6 +173,21 @@ TEST_P(ScalarExpressionTest, eval_add_nested) {
   EXPECT_EQ(1341, casted->Value(0));
   EXPECT_EQ(1343, casted->Value(1));
   EXPECT_EQ(1345, casted->Value(2));
+}
+
+TEST_P(ScalarExpressionTest, eval_uint128_constant) {
+  RowDescriptor rd_output({types::DataType::UINT128});
+  RowBatch output_rb(rd_output, input_rb_->num_rows());
+
+  auto se = UInt128ConstScalarExpr();
+  RunEvaluator({se}, &output_rb);
+
+  auto out_col = output_rb.ColumnAt(0);
+  EXPECT_EQ(3, out_col->length());
+  auto casted = static_cast<arrow::UInt128Array*>(out_col.get());
+  EXPECT_EQ(types::UInt128Value(123, 456), casted->Value(0));
+  EXPECT_EQ(types::UInt128Value(123, 456), casted->Value(1));
+  EXPECT_EQ(types::UInt128Value(123, 456), casted->Value(2));
 }
 
 }  // namespace exec
