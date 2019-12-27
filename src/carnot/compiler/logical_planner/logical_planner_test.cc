@@ -92,10 +92,10 @@ TEST_F(LogicalPlannerTest, DISABLED_many_agents) {
 const char* kHttpRequestStats = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-30s')
 
-t1['service'] = t1.attr['service']
-t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
-t1['failure'] = t1['http_resp_status'] >= 400
-t1['range_group'] = t1['time_'] - pl.modulo(t1['time_'], 1000000000)
+t1.service = t1.attr['service']
+t1.http_resp_latency_ms = t1.http_resp_latency_ns / 1.0E6
+t1.failure = t1.http_resp_status >= 400
+t1.range_group = t1.time_ - pl.modulo(t1.time_, 1000000000)
 
 quantiles_agg = t1.groupby('service').agg(
   latency_quantiles=('http_resp_latency_ms', pl.quantiles),
@@ -121,11 +121,11 @@ joined_table = quantiles_table.merge(rps_table,
                                      right_on=['service'],
                                      suffixes=['', '_x'])
 
-joined_table['latency(p50)'] = joined_table['latency_p50']
-joined_table['latency(p90)'] = joined_table['latency_p90']
-joined_table['latency(p99)'] = joined_table['latency_p99']
-joined_table['throughput (rps)'] = joined_table['rps']
-joined_table['throughput total'] = joined_table['throughput_total']
+joined_table['latency(p50)'] = joined_table.latency_p50
+joined_table['latency(p90)'] = joined_table.latency_p90
+joined_table['latency(p99)'] = joined_table.latency_p99
+joined_table['throughput (rps)'] = joined_table.rps
+joined_table['throughput total'] = joined_table.throughput_total
 
 joined_table = joined_table[[
   'service',

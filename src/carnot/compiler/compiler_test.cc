@@ -539,7 +539,7 @@ TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
   std::string query =
       absl::StrJoin({"queryDF = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
-                     "queryDF['cpu_sum'] = queryDF['cpu1'] + queryDF['cpu2']",
+                     "queryDF.cpu_sum = queryDF.cpu1 + queryDF['cpu2']",
                      "aggDF = queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', pl.count),",
                      "cpu_mean=('cpu1', pl.mean))", "pl.display(aggDF, 'cpu_out')"},
                     "\n");
@@ -552,7 +552,7 @@ TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
 TEST_F(CompilerTest, rename_then_group_by_test) {
   auto query =
       absl::StrJoin({"queryDF = pl.DataFrame(table='sequences', select=['time_', 'xmod10', 'PIx'])",
-                     "queryDF['res'] = queryDF['PIx']", "queryDF['c1'] = queryDF['xmod10']",
+                     "queryDF['res'] = queryDF.PIx", "queryDF.c1 = queryDF['xmod10']",
                      "map_out = queryDF[['res', 'c1']]",
                      "agg_out = map_out.groupby(['res', 'c1']).agg(count=('c1', pl.count))",
                      "pl.display(agg_out, 't15')"},

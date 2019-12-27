@@ -3,10 +3,10 @@ queries = [
 """
 t1 = pl.DataFrame(table='http_events', start_time='-30s')
 
-t1['service'] = t1.attr['service']
-t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
-t1['failure'] = t1['http_resp_status'] >= 400
-t1['range_group'] = t1['time_'] - pl.modulo(t1['time_'], 1000000000)
+t1.service = t1.attr['service']
+t1.http_resp_latency_ms = t1.http_resp_latency_ns / 1.0E6
+t1.failure = t1.http_resp_status >= 400
+t1.range_group = t1.time_ - pl.modulo(t1.time_, 1000000000)
 
 quantiles_agg = t1.groupby('service').agg(
   latency_quantiles=('http_resp_latency_ms', pl.quantiles),
@@ -14,9 +14,9 @@ quantiles_agg = t1.groupby('service').agg(
   throughput_total=('http_resp_status', pl.count),
 )
 
-quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p50')
-quantiles_agg['latency_p90'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
-quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
+quantiles_agg.latency_p50 = pl.pluck(quantiles_agg.latency_quantiles, 'p50')
+quantiles_agg.latency_p90 = pl.pluck(quantiles_agg.latency_quantiles, 'p90')
+quantiles_agg.latency_p99 = pl.pluck(quantiles_agg.latency_quantiles, 'p99')
 quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
 
 # The Range aggregate to calcualte the requests per second.
@@ -32,11 +32,11 @@ joined_table = quantiles_table.merge(rps_table,
                                      right_on=['service'],
                                      suffixes=['', '_x'])
 
-joined_table['latency(p50)'] = joined_table['latency_p50']
-joined_table['latency(p90)'] = joined_table['latency_p90']
-joined_table['latency(p99)'] = joined_table['latency_p99']
-joined_table['throughput (rps)'] = joined_table['rps']
-joined_table['throughput total'] = joined_table['throughput_total']
+joined_table['latency(p50)'] = joined_table.latency_p50
+joined_table['latency(p90)'] = joined_table.latency_p90
+joined_table['latency(p99)'] = joined_table.latency_p99
+joined_table['throughput (rps)'] = joined_table.rps
+joined_table['throughput total'] = joined_table.throughput_total
 
 joined_table = joined_table[[
   'service',
@@ -46,7 +46,7 @@ joined_table = joined_table[[
   'errors',
   'throughput (rps)',
   'throughput total']]
-joined_table = joined_table[joined_table['service'] != '']
+joined_table = joined_table[joined_table.service != '']
 pl.display(joined_table)
 """
 ],
@@ -60,15 +60,15 @@ t1 = pl.DataFrame(table='process_stats', start_time='-60s')
 bytes_per_mb = 1024.0 * 1024.0
 
 # Convert to better units.
-t1['cpu_utime_s'] = t1['cpu_utime_ns'] / 1.0E9
-t1['cpu_ktime_s'] = t1['cpu_ktime_ns'] / 1.0E9
-t1['vsize_mb'] = t1['vsize_bytes'] / bytes_per_mb
-t1['rss_bytes_mb'] = t1['rss_bytes'] / bytes_per_mb
-t1['read_bytes_mb'] = t1['read_bytes'] / bytes_per_mb
-t1['write_bytes_mb'] = t1['write_bytes'] / bytes_per_mb
-t1['rchar_bytes_mb'] = t1['rchar_bytes'] / bytes_per_mb
-t1['wchar_bytes_mb'] = t1['wchar_bytes'] / bytes_per_mb
-t1['pod'] = t1.attr['pod']
+t1.cpu_utime_s = t1.cpu_utime_ns / 1.0E9
+t1.cpu_ktime_s = t1.cpu_ktime_ns / 1.0E9
+t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
+t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
+t1.read_bytes_mb = t1.read_bytes / bytes_per_mb
+t1.write_bytes_mb = t1.write_bytes / bytes_per_mb
+t1.rchar_bytes_mb = t1.rchar_bytes / bytes_per_mb
+t1.wchar_bytes_mb = t1.wchar_bytes / bytes_per_mb
+t1.pod = t1.attr['pod']
 
 upid_aggop = t1.groupby(['upid', 'pod']).agg(
   vsize_mb=('vsize_mb', pl.mean),
@@ -90,12 +90,12 @@ upid_aggop = t1.groupby(['upid', 'pod']).agg(
 )
 
 # The cpu time diff.
-upid_aggop['cpu_utime_s'] = upid_aggop['cpu_utime_s_end'] - upid_aggop['cpu_utime_s_start']
-upid_aggop['cpu_ktime_s'] = upid_aggop['cpu_ktime_s_end'] - upid_aggop['cpu_ktime_s_start']
-upid_aggop['read_bytes_mb'] = upid_aggop['read_bytes_mb_end'] - upid_aggop['read_bytes_mb_start']
-upid_aggop['write_bytes_mb'] = upid_aggop['write_bytes_mb_end'] - upid_aggop['write_bytes_mb_start']
-upid_aggop['rchar_bytes_mb'] = upid_aggop['rchar_bytes_mb_end'] - upid_aggop['rchar_bytes_mb_start']
-upid_aggop['wchar_bytes_mb'] = upid_aggop['wchar_bytes_mb_end'] - upid_aggop['wchar_bytes_mb_start']
+upid_aggop.cpu_utime_s = upid_aggop.cpu_utime_s_end - upid_aggop.cpu_utime_s_start
+upid_aggop.cpu_ktime_s = upid_aggop.cpu_ktime_s_end - upid_aggop.cpu_ktime_s_start
+upid_aggop.read_bytes_mb = upid_aggop.read_bytes_mb_end - upid_aggop.read_bytes_mb_start
+upid_aggop.write_bytes_mb = upid_aggop.write_bytes_mb_end - upid_aggop.write_bytes_mb_start
+upid_aggop.rchar_bytes_mb = upid_aggop.rchar_bytes_mb_end - upid_aggop.rchar_bytes_mb_start
+upid_aggop.wchar_bytes_mb = upid_aggop.wchar_bytes_mb_end - upid_aggop.wchar_bytes_mb_start
 
 # For this aggregate, we sum up the values as we've already calculated the average/usage 
 # for the upids already.
@@ -111,17 +111,17 @@ pod_aggop = upid_aggop.groupby('pod').agg(
 )
 
 # Format everything nicely.
-pod_aggop['pod_name'] = pod_aggop['pod']
-pod_aggop['status'] = pl.pod_name_to_status(pod_aggop['pod_name'])
-pod_aggop['Created on'] = pl.pod_name_to_start_time(pod_aggop['pod_name'])
-pod_aggop['CPU User time (s)'] = pod_aggop['cpu_utime_s']
-pod_aggop['CPU System time (s)'] = pod_aggop['cpu_ktime_s']
-pod_aggop['Virtual Memory (mb)'] = pod_aggop['vsize_mb']
-pod_aggop['Average Memory (mb)'] = pod_aggop['rss_bytes_mb']
-pod_aggop['Read to IO (mb)'] = pod_aggop['read_bytes_mb']
-pod_aggop['Write to IO (mb)'] = pod_aggop['write_bytes_mb']
-pod_aggop['Characters Read (mb)'] = pod_aggop['rchar_bytes_mb']
-pod_aggop['Characters written (mb)'] = pod_aggop['wchar_bytes_mb']
+pod_aggop.pod_name = pod_aggop.pod
+pod_aggop.status = pl.pod_name_to_status(pod_aggop.pod_name)
+pod_aggop['Created on'] = pl.pod_name_to_start_time(pod_aggop.pod_name)
+pod_aggop['CPU User time (s)'] = pod_aggop.cpu_utime_s
+pod_aggop['CPU System time (s)'] = pod_aggop.cpu_ktime_s
+pod_aggop['Virtual Memory (mb)'] = pod_aggop.vsize_mb
+pod_aggop['Average Memory (mb)'] = pod_aggop.rss_bytes_mb
+pod_aggop['Read to IO (mb)'] = pod_aggop.read_bytes_mb
+pod_aggop['Write to IO (mb)'] = pod_aggop.write_bytes_mb
+pod_aggop['Characters Read (mb)'] = pod_aggop.rchar_bytes_mb
+pod_aggop['Characters written (mb)'] = pod_aggop.wchar_bytes_mb
 
 keep_columns = pod_aggop[['pod_name', 'status', 'Created on', 'CPU User time (s)', 'CPU System time (s)',
                           'Virtual Memory (mb)', 'Average Memory (mb)', 'Read to IO (mb)', 'Write to IO (mb)',
@@ -138,15 +138,15 @@ t1 = pl.DataFrame(table='process_stats', start_time='-60s')
 bytes_per_mb = 1024.0 * 1024.0
 
 # Convert to better units.
-t1['cpu_utime_s'] = t1['cpu_utime_ns'] / 1.0E9
-t1['cpu_ktime_s'] = t1['cpu_ktime_ns'] / 1.0E9
-t1['vsize_mb'] = t1['vsize_bytes'] / bytes_per_mb
-t1['rss_bytes_mb'] = t1['rss_bytes'] / bytes_per_mb
-t1['read_bytes_mb'] = t1['read_bytes'] / bytes_per_mb
-t1['write_bytes_mb'] = t1['write_bytes'] / bytes_per_mb
-t1['rchar_bytes_mb'] = t1['rchar_bytes'] / bytes_per_mb
-t1['wchar_bytes_mb'] = t1['wchar_bytes'] / bytes_per_mb
-t1['pod']  = t1.attr['pod']
+t1.cpu_utime_s = t1.cpu_utime_ns / 1.0E9
+t1.cpu_ktime_s = t1.cpu_ktime_ns / 1.0E9
+t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
+t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
+t1.read_bytes_mb = t1.read_bytes / bytes_per_mb
+t1.write_bytes_mb = t1.write_bytes / bytes_per_mb
+t1.rchar_bytes_mb = t1.rchar_bytes / bytes_per_mb
+t1.wchar_bytes_mb = t1.wchar_bytes / bytes_per_mb
+t1.pod  = t1.attr['pod']
 
 upid_aggop = t1.groupby(['upid', 'pod']).agg(
   vsize_mb=('vsize_mb', pl.mean),
@@ -173,17 +173,17 @@ pod_aggop = upid_aggop.groupby('pod').agg(
 )
 
 # Format everything nicely.
-pod_aggop['pod_name'] = pod_aggop['pod']
-pod_aggop['status'] = pl.pod_name_to_status(pod_aggop['pod_name'])
-pod_aggop['Created on'] = pl.pod_name_to_start_time(pod_aggop['pod_name'])
-pod_aggop['CPU User time (s)'] = pod_aggop['cpu_utime_s']
-pod_aggop['CPU System time (s)'] = pod_aggop['cpu_ktime_s']
-pod_aggop['Virtual Memory (mb)'] = pod_aggop['vsize_mb']
-pod_aggop['Average Memory (mb)'] = pod_aggop['rss_bytes_mb']
-pod_aggop['Read to IO (mb)'] = pod_aggop['read_bytes_mb']
-pod_aggop['Write to IO (mb)'] = pod_aggop['write_bytes_mb']
-pod_aggop['Characters Read (mb)'] = pod_aggop['rchar_bytes_mb']
-pod_aggop['Characters written (mb)'] = pod_aggop['wchar_bytes_mb']
+pod_aggop.pod_name = pod_aggop.pod
+pod_aggop.status = pl.pod_name_to_status(pod_aggop.pod_name)
+pod_aggop['Created on'] = pl.pod_name_to_start_time(pod_aggop.pod_name)
+pod_aggop['CPU User time (s)'] = pod_aggop.cpu_utime_s
+pod_aggop['CPU System time (s)'] = pod_aggop.cpu_ktime_s
+pod_aggop['Virtual Memory (mb)'] = pod_aggop.vsize_mb
+pod_aggop['Average Memory (mb)'] = pod_aggop.rss_bytes_mb
+pod_aggop['Read to IO (mb)'] = pod_aggop.read_bytes_mb
+pod_aggop['Write to IO (mb)'] = pod_aggop.write_bytes_mb
+pod_aggop['Characters Read (mb)'] = pod_aggop.rchar_bytes_mb
+pod_aggop['Characters written (mb)'] = pod_aggop.wchar_bytes_mb
 
 keep_columns = pod_aggop[['pod_name', 'status', 'Created on', 'CPU User time (s)', 'CPU System time (s)',
                           'Virtual Memory (mb)', 'Average Memory (mb)', 'Read to IO (mb)', 'Write to IO (mb)',
@@ -193,14 +193,14 @@ pl.display(keep_columns)
 ["Sample HTTP Data",
 """
 t1 = pl.DataFrame(table='http_events', select=['time_', 'remote_addr', 'remote_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns'], start_time='-30s')
-t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
+t1.http_resp_latency_ms = t1.http_resp_latency_ns / 1.0E6
 t2 = t1.drop(columns=['http_resp_latency_ns']).head(n=100)
 pl.display(t2)
 """],
 ["Sample MySQL Data",
 """
 t1 = pl.DataFrame(table='mysql_events', select=['time_', 'remote_addr', 'remote_port', 'req_cmd', 'req_body', 'resp_status', 'resp_body', 'latency_ns'], start_time='-30s')
-t1['latency_ms'] = t1['latency_ns'] / 1.0E6
+t1.latency_ms = t1.latency_ns / 1.0E6
 t2 = t1.drop(columns=['latency_ns']).head(n=100)
 pl.display(t2)
 """],
@@ -218,12 +218,12 @@ pl.display(t2)
 # 
 t1 = pl.DataFrame(table='process_stats', start_time='-30m')
 bytes_per_mb = 1024.0 * 1024.0
-t1['vsize_mb'] = t1['vsize_bytes'] / bytes_per_mb
-t1['rss_bytes_mb'] = t1['rss_bytes'] / bytes_per_mb
-t1['timestamp'] = pl.bin(t1['time_'], pl.seconds(10))
-t1['pod']  = t1.attr['pod']
+t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
+t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
+t1.timestamp = pl.bin(t1.time_, pl.seconds(10))
+t1.pod = t1.attr['pod']
 # uncomment and replace service_name to filter on a specific service.
-#t1 = t1[pl.contains(t1['service'], 'service_name')]
+#t1 = t1[pl.contains(t1.service, 'service_name')]
 upid_aggop = t1.groupby(['upid', 'pod', 'timestamp']).agg(
   vsize_mb=('vsize_mb', pl.mean),
   rss_bytes_mb=('rss_bytes_mb', pl.mean),
@@ -235,8 +235,8 @@ pod_aggop = upid_aggop.groupby(['pod', 'timestamp']).agg(
   rss_bytes_mb=('rss_bytes_mb', pl.sum),
 )
 # Format column names.
-pod_aggop['Virtual Memory (mb)'] = pod_aggop['vsize_mb']
-pod_aggop['Average Memory (mb)'] = pod_aggop['rss_bytes_mb']
+pod_aggop['Virtual Memory (mb)'] = pod_aggop.vsize_mb
+pod_aggop['Average Memory (mb)'] = pod_aggop.rss_bytes_mb
 keep_columns = pod_aggop[[
   'pod', 
   'timestamp', 
@@ -252,12 +252,12 @@ pl.display(keep_columns)
 # 
 t1 = pl.DataFrame(table='process_stats', start_time='-30m')
 bytes_per_mb = 1024.0 * 1024.0
-t1['vsize_mb'] = t1['vsize_bytes'] / bytes_per_mb
-t1['rss_bytes_mb'] = t1['rss_bytes'] / bytes_per_mb
-t1['timestamp'] = pl.bin(t1['time_'], pl.seconds(10))
-t1['service']  = t1.attr['service']
+t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
+t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
+t1.timestamp = pl.bin(t1.time_, pl.seconds(10))
+t1.service  = t1.attr['service']
 # uncomment and replace service_name to filter on a specific service.
-#t1 = t1[pl.contains(t1['service'], 'service_name')]
+#t1 = t1[pl.contains(t1.service, 'service_name')]
 upid_aggop = t1.groupby(['upid', 'service', 'timestamp']).agg(
   vsize_mb=('vsize_mb', pl.mean),
   rss_bytes_mb=('rss_bytes_mb', pl.mean),
@@ -269,8 +269,8 @@ aggop = upid_aggop.groupby(['service', 'timestamp']).agg(
   rss_bytes_mb=('rss_bytes_mb', pl.sum),
 )
 # Format column names.
-aggop['Virtual Memory (mb)'] = aggop['vsize_mb']
-aggop['Average Memory (mb)'] = aggop['rss_bytes_mb']
+aggop['Virtual Memory (mb)'] = aggop.vsize_mb
+aggop['Average Memory (mb)'] = aggop.rss_bytes_mb
 keep_columns = aggop[[
   'service', 
   'timestamp', 
@@ -286,23 +286,23 @@ pl.display(keep_columns)
 # 
 t1 = pl.DataFrame(table='process_stats', start_time='-30s')
 bytes_per_mb = 1024.0 * 1024.0
-t1['vsize_mb'] = t1['vsize_bytes'] / bytes_per_mb
-t1['rss_bytes_mb'] = t1['rss_bytes'] / bytes_per_mb
-t1['timestamp'] = pl.bin(t1['time_'], pl.seconds(10))
-t1['cmdline'] = pl.upid_to_cmdline(t1['upid'])
+t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
+t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
+t1.timestamp = pl.bin(t1.time_, pl.seconds(10))
+t1.cmdline = pl.upid_to_cmdline(t1.upid)
 
 aggop = t1.groupby(['upid', 'timestamp', 'cmdline']).agg(
   vsize_mb=('vsize_mb', pl.mean),
   rss_bytes_mb=('rss_bytes_mb', pl.mean),
 )
 # Format column names.
-aggop['pid'] = pl.upid_to_pid(aggop['upid'])
-aggop['asid'] = pl.upid_to_asid(aggop['upid'])
-aggop['Process Name'] = aggop['cmdline'] 
+aggop.pid = pl.upid_to_pid(aggop.upid)
+aggop.asid = pl.upid_to_asid(aggop.upid)
+aggop['Process Name'] = aggop.cmdline
 # uncomment and replace number to filter on a specific pid.
-#aggop = aggop[aggop['pid'] == 4862]
-aggop['Virtual Memory (mb)'] = aggop['vsize_mb']
-aggop['Average Memory (mb)'] = aggop['rss_bytes_mb']
+#aggop = aggop[aggop.pid == 4862]
+aggop['Virtual Memory (mb)'] = aggop.vsize_mb
+aggop['Average Memory (mb)'] = aggop.rss_bytes_mb
 keep_columns = aggop[[
   'pid',
   'Process Name',

@@ -106,7 +106,7 @@ TEST_F(CarnotTest, map_test) {
   std::vector<types::Float64Value> col1_in2 = {5.1, 11.1};
 
   auto query = absl::StrJoin({"queryDF = pl.DataFrame(table='test_table', select=['col1', 'col2'])",
-                              "queryDF['res'] = pl.add(queryDF['col1'], queryDF['col2'])",
+                              "queryDF.res = pl.add(queryDF.col1, queryDF['col2'])",
                               "df = queryDF[['res']]", "pl.display(df, 'test_output')"},
                              "\n");
 
@@ -133,7 +133,7 @@ TEST_F(CarnotTest, subscript_map_test) {
 
   auto query = absl::StrJoin(
       {"queryDF = pl.DataFrame(table='test_table', select=['col1', 'col2'])",
-       "queryDF['res'] = queryDF['col1'] + queryDF['col2']", "pl.display(queryDF, 'test_output')"},
+       "queryDF['res'] = queryDF.col1 + queryDF.col2", "pl.display(queryDF, 'test_output')"},
       "\n");
 
   auto uuid = sole::uuid4();
@@ -227,7 +227,7 @@ TEST_F(CarnotTest, empty_query_test) {
 TEST_F(CarnotTest, map_op_udf_add) {
   auto add_query =
       absl::StrJoin({"queryDF = pl.DataFrame(table='test_table', select=['col1', 'col2'])",
-                     "queryDF['sum'] = queryDF['col1'] + queryDF['col2']", "df = queryDF[['sum']]",
+                     "queryDF.sum = queryDF.col1 + queryDF.col2", "df = queryDF[['sum']]",
                      "pl.display(df, 'test_output')"},
                     "\n");
   // No time column, doesn't use a time parameter.
