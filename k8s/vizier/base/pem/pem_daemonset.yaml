@@ -38,10 +38,10 @@ spec:
               fieldPath: metadata.name
         resources:
           limits:
-            memory: 256Mi
+            memory: 512Mi
           requests:
             cpu: 100m
-            memory: 256Mi
+            memory: 512Mi
         securityContext:
           capabilities:
             add:
