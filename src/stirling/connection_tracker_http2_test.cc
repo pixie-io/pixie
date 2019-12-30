@@ -183,6 +183,52 @@ TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
   EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
 }
 
+// This test ensures we ignore data with file descriptor of zero
+// which is usually indicative of something erroneous.
+// With uprobes, in particular, it implies we failed to get the net.Conn data,
+// which could be because we have currently hard-coded dwarf info values.
+TEST_F(ConnectionTrackerHTTP2Test, ZeroFD) {
+  ConnectionTracker tracker;
+
+  const conn_id_t kConnID = {
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 0, .generation = 3};
+  const int kStreamID = 7;
+  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  std::unique_ptr<HTTP2DataEvent> data_frame;
+  std::unique_ptr<HTTP2HeaderEvent> header_event;
+
+  header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
+  tracker.AddHTTP2Header(std::move(header_event));
+
+  header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
+  tracker.AddHTTP2Header(std::move(header_event));
+
+  header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic");
+  tracker.AddHTTP2Header(std::move(header_event));
+
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
+  tracker.AddHTTP2Data(std::move(data_frame));
+
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true);
+  tracker.AddHTTP2Data(std::move(data_frame));
+
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
+  tracker.AddHTTP2Data(std::move(data_frame));
+
+  data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse");
+  tracker.AddHTTP2Data(std::move(data_frame));
+
+  header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
+  tracker.AddHTTP2Header(std::move(header_event));
+
+  header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
+  tracker.AddHTTP2Header(std::move(header_event));
+
+  std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
+
+  EXPECT_TRUE(records.empty());
+}
+
 TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
   ConnectionTracker tracker;
 

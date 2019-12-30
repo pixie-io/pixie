@@ -400,6 +400,7 @@ class ConnectionTracker {
   void SetConnID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
+  void CheckTracker();
   void HandleInactivity();
 
   // Used to identify the remove endpoint in case the accept/connect was not traced.

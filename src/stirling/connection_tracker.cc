@@ -66,14 +66,13 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
     LOG_FIRST_N(WARNING, 20) << absl::Substitute("[PL-985] Clobbering existing ConnOpenEvent $0.",
                                                  ToString(conn_event.conn_id));
   }
-  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
-      << absl::Substitute(
-             "Did not expect Open event more than 1 sampling iteration after Close $0.",
-             ToString(conn_event.conn_id));
+
+  SetConnID(conn_event.conn_id);
+  SetTrafficClass(conn_event.traffic_class);
+
+  CheckTracker();
 
   UpdateTimestamps(conn_event.timestamp_ns);
-  SetTrafficClass(conn_event.traffic_class);
-  SetConnID(conn_event.conn_id);
 
   open_info_.timestamp_ns = conn_event.timestamp_ns;
   Status s = ParseSockAddr(*reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
@@ -91,8 +90,11 @@ void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
                                                ToString(close_event.conn_id));
   }
 
-  UpdateTimestamps(close_event.timestamp_ns);
   SetConnID(close_event.conn_id);
+
+  CheckTracker();
+
+  UpdateTimestamps(close_event.timestamp_ns);
 
   close_info_.timestamp_ns = close_event.timestamp_ns;
   close_info_.send_seq_num = close_event.wr_seq_num;
@@ -102,19 +104,16 @@ void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
 }
 
 void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
+  SetConnID(event->attr.conn_id);
+  SetTrafficClass(event->attr.traffic_class);
+
   // A disabled tracker doesn't collect data events.
   if (disabled_) {
     return;
   }
 
-  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
-      << absl::Substitute(
-             "Did not expect Data event more than 1 sampling iteration after Close $0.",
-             ToString(event->attr.conn_id));
-
+  CheckTracker();
   UpdateTimestamps(event->attr.return_timestamp_ns);
-  SetConnID(event->attr.conn_id);
-  SetTrafficClass(event->attr.traffic_class);
 
   switch (event->attr.direction) {
     case TrafficDirection::kEgress: {
@@ -183,29 +182,30 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
   return half_stream_ptr;
 }
 
-// TODO(oazizi): Change from const reference to pointer, to make std::move meaningful.
 void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
+  SetConnID(hdr->attr.conn_id);
+  traffic_class_.protocol = kProtocolHTTP2Uprobe;
+
+  if (conn_id_.fd == 0) {
+    Disable(
+        "FD of zero is usually not valid. One reason for could be that net.Conn could not be "
+        "accessed because of incorrect type information. If this is the case, the dwarf feature "
+        "should fix this.");
+  }
+
   // A disabled tracker doesn't collect data events.
   if (disabled_) {
     return;
   }
 
-  const conn_id_t& conn_id = hdr->attr.conn_id;
-
-  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
-      << absl::Substitute(
-             "Did not expect Data event more than 1 sampling iteration after Close $0.",
-             ToString(conn_id));
-
-  UpdateTimestamps(hdr->attr.timestamp_ns);
-  SetConnID(conn_id);
-
-  traffic_class_.protocol = kProtocolHTTP2Uprobe;
+  CheckTracker();
 
   // Don't trace any control messages.
   if (hdr->attr.stream_id == 0) {
     return;
   }
+
+  UpdateTimestamps(hdr->attr.timestamp_ns);
 
   bool write_event = false;
   switch (hdr->attr.type) {
@@ -239,28 +239,30 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   half_stream_ptr->UpdateTimestamp(hdr->attr.timestamp_ns);
 }
 
-// TODO(oazizi): Change from const reference to pointer, and use std::move.
 void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
+  SetConnID(data->attr.conn_id);
+  traffic_class_.protocol = kProtocolHTTP2Uprobe;
+
+  if (conn_id_.fd == 0) {
+    Disable(
+        "FD of zero is usually not valid. One reason for could be that net.Conn could not be "
+        "accessed because of incorrect type information. If this is the case, the dwarf feature "
+        "should fix this.");
+  }
+
   // A disabled tracker doesn't collect data events.
   if (disabled_) {
     return;
   }
 
-  const conn_id_t& conn_id = data->attr.conn_id;
-
-  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
-      << absl::Substitute(
-             "Did not expect Data event more than 1 sampling iteration after Close $0.",
-             ToString(conn_id));
-
-  UpdateTimestamps(data->attr.timestamp_ns);
-  SetConnID(conn_id);
-  traffic_class_.protocol = kProtocolHTTP2Uprobe;
+  CheckTracker();
 
   // Don't trace any control messages.
   if (data->attr.stream_id == 0) {
     return;
   }
+
+  UpdateTimestamps(data->attr.timestamp_ns);
 
   bool write_event = false;
   switch (data->attr.type) {
@@ -499,9 +501,9 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
 }
 
 void ConnectionTracker::Disable(std::string_view reason) {
-  VLOG(1) << absl::Substitute("Disabling connection pid=$0 fd=$1 gen=$2 dest=$3:$4 reason=$5",
-                              pid(), fd(), generation(), open_info_.remote_addr,
-                              open_info_.remote_port, reason);
+  LOG_IF(WARNING, !disabled_) << absl::Substitute("Disabling connection=$0 dest=$1:$2 reason=$3",
+                                                  ToString(conn_id_), open_info_.remote_addr,
+                                                  open_info_.remote_port, reason);
   disabled_ = true;
   // TODO(oazizi): Consider storing the reason field.
 
@@ -529,9 +531,6 @@ void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
                           ToString(conn_id));
 
   conn_id_ = conn_id;
-
-  LOG(ERROR) << "FD==0, which usually means the FD was not captured correctly. conn=$1",
-      ToString(conn_id_);
 }
 
 void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
@@ -551,6 +550,17 @@ void ConnectionTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
   last_bpf_timestamp_ns_ = std::max(last_bpf_timestamp_ns_, bpf_timestamp);
 
   last_update_timestamp_ = std::chrono::steady_clock::now();
+}
+
+void ConnectionTracker::CheckTracker() {
+  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
+      << absl::Substitute(
+             "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
+             ToString(conn_id_));
+
+  LOG_IF(ERROR, conn_id_.fd == 0 && !disabled_) << absl::Substitute(
+      "FD==0, which usually means the FD was not captured correctly. Connection=$0.",
+      ToString(conn_id_));
 }
 
 DataStream* ConnectionTracker::req_data() {
