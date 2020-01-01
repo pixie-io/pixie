@@ -613,7 +613,7 @@ def buildScriptForCommits = {
  *****************************************************************************/
 def regressionBuilders = [:]
 
-TEST_ITERATIONS=100
+TEST_ITERATIONS=10
 
 regressionBuilders['Test (opt)'] = {
   WithSourceCode {
