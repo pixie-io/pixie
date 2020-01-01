@@ -52,15 +52,15 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/googletest/archive/release-1.10.0.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
-        sha256 = "fd040f5238ff1e32b468d9d38e50f0d7f8da0828019948c9001e9a03093e1d8f",
-        strip_prefix = "grpc-1.24.2",
-        urls = ["https://github.com/grpc/grpc/archive/v1.24.2.tar.gz"],
+        sha256 = "2fcb7f1ab160d6fd3aaade64520be3e5446fc4c6fa7ba6581afdc4e26094bd81",
+        strip_prefix = "grpc-1.26.0",
+        urls = ["https://github.com/grpc/grpc/archive/v1.26.0.tar.gz"],
     ),
     com_google_boringssl = dict(
-        sha256 = "2b18e1c1ad15cc180529ababde8a62885ac35005131e9a797cdaf0e07d76a767",
-        strip_prefix = "boringssl-afc30d43eef92979b05776ec0963c9cede5fb80f",
+        sha256 = "781fa39693ec2984c71213cd633e9f6589eaaed75e3a9ac413237edec96fd3b9",
+        strip_prefix = "boringssl-83da28a68f32023fd3b95a8ae94991a07b1f6c62",
         urls = ["https://github.com/google/boringssl/" +
-                "archive/afc30d43eef92979b05776ec0963c9cede5fb80f.tar.gz"],
+                "archive/83da28a68f32023fd3b95a8ae94991a07b1f6c6.tar.gz"],
     ),
     com_github_gflags_gflags = dict(
         sha256 = "9e1a38e2dcbb20bb10891b5a171de2e5da70e0a50fff34dd4b0c2c6d75043909",
