@@ -132,6 +132,8 @@ Status SocketTraceConnector::InitImpl() {
   }
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << "Probes successfully deployed";
+  // TODO(yzhao): Consider adding a flag to switch the role to trace, i.e., between kRoleRequestor &
+  // kRoleResponder.
   if (protocol_transfer_specs_[kProtocolHTTP].enabled) {
     PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
   }
