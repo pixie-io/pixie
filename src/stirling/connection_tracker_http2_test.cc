@@ -282,5 +282,169 @@ TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   EXPECT_THAT(tracker.recv_data<http2::Stream>(), ::testing::IsEmpty());
 }
 
+TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
+  ConnectionTracker tracker;
+
+  // The first stream is ordinary.
+  {
+    const conn_id_t kConnID = {
+        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
+    const uint32_t kStreamID = 7;
+    auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+
+    std::unique_ptr<HTTP2DataEvent> data_frame;
+    std::unique_ptr<HTTP2HeaderEvent> header_event;
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    data_frame =
+        frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
+    tracker.AddHTTP2Data(std::move(data_frame));
+
+    data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Response");
+    tracker.AddHTTP2Data(std::move(data_frame));
+
+    header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
+    tracker.AddHTTP2Header(std::move(header_event));
+  }
+
+  // And now another stream which jumps stream IDs for some reason.
+  // This stream ID has to have the same even/oddness.
+  {
+    const conn_id_t kConnID = {
+        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
+    const uint32_t kStreamID = 100007;
+    auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+
+    std::unique_ptr<HTTP2DataEvent> data_frame;
+    std::unique_ptr<HTTP2HeaderEvent> header_event;
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/wormhole");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    data_frame =
+        frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
+    tracker.AddHTTP2Data(std::move(data_frame));
+
+    data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Long ways from home");
+    tracker.AddHTTP2Data(std::move(data_frame));
+
+    header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
+    tracker.AddHTTP2Header(std::move(header_event));
+  }
+
+  std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
+
+  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(records[0].send.data, "Request");
+  EXPECT_EQ(records[0].recv.data, "Long ways from home");
+  EXPECT_THAT(records[0].send.headers,
+              UnorderedElementsAre(Pair(":method", "post"), Pair(":host", "pixie.ai"),
+                                   Pair(":path", "/wormhole")));
+  EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
+}
+
+TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
+  ConnectionTracker tracker;
+
+  // The first stream is ordinary.
+  {
+    const conn_id_t kConnID = {
+        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
+    const uint32_t kStreamID = 100007;
+    auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+
+    std::unique_ptr<HTTP2DataEvent> data_frame;
+    std::unique_ptr<HTTP2HeaderEvent> header_event;
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    data_frame =
+        frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
+    tracker.AddHTTP2Data(std::move(data_frame));
+
+    data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Response");
+    tracker.AddHTTP2Data(std::move(data_frame));
+
+    header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
+    tracker.AddHTTP2Header(std::move(header_event));
+  }
+
+  // And now another stream which jumps stream IDs for some reason.
+  // This stream ID has to have the same even/oddness.
+  {
+    const conn_id_t kConnID = {
+        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
+    const uint32_t kStreamID = 7;
+    auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+
+    std::unique_ptr<HTTP2DataEvent> data_frame;
+    std::unique_ptr<HTTP2HeaderEvent> header_event;
+
+    LOG(INFO) << "A";
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
+    tracker.AddHTTP2Header(std::move(header_event));
+    LOG(INFO) << "B";
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/wormhole");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    data_frame =
+        frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
+    tracker.AddHTTP2Data(std::move(data_frame));
+
+    data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Long ways from home");
+    tracker.AddHTTP2Data(std::move(data_frame));
+
+    header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
+    tracker.AddHTTP2Header(std::move(header_event));
+
+    header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
+    tracker.AddHTTP2Header(std::move(header_event));
+  }
+
+  std::vector<http2::NewRecord> records = tracker.ProcessMessages<http2::NewRecord>();
+
+  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(records[0].send.data, "Request");
+  EXPECT_EQ(records[0].recv.data, "Long ways from home");
+  EXPECT_THAT(records[0].send.headers,
+              UnorderedElementsAre(Pair(":method", "post"), Pair(":host", "pixie.ai"),
+                                   Pair(":path", "/wormhole")));
+  EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
+}
+
 }  // namespace stirling
 }  // namespace pl

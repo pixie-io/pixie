@@ -23,6 +23,9 @@
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
 DEFINE_bool(infer_conn_info, true,
             "Whether to attempt connection inference when remote endpoint information is missing.");
+DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
+              "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
+              "connection info is cleared.");
 
 namespace pl {
 namespace stirling {
@@ -156,17 +159,43 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
         "this could be indicative of a bug that could result in a memory leak.",
         stream_id, *oldest_active_stream_id_ptr);
     // Need to grow the deque at the front.
-    size_t new_size = streams_deque_ptr->size() + ((*oldest_active_stream_id_ptr - stream_id) / 2);
-    streams_deque_ptr->insert(streams_deque_ptr->begin(), new_size - streams_deque_ptr->size(),
-                              http2::Stream());
-    index = 0;
-    *oldest_active_stream_id_ptr = stream_id;
+    size_t new_size = streams_deque_ptr->size() +
+                      ((*oldest_active_stream_id_ptr - stream_id) / kHTTP2StreamIDIncrement);
+    // Reset everything for now.
+    if (new_size - streams_deque_ptr->size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
+      LOG(ERROR) << absl::Substitute(
+          "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
+          "all streams on this connection.",
+          stream_id, *oldest_active_stream_id_ptr + streams_deque_ptr->size() * 2);
+      streams_deque_ptr->clear();
+      streams_deque_ptr->resize(1);
+      index = 0;
+      *oldest_active_stream_id_ptr = stream_id;
+    } else {
+      streams_deque_ptr->insert(streams_deque_ptr->begin(), new_size - streams_deque_ptr->size(),
+                                http2::Stream());
+      index = 0;
+      *oldest_active_stream_id_ptr = stream_id;
+    }
   } else {
     // Stream ID is after the front. We may or may not need to grow the deque,
     // depending on its current size.
-    index = (stream_id - *oldest_active_stream_id_ptr) / 2;
+    index = (stream_id - *oldest_active_stream_id_ptr) / kHTTP2StreamIDIncrement;
     size_t new_size = std::max(streams_deque_ptr->size(), index + 1);
-    streams_deque_ptr->resize(new_size);
+    // If we are to grow by more than some threshold, then something appears wrong.
+    // Reset everything for now.
+    if (new_size - streams_deque_ptr->size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
+      LOG(ERROR) << absl::Substitute(
+          "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
+          "all streams on this connection",
+          stream_id, *oldest_active_stream_id_ptr + streams_deque_ptr->size() * 2);
+      streams_deque_ptr->clear();
+      streams_deque_ptr->resize(1);
+      index = 0;
+      *oldest_active_stream_id_ptr = stream_id;
+    } else {
+      streams_deque_ptr->resize(new_size);
+    }
   }
 
   auto& stream = (*streams_deque_ptr)[index];

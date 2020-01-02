@@ -416,9 +416,10 @@ class ConnectionTracker {
   DataStream send_data_;
   DataStream recv_data_;
 
-  // HTTP2 uses a different scheme, where it holds client and server-initiated streams,
-  // instead of send and recv messages.
-  // As such, we create aliases for HTTP2.
+  // --- Start uprobe-based HTTP2 members.
+
+  // Uprobe-based HTTP2 uses a different scheme, where it holds client and server-initiated streams,
+  // instead of send and recv messages. As such, we create aliases for HTTP2.
   DataStream& client_streams_ = send_data_;
   DataStream& server_streams_ = recv_data_;
 
@@ -429,6 +430,12 @@ class ConnectionTracker {
 
   // Access the appropriate HalfStream object for the given stream ID.
   http2::HalfStream* HalfStreamPtr(uint32_t stream_id, bool write_event);
+
+  // According to the HTTP2 protocol, Stream IDs are incremented by 2.
+  // Client-initiated streams use odd IDs, while server-initiated streams use even IDs.
+  static constexpr int kHTTP2StreamIDIncrement = 2;
+
+  // --- End uprobe-based HTTP2 members.
 
   // The connection close info.
   SocketClose close_info_;
