@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "pixielabs.ai/pixielabs/src/stirling/http/testing/go_http_server",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "go_http_server",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

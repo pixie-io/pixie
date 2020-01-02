@@ -12,14 +12,17 @@
 #include "src/stirling/data_table.h"
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
+#include "src/stirling/testing/common.h"
 #include "src/stirling/testing/events_fixture.h"
 #include "src/stirling/testing/http2_stream_generator.h"
 
 namespace pl {
 namespace stirling {
 
+using ::pl::stirling::testing::ColWrapperSizeIs;
 using ::testing::Each;
 using ::testing::ElementsAre;
+
 using RecordBatch = types::ColumnWrapperRecordBatch;
 
 class SocketTraceConnectorTest : public testing::EventsFixture {
@@ -167,8 +170,6 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
   }
   return result;
 }
-
-MATCHER_P(ColWrapperSizeIs, size, "") { return arg->Size() == static_cast<size_t>(size); }
 
 TEST_F(SocketTraceConnectorTest, End2End) {
   struct socket_control_event_t conn = InitConn<kProtocolHTTP>();

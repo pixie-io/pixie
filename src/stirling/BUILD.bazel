@@ -169,6 +169,26 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "http_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["http_trace_bpf_test.cc"],
+    args = [
+        "--go_greeter_client_path=$(location //src/stirling/http/testing/go_http_client)",
+        "--go_greeter_server_path=$(location //src/stirling/http/testing/go_http_server)",
+    ],
+    data = [
+        "//src/stirling/http/testing/go_http_client",
+        "//src/stirling/http/testing/go_http_server",
+    ],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "mysql_trace_bpf_test",
     timeout = "moderate",
     srcs = ["mysql_trace_bpf_test.cc"],
