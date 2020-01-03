@@ -1,21 +1,21 @@
 REPOSITORY_LOCATIONS = dict(
     bazel_gazelle = dict(
-        sha256 = "41bff2a0b32b02f20c227d234aa25ef3783998e5453f7eade929704dcff7cd4b",
-        urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.19.0/bazel-gazelle-v0.19.0.tar.gz"],
+        sha256 = "86c6d481b3f7aedc1d60c1c211c6f76da282ae197c3b3160f54bd3a8f847896f",
+        urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.19.1/bazel-gazelle-v0.19.1.tar.gz"],
     ),
     io_bazel_rules_go = dict(
-        sha256 = "078f2a9569fa9ed846e60805fb5fb167d6f6c4ece48e6d409bf5fb2154eaf0d8",
+        sha256 = "e88471aea3a3a4f19ec1310a55ba94772d087e9ce46e41ae38ecebe17935de7b",
         urls = [
             "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go" +
-            "/releases/download/v0.20.0/rules_go-v0.20.0.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.20.0/rules_go-v0.20.0.tar.gz",
+            "/releases/download/v0.20.3/rules_go-v0.20.3.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.20.3/rules_go-v0.20.3.tar.gz",
         ],
     ),
     io_bazel_rules_k8s = dict(
-        sha256 = "649a851538f863410fd78147b78334bc7f47008d77712a4ee2f76d6aade704e7",
-        strip_prefix = "rules_k8s-0.2",
+        sha256 = "cc75cf0d86312e1327d226e980efd3599704e01099b58b3c2fc4efe5e321fcd9",
+        strip_prefix = "rules_k8s-0.3.1",
         urls = [
-            "https://github.com/bazelbuild/rules_k8s/releases/download/v0.2/rules_k8s-v0.2.tar.gz",
+            "https://github.com/bazelbuild/rules_k8s/releases/download/v0.3.1/rules_k8s-v0.3.1.tar.gz",
         ],
     ),
     com_github_bazelbuild_buildtools = dict(
@@ -34,16 +34,16 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/bazel-skylib/archive/1.0.2.tar.gz"],
     ),
     io_bazel_rules_docker = dict(
-        sha256 = "413bb1ec0895a8d3249a01edf24b82fd06af3c8633c9fb833a0cb1d4b234d46d",
-        strip_prefix = "rules_docker-0.12.0",
-        urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.12.0.tar.gz"],
+        sha256 = "df13123c44b4a4ff2c2f337b906763879d94871d16411bf82dcfeba892b58607",
+        strip_prefix = "rules_docker-0.13.0",
+        urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.13.0.tar.gz"],
     ),
     io_bazel_toolchains = dict(
-        sha256 = "e9bab54199722935f239cb1cd56a80be2ac3c3843e1a6d3492e2bc11f9c21daf",
-        strip_prefix = "bazel-toolchains-1.0.0",
+        sha256 = "e2126599d29f2028e6b267eba273dcc8e7f4a35ff323e9600cf42fb03875b7c6",
+        strip_prefix = "bazel-toolchains-2.0.0",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/1.0.0.tar.gz",
-            "https://github.com/bazelbuild/bazel-toolchains/archive/1.0.0.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/2.0.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-toolchains/archive/2.0.0.tar.gz",
         ],
     ),
     com_google_googletest = dict(
