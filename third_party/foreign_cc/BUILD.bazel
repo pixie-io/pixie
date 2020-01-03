@@ -45,7 +45,7 @@ cmake_external(
         "make nats_static",
         "make install",
     ],
-    deps = ["@com_google_boringssl//:ssl"],
+    deps = ["@boringssl//:ssl"],
 )
 
 cmake_external(
@@ -108,5 +108,5 @@ cmake_external(
     generate_crosstool_file = True,
     lib_name = "libnghttp2",
     lib_source = "@com_github_nghttp2_nghttp2//:all",
-    deps = ["@com_google_boringssl//:ssl"],
+    deps = ["@boringssl//:ssl"],
 )

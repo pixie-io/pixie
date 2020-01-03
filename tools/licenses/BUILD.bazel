@@ -32,7 +32,7 @@ genrule(
         "//third_party/tdigest:LICENSE",
         "//third_party:libpypa/COPYING",
         "//third_party:arrow/LICENSE.txt",
-        "@com_google_boringssl//:LICENSE",
+        "@boringssl//:LICENSE",
     ],
     outs = ["CPP_LICENSES"],
     cmd = "python $(location :combine_bazel_licenses.py) $@ $(SRCS)",
