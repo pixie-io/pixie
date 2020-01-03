@@ -199,22 +199,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   inline static ::pl::grpc::ServiceDescriptorDatabase grpc_desc_db_{
       demos::hipster_shop::GetFileDescriptorSet()};
 
-  explicit SocketTraceConnector(std::string_view source_name)
-      : SourceConnector(
-            source_name, kTables,
-            std::chrono::milliseconds(FLAGS_stirling_socket_trace_sampling_period_millis),
-            kDefaultPushPeriod),
-        bpf_tools::BCCWrapper(kBCCScript) {
-    // TODO(yzhao): Is there a better place/time to grab the flags?
-    http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
-    proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
-    netlink_socket_prober_ = std::make_unique<system::NetlinkSocketProber>();
-
-    protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
-    protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_kprobe_tracing;
-    protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled = true;
-    protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
-  }
+  explicit SocketTraceConnector(std::string_view source_name);
 
   // Events from BPF.
   // TODO(oazizi/yzhao): These all operate based on pass-by-value, which copies.
