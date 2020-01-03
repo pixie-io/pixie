@@ -109,7 +109,7 @@ export const Editor = ({ client }) => {
   }, []);
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'row' }}>
+    <div className='pixie-editor-container'>
       <Drawer
         openedWidth='15vw'
         defaultOpened={data && data.drawerOpened}
@@ -117,7 +117,7 @@ export const Editor = ({ client }) => {
       >
         <PresetQueries onQuerySelect={createNewTab} />
       </Drawer>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div className='pixie-editor-tabs-container'>
         <Tab.Container
           activeKey={state.activeTab}
           onSelect={selectTab}
@@ -129,38 +129,41 @@ export const Editor = ({ client }) => {
                 <EditorTabTitle {...tab} onClose={(id) => deleteTab(id)} />
               </Nav.Item>,
             )}
-            <Nav.Item as={Nav.Link} eventKey={NEW_TAB}>
+            <Nav.Item as={Nav.Link} eventKey={NEW_TAB} className='pixie-editor-tabs-new'>
               <img src={newTabIcon} />
             </Nav.Item>
           </Nav>
-          <Tab.Content style={{ flex: 1, position: 'relative' }}>
+          <Tab.Content className='pixie-editor-tab-content-container'>
             {state.tabs.map((tab) =>
               <Tab.Pane
                 eventKey={tab.id}
                 key={tab.id}
                 unmountOnExit={false}
-                style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
+                className='pixie-editor-content-fullbleed'>
                 <EditorContent {...tab} />
               </Tab.Pane>,
             )}
           </Tab.Content>
         </Tab.Container>
       </div>
-    </div>
+    </div >
   );
 };
 
 const EditorTabTitle: React.FC<EditorTabInfo & { onClose: (id: string) => void }> = (props) => {
+  const onClick = React.useCallback((e) => {
+    e.stopPropagation(); // Stop the tab from getting selected.
+    props.onClose(props.id);
+  }, []);
   return (
-    <div style={{ display: 'flex', alignItems: 'center' }}>
-      {props.title}
+    <div className='pixie-editor-tab-title'>
+      <span className='pixie-editor-tab-title-text'>
+        {props.title}
+      </span>
       <img
-        style={{ marginLeft: '8px', width: '16px', height: '16px' }}
+        className='pixie-editor-tab-title-close-icon'
         src={closeIcon}
-        onClick={(e) => {
-          e.stopPropagation(); // Stop the tab from getting selected.
-          props.onClose(props.id);
-        }}
+        onClick={onClick}
       />
     </div>
   );
