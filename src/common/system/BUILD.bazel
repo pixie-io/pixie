@@ -45,4 +45,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/system/testing:cc_library",
     ],
+    # TODO(oazizi/yzhao): Make this test safe to run with other tests. Right now it relies on global
+    # network state making it flaky.
+    tags = ["exclusive"],
 )
