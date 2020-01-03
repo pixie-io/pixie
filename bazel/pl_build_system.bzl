@@ -24,12 +24,9 @@ def pl_copts():
         "//conditions:default": [],
     })
 
-    # TODO(zasgar): Remove these flags as we cleanup the code.
+    # Leaving this here as an example of how to add compiler dependent_flags.
     compiler_dependent_flags = select({
-        "@pl//bazel:gcc_build": [
-            "-Wno-error=deprecated-declarations",
-            "-Wno-error=deprecated-copy",
-        ],
+        "@pl//bazel:gcc_build": [],
         "//conditions:default": [],
     })
 

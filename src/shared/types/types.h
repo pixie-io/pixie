@@ -39,12 +39,16 @@ struct FixedSizedValueType : BaseValueType {
   // We need this to make UBSAN happy since otherwise it's un-initialized.
   // TODO(zasgar): Understand if this impacts performance.
   T val = 0;
-  FixedSizedValueType() : BaseValueType() {}
+  constexpr FixedSizedValueType() : BaseValueType() {}
 
   // Allow implicit construction to make it easier/more natural to return values
   // from functions.
   // NOLINTNEXTLINE: implicit constructor.
-  FixedSizedValueType(T new_val) : val(new_val) {}
+  constexpr FixedSizedValueType(T new_val) : val(new_val) {}
+
+  // GCC requires the copy constructor to be explicitly specified.
+  // NOLINTNEXTLINE: implicit constructor.
+  constexpr FixedSizedValueType(const FixedSizedValueType<T>& rhs) = default;
 
   template <class T2>
   // Overload the equality to make it easier to write code with value types.
@@ -80,12 +84,12 @@ struct FixedSizedValueType : BaseValueType {
   }
 
   // Overload assignment to make it easier to write code with value types.
-  FixedSizedValueType<T>& operator=(FixedSizedValueType<T> rhs) {
+  FixedSizedValueType<T>& operator=(const FixedSizedValueType<T>& rhs) {
     val = rhs.val;
     return *this;
   }
 
-  FixedSizedValueType<T>& operator=(T rhs) {
+  FixedSizedValueType<T>& operator=(const T& rhs) {
     val = rhs;
     return *this;
   }

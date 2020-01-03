@@ -92,6 +92,7 @@ pl_cc_library(
     copts = [
         "-Wno-unused-parameter",
         "-Wno-overloaded-virtual",
+        "-Wno-deprecated-declarations",
     ],
     includes = [
         "arrow/cpp/src",
