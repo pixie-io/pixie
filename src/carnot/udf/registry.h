@@ -18,7 +18,7 @@ namespace pl {
 namespace carnot {
 namespace udf {
 
-enum RegistryType { kScalarUDF = 1, kUDA };
+enum RegistryType { kScalarUDF = 1, kUDA, kUDTF };
 
 /**
  * RegistryKey is the class used to uniquely refer to UDFs/UDAs in the registry.
@@ -94,8 +94,8 @@ class Registry : public BaseUDFRegistry {
 
   /**
    * Registers the given UDF/UDA into the registry. A double register will result in an error.
-   * @tparam T The UDF/UDA to register.
-   * @param name The name of the UDF/UDA to register.
+   * @tparam T The UDF/UDA/UDTF to register.
+   * @param name The name of the UDF/UDA/UDTF to register.
    * @return Status ok/error.
    */
   template <typename T>
@@ -166,6 +166,13 @@ class UDARegistry : public Registry<UDADefinition> {
  public:
   using Registry<UDADefinition>::Registry;
   RegistryType Type() override { return kUDA; };
+  udfspb::UDFInfo SpecToProto() const override;
+};
+
+class UDTFRegistry : public Registry<UDTFDefinition> {
+ public:
+  using Registry<UDTFDefinition>::Registry;
+  RegistryType Type() override { return kUDTF; };
   udfspb::UDFInfo SpecToProto() const override;
 };
 

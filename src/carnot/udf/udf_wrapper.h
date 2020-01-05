@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "src/carnot/udf/udf.h"
+#include "src/carnot/udf/udtf.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
@@ -332,6 +333,56 @@ struct UDAWrapper {
     auto* casted_uda = static_cast<TUDA*>(uda);
     *casted_output = casted_uda->Finalize(ctx);
     return Status::OK();
+  }
+};
+
+/**
+ * UDTFWrapper provides and executable wrapper that vectorizes the UDTF code.
+ * The results are written to the passed in arrow column builders.
+ * @tparam TUDTF
+ */
+template <typename TUDTF>
+struct UDTFWrapper {
+  /**
+   * Create a new UDTF.
+   * @return A unique_ptr to the UDTF instance.
+   */
+  static StatusOr<std::unique_ptr<AnyUDTF>> Make(
+      const std::vector<const types::BaseValueType*>& args) {
+    auto u = std::make_unique<TUDTF>();
+    PL_RETURN_IF_ERROR(InitExecWrapper(
+        u.get(), args, std::make_index_sequence<UDTFTraits<TUDTF>::InitArgumentTypes().size()>{}));
+    return std::unique_ptr<AnyUDTF>(u.release());
+  }
+
+  static bool ExecBatchUpdate(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
+                              std::vector<arrow::ArrayBuilder*>* outputs) {
+    if (max_gen_records == 0) {
+      return false;
+    }
+
+    // Reserve the output.
+    for (auto* out : *outputs) {
+      CHECK(out->Reserve(max_gen_records).ok());
+    }
+
+    auto* u = static_cast<TUDTF*>(udtf);
+    int count = 0;
+    bool more = true;
+    RecordWriterProxy<TUDTF> rw(outputs);
+    while (count < max_gen_records && more) {
+      more = u->NextRecord(ctx, &rw);
+      ++count;
+    }
+    return more;
+  }
+
+ private:
+  template <std::size_t... I>
+  static Status InitExecWrapper(TUDTF* udtf, const std::vector<const types::BaseValueType*>& args,
+                                std::index_sequence<I...>) {
+    [[maybe_unused]] constexpr auto init_argument_types = UDTFTraits<TUDTF>::InitArgumentTypes();
+    return udtf->Init(*CastToUDFValueType<init_argument_types[I]>(args[I])...);
   }
 };
 

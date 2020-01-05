@@ -4,6 +4,7 @@
 #include <type_traits>
 
 #include "src/carnot/udf/udf_wrapper.h"
+#include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 

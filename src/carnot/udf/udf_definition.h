@@ -120,7 +120,6 @@ class ScalarUDFDefinition : public UDFDefinition {
 
 /**
  * Store the information for a single UDA.
- * TODO(zasgar): Also, needs to store ptrs to exec funcs.
  */
 class UDADefinition : public UDFDefinition {
  public:
@@ -193,6 +192,34 @@ class UDADefinition : public UDFDefinition {
   std::function<Status(UDA* uda, FunctionContext* ctx, types::BaseValueType* output)>
       finalize_value_fn;
   std::function<Status(UDA* uda1, UDA* uda2, FunctionContext* ctx)> merge_fn_;
+};
+
+class UDTFDefinition : public UDFDefinition {
+ public:
+  UDTFDefinition() = default;
+  ~UDTFDefinition() override = default;
+  /**
+   * Init a UDTF definition with the given name and type.
+   *
+   * @tparam T the UDTF class. Must be derived from UDTF.
+   * @param name The name of the UDTF.
+   * @return Status success/error.
+   */
+  template <typename T>
+  Status Init(const std::string& name) {
+    PL_UNUSED(name);
+    // TODO(zasgar): Implement this and add checks.
+    return Status::OK();
+  }
+
+  const std::vector<types::DataType>& RegistryArgTypes() override {
+    // UDTF's can't be overloaded.
+    return args_types;
+  }
+
+ private:
+  const std::vector<types::DataType>
+      args_types{};  // Empty arg types because UDTF's can't be overloaded.
 };
 
 }  // namespace udf

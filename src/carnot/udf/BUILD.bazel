@@ -39,6 +39,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "udtf_test",
+    srcs = ["udtf_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "udf_definition_test",
     srcs = ["udf_definition_test.cc"],
     deps = [
