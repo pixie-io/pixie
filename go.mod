@@ -23,7 +23,7 @@ require (
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
 	github.com/coreos/bbolt v1.3.2 // indirect
-	github.com/coreos/etcd v3.3.13+incompatible
+	github.com/coreos/etcd v3.3.18+incompatible
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e // indirect
 	github.com/coreos/pkg v0.0.0-20180108230652-97fdf19511ea // indirect
@@ -43,6 +43,7 @@ require (
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
 	github.com/google/gofuzz v1.0.0 // indirect
+	github.com/google/uuid v1.1.1 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20191008195207-8e1d251e947d
 	github.com/gorilla/handlers v1.4.2
@@ -77,7 +78,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v1.0.0-rc8 // indirect
-	github.com/ory/dockertest v3.3.4+incompatible
+	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
 	github.com/prometheus/client_golang v0.9.2 // indirect
 	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90 // indirect
@@ -88,7 +89,7 @@ require (
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
 	github.com/sercand/kuberesolver v2.1.0+incompatible
 	github.com/shopspring/decimal v0.0.0-20190905144223-a36b5d85f337 // indirect
-	github.com/sirupsen/logrus v1.4.1
+	github.com/sirupsen/logrus v1.4.2
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
 	github.com/soheilhy/cmux v0.1.4 // indirect
 	github.com/spf13/cast v1.3.0
