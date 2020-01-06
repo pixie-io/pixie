@@ -27,12 +27,14 @@ class EngineState : public NotCopyable {
   EngineState() = delete;
   EngineState(std::unique_ptr<udf::ScalarUDFRegistry> udf_registry,
               std::unique_ptr<udf::UDARegistry> uda_registry,
+              std::unique_ptr<udf::UDTFRegistry> udtf_registry,
               std::shared_ptr<table_store::TableStore> table_store,
               std::shared_ptr<table_store::schema::Schema> schema,
               std::unique_ptr<compiler::RegistryInfo> registry_info,
               const exec::KelvinStubGenerator& stub_generator, exec::GRPCRouter* grpc_router)
       : uda_registry_(std::move(uda_registry)),
         scalar_udf_registry_(std::move(udf_registry)),
+        udtf_registry_(std::move(udtf_registry)),
         table_store_(std::move(table_store)),
         schema_(std::move(schema)),
         registry_info_(std::move(registry_info)),
@@ -45,9 +47,11 @@ class EngineState : public NotCopyable {
     // Initialize state.
     auto scalar_udf_registry = std::make_unique<udf::ScalarUDFRegistry>("udf_registry");
     auto uda_registry = std::make_unique<udf::UDARegistry>("uda_registry");
+    auto udtf_registry = std::make_unique<udf::UDTFRegistry>("udtf_registry");
     builtins::RegisterBuiltinsOrDie(scalar_udf_registry.get());
     builtins::RegisterBuiltinsOrDie(uda_registry.get());
     funcs::metadata::RegisterMetadataOpsOrDie(scalar_udf_registry.get());
+    // TODO(zasgar) add the register call for UDTFs here.
 
     auto schema = std::make_shared<table_store::schema::Schema>();
 
@@ -59,21 +63,22 @@ class EngineState : public NotCopyable {
     PL_RETURN_IF_ERROR(registry_info->Init(udf_info));
 
     return std::make_unique<EngineState>(std::move(scalar_udf_registry), std::move(uda_registry),
-                                         table_store, schema, std::move(registry_info),
-                                         stub_generator, grpc_router);
+                                         std::move(udtf_registry), table_store, schema,
+                                         std::move(registry_info), stub_generator, grpc_router);
   }
 
   std::shared_ptr<table_store::schema::Schema> schema() { return schema_; }
 
   table_store::TableStore* table_store() { return table_store_.get(); }
-
   std::unique_ptr<exec::ExecState> CreateExecState(const sole::uuid& query_id) {
     return std::make_unique<exec::ExecState>(scalar_udf_registry_.get(), uda_registry_.get(),
-                                             table_store_, stub_generator_, query_id, grpc_router_);
+                                             udtf_registry_.get(), table_store_, stub_generator_,
+                                             query_id, grpc_router_);
   }
 
   std::unique_ptr<plan::PlanState> CreatePlanState() {
-    return std::make_unique<plan::PlanState>(scalar_udf_registry_.get(), uda_registry_.get());
+    return std::make_unique<plan::PlanState>(scalar_udf_registry_.get(), uda_registry_.get(),
+                                             udtf_registry_.get());
   }
 
   std::unique_ptr<compiler::CompilerState> CreateCompilerState(types::Time64NSValue time_now) {
@@ -85,6 +90,7 @@ class EngineState : public NotCopyable {
  private:
   std::unique_ptr<udf::UDARegistry> uda_registry_;
   std::unique_ptr<udf::ScalarUDFRegistry> scalar_udf_registry_;
+  std::unique_ptr<udf::UDTFRegistry> udtf_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<table_store::schema::Schema> schema_;
   std::unique_ptr<compiler::RegistryInfo> registry_info_;

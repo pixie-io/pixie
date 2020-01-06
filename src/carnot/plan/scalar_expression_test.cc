@@ -41,7 +41,9 @@ class ScalarExpressionTest : public ::testing::Test {
   ScalarExpressionTest() {
     udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test");
     uda_registry_ = std::make_unique<udf::UDARegistry>("testUDA");
-    state_ = std::make_unique<PlanState>(udf_registry_.get(), uda_registry_.get());
+    udtf_registry_ = std::make_unique<udf::UDTFRegistry>("testUDTF");
+    state_ =
+        std::make_unique<PlanState>(udf_registry_.get(), uda_registry_.get(), udtf_registry_.get());
 
     state_->udf_registry()->RegisterOrDie<DummyTestUDF>("foobar");
     state_->uda_registry()->RegisterOrDie<DummyTestUDA>("testAgg");
@@ -63,6 +65,7 @@ class ScalarExpressionTest : public ::testing::Test {
   std::unique_ptr<PlanState> state_;
   std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
   std::unique_ptr<udf::UDARegistry> uda_registry_;
+  std::unique_ptr<udf::UDTFRegistry> udtf_registry_;
 };
 
 TEST(ColumnTest, basic_tests) {

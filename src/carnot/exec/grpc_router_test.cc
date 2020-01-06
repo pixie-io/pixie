@@ -193,10 +193,11 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
 
   auto udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
   auto uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
+  auto udtf_registry_ = std::make_unique<udf::UDTFRegistry>("test_registry");
   auto table_store = std::make_shared<table_store::TableStore>();
   auto exec_state =
-      std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,
-                                  MockKelvinStubGenerator, sole::uuid4());
+      std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), udtf_registry_.get(),
+                                  table_store, MockKelvinStubGenerator, sole::uuid4());
 
   MockExecNode mock_child;
 

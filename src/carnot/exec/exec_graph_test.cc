@@ -49,10 +49,12 @@ class ExecGraphTest : public ::testing::Test {
 
     auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
     auto uda_registry = std::make_unique<udf::UDARegistry>("test_registry");
+    auto udtf_registry = std::make_unique<udf::UDTFRegistry>("test_registry");
     auto table_store = std::make_shared<table_store::TableStore>();
 
-    exec_state_ = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store,
-                                              MockKelvinStubGenerator, sole::uuid4());
+    exec_state_ =
+        std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), udtf_registry.get(),
+                                    table_store, MockKelvinStubGenerator, sole::uuid4());
   }
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
   std::unique_ptr<ExecState> exec_state_ = nullptr;
@@ -62,7 +64,9 @@ TEST_F(ExecGraphTest, basic) {
   ExecutionGraph e;
   auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("test");
   auto uda_registry = std::make_unique<udf::UDARegistry>("testUDA");
-  auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
+  auto udtf_registry = std::make_unique<udf::UDTFRegistry>("testUDTF");
+  auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get(),
+                                                      udtf_registry.get());
 
   auto schema = std::make_shared<table_store::schema::Schema>();
   table_store::schema::Relation relation(std::vector<types::DataType>({types::DataType::INT64}),
@@ -99,8 +103,10 @@ TEST_F(ExecGraphTest, execute) {
   EXPECT_OK(udf_registry->Register<AddUDF>("add"));
   EXPECT_OK(udf_registry->Register<MultiplyUDF>("multiply"));
   auto uda_registry = std::make_unique<udf::UDARegistry>("testUDA");
+  auto udtf_registry = std::make_unique<udf::UDTFRegistry>("testUDTF");
 
-  auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
+  auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get(),
+                                                      udtf_registry.get());
 
   auto schema = std::make_shared<table_store::schema::Schema>();
   schema->AddRelation(
@@ -135,8 +141,9 @@ TEST_F(ExecGraphTest, execute) {
 
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
-  auto exec_state_ = std::make_unique<ExecState>(
-      udf_registry.get(), uda_registry.get(), table_store, MockKelvinStubGenerator, sole::uuid4());
+  auto exec_state_ =
+      std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), udtf_registry.get(),
+                                  table_store, MockKelvinStubGenerator, sole::uuid4());
 
   EXPECT_OK(exec_state_->AddScalarUDF(
       0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));
@@ -174,9 +181,10 @@ TEST_F(ExecGraphTest, execute_time) {
   EXPECT_OK(udf_registry->Register<AddUDF>("add"));
   EXPECT_OK(udf_registry->Register<MultiplyUDF>("multiply"));
   auto uda_registry = std::make_unique<udf::UDARegistry>("testUDA");
+  auto udtf_registry = std::make_unique<udf::UDTFRegistry>("testUDTF");
 
-  auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
-
+  auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get(),
+                                                      udtf_registry.get());
   auto schema = std::make_shared<table_store::schema::Schema>();
   schema->AddRelation(
       1, table_store::schema::Relation(
@@ -212,8 +220,9 @@ TEST_F(ExecGraphTest, execute_time) {
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
 
-  auto exec_state_ = std::make_unique<ExecState>(
-      udf_registry.get(), uda_registry.get(), table_store, MockKelvinStubGenerator, sole::uuid4());
+  auto exec_state_ =
+      std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), udtf_registry.get(),
+                                  table_store, MockKelvinStubGenerator, sole::uuid4());
 
   EXPECT_OK(exec_state_->AddScalarUDF(
       0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));
