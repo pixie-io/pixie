@@ -579,12 +579,10 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
-  ConnectionTracker::SetInactivityDuration(std::chrono::seconds(1));
-
   // Inactive dead connections are determined by checking the /proc filesystem.
   // Here we create a PID that is a valid number, but non-existent on any Linux system.
   // Note that max PID bits in Linux is 22 bits.
-  uint32_t impossible_pid = 1 << 23;
+  const uint32_t impossible_pid = 1 << 23;
 
   struct socket_control_event_t conn0 = InitConn<kProtocolHTTP>();
   conn0.open.conn_id.upid.pid = impossible_pid;
@@ -595,22 +593,26 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   std::unique_ptr<SocketDataEvent> conn0_resp_event = InitRecvEvent<kProtocolHTTP>(kResp0);
   conn0_resp_event->attr.conn_id.upid.pid = impossible_pid;
 
-  struct socket_control_event_t conn0_close = InitClose();
-  conn0_close.close.conn_id.upid.pid = impossible_pid;
-
   DataTable data_table(kHTTPTable);
 
   // Simulating events being emitted from BPF perf buffer.
   source_->AcceptControlEvent(conn0);
   source_->AcceptDataEvent(std::move(conn0_req_event));
   source_->AcceptDataEvent(std::move(conn0_resp_event));
-  PL_UNUSED(conn0_close);  // Missing close event.
 
+  // Note that close event was not recorded, so this connection remain open before reaching the
+  // inactivity threshold.
+
+  // First set the inactive duration threshold to be artificially large, so that the next loop
+  // checking the number of active connections is robust.
+  ConnectionTracker::SetInactivityDuration(std::chrono::seconds(1000));
   for (int i = 0; i < 100; ++i) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
+  // Then reduce the threshold to 0, so that any connections would be considered dead.
+  ConnectionTracker::SetInactivityDuration(std::chrono::seconds(0));
   sleep(2);
 
   // Connection should be timed out by now, and should be killed by one more TransferData() call.
