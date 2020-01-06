@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/carnot/udf/udf_wrapper.h"
@@ -207,14 +208,26 @@ class UDTFDefinition : public UDFDefinition {
    */
   template <typename T>
   Status Init(const std::string& name) {
+    auto factory = std::make_unique<GenericUDTFFactory<T>>();
+    return Init<T>(std::move(factory), name);
+  }
+
+  /**
+   * Init a UDTF definition with the given factory function.
+   * @tparam T The UDTF def.
+   * @param factory The UDTF factory.
+   * @param name The name of the UDTF.
+   * @return Status
+   */
+  template <typename T>
+  Status Init(std::unique_ptr<UDTFFactory> factory, const std::string& name) {
+    factory_ = std::move(factory);
     // Check to make sure it's a valid UDTF.
     UDTFChecker<T> checker;
     PL_UNUSED(checker);
 
     PL_RETURN_IF_ERROR(UDFDefinition::Init(name));
-    make_fn_ = UDTFWrapper<T>::Make;
     exec_batch_update_ = UDTFWrapper<T>::ExecBatchUpdate;
-
     return Status::OK();
   }
 
@@ -225,7 +238,7 @@ class UDTFDefinition : public UDFDefinition {
 
   UDTFDefinition* GetDefinition() override { return this; }
 
-  std::unique_ptr<AnyUDTF> Make() { return make_fn_(); }
+  std::unique_ptr<AnyUDTF> Make() { return factory_->Make(); }
 
   bool ExecBatchUpdate(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
                        std::vector<arrow::ArrayBuilder*>* outputs) {
@@ -233,7 +246,7 @@ class UDTFDefinition : public UDFDefinition {
   }
 
  private:
-  std::function<std::unique_ptr<AnyUDTF>()> make_fn_;
+  std::unique_ptr<UDTFFactory> factory_;
   std::function<bool(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
                      std::vector<arrow::ArrayBuilder*>* outputs)>
       exec_batch_update_;

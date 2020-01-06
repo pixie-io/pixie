@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "src/carnot/udf/base.h"
@@ -460,6 +461,38 @@ class UDTF : public AnyUDTF {
    * @return Index of the column (or compile time assert).
    */
   static constexpr size_t IndexOf(std::string_view col) { return RecordWriter::ColIdx(col); }
+};
+
+/**
+ * UDTFFactory is the interface for a class that creates a new UDTF.
+ *
+ * We add this level of indirection so that parameters can be passed to UDTF that don't exist on the
+ * internal FunctionContext of carnot.
+ */
+class UDTFFactory {
+ public:
+  UDTFFactory() = default;
+  virtual ~UDTFFactory() = default;
+
+  /**
+   * Make returns a new copy of the UDTF.
+   */
+  virtual std::unique_ptr<AnyUDTF> Make() = 0;
+};
+
+/**
+ * GenericUDTFFactory is a creator for a no arg constructor UDTF.
+ *
+ * This can be used for UDTFs that don't need any arguments during construction.
+ */
+template <typename TUDTF>
+class GenericUDTFFactory final : public UDTFFactory {
+ public:
+  GenericUDTFFactory() = default;
+  std::unique_ptr<AnyUDTF> Make() override { return std::make_unique<TUDTF>(); }
+
+ private:
+  UDTFChecker<TUDTF> checker_;
 };
 
 }  // namespace udf

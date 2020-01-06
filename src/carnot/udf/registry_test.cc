@@ -263,6 +263,52 @@ TEST(UDTFRegistryDeathTest, udtf_does_not_allow_overload) {
   EXPECT_DEATH(registry.RegisterOrDie<BasicUDTFTwoColOverload>("test_udtf"), ".*already exists.*");
 }
 
+class UDTFWithConstructor : public UDTF<UDTFWithConstructor> {
+ public:
+  UDTFWithConstructor() = delete;
+  explicit UDTFWithConstructor(int x) { x_ = x; }
+  static constexpr auto Executor() { return udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("out_str", types::DataType::STRING, types::PatternType::GENERAL, "string result"));
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    while (idx++ < 2) {
+      rw->Append<IndexOf("out_str")>("abc " + std::to_string(idx));
+      return true;
+    }
+    return false;
+  }
+
+  int x() { return x_; }
+
+  class Factory final : public UDTFFactory {
+   public:
+    Factory() = delete;
+    explicit Factory(int x) : x_(x) {}
+    std::unique_ptr<AnyUDTF> Make() override { return std::make_unique<UDTFWithConstructor>(x_); }
+
+   private:
+    int x_ = 0;
+  };
+
+ private:
+  int idx = 0;
+  int x_ = 0;
+};
+
+TEST(UDTFRegistry, init_with_factory) {
+  UDTFRegistry registry("test registry");
+  registry.RegisterFactoryOrDie<UDTFWithConstructor, UDTFWithConstructor::Factory>("test_udtf",
+                                                                                   /*x*/ 100);
+  auto* def = registry.GetDefinition("test_udtf").ConsumeValueOrDie();
+  auto inst = def->Make();
+  UDTFWithConstructor* u = static_cast<UDTFWithConstructor*>(inst.get());
+  EXPECT_EQ(u->x(), 100);
+}
+
 }  // namespace udf
 }  // namespace carnot
 }  // namespace pl

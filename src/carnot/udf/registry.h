@@ -93,7 +93,7 @@ class Registry : public BaseUDFRegistry {
   ~Registry() override = default;
 
   /**
-   * Registers the given UDF/UDA into the registry. A double register will result in an error.
+   * Registers the given UDF/UDA/UDTF into the registry. A double register will result in an error.
    * @tparam T The UDF/UDA/UDTF to register.
    * @param name The name of the UDF/UDA/UDTF to register.
    * @return Status ok/error.
@@ -174,6 +174,41 @@ class UDTFRegistry : public Registry<UDTFDefinition> {
   using Registry<UDTFDefinition>::Registry;
   RegistryType Type() override { return kUDTF; };
   udfspb::UDFInfo SpecToProto() const override;
+
+  /**
+   * UDTF specfic Register function that creates a UDTF factory.
+   * @tparam TUDTF the UDTF
+   * @tparam TFactory the UDTF factory
+   * @param name name of the udtf
+   * @return
+   */
+  template <typename TUDTF, typename TFactory, typename... Args>
+  Status RegisterFactory(const std::string& name, Args&&... args) {
+    static_assert(std::is_base_of_v<UDTFFactory, TFactory>,
+                  "TFactory must be derived from UDTFFactory");
+
+    auto factory = std::make_unique<TFactory>(std::forward<Args>(args)...);
+    auto udf_def = std::make_unique<UDTFDefinition>();
+    PL_RETURN_IF_ERROR(udf_def->template Init<TUDTF>(std::move(factory), name));
+
+    auto key = RegistryKey(name, udf_def->RegistryArgTypes());
+    if (map_.find(key) != map_.end()) {
+      return error::AlreadyExists(
+          "The UDF with name \"$0\" already exists with same exec args \"$1\".", name,
+          key.DebugString());
+    }
+    map_[key] = std::move(udf_def);
+    return Status::OK();
+  }
+
+  /**
+   * Same as Register, except dies when there is an error.
+   */
+  template <typename TUDTF, typename TFactory, typename... Args>
+  void RegisterFactoryOrDie(const std::string& name, Args&&... args) {
+    auto status = RegisterFactory<TUDTF, TFactory>(name, std::forward<Args>(args)...);
+    CHECK(status.ok()) << "Failed to register UDTF: " << status.msg();
+  }
 };
 
 /**
