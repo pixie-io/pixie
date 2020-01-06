@@ -113,15 +113,25 @@ class UDTFTraits {
   /**
    * Checks to see if InitArgs() is correct signature.
    */
-  static constexpr bool HasCorrectInitArgsSignature() {
+  template <class Q = TUDTF>
+  typename std::enable_if_t<UDTFTraits<Q>::HasInitArgsFn(),
+                            bool> static constexpr HasCorrectInitArgsSignature() {
     return CorrectInitArgsTypeHelper<std::result_of_t<decltype (&TUDTF::InitArgs)()>>::value;
+  }
+
+  template <class Q = TUDTF>
+  typename std::enable_if_t<!UDTFTraits<Q>::HasInitArgsFn(),
+                            bool> static constexpr HasCorrectInitArgsSignature() {
+    return false;
   }
 
   // Checks to make sure InitArgumentsTypes match the Init function.
   // Only valid if both functions exist.
-  static constexpr bool HasConsistentInitArgs() {
-    constexpr auto init_args_from_def = UDTFTraits<TUDTF>::InitArgumentTypes();
-    constexpr auto init_args_from_func = UDTFTraits<TUDTF>::GetUDTFInitArgumentsFromFunc();
+  template <class Q = TUDTF>
+  typename std::enable_if_t<UDTFTraits<Q>::HasInitFn() && UDTFTraits<Q>::HasInitArgsFn(),
+                            bool> static constexpr HasConsistentInitArgs() {
+    constexpr auto init_args_from_def = UDTFTraits<Q>::InitArgumentTypes();
+    constexpr auto init_args_from_func = UDTFTraits<Q>::GetUDTFInitArgumentsFromFunc();
 
     if (init_args_from_def.size() != init_args_from_func.size()) {
       return false;
@@ -133,6 +143,12 @@ class UDTFTraits {
       }
     }
     return true;
+  }
+
+  template <class Q = TUDTF>
+  typename std::enable_if_t<!(UDTFTraits<Q>::HasInitFn() && UDTFTraits<Q>::HasInitArgsFn()),
+                            bool> static constexpr HasConsistentInitArgs() {
+    return false;
   }
 
   /**
@@ -358,7 +374,8 @@ struct UDTFChecker {
                 "Either both or none of InitArgs() and Init(...) must exist");
 
   // InitArgs must return std::array<UDTFArg, N>.
-  static_assert(TR::HasCorrectInitArgsSignature(), "Init args must return std::array<UDTFArg, N>");
+  static_assert(!TR::HasInitArgsFn() || TR::HasCorrectInitArgsSignature(),
+                "Init args must return std::array<UDTFArg, N>");
   static_assert(!TR::HasInitFn() || TR::HasConsistentInitArgs(),
                 "Specified init args should match init function");
 

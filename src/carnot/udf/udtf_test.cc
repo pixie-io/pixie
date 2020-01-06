@@ -130,6 +130,10 @@ TEST(BasicUDTFOneCol, can_run) {
   constexpr auto output_rel = traits.OutputRelationTypes();
   ASSERT_THAT(output_rel, ElementsAre(types::DataType::STRING));
 
+  // Check the static assertions.
+  constexpr BasicUDTFOneCol::Checker check;
+  PL_UNUSED(check);
+
   EXPECT_TRUE(TR::HasInitArgsFn());
   EXPECT_TRUE(TR::HasCorrectInitArgsSignature());
   EXPECT_TRUE(TR::HasInitFn());
@@ -156,6 +160,42 @@ TEST(BasicUDTFOneCol, can_run) {
   EXPECT_EQ(out->length(), 2);
   EXPECT_EQ(out->GetString(0), "abc 1");
   EXPECT_EQ(out->GetString(1), "abc 2");
+}
+
+class BasicUDTFTwoColBad : public UDTF<BasicUDTFTwoColBad> {
+ public:
+  static constexpr auto Executor() { return udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("out_str", types::DataType::STRING, types::PatternType::GENERAL, "string result"),
+        ColInfo("int_val", types::DataType::INT64, types::PatternType::GENERAL, "int result"));
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    while (idx++ < 2) {
+      rw->Append<IndexOf("out_str")>("abc " + std::to_string(idx));
+      return true;
+    }
+    return false;
+  }
+
+ private:
+  int idx = 0;
+};
+
+TEST(BasicUDTFTwoColBadDeathTest, record_writer_should_catch_bad_append) {
+  constexpr BasicUDTFTwoColBad::Checker check;
+  PL_UNUSED(check);
+
+  UDTFWrapper<BasicUDTFTwoColBad> wrapper;
+  auto u = wrapper.Make({}).ConsumeValueOrDie();
+
+  arrow::StringBuilder string_builder(0);
+  arrow::Int64Builder int64_builder(0);
+  std::vector<arrow::ArrayBuilder*> outs{&string_builder, &int64_builder};
+
+  EXPECT_DEATH(wrapper.ExecBatchUpdate(u.get(), nullptr, 100, &outs), ".*wrong number.*");
 }
 
 }  // namespace udf

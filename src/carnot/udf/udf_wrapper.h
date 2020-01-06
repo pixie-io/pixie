@@ -350,8 +350,15 @@ struct UDTFWrapper {
   static StatusOr<std::unique_ptr<AnyUDTF>> Make(
       const std::vector<const types::BaseValueType*>& args) {
     auto u = std::make_unique<TUDTF>();
-    PL_RETURN_IF_ERROR(InitExecWrapper(
-        u.get(), args, std::make_index_sequence<UDTFTraits<TUDTF>::InitArgumentTypes().size()>{}));
+    if constexpr (UDTFTraits<TUDTF>::HasInitFn()) {
+      PL_RETURN_IF_ERROR(InitExecWrapper(
+          u.get(), args,
+          std::make_index_sequence<UDTFTraits<TUDTF>::InitArgumentTypes().size()>{}));
+    } else {
+      if (args.size() != 0) {
+        return error::InvalidArgument("got args for UDTF that takes no init args");
+      }
+    }
     return std::unique_ptr<AnyUDTF>(u.release());
   }
 
