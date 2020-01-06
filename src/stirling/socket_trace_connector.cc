@@ -59,7 +59,7 @@ DEFINE_bool(stirling_enable_http_tracing, true,
             "If true, stirling will trace and process HTTP messages");
 DEFINE_bool(stirling_enable_grpc_kprobe_tracing, false,
             "If true, stirling will trace and process gRPC RPCs.");
-DEFINE_bool(stirling_enable_grpc_uprobe_tracing, false,
+DEFINE_bool(stirling_enable_grpc_uprobe_tracing, true,
             "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
@@ -100,8 +100,10 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
 
   protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
   protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_kprobe_tracing;
-  protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled = true;
   protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
+
+  protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled =
+      FLAGS_stirling_enable_grpc_uprobe_tracing;
 }
 
 Status SocketTraceConnector::InitImpl() {
@@ -133,8 +135,12 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFCode(cflags));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
 
-  if (FLAGS_stirling_enable_grpc_uprobe_tracing) {
-    // TODO(yzhao): Factor line 133-149 to a helper function.
+  // TODO(yzhao): Factor this block into a helper function.
+  // TODO(oazizi/yzhao): Should uprobe uses different set of perf buffers than the kprobes?
+  // That allows the BPF code and companion user-space code for uprobe & kprobe be separated
+  // cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
+  // because of the mixed & duplicate data events from these 2 sources.
+  if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
     std::map<std::string, std::vector<int>> binaries =
         GetActiveBinaries(system::Config::GetInstance().proc_path());
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
@@ -146,6 +152,7 @@ Status SocketTraceConnector::InitImpl() {
                         ResolveUProbeTmpls(binaries, kUProbeTmpls));
     PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
   }
+
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << "Probes successfully deployed";
   // TODO(yzhao): Consider adding a flag to switch the role to trace, i.e., between kRoleRequestor &
