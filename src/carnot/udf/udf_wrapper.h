@@ -347,21 +347,23 @@ struct UDTFWrapper {
    * Create a new UDTF.
    * @return A unique_ptr to the UDTF instance.
    */
-  static std::unique_ptr<AnyUDTF> Make(const std::vector<const types::BaseValueType*>& args) {
-    auto u = std::make_unique<TUDTF>();
+  static std::unique_ptr<AnyUDTF> Make() { return std::make_unique<TUDTF>(); }
+
+  static Status Init(AnyUDTF* udtf, FunctionContext* ctx,
+                     const std::vector<const types::BaseValueType*>& args) {
     if constexpr (UDTFTraits<TUDTF>::HasInitFn()) {
-      Status s = InitExecWrapper(
-          u.get(), args, std::make_index_sequence<UDTFTraits<TUDTF>::InitArgumentTypes().size()>{});
-      if (!s.ok()) {
-        LOG(ERROR) << "Failed to create UDTF: " << typeid(TUDTF).name();
-        return nullptr;
-      }
-    } else {
-      if (args.size() != 0) {
-        LOG(ERROR) << "Got args for UDTF that takes no init args, ignoring...";
-      }
+      auto* u = static_cast<TUDTF*>(udtf);
+      return InitExecWrapper(
+          u, ctx, args, std::make_index_sequence<UDTFTraits<TUDTF>::InitArgumentTypes().size()>{});
     }
-    return u;
+    if (args.size()) {
+      // These are to make GCC happy.
+      PL_UNUSED(udtf);
+      PL_UNUSED(ctx);
+      return error::InvalidArgument("Got args for UDTF '%s', that takes no init args, ignoring...",
+                                    typeid(TUDTF).name());
+    }
+    return Status::OK();
   }
 
   static bool ExecBatchUpdate(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
@@ -388,10 +390,11 @@ struct UDTFWrapper {
 
  private:
   template <std::size_t... I>
-  static Status InitExecWrapper(TUDTF* udtf, const std::vector<const types::BaseValueType*>& args,
+  static Status InitExecWrapper(TUDTF* udtf, FunctionContext* ctx,
+                                const std::vector<const types::BaseValueType*>& args,
                                 std::index_sequence<I...>) {
     [[maybe_unused]] constexpr auto init_argument_types = UDTFTraits<TUDTF>::InitArgumentTypes();
-    return udtf->Init(*CastToUDFValueType<init_argument_types[I]>(args[I])...);
+    return udtf->Init(ctx, *CastToUDFValueType<init_argument_types[I]>(args[I])...);
   }
 };
 

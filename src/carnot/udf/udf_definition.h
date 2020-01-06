@@ -225,9 +225,7 @@ class UDTFDefinition : public UDFDefinition {
 
   UDTFDefinition* GetDefinition() override { return this; }
 
-  std::unique_ptr<AnyUDTF> Make(const std::vector<const types::BaseValueType*>& args) {
-    return make_fn_(args);
-  }
+  std::unique_ptr<AnyUDTF> Make() { return make_fn_(); }
 
   bool ExecBatchUpdate(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
                        std::vector<arrow::ArrayBuilder*>* outputs) {
@@ -235,7 +233,7 @@ class UDTFDefinition : public UDFDefinition {
   }
 
  private:
-  std::function<std::unique_ptr<AnyUDTF>(const std::vector<const types::BaseValueType*>&)> make_fn_;
+  std::function<std::unique_ptr<AnyUDTF>()> make_fn_;
   std::function<bool(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
                      std::vector<arrow::ArrayBuilder*>* outputs)>
       exec_batch_update_;

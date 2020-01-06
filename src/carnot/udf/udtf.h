@@ -217,12 +217,12 @@ class UDTFTraits {
 
  private:
   static constexpr auto GetUDTFInitArgumentsFromFunc() {
-    return UDTFTraits::GetUDTFInitArgumentsTypeHelper(&TUDTF::Init);
+    return UDTFTraits::GetInitArgumentsTypeHelper(&TUDTF::Init);
   }
 
   template <typename T, typename... Types>
-  static constexpr std::array<types::DataType, sizeof...(Types)> GetUDTFInitArgumentsTypeHelper(
-      Status (T::*)(Types...)) {
+  static constexpr std::array<types::DataType, sizeof...(Types)> GetInitArgumentsTypeHelper(
+      Status (T::*)(FunctionContext*, Types...)) {
     return std::array<types::DataType, sizeof...(Types)>(
         {types::ValueTypeTraits<Types>::data_type...});
   }

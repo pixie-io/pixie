@@ -6,6 +6,7 @@
 #include "src/carnot/udf/udf_wrapper.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
+#include "src/common/testing/testing.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
@@ -47,7 +48,7 @@ class PartialUDTF3 : public UDTF<PartialUDTF3> {
     return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"));
   }
 
-  Status Init(types::Int64Value) { return Status::OK(); }
+  Status Init(FunctionContext*, types::Int64Value) { return Status::OK(); }
 };
 
 TEST(PartialUDTF3, correct_init_types) {
@@ -66,7 +67,7 @@ class InvalidUDTF4 : public UDTF<InvalidUDTF4> {
     return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"));
   }
 
-  Status Init(types::StringValue) { return Status::OK(); }
+  Status Init(FunctionContext*, types::StringValue) { return Status::OK(); }
 };
 
 TEST(PartialUDTF3, inconsistent_init_args) {
@@ -104,7 +105,7 @@ class BasicUDTFOneCol : public UDTF<BasicUDTFOneCol> {
         ColInfo("out_str", types::DataType::STRING, types::PatternType::GENERAL, "string result"));
   }
 
-  Status Init(types::Int64Value init1, types::StringValue init2) {
+  Status Init(FunctionContext*, types::Int64Value init1, types::StringValue init2) {
     EXPECT_EQ(init1, 1337);
     EXPECT_EQ(init2, "abc");
     return Status::OK();
@@ -147,8 +148,9 @@ TEST(BasicUDTFOneCol, can_run) {
   types::Int64Value init1 = 1337;
   types::StringValue init2 = "abc";
 
-  auto u = wrapper.Make({&init1, &init2});
+  auto u = wrapper.Make();
   ASSERT_NE(u, nullptr);
+  EXPECT_OK(wrapper.Init(u.get(), nullptr, {&init1, &init2}));
 
   arrow::StringBuilder string_builder(0);
   std::vector<arrow::ArrayBuilder*> outs{&string_builder};
@@ -190,8 +192,9 @@ TEST(BasicUDTFTwoColBadDeathTest, record_writer_should_catch_bad_append) {
   PL_UNUSED(check);
 
   UDTFWrapper<BasicUDTFTwoColBad> wrapper;
-  auto u = wrapper.Make({});
+  auto u = wrapper.Make();
   ASSERT_NE(u, nullptr);
+  EXPECT_OK(wrapper.Init(u.get(), nullptr, {}));
 
   arrow::StringBuilder string_builder(0);
   arrow::Int64Builder int64_builder(0);
