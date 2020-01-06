@@ -170,7 +170,8 @@ def pl_cc_test(
         timeout = "short",
         args = [],
         coverage = True,
-        local = False):
+        local = False,
+        flaky = False):
     test_lib_tags = list(tags)
     if coverage:
         test_lib_tags.append("coverage_test_lib")
@@ -199,6 +200,7 @@ def pl_cc_test(
         size = size,
         timeout = timeout,
         local = local,
+        flaky = flaky,
     )
 
 # PL C++ test related libraries (that want gtest, gmock) should be specified
