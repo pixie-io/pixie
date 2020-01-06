@@ -35,7 +35,7 @@ TEST(ParseSockAddr, Unsupported) {
 TEST(ParseIPAddr, ipv4) {
   // Test address.
   struct in_addr in_addr;
-  inet_pton(AF_INET, "1.2.3.4", &in_addr);
+  EXPECT_OK(ParseIPv4Addr("1.2.3.4", &in_addr));
 
   // Now check for the expected string.
   std::string addr;
@@ -47,7 +47,7 @@ TEST(ParseIPAddr, ipv4) {
 TEST(ParseIPAddr, ipv6) {
   // Test address.
   struct in6_addr in6_addr;
-  inet_pton(AF_INET6, "2001:0db8:85a3:0000:0000:8a2e:0370:7334", &in6_addr);
+  EXPECT_OK(ParseIPv6Addr("2001:0db8:85a3:0000:0000:8a2e:0370:7334", &in6_addr));
 
   // Now check for the expected string.
   std::string addr;
@@ -60,7 +60,7 @@ TEST(ParseIPAddr, ipv6) {
 TEST(ParseIPAddr, ipv4_using_in6_addr) {
   // Create an IP address for the test.
   struct in6_addr in6_addr;
-  inet_pton(AF_INET, "1.2.3.4", &in6_addr);
+  EXPECT_OK(ParseIPv4Addr("1.2.3.4", &in6_addr));
 
   // Now check for the expected string.
   std::string addr;

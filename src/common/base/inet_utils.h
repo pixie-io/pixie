@@ -1,5 +1,7 @@
 #pragma once
 
+// C++-style wrappers of C-style IP addresses APIs.
+
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
@@ -30,6 +32,17 @@ inline Status ParseIPv4Addr(const struct in6_addr& in6_addr, std::string* addr) 
   return ParseIPv4Addr(*in_addr, addr);
 }
 
+inline Status ParseIPv4Addr(const std::string& addr_str, struct in_addr* in_addr) {
+  if (!inet_pton(AF_INET, addr_str.c_str(), in_addr)) {
+    return error::Internal("Could not parse IPv4 (AF_INET) address: $0", addr_str);
+  }
+  return Status::OK();
+}
+
+inline Status ParseIPv4Addr(const std::string& addr_str, struct in6_addr* in6_addr) {
+  return ParseIPv4Addr(addr_str, reinterpret_cast<struct in_addr*>(in6_addr));
+}
+
 inline Status ParseIPv6Addr(const struct in6_addr& in6_addr, std::string* addr) {
   addr->resize(INET6_ADDRSTRLEN);
   if (inet_ntop(AF_INET6, &in6_addr, addr->data(), INET6_ADDRSTRLEN) == nullptr) {
@@ -37,6 +50,13 @@ inline Status ParseIPv6Addr(const struct in6_addr& in6_addr, std::string* addr) 
   }
   addr->erase(addr->find('\0'));
 
+  return Status::OK();
+}
+
+inline Status ParseIPv6Addr(const std::string& addr_str, struct in6_addr* in6_addr) {
+  if (!inet_pton(AF_INET6, addr_str.c_str(), in6_addr)) {
+    return error::Internal("Could not parse IPv6 (AF_INET6) address: $0", addr_str);
+  }
   return Status::OK();
 }
 
