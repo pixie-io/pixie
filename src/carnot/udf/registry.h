@@ -130,8 +130,8 @@ class Registry : public BaseUDFRegistry {
    * @param registry_arg_types The overload dependent args of the UDF/UDA.
    * @return
    */
-  StatusOr<TUDFDef*> GetDefinition(const std::string& name,
-                                   const std::vector<types::DataType>& registry_arg_types) const {
+  StatusOr<TUDFDef*> GetDefinition(
+      const std::string& name, const std::vector<types::DataType>& registry_arg_types = {}) const {
     auto key = RegistryKey(name, registry_arg_types);
     auto it = map_.find(key);
     if (it == map_.end()) {

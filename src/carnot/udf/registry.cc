@@ -30,6 +30,17 @@ udfspb::UDFInfo UDARegistry::SpecToProto() const {
   return info;
 }
 
+udfspb::UDFInfo UDTFRegistry::SpecToProto() const {
+  udfspb::UDFInfo info;
+  for (const auto& kv : map_) {
+    auto* udtf_spec_pb = info.add_udtfs();
+    const auto& udtf_def = kv.second;
+    udtf_spec_pb->set_name(udtf_def->name());
+
+    // TODO(zasgar/philkuz): Finish with the rest of the UDTF proto def here.
+  }
+  return info;
+}
 }  // namespace udf
 }  // namespace carnot
 }  // namespace pl

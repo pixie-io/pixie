@@ -215,6 +215,54 @@ TEST(RegistryInfoExporter, export_uda_and_udf) {
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_udf_info, udf_info));
 }
 
+class BasicUDTFTwoCol : public UDTF<BasicUDTFTwoCol> {
+ public:
+  static constexpr auto Executor() { return udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("out_str", types::DataType::STRING, types::PatternType::GENERAL, "string result"),
+        ColInfo("int_val", types::DataType::INT64, types::PatternType::GENERAL, "int result"));
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter*) { return false; }
+};
+
+class BasicUDTFTwoColOverload : public UDTF<BasicUDTFTwoColOverload> {
+ public:
+  static constexpr auto Executor() { return udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("out_str", types::DataType::STRING, types::PatternType::GENERAL, "string result"));
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter*) { return false; }
+};
+
+TEST(UDTFRegistry, init_with_udtf) {
+  UDTFRegistry registry("test registry");
+  registry.RegisterOrDie<BasicUDTFTwoCol>("test_udtf");
+
+  EXPECT_EQ(kUDTF, registry.Type());
+  auto statusor = registry.GetDefinition("test_udtf");
+  ASSERT_OK(statusor);
+  auto def = statusor.ConsumeValueOrDie();
+  ASSERT_NE(nullptr, def);
+  EXPECT_EQ("test_udtf", def->name());
+
+  const char* expected_debug_str =
+      "Registry(kUDTF): test registry\n"
+      "test_udtf\n";
+  EXPECT_EQ(expected_debug_str, registry.DebugString());
+}
+
+TEST(UDTFRegistryDeathTest, udtf_does_not_allow_overload) {
+  UDTFRegistry registry("test registry");
+  registry.RegisterOrDie<BasicUDTFTwoCol>("test_udtf");
+  EXPECT_DEATH(registry.RegisterOrDie<BasicUDTFTwoColOverload>("test_udtf"), ".*already exists.*");
+}
+
 }  // namespace udf
 }  // namespace carnot
 }  // namespace pl

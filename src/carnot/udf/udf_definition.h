@@ -207,8 +207,14 @@ class UDTFDefinition : public UDFDefinition {
    */
   template <typename T>
   Status Init(const std::string& name) {
-    PL_UNUSED(name);
-    // TODO(zasgar): Implement this and add checks.
+    // Check to make sure it's a valid UDTF.
+    UDTFChecker<T> checker;
+    PL_UNUSED(checker);
+
+    PL_RETURN_IF_ERROR(UDFDefinition::Init(name));
+    make_fn_ = UDTFWrapper<T>::Make;
+    exec_batch_update_ = UDTFWrapper<T>::ExecBatchUpdate;
+
     return Status::OK();
   }
 
@@ -217,7 +223,22 @@ class UDTFDefinition : public UDFDefinition {
     return args_types;
   }
 
+  UDTFDefinition* GetDefinition() override { return this; }
+
+  std::unique_ptr<AnyUDTF> Make(const std::vector<const types::BaseValueType*>& args) {
+    return make_fn_(args);
+  }
+
+  bool ExecBatchUpdate(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
+                       std::vector<arrow::ArrayBuilder*>* outputs) {
+    return exec_batch_update_(udtf, ctx, max_gen_records, outputs);
+  }
+
  private:
+  std::function<std::unique_ptr<AnyUDTF>(const std::vector<const types::BaseValueType*>&)> make_fn_;
+  std::function<bool(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
+                     std::vector<arrow::ArrayBuilder*>* outputs)>
+      exec_batch_update_;
   const std::vector<types::DataType>
       args_types{};  // Empty arg types because UDTF's can't be overloaded.
 };
