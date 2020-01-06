@@ -215,11 +215,20 @@ class UDTFTraits {
         relation, [](const ColInfo& info) -> auto { return info.name(); });
   }
 
- private:
+  /**
+   * Returns the init arguments as seen by the Init(...) function.
+   */
+  template <typename Q = TUDTF, std::enable_if_t<UDTFTraits<Q>::HasInitFn(), void>* = nullptr>
   static constexpr auto GetUDTFInitArgumentsFromFunc() {
-    return UDTFTraits::GetInitArgumentsTypeHelper(&TUDTF::Init);
+    return UDTFTraits::GetInitArgumentsTypeHelper(&Q::Init);
   }
 
+  template <typename Q = TUDTF, std::enable_if_t<!UDTFTraits<Q>::HasInitFn(), void>* = nullptr>
+  static constexpr auto GetUDTFInitArgumentsFromFunc() {
+    return std::array<types::DataType, 0>{};
+  }
+
+ private:
   template <typename T, typename... Types>
   static constexpr std::array<types::DataType, sizeof...(Types)> GetInitArgumentsTypeHelper(
       Status (T::*)(FunctionContext*, Types...)) {
@@ -369,14 +378,16 @@ struct UDTFChecker {
  private:
   using TR = UDTFTraits<T>;
   static_assert(std::is_base_of_v<UDTF<T>, T>, "UDTF must be derived from UDTF<T>");
-  // Either both or None of InitArgs and Init must be specified.
-  static_assert(!(TR::HasInitFn() ^ TR::HasInitArgsFn()),
+  // Either both or None of InitArgs and Init must be specified. Alternative, an Init function with
+  // only FunctionContext as the argument can be specified.
+  static_assert(!(TR::HasInitFn() ^ TR::HasInitArgsFn()) ||
+                    (TR::HasInitFn() && TR::GetUDTFInitArgumentsFromFunc().size() == 0),
                 "Either both or none of InitArgs() and Init(...) must exist");
 
   // InitArgs must return std::array<UDTFArg, N>.
   static_assert(!TR::HasInitArgsFn() || TR::HasCorrectInitArgsSignature(),
                 "Init args must return std::array<UDTFArg, N>");
-  static_assert(!TR::HasInitFn() || TR::HasConsistentInitArgs(),
+  static_assert(!TR::HasInitArgsFn() || TR::HasConsistentInitArgs(),
                 "Specified init args should match init function");
 
   // Check OutputRelation().

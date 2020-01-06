@@ -203,6 +203,42 @@ TEST(BasicUDTFTwoColBadDeathTest, record_writer_should_catch_bad_append) {
   EXPECT_DEATH(wrapper.ExecBatchUpdate(u.get(), nullptr, 100, &outs), ".*wrong number.*");
 }
 
+class ValidOneColUDTFEmptyInit : public UDTF<ValidOneColUDTFEmptyInit> {
+ public:
+  static constexpr auto Executor() { return udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("out_str", types::DataType::STRING, types::PatternType::GENERAL, "string result"));
+  }
+
+  Status Init(FunctionContext*) { return Status::OK(); }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    while (idx++ < 2) {
+      rw->Append<IndexOf("out_str")>("abc " + std::to_string(idx));
+      return true;
+    }
+    return false;
+  }
+
+ private:
+  int idx = 0;
+};
+
+TEST(ValidOneColUDTFEmptyInit, empty_init_is_valid) {
+  using TR = UDTFTraits<ValidOneColUDTFEmptyInit>;
+  constexpr ValidOneColUDTFEmptyInit::Checker check;
+  PL_UNUSED(check);
+
+  EXPECT_FALSE(TR::HasInitArgsFn());
+  EXPECT_TRUE(TR::HasInitFn());
+  EXPECT_FALSE(TR::HasConsistentInitArgs());
+  EXPECT_TRUE(TR::HasExecutorFn());
+  EXPECT_TRUE(TR::HasCorrectExectorFnReturnType());
+  EXPECT_TRUE(TR::HasNextRecordFn());
+}
+
 }  // namespace udf
 }  // namespace carnot
 }  // namespace pl
