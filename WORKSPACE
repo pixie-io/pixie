@@ -121,8 +121,8 @@ go_repository(
 go_repository(
     name = "com_github_google_uuid",
     importpath = "github.com/google/uuid",
-    sum = "h1:b4Gk+7WdP/d3HZH8EJsZpvV7EtDOgaZLtnaNGIu1adA=",
-    version = "v1.0.0",
+    sum = "h1:Gkbcsh/GbpXz7lPftLA3P6TYMwjCLYm83jiFQZF/3gY=",
+    version = "v1.1.1",
 )
 
 go_repository(
@@ -288,8 +288,8 @@ go_repository(
 go_repository(
     name = "com_github_sirupsen_logrus",
     importpath = "github.com/sirupsen/logrus",
-    sum = "h1:GL2rEmy6nsikmW0r8opw9JIRScdMF5hA8cOYLH7In1k=",
-    version = "v1.4.1",
+    sum = "h1:SPIRibHv4MatM3XXNO2BJeFLZwZ2LvZgfQ5+UNI2im4=",
+    version = "v1.4.2",
 )
 
 go_repository(
@@ -569,8 +569,8 @@ go_repository(
     build_file_generation = "on",
     build_file_proto_mode = "disable",
     importpath = "github.com/coreos/etcd",
-    sum = "h1:8F3hqu9fGYLBifCmRCJsicFqDx/D68Rt3q1JMazcgBQ=",
-    version = "v3.3.13+incompatible",
+    sum = "h1:Zz1aXgDrFFi1nadh58tA9ktt06cmPTwNNP3dXwIq1lE=",
+    version = "v3.3.18+incompatible",
 )
 
 go_repository(
@@ -942,8 +942,8 @@ go_repository(
 go_repository(
     name = "com_github_ory_dockertest",
     importpath = "github.com/ory/dockertest",
-    sum = "h1:VrpM6Gqg7CrPm3bL4Wm1skO+zFWLbh7/Xb5kGEbJRh8=",
-    version = "v3.3.4+incompatible",
+    sum = "h1:iLLK6SQwIhcbrG783Dghaaa3WPzGc+4Emza6EbVUUGA=",
+    version = "v3.3.5+incompatible",
 )
 
 go_repository(

@@ -8,13 +8,11 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/stretchr/testify/assert"
 
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 )
 
 func testBatchSize(t *testing.T, size int) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	// Add items into etcd that we can get.
 	i := 0

@@ -2,19 +2,18 @@ package testingutils
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/ory/dockertest"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // SetupEtcd starts up an embedded etcd server on some free ports.
-func SetupEtcd(t *testing.T) (*clientv3.Client, func()) {
+func SetupEtcd() (*clientv3.Client, func()) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
-		t.Fatalf("Could not connect to docker: %s", err)
+		log.Fatalf("Could not connect to docker: %s", err)
 	}
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "quay.io/coreos/etcd",
@@ -33,7 +32,7 @@ func SetupEtcd(t *testing.T) (*clientv3.Client, func()) {
 
 	clientPort := resource.GetPort("2379/tcp")
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 
 	var client *clientv3.Client
@@ -43,19 +42,18 @@ func SetupEtcd(t *testing.T) (*clientv3.Client, func()) {
 			DialTimeout: 5 * time.Second,
 		})
 		if err != nil {
-			logrus.Errorf("Failed to connect to etcd: #{err}")
+			log.Errorf("Failed to connect to etcd: #{err}")
 		}
 		return err
 	}); err != nil {
-		t.Fatal("Cannot start etcd")
+		log.Fatal("Cannot start etcd")
 	}
 
 	cleanup := func() {
 		client.Close()
 		if err := pool.Purge(resource); err != nil {
-			t.Fatalf("Could not purge resource: %s", err)
+			log.Fatalf("Could not purge resource: %s", err)
 		}
-		client.Close()
 	}
 
 	return client, cleanup

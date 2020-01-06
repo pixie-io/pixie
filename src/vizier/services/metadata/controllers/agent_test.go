@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"context"
 	"errors"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -24,9 +25,18 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
-func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, *mock_controllers.MockMetadataStore, func()) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
+var etcdClient *clientv3.Client
 
+func clearEtcd(t *testing.T) {
+	_, err := etcdClient.Delete(context.Background(), "", clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal("Failed to clear etcd data.")
+	}
+}
+
+func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, *mock_controllers.MockMetadataStore, func()) {
+	clearEtcd(t)
+	cleanup := func() {}
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
@@ -853,4 +863,13 @@ func TestGetMetadataUpdatesGetEndpointsFailed(t *testing.T) {
 
 	_, err := agtMgr.GetMetadataUpdates("localhost")
 	assert.NotNil(t, err)
+}
+
+func TestMain(m *testing.M) {
+	c, cleanup := testingutils.SetupEtcd()
+	etcdClient = c
+	code := m.Run()
+	// Can't be deferred b/c of os.Exit.
+	cleanup()
+	os.Exit(code)
 }

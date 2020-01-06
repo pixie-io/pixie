@@ -12,52 +12,13 @@ import (
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
-	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
-func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb string) {
-	info := new(agentpb.Agent)
-	if err := proto.UnmarshalText(agentPb, info); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	i, err := info.Marshal()
-	if err != nil {
-		t.Fatal("Unable to marshal agentData pb.")
-	}
-
-	_, err = client.Put(context.Background(), controllers.GetAgentKey(agentID), string(i))
-	if err != nil {
-		t.Fatal("Unable to add agentData to etcd.")
-	}
-
-	_, err = client.Put(context.Background(), controllers.GetHostnameAgentKey(info.Info.HostInfo.Hostname), agentID)
-	if err != nil {
-		t.Fatal("Unable to add agentData to etcd.")
-	}
-
-	// Add schema info.
-	schema := new(metadatapb.SchemaInfo)
-	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	s, err := schema.Marshal()
-	if err != nil {
-		t.Fatal("Unable to marshal schema pb.")
-	}
-
-	_, err = client.Put(context.Background(), controllers.GetAgentSchemaKey(agentID, schema.Name), string(s))
-	if err != nil {
-		t.Fatal("Unable to add agent schema to etcd.")
-	}
-}
-
 func TestUpdateEndpoints(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -125,8 +86,7 @@ func TestUpdateEndpoints(t *testing.T) {
 }
 
 func TestUpdatePod(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -189,8 +149,7 @@ func TestUpdatePod(t *testing.T) {
 }
 
 func TestUpdateService(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -253,8 +212,7 @@ func TestUpdateService(t *testing.T) {
 }
 
 func TestUpdateContainer(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -284,8 +242,7 @@ func TestUpdateContainer(t *testing.T) {
 }
 
 func TestUpdateContainersFromPod(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -328,8 +285,7 @@ func TestUpdateContainersFromPod(t *testing.T) {
 }
 
 func TestUpdateContainersFromPendingPod(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -353,8 +309,7 @@ func TestUpdateContainersFromPendingPod(t *testing.T) {
 }
 
 func TestUpdateSchemas(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -399,8 +354,7 @@ func TestUpdateSchemas(t *testing.T) {
 }
 
 func TestGetAgentsForHostnames(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -440,8 +394,7 @@ func TestGetAgentsForHostnames(t *testing.T) {
 }
 
 func TestGetKelvinIDs(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -479,8 +432,7 @@ func TestGetKelvinIDs(t *testing.T) {
 }
 
 func TestGetAgentsForMissingHostnames(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -508,8 +460,7 @@ func TestGetAgentsForMissingHostnames(t *testing.T) {
 }
 
 func TestAddToAgentQueue(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -527,8 +478,7 @@ func TestAddToAgentQueue(t *testing.T) {
 }
 
 func TestAddToFrontOfAgentQueue(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -557,8 +507,7 @@ func TestAddToFrontOfAgentQueue(t *testing.T) {
 }
 
 func TestAddUpdatesToAgentQueue(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -594,8 +543,7 @@ func TestAddUpdatesToAgentQueue(t *testing.T) {
 }
 
 func TestGetFromAgentQueue(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -631,8 +579,7 @@ func TestGetFromAgentQueue(t *testing.T) {
 }
 
 func TestGetAgents(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -667,8 +614,7 @@ func TestGetAgents(t *testing.T) {
 }
 
 func TestGetPods(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -719,8 +665,7 @@ func TestGetPods(t *testing.T) {
 }
 
 func TestGetContainers(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -765,8 +710,7 @@ func TestGetContainers(t *testing.T) {
 }
 
 func TestGetEndpoints(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -817,8 +761,7 @@ func TestGetEndpoints(t *testing.T) {
 }
 
 func TestGetServices(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -869,8 +812,7 @@ func TestGetServices(t *testing.T) {
 }
 
 func TestGetASID(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -891,8 +833,7 @@ func TestGetASID(t *testing.T) {
 }
 
 func TestGetProcesses(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -945,8 +886,7 @@ func TestGetProcesses(t *testing.T) {
 }
 
 func TestUpdateProcesses(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -1006,8 +946,7 @@ func TestUpdateProcesses(t *testing.T) {
 }
 
 func TestGetComputedSchemas(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
@@ -1052,8 +991,7 @@ func TestGetComputedSchemas(t *testing.T) {
 }
 
 func TestGetNodeEndpoints(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {

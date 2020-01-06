@@ -8,13 +8,11 @@ import (
 	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/stretchr/testify/assert"
 
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 )
 
 func TestLeaderElection(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
 	if err != nil {
@@ -53,8 +51,7 @@ func TestLeaderElection(t *testing.T) {
 }
 
 func TestLeaderElection_Stop(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
 	if err != nil {
@@ -104,5 +101,4 @@ func TestLeaderElection_Stop(t *testing.T) {
 
 	isLeader, err = l2.IsLeader()
 	assert.Equal(t, true, isLeader)
-
 }

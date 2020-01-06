@@ -2,6 +2,7 @@ package etcd_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/coreos/etcd/clientv3"
@@ -11,9 +12,17 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 )
 
+var etcdClient *clientv3.Client
+
+func clearEtcd(t *testing.T) {
+	_, err := etcdClient.Delete(context.Background(), "", clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal("Failed to clear etcd data.")
+	}
+}
+
 func TestEnqueue(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	q := etcd.NewQueue(etcdClient, "test")
 
@@ -51,8 +60,7 @@ func TestEnqueue(t *testing.T) {
 }
 
 func TestDequeueMultiple(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	q := etcd.NewQueue(etcdClient, "test")
 
@@ -83,8 +91,7 @@ func TestDequeueMultiple(t *testing.T) {
 }
 
 func TestDequeueEmpty(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	q := etcd.NewQueue(etcdClient, "test")
 
@@ -94,8 +101,7 @@ func TestDequeueEmpty(t *testing.T) {
 }
 
 func TestDequeueAll(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	q := etcd.NewQueue(etcdClient, "test")
 
@@ -133,8 +139,7 @@ func TestDequeueAll(t *testing.T) {
 }
 
 func TestEnqueueAtFront(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	q := etcd.NewQueue(etcdClient, "test")
 
@@ -185,8 +190,7 @@ func TestEnqueueAtFront(t *testing.T) {
 }
 
 func TestEnqueueAll(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	q := etcd.NewQueue(etcdClient, "test")
 
@@ -262,8 +266,7 @@ func TestEnqueueAll(t *testing.T) {
 }
 
 func TestEnqueueAllDequeueAll(t *testing.T) {
-	etcdClient, cleanup := testingutils.SetupEtcd(t)
-	defer cleanup()
+	clearEtcd(t)
 
 	q := etcd.NewQueue(etcdClient, "test")
 
@@ -311,4 +314,13 @@ func TestEnqueueAllDequeueAll(t *testing.T) {
 	assert.Equal(t, "1", (*dequeueResp)[2])
 	assert.Equal(t, "2", (*dequeueResp)[3])
 	assert.Equal(t, "3", (*dequeueResp)[4])
+}
+
+func TestMain(m *testing.M) {
+	c, cleanup := testingutils.SetupEtcd()
+	etcdClient = c
+	code := m.Run()
+	// Can't be deferred b/c of os.Exit.
+	cleanup()
+	os.Exit(code)
 }
