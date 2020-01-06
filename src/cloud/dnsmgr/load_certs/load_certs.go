@@ -64,7 +64,7 @@ func getCertFilePath() string {
 
 func getQuery(updateOnly bool) string {
 	if updateOnly {
-		return `UPDATE ssl_certs SET cert=cert, key=key WHERE cname=cname VALUES (:cname, :cert, :key)`
+		return `UPDATE ssl_certs SET cert=:cert, key=:key WHERE cname=:cname`
 	}
 	return `INSERT INTO ssl_certs(cname, cert, key) VALUES (:cname, :cert, :key)`
 }
@@ -106,21 +106,16 @@ func loadCerts(db *sqlx.DB) {
 			Cert:  certInfo.Cert,
 			Key:   certInfo.Key,
 		}
-		_, err := db.NamedQuery(query, &sc)
+		rows, err := db.NamedQuery(query, &sc)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to insert certs into DB")
 		}
+		rows.Close()
 	}
 }
 
-func main() {
-	log.WithField("exec", "load_certs").Info("Starting load_certs...")
-	pflag.Parse()
-
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("PL")
-	viper.BindPFlags(pflag.CommandLine)
-
+// InitDBAndLoadCerts initializes the database then loads or updates the certs.
+func InitDBAndLoadCerts() {
 	db := pg.MustConnectDefaultPostgresDB()
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{
 		MigrationsTable: "dnsmgr_service_migrations",
@@ -141,4 +136,16 @@ func main() {
 	}
 
 	loadCerts(db)
+}
+
+func main() {
+	log.WithField("exec", "load_certs").Info("Starting load_certs...")
+	pflag.Parse()
+
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("PL")
+	viper.BindPFlags(pflag.CommandLine)
+
+	InitDBAndLoadCerts()
+
 }
