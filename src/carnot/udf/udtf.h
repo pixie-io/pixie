@@ -186,12 +186,22 @@ class UDTFTraits {
    */
   static constexpr bool HasNextRecordFn() { return NextRecordFnHelper<TUDTF>::value; }
 
+  template <typename Q = TUDTF, std::enable_if_t<UDTFTraits<Q>::HasInitArgsFn(), void>* = nullptr>
+  static constexpr auto InitArguments() {
+    return Q::InitArgs();
+  }
+
+  template <typename Q = TUDTF, std::enable_if_t<!UDTFTraits<Q>::HasInitArgsFn(), void>* = nullptr>
+  static constexpr auto InitArguments() {
+    return std::array<UDTFArg, 0>{};
+  }
+
   /**
    * Gets the input arguments (compile time).
    * @return std::array of the init arguments.
    */
   static constexpr auto InitArgumentTypes() {
-    constexpr auto initargs = TUDTF::InitArgs();
+    constexpr auto initargs = InitArguments<TUDTF>();
     return ArrayTransform(
         initargs, [](const UDTFArg& arg) -> auto { return arg.type(); });
   }

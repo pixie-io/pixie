@@ -234,4 +234,9 @@ constexpr auto ArrayTransform(const std::array<T, N>& arr, F&& f) {
   return internal::ArrayTransformHelper(arr, f, std::make_index_sequence<N>{});
 }
 
+template <typename T, typename F, std::size_t N = 0>
+constexpr auto ArrayTransform(const std::array<T, 0>&, F&&) {
+  return std::array<typename std::result_of_t<F&(T)>, 0>{};
+}
+
 }  // namespace pl

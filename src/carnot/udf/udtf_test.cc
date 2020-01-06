@@ -237,6 +237,9 @@ TEST(ValidOneColUDTFEmptyInit, empty_init_is_valid) {
   EXPECT_TRUE(TR::HasExecutorFn());
   EXPECT_TRUE(TR::HasCorrectExectorFnReturnType());
   EXPECT_TRUE(TR::HasNextRecordFn());
+
+  constexpr std::array<types::DataType, 0> init_args = TR::InitArgumentTypes();
+  EXPECT_EQ(init_args.size(), 0);
 }
 
 }  // namespace udf
