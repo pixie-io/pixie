@@ -383,11 +383,12 @@ TEST_F(SourceRelationTest, UDTFDoesNothing) {
   Relation relation{{types::INT64, types::STRING}, {"fd", "name"}};
   ASSERT_OK(relation.ToProto(udtf_spec.mutable_relation()));
 
-  auto udtf = graph
-                  ->CreateNode<UDTFSourceIR>(ast, "GetOpenNetworkConnections",
-                                             std::vector<std::string>{"upid"},
-                                             std::vector<ExpressionIR*>{upid_str}, udtf_spec)
-                  .ConsumeValueOrDie();
+  auto udtf =
+      graph
+          ->CreateNode<UDTFSourceIR>(
+              ast, "GetOpenNetworkConnections",
+              absl::flat_hash_map<std::string, ExpressionIR*>{{"upid", upid_str}}, udtf_spec)
+          .ConsumeValueOrDie();
 
   EXPECT_TRUE(udtf->IsRelationInit());
 

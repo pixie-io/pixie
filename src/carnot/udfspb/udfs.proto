@@ -62,26 +62,12 @@ message UDTFSourceSpec {
     pl.types.SemanticType semantic_type = 3;
   }
 
-  // The type of filter to use on the semantic argument.
-  // At the current moment specifying this means that you want to exactly match
-  // the user's passed in argument to filter.
-  message SemanticArgFilter {
-    // The index of the argument that is semantic.
-    int64 idx = 1;
-  }
-  message Filter {
-    oneof filter {
-      SemanticArgFilter semantic_filter = 1;
-    }
-  }
   // Name of the UDTFSource.
   string name = 1;
   // The types of the arguments of the UDTFSource. Must be the same length as arg_names.
   repeated Arg args = 2;
   // Which agents the table function should execute on.
   UDTFSourceExecutor executor = 3;
-  // The filter to use when the executor uses a subset.
-  repeated Filter filters = 4;
   // The relation that this UDTF generates.
-  pl.table_store.schemapb.Relation relation = 5;
+  pl.table_store.schemapb.Relation relation = 4;
 }

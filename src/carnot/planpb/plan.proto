@@ -257,10 +257,8 @@ message JoinOperator {
 message UDTFSourceOperator {
   // The name of the UDTF.
   string name = 1;
-  // The names of the arguments. Must be the same length as arg_values.
-  repeated string arg_names = 2;
   // The values to assign the arguments. Must be the same length as arg_name.
-  repeated ScalarValue arg_values = 3;
+  repeated ScalarValue arg_values = 2;
 }
 
 // Scalar expression is any single valued expression.

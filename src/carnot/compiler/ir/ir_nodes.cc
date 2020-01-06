@@ -1413,16 +1413,15 @@ Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
   return Status::OK();
 }
 
-Status UDTFSourceIR::Init(std::string_view func_name, const std::vector<std::string>& arg_names,
-                          const std::vector<ExpressionIR*>& arg_values,
+Status UDTFSourceIR::Init(std::string_view func_name,
+                          const absl::flat_hash_map<std::string, ExpressionIR*>& arg_value_map,
                           const udfspb::UDTFSourceSpec& udtf_spec) {
   func_name_ = func_name;
-  arg_names_ = arg_names;
   udtf_spec_ = udtf_spec;
   table_store::schema::Relation relation;
   PL_RETURN_IF_ERROR(relation.FromProto(&udtf_spec_.relation()));
   PL_RETURN_IF_ERROR(SetRelation(relation));
-  return SetArgValues(arg_values);
+  return InitArgValues(arg_value_map, udtf_spec);
 }
 
 Status UDTFSourceIR::ToProto(planpb::Operator* op) const {
@@ -1430,9 +1429,6 @@ Status UDTFSourceIR::ToProto(planpb::Operator* op) const {
 
   auto pb = op->mutable_udtf_source_op();
   pb->set_name(func_name_);
-  for (const std::string& arg_name : arg_names_) {
-    pb->add_arg_names(arg_name);
-  }
 
   for (const auto& arg_value : arg_values_) {
     auto arg_value_pb = pb->add_arg_values();
@@ -1442,23 +1438,33 @@ Status UDTFSourceIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
-StatusOr<DataIR*> UDTFSourceIR::ProcessArgValue(ExpressionIR* arg_expr) {
-  if (!arg_expr->IsData()) {
-    return CreateIRNodeError("expected scalar value, received '$0'", arg_expr->type_string());
-  }
-  return static_cast<DataIR*>(arg_expr);
-}
-
 Status UDTFSourceIR::SetArgValues(const std::vector<ExpressionIR*>& arg_values) {
-  for (const auto& arg : arg_values) {
-    if (Match(arg, Collection())) {
-      DCHECK(false);
-      return CreateIRNodeError("Collections not supported for now.");
+  arg_values_.resize(arg_values.size());
+  for (const auto& [idx, value] : Enumerate(arg_values)) {
+    DCHECK(!Match(value, Collection())) << "Collections not supported in UDTF";
+    if (!value->IsData()) {
+      return CreateIRNodeError("expected scalar value, received '$0'", value->type_string());
     }
-    PL_ASSIGN_OR_RETURN(DataIR * data, ProcessArgValue(arg));
-    arg_values_.push_back(data);
+    PL_ASSIGN_OR_RETURN(arg_values_[idx],
+                        graph_ptr()->OptionallyCloneWithEdge(this, static_cast<DataIR*>(value)));
   }
   return Status::OK();
+}
+
+Status UDTFSourceIR::InitArgValues(
+    const absl::flat_hash_map<std::string, ExpressionIR*>& arg_value_map,
+    const udfspb::UDTFSourceSpec& udtf_spec) {
+  std::vector<ExpressionIR*> arg_values;
+  arg_values.reserve(udtf_spec.args().size());
+
+  // This gets the arguments in the order of the UDTF spec.
+  for (const auto& arg_spec : udtf_spec.args()) {
+    auto arg_value_map_iter = arg_value_map.find(arg_spec.name());
+    DCHECK(arg_value_map_iter != arg_value_map.end());
+    ExpressionIR* arg = arg_value_map_iter->second;
+    arg_values.push_back(arg);
+  }
+  return SetArgValues(arg_values);
 }
 
 // TODO(philkuz) incorporate this into OperatorIR and make a subroutine for ExpressionEvalutor and
@@ -1507,7 +1513,6 @@ Status UDTFSourceIR::CopyFromNodeImpl(
     const IRNode* source, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const UDTFSourceIR* udtf = static_cast<const UDTFSourceIR*>(source);
   func_name_ = udtf->func_name_;
-  arg_names_ = udtf->arg_names_;
   udtf_spec_ = udtf->udtf_spec_;
   std::vector<ExpressionIR*> arg_values;
   for (const DataIR* arg_element : udtf->arg_values_) {

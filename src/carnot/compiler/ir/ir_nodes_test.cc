@@ -1171,12 +1171,34 @@ TEST_F(OperatorTests, union_duplicate_parents) {
 
   EXPECT_THAT(union_op->parents(), ElementsAre(mem_src2, mem_src1, maps[0], maps[1]));
 }
+const char* kOpenNetworkConnsUDTFSourceSpecPb = R"proto(
+name: "OpenNetworkConnections"
+args {
+  name: "upid"
+  arg_type: STRING
+  semantic_type: ST_UPID
+}
+executor: UDTF_SUBSET_PEM
+relation {
+  columns {
+    column_name: "time_"
+    column_type: TIME64NS
+  }
+  columns {
+    column_name: "fd"
+    column_type: INT64
+  }
+  columns {
+    column_name: "name"
+    column_type: STRING
+  }
+}
+)proto";
 
-const char* kExpectedUDTFPb = R"proto(
+const char* kExpectedUDTFSourceOpSingleArgPb = R"proto(
   op_type: UDTF_SOURCE_OPERATOR
   udtf_source_op {
-    name: "GetOpenNetworkConnections"
-    arg_names: "upid"
+    name: "OpenNetworkConnections"
     arg_values {
       data_type: STRING
       string_value: "5525adaadadadadad"
@@ -1184,22 +1206,85 @@ const char* kExpectedUDTFPb = R"proto(
   }
 )proto";
 
-TEST_F(OperatorTests, UDTFTest) {
-  auto upid_str = MakeString("5525adaadadadadad");
-
+TEST_F(OperatorTests, UDTFSingleArgTest) {
   udfspb::UDTFSourceSpec udtf_spec;
-  Relation relation{{types::INT64, types::STRING}, {"fd", "name"}};
-  ASSERT_OK(relation.ToProto(udtf_spec.mutable_relation()));
+  ASSERT_TRUE(
+      google::protobuf::TextFormat::MergeFromString(kOpenNetworkConnsUDTFSourceSpecPb, &udtf_spec));
 
-  auto udtf_or_s = graph->CreateNode<UDTFSourceIR>(ast, "GetOpenNetworkConnections",
-                                                   std::vector<std::string>{"upid"},
-                                                   std::vector<ExpressionIR*>{upid_str}, udtf_spec);
+  Relation relation{{types::TIME64NS, types::INT64, types::STRING}, {"time_", "fd", "name"}};
+
+  absl::flat_hash_map<std::string, ExpressionIR*> arg_map{
+      {"upid", MakeString("5525adaadadadadad")}};
+
+  auto udtf_or_s =
+      graph->CreateNode<UDTFSourceIR>(ast, "OpenNetworkConnections", arg_map, udtf_spec);
   ASSERT_OK(udtf_or_s);
   UDTFSourceIR* udtf = udtf_or_s.ConsumeValueOrDie();
+
   planpb::Operator pb;
   EXPECT_OK(udtf->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kExpectedUDTFSourceOpSingleArgPb)) << pb.DebugString();
 
-  EXPECT_THAT(pb, EqualsProto(kExpectedUDTFPb)) << pb.DebugString();
+  EXPECT_TRUE(udtf->IsRelationInit());
+  EXPECT_EQ(udtf->relation(), relation);
+}
+
+const char* kDiskSpaceUDTFPb = R"proto(
+name: "GetDiskSpace"
+args {
+  name: "agent"
+  arg_type: STRING
+  semantic_type: ST_AGENT_UID
+}
+args {
+  name: "disk_idx"
+  arg_type: INT64
+  semantic_type: ST_NONE
+}
+executor: UDTF_SUBSET_PEM
+relation {
+  columns {
+    column_name: "used_capacity"
+    column_type: INT64
+  }
+  columns {
+    column_name: "total_capacity"
+    column_type: INT64
+  }
+}
+)proto";
+
+const char* kExpectedUDTFSourceOpMultipleArgsPb = R"proto(
+  op_type: UDTF_SOURCE_OPERATOR
+  udtf_source_op {
+    name: "GetDiskSpace"
+    arg_values {
+      data_type: STRING
+      string_value: "5525adaadadadadad"
+    }
+    arg_values {
+      data_type: INT64
+      int64_value: 321
+    }
+  }
+)proto";
+
+TEST_F(OperatorTests, UDTFMultipleOutOfOrderArgs) {
+  udfspb::UDTFSourceSpec udtf_spec;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kDiskSpaceUDTFPb, &udtf_spec));
+
+  Relation relation{{types::INT64, types::INT64}, {"used_capacity", "total_capacity"}};
+
+  absl::flat_hash_map<std::string, ExpressionIR*> arg_map{
+      {"disk_idx", MakeInt(321)}, {"agent", MakeString("5525adaadadadadad")}};
+
+  auto udtf_or_s = graph->CreateNode<UDTFSourceIR>(ast, "GetDiskSpace", arg_map, udtf_spec);
+  ASSERT_OK(udtf_or_s);
+  UDTFSourceIR* udtf = udtf_or_s.ConsumeValueOrDie();
+
+  planpb::Operator pb;
+  EXPECT_OK(udtf->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kExpectedUDTFSourceOpMultipleArgsPb)) << pb.DebugString();
 
   EXPECT_TRUE(udtf->IsRelationInit());
   EXPECT_EQ(udtf->relation(), relation);

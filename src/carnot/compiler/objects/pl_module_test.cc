@@ -24,11 +24,6 @@ args {
   semantic_type: ST_UPID
 }
 executor: UDTF_SUBSET_PEM
-filters {
-  semantic_filter {
-    idx: 0
-  }
-}
 relation {
   columns {
     column_name: "time_"

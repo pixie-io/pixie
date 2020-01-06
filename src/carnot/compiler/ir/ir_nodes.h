@@ -1600,11 +1600,20 @@ class UDTFSourceIR : public OperatorIR {
       : OperatorIR(id, IRNodeType::kUDTFSource, /* has_parents */ false,
                    /* is_source */ true) {}
 
-  Status Init(std::string_view func_name, const std::vector<std::string>& arg_names,
-              const std::vector<ExpressionIR*>& arg_values,
+  Status Init(std::string_view func_name,
+              const absl::flat_hash_map<std::string, ExpressionIR*>& arg_values,
               const udfspb::UDTFSourceSpec& udtf_spec);
 
+  /**
+   * @brief Manages the overhead of setting argument values of the UDTFSourceOperator.
+   *
+   * @param expr
+   * @return OK or error if one occurs.
+   */
   Status SetArgValues(const std::vector<ExpressionIR*>& arg_values);
+
+  Status InitArgValues(const absl::flat_hash_map<std::string, ExpressionIR*>& arg_values,
+                       const udfspb::UDTFSourceSpec& udtf_spec);
 
   Status ToProto(planpb::Operator*) const override;
   std::string func_name() const { return func_name_; }
@@ -1627,7 +1636,6 @@ class UDTFSourceIR : public OperatorIR {
   StatusOr<DataIR*> ProcessArgValue(ExpressionIR* expr);
 
   std::string func_name_;
-  std::vector<std::string> arg_names_;
   std::vector<DataIR*> arg_values_;
   udfspb::UDTFSourceSpec udtf_spec_;
 };

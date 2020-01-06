@@ -171,16 +171,14 @@ bool CoordinatorImpl::KeepSource(OperatorIR* source, const distributedpb::Carnot
 bool CoordinatorImpl::UDTFMatchesFilters(UDTFSourceIR* source,
                                          const distributedpb::CarnotInfo& carnot_info) {
   const auto& udtf_spec = source->udtf_spec();
-  for (const auto& filter : udtf_spec.filters()) {
-    // We currently only support semantic filters.
-    DCHECK(filter.has_semantic_filter());
-    // TODO(philkuz) should preprocess filters.
-    auto semantic_filter = filter.semantic_filter();
-    DCHECK_LT(semantic_filter.idx(), static_cast<int64_t>(source->arg_values().size()));
-    DataIR* data = source->arg_values()[semantic_filter.idx()];
-    auto arg = udtf_spec.args()[semantic_filter.idx()];
-    // Switch on semantic type and handle as appropriate.
+  for (const auto& [idx, arg] : Enumerate(udtf_spec.args())) {
+    DataIR* data = source->arg_values()[idx];
+
     switch (arg.semantic_type()) {
+      // We do not filter on None types.
+      case types::ST_NONE: {
+        continue;
+      }
       case types::ST_UPID: {
         // These conditions should already be checked in pl_module.
         DCHECK_EQ(arg.arg_type(), types::STRING);
@@ -202,18 +200,20 @@ bool CoordinatorImpl::UDTFMatchesFilters(UDTFSourceIR* source,
         if (carnot_info.query_broker_address() != str->str()) {
           return false;
         }
+        continue;
+      }
+      default: {
+        CHECK(false) << absl::Substitute("Argument spec for UDTF '$0' set improperly for '$1'",
+                                         udtf_spec.name(), arg.name());
         break;
       }
-      default:
-        DCHECK(false) << absl::Substitute("Filter improperly set for '$0'", udtf_spec.name());
-        break;
     }
   }
   return true;
 }
 
 Status CoordinatorImpl::PrunePlan(IR* plan, const distributedpb::CarnotInfo& carnot_info) {
-  // Get the sources
+  // Get the sources to remove.
   std::vector<OperatorIR*> sources_to_remove;
   for (OperatorIR* plan_op : plan->GetSources()) {
     DCHECK(Match(plan_op, SourceOperator()));

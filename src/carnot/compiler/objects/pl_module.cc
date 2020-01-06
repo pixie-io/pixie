@@ -272,19 +272,16 @@ StatusOr<ExpressionIR*> UDTFSourceHandler::EvaluateExpression(
 StatusOr<QLObjectPtr> UDTFSourceHandler::Eval(IR* graph,
                                               const udfspb::UDTFSourceSpec& udtf_source_spec,
                                               const pypa::AstPtr& ast, const ParsedArgs& args) {
-  std::vector<std::string> arg_names;
-  std::vector<ExpressionIR*> arg_values;
+  absl::flat_hash_map<std::string, ExpressionIR*> arg_map;
   for (const auto& arg : udtf_source_spec.args()) {
     DCHECK(args.args().contains(arg.name()));
-    arg_names.push_back(arg.name());
-
     IRNode* arg_node = args.GetArg(arg.name());
-    PL_ASSIGN_OR_RETURN(ExpressionIR * arg_expr, EvaluateExpression(arg_node, arg));
-    arg_values.push_back(arg_expr);
+
+    PL_ASSIGN_OR_RETURN(arg_map[arg.name()], EvaluateExpression(arg_node, arg));
   }
-  PL_ASSIGN_OR_RETURN(UDTFSourceIR * udtf_source,
-                      graph->CreateNode<UDTFSourceIR>(ast, udtf_source_spec.name(), arg_names,
-                                                      arg_values, udtf_source_spec));
+  PL_ASSIGN_OR_RETURN(
+      UDTFSourceIR * udtf_source,
+      graph->CreateNode<UDTFSourceIR>(ast, udtf_source_spec.name(), arg_map, udtf_source_spec));
   return Dataframe::Create(udtf_source);
 }
 

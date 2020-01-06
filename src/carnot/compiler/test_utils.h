@@ -501,11 +501,22 @@ class OperatorTests : public ::testing::Test {
     return groupby;
   }
 
+  UDTFSourceIR* MakeUDTFSource(
+      const udfspb::UDTFSourceSpec& udtf_spec,
+      const absl::flat_hash_map<std::string, ExpressionIR*>& arg_value_map) {
+    return graph->CreateNode<UDTFSourceIR>(ast, udtf_spec.name(), arg_value_map, udtf_spec)
+        .ConsumeValueOrDie();
+  }
+
   UDTFSourceIR* MakeUDTFSource(const udfspb::UDTFSourceSpec& udtf_spec,
                                const std::vector<std::string>& arg_names,
                                const std::vector<ExpressionIR*>& arg_values) {
-    return graph->CreateNode<UDTFSourceIR>(ast, udtf_spec.name(), arg_names, arg_values, udtf_spec)
-        .ConsumeValueOrDie();
+    CHECK_EQ(arg_names.size(), arg_values.size()) << "arg names and size must be the same.";
+    absl::flat_hash_map<std::string, ExpressionIR*> arg_value_map;
+    for (size_t i = 0; i < arg_names.size(); ++i) {
+      arg_value_map[arg_names[i]] = arg_values[i];
+    }
+    return MakeUDTFSource(udtf_spec, arg_value_map);
   }
 
   template <typename... Args>

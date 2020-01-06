@@ -559,11 +559,6 @@ args {
   semantic_type: ST_UPID
 }
 executor: UDTF_SUBSET_PEM
-filters {
-  semantic_filter {
-    idx: 0
-  }
-}
 relation {
   columns {
     column_name: "time_"
@@ -586,7 +581,8 @@ TEST_F(SplitterTest, UDTFOnSubsetOfPEMs) {
   Relation udtf_relation;
   ASSERT_OK(udtf_relation.FromProto(&udtf_spec.relation()));
 
-  auto udtf = MakeUDTFSource(udtf_spec, {}, {});
+  std::string upid_value = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c";
+  auto udtf = MakeUDTFSource(udtf_spec, {{"upid", MakeString(upid_value)}});
   auto sink = MakeMemSink(udtf, "out");
 
   DistributedSplitter splitter;
@@ -618,7 +614,8 @@ TEST_F(SplitterTest, UDTFOnManyPEMsJoinWithUDTFOneKelvin) {
   Relation udtf_pem_relation;
   ASSERT_OK(udtf_pem_relation.FromProto(&udtf_pem_spec.relation()));
 
-  auto udtf_pems = MakeUDTFSource(udtf_pem_spec, {}, {});
+  std::string upid_value = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c";
+  auto udtf_pems = MakeUDTFSource(udtf_pem_spec, {{"upid", MakeString(upid_value)}});
 
   udfspb::UDTFSourceSpec udtf_kelvin_spec;
   ASSERT_TRUE(
@@ -626,7 +623,7 @@ TEST_F(SplitterTest, UDTFOnManyPEMsJoinWithUDTFOneKelvin) {
   Relation udtf_kelvin_relation;
   ASSERT_OK(udtf_kelvin_relation.FromProto(&udtf_kelvin_spec.relation()));
 
-  auto udtf_kelvins = MakeUDTFSource(udtf_kelvin_spec, {}, {});
+  auto udtf_kelvins = MakeUDTFSource(udtf_kelvin_spec, {});
   auto join = MakeJoin({udtf_pems, udtf_kelvins}, "inner", udtf_pem_relation, udtf_kelvin_relation,
                        {"name"}, {"service"});
   MakeMemSink(join, "out");
