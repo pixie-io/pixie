@@ -14,6 +14,82 @@ namespace udf {
 
 using ::testing::ElementsAre;
 
+class InvalidUDTF1 : public UDTF<InvalidUDTF1> {
+ public:
+  static constexpr std::array<int, 1> InitArgs() { return {0}; }
+};
+
+TEST(InvalidUDTF1, bad_init_args_fn) {
+  using TR = UDTFTraits<InvalidUDTF1>;
+  EXPECT_TRUE(TR::HasInitArgsFn());
+  EXPECT_FALSE(TR::HasCorrectInitArgsSignature());
+}
+
+class InvalidUDTF2 : public UDTF<InvalidUDTF2> {
+ public:
+  static constexpr auto InitArgs() {
+    return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"));
+  }
+};
+
+TEST(InvalidUDTF2, missing_init_fn) {
+  using TR = UDTFTraits<InvalidUDTF2>;
+  EXPECT_TRUE(TR::HasInitArgsFn());
+  EXPECT_TRUE(TR::HasCorrectInitArgsSignature());
+  EXPECT_FALSE(TR::HasInitFn());
+  EXPECT_FALSE(TR::HasExecutorFn());
+  EXPECT_FALSE(TR::HasNextRecordFn());
+}
+
+class PartialUDTF3 : public UDTF<PartialUDTF3> {
+ public:
+  static constexpr auto InitArgs() {
+    return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"));
+  }
+
+  Status Init(types::Int64Value) { return Status::OK(); }
+};
+
+TEST(PartialUDTF3, correct_init_types) {
+  using TR = UDTFTraits<PartialUDTF3>;
+  EXPECT_TRUE(TR::HasInitArgsFn());
+  EXPECT_TRUE(TR::HasCorrectInitArgsSignature());
+  EXPECT_TRUE(TR::HasInitFn());
+  EXPECT_TRUE(TR::HasConsistentInitArgs());
+  EXPECT_FALSE(TR::HasExecutorFn());
+  EXPECT_FALSE(TR::HasNextRecordFn());
+}
+
+class InvalidUDTF4 : public UDTF<InvalidUDTF4> {
+ public:
+  static constexpr auto InitArgs() {
+    return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"));
+  }
+
+  Status Init(types::StringValue) { return Status::OK(); }
+};
+
+TEST(PartialUDTF3, inconsistent_init_args) {
+  using TR = UDTFTraits<InvalidUDTF4>;
+  EXPECT_TRUE(TR::HasInitArgsFn());
+  EXPECT_TRUE(TR::HasCorrectInitArgsSignature());
+  EXPECT_TRUE(TR::HasInitFn());
+  EXPECT_FALSE(TR::HasConsistentInitArgs());
+  EXPECT_FALSE(TR::HasExecutorFn());
+  EXPECT_FALSE(TR::HasNextRecordFn());
+}
+
+class InvalidUDTF5 : public UDTF<InvalidUDTF4> {
+ public:
+  static constexpr int Executor() { return 0; }
+};
+
+TEST(PartialUDTF3, bad_executor_func) {
+  using TR = UDTFTraits<InvalidUDTF5>;
+  EXPECT_TRUE(TR::HasExecutorFn());
+  EXPECT_FALSE(TR::HasCorrectExectorFnReturnType());
+}
+
 class BasicUDTFOneCol : public UDTF<BasicUDTFOneCol> {
  public:
   static constexpr auto Executor() { return udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
@@ -47,11 +123,20 @@ class BasicUDTFOneCol : public UDTF<BasicUDTFOneCol> {
 };
 
 TEST(BasicUDTFOneCol, can_run) {
+  using TR = UDTFTraits<BasicUDTFOneCol>;
   UDTFTraits<BasicUDTFOneCol> traits;
   constexpr auto init_args = traits.InitArgumentTypes();
   ASSERT_THAT(init_args, ElementsAre(types::DataType::INT64, types::DataType::STRING));
   constexpr auto output_rel = traits.OutputRelationTypes();
   ASSERT_THAT(output_rel, ElementsAre(types::DataType::STRING));
+
+  EXPECT_TRUE(TR::HasInitArgsFn());
+  EXPECT_TRUE(TR::HasCorrectInitArgsSignature());
+  EXPECT_TRUE(TR::HasInitFn());
+  EXPECT_TRUE(TR::HasConsistentInitArgs());
+  EXPECT_TRUE(TR::HasExecutorFn());
+  EXPECT_TRUE(TR::HasCorrectExectorFnReturnType());
+  EXPECT_TRUE(TR::HasNextRecordFn());
 
   UDTFWrapper<BasicUDTFOneCol> wrapper;
   PL_UNUSED(wrapper);

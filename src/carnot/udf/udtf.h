@@ -89,6 +89,9 @@ class ColInfo {
   const std::string_view desc_;
 };
 
+template <typename T>
+struct UDTFChecker;
+
 /**
  * UDTFTraits allows access to compile time traits of a given UDTF.
  * @tparam TUDTF A class that derives from UDTF<T>.
@@ -97,9 +100,74 @@ template <typename TUDTF>
 class UDTFTraits {
  public:
   /**
-   * Checks to see if the UDTF has an Init function
+   * Checks to see if an InitArgs() function exists.
    */
-  static constexpr bool HasInit() { return has_udtf_init_args_fn<TUDTF>::value; }
+  static constexpr bool HasInitArgsFn() { return InitArgsFnHelper<TUDTF>::value; }
+
+  /**
+   * Checks to see if an Init(...) function exists.
+   * @return
+   */
+  static constexpr bool HasInitFn() { return InitFnHelper<TUDTF>::value; }
+
+  /**
+   * Checks to see if InitArgs() is correct signature.
+   */
+  static constexpr bool HasCorrectInitArgsSignature() {
+    return CorrectInitArgsTypeHelper<std::result_of_t<decltype (&TUDTF::InitArgs)()>>::value;
+  }
+
+  // Checks to make sure InitArgumentsTypes match the Init function.
+  // Only valid if both functions exist.
+  static constexpr bool HasConsistentInitArgs() {
+    constexpr auto init_args_from_def = UDTFTraits<TUDTF>::InitArgumentTypes();
+    constexpr auto init_args_from_func = UDTFTraits<TUDTF>::GetUDTFInitArgumentsFromFunc();
+
+    if (init_args_from_def.size() != init_args_from_func.size()) {
+      return false;
+    }
+
+    for (size_t i = 0; i < init_args_from_func.size(); ++i) {
+      if (init_args_from_def[i] != init_args_from_func[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Checks to see if OutputRelation() exists.
+   */
+  static constexpr bool HasOutputRelationFn() { return OutputRelationFnHelper<TUDTF>::value; }
+
+  /**
+   * Checks to see if OutputRelation() has correct signature.
+   */
+  static constexpr bool HasCorrectOutputRelationFnSignature() {
+    return HasOutputRelationFn() &&
+           CorrectOutputRelationTypeHelper<
+               std::result_of_t<decltype (&TUDTF::OutputRelation)()>>::value;
+  }
+
+  /**
+   * Checks to see if Executor() exists.
+   */
+  static constexpr bool HasExecutorFn() { return ExecutorFnHelper<TUDTF>::value; }
+
+  /**
+   * Checks to see if Executor() returns udfspb::UDTFSourceExecutor.
+   * @return
+   */
+  static constexpr bool HasCorrectExectorFnReturnType() {
+    return HasExecutorFn() && std::is_same_v<std::result_of_t<decltype (&TUDTF::Executor)()>,
+                                             udfspb::UDTFSourceExecutor>;
+  }
+
+  /**
+   * Checks to see if NextRecord() exists.
+   * @return
+   */
+  static constexpr bool HasNextRecordFn() { return NextRecordFnHelper<TUDTF>::value; }
 
   /**
    * Gets the input arguments (compile time).
@@ -136,9 +204,9 @@ class UDTFTraits {
     return UDTFTraits::GetUDTFInitArgumentsTypeHelper(&TUDTF::Init);
   }
 
-  template <typename... Types>
+  template <typename T, typename... Types>
   static constexpr std::array<types::DataType, sizeof...(Types)> GetUDTFInitArgumentsTypeHelper(
-      Status (TUDTF::*)(Types...)) {
+      Status (T::*)(Types...)) {
     return std::array<types::DataType, sizeof...(Types)>(
         {types::ValueTypeTraits<Types>::data_type...});
   }
@@ -147,104 +215,54 @@ class UDTFTraits {
    * Templates to check Init Args
    *************************************/
   template <typename T, typename = void>
-  struct has_udtf_init_args_fn : std::false_type {};
+  struct InitArgsFnHelper : std::false_type {};
 
   template <typename T>
-  struct has_udtf_init_args_fn<T, std::void_t<decltype(&T::InitArgs)>> : std::true_type {};
+  struct InitArgsFnHelper<T, std::void_t<decltype(&T::InitArgs)>> : std::true_type {};
 
   template <typename T, size_t = 0>
-  struct has_correct_init_args_type : std::false_type {};
+  struct CorrectInitArgsTypeHelper : std::false_type {};
 
   template <size_t N>
-  struct has_correct_init_args_type<std::array<UDTFArg, N>> : std::true_type {};
+  struct CorrectInitArgsTypeHelper<std::array<UDTFArg, N>> : std::true_type {};
 
   template <typename T, typename = void>
-  struct has_udtf_init_fn : std::false_type {};
+  struct InitFnHelper : std::false_type {};
 
   template <typename T>
-  struct has_udtf_init_fn<T, std::void_t<decltype(&T::Init)>> : std::true_type {};
-
-  // Checks to make sure InitArgumentsTypes match the Init function.
-  // Only valid if both functions exist.
-  static constexpr bool CheckInitArgsConsistency() {
-    constexpr auto init_args_from_def = UDTFTraits<TUDTF>::InitArgumentTypes();
-    constexpr auto init_args_from_func = UDTFTraits<TUDTF>::GetUDTFInitArgumentsFromFunc();
-
-    if (init_args_from_def.size() != init_args_from_func.size()) {
-      return false;
-    }
-
-    for (size_t i = 0; i < init_args_from_func.size(); ++i) {
-      if (init_args_from_def[i] != init_args_from_func[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
+  struct InitFnHelper<T, std::void_t<decltype(&T::Init)>> : std::true_type {};
 
   /*************************************
    * Templates to check output relation
    *************************************/
   template <typename T, typename = void>
-  struct has_udtf_output_relation_fn : std::false_type {};
+  struct OutputRelationFnHelper : std::false_type {};
 
   template <typename T>
-  struct has_udtf_output_relation_fn<T, std::void_t<decltype(&T::OutputRelation)>>
-      : std::true_type {};
+  struct OutputRelationFnHelper<T, std::void_t<decltype(&T::OutputRelation)>> : std::true_type {};
 
   template <typename T, size_t = 0>
-  struct has_correct_output_relation_type : std::false_type {};
+  struct CorrectOutputRelationTypeHelper : std::false_type {};
 
   template <size_t N>
-  struct has_correct_output_relation_type<std::array<ColInfo, N>> : std::true_type {};
+  struct CorrectOutputRelationTypeHelper<std::array<ColInfo, N>> : std::true_type {};
 
   /*************************************
    * Templates to check Executor() func.
    *************************************/
   template <typename T, typename = void>
-  struct has_udtf_executor_fn : std::false_type {};
+  struct ExecutorFnHelper : std::false_type {};
 
   template <typename T>
-  struct has_udtf_executor_fn<T, std::void_t<decltype(&T::Executor)>> : std::true_type {};
+  struct ExecutorFnHelper<T, std::void_t<decltype(&T::Executor)>> : std::true_type {};
 
   template <typename T, typename = void>
-  struct has_next_record_fn : std::false_type {};
+  struct NextRecordFnHelper : std::false_type {};
 
   template <typename T>
-  struct has_next_record_fn<
+  struct NextRecordFnHelper<
       T, std::void_t<decltype (&T::NextRecord)(FunctionContext*, typename T::RecordWriter*)>>
       : std::true_type {};
-
-  /*************************************
-   * Asserts to validate that the UDTF is correct.
-   *************************************/
-  static_assert(std::is_base_of_v<UDTF<TUDTF>, TUDTF>, "UDTF must be derived from UDTF<T>");
-
-  // Either both or None of InitArgs and Init must be specified.
-  static_assert(!(has_udtf_init_args_fn<TUDTF>::value ^ has_udtf_init_fn<TUDTF>::value),
-                "Either both or none of InitArgs() and Init(...) must exist");
-  // InitArgs must return std::array<UDTFArg, N>.
-  static_assert(has_correct_init_args_type<std::result_of_t<decltype (&TUDTF::InitArgs)()>>::value,
-                "Init args must return std::array<UDTFArg, N>");
-  static_assert(!HasInit() || CheckInitArgsConsistency(),
-                "Specified init args should match init function");
-
-  // Check OutputRelation().
-  static_assert(has_udtf_output_relation_fn<TUDTF>::value, "Missing output relation func");
-  static_assert(has_correct_output_relation_type<
-                    std::result_of_t<decltype (&TUDTF::OutputRelation)()>>::value,
-                "Output relation function has incorrect signature");
-
-  // Check that Executor exists and returns the executor type.
-  static_assert(has_udtf_executor_fn<TUDTF>::value, "UDTF must have an Exectuor() func");
-  static_assert(
-      std::is_same_v<std::result_of_t<decltype (&TUDTF::Executor)()>, udfspb::UDTFSourceExecutor>,
-      "Executor() must return UDTFSourceExecutor");
-
-  // Check that NextRecord exists and is well formed.
-  static_assert(
-      has_next_record_fn<TUDTF>::value,
-      "UDTF must have NextRecord func of form NextRecord(FunctionContext, RecordWriterProxy*)");
 };
 
 /**
@@ -330,6 +348,34 @@ class RecordWriterProxy final {
   std::vector<arrow::ArrayBuilder*>* outputs_;
 };
 
+template <typename T>
+struct UDTFChecker {
+ private:
+  using TR = UDTFTraits<T>;
+  static_assert(std::is_base_of_v<UDTF<T>, T>, "UDTF must be derived from UDTF<T>");
+  // Either both or None of InitArgs and Init must be specified.
+  static_assert(!(TR::HasInitFn() ^ TR::HasInitArgsFn()),
+                "Either both or none of InitArgs() and Init(...) must exist");
+
+  // InitArgs must return std::array<UDTFArg, N>.
+  static_assert(TR::HasCorrectInitArgsSignature(), "Init args must return std::array<UDTFArg, N>");
+  static_assert(!TR::HasInitFn() || TR::HasConsistentInitArgs(),
+                "Specified init args should match init function");
+
+  // Check OutputRelation().
+  static_assert(TR::HasOutputRelationFn(), "Missing output relation func");
+  static_assert(TR::HasCorrectOutputRelationFnSignature(),
+                "Output relation function has incorrect signature");
+
+  // Check that Executor exists and returns the executor type.
+  static_assert(TR::HasExecutorFn(), "UDTF must have an Exectuor() func");
+  static_assert(TR::HasCorrectExectorFnReturnType(), "Executor() must return UDTFSourceExecutor");
+  // Check that NextRecord exists and is well formed.
+  static_assert(
+      TR::HasNextRecordFn(),
+      "UDTF must have NextRecord func of form NextRecord(FunctionContext, RecordWriterProxy*)");
+};
+
 /**
  * UDTF<T> is the base class that all UDTFs need to derive from.
  * This class contains type dependent shared functions.
@@ -378,6 +424,7 @@ template <typename Derived>
 class UDTF : public AnyUDTF {
  public:
   using RecordWriter = RecordWriterProxy<Derived>;
+  using Checker = UDTFChecker<Derived>;
 
   /**
    * Returns the index of the output column if it exists.
