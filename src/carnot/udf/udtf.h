@@ -207,6 +207,12 @@ class UDTFTraits {
   }
 
   /**
+   * Gets the output relation.
+   */
+  static constexpr auto OutputRelation() { return TUDTF::OutputRelation(); }
+
+  static constexpr udfspb::UDTFSourceExecutor Executor() { return TUDTF::Executor(); }
+  /**
    * Gets the type of the output relations (compile time).
    * @return std::array of the output relation types.
    */

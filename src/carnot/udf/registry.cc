@@ -36,8 +36,20 @@ udfspb::UDFInfo UDTFRegistry::SpecToProto() const {
     auto* udtf_spec_pb = info.add_udtfs();
     const auto& udtf_def = kv.second;
     udtf_spec_pb->set_name(udtf_def->name());
+    udtf_spec_pb->set_executor(udtf_def->executor());
 
-    // TODO(zasgar/philkuz): Finish with the rest of the UDTF proto def here.
+    for (const auto& arg : udtf_def->init_arguments()) {
+      auto new_arg = udtf_spec_pb->add_args();
+      new_arg->set_name(std::string(arg.name()));
+      new_arg->set_arg_type(arg.type());
+      new_arg->set_semantic_type(arg.stype());
+    }
+
+    for (const auto& c : udtf_def->output_relation()) {
+      auto new_c = udtf_spec_pb->mutable_relation()->add_columns();
+      new_c->set_column_name(std::string(c.name()));
+      new_c->set_column_type(c.type());
+    }
   }
   return info;
 }

@@ -153,7 +153,7 @@ class UDADefinition : public UDFDefinition {
 
   const std::vector<types::DataType>& RegistryArgTypes() override { return update_arguments_; }
 
-  const std::vector<types::DataType> update_arguments() { return update_arguments_; }
+  const std::vector<types::DataType>& update_arguments() { return update_arguments_; }
   types::DataType finalize_return_type() const { return finalize_return_type_; }
 
   std::unique_ptr<UDA> Make() { return make_fn_(); }
@@ -227,7 +227,17 @@ class UDTFDefinition : public UDFDefinition {
     PL_UNUSED(checker);
 
     PL_RETURN_IF_ERROR(UDFDefinition::Init(name));
+    exec_init_ = UDTFWrapper<T>::Init;
     exec_batch_update_ = UDTFWrapper<T>::ExecBatchUpdate;
+
+    auto init_args = UDTFTraits<T>::InitArguments();
+    init_arguments_ = {init_args.begin(), init_args.end()};
+
+    auto output_relation = UDTFTraits<T>::OutputRelation();
+    output_relation_ = {output_relation.begin(), output_relation.end()};
+
+    executor_ = UDTFTraits<T>::Executor();
+
     return Status::OK();
   }
 
@@ -240,16 +250,30 @@ class UDTFDefinition : public UDFDefinition {
 
   std::unique_ptr<AnyUDTF> Make() { return factory_->Make(); }
 
+  Status ExecInit(AnyUDTF* udtf, FunctionContext* ctx,
+                  const std::vector<const types::BaseValueType*>& args) {
+    return exec_init_(udtf, ctx, args);
+  }
+
   bool ExecBatchUpdate(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
                        std::vector<arrow::ArrayBuilder*>* outputs) {
     return exec_batch_update_(udtf, ctx, max_gen_records, outputs);
   }
 
+  const std::vector<UDTFArg>& init_arguments() { return init_arguments_; }
+  const std::vector<ColInfo>& output_relation() { return output_relation_; }
+  udfspb::UDTFSourceExecutor executor() { return executor_; }
+
  private:
   std::unique_ptr<UDTFFactory> factory_;
+  std::function<Status(AnyUDTF*, FunctionContext*, const std::vector<const types::BaseValueType*>&)>
+      exec_init_;
   std::function<bool(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
                      std::vector<arrow::ArrayBuilder*>* outputs)>
       exec_batch_update_;
+  std::vector<UDTFArg> init_arguments_;
+  std::vector<ColInfo> output_relation_;
+  udfspb::UDTFSourceExecutor executor_;
   const std::vector<types::DataType>
       args_types{};  // Empty arg types because UDTF's can't be overloaded.
 };

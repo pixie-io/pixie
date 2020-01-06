@@ -307,6 +307,15 @@ TEST(UDTFRegistry, init_with_factory) {
   auto inst = def->Make();
   UDTFWithConstructor* u = static_cast<UDTFWithConstructor*>(inst.get());
   EXPECT_EQ(u->x(), 100);
+
+  const auto& output_rel = def->output_relation();
+  EXPECT_EQ(output_rel.size(), 1);
+  EXPECT_EQ(output_rel[0].name(), "out_str");
+  EXPECT_EQ(output_rel[0].type(), types::STRING);
+  EXPECT_EQ(output_rel[0].ptype(), types::PatternType::GENERAL);
+  EXPECT_EQ(std::string(output_rel[0].desc()), "string result");
+
+  EXPECT_EQ(def->executor(), udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS);
 }
 
 }  // namespace udf
