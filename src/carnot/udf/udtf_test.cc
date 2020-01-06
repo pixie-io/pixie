@@ -147,7 +147,8 @@ TEST(BasicUDTFOneCol, can_run) {
   types::Int64Value init1 = 1337;
   types::StringValue init2 = "abc";
 
-  auto u = wrapper.Make({&init1, &init2}).ConsumeValueOrDie();
+  auto u = wrapper.Make({&init1, &init2});
+  ASSERT_NE(u, nullptr);
 
   arrow::StringBuilder string_builder(0);
   std::vector<arrow::ArrayBuilder*> outs{&string_builder};
@@ -189,7 +190,8 @@ TEST(BasicUDTFTwoColBadDeathTest, record_writer_should_catch_bad_append) {
   PL_UNUSED(check);
 
   UDTFWrapper<BasicUDTFTwoColBad> wrapper;
-  auto u = wrapper.Make({}).ConsumeValueOrDie();
+  auto u = wrapper.Make({});
+  ASSERT_NE(u, nullptr);
 
   arrow::StringBuilder string_builder(0);
   arrow::Int64Builder int64_builder(0);

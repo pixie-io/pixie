@@ -347,19 +347,21 @@ struct UDTFWrapper {
    * Create a new UDTF.
    * @return A unique_ptr to the UDTF instance.
    */
-  static StatusOr<std::unique_ptr<AnyUDTF>> Make(
-      const std::vector<const types::BaseValueType*>& args) {
+  static std::unique_ptr<AnyUDTF> Make(const std::vector<const types::BaseValueType*>& args) {
     auto u = std::make_unique<TUDTF>();
     if constexpr (UDTFTraits<TUDTF>::HasInitFn()) {
-      PL_RETURN_IF_ERROR(InitExecWrapper(
-          u.get(), args,
-          std::make_index_sequence<UDTFTraits<TUDTF>::InitArgumentTypes().size()>{}));
+      Status s = InitExecWrapper(
+          u.get(), args, std::make_index_sequence<UDTFTraits<TUDTF>::InitArgumentTypes().size()>{});
+      if (!s.ok()) {
+        LOG(ERROR) << "Failed to create UDTF: " << typeid(TUDTF).name();
+        return nullptr;
+      }
     } else {
       if (args.size() != 0) {
-        return error::InvalidArgument("got args for UDTF that takes no init args");
+        LOG(ERROR) << "Got args for UDTF that takes no init args, ignoring...";
       }
     }
-    return std::unique_ptr<AnyUDTF>(u.release());
+    return u;
   }
 
   static bool ExecBatchUpdate(AnyUDTF* udtf, FunctionContext* ctx, int max_gen_records,
