@@ -104,6 +104,7 @@ pl_cc_test(
     srcs = ["stirling_bpf_test.cc"],
     tags = ["requires_bpf"],
     deps = [":cc_library"],
+    flaky = True,
 )
 
 cc_image(
