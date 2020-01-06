@@ -2,6 +2,7 @@
 #include <string>
 #include <utility>
 
+#include <absl/container/flat_hash_set.h>
 #include <absl/strings/str_join.h>
 
 #include "src/common/base/base.h"
@@ -19,11 +20,19 @@ Relation::Relation() = default;
 Relation::Relation(ColTypeArray col_types, ColNameArray col_names)
     : col_types_(std::move(col_types)), col_names_(std::move(col_names)) {
   CHECK(col_types_.size() == col_names_.size()) << "Initialized with mismatched col names/sizes";
+  absl::flat_hash_set<std::string> unique_names;
+  for (const auto& col_name : col_names_) {
+    DCHECK(!unique_names.contains(col_name))
+        << absl::Substitute("Duplicate column name '$0' in relation", col_name);
+    unique_names.insert(col_name);
+  }
 }
 
 size_t Relation::NumColumns() const { return col_types_.size(); }
 
 void Relation::AddColumn(const types::DataType& col_type, const std::string& col_name) {
+  DCHECK(std::find(col_names_.begin(), col_names_.end(), col_name) == col_names_.end())
+      << absl::Substitute("Column '$0' already exists", col_name);
   col_types_.push_back(col_type);
   col_names_.push_back(col_name);
 }

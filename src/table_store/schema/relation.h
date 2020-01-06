@@ -71,6 +71,8 @@ class Relation {
     return col_types() == relation.col_types() && col_names() == relation.col_names();
   }
 
+  bool operator!=(const Relation& relation) const { return !(*this == relation); }
+
   friend std::ostream& operator<<(std::ostream& out, const Relation& relation) {
     return out << relation.DebugString();
   }

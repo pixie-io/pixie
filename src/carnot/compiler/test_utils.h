@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_set>
 
+#include <absl/container/flat_hash_set.h>
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
 
@@ -269,11 +270,61 @@ struct CompilerErrorMatcher {
   std::string expected_compiler_error_;
 };
 
+struct UnorderedRelationMatcher {
+  explicit UnorderedRelationMatcher(const Relation& expected_relation)
+      : expected_relation_(expected_relation) {}
+
+  bool MatchAndExplain(const Relation& actual_relation,
+                       ::testing::MatchResultListener* listener) const {
+    if (expected_relation_.NumColumns() != actual_relation.NumColumns()) {
+      (*listener) << absl::Substitute(
+          "Expected relation has $0 columns and actual relation has $1 columns",
+          expected_relation_.NumColumns(), actual_relation.NumColumns());
+      return false;
+    }
+
+    for (const auto& expected_colname : expected_relation_.col_names()) {
+      if (!actual_relation.HasColumn(expected_colname)) {
+        (*listener) << absl::Substitute(
+            "Expected relation has column '$0' which is missing in actual relation $1",
+            expected_colname, actual_relation.DebugString());
+        return false;
+      }
+      if (actual_relation.GetColumnType(expected_colname) !=
+          expected_relation_.GetColumnType(expected_colname)) {
+        (*listener) << absl::Substitute(
+            "Mismatched type for column '$0', expected '$1' but received '$2'", expected_colname,
+            expected_relation_.GetColumnType(expected_colname),
+            actual_relation.GetColumnType(expected_colname));
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void DescribeTo(::std::ostream* os) const {
+    *os << "unordered equals relation: " << expected_relation_.DebugString();
+  }
+
+  void DescribeNegationTo(::std::ostream* os) const {
+    *os << "does not unordered equal relation: " << expected_relation_.DebugString();
+  }
+
+  const Relation expected_relation_;
+};
+
 template <typename... Args>
 inline ::testing::PolymorphicMatcher<CompilerErrorMatcher> HasCompilerError(
     Args... substitute_args) {
   return ::testing::MakePolymorphicMatcher(
       CompilerErrorMatcher(std::move(absl::Substitute(substitute_args...))));
+}
+
+// Checks whether two relations match, but agnostic to column order.
+template <typename... Args>
+inline ::testing::PolymorphicMatcher<UnorderedRelationMatcher> UnorderedRelationMatches(
+    Args... args) {
+  return ::testing::MakePolymorphicMatcher(UnorderedRelationMatcher(args...));
 }
 
 class OperatorTests : public ::testing::Test {
@@ -701,40 +752,6 @@ class ASTVisitorTest : public ::testing::Test {
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ir;
-  }
-
-  // TODO(philkuz) (PL-1286) remove this  -> we now have a function for this in the Relation class.
-  bool RelationEquality(const table_store::schema::Relation& r1,
-                        const table_store::schema::Relation& r2) {
-    std::vector<std::string> r1_names;
-    std::vector<std::string> r2_names;
-    std::vector<types::DataType> r1_types;
-    std::vector<types::DataType> r2_types;
-    if (r1.NumColumns() >= r2.NumColumns()) {
-      r1_names = r1.col_names();
-      r1_types = r1.col_types();
-      r2_names = r2.col_names();
-      r2_types = r2.col_types();
-    } else {
-      r1_names = r2.col_names();
-      r1_types = r2.col_types();
-      r2_names = r1.col_names();
-      r2_types = r1.col_types();
-    }
-    for (size_t i = 0; i < r1_names.size(); i++) {
-      std::string col1 = r1_names[i];
-      auto type1 = r1_types[i];
-      auto r2_iter = std::find(r2_names.begin(), r2_names.end(), col1);
-      // if we can't find name in the second relation, then
-      if (r2_iter == r2_names.end()) {
-        return false;
-      }
-      int64_t r2_idx = std::distance(r2_names.begin(), r2_iter);
-      if (r2_types[r2_idx] != type1) {
-        return false;
-      }
-    }
-    return true;
   }
 
   std::shared_ptr<RegistryInfo> registry_info_;

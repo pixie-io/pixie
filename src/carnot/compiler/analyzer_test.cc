@@ -23,6 +23,7 @@ using ::testing::Contains;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
+using ::testing::Not;
 
 class AnalyzerTest : public ASTVisitorTest {
  protected:
@@ -37,9 +38,9 @@ TEST_F(AnalyzerTest, test_utils) {
   table_store::schema::Relation cpu2_relation;
   cpu2_relation.AddColumn(types::FLOAT64, "cpu0");
   cpu2_relation.AddColumn(types::FLOAT64, "cpu1");
-  EXPECT_FALSE(RelationEquality((*compiler_state_->relation_map())["cpu"], cpu2_relation));
-  EXPECT_TRUE(RelationEquality((*compiler_state_->relation_map())["cpu"],
-                               (*compiler_state_->relation_map())["cpu"]));
+  EXPECT_THAT((*compiler_state_->relation_map())["cpu"],
+              Not(UnorderedRelationMatches(cpu2_relation)));
+  EXPECT_EQ((*compiler_state_->relation_map())["cpu"], (*compiler_state_->relation_map())["cpu"]);
 }
 
 TEST_F(AnalyzerTest, no_special_relation) {
@@ -218,7 +219,8 @@ TEST_F(AnalyzerTest, test_relation_results) {
   std::vector<IRNode*> source_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
   EXPECT_EQ(source_nodes.size(), 1);
   auto source_node = static_cast<MemorySourceIR*>(source_nodes[0]);
-  EXPECT_TRUE(RelationEquality(source_node->relation(), (*compiler_state_->relation_map())["cpu"]));
+  EXPECT_THAT(source_node->relation(),
+              UnorderedRelationMatches((*compiler_state_->relation_map())["cpu"]));
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
   std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
@@ -240,14 +242,14 @@ TEST_F(AnalyzerTest, test_relation_results) {
   test_agg_relation.AddColumn(types::INT64, "cpu_count");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu0");
-  EXPECT_TRUE(RelationEquality(agg_node->relation(), test_agg_relation));
+  EXPECT_THAT(agg_node->relation(), UnorderedRelationMatches(test_agg_relation));
 
   // Sink should have the same relation as before and be equivalent to its parent.
   std::vector<IRNode*> sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
   EXPECT_EQ(sink_nodes.size(), 1);
   auto sink_node = static_cast<MemorySinkIR*>(sink_nodes[0]);
-  EXPECT_TRUE(RelationEquality(sink_node->relation(), test_agg_relation));
-  EXPECT_TRUE(RelationEquality(sink_node->relation(), sink_node->parents()[0]->relation()));
+  EXPECT_THAT(sink_node->relation(), UnorderedRelationMatches(test_agg_relation));
+  EXPECT_EQ(sink_node->relation(), sink_node->parents()[0]->relation());
 }  // namespace compiler
 
 // Make sure the compiler exits when calling columns that aren't explicitly called.
@@ -300,7 +302,7 @@ TEST_F(AnalyzerTest, test_relation_multi_col_agg) {
   test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu0");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu2");
-  EXPECT_TRUE(RelationEquality(agg_node->relation(), test_agg_relation));
+  EXPECT_THAT(agg_node->relation(), UnorderedRelationMatches(test_agg_relation));
 }
 
 TEST_F(AnalyzerTest, test_from_select) {
@@ -318,7 +320,7 @@ TEST_F(AnalyzerTest, test_from_select) {
   std::vector<IRNode*> sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
   EXPECT_EQ(sink_nodes.size(), 1);
   auto sink_node = static_cast<MemorySinkIR*>(sink_nodes[0]);
-  EXPECT_TRUE(RelationEquality(sink_node->relation(), test_relation));
+  EXPECT_EQ(sink_node->relation(), test_relation);
 }
 
 TEST_F(AnalyzerTest, nonexistent_cols) {
