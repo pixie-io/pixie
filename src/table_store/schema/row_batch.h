@@ -31,6 +31,8 @@ class RowBatch {
     columns_.reserve(desc_.size());
   }
 
+  ~RowBatch() { DCHECK_EQ(desc_.size(), columns_.size()); }
+
   // TODO(nserrino): Replace these conversion funcs when RowBatchData is deprecated
   // and proper serialization is implemented.
   Status ToProto(table_store::schemapb::RowBatchData* row_batch_proto) const;
@@ -40,6 +42,12 @@ class RowBatch {
   static StatusOr<std::unique_ptr<RowBatch>> FromColumnBuilders(
       const RowDescriptor& desc, bool eow, bool eos,
       std::vector<std::unique_ptr<arrow::ArrayBuilder>>* builders);
+
+  /**
+   * Creates a row batch with zero rows in it matching the row descriptor.
+   */
+  static StatusOr<std::unique_ptr<RowBatch>> WithZeroRows(const RowDescriptor& desc, bool eow,
+                                                          bool eos);
 
   /**
    * Adds the given column to the row batch, given that it correctly fits the schema.

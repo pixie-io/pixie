@@ -30,21 +30,24 @@ class RowBatchTest : public ::testing::Test {
     auto descriptor = std::vector<types::DataType>(
         {types::DataType::BOOLEAN, types::DataType::INT64, types::DataType::FLOAT64});
 
-    RowDescriptor rd = RowDescriptor(descriptor);
-    rb_ = std::make_unique<RowBatch>(rd, 3);
+    rd_ = std::make_unique<RowDescriptor>(descriptor);
+    rb_ = std::make_unique<RowBatch>(*rd_, 3);
+    AddColumns(rb_.get());
+  }
+  void AddColumns(RowBatch* rb) {
+    std::vector<types::BoolValue> in1 = {true, false, true};
+    std::vector<types::Int64Value> in2 = {3, 4, 5};
+    std::vector<types::Float64Value> in3 = {3.3, 4.1, 5.6};
+
+    EXPECT_TRUE(rb->AddColumn(types::ToArrow(in1, arrow::default_memory_pool())).ok());
+    EXPECT_TRUE(rb->AddColumn(types::ToArrow(in2, arrow::default_memory_pool())).ok());
+    EXPECT_TRUE(rb->AddColumn(types::ToArrow(in3, arrow::default_memory_pool())).ok());
   }
   std::unique_ptr<RowBatch> rb_;
+  std::unique_ptr<RowDescriptor> rd_;
 };
 
 TEST_F(RowBatchTest, basic_test) {
-  std::vector<types::BoolValue> in1 = {true, false, true};
-  std::vector<types::Int64Value> in2 = {3, 4, 5};
-  std::vector<types::Float64Value> in3 = {3.3, 4.1, 5.6};
-
-  EXPECT_TRUE(rb_->AddColumn(types::ToArrow(in1, arrow::default_memory_pool())).ok());
-  EXPECT_TRUE(rb_->AddColumn(types::ToArrow(in2, arrow::default_memory_pool())).ok());
-  EXPECT_TRUE(rb_->AddColumn(types::ToArrow(in3, arrow::default_memory_pool())).ok());
-
   EXPECT_TRUE(rb_->HasColumn(0));
   EXPECT_TRUE(rb_->HasColumn(1));
   EXPECT_TRUE(rb_->HasColumn(2));
@@ -60,25 +63,24 @@ TEST_F(RowBatchTest, basic_test) {
 }
 
 TEST_F(RowBatchTest, extra_col_test) {
-  std::vector<types::BoolValue> in1 = {true, false, true};
-  std::vector<types::Int64Value> in2 = {3, 4, 5};
-  std::vector<types::Float64Value> in3 = {3.3, 4.1, 5.6};
-  std::vector<types::Float64Value> in4 = {3.3, 4.1, 5.6, 1.2};
-
-  EXPECT_TRUE(rb_->AddColumn(types::ToArrow(in1, arrow::default_memory_pool())).ok());
-  EXPECT_TRUE(rb_->AddColumn(types::ToArrow(in2, arrow::default_memory_pool())).ok());
-  EXPECT_TRUE(rb_->AddColumn(types::ToArrow(in3, arrow::default_memory_pool())).ok());
+  std::vector<types::BoolValue> in4 = {true, false, true};
   EXPECT_FALSE(rb_->AddColumn(types::ToArrow(in4, arrow::default_memory_pool())).ok());
 }
 
 TEST_F(RowBatchTest, extra_row_test) {
   std::vector<types::BoolValue> in1 = {false, true, true, true};
-  EXPECT_FALSE(rb_->AddColumn(types::ToArrow(in1, arrow::default_memory_pool())).ok());
+  auto rb = std::make_unique<RowBatch>(*rd_, 3);
+  EXPECT_FALSE(rb->AddColumn(types::ToArrow(in1, arrow::default_memory_pool())).ok());
+  // This is done at the end so that the check in the RowBatch destructor succeeds.
+  AddColumns(rb.get());
 }
 
 TEST_F(RowBatchTest, incorrect_type_test) {
   std::vector<types::Float64Value> in1 = {1.4, 1.2, 1.1};
-  EXPECT_FALSE(rb_->AddColumn(types::ToArrow(in1, arrow::default_memory_pool())).ok());
+  auto rb = std::make_unique<RowBatch>(*rd_, 3);
+  EXPECT_FALSE(rb->AddColumn(types::ToArrow(in1, arrow::default_memory_pool())).ok());
+  // This is done at the end so that the check in the RowBatch destructor succeeds.
+  AddColumns(rb.get());
 }
 
 TEST_F(RowBatchTest, num_bytes) {
@@ -87,21 +89,21 @@ TEST_F(RowBatchTest, num_bytes) {
                                     types::DataType::FLOAT64, types::DataType::STRING});
 
   RowDescriptor rd = RowDescriptor(descriptor);
-  auto rb_ = std::make_unique<RowBatch>(rd, 3);
+  auto rb = std::make_unique<RowBatch>(rd, 3);
 
   std::vector<types::BoolValue> in1 = {true, false, true};
   std::vector<types::Int64Value> in2 = {3, 4, 5};
   std::vector<types::Float64Value> in3 = {3.3, 4.1, 5.6};
   std::vector<types::StringValue> in4 = {"hello", "thisIs", "aString"};
 
-  EXPECT_TRUE(rb_->AddColumn(types::ToArrow(in1, arrow::default_memory_pool())).ok());
-  EXPECT_TRUE(rb_->AddColumn(types::ToArrow(in2, arrow::default_memory_pool())).ok());
-  EXPECT_TRUE(rb_->AddColumn(types::ToArrow(in3, arrow::default_memory_pool())).ok());
-  EXPECT_TRUE(rb_->AddColumn(types::ToArrow(in4, arrow::default_memory_pool())).ok());
+  EXPECT_TRUE(rb->AddColumn(types::ToArrow(in1, arrow::default_memory_pool())).ok());
+  EXPECT_TRUE(rb->AddColumn(types::ToArrow(in2, arrow::default_memory_pool())).ok());
+  EXPECT_TRUE(rb->AddColumn(types::ToArrow(in3, arrow::default_memory_pool())).ok());
+  EXPECT_TRUE(rb->AddColumn(types::ToArrow(in4, arrow::default_memory_pool())).ok());
 
   auto expected_bytes =
       3 * sizeof(bool) + 3 * sizeof(int64_t) + 3 * sizeof(double) + sizeof(char) * 18;
-  EXPECT_EQ(expected_bytes, rb_->NumBytes());
+  EXPECT_EQ(expected_bytes, rb->NumBytes());
 }
 
 TEST_F(RowBatchTest, to_from_proto) {
@@ -158,6 +160,17 @@ num_rows: 3
 
   google::protobuf::util::MessageDifferencer differ;
   EXPECT_TRUE(differ.Compare(input_proto, output_proto));
+}
+
+TEST_F(RowBatchTest, with_zero_rows) {
+  bool eow = true;
+  bool eos = false;
+  auto rb = RowBatch::WithZeroRows(*rd_, eow, eos).ConsumeValueOrDie();
+  EXPECT_EQ(3, rb->num_columns());
+  EXPECT_EQ(0, rb->num_rows());
+  EXPECT_EQ(*rd_, rb->desc());
+  EXPECT_EQ(eow, rb->eow());
+  EXPECT_EQ(eos, rb->eos());
 }
 
 }  // namespace schema

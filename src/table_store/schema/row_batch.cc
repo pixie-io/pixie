@@ -224,6 +224,16 @@ StatusOr<std::unique_ptr<RowBatch>> RowBatch::FromColumnBuilders(
   return output_rb;
 }
 
+StatusOr<std::unique_ptr<RowBatch>> RowBatch::WithZeroRows(const RowDescriptor& desc, bool eow,
+                                                           bool eos) {
+  std::vector<std::unique_ptr<arrow::ArrayBuilder>> builders(desc.size());
+  for (size_t i = 0; i < desc.size(); ++i) {
+    builders[i] = types::MakeArrowBuilder(desc.type(i), arrow::default_memory_pool());
+    PL_RETURN_IF_ERROR(builders[i]->Reserve(0));
+  }
+  return RowBatch::FromColumnBuilders(desc, eow, eos, &builders);
+}
+
 }  // namespace schema
 }  // namespace table_store
 }  // namespace pl

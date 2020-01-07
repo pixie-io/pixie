@@ -426,13 +426,16 @@ Status EquijoinNode::ConsumeNextImpl(ExecState* exec_state, const table_store::s
       PL_RETURN_IF_ERROR(NextOutputBatch(exec_state));
     }
 
+    // Now send the last row batch and we know it is EOS/EOW.
     if (pending_output_batch_ == nullptr) {
       // This should only happen when no join keys match up.
-      pending_output_batch_ = std::make_unique<RowBatch>(*output_descriptor_, 0);
+      PL_ASSIGN_OR_RETURN(
+          pending_output_batch_,
+          RowBatch::WithZeroRows(*output_descriptor_, /* eow */ true, /* eos */ true));
+    } else {
+      pending_output_batch_->set_eos(true);
+      pending_output_batch_->set_eow(true);
     }
-    // Now send the last row batch and we know it is EOS/EOW.
-    pending_output_batch_->set_eos(true);
-    pending_output_batch_->set_eow(true);
     PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *pending_output_batch_));
   }
 

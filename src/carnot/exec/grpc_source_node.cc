@@ -64,9 +64,7 @@ Status GRPCSourceNode::OptionallyPopRowBatch() {
   std::unique_ptr<carnotpb::RowBatchRequest> rb_request;
   bool got_one = row_batch_queue_.wait_dequeue_timed(rb_request, grpc_timeout_us_.count());
   if (!got_one) {
-    next_up_ = std::make_unique<RowBatch>(*output_descriptor_, 0);
-    next_up_->set_eow(true);
-    next_up_->set_eos(true);
+    PL_ASSIGN_OR_RETURN(next_up_, RowBatch::WithZeroRows(*output_descriptor_, true, true));
   } else {
     PL_ASSIGN_OR_RETURN(next_up_, RowBatch::FromProto(rb_request->row_batch()));
   }
