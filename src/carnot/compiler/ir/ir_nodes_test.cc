@@ -273,6 +273,8 @@ const char* kExpectedMapPb = R"(
             index: 4
           }
         }
+        args_data_types: INT64
+        args_data_types: INT64
       }
     }
   }
@@ -289,6 +291,7 @@ TEST(ToProto, map_ir) {
                                        std::vector<ExpressionIR*>({constant, col}))
                   .ValueOrDie();
   func->set_func_id(1);
+  func->SetArgsTypes({constant->EvaluatedDataType(), col->EvaluatedDataType()});
 
   auto mem_src =
       graph
@@ -302,10 +305,7 @@ TEST(ToProto, map_ir) {
 
   planpb::Operator pb;
   EXPECT_OK(map->ToProto(&pb));
-
-  planpb::Operator expected_pb;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedMapPb, &expected_pb));
-  EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
+  EXPECT_THAT(pb, EqualsProto(kExpectedMapPb));
 }
 
 const char* kExpectedAggPb = R"(
@@ -362,8 +362,181 @@ TEST(ToProto, agg_ir) {
   planpb::Operator pb;
   ASSERT_OK(agg->ToProto(&pb));
 
-  planpb::Operator expected_pb;
   EXPECT_THAT(pb, EqualsProto(kExpectedAggPb));
+}
+
+const char* kInt64PbTxt = R"proto(
+constant {
+  data_type: INT64
+  int64_value: 123
+})proto";
+
+TEST(ToProto, int_ir) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  auto data_ir = graph->CreateNode<IntIR>(ast, 123).ConsumeValueOrDie();
+
+  planpb::ScalarExpression pb;
+
+  ASSERT_OK(data_ir->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kInt64PbTxt));
+}
+
+const char* kStringPbTxt = R"proto(
+constant {
+  data_type: STRING
+  string_value: "pixie"
+})proto";
+
+TEST(ToProto, string_ir) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  auto data_ir = graph->CreateNode<StringIR>(ast, "pixie").ConsumeValueOrDie();
+
+  planpb::ScalarExpression pb;
+
+  ASSERT_OK(data_ir->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kStringPbTxt));
+}
+
+const char* kFloatPbTxt = R"proto(
+constant {
+  data_type: FLOAT64
+  float64_value: 1.23
+})proto";
+
+TEST(ToProto, float_ir) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  auto data_ir = graph->CreateNode<FloatIR>(ast, 1.23).ConsumeValueOrDie();
+
+  planpb::ScalarExpression pb;
+
+  ASSERT_OK(data_ir->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kFloatPbTxt));
+}
+
+const char* kTimePbTxt = R"proto(
+constant {
+  data_type: TIME64NS
+  time64_ns_value: 123
+})proto";
+
+TEST(ToProto, time_ir) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  auto data_ir = graph->CreateNode<TimeIR>(ast, 123).ConsumeValueOrDie();
+
+  planpb::ScalarExpression pb;
+
+  ASSERT_OK(data_ir->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kTimePbTxt));
+}
+
+const char* kBoolPbTxt = R"proto(
+constant {
+  data_type: BOOLEAN
+  bool_value: true
+})proto";
+
+TEST(ToProto, bool_ir) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  auto data_ir = graph->CreateNode<BoolIR>(ast, true).ConsumeValueOrDie();
+
+  planpb::ScalarExpression pb;
+
+  ASSERT_OK(data_ir->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kBoolPbTxt));
+}
+
+const char* kSimpleFuncPbTxt = R"proto(
+func{
+  name: "pl.foobar1"
+  args {
+    constant {
+      data_type: INT64
+      int64_value: 123
+    }
+  }
+  args {
+    constant {
+      data_type: INT64
+      int64_value: 456
+    }
+  }
+  args_data_types: INT64
+  args_data_types: INT64
+})proto";
+
+const char* kNestedFuncPbTxt = R"proto(
+func {
+  name: "pl.foobar2"
+  args {
+    constant {
+      data_type: INT64
+      int64_value: 789
+    }
+  }
+  args {$0}
+  args_data_types: INT64
+  args_data_types: INT64
+}
+)proto";
+
+TEST(ToProto, func_tests) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  auto int1 = graph->CreateNode<IntIR>(ast, 123).ConsumeValueOrDie();
+  auto int2 = graph->CreateNode<IntIR>(ast, 456).ConsumeValueOrDie();
+  auto int3 = graph->CreateNode<IntIR>(ast, 789).ConsumeValueOrDie();
+
+  auto foobar1_fn = graph
+                        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "foobar1"},
+                                             std::vector<ExpressionIR*>{int1, int2})
+                        .ConsumeValueOrDie();
+
+  foobar1_fn->SetArgsTypes({types::INT64, types::INT64});
+  auto foobar2_fn = graph
+                        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "foobar2"},
+                                             std::vector<ExpressionIR*>{int3, foobar1_fn})
+                        .ConsumeValueOrDie();
+  foobar2_fn->SetArgsTypes({types::INT64, types::INT64});
+
+  ASSERT_THAT(foobar2_fn->args(), ElementsAre(int3, foobar1_fn));
+
+  planpb::ScalarExpression pb1;
+
+  ASSERT_OK(foobar1_fn->ToProto(&pb1));
+  EXPECT_THAT(pb1, EqualsProto(kSimpleFuncPbTxt)) << pb1.DebugString();
+
+  planpb::ScalarExpression pb2;
+
+  ASSERT_OK(foobar2_fn->ToProto(&pb2));
+  EXPECT_THAT(pb2, EqualsProto(absl::Substitute(kNestedFuncPbTxt, kSimpleFuncPbTxt)))
+      << pb2.DebugString();
+}
+
+const char* kColumnPbTxt = R"proto(
+column {
+  node: $0
+  index: 123
+})proto";
+
+TEST(ToProto, column_tests) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  auto column = graph->CreateNode<ColumnIR>(ast, "column", 0).ConsumeValueOrDie();
+  column->ResolveColumn(123, types::INT64);
+
+  auto mem_src = graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{})
+                     .ConsumeValueOrDie();
+  graph->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"column", column}}, false)
+      .ConsumeValueOrDie();
+
+  planpb::ScalarExpression pb;
+  ASSERT_OK(column->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kColumnPbTxt, mem_src->id())));
 }
 
 class MetadataTests : public ::testing::Test {

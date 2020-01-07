@@ -372,7 +372,10 @@ class IR {
   int64_t id_node_counter = 0;
 };
 
+// Forward declaration for types that are used in OperatorIR. They are declared later in this
+// header.
 class ColumnIR;
+class ExpressionIR;
 
 /**
  * @brief Node class for the operator
@@ -409,8 +412,6 @@ class OperatorIR : public IRNode {
   Status ReplaceParent(OperatorIR* old_parent, OperatorIR* new_parent);
 
   virtual Status ToProto(planpb::Operator*) const = 0;
-
-  Status EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
   std::string ParentsDebugString();
   Status CopyParentsFrom(const OperatorIR* og_op);
@@ -461,6 +462,7 @@ class ExpressionIR : public IRNode {
   virtual bool IsColumn() const { return false; }
   virtual bool IsData() const { return false; }
   virtual bool IsCollection() const { return false; }
+  virtual Status ToProto(planpb::ScalarExpression* expr) const = 0;
 
  protected:
   ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
@@ -595,6 +597,32 @@ class DataIR : public ExpressionIR {
   bool IsDataTypeEvaluated() const override { return true; }
   bool IsData() const override { return true; }
 
+  /**
+   * @brief ToProto method override that writes ScalarValues to the ScalarExpression message.
+   *
+   * @param expr
+   * @return Status
+   */
+  Status ToProto(planpb::ScalarExpression* expr) const override;
+
+  /**
+   * @brief ToProto method that takes in a scalar message instead of a ScalarExpression.
+   *
+   * @param column_pb
+   * @return Status
+   */
+  Status ToProto(planpb::ScalarValue* column_pb) const;
+
+  /**
+   * @brief The implementation of ToProto for DataIR derived classes.
+   * Each implementation should only be one line such as
+   * `value->set_int64_value`
+   *
+   * @param value the value protobuf to use.
+   * @return Status
+   */
+  virtual Status ToProtoImpl(planpb::ScalarValue* value) const = 0;
+
  protected:
   DataIR(int64_t id, IRNodeType type, types::DataType data_type)
       : ExpressionIR(id, type), evaluated_data_type_(data_type) {}
@@ -691,6 +719,22 @@ class ColumnIR : public ExpressionIR {
                       absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   void SetContainingOperatorParentIdx(int64_t container_op_parent_idx);
 
+  /**
+   * @brief ToProto method for the Column class and derived classes.
+   *
+   * @param expr
+   * @return error if we can't convert the Column into an expression.
+   */
+  Status ToProto(planpb::ScalarExpression* expr) const override;
+
+  /**
+   * @brief ToProto method that takes in a column message instead of a ScalarExpression.
+   *
+   * @param column_pb
+   * @return Status
+   */
+  Status ToProto(planpb::Column* column_pb) const;
+
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -736,6 +780,8 @@ class StringIR : public DataIR {
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
+  Status ToProtoImpl(planpb::ScalarValue* value) const override;
+
  private:
   std::string str_;
 };
@@ -759,6 +805,10 @@ class CollectionIR : public ExpressionIR {
   bool IsCollection() const override { return true; }
   bool IsDataTypeEvaluated() const override { return true; }
   types::DataType EvaluatedDataType() const override { return types::DATA_TYPE_UNKNOWN; }
+
+  Status ToProto(planpb::ScalarExpression*) const override {
+    return error::Unimplemented("Collections aren't supported in expressions.");
+  }
 
  protected:
   Status CopyFromCollection(const CollectionIR* source,
@@ -870,6 +920,8 @@ class FuncIR : public ExpressionIR {
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
+  Status ToProto(planpb::ScalarExpression* expr) const override;
+
  private:
   std::string func_prefix_ = kPLFuncPrefix;
   Op op_;
@@ -894,6 +946,8 @@ class FloatIR : public DataIR {
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
+  Status ToProtoImpl(planpb::ScalarValue* value) const override;
+
  private:
   double val_;
 };
@@ -911,6 +965,7 @@ class IntIR : public DataIR {
   std::string DebugString() const override {
     return absl::Substitute("$0, $1)", DataIR::DebugString(), val());
   }
+  Status ToProtoImpl(planpb::ScalarValue* value) const override;
 
  private:
   int64_t val_;
@@ -926,6 +981,8 @@ class BoolIR : public DataIR {
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
+  Status ToProtoImpl(planpb::ScalarValue* value) const override;
+
  private:
   bool val_;
 };
@@ -939,6 +996,7 @@ class TimeIR : public DataIR {
   bool val() const { return val_ != 0; }
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+  Status ToProtoImpl(planpb::ScalarValue* value) const override;
 
  private:
   int64_t val_;
@@ -992,6 +1050,8 @@ class MetadataLiteralIR : public ExpressionIR {
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   Status SetLiteral(DataIR* literal);
+
+  Status ToProto(planpb::ScalarExpression* expr) const override;
 
  private:
   DataIR* literal_;
@@ -1199,7 +1259,7 @@ class BlockingAggIR : public OperatorIR {
   ColExpressionVector aggregate_expressions() const { return aggregate_expressions_; }
   Status ToProto(planpb::Operator*) const override;
   Status EvaluateAggregateExpression(planpb::AggregateExpression* expr,
-                                     const IRNode& ir_node) const;
+                                     const ExpressionIR& ir_node) const;
 
   Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
               const ColExpressionVector& agg_expr);
@@ -1620,8 +1680,6 @@ class UDTFSourceIR : public OperatorIR {
   Status ToProto(planpb::Operator*) const override;
   std::string func_name() const { return func_name_; }
   udfspb::UDTFSourceSpec udtf_spec() const { return udtf_spec_; }
-
-  Status ArgElementToProto(planpb::ScalarValue* value_pb, DataIR* node) const;
 
   Status CopyFromNodeImpl(const IRNode* source,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;

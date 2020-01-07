@@ -370,87 +370,13 @@ Status DropIR::ToProto(planpb::Operator*) const {
   return error::Unimplemented("$0 does not have a protobuf.", type_string());
 }
 
-Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const {
-  switch (ir_node.type()) {
-    case IRNodeType::kMetadata:
-    case IRNodeType::kColumn: {
-      const ColumnIR& col_ir = static_cast<const ColumnIR&>(ir_node);
-      auto col = expr->mutable_column();
-      PL_ASSIGN_OR_RETURN(int64_t ref_op_id, col_ir.ReferenceID());
-      col->set_node(ref_op_id);
-      col->set_index(col_ir.col_idx());
-      break;
-    }
-    case IRNodeType::kFunc: {
-      auto func = expr->mutable_func();
-      auto casted_ir = static_cast<const FuncIR&>(ir_node);
-      func->set_name(casted_ir.func_name());
-      for (const auto& arg : casted_ir.args()) {
-        auto func_arg = func->add_args();
-        PL_RETURN_IF_ERROR(EvaluateExpression(func_arg, *arg));
-      }
-      func->set_id(casted_ir.func_id());
-      for (const types::DataType dt : casted_ir.args_types()) {
-        func->add_args_data_types(dt);
-      }
-      break;
-    }
-    case IRNodeType::kInt: {
-      auto value = expr->mutable_constant();
-      auto casted_ir = static_cast<const IntIR&>(ir_node);
-      value->set_data_type(types::DataType::INT64);
-      value->set_int64_value(casted_ir.val());
-      break;
-    }
-    case IRNodeType::kString: {
-      auto value = expr->mutable_constant();
-      auto casted_ir = static_cast<const StringIR&>(ir_node);
-      value->set_data_type(types::DataType::STRING);
-      value->set_string_value(casted_ir.str());
-      break;
-    }
-    case IRNodeType::kFloat: {
-      auto value = expr->mutable_constant();
-      auto casted_ir = static_cast<const FloatIR&>(ir_node);
-      value->set_data_type(types::DataType::FLOAT64);
-      value->set_float64_value(casted_ir.val());
-      break;
-    }
-    case IRNodeType::kBool: {
-      auto value = expr->mutable_constant();
-      auto casted_ir = static_cast<const BoolIR&>(ir_node);
-      value->set_data_type(types::DataType::BOOLEAN);
-      value->set_bool_value(casted_ir.val());
-      break;
-    }
-    case IRNodeType::kTime: {
-      auto value = expr->mutable_constant();
-      auto casted_ir = static_cast<const TimeIR&>(ir_node);
-      value->set_data_type(types::DataType::TIME64NS);
-      value->set_time64_ns_value(static_cast<::google::protobuf::int64>(casted_ir.val()));
-      break;
-    }
-    case IRNodeType::kMetadataLiteral: {
-      // MetadataLiteral is just a container.
-      auto casted_ir = static_cast<const MetadataLiteralIR&>(ir_node);
-      PL_RETURN_IF_ERROR(EvaluateExpression(expr, *casted_ir.literal()));
-      break;
-    }
-    default: {
-      return ir_node.CreateIRNodeError("Didn't expect $0 in expression evaluator",
-                                       ir_node.type_string());
-    }
-  }
-  return Status::OK();
-}
-
 Status MapIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_map_op();
   op->set_op_type(planpb::MAP_OPERATOR);
 
   for (const auto& col_expr : col_exprs_) {
     auto expr = pb->add_expressions();
-    PL_RETURN_IF_ERROR(EvaluateExpression(expr, *col_expr.node));
+    PL_RETURN_IF_ERROR(col_expr.node->ToProto(expr));
     pb->add_column_names(col_expr.name);
   }
 
@@ -482,7 +408,7 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
   }
 
   auto expr = pb->mutable_expression();
-  PL_RETURN_IF_ERROR(EvaluateExpression(expr, *filter_expr_));
+  PL_RETURN_IF_ERROR(filter_expr_->ToProto(expr));
   return Status::OK();
 }
 
@@ -559,7 +485,7 @@ Status GroupByIR::CopyFromNodeImpl(const IRNode* source,
 }
 
 Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* expr,
-                                                  const IRNode& ir_node) const {
+                                                  const ExpressionIR& ir_node) const {
   DCHECK(ir_node.type() == IRNodeType::kFunc);
   auto casted_ir = static_cast<const FuncIR&>(ir_node);
   expr->set_name(casted_ir.func_name());
@@ -569,58 +495,12 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
   }
   for (auto ir_arg : casted_ir.args()) {
     auto arg_pb = expr->add_args();
-    switch (ir_arg->type()) {
-      case IRNodeType::kMetadata:
-      case IRNodeType::kColumn: {
-        ColumnIR* col_ir = static_cast<ColumnIR*>(ir_arg);
-        auto col = arg_pb->mutable_column();
-        PL_ASSIGN_OR_RETURN(int64_t ref_op_id, col_ir->ReferenceID());
-        col->set_node(ref_op_id);
-        col->set_index(col_ir->col_idx());
-        break;
-      }
-      case IRNodeType::kInt: {
-        auto value = arg_pb->mutable_constant();
-        auto casted_ir = static_cast<IntIR*>(ir_arg);
-        value->set_data_type(types::DataType::INT64);
-        value->set_int64_value(casted_ir->val());
-        break;
-      }
-      case IRNodeType::kString: {
-        auto value = arg_pb->mutable_constant();
-        auto casted_ir = static_cast<StringIR*>(ir_arg);
-        value->set_data_type(types::DataType::STRING);
-        value->set_string_value(casted_ir->str());
-        break;
-      }
-      case IRNodeType::kFloat: {
-        auto value = arg_pb->mutable_constant();
-        auto casted_ir = static_cast<FloatIR*>(ir_arg);
-        value->set_data_type(types::DataType::FLOAT64);
-        value->set_float64_value(casted_ir->val());
-        break;
-      }
-      case IRNodeType::kBool: {
-        auto value = arg_pb->mutable_constant();
-        auto casted_ir = static_cast<BoolIR*>(ir_arg);
-        value->set_data_type(types::DataType::BOOLEAN);
-        value->set_bool_value(casted_ir->val());
-        break;
-      }
-      case IRNodeType::kTime: {
-        auto value = arg_pb->mutable_constant();
-        auto casted_ir = static_cast<const TimeIR&>(ir_node);
-        value->set_data_type(types::DataType::TIME64NS);
-        value->set_time64_ns_value(static_cast<::google::protobuf::int64>(casted_ir.val()));
-        break;
-      }
-      case IRNodeType::kFunc: {
-        return ir_node.CreateIRNodeError("agg expressions cannot be nested", ir_node.type_string());
-      }
-      default: {
-        return ir_node.CreateIRNodeError("Didn't expect node of type $0 in expression evaluator.",
-                                         ir_node.type_string());
-      }
+    if (ir_arg->IsColumn()) {
+      PL_RETURN_IF_ERROR(static_cast<ColumnIR*>(ir_arg)->ToProto(arg_pb->mutable_column()));
+    } else if (ir_arg->IsData()) {
+      PL_RETURN_IF_ERROR(static_cast<DataIR*>(ir_arg)->ToProto(arg_pb->mutable_constant()));
+    } else {
+      return CreateIRNodeError("$0 is an invalid aggregate value", ir_arg->type_string());
     }
   }
   return Status::OK();
@@ -650,10 +530,57 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
+Status DataIR::ToProto(planpb::ScalarExpression* expr) const {
+  auto value_pb = expr->mutable_constant();
+  return ToProto(value_pb);
+}
+
+Status DataIR::ToProto(planpb::ScalarValue* value_pb) const {
+  value_pb->set_data_type(evaluated_data_type_);
+  return ToProtoImpl(value_pb);
+}
+
+Status IntIR::ToProtoImpl(planpb::ScalarValue* value) const {
+  value->set_int64_value(val_);
+  return Status::OK();
+}
+
+Status FloatIR::ToProtoImpl(planpb::ScalarValue* value) const {
+  value->set_float64_value(val_);
+  return Status::OK();
+}
+
+Status BoolIR::ToProtoImpl(planpb::ScalarValue* value) const {
+  value->set_bool_value(val_);
+  return Status::OK();
+}
+
+Status StringIR::ToProtoImpl(planpb::ScalarValue* value) const {
+  value->set_string_value(str_);
+  return Status::OK();
+}
+
+Status TimeIR::ToProtoImpl(planpb::ScalarValue* value) const {
+  value->set_time64_ns_value(val_);
+  return Status::OK();
+}
+
 Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {
   SetColumnName(col_name);
   SetContainingOperatorParentIdx(parent_idx);
   return Status::OK();
+}
+
+Status ColumnIR::ToProto(planpb::Column* column_pb) const {
+  PL_ASSIGN_OR_RETURN(int64_t ref_op_id, ReferenceID());
+  column_pb->set_node(ref_op_id);
+  column_pb->set_index(col_idx());
+  return Status::OK();
+}
+
+Status ColumnIR::ToProto(planpb::ScalarExpression* expr) const {
+  auto column_pb = expr->mutable_column();
+  return ToProto(column_pb);
 }
 
 std::string ColumnIR::DebugString() const {
@@ -768,6 +695,22 @@ Status FuncIR::AddOrCloneArg(ExpressionIR* arg) {
   return Status::OK();
 }
 
+Status FuncIR::ToProto(planpb::ScalarExpression* expr) const {
+  auto func_pb = expr->mutable_func();
+  func_pb->set_name(func_name());
+  func_pb->set_id(func_id_);
+  for (ExpressionIR* arg : args()) {
+    PL_RETURN_IF_ERROR(arg->ToProto(func_pb->add_args()));
+  }
+  if (args_types().size() != args().size()) {
+    return CreateIRNodeError("arg types not resolved");
+  }
+  for (types::DataType dt : args_types()) {
+    func_pb->add_args_data_types(dt);
+  }
+  return Status::OK();
+}
+
 /* Float IR */
 Status FloatIR::Init(double val) {
   val_ = val;
@@ -818,6 +761,10 @@ Status MetadataLiteralIR::SetLiteral(DataIR* literal) {
 bool MetadataResolverIR::HasMetadataColumn(const std::string& col_name) {
   auto md_map_it = metadata_columns_.find(col_name);
   return md_map_it != metadata_columns_.end();
+}
+
+Status MetadataLiteralIR::ToProto(planpb::ScalarExpression* expr) const {
+  return literal_->ToProto(expr);
 }
 
 Status MetadataResolverIR::AddMetadata(MetadataProperty* md_property) {
@@ -1448,8 +1395,7 @@ Status UDTFSourceIR::ToProto(planpb::Operator* op) const {
   pb->set_name(func_name_);
 
   for (const auto& arg_value : arg_values_) {
-    auto arg_value_pb = pb->add_arg_values();
-    PL_RETURN_IF_ERROR(ArgElementToProto(arg_value_pb, arg_value));
+    PL_RETURN_IF_ERROR(arg_value->ToProto(pb->add_arg_values()));
   }
 
   return Status::OK();
@@ -1482,47 +1428,6 @@ Status UDTFSourceIR::InitArgValues(
     arg_values.push_back(arg);
   }
   return SetArgValues(arg_values);
-}
-
-// TODO(philkuz) incorporate this into OperatorIR and make a subroutine for ExpressionEvalutor and
-// AggregateExpressionEvaluator.
-Status UDTFSourceIR::ArgElementToProto(planpb::ScalarValue* value, DataIR* data_node) const {
-  switch (data_node->type()) {
-    case IRNodeType::kInt: {
-      auto casted_ir = static_cast<IntIR*>(data_node);
-      value->set_data_type(types::DataType::INT64);
-      value->set_int64_value(casted_ir->val());
-      break;
-    }
-    case IRNodeType::kString: {
-      auto casted_ir = static_cast<StringIR*>(data_node);
-      value->set_data_type(types::DataType::STRING);
-      value->set_string_value(casted_ir->str());
-      break;
-    }
-    case IRNodeType::kFloat: {
-      auto casted_ir = static_cast<FloatIR*>(data_node);
-      value->set_data_type(types::DataType::FLOAT64);
-      value->set_float64_value(casted_ir->val());
-      break;
-    }
-    case IRNodeType::kBool: {
-      auto casted_ir = static_cast<BoolIR*>(data_node);
-      value->set_data_type(types::DataType::BOOLEAN);
-      value->set_bool_value(casted_ir->val());
-      break;
-    }
-    case IRNodeType::kTime: {
-      auto casted_ir = static_cast<TimeIR*>(data_node);
-      value->set_data_type(types::DataType::TIME64NS);
-      value->set_time64_ns_value(static_cast<::google::protobuf::int64>(casted_ir->val()));
-      break;
-    }
-    default: {
-      return CreateIRNodeError("Can't serialize data type '$0'", data_node->type_string());
-    }
-  }
-  return Status::OK();
 }
 
 // StatusOr<IRNode*> UDTFSourceIR::DeepCloneIntoImpl(IR* graph) const {
