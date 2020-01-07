@@ -1,0 +1,22 @@
+.pixie-accordion-toggle {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  background-color: inherit;
+  color: inherit;
+
+  .pixie-accordion-toggle-collapse-icon {
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-right: 0.25rem;
+  }
+}
+
+.pixie-accordion-item {
+  text-align: start;
+  width: 100%;
+  color: inherit;
+  padding-left: 2rem;
+}

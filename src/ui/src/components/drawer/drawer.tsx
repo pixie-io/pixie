@@ -41,12 +41,10 @@ export const Drawer: React.FC<React.PropsWithChildren<DrawerProps>> =
         <div className={`pixie-drawer-content ${opened ? 'opened' : 'closed'}`}>
           <div>{children}</div>
         </div>
-        <div className='pixie-drawer-footer-row'>
+        <Button size='sm' className='pixie-drawer-footer-row' onClick={toggleOpened}>
           <div className='spacer' />
-          <Button size='sm' onClick={toggleOpened}>
-            <img src={opened ? collapseLeft : collapseRight} />
-          </Button>
-        </div>
+          <img src={opened ? collapseLeft : collapseRight} />
+        </Button>
       </div>
     );
   };

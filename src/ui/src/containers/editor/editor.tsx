@@ -15,7 +15,7 @@ import {useMutation, useQuery} from '@apollo/react-hooks';
 import {Drawer} from '../../components/drawer/drawer';
 import {saveCodeToStorage} from './code-utils';
 import {EditorContent} from './content';
-import {PresetQueries} from './preset-queries';
+import EditorDrawerMenu from './drawer-menu';
 
 const NEW_TAB = 'new-tab';
 const PIXIE_EDITOR_TABS_KEY = 'pixie-editor-tabs';
@@ -115,7 +115,7 @@ export const Editor = ({ client }) => {
         defaultOpened={data && data.drawerOpened}
         onOpenedChanged={updateDrawerMemo}
       >
-        <PresetQueries onQuerySelect={createNewTab} />
+        <EditorDrawerMenu onSelect={createNewTab} />
       </Drawer>
       <div className='pixie-editor-tabs-container'>
         <Tab.Container
