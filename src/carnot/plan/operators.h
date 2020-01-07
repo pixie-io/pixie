@@ -276,6 +276,23 @@ class JoinOperator : public Operator {
   planpb::JoinOperator pb_;
 };
 
+class UDTFSourceOperator : public Operator {
+ public:
+  explicit UDTFSourceOperator(int64_t id) : Operator(id, planpb::UDTF_SOURCE_OPERATOR) {}
+  ~UDTFSourceOperator() override = default;
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::UDTFSourceOperator& pb);
+  std::string DebugString() const override;
+  const std::string& name() const { return pb_.name(); }
+  const std::vector<ScalarValue>& init_arguments() const;
+
+ private:
+  planpb::UDTFSourceOperator pb_;
+  std::vector<ScalarValue> init_arguments_;
+};
+
 }  // namespace plan
 }  // namespace carnot
 }  // namespace pl

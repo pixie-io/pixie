@@ -221,6 +221,17 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "udtf_source_node_test",
+    srcs = ["udtf_source_node_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+        "//src/carnot/planpb:plan_testutils",
+        "//third_party:arrow",
+    ],
+)
+
+pl_cc_test(
     name = "grpc_router_test",
     srcs = ["grpc_router_test.cc"],
     deps = [

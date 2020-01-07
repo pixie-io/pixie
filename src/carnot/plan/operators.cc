@@ -52,6 +52,8 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
       return CreateOperator<UnionOperator>(id, pb.union_op());
     case planpb::JOIN_OPERATOR:
       return CreateOperator<JoinOperator>(id, pb.join_op());
+    case planpb::UDTF_SOURCE_OPERATOR:
+      return CreateOperator<UDTFSourceOperator>(id, pb.udtf_source_op());
     default:
       LOG(FATAL) << absl::Substitute("Unknown operator type: $0",
                                      magic_enum::enum_name(pb.op_type()));
@@ -549,6 +551,31 @@ planpb::JoinOperator::ParentColumn JoinOperator::time_column() const {
   auto pos = std::distance(column_names().begin(),
                            std::find(column_names().begin(), column_names().end(), "time_"));
   return output_columns()[pos];
+}
+
+Status UDTFSourceOperator::Init(const planpb::UDTFSourceOperator& pb) {
+  pb_ = pb;
+  for (const auto& sv : pb_.arg_values()) {
+    ScalarValue s;
+    PL_RETURN_IF_ERROR(s.Init(sv));
+    init_arguments_.emplace_back(s);
+  }
+  return Status::OK();
+}
+
+StatusOr<table_store::schema::Relation> UDTFSourceOperator::OutputRelation(
+    const table_store::schema::Schema& /*schema*/, const PlanState& /*state*/,
+    const std::vector<int64_t>& /*input_ids*/) const {
+  // TODO(zasgar): // Add relation here.
+  return StatusOr<table_store::schema::Relation>();
+}
+
+std::string UDTFSourceOperator::DebugString() const {
+  return absl::Substitute("UDTFSource<$0>", pb_.name());
+}
+
+const std::vector<ScalarValue>& UDTFSourceOperator::init_arguments() const {
+  return init_arguments_;
 }
 
 }  // namespace plan

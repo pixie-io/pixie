@@ -1,0 +1,124 @@
+#include <arrow/array.h>
+#include <gmock/gmock.h>
+#include <google/protobuf/text_format.h>
+#include <gtest/gtest.h>
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include <sole.hpp>
+
+#include "src/common/base/base.h"
+
+#include "src/carnot/exec/exec_node_mock.h"
+#include "src/carnot/exec/test_utils.h"
+#include "src/carnot/exec/udtf_source_node.h"
+#include "src/carnot/planpb/test_proto.h"
+#include "src/shared/types/arrow_adapter.h"
+
+namespace pl {
+namespace carnot {
+namespace exec {
+
+using types::Int64Value;
+using types::StringValue;
+using udf::ColInfo;
+using udf::FunctionContext;
+using udf::UDTF;
+using udf::UDTFArg;
+
+using table_store::schema::RowBatch;
+using table_store::schema::RowDescriptor;
+
+class BasicTestUDTF : public UDTF<BasicTestUDTF> {
+ public:
+  static constexpr auto InitArgs() {
+    return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"),
+                     UDTFArg("some_string", types::DataType::STRING, "String arg"));
+  }
+
+  static constexpr auto Executor() { return udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("out_int", types::DataType::INT64, types::PatternType::GENERAL, "int result"),
+        ColInfo("out_str", types::DataType::STRING, types::PatternType::GENERAL, "string result"));
+  }
+
+  Status Init(FunctionContext*, Int64Value some_int, StringValue some_string) {
+    some_int_ = some_int.val;
+    some_string_ = std::string(some_string);
+    return Status::OK();
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    while (idx++ < 2) {
+      rw->Append<IndexOf("out_str")>(some_string_ + std::to_string(idx));
+      rw->Append<IndexOf("out_int")>(some_int_ + idx);
+      return true;
+    }
+    return false;
+  }
+
+ private:
+  int idx = 0;
+  int64_t some_int_;
+  std::string some_string_;
+};
+
+const char* kUDTFTestPbtxt = R"proto(
+  op_type: UDTF_SOURCE_OPERATOR
+  udtf_source_op {
+    name: "test_udtf"
+    arg_values {
+      data_type: INT64
+      int64_value: 321
+    }
+    arg_values {
+      data_type: STRING
+      string_value: "ts1"
+    }
+  }
+)proto";
+
+class UDTFSourceNodeTest : public ::testing::Test {
+ public:
+  UDTFSourceNodeTest() {
+    planpb::Operator op_pb;
+    EXPECT_TRUE(google::protobuf::TextFormat::MergeFromString(kUDTFTestPbtxt, &op_pb));
+    plan_node_ = plan::UDTFSourceOperator::FromProto(op_pb, 1);
+
+    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
+    uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
+    udtf_registry_ = std::make_unique<udf::UDTFRegistry>("test_registry");
+    EXPECT_OK(udtf_registry_->Register<BasicTestUDTF>("test_udtf"));
+    auto table_store = std::make_shared<table_store::TableStore>();
+
+    exec_state_ =
+        std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), udtf_registry_.get(),
+                                    table_store, MockKelvinStubGenerator, sole::uuid4());
+  }
+
+ protected:
+  std::unique_ptr<plan::Operator> plan_node_;
+  std::unique_ptr<ExecState> exec_state_;
+  std::unique_ptr<udf::UDARegistry> uda_registry_;
+  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
+  std::unique_ptr<udf::UDTFRegistry> udtf_registry_;
+};
+
+TEST_F(UDTFSourceNodeTest, single_output_batch_test) {
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::STRING});
+  auto tester = exec::ExecNodeTester<UDTFSourceNode, plan::UDTFSourceOperator>(
+      *plan_node_, output_rd, {}, exec_state_.get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 2, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Int64Value>({322, 323})
+          .AddColumn<types::StringValue>({"ts11", "ts12"})
+          .get());
+}
+
+}  // namespace exec
+}  // namespace carnot
+}  // namespace pl
