@@ -377,6 +377,15 @@ TEST(MathOps, time_time_bin_test) {
   udf_tester.ForInput(11, 2).Expect(10);
 }
 
+TEST(MathOps, round_test) {
+  auto udf_tester = udf::UDFTester<RoundUDF>();
+  udf_tester.ForInput(11.2, 2).Expect("11.20");
+  udf_tester.ForInput(11.23456, 2).Expect("11.23");
+  udf_tester.ForInput(0.0, 5).Expect("0.00000");
+  udf_tester.ForInput(20.29438, 0).Expect("20");
+  udf_tester.ForInput(1234, 3).Expect("1234.000");
+}
+
 TEST(MathOps, basic_float64_mean_uda_test) {
   auto inputs = std::vector<double>({1.234, 2.442, 1.04, 5.322, 6.333});
   uint64_t size = inputs.size();

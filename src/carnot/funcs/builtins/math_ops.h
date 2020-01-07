@@ -122,6 +122,15 @@ class BinUDF : public udf::ScalarUDF {
   TReturn Exec(udf::FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val - (b1.val % b2.val); }
 };
 
+// TODO(philkuz, nserrino) Move decimal places to be a constructor arg after PL-1048 is done.
+class RoundUDF : public udf::ScalarUDF {
+ public:
+  types::StringValue Exec(udf::FunctionContext*, types::Float64Value value,
+                          types::Int64Value decimal_places) {
+    return absl::StrFormat("%.*f", decimal_places.val, value.val);
+  }
+};
+
 template <typename TArg>
 class MeanUDA : public udf::UDA {
  public:
