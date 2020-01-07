@@ -114,6 +114,7 @@ Status CarnotImpl::Init(std::shared_ptr<table_store::TableStore> table_store,
   if (grpc_server_port_ > 0) {
     grpc_server_thread_ = std::make_unique<std::thread>(&CarnotImpl::GRPCServerFunc, this);
   }
+
   PL_ASSIGN_OR_RETURN(engine_state_,
                       EngineState::CreateDefault(table_store, stub_generator, grpc_router_.get()));
   return Status::OK();
@@ -174,6 +175,7 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
       .OnJoin([&](const auto&) {})
       .OnGRPCSource([&](const auto&) {})
       .OnGRPCSink([&](const auto&) {})
+      .OnUDTFSource([&](const auto&) {})
       .Walk(pf);
 
   return Status::OK();

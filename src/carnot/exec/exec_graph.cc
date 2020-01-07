@@ -13,6 +13,7 @@
 #include "src/carnot/exec/map_node.h"
 #include "src/carnot/exec/memory_sink_node.h"
 #include "src/carnot/exec/memory_source_node.h"
+#include "src/carnot/exec/udtf_source_node.h"
 #include "src/carnot/exec/union_node.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/common/memory/memory.h"
@@ -70,6 +71,10 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
       })
       .OnGRPCSink([&](auto& node) {
         return OnOperatorImpl<plan::GRPCSinkOperator, GRPCSinkNode>(node, &descriptors);
+      })
+      .OnUDTFSource([&](auto& node) {
+        sources_.emplace_back(node.id());
+        return OnOperatorImpl<plan::UDTFSourceOperator, UDTFSourceNode>(node, &descriptors);
       })
       .Walk(pf_);
 

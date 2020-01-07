@@ -9,6 +9,7 @@
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 
@@ -555,6 +556,7 @@ planpb::JoinOperator::ParentColumn JoinOperator::time_column() const {
 
 Status UDTFSourceOperator::Init(const planpb::UDTFSourceOperator& pb) {
   pb_ = pb;
+
   for (const auto& sv : pb_.arg_values()) {
     ScalarValue s;
     PL_RETURN_IF_ERROR(s.Init(sv));
@@ -564,10 +566,16 @@ Status UDTFSourceOperator::Init(const planpb::UDTFSourceOperator& pb) {
 }
 
 StatusOr<table_store::schema::Relation> UDTFSourceOperator::OutputRelation(
-    const table_store::schema::Schema& /*schema*/, const PlanState& /*state*/,
+    const table_store::schema::Schema& /*schema*/, const PlanState& state,
     const std::vector<int64_t>& /*input_ids*/) const {
-  // TODO(zasgar): // Add relation here.
-  return StatusOr<table_store::schema::Relation>();
+  PL_ASSIGN_OR_RETURN(auto def, state.udtf_registry()->GetDefinition(pb_.name()));
+  auto cols = def->output_relation();
+
+  table_store::schema::Relation output_rel;
+  for (const auto& c : cols) {
+    output_rel.AddColumn(c.type(), std::string(c.name()));
+  }
+  return output_rel;
 }
 
 std::string UDTFSourceOperator::DebugString() const {

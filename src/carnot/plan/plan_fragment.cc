@@ -61,8 +61,11 @@ void PlanFragmentWalker::CallWalkFn(const Operator& op) {
     case planpb::OperatorType::GRPC_SOURCE_OPERATOR:
       CallAs<GRPCSourceOperator>(on_grpc_source_walk_fn_, op);
       break;
+    case planpb::OperatorType::UDTF_SOURCE_OPERATOR:
+      CallAs<UDTFSourceOperator>(on_udtf_source_walk_fn_, op);
+      break;
     default:
-      LOG(WARNING) << absl::StrCat("Operator does not exist: %d", op_type);
+      LOG(FATAL) << absl::Substitute("Operator does not exist: $0", magic_enum::enum_name(op_type));
   }
 }
 
