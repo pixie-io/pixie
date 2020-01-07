@@ -17,7 +17,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace distributedpb {
+namespace logical_planner {
 namespace testutils {
 
 /**
@@ -155,6 +155,56 @@ tablets: "$0"
 )proto";
 
 const char* kQueryForTwoAgents = "df = pl.DataFrame(table = 'table1')\npl.display(df, 'out')";
+
+const char* kHttpRequestStats = R"pxl(
+t1 = pl.DataFrame(table='http_events', start_time='-30s')
+
+t1['service'] = t1.attr['service']
+t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
+t1['failure'] = t1['http_resp_status'] >= 400
+t1['range_group'] = t1['time_'] - pl.modulo(t1['time_'], 1000000000)
+
+quantiles_agg = t1.groupby('service').agg(
+  latency_quantiles=('http_resp_latency_ms', pl.quantiles),
+  errors=('failure', pl.mean),
+  throughput_total=('http_resp_status', pl.count),
+)
+
+quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p50')
+quantiles_agg['latency_p90'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
+quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
+quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
+
+# The Range aggregate to calcualte the requests per second.
+requests_agg = t1.groupby(['service', 'range_group']).agg(
+  requests_per_window=('http_resp_status', pl.count),
+)
+
+rps_table = requests_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
+
+joined_table = quantiles_table.merge(rps_table,
+                                     how='inner',
+                                     left_on=['service'],
+                                     right_on=['service'],
+                                     suffixes=['', '_x'])
+
+joined_table['latency(p50)'] = joined_table['latency_p50']
+joined_table['latency(p90)'] = joined_table['latency_p90']
+joined_table['latency(p99)'] = joined_table['latency_p99']
+joined_table['throughput (rps)'] = joined_table['rps']
+joined_table['throughput total'] = joined_table['throughput_total']
+
+joined_table = joined_table[[
+  'service',
+  'latency(p50)',
+  'latency(p90)',
+  'latency(p99)',
+  'errors',
+  'throughput (rps)',
+  'throughput total']]
+df = joined_table[joined_table['service'] != '']
+pl.display(df)
+)pxl";
 
 distributedpb::DistributedState LoadDistributedStatePb(const std::string& distributed_state_str) {
   distributedpb::DistributedState distributed_state_pb;
@@ -826,8 +876,7 @@ carnot_info {
 )proto";
 
 }  // namespace testutils
-
-}  // namespace distributedpb
+}  // namespace logical_planner
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -8,8 +8,8 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/distributed_planner.h"
-#include "src/carnot/compiler/distributedpb/test_proto.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
+#include "src/carnot/compiler/logical_planner/test_utils.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/rule_mock.h"
 #include "src/carnot/compiler/rules.h"
@@ -21,7 +21,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 namespace distributed {
-using distributedpb::testutils::kThreeAgentsOneKelvinDistributedState;
+using logical_planner::testutils::kThreeAgentsOneKelvinDistributedState;
 using pl::testing::proto::EqualsProto;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;

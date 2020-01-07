@@ -37,12 +37,3 @@ pl_go_proto_library(
         "//src/table_store/proto:schema_pl_go_proto",
     ],
 )
-
-pl_cc_test_library(
-    name = "test_utils",
-    hdrs = ["test_proto.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":distributed_plan_pl_cc_proto",
-    ],
-)

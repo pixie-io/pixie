@@ -8,16 +8,15 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/distributed_planner.h"
-#include "src/carnot/compiler/distributedpb/test_proto.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
+#include "src/carnot/compiler/logical_planner/logical_planner.h"
+#include "src/carnot/compiler/logical_planner/test_utils.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/rule_mock.h"
 #include "src/carnot/compiler/rules.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/protobuf.h"
-
-#include "src/carnot/compiler/logical_planner/logical_planner.h"
 
 namespace pl {
 namespace carnot {
@@ -69,81 +68,28 @@ class LogicalPlannerTest : public ::testing::Test {
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
   auto planner = LogicalPlanner::Create(true).ConsumeValueOrDie();
-  auto plan = planner
-                  ->Plan(distributedpb::testutils::CreateTwoAgentsOneKelvinPlannerState(),
-                         distributedpb::testutils::kQueryForTwoAgents)
-                  .ConsumeValueOrDie();
+  auto plan =
+      planner
+          ->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(), testutils::kQueryForTwoAgents)
+          .ConsumeValueOrDie();
   auto out_pb = plan->ToProto().ConsumeValueOrDie();
-  EXPECT_THAT(out_pb,
-              Partially(EqualsProto(distributedpb::testutils::kExpectedPlanTwoAgentOneKelvin)))
+  EXPECT_THAT(out_pb, Partially(EqualsProto(testutils::kExpectedPlanTwoAgentOneKelvin)))
       << out_pb.DebugString();
 }
 
 TEST_F(LogicalPlannerTest, DISABLED_many_agents) {
   auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
-  auto plan = planner
-                  ->Plan(distributedpb::testutils::CreateTwoAgentsPlannerState(),
-                         distributedpb::testutils::kQueryForTwoAgents)
+  auto plan = planner->Plan(testutils::CreateTwoAgentsPlannerState(), testutils::kQueryForTwoAgents)
                   .ConsumeValueOrDie();
   auto out_pb = plan->ToProto().ConsumeValueOrDie();
-  EXPECT_THAT(out_pb, Partially(EqualsProto(distributedpb::testutils::kExpectedPlanTwoAgents)));
+  EXPECT_THAT(out_pb, Partially(EqualsProto(testutils::kExpectedPlanTwoAgents)));
 }
-
-const char* kHttpRequestStats = R"pxl(
-t1 = pl.DataFrame(table='http_events', start_time='-30s')
-
-t1.service = t1.ctx['service']
-t1.http_resp_latency_ms = t1.http_resp_latency_ns / 1.0E6
-t1.failure = t1.http_resp_status >= 400
-t1.range_group = t1.time_ - pl.modulo(t1.time_, 1000000000)
-
-quantiles_agg = t1.groupby('service').agg(
-  latency_quantiles=('http_resp_latency_ms', pl.quantiles),
-  errors=('failure', pl.mean),
-  throughput_total=('http_resp_status', pl.count),
-)
-
-quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p50')
-quantiles_agg['latency_p90'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
-quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
-quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
-
-# The Range aggregate to calcualte the requests per second.
-requests_agg = t1.groupby(['service', 'range_group']).agg(
-  requests_per_window=('http_resp_status', pl.count),
-)
-
-rps_table = requests_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
-
-joined_table = quantiles_table.merge(rps_table,
-                                     how='inner',
-                                     left_on=['service'],
-                                     right_on=['service'],
-                                     suffixes=['', '_x'])
-
-joined_table['latency(p50)'] = joined_table.latency_p50
-joined_table['latency(p90)'] = joined_table.latency_p90
-joined_table['latency(p99)'] = joined_table.latency_p99
-joined_table['throughput (rps)'] = joined_table.rps
-joined_table['throughput total'] = joined_table.throughput_total
-
-joined_table = joined_table[[
-  'service',
-  'latency(p50)',
-  'latency(p90)',
-  'latency(p99)',
-  'errors',
-  'throughput (rps)',
-  'throughput total']]
-df = joined_table[joined_table['service'] != '']
-pl.display(df)
-)pxl";
 
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
   auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
-  auto plan_or_s = planner->Plan(distributedpb::testutils::CreateTwoAgentsOneKelvinPlannerState(
-                                     distributedpb::testutils::kHttpEventsSchema),
-                                 kHttpRequestStats);
+  auto plan_or_s =
+      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                    testutils::kHttpRequestStats);
   EXPECT_OK(plan_or_s);
 }
 
@@ -201,9 +147,8 @@ pl.display(joined_table)
 
 TEST_F(LogicalPlannerTest, duplicate_int) {
   auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
-  auto plan_or_s = planner->Plan(distributedpb::testutils::CreateTwoAgentsPlannerState(
-                                     distributedpb::testutils::kHttpEventsSchema),
-                                 kCompileTimeQuery);
+  auto plan_or_s = planner->Plan(
+      testutils::CreateTwoAgentsPlannerState(testutils::kHttpEventsSchema), kCompileTimeQuery);
   EXPECT_OK(plan_or_s);
 }
 
@@ -238,9 +183,8 @@ pl.display(df)
 )query";
 TEST_F(LogicalPlannerTest, NestedCompileTime) {
   auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
-  auto plan_or_s = planner->Plan(distributedpb::testutils::CreateTwoAgentsPlannerState(
-                                     distributedpb::testutils::kHttpEventsSchema),
-                                 kTwoWindowQuery);
+  auto plan_or_s = planner->Plan(
+      testutils::CreateTwoAgentsPlannerState(testutils::kHttpEventsSchema), kTwoWindowQuery);
   EXPECT_OK(plan_or_s);
 }
 }  // namespace logical_planner

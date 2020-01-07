@@ -8,7 +8,7 @@
 #include <absl/strings/str_join.h>
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
-#include "src/carnot/compiler/distributedpb/test_proto.h"
+#include "src/carnot/compiler/logical_planner/test_utils.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/error.h"
@@ -20,6 +20,8 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
+namespace logical_planner {
+
 using pl::testing::proto::EqualsProto;
 using pl::testing::proto::Partially;
 
@@ -48,7 +50,7 @@ TEST_F(PlannerExportTest, DISABLED_two_agents_query_test) {
   int result_len;
   std::string query = "df = pl.DataFrame(table='table1')\npl.display(df, 'out')";
 
-  auto logical_planner_state = distributedpb::testutils::CreateTwoAgentsPlannerState();
+  auto logical_planner_state = testutils::CreateTwoAgentsPlannerState();
   auto interface_result =
       PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), query, &result_len);
   ASSERT_OK(interface_result);
@@ -57,7 +59,7 @@ TEST_F(PlannerExportTest, DISABLED_two_agents_query_test) {
   ASSERT_TRUE(planner_result.ParseFromString(interface_result.ConsumeValueOrDie()));
   ASSERT_OK(planner_result.status());
   std::string expected_planner_result_str =
-      absl::Substitute("plan {$0}", distributedpb::testutils::kExpectedPlanTwoAgents);
+      absl::Substitute("plan {$0}", testutils::kExpectedPlanTwoAgents);
   EXPECT_THAT(planner_result, Partially(EqualsProto(expected_planner_result_str)))
       << planner_result.DebugString();
 }
@@ -68,7 +70,7 @@ TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
   int result_len;
   std::string query = "df = pl.DataFrame(table='table1')\npl.display(df, 'out')";
 
-  auto logical_planner_state = distributedpb::testutils::CreateTwoAgentsOneKelvinPlannerState();
+  auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
   auto interface_result =
       PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), query, &result_len);
   ASSERT_OK(interface_result);
@@ -77,7 +79,7 @@ TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
   ASSERT_TRUE(planner_result.ParseFromString(interface_result.ConsumeValueOrDie()));
   ASSERT_OK(planner_result.status());
   std::string expected_planner_result_str =
-      absl::Substitute("plan {$0}", distributedpb::testutils::kExpectedPlanTwoAgentOneKelvin);
+      absl::Substitute("plan {$0}", testutils::kExpectedPlanTwoAgentOneKelvin);
   EXPECT_THAT(planner_result, Partially(EqualsProto(expected_planner_result_str)))
       << planner_result.DebugString();
 }
@@ -89,7 +91,7 @@ TEST_F(PlannerExportTest, bad_queries) {
   std::string bad_table_query =
       "df = pl.DataFrame(table='bad_table_name')\n"
       "pl.display(df, 'out')";
-  auto logical_planner_state = distributedpb::testutils::CreateTwoAgentsPlannerState();
+  auto logical_planner_state = testutils::CreateTwoAgentsPlannerState();
   auto interface_result =
       PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), bad_table_query, &result_len);
   // The compiler should successfully compile and a proto should be returned.
@@ -110,7 +112,7 @@ pl.display(t1)
 // would cause a segfault. If this unit test passes, then that bug should be gone.
 TEST_F(PlannerExportTest, udf_in_query) {
   planner_ = PlannerNew(/* distributed */ true);
-  auto logical_planner_state = distributedpb::testutils::CreateTwoAgentsOneKelvinPlannerState();
+  auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
   int result_len;
   auto interface_result =
       PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), kUDFQuery, &result_len);
@@ -120,6 +122,8 @@ TEST_F(PlannerExportTest, udf_in_query) {
   ASSERT_TRUE(planner_result_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
   EXPECT_OK(planner_result_pb.status());
 }
+
+}  // namespace logical_planner
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

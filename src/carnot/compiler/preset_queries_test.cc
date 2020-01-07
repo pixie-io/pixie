@@ -12,8 +12,8 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/compiler.h"
-#include "src/carnot/compiler/distributedpb/test_proto.h"
 #include "src/carnot/compiler/logical_planner/logical_planner.h"
+#include "src/carnot/compiler/logical_planner/test_utils.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/funcs/metadata/metadata_ops.h"
 #include "src/carnot/planpb/plan.pb.h"
@@ -96,7 +96,8 @@ TEST_F(PresetQueriesTest, PresetQueries) {
   // Test single agent planning
   for (const auto& query : preset_queries_) {
     auto planner = logical_planner::LogicalPlanner::Create(false).ConsumeValueOrDie();
-    auto multi_agent_state = distributedpb::testutils::CreateOneAgentOneKelvinPlannerState(schema_);
+    auto multi_agent_state =
+        logical_planner::testutils::CreateOneAgentOneKelvinPlannerState(schema_);
     auto plan_or_s = planner->Plan(multi_agent_state, query.second);
     EXPECT_OK(plan_or_s) << "Query '" << query.first << "' failed";
   }
@@ -104,7 +105,7 @@ TEST_F(PresetQueriesTest, PresetQueries) {
   // Test multi agent planning
   for (const auto& query : preset_queries_) {
     auto planner = logical_planner::LogicalPlanner::Create(false).ConsumeValueOrDie();
-    auto multi_agent_state = distributedpb::testutils::CreateTwoAgentsPlannerState(schema_);
+    auto multi_agent_state = logical_planner::testutils::CreateTwoAgentsPlannerState(schema_);
     auto plan_or_s = planner->Plan(multi_agent_state, query.second);
     EXPECT_OK(plan_or_s) << "Query '" << query.first << "' failed";
   }
