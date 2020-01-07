@@ -665,7 +665,7 @@ TEST_F(FilterTest, InvalidChainedFilterQuery) {
 
 const char* kFilterWithNewMetadataQuery = R"query(
 df = pl.DataFrame("bar")
-df = df[df.attr["service"] == "foo"]
+df = df[df.ctx["service"] == "foo"]
 pl.display(df, 'ld')
 )query";
 
@@ -834,7 +834,7 @@ TEST_F(ASTVisitorTest, CantCopyColumnsBetweenDataframes) {
 TEST_F(ASTVisitorTest, CantCopyMetadataBetweenDataframes) {
   std::string query = absl::StrJoin(
       {"df1 = pl.DataFrame(table='http_events')", "df2 = pl.DataFrame(table='http_events')",
-       "df1['service'] = df2.attr['service']", "pl.display(df1)"},
+       "df1['service'] = df2.ctx['service']", "pl.display(df1)"},
       "\n");
   auto ir_graph_status = CompileGraph(query);
   ASSERT_NOT_OK(ir_graph_status);

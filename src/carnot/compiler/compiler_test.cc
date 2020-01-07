@@ -2425,17 +2425,17 @@ TEST_P(MetadataSingleOps, valid_filter_metadata_proto) {
 
 // Indirectly maps to metadata_name_to_plan_map
 std::vector<std::tuple<std::string, std::string>> metadata_operators{
-    {"df = df[df.attr['service'] == 'pl/orders']", "filter_metadata_plan"},
-    {"df['service'] = df.attr['service']\ndf = df[['service']]", "map_metadata_plan"},
-    {"df['service'] =  df.attr['service']\n"
+    {"df = df[df.ctx['service'] == 'pl/orders']", "filter_metadata_plan"},
+    {"df['service'] = df.ctx['service']\ndf = df[['service']]", "map_metadata_plan"},
+    {"df['service'] =  df.ctx['service']\n"
      "df = df.groupby('service').agg(mean_cpu = ('cpu0', pl.mean))",
      "agg_metadata_plan1"},
-    {"df['service'] =  df.attr['service']\n"
+    {"df['service'] =  df.ctx['service']\n"
      "df = df.groupby(['cpu0', 'service']).agg(mean_cpu = ('cpu0', pl.mean))",
      "agg_metadata_plan2"},
-    {"df['service'] =  df.attr['service']\n"
+    {"df['service'] =  df.ctx['service']\n"
      "aggDF = df.groupby(['upid', 'service']).agg(mean_cpu = ('cpu0', pl.mean))\n"
-     "df =aggDF[aggDF.attr['service'] == 'pl/service-name']",
+     "df =aggDF[aggDF.ctx['service'] == 'pl/service-name']",
      "agg_filter_metadata_plan1"}};
 
 INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
@@ -2444,7 +2444,7 @@ INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
 TEST_F(CompilerTest, cgroups_pod_id) {
   std::string query =
       absl::StrJoin({"queryDF = pl.DataFrame(table='cgroups')",
-                     "range_out = queryDF[queryDF.attr['pod_name'] == 'pl/pl-nats-1']",
+                     "range_out = queryDF[queryDF.ctx['pod_name'] == 'pl/pl-nats-1']",
                      "pl.display(range_out, 'out')"},
                     "\n");
   auto plan_status = compiler_.Compile(query, compiler_state_.get());
@@ -2996,7 +2996,7 @@ TEST_F(CompilerTest, missing_result) {
 
 const char* kBadDropQuery = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-300s')
-t1['service'] = t1.attr['service']
+t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t1['failure'] = t1['http_resp_status'] >= 400
 # edit this to increase/decrease window. Dont go lower than 1 second.

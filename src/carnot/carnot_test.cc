@@ -1155,7 +1155,7 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
   std::string query = absl::StrJoin(
       {
           "df = pl.DataFrame(table='big_test_table', select=['string_groups', '_attr_pod_id'])",
-          "df['pod_name'] = df.attr['pod_name']",
+          "df['pod_name'] = df.ctx['pod_name']",
           "bdf = df[df['pod_name'] == 'pl/name']",
           "pl.display(bdf, 'logical_plan')",
       },

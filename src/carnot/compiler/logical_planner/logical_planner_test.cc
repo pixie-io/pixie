@@ -92,7 +92,7 @@ TEST_F(LogicalPlannerTest, DISABLED_many_agents) {
 const char* kHttpRequestStats = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-30s')
 
-t1.service = t1.attr['service']
+t1.service = t1.ctx['service']
 t1.http_resp_latency_ms = t1.http_resp_latency_ns / 1.0E6
 t1.failure = t1.http_resp_status >= 400
 t1.range_group = t1.time_ - pl.modulo(t1.time_, 1000000000)
@@ -150,7 +150,7 @@ TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
 const char* kCompileTimeQuery = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-120s')
 
-t1['service'] = t1.attr['service']
+t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t1['failure'] = t1['http_resp_status'] >= 400
 t1['range_group'] = t1['time_'] - pl.modulo(t1['time_'], 2000000000)
@@ -209,7 +209,7 @@ TEST_F(LogicalPlannerTest, duplicate_int) {
 
 const char* kTwoWindowQuery = R"query(
 t1 = pl.DataFrame(table='http_events', start_time='-300s')
-t1['service'] = t1.attr['service']
+t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 # edit this to increase/decrease window. Dont go lower than 1 second.
 t1['window1'] = pl.bin(t1['time_'], pl.seconds(10))

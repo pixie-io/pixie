@@ -94,6 +94,8 @@ Status Dataframe::Init() {
   AddMethod(kGroupByOpId, group_by_fn);
 
   attributes_.emplace(kMetadataAttrName);
+  // TODO(nserrino): PL-1276 Deprecate old metadata name when the UI queries change.
+  attributes_.emplace(kOldMetadataAttrName);
   return Status::OK();
 }
 
@@ -102,7 +104,8 @@ StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
   // If this gets to this point, should fail here.
   DCHECK(HasNonMethodAttribute(name));
 
-  if (name == kMetadataAttrName) {
+  // TODO(nserrino): PL-1276 Deprecate old metadata name when the UI queries change.
+  if (name == kMetadataAttrName || name == kOldMetadataAttrName) {
     return MetadataObject::Create(op());
   }
 

@@ -556,20 +556,20 @@ TEST_P(MetadataSingleOps, valid_metadata_calls) {
   ASSERT_OK(HandleRelation(ir_graph));
 }
 std::vector<std::string> metadata_operators{
-    "df = queryDF[queryDF.attr['service'] == 'pl/orders']",
+    "df = queryDF[queryDF.ctx['service'] == 'pl/orders']",
 
-    "queryDF['service'] = queryDF.attr['service']\n"
+    "queryDF['service'] = queryDF.ctx['service']\n"
     "df = queryDF.drop(['cpu0'])",
 
-    "queryDF['service'] = queryDF.attr['service']\n"
+    "queryDF['service'] = queryDF.ctx['service']\n"
     "df = queryDF.groupby('service').agg(mean_cpu=('cpu0', pl.mean))",
 
-    "queryDF['service'] = queryDF.attr['service']\n"
+    "queryDF['service'] = queryDF.ctx['service']\n"
     "df = queryDF.groupby(['cpu0', 'service']).agg(mean_cpu=('cpu0', pl.mean))",
 
-    "queryDF['service'] = queryDF.attr['service']\n"
+    "queryDF['service'] = queryDF.ctx['service']\n"
     "aggDF = queryDF.groupby(['upid', 'service']).agg(mean_cpu=('cpu0', pl.mean))\n"
-    "df = aggDF[aggDF.attr['service'] == 'pl/service-name']"};
+    "df = aggDF[aggDF.ctx['service'] == 'pl/service-name']"};
 
 INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
                          ::testing::ValuesIn(metadata_operators));
@@ -577,7 +577,7 @@ INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
 TEST_F(AnalyzerTest, valid_metadata_call) {
   std::string valid_query =
       absl::StrJoin({"queryDF = pl.DataFrame(table='cpu') ",
-                     "queryDF['service'] = queryDF.attr['service']", "pl.display(queryDF, 'out')"},
+                     "queryDF['service'] = queryDF.ctx['service']", "pl.display(queryDF, 'out')"},
                     "\n");
   VLOG(1) << valid_query;
   auto ir_graph_status = CompileGraph(valid_query);
@@ -589,7 +589,7 @@ TEST_F(AnalyzerTest, valid_metadata_call) {
 TEST_F(AnalyzerTest, metadata_fails_no_upid) {
   std::string valid_query =
       absl::StrJoin({"queryDF = pl.DataFrame(table='cpu', select=['cpu0']) ",
-                     "queryDF['service'] = queryDF.attr['service']", "pl.display(queryDF, 'out')"},
+                     "queryDF['service'] = queryDF.ctx['service']", "pl.display(queryDF, 'out')"},
                     "\n");
   VLOG(1) << valid_query;
   auto ir_graph_status = CompileGraph(valid_query);
@@ -618,9 +618,9 @@ TEST_F(AnalyzerTest, define_column_metadata) {
 // Test to make sure that copying the metadata key column still works.
 TEST_F(AnalyzerTest, copy_metadata_key_and_og_column) {
   std::string valid_query = absl::StrJoin(
-      {"queryDF = pl.DataFrame(table='cpu')", "queryDF['service'] = queryDF.attr['service']",
+      {"queryDF = pl.DataFrame(table='cpu')", "queryDF['service'] = queryDF.ctx['service']",
        "opDF = queryDF.groupby(['$0', 'service']).agg(mean_cpu =('cpu0', pl.mean))",
-       "opDF = opDF[opDF.attr['service']=='pl/service-name']", "pl.display(opDF, 'out')"},
+       "opDF = opDF[opDF.ctx['service']=='pl/service-name']", "pl.display(opDF, 'out')"},
       "\n");
   valid_query = absl::Substitute(valid_query, MetadataProperty::kUniquePIDColumn);
   auto ir_graph_status = CompileGraph(valid_query);
@@ -733,7 +733,7 @@ TEST_F(AnalyzerTest, drop_to_map_nonexistent_test) {
 }
 const char* kTwoWindowQuery = R"query(
 t1 = pl.DataFrame(table='http_events', start_time='-300s')
-t1['service'] = t1.attr['service']
+t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 # edit this to increase/decrease window. Dont go lower than 1 second.
 t1['window1'] = pl.bin(t1['time_'], pl.seconds(10))

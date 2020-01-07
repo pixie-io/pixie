@@ -212,7 +212,7 @@ Status ASTVisitorImpl::ValidateSubscriptValue(const pypa::AstExpr& node,
   switch (node->type) {
     case AstType::Attribute: {
       // We want to make sure that the parent of an attribute is completely valid, even if it's
-      // nested. ie. `df.attr['service']`
+      // nested. ie. `df.ctx['service']`
       return ValidateSubscriptValue(PYPA_PTR_CAST(Attribute, node)->value, op_context);
     }
     case AstType::Name: {

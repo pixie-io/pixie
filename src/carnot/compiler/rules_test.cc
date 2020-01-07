@@ -1321,7 +1321,7 @@ class FormatMetadataTest : public RulesTest {
 };
 
 TEST_F(FormatMetadataTest, string_matches_format) {
-  // equiv to `r.attr.pod_name == pod-xyzx`
+  // equiv to `r.ctx['pod_name'] == pod-xyzx`
   FuncIR* equals_func = MakeEqualsFunc(MakeMetadataIR("pod_name", /* parent_op_idx */ 0),
                                        MakeString("namespace/pod-xyzx"));
   EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
@@ -1363,7 +1363,7 @@ TEST_F(FormatMetadataTest, bad_format) {
 }
 
 TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
-  // equiv to `r.attr.pod_name == 10`
+  // equiv to `r.ctx['pod_name'] == 10`
   FuncIR* equals_func =
       MakeEqualsFunc(MakeMetadataIR("pod_name", /* parent_op_idx */ 0), MakeInt(10));
   MetadataFunctionFormatRule rule(compiler_state_.get());
@@ -1378,7 +1378,7 @@ TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
 }
 
 TEST_F(FormatMetadataTest, only_equal_supported) {
-  // equiv to `r.attr.pod_name == 10`
+  // equiv to `r.ctx['pod_name'] == 10`
   FuncIR* add_func =
       MakeAddFunc(MakeMetadataIR("pod_name", /* parent_op_idx */ 0), MakeString("pod-xyzx"));
   MetadataFunctionFormatRule rule(compiler_state_.get());
