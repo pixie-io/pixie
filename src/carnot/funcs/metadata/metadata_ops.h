@@ -91,18 +91,38 @@ class UPIDToContainerIDUDF : public ScalarUDF {
   }
 };
 
+inline const md::ContainerInfo* ContainerInfoFromUPID(const pl::md::AgentMetadataState* md,
+                                                      types::UInt128Value upid_value) {
+  auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
+  auto upid = md::UPID(upid_uint128);
+  auto pid = md->GetPIDByUPID(upid);
+  if (pid == nullptr) {
+    return nullptr;
+  }
+  return md->k8s_metadata_state().ContainerInfoByID(pid->cid());
+}
+
+class UPIDToNamespaceUDF : public ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto container_info = ContainerInfoFromUPID(md, upid_value);
+    if (container_info == nullptr) {
+      return "";
+    }
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(container_info->pod_id());
+    if (pod_info == nullptr) {
+      return "";
+    }
+    return pod_info->ns();
+  }
+};
+
 class UPIDToPodIDUDF : public ScalarUDF {
  public:
   types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
-
-    auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
-    auto upid = md::UPID(upid_uint128);
-    auto pid = md->GetPIDByUPID(upid);
-    if (pid == nullptr) {
-      return "";
-    }
-    auto container_info = md->k8s_metadata_state().ContainerInfoByID(pid->cid());
+    auto container_info = ContainerInfoFromUPID(md, upid_value);
     if (container_info == nullptr) {
       return "";
     }
@@ -114,14 +134,7 @@ class UPIDToPodNameUDF : public ScalarUDF {
  public:
   types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
-
-    auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
-    auto upid = md::UPID(upid_uint128);
-    auto pid = md->GetPIDByUPID(upid);
-    if (pid == nullptr) {
-      return "";
-    }
-    auto container_info = md->k8s_metadata_state().ContainerInfoByID(pid->cid());
+    auto container_info = ContainerInfoFromUPID(md, upid_value);
     if (container_info == nullptr) {
       return "";
     }
@@ -168,13 +181,7 @@ class UPIDToK8S {
  public:
   static const pl::md::PodInfo* UPIDtoPod(const pl::md::AgentMetadataState* md,
                                           types::UInt128Value upid_value) {
-    auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
-    auto upid = md::UPID(upid_uint128);
-    auto pid = md->GetPIDByUPID(upid);
-    if (pid == nullptr) {
-      return nullptr;
-    }
-    auto container_info = md->k8s_metadata_state().ContainerInfoByID(pid->cid());
+    auto container_info = ContainerInfoFromUPID(md, upid_value);
     if (container_info == nullptr) {
       return nullptr;
     }

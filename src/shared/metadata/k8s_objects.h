@@ -263,7 +263,7 @@ class ContainerInfo {
 };
 
 /**
- * PodInfo contains information about K8s pods.
+ * ServiceInfo contains information about K8s services.
  */
 class ServiceInfo : public K8sMetadataObject {
  public:

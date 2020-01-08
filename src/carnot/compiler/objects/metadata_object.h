@@ -11,14 +11,14 @@ namespace compiler {
 
 class MetadataObject : public QLObject {
  public:
-  static constexpr TypeDescriptor MetadataType = {
+  static constexpr TypeDescriptor MetadataTypeDescriptor = {
       /* name */ "metadata",
       /* type */ QLObjectType::kMetadata,
   };
   static StatusOr<std::shared_ptr<MetadataObject>> Create(OperatorIR* op);
 
  protected:
-  explicit MetadataObject(OperatorIR* op) : QLObject(MetadataType), op_(op) {}
+  explicit MetadataObject(OperatorIR* op) : QLObject(MetadataTypeDescriptor), op_(op) {}
   Status Init();
 
   StatusOr<QLObjectPtr> SubscriptHandler(const pypa::AstPtr& ast, const ParsedArgs& args);

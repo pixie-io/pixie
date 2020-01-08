@@ -33,6 +33,7 @@ std::unique_ptr<MetadataHandler> MetadataHandler::Create() {
                                            {MetadataType::UPID, MetadataType::POD_ID});
   handler->AddObject<NameMetadataProperty>(MetadataType::DEPLOYMENT_NAME, {"deployment"},
                                            {MetadataType::UPID, MetadataType::DEPLOYMENT_ID});
+  handler->AddObject<NameMetadataProperty>(MetadataType::NAMESPACE, {}, {MetadataType::UPID});
   return handler;
 }
 

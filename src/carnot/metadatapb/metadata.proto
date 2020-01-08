@@ -18,4 +18,5 @@ enum MetadataType {
   POD_NAME = 2001;
   SERVICE_NAME = 2002;
   DEPLOYMENT_NAME = 2003;
+  NAMESPACE = 2004;
 }
