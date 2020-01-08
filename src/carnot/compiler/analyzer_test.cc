@@ -810,6 +810,18 @@ TEST_F(AnalyzerTest, multiple_displays_does_not_fail) {
   ASSERT_OK(analyzer_status);
 }
 
+TEST_F(AnalyzerTest, nested_agg_fails) {
+  auto mem_src = MakeMemSource("cpu");
+  auto child_fn = MakeMeanFunc(MakeColumn("cpu0", 0));
+  auto parent_fn = MakeMeanFunc(child_fn);
+  auto agg = MakeBlockingAgg(mem_src, {}, {{"fn", parent_fn}});
+  MakeMemSink(agg, "");
+
+  auto analyzer_status = HandleRelation(graph);
+  ASSERT_NOT_OK(analyzer_status);
+  EXPECT_THAT(analyzer_status.status(), HasCompilerError("agg function arg cannot be a function"));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

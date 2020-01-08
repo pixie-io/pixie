@@ -1399,6 +1399,32 @@ StatusOr<bool> CombineConsecutiveMapsRule::Apply(IRNode* ir_node) {
   return true;
 }
 
+StatusOr<bool> NestedBlockingAggFnCheckRule::Apply(IRNode* ir_node) {
+  // Roll the child into the parent so we only have to iterate over the graph once.
+  if (!Match(ir_node, BlockingAgg())) {
+    return false;
+  }
+  for (const auto& expr : static_cast<BlockingAggIR*>(ir_node)->aggregate_expressions()) {
+    PL_RETURN_IF_ERROR(CheckExpression(expr));
+  }
+  return false;
+}
+
+Status NestedBlockingAggFnCheckRule::CheckExpression(const ColumnExpression& expr) {
+  if (!Match(expr.node, Func())) {
+    return expr.node->CreateIRNodeError("agg expression must be a function");
+  }
+
+  FuncIR* func = static_cast<FuncIR*>(expr.node);
+  for (const auto& arg : func->args()) {
+    if (arg->IsFunction()) {
+      return arg->CreateIRNodeError("agg function arg cannot be a function");
+    }
+  }
+
+  return Status::OK();
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

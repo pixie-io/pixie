@@ -448,6 +448,19 @@ class CombineConsecutiveMapsRule : public Rule {
                      const absl::flat_hash_set<std::string>& parent_col_names);
 };
 
+/**
+ * @brief This rule makes sure that nested blocking aggs cause a compiler error.
+ *
+ */
+class NestedBlockingAggFnCheckRule : public Rule {
+ public:
+  NestedBlockingAggFnCheckRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+  Status CheckExpression(const ColumnExpression& col_expr);
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

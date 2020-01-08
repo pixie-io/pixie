@@ -662,11 +662,6 @@ args {
   semantic_type: ST_UPID
 }
 executor: UDTF_SUBSET_PEM
-filters {
-  semantic_filter {
-    idx: 0
-  }
-}
 relation {
   columns {
     column_name: "time_"
@@ -683,10 +678,10 @@ relation {
 }
 )proto";
 
-class ASTVisitorTest : public ::testing::Test {
+class ASTVisitorTest : public OperatorTests {
  protected:
   void SetUp() override {
-    Test::SetUp();
+    OperatorTests::SetUp();
     relation_map_ = std::make_unique<RelationMap>();
 
     registry_info_ = std::make_shared<RegistryInfo>();

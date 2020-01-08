@@ -464,6 +464,7 @@ class ExpressionIR : public IRNode {
   virtual bool IsColumn() const { return false; }
   virtual bool IsData() const { return false; }
   virtual bool IsCollection() const { return false; }
+  virtual bool IsFunction() const { return false; }
   virtual Status ToProto(planpb::ScalarExpression* expr) const = 0;
 
  protected:
@@ -945,6 +946,7 @@ class FuncIR : public ExpressionIR {
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   Status ToProto(planpb::ScalarExpression* expr) const override;
+  bool IsFunction() const override { return true; }
 
  private:
   std::string func_prefix_ = kPLFuncPrefix;

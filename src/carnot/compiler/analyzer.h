@@ -38,6 +38,7 @@ class Analyzer : public RuleExecutor {
     source_and_metadata_resolution_batch->AddRule<SetupJoinTypeRule>();
     source_and_metadata_resolution_batch->AddRule<MergeGroupByIntoAggRule>();
     source_and_metadata_resolution_batch->AddRule<ConvertMemSourceStringTimesRule>(compiler_state_);
+    source_and_metadata_resolution_batch->AddRule<NestedBlockingAggFnCheckRule>();
   }
 
   void CreateVerifyUserDefinedColumnsBatch() {
