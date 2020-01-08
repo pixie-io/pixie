@@ -70,6 +70,14 @@ Status PLModule::RegisterCompileTimeFuncs() {
   for (const auto& time : kTimeFuncs) {
     PL_RETURN_IF_ERROR(RegisterCompileTimeUnitFunction(time));
   }
+
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> uuid_str_fn,
+      FuncObject::Create(kUInt128ConversionId, {"uuid_str"}, {},
+                         /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+                         std::bind(&CompileTimeFuncHandler::UInt128Conversion, graph_,
+                                   std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kUInt128ConversionId, uuid_str_fn);
   return Status::OK();
 }
 
@@ -216,6 +224,23 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::string ti
   return ExprObject::Create(node);
 }
 
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
+                                                                const ParsedArgs& args) {
+  IRNode* uuid_str = args.GetArg("uuid_str");
+  if (!Match(uuid_str, String())) {
+    return uuid_str->CreateIRNodeError("Argument must be a String, got a $0",
+                                       uuid_str->type_string());
+  }
+  auto upid_or_s = md::UPID::ParseFromUUIDString(static_cast<StringIR*>(uuid_str)->str());
+  if (!upid_or_s.ok()) {
+    return uuid_str->CreateIRNodeError(upid_or_s.msg());
+  }
+  PL_ASSIGN_OR_RETURN(UInt128IR * uint128_ir,
+                      graph->CreateNode<UInt128IR>(ast, upid_or_s.ConsumeValueOrDie().value()));
+
+  return ExprObject::Create(uint128_ir);
+}
+
 StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, std::string name, const pypa::AstPtr& ast,
                                        const ParsedArgs& args) {
   std::vector<ExpressionIR*> expr_args;
@@ -247,6 +272,7 @@ StatusOr<ExpressionIR*> UDTFSourceHandler::EvaluateExpression(
       return data_node;
     }
     case types::ST_UPID: {
+      // TODO(philkuz) convert this to support Uint128.
       DCHECK_EQ(arg.arg_type(), types::STRING);
       if (!Match(data_node, String())) {
         return arg_node->CreateIRNodeError("UPID only handled with Strings.");

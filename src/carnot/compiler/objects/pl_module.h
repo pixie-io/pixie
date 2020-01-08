@@ -21,6 +21,7 @@ class PLModule : public QLObject {
   inline static constexpr char kDataframeOpId[] = "DataFrame";
   inline static constexpr char kDisplayOpId[] = "display";
   inline static constexpr char kNowOpId[] = "now";
+  inline static constexpr char kUInt128ConversionId[] = "uint128";
   static const constexpr char* const kTimeFuncs[] = {"minutes", "hours",        "seconds",
                                                      "days",    "microseconds", "milliseconds"};
 
@@ -69,6 +70,8 @@ class CompileTimeFuncHandler {
   static StatusOr<QLObjectPtr> NowEval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args);
   static StatusOr<QLObjectPtr> TimeEval(IR* graph, std::string name, const pypa::AstPtr& ast,
                                         const ParsedArgs& args);
+  static StatusOr<QLObjectPtr> UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
+                                                 const ParsedArgs& args);
 };
 
 /**
