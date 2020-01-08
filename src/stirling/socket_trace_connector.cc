@@ -695,7 +695,6 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   RecordBuilder<&kMySQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
-  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time_ticks());
   r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
   r.Append<r.ColIndex("req_cmd")>(static_cast<uint64_t>(entry.req.cmd));

@@ -7,7 +7,6 @@ namespace stirling {
 static constexpr DataElement kMySQLElements[] = {
         {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
         {"upid", types::DataType::UINT128, types::PatternType::GENERAL},
-        {"pid_start_time", types::DataType::INT64, types::PatternType::GENERAL},
         {"remote_addr", types::DataType::STRING, types::PatternType::GENERAL},
         {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
         {"req_cmd", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
