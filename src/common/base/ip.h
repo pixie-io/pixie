@@ -30,15 +30,23 @@ struct IPv6Address {
  */
 class CIDRBlock {
  public:
+  /**
+   * Returns a CIDRBlock that matches the input string.
+   */
+  static StatusOr<CIDRBlock> FromStr(std::string_view cidr_str);
+
   CIDRBlock(IPv4Address addr, size_t prefix_length);
   CIDRBlock(IPv6Address addr, size_t prefix_length);
+
+  // For StatusOr<CIDRBlock> to compile.
+  CIDRBlock() = default;
 
   bool Contains(const IPv4Address& addr) const;
   bool Contains(const IPv6Address& addr) const;
 
  private:
-  const std::variant<IPv4Address, IPv6Address> addr_;
-  const size_t prefix_length_;
+  std::variant<IPv4Address, IPv6Address> addr_;
+  size_t prefix_length_;
 };
 
 }  // namespace pl
