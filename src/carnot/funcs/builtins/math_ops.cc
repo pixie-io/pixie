@@ -6,8 +6,11 @@ namespace pl {
 namespace carnot {
 namespace builtins {
 
-void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
+void RegisterMathOpsOrDie(udf::Registry* registry) {
   CHECK(registry != nullptr);
+  /*****************************************
+   * Scalar UDFs.
+   *****************************************/
   // Addition
   registry->RegisterOrDie<AddUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
       "pl.add");
@@ -133,10 +136,10 @@ void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
       "pl.bin");
   registry->RegisterOrDie<BinUDF<types::Time64NSValue, types::Time64NSValue, types::Time64NSValue>>(
       "pl.bin");
-}
 
-void RegisterMathOpsOrDie(udf::UDARegistry* registry) {
-  CHECK(registry != nullptr);
+  /*****************************************
+   * Aggregate UDFs.
+   *****************************************/
   // Mean
   registry->RegisterOrDie<MeanUDA<types::Float64Value>>("pl.mean");
   registry->RegisterOrDie<MeanUDA<types::Int64Value>>("pl.mean");

@@ -4,14 +4,10 @@ namespace pl {
 namespace carnot {
 namespace udfexporter {
 udfspb::UDFInfo GetUDFProto() {
-  auto scalar_udf_registry = std::make_unique<udf::ScalarUDFRegistry>("udf_registry");
-  auto uda_registry = std::make_unique<udf::UDARegistry>("uda_registry");
-  builtins::RegisterBuiltinsOrDie(scalar_udf_registry.get());
-  builtins::RegisterBuiltinsOrDie(uda_registry.get());
-  funcs::metadata::RegisterMetadataOpsOrDie(scalar_udf_registry.get());
-  auto udf_proto =
-      udf::RegistryInfoExporter().Registry(*uda_registry).Registry(*scalar_udf_registry).ToProto();
-  return udf_proto;
+  auto registry = std::make_unique<udf::Registry>("udf_registry");
+  builtins::RegisterBuiltinsOrDie(registry.get());
+  funcs::metadata::RegisterMetadataOpsOrDie(registry.get());
+  return registry->ToProto();
 }
 
 StatusOr<std::unique_ptr<compiler::RegistryInfo>> ExportUDFInfo() {

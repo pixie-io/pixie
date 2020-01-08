@@ -41,14 +41,11 @@ using KelvinStubGenerator = std::function<std::unique_ptr<carnotpb::KelvinServic
 class ExecState {
  public:
   ExecState() = delete;
-  explicit ExecState(udf::ScalarUDFRegistry* scalar_udf_registry, udf::UDARegistry* uda_registry,
-                     udf::UDTFRegistry* udtf_registry,
+  explicit ExecState(udf::Registry* func_registry,
                      std::shared_ptr<table_store::TableStore> table_store,
                      const KelvinStubGenerator& stub_generator, const sole::uuid& query_id,
                      GRPCRouter* grpc_router = nullptr)
-      : scalar_udf_registry_(scalar_udf_registry),
-        uda_registry_(uda_registry),
-        udtf_registry_(udtf_registry),
+      : func_registry_(func_registry),
         table_store_(std::move(table_store)),
         stub_generator_(stub_generator),
         query_id_(query_id),
@@ -64,9 +61,7 @@ class ExecState {
     return arrow::default_memory_pool();
   }
 
-  udf::ScalarUDFRegistry* scalar_udf_registry() { return scalar_udf_registry_; }
-  udf::UDARegistry* uda_registry() { return uda_registry_; }
-  udf::UDTFRegistry* udtf_registry() { return udtf_registry_; }
+  udf::Registry* func_registry() { return func_registry_; }
 
   table_store::TableStore* table_store() { return table_store_.get(); }
 
@@ -74,13 +69,13 @@ class ExecState {
 
   Status AddScalarUDF(int64_t id, const std::string& name,
                       const std::vector<types::DataType> arg_types) {
-    PL_ASSIGN_OR_RETURN(auto def, scalar_udf_registry_->GetDefinition(name, arg_types));
+    PL_ASSIGN_OR_RETURN(auto def, func_registry_->GetScalarUDFDefinition(name, arg_types));
     id_to_scalar_udf_map_[id] = def;
     return Status::OK();
   }
 
   Status AddUDA(int64_t id, const std::string& name, const std::vector<types::DataType> arg_types) {
-    PL_ASSIGN_OR_RETURN(auto def, uda_registry_->GetDefinition(name, arg_types));
+    PL_ASSIGN_OR_RETURN(auto def, func_registry_->GetUDADefinition(name, arg_types));
     id_to_uda_map_[id] = def;
     return Status::OK();
   }
@@ -117,9 +112,7 @@ class ExecState {
   GRPCRouter* grpc_router() { return grpc_router_; }
 
  private:
-  udf::ScalarUDFRegistry* scalar_udf_registry_;
-  udf::UDARegistry* uda_registry_;
-  udf::UDTFRegistry* udtf_registry_;
+  udf::Registry* func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<const md::AgentMetadataState> metadata_state_;
   const KelvinStubGenerator stub_generator_;

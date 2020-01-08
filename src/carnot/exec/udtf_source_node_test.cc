@@ -88,23 +88,18 @@ class UDTFSourceNodeTest : public ::testing::Test {
     EXPECT_TRUE(google::protobuf::TextFormat::MergeFromString(kUDTFTestPbtxt, &op_pb));
     plan_node_ = plan::UDTFSourceOperator::FromProto(op_pb, 1);
 
-    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
-    uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
-    udtf_registry_ = std::make_unique<udf::UDTFRegistry>("test_registry");
-    EXPECT_OK(udtf_registry_->Register<BasicTestUDTF>("test_udtf"));
+    func_registry_ = std::make_unique<udf::Registry>("test_registry");
+    EXPECT_OK(func_registry_->Register<BasicTestUDTF>("test_udtf"));
     auto table_store = std::make_shared<table_store::TableStore>();
 
-    exec_state_ =
-        std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), udtf_registry_.get(),
-                                    table_store, MockKelvinStubGenerator, sole::uuid4());
+    exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
+                                              MockKelvinStubGenerator, sole::uuid4());
   }
 
  protected:
   std::unique_ptr<plan::Operator> plan_node_;
   std::unique_ptr<ExecState> exec_state_;
-  std::unique_ptr<udf::UDARegistry> uda_registry_;
-  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
-  std::unique_ptr<udf::UDTFRegistry> udtf_registry_;
+  std::unique_ptr<udf::Registry> func_registry_;
 };
 
 TEST_F(UDTFSourceNodeTest, single_output_batch_test) {

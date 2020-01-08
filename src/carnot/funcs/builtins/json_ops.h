@@ -65,11 +65,7 @@ class PluckAsFloat64UDF : public udf::ScalarUDF {
   }
 };
 
-inline void RegisterJSONOpsOrDie(udf::ScalarUDFRegistry* registry) {
-  registry->RegisterOrDie<PluckUDF>("pl.pluck");
-  registry->RegisterOrDie<PluckAsInt64UDF>("pl.pluck_int64");
-  registry->RegisterOrDie<PluckAsFloat64UDF>("pl.pluck_float64");
-}
+void RegisterJSONOpsOrDie(udf::Registry* registry);
 
 }  // namespace builtins
 }  // namespace carnot

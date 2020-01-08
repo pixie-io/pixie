@@ -26,21 +26,16 @@ using udf::FunctionContext;
 class UnionNodeTest : public ::testing::Test {
  public:
   UnionNodeTest() {
-    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
-    uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
-    udtf_registry_ = std::make_unique<udf::UDTFRegistry>("test_registry");
+    func_registry_ = std::make_unique<udf::Registry>("test_registry");
     auto table_store = std::make_shared<table_store::TableStore>();
-    exec_state_ =
-        std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), udtf_registry_.get(),
-                                    table_store, MockKelvinStubGenerator, sole::uuid4());
+    exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
+                                              MockKelvinStubGenerator, sole::uuid4());
   }
 
  protected:
   std::unique_ptr<plan::Operator> plan_node_;
   std::unique_ptr<ExecState> exec_state_;
-  std::unique_ptr<udf::UDARegistry> uda_registry_;
-  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
-  std::unique_ptr<udf::UDTFRegistry> udtf_registry_;
+  std::unique_ptr<udf::Registry> func_registry_;
 };
 
 TEST_F(UnionNodeTest, unordered) {

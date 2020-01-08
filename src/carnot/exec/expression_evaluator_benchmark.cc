@@ -25,10 +25,8 @@ using pl::carnot::planpb::testutils::kAddScalarFuncPbtxt;
 using pl::carnot::planpb::testutils::kColumnReferencePbtxt;
 using pl::carnot::planpb::testutils::kScalarInt64ValuePbtxt;
 using pl::carnot::udf::FunctionContext;
+using pl::carnot::udf::Registry;
 using pl::carnot::udf::ScalarUDF;
-using pl::carnot::udf::ScalarUDFRegistry;
-using pl::carnot::udf::UDARegistry;
-using pl::carnot::udf::UDTFRegistry;
 using pl::table_store::schema::RowBatch;
 using pl::table_store::schema::RowDescriptor;
 using pl::types::DataType;
@@ -51,14 +49,11 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   CHECK(s_or_se.ok());
   std::shared_ptr<ScalarExpression> se = s_or_se.ConsumeValueOrDie();
 
-  auto udf_registry = std::make_unique<ScalarUDFRegistry>("test_registry");
-  auto uda_registry = std::make_unique<UDARegistry>("test_registry");
-  auto udtf_registry = std::make_unique<UDTFRegistry>("test_registry");
+  auto func_registry = std::make_unique<Registry>("test_registry");
   auto table_store = std::make_shared<pl::table_store::TableStore>();
-  PL_CHECK_OK(udf_registry->Register<AddUDF>("add"));
-  auto exec_state =
-      std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), udtf_registry.get(),
-                                  table_store, MockKelvinStubGenerator, sole::uuid4());
+  PL_CHECK_OK(func_registry->Register<AddUDF>("add"));
+  auto exec_state = std::make_unique<ExecState>(func_registry.get(), table_store,
+                                                MockKelvinStubGenerator, sole::uuid4());
 
   auto in1 = pl::datagen::CreateLargeData<Int64Value>(data_size);
   auto in2 = pl::datagen::CreateLargeData<Int64Value>(data_size);

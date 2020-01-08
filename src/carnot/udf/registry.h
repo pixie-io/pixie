@@ -18,8 +18,6 @@ namespace pl {
 namespace carnot {
 namespace udf {
 
-enum RegistryType { kScalarUDF = 1, kUDA, kUDTF };
-
 /**
  * RegistryKey is the class used to uniquely refer to UDFs/UDAs in the registry.
  * A UDF may be overloaded on exec arguments but nothing else.
@@ -41,13 +39,7 @@ class RegistryKey {
    */
   const std::string& name() const { return name_; }
 
-  std::string DebugString() const {
-    std::vector<std::string> name_vector;
-    for (auto const& type : registry_arg_types_) {
-      name_vector.push_back(types::DataType_Name(type));
-    }
-    return absl::Substitute("$0($1)", name_, absl::StrJoin(name_vector, ","));
-  }
+  std::string DebugString() const;
 
   const std::vector<types::DataType> registry_arg_types() { return registry_arg_types_; }
 
@@ -56,41 +48,41 @@ class RegistryKey {
    * @param lhs is the other RegistryKey.
    * @return a stable less than compare.
    */
-  bool operator<(const RegistryKey& lhs) const {
-    if (name_ == lhs.name_) {
-      return registry_arg_types_ < lhs.registry_arg_types_;
-    }
-    return name_ < lhs.name_;
-  }
+  bool operator<(const RegistryKey& lhs) const;
 
  protected:
   std::string name_;
   std::vector<types::DataType> registry_arg_types_;
 };
 
-class BaseUDFRegistry {
- public:
-  BaseUDFRegistry() = default;
-  virtual ~BaseUDFRegistry() = default;
-  /**
-   * Get the type of the registry.
-   * @return Returns the type of the registry.
-   */
-  virtual RegistryType Type() = 0;
-  virtual std::string DebugString() = 0;
-  virtual udfspb::UDFInfo SpecToProto() const = 0;
+template <typename T, typename = void>
+struct RegistryTraits {
+  static_assert(sizeof(T) == 0, "Invalid UDF type");
+};
+
+template <typename T>
+struct RegistryTraits<T, typename std::enable_if_t<std::is_base_of_v<ScalarUDF, T>, void>> {
+  using TUDFDef = ScalarUDFDefinition;
+};
+
+template <typename T>
+struct RegistryTraits<T, typename std::enable_if_t<std::is_base_of_v<UDA, T>, void>> {
+  using TUDFDef = UDADefinition;
+};
+
+template <typename T>
+struct RegistryTraits<T, typename std::enable_if_t<std::is_base_of_v<UDTF<T>, T>, void>> {
+  using TUDFDef = UDTFDefinition;
 };
 
 /**
- * The registry to store UDFs/UDAS.
+ * The registry to store UDFs/UDAS/UDTFs.
  *
- * @tparam TUDFDef The UDF defintion to store.
  */
-template <typename TUDFDef>
-class Registry : public BaseUDFRegistry {
+class Registry {
  public:
   explicit Registry(std::string name) : name_(std::move(name)) {}
-  ~Registry() override = default;
+  virtual ~Registry() = default;
 
   /**
    * Registers the given UDF/UDA/UDTF into the registry. A double register will result in an error.
@@ -100,8 +92,8 @@ class Registry : public BaseUDFRegistry {
    */
   template <typename T>
   Status Register(const std::string& name) {
-    auto udf_def = std::make_unique<TUDFDef>();
-    PL_RETURN_IF_ERROR(udf_def->template Init<T>(name));
+    auto udf_def = std::make_unique<typename RegistryTraits<T>::TUDFDef>(name);
+    PL_RETURN_IF_ERROR(udf_def->template Init<T>());
 
     auto key = RegistryKey(name, udf_def->RegistryArgTypes());
     if (map_.find(key) != map_.end()) {
@@ -125,57 +117,6 @@ class Registry : public BaseUDFRegistry {
   }
 
   /**
-   * Get the UDF/UDA definition.
-   * @param name The name of the UDF/UDA.
-   * @param registry_arg_types The overload dependent args of the UDF/UDA.
-   * @return
-   */
-  StatusOr<TUDFDef*> GetDefinition(
-      const std::string& name, const std::vector<types::DataType>& registry_arg_types = {}) const {
-    auto key = RegistryKey(name, registry_arg_types);
-    auto it = map_.find(key);
-    if (it == map_.end()) {
-      return error::NotFound("No UDF matching $0 found.", key.DebugString());
-    }
-    return it->second.get();
-  }
-
-  std::string DebugString() override {
-    std::string debug_string;
-    debug_string += absl::Substitute("Registry($0): $1\n", magic_enum::enum_name(Type()), name_);
-    for (const auto& entry : map_) {
-      // TODO(zasgar): add arguments as well. Future Diff.
-      debug_string += entry.first.name() + "\n";
-    }
-    return debug_string;
-  }
-
- protected:
-  std::string name_;
-  std::map<RegistryKey, std::unique_ptr<TUDFDef>> map_;
-};
-
-class ScalarUDFRegistry : public Registry<ScalarUDFDefinition> {
- public:
-  using Registry<ScalarUDFDefinition>::Registry;
-  RegistryType Type() override { return kScalarUDF; };
-  udfspb::UDFInfo SpecToProto() const override;
-};
-
-class UDARegistry : public Registry<UDADefinition> {
- public:
-  using Registry<UDADefinition>::Registry;
-  RegistryType Type() override { return kUDA; };
-  udfspb::UDFInfo SpecToProto() const override;
-};
-
-class UDTFRegistry : public Registry<UDTFDefinition> {
- public:
-  using Registry<UDTFDefinition>::Registry;
-  RegistryType Type() override { return kUDTF; };
-  udfspb::UDFInfo SpecToProto() const override;
-
-  /**
    * UDTF specfic Register function that creates a UDTF factory.
    * @tparam TUDTF the UDTF
    * @tparam TFactory the UDTF factory
@@ -186,15 +127,17 @@ class UDTFRegistry : public Registry<UDTFDefinition> {
   Status RegisterFactory(const std::string& name, Args&&... args) {
     static_assert(std::is_base_of_v<UDTFFactory, TFactory>,
                   "TFactory must be derived from UDTFFactory");
+    static_assert(std::is_base_of_v<UDTF<TUDTF>, TUDTF>,
+                  "Register factory is only valid for UDTFs");
 
     auto factory = std::make_unique<TFactory>(std::forward<Args>(args)...);
-    auto udf_def = std::make_unique<UDTFDefinition>();
-    PL_RETURN_IF_ERROR(udf_def->template Init<TUDTF>(std::move(factory), name));
+    auto udf_def = std::make_unique<UDTFDefinition>(name);
+    PL_RETURN_IF_ERROR(udf_def->template Init<TUDTF>(std::move(factory)));
 
     auto key = RegistryKey(name, udf_def->RegistryArgTypes());
     if (map_.find(key) != map_.end()) {
       return error::AlreadyExists(
-          "The UDF with name \"$0\" already exists with same exec args \"$1\".", name,
+          "The UDTF with name \"$0\" already exists with same exec args \"$1\".", name,
           key.DebugString());
     }
     map_[key] = std::move(udf_def);
@@ -209,27 +152,34 @@ class UDTFRegistry : public Registry<UDTFDefinition> {
     auto status = RegisterFactory<TUDTF, TFactory>(name, std::forward<Args>(args)...);
     CHECK(status.ok()) << "Failed to register UDTF: " << status.msg();
   }
-};
 
-/**
- * RegistryInfoExporter is a helper class used to export info from various
- * registries. Usage:
- *   RegistryInfoExporter()
- *     .Registry(registry1)
- *     .Registry(registry2)
- *     .ToProto()
- */
-class RegistryInfoExporter {
- public:
-  RegistryInfoExporter& Registry(const BaseUDFRegistry& registry) {
-    auto info = registry.SpecToProto();
-    info_.MergeFrom(info);
-    return *this;
-  }
-  udfspb::UDFInfo ToProto() { return info_; }
+  StatusOr<ScalarUDFDefinition*> GetScalarUDFDefinition(
+      const std::string& name, const std::vector<types::DataType>& registry_arg_types = {}) const;
+
+  StatusOr<UDADefinition*> GetUDADefinition(
+      const std::string& name, const std::vector<types::DataType>& registry_arg_types = {}) const;
+
+  StatusOr<UDTFDefinition*> GetUDTFDefinition(
+      const std::string& name, const std::vector<types::DataType>& registry_arg_types = {}) const;
+
+  std::string DebugString();
+  udfspb::UDFInfo ToProto();
 
  private:
-  udfspb::UDFInfo info_;
+  /**
+   * Get the UDF/UDA/UDTF definition.
+   * @param name The name of the UDF/UDA/UDTF.
+   * @return
+   */
+  StatusOr<UDFDefinition*> GetDefinition(
+      const std::string& name, const std::vector<types::DataType>& registry_arg_types = {}) const;
+
+  void ToProto(const ScalarUDFDefinition& def, udfspb::ScalarUDFSpec* spec);
+  void ToProto(const UDADefinition& def, udfspb::UDASpec* spec);
+  void ToProto(const UDTFDefinition& def, udfspb::UDTFSourceSpec* spec);
+
+  std::string name_;
+  std::map<RegistryKey, std::unique_ptr<UDFDefinition>> map_;
 };
 
 }  // namespace udf

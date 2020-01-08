@@ -56,8 +56,8 @@ static void BM_AddInt64Values(benchmark::State& state) {
   auto wrapped_vec2 = Int64ValueColumnWrapper(vec2);
 
   // Create the UDF.
-  ScalarUDFDefinition def;
-  CHECK(def.template Init<AddUDF>("add").ok());
+  ScalarUDFDefinition def("add");
+  CHECK(def.template Init<AddUDF>().ok());
   auto u = def.Make();
 
   // Loop the test.
@@ -88,8 +88,8 @@ static void BM_SubStr(benchmark::State& state) {
   auto wrapped_vec1 = StringValueColumnWrapper(vec1);
 
   // Create UDF.
-  ScalarUDFDefinition def;
-  CHECK(def.template Init<SubStrUDF>("substr").ok());
+  ScalarUDFDefinition def("substr");
+  CHECK(def.template Init<SubStrUDF>().ok());
   auto u = def.Make();
 
   // Run the test.
@@ -178,8 +178,8 @@ static void BM_AddInt64ValueToArrow(benchmark::State& state) {
   auto wrapped_vec1 = Int64ValueColumnWrapper(vec1);
   auto wrapped_vec2 = Int64ValueColumnWrapper(vec2);
 
-  ScalarUDFDefinition def;
-  CHECK(def.template Init<AddUDF>("add").ok());
+  ScalarUDFDefinition def("add");
+  CHECK(def.template Init<AddUDF>().ok());
   auto u = def.Make();
   // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
@@ -208,8 +208,8 @@ static void BM_SubStrArrow(benchmark::State& state) {
 
   // Create UDF.
   std::shared_ptr<arrow::Array> out;
-  ScalarUDFDefinition def;
-  CHECK(def.template Init<SubStrUDF>("substr").ok());
+  ScalarUDFDefinition def("substr");
+  CHECK(def.template Init<SubStrUDF>().ok());
   auto u = def.Make();
   // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {

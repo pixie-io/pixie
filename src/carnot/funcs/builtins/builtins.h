@@ -6,8 +6,7 @@ namespace pl {
 namespace carnot {
 namespace builtins {
 
-void RegisterBuiltinsOrDie(udf::ScalarUDFRegistry* registry);
-void RegisterBuiltinsOrDie(udf::UDARegistry* registry);
+void RegisterBuiltinsOrDie(udf::Registry* registry);
 
 }  // namespace builtins
 }  // namespace carnot

@@ -9,8 +9,11 @@ namespace carnot {
 namespace funcs {
 namespace metadata {
 
-void RegisterMetadataOpsOrDie(pl::carnot::udf::ScalarUDFRegistry* registry) {
+void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry) {
   CHECK(registry != nullptr);
+  /*****************************************
+   * Scalar UDFs.
+   *****************************************/
   registry->RegisterOrDie<ASIDUDF>("pl.asid");
   registry->RegisterOrDie<UPIDToASIDUDF>("pl.upid_to_asid");
   registry->RegisterOrDie<PodIDToPodNameUDF>("pl.pod_id_to_pod_name");
@@ -32,6 +35,10 @@ void RegisterMetadataOpsOrDie(pl::carnot::udf::ScalarUDFRegistry* registry) {
   registry->RegisterOrDie<PodNameToPodStartTimeUDF>("pl.pod_name_to_start_time");
   registry->RegisterOrDie<PodNameToPodStatusUDF>("pl.pod_name_to_status");
   registry->RegisterOrDie<UPIDToCmdLineUDF>("pl.upid_to_cmdline");
+
+  /*****************************************
+   * Aggregate UDFs.
+   *****************************************/
 }
 
 }  // namespace metadata

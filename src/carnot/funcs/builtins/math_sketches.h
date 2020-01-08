@@ -37,7 +37,7 @@ class QuantilesUDA : public udf::UDA {
   tdigest::TDigest digest_;
 };
 
-void RegisterMathSketchesOrDie(udf::UDARegistry* registry);
+void RegisterMathSketchesOrDie(udf::Registry* registry);
 
 }  // namespace builtins
 }  // namespace carnot

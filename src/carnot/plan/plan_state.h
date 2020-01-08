@@ -6,31 +6,23 @@ namespace pl {
 namespace carnot {
 namespace udf {
 // Forward declare registries.
-class ScalarUDFRegistry;
-class UDARegistry;
-class UDTFRegistry;
+class Registry;
 }  // namespace udf
 namespace plan {
 
 class PlanState {
  public:
   /**
-   * Init with a UDF registry and hold a shared pointer for it.
+   * Init with a UDF registry and hold a raw pointer for it.
    *
-   * @param udf_registry the passed in UDF registry.
+   * @param func_registry the passed in UDF registry.
    */
-  explicit PlanState(udf::ScalarUDFRegistry* udf_registry, udf::UDARegistry* uda_registry,
-                     udf::UDTFRegistry* udtf_registry)
-      : udf_registry_(udf_registry), uda_registry_(uda_registry), udtf_registry_(udtf_registry) {}
+  explicit PlanState(udf::Registry* func_registry) : func_registry_(func_registry) {}
 
-  udf::ScalarUDFRegistry* udf_registry() const { return udf_registry_; }
-  udf::UDARegistry* uda_registry() const { return uda_registry_; }
-  udf::UDTFRegistry* udtf_registry() const { return udtf_registry_; }
+  udf::Registry* func_registry() const { return func_registry_; }
 
  private:
-  udf::ScalarUDFRegistry* udf_registry_;
-  udf::UDARegistry* uda_registry_;
-  udf::UDTFRegistry* udtf_registry_;
+  udf::Registry* func_registry_;
 };
 
 }  // namespace plan

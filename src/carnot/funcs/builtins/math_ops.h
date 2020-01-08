@@ -200,8 +200,7 @@ class CountUDA : public udf::UDA {
   uint64_t count_ = 0;
 };
 
-void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry);
-void RegisterMathOpsOrDie(udf::UDARegistry* registry);
+void RegisterMathOpsOrDie(udf::Registry* registry);
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl

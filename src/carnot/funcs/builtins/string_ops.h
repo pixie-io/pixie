@@ -63,7 +63,7 @@ class TrimUDF : public udf::ScalarUDF {
   }
 };
 
-void RegisterStringOpsOrDie(udf::ScalarUDFRegistry* registry);
+void RegisterStringOpsOrDie(udf::Registry* registry);
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl

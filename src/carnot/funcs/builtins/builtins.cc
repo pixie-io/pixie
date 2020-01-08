@@ -10,15 +10,11 @@ namespace pl {
 namespace carnot {
 namespace builtins {
 
-void RegisterBuiltinsOrDie(udf::ScalarUDFRegistry* registry) {
-  RegisterMathOpsOrDie(registry);
-  RegisterJSONOpsOrDie(registry);
-  RegisterStringOpsOrDie(registry);
-}
-
-void RegisterBuiltinsOrDie(udf::UDARegistry* registry) {
+void RegisterBuiltinsOrDie(udf::Registry* registry) {
   RegisterMathOpsOrDie(registry);
   RegisterMathSketchesOrDie(registry);
+  RegisterJSONOpsOrDie(registry);
+  RegisterStringOpsOrDie(registry);
 }
 
 }  // namespace builtins

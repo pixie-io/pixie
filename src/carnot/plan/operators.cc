@@ -580,7 +580,7 @@ Status UDTFSourceOperator::Init(const planpb::UDTFSourceOperator& pb) {
 StatusOr<table_store::schema::Relation> UDTFSourceOperator::OutputRelation(
     const table_store::schema::Schema& /*schema*/, const PlanState& state,
     const std::vector<int64_t>& /*input_ids*/) const {
-  PL_ASSIGN_OR_RETURN(auto def, state.udtf_registry()->GetDefinition(pb_.name()));
+  PL_ASSIGN_OR_RETURN(auto def, state.func_registry()->GetUDTFDefinition(pb_.name()));
   auto cols = def->output_relation();
 
   table_store::schema::Relation output_rel;

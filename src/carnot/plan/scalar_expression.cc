@@ -234,7 +234,7 @@ StatusOr<types::DataType> ScalarFunc::OutputDataType(
                      PL_RETURN_IF_ERROR(child_result);
                      child_args.push_back(child_result.ValueOrDie());
                    }
-                   auto s = state.udf_registry()->GetDefinition(func.name(), child_args);
+                   auto s = state.func_registry()->GetScalarUDFDefinition(func.name(), child_args);
                    PL_RETURN_IF_ERROR(s);
                    return s.ValueOrDie()->exec_return_type();
                  })
@@ -309,7 +309,7 @@ StatusOr<types::DataType> AggregateExpression::OutputDataType(
   for (const auto& arg : arg_deps_) {
     child_args.push_back(arg->OutputDataType(state, input_schema).ValueOrDie());
   }
-  PL_ASSIGN_OR_RETURN(auto s, state.uda_registry()->GetDefinition(name_, child_args));
+  PL_ASSIGN_OR_RETURN(auto s, state.func_registry()->GetUDADefinition(name_, child_args));
   return s->finalize_return_type();
 }
 

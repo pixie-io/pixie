@@ -40,15 +40,10 @@ class CompilerTest : public ::testing::Test {
   void SetUpRegistryInfo() {
     // TODO(philkuz) replace the following call info_
     // info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
-    auto scalar_udf_registry = std::make_unique<udf::ScalarUDFRegistry>("udf_registry");
-    auto uda_registry = std::make_unique<udf::UDARegistry>("uda_registry");
-    builtins::RegisterBuiltinsOrDie(scalar_udf_registry.get());
-    builtins::RegisterBuiltinsOrDie(uda_registry.get());
-    funcs::metadata::RegisterMetadataOpsOrDie(scalar_udf_registry.get());
-    auto udf_proto = udf::RegistryInfoExporter()
-                         .Registry(*uda_registry)
-                         .Registry(*scalar_udf_registry)
-                         .ToProto();
+    auto func_registry = std::make_unique<udf::Registry>("func_registry");
+    builtins::RegisterBuiltinsOrDie(func_registry.get());
+    funcs::metadata::RegisterMetadataOpsOrDie(func_registry.get());
+    auto udf_proto = func_registry->ToProto();
 
     std::string new_udf_info = absl::Substitute("$0$1", udf_proto.DebugString(), kExtraScalarUDFs);
     google::protobuf::TextFormat::MergeFromString(new_udf_info, &udf_proto);

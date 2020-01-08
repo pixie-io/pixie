@@ -33,8 +33,8 @@ class AddUDF : public ScalarUDF {
 
 TEST(UDFDefinition, no_args) {
   auto ctx = FunctionContext(nullptr);
-  ScalarUDFDefinition def;
-  EXPECT_OK(def.Init<NoArgUDF>("noargudf"));
+  ScalarUDFDefinition def("noargudf");
+  EXPECT_OK(def.Init<NoArgUDF>());
 
   size_t size = 10;
   types::Int64ValueColumnWrapper out(size);
@@ -49,8 +49,8 @@ TEST(UDFDefinition, no_args) {
 
 TEST(UDFDefinition, two_args) {
   auto ctx = FunctionContext(nullptr);
-  ScalarUDFDefinition def;
-  EXPECT_OK(def.Init<AddUDF>("add"));
+  ScalarUDFDefinition def("add");
+  EXPECT_OK(def.Init<AddUDF>());
 
   types::Int64ValueColumnWrapper v1({1, 2, 3});
   types::Int64ValueColumnWrapper v2({3, 4, 5});
@@ -65,8 +65,8 @@ TEST(UDFDefinition, two_args) {
 
 TEST(UDFDefinition, str_args) {
   auto ctx = FunctionContext(nullptr);
-  ScalarUDFDefinition def;
-  EXPECT_OK(def.Init<SubStrUDF>("substr"));
+  ScalarUDFDefinition def("substr");
+  EXPECT_OK(def.Init<SubStrUDF>());
 
   types::StringValueColumnWrapper v1({"abcd", "defg", "hello"});
 
@@ -81,7 +81,6 @@ TEST(UDFDefinition, str_args) {
 
 TEST(UDFDefinition, arrow_write) {
   auto ctx = FunctionContext(nullptr);
-  ScalarUDFDefinition def;
   std::vector<types::Int64Value> v1 = {1, 2, 3};
   std::vector<types::Int64Value> v2 = {3, 4, 5};
 
@@ -116,8 +115,8 @@ class MinSumUDA : public udf::UDA {
 
 TEST(UDADefinition, without_merge) {
   auto ctx = FunctionContext(nullptr);
-  UDADefinition def;
-  EXPECT_OK(def.Init<MinSumUDA>("minsum"));
+  UDADefinition def("minsum");
+  EXPECT_OK(def.Init<MinSumUDA>());
 
   types::Int64ValueColumnWrapper v1({1, 2, 3});
   types::Int64ValueColumnWrapper v2({5, 1, 3});
@@ -131,8 +130,8 @@ TEST(UDADefinition, without_merge) {
 
 TEST(UDADefinition, with_merge) {
   auto ctx = FunctionContext(nullptr);
-  UDADefinition def;
-  EXPECT_OK(def.Init<MinSumUDA>("minsum"));
+  UDADefinition def("minsum");
+  EXPECT_OK(def.Init<MinSumUDA>());
 
   types::Int64ValueColumnWrapper v1({1, 2, 3});
   types::Int64ValueColumnWrapper v2({5, 1, 3});
@@ -151,8 +150,8 @@ TEST(UDADefinition, with_merge) {
 
 TEST(UDADefinition, arrow_output) {
   auto ctx = FunctionContext(nullptr);
-  UDADefinition def;
-  EXPECT_OK(def.Init<MinSumUDA>("minsum"));
+  UDADefinition def("minsum");
+  EXPECT_OK(def.Init<MinSumUDA>());
 
   types::Int64ValueColumnWrapper v1({1, 2, 3});
   types::Int64ValueColumnWrapper v2({5, 1, 3});

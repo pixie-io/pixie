@@ -13,19 +13,20 @@ namespace pl {
 namespace carnot {
 namespace udf {
 
+enum class UDFDefinitionKind { kScalarUDF = 1, kUDA, kUDTF };
+
 /**
  * Store definition of a UDF. This is meant ot be stored in the UDF registry and
  * includes things like execution wrappers.
  */
 class UDFDefinition {
  public:
-  UDFDefinition() = default;
+  UDFDefinition() = delete;
+  UDFDefinition(UDFDefinitionKind kind, std::string_view name)
+      : kind_(kind), name_(std::string(name)) {}
+
   virtual ~UDFDefinition() = default;
 
-  Status Init(const std::string& name) {
-    name_ = name;
-    return Status::OK();
-  }
   /**
    * @return The overload dependent arguments that the registry uses to resolves UDFs.
    */
@@ -37,13 +38,16 @@ class UDFDefinition {
    */
   virtual UDFDefinition* GetDefinition() { return this; }
 
+  UDFDefinitionKind kind() const { return kind_; }
+
   /**
    * Access internal variable name.
    * @return Returns the name of the UDF.
    */
-  std::string name() { return name_; }
+  const std::string& name() const { return name_; }
 
  private:
+  UDFDefinitionKind kind_;
   std::string name_;
 };
 
@@ -53,8 +57,11 @@ class UDFDefinition {
  */
 class ScalarUDFDefinition : public UDFDefinition {
  public:
-  ScalarUDFDefinition() = default;
+  ScalarUDFDefinition() = delete;
   ~ScalarUDFDefinition() override = default;
+
+  explicit ScalarUDFDefinition(std::string_view name)
+      : UDFDefinition(UDFDefinitionKind::kScalarUDF, name) {}
 
   /**
    * Init a UDF definition with the given name and type.
@@ -64,8 +71,7 @@ class ScalarUDFDefinition : public UDFDefinition {
    * @return Status success/error.
    */
   template <typename TUDF>
-  Status Init(const std::string& name) {
-    PL_RETURN_IF_ERROR(UDFDefinition::Init(name));
+  Status Init() {
     exec_return_type_ = ScalarUDFTraits<TUDF>::ReturnType();
     auto exec_arguments_array = ScalarUDFTraits<TUDF>::ExecArguments();
     exec_arguments_ = {begin(exec_arguments_array), end(exec_arguments_array)};
@@ -124,8 +130,11 @@ class ScalarUDFDefinition : public UDFDefinition {
  */
 class UDADefinition : public UDFDefinition {
  public:
-  UDADefinition() = default;
+  UDADefinition() = delete;
   ~UDADefinition() override = default;
+
+  explicit UDADefinition(std::string_view name) : UDFDefinition(UDFDefinitionKind::kUDA, name) {}
+
   /**
    * Init a UDA definition with the given name and type.
    *
@@ -134,8 +143,7 @@ class UDADefinition : public UDFDefinition {
    * @return Status success/error.
    */
   template <typename T>
-  Status Init(const std::string& name) {
-    PL_RETURN_IF_ERROR(UDFDefinition::Init(name));
+  Status Init() {
     auto update_arguments_array = UDATraits<T>::UpdateArgumentTypes();
     update_arguments_ = {update_arguments_array.begin(), update_arguments_array.end()};
     finalize_return_type_ = UDATraits<T>::FinalizeReturnType();
@@ -153,7 +161,7 @@ class UDADefinition : public UDFDefinition {
 
   const std::vector<types::DataType>& RegistryArgTypes() override { return update_arguments_; }
 
-  const std::vector<types::DataType>& update_arguments() { return update_arguments_; }
+  const std::vector<types::DataType>& update_arguments() const { return update_arguments_; }
   types::DataType finalize_return_type() const { return finalize_return_type_; }
 
   std::unique_ptr<UDA> Make() { return make_fn_(); }
@@ -197,8 +205,11 @@ class UDADefinition : public UDFDefinition {
 
 class UDTFDefinition : public UDFDefinition {
  public:
-  UDTFDefinition() = default;
+  UDTFDefinition() = delete;
   ~UDTFDefinition() override = default;
+
+  explicit UDTFDefinition(std::string_view name) : UDFDefinition(UDFDefinitionKind::kUDTF, name) {}
+
   /**
    * Init a UDTF definition with the given name and type.
    *
@@ -207,9 +218,9 @@ class UDTFDefinition : public UDFDefinition {
    * @return Status success/error.
    */
   template <typename T>
-  Status Init(const std::string& name) {
+  Status Init() {
     auto factory = std::make_unique<GenericUDTFFactory<T>>();
-    return Init<T>(std::move(factory), name);
+    return Init<T>(std::move(factory));
   }
 
   /**
@@ -220,13 +231,12 @@ class UDTFDefinition : public UDFDefinition {
    * @return Status
    */
   template <typename T>
-  Status Init(std::unique_ptr<UDTFFactory> factory, const std::string& name) {
+  Status Init(std::unique_ptr<UDTFFactory> factory) {
     factory_ = std::move(factory);
     // Check to make sure it's a valid UDTF.
     UDTFChecker<T> checker;
     PL_UNUSED(checker);
 
-    PL_RETURN_IF_ERROR(UDFDefinition::Init(name));
     exec_init_ = UDTFWrapper<T>::Init;
     exec_batch_update_ = UDTFWrapper<T>::ExecBatchUpdate;
 
@@ -260,9 +270,9 @@ class UDTFDefinition : public UDFDefinition {
     return exec_batch_update_(udtf, ctx, max_gen_records, outputs);
   }
 
-  const std::vector<UDTFArg>& init_arguments() { return init_arguments_; }
-  const std::vector<ColInfo>& output_relation() { return output_relation_; }
-  udfspb::UDTFSourceExecutor executor() { return executor_; }
+  const std::vector<UDTFArg>& init_arguments() const { return init_arguments_; }
+  const std::vector<ColInfo>& output_relation() const { return output_relation_; }
+  udfspb::UDTFSourceExecutor executor() const { return executor_; }
 
  private:
   std::unique_ptr<UDTFFactory> factory_;

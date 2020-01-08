@@ -379,8 +379,6 @@ class PodNameToServiceIDUDF : public ScalarUDF {
   }
 };
 
-void RegisterMetadataOpsOrDie(pl::carnot::udf::ScalarUDFRegistry* registry);
-
 class UPIDToStringUDF : public ScalarUDF {
  public:
   types::StringValue Exec(FunctionContext*, types::UInt128Value upid_value) {
@@ -467,6 +465,8 @@ class UPIDToCmdLineUDF : public ScalarUDF {
     return pid_info->cmdline();
   }
 };
+
+void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry);
 
 }  // namespace metadata
 }  // namespace funcs

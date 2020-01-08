@@ -165,12 +165,9 @@ agg_op {
   value_names: "value1"
 })";
 
-std::unique_ptr<ExecState> MakeTestExecState(udf::ScalarUDFRegistry* udf_registry,
-                                             udf::UDARegistry* uda_registry,
-                                             udf::UDTFRegistry* udtf_registry) {
+std::unique_ptr<ExecState> MakeTestExecState(udf::Registry* registry) {
   auto table_store = std::make_shared<table_store::TableStore>();
-  return std::make_unique<ExecState>(udf_registry, uda_registry, udtf_registry, table_store,
-                                     MockKelvinStubGenerator, sole::uuid4());
+  return std::make_unique<ExecState>(registry, table_store, MockKelvinStubGenerator, sole::uuid4());
 }
 
 std::unique_ptr<plan::Operator> PlanNodeFromPbtxt(const std::string& pbtxt) {
@@ -182,21 +179,17 @@ std::unique_ptr<plan::Operator> PlanNodeFromPbtxt(const std::string& pbtxt) {
 class AggNodeTest : public ::testing::Test {
  public:
   AggNodeTest() {
-    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test");
-    uda_registry_ = std::make_unique<udf::UDARegistry>("test_uda");
-    udtf_registry_ = std::make_unique<udf::UDTFRegistry>("test_udtf");
-    EXPECT_TRUE(uda_registry_->Register<MinSumUDA>("minsum").ok());
+    func_registry_ = std::make_unique<udf::Registry>("test");
+    EXPECT_TRUE(func_registry_->Register<MinSumUDA>("minsum").ok());
 
-    exec_state_ = MakeTestExecState(udf_registry_.get(), uda_registry_.get(), udtf_registry_.get());
+    exec_state_ = MakeTestExecState(func_registry_.get());
     EXPECT_OK(exec_state_->AddUDA(0, "minsum",
                                   std::vector<types::DataType>({types::INT64, types::INT64})));
   }
 
  protected:
   std::unique_ptr<ExecState> exec_state_;
-  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
-  std::unique_ptr<udf::UDARegistry> uda_registry_;
-  std::unique_ptr<udf::UDTFRegistry> udtf_registry_;
+  std::unique_ptr<udf::Registry> func_registry_;
 };
 
 TEST_F(AggNodeTest, no_groups_blocking) {

@@ -6,8 +6,11 @@ namespace pl {
 namespace carnot {
 namespace builtins {
 
-void RegisterStringOpsOrDie(udf::ScalarUDFRegistry* registry) {
+void RegisterStringOpsOrDie(udf::Registry* registry) {
   CHECK(registry != nullptr);
+  /*****************************************
+   * Scalar UDFs.
+   *****************************************/
   // String contains.
   registry->RegisterOrDie<ContainsUDF>("pl.contains");
   registry->RegisterOrDie<LengthUDF>("pl.length");
@@ -16,6 +19,10 @@ void RegisterStringOpsOrDie(udf::ScalarUDFRegistry* registry) {
   registry->RegisterOrDie<ToLowerUDF>("pl.tolower");
   registry->RegisterOrDie<ToUpperUDF>("pl.toupper");
   registry->RegisterOrDie<TrimUDF>("pl.trim");
+
+  /*****************************************
+   * Aggregate UDFs.
+   *****************************************/
 }
 
 }  // namespace builtins

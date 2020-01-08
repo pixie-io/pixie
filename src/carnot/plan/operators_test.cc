@@ -32,14 +32,12 @@ class DummyTestUDA : public udf::UDA {
 class OperatorTest : public ::testing::Test {
  public:
   OperatorTest() {
-    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test");
-    uda_registry_ = std::make_unique<udf::UDARegistry>("testUDA");
-    udtf_registry_ = std::make_unique<udf::UDTFRegistry>("testUDTF");
-    state_ =
-        std::make_unique<PlanState>(udf_registry_.get(), uda_registry_.get(), udtf_registry_.get());
+    func_registry_ = std::make_unique<udf::Registry>("test");
+    state_ = std::make_unique<PlanState>(func_registry_.get());
 
-    state_->udf_registry()->RegisterOrDie<DummyTestUDF>("testUdf");
-    state_->uda_registry()->RegisterOrDie<DummyTestUDA>("testUda");
+    state_->func_registry()->RegisterOrDie<DummyTestUDF>("testUdf");
+    state_->func_registry()->RegisterOrDie<DummyTestUDA>("testUda");
+
     Relation rel0;
     rel0.AddColumn(types::INT64, "col0");
     rel0.AddColumn(types::FLOAT64, "col1");
@@ -76,9 +74,7 @@ class OperatorTest : public ::testing::Test {
  protected:
   Schema schema_;
   std::unique_ptr<PlanState> state_;
-  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
-  std::unique_ptr<udf::UDARegistry> uda_registry_;
-  std::unique_ptr<udf::UDTFRegistry> udtf_registry_;
+  std::unique_ptr<udf::Registry> func_registry_;
 };
 
 TEST_F(OperatorTest, from_proto_map) {

@@ -27,13 +27,10 @@ using ::testing::_;
 class MemorySourceNodeTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
-    uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
-    udtf_registry_ = std::make_unique<udf::UDTFRegistry>("test_registry");
+    func_registry_ = std::make_unique<udf::Registry>("test_registry");
     auto table_store = std::make_shared<table_store::TableStore>();
-    exec_state_ =
-        std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), udtf_registry_.get(),
-                                    table_store, MockKelvinStubGenerator, sole::uuid4());
+    exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
+                                              MockKelvinStubGenerator, sole::uuid4());
 
     table_store::schema::Relation rel({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                       {"col1", "time_"});
@@ -55,9 +52,7 @@ class MemorySourceNodeTest : public ::testing::Test {
   }
 
   std::unique_ptr<ExecState> exec_state_;
-  std::unique_ptr<udf::UDARegistry> uda_registry_;
-  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
-  std::unique_ptr<udf::UDTFRegistry> udtf_registry_;
+  std::unique_ptr<udf::Registry> func_registry_;
 };
 
 TEST_F(MemorySourceNodeTest, basic) {
@@ -177,13 +172,10 @@ TEST_F(MemorySourceNodeTest, all_range) {
 class MemorySourceNodeTabletTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
-    uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
-    udtf_registry_ = std::make_unique<udf::UDTFRegistry>("test_registry");
+    func_registry_ = std::make_unique<udf::Registry>("test_registry");
     auto table_store = std::make_shared<table_store::TableStore>();
-    exec_state_ =
-        std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), udtf_registry_.get(),
-                                    table_store, MockKelvinStubGenerator, sole::uuid4());
+    exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
+                                              MockKelvinStubGenerator, sole::uuid4());
 
     rel = table_store::schema::Relation({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                         {"col1", "time_"});
@@ -211,9 +203,7 @@ class MemorySourceNodeTabletTest : public ::testing::Test {
 
   table_store::schema::Relation rel;
   std::unique_ptr<ExecState> exec_state_;
-  std::unique_ptr<udf::UDARegistry> uda_registry_;
-  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
-  std::unique_ptr<udf::UDTFRegistry> udtf_registry_;
+  std::unique_ptr<udf::Registry> func_registry_;
   std::string table_name_ = "cpu";
   uint64_t table_id_ = 987;
   types::TabletID tablet_id_ = "123";
