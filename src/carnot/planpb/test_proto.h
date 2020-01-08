@@ -155,7 +155,7 @@ column_names: "usage"
 const char* kBlockingAggOperator1 = R"(
 windowed: false
 values {
-  name: "testUdf"
+  name: "testUda"
   args {
     constant {
       data_type: BOOLEAN,
@@ -164,7 +164,7 @@ values {
   }
 }
 groups {
-  node: 1
+  node: 0
   index: 1
 }
 group_names: "group1"

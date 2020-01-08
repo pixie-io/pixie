@@ -21,6 +21,14 @@ class DummyTestUDF : public udf::ScalarUDF {
   types::Int64Value Exec(udf::FunctionContext*, types::BoolValue, types::Float64Value) { return 0; }
 };
 
+class DummyTestUDA : public udf::UDA {
+ public:
+  Status Init(udf::FunctionContext*) { return Status::OK(); }
+  void Update(udf::FunctionContext*, types::BoolValue) {}
+  void Merge(udf::FunctionContext*, const DummyTestUDA&) {}
+  types::Int64Value Finalize(udf::FunctionContext*) { return 0; }
+};
+
 class OperatorTest : public ::testing::Test {
  public:
   OperatorTest() {
@@ -31,6 +39,7 @@ class OperatorTest : public ::testing::Test {
         std::make_unique<PlanState>(udf_registry_.get(), uda_registry_.get(), udtf_registry_.get());
 
     state_->udf_registry()->RegisterOrDie<DummyTestUDF>("testUdf");
+    state_->uda_registry()->RegisterOrDie<DummyTestUDA>("testUda");
     Relation rel0;
     rel0.AddColumn(types::INT64, "col0");
     rel0.AddColumn(types::FLOAT64, "col1");
@@ -230,10 +239,11 @@ TEST_F(OperatorTest, output_relation_source) {
   auto src_pb = planpb::testutils::CreateTestSource1PB();
   auto src_op = Operator::FromProto(src_pb, 1);
 
-  auto rel = src_op->OutputRelation(schema_, *state_, std::vector<int64_t>());
-  EXPECT_EQ(1, rel.ValueOrDie().NumColumns());
-  EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(0));
-  EXPECT_EQ("usage", rel.ValueOrDie().GetColumnName(0));
+  auto rel = src_op->OutputRelation(schema_, *state_, std::vector<int64_t>()).ConsumeValueOrDie();
+
+  Relation expected_relation;
+  expected_relation.AddColumn(types::DataType::FLOAT64, "usage");
+  EXPECT_EQ(expected_relation, rel);
 }
 
 TEST_F(OperatorTest, output_relation_source_inputs) {
@@ -255,9 +265,12 @@ TEST_F(OperatorTest, output_relation_sink) {
 TEST_F(OperatorTest, output_relation_map) {
   auto map_pb = planpb::testutils::CreateTestMap1PB();
   auto map_op = Operator::FromProto(map_pb, 1);
-  auto rel = map_op->OutputRelation(schema_, *state_, std::vector<int64_t>({1}));
-  EXPECT_EQ(1, rel.ValueOrDie().NumColumns());
-  EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(0));
+  auto rel =
+      map_op->OutputRelation(schema_, *state_, std::vector<int64_t>({1})).ConsumeValueOrDie();
+
+  Relation expected_relation;
+  expected_relation.AddColumn(types::DataType::INT64, "col1");
+  EXPECT_EQ(expected_relation, rel);
 }
 
 TEST_F(OperatorTest, output_relation_map_no_input) {
@@ -292,36 +305,54 @@ TEST_F(OperatorTest, output_relation_blocking_agg_missing_rel) {
   EXPECT_EQ(rel.msg(), "Missing relation (10) for input of BlockingAggregateOperator");
 }
 
+TEST_F(OperatorTest, output_relation_agg) {
+  auto agg_pb = planpb::testutils::CreateTestBlockingAgg1PB();
+  auto agg_op = Operator::FromProto(agg_pb, 1);
+
+  auto rel =
+      agg_op->OutputRelation(schema_, *state_, std::vector<int64_t>({0})).ConsumeValueOrDie();
+
+  Relation expected_relation;
+  expected_relation.AddColumn(types::DataType::FLOAT64, "group1");
+  expected_relation.AddColumn(types::DataType::INT64, "value1");
+  EXPECT_EQ(expected_relation, rel);
+}
+
 TEST_F(OperatorTest, output_relation_filter) {
   auto filter_pb = planpb::testutils::CreateTestFilter1PB();
   auto filter_op = Operator::FromProto(filter_pb, 1);
 
-  auto rel = filter_op->OutputRelation(schema_, *state_, std::vector<int64_t>({0}));
-  EXPECT_EQ(2, rel.ValueOrDie().NumColumns());
-  EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(0));
-  EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(1));
+  auto rel =
+      filter_op->OutputRelation(schema_, *state_, std::vector<int64_t>({0})).ConsumeValueOrDie();
+
+  Relation expected_relation;
+  expected_relation.AddColumn(types::DataType::INT64, "col0");
+  expected_relation.AddColumn(types::DataType::FLOAT64, "col1");
+  EXPECT_EQ(expected_relation, rel);
 }
 
 TEST_F(OperatorTest, output_relation_limit) {
   auto limit_pb = planpb::testutils::CreateTestLimit1PB();
   auto limit_op = Operator::FromProto(limit_pb, 1);
 
-  auto rel = limit_op->OutputRelation(schema_, *state_, std::vector<int64_t>({0}));
-  EXPECT_EQ(2, rel.ValueOrDie().NumColumns());
-  EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(0));
-  EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(1));
+  auto rel =
+      limit_op->OutputRelation(schema_, *state_, std::vector<int64_t>({0})).ConsumeValueOrDie();
+  Relation expected_relation;
+  expected_relation.AddColumn(types::DataType::INT64, "col0");
+  expected_relation.AddColumn(types::DataType::FLOAT64, "col1");
+  EXPECT_EQ(expected_relation, rel);
 }
 
 TEST_F(OperatorTest, output_relation_union) {
   auto union_pb = planpb::testutils::CreateTestUnionOrderedPB();
   auto union_op = Operator::FromProto(union_pb, 4);
 
-  auto rel = union_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 3}));
-  EXPECT_EQ(2, rel.ValueOrDie().NumColumns());
-  EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(0));
-  EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(1));
-  EXPECT_EQ("abc", rel.ValueOrDie().GetColumnName(0));
-  EXPECT_EQ("time_", rel.ValueOrDie().GetColumnName(1));
+  auto rel =
+      union_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 3})).ConsumeValueOrDie();
+  Relation expected_relation;
+  expected_relation.AddColumn(types::DataType::FLOAT64, "abc");
+  expected_relation.AddColumn(types::DataType::INT64, "time_");
+  EXPECT_EQ(expected_relation, rel);
 }
 
 TEST_F(OperatorTest, output_relation_union_mismatched) {

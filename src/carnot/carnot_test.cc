@@ -524,7 +524,7 @@ INSTANTIATE_TEST_SUITE_P(CarnotRangeVariants, CarnotRangeTest,
 TEST_F(CarnotTest, group_by_all_agg_test) {
   auto agg_dict =
       absl::StrJoin({"mean=('col2', pl.mean)", "count=('col3', pl.count)", "min=('col2', pl.min)",
-                     "max=('col3', pl.max)", "sum=('col3', pl.sum)"},
+                     "max=('col3', pl.max)", "sum=('col3', pl.sum)", "sum2=('col3', pl.sum)"},
                     ",");
   auto query = absl::StrJoin(
       {
@@ -540,11 +540,11 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
   ASSERT_OK(s);
   auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
   EXPECT_EQ(1, output_table->NumBatches());
-  EXPECT_EQ(5, output_table->NumColumns());
+  EXPECT_EQ(6, output_table->NumColumns());
 
   auto rb1 =
       output_table
-          ->GetRowBatch(0, std::vector<int64_t>({0, 1, 2, 3, 4}), arrow::default_memory_pool())
+          ->GetRowBatch(0, std::vector<int64_t>({0, 1, 2, 3, 4, 5}), arrow::default_memory_pool())
           .ConsumeValueOrDie();
 
   auto test_col2 = CarnotTestUtils::big_test_col2;
@@ -583,6 +583,11 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
                      arrow::default_memory_pool())));
 
   EXPECT_TRUE(rb1->ColumnAt(4)->Equals(
+      types::ToArrow(std::vector<types::Int64Value>({types::Int64Value(col3_expected_sum)}),
+                     arrow::default_memory_pool())));
+
+  // Contents of column 4 and column 5 are the same.
+  EXPECT_TRUE(rb1->ColumnAt(5)->Equals(
       types::ToArrow(std::vector<types::Int64Value>({types::Int64Value(col3_expected_sum)}),
                      arrow::default_memory_pool())));
 }

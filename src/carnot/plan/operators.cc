@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -153,7 +154,18 @@ StatusOr<table_store::schema::Relation> MapOperator::OutputRelation(
  * Aggregate Operator Implementation.
  */
 
-std::string AggregateOperator::DebugString() const { return "Operator: Aggregate"; }
+std::string AggregateOperator::DebugString() const {
+  const auto& v = values();
+  std::vector<std::string> value_names(v.size());
+  std::transform(begin(v), end(v), begin(value_names), [](auto val) { return val->name(); });
+
+  const auto& g = groups();
+  std::vector<std::string> group_names(g.size());
+  std::transform(begin(g), end(g), begin(group_names), [](auto val) { return val.name; });
+
+  return absl::Substitute("Op:Aggregate(values=($0), groups=($1))",
+                          absl::StrJoin(value_names, ", "), absl::StrJoin(group_names, ", "));
+}
 
 Status AggregateOperator::Init(const planpb::AggregateOperator& pb) {
   pb_ = pb;
@@ -208,10 +220,10 @@ StatusOr<table_store::schema::Relation> AggregateOperator::OutputRelation(
     output_relation.AddColumn(input_relation.GetColumnType(col_idx), pb_.group_names(idx));
   }
 
-  for (const auto& value : values_) {
+  for (const auto& [i, value] : Enumerate(values_)) {
     auto s = value->OutputDataType(state, schema);
     PL_RETURN_IF_ERROR(s);
-    output_relation.AddColumn(s.ConsumeValueOrDie(), value->name());
+    output_relation.AddColumn(s.ConsumeValueOrDie(), pb_.value_names(i));
   }
   return output_relation;
 }
