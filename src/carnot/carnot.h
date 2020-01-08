@@ -35,9 +35,16 @@ struct CarnotQueryResult {
 class Carnot : public NotCopyable {
  public:
   static StatusOr<std::unique_ptr<Carnot>> Create(
+      std::unique_ptr<udf::Registry> func_registry,
+      std::shared_ptr<table_store::TableStore> table_store,
+      const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
+      std::shared_ptr<grpc::ServerCredentials> grpc_server_creds);
+
+  static StatusOr<std::unique_ptr<Carnot>> Create(
       std::shared_ptr<table_store::TableStore> table_store,
       const exec::KelvinStubGenerator& stub_generator, int grpc_server_port = 0,
       std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
+
   using AgentMetadataCallbackFunc = std::function<std::shared_ptr<const md::AgentMetadataState>()>;
 
   virtual ~Carnot() = default;

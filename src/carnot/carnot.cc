@@ -50,6 +50,11 @@ class CarnotImpl final : public Carnot {
               const exec::KelvinStubGenerator& stub_generator, int grpc_server_port = 0,
               std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
 
+  Status Init(std::unique_ptr<udf::Registry> func_registry,
+              std::shared_ptr<table_store::TableStore> table_store,
+              const exec::KelvinStubGenerator& stub_generator, int grpc_server_port = 0,
+              std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
+
   StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query, const sole::uuid& query_id,
                                            types::Time64NSValue time_now) override;
 
@@ -105,7 +110,8 @@ class CarnotImpl final : public Carnot {
   int grpc_server_port_;
 };
 
-Status CarnotImpl::Init(std::shared_ptr<table_store::TableStore> table_store,
+Status CarnotImpl::Init(std::unique_ptr<udf::Registry> func_registry,
+                        std::shared_ptr<table_store::TableStore> table_store,
                         const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
                         std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
   grpc_server_creds_ = grpc_server_creds;
@@ -116,7 +122,8 @@ Status CarnotImpl::Init(std::shared_ptr<table_store::TableStore> table_store,
   }
 
   PL_ASSIGN_OR_RETURN(engine_state_,
-                      EngineState::CreateDefault(table_store, stub_generator, grpc_router_.get()));
+                      EngineState::CreateDefault(std::move(func_registry), table_store,
+                                                 stub_generator, grpc_router_.get()));
   return Status::OK();
 }
 
@@ -320,13 +327,26 @@ CarnotImpl::~CarnotImpl() {
 }
 
 StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
+    std::unique_ptr<udf::Registry> func_registry,
     std::shared_ptr<table_store::TableStore> table_store,
     const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
     std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
   std::unique_ptr<Carnot> carnot_impl(new CarnotImpl());
   PL_RETURN_IF_ERROR(static_cast<CarnotImpl*>(carnot_impl.get())
-                         ->Init(table_store, stub_generator, grpc_server_port, grpc_server_creds));
+                         ->Init(std::move(func_registry), table_store, stub_generator,
+                                grpc_server_port, grpc_server_creds));
   return carnot_impl;
+}
+
+StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
+    std::shared_ptr<table_store::TableStore> table_store,
+    const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
+    std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
+  auto func_registry = std::make_unique<pl::carnot::udf::Registry>("default_registry");
+  pl::carnot::funcs::RegisterFuncsOrDie(func_registry.get());
+
+  return Create(std::move(func_registry), table_store, stub_generator, grpc_server_port,
+                grpc_server_creds);
 }
 
 }  // namespace carnot

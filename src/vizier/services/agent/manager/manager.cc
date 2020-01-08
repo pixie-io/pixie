@@ -8,6 +8,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/perf/perf.h"
+#include "src/vizier/funcs/funcs.h"
 #include "src/vizier/services/agent/manager/exec.h"
 #include "src/vizier/services/agent/manager/heartbeat.h"
 #include "src/vizier/services/agent/manager/ssl.h"
@@ -45,20 +46,25 @@ Manager::Manager(sole::uuid agent_id, int grpc_server_port,
       api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
       nats_connector_(std::move(nats_connector)),
-      table_store_(std::make_shared<table_store::TableStore>()),
-      // TODO(zasgar/nserrino): abstract away the stub generator.
-      carnot_(pl::carnot::Carnot::Create(
-                  table_store_,
-                  [&](const std::string& remote_addr)
-                      -> std::unique_ptr<pl::carnotpb::KelvinService::StubInterface> {
-                    grpc::ChannelArguments args;
-                    args.SetSslTargetNameOverride("kelvin.pl.svc");
+      table_store_(std::make_shared<table_store::TableStore>()) {
+  // Register Vizier specific and carnot builtin functions.
+  auto func_registry = std::make_unique<pl::carnot::udf::Registry>("vizier_func_registry");
+  ::pl::vizier::funcs::RegisterFuncsOrDie(func_registry.get());
 
-                    auto chan = grpc::CreateCustomChannel(remote_addr, grpc_channel_creds_, args);
-                    return pl::carnotpb::KelvinService::NewStub(chan);
-                  },
-                  grpc_server_port, SSL::DefaultGRPCServerCreds())
-                  .ConsumeValueOrDie()) {
+  // TODO(zasgar/nserrino): abstract away the stub generator.
+  carnot_ = pl::carnot::Carnot::Create(
+                std::move(func_registry), table_store_,
+                [&](const std::string& remote_addr)
+                    -> std::unique_ptr<pl::carnotpb::KelvinService::StubInterface> {
+                  grpc::ChannelArguments args;
+                  args.SetSslTargetNameOverride("kelvin.pl.svc");
+
+                  auto chan = grpc::CreateCustomChannel(remote_addr, grpc_channel_creds_, args);
+                  return pl::carnotpb::KelvinService::NewStub(chan);
+                },
+                grpc_server_port, SSL::DefaultGRPCServerCreds())
+                .ConsumeValueOrDie();
+
   info_.agent_id = agent_id;
   info_.capabilities = std::move(capabilities);
 }

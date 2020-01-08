@@ -6,7 +6,7 @@
 
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/exec/exec_state.h"
-#include "src/carnot/funcs/builtins/builtins.h"
+#include "src/carnot/funcs/funcs.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
@@ -37,15 +37,10 @@ class EngineState : public NotCopyable {
         grpc_router_(grpc_router) {}
 
   static StatusOr<std::unique_ptr<EngineState>> CreateDefault(
+      std::unique_ptr<udf::Registry> func_registry,
       std::shared_ptr<table_store::TableStore> table_store,
       const exec::KelvinStubGenerator& stub_generator, exec::GRPCRouter* grpc_router) {
-    // Initialize state.
-    auto func_registry = std::make_unique<udf::Registry>("default_func_registry");
-    builtins::RegisterBuiltinsOrDie(func_registry.get());
-    // TODO(zasgar) add the register call for UDTFs here.
-
     auto schema = std::make_shared<table_store::schema::Schema>();
-
     auto registry_info = std::make_unique<compiler::RegistryInfo>();
     auto udf_info = func_registry->ToProto();
     PL_RETURN_IF_ERROR(registry_info->Init(udf_info));
