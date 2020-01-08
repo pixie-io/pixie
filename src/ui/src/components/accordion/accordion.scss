@@ -1,3 +1,9 @@
+.pixie-accordion {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .pixie-accordion-toggle {
   width: 100%;
   overflow: hidden;
@@ -6,6 +12,7 @@
   text-align: start;
   background-color: inherit;
   color: inherit;
+  flex-shrink: 0;
 
   .pixie-accordion-toggle-collapse-icon {
     width: 0.75rem;
@@ -19,4 +26,9 @@
   width: 100%;
   color: inherit;
   padding-left: 2rem;
+}
+
+.pixie-accordion-collapse.show {
+  overflow-y: auto;
+  min-height: 0;
 }

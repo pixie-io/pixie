@@ -5,6 +5,7 @@
 
 .pixie-drawer-content {
   flex: 1;
+  min-height: 0;
 
   &.closed > * {
     display: none;

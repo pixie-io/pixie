@@ -41,7 +41,7 @@ export const Drawer: React.FC<React.PropsWithChildren<DrawerProps>> =
         style={styles}
       >
         <div className={`pixie-drawer-content ${opened ? 'opened' : 'closed'}`}>
-          <div>{children}</div>
+          {children}
         </div>
         <Button size='sm' className='pixie-drawer-footer-row' onClick={toggleOpened}>
           <div className='spacer' />

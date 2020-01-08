@@ -33,6 +33,7 @@ export const Accordion = (props: AccordionProps) => {
   for (const item of items) {
     children.push(
       <AccordionToggle
+        key={`toggle-${item.key}`}
         eventKey={item.key}
         name={item.name}
         onClick={React.useCallback(() => {
@@ -41,8 +42,8 @@ export const Accordion = (props: AccordionProps) => {
         active={activeKey === item.key}
       />);
     children.push(
-      <Collapse in={activeKey === item.key}>
-        <div>
+      <Collapse key={`collapse-${item.key}`} in={activeKey === item.key}>
+        <div className='pixie-accordion-collapse'>
           {
             item.children.map((child) => (
               <Button
@@ -59,7 +60,7 @@ export const Accordion = (props: AccordionProps) => {
         </div>
       </Collapse>);
   }
-  return (<>{children}</>);
+  return <div className='pixie-accordion'> {children}</div>;
 };
 
 interface AccordionItemProps {
