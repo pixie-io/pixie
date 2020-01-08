@@ -10,12 +10,6 @@
 namespace pl {
 namespace carnot {
 namespace udfexporter {
-/**
- * @brief GetUDFProto returns the proto for all of the udfs
- *
- * @return udfspb::UDFInfo: returns a proto that describes all of the functions in the repo.
- */
-udfspb::UDFInfo GetUDFProto();
 
 /**
  * @brief ExportUDFInfo() setups a RegistryInfo using all of the definitions that are
@@ -26,13 +20,6 @@ udfspb::UDFInfo GetUDFProto();
  * info.
  */
 StatusOr<std::unique_ptr<compiler::RegistryInfo>> ExportUDFInfo();
-
-/**
- * @brief Print out the udf registry in a nice format.
- *
- * @return std::string: the udf registry in a nice format.
- */
-std::string UDFProtoFormatString();
 
 }  // namespace udfexporter
 }  // namespace carnot
