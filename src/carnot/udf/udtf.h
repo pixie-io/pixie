@@ -28,7 +28,7 @@ class UDTFArg {
  public:
   constexpr UDTFArg() = delete;
   constexpr UDTFArg(std::string_view name, types::DataType type, std::string_view desc)
-      : UDTFArg(name, type, types::SemanticType::ST_UNSPECIFIED, desc) {}
+      : UDTFArg(name, type, types::SemanticType::ST_NONE, desc) {}
 
   constexpr UDTFArg(std::string_view name, types::DataType type, types::SemanticType stype,
                     std::string_view desc)
