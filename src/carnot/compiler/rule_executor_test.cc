@@ -20,8 +20,8 @@ using ::testing::_;
 
 class RuleExecutorTest : public OperatorTests {
  protected:
-  void SetUp() override {
-    info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
+  void SetUpImpl() override {
+    auto info = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
 
     auto rel_map = std::make_unique<RelationMap>();
     auto cpu_relation = table_store::schema::Relation(
@@ -30,16 +30,16 @@ class RuleExecutorTest : public OperatorTests {
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
     rel_map->emplace("cpu", cpu_relation);
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
+    compiler_state_ =
+        std::make_unique<CompilerState>(std::move(rel_map), std::move(info), time_now);
 
-    ast = MakeTestAstPtr();
-    graph = std::make_shared<IR>();
+    SetupGraph(cpu_relation);
+  }
+
+  void SetupGraph(const table_store::schema::Relation& cpu_relation) {
     mem_src =
         graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
-    SetupGraph();
-  }
-  void SetupGraph() {
     int_constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
     int_constant2 = graph->CreateNode<IntIR>(ast, 12).ValueOrDie();
     col = graph->CreateNode<ColumnIR>(ast, "count", /* parent_op_idx */ 0).ValueOrDie();
@@ -58,10 +58,7 @@ class RuleExecutorTest : public OperatorTests {
   }
 
   std::unique_ptr<CompilerState> compiler_state_;
-  std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
-  pypa::AstPtr ast;
-  std::shared_ptr<IR> graph;
   MemorySourceIR* mem_src;
   FuncIR* func;
   FuncIR* func2;

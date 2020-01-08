@@ -48,7 +48,7 @@ class LogicalPlanner : public NotCopyable {
       const table_store::schemapb::Schema& schema_pb);
 
   StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
-      const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* reg_info);
+      const distributedpb::LogicalPlannerState& logical_state);
   Status ApplyTabletizer(distributed::DistributedPlan* distributed_plan);
 
   Compiler compiler_;

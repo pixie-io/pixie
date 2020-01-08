@@ -188,12 +188,12 @@ pypa::AstPtr MakeTestAstPtr() {
  */
 StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  auto info = std::make_shared<RegistryInfo>();
+  auto info = std::make_unique<RegistryInfo>();
   udfspb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   PL_RETURN_IF_ERROR(info->Init(info_pb));
   auto compiler_state =
-      std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
+      std::make_shared<CompilerState>(std::make_unique<RelationMap>(), std::move(info), 0);
   PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state.get()));
 
   pypa::AstModulePtr ast;
@@ -684,14 +684,14 @@ class ASTVisitorTest : public OperatorTests {
     OperatorTests::SetUp();
     relation_map_ = std::make_unique<RelationMap>();
 
-    registry_info_ = std::make_shared<RegistryInfo>();
+    auto registry_info = std::make_unique<RegistryInfo>();
     udfspb::UDFInfo info_pb;
     google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-    EXPECT_OK(registry_info_->Init(info_pb));
+    EXPECT_OK(registry_info->Init(info_pb));
     // TODO(philkuz) remove this when we have a udtf registry.
     udfspb::UDTFSourceSpec spec;
     google::protobuf::TextFormat::MergeFromString(kUDTFOpenNetworkConnections, &spec);
-    registry_info_->AddUDTF(spec);
+    registry_info->AddUDTF(spec);
     // TODO(philkuz) remove end.
     table_store::schema::Relation cpu_relation;
     relation_map_ = std::make_unique<RelationMap>();
@@ -735,8 +735,8 @@ class ASTVisitorTest : public OperatorTests {
     http_events_relation.AddColumn(types::INT64, "http_resp_latency_ns");
     relation_map_->emplace("http_events", http_events_relation);
 
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(relation_map_), registry_info_.get(), time_now);
+    compiler_state_ = std::make_unique<CompilerState>(std::move(relation_map_),
+                                                      std::move(registry_info), time_now);
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {
@@ -749,7 +749,6 @@ class ASTVisitorTest : public OperatorTests {
     return ir;
   }
 
-  std::shared_ptr<RegistryInfo> registry_info_;
   std::unique_ptr<RelationMap> relation_map_;
   std::unique_ptr<CompilerState> compiler_state_;
   int64_t time_now = 1552607213931245000;

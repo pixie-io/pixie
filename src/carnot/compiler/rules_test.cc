@@ -25,10 +25,7 @@ using ::testing::UnorderedElementsAreArray;
 
 class RulesTest : public OperatorTests {
  protected:
-  void SetUpRegistryInfo() { info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie(); }
   void SetUpImpl() override {
-    SetUpRegistryInfo();
-
     auto rel_map = std::make_unique<RelationMap>();
     cpu_relation = table_store::schema::Relation(
         std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
@@ -36,7 +33,9 @@ class RulesTest : public OperatorTests {
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
     rel_map->emplace("cpu", cpu_relation);
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
+    auto info = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
+    compiler_state_ =
+        std::make_unique<CompilerState>(std::move(rel_map), std::move(info), time_now);
     md_handler = MetadataHandler::Create();
   }
   MetadataResolverIR* MakeMetadataResolver(OperatorIR* parent) {
@@ -76,7 +75,6 @@ class RulesTest : public OperatorTests {
   }
 
   std::unique_ptr<CompilerState> compiler_state_;
-  std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   table_store::schema::Relation cpu_relation;
   std::unique_ptr<MetadataHandler> md_handler;

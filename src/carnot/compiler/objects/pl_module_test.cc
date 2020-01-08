@@ -69,14 +69,13 @@ class PLModuleTest : public QLObjectTest {
 
   void SetUp() override {
     QLObjectTest::SetUp();
-    info_ = SetUpRegistryInfo();
-    compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
+    compiler_state_ =
+        std::make_unique<CompilerState>(SetUpRelMap(), SetUpRegistryInfo(), time_now_);
     module_ = PLModule::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
   }
 
   std::unique_ptr<CompilerState> compiler_state_;
   int64_t time_now_ = 1552607213931245000;
-  std::unique_ptr<RegistryInfo> info_;
   std::shared_ptr<PLModule> module_;
 };
 

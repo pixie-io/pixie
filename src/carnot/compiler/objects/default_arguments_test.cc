@@ -47,8 +47,8 @@ class DefaultArgumentsTest : public OperatorTests {
 
   void SetUp() override {
     OperatorTests::SetUp();
-    info_ = SetUpRegistryInfo();
-    compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
+    compiler_state_ =
+        std::make_unique<CompilerState>(SetUpRelMap(), SetUpRegistryInfo(), time_now_);
     module_ = PLModule::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
     ast_visitor_ = ASTVisitorImpl::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
   }
@@ -84,7 +84,6 @@ class DefaultArgumentsTest : public OperatorTests {
   std::shared_ptr<ASTVisitorImpl> ast_visitor_;
   std::unique_ptr<CompilerState> compiler_state_;
   int64_t time_now_ = 1552607213931245000;
-  std::unique_ptr<RegistryInfo> info_;
   std::shared_ptr<PLModule> module_;
 };
 

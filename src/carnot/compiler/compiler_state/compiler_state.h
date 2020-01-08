@@ -24,15 +24,16 @@ class CompilerState : public NotCopyable {
    * be constructed for every query compiled in Carnot and it will not be reused.
    */
   explicit CompilerState(std::unique_ptr<RelationMap> relation_map,
-                         compiler::RegistryInfo* registry_info, types::Time64NSValue time_now)
+                         std::unique_ptr<compiler::RegistryInfo> registry_info,
+                         types::Time64NSValue time_now)
       : relation_map_(std::move(relation_map)),
-        registry_info_(registry_info),
+        registry_info_(std::move(registry_info)),
         time_now_(time_now) {}
 
   CompilerState() = delete;
 
   RelationMap* relation_map() const { return relation_map_.get(); }
-  compiler::RegistryInfo* registry_info() const { return registry_info_; }
+  compiler::RegistryInfo* registry_info() const { return registry_info_.get(); }
   types::Time64NSValue time_now() const { return time_now_; }
 
   std::map<RegistryKey, int64_t> udf_to_id_map() const { return udf_to_id_map_; }
@@ -60,7 +61,7 @@ class CompilerState : public NotCopyable {
 
  private:
   std::unique_ptr<RelationMap> relation_map_;
-  compiler::RegistryInfo* registry_info_;
+  std::unique_ptr<compiler::RegistryInfo> registry_info_;
   types::Time64NSValue time_now_;
   // TODO(michelle): Update this map to handle init args, once we add init args to the compiler.
   std::map<RegistryKey, int64_t> udf_to_id_map_;
