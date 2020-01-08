@@ -79,6 +79,8 @@ StatusOr<IRNode*> IR::MakeNodeWithType(IRNodeType node_type, int64_t new_node_id
       return MakeNode<LimitIR>(new_node_id);
     case IRNodeType::kString:
       return MakeNode<StringIR>(new_node_id);
+    case IRNodeType::kUInt128:
+      return MakeNode<UInt128IR>(new_node_id);
     case IRNodeType::kFloat:
       return MakeNode<FloatIR>(new_node_id);
     case IRNodeType::kInt:
@@ -565,6 +567,13 @@ Status TimeIR::ToProtoImpl(planpb::ScalarValue* value) const {
   return Status::OK();
 }
 
+Status UInt128IR::ToProtoImpl(planpb::ScalarValue* value) const {
+  auto uint128pb = value->mutable_uint128_value();
+  uint128pb->set_high(absl::Uint128High64(val_));
+  uint128pb->set_low(absl::Uint128Low64(val_));
+  return Status::OK();
+}
+
 Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {
   SetColumnName(col_name);
   SetContainingOperatorParentIdx(parent_idx);
@@ -636,6 +645,18 @@ StatusOr<OperatorIR*> ColumnIR::ReferencedOperator() const {
 
 Status StringIR::Init(std::string str) {
   str_ = str;
+  return Status::OK();
+}
+
+Status UInt128IR::Init(absl::uint128 val) {
+  val_ = val;
+  return Status::OK();
+}
+
+Status UInt128IR::CopyFromNodeImpl(const IRNode* source,
+                                   absl::flat_hash_map<const IRNode*, IRNode*>*) {
+  const UInt128IR* input = static_cast<const UInt128IR*>(source);
+  val_ = input->val_;
   return Status::OK();
 }
 

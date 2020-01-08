@@ -416,6 +416,26 @@ TEST(ToProto, float_ir) {
   EXPECT_THAT(pb, EqualsProto(kFloatPbTxt));
 }
 
+const char* kUInt128PbTxt = R"proto(
+constant {
+  data_type: UINT128
+  uint128_value {
+    high: 123
+    low: 456
+  }
+})proto";
+
+TEST(ToProto, uint128_ir) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  auto data_ir = graph->CreateNode<UInt128IR>(ast, absl::MakeUint128(123, 456)).ConsumeValueOrDie();
+
+  planpb::ScalarExpression pb;
+
+  ASSERT_OK(data_ir->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kUInt128PbTxt));
+}
+
 const char* kTimePbTxt = R"proto(
 constant {
   data_type: TIME64NS
@@ -1461,6 +1481,13 @@ TEST_F(OperatorTests, UDTFMultipleOutOfOrderArgs) {
 
   EXPECT_TRUE(udtf->IsRelationInit());
   EXPECT_EQ(udtf->relation(), relation);
+}
+
+TEST_F(OperatorTests, uint128_ir) {
+  auto uint128_or_s = graph->CreateNode<UInt128IR>(ast, absl::MakeUint128(123, 456));
+  ASSERT_OK(uint128_or_s);
+  auto uint128ir = uint128_or_s.ConsumeValueOrDie();
+  EXPECT_EQ(uint128ir->val(), absl::MakeUint128(123, 456));
 }
 
 }  // namespace compiler

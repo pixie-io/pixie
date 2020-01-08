@@ -56,6 +56,7 @@ enum class IRNodeType {
   kFilter,
   kLimit,
   kString,
+  kUInt128,
   kFloat,
   kInt,
   kBool,
@@ -86,6 +87,7 @@ static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "Filter",
                                                  "Limit",
                                                  "String",
+                                                 "UInt128Value",
                                                  "Float",
                                                  "Int",
                                                  "Bool",
@@ -784,6 +786,28 @@ class StringIR : public DataIR {
 
  private:
   std::string str_;
+};
+
+class UInt128IR : public DataIR {
+ public:
+  UInt128IR() = delete;
+  explicit UInt128IR(int64_t id) : DataIR(id, IRNodeType::kUInt128, types::DataType::UINT128) {}
+
+  /**
+   * @brief Inits the UInt128 from a string.
+   *
+   * @param val
+   * @return Status
+   */
+  Status Init(absl::uint128 val);
+  absl::uint128 val() const { return val_; }
+  Status CopyFromNodeImpl(const IRNode* node,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+
+  Status ToProtoImpl(planpb::ScalarValue* value) const override;
+
+ private:
+  absl::uint128 val_;
 };
 
 /**
