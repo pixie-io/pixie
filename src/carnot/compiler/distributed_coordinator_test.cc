@@ -287,7 +287,7 @@ constexpr char kUDTFOpenConnsPb[] = R"proto(
 name: "OpenNetworkConnections"
 args {
   name: "upid"
-  arg_type: STRING
+  arg_type: UINT128
   semantic_type: ST_UPID
 }
 executor: UDTF_SUBSET_PEM
@@ -317,7 +317,8 @@ TEST_F(CoordinatorTest, udtf_run_on_som_pems) {
   std::string upid_str =
       sole::rebuild(absl::Uint128High64(upid.value()), absl::Uint128Low64(upid.value())).str();
 
-  auto udtf = MakeUDTFSource(udtf_spec, {"upid"}, {MakeString(upid_str)});
+  UInt128IR* uint128 = graph->CreateNode<UInt128IR>(ast, upid_str).ConsumeValueOrDie();
+  auto udtf = MakeUDTFSource(udtf_spec, {"upid"}, {uint128});
   auto mem_sink = MakeMemSink(udtf, "out");
 
   auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);

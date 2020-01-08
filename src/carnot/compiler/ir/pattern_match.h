@@ -146,6 +146,9 @@ inline ClassMatch<IRNodeType::kGroupBy> GroupBy() { return ClassMatch<IRNodeType
 inline ClassMatch<IRNodeType::kUDTFSource> UDTFSource() {
   return ClassMatch<IRNodeType::kUDTFSource>();
 }
+inline ClassMatch<IRNodeType::kUInt128> UInt128Value() {
+  return ClassMatch<IRNodeType::kUInt128>();
+}
 
 /* Match GRPCSink with a specific source ID */
 struct GRPCSinkWithSourceID : public ParentMatch {

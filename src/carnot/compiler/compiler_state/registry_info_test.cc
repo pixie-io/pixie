@@ -35,7 +35,7 @@ udtfs {
   name: "OpenNetworkConnections"
   args {
     name: "upid"
-    arg_type: STRING
+    arg_type: UINT128
     semantic_type: ST_UPID
   }
   executor: UDTF_SUBSET_PEM

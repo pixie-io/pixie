@@ -181,19 +181,18 @@ bool CoordinatorImpl::UDTFMatchesFilters(UDTFSourceIR* source,
       }
       case types::ST_UPID: {
         // These conditions should already be checked in pl_module.
-        DCHECK_EQ(arg.arg_type(), types::STRING);
-        DCHECK_EQ(data->type(), IRNodeType::kString);
-        StringIR* str = static_cast<StringIR*>(data);
+        DCHECK_EQ(arg.arg_type(), types::UINT128);
+        DCHECK_EQ(data->type(), IRNodeType::kUInt128);
+        UInt128IR* upid_uint128 = static_cast<UInt128IR*>(data);
         // Convert string to UPID.
-        auto upid_or_s = md::UPID::ParseFromUUIDString(str->str());
         // Get the ASID out of the UPID and compare it to the ASID of the Agent.
-        md::UPID upid = upid_or_s.ConsumeValueOrDie();
-        if (upid.asid() != carnot_info.asid()) {
+        if (md::UPID(upid_uint128->val()).asid() != carnot_info.asid()) {
           return false;
         }
         break;
       }
       case types::ST_AGENT_UID: {
+        // TODO(philkuz) need a test for this.
         DCHECK_EQ(arg.arg_type(), types::STRING);
         DCHECK_EQ(data->type(), IRNodeType::kString);
         StringIR* str = static_cast<StringIR*>(data);

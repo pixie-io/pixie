@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 #include <pypa/ast/ast.hh>
 
+#include <sole.hpp>
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/metadata_handler.h"
@@ -1368,7 +1369,7 @@ constexpr char kOpenNetworkConnsUDTFSourceSpecPb[] = R"proto(
 name: "OpenNetworkConnections"
 args {
   name: "upid"
-  arg_type: STRING
+  arg_type: UINT128
   semantic_type: ST_UPID
 }
 executor: UDTF_SUBSET_PEM
@@ -1488,6 +1489,21 @@ TEST_F(OperatorTests, uint128_ir) {
   ASSERT_OK(uint128_or_s);
   auto uint128ir = uint128_or_s.ConsumeValueOrDie();
   EXPECT_EQ(uint128ir->val(), absl::MakeUint128(123, 456));
+}
+
+TEST_F(OperatorTests, uint128_ir_init_from_str) {
+  std::string uuid_str = "00000000-0000-007b-0000-0000000001c8";
+  auto uint128_or_s = graph->CreateNode<UInt128IR>(ast, uuid_str);
+  ASSERT_OK(uint128_or_s);
+  auto uint128ir = uint128_or_s.ConsumeValueOrDie();
+  EXPECT_EQ(uint128ir->val(), absl::MakeUint128(123, 456));
+}
+
+TEST_F(OperatorTests, uint128_ir_init_from_str_bad_format) {
+  std::string uuid_str = "bad_uuid";
+  auto uint128_or_s = graph->CreateNode<UInt128IR>(ast, uuid_str);
+  ASSERT_NOT_OK(uint128_or_s);
+  EXPECT_THAT(uint128_or_s.status(), HasCompilerError(".* is not a valid UUID"));
 }
 
 }  // namespace compiler

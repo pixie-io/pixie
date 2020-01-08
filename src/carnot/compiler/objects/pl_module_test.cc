@@ -21,7 +21,7 @@ constexpr char kUDTFSourcePb[] = R"proto(
 name: "OpenNetworkConnections"
 args {
   name: "upid"
-  arg_type: STRING
+  arg_type: UINT128
   semantic_type: ST_UPID
 }
 executor: UDTF_SUBSET_PEM
@@ -127,7 +127,9 @@ TEST_F(PLModuleTest, GetUDTFMethod) {
   EXPECT_EQ(udtf->func_name(), network_conns_udtf_name);
   const auto& arg_values = udtf->arg_values();
   ASSERT_EQ(arg_values.size(), 1);
-  EXPECT_EQ(upid_str, arg_values[0]);
+  auto upid = md::UPID::ParseFromUUIDString(upid_value).ConsumeValueOrDie();
+  EXPECT_TRUE(Match(arg_values[0], UInt128Value()));
+  EXPECT_EQ(static_cast<UInt128IR*>(arg_values[0])->val(), upid.value());
 }
 
 TEST_F(PLModuleTest, GetUDTFMethodBadArguements) {
@@ -145,11 +147,11 @@ TEST_F(PLModuleTest, GetUDTFMethodBadArguements) {
               HasCompilerError("missing 1 required positional arguments 'upid'"));
 }
 
-TEST_F(PLModuleTest, upid_conversion) {
-  std::string upid_str = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c";
-  auto upid_or_s = md::UPID::ParseFromUUIDString(upid_str);
-  ASSERT_OK(upid_or_s) << "upid should be valid.";
-  auto expected_upid = upid_or_s.ConsumeValueOrDie();
+TEST_F(PLModuleTest, uuint128_conversion) {
+  std::string uuint128_str = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c";
+  auto uuint128_or_s = md::UPID::ParseFromUUIDString(uuint128_str);
+  ASSERT_OK(uuint128_or_s) << "uuint128 should be valid.";
+  auto expected_uuint128 = uuint128_or_s.ConsumeValueOrDie();
 
   auto method_or_s = module_->GetMethod(PLModule::kUInt128ConversionId);
   ASSERT_OK(method_or_s);
@@ -158,17 +160,17 @@ TEST_F(PLModuleTest, upid_conversion) {
   ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
 
   auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)
-                         ->Call({{{"uuid_str", MakeString(upid_str)}}, {}}, ast, ast_visitor.get());
+                         ->Call({{{"uuid", MakeString(uuint128_str)}}, {}}, ast, ast_visitor.get());
   ASSERT_OK(result_or_s);
-  QLObjectPtr upid_str_object = result_or_s.ConsumeValueOrDie();
-  ASSERT_TRUE(upid_str_object->type_descriptor().type() == QLObjectType::kExpr);
+  QLObjectPtr uuint128_str_object = result_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(uuint128_str_object->type_descriptor().type() == QLObjectType::kExpr);
 
-  std::shared_ptr<ExprObject> expr = std::static_pointer_cast<ExprObject>(upid_str_object);
+  std::shared_ptr<ExprObject> expr = std::static_pointer_cast<ExprObject>(uuint128_str_object);
   ASSERT_EQ(expr->GetExpr()->type(), IRNodeType::kUInt128);
-  EXPECT_EQ(static_cast<UInt128IR*>(expr->GetExpr())->val(), expected_upid.value());
+  EXPECT_EQ(static_cast<UInt128IR*>(expr->GetExpr())->val(), expected_uuint128.value());
 }
 
-TEST_F(PLModuleTest, upid_conversion_fails_on_invalid_string) {
+TEST_F(PLModuleTest, uuint128_conversion_fails_on_invalid_string) {
   std::string upid_str = "bad_uuid";
 
   auto method_or_s = module_->GetMethod(PLModule::kUInt128ConversionId);
@@ -178,7 +180,7 @@ TEST_F(PLModuleTest, upid_conversion_fails_on_invalid_string) {
   ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
 
   auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)
-                         ->Call({{{"uuid_str", MakeString(upid_str)}}, {}}, ast, ast_visitor.get());
+                         ->Call({{{"uuid", MakeString(upid_str)}}, {}}, ast, ast_visitor.get());
   ASSERT_NOT_OK(result_or_s);
   EXPECT_THAT(result_or_s.status(), HasCompilerError(".* is not a valid UUID"));
 }

@@ -653,6 +653,15 @@ Status UInt128IR::Init(absl::uint128 val) {
   return Status::OK();
 }
 
+Status UInt128IR::Init(const std::string& uuid_str) {
+  auto upid_or_s = md::UPID::ParseFromUUIDString(uuid_str);
+  if (!upid_or_s.ok()) {
+    return CreateIRNodeError(upid_or_s.msg());
+  }
+
+  return Init(upid_or_s.ConsumeValueOrDie().value());
+}
+
 Status UInt128IR::CopyFromNodeImpl(const IRNode* source,
                                    absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const UInt128IR* input = static_cast<const UInt128IR*>(source);

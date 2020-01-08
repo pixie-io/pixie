@@ -795,12 +795,21 @@ class UInt128IR : public DataIR {
   explicit UInt128IR(int64_t id) : DataIR(id, IRNodeType::kUInt128, types::DataType::UINT128) {}
 
   /**
-   * @brief Inits the UInt128 from a string.
+   * @brief Inits the UInt128 from a absl::uint128 value.
    *
-   * @param val
+   * @param absl::uint128 uint128 to initialize this from.
    * @return Status
    */
   Status Init(absl::uint128 val);
+
+  /**
+   * @brief Inits the UInt128 from a UUID string. If the UUID string is not configured correctly,
+   * then returns an error.
+   *
+   * @return Status::OK if uuid_str is formatted correctly or error if not.
+   */
+  Status Init(const std::string& uuid_str);
+
   absl::uint128 val() const { return val_; }
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1051,8 +1060,8 @@ class MetadataIR : public ColumnIR {
  private:
   std::string metadata_name_;
   bool has_metadata_resolver_ = false;
-  MetadataResolverIR* resolver_;
-  MetadataProperty* property_;
+  MetadataResolverIR* resolver_ = nullptr;
+  MetadataProperty* property_ = nullptr;
 };
 
 /**

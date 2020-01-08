@@ -94,7 +94,7 @@ class UDTFSourceHandler {
                                     const pypa::AstPtr& ast, const ParsedArgs& args);
 
  private:
-  static StatusOr<ExpressionIR*> EvaluateExpression(IRNode* arg_node,
+  static StatusOr<ExpressionIR*> EvaluateExpression(IR* graph, IRNode* arg_node,
                                                     const udfspb::UDTFSourceSpec::Arg& arg);
 };
 

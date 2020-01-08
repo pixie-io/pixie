@@ -73,7 +73,7 @@ Status PLModule::RegisterCompileTimeFuncs() {
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> uuid_str_fn,
-      FuncObject::Create(kUInt128ConversionId, {"uuid_str"}, {},
+      FuncObject::Create(kUInt128ConversionId, {"uuid"}, {},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
                          std::bind(&CompileTimeFuncHandler::UInt128Conversion, graph_,
                                    std::placeholders::_1, std::placeholders::_2)));
@@ -226,10 +226,9 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::string ti
 
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
                                                                 const ParsedArgs& args) {
-  IRNode* uuid_str = args.GetArg("uuid_str");
+  IRNode* uuid_str = args.GetArg("uuid");
   if (!Match(uuid_str, String())) {
-    return uuid_str->CreateIRNodeError("Argument must be a String, got a $0",
-                                       uuid_str->type_string());
+    return uuid_str->CreateIRNodeError("'uuid' must be a str, got a $0", uuid_str->type_string());
   }
   auto upid_or_s = md::UPID::ParseFromUUIDString(static_cast<StringIR*>(uuid_str)->str());
   if (!upid_or_s.ok()) {
@@ -256,29 +255,35 @@ StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, std::string name, const pypa::
 }
 
 StatusOr<ExpressionIR*> UDTFSourceHandler::EvaluateExpression(
-    IRNode* arg_node, const udfspb::UDTFSourceSpec::Arg& arg) {
+    IR* graph, IRNode* arg_node, const udfspb::UDTFSourceSpec::Arg& arg) {
   // Processd for the data node instead.
   if (!Match(arg_node, DataNode())) {
     return arg_node->CreateIRNodeError("Expected '$0' to be of type $1, received a $2", arg.name(),
                                        arg.arg_type(), arg_node->type_string());
   }
   DataIR* data_node = static_cast<DataIR*>(arg_node);
-  if (data_node->EvaluatedDataType() != arg.arg_type()) {
-    return arg_node->CreateIRNodeError("Expected '$0' to be a $1, received a $2", arg.name(),
-                                       arg.arg_type(), data_node->EvaluatedDataType());
-  }
   switch (arg.semantic_type()) {
     case types::ST_NONE: {
+      if (data_node->EvaluatedDataType() != arg.arg_type()) {
+        return arg_node->CreateIRNodeError("Expected '$0' to be a $1, received a $2", arg.name(),
+                                           magic_enum::enum_name(arg.arg_type()),
+                                           magic_enum::enum_name(data_node->EvaluatedDataType()));
+      }
       return data_node;
     }
     case types::ST_UPID: {
-      // TODO(philkuz) convert this to support Uint128.
-      DCHECK_EQ(arg.arg_type(), types::STRING);
-      if (!Match(data_node, String())) {
-        return arg_node->CreateIRNodeError("UPID only handled with Strings.");
+      DCHECK_EQ(arg.arg_type(), types::UINT128);
+      if (!Match(data_node, UInt128Value()) && !Match(data_node, String())) {
+        return arg_node->CreateIRNodeError(
+            "UPID must be a uint128 or str that converts to UUID, received a $0",
+            magic_enum::enum_name(arg.arg_type()));
       }
-      // If the parse fails, then we don't have a properly formatted upid.
-      PL_RETURN_IF_ERROR(md::UPID::ParseFromUUIDString(static_cast<StringIR*>(data_node)->str()));
+      if (Match(data_node, String())) {
+        // If the parse fails, then we don't have a properly formatted upid.
+        return graph->CreateNode<UInt128IR>(arg_node->ast_node(),
+                                            static_cast<StringIR*>(data_node)->str());
+      }
+      // Otherwise match uint128 and do nothing.
       return data_node;
     }
     case types::ST_AGENT_UID: {
@@ -303,7 +308,7 @@ StatusOr<QLObjectPtr> UDTFSourceHandler::Eval(IR* graph,
     DCHECK(args.args().contains(arg.name()));
     IRNode* arg_node = args.GetArg(arg.name());
 
-    PL_ASSIGN_OR_RETURN(arg_map[arg.name()], EvaluateExpression(arg_node, arg));
+    PL_ASSIGN_OR_RETURN(arg_map[arg.name()], EvaluateExpression(graph, arg_node, arg));
   }
   PL_ASSIGN_OR_RETURN(
       UDTFSourceIR * udtf_source,

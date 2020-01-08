@@ -658,7 +658,7 @@ constexpr char kUDTFOpenNetworkConnections[] = R"proto(
 name: "OpenNetworkConnections"
 args {
   name: "upid"
-  arg_type: STRING
+  arg_type: UINT128
   semantic_type: ST_UPID
 }
 executor: UDTF_SUBSET_PEM
@@ -777,8 +777,7 @@ void CompareCloneNode(ColumnIR* new_ir, ColumnIR* old_ir, const std::string& err
         new_ir->DebugString(), old_ir->DebugString());
     EXPECT_EQ(new_referenced_op->id(), old_referenced_op->id()) << err_string;
 
-    for (size_t i = 0; i < new_containing_ops.size(); ++i) {
-      auto new_containing_op = new_containing_ops[i];
+    for (const auto& [i, new_containing_op] : Enumerate(new_containing_ops)) {
       auto old_containing_op = old_containing_ops[i];
       EXPECT_EQ(new_containing_op->id(), old_containing_op->id()) << err_string;
       EXPECT_NE(new_containing_op->graph_ptr(), old_containing_op->graph_ptr()) << absl::Substitute(
