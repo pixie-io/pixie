@@ -17,12 +17,7 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/table_store/table/table_store.h"
 
-PL_SUPPRESS_WARNINGS_START()
 #include "src/carnotpb/carnot.grpc.pb.h"
-// TODO(michelle/nserrino): Fix this so that we don't need to the NOLINT.
-// NOLINTNEXTLINE(build/include_subdir)
-#include "blockingconcurrentqueue.h"
-PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
 namespace carnot {
