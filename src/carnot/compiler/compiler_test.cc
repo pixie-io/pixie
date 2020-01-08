@@ -11,7 +11,7 @@
 
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/test_utils.h"
-#include "src/carnot/funcs/metadata/metadata_ops.h"
+#include "src/carnot/funcs/funcs.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
@@ -41,8 +41,7 @@ class CompilerTest : public ::testing::Test {
     // TODO(philkuz) replace the following call info_
     // info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
     auto func_registry = std::make_unique<udf::Registry>("func_registry");
-    builtins::RegisterBuiltinsOrDie(func_registry.get());
-    funcs::metadata::RegisterMetadataOpsOrDie(func_registry.get());
+    funcs::RegisterFuncsOrDie(func_registry.get());
     auto udf_proto = func_registry->ToProto();
 
     std::string new_udf_info = absl::Substitute("$0$1", udf_proto.DebugString(), kExtraScalarUDFs);

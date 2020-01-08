@@ -7,7 +7,6 @@
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/funcs/builtins/builtins.h"
-#include "src/carnot/funcs/metadata/metadata_ops.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
@@ -43,7 +42,6 @@ class EngineState : public NotCopyable {
     // Initialize state.
     auto func_registry = std::make_unique<udf::Registry>("default_func_registry");
     builtins::RegisterBuiltinsOrDie(func_registry.get());
-    funcs::metadata::RegisterMetadataOpsOrDie(func_registry.get());
     // TODO(zasgar) add the register call for UDTFs here.
 
     auto schema = std::make_shared<table_store::schema::Schema>();
