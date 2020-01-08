@@ -1,8 +1,22 @@
-#include <algorithm>
-#include <string>
-#include <unordered_set>
-
 #include "src/carnot/exec/equijoin_node.h"
+
+#include <arrow/array.h>
+#include <arrow/memory_pool.h>
+#include <arrow/status.h>
+#include <stddef.h>
+#include <algorithm>
+#include <cstdint>
+#include <string>
+#include <utility>
+
+#include <absl/strings/str_join.h>
+#include <absl/strings/substitute.h>
+
+#include "src/carnot/planpb/plan.pb.h"
+#include "src/carnot/udf/udf_wrapper.h"
+#include "src/common/base/base.h"
+#include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/type_utils.h"
 
 namespace pl {
 namespace carnot {

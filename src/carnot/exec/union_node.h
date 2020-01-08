@@ -1,5 +1,8 @@
 #pragma once
 
+#include <arrow/array.h>
+#include <arrow/array/builder_base.h>
+#include <stddef.h>
 #include <memory>
 #include <string>
 #include <utility>
@@ -7,6 +10,10 @@
 
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/exec_state.h"
+#include "src/carnot/plan/operators.h"
+#include "src/common/base/base.h"
+#include "src/common/base/status.h"
+#include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

@@ -1,12 +1,19 @@
 #pragma once
 
+#include <arrow/array.h>
+#include <stdint.h>
+#include <string.h>
+#include <algorithm>
 #include <iostream>
+#include <memory>
+#include <string>
 #include <utility>
 #include <variant>
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
+#include <absl/strings/substitute.h>
 #include <libcuckoo/cuckoohash_map.hh>
 
 #include "src/common/base/base.h"
@@ -14,6 +21,7 @@
 #include "src/farmhash.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/hash_utils.h"
+#include "src/shared/types/proto/types.pb.h"
 #include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
 

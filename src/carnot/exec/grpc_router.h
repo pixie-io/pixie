@@ -1,15 +1,20 @@
 #pragma once
 
-#include <grpcpp/grpcpp.h>
-
+#include <stdint.h>
 #include <chrono>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include <absl/base/internal/spinlock.h>
+#include <absl/base/thread_annotations.h>
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/node_hash_map.h>
+#include <absl/hash/hash.h>
+#include <grpcpp/grpcpp.h>
+#include <sole.hpp>
+
+#include "src/carnotpb/carnot.pb.h"
 #include "src/common/base/base.h"
 #include "src/common/uuid/uuid.h"
 
@@ -17,7 +22,9 @@ PL_SUPPRESS_WARNINGS_START()
 #include "include/grpcpp/server_context.h"
 #include "include/grpcpp/support/status.h"
 #include "include/grpcpp/support/sync_stream.h"
+
 #include "src/carnotpb/carnot.grpc.pb.h"
+
 PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {

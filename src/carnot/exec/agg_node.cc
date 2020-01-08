@@ -1,8 +1,17 @@
-#include <iostream>
-
 #include "src/carnot/exec/agg_node.h"
+
+#include <arrow/array.h>
+#include <arrow/array/builder_base.h>
+#include <arrow/status.h>
+#include <stddef.h>
+#include <cstdint>
+
+#include <magic_enum.hpp>
+
+#include "src/carnot/exec/expression_evaluator.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"

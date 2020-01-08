@@ -1,12 +1,13 @@
-#include <limits>
+#include "src/carnot/exec/grpc_source_node.h"
+
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <absl/strings/str_format.h>
-#include <absl/strings/str_join.h>
-#include "src/carnot/exec/grpc_source_node.h"
+#include <absl/strings/substitute.h>
+
 #include "src/carnot/planpb/plan.pb.h"
+
 namespace pl {
 namespace carnot {
 namespace exec {

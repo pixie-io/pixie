@@ -1,18 +1,29 @@
+#include <arrow/array.h>
+#include <arrow/memory_pool.h>
 #include <benchmark/benchmark.h>
+#include <cstddef>
+#include <memory>
+#include <vector>
+
 #include <google/protobuf/text_format.h>
 #include <sole.hpp>
 
+#include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/expression_evaluator.h"
 #include "src/carnot/exec/test_utils.h"
+#include "src/carnot/plan/plan_state.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
+#include "src/carnot/udf/base.h"
+#include "src/carnot/udf/registry.h"
+#include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"
-#include "src/common/benchmark/benchmark.h"
 #include "src/common/datagen/datagen.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/table/table_store.h"
+#include "src/table_store/table_store.h"
 
 using ScalarExpression = pl::carnot::plan::ScalarExpression;
 using ScalarExpressionVector = std::vector<std::shared_ptr<ScalarExpression>>;

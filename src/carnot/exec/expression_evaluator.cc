@@ -1,12 +1,23 @@
+#include "src/carnot/exec/expression_evaluator.h"
+
 #include <arrow/array.h>
-#include <arrow/buffer.h>
 #include <arrow/builder.h>
+#include <arrow/memory_pool.h>
+#include <stddef.h>
 #include <algorithm>
+#include <cstdint>
+#include <iterator>
 #include <memory>
+#include <ostream>
+#include <vector>
+
+#include <absl/strings/str_join.h>
+#include <absl/strings/substitute.h>
 
 #include "src/carnot/exec/exec_state.h"
-#include "src/carnot/exec/expression_evaluator.h"
+#include "src/carnot/udf/udf_definition.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/proto/types.pb.h"
 #include "src/shared/types/types.h"
 
 namespace pl {

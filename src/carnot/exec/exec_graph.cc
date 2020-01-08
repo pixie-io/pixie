@@ -1,12 +1,15 @@
+#include "src/carnot/exec/exec_graph.h"
+
+#include <stdint.h>
 #include <algorithm>
 #include <memory>
 #include <unordered_map>
 
 #include "src/carnot/exec/agg_node.h"
 #include "src/carnot/exec/equijoin_node.h"
-#include "src/carnot/exec/exec_graph.h"
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/filter_node.h"
+#include "src/carnot/exec/grpc_router.h"
 #include "src/carnot/exec/grpc_sink_node.h"
 #include "src/carnot/exec/grpc_source_node.h"
 #include "src/carnot/exec/limit_node.h"
@@ -15,8 +18,8 @@
 #include "src/carnot/exec/memory_source_node.h"
 #include "src/carnot/exec/udtf_source_node.h"
 #include "src/carnot/exec/union_node.h"
+#include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/plan_state.h"
-#include "src/common/memory/memory.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

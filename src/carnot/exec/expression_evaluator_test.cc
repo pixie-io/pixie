@@ -1,20 +1,22 @@
-#include <gtest/gtest.h>
+#include "src/carnot/exec/expression_evaluator.h"
 
-#include <google/protobuf/text_format.h>
-#include <iostream>
+#include <arrow/memory_pool.h>
+#include <arrow/type_fwd.h>
 #include <memory>
 #include <string>
+#include <vector>
 
+#include <google/protobuf/text_format.h>
+#include <gtest/gtest.h>
 #include <sole.hpp>
 
-#include "src/carnot/planpb/plan.pb.h"
-
 #include "src/carnot/exec/exec_state.h"
-#include "src/carnot/exec/expression_evaluator.h"
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/plan/scalar_expression.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
+#include "src/common/base/test_utils.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 

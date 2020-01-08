@@ -1,9 +1,10 @@
+#include "src/carnot/exec/grpc_sink_node.h"
+
 #include <string>
-#include <utility>
 #include <vector>
 
-#include <absl/strings/str_format.h>
-#include "src/carnot/exec/grpc_sink_node.h"
+#include <absl/strings/substitute.h>
+
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/uuid/uuid_utils.h"
 #include "src/table_store/table_store.h"

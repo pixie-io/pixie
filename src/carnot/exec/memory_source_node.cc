@@ -1,11 +1,14 @@
+#include "src/carnot/exec/memory_source_node.h"
+
 #include <limits>
 #include <string>
 #include <vector>
 
-#include <absl/strings/str_format.h>
-#include <absl/strings/str_join.h>
-#include "src/carnot/exec/memory_source_node.h"
+#include <absl/strings/substitute.h>
+
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/common/base/base.h"
+
 namespace pl {
 namespace carnot {
 namespace exec {

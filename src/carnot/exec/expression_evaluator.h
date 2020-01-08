@@ -1,5 +1,7 @@
 #pragma once
 
+#include <arrow/array.h>
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <string>
@@ -8,7 +10,10 @@
 
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/plan/scalar_expression.h"
+#include "src/carnot/udf/base.h"
+#include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"
+#include "src/shared/types/column_wrapper.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

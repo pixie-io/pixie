@@ -1,11 +1,16 @@
+#include "src/carnot/exec/equijoin_node.h"
+
+#include <absl/strings/substitute.h>
+#include <gmock/gmock.h>
+#include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
 #include <sole.hpp>
 
-#include "src/carnot/exec/equijoin_node.h"
-#include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/test_utils.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
-#include "src/shared/types/arrow_adapter.h"
+#include "src/carnot/udf/base.h"
+#include "src/carnot/udf/registry.h"
 
 namespace pl {
 namespace carnot {

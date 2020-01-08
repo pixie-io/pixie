@@ -1,17 +1,22 @@
 #pragma once
 
-#include <grpcpp/grpcpp.h>
-
+#include <stddef.h>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include <grpcpp/grpcpp.h>
+
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/exec_state.h"
+#include "src/carnot/plan/operators.h"
 #include "src/carnotpb/carnot.pb.h"
+#include "src/common/base/base.h"
+#include "src/table_store/table_store.h"
 
 PL_SUPPRESS_WARNINGS_START()
 #include "src/carnotpb/carnot.grpc.pb.h"
+
 PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {

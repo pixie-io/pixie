@@ -1,10 +1,12 @@
+#include "src/carnot/exec/memory_sink_node.h"
+
 #include <string>
 #include <vector>
 
-#include <absl/strings/str_format.h>
-#include <absl/strings/str_join.h>
-#include "src/carnot/exec/memory_sink_node.h"
+#include <absl/strings/substitute.h>
+
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

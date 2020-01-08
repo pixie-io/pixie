@@ -1,11 +1,12 @@
+#include "src/carnot/exec/map_node.h"
+
 #include <string>
-#include <utility>
 #include <vector>
 
-#include <absl/strings/str_join.h>
 #include <absl/strings/substitute.h>
-#include "src/carnot/exec/map_node.h"
+
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {

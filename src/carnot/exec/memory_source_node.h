@@ -1,11 +1,15 @@
 #pragma once
 
+#include <stdint.h>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/exec_state.h"
+#include "src/carnot/plan/operators.h"
+#include "src/common/base/base.h"
+#include "src/common/base/status.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

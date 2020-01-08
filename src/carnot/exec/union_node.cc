@@ -1,13 +1,20 @@
+#include "src/carnot/exec/union_node.h"
+
+#include <arrow/memory_pool.h>
+#include <arrow/status.h>
 #include <algorithm>
+#include <cstddef>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <absl/strings/str_join.h>
 #include <absl/strings/substitute.h>
-#include "src/carnot/exec/union_node.h"
+
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/type_utils.h"
 
 namespace pl {
 namespace carnot {

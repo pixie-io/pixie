@@ -1,10 +1,22 @@
-#include <limits>
+#include "src/carnot/exec/udtf_source_node.h"
+
+#include <arrow/array/builder_base.h>
+#include <arrow/memory_pool.h>
+#include <ostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include "src/carnot/exec/udtf_source_node.h"
-#include "src/carnot/planpb/plan.pb.h"
+#include <magic_enum.hpp>
+
+#include "src/carnot/plan/scalar_expression.h"
+#include "src/carnot/udf/registry.h"
+#include "src/common/base/base.h"
 #include "src/common/memory/object_pool.h"
+#include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/types.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {

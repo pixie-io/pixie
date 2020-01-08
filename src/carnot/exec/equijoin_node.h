@@ -1,15 +1,24 @@
 #pragma once
 
+#include <arrow/array/builder_base.h>
+#include <cstddef>
 #include <memory>
 #include <queue>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
+
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/row_tuple.h"
+#include "src/carnot/plan/operators.h"
+#include "src/common/base/base.h"
+#include "src/common/base/status.h"
 #include "src/common/memory/memory.h"
+#include "src/shared/types/column_wrapper.h"
+#include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

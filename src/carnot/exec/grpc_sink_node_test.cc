@@ -1,18 +1,20 @@
+#include "src/carnot/exec/grpc_sink_node.h"
+
+#include <vector>
+
 #include <google/protobuf/util/message_differencer.h>
 #include <grpcpp/test/mock_stream.h>
 #include <gtest/gtest.h>
-
-#include <utility>
-#include <vector>
-
 #include <sole.hpp>
 
-#include "src/carnot/exec/exec_node_mock.h"
-#include "src/carnot/exec/grpc_sink_node.h"
 #include "src/carnot/exec/test_utils.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
-#include "src/common/base/base.h"
+#include "src/carnot/udf/registry.h"
+#include "src/carnotpb/carnot_mock.grpc.pb.h"
+#include "src/common/testing/testing.h"
 #include "src/common/uuid/uuid_utils.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {

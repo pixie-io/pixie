@@ -1,15 +1,24 @@
 #pragma once
 
+#include <stddef.h>
+#include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "src/carnot/exec/exec_node.h"
+#include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/memory_source_node.h"
+#include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
+#include "src/carnot/plan/plan_state.h"
+#include "src/common/base/base.h"
 #include "src/common/memory/memory.h"
 #include "src/shared/types/types.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {

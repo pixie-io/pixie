@@ -1,17 +1,28 @@
 #pragma once
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <libcuckoo/cuckoohash_map.hh>
+
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/expression_evaluator.h"
 #include "src/carnot/exec/row_tuple.h"
 #include "src/carnot/plan/operators.h"
+#include "src/carnot/plan/scalar_expression.h"
+#include "src/carnot/udf/base.h"
+#include "src/carnot/udf/udf.h"
+#include "src/carnot/udf/udf_definition.h"
+#include "src/common/base/base.h"
 #include "src/common/memory/memory.h"
+#include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/hash_utils.h"
+#include "src/shared/types/types.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
