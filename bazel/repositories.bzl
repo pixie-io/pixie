@@ -234,7 +234,11 @@ def pl_deps():
     _repository_impl(name = "distroless")
     _repository_impl(name = "io_bazel_rules_go")
     _repository_impl(name = "boringssl", repository_key = "com_google_boringssl")
-    _repository_impl(name = "com_github_grpc_grpc")
+    _repository_impl(
+        name = "com_github_grpc_grpc",
+        patches = ["//third_party:grpc.patch"],
+        patch_args = ["-p1"],
+    )
     _repository_impl(name = "com_intel_tbb", build_file = "@pl//third_party:tbb.BUILD")
     _repository_impl(name = "com_efficient_libcuckoo", build_file = "@pl//third_party:libcuckoo.BUILD")
     _repository_impl(name = "com_google_farmhash", build_file = "@pl//third_party:farmhash.BUILD")
