@@ -45,8 +45,9 @@ export const Accordion = (props: AccordionProps) => {
       <Collapse key={`collapse-${item.key}`} in={activeKey === item.key}>
         <div className='pixie-accordion-collapse'>
           {
-            item.children.map((child) => (
+            item.children.map((child, i) => (
               <Button
+                key={`accordion-child-${i}`}
                 className='pixie-accordion-item'
                 size='sm'
                 onClick={child.onClick}
@@ -70,7 +71,7 @@ interface AccordionItemProps {
   onClick?: () => void;
 }
 
-const AccordionToggle = ({ active, name, onClick }: AccordionItemProps) => {
+export const AccordionToggle = ({ active, name, onClick }: AccordionItemProps) => {
   return (
     <Button className='pixie-accordion-toggle' onClick={onClick}>
       <img className='pixie-accordion-toggle-collapse-icon' src={active ? openedIcon : closedIcon} />
