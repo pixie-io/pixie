@@ -470,6 +470,8 @@ class UDTF : public AnyUDTF {
  public:
   using RecordWriter = RecordWriterProxy<Derived>;
   using Checker = UDTFChecker<Derived>;
+  using UDTFArg = udf::UDTFArg;
+  using ColInfo = udf::ColInfo;
 
   /**
    * Returns the index of the output column if it exists.

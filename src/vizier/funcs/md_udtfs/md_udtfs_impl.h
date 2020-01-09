@@ -23,8 +23,6 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
  public:
   using MDSStub = vizier::services::metadata::MetadataService::Stub;
   using SchemaResponse = vizier::services::metadata::SchemaResponse;
-  using ColInfo = carnot::udf::ColInfo;
-  using FunctionContext = carnot::udf::FunctionContext;
   GetTableSchemas() = delete;
   explicit GetTableSchemas(std::shared_ptr<MDSStub> stub) : idx_(0), stub_(stub) {}
 
