@@ -244,31 +244,6 @@ TEST_F(ScalarExpressionTest, col_tests) {
   EXPECT_EQ(types::STRING, status.ValueOrDie());
 }
 
-const char* kFuncWithTwoColsProtoTxt = R"(
-name: "foobar"
-args {
-  column {
-    node: 0
-    index: 1
-  }
-}
-args {
-  column {
-    node: 1
-    index: 1
-  }
-}
-args {
-  constant {
-    data_type: INT64
-    int64_value: 36
-  }
-}
-args_data_types: INT64
-args_data_types: INT64
-args_data_types: INT64
-)";
-
 class ScalarFuncTest : public ScalarExpressionTest {
  public:
   ~ScalarFuncTest() override = default;
@@ -342,7 +317,7 @@ TEST(ScalarExpressionWalker, walk_node_graph) {
 }
 
 // TODO(michelle): Use our fixtures for this.
-const char* kAggregateExpression = R"(
+constexpr char kAggregateExpression[] = R"(
 name: "testAgg"
 args {
   column {

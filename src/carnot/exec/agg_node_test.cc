@@ -35,7 +35,7 @@ class MinSumUDA : public udf::UDA {
   types::Int64Value sum_ = 0;
 };
 
-const char* kBlockingNoGroupAgg = R"(
+constexpr char kBlockingNoGroupAgg[] = R"(
 op_type: AGGREGATE_OPERATOR
 agg_op {
   windowed: false
@@ -57,7 +57,7 @@ agg_op {
   value_names: "value1"
 })";
 
-const char* kBlockingSingleGroupAgg = R"(
+constexpr char kBlockingSingleGroupAgg[] = R"(
 op_type: AGGREGATE_OPERATOR
 agg_op {
   windowed: false
@@ -84,7 +84,7 @@ agg_op {
   value_names: "value1"
 })";
 
-const char* kBlockingMultipleGroupAgg = R"(
+constexpr char kBlockingMultipleGroupAgg[] = R"(
 op_type: AGGREGATE_OPERATOR
 agg_op {
   windowed: false
@@ -116,7 +116,7 @@ agg_op {
   value_names: "value1"
 })";
 
-const char* kWindowedNoGroupAgg = R"(
+constexpr char kWindowedNoGroupAgg[] = R"(
 op_type: AGGREGATE_OPERATOR
 agg_op {
   windowed: true
@@ -138,7 +138,7 @@ agg_op {
   value_names: "value1"
 })";
 
-const char* kWindowedSingleGroupAgg = R"(
+constexpr char kWindowedSingleGroupAgg[] = R"(
 op_type: AGGREGATE_OPERATOR
 agg_op {
   windowed: true

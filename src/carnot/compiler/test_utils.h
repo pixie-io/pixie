@@ -26,7 +26,7 @@ namespace compiler {
 
 using table_store::schema::Relation;
 
-const char* kExpectedUDFInfo = R"(
+constexpr char kExpectedUDFInfo[] = R"(
 scalar_udfs {
   name: "pl.divide"
   exec_arg_types: FLOAT64
@@ -654,7 +654,7 @@ inline ::testing::PolymorphicMatcher<HasEdgeMatcher> HasEdge(IRNode* from, IRNod
   return ::testing::MakePolymorphicMatcher(HasEdgeMatcher(from, to));
 }
 
-const char* kUDTFOpenNetworkConnections = R"proto(
+constexpr char kUDTFOpenNetworkConnections[] = R"proto(
 name: "OpenNetworkConnections"
 args {
   name: "upid"

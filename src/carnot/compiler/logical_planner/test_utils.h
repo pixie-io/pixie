@@ -29,7 +29,7 @@ namespace testutils {
  * error case testing.
  */
 
-const char* kSchema = R"proto(
+constexpr char kSchema[] = R"proto(
 relation_map {
   key: "table1"
   value {
@@ -50,7 +50,7 @@ relation_map {
 
 )proto";
 
-const char* kHttpEventsSchema = R"proto(
+constexpr char kHttpEventsSchema[] = R"proto(
 relation_map {
   key: "http_events"
   value {
@@ -122,7 +122,7 @@ relation_map {
 }
 )proto";
 
-const char* kAgentCarnotInfoTpl = R"proto(
+constexpr char kAgentCarnotInfoTpl[] = R"proto(
 query_broker_address: "$0"
 has_grpc_server: false
 has_data_store: true
@@ -132,7 +132,7 @@ asid: $1
 $2
 )proto";
 
-const char* kKelvinCarnotInfoTpl = R"proto(
+constexpr char kKelvinCarnotInfoTpl[] = R"proto(
 query_broker_address: "$0"
 grpc_address: "$1"
 has_grpc_server: true
@@ -142,7 +142,7 @@ accepts_remote_sources: true
 asid: $2
 )proto";
 
-const char* kTableInfoTpl = R"proto(
+constexpr char kTableInfoTpl[] = R"proto(
 table_info{
   table: "$0"
   tabletization_key: "$1"
@@ -150,13 +150,13 @@ table_info{
 }
 )proto";
 
-const char* kTabletValueTpl = R"proto(
+constexpr char kTabletValueTpl[] = R"proto(
 tablets: "$0"
 )proto";
 
-const char* kQueryForTwoAgents = "df = pl.DataFrame(table = 'table1')\npl.display(df, 'out')";
+constexpr char kQueryForTwoAgents[] = "df = pl.DataFrame(table = 'table1')\npl.display(df, 'out')";
 
-const char* kHttpRequestStats = R"pxl(
+constexpr char kHttpRequestStats[] = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-30s')
 
 t1['service'] = t1.attr['service']
@@ -323,7 +323,7 @@ distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState() {
   return CreateTwoAgentsOneKelvinPlannerState(kSchema);
 }
 
-const char* kExpectedPlanTwoAgents = R"proto(
+constexpr char kExpectedPlanTwoAgents[] = R"proto(
 qb_address_to_plan {
   key: "agent1"
   value {
@@ -497,7 +497,7 @@ dag {
 }
 )proto";
 
-const char* kExpectedPlanTwoAgentOneKelvin = R"proto(
+constexpr char kExpectedPlanTwoAgentOneKelvin[] = R"proto(
   qb_address_to_plan {
   key: "agent1"
   value {
@@ -781,7 +781,7 @@ dag {
 }
 )proto";
 
-const char* kThreeAgentsOneKelvinDistributedState = R"proto(
+constexpr char kThreeAgentsOneKelvinDistributedState[] = R"proto(
 carnot_info {
   query_broker_address: "agent1"
   has_grpc_server: false
@@ -817,7 +817,7 @@ carnot_info {
 }
 )proto";
 
-const char* kOneAgentOneKelvinDistributedState = R"proto(
+constexpr char kOneAgentOneKelvinDistributedState[] = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false
@@ -837,7 +837,7 @@ carnot_info {
 }
 )proto";
 
-const char* kOneAgentThreeKelvinsDistributedState = R"proto(
+constexpr char kOneAgentThreeKelvinsDistributedState[] = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false

@@ -475,7 +475,7 @@ TEST_F(SplitterTest, two_paths) {
   HasGRPCSourceGroupParent(mem_sink2->id(), after_blocking, "Branch2");
 }
 
-const char* kUDTFServiceUpTimePb = R"proto(
+constexpr char kUDTFServiceUpTimePb[] = R"proto(
 name: "ServiceUpTime"
 executor: UDTF_ONE_KELVIN
 relation {
@@ -551,7 +551,7 @@ TEST_F(SplitterTest, UDTFOnOneKelvinWithJoin) {
   EXPECT_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
 }
 
-const char* kUDTFOpenConnsPb = R"proto(
+constexpr char kUDTFOpenConnsPb[] = R"proto(
 name: "OpenNetworkConnections"
 args {
   name: "upid"

@@ -7,7 +7,7 @@ namespace pl {
 namespace carnot {
 namespace builtins {
 
-const char* kTestJSONStr = R"(
+constexpr char kTestJSONStr[] = R"(
 {
   "str_key": {"abc": "def"},
   "int64_key": 34243242341,

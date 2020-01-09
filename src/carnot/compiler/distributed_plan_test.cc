@@ -21,7 +21,7 @@ namespace distributed {
 using ::pl::testing::proto::EqualsProto;
 using ::pl::testing::proto::Partially;
 
-const char* kOneAgentDistributedState = R"proto(
+constexpr char kOneAgentDistributedState[] = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false
@@ -48,7 +48,7 @@ class DistributedPlanTest : public OperatorTests {
   }
 };
 
-const char* kIRProto = R"proto(
+constexpr char kIRProto[] = R"proto(
 qb_address_to_plan {
   key: "agent"
   value {

@@ -102,7 +102,7 @@ TEST_F(PlannerExportTest, bad_queries) {
   EXPECT_THAT(planner_result_pb.status(), HasCompilerError("Table 'bad_table_name' not found."));
 }
 
-const char* kUDFQuery = R"query(
+constexpr char kUDFQuery[] = R"query(
 t1 = pl.DataFrame(table='table1', start_time='-30s')
 t1 = t1[t1['cpu_cycles'] >= 0]
 pl.display(t1)

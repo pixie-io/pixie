@@ -8,7 +8,7 @@ namespace carnot {
 namespace compiler {
 using ::pl::table_store::schema::Relation;
 
-const char* kRegInfoProto = R"proto(
+constexpr char kRegInfoProto[] = R"proto(
 scalar_udfs {
   name: "pl.equals"
   exec_arg_types: UINT128
@@ -17,7 +17,7 @@ scalar_udfs {
 }
 )proto";
 
-const char* kUDTFSourcePb = R"proto(
+constexpr char kUDTFSourcePb[] = R"proto(
 name: "OpenNetworkConnections"
 args {
   name: "upid"

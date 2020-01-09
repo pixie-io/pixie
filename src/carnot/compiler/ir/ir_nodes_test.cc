@@ -135,7 +135,7 @@ TEST(IRTest, CollectionSharedNodes) {
   CompareClone(tuple->children()[0], tuple->children()[1], "Tuple expression");
 }
 
-const char* kExpectedMemSrcPb = R"(
+constexpr char kExpectedMemSrcPb[] = R"(
   op_type: MEMORY_SOURCE_OPERATOR
   mem_source_op {
     name: "test_table"
@@ -172,7 +172,7 @@ TEST(ToProto, memory_source_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedMemSrcPb));
 }
 
-const char* kExpectedMemSrcWithTabletPb = R"(
+constexpr char kExpectedMemSrcWithTabletPb[] = R"(
   op_type: MEMORY_SOURCE_OPERATOR
   mem_source_op {
     name: "test_table"
@@ -218,7 +218,7 @@ TEST(ToProto, memory_source_ir_with_tablet) {
                                                absl::Substitute("\"$0\"", tablet_value))));
 }
 
-const char* kExpectedMemSinkPb = R"(
+constexpr char kExpectedMemSinkPb[] = R"(
   op_type: MEMORY_SINK_OPERATOR
   mem_sink_op {
     name: "output_table"
@@ -253,7 +253,7 @@ TEST(ToProto, memory_sink_ir) {
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
 }
 
-const char* kExpectedMapPb = R"(
+constexpr char kExpectedMapPb[] = R"(
   op_type: MAP_OPERATOR
   map_op {
     column_names: "col_name"
@@ -308,7 +308,7 @@ TEST(ToProto, map_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedMapPb));
 }
 
-const char* kExpectedAggPb = R"(
+constexpr char kExpectedAggPb[] = R"(
   op_type: AGGREGATE_OPERATOR
   agg_op {
     windowed: false
@@ -365,7 +365,7 @@ TEST(ToProto, agg_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedAggPb));
 }
 
-const char* kInt64PbTxt = R"proto(
+constexpr char kInt64PbTxt[] = R"proto(
 constant {
   data_type: INT64
   int64_value: 123
@@ -382,7 +382,7 @@ TEST(ToProto, int_ir) {
   EXPECT_THAT(pb, EqualsProto(kInt64PbTxt));
 }
 
-const char* kStringPbTxt = R"proto(
+constexpr char kStringPbTxt[] = R"proto(
 constant {
   data_type: STRING
   string_value: "pixie"
@@ -399,7 +399,7 @@ TEST(ToProto, string_ir) {
   EXPECT_THAT(pb, EqualsProto(kStringPbTxt));
 }
 
-const char* kFloatPbTxt = R"proto(
+constexpr char kFloatPbTxt[] = R"proto(
 constant {
   data_type: FLOAT64
   float64_value: 1.23
@@ -416,7 +416,7 @@ TEST(ToProto, float_ir) {
   EXPECT_THAT(pb, EqualsProto(kFloatPbTxt));
 }
 
-const char* kUInt128PbTxt = R"proto(
+constexpr char kUInt128PbTxt[] = R"proto(
 constant {
   data_type: UINT128
   uint128_value {
@@ -436,7 +436,7 @@ TEST(ToProto, uint128_ir) {
   EXPECT_THAT(pb, EqualsProto(kUInt128PbTxt));
 }
 
-const char* kTimePbTxt = R"proto(
+constexpr char kTimePbTxt[] = R"proto(
 constant {
   data_type: TIME64NS
   time64_ns_value: 123
@@ -453,7 +453,7 @@ TEST(ToProto, time_ir) {
   EXPECT_THAT(pb, EqualsProto(kTimePbTxt));
 }
 
-const char* kBoolPbTxt = R"proto(
+constexpr char kBoolPbTxt[] = R"proto(
 constant {
   data_type: BOOLEAN
   bool_value: true
@@ -470,7 +470,7 @@ TEST(ToProto, bool_ir) {
   EXPECT_THAT(pb, EqualsProto(kBoolPbTxt));
 }
 
-const char* kSimpleFuncPbTxt = R"proto(
+constexpr char kSimpleFuncPbTxt[] = R"proto(
 func{
   name: "pl.foobar1"
   args {
@@ -489,7 +489,7 @@ func{
   args_data_types: INT64
 })proto";
 
-const char* kNestedFuncPbTxt = R"proto(
+constexpr char kNestedFuncPbTxt[] = R"proto(
 func {
   name: "pl.foobar2"
   args {
@@ -537,7 +537,7 @@ TEST(ToProto, func_tests) {
       << pb2.DebugString();
 }
 
-const char* kColumnPbTxt = R"proto(
+constexpr char kColumnPbTxt[] = R"proto(
 column {
   node: $0
   index: 123
@@ -841,7 +841,7 @@ TEST_F(CloneTests, copy_into_existing_dag) {
 }
 
 class ToProtoTests : public OperatorTests {};
-const char* kExpectedGRPCSourcePb = R"proto(
+constexpr char kExpectedGRPCSourcePb[] = R"proto(
   op_type: GRPC_SOURCE_OPERATOR
   grpc_source_op {
     column_types: INT64
@@ -865,7 +865,7 @@ TEST_F(ToProtoTests, grpc_source_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedGRPCSourcePb));
 }
 
-const char* kExpectedGRPCSinkPb = R"proto(
+constexpr char kExpectedGRPCSinkPb[] = R"proto(
   op_type: GRPC_SINK_OPERATOR
   grpc_sink_op {
     address: "$0"
@@ -887,7 +887,7 @@ TEST_F(ToProtoTests, grpc_sink_ir) {
   EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedGRPCSinkPb, grpc_address, destination_id)));
 }
 
-const char* kIRProto = R"proto(
+constexpr char kIRProto[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -955,7 +955,7 @@ TEST_F(ToProtoTests, ir) {
   EXPECT_THAT(pb, EqualsProto(kIRProto));
 }
 
-const char* kExpectedUnionOpPb = R"proto(
+constexpr char kExpectedUnionOpPb[] = R"proto(
 op_type: UNION_OPERATOR
 union_op {
   column_names: "count"
@@ -995,7 +995,7 @@ TEST_F(ToProtoTests, UnionNoTime) {
   EXPECT_THAT(pb, EqualsProto(kExpectedUnionOpPb));
 }
 
-const char* kExpectedUnionOpTimePb = R"proto(
+constexpr char kExpectedUnionOpTimePb[] = R"proto(
 op_type: UNION_OPERATOR
 union_op {
   column_names: "time_"
@@ -1029,7 +1029,7 @@ TEST_F(ToProtoTests, UnionHasTime) {
   EXPECT_THAT(pb, EqualsProto(kExpectedUnionOpTimePb));
 }
 
-const char* kExpectedInnerJoinOpPb = R"proto(
+constexpr char kExpectedInnerJoinOpPb[] = R"proto(
 op_type: JOIN_OPERATOR
 join_op {
   type: INNER
@@ -1091,7 +1091,7 @@ TEST_F(ToProtoTests, inner_join) {
   EXPECT_THAT(pb, EqualsProto(kExpectedInnerJoinOpPb));
 }
 
-const char* kExpectedLeftJoinOpPb = R"proto(
+constexpr char kExpectedLeftJoinOpPb[] = R"proto(
 op_type: JOIN_OPERATOR
 join_op {
   type: LEFT_OUTER
@@ -1152,7 +1152,7 @@ TEST_F(ToProtoTests, left_join) {
   EXPECT_THAT(pb, EqualsProto(kExpectedLeftJoinOpPb));
 }
 
-const char* kExpectedOuterJoinOpPb = R"proto(
+constexpr char kExpectedOuterJoinOpPb[] = R"proto(
 op_type: JOIN_OPERATOR
 join_op {
   type: FULL_OUTER
@@ -1364,7 +1364,7 @@ TEST_F(OperatorTests, union_duplicate_parents) {
 
   EXPECT_THAT(union_op->parents(), ElementsAre(mem_src2, mem_src1, maps[0], maps[1]));
 }
-const char* kOpenNetworkConnsUDTFSourceSpecPb = R"proto(
+constexpr char kOpenNetworkConnsUDTFSourceSpecPb[] = R"proto(
 name: "OpenNetworkConnections"
 args {
   name: "upid"
@@ -1388,7 +1388,7 @@ relation {
 }
 )proto";
 
-const char* kExpectedUDTFSourceOpSingleArgPb = R"proto(
+constexpr char kExpectedUDTFSourceOpSingleArgPb[] = R"proto(
   op_type: UDTF_SOURCE_OPERATOR
   udtf_source_op {
     name: "OpenNetworkConnections"
@@ -1422,7 +1422,7 @@ TEST_F(OperatorTests, UDTFSingleArgTest) {
   EXPECT_EQ(udtf->relation(), relation);
 }
 
-const char* kDiskSpaceUDTFPb = R"proto(
+constexpr char kDiskSpaceUDTFPb[] = R"proto(
 name: "GetDiskSpace"
 args {
   name: "agent"
@@ -1447,7 +1447,7 @@ relation {
 }
 )proto";
 
-const char* kExpectedUDTFSourceOpMultipleArgsPb = R"proto(
+constexpr char kExpectedUDTFSourceOpMultipleArgsPb[] = R"proto(
   op_type: UDTF_SOURCE_OPERATOR
   udtf_source_op {
     name: "GetDiskSpace"

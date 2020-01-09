@@ -13,7 +13,7 @@ namespace carnot {
 namespace compiler {
 using ::testing::UnorderedElementsAre;
 
-const char* kExpectedUDFInfo = R"(
+constexpr char kExpectedUDFInfo[] = R"(
 udas {
   name: "uda1"
   update_arg_types: INT64

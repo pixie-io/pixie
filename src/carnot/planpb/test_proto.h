@@ -30,26 +30,26 @@ using google::protobuf::FieldDescriptor;
  * error case testing.
  */
 
-const char* kColumnReferencePbtxt = R"(
+constexpr char kColumnReferencePbtxt[] = R"(
 column {
   node: 0,
   index: 0,
 })";
 
-const char* kScalarBooleanValue = R"(
+constexpr char kScalarBooleanValue[] = R"(
   type: BOOLEAN,
   value {
     bool_value: false
   }
 )";
 
-const char* kScalarInt64ValuePbtxt = R"(
+constexpr char kScalarInt64ValuePbtxt[] = R"(
 constant {
     data_type: INT64,
     int64_value: 1337
 })";
 
-const char* kScalarUInt128ValuePbtxt = R"(
+constexpr char kScalarUInt128ValuePbtxt[] = R"(
 constant {
     data_type: UINT128
     uint128_value : {
@@ -62,7 +62,7 @@ constant {
  * Template for a ScalarFunc.
  * $1: A ScalarExpression representing the args used during evaluation.
  */
-const char* kScalarFuncFIITmpl = R"(
+constexpr char kScalarFuncFIITmpl[] = R"(
   name: "testUDF"
   args: constant {
 
@@ -70,7 +70,7 @@ const char* kScalarFuncFIITmpl = R"(
   args: $1
 )";
 
-const char* kFuncWithTwoCols = R"(
+constexpr char kFuncWithTwoCols[] = R"(
 name: "foobar"
 args {
   column {
@@ -101,20 +101,20 @@ args_data_types: INT64
  * $1: The operator field.
  * $2: The operator contents.
  */
-const char* kOperatorProtoTmpl = R"(
+constexpr char kOperatorProtoTmpl[] = R"(
 op_type: $0
 $1 {
   $2
 })";
 
-const char* kMemSourceOperator1 = R"(
+constexpr char kMemSourceOperator1[] = R"(
 name: "cpu"
 column_idxs: 1
 column_types: FLOAT64
 column_names: "usage"
 )";
 
-const char* kMemSourceOperatorWithTablet1 = R"(
+constexpr char kMemSourceOperatorWithTablet1[] = R"(
 name: "cpu"
 column_idxs: 1
 column_types: FLOAT64
@@ -122,7 +122,7 @@ column_names: "usage"
 tablet: $0
 )";
 
-const char* kMemSourceOperatorRange = R"(
+constexpr char kMemSourceOperatorRange[] = R"(
 name: "cpu"
 start_time: {
  value: 3
@@ -135,7 +135,7 @@ column_types: FLOAT64
 column_names: "usage"
 )";
 
-const char* kMemSourceOperatorEmptyRange = R"(
+constexpr char kMemSourceOperatorEmptyRange[] = R"(
 name: "cpu"
 start_time: {
  value: 10
@@ -148,7 +148,7 @@ column_types: FLOAT64
 column_names: "usage"
 )";
 
-const char* kMemSourceOperatorAllRange = R"(
+constexpr char kMemSourceOperatorAllRange[] = R"(
 name: "cpu"
 start_time: {
  value: 3
@@ -161,7 +161,7 @@ column_types: FLOAT64
 column_names: "usage"
 )";
 
-const char* kBlockingAggOperator1 = R"(
+constexpr char kBlockingAggOperator1[] = R"(
 windowed: false
 values {
   name: "testUda"
@@ -180,7 +180,7 @@ group_names: "group1"
 value_names: "value1"
 )";
 
-const char* kWindowedAggOperator1 = R"(
+constexpr char kWindowedAggOperator1[] = R"(
 windowed: true
 values {
   name: "testUdf"
@@ -199,7 +199,7 @@ group_names: "group1"
 value_names: "value1"
 )";
 
-const char* kFilterOperator1 = R"(
+constexpr char kFilterOperator1[] = R"(
 expression {
   func {
     name: "testUdf"
@@ -222,13 +222,13 @@ columns {
 }
 )";
 
-const char* kMemSinkOperator1 = R"(
+constexpr char kMemSinkOperator1[] = R"(
 name: "cpu_15s"
 column_names: "winagg_cpu0"
 column_types: FLOAT64
 )";
 
-const char* kMemSinkOperator2 = R"(
+constexpr char kMemSinkOperator2[] = R"(
 name: "cpu_15s"
 column_names: "test_col1"
 column_types: INT64
@@ -236,15 +236,15 @@ column_names: "test_col2"
 column_types: BOOLEAN
 )";
 
-const char* kGRPCSourceOperator1 = R"(
+constexpr char kGRPCSourceOperator1[] = R"(
 )";
 
-const char* kGRPCSinkOperator1 = R"(
+constexpr char kGRPCSinkOperator1[] = R"(
 address: "localhost:1234"
 destination_id: 0
 )";
 
-const char* kMapOperator1 = R"(
+constexpr char kMapOperator1[] = R"(
 expressions {
   func {
     name: "testUdf"
@@ -267,7 +267,7 @@ expressions {
 column_names: "col1"
 )";
 
-const char* kLimitOperator1 = R"(
+constexpr char kLimitOperator1[] = R"(
 limit: 10
 columns {
   node: 1
@@ -282,7 +282,7 @@ columns {
 // relation 1: [abc, time_]
 // relation 2: [time_, abc]
 // maps to output relation:
-const char* kUnionOperatorOrdered = R"(
+constexpr char kUnionOperatorOrdered[] = R"(
   rows_per_batch: 5
   column_names: "abc"
   column_names: "time_"
@@ -296,7 +296,7 @@ const char* kUnionOperatorOrdered = R"(
   }
 )";
 
-const char* kUnionOperatorUnordered = R"(
+constexpr char kUnionOperatorUnordered[] = R"(
   column_names: "abc"
   column_names: "xyz"
   column_mappings {
@@ -309,7 +309,7 @@ const char* kUnionOperatorUnordered = R"(
   }
 )";
 
-const char* kUnionOperatorOutOfRange1 = R"(
+constexpr char kUnionOperatorOutOfRange1[] = R"(
   rows_per_batch: 3
   column_names: "abc"
   column_names: "time_"
@@ -321,7 +321,7 @@ const char* kUnionOperatorOutOfRange1 = R"(
   }
 )";
 
-const char* kUnionOperatorOutOfRange2 = R"(
+constexpr char kUnionOperatorOutOfRange2[] = R"(
   column_names: "abc"
   column_names: "time_"
   column_mappings {
@@ -336,7 +336,7 @@ const char* kUnionOperatorOutOfRange2 = R"(
   }
 )";
 
-const char* kJoinOperator1 = R"(
+constexpr char kJoinOperator1[] = R"(
   type: INNER
   equality_conditions {
     left_column_index: 0
@@ -355,7 +355,7 @@ const char* kJoinOperator1 = R"(
   rows_per_batch: 10
 )";
 
-const char* kJoinOperatorNoTime1 = R"(
+constexpr char kJoinOperatorNoTime1[] = R"(
   type: INNER
   equality_conditions {
     left_column_index: 0
@@ -375,7 +375,7 @@ const char* kJoinOperatorNoTime1 = R"(
 )";
 
 // Full outer, time ordered joins are not supported.
-const char* kBadJoin1 = R"(
+constexpr char kBadJoin1[] = R"(
   type: FULL_OUTER
   equality_conditions {
     left_column_index: 0
@@ -396,7 +396,7 @@ const char* kBadJoin1 = R"(
 
 // Left outer, time ordered joins are only supported
 // when the left table provides the time_ column.
-const char* kBadJoin2 = R"(
+constexpr char kBadJoin2[] = R"(
   type: LEFT_OUTER
   equality_conditions {
     left_column_index: 0
@@ -419,7 +419,7 @@ const char* kBadJoin2 = R"(
  * Template for Map Operator.
  *   $0 : the expressions
  */
-const char* kMapOperatorTmpl = R"(
+constexpr char kMapOperatorTmpl[] = R"(
 expressions {
   $0
 }
@@ -430,7 +430,7 @@ column_names: "col1"
  * Template for Map Operator.
  *   $0 : the expression
  */
-const char* kFilterOperatorTmpl = R"(
+constexpr char kFilterOperatorTmpl[] = R"(
 expression {
   $0
 }
@@ -453,13 +453,13 @@ columns {
  * $0: The type of ScalarExpression. (constant|func|column)
  * $1: The contents of the ScalarExpression. Either a ScalarValue, Column, or ScalarFunc.
  */
-const char* kScalarExpressionTmpl = R"(
+constexpr char kScalarExpressionTmpl[] = R"(
   $0 {
     $1
   }
 )";
 
-const char* kAddScalarFuncPbtxt = R"(
+constexpr char kAddScalarFuncPbtxt[] = R"(
 func {
   name: "add"
   args {
@@ -478,7 +478,7 @@ func {
   args_data_types: INT64
 })";
 
-const char* kAddScalarFuncConstPbtxt = R"(
+constexpr char kAddScalarFuncConstPbtxt[] = R"(
 func {
   name: "add"
   args {
@@ -497,7 +497,7 @@ func {
   args_data_types: INT64
 })";
 
-const char* kEq1ScalarFuncConstPbtxt = R"(
+constexpr char kEq1ScalarFuncConstPbtxt[] = R"(
 func {
   name: "eq"
   args {
@@ -516,13 +516,13 @@ func {
   args_data_types: INT64
 })";
 
-const char* kColValueScalarFuncConstPbtxt = R"(
+constexpr char kColValueScalarFuncConstPbtxt[] = R"(
 column {
   node: 0
   index: 0
 })";
 
-const char* kStrEqAScalarFuncConstPbtxt = R"(
+constexpr char kStrEqAScalarFuncConstPbtxt[] = R"(
 func {
   name: "eq"
   id: 1
@@ -542,7 +542,7 @@ func {
   args_data_types: STRING
 })";
 
-const char* kAddScalarFuncNestedPbtxt = R"(
+constexpr char kAddScalarFuncNestedPbtxt[] = R"(
 func {
   name: "add"
   args {
@@ -574,7 +574,7 @@ func {
   args_data_types: FLOAT64
 })";
 
-const char* kPlanFragmentWithFourNodes = R"(
+constexpr char kPlanFragmentWithFourNodes[] = R"(
   id: 1,
   dag {
     nodes {
@@ -652,7 +652,7 @@ const char* kPlanFragmentWithFourNodes = R"(
   }
 )";
 
-const char* kLinearPlanFragment = R"(
+constexpr char kLinearPlanFragment[] = R"(
   id: 1,
   dag {
     nodes {
@@ -763,7 +763,7 @@ const char* kLinearPlanFragment = R"(
   }
 )";
 
-const char* kPlanWithFiveNodes = R"(
+constexpr char kPlanWithFiveNodes[] = R"(
   dag {
     nodes {
       id: 1

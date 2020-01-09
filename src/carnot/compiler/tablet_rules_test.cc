@@ -32,7 +32,7 @@ class TabletSourceConversionRuleTest : public OperatorTests {
   Relation relation1_;
 };
 
-const char* kCarnotInfo = R"proto(
+constexpr char kCarnotInfo[] = R"proto(
 query_broker_address: "carnot"
 has_data_store: true
 processes_data: true

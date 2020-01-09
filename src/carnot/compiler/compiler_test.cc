@@ -27,7 +27,7 @@ using planpb::testutils::CompareLogicalPlans;
 using ::testing::_;
 using ::testing::ContainsRegex;
 
-const char* kExtraScalarUDFs = R"proto(
+constexpr char kExtraScalarUDFs[] = R"proto(
 scalar_udfs {
   name: "pl.equal"
   exec_arg_types: UINT128
@@ -108,7 +108,7 @@ class CompilerTest : public ::testing::Test {
   Relation cgroups_relation_;
 };
 
-const char* kExpectedLogicalPlan = R"(
+constexpr char kExpectedLogicalPlan[] = R"(
 dag {
   nodes {
     id: 1
@@ -263,7 +263,7 @@ TEST_F(CompilerTest, test_general_compilation) {
 }
 
 // Test for select order that is different than the schema.
-const char* kSelectOrderLogicalPlan = R"(
+constexpr char kSelectOrderLogicalPlan[] = R"(
 nodes {
   nodes {
     op {
@@ -312,7 +312,7 @@ TEST_F(CompilerTest, select_order_test) {
   EXPECT_THAT(plan.ConsumeValueOrDie(), Partially(EqualsProto(kSelectOrderLogicalPlan)));
 }
 
-const char* kRangeNowPlan = R"(
+constexpr char kRangeNowPlan[] = R"(
 nodes {
   nodes {
     op {
@@ -368,7 +368,7 @@ TEST_F(CompilerTest, range_now_test) {
   EXPECT_THAT(plan.ConsumeValueOrDie(), Partially(EqualsProto(expected_plan)));
 }
 
-const char* kRangeTimeUnitPlan = R"(
+constexpr char kRangeTimeUnitPlan[] = R"(
 nodes {
   nodes {
     op {
@@ -453,7 +453,7 @@ TEST_P(CompilerTimeFnTest, range_now_keyword_test) {
 INSTANTIATE_TEST_SUITE_P(CompilerTimeFnTestSuites, CompilerTimeFnTest,
                          ::testing::ValuesIn(compiler_time_data));
 
-const char* kGroupByAllPlan = R"(
+constexpr char kGroupByAllPlan[] = R"(
 nodes {
   nodes {
     op {
@@ -574,7 +574,7 @@ TEST_F(CompilerTest, comparison_test) {
   ASSERT_OK(plan);
 }
 
-const char* kFilterPlan = R"(
+constexpr char kFilterPlan[] = R"(
 nodes {
   nodes {
     op {
@@ -687,7 +687,7 @@ TEST_F(CompilerTest, filter_errors) {
   EXPECT_NOT_OK(compiler_.Compile(int_val, compiler_state_.get()));
 }
 
-const char* kExpectedLimitPlan = R"(
+constexpr char kExpectedLimitPlan[] = R"(
 nodes {
   nodes {
     id: 6
@@ -794,7 +794,7 @@ TEST_F(CompilerTest, multiple_result_sinks) {
   ASSERT_OK(plan_status);
 }
 
-const char* kExpectedSelectDefaultArg = R"proto(
+constexpr char kExpectedSelectDefaultArg[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -868,7 +868,7 @@ TEST_F(CompilerTest, from_select_default_arg) {
   EXPECT_TRUE(CompareLogicalPlans(expected_plan_pb, plan, true /*ignore_ids*/));
 }
 
-const char* kExpectedFilterMetadataPlan = R"proto(
+constexpr char kExpectedFilterMetadataPlan[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -1050,7 +1050,7 @@ nodes {
 }
 )proto";
 
-const char* kExpectedMapMetadataPlan = R"proto(
+constexpr char kExpectedMapMetadataPlan[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -1247,7 +1247,7 @@ nodes {
 }
 )proto";
 
-const char* kExpectedAgg1MetadataPlan = R"proto(
+constexpr char kExpectedAgg1MetadataPlan[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -1455,7 +1455,7 @@ nodes {
 }
 )proto";
 
-const char* kExpectedAgg2MetadataPlan = R"proto(
+constexpr char kExpectedAgg2MetadataPlan[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -1670,7 +1670,7 @@ nodes {
 }
 )proto";
 
-const char* kExpectedAggFilter1MetadataPlan = R"proto(
+constexpr char kExpectedAggFilter1MetadataPlan[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -1981,7 +1981,7 @@ nodes {
 }
 )proto";
 
-const char* kExpectedAggFilter2MetadataPlan = R"proto(
+constexpr char kExpectedAggFilter2MetadataPlan[] = R"proto(
 nodes {
   id: 1
   dag {
@@ -2161,7 +2161,7 @@ nodes {
 }
 )proto";
 
-const char* kExpectedAliasingMetadataPlan = R"proto(
+constexpr char kExpectedAliasingMetadataPlan[] = R"proto(
 nodes {
   id: 1
   dag {
@@ -2450,7 +2450,7 @@ TEST_F(CompilerTest, cgroups_pod_id) {
   ASSERT_OK(plan_status);
 }
 
-const char* kJoinInnerQueryPlan = R"proto(
+constexpr char kJoinInnerQueryPlan[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -2620,7 +2620,7 @@ nodes {
 }
 )proto";
 
-const char* kJoinQueryTypeTpl = R"query(
+constexpr char kJoinQueryTypeTpl[] = R"query(
 src1 = pl.DataFrame(table='cpu', select=['cpu0', 'upid', 'cpu1'])
 src2 = pl.DataFrame(table='http_table', select=['http_resp_status', 'upid',  'http_resp_latency_ns'])
 join = src1.merge(src2, how='$0', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
@@ -2637,7 +2637,7 @@ TEST_F(CompilerTest, DISABLED_inner_join) {
   EXPECT_THAT(plan, EqualsProto(kJoinInnerQueryPlan)) << plan.DebugString();
 }
 
-const char* kJoinRightQueryPlan = R"proto(
+constexpr char kJoinRightQueryPlan[] = R"proto(
   dag {
   nodes {
     id: 1
@@ -2817,7 +2817,7 @@ TEST_F(CompilerTest, DISABLED_right_join) {
   EXPECT_THAT(plan, EqualsProto(kJoinRightQueryPlan)) << plan.DebugString();
 }
 
-const char* kSelfJoinQueryPlan = R"proto(
+constexpr char kSelfJoinQueryPlan[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -2954,7 +2954,7 @@ nodes {
 }
 )proto";
 
-const char* kSelfJoinQuery = R"query(
+constexpr char kSelfJoinQuery[] = R"query(
 src1 = pl.DataFrame(table='cpu', select=['cpu0', 'upid', 'cpu1'])
 join = src1.merge(src1, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
 pl.display(join, 'joined')
@@ -2993,7 +2993,7 @@ TEST_F(CompilerTest, missing_result) {
               ContainsRegex("query does not output a result, please add a print.* statement"));
 }
 
-const char* kBadDropQuery = R"pxl(
+constexpr char kBadDropQuery[] = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-300s')
 t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6

@@ -14,7 +14,7 @@ namespace compiler {
 using ::pl::table_store::schema::Relation;
 using ::testing::ElementsAre;
 
-const char* kRegInfoProto = R"proto(
+constexpr char kRegInfoProto[] = R"proto(
 scalar_udfs {
   name: "pl.equals"
   exec_arg_types: UINT128

@@ -55,7 +55,7 @@ class CoordinatorTest : public OperatorTests {
   }
 };
 
-const char* kAgentSimplePlan = R"proto(
+constexpr char kAgentSimplePlan[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -87,7 +87,7 @@ nodes {
 }
 )proto";
 
-const char* kKelvinSimplePlan = R"proto(
+constexpr char kKelvinSimplePlan[] = R"proto(
 dag {
   nodes {
     id: 1
@@ -187,7 +187,7 @@ TEST_F(CoordinatorTest, one_agent_three_kelvin) {
               Partially(EqualsProto(kAgentSimplePlan)));
 }
 
-const char* kBadAgentSpecificationState = R"proto(
+constexpr char kBadAgentSpecificationState[] = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false
@@ -217,7 +217,7 @@ TEST_F(CoordinatorTest, bad_agent_spec) {
             "`has_data_store() && processes_data()`.");
 }
 
-const char* kBadKelvinSpecificationState = R"proto(
+constexpr char kBadKelvinSpecificationState[] = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false
@@ -247,7 +247,7 @@ TEST_F(CoordinatorTest, bad_kelvin_spec) {
             "`processes_data() && accepts_remote_sources()`.");
 }
 
-const char* kUDTFServiceUpTimePb = R"proto(
+constexpr char kUDTFServiceUpTimePb[] = R"proto(
 name: "ServiceUpTime"
 executor: UDTF_ONE_KELVIN
 relation {
@@ -283,7 +283,7 @@ TEST_F(CoordinatorTest, udtf_on_one_kelvin) {
   EXPECT_EQ(new_udtf->Children()[0], GetEquivalentInNewPlan(plan, mem_sink));
 }
 
-const char* kUDTFOpenConnsPb = R"proto(
+constexpr char kUDTFOpenConnsPb[] = R"proto(
 name: "OpenNetworkConnections"
 args {
   name: "upid"

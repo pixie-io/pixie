@@ -11,7 +11,7 @@ namespace plan {
 
 using google::protobuf::TextFormat;
 
-const char* kPlanFragmentWithAllNodes = R"(
+constexpr char kPlanFragmentWithAllNodes[] = R"(
   id: 1,
   dag {
     nodes {

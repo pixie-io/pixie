@@ -69,7 +69,7 @@ class BasicTestUDTF : public UDTF<BasicTestUDTF> {
   std::string some_string_;
 };
 
-const char* kUDTFTestPbtxt = R"proto(
+constexpr char kUDTFTestPbtxt[] = R"proto(
   op_type: UDTF_SOURCE_OPERATOR
   udtf_source_op {
     name: "test_udtf"

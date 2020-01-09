@@ -505,7 +505,7 @@ TEST_F(AggTest, not_allowed_by_arguments) {
   EXPECT_THAT(ir_graph_status.status(), HasCompilerError("expected string or list of strings"));
 }
 
-const char* kInnerJoinQuery = R"query(
+constexpr char kInnerJoinQuery[] = R"query(
 src1 = pl.DataFrame(table='cpu', select=['upid', 'cpu0','cpu1'])
 src2 = pl.DataFrame(table='network', select=['bytes_in', 'upid', 'bytes_out'])
 join = src1.merge(src2, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
@@ -555,7 +555,7 @@ TEST_F(JoinTest, test_inner_join) {
   EXPECT_THAT(graph->dag().ParentsOf(join->id()), ElementsAre(mem_src1->id(), mem_src2->id()));
 }
 
-const char* kJoinUnequalLeftOnRightOnColumns = R"query(
+constexpr char kJoinUnequalLeftOnRightOnColumns[] = R"query(
 src1 = pl.DataFrame(table='cpu', select=['upid', 'cpu0'])
 src2 = pl.DataFrame(table='network', select=['upid', 'bytes_in'])
 join = src1.merge(src2, how='inner', left_on=['upid', 'cpu0'], right_on=['upid'])
@@ -570,7 +570,7 @@ TEST_F(JoinTest, JoinConditionsWithUnequalLengths) {
       HasCompilerError("'left_on' and 'right_on' must contain the same number of elements."));
 }
 
-const char* kNewFilterQuery = R"query(
+constexpr char kNewFilterQuery[] = R"query(
 df = pl.DataFrame("bar")
 df = df[df["service"] == "foo"]
 pl.display(df, 'ld')
@@ -611,7 +611,7 @@ TEST_F(FilterTest, TestNewFilter) {
   ASSERT_TRUE(Match(filter->Children()[0], MemorySink()));
 }
 
-const char* kFilterChainedQuery = R"query(
+constexpr char kFilterChainedQuery[] = R"query(
 df = pl.DataFrame("bar")
 df = df[df["service"] == "foo"]
 pl.display(df, 'ld')
@@ -651,7 +651,7 @@ TEST_F(FilterTest, ChainedFilterQuery) {
   ASSERT_TRUE(Match(filter->Children()[0], MemorySink()));
 }
 
-const char* kInvalidFilterChainQuery = R"query(
+constexpr char kInvalidFilterChainQuery[] = R"query(
 df = pl.DataFrame("bar")[df["service"] == "foo"]
 pl.display(df, 'ld')
 )query";
@@ -663,7 +663,7 @@ TEST_F(FilterTest, InvalidChainedFilterQuery) {
   EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("name 'df' is not defined"));
 }
 
-const char* kFilterWithNewMetadataQuery = R"query(
+constexpr char kFilterWithNewMetadataQuery[] = R"query(
 df = pl.DataFrame("bar")
 df = df[df.ctx["service"] == "foo"]
 pl.display(df, 'ld')
@@ -842,7 +842,7 @@ TEST_F(ASTVisitorTest, CantCopyMetadataBetweenDataframes) {
               HasCompilerError("name 'df2' is not available in this context"));
 }
 
-const char* kRepeatedExprs = R"query(
+constexpr char kRepeatedExprs[] = R"query(
 a = 10
 df = pl.DataFrame("bar", start_time=a+a)
 b = 20 * 20

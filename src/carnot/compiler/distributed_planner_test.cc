@@ -27,7 +27,7 @@ using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
-const char* kOneAgentOneKelvinDistributedState = R"proto(
+constexpr char kOneAgentOneKelvinDistributedState[] = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false

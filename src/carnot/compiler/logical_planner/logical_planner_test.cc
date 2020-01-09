@@ -24,43 +24,6 @@ namespace compiler {
 namespace logical_planner {
 using pl::testing::proto::EqualsProto;
 
-const char* kTwoAgentOneKelvinDistributedState = R"proto(
-carnot_info {
-  query_broker_address: "agent1"
-  has_grpc_server: false
-  has_data_store: true
-  processes_data: true
-  accepts_remote_sources: false
-  table_info {
-    table: "table1"
-    tabletization_key: "upid"
-    tablets: "1"
-    tablets: "2"
-  }
-}
-carnot_info {
-  query_broker_address: "agent2"
-  has_grpc_server: false
-  has_data_store: true
-  processes_data: true
-  accepts_remote_sources: false
-  table_info {
-    table: "table1"
-    tabletization_key: "upid"
-    tablets: "3"
-    tablets: "4"
-  }
-}
-carnot_info {
-  query_broker_address: "kelvin"
-  grpc_address: "1111"
-  has_grpc_server: true
-  has_data_store: false
-  processes_data: true
-  accepts_remote_sources: true
-}
-)proto";
-
 class LogicalPlannerTest : public ::testing::Test {
  protected:
 };
@@ -93,7 +56,7 @@ TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
   EXPECT_OK(plan_or_s);
 }
 
-const char* kCompileTimeQuery = R"pxl(
+constexpr char kCompileTimeQuery[] = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-120s')
 
 t1['service'] = t1.ctx['service']
@@ -152,7 +115,7 @@ TEST_F(LogicalPlannerTest, duplicate_int) {
   EXPECT_OK(plan_or_s);
 }
 
-const char* kTwoWindowQuery = R"query(
+constexpr char kTwoWindowQuery[] = R"query(
 t1 = pl.DataFrame(table='http_events', start_time='-300s')
 t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6

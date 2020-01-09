@@ -23,7 +23,7 @@ using ::testing::ElementsAreArray;
  *
  */
 
-const char* kRegInfoProto = R"proto(
+constexpr char kRegInfoProto[] = R"proto(
 udas {
   name: "pl.mean"
   update_arg_types: FLOAT64

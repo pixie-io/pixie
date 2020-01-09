@@ -629,7 +629,7 @@ TEST_F(AnalyzerTest, copy_metadata_key_and_og_column) {
   ASSERT_OK(HandleRelation(ir_graph));
 }
 
-const char* kInnerJoinQuery = R"query(
+constexpr char kInnerJoinQuery[] = R"query(
 src1 = pl.DataFrame(table='cpu', select=['upid', 'cpu0','cpu1'])
 src2 = pl.DataFrame(table='network', select=['bytes_in', 'upid', 'bytes_out'])
 join = src1.merge(src2, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
@@ -678,7 +678,7 @@ TEST_F(AnalyzerTest, join_test) {
                                                        types::FLOAT64, types::FLOAT64));
 }
 
-const char* kInnerJoinFollowedByMapQuery = R"query(
+constexpr char kInnerJoinFollowedByMapQuery[] = R"query(
 src1 = pl.DataFrame(table='cpu', select=['upid', 'cpu0','cpu1'])
 src2 = pl.DataFrame(table='network', select=['upid', 'bytes_in', 'bytes_out'])
 join = src1.merge(src2, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
@@ -695,7 +695,7 @@ TEST_F(AnalyzerTest, use_join_col_test) {
   ASSERT_OK(HandleRelation(ir_graph));
 }
 
-const char* kDropColumn = R"query(
+constexpr char kDropColumn[] = R"query(
 src1 = pl.DataFrame(table='cpu', select=['upid', 'cpu0']).drop(columns=['upid'])
 pl.display(src1, 'dropped')
 )query";
@@ -717,7 +717,7 @@ TEST_F(AnalyzerTest, drop_to_map_test) {
   EXPECT_EQ(map->relation(), cpu0_relation);
 }
 
-const char* kDropNonexistentColumn = R"query(
+constexpr char kDropNonexistentColumn[] = R"query(
 src1 = pl.DataFrame(table='cpu', select=['upid', 'cpu0']).drop(columns=['thiscoldoesnotexist'])
 pl.display(src1, 'dropped')
 )query";
@@ -731,7 +731,7 @@ TEST_F(AnalyzerTest, drop_to_map_nonexistent_test) {
   EXPECT_THAT(analyzer_status,
               HasCompilerError("Column 'thiscoldoesnotexist' not found in parent dataframe"));
 }
-const char* kTwoWindowQuery = R"query(
+constexpr char kTwoWindowQuery[] = R"query(
 t1 = pl.DataFrame(table='http_events', start_time='-300s')
 t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
@@ -769,11 +769,11 @@ TEST_F(AnalyzerTest, eval_compile_time_function) {
 }
 
 // TODO(nserrino, philkuz): PL-1264 Add a  test case like start_time=a+a when that issue is fixed.
-const char* kCompileTimeStringFunc1 = R"pxl(
+constexpr char kCompileTimeStringFunc1[] = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-5m' + '-1h')
 pl.display(t1)
 )pxl";
-const char* kCompileTimeStringFunc2 = R"pxl(
+constexpr char kCompileTimeStringFunc2[] = R"pxl(
 a = '-5m'
 t1 = pl.DataFrame(table='http_events', start_time=a+'-10m')
 t2 = pl.DataFrame(table='http_events', start_time='-1h', end_time=a+'-15m')
@@ -796,7 +796,7 @@ TEST_F(AnalyzerTest, eval_compile_time_function_string_time_repeat_arg_two_ops) 
   ASSERT_OK(analyzer_status);
 }
 
-const char* kMultiDisplays = R"pxl(
+constexpr char kMultiDisplays[] = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-5m')
 pl.display(t1)
 pl.display(t1)

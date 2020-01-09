@@ -167,7 +167,7 @@ TEST_F(DAGTest, replace_parent_node_edges_test) {
   EXPECT_THAT(dag_.DependenciesOf(20), ElementsAre(3));
 }
 
-const char* kDAGProto = R"proto(
+constexpr char kDAGProto[] = R"proto(
 nodes {
   id: 20
 }
@@ -200,7 +200,7 @@ TEST_F(DAGTest, to_proto) {
   EXPECT_THAT(pb, EqualsProto(kDAGProto));
 }
 
-const char* kDAGProtoIgnoreIds = R"proto(
+constexpr char kDAGProtoIgnoreIds[] = R"proto(
 nodes {
   id: 5
   sorted_children: 8

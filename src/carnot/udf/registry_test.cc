@@ -176,7 +176,7 @@ TEST(RegistryDeathTest, double_register_uda) {
   EXPECT_DEATH(registry.RegisterOrDie<UDA1>("uda1"), ".*already exists.*");
 }
 
-const char* kExpectedUDFInfo = R"(
+constexpr char kExpectedUDFInfo[] = R"(
 udas {
   name: "uda1"
   update_arg_types: INT64
