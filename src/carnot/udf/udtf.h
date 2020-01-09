@@ -10,7 +10,7 @@ namespace pl {
 namespace carnot {
 namespace udf {
 
-class AnyUDTF {
+class AnyUDTF : public BaseFunc {
  public:
   virtual ~AnyUDTF() = default;
 };

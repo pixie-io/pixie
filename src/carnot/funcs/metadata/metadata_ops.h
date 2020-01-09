@@ -16,9 +16,8 @@ namespace funcs {
 namespace metadata {
 
 using ScalarUDF = pl::carnot::udf::ScalarUDF;
-using FunctionContext = pl::carnot::udf::FunctionContext;
 
-inline const pl::md::AgentMetadataState* GetMetadataState(FunctionContext* ctx) {
+inline const pl::md::AgentMetadataState* GetMetadataState(pl::carnot::udf::FunctionContext* ctx) {
   DCHECK(ctx != nullptr);
   auto md = ctx->metadata_state();
   DCHECK(md != nullptr);
@@ -27,7 +26,7 @@ inline const pl::md::AgentMetadataState* GetMetadataState(FunctionContext* ctx) 
 
 class ASIDUDF : public ScalarUDF {
  public:
-  types::Int64Value Exec(FunctionContext* ctx) {
+  Int64Value Exec(FunctionContext* ctx) {
     auto md = GetMetadataState(ctx);
     return md->asid();
   }
@@ -35,14 +34,12 @@ class ASIDUDF : public ScalarUDF {
 
 class UPIDToASIDUDF : public ScalarUDF {
  public:
-  types::Int64Value Exec(FunctionContext*, types::UInt128Value upid_value) {
-    return upid_value.High64() >> 32;
-  }
+  Int64Value Exec(FunctionContext*, UInt128Value upid_value) { return upid_value.High64() >> 32; }
 };
 
 class PodIDToPodNameUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_id) {
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
     auto md = GetMetadataState(ctx);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
@@ -56,13 +53,12 @@ class PodIDToPodNameUDF : public ScalarUDF {
 
 class PodNameToPodIDUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_name) {
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
     auto md = GetMetadataState(ctx);
     return GetPodID(md, pod_name);
   }
 
-  static types::StringValue GetPodID(const pl::md::AgentMetadataState* md,
-                                     types::StringValue pod_name) {
+  static StringValue GetPodID(const pl::md::AgentMetadataState* md, StringValue pod_name) {
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
     std::vector<std::string_view> name_parts = absl::StrSplit(pod_name, "/");
     if (name_parts.size() != 2) {
@@ -78,7 +74,7 @@ class PodNameToPodIDUDF : public ScalarUDF {
 
 class UPIDToContainerIDUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
 
     auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
@@ -104,7 +100,7 @@ inline const md::ContainerInfo* ContainerInfoFromUPID(const pl::md::AgentMetadat
 
 class UPIDToNamespaceUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     auto container_info = ContainerInfoFromUPID(md, upid_value);
     if (container_info == nullptr) {
@@ -120,7 +116,7 @@ class UPIDToNamespaceUDF : public ScalarUDF {
 
 class UPIDToPodIDUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     auto container_info = ContainerInfoFromUPID(md, upid_value);
     if (container_info == nullptr) {
@@ -132,7 +128,7 @@ class UPIDToPodIDUDF : public ScalarUDF {
 
 class UPIDToPodNameUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     auto container_info = ContainerInfoFromUPID(md, upid_value);
     if (container_info == nullptr) {
@@ -148,7 +144,7 @@ class UPIDToPodNameUDF : public ScalarUDF {
 
 class ServiceIDToServiceNameUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::StringValue service_id) {
+  StringValue Exec(FunctionContext* ctx, StringValue service_id) {
     auto md = GetMetadataState(ctx);
 
     const auto* service_info = md->k8s_metadata_state().ServiceInfoByID(service_id);
@@ -162,7 +158,7 @@ class ServiceIDToServiceNameUDF : public ScalarUDF {
 
 class ServiceNameToServiceIDUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::StringValue service_name) {
+  StringValue Exec(FunctionContext* ctx, StringValue service_name) {
     auto md = GetMetadataState(ctx);
     // This UDF expects the service name to be in the format of "<ns>/<service-name>".
     std::vector<std::string_view> name_parts = absl::StrSplit(service_name, "/");
@@ -211,7 +207,7 @@ class UPIDToK8S {
  */
 class UPIDToServiceIDUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     auto pod_info = UPIDToK8S::UPIDtoPod(md, upid_value);
     if (pod_info == nullptr || pod_info->services().size() == 0) {
@@ -237,7 +233,7 @@ class UPIDToServiceIDUDF : public ScalarUDF {
  */
 class UPIDToServiceNameUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     auto pod_info = UPIDToK8S::UPIDtoPod(md, upid_value);
     if (pod_info == nullptr || pod_info->services().size() == 0) {
@@ -263,7 +259,7 @@ class UPIDToServiceNameUDF : public ScalarUDF {
  */
 class PodIDToServiceNameUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_id) {
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
     auto md = GetMetadataState(ctx);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
@@ -291,7 +287,7 @@ class PodIDToServiceNameUDF : public ScalarUDF {
  */
 class PodIDToServiceIDUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_id) {
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
     auto md = GetMetadataState(ctx);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
@@ -318,7 +314,7 @@ class PodIDToServiceIDUDF : public ScalarUDF {
  */
 class PodNameToServiceNameUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_name) {
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
@@ -355,7 +351,7 @@ class PodNameToServiceNameUDF : public ScalarUDF {
  */
 class PodNameToServiceIDUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_name) {
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
@@ -388,7 +384,7 @@ class PodNameToServiceIDUDF : public ScalarUDF {
 
 class UPIDToStringUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext*, types::UInt128Value upid_value) {
+  StringValue Exec(FunctionContext*, UInt128Value upid_value) {
     auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
     auto upid = md::UPID(upid_uint128);
     return upid.String();
@@ -397,7 +393,7 @@ class UPIDToStringUDF : public ScalarUDF {
 
 class UPIDToPIDUDF : public ScalarUDF {
  public:
-  types::Int64Value Exec(FunctionContext*, types::UInt128Value upid_value) {
+  Int64Value Exec(FunctionContext*, UInt128Value upid_value) {
     auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
     auto upid = md::UPID(upid_uint128);
     return static_cast<int64_t>(upid.pid());
@@ -406,7 +402,7 @@ class UPIDToPIDUDF : public ScalarUDF {
 
 class PodIDToPodStartTimeUDF : public ScalarUDF {
  public:
-  types::Time64NSValue Exec(FunctionContext* ctx, types::StringValue pod_id) {
+  Time64NSValue Exec(FunctionContext* ctx, StringValue pod_id) {
     auto md = GetMetadataState(ctx);
     const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
     if (pod_info == nullptr) {
@@ -418,9 +414,9 @@ class PodIDToPodStartTimeUDF : public ScalarUDF {
 
 class PodNameToPodStartTimeUDF : public ScalarUDF {
  public:
-  types::Time64NSValue Exec(FunctionContext* ctx, types::StringValue pod_name) {
+  Time64NSValue Exec(FunctionContext* ctx, StringValue pod_name) {
     auto md = GetMetadataState(ctx);
-    types::StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
     const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
     if (pod_info == nullptr) {
       return 0;
@@ -436,11 +432,11 @@ class PodNameToPodStatusUDF : public ScalarUDF {
    *
    * @param ctx: the function context
    * @param pod_name: the Value containing a pod name.
-   * @return types::StringValue: the status of the pod.
+   * @return StringValue: the status of the pod.
    */
-  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_name) {
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
     auto md = GetMetadataState(ctx);
-    types::StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
     const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
     if (pod_info == nullptr) {
       return "";
@@ -459,9 +455,9 @@ class UPIDToCmdLineUDF : public ScalarUDF {
    *
    * @param ctx: The function context.
    * @param upid_value: The UPID value
-   * @return types::StringValue: the cmdline for the UPID.
+   * @return StringValue: the cmdline for the UPID.
    */
-  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
     auto upid = md::UPID(upid_uint128);

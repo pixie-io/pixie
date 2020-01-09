@@ -13,15 +13,12 @@
 #include "src/shared/metadata/pids.h"
 #include "src/shared/metadata/state_manager.h"
 
-PL_SUPPRESS_WARNINGS_START()
-// NOLINTNEXTLINE(build/include_subdir)
-#include "blockingconcurrentqueue.h"
-PL_SUPPRESS_WARNINGS_END()
-
 namespace pl {
 namespace carnot {
 namespace funcs {
 namespace metadata {
+
+using ::pl::carnot::udf::FunctionContext;
 
 using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
 using ::testing::AnyOf;

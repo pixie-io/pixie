@@ -26,7 +26,7 @@ namespace udf {
 /**
  * AnyUDF is the base class for all UDFs in carnot.
  */
-class AnyUDF {
+class AnyUDF : public BaseFunc {
  public:
   virtual ~AnyUDF() = default;
 };
@@ -34,7 +34,7 @@ class AnyUDF {
 /**
  * Any UDA is a base class for all UDAs in carnot.
  */
-class AnyUDA {
+class AnyUDA : public BaseFunc {
  public:
   virtual ~AnyUDA() = default;
 };
