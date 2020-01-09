@@ -11,9 +11,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include "src/common/base/macros.h"
-PL_SUPPRESS_WARNINGS_START()
 #include "src/stirling/http2/testing/proto/greet.grpc.pb.h"
-PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
 namespace stirling {

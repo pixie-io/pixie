@@ -16,7 +16,6 @@ PL_SUPPRESS_WARNINGS_START()
 // TODO(nserrino/michelle): Fix this lint issue so that we can remove the warning.
 // NOLINTNEXTLINE(build/include_subdir)
 #include "blockingconcurrentqueue.h"
-
 PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {

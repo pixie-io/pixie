@@ -17,10 +17,8 @@
 #include "src/vizier/messages/messagespb/messages.pb.h"
 #include "src/vizier/services/agent/manager/relation_info_manager.h"
 
-PL_SUPPRESS_WARNINGS_START()
 #include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 #include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
-PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
 namespace vizier {

@@ -1,9 +1,7 @@
 #include <iostream>
 
 #include "src/stirling/http2/testing/grpc_stub.h"
-PL_SUPPRESS_WARNINGS_START()
 #include "src/stirling/http2/testing/proto/greet.grpc.pb.h"
-PL_SUPPRESS_WARNINGS_END()
 
 using ::pl::stirling::http2::testing::Greeter;
 using ::pl::stirling::http2::testing::HelloReply;

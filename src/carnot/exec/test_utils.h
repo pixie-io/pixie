@@ -16,9 +16,7 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/table_store/table_store.h"
 
-PL_SUPPRESS_WARNINGS_START()
 #include "src/carnotpb/carnot_mock.grpc.pb.h"
-PL_SUPPRESS_WARNINGS_END();
 
 namespace pl {
 namespace carnot {

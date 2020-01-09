@@ -12,9 +12,6 @@
 #include "src/common/base/base.h"
 #include "src/common/uuid/uuid.h"
 
-PL_SUPPRESS_WARNINGS_START()
-PL_SUPPRESS_WARNINGS_END()
-
 namespace pl {
 namespace carnot {
 namespace exec {

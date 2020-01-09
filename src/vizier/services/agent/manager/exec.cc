@@ -8,9 +8,7 @@
 #include "src/common/perf/perf.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
-PL_SUPPRESS_WARNINGS_START()
 #include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
-PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
 namespace vizier {
