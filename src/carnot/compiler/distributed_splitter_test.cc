@@ -34,10 +34,10 @@ class BlockingOperatorGRPCBridgeRuleTest : public OperatorTests {
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
     rel_map->emplace("cpu", cpu_relation);
 
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map),
-                                                      std::make_unique<RegistryInfo>(), time_now);
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
   }
   std::unique_ptr<CompilerState> compiler_state_;
+  std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   table_store::schema::Relation cpu_relation;
 };
@@ -52,9 +52,7 @@ class SplitterTest : public OperatorTests {
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
     rel_map->emplace("cpu", cpu_relation);
 
-    auto info = std::make_unique<RegistryInfo>();
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(rel_map), std::move(info), time_now);
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
   }
   void HasGRPCSinkChild(int64_t id, IR* test_graph, const std::string& err_string) {
     IRNode* maybe_op_node = test_graph->Get(id);
@@ -84,6 +82,7 @@ class SplitterTest : public OperatorTests {
   }
 
   std::unique_ptr<CompilerState> compiler_state_;
+  std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   table_store::schema::Relation cpu_relation;
 };

@@ -19,11 +19,11 @@ class QLObjectTest : public OperatorTests {
   void SetUp() override {
     OperatorTests::SetUp();
 
-    auto info = std::make_unique<RegistryInfo>();
+    auto info = std::make_shared<RegistryInfo>();
     udfspb::UDFInfo info_pb;
     PL_CHECK_OK(info->Init(info_pb));
     auto compiler_state =
-        std::make_shared<CompilerState>(std::make_unique<RelationMap>(), std::move(info), 0);
+        std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
     // Graph is set in OperatorTests.
     ast_visitor = ASTVisitorImpl::Create(graph.get(), compiler_state.get()).ConsumeValueOrDie();
   }

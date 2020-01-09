@@ -40,15 +40,16 @@ scalar_udfs {
 class ASTExpressionTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    auto info_ = std::make_unique<RegistryInfo>();
+    info_ = std::make_shared<RegistryInfo>();
     udfspb::UDFInfo info_pb;
     google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &info_pb);
     PL_CHECK_OK(info_->Init(info_pb));
-    compiler_state_ = std::make_shared<CompilerState>(std::make_unique<RelationMap>(),
-                                                      std::move(info_), time_now_);
+    compiler_state_ =
+        std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now_);
     graph = std::make_shared<IR>();
     ast_visitor = ASTVisitorImpl::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
   }
+  std::shared_ptr<RegistryInfo> info_;
   Parser parser;
   std::shared_ptr<IR> graph;
   std::shared_ptr<ASTVisitor> ast_visitor;

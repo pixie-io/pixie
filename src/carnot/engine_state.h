@@ -27,10 +27,12 @@ class EngineState : public NotCopyable {
   EngineState(std::unique_ptr<udf::Registry> func_registry,
               std::shared_ptr<table_store::TableStore> table_store,
               std::shared_ptr<table_store::schema::Schema> schema,
+              std::unique_ptr<compiler::RegistryInfo> registry_info,
               const exec::KelvinStubGenerator& stub_generator, exec::GRPCRouter* grpc_router)
       : func_registry_(std::move(func_registry)),
         table_store_(std::move(table_store)),
         schema_(std::move(schema)),
+        registry_info_(std::move(registry_info)),
         stub_generator_(stub_generator),
         grpc_router_(grpc_router) {}
 
@@ -39,9 +41,12 @@ class EngineState : public NotCopyable {
       std::shared_ptr<table_store::TableStore> table_store,
       const exec::KelvinStubGenerator& stub_generator, exec::GRPCRouter* grpc_router) {
     auto schema = std::make_shared<table_store::schema::Schema>();
+    auto registry_info = std::make_unique<compiler::RegistryInfo>();
+    auto udf_info = func_registry->ToProto();
+    PL_RETURN_IF_ERROR(registry_info->Init(udf_info));
 
     return std::make_unique<EngineState>(std::move(func_registry), table_store, schema,
-                                         stub_generator, grpc_router);
+                                         std::move(registry_info), stub_generator, grpc_router);
   }
 
   std::shared_ptr<table_store::schema::Schema> schema() { return schema_; }
@@ -58,9 +63,7 @@ class EngineState : public NotCopyable {
 
   std::unique_ptr<compiler::CompilerState> CreateCompilerState(types::Time64NSValue time_now) {
     auto rel_map = table_store_->GetRelationMap();
-    auto registry_info = std::make_unique<compiler::RegistryInfo>();
-    PL_CHECK_OK(registry_info->Init(func_registry_->ToProto()));
-    return std::make_unique<compiler::CompilerState>(std::move(rel_map), std::move(registry_info),
+    return std::make_unique<compiler::CompilerState>(std::move(rel_map), registry_info_.get(),
                                                      time_now);
   }
 
@@ -68,6 +71,7 @@ class EngineState : public NotCopyable {
   std::unique_ptr<udf::Registry> func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<table_store::schema::Schema> schema_;
+  std::unique_ptr<compiler::RegistryInfo> registry_info_;
   const exec::KelvinStubGenerator stub_generator_;
   exec::GRPCRouter* grpc_router_ = nullptr;
 };

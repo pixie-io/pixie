@@ -23,14 +23,13 @@ StatusOr<std::unique_ptr<RelationMap>> LogicalPlanner::MakeRelationMap(const Sch
 }
 
 StatusOr<std::unique_ptr<CompilerState>> LogicalPlanner::CreateCompilerState(
-    const distributedpb::LogicalPlannerState& logical_state) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
+    const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* registry_info) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<compiler::RelationMap> rel_map,
                       MakeRelationMap(logical_state.schema()));
 
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
-  return std::make_unique<compiler::CompilerState>(std::move(rel_map), std::move(registry_info),
+  return std::make_unique<compiler::CompilerState>(std::move(rel_map), registry_info,
                                                    pl::CurrentTimeNS());
 }
 
@@ -52,9 +51,10 @@ Status LogicalPlanner::Init(bool distributed) {
 
 StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
     const distributedpb::LogicalPlannerState& logical_state, const std::string& query) {
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
   // Compile into the IR.
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState(logical_state));
+                      CreateCompilerState(logical_state, registry_info.get()));
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> single_node_plan,
                       compiler_.CompileToIR(query, compiler_state.get()));
   // Create the distributed plan.

@@ -37,9 +37,9 @@ scalar_udfs {
 )proto";
 class CompilerTest : public ::testing::Test {
  protected:
-  std::unique_ptr<RegistryInfo> SetUpRegistryInfo() {
-    // TODO(philkuz) replace the following call info
-    // info = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
+  void SetUpRegistryInfo() {
+    // TODO(philkuz) replace the following call info_
+    // info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
     auto func_registry = std::make_unique<udf::Registry>("func_registry");
     funcs::RegisterFuncsOrDie(func_registry.get());
     auto udf_proto = func_registry->ToProto();
@@ -47,12 +47,13 @@ class CompilerTest : public ::testing::Test {
     std::string new_udf_info = absl::Substitute("$0$1", udf_proto.DebugString(), kExtraScalarUDFs);
     google::protobuf::TextFormat::MergeFromString(new_udf_info, &udf_proto);
 
-    auto info = std::make_unique<compiler::RegistryInfo>();
-    PL_CHECK_OK(info->Init(udf_proto));
-    return info;
+    info_ = std::make_unique<compiler::RegistryInfo>();
+    PL_CHECK_OK(info_->Init(udf_proto));
   }
 
   void SetUp() override {
+    SetUpRegistryInfo();
+
     auto rel_map = std::make_unique<RelationMap>();
     rel_map->emplace("sequences", Relation(
                                       {
@@ -96,12 +97,12 @@ class CompilerTest : public ::testing::Test {
     http_events_relation.AddColumn(types::INT64, "http_resp_latency_ns");
     rel_map->emplace("http_events", http_events_relation);
 
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(rel_map), SetUpRegistryInfo(), time_now);
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
 
     compiler_ = Compiler();
   }
   std::unique_ptr<CompilerState> compiler_state_;
+  std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   Compiler compiler_;
   Relation cgroups_relation_;

@@ -1108,10 +1108,11 @@ TEST_F(CarnotTest, pass_logical_plan) {
   pl::StatusOr<std::unique_ptr<compiler::RegistryInfo>> registry_info_or_s =
       udfexporter::ExportUDFInfo();
   ASSERT_OK(registry_info_or_s);
+  std::unique_ptr<compiler::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
 
   std::unique_ptr<compiler::CompilerState> compiler_state =
-      std::make_unique<compiler::CompilerState>(
-          table_store_->GetRelationMap(), registry_info_or_s.ConsumeValueOrDie(), current_time);
+      std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
+                                                current_time);
   StatusOr<planpb::Plan> logical_plan_status =
       compiler.Compile(absl::Substitute(query, logical_plan_table_name), compiler_state.get());
   ASSERT_OK(logical_plan_status);
@@ -1168,10 +1169,11 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
   pl::StatusOr<std::unique_ptr<compiler::RegistryInfo>> registry_info_or_s =
       udfexporter::ExportUDFInfo();
   ASSERT_OK(registry_info_or_s);
+  std::unique_ptr<compiler::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
 
   std::unique_ptr<compiler::CompilerState> compiler_state =
-      std::make_unique<compiler::CompilerState>(
-          table_store_->GetRelationMap(), registry_info_or_s.ConsumeValueOrDie(), current_time);
+      std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
+                                                current_time);
   StatusOr<planpb::Plan> logical_plan_status =
       compiler.Compile(absl::Substitute(query, table_name), compiler_state.get());
   ASSERT_OK(logical_plan_status);

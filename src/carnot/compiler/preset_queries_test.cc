@@ -36,7 +36,10 @@ using ::testing::ContainsRegex;
 
 class PresetQueriesTest : public ::testing::Test {
  protected:
+  void SetUpRegistryInfo() { info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie(); }
+
   void SetUp() override {
+    SetUpRegistryInfo();
     auto rel_map = std::make_unique<RelationMap>();
     absl::flat_hash_map<std::string, Relation> absl_rel_map;
 
@@ -52,9 +55,7 @@ class PresetQueriesTest : public ::testing::Test {
       absl_rel_map[rel_info.name] = rel_info.relation;
     }
 
-    auto info = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(rel_map), std::move(info), time_now);
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
     compiler_ = Compiler();
 
     EXPECT_OK(table_store::schema::Schema::ToProto(&schema_, absl_rel_map));
@@ -77,6 +78,7 @@ class PresetQueriesTest : public ::testing::Test {
   // Using map so that test order is deterministic.
   std::map<std::string, std::string> preset_queries_;
   std::unique_ptr<CompilerState> compiler_state_;
+  std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   Compiler compiler_;
   table_store::schemapb::Schema schema_;

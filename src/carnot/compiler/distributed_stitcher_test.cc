@@ -42,8 +42,8 @@ class StitcherTest : public OperatorTests {
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
     rel_map->emplace("cpu", cpu_relation);
 
-    compiler_state_ = std::make_unique<CompilerState>(
-        std::move(rel_map), std::make_unique<compiler::RegistryInfo>(), time_now);
+    info_ = std::make_unique<compiler::RegistryInfo>();
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
   }
   distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
     distributedpb::DistributedState physical_state_pb;
@@ -67,6 +67,7 @@ class StitcherTest : public OperatorTests {
   }
 
   std::unique_ptr<CompilerState> compiler_state_;
+  std::unique_ptr<compiler::RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
 };
 
