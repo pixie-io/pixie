@@ -15,7 +15,7 @@ namespace builtins {
 // Revisit when we have them.
 class PluckUDF : public udf::ScalarUDF {
  public:
-  types::StringValue Exec(udf::FunctionContext*, types::StringValue in, types::StringValue key) {
+  StringValue Exec(FunctionContext*, StringValue in, StringValue key) {
     rapidjson::Document d;
     rapidjson::ParseResult ok = d.Parse(in.data());
     // TODO(zasgar/michelle): Replace with null when available.
@@ -39,7 +39,7 @@ class PluckUDF : public udf::ScalarUDF {
 
 class PluckAsInt64UDF : public udf::ScalarUDF {
  public:
-  types::Int64Value Exec(udf::FunctionContext*, types::StringValue in, types::StringValue key) {
+  Int64Value Exec(FunctionContext*, StringValue in, StringValue key) {
     rapidjson::Document d;
     rapidjson::ParseResult ok = d.Parse(in.data());
     // TODO(zasgar/michelle): Replace with null when available.
@@ -53,7 +53,7 @@ class PluckAsInt64UDF : public udf::ScalarUDF {
 
 class PluckAsFloat64UDF : public udf::ScalarUDF {
  public:
-  types::Float64Value Exec(udf::FunctionContext*, types::StringValue in, types::StringValue key) {
+  Float64Value Exec(FunctionContext*, StringValue in, StringValue key) {
     rapidjson::Document d;
     rapidjson::ParseResult ok = d.Parse(in.data());
     // TODO(zasgar/michelle): Replace with null when available.

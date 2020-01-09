@@ -16,10 +16,10 @@ template <typename TArg>
 class QuantilesUDA : public udf::UDA {
  public:
   QuantilesUDA() : digest_(1000) {}
-  void Update(udf::FunctionContext*, TArg val) { digest_.add(val.val); }
-  void Merge(udf::FunctionContext*, const QuantilesUDA& other) { digest_.merge(&other.digest_); }
+  void Update(FunctionContext*, TArg val) { digest_.add(val.val); }
+  void Merge(FunctionContext*, const QuantilesUDA& other) { digest_.merge(&other.digest_); }
 
-  types::StringValue Finalize(udf::FunctionContext*) {
+  StringValue Finalize(FunctionContext*) {
     rapidjson::Document d;
     d.SetObject();
     d.AddMember("p01", digest_.quantile(0.01), d.GetAllocator());
