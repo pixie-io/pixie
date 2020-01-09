@@ -171,7 +171,7 @@ Status K8sMetadataState::HandleServiceUpdate(const ServiceUpdate& update) {
 }
 
 std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
-  auto state = std::make_shared<AgentMetadataState>(asid_);
+  auto state = std::make_shared<AgentMetadataState>(hostname_, asid_);
   state->last_update_ts_ns_ = last_update_ts_ns_;
   state->epoch_id_ = epoch_id_;
   state->asid_ = asid_;

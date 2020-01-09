@@ -469,6 +469,18 @@ class UPIDToCmdLineUDF : public ScalarUDF {
   }
 };
 
+class HostnameUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the hostname of the machine.
+   */
+  StringValue Exec(FunctionContext* ctx) {
+    auto md = GetMetadataState(ctx);
+
+    return md->hostname();
+  }
+};
+
 void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry);
 
 }  // namespace metadata

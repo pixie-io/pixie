@@ -26,7 +26,8 @@ using ::testing::AnyOf;
 class MetadataOpsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    metadata_state_ = std::make_shared<pl::md::AgentMetadataState>(1);
+    metadata_state_ =
+        std::make_shared<pl::md::AgentMetadataState>(/* hostname */ "myhost", /* asid */ 1);
     // Apply updates to metadata state.
     updates_ =
         std::make_unique<moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>>();
@@ -298,6 +299,13 @@ TEST_F(MetadataOpsTest, upid_to_cmdline) {
   EXPECT_EQ(udf.Exec(function_ctx.get(), upid1.value()), "test");
   auto upid2 = md::UPID(123, 567, 468);
   EXPECT_EQ(udf.Exec(function_ctx.get(), upid2.value()), "cmdline");
+}
+
+TEST_F(MetadataOpsTest, hostname) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+
+  HostnameUDF udf;
+  EXPECT_EQ(udf.Exec(function_ctx.get()), "myhost");
 }
 
 }  // namespace metadata

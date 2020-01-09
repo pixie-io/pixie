@@ -76,7 +76,7 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     auto sys_config = system::MockConfig();
     EXPECT_CALL(sys_config, KernelTicksPerSecond()).WillRepeatedly(::testing::Return(10000000));
 
-    mds_manager_ = std::make_unique<md::AgentMetadataStateManager>(1, sys_config);
+    mds_manager_ = std::make_unique<md::AgentMetadataStateManager>("host", 1, sys_config);
 
     // Relation info with no tabletization.
     Relation relation0({types::TIME64NS, types::INT64}, {"time_", "count"});

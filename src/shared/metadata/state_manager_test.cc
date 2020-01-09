@@ -157,8 +157,9 @@ void GenerateTestUpdateEventsForNonExistentPod(
 class AgentMetadataStateTest : public ::testing::Test {
  protected:
   static constexpr int kASID = 123;
+  static constexpr char kHostname[] = "myhost";
 
-  AgentMetadataStateTest() : metadata_state_(kASID) {}
+  AgentMetadataStateTest() : metadata_state_(kHostname, kASID) {}
 
   AgentMetadataState metadata_state_;
 };
@@ -170,6 +171,7 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &updates));
   EXPECT_EQ(0, updates.size_approx());
 
+  EXPECT_EQ("myhost", metadata_state_.hostname());
   EXPECT_EQ(123, metadata_state_.asid());
 
   K8sMetadataState* state = metadata_state_.k8s_metadata_state();

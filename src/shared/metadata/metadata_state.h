@@ -148,9 +148,14 @@ class K8sMetadataState : NotCopyable {
 class AgentMetadataState : NotCopyable {
  public:
   AgentMetadataState() = delete;
-  explicit AgentMetadataState(uint32_t asid)
-      : asid_(asid), k8s_metadata_state_(new K8sMetadataState()) {}
+  explicit AgentMetadataState(uint32_t asid) : AgentMetadataState(/* hostname */ "unknown", asid) {}
 
+  AgentMetadataState(std::string_view hostname, uint32_t asid)
+      : hostname_(std::string(hostname)),
+        asid_(asid),
+        k8s_metadata_state_(new K8sMetadataState()) {}
+
+  const std::string& hostname() const { return hostname_; }
   uint32_t asid() const { return asid_; }
 
   int64_t last_update_ts_ns() const { return last_update_ts_ns_; }
@@ -202,6 +207,7 @@ class AgentMetadataState : NotCopyable {
    */
   uint64_t epoch_id_ = 0;
 
+  std::string hostname_;
   uint32_t asid_;
 
   std::unique_ptr<K8sMetadataState> k8s_metadata_state_;

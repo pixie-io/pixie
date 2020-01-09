@@ -36,10 +36,11 @@ class AgentMetadataStateManager {
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
   using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
 
-  explicit AgentMetadataStateManager(uint32_t asid, const pl::system::Config& config)
+  explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid,
+                                     const pl::system::Config& config)
       : asid_(asid) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
-    agent_metadata_state_ = std::make_shared<AgentMetadataState>(asid);
+    agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid);
   }
 
   uint32_t asid() { return asid_; }
