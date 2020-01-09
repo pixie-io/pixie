@@ -16,14 +16,14 @@ const CacheFlushMaxRetries int64 = 5
 
 // KeyValueStore is a key value store which supports getting and setting multiple values.
 type KeyValueStore interface {
-	Get(string) (string, error)
+	Get(string) ([]byte, error)
 	SetAll(*map[string]Entry) error
-	GetWithPrefix(string) ([]string, []string, error)
+	GetWithPrefix(string) ([]string, [][]byte, error)
 }
 
 // Entry is an entry value + ttl inside a key value store.
 type Entry struct {
-	Value     string
+	Value     []byte
 	ExpiresAt time.Time
 }
 
@@ -84,13 +84,13 @@ func (c *Cache) FlushToDatastore() {
 }
 
 // Get gets the given key from the cache or the backing datastore.
-func (c *Cache) Get(key string) (string, error) {
+func (c *Cache) Get(key string) ([]byte, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if val, ok := c.cacheMap[key]; ok {
 		if !val.ExpiresAt.IsZero() && val.ExpiresAt.Before(c.clock.Now()) {
-			return "", nil
+			return nil, nil
 		}
 		return val.Value, nil
 	}
@@ -104,7 +104,7 @@ func (c *Cache) SetWithTTL(key string, value string, ttl time.Duration) {
 	defer c.mu.Unlock()
 
 	c.cacheMap[key] = Entry{
-		Value:     value,
+		Value:     []byte(value),
 		ExpiresAt: c.clock.Now().Add(ttl),
 	}
 }
@@ -115,15 +115,15 @@ func (c *Cache) Set(key string, value string) {
 	defer c.mu.Unlock()
 
 	c.cacheMap[key] = Entry{
-		Value:     value,
+		Value:     []byte(value),
 		ExpiresAt: time.Time{}, // The zero value of time should represent no TTL.
 	}
 }
 
 // GetWithPrefix gets all keys and values with the given prefix.
-func (c *Cache) GetWithPrefix(prefix string) (keys []string, values []string, err error) {
+func (c *Cache) GetWithPrefix(prefix string) (keys []string, values [][]byte, err error) {
 	keys = make([]string, 0)
-	values = make([]string, 0)
+	values = make([][]byte, 0)
 
 	// Find all keys in cache beginning with prefix.
 	cacheKeys := make([]string, 0)

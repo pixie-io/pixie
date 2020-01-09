@@ -34,9 +34,9 @@ func (m *MockKeyValueStore) EXPECT() *MockKeyValueStoreMockRecorder {
 }
 
 // Get mocks base method
-func (m *MockKeyValueStore) Get(arg0 string) (string, error) {
+func (m *MockKeyValueStore) Get(arg0 string) ([]byte, error) {
 	ret := m.ctrl.Call(m, "Get", arg0)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -59,10 +59,10 @@ func (mr *MockKeyValueStoreMockRecorder) SetAll(arg0 interface{}) *gomock.Call {
 }
 
 // GetWithPrefix mocks base method
-func (m *MockKeyValueStore) GetWithPrefix(arg0 string) ([]string, []string, error) {
+func (m *MockKeyValueStore) GetWithPrefix(arg0 string) ([]string, [][]byte, error) {
 	ret := m.ctrl.Call(m, "GetWithPrefix", arg0)
 	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].([]string)
+	ret1, _ := ret[1].([][]byte)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

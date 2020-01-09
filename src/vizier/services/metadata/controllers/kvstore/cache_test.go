@@ -27,15 +27,15 @@ func TestCache_GetFromCache(t *testing.T) {
 
 	val, err := c.Get("new_key")
 	assert.Nil(t, err)
-	assert.Equal(t, "", val)
+	assert.Nil(t, val)
 
 	val, err = c.Get("another_key")
 	assert.Nil(t, err)
-	assert.Equal(t, "abc", val)
+	assert.Equal(t, "abc", string(val))
 
 	val, err = c.Get("non_ttl_key")
 	assert.Nil(t, err)
-	assert.Equal(t, "1234", val)
+	assert.Equal(t, "1234", string(val))
 }
 
 func TestCache_GetFromDatastore(t *testing.T) {
@@ -45,7 +45,7 @@ func TestCache_GetFromDatastore(t *testing.T) {
 	mockDs.
 		EXPECT().
 		Get("existing_key").
-		Return("abcd", nil)
+		Return([]byte("abcd"), nil)
 
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
@@ -54,7 +54,7 @@ func TestCache_GetFromDatastore(t *testing.T) {
 
 	val, err := c.Get("existing_key")
 	assert.Nil(t, err)
-	assert.Equal(t, "abcd", val)
+	assert.Equal(t, "abcd", string(val))
 }
 
 func TestCache_Flush(t *testing.T) {
@@ -65,15 +65,15 @@ func TestCache_Flush(t *testing.T) {
 
 	expectedFlush := map[string]kvstore.Entry{
 		"abcd": kvstore.Entry{
-			Value:     "efgh",
+			Value:     []byte("efgh"),
 			ExpiresAt: expireTime,
 		},
 		"aKey": kvstore.Entry{
-			Value:     "xyz",
+			Value:     []byte("xyz"),
 			ExpiresAt: expireTime,
 		},
 		"non_ttl_key": kvstore.Entry{
-			Value:     "1234",
+			Value:     []byte("1234"),
 			ExpiresAt: time.Time{},
 		},
 	}
@@ -84,15 +84,15 @@ func TestCache_Flush(t *testing.T) {
 	mockDs.
 		EXPECT().
 		Get("abcd").
-		Return("efgh", nil)
+		Return([]byte("efgh"), nil)
 	mockDs.
 		EXPECT().
 		Get("aKey").
-		Return("xyz", nil)
+		Return([]byte("xyz"), nil)
 	mockDs.
 		EXPECT().
 		Get("expiredKey").
-		Return("", nil)
+		Return(nil, nil)
 
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
@@ -107,15 +107,15 @@ func TestCache_Flush(t *testing.T) {
 
 	val, err := c.Get("abcd")
 	assert.Nil(t, err)
-	assert.Equal(t, "efgh", val)
+	assert.Equal(t, []byte("efgh"), val)
 
 	val, err = c.Get("aKey")
 	assert.Nil(t, err)
-	assert.Equal(t, "xyz", val)
+	assert.Equal(t, []byte("xyz"), val)
 
 	val, err = c.Get("expiredKey")
 	assert.Nil(t, err)
-	assert.Equal(t, "", val)
+	assert.Equal(t, []byte(nil), val)
 }
 
 func TestCache_GetPrefix(t *testing.T) {
@@ -128,46 +128,46 @@ func TestCache_GetPrefix(t *testing.T) {
 		name         string
 		prefix       string
 		outputKeys   []string
-		outputValues []string
+		outputValues [][]byte
 		cacheKeys    []string
 		cacheValues  []string
 		cacheTTL     []time.Duration
 		dsKeys       []string
-		dsValues     []string
+		dsValues     [][]byte
 		hasError     bool
 	}{
 		{
 			name:         "valid",
 			prefix:       "a",
 			outputKeys:   []string{"aa", "ab", "ac", "af", "ag", "ah"},
-			outputValues: []string{"some", "value", "2", "3", "here", "4"},
+			outputValues: [][]byte{[]byte("some"), []byte("value"), []byte("2"), []byte("3"), []byte("here"), []byte("4")},
 			cacheKeys:    []string{"aa", "no", "ab", "ae", "ag", "non-matching"},
 			cacheValues:  []string{"some", "test", "value", "goes", "here", "abc"},
 			cacheTTL:     []time.Duration{time.Second * 0, time.Second * 0, time.Second * 10, time.Second * 1, time.Second * 0, time.Second * 10},
 			dsKeys:       []string{"ab", "ac", "af", "ah"},
-			dsValues:     []string{"1", "2", "3", "4"},
+			dsValues:     [][]byte{[]byte("1"), []byte("2"), []byte("3"), []byte("4")},
 		},
 		{
 			name:         "datastore empty",
 			prefix:       "a",
 			outputKeys:   []string{"aa", "ab", "ag"},
-			outputValues: []string{"some", "hi", "value"},
+			outputValues: [][]byte{[]byte("some"), []byte("hi"), []byte("value")},
 			cacheKeys:    []string{"aa", "ag", "ae", "ab"},
 			cacheValues:  []string{"some", "value", "here", "hi"},
 			cacheTTL:     []time.Duration{time.Second * 0, time.Second * 10, time.Second * 1, time.Second * 10},
 			dsKeys:       []string{},
-			dsValues:     []string{},
+			dsValues:     [][]byte{},
 		},
 		{
 			name:         "cache empty",
 			prefix:       "a",
 			outputKeys:   []string{"ab", "ac", "af", "ah"},
-			outputValues: []string{"1", "2", "3", "4"},
+			outputValues: [][]byte{[]byte("1"), []byte("2"), []byte("3"), []byte("4")},
 			cacheKeys:    []string{},
 			cacheValues:  []string{},
 			cacheTTL:     []time.Duration{},
 			dsKeys:       []string{"ab", "ac", "af", "ah"},
-			dsValues:     []string{"1", "2", "3", "4"},
+			dsValues:     [][]byte{[]byte("1"), []byte("2"), []byte("3"), []byte("4")},
 		},
 	}
 
