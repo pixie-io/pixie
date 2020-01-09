@@ -67,7 +67,7 @@ final class FileCheckerTest {
         foreach ($protoFiles as &$file) {
             $pbFilename = substr($file,0,-6) . '.pb.go';
             $test_results = $this->checkFile($file, $pbFilename, $test_results, '.proto', 'To regenerate, run this command:' .
-                    'python $(bazel info workspace)/scripts/update_go_protos.py -r <.pb.go bazel directive>');
+                    'python $(bazel info workspace)/scripts/update_go_protos.sh');
         }
 
         foreach ($gqlFiles as &$file) {
