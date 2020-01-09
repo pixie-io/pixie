@@ -1,6 +1,6 @@
 import './editor.scss';
 
-import {MUTATE_DRAWER_OPENED, QUERY_DRAWER_OPENED} from 'common/cloud-gql-client';
+import {MUTATE_DRAWER_OPENED, QUERY_DRAWER_OPENED} from 'common/local-gql';
 import gql from 'graphql-tag';
 // @ts-ignore : TS does not like image files.
 import * as closeIcon from 'images/icons/cross.svg';
@@ -10,7 +10,7 @@ import * as React from 'react';
 import {Button, Nav, Tab, Tabs} from 'react-bootstrap';
 import * as uuid from 'uuid/v1';
 
-import {useMutation, useQuery} from '@apollo/react-hooks';
+import {ApolloProvider, useMutation, useQuery} from '@apollo/react-hooks';
 
 import {Drawer} from '../../components/drawer/drawer';
 import {saveCodeToStorage} from './code-utils';
@@ -109,44 +109,46 @@ export const Editor = ({ client }) => {
   }, []);
 
   return (
-    <div className='pixie-editor-container'>
-      <Drawer
-        openedWidth='15vw'
-        defaultOpened={data && data.drawerOpened}
-        onOpenedChanged={updateDrawerMemo}
-      >
-        <EditorDrawerMenu onSelect={createNewTab} />
-      </Drawer>
-      <div className='pixie-editor-tabs-container'>
-        <Tab.Container
-          activeKey={state.activeTab}
-          onSelect={selectTab}
-          mountOnEnter={true}
-          id='pixie-editor-tabs'>
-          <Nav variant='tabs' className='pixie-editor-tabs-nav'>
-            {state.tabs.map((tab) =>
-              <Nav.Item key={tab.id} as={Nav.Link} eventKey={tab.id}>
-                <EditorTabTitle {...tab} onClose={(id) => deleteTab(id)} />
-              </Nav.Item>,
-            )}
-            <Nav.Item as={Nav.Link} eventKey={NEW_TAB} className='pixie-editor-tabs-new'>
-              <img src={newTabIcon} />
-            </Nav.Item>
-          </Nav>
-          <Tab.Content className='pixie-editor-tab-content-container'>
-            {state.tabs.map((tab) =>
-              <Tab.Pane
-                eventKey={tab.id}
-                key={tab.id}
-                unmountOnExit={false}
-                className='pixie-editor-content-fullbleed'>
-                <EditorContent {...tab} />
-              </Tab.Pane>,
-            )}
-          </Tab.Content>
-        </Tab.Container>
-      </div>
-    </div >
+    <ApolloProvider client={client}>
+      <div className='pixie-editor-container'>
+        <Drawer
+          openedWidth='15vw'
+          defaultOpened={data && data.drawerOpened}
+          onOpenedChanged={updateDrawerMemo}
+        >
+          <EditorDrawerMenu onSelect={createNewTab} />
+        </Drawer>
+        <div className='pixie-editor-tabs-container'>
+          <Tab.Container
+            activeKey={state.activeTab}
+            onSelect={selectTab}
+            mountOnEnter={true}
+            id='pixie-editor-tabs'>
+            <Nav variant='tabs' className='pixie-editor-tabs-nav'>
+              {state.tabs.map((tab) =>
+                <Nav.Item key={tab.id} as={Nav.Link} eventKey={tab.id}>
+                  <EditorTabTitle {...tab} onClose={(id) => deleteTab(id)} />
+                </Nav.Item>,
+              )}
+              <Nav.Item as={Nav.Link} eventKey={NEW_TAB} className='pixie-editor-tabs-new'>
+                <img src={newTabIcon} />
+              </Nav.Item>
+            </Nav>
+            <Tab.Content className='pixie-editor-tab-content-container'>
+              {state.tabs.map((tab) =>
+                <Tab.Pane
+                  eventKey={tab.id}
+                  key={tab.id}
+                  unmountOnExit={false}
+                  className='pixie-editor-content-fullbleed'>
+                  <EditorContent {...tab} />
+                </Tab.Pane>,
+              )}
+            </Tab.Content>
+          </Tab.Container>
+        </div>
+      </div >
+    </ApolloProvider>
   );
 };
 

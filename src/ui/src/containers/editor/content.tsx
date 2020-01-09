@@ -1,5 +1,6 @@
 import './content.scss';
 
+import {APPEND_HISTORY} from 'common/local-gql';
 import {vizierGQLClient} from 'common/vizier-gql-client';
 import {LineChart} from 'components/chart/line-chart';
 import {ScatterPlot} from 'components/chart/scatter';
@@ -11,7 +12,7 @@ import {Button, Nav, Tab} from 'react-bootstrap';
 import Split from 'react-split';
 import {AutoSizer} from 'react-virtualized';
 
-import {useMutation} from '@apollo/react-hooks';
+import {useMutation, useQuery} from '@apollo/react-hooks';
 
 import {QueryResultViewer} from '../vizier/query-result-viewer';
 import {getCodeFromStorage, saveCodeToStorage} from './code-utils';
@@ -34,13 +35,32 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
     },
   });
 
-  const executeQuery = (query: string) => {
+  const [saveHistory] = useMutation(APPEND_HISTORY);
+
+  const executeQuery = React.useCallback(() => {
+    const time = new Date();
     runQuery({
       variables: {
         queryStr: code,
       },
+    }).then(({ errors }) => {
+      saveHistory({
+        variables: {
+          history: {
+            time,
+            code,
+            title: props.title,
+            status: !errors ? 'FAILED' : 'SUCCESS',
+          },
+        },
+      });
     });
-  };
+  }, []);
+
+  const onCodeChange = React.useCallback((c) => {
+    setCode(c);
+    saveCodeToStorage(props.id, c);
+  }, []);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -51,7 +71,7 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
           size='sm'
           variant='secondary'
           disabled={loading}
-          onClick={() => executeQuery(code)}>
+          onClick={executeQuery}>
           Execute
         </Button>
       </div>
@@ -62,11 +82,8 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
         direction='vertical' >
         <CodeEditor
           code={code}
-          onChange={(c) => {
-            setCode(c);
-            saveCodeToStorage(props.id, c);
-          }}
-          onSubmit={() => executeQuery(code)}
+          onChange={onCodeChange}
+          onSubmit={executeQuery}
           disabled={loading}
         />
         <div className={`pixie-editor--result-viewer ${loading || error || !data ? 'center-content' : ''}`}>

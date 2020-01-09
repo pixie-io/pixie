@@ -25,10 +25,12 @@ export const Drawer: React.FC<React.PropsWithChildren<DrawerProps>> =
     const [opened, setOpened] = React.useState<boolean>(defaultOpened);
     const toggleOpened = React.useCallback(() => {
       setOpened((isOpened) => !isOpened);
+    }, []);
+    React.useEffect(() => {
       if (onOpenedChanged) {
-        onOpenedChanged(!opened);
+        onOpenedChanged(opened);
       }
-    }, [setOpened]);
+    }, [opened]);
     const styles = React.useMemo(() => ({
       width: opened ? openedWidth : closedWidth,
     }), [opened, openedWidth, closedWidth]);
