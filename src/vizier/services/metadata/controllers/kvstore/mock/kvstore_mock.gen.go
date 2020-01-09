@@ -47,7 +47,7 @@ func (mr *MockKeyValueStoreMockRecorder) Get(arg0 interface{}) *gomock.Call {
 }
 
 // SetAll mocks base method
-func (m *MockKeyValueStore) SetAll(arg0 *map[string]kvstore.Entry) error {
+func (m *MockKeyValueStore) SetAll(arg0 []kvstore.TTLKeyValue) error {
 	ret := m.ctrl.Call(m, "SetAll", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -70,4 +70,41 @@ func (m *MockKeyValueStore) GetWithPrefix(arg0 string) ([]string, [][]byte, erro
 // GetWithPrefix indicates an expected call of GetWithPrefix
 func (mr *MockKeyValueStoreMockRecorder) GetWithPrefix(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithPrefix", reflect.TypeOf((*MockKeyValueStore)(nil).GetWithPrefix), arg0)
+}
+
+// GetAll mocks base method
+func (m *MockKeyValueStore) GetAll(arg0 []string) ([][]byte, error) {
+	ret := m.ctrl.Call(m, "GetAll", arg0)
+	ret0, _ := ret[0].([][]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAll indicates an expected call of GetAll
+func (mr *MockKeyValueStoreMockRecorder) GetAll(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockKeyValueStore)(nil).GetAll), arg0)
+}
+
+// DeleteAll mocks base method
+func (m *MockKeyValueStore) DeleteAll(arg0 []string) error {
+	ret := m.ctrl.Call(m, "DeleteAll", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAll indicates an expected call of DeleteAll
+func (mr *MockKeyValueStoreMockRecorder) DeleteAll(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAll", reflect.TypeOf((*MockKeyValueStore)(nil).DeleteAll), arg0)
+}
+
+// DeleteWithPrefix mocks base method
+func (m *MockKeyValueStore) DeleteWithPrefix(arg0 string) error {
+	ret := m.ctrl.Call(m, "DeleteWithPrefix", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteWithPrefix indicates an expected call of DeleteWithPrefix
+func (mr *MockKeyValueStoreMockRecorder) DeleteWithPrefix(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteWithPrefix", reflect.TypeOf((*MockKeyValueStore)(nil).DeleteWithPrefix), arg0)
 }

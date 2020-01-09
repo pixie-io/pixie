@@ -1,6 +1,7 @@
 package kvstore_test
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -61,26 +62,58 @@ func TestCache_Flush(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-	expireTime := time.Unix(2, 0).Add(time.Second * 10)
 
-	expectedFlush := map[string]kvstore.Entry{
-		"abcd": kvstore.Entry{
-			Value:     []byte("efgh"),
-			ExpiresAt: expireTime,
+	expectedFlush := []kvstore.TTLKeyValue{
+		kvstore.TTLKeyValue{
+			Key:    "abcd",
+			Value:  []byte("efgh"),
+			Expire: true,
+			TTL:    int64(5),
 		},
-		"aKey": kvstore.Entry{
-			Value:     []byte("xyz"),
-			ExpiresAt: expireTime,
+		kvstore.TTLKeyValue{
+			Key:    "aKey",
+			Value:  []byte("xyz"),
+			Expire: true,
+			TTL:    int64(5),
 		},
-		"non_ttl_key": kvstore.Entry{
-			Value:     []byte("1234"),
-			ExpiresAt: time.Time{},
+		kvstore.TTLKeyValue{
+			Key:    "expiredKey",
+			Value:  []byte("hello"),
+			Expire: true,
+			TTL:    int64(-4),
+		},
+		kvstore.TTLKeyValue{
+			Key:    "non_ttl_key",
+			Value:  []byte("1234"),
+			Expire: false,
+			TTL:    int64(0),
+		},
+		kvstore.TTLKeyValue{
+			Key:    "deleted_key",
+			Value:  []byte(nil),
+			Expire: true,
+			TTL:    int64(-5),
 		},
 	}
+
 	mockDs.
 		EXPECT().
-		SetAll(&expectedFlush).
-		Return(nil)
+		SetAll(gomock.Any()).
+		DoAndReturn(func(kvs []kvstore.TTLKeyValue) error {
+			assert.Equal(t, len(expectedFlush), len(kvs))
+			for _, kv := range expectedFlush {
+				seen := false
+				for _, actualKv := range kvs {
+					if actualKv.Key == kv.Key && actualKv.Expire == kv.Expire && actualKv.TTL == kv.TTL && bytes.Compare(actualKv.Value, kv.Value) == 0 {
+						seen = true
+					}
+				}
+				assert.Equal(t, true, seen)
+			}
+
+			return nil
+		})
+
 	mockDs.
 		EXPECT().
 		Get("abcd").
@@ -94,6 +127,11 @@ func TestCache_Flush(t *testing.T) {
 		Get("expiredKey").
 		Return(nil, nil)
 
+	mockDs.
+		EXPECT().
+		Get("deleted_key").
+		Return(nil, nil)
+
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
 
@@ -101,6 +139,7 @@ func TestCache_Flush(t *testing.T) {
 	c.SetWithTTL("aKey", "xyz", time.Second*10)
 	c.SetWithTTL("expiredKey", "hello", time.Second*1)
 	c.Set("non_ttl_key", "1234")
+	c.DeleteAll([]string{"deleted_key"})
 	clock.Advance(time.Second * 5)
 
 	c.FlushToDatastore()
@@ -114,6 +153,10 @@ func TestCache_Flush(t *testing.T) {
 	assert.Equal(t, []byte("xyz"), val)
 
 	val, err = c.Get("expiredKey")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+
+	val, err = c.Get("deleted_key")
 	assert.Nil(t, err)
 	assert.Equal(t, []byte(nil), val)
 }
@@ -195,4 +238,116 @@ func TestCache_GetPrefix(t *testing.T) {
 			assert.Equal(t, tc.outputValues, outVals)
 		})
 	}
+}
+
+func TestCache_GetAll(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	c.SetWithTTL("new_key", "efgh", time.Second*1)
+	c.SetWithTTL("another_key", "abc", time.Second*10)
+	c.Set("non_ttl_key", "1234")
+	clock.Advance(time.Second * 5)
+
+	val, err := c.GetAll([]string{"another_key", "non_ttl_key"})
+	assert.Nil(t, err)
+	assert.Equal(t, [][]byte{[]byte("abc"), []byte("1234")}, val)
+
+	mockDs.
+		EXPECT().
+		GetAll([]string{"non_ttl_key", "non_existent_key", "key_in_db"}).
+		Return([][]byte{[]byte("old_value"), nil, []byte("value_in_db")}, nil)
+
+	val, err = c.GetAll([]string{"non_ttl_key", "non_existent_key", "key_in_db"})
+	assert.Nil(t, err)
+	assert.Equal(t, [][]byte{[]byte("1234"), nil, []byte("value_in_db")}, val)
+}
+
+func TestCache_DeleteAll(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	c.SetWithTTL("new_key", "efgh", time.Second*1)
+	c.SetWithTTL("another_key", "abc", time.Second*10)
+	c.SetWithTTL("a_key", "xyz", time.Second*10)
+	c.Set("non_ttl_key", "1234")
+	clock.Advance(time.Second * 5)
+
+	c.DeleteAll([]string{"new_key", "another_key", "non_ttl_key"})
+	clock.Advance(time.Second * 1)
+
+	val, err := c.Get("new_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+
+	val, err = c.Get("another_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+
+	val, err = c.Get("non_ttl_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+
+	val, err = c.Get("a_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte("xyz"), val)
+}
+
+func TestCache_DeleteWithPrefix(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	c.SetWithTTL("anew_key", "efgh", time.Second*1)
+	c.SetWithTTL("another_key", "abc", time.Second*10)
+	c.SetWithTTL("a_key", "xyz", time.Second*10)
+	c.Set("non_ttl_key", "1234")
+
+	mockDs.
+		EXPECT().
+		DeleteWithPrefix("a").
+		Return(nil)
+	mockDs.
+		EXPECT().
+		Get("anew_key").
+		Return(nil, nil)
+	mockDs.
+		EXPECT().
+		Get("another_key").
+		Return(nil, nil)
+	mockDs.
+		EXPECT().
+		Get("a_key").
+		Return(nil, nil)
+
+	err := c.DeleteWithPrefix("a")
+	assert.Nil(t, err)
+
+	val, err := c.Get("anew_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+
+	val, err = c.Get("another_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+
+	val, err = c.Get("a_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+
+	val, err = c.Get("non_ttl_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte("1234"), val)
+
 }

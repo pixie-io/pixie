@@ -17,19 +17,29 @@ const CacheFlushMaxRetries int64 = 5
 // KeyValueStore is a key value store which supports getting and setting multiple values.
 type KeyValueStore interface {
 	Get(string) ([]byte, error)
-	SetAll(*map[string]Entry) error
+	SetAll([]TTLKeyValue) error
 	GetWithPrefix(string) ([]string, [][]byte, error)
+	GetAll([]string) ([][]byte, error)
+	DeleteAll([]string) error
+	DeleteWithPrefix(string) error
 }
 
-// Entry is an entry value + ttl inside a key value store.
-type Entry struct {
+type entry struct {
 	Value     []byte
 	ExpiresAt time.Time
 }
 
+// TTLKeyValue is a key value entry with a TTL.
+type TTLKeyValue struct {
+	Key    string
+	Value  []byte
+	Expire bool // Whether or not this key-value should expire.
+	TTL    int64
+}
+
 // Cache is a cache for a key value store. It periodically flushes data to the key value store.
 type Cache struct {
-	cacheMap   map[string]Entry
+	cacheMap   map[string]entry
 	datastore  KeyValueStore
 	mu         sync.Mutex
 	clock      utils.Clock
@@ -45,7 +55,7 @@ func NewCache(datastore KeyValueStore) *Cache {
 // NewCacheWithClock creates a new cache with a clock. Used for testing purposes.
 func NewCacheWithClock(datastore KeyValueStore, clock utils.Clock) *Cache {
 	c := &Cache{
-		cacheMap:  make(map[string]Entry),
+		cacheMap:  make(map[string]entry),
 		datastore: datastore,
 		clock:     clock,
 	}
@@ -58,17 +68,20 @@ func (c *Cache) FlushToDatastore() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	cachedData := c.cacheMap
-
+	entries := make([]TTLKeyValue, len(c.cacheMap))
+	// Process values in cache into TTLKeyValues.
 	now := c.clock.Now()
-
-	// Don't bothering flushing expired data to the backing datastore.
-	for k, v := range cachedData {
-		if !v.ExpiresAt.IsZero() && v.ExpiresAt.Before(now) {
-			delete(cachedData, k)
+	i := 0
+	for k, v := range c.cacheMap {
+		ttl := int64(v.ExpiresAt.Sub(now).Seconds())
+		if v.ExpiresAt.IsZero() {
+			ttl = 0
 		}
+		entries[i] = TTLKeyValue{k, v.Value, !v.ExpiresAt.IsZero(), ttl}
+		i++
 	}
-	err := c.datastore.SetAll(&cachedData)
+
+	err := c.datastore.SetAll(entries)
 
 	if err != nil {
 		c.numRetries++
@@ -78,7 +91,7 @@ func (c *Cache) FlushToDatastore() {
 		log.WithError(err).Error("Could not flush cache to datastore.")
 	} else {
 		// Clear out cache.
-		c.cacheMap = make(map[string]Entry)
+		c.cacheMap = make(map[string]entry)
 		c.numRetries = 0
 	}
 }
@@ -99,11 +112,12 @@ func (c *Cache) Get(key string) ([]byte, error) {
 }
 
 // SetWithTTL puts the given key and value in the cache, which is later flushed to the backing datastore.
+// A TTL of 0 means that the key is deleted.
 func (c *Cache) SetWithTTL(key string, value string, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.cacheMap[key] = Entry{
+	c.cacheMap[key] = entry{
 		Value:     []byte(value),
 		ExpiresAt: c.clock.Now().Add(ttl),
 	}
@@ -114,10 +128,52 @@ func (c *Cache) Set(key string, value string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.cacheMap[key] = Entry{
+	c.cacheMap[key] = entry{
 		Value:     []byte(value),
 		ExpiresAt: time.Time{}, // The zero value of time should represent no TTL.
 	}
+}
+
+// DeleteAll deletes all of the keys in the cache and datastore if they exist.
+func (c *Cache) DeleteAll(keys []string) {
+	for _, key := range keys {
+		c.SetWithTTL(key, "", 0)
+	}
+}
+
+// GetAll get the values for all of the given keys and returns them in the given order. If no value exists
+// for the given key, it returns an empty string in that index.
+func (c *Cache) GetAll(keys []string) ([][]byte, error) {
+	vals := make([][]byte, len(keys))
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	cacheHits := 0
+	for i, k := range keys {
+		if val, ok := c.cacheMap[k]; ok {
+			if val.ExpiresAt.IsZero() || !val.ExpiresAt.Before(c.clock.Now()) {
+				vals[i] = val.Value
+				cacheHits++
+			}
+		}
+	}
+
+	if cacheHits == len(keys) {
+		return vals, nil
+	}
+
+	// Make a request to backing datastore and fill in missing values.
+	dVals, err := c.datastore.GetAll(keys)
+	if err != nil {
+		return nil, err
+	}
+	for i, val := range dVals {
+		if vals[i] == nil && val != nil {
+			vals[i] = val
+		}
+	}
+
+	return vals, nil
 }
 
 // GetWithPrefix gets all keys and values with the given prefix.
@@ -182,4 +238,18 @@ func (c *Cache) GetWithPrefix(prefix string) (keys []string, values [][]byte, er
 	}
 
 	return keys, values, nil
+}
+
+// DeleteWithPrefix deletes all keys and values with the given prefix.
+func (c *Cache) DeleteWithPrefix(prefix string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for key := range c.cacheMap {
+		if strings.HasPrefix(key, prefix) {
+			delete(c.cacheMap, key)
+		}
+	}
+
+	return c.datastore.DeleteWithPrefix(prefix)
 }

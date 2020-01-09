@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/stretchr/testify/assert"
@@ -43,18 +42,40 @@ func TestEtcdStore_SetAll(t *testing.T) {
 		t.Fatal("Failed to clear etcd data.")
 	}
 
-	e := kvstore.NewEtcdStore(etcdClient)
-	setMap := make(map[string]kvstore.Entry)
-	setMap["/abc"] = kvstore.Entry{
-		ExpiresAt: time.Time{},
-		Value:     []byte("1234"),
-	}
-	setMap["/def"] = kvstore.Entry{
-		ExpiresAt: time.Now().Add(time.Hour * 3),
-		Value:     []byte("5678"),
+	_, err = etcdClient.Put(context.Background(), "/existingKey", "xyz")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
 	}
 
-	err = e.SetAll(&setMap)
+	e := kvstore.NewEtcdStore(etcdClient)
+	setArr := []kvstore.TTLKeyValue{
+		kvstore.TTLKeyValue{
+			Key:    "/abc",
+			Value:  []byte("1234"),
+			Expire: false,
+			TTL:    0,
+		},
+		kvstore.TTLKeyValue{
+			Key:    "/def",
+			Value:  []byte("5678"),
+			Expire: true,
+			TTL:    10800,
+		},
+		kvstore.TTLKeyValue{
+			Key:    "/existingKey",
+			Value:  []byte("abcd"),
+			Expire: true,
+			TTL:    -10800,
+		},
+		kvstore.TTLKeyValue{
+			Key:    "/nonExistentKey",
+			Value:  []byte("efgh"),
+			Expire: true,
+			TTL:    -10800,
+		},
+	}
+
+	err = e.SetAll(setArr)
 	assert.Nil(t, err)
 
 	kv, err := etcdClient.Get(context.Background(), "/abc")
@@ -70,6 +91,20 @@ func TestEtcdStore_SetAll(t *testing.T) {
 	}
 	assert.Nil(t, err)
 	assert.Equal(t, "5678", string(kv.Kvs[0].Value))
+
+	kv, err = etcdClient.Get(context.Background(), "/existingKey")
+	if err != nil {
+		t.Fatal("Could not get value from etcd")
+	}
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(kv.Kvs))
+
+	kv, err = etcdClient.Get(context.Background(), "/nonExistentKey")
+	if err != nil {
+		t.Fatal("Could not get value from etcd")
+	}
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(kv.Kvs))
 }
 
 func TestEtcdStore_GetWithPrefix(t *testing.T) {
@@ -113,6 +148,93 @@ func TestEtcdStore_GetWithPrefix(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(keys))
 	assert.Equal(t, 0, len(vals))
+}
+
+func TestEtcdStore_GetAll(t *testing.T) {
+	_, err := etcdClient.Delete(context.Background(), "", clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal("Failed to clear etcd data.")
+	}
+
+	// Add items into etcd that we can get.
+	_, err = etcdClient.Put(context.Background(), "/abcd", "hello")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+	_, err = etcdClient.Put(context.Background(), "/aefg", "hola")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+	_, err = etcdClient.Put(context.Background(), "/ahij", "ciao")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+	_, err = etcdClient.Put(context.Background(), "/bklm", "bonjour")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+
+	e := kvstore.NewEtcdStore(etcdClient)
+	vals, err := e.GetAll([]string{"/abcd", "/bklm", "/aefg", "/doesntexist"})
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(vals))
+}
+
+func TestEtcdStore_DeleteWithPrefix(t *testing.T) {
+	_, err := etcdClient.Delete(context.Background(), "", clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal("Failed to clear etcd data.")
+	}
+
+	// Add items into etcd that we can get.
+	_, err = etcdClient.Put(context.Background(), "/abcd", "hello")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+	_, err = etcdClient.Put(context.Background(), "/aefg", "hola")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+	_, err = etcdClient.Put(context.Background(), "/ahij", "ciao")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+	_, err = etcdClient.Put(context.Background(), "/bklm", "bonjour")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+
+	e := kvstore.NewEtcdStore(etcdClient)
+	err = e.DeleteWithPrefix("/a")
+	assert.Nil(t, err)
+
+	kv, err := etcdClient.Get(context.Background(), "/abcd")
+	if err != nil {
+		t.Fatal("Could not get value from etcd")
+	}
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(kv.Kvs))
+
+	kv, err = etcdClient.Get(context.Background(), "/aefg")
+	if err != nil {
+		t.Fatal("Could not get value from etcd")
+	}
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(kv.Kvs))
+
+	kv, err = etcdClient.Get(context.Background(), "/ahij")
+	if err != nil {
+		t.Fatal("Could not get value from etcd")
+	}
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(kv.Kvs))
+
+	kv, err = etcdClient.Get(context.Background(), "/bklm")
+	if err != nil {
+		t.Fatal("Could not get value from etcd")
+	}
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(kv.Kvs))
 }
 
 func TestMain(m *testing.M) {

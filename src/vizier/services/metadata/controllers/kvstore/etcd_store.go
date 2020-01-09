@@ -3,7 +3,6 @@ package kvstore
 import (
 	"context"
 	"errors"
-	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
 	etcdutils "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
@@ -31,22 +30,49 @@ func (e *EtcdStore) Get(key string) ([]byte, error) {
 	return resp.Kvs[0].Value, nil
 }
 
+// GetAll gets the values for all of the given keys.
+func (e *EtcdStore) GetAll(keys []string) ([][]byte, error) {
+	ops := make([]v3.Op, len(keys))
+	for i, k := range keys {
+		ops[i] = v3.OpGet(k)
+	}
+
+	resp, err := etcdutils.BatchOps(e.client, ops)
+	if err != nil {
+		return nil, err
+	}
+
+	vals := make([][]byte, len(keys))
+	for i, r := range resp {
+		rRange := r.GetResponseRange().Kvs
+		if len(rRange) > 0 {
+			vals[i] = r.GetResponseRange().Kvs[0].Value
+			continue
+		}
+		vals[i] = nil
+
+	}
+
+	return vals, nil
+}
+
 // SetAll performs a put on all of the given keys and values in etcd.
-func (e *EtcdStore) SetAll(keysValues *map[string]Entry) error {
-	ops := make([]v3.Op, len(*keysValues))
-	i := 0
-	for k, v := range *keysValues {
+func (e *EtcdStore) SetAll(keysValues []TTLKeyValue) error {
+	ops := make([]v3.Op, len(keysValues))
+	for i, kv := range keysValues {
 		leaseID := v3.NoLease
-		if !v.ExpiresAt.IsZero() {
-			ttl := v.ExpiresAt.Sub(time.Now()).Seconds()
-			resp, err := e.client.Grant(context.TODO(), int64(ttl))
+		if kv.Expire && kv.TTL > 0 {
+			resp, err := e.client.Grant(context.TODO(), kv.TTL)
 			if err != nil {
 				return errors.New("Could not get grant for lease")
 			}
 			leaseID = resp.ID
+			ops[i] = v3.OpPut(kv.Key, string(kv.Value), v3.WithLease(leaseID))
+		} else if kv.Expire && kv.TTL <= 0 {
+			ops[i] = v3.OpDelete(kv.Key)
+		} else {
+			ops[i] = v3.OpPut(kv.Key, string(kv.Value), v3.WithLease(leaseID))
 		}
-		ops[i] = v3.OpPut(k, string(v.Value), v3.WithLease(leaseID))
-		i++
 	}
 
 	_, err := etcdutils.BatchOps(e.client, ops)
@@ -69,4 +95,10 @@ func (e *EtcdStore) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
 	}
 
 	return keys, values, nil
+}
+
+// DeleteWithPrefix deletes all keys and values with the given prefix.
+func (e *EtcdStore) DeleteWithPrefix(prefix string) error {
+	_, err := e.client.Delete(context.Background(), prefix, v3.WithPrefix())
+	return err
 }
