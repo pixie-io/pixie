@@ -13,10 +13,12 @@
 #include "src/common/event/nats.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/metadata.h"
+#include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
 #include "src/vizier/services/agent/manager/relation_info_manager.h"
 
 PL_SUPPRESS_WARNINGS_START()
+#include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 #include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
 PL_SUPPRESS_WARNINGS_END()
 
@@ -51,6 +53,8 @@ class Manager : public pl::NotCopyable {
   using MsgCase = messages::VizierMessage::MsgCase;
   using QueryBrokerService = pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService;
   using QueryBrokerServiceSPtr = std::shared_ptr<Manager::QueryBrokerService::Stub>;
+  using MDSService = services::metadata::MetadataService;
+  using MDSServiceSPtr = std::shared_ptr<Manager::MDSService::Stub>;
 
   Manager() = delete;
   virtual ~Manager() = default;
@@ -82,10 +86,10 @@ class Manager : public pl::NotCopyable {
   // Protect constructor since we need to use Init on this class.
   Manager(sole::uuid agent_id, int grpc_server_port,
           services::shared::agent::AgentCapabilities capabilities, std::string_view nats_url,
-          std::string_view qb_url);
+          std::string_view qb_url, std::string_view mds_url);
   Manager(sole::uuid agent_id, int grpc_server_port,
           services::shared::agent::AgentCapabilities capabilities, std::string_view qb_url,
-          std::unique_ptr<VizierNATSConnector> nats_connector);
+          std::string_view mds_url, std::unique_ptr<VizierNATSConnector> nats_connector);
   Status Init();
 
   void NATSMessageHandler(VizierNATSConnector::MsgType msg);
@@ -102,6 +106,9 @@ class Manager : public pl::NotCopyable {
 
   static QueryBrokerServiceSPtr CreateDefaultQueryBrokerStub(
       std::string_view query_broker_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds);
+  static MDSServiceSPtr CreateDefaultMDSStub(
+      std::string_view mds_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds);
+
   // ************************************************************
   // Interfaces that need to be implemented for the derived variants
   // of the agent.
@@ -143,6 +150,9 @@ class Manager : public pl::NotCopyable {
 
   // The controller is still running. Force stopping will cause un-graceful termination.
   std::atomic<bool> running_ = false;
+
+  // Factory context for vizier functions.
+  funcs::VizierFuncFactoryContext func_context_;
 
   // The base agent contains the following components.
   std::shared_ptr<table_store::TableStore> table_store_;

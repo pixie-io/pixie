@@ -1,5 +1,6 @@
 #include "src/carnot/udf_exporter/udf_exporter.h"
-#include "src/carnot/funcs/funcs.h"
+#include "src/vizier/funcs/context/vizier_context.h"
+#include "src/vizier/funcs/funcs.h"
 
 namespace pl {
 namespace carnot {
@@ -8,7 +9,8 @@ namespace udfexporter {
 StatusOr<std::unique_ptr<compiler::RegistryInfo>> ExportUDFInfo() {
   auto registry = std::make_unique<udf::Registry>("udf_registry");
 
-  funcs::RegisterFuncsOrDie(registry.get());
+  vizier::funcs::VizierFuncFactoryContext ctx;
+  vizier::funcs::RegisterFuncsOrDie(ctx, registry.get());
 
   udfspb::UDFInfo udf_proto = registry->ToProto();
   auto registry_info = std::make_unique<compiler::RegistryInfo>();

@@ -30,7 +30,8 @@ class PEMManager : public Manager {
 
   PEMManager(sole::uuid agent_id, std::string_view nats_url, std::string_view qb_url,
              std::unique_ptr<stirling::Stirling> stirling)
-      : Manager(agent_id, /*grpc_server_port*/ 0, PEMManager::Capabilities(), nats_url, qb_url),
+      : Manager(agent_id, /*grpc_server_port*/ 0, PEMManager::Capabilities(), nats_url, qb_url,
+                /*mds_url*/ ""),
         stirling_(std::move(stirling)) {}
 
   Status InitImpl() override;

@@ -1,0 +1,33 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_header",
+    hdrs = ["md_udtfs.h"],
+    deps = [
+        "//src/carnot/udf:cc_library",
+        "//src/vizier/funcs/context:cc_library",
+        "//src/vizier/services/metadata/metadatapb:service_pl_cc_proto",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = glob(
+        ["*.h"],
+        exclude = ["md_udtfs.h"],
+    ),
+    deps = [
+        ":cc_header",
+        "//src/carnot/udf:cc_library",
+        "//src/vizier/funcs/context:cc_library",
+        "//src/vizier/services/metadata/metadatapb:service_pl_cc_proto",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)

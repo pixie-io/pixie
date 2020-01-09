@@ -8,6 +8,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/perf/perf.h"
+#include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
 #include "src/vizier/services/agent/manager/exec.h"
 #include "src/vizier/services/agent/manager/heartbeat.h"
@@ -33,23 +34,28 @@ using ::pl::event::Dispatcher;
 
 Manager::Manager(sole::uuid agent_id, int grpc_server_port,
                  services::shared::agent::AgentCapabilities capabilities, std::string_view nats_url,
-                 std::string_view qb_url)
-    : Manager(agent_id, grpc_server_port, std::move(capabilities), qb_url,
+                 std::string_view qb_url, std::string_view mds_url)
+    : Manager(agent_id, grpc_server_port, std::move(capabilities), qb_url, mds_url,
               Manager::CreateDefaultNATSConnector(agent_id, nats_url)) {}
 
 Manager::Manager(sole::uuid agent_id, int grpc_server_port,
                  services::shared::agent::AgentCapabilities capabilities, std::string_view qb_url,
-                 std::unique_ptr<VizierNATSConnector> nats_connector)
+                 std::string_view mds_url, std::unique_ptr<VizierNATSConnector> nats_connector)
     : grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
       qb_stub_(Manager::CreateDefaultQueryBrokerStub(qb_url, grpc_channel_creds_)),
       time_system_(std::make_unique<pl::event::RealTimeSystem>()),
       api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
       nats_connector_(std::move(nats_connector)),
+      // TODO(zasgar): Not constructing the MDS by checking the url being empty is a bit janky. Fix
+      // this.
+      func_context_(
+          this, mds_url.size() == 0 ? nullptr : CreateDefaultMDSStub(mds_url, grpc_channel_creds_)),
       table_store_(std::make_shared<table_store::TableStore>()) {
   // Register Vizier specific and carnot builtin functions.
+
   auto func_registry = std::make_unique<pl::carnot::udf::Registry>("vizier_func_registry");
-  ::pl::vizier::funcs::RegisterFuncsOrDie(func_registry.get());
+  ::pl::vizier::funcs::RegisterFuncsOrDie(func_context_, func_registry.get());
 
   // TODO(zasgar/nserrino): abstract away the stub generator.
   carnot_ = pl::carnot::Carnot::Create(
@@ -258,6 +264,13 @@ Manager::QueryBrokerServiceSPtr Manager::CreateDefaultQueryBrokerStub(
   }
   LOG(INFO) << "Connected to query broker at: " << query_broker_addr;
   return std::make_shared<Manager::QueryBrokerService::Stub>(chan);
+}
+
+Manager::MDSServiceSPtr Manager::CreateDefaultMDSStub(
+    std::string_view mds_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
+  // We need to move the channel here since gRPC mocking is done by the stub.
+  auto chan = grpc::CreateChannel(std::string(mds_addr), channel_creds);
+  return std::make_shared<Manager::MDSService::Stub>(chan);
 }
 
 Manager::MessageHandler::MessageHandler(Dispatcher* dispatcher, Info* agent_info,

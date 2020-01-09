@@ -25,6 +25,23 @@ pl_cc_library(
     ],
 )
 
+pl_cc_library(
+    name = "cc_headers",
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/carnot",
+        "//src/common/event:cc_library",
+        "//src/common/uuid:cc_library",
+        "//src/shared/metadata:cc_library",
+        "//src/shared/schema:cc_library",
+        "//src/vizier/messages/messagespb:messages_pl_cc_proto",
+        "//src/vizier/services/query_broker/querybrokerpb:service_pl_cc_proto",
+        "//third_party/foreign_cc:natsc",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_rlyeh_sole//:sole",
+    ],
+)
+
 pl_cc_test(
     name = "relation_info_manager_test",
     srcs = ["relation_info_manager_test.cc"],
@@ -39,7 +56,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/event:cc_library",
-        "//src/common/testing/event:cc_library",
         "//src/common/system:cc_library_mock",
+        "//src/common/testing/event:cc_library",
     ],
 )
