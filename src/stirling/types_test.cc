@@ -1,4 +1,3 @@
-#include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
 
 #include "src/stirling/types.h"

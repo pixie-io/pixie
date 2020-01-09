@@ -1,6 +1,5 @@
 #include "src/stirling/mysql/mysql_handler.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>

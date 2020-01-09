@@ -1,9 +1,7 @@
 #include "src/stirling/mysql/mysql_stitcher.h"
 
 #include <deque>
-#include <memory>
 #include <string>
-#include <utility>
 
 #include "src/stirling/mysql/mysql_handler.h"
 #include "src/stirling/mysql/mysql_types.h"

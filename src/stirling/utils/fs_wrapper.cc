@@ -1,7 +1,5 @@
 #ifdef __linux__
 
-#include <string>
-
 #include "src/stirling/utils/fs_wrapper.h"
 
 namespace pl {

@@ -1,10 +1,8 @@
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include "src/common/base/base.h"
 
-#include "src/stirling/data_table.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/source_connector.h"
 

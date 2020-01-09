@@ -1,6 +1,4 @@
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <utility>
 
 #include "src/stirling/mysql/mysql_stitcher.h"
 #include "src/stirling/mysql/mysql_types.h"

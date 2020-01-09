@@ -2,7 +2,6 @@
 #include <gtest/gtest.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <cstdlib>
 #include <string_view>
 #include <thread>
 
@@ -12,8 +11,6 @@
 #include "src/shared/types/types.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/data_table.h"
-#include "src/stirling/mysql/test_data.h"
-#include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/client_server_system.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"

@@ -6,7 +6,6 @@
 #include <utility>
 
 #include "src/stirling/http/http_parse.h"
-#include "src/stirling/testing/events_fixture.h"
 
 namespace pl {
 namespace stirling {

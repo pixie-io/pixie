@@ -8,7 +8,6 @@
 
 #include "src/common/base/base.h"
 #include "src/shared/metadata/metadata.h"
-#include "src/stirling/info_class_manager.h"
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/socket_trace_connector.h"

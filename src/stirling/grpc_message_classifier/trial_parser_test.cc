@@ -1,7 +1,6 @@
 #include "src/stirling/grpc_message_classifier/trial_parser.h"
 
 #include <fstream>
-#include <iostream>
 #include <string>
 
 #include "src/common/testing/testing.h"

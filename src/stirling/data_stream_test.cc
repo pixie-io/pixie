@@ -1,7 +1,5 @@
 #include "src/stirling/data_stream.h"
 
-#include <sys/socket.h>
-
 #include <utility>
 
 #include "src/common/testing/testing.h"

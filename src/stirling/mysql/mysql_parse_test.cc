@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <deque>
 #include <random>
-#include <utility>
 
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/mysql/mysql_parse.h"

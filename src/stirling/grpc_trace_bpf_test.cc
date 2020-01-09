@@ -1,5 +1,4 @@
 #include <gmock/gmock.h>
-#include <google/protobuf/util/message_differencer.h>
 #include <grpcpp/grpcpp.h>
 #include <gtest/gtest.h>
 #include <sys/types.h>

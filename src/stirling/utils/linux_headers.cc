@@ -4,7 +4,6 @@
 
 #include <sys/utsname.h>
 
-#include <fstream>
 #include <sstream>
 #include <vector>
 

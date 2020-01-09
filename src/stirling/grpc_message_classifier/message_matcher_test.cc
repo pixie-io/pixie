@@ -4,7 +4,6 @@
 #include <string>
 
 #include "demos/applications/hipster_shop/reflection.h"
-#include "src/common/base/base.h"
 #include "src/common/base/utils.h"
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/testing/status.h"
