@@ -15,6 +15,7 @@ set_default_values() {
   ZONE=us-west1-a
 
   PROD_MODE=false
+  SKYLAB_MODE=false
   PROJECT=pl-dev-infra
   NETWORK=projects/pl-dev-infra/global/networks/dev
   SUBNETWORK=projects/pl-dev-infra/regions/us-west1/subnetworks/us-west1-0
