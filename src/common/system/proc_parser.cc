@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/strings/numbers.h>
 #include <absl/strings/substitute.h>
 #include "src/common/system/proc_parser.h"
@@ -234,7 +235,6 @@ Status ProcParser::ParseProcPIDStat(int32_t pid, ProcessStats* out) const {
   return Status::OK();
 }
 
-// WARNING: since this function uses a static variable, it is not thread-safe.
 Status ProcParser::ParseProcPIDStatIO(int32_t pid, ProcessStats* out) const {
   /**
    * Sample file:
@@ -252,7 +252,7 @@ Status ProcParser::ParseProcPIDStatIO(int32_t pid, ProcessStats* out) const {
   // Just to be safe when using offsetof, make sure object is standard layout.
   static_assert(std::is_standard_layout<ProcessStats>::value);
 
-  static std::unordered_map<std::string_view, size_t> field_name_to_offset_map = {
+  static absl::flat_hash_map<std::string_view, size_t> field_name_to_offset_map{
       {"rchar:", offsetof(ProcessStats, rchar_bytes)},
       {"wchar:", offsetof(ProcessStats, wchar_bytes)},
       {"read_bytes:", offsetof(ProcessStats, read_bytes)},
@@ -303,7 +303,6 @@ Status ProcParser::ParseProcStat(SystemStats* out) const {
   return error::NotFound("Could not extract system information");
 }
 
-// WARNING: since this function uses a static variable, it is not thread-safe.
 Status ProcParser::ParseProcMemInfo(SystemStats* out) const {
   /**
    * Sample file:
@@ -319,7 +318,7 @@ Status ProcParser::ParseProcMemInfo(SystemStats* out) const {
   static_assert(std::is_standard_layout<SystemStats>::value);
 
   // clang-format off
-  static std::unordered_map<std::string_view, size_t> field_name_to_offset_map = {
+  static absl::flat_hash_map<std::string_view, size_t> field_name_to_offset_map {
       {"MemTotal:", offsetof(SystemStats, mem_total_bytes)},
       {"MemFree:", offsetof(SystemStats, mem_free_bytes)},
       {"MemAvailable:", offsetof(SystemStats, mem_available_bytes)},
@@ -339,7 +338,7 @@ Status ProcParser::ParseProcMemInfo(SystemStats* out) const {
 
 Status ProcParser::ParseFromKeyValueFile(
     const std::string& fpath,
-    const std::unordered_map<std::string_view, size_t>& field_name_to_value_map, uint8_t* out_base,
+    const absl::flat_hash_map<std::string_view, size_t>& field_name_to_value_map, uint8_t* out_base,
     int64_t field_value_multiplier) {
   std::ifstream ifs;
   ifs.open(fpath);

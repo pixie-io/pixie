@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 
@@ -175,7 +176,7 @@ class ProcParser {
 
   static Status ParseFromKeyValueFile(
       const std::string& fpath,
-      const std::unordered_map<std::string_view, size_t>& field_name_to_value_map,
+      const absl::flat_hash_map<std::string_view, size_t>& field_name_to_value_map,
       uint8_t* out_base, int64_t field_value_multiplier);
   int64_t ns_per_kernel_tick_;
   int32_t bytes_per_page_;
