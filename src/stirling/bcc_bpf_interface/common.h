@@ -20,7 +20,12 @@ enum TrafficProtocol {
 };
 
 // The direction of traffic expected on a probe. Values are used in bit masks.
-enum ReqRespRole { kRoleUnknown = 1 << 0, kRoleRequestor = 1 << 1, kRoleResponder = 1 << 2 };
+enum ReqRespRole {
+  kRoleUnknown = 0,
+  kRoleRequestor = 1 << 1,
+  kRoleResponder = 1 << 2,
+  kRoleAll = kRoleRequestor | kRoleResponder,
+};
 
 struct traffic_class_t {
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).

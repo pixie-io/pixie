@@ -54,8 +54,6 @@ class GoHTTPCTraceTest : public ::testing::Test {
 
     server_path_ = FLAGS_go_greeter_server_path;
     client_path_ = FLAGS_go_greeter_client_path;
-
-    PL_CHECK_OK(s_.Start({server_path_}));
   }
 
   void TearDown() override {
@@ -78,18 +76,15 @@ class GoHTTPCTraceTest : public ::testing::Test {
 };
 
 TEST_F(GoHTTPCTraceTest, RequestAndResponse) {
-  SubProcess c;
-  EXPECT_OK(c.Start({client_path_, "-name=PixieLabs"}));
-
-  EXPECT_OK(socket_trace_connector_->TestOnlySetTargetPID(c.child_pid()));
-
-  EXPECT_EQ(0, c.Wait()) << "Client should exit normally.";
+  ASSERT_OK(s_.Start({server_path_}));
+  ASSERT_OK(c_.Start({client_path_, "-name=PixieLabs"}));
+  EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
 
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> target_record_indices =
-      testing::FindRecordIdxMatchesPid(record_batch, c.child_pid());
+      testing::FindRecordIdxMatchesPid(record_batch, c_.child_pid());
   ASSERT_THAT(target_record_indices, SizeIs(1));
 
   const size_t target_record_idx = target_record_indices.front();
@@ -108,6 +103,40 @@ TEST_F(GoHTTPCTraceTest, RequestAndResponse) {
   EXPECT_THAT(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(target_record_idx),
               StrEq(absl::StrCat(R"({"greeter":"Hello PixieLabs!"})", "\n")));
 }
+
+struct TraceRoleTestParam {
+  ReqRespRole role;
+  size_t client_records_count;
+  size_t server_records_count;
+};
+
+class TraceRoleTest : public GoHTTPCTraceTest,
+                      public ::testing::WithParamInterface<TraceRoleTestParam> {};
+
+TEST_P(TraceRoleTest, VerifyRecordsCount) {
+  const TraceRoleTestParam& param = GetParam();
+  EXPECT_OK(socket_trace_connector_->UpdateProtocolTraceRole(kProtocolHTTP, param.role));
+
+  EXPECT_OK(s_.Start({server_path_}));
+  EXPECT_OK(c_.Start({client_path_, "-name=PixieLabs"}));
+  EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
+
+  connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
+
+  const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
+  const std::vector<size_t> client_record_ids =
+      testing::FindRecordIdxMatchesPid(record_batch, c_.child_pid());
+  EXPECT_THAT(client_record_ids, SizeIs(param.client_records_count));
+  const std::vector<size_t> server_record_ids =
+      testing::FindRecordIdxMatchesPid(record_batch, s_.child_pid());
+  EXPECT_THAT(server_record_ids, SizeIs(param.server_records_count));
+}
+
+INSTANTIATE_TEST_SUITE_P(AllTraceRoles, TraceRoleTest,
+                         ::testing::Values(TraceRoleTestParam{kRoleUnknown, 0, 0},
+                                           TraceRoleTestParam{kRoleRequestor, 1, 0},
+                                           TraceRoleTestParam{kRoleResponder, 0, 1},
+                                           TraceRoleTestParam{kRoleAll, 1, 1}));
 
 }  // namespace stirling
 }  // namespace pl

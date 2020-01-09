@@ -35,9 +35,9 @@ class SocketTraceBPFTest : public ::testing::Test {
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
 
-  void ConfigureCapture(TrafficProtocol protocol, uint64_t mask) {
+  void ConfigureCapture(TrafficProtocol protocol, ReqRespRole role) {
     auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
-    ASSERT_OK(socket_trace_connector->Configure(protocol, mask));
+    ASSERT_OK(socket_trace_connector->UpdateProtocolTraceRole(protocol, role));
   }
 
   void TestOnlySetTargetPID(int64_t pid) {

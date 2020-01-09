@@ -66,6 +66,12 @@ DEFINE_bool(stirling_enable_mysql_tracing, true,
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will trace and process syscalls made by itself.");
 
+const char kRoleReqStr[] = "REQ";
+const char kRoleRespStr[] = "RESP";
+const char kRoleAllStr[] = "ALL";
+DEFINE_string(stirling_role_to_trace, kRoleReqStr,
+              "Must be one of [REQ|RESP|ALL]. Specify what role to trace.");
+
 // This flag is for survivability only, in case the host's located headers don't work.
 DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
 
@@ -98,9 +104,28 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
   netlink_socket_prober_ = std::make_unique<system::NetlinkSocketProber>();
 
+  ReqRespRole role_to_trace = kRoleRequestor;
+  if (!FLAGS_stirling_role_to_trace.empty()) {
+    if (FLAGS_stirling_role_to_trace == kRoleReqStr) {
+      role_to_trace = kRoleRequestor;
+    } else if (FLAGS_stirling_role_to_trace == kRoleRespStr) {
+      role_to_trace = kRoleResponder;
+    } else if (FLAGS_stirling_role_to_trace == kRoleAllStr) {
+      role_to_trace = kRoleAll;
+    } else {
+      LOG(DFATAL) << absl::Substitute("--stirling_role_to_trace=$0, must be [$1|$2|$3].",
+                                      FLAGS_stirling_role_to_trace, kRoleReqStr, kRoleRespStr,
+                                      kRoleAllStr);
+    }
+  }
   protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
+  protocol_transfer_specs_[kProtocolHTTP].role_to_trace = role_to_trace;
+
   protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_kprobe_tracing;
+  protocol_transfer_specs_[kProtocolHTTP2].role_to_trace = role_to_trace;
+
   protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
+  protocol_transfer_specs_[kProtocolMySQL].role_to_trace = role_to_trace;
 
   protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled =
       FLAGS_stirling_enable_grpc_uprobe_tracing;
@@ -158,13 +183,16 @@ Status SocketTraceConnector::InitImpl() {
   // TODO(yzhao): Consider adding a flag to switch the role to trace, i.e., between kRoleRequestor &
   // kRoleResponder.
   if (protocol_transfer_specs_[kProtocolHTTP].enabled) {
-    PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
+    PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
+        kProtocolHTTP, protocol_transfer_specs_[kProtocolHTTP].role_to_trace));
   }
   if (protocol_transfer_specs_[kProtocolHTTP2].enabled) {
-    PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleRequestor));
+    PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
+        kProtocolHTTP2, protocol_transfer_specs_[kProtocolHTTP2].role_to_trace));
   }
   if (protocol_transfer_specs_[kProtocolMySQL].enabled) {
-    PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kRoleRequestor));
+    PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
+        kProtocolMySQL, protocol_transfer_specs_[kProtocolMySQL].role_to_trace));
   }
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
   if (FLAGS_stirling_disable_self_tracing) {
@@ -241,9 +269,11 @@ Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable
   return Status::OK();
 }
 
-Status SocketTraceConnector::Configure(TrafficProtocol protocol, uint64_t config_mask) {
+Status SocketTraceConnector::UpdateProtocolTraceRole(TrafficProtocol protocol,
+                                                     ReqRespRole config_mask) {
   auto control_map_handle = bpf().get_percpu_array_table<uint64_t>(kControlMapName);
-  return UpdatePerCPUArrayValue(static_cast<int>(protocol), config_mask, &control_map_handle);
+  return UpdatePerCPUArrayValue(static_cast<int>(protocol), static_cast<uint64_t>(config_mask),
+                                &control_map_handle);
 }
 
 Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {

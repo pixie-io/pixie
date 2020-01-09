@@ -59,7 +59,7 @@ constexpr std::string_view kNoProtocolMsg = R"(This is not an HTTP message)";
 // change if we alter output format.
 
 TEST_F(SocketTraceBPFTest, Framework) {
-  ConfigureCapture(kProtocolHTTP, kRoleRequestor | kRoleResponder);
+  ConfigureCapture(kProtocolHTTP, kRoleAll);
 
   testing::SendRecvScript script({
       {kHTTPReqMsg1},
@@ -251,7 +251,7 @@ TEST_F(SocketTraceBPFTest, RecvRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor | kRoleResponder);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleAll);
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
 
   testing::ClientServerSystem system;
@@ -367,7 +367,7 @@ class SyscallPairBPFTest : public SocketTraceBPFTest,
                            public ::testing::WithParamInterface<SyscallPair> {};
 
 TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
-  ConfigureCapture(kProtocolHTTP, kRoleRequestor | kRoleResponder);
+  ConfigureCapture(kProtocolHTTP, kRoleAll);
   testing::ClientServerSystem system({});
   const std::vector<std::vector<std::string_view>> data = {
       {"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"},

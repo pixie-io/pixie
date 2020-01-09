@@ -45,6 +45,7 @@ DECLARE_bool(stirling_enable_grpc_uprobe_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_bool(stirling_use_packaged_headers);
+DECLARE_string(stirling_role_to_trace);
 
 BCC_SRC_STRVIEW(http_trace_bcc_script, socket_trace);
 
@@ -91,7 +92,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status StopImpl() override;
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
 
-  Status Configure(TrafficProtocol protocol, uint64_t config_mask);
+  // Updates control map value for protocol, which specifies which role(s) to trace for the given
+  // protocol's traffic.
+  Status UpdateProtocolTraceRole(TrafficProtocol protocol, ReqRespRole role_to_trace);
   Status TestOnlySetTargetPID(int64_t pid);
   Status DisableSelfTracing();
 
@@ -239,6 +242,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     std::function<void(SocketTraceConnector&, ConnectorContext*, ConnectionTracker*, DataTable*)>
         transfer_fn = nullptr;
     bool enabled = false;
+    // TODO(yzhao): Consider removing this if protocol-specific trace role is not needed.
+    // Given protocol_transfer_specs_ is already here, it makes sense to not add another member
+    // variable.
+    ReqRespRole role_to_trace = kRoleRequestor;
   };
 
   // This map controls how each protocol is processed and transferred.
