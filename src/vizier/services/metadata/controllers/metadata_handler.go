@@ -344,6 +344,12 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 		}
 	}
 
+	var podName, hostname string
+	if pod.Spec != nil {
+		podName = pod.Spec.NodeName
+		hostname = pod.Spec.Hostname
+	}
+
 	update := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
 			PodUpdate: &metadatapb.PodUpdate{
@@ -355,6 +361,8 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 				QOSClass:         pod.Status.QOSClass,
 				ContainerIDs:     containers,
 				Phase:            pod.Status.Phase,
+				NodeName:         podName,
+				Hostname:         hostname,
 			},
 		},
 	}
