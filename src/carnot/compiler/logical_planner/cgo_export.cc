@@ -57,8 +57,17 @@ char* ExitEarly(const std::string& err, int* result_len) {
 
 }  // namespace
 
-PlannerPtr PlannerNew() {
-  auto planner_or_s = pl::carnot::compiler::logical_planner::LogicalPlanner::Create();
+PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
+  std::string udf_info_str(udf_info_data, udf_info_data + udf_info_len);
+  pl::carnot::udfspb::UDFInfo udf_info_pb;
+
+  bool did_udf_info_pb_load =
+      google::protobuf::TextFormat::MergeFromString(udf_info_str, &udf_info_pb);
+
+  CHECK(did_udf_info_pb_load) << absl::Substitute("Couldn't process the udf_info: $0.",
+                                                  udf_info_str);
+
+  auto planner_or_s = pl::carnot::compiler::logical_planner::LogicalPlanner::Create(udf_info_pb);
   if (!planner_or_s.ok()) {
     return nullptr;
   }

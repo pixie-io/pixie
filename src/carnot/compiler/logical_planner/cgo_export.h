@@ -11,7 +11,7 @@ typedef void* PlannerPtr;
  * @brief Makes a new planner object.
  * @return PlannePtr - pointer to the planner object.
  */
-PlannerPtr PlannerNew();
+PlannerPtr PlannerNew(const char* udf_info_str_data, int udf_info_str_len);
 
 /**
  * @brief Takes in the planner object and the schema, uses this to setup the planner and

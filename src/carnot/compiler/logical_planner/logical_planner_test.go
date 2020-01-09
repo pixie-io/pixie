@@ -10,7 +10,9 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner"
+	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
+	funcs "pixielabs.ai/pixielabs/src/vizier/funcs"
 )
 
 const plannerStatePBStr = `
@@ -69,10 +71,17 @@ distributed_state {
 // TestPlanner_Simple makes sure that we can actually pass in all the info needed
 // to create a PlannerState and can successfully compile to an expected result.
 func TestPlanner_Simple(t *testing.T) {
-	// TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
-	t.Skip("Fix me clang/gcc upgrade")
 	// Create the compiler.
-	c := logicalplanner.New()
+	var udfInfoPb udfspb.UDFInfo
+	b, err := funcs.Asset("src/vizier/funcs/data/udf.pb")
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	err = proto.Unmarshal(b, &udfInfoPb)
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	c := logicalplanner.New(&udfInfoPb)
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	query := "df = pl.DataFrame(table='table1')\npl.display(df, 'out')"
@@ -143,7 +152,7 @@ func TestPlanner_Simple(t *testing.T) {
 
 func TestPlanner_MissingTable(t *testing.T) {
 	// Create the compiler.
-	c := logicalplanner.New()
+	c := logicalplanner.New(&udfspb.UDFInfo{})
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	query := "df = pl.DataFrame(table='bad_table')\npl.display(df, 'out')"

@@ -11,6 +11,7 @@
 #include "src/carnot/compiler/logical_planner/test_utils.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/base/error.h"
 #include "src/common/base/macros.h"
 #include "src/common/base/statusor.h"
@@ -25,10 +26,26 @@ namespace logical_planner {
 using pl::testing::proto::EqualsProto;
 using pl::testing::proto::Partially;
 
+constexpr char kUDFInfoPb[] = R"proto(
+scalar_udfs {
+  name: "pl.greaterThanEqual"
+  exec_arg_types: INT64
+  exec_arg_types: INT64
+  return_type: BOOLEAN
+}
+)proto";
+
 class PlannerExportTest : public ::testing::Test {
  protected:
+  void SetUp() override {
+    // TODO(philkuz/zasgar) need to import the udf_info str here once we have the genrule.
+    // or figure out a different way to handle this.
+    udf_info_str_ = kUDFInfoPb;
+  }
   void TearDown() override { PlannerFree(planner_); }
+  PlannerPtr MakePlanner() { return PlannerNew(udf_info_str_.c_str(), udf_info_str_.length()); }
   PlannerPtr planner_;
+  std::string udf_info_str_;
 };
 
 StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string planner_state,
@@ -46,7 +63,7 @@ StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string plann
 
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
-  planner_ = PlannerNew();
+  planner_ = MakePlanner();
   int result_len;
   std::string query = "df = pl.DataFrame(table='table1')\npl.display(df, 'out')";
 
@@ -65,7 +82,7 @@ TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
 }
 
 TEST_F(PlannerExportTest, bad_queries) {
-  planner_ = PlannerNew();
+  planner_ = MakePlanner();
   int result_len;
   // Bad table name query that should yield a compiler error.
   std::string bad_table_query =
@@ -91,7 +108,7 @@ pl.display(t1)
 // Previously had an issue where the UDF registry's memory was improperly handled, and this query
 // would cause a segfault. If this unit test passes, then that bug should be gone.
 TEST_F(PlannerExportTest, udf_in_query) {
-  planner_ = PlannerNew();
+  planner_ = MakePlanner();
   auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
   int result_len;
   auto interface_result =

@@ -4,8 +4,8 @@ package logicalplanner
 // // If you delete it, the planner will break.
 // #include "src/carnot/compiler/logical_planner/cgo_export.h"
 //
-// PlannerPtr PlannerNewGoStr() {
-//   return PlannerNew();
+// PlannerPtr PlannerNewGoStr(_GoString_ udf_info) {
+//   return PlannerNew(_GoStringPtr(udf_info), _GoStringLen(udf_info));
 // }
 //
 // char* PlannerPlanGoStr(PlannerPtr planner_ptr,
@@ -29,6 +29,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/compiler"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 )
 
@@ -38,10 +39,10 @@ type GoPlanner struct {
 }
 
 // New creates a new GoPlanner object.
-func New() GoPlanner {
+func New(udfInfo *udfspb.UDFInfo) GoPlanner {
 	var ret GoPlanner
-
-	ret.planner = C.PlannerNewGoStr()
+	udfInfoStr := proto.MarshalTextString(udfInfo)
+	ret.planner = C.PlannerNewGoStr( udfInfoStr)
 
 	return ret
 }

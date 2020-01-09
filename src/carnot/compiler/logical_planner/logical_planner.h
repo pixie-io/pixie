@@ -25,7 +25,7 @@ class LogicalPlanner : public NotCopyable {
    * @return StatusOr<std::unique_ptr<DistributedPlanner>>: the distributed planner object or an
    * error.
    */
-  static StatusOr<std::unique_ptr<LogicalPlanner>> Create();
+  static StatusOr<std::unique_ptr<LogicalPlanner>> Create(const udfspb::UDFInfo& udf_info);
 
   /**
    * @brief Takes in a logical plan and outputs the distributed plan.
@@ -38,7 +38,8 @@ class LogicalPlanner : public NotCopyable {
   StatusOr<std::unique_ptr<distributed::DistributedPlan>> Plan(
       const distributedpb::LogicalPlannerState& logical_state, const std::string& query);
 
-  Status Init();
+  Status Init(std::unique_ptr<compiler::RegistryInfo> registry_info);
+  Status Init(const udfspb::UDFInfo& udf_info);
 
  protected:
   LogicalPlanner() {}
@@ -53,6 +54,7 @@ class LogicalPlanner : public NotCopyable {
 
   Compiler compiler_;
   std::unique_ptr<distributed::Planner> distributed_planner_;
+  std::unique_ptr<compiler::RegistryInfo> registry_info_;
 };
 
 }  // namespace logical_planner

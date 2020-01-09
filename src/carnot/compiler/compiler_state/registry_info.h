@@ -73,6 +73,8 @@ class RegistryInfo {
   // TODO(philkuz) move this function to protected when udtfs are finally supported.
   void AddUDTF(const udfspb::UDTFSourceSpec& source_spec) { udtfs_.push_back(source_spec); }
 
+  const udfspb::UDFInfo& info_pb() { return info_pb_; }
+
  protected:
   std::map<RegistryKey, types::DataType> udf_map_;
   std::map<RegistryKey, types::DataType> uda_map_;
@@ -80,6 +82,8 @@ class RegistryInfo {
   absl::flat_hash_map<std::string, UDFType> funcs_;
   // The vector containing udtfs.
   std::vector<udfspb::UDTFSourceSpec> udtfs_;
+
+  udfspb::UDFInfo info_pb_;
 };
 
 }  // namespace compiler

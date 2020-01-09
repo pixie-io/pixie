@@ -64,6 +64,7 @@ pl_cc_test(
     name = "cgo_export_test",
     srcs = ["cgo_export_test.cc"],
     deps = [
+        "//src/carnot/udf_exporter:cc_library",
         ":cgo_export",
         ":test_utils",
         "//src/carnot/compiler:test_utils",
@@ -83,6 +84,7 @@ pl_cgo_library(
         "//src/carnot/compiler:go_default_library",
         "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/compiler/distributedpb:distributed_plan_pl_go_proto",
+        "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
         "@com_github_gogo_protobuf//proto:go_default_library",
@@ -100,8 +102,10 @@ go_test(
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
+        "//src/carnot/udfspb:udfs_pl_go_proto",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "//src/vizier/funcs:go_default_library",
     ],
 )
 

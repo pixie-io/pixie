@@ -36,7 +36,10 @@ using ::testing::ContainsRegex;
 
 class PresetQueriesTest : public ::testing::Test {
  protected:
-  void SetUpRegistryInfo() { info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie(); }
+  void SetUpRegistryInfo() {
+    info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
+    udf_info_ = info_->info_pb();
+  }
 
   void SetUp() override {
     SetUpRegistryInfo();
@@ -84,6 +87,7 @@ class PresetQueriesTest : public ::testing::Test {
   table_store::schemapb::Schema schema_;
   Relation cgroups_relation_;
   const std::string tomlpath_ = "src/ui/src/containers/vizier/preset-queries.toml";
+  udfspb::UDFInfo udf_info_;
 };
 
 TEST_F(PresetQueriesTest, PresetQueries) {
@@ -95,7 +99,7 @@ TEST_F(PresetQueriesTest, PresetQueries) {
 
   // Test single agent planning
   for (const auto& query : preset_queries_) {
-    auto planner = logical_planner::LogicalPlanner::Create().ConsumeValueOrDie();
+    auto planner = logical_planner::LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
     auto multi_agent_state =
         logical_planner::testutils::CreateOneAgentOneKelvinPlannerState(schema_);
     auto plan_or_s = planner->Plan(multi_agent_state, query.second);
@@ -104,7 +108,7 @@ TEST_F(PresetQueriesTest, PresetQueries) {
 
   // Test multi agent planning
   for (const auto& query : preset_queries_) {
-    auto planner = logical_planner::LogicalPlanner::Create().ConsumeValueOrDie();
+    auto planner = logical_planner::LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
     auto multi_agent_state =
         logical_planner::testutils::CreateOneAgentOneKelvinPlannerState(schema_);
     auto plan_or_s = planner->Plan(multi_agent_state, query.second);

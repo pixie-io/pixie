@@ -15,6 +15,7 @@ namespace carnot {
 namespace compiler {
 
 Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
+  info_pb_ = info;
   for (const auto& uda : info.udas()) {
     std::vector<types::DataType> arg_types;
     arg_types.reserve(uda.update_arg_types_size());

@@ -15,11 +15,14 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/compiler"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
+	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
+	funcs "pixielabs.ai/pixielabs/src/vizier/funcs"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
@@ -246,6 +249,16 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb
 	return queryResponse, nil
 }
 
+func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
+	b, err := funcs.Asset("src/vizier/funcs/data/udf.pb")
+	if err != nil {
+		return err
+	}
+	proto.Unmarshal(b, udfInfoPb)
+	return nil
+
+}
+
 // ExecuteQuery executes a query on multiple agents and compute node.
 func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
 	flags, err := ParseQueryFlags(req.QueryStr)
@@ -254,7 +267,11 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 	}
 	planOpts := flags.GetPlanOptions()
 
-	planner := logicalplanner.New()
+	var udfInfo udfspb.UDFInfo
+	if err := loadUDFInfo(&udfInfo); err != nil {
+		return nil, err
+	}
+	planner := logicalplanner.New(&udfInfo)
 	defer planner.Free()
 	return s.ExecuteQueryWithPlanner(ctx, req, planner, planOpts)
 }

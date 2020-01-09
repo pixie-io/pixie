@@ -26,11 +26,13 @@ using pl::testing::proto::EqualsProto;
 
 class LogicalPlannerTest : public ::testing::Test {
  protected:
+  void SetUp() { info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb(); }
+  udfspb::UDFInfo info_;
 };
 
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
-  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan =
       planner
           ->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(), testutils::kQueryForTwoAgents)
@@ -41,7 +43,7 @@ TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
 }
 
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
-  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
       planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     testutils::kHttpRequestStats);
@@ -101,7 +103,7 @@ pl.display(joined_table)
 )pxl";
 
 TEST_F(LogicalPlannerTest, duplicate_int) {
-  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
       planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     kCompileTimeQuery);
@@ -138,7 +140,7 @@ df = window2_agg[window2_agg['service'] != '']
 pl.display(df)
 )query";
 TEST_F(LogicalPlannerTest, NestedCompileTime) {
-  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
       planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     kTwoWindowQuery);

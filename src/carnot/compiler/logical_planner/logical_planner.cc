@@ -33,14 +33,17 @@ StatusOr<std::unique_ptr<CompilerState>> LogicalPlanner::CreateCompilerState(
                                                    pl::CurrentTimeNS());
 }
 
-StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create() {
+StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {
   auto planner = std::unique_ptr<LogicalPlanner>(new LogicalPlanner());
-  PL_RETURN_IF_ERROR(planner->Init());
+  PL_RETURN_IF_ERROR(planner->Init(udf_info));
   return planner;
 }
 
-Status LogicalPlanner::Init() {
+Status LogicalPlanner::Init(const udfspb::UDFInfo& udf_info) {
   compiler_ = Compiler();
+  registry_info_ = std::make_unique<compiler::RegistryInfo>();
+  PL_RETURN_IF_ERROR(registry_info_->Init(udf_info));
+
   PL_ASSIGN_OR_RETURN(distributed_planner_, distributed::DistributedPlanner::Create());
   return Status::OK();
 }
