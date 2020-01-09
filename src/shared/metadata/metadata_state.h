@@ -74,6 +74,18 @@ class K8sMetadataState : NotCopyable {
 
   using ServicesByNameMap = PodsByNameMap;
 
+  // This is not satisfactory, as it violates the general pattern of this class, where mutations
+  // are applied asynchronously through the Handle*() functions.
+  //
+  // This is adopted because:
+  // * cluster_cidr is a property of the K8s cluster.
+  // * Eventually, it's likely that cluster_cidr can change during the lifetime of the K8s cluster,
+  // which then requires the same update pattern as other fields.
+  //
+  // Alternative could be:
+  // * AgentMetadataState::cluster_cidr_.
+  void set_cluster_cidr(CIDRBlock cidr) { cluster_cidr_ = cidr; }
+
   const PodsByNameMap& pods_by_name() const { return pods_by_name_; }
 
   /**
@@ -125,6 +137,13 @@ class K8sMetadataState : NotCopyable {
   std::string DebugString(int indent_level = 0) const;
 
  private:
+  // The CIDR block assigned to the pods of the cluster. This is used to determine an IP address
+  // is inside/outside of the cluster.
+  //
+  // If unset, only client-side events, which are detected by traffic direction and the content
+  // being request or response, are captured.
+  std::optional<CIDRBlock> cluster_cidr_;
+
   // This stores K8s native objects (services, pods, etc).
   absl::flat_hash_map<UID, K8sMetadataObjectUPtr> k8s_objects_;
 

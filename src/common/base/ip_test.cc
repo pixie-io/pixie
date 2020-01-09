@@ -56,17 +56,24 @@ TEST(CIDRBlockTest, ContainsIPv6Address) {
 TEST(CIDRBlockTest, ParsesIPv4String) {
   EXPECT_OK(CIDRBlock::FromStr("1.2.3.4/32"));
   EXPECT_OK(CIDRBlock::FromStr("1.2.3.4/0"));
-  EXPECT_THAT(CIDRBlock::FromStr("1.2.3.4/-1").msg(), StrEq("Prefix length must be >= 0, got: -1"));
+  EXPECT_THAT(CIDRBlock::FromStr("1.2.3.4/-1").msg(),
+              StrEq("Prefix length must be >= 0, got: '-1'"));
   EXPECT_THAT(CIDRBlock::FromStr("1.2.3.4/33").msg(),
-              StrEq("Prefix length for IPv4 CIDR block must be <=32, got: 33"));
+              StrEq("Prefix length for IPv4 CIDR block must be <=32, got: '33'"));
 }
 
 TEST(CIDRBlockTest, ParsesIPv6String) {
   EXPECT_OK(CIDRBlock::FromStr("::1/0"));
   EXPECT_OK(CIDRBlock::FromStr("::1/128"));
-  EXPECT_THAT(CIDRBlock::FromStr("::1/-1").msg(), StrEq("Prefix length must be >= 0, got: -1"));
+  EXPECT_THAT(CIDRBlock::FromStr("::1/-1").msg(), StrEq("Prefix length must be >= 0, got: '-1'"));
   EXPECT_THAT(CIDRBlock::FromStr("::1/129").msg(),
-              StrEq("Prefix length for IPv6 CIDR block must be <=128, got: 129"));
+              StrEq("Prefix length for IPv6 CIDR block must be <=128, got: '129'"));
+}
+
+TEST(CIDRBlockTest, ParseInvalidIPAddressString) {
+  EXPECT_THAT(CIDRBlock::FromStr("non-ip/0").msg(), StrEq("Cannot parse IP address: 'non-ip'"));
+  EXPECT_THAT(CIDRBlock::FromStr("aaa").msg(),
+              StrEq("The format must be <ipv4/6 address>/<prefix length>, got: 'aaa'"));
 }
 
 }  // namespace pl

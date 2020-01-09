@@ -64,7 +64,7 @@ bool CIDRBlock::Contains(const IPv6Address& addr) const {
 StatusOr<CIDRBlock> CIDRBlock::FromStr(std::string_view cidr_str) {
   std::vector<std::string_view> fields = absl::StrSplit(cidr_str, '/');
   if (fields.size() != 2) {
-    return error::InvalidArgument("The format must be <ipv4/6 address>/<prefix length>, got: $0",
+    return error::InvalidArgument("The format must be <ipv4/6 address>/<prefix length>, got: '$0'",
                                   cidr_str);
   }
   int prefix_length = 0;
@@ -72,12 +72,12 @@ StatusOr<CIDRBlock> CIDRBlock::FromStr(std::string_view cidr_str) {
     return error::InvalidArgument("Could not parse $0 as integer", fields[1]);
   }
   if (prefix_length < 0) {
-    return error::InvalidArgument("Prefix length must be >= 0, got: $0", prefix_length);
+    return error::InvalidArgument("Prefix length must be >= 0, got: '$0'", prefix_length);
   }
   StatusOr<IPv4Address> v4_addr_or = IPv4Address::FromStr(fields[0]);
   if (v4_addr_or.ok()) {
     if (prefix_length > kIPv4BitLen) {
-      return error::InvalidArgument("Prefix length for IPv4 CIDR block must be <=$0, got: $1",
+      return error::InvalidArgument("Prefix length for IPv4 CIDR block must be <=$0, got: '$1'",
                                     kIPv4BitLen, prefix_length);
     }
     return CIDRBlock(v4_addr_or.ConsumeValueOrDie(), prefix_length);
@@ -85,12 +85,12 @@ StatusOr<CIDRBlock> CIDRBlock::FromStr(std::string_view cidr_str) {
   StatusOr<IPv6Address> v6_addr_or = IPv6Address::FromStr(fields[0]);
   if (v6_addr_or.ok()) {
     if (prefix_length > kIPv6BitLen) {
-      return error::InvalidArgument("Prefix length for IPv6 CIDR block must be <=$0, got: $1",
+      return error::InvalidArgument("Prefix length for IPv6 CIDR block must be <=$0, got: '$1'",
                                     kIPv6BitLen, prefix_length);
     }
     return CIDRBlock(v6_addr_or.ConsumeValueOrDie(), prefix_length);
   }
-  return error::InvalidArgument("Cannot parse IP address: $0", fields[0]);
+  return error::InvalidArgument("Cannot parse IP address: '$0'", fields[0]);
 }
 
 }  // namespace pl

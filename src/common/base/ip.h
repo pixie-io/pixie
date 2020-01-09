@@ -39,7 +39,7 @@ class CIDRBlock {
   CIDRBlock(IPv6Address addr, size_t prefix_length);
 
   // For StatusOr<CIDRBlock> to compile.
-  CIDRBlock() = default;
+  CIDRBlock() : addr_(), prefix_length_(0) {}
 
   bool Contains(const IPv4Address& addr) const;
   bool Contains(const IPv6Address& addr) const;
