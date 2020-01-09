@@ -44,6 +44,7 @@ type MetadataStore interface {
 	GetServices() ([]*metadatapb.Service, error)
 	GetComputedSchemas() ([]*metadatapb.SchemaInfo, error)
 	GetASID() (uint32, error)
+	GetClusterCIDR() string
 	GetProcesses([]*types.UInt128) ([]*metadatapb.ProcessInfo, error)
 }
 

@@ -26,6 +26,12 @@ import (
 type EtcdMetadataStore struct {
 	client         *clientv3.Client
 	expiryDuration time.Duration
+	clusterInfo    ClusterInfo
+}
+
+// ClusterInfo contains static information about the cluster.
+type ClusterInfo struct {
+	CIDR string
 }
 
 // NewEtcdMetadataStore creates a new etcd metadata store.
@@ -38,9 +44,20 @@ func NewEtcdMetadataStoreWithExpiryTime(client *clientv3.Client, expiryDuration 
 	mds := &EtcdMetadataStore{
 		client:         client,
 		expiryDuration: expiryDuration,
+		clusterInfo:    ClusterInfo{CIDR: ""},
 	}
 
 	return mds, nil
+}
+
+// GetClusterCIDR returns the CIDR for the current cluster.
+func (mds *EtcdMetadataStore) GetClusterCIDR() string {
+	return mds.clusterInfo.CIDR
+}
+
+// SetClusterInfo sets static information about the current cluster.
+func (mds *EtcdMetadataStore) SetClusterInfo(clusterInfo ClusterInfo) {
+	mds.clusterInfo = clusterInfo
 }
 
 // UpdateEndpoints adds or updates the given endpoint in the metadata store.

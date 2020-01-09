@@ -63,11 +63,11 @@ func getNATSURL(port int) string {
 	return fmt.Sprintf("nats://%s:%d", testOptions.Host, port)
 }
 
-func getTestNATSInstance(t *testing.T, port int, agtMgr controllers.AgentManager, isLeader *bool) (*nats.Conn, *controllers.MessageBusController) {
+func getTestNATSInstance(t *testing.T, port int, agtMgr controllers.AgentManager, mdStore controllers.MetadataStore, isLeader *bool) (*nats.Conn, *controllers.MessageBusController) {
 	viper.Set("disable_ssl", true)
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 
-	mc, err := controllers.NewTestMessageBusController(getNATSURL(port), "agent_update", agtMgr, isLeader, clock)
+	mc, err := controllers.NewTestMessageBusController(getNATSURL(port), "agent_update", agtMgr, mdStore, isLeader, clock)
 	assert.Equal(t, err, nil)
 
 	nc, err := nats.Connect(testingutils.GetNATSURL(port))
@@ -95,6 +95,11 @@ func TestAgentRegisterRequest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	mockMdStore.
+		EXPECT().
+		GetClusterCIDR().
+		Return("10.24.0.0/14")
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -136,7 +141,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -153,7 +158,8 @@ func TestAgentRegisterRequest(t *testing.T) {
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID: 1,
+				ASID:        1,
+				ClusterCIDR: "10.24.0.0/14",
 			},
 		},
 	}
@@ -193,6 +199,12 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+
+	mockMdStore.
+		EXPECT().
+		GetClusterCIDR().
+		Return("10.24.0.0/14")
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -237,7 +249,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -254,7 +266,8 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID: 1,
+				ASID:        1,
+				ClusterCIDR: "10.24.0.0/14",
 			},
 		},
 	}
@@ -290,6 +303,11 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	mockMdStore.
+		EXPECT().
+		GetClusterCIDR().
+		Return("10.24.0.0/14")
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -331,7 +349,7 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -348,7 +366,8 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID: 1,
+				ASID:        1,
+				ClusterCIDR: "10.24.0.0/14",
 			},
 		},
 	}
@@ -373,10 +392,11 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -407,6 +427,8 @@ func TestAgentCreateFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
@@ -420,7 +442,7 @@ func TestAgentCreateFailed(t *testing.T) {
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -464,10 +486,11 @@ func TestAgentUpdateRequest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -505,10 +528,11 @@ func TestAgentUpdateRequestInvalidUUID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -547,6 +571,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 
 	mockAgtMgr.
 		EXPECT().
@@ -600,7 +625,7 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -647,6 +672,7 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 
 	mockAgtMgr.
 		EXPECT().
@@ -658,7 +684,7 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -703,6 +729,7 @@ func TestAgentHeartbeatInvalidUUID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 
 	mockAgtMgr.
 		EXPECT().
@@ -717,7 +744,7 @@ func TestAgentHeartbeatInvalidUUID(t *testing.T) {
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -748,10 +775,11 @@ func TestEmptyMessage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	_, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -776,10 +804,11 @@ func TestUnhandledMessage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	_, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
@@ -806,10 +835,11 @@ func TestClose(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 
 	// Create Metadata Service controller.
 	isLeader := true
-	nc, mc := getTestNATSInstance(t, port, mockAgtMgr, &isLeader)
+	nc, mc := getTestNATSInstance(t, port, mockAgtMgr, mockMdStore, &isLeader)
 
 	// Listen for response.
 	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))

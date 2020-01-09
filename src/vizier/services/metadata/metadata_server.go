@@ -120,7 +120,7 @@ func main() {
 		keepAlive = false
 	}()
 
-	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent", agtMgr, &isLeader)
+	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent", agtMgr, etcdMds, &isLeader)
 
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
@@ -135,7 +135,8 @@ func main() {
 
 	mdHandler.ProcessAgentUpdates()
 
-	_, err = controllers.NewK8sMetadataController(mdHandler)
+	k8sMd, err := controllers.NewK8sMetadataController(mdHandler)
+	etcdMds.SetClusterInfo(controllers.ClusterInfo{CIDR: k8sMd.GetClusterCIDR()})
 
 	// Set up server.
 	env, err := metadataenv.New()

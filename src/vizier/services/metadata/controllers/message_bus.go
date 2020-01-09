@@ -22,9 +22,10 @@ type MessageBusController struct {
 	clock             utils.Clock
 	agentManager      AgentManager
 	isLeader          *bool
+	mdStore           MetadataStore
 }
 
-func newMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, isLeader *bool, clock utils.Clock) (*MessageBusController, error) {
+func newMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, mdStore MetadataStore, isLeader *bool, clock utils.Clock) (*MessageBusController, error) {
 	var conn *nats.Conn
 	var err error
 	if viper.GetBool("disable_ssl") {
@@ -39,7 +40,7 @@ func newMessageBusController(natsURL string, agentTopic string, agentManager Age
 		return nil, err
 	}
 
-	mc := &MessageBusController{conn: conn, clock: clock, agentManager: agentManager, isLeader: isLeader}
+	mc := &MessageBusController{conn: conn, clock: clock, agentManager: agentManager, mdStore: mdStore, isLeader: isLeader}
 
 	ch := make(chan *nats.Msg, 64)
 
@@ -56,14 +57,14 @@ func newMessageBusController(natsURL string, agentTopic string, agentManager Age
 }
 
 // NewTestMessageBusController creates a new message bus controller where you can specify a test clock.
-func NewTestMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, isLeader *bool, clock utils.Clock) (*MessageBusController, error) {
-	return newMessageBusController(natsURL, agentTopic, agentManager, isLeader, clock)
+func NewTestMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, mdStore MetadataStore, isLeader *bool, clock utils.Clock) (*MessageBusController, error) {
+	return newMessageBusController(natsURL, agentTopic, agentManager, mdStore, isLeader, clock)
 }
 
 // NewMessageBusController creates a new message bus controller.
-func NewMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, isLeader *bool) (*MessageBusController, error) {
+func NewMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, mdStore MetadataStore, isLeader *bool) (*MessageBusController, error) {
 	clock := utils.SystemClock{}
-	return newMessageBusController(natsURL, agentTopic, agentManager, isLeader, clock)
+	return newMessageBusController(natsURL, agentTopic, agentManager, mdStore, isLeader, clock)
 }
 
 // AgentTopicListener handles any incoming messages on the controller's channel.
@@ -202,7 +203,8 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID: asid,
+				ASID:        asid,
+				ClusterCIDR: mc.mdStore.GetClusterCIDR(),
 			},
 		},
 	}

@@ -312,6 +312,18 @@ func (mr *MockMetadataStoreMockRecorder) GetASID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetASID", reflect.TypeOf((*MockMetadataStore)(nil).GetASID))
 }
 
+// GetClusterCIDR mocks base method
+func (m *MockMetadataStore) GetClusterCIDR() string {
+	ret := m.ctrl.Call(m, "GetClusterCIDR")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetClusterCIDR indicates an expected call of GetClusterCIDR
+func (mr *MockMetadataStoreMockRecorder) GetClusterCIDR() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterCIDR", reflect.TypeOf((*MockMetadataStore)(nil).GetClusterCIDR))
+}
+
 // GetProcesses mocks base method
 func (m *MockMetadataStore) GetProcesses(arg0 []*types.UInt128) ([]*metadatapb.ProcessInfo, error) {
 	ret := m.ctrl.Call(m, "GetProcesses", arg0)

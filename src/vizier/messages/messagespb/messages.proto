@@ -34,6 +34,9 @@ message RegisterAgentResponse {
     uint32 asid = 1 [
                     (gogoproto.customname) = "ASID"
                     ];
+    string cluster_cidr = 2 [
+                    (gogoproto.customname) = "ClusterCIDR"
+                    ];
 }
 
 message UpdateAgentRequest {
