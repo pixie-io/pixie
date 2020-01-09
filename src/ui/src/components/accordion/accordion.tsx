@@ -12,13 +12,13 @@ interface AccordionProps {
 }
 
 interface AccordionToggleItem {
-  name: string;
+  title: React.ReactNode;
   key: string;
   children: AccordionItem[];
 }
 
 interface AccordionItem {
-  name: string;
+  title: React.ReactNode;
   onClick: () => void;
 }
 
@@ -35,7 +35,7 @@ export const Accordion = (props: AccordionProps) => {
       <AccordionToggle
         key={`toggle-${item.key}`}
         eventKey={item.key}
-        name={item.name}
+        title={item.title}
         onClick={React.useCallback(() => {
           setActiveKey((key) => key === item.key ? '' : item.key);
         }, [])}
@@ -54,7 +54,7 @@ export const Accordion = (props: AccordionProps) => {
                 // @ts-ignore: 'darker' is defined in theme.scss.
                 variant='darker'
               >
-                {child.name}
+                {child.title}
               </Button>
             ))
           }
@@ -67,15 +67,15 @@ export const Accordion = (props: AccordionProps) => {
 interface AccordionItemProps {
   eventKey: string;
   active?: boolean;
-  name: string;
+  title: React.ReactNode;
   onClick?: () => void;
 }
 
-export const AccordionToggle = ({ active, name, onClick }: AccordionItemProps) => {
+export const AccordionToggle = ({ active, title, onClick }: AccordionItemProps) => {
   return (
     <Button className='pixie-accordion-toggle' onClick={onClick}>
       <img className='pixie-accordion-toggle-collapse-icon' src={active ? openedIcon : closedIcon} />
-      {name}
+      {title}
     </Button>
   );
 };

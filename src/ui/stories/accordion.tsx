@@ -9,25 +9,25 @@ storiesOf('Accordion', module)
     <Accordion
       items={[
         {
-          name: 'Toggle1',
+          title: 'Toggle1',
           key: 'toggle1',
           children: [
             {
-              name: 'content1',
+              title: 'content1',
               onClick: action('clicked'),
             },
             {
-              name: 'content2',
+              title: 'content2',
               onClick: action('clicked'),
             },
           ],
         },
         {
-          name: 'Toggle2',
+          title: 'Toggle2',
           key: 'toggle2',
           children: [
             {
-              name: 'content1',
+              title: 'content1',
               onClick: action('clicked'),
             },
           ],

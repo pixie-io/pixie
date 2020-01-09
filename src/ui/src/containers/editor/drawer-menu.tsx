@@ -7,6 +7,7 @@ import {useQuery} from '@apollo/react-hooks';
 
 // @ts-ignore : TS does not seem to like this import.
 import * as PresetQueriesTOML from '../vizier/preset-queries.toml';
+import HistoryEntry from './script-history';
 
 interface EditorDrawerMenuProps {
   onSelect?: (script: Script) => void;
@@ -24,7 +25,7 @@ const PRESET_QUERIES: Script[] = toml.parse(PresetQueriesTOML).queries.map(
 const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
   const presetQueries = React.useMemo(() =>
     PRESET_QUERIES.map((s) => ({
-      name: s.name,
+      title: s.name,
       onClick: () => {
         if (props.onSelect) {
           props.onSelect(s);
@@ -36,7 +37,7 @@ const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
   const accordionItem = React.useMemo(() => {
     const historyEntries = historyData && historyData.scriptHistory || [];
     const historyMenuItems = historyEntries.map((history) => ({
-      name: history.title,
+      title: (<HistoryEntry name={history.title} time={history.time} />),
       onClick: () => {
         if (props.onSelect) {
           props.onSelect({
@@ -47,15 +48,14 @@ const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
         }
       },
     }));
-
     return [
       {
-        name: 'Example Scripts',
+        title: 'Example Scripts',
         key: 'example',
         children: presetQueries,
       },
       {
-        name: 'Script History',
+        title: 'Script History',
         key: 'history',
         children: historyMenuItems,
       },

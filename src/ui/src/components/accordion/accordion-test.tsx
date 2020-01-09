@@ -6,25 +6,25 @@ import {Accordion, AccordionToggle} from './accordion';
 
 const testAccordionItems = [
   {
-    name: 'item1',
+    title: 'item1',
     key: 'item1',
     children: [
       {
-        name: 'content1',
+        title: 'content1',
         onClick: jest.fn(),
       },
       {
-        name: 'content2',
+        title: 'content2',
         onClick: jest.fn(),
       },
     ],
   },
   {
-    name: 'item2',
+    title: 'item2',
     key: 'item2',
     children: [
       {
-        name: 'content2-1',
+        title: 'content2-1',
         onClick: jest.fn(),
       },
     ],
@@ -42,7 +42,7 @@ describe('<Accordion/> test', () => {
     const wrapper = shallow(<Accordion items={testAccordionItems} />);
     const activeToggle = wrapper.findWhere((node) => node.type() === AccordionToggle && node.prop('active'));
     expect(activeToggle.length).toBe(1);
-    expect(activeToggle.prop('name')).toBe('item1');
+    expect(activeToggle.prop('title')).toBe('item1');
     const activeCollapse = wrapper.findWhere((node) => node.type() === Collapse && node.prop('in'));
     expect(activeCollapse.length).toBe(1);
     expect(activeCollapse.key()).toBe('collapse-item1');
