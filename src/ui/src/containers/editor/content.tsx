@@ -55,7 +55,7 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
         },
       });
     });
-  }, []);
+  }, [code]);
 
   const onCodeChange = React.useCallback((c) => {
     setCode(c);
