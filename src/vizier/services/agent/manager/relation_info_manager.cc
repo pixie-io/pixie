@@ -22,6 +22,7 @@ void RelationInfoManager::AddSchemaToUpdateInfo(messages::AgentUpdateInfo* updat
       auto* column = schema->add_columns();
       column->set_name(relation.GetColumnName(i));
       column->set_data_type(relation.GetColumnType(i));
+      column->set_desc(relation.GetColumnDesc(i));
       // TODO(philkuz) (PL-850) add pattern_type to the relation somehow.
       // column->set_pattern_type(relation.GetColumnPatternType(i));
     }

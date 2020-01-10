@@ -18,8 +18,14 @@ using std::string;
 Relation::Relation() = default;
 
 Relation::Relation(ColTypeArray col_types, ColNameArray col_names)
-    : col_types_(std::move(col_types)), col_names_(std::move(col_names)) {
+    : Relation(col_types, col_names, ColDescArray(col_types.size(), "")) {}
+
+Relation::Relation(ColTypeArray col_types, ColNameArray col_names, ColDescArray col_desc)
+    : col_types_(std::move(col_types)),
+      col_names_(std::move(col_names)),
+      col_desc_(std::move(col_desc)) {
   CHECK(col_types_.size() == col_names_.size()) << "Initialized with mismatched col names/sizes";
+  CHECK(col_names_.size() == col_desc_.size()) << "Initialized with mismatched col names/desc";
   absl::flat_hash_set<std::string> unique_names;
   for (const auto& col_name : col_names_) {
     DCHECK(!unique_names.contains(col_name))
@@ -30,11 +36,13 @@ Relation::Relation(ColTypeArray col_types, ColNameArray col_names)
 
 size_t Relation::NumColumns() const { return col_types_.size(); }
 
-void Relation::AddColumn(const types::DataType& col_type, const std::string& col_name) {
+void Relation::AddColumn(const types::DataType& col_type, const std::string& col_name,
+                         std::string_view col_desc) {
   DCHECK(std::find(col_names_.begin(), col_names_.end(), col_name) == col_names_.end())
       << absl::Substitute("Column '$0' already exists", col_name);
   col_types_.push_back(col_type);
   col_names_.push_back(col_name);
+  col_desc_.push_back(std::string(col_desc));
 }
 
 bool Relation::HasColumn(size_t idx) const { return idx < col_types_.size(); }
@@ -59,10 +67,17 @@ types::DataType Relation::GetColumnType(size_t idx) const {
 types::DataType Relation::GetColumnType(const std::string& col_name) const {
   return GetColumnType(GetColumnIndex(col_name));
 }
-std::string Relation::GetColumnName(size_t idx) const {
+
+const std::string& Relation::GetColumnName(size_t idx) const {
   CHECK(HasColumn(idx)) << absl::Substitute("Column $0 does not exist. Only $1 columns available.",
                                             idx, NumColumns());
   return col_names_[idx];
+}
+
+const std::string& Relation::GetColumnDesc(size_t idx) const {
+  CHECK(HasColumn(idx)) << absl::Substitute("Column $0 does not exist. Only $1 columns available.",
+                                            idx, NumColumns());
+  return col_desc_[idx];
 }
 
 std::string Relation::DebugString() const {

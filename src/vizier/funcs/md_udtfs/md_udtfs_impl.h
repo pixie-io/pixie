@@ -72,7 +72,7 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
       for (const auto& col : rel.columns()) {
         relation_info_.emplace_back(table_name, col.column_name(),
                                     std::string(magic_enum::enum_name(col.column_type())),
-                                    "description goes here");
+                                    col.column_desc());
       }
     }
     return Status::OK();

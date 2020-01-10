@@ -51,6 +51,7 @@ func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) 
 			columnPbs[j] = &schemapb.Relation_ColumnInfo{
 				ColumnName: column.Name,
 				ColumnType: column.DataType,
+				ColumnDesc: column.Desc,
 			}
 		}
 		schemaPb := &schemapb.Relation{

@@ -13,6 +13,7 @@ namespace schema {
 
 using ColTypeArray = std::vector<types::DataType>;
 using ColNameArray = std::vector<std::string>;
+using ColDescArray = std::vector<std::string>;
 
 /**
  * Relation tracks columns/types for a given table/operator
@@ -22,6 +23,7 @@ class Relation {
   Relation();
   // Constructor for Relation that initializes with a list of column types.
   explicit Relation(ColTypeArray col_types, ColNameArray col_names);
+  explicit Relation(ColTypeArray col_types, ColNameArray col_names, ColDescArray col_desc);
 
   // Get the column types.
   const ColTypeArray& col_types() const { return col_types_; }
@@ -32,7 +34,8 @@ class Relation {
   size_t NumColumns() const;
 
   // Add a column to the relation.
-  void AddColumn(const types::DataType& col_type, const std::string& col_name);
+  void AddColumn(const types::DataType& col_type, const std::string& col_name,
+                 std::string_view desc = "");
 
   int64_t GetColumnIndex(const std::string& col_name) const;
 
@@ -42,7 +45,8 @@ class Relation {
 
   types::DataType GetColumnType(size_t idx) const;
   types::DataType GetColumnType(const std::string& col_name) const;
-  std::string GetColumnName(size_t idx) const;
+  const std::string& GetColumnName(size_t idx) const;
+  const std::string& GetColumnDesc(size_t idx) const;
 
   // Get the debug string of this relation.
   std::string DebugString() const;
@@ -80,6 +84,7 @@ class Relation {
  private:
   ColTypeArray col_types_;
   ColNameArray col_names_;
+  ColDescArray col_desc_;
 };
 
 }  // namespace schema
