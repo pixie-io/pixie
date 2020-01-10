@@ -77,6 +77,7 @@ class GoHTTPCTraceTest : public ::testing::Test {
 
 TEST_F(GoHTTPCTraceTest, RequestAndResponse) {
   ASSERT_OK(s_.Start({server_path_}));
+  sleep(2);
   ASSERT_OK(c_.Start({client_path_, "-name=PixieLabs"}));
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
@@ -117,8 +118,9 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
   const TraceRoleTestParam& param = GetParam();
   EXPECT_OK(socket_trace_connector_->UpdateProtocolTraceRole(kProtocolHTTP, param.role));
 
-  EXPECT_OK(s_.Start({server_path_}));
-  EXPECT_OK(c_.Start({client_path_, "-name=PixieLabs"}));
+  ASSERT_OK(s_.Start({server_path_}));
+  sleep(2);
+  ASSERT_OK(c_.Start({client_path_, "-name=PixieLabs"}));
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
