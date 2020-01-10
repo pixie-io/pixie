@@ -117,6 +117,8 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
   }
   pod_info->set_start_time_ns(update.start_timestamp_ns());
   pod_info->set_stop_time_ns(update.stop_timestamp_ns());
+  pod_info->set_node_name(update.node_name());
+  pod_info->set_hostname(update.hostname());
 
   pods_by_name_[{ns, name}] = object_uid;
   return Status::OK();

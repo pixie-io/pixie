@@ -129,17 +129,21 @@ inline PodPhase ConvertToPodPhase(pl::shared::k8s::metadatapb::PodPhase pb_enum)
 class PodInfo : public K8sMetadataObject {
  public:
   PodInfo(UID uid, std::string_view ns, std::string_view name, PodQOSClass qos_class,
-          PodPhase phase)
-      : K8sMetadataObject(K8sObjectType::kPod, std::move(uid), ns, name),
+          PodPhase phase, std::string_view node_name, std::string_view hostname,
+          int64_t start_timestamp_ns = 0, int64_t stop_timestamp_ns = 0)
+      : K8sMetadataObject(K8sObjectType::kPod, uid, ns, name, start_timestamp_ns,
+                          stop_timestamp_ns),
         qos_class_(qos_class),
-        phase_(phase) {}
+        phase_(phase),
+        node_name_(node_name),
+        hostname_(hostname) {}
 
   explicit PodInfo(const pl::shared::k8s::metadatapb::PodUpdate& pod_update_info)
-      : K8sMetadataObject(K8sObjectType::kPod, pod_update_info.uid(), pod_update_info.namespace_(),
-                          pod_update_info.name(), pod_update_info.start_timestamp_ns(),
-                          pod_update_info.stop_timestamp_ns()),
-        qos_class_(ConvertToPodQOsClass(pod_update_info.qos_class())),
-        phase_(ConvertToPodPhase(pod_update_info.phase())) {}
+      : PodInfo(pod_update_info.uid(), pod_update_info.namespace_(), pod_update_info.name(),
+                ConvertToPodQOsClass(pod_update_info.qos_class()),
+                ConvertToPodPhase(pod_update_info.phase()), pod_update_info.node_name(),
+                pod_update_info.hostname(), pod_update_info.start_timestamp_ns(),
+                pod_update_info.stop_timestamp_ns()) {}
 
   virtual ~PodInfo() = default;
 
@@ -150,6 +154,11 @@ class PodInfo : public K8sMetadataObject {
   void RmService(UIDView uid) { services_.erase(uid); }
   PodQOSClass qos_class() const { return qos_class_; }
   PodPhase phase() const { return phase_; }
+
+  void set_node_name(std::string_view node_name) { node_name_ = node_name; }
+  void set_hostname(std::string_view hostname) { hostname_ = hostname; }
+  const std::string& node_name() const { return node_name_; }
+  const std::string& hostname() const { return hostname_; }
 
   const absl::flat_hash_set<std::string>& containers() const { return containers_; }
   const absl::flat_hash_set<std::string>& services() const { return services_; }
@@ -180,6 +189,9 @@ class PodInfo : public K8sMetadataObject {
    * Should point to ServiceInfo via the data structure containing this pod.
    */
   absl::flat_hash_set<UID> services_;
+
+  std::string node_name_;
+  std::string hostname_;
 };
 
 /**
@@ -191,13 +203,12 @@ class PodInfo : public K8sMetadataObject {
 class ContainerInfo {
  public:
   ContainerInfo() = delete;
-  ContainerInfo(CID cid, int64_t start_time_ns)
-      : cid_(std::move(cid)), start_time_ns_(start_time_ns), stop_time_ns_(0) {}
+  ContainerInfo(CID cid, int64_t start_time_ns, int64_t stop_time_ns = 0)
+      : cid_(std::move(cid)), start_time_ns_(start_time_ns), stop_time_ns_(stop_time_ns) {}
 
   explicit ContainerInfo(const pl::shared::k8s::metadatapb::ContainerUpdate& container_update_info)
-      : cid_(container_update_info.cid()),
-        start_time_ns_(container_update_info.start_timestamp_ns()),
-        stop_time_ns_(container_update_info.stop_timestamp_ns()) {}
+      : ContainerInfo(container_update_info.cid(), container_update_info.start_timestamp_ns(),
+                      container_update_info.stop_timestamp_ns()) {}
 
   const CID& cid() const { return cid_; }
 
