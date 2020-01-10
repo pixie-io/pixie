@@ -258,7 +258,8 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     ECHECK(hdr->value.empty());
 
     // Only expect one end_stream signal per stream direction.
-    ECHECK(!half_stream_ptr->end_stream);
+    ECHECK(!half_stream_ptr->end_stream) << absl::Substitute(
+        "stream_id: $0, conn_id: $1", hdr->attr.stream_id, ToString(hdr->attr.conn_id));
 
     half_stream_ptr->end_stream = true;
     return;
