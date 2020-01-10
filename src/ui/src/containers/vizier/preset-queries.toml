@@ -26,9 +26,9 @@ range_agg = t1.groupby(['service', 'range_group']).agg(
 
 rps_table = range_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
 
-joined_table = quantiles_table.merge(rps_table, 
-                                     how='inner', 
-                                     left_on=['service'], 
+joined_table = quantiles_table.merge(rps_table,
+                                     how='inner',
+                                     left_on=['service'],
                                      right_on=['service'],
                                      suffixes=['', '_x'])
 
@@ -52,9 +52,9 @@ pl.display(joined_table)
 ],
 ["Pod Resource Usage In Time Interval",
 """
-# 
+#
 # Returns the Resource Usage for each pod during an interval.
-# 
+#
 t1 = pl.DataFrame(table='process_stats', start_time='-60s')
 
 bytes_per_mb = 1024.0 * 1024.0
@@ -73,7 +73,7 @@ t1.pod = t1.attr['pod']
 upid_aggop = t1.groupby(['upid', 'pod']).agg(
   vsize_mb=('vsize_mb', pl.mean),
   rss_bytes_mb=('rss_bytes_mb', pl.mean),
-  # The following columns are all counters, so we diff the value at the beginning 
+  # The following columns are all counters, so we diff the value at the beginning
   # of the period with the value at the end of the period.
   cpu_utime_s_end=('cpu_utime_s', pl.max),
   cpu_ktime_s_end=('cpu_ktime_s', pl.max),
@@ -97,7 +97,7 @@ upid_aggop.write_bytes_mb = upid_aggop.write_bytes_mb_end - upid_aggop.write_byt
 upid_aggop.rchar_bytes_mb = upid_aggop.rchar_bytes_mb_end - upid_aggop.rchar_bytes_mb_start
 upid_aggop.wchar_bytes_mb = upid_aggop.wchar_bytes_mb_end - upid_aggop.wchar_bytes_mb_start
 
-# For this aggregate, we sum up the values as we've already calculated the average/usage 
+# For this aggregate, we sum up the values as we've already calculated the average/usage
 # for the upids already.
 pod_aggop = upid_aggop.groupby('pod').agg(
   cpu_utime_s=('cpu_utime_s', pl.sum),
@@ -130,9 +130,9 @@ pl.display(keep_columns)
 """],
 ["Total Resource Usage During Pod Lifetime",
 """
-# 
+#
 # Returns the Total Resource Usage for each pod.
-# 
+#
 t1 = pl.DataFrame(table='process_stats', start_time='-60s')
 
 bytes_per_mb = 1024.0 * 1024.0
@@ -159,7 +159,7 @@ upid_aggop = t1.groupby(['upid', 'pod']).agg(
   rchar_bytes_mb=('rchar_bytes_mb', pl.max),
   wchar_bytes_mb=('wchar_bytes_mb', pl.max),
 )
-# For this aggregate, we sum up the values as we've already calculated the average/usage 
+# For this aggregate, we sum up the values as we've already calculated the average/usage
 # for the upids already.
 pod_aggop = upid_aggop.groupby('pod').agg(
   cpu_utime_s=('cpu_utime_s', pl.sum),
@@ -213,9 +213,9 @@ pl.display(t2)
 """],
 ["Memory Usage of Pods",
 """
-# 
+#
 # Get the Virtual memory usage and average memory for all pods in the k8s cluster.
-# 
+#
 t1 = pl.DataFrame(table='process_stats', start_time='-30m')
 bytes_per_mb = 1024.0 * 1024.0
 t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
@@ -228,7 +228,7 @@ upid_aggop = t1.groupby(['upid', 'pod', 'timestamp']).agg(
   vsize_mb=('vsize_mb', pl.mean),
   rss_bytes_mb=('rss_bytes_mb', pl.mean),
 )
-# For this aggregate, we sum up the values as we've already calculated the average/usage 
+# For this aggregate, we sum up the values as we've already calculated the average/usage
 # for the upids already, just need to do it for the entire pod.
 pod_aggop = upid_aggop.groupby(['pod', 'timestamp']).agg(
   vsize_mb=('vsize_mb', pl.sum),
@@ -238,18 +238,18 @@ pod_aggop = upid_aggop.groupby(['pod', 'timestamp']).agg(
 pod_aggop['Virtual Memory (mb)'] = pod_aggop.vsize_mb
 pod_aggop['Average Memory (mb)'] = pod_aggop.rss_bytes_mb
 keep_columns = pod_aggop[[
-  'pod', 
-  'timestamp', 
-  'Virtual Memory (mb)', 
+  'pod',
+  'timestamp',
+  'Virtual Memory (mb)',
   'Average Memory (mb)'
 ]]
 pl.display(keep_columns)
 """],
 ["Memory Usage of Services",
 """
-# 
+#
 # Get the Virtual memory usage and average memory for all services in the k8s cluster.
-# 
+#
 t1 = pl.DataFrame(table='process_stats', start_time='-30m')
 bytes_per_mb = 1024.0 * 1024.0
 t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
@@ -262,7 +262,7 @@ upid_aggop = t1.groupby(['upid', 'service', 'timestamp']).agg(
   vsize_mb=('vsize_mb', pl.mean),
   rss_bytes_mb=('rss_bytes_mb', pl.mean),
 )
-# For this aggregate, we sum up the values as we've already calculated the average/usage 
+# For this aggregate, we sum up the values as we've already calculated the average/usage
 # for the upids already, just need to do it for the entire service.
 aggop = upid_aggop.groupby(['service', 'timestamp']).agg(
   vsize_mb=('vsize_mb', pl.sum),
@@ -272,18 +272,18 @@ aggop = upid_aggop.groupby(['service', 'timestamp']).agg(
 aggop['Virtual Memory (mb)'] = aggop.vsize_mb
 aggop['Average Memory (mb)'] = aggop.rss_bytes_mb
 keep_columns = aggop[[
-  'service', 
-  'timestamp', 
-  'Virtual Memory (mb)', 
+  'service',
+  'timestamp',
+  'Virtual Memory (mb)',
   'Average Memory (mb)'
 ]]
 pl.display(keep_columns)
 """],
 ["Memory Usage of Processes",
 """
-# 
+#
 # Get the Virtual memory usage and average memory for all processes in the k8s cluster.
-# 
+#
 t1 = pl.DataFrame(table='process_stats', start_time='-30s')
 bytes_per_mb = 1024.0 * 1024.0
 t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
@@ -307,12 +307,19 @@ keep_columns = aggop[[
   'pid',
   'Process Name',
   'asid',
-  'timestamp', 
-  'Virtual Memory (mb)', 
+  'timestamp',
+  'Virtual Memory (mb)',
   'Average Memory (mb)'
 ]]
 pl.display(keep_columns)
 """
-]
+],
+["Table Schemas",
+"""
+#
+# Get the schema for all the tables available in the system.
+#
+pl.display(pl.GetSchemas())
+"""]
 
 ]
