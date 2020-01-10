@@ -20,17 +20,17 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: adservice
+      app: adservice
   template:
     metadata:
       labels:
-        name: adservice
+        app: adservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
         # Image built from https://github.com/pixie-labs/microservices-demo/src/adservice.
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/adservice:a815e02
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/adservice:v0.1.3
         ports:
         - containerPort: 9555
         env:
@@ -45,12 +45,12 @@ spec:
             memory: 300Mi
         readinessProbe:
           initialDelaySeconds: 20
-          periodSeconds: 5
+          periodSeconds: 15
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:9555"]
         livenessProbe:
           initialDelaySeconds: 20
-          periodSeconds: 5
+          periodSeconds: 15
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:9555"]
 ---

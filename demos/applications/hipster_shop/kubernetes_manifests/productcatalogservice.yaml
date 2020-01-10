@@ -20,19 +20,22 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: productcatalogservice
+      app: productcatalogservice
   template:
     metadata:
       labels:
-        name: productcatalogservice
+        app: productcatalogservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
         # Image built from https://github.com/pixie-labs/microservices-demo/src/productcatalogservice.
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/productcatalogservice:a815e02
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/productcatalogservice:v0.1.3
         ports:
         - containerPort: 3550
+        env:
+        - name: PORT
+          value: "3550"
         readinessProbe:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:3550"]

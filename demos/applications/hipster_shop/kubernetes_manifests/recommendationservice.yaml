@@ -20,17 +20,17 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: recommendationservice
+      app: recommendationservice
   template:
     metadata:
       labels:
-        name: recommendationservice
+        app: recommendationservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
         # Image built from https://github.com/pixie-labs/microservices-demo/src/recommendationservice.
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/recommendationservice:a815e02
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/recommendationservice:v0.1.3
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -42,6 +42,8 @@ spec:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:8080"]
         env:
+        - name: PORT
+          value: "8080"
         - name: PRODUCT_CATALOG_SERVICE_ADDR
           value: "productcatalogservice:3550"
         resources:

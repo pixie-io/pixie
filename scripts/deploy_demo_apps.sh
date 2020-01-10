@@ -8,7 +8,7 @@ usage() {
   echo ""
   echo "List of supported demo applications:"
   echo "  sockshop (default)"
-  echo "  hipster_shop"
+  echo "  hipster-shop"
   exit
 }
 
@@ -46,11 +46,11 @@ if [ "$TARGET" = "sockshop" ]; then
   if [ "$DEPLOY_LOAD_GEN" = true ]; then
     kubectl apply -f "$workspace"/demos/applications/sockshop/load_generation
   fi
-elif [ "$TARGET" = "hipster_shop" ]; then
+elif [ "$TARGET" = "hipster-shop" ]; then
   kubectl apply -f "$workspace"/demos/applications/hipster_shop/kubernetes_manifests/0000_namespace.yaml && sleep 5
   kubectl apply -f "$workspace"/demos/applications/hipster_shop/kubernetes_manifests
   if [ "$DEPLOY_LOAD_GEN" = true ]; then
-    echo "WARNING: hipster_shop load generation not yet supported."
+    echo "WARNING: hipster-shop load generation not yet supported."
   fi
 else
   echo "ERROR: $TARGET is not a valid demo app"

@@ -20,16 +20,16 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: checkoutservice
+      app: checkoutservice
   template:
     metadata:
       labels:
-        name: checkoutservice
+        app: checkoutservice
     spec:
       containers:
         - name: server
           # Image built from https://github.com/pixie-labs/microservices-demo/src/checkoutservice.
-          image: gcr.io/pl-dev-infra/demos/microservices-demo-app/checkoutservice:a815e02
+          image: gcr.io/pl-dev-infra/demos/microservices-demo-app/checkoutservice:v0.1.3
           ports:
           - containerPort: 5050
           readinessProbe:
@@ -39,6 +39,8 @@ spec:
             exec:
               command: ["/bin/grpc_health_probe", "-addr=:5050"]
           env:
+          - name: PORT
+            value: "5050"
           - name: PRODUCT_CATALOG_SERVICE_ADDR
             value: "productcatalogservice:3550"
           - name: SHIPPING_SERVICE_ADDR

@@ -20,20 +20,23 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: currencyservice
+      app: currencyservice
   template:
     metadata:
       labels:
-        name: currencyservice
+        app: currencyservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
         # Image built from https://github.com/pixie-labs/microservices-demo/src/currencyservice.
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/currencyservice:a815e02
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/currencyservice:v0.1.3
         ports:
         - name: grpc
           containerPort: 7000
+        env:
+        - name: PORT
+          value: "7000"
         readinessProbe:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:7000"]

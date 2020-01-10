@@ -20,16 +20,16 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: frontend
+      app: frontend
   template:
     metadata:
       labels:
-        name: frontend
+        app: frontend
     spec:
       containers:
         - name: server
           # Image built from https://github.com/pixie-labs/microservices-demo/src/frontend.
-          image: gcr.io/pl-dev-infra/demos/microservices-demo-app/frontend:a815e02
+          image: gcr.io/pl-dev-infra/demos/microservices-demo-app/frontend:v0.1.3
           ports:
           - containerPort: 8080
           readinessProbe:
@@ -49,6 +49,8 @@ spec:
               - name: "Cookie"
                 value: "shop_session-id=x-liveness-probe"
           env:
+          - name: PORT
+            value: "8080"
           - name: PRODUCT_CATALOG_SERVICE_ADDR
             value: "productcatalogservice:3550"
           - name: CURRENCY_SERVICE_ADDR

@@ -20,16 +20,16 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: cartservice
+      app: cartservice
   template:
     metadata:
       labels:
-        name: cartservice
+        app: cartservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/cartservice:a815e02
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/cartservice:v0.1.3
         ports:
         - containerPort: 7070
         env:
@@ -49,12 +49,12 @@ spec:
         readinessProbe:
           initialDelaySeconds: 15
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:7070"]
+            command: ["/bin/grpc_health_probe", "-addr=:7070", "-rpc-timeout=5s"]
         livenessProbe:
           initialDelaySeconds: 15
           periodSeconds: 10
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:7070"]
+            command: ["/bin/grpc_health_probe", "-addr=:7070", "-rpc-timeout=5s"]
 ---
 apiVersion: v1
 kind: Service

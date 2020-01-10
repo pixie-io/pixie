@@ -35,24 +35,14 @@ git clone https://github.com/GoogleCloudPlatform/microservices-demo
 cd microservices-demo
 ```
 
-Edit the skaffold.yaml file to change the location of the docker images:
-Change
-```
-gcr.io/microservices-demo-app/<service>
-```
-to
-```
-gcr.io/pl-dev-infra/demos/microservices-demo-app/<service>
-```
-
 Next, run:
 ```
-skaffold build
+skaffold build --default-repo=gcr.io/pl-dev-infra/demos/microservices-demo-app
 ```
 to build the docker images and store them on our container registry.
 
 Note: Based on when you clone the repo and generate the images, you will need to
-update the tags in the kubernetes manaifest yaml files. This can be done in the following way:
+update the tags in the kubernetes manifest yaml files. This can be done in the following way:
 
 From the cloned repo directory:
 ```

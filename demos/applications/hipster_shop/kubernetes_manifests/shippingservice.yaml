@@ -20,18 +20,21 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: shippingservice
+      app: shippingservice
   template:
     metadata:
       labels:
-        name: shippingservice
+        app: shippingservice
     spec:
       containers:
       - name: server
         # Image built from https://github.com/pixie-labs/microservices-demo/src/shippingservice.
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/shippingservice:a815e02
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/shippingservice:v0.1.3
         ports:
         - containerPort: 50051
+        env:
+        - name: PORT
+          value: "50051"
         readinessProbe:
           periodSeconds: 5
           exec:

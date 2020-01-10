@@ -20,11 +20,11 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: redis-cart
+      app: redis-cart
   template:
     metadata:
       labels:
-        name: redis-cart
+        app: redis-cart
     spec:
       containers:
       - name: redis
