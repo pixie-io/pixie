@@ -8,26 +8,12 @@ const testAccordionItems = [
   {
     title: 'item1',
     key: 'item1',
-    children: [
-      {
-        title: 'content1',
-        onClick: jest.fn(),
-      },
-      {
-        title: 'content2',
-        onClick: jest.fn(),
-      },
-    ],
+    content: <div className='content1' />,
   },
   {
     title: 'item2',
     key: 'item2',
-    children: [
-      {
-        title: 'content2-1',
-        onClick: jest.fn(),
-      },
-    ],
+    content: <div className='content2' />,
   },
 ];
 

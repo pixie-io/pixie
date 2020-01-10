@@ -14,12 +14,7 @@ interface AccordionProps {
 interface AccordionToggleItem {
   title: React.ReactNode;
   key: string;
-  children: AccordionItem[];
-}
-
-interface AccordionItem {
-  title: React.ReactNode;
-  onClick: () => void;
+  content: React.ReactNode;
 }
 
 export const Accordion = (props: AccordionProps) => {
@@ -44,38 +39,51 @@ export const Accordion = (props: AccordionProps) => {
     children.push(
       <Collapse key={`collapse-${item.key}`} in={activeKey === item.key}>
         <div className='pixie-accordion-collapse'>
-          {
-            item.children.map((child, i) => (
-              <Button
-                key={`accordion-child-${i}`}
-                className='pixie-accordion-item'
-                size='sm'
-                onClick={child.onClick}
-                // @ts-ignore: 'darker' is defined in theme.scss.
-                variant='darker'
-              >
-                {child.title}
-              </Button>
-            ))
-          }
+          {item.content}
         </div>
       </Collapse>);
   }
   return <div className='pixie-accordion'> {children}</div>;
 };
 
-interface AccordionItemProps {
+interface AccordionToggleProps {
   eventKey: string;
   active?: boolean;
   title: React.ReactNode;
   onClick?: () => void;
 }
 
-export const AccordionToggle = ({ active, title, onClick }: AccordionItemProps) => {
+export const AccordionToggle = ({ active, title, onClick }: AccordionToggleProps) => {
   return (
     <Button className='pixie-accordion-toggle' onClick={onClick}>
       <img className='pixie-accordion-toggle-collapse-icon' src={active ? openedIcon : closedIcon} />
       {title}
     </Button>
   );
+};
+
+interface AccordionListProps {
+  items: AccordionItem[];
+}
+
+interface AccordionItem {
+  title: React.ReactNode;
+  onClick: () => void;
+}
+
+export const AccordionList = (props: AccordionListProps) => {
+  return (<>
+    {
+      props.items.map((item, i) => (
+        <Button
+          key={`accordion-child-${i}`}
+          className='pixie-accordion-item'
+          size='sm'
+          onClick={item.onClick}
+        >
+          {item.title}
+        </Button>
+      ))
+    }
+  </>);
 };

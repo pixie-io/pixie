@@ -1,7 +1,14 @@
+@import 'theme.scss';
+
 .pixie-accordion {
   height: 100%;
   display: flex;
   flex-direction: column;
+
+  .btn {
+    border: none;
+    box-shadow: none !important;
+  }
 }
 
 .pixie-accordion-toggle {
@@ -21,14 +28,19 @@
   }
 }
 
-.pixie-accordion-item {
-  text-align: start;
-  width: 100%;
-  color: inherit;
-  padding-left: 2rem;
-}
+.pixie-accordion-collapse {
+  background-color: $not-so-deep-oceanic;
 
-.pixie-accordion-collapse.show {
-  overflow-y: auto;
-  min-height: 0;
+  &.show {
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .pixie-accordion-item {
+    text-align: start;
+    width: 100%;
+    color: inherit;
+    padding-left: 2rem;
+    background-color: inherit;
+  }
 }
