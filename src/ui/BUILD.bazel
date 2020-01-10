@@ -24,6 +24,13 @@ UI_SCRIPT_START = """
       export OUTPUT_PATH="$$(pwd)/$(RULEDIR)"
       export TMPPATH=$$(mktemp -d)
 
+      # This is some truly shady stuff. The stamping on genrules just makes this file
+      # available, but does not apply it to the environment. We parse out the file
+      # and apply it to the environment here. Hopefully,
+      # no special characters/spaces/quotes in the results ...
+      if [ -f "bazel-out/volatile-status.txt" ]; then
+        $$(sed -E "s/^([A-Za-z_]+)\s*(.*)/export \\1=\\2/g" bazel-out/volatile-status.txt)
+      fi
       cp -aL $${BASE_PATH}/* $${TMPPATH}
 
       pushd $${TMPPATH}/src/ui &> /dev/null
