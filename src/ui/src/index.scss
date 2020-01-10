@@ -7,22 +7,23 @@
 // Custom scrollbar
 /* width */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: .5rem;
+  height: .5rem;
 }
 
 /* Track */
 ::-webkit-scrollbar-track {
-  background: #0b1420;
+  background: $oceanic;
 }
 
 /* Handle */
 ::-webkit-scrollbar-thumb {
-  background: #0b1420;
+  background: $mid-oceanic;
 }
 
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
-  background: #0f222d;
+  background: $pale-teal-oceanic;
 }
 
 // Remove the focus outline. TODO(malthus): We make sure this doesn't affect
