@@ -10,7 +10,6 @@
 #include "src/stirling/bcc_bpf_interface/http2.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
-#include "src/stirling/bcc_bpf/logging.h"
 #include "src/stirling/bcc_bpf/utils.h"
 
 // TODO(yzhao): Investigate the performance overhead of active_*_info_map.delete(id), when id is not

@@ -32,7 +32,6 @@ extern "C" {
 #define BCC_SRC_STRVIEW(varname, build_label) OBJ_STRVIEW(varname, _binary_##build_label##_bpf_src);
 
 DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
-DECLARE_bool(stirling_bpf_enable_logging);
 
 namespace pl {
 namespace bpf_tools {
@@ -219,11 +218,6 @@ class BCCWrapper {
   Status AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events);
 
   /**
-   * @brief Dumps BPF logging events through GLOG logging facility.
-   */
-  void DumpBPFLog();
-
-  /**
    * @brief Drains the perf buffer, calling the handle function that was
    * specified in the PerfBufferSpec when OpenPerfBuffer was called.
    */
@@ -256,7 +250,6 @@ class BCCWrapper {
   static size_t num_attached_perf_events() { return num_attached_perf_events_; }
 
  private:
-  Status InitLogging();
   Status DetachKProbe(const KProbeSpec& probe);
   Status DetachUProbe(const UProbeSpec& probe);
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
@@ -274,7 +267,6 @@ class BCCWrapper {
   std::vector<UProbeSpec> uprobes_;
   std::vector<PerfBufferSpec> perf_buffers_;
   std::vector<PerfEventSpec> perf_events_;
-  bool logging_enabled_ = false;
 
   ebpf::BPF bpf_;
 

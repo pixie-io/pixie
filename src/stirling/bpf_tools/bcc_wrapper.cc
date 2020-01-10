@@ -30,8 +30,6 @@
 DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 256,
               "The size of the perf buffers, in number of memory pages.");
 
-DEFINE_bool(stirling_bpf_enable_logging, false, "If true, BPF logging facilities are enabled.");
-
 namespace pl {
 namespace bpf_tools {
 
@@ -79,9 +77,6 @@ Status BCCWrapper::InitBPFCode(const std::vector<std::string>& cflags) {
   auto init_res = bpf_.init(std::string(bpf_program_), cflags);
   if (init_res.code() != 0) {
     return error::Internal("Unable to initialize BCC BPF program: $0", init_res.msg());
-  }
-  if (FLAGS_stirling_bpf_enable_logging) {
-    PL_RETURN_IF_ERROR(InitLogging());
   }
   return Status::OK();
 }
@@ -268,31 +263,6 @@ void BCCWrapper::PollPerfBuffer(std::string_view perf_buffer_name, int timeout_m
   auto perf_buffer = bpf().get_perf_buffer(std::string(perf_buffer_name));
   if (perf_buffer != nullptr) {
     perf_buffer->poll(timeout_ms);
-  }
-}
-
-namespace {
-
-void HandleLog(void* /*cb_cookie*/, void* data, int /*data_size*/) {
-  static constexpr std::string_view kBPFLogEventsPreamble = "BPF ";
-  const auto* event = static_cast<const log_event_t*>(data);
-  LOG(INFO) << absl::StrCat(kBPFLogEventsPreamble,
-                            std::string_view(event->msg, event->attr.msg_size));
-}
-
-static constexpr PerfBufferSpec kLogPerfBufferSpec = {"log_events", &HandleLog, nullptr};
-
-}  // namespace
-
-Status BCCWrapper::InitLogging() {
-  PL_RETURN_IF_ERROR(OpenPerfBuffer(kLogPerfBufferSpec, nullptr));
-  logging_enabled_ = true;
-  return Status::OK();
-}
-
-void BCCWrapper::DumpBPFLog() {
-  if (logging_enabled_) {
-    PollPerfBuffer(kLogPerfBufferSpec.name);
   }
 }
 

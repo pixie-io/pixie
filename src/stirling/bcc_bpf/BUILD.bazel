@@ -15,7 +15,6 @@ filegroup(
 filegroup(
     name = "utils",
     srcs = [
-        "logging.h",
         "utils.h",
     ],
     visibility = ["//experimental/bpf:__subpackages__"],
@@ -33,7 +32,6 @@ pl_bpf_cc_resource(
     name = "socket_trace",
     src = "socket_trace.c",
     hdrs = [
-        "logging.h",
         "utils.h",
         "go_grpc.c",
         "//src/stirling/bcc_bpf_interface:headers",
@@ -48,7 +46,6 @@ pl_bpf_preprocess(
     name = "socket_trace_preprocess_debug",
     src = "socket_trace.c",
     hdrs = [
-        "logging.h",
         "utils.h",
         "go_grpc.c",
         "//src/stirling/bcc_bpf_interface:headers",
@@ -60,7 +57,6 @@ pl_bpf_cc_resource(
     name = "pidruntime",
     src = "pidruntime.c",
     hdrs = [
-        "logging.h",
         "utils.h",
         "//src/stirling/bcc_bpf_interface:headers",
     ],
@@ -73,7 +69,6 @@ pl_bpf_preprocess(
     name = "pidruntime_preprocess_debug",
     src = "pidruntime.c",
     hdrs = [
-        "logging.h",
         "utils.h",
         "//src/stirling/bcc_bpf_interface:headers",
     ],

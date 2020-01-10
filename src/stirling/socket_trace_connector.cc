@@ -153,11 +153,7 @@ Status SocketTraceConnector::InitImpl() {
     FLAGS_stirling_enable_grpc_kprobe_tracing = false;
   }
 
-  std::vector<std::string> cflags;
-  if (FLAGS_stirling_bpf_enable_logging) {
-    cflags.emplace_back("-DENABLE_BPF_LOGGING");
-  }
-  PL_RETURN_IF_ERROR(InitBPFCode(cflags));
+  PL_RETURN_IF_ERROR(InitBPFCode(/*cflags*/ {}));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
 
   // TODO(yzhao): Factor this block into a helper function.
@@ -254,8 +250,6 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   UpdateActiveConnections();
 
   TransferStreams(ctx, table_num, data_table);
-
-  DumpBPFLog();
 }
 
 template <typename TValueType>
