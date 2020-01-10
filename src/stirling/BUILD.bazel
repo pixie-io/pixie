@@ -188,6 +188,7 @@ pl_cc_test(
         "//src/common/exec:cc_library",
         "//src/stirling/testing:cc_library",
     ],
+    flaky = True,
 )
 
 pl_cc_test(
