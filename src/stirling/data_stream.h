@@ -110,8 +110,8 @@ class DataStream {
           size, FLAGS_messages_size_limit_bytes);
       Messages<TMessageType>().clear();
     }
-    EraseExpiredFrames(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),
-                       &Messages<TMessageType>());
+    EraseExpiredMessages(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),
+                         &Messages<TMessageType>());
   }
 
   /**
@@ -144,7 +144,7 @@ class DataStream {
 
  private:
   template <typename TMessageType>
-  static void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TMessageType>* msgs) {
+  static void EraseExpiredMessages(std::chrono::seconds exp_dur, std::deque<TMessageType>* msgs) {
     auto iter = msgs->begin();
     for (; iter != msgs->end(); ++iter) {
       auto frame_age = std::chrono::duration_cast<std::chrono::seconds>(
