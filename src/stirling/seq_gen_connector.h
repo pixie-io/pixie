@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/stirling/canonical_types.h"
 #include "src/stirling/sequence_generator.h"
 #include "src/stirling/source_connector.h"
 
@@ -21,21 +22,21 @@ class SeqGenConnector : public SourceConnector {
 
   // clang-format off
   static constexpr DataElement kElementsSeq0[] = {
-      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
-      {"x", types::DataType::INT64, types::PatternType::GENERAL},
-      {"xmod10", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
-      {"xsquared", types::DataType::INT64, types::PatternType::GENERAL},
-      {"fibonnaci", types::DataType::INT64, types::PatternType::GENERAL},
-      {"PIx", types::DataType::FLOAT64, types::PatternType::GENERAL},
+      canonical_data_elements::kTime,
+      {"x", types::DataType::INT64, types::PatternType::GENERAL, "A sequence number."},
+      {"xmod10", types::DataType::INT64, types::PatternType::GENERAL_ENUM, "The value of x % 10."},
+      {"xsquared", types::DataType::INT64, types::PatternType::GENERAL, "The value of x^2."},
+      {"fibonnaci", types::DataType::INT64, types::PatternType::GENERAL, "Fibonnaci number"},
+      {"PIx", types::DataType::FLOAT64, types::PatternType::GENERAL, "PI * x"},
   };
   // clang-format on
   static constexpr auto kSeq0Table = DataTableSchema("sequence_generator0", kElementsSeq0);
 
   // clang-format off
   static constexpr DataElement kElementsSeq1[] = {
-      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
-      {"x", types::DataType::INT64, types::PatternType::GENERAL},
-      {"xmod8", types::DataType::INT64, types::PatternType::GENERAL}
+      canonical_data_elements::kTime,
+      {"x", types::DataType::INT64, types::PatternType::GENERAL, "A sequence number."},
+      {"xmod8", types::DataType::INT64, types::PatternType::GENERAL, "The value of x % 8."}
   };
   // clang-format on
   static constexpr std::string_view kSeq1TabletizationKey = "xmod8";

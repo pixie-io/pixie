@@ -22,6 +22,7 @@ DUMMY_SOURCE_CONNECTOR(SystemStatsConnector);
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 #include "src/shared/metadata/metadata.h"
+#include "src/stirling/canonical_types.h"
 
 namespace pl {
 namespace stirling {
@@ -30,19 +31,30 @@ class SystemStatsConnector : public SourceConnector {
  public:
   // clang-format off
   static constexpr DataElement kProcessStatsElements[] = {
-      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
-      {"upid", types::DataType::UINT128, types::PatternType::GENERAL},
-      {"major_faults", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"minor_faults", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"cpu_utime_ns", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"cpu_ktime_ns", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"num_threads", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
-      {"vsize_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
-      {"rss_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
-      {"rchar_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"wchar_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"read_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"write_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
+      canonical_data_elements::kTime,
+      canonical_data_elements::kUPID,
+      {"major_faults", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Number of major page faults"},
+      {"minor_faults", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Number of minor page faults"},
+      {"cpu_utime_ns", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Time spent on user space by the process"},
+      {"cpu_ktime_ns", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Time spent on kernel by the process"},
+      {"num_threads", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+      "Number of threads of the process"},
+      {"vsize_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+      "Virtual memory size in bytes of the process"},
+      {"rss_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+      "Resident memory size in bytes of the process"},
+      {"rchar_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "IO reads in bytes of the process"},
+      {"wchar_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "IO writes in bytes of the process" },
+      {"read_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "IO reads actually go to storage layer in bytes of the process"},
+      {"write_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "IO writes actually go to storage layer in bytes of the process"},
   };
   // clang-format on
   static constexpr auto kProcessStatsTable =
@@ -55,16 +67,25 @@ class SystemStatsConnector : public SourceConnector {
 
   // clang-format off
   static constexpr DataElement kNetworkStatsElements[] = {
-      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
-      {"pod_id", types::DataType::STRING, types::PatternType::GENERAL},
-      {"rx_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"rx_packets", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"rx_errors", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"rx_drops", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"tx_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"tx_packets", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"tx_errors", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
-      {"tx_drops", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
+      canonical_data_elements::kTime,
+      {"pod_id", types::DataType::STRING, types::PatternType::GENERAL,
+      "The ID of the pod"},
+      {"rx_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Received network traffic in bytes of the pod"},
+      {"rx_packets", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Number of received network packets of the pod"},
+      {"rx_errors", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Number of network receive errors of the pod"},
+      {"rx_drops", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Number of dropped network packets being received of the pod"},
+      {"tx_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Transmitted network traffic of the pod"},
+      {"tx_packets", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Number of transmitted network packets of the pod"},
+      {"tx_errors", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Number of network transmit errors of the pod"},
+      {"tx_drops", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
+      "Number of dropped network packets being transmitted of the pod"},
   };
   // clang-format on
   static constexpr auto kNetworkStatsTable =

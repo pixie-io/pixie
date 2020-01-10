@@ -27,21 +27,25 @@ using AgentMetadataType = std::shared_ptr<const pl::md::AgentMetadataState>;
  */
 using AgentMetadataCallback = std::function<AgentMetadataType()>;
 
+// TODO(oazizi/yzhao): Consider change this to a struct.
 class DataElement {
  public:
   constexpr DataElement() = delete;
-  constexpr DataElement(std::string_view name, types::DataType type, types::PatternType ptype)
-      : name_(name), type_(type), ptype_(ptype) {}
+  constexpr DataElement(std::string_view name, types::DataType type, types::PatternType ptype,
+                        std::string_view desc = {})
+      : name_(name), type_(type), ptype_(ptype), desc_(desc) {}
 
   constexpr const std::string_view& name() const { return name_; }
   constexpr const types::DataType& type() const { return type_; }
   constexpr const types::PatternType& ptype() const { return ptype_; }
+  constexpr const std::string_view& desc() const { return desc_; }
   stirlingpb::Element ToProto() const;
 
  protected:
   const std::string_view name_;
   types::DataType type_;
   types::PatternType ptype_;
+  const std::string_view desc_;
 };
 
 class DataTableSchema {

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "src/stirling/canonical_types.h"
 #include "src/stirling/source_connector.h"
 
 namespace pl {
@@ -13,10 +14,13 @@ class ProcStatConnector : public SourceConnector {
  public:
   // clang-format off
   static constexpr DataElement kElements[] = {
-          {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
-          {"system_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE},
-          {"user_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE},
-          {"idle_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE}
+      canonical_data_elements::kTime,
+      {"system_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE,
+        "The percentage of time the CPU was executing in kernel-space"},
+      {"user_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE,
+        "The percentage of time the CPU was executing in user-space"},
+      {"idle_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE,
+        "The percentage of time the CPU was idle"}
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema("proc_stat", kElements);

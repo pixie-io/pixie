@@ -22,6 +22,7 @@ DUMMY_SOURCE_CONNECTOR(PIDRuntimeConnector);
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf_interface/pidruntime.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/canonical_types.h"
 #include "src/stirling/common/utils.h"
 #include "src/stirling/source_connector.h"
 
@@ -36,11 +37,15 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
 
   // clang-format off
   static constexpr DataElement kElements[] = {
-      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
-      {"pid", types::DataType::INT64, types::PatternType::GENERAL},
+      canonical_data_elements::kTime,
+      // TODO(yzhao): Change to upid.
+      {"pid", types::DataType::INT64, types::PatternType::GENERAL,
+      "Process PID"},
       // TODO(chengruizhe): runtime_ns: Will be converted to counter
-      {"runtime_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
-      {"cmd", types::DataType::STRING, types::PatternType::GENERAL},
+      {"runtime_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+      "Process runtime in nanoseconds"},
+      {"cmd", types::DataType::STRING, types::PatternType::GENERAL,
+      "Process command line"},
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema("bcc_pid_cpu_usage", kElements);
