@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_bindata", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 pl_cc_library(
     name = "cc_library",
@@ -10,6 +11,7 @@ pl_cc_library(
             "*.h",
         ],
         exclude = [
+            "export.cc",
             "**/*_test.cc",
             "**/*_benchmark.cc",
         ],
@@ -22,4 +24,37 @@ pl_cc_library(
         "//src/vizier/services/agent/manager:cc_headers",
         "//src/vizier/services/metadata/metadatapb:service_pl_cc_proto",
     ],
+)
+
+pl_cc_binary(
+    name = "export_funcs",
+    srcs = ["export.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+genrule(
+    name = "udf_info_pb_txt",
+    srcs = [":export_funcs"],
+    outs = ["data/udf.pb"],
+    cmd = "$(location :export_funcs) --out_file_path $@",
+)
+
+pl_bindata(
+    name = "udf_info_bindata",
+    srcs = [":udf_info_pb_txt"],
+    package = "funcs",
+    strip_bin_dir = True,
+)
+
+go_library(
+    name = "go_default_library",
+    # Note we only import the bindata rule not the bindata file that's kept in this dir.
+    srcs = [
+        "funcs.h",
+        "udf_info_bindata.gen.go",
+    ],
+    importpath = "pixielabs.ai/pixielabs/src/vizier/funcs",
+    visibility = ["//visibility:public"],
 )

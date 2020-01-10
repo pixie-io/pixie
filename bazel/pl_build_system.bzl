@@ -1,6 +1,7 @@
 # Based on envoy(28d5f41) envoy/bazel/envoy_build_system.bzl
 # Compute the final copts based on various options.
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_context", "go_library", "go_test")
+load("@io_bazel_rules_go//go/private:rules/rule.bzl", "go_rule")
 
 def pl_copts():
     posix_options = [
@@ -281,3 +282,73 @@ def pl_exp_cc_test(**kwargs):
 def pl_exp_cc_test_library(**kwargs):
     kwargs = append_manual_tag(kwargs)
     pl_cc_test_library(**kwargs)
+
+def _pl_bindata_impl(ctx):
+    """
+    Copied from https://github.com/bazelbuild/rules_go/blob/master/extras/bindata.bzl
+    but updated to change the bindata executable and to strip the bin_dir path.
+    """
+    go = go_context(ctx)
+    out = go.declare_file(go, ext = ".gen.go")
+    arguments = ctx.actions.args()
+    arguments.add_all([
+        "-o",
+        out,
+        "-pkg",
+        ctx.attr.package,
+        "-prefix",
+        ctx.label.package,
+    ])
+    if ctx.attr.strip_bin_dir:
+        arguments.add_all([
+            "-prefix",
+            ctx.bin_dir.path,
+        ])
+    if not ctx.attr.compress:
+        arguments.add("-nocompress")
+    if not ctx.attr.metadata:
+        arguments.add("-nometadata")
+    if not ctx.attr.memcopy:
+        arguments.add("-nomemcopy")
+    if not ctx.attr.modtime:
+        arguments.add_all(["-modtime", "0"])
+    if ctx.attr.extra_args:
+        arguments.add_all(ctx.attr.extra_args)
+    srcs = [f.path for f in ctx.files.srcs]
+    if ctx.attr.strip_external and any([f.startswith("external/") for f in srcs]):
+        arguments.add("-prefix", ctx.label.workspace_root + "/" + ctx.label.package)
+    arguments.add_all(srcs)
+    ctx.actions.run(
+        inputs = ctx.files.srcs,
+        outputs = [out],
+        mnemonic = "GoBindata",
+        executable = ctx.executable._bindata,
+        arguments = [arguments],
+    )
+    return [
+        DefaultInfo(
+            files = depset([out]),
+        ),
+    ]
+
+pl_bindata = go_rule(
+    _pl_bindata_impl,
+    attrs = {
+        "srcs": attr.label_list(allow_files = True),
+        "package": attr.string(mandatory = True),
+        "compress": attr.bool(default = True),
+        "metadata": attr.bool(default = False),
+        "memcopy": attr.bool(default = True),
+        "modtime": attr.bool(default = False),
+        "strip_external": attr.bool(default = False),
+        # Modification of the original bindata arguments.
+        "strip_bin_dir": attr.bool(default = False),
+        "extra_args": attr.string_list(),
+        "_bindata": attr.label(
+            executable = True,
+            cfg = "host",
+            # Modification of go_bindata repo from kevinburke to the go-bindata repo.
+            default = "@com_github_go_bindata_go_bindata//go-bindata:go-bindata",
+        ),
+    },
+)
