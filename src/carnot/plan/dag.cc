@@ -1,11 +1,19 @@
+#include "src/carnot/plan/dag.h"
+
+#include <algorithm>
+#include <iostream>
 #include <queue>
 #include <stack>
 #include <string>
 #include <tuple>
+#include <utility>
 
+#include <absl/hash/hash.h>
+#include <absl/strings/str_cat.h>
 #include <absl/strings/str_join.h>
-#include <iostream>
-#include "src/carnot/plan/dag.h"
+#include <absl/strings/substitute.h>
+
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {

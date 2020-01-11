@@ -1,13 +1,20 @@
 #pragma once
 
+#include <stddef.h>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include <google/protobuf/wrappers.pb.h>
+
 #include "src/carnot/plan/plan_node.h"
+#include "src/carnot/plan/plan_state.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
+#include "src/shared/types/column_wrapper.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {

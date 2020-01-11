@@ -3,7 +3,7 @@
 #include <arrow/array.h>
 #include <arrow/array/builder_base.h>
 #include <arrow/status.h>
-#include <stddef.h>
+#include <algorithm>
 #include <cstdint>
 
 #include <magic_enum.hpp>

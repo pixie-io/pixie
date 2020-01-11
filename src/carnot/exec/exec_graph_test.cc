@@ -18,7 +18,6 @@
 #include "src/carnot/udf/base.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
-#include "src/common/base/statusor.h"
 #include "src/common/base/test_utils.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"

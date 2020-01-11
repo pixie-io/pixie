@@ -1,7 +1,12 @@
 #include "src/carnot/plan/dag.h"
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+
+#include <algorithm>
 #include <unordered_set>
+
+#include <gmock/gmock.h>
+#include <google/protobuf/text_format.h>
+#include <gtest/gtest.h>
+
 #include "src/common/testing/protobuf.h"
 
 namespace pl {

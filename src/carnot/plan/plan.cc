@@ -1,8 +1,15 @@
 #include "src/carnot/plan/plan.h"
+
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include <absl/strings/str_cat.h>
+
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
-#include "src/carnot/plan/plan_graph.h"
-#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 
 namespace pl {

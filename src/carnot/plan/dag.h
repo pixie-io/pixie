@@ -4,6 +4,8 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
+#include <iterator>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -12,6 +14,7 @@
 #include <absl/container/flat_hash_set.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_format.h>
+
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 

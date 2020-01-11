@@ -1,16 +1,22 @@
+#include "src/carnot/plan/operators.h"
+
 #include <algorithm>
+#include <iterator>
 #include <memory>
-#include <unordered_map>
+#include <ostream>
+#include <string_view>
 #include <utility>
 #include <vector>
 
-#include <absl/strings/str_format.h>
+#include <absl/strings/str_join.h>
+#include <absl/strings/substitute.h>
 #include <magic_enum.hpp>
 
-#include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf/registry.h"
+#include "src/carnot/udf/udf_definition.h"
+#include "src/carnot/udf/udtf.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 

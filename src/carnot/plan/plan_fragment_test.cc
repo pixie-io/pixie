@@ -1,7 +1,10 @@
-#include <google/protobuf/text_format.h>
+#include "src/carnot/plan/plan_fragment.h"
+
+#include <cstdint>
 #include <vector>
 
-#include "src/carnot/plan/plan_fragment.h"
+#include <google/protobuf/text_format.h>
+
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/testing/testing.h"
 

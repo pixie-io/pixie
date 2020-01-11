@@ -14,11 +14,10 @@
 #include <grpcpp/grpcpp.h>
 #include <sole.hpp>
 
+#include "src/carnotpb/carnot.grpc.pb.h"
 #include "src/carnotpb/carnot.pb.h"
 #include "src/common/base/base.h"
 #include "src/common/uuid/uuid.h"
-#include "src/carnotpb/carnot.grpc.pb.h"
-
 
 namespace pl {
 namespace carnot {

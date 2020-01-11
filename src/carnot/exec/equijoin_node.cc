@@ -3,7 +3,6 @@
 #include <arrow/array.h>
 #include <arrow/memory_pool.h>
 #include <arrow/status.h>
-#include <stddef.h>
 #include <algorithm>
 #include <cstdint>
 #include <string>

@@ -1,15 +1,18 @@
-#include <google/protobuf/text_format.h>
+#include "src/carnot/plan/scalar_expression.h"
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
 #include <absl/strings/match.h>
+#include <google/protobuf/text_format.h>
 
-#include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/planpb/test_proto.h"
+#include "src/carnot/udf/base.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/types/proto/types.pb.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

@@ -1,15 +1,19 @@
 #pragma once
 
+#include <stdint.h>
 #include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include <absl/numeric/int128.h>
 #include <absl/strings/str_format.h>
+
 #include "src/carnot/plan/plan_node.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
+#include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

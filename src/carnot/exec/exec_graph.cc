@@ -1,6 +1,5 @@
 #include "src/carnot/exec/exec_graph.h"
 
-#include <stdint.h>
 #include <algorithm>
 #include <memory>
 #include <unordered_map>

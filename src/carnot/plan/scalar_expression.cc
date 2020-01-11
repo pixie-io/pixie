@@ -1,15 +1,19 @@
+#include "src/carnot/plan/scalar_expression.h"
+
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <absl/strings/str_format.h>
 #include <absl/strings/str_join.h>
+#include <absl/strings/substitute.h>
+
 #include "src/carnot/plan/plan_state.h"
-#include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/udf/registry.h"
-#include "src/carnot/udf/udf.h"
+#include "src/carnot/udf/udf_definition.h"
 #include "src/common/base/base.h"
+#include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
 namespace carnot {

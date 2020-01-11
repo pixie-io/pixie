@@ -1,12 +1,15 @@
-#include <gtest/gtest.h>
-#include <iostream>
-
 #include "src/carnot/plan/operators.h"
+
+#include <gtest/gtest.h>
+
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
+#include "src/carnot/udf/base.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/test_utils.h"
+#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

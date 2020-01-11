@@ -1,7 +1,14 @@
-#include <gtest/gtest.h>
+#include "src/carnot/plan/plan.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <unordered_map>
 #include <vector>
 
-#include "src/carnot/plan/plan.h"
+#include <google/protobuf/text_format.h>
+#include <gtest/gtest.h>
+
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/common/testing/testing.h"
