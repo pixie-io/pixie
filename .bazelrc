@@ -23,15 +23,21 @@ build --apple_platform_type=macos
 
 # Build for Clang:
 build:clang --linkopt -fuse-ld=lld
-build:clang --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
-build:clang --action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
+#build:clang --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
+#build:clang --action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
+build:clang --action_env=BAZEL_LINKOPTS=-lm:-lc++
 # We need this to ensure that external projects are built with
 # C++17 support. This is needed in some libraries like absl which
 # have different behavior with C++17.
-build:clang --action_env=BAZEL_CXXOPTS=-std=c++17
+build:libc++ --action_env=CXXFLAGS=-stdlib=libc++
+build:libc++ --action_env=LDFLAGS=-stdlib=libc++
+#build:libc++ --action_env=BAZEL_CXXOPTS=-stdlib=libc++
+build:libc++ --action_env=BAZEL_LINKLIBS=-l%:libc++.a:-l%:libc++abi.a:-lm
+build:clang --action_env=BAZEL_CXXOPTS=-std=c++17:-stdlib=libc++
 build:clang --action_env=BAZEL_COMPILER=clang
-build:clang --action_env=CC=clang
-build:clang --action_env=CXX=clang++
+build:clang --action_env=CC=/home/zasgar/testing/clang-9.0-lc++/bin/clang
+build:clang --action_env=CXX=/home/zasgar/testing/clang-9.0-lc++/bin/clang++
+build:clang --copt -D_LIBCPP_NO_EXPERIMENTAL_DEPRECATION_WARNING_FILESYSTEM
 
 # Build for GCC.
 build:gcc --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a

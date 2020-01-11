@@ -43,7 +43,7 @@ def pl_linkopts():
             "-llzma",
             "-lrt",
             "-ldl",
-            "-lstdc++fs",
+#            "-lc++fs",
             "-Wl,--hash-style=gnu",
         ],
     })
@@ -58,7 +58,7 @@ def pl_test_linkopts():
             "-llzma",
             "-lrt",
             "-ldl",
-            "-lstdc++fs",
+#            "-lc++fs",
         ],
     })
 
