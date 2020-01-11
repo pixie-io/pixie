@@ -328,7 +328,16 @@ StatusOr<std::unique_ptr<IR>> DistributedSplitter::CreateGRPCBridge(
   for (const auto& [parent, children] : edges_to_break) {
     // Go through the children and replace the parent with the new child.
     for (auto child : children) {
-      PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, CreateGRPCSink(parent, grpc_id_counter));
+      // TODO(philkuz) figure out how this limit works with PL-846.
+      OperatorIR* grpc_sink_parent = parent;
+      if (Match(child, Limit())) {
+        LimitIR* limit = static_cast<LimitIR*>(child);
+        PL_ASSIGN_OR_RETURN(LimitIR * new_limit, grpc_bridge_plan->CopyNode(limit));
+        PL_RETURN_IF_ERROR(new_limit->CopyParentsFrom(limit));
+        grpc_sink_parent = new_limit;
+      }
+      PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink,
+                          CreateGRPCSink(grpc_sink_parent, grpc_id_counter));
       PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
                           CreateGRPCSourceGroup(parent, grpc_id_counter));
       PL_RETURN_IF_ERROR(child->ReplaceParent(parent, grpc_source_group));

@@ -119,6 +119,49 @@ TEST_F(SplitterTest, blocking_agg_test) {
   EXPECT_TRUE(Match(sink_parent, BlockingAgg()));
 }
 
+TEST_F(SplitterTest, limit_test) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto limit = MakeLimit(mem_src, 10);
+  EXPECT_OK(limit->SetRelation(mem_src->relation()));
+  auto sink = MakeMemSink(limit, "out");
+  EXPECT_TRUE(limit->IsRelationInit());
+
+  DistributedSplitter splitter;
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+
+  // Verify the resultant graph.
+  MemorySourceIR* new_mem_src = GetEquivalentInNewPlan(before_blocking, mem_src);
+  ASSERT_EQ(new_mem_src->Children().size(), 1UL);
+  OperatorIR* mem_src_child = new_mem_src->Children()[0];
+
+  ASSERT_TRUE(Match(mem_src_child, Limit()))
+      << "Expected Limit, got " << mem_src_child->type_string();
+  LimitIR* new_limit = static_cast<LimitIR*>(mem_src_child);
+  EXPECT_EQ(new_limit->limit_value(), limit->limit_value());
+  ASSERT_EQ(new_limit->Children().size(), 1UL);
+
+  OperatorIR* before_blocking_limit_child = new_limit->Children()[0];
+  ASSERT_TRUE(Match(before_blocking_limit_child, GRPCSink()))
+      << "Expected GRPCSink, got " << before_blocking_limit_child->type_string();
+  GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(before_blocking_limit_child);
+
+  OperatorIR* sink_parent = GetEquivalentInNewPlan(after_blocking, sink)->parents()[0];
+  ASSERT_TRUE(Match(sink_parent, Limit())) << "Expected Limit, got " << sink_parent->type_string();
+  LimitIR* after_blocking_limit = static_cast<LimitIR*>(sink_parent);
+  EXPECT_EQ(after_blocking_limit->limit_value(), limit->limit_value());
+
+  OperatorIR* limit_parent = after_blocking_limit->parents()[0];
+  ASSERT_TRUE(Match(limit_parent, GRPCSourceGroup()))
+      << "Expected GRPCSourceGroup, got " << limit_parent->type_string();
+  GRPCSourceGroupIR* grpc_source_group = static_cast<GRPCSourceGroupIR*>(limit_parent);
+
+  EXPECT_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
+}
+
 TEST_F(SplitterTest, sink_only_test) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});

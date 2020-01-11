@@ -1375,6 +1375,7 @@ class LimitIR : public OperatorIR {
 
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+  inline bool IsBlocking() const override { return true; }
 
  private:
   int64_t limit_value_;
