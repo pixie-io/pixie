@@ -52,11 +52,6 @@ class Relation {
   std::string DebugString() const;
 
   /**
-   * @brief Makes a new relation that has the specified columns.
-   */
-  StatusOr<Relation> MakeSubRelation(const std::vector<std::string>& columns) const;
-
-  /**
    * Convert relation and write to passed in proto.
    * @param relation_proto The proto to write.
    * @return The status of conversion.

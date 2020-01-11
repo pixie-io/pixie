@@ -225,14 +225,6 @@ TEST_F(AnalyzerTest, test_relation_results) {
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
   std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
   EXPECT_EQ(map_nodes.size(), 2);
-  // The map nodes are a different position.
-  auto map_node = static_cast<MapIR*>(map_nodes[1]);
-  auto test_map_relation_s =
-      (*compiler_state_->relation_map())["cpu"].MakeSubRelation({"cpu0", "cpu1"});
-  EXPECT_OK(test_map_relation_s);
-  table_store::schema::Relation test_map_relation = test_map_relation_s.ConsumeValueOrDie();
-  test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
-  EXPECT_EQ(map_node->relation(), test_map_relation);
 
   // Agg should be a new relation with one column.
   std::vector<IRNode*> agg_nodes = ir_graph->FindNodesOfType(IRNodeType::kBlockingAgg);

@@ -339,11 +339,6 @@ TEST_F(SourceRelationTest, set_source_variable_columns) {
   EXPECT_TRUE(mem_src->IsRelationInit());
   // Make sure the relations are the same after processing.
   table_store::schema::Relation relation = mem_src->relation();
-  auto sub_relation_result = cpu_relation.MakeSubRelation(str_columns);
-  EXPECT_OK(sub_relation_result);
-  table_store::schema::Relation expected_relation = sub_relation_result.ValueOrDie();
-  EXPECT_TRUE(relation.col_types() == expected_relation.col_types());
-  EXPECT_TRUE(relation.col_names() == expected_relation.col_names());
 }
 
 TEST_F(SourceRelationTest, missing_table_name) {

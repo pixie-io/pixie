@@ -88,23 +88,7 @@ std::string Relation::DebugString() const {
   }
   return "[" + absl::StrJoin(col_info_as_str, ", ") + "]";
 }
-StatusOr<Relation> Relation::MakeSubRelation(const std::vector<std::string>& columns) const {
-  Relation new_relation;
-  std::vector<std::string> missing_columns;
-  for (auto& c : columns) {
-    if (!HasColumn(c)) {
-      missing_columns.push_back(c);
-      continue;
-    }
-    auto col_type = GetColumnType(c);
-    new_relation.AddColumn(col_type, c);
-  }
-  if (missing_columns.size() > 0) {
-    return error::InvalidArgument("Columns {$0} are missing in table.",
-                                  absl::StrJoin(missing_columns, ","));
-  }
-  return new_relation;
-}
+
 Status Relation::ToProto(table_store::schemapb::Relation* relation_proto) const {
   CHECK(relation_proto != nullptr);
   size_t num_columns = NumColumns();
