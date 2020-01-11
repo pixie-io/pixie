@@ -216,7 +216,7 @@ pl.display(t2)
 #
 # Get the Virtual memory usage and average memory for all pods in the k8s cluster.
 #
-t1 = pl.DataFrame(table='process_stats', start_time='-30m')
+t1 = pl.DataFrame(table='process_stats', start_time='-1m')
 bytes_per_mb = 1024.0 * 1024.0
 t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
 t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
@@ -250,7 +250,7 @@ pl.display(keep_columns)
 #
 # Get the Virtual memory usage and average memory for all services in the k8s cluster.
 #
-t1 = pl.DataFrame(table='process_stats', start_time='-30m')
+t1 = pl.DataFrame(table='process_stats', start_time='-1m')
 bytes_per_mb = 1024.0 * 1024.0
 t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
 t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
