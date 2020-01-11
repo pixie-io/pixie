@@ -13,7 +13,7 @@ interface EditorDrawerMenuProps {
   onSelect: (script: Script) => void;
 }
 
-interface Script {
+export interface Script {
   id?: string;
   title: string;
   code: string;
@@ -22,7 +22,7 @@ interface Script {
 const PRESET_QUERIES: Script[] = toml.parse(PresetQueriesTOML).queries.map(
   (query) => ({ title: query[0], code: query[1] }));
 
-const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
+export const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
   const { data: historyData } = useQuery<{ scriptHistory: ScriptHistory[] }>(SCRIPT_HISTORY);
   const accordionItem = React.useMemo(() => {
     const presetQueries = PRESET_QUERIES.map((s) => ({
@@ -50,5 +50,3 @@ const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
 
   return (<Accordion items={accordionItem} />);
 };
-
-export default EditorDrawerMenu;

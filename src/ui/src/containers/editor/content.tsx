@@ -57,9 +57,12 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
     });
   }, [code]);
 
+  React.useEffect(() => {
+    saveCodeToStorage(props.id, code);
+  }, [code]);
+
   const onCodeChange = React.useCallback((c) => {
     setCode(c);
-    saveCodeToStorage(props.id, c);
   }, []);
 
   return (

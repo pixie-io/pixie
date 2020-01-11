@@ -15,7 +15,7 @@ import {ApolloProvider, useMutation, useQuery} from '@apollo/react-hooks';
 import {Drawer} from '../../components/drawer/drawer';
 import {saveCodeToStorage} from './code-utils';
 import {EditorContent} from './content';
-import EditorDrawerMenu from './drawer-menu';
+import {EditorDrawerMenu, Script} from './drawer-menu';
 
 const NEW_TAB = 'new-tab';
 const PIXIE_EDITOR_TABS_KEY = 'pixie-editor-tabs';
@@ -89,9 +89,9 @@ export const Editor = ({ client }) => {
     });
   };
 
-  const createNewTab = (query?) => {
+  const createNewTab = React.useCallback((query?) => {
     const newTab = {
-      title: (query && query.name) || 'untitled',
+      title: (query && query.title) || 'untitled',
       id: uuid(),
     };
     if (query && query.code) {
@@ -100,7 +100,7 @@ export const Editor = ({ client }) => {
     setState(({ tabs }) => {
       return { tabs: [...tabs, newTab], activeTab: newTab.id };
     });
-  };
+  }, []);
 
   const { data } = useQuery(QUERY_DRAWER_OPENED, { client });
   const [updateDrawer] = useMutation(MUTATE_DRAWER_OPENED, { client });
