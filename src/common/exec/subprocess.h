@@ -1,5 +1,7 @@
 #pragma once
 
+#include <csignal>
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -23,9 +25,14 @@ class SubProcess {
   Status Start(const std::vector<std::string>& args);
 
   /**
+   * @brief Send a signal to the process.
+   */
+  void Signal(int signal);
+
+  /**
    * @brief Kill the started process.
    */
-  void Kill();
+  void Kill() { Signal(SIGKILL); }
 
   /**
    * @brief Wait for the subprocess to finish, and return its exit code.

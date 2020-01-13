@@ -38,9 +38,11 @@ Status SubProcess::Start(const std::vector<std::string>& args) {
   }
 }
 
-void SubProcess::Kill() {
+// TODO(oazizi/yzhao): This implementation has unexpected behavior if the child pid terminates
+// and is reused by the OS.
+void SubProcess::Signal(int signal) {
   if (child_pid_ != -1) {
-    kill(child_pid_, 9);
+    kill(child_pid_, signal);
   }
 }
 
