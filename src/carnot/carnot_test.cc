@@ -29,6 +29,9 @@ class CarnotTest : public ::testing::Test {
     table_store_->AddTable("test_table", table);
     big_table_ = CarnotTestUtils::BigTestTable();
     table_store_->AddTable("big_test_table", big_table_);
+    empty_table_ = table_store::Table::Create(
+        table_store::schema::Relation({types::UINT128, types::INT64}, {"upid", "cycles"}));
+    table_store_->AddTable("empty_table", empty_table_);
   }
 
   // TODO(nserrino/philkuz): Move this logic somewhere more reusable.
@@ -38,6 +41,7 @@ class CarnotTest : public ::testing::Test {
 
   std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<table_store::Table> big_table_;
+  std::shared_ptr<table_store::Table> empty_table_;
   std::unique_ptr<Carnot> carnot_;
 };
 
@@ -1193,6 +1197,35 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
           types::ToArrow(std::vector<types::StringValue>({}), arrow::default_memory_pool())));
     }
   }
+}
+
+TEST_F(CarnotTest, empty_table_yields_empty_results) {
+  // Test to make sure that metadata can actually compile and work in the executor.
+  // This test does not actually test to make sure that the AgentMetadataState works properly.
+  std::string query = "pl.display(pl.DataFrame('empty_table'))";
+
+  compiler::Compiler compiler;
+  int64_t current_time = 0;
+
+  // Create a CompilerState obj using the relation map and grabbing the current time.
+
+  auto registry_info_or_s = udfexporter::ExportUDFInfo();
+  ASSERT_OK(registry_info_or_s);
+  std::unique_ptr<compiler::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
+
+  std::unique_ptr<compiler::CompilerState> compiler_state =
+      std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
+                                                current_time);
+  StatusOr<planpb::Plan> plan_or_s = compiler.Compile(query, compiler_state.get());
+  ASSERT_OK(plan_or_s);
+  planpb::Plan plan = plan_or_s.ConsumeValueOrDie();
+  ASSERT_OK(carnot_->ExecutePlan(plan, sole::uuid4()));
+
+  auto table = table_store_->GetTable("empty_table");
+  std::vector<int64_t> column_selector_vec({0, 1});
+  ASSERT_EQ(table->NumColumns(), column_selector_vec.size());
+
+  EXPECT_EQ(table->NumBatches(), 0);
 }
 
 }  // namespace carnot
