@@ -111,7 +111,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetTrafficClass(event->attr.traffic_class);
 
   // A disabled tracker doesn't collect data events.
-  if (disabled_) {
+  if (disabled()) {
     return;
   }
 
@@ -223,7 +223,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   }
 
   // A disabled tracker doesn't collect data events.
-  if (disabled_) {
+  if (disabled()) {
     return;
   }
 
@@ -281,7 +281,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   }
 
   // A disabled tracker doesn't collect data events.
-  if (disabled_) {
+  if (disabled()) {
     return;
   }
 
@@ -588,7 +588,7 @@ void ConnectionTracker::CheckTracker() {
              "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
              ToString(conn_id_));
 
-  LOG_IF(ERROR, conn_id_.fd == 0 && !disabled_) << absl::Substitute(
+  LOG_IF(ERROR, conn_id_.fd == 0 && !disabled()) << absl::Substitute(
       "FD==0, which usually means the FD was not captured correctly. Connection=$0.",
       ToString(conn_id_));
 }
