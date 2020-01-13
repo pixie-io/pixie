@@ -3,7 +3,7 @@ queries = [
 """
 t1 = pl.DataFrame(table='http_events', start_time='-30s')
 
-t1.service = t1.attr['service']
+t1.service = t1.ctx['service']
 t1.http_resp_latency_ms = t1.http_resp_latency_ns / 1.0E6
 t1.failure = t1.http_resp_status >= 400
 t1.range_group = t1.time_ - pl.modulo(t1.time_, 1000000000)
@@ -68,7 +68,7 @@ t1.read_bytes_mb = t1.read_bytes / bytes_per_mb
 t1.write_bytes_mb = t1.write_bytes / bytes_per_mb
 t1.rchar_bytes_mb = t1.rchar_bytes / bytes_per_mb
 t1.wchar_bytes_mb = t1.wchar_bytes / bytes_per_mb
-t1.pod = t1.attr['pod']
+t1.pod = t1.ctx['pod']
 
 upid_aggop = t1.groupby(['upid', 'pod']).agg(
   vsize_mb=('vsize_mb', pl.mean),
@@ -146,7 +146,7 @@ t1.read_bytes_mb = t1.read_bytes / bytes_per_mb
 t1.write_bytes_mb = t1.write_bytes / bytes_per_mb
 t1.rchar_bytes_mb = t1.rchar_bytes / bytes_per_mb
 t1.wchar_bytes_mb = t1.wchar_bytes / bytes_per_mb
-t1.pod  = t1.attr['pod']
+t1.pod  = t1.ctx['pod']
 
 upid_aggop = t1.groupby(['upid', 'pod']).agg(
   vsize_mb=('vsize_mb', pl.mean),
@@ -221,7 +221,7 @@ bytes_per_mb = 1024.0 * 1024.0
 t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
 t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
 t1.timestamp = pl.bin(t1.time_, pl.seconds(10))
-t1.pod = t1.attr['pod']
+t1.pod = t1.ctx['pod']
 # uncomment and replace service_name to filter on a specific service.
 #t1 = t1[pl.contains(t1.service, 'service_name')]
 upid_aggop = t1.groupby(['upid', 'pod', 'timestamp']).agg(
@@ -255,7 +255,7 @@ bytes_per_mb = 1024.0 * 1024.0
 t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
 t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
 t1.timestamp = pl.bin(t1.time_, pl.seconds(10))
-t1.service  = t1.attr['service']
+t1.service  = t1.ctx['service']
 # uncomment and replace service_name to filter on a specific service.
 #t1 = t1[pl.contains(t1.service, 'service_name')]
 upid_aggop = t1.groupby(['upid', 'service', 'timestamp']).agg(

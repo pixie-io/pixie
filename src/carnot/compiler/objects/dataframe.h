@@ -48,8 +48,6 @@ class Dataframe : public QLObject {
   inline static constexpr char kMergeOpId[] = "merge";
   inline static constexpr char kGroupByOpId[] = "groupby";
   // Attribute names.
-  // TODO(nserrino): PL-1276 Deprecate old metadata name when the UI queries change.
-  inline static constexpr char kOldMetadataAttrName[] = "attr";
   inline static constexpr char kMetadataAttrName[] = "ctx";
 
  protected:

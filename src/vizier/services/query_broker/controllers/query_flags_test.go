@@ -7,26 +7,22 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 )
 
-// TODO(nserrino): Update service column once df.attr['service'] lands.
 const validQueryWithFlag = `
 #pl:set distributed_query=true
 #pl:set analyze=true
 
 t1 = dataframe(table='http_events').range(start='-30s')
 
-# t1['service'] = t1.attr['service']
-t1['service'] = 'changeme'
+t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t1['failure'] = t1['http_resp_status'] >= 400
 t1['range_group'] = pl.subtract(t1['time_'], pl.modulo(t1['time_'], 1000000000))
 `
 
-// TODO(nserrino): Update service column once df.attr['service'] lands.
 const validQueryWithoutFlag = `
 t1 = dataframe(table='http_events').range(start='-30s')
 
-# t1['service'] = t1.attr['service']
-t1['service'] = 'changeme'
+t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t1['failure'] = t1['http_resp_status'] >= 400
 t1['range_group'] = pl.subtract(t1['time_'], pl.modulo(t1['time_'], 1000000000))

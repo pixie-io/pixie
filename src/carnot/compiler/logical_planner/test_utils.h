@@ -159,7 +159,7 @@ constexpr char kQueryForTwoAgents[] = "df = pl.DataFrame(table = 'table1')\npl.d
 constexpr char kHttpRequestStats[] = R"pxl(
 t1 = pl.DataFrame(table='http_events', start_time='-30s')
 
-t1['service'] = t1.attr['service']
+t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t1['failure'] = t1['http_resp_status'] >= 400
 t1['range_group'] = t1['time_'] - pl.modulo(t1['time_'], 1000000000)
