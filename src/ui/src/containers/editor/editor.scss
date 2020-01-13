@@ -2,6 +2,7 @@
 
 .pixie-drawer {
   background-color: $dark;
+  border-right: 2px solid $dark;
 
   .list-group-item-action {
     color: $light;
