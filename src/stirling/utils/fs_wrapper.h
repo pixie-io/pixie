@@ -5,6 +5,7 @@
 #include <experimental/filesystem>
 
 #include "src/common/base/base.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace stirling {
@@ -16,6 +17,7 @@ namespace utils {
 Status CreateSymlink(std::experimental::filesystem::path target,
                      std::experimental::filesystem::path link);
 Status CreateDirectories(std::experimental::filesystem::path dir);
+pl::StatusOr<std::experimental::filesystem::path> ReadSymlink(std::experimental::filesystem::path symlink);
 
 }  // namespace utils
 }  // namespace stirling

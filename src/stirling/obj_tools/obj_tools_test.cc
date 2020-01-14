@@ -18,10 +18,12 @@ using ::testing::EndsWith;
 using ::testing::IsEmpty;
 using ::testing::Pair;
 
-// This test does not pass in Jenkins. The failure is that the resolved overlay path was reported as
-// non-existent by filesystem::exists(); therefore, GetActiveBinariesTest() ignores the file.
-TEST(GetActiveBinariesTest, DISABLED_CaptureTestBinary) {
-  const std::map<std::string, std::vector<int>> binaries = GetActiveBinaries("/proc");
+// Tests GetActiveBinaries() resolves this running test itself.
+// We instruct GetActiveBinaries() to behave as if the test is not running inside a container.
+// TODO(yzhao): We observed sometimes that container A cannot see the /root/.cache/bazel path under
+// the overlayfs' 'merged' directory.
+TEST(GetActiveBinariesTest, CaptureTestBinary) {
+  const std::map<std::string, std::vector<int>> binaries = GetActiveBinaries("/proc", /*host*/ {});
   EXPECT_THAT(binaries, Contains(Pair(EndsWith("src/stirling/obj_tools/obj_tools_test"), _)))
       << "Should see the test process itself";
 }

@@ -1,5 +1,7 @@
 #ifdef __linux__
 
+#include <system_error>
+
 #include "src/stirling/utils/fs_wrapper.h"
 
 namespace pl {
@@ -26,6 +28,15 @@ Status CreateDirectories(fs::path dir) {
                            ec.message());
   }
   return Status::OK();
+}
+
+pl::StatusOr<fs::path> ReadSymlink(fs::path symlink) {
+  std::error_code ec;
+  fs::path res = fs::read_symlink(symlink, ec);
+  if (ec) {
+    return pl::error::Internal("Could not read symlink: $0", symlink.string());
+  }
+  return res;
 }
 
 }  // namespace utils

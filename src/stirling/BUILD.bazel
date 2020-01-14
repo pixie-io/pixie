@@ -216,7 +216,12 @@ pl_cc_test(
         "//src/stirling/http2/testing/go_grpc_client:greeter_client",
         "//src/stirling/http2/testing/go_grpc_server:greeter_server",
     ],
-    tags = ["requires_bpf"],
+    tags = [
+        "requires_bpf",
+        # This test runs go gRPC client & server, which causes other tests to attach & detach
+        # uprobes and slowed down significantly.
+        "exclusive",
+    ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",

@@ -163,7 +163,7 @@ Status SocketTraceConnector::InitImpl() {
   // because of the mixed & duplicate data events from these 2 sources.
   if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
     std::map<std::string, std::vector<int>> binaries =
-        GetActiveBinaries(system::Config::GetInstance().proc_path());
+        GetActiveBinaries("/proc", system::Config::GetInstance().host_path());
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
         bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
     for (const auto& [pid, symaddrs] : GetSymAddrs(binaries)) {
