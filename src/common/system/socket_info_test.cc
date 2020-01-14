@@ -7,6 +7,7 @@
 #include <string>
 
 #include <absl/strings/numbers.h>
+
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
@@ -136,6 +137,45 @@ TEST(NetlinkSocketProberTest, EstablishedUnixConnection) {
   close(client_fd);
   close(server_accept_fd);
   close(server_listen_fd);
+}
+
+TEST(NetlinkSocketProberTest, ListeningInetConnection) {
+  testing::TCPSocket server;
+
+  // A bind and connect is sufficient to establish a connection.
+  server.Bind();
+
+  std::string server_endpoint = AddrPortStr(server.addr(), server.port());
+
+  // Should not find the server endpoint in established state.
+  {
+    NetlinkSocketProber socket_prober;
+    std::map<int, SocketInfo> socket_info_entries;
+    auto s = socket_prober.InetConnections(&socket_info_entries, kTCPEstablishedState);
+    ASSERT_OK(s);
+    EXPECT_THAT(socket_info_entries, Not(Contains(HasLocalIPEndpoint(server_endpoint))));
+  }
+
+  // Should find the server endpoint in listening state.
+  {
+    NetlinkSocketProber socket_prober;
+    std::map<int, SocketInfo> socket_info_entries;
+    auto s = socket_prober.InetConnections(&socket_info_entries, kTCPListeningState);
+    ASSERT_OK(s);
+    EXPECT_THAT(socket_info_entries, Contains(HasLocalIPEndpoint(server_endpoint)));
+  }
+
+  // Test with multiple states specified.
+  {
+    NetlinkSocketProber socket_prober;
+    std::map<int, SocketInfo> socket_info_entries;
+    auto s = socket_prober.InetConnections(&socket_info_entries,
+                                           kTCPEstablishedState | kTCPListeningState);
+    ASSERT_OK(s);
+    EXPECT_THAT(socket_info_entries, Contains(HasLocalIPEndpoint(server_endpoint)));
+  }
+
+  server.Close();
 }
 
 TEST(NetlinkSocketProberTest, ClosedInetConnection) {

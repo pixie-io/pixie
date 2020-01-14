@@ -13,6 +13,10 @@
 namespace pl {
 namespace system {
 
+// See tcp_states.h for other states if we ever need them.
+constexpr int kTCPEstablishedState = 1 << 1;
+constexpr int kTCPListeningState = 1 << 10;
+
 struct SocketInfo {
   uint8_t family;
   struct in6_addr local_addr;
@@ -32,18 +36,26 @@ class NetlinkSocketProber {
   /**
    * Finds IPv4 or IPv6 TCP connections in the established state.
    *
-   * @param map of inode to SocketInfoEntry that will be populated with established connections.
+   * @param socket_info_entries map of inode to SocketInfoEntry that will be populated with
+   * established connections.
+   * @param conn_states bit vector of connection states to return.
+   *
    * @return error if connection information could not be obtained from kernel.
    */
-  Status InetConnections(std::map<int, SocketInfo>* socket_info_entries);
+  Status InetConnections(std::map<int, SocketInfo>* socket_info_entries,
+                         int conn_states = kTCPEstablishedState);
 
   /**
    * Finds Unix domain socket connections in the established state.
    *
-   * @param map of inode to SocketInfoEntry that will be populated with established connections.
+   * @param socket_info_entries map of inode to SocketInfoEntry that will be populated with
+   * established connections.
+   * @param conn_states bit vector of connection states to return.
+   *
    * @return error if connection information could not be obtained from kernel.
    */
-  Status UnixConnections(std::map<int, SocketInfo>* socket_info_entries);
+  Status UnixConnections(std::map<int, SocketInfo>* socket_info_entries,
+                         int conn_states = kTCPEstablishedState);
 
  private:
   template <typename TDiagReqType>
@@ -52,7 +64,7 @@ class NetlinkSocketProber {
   template <typename TDiagMsgType>
   Status RecvDiagResp(std::map<int, SocketInfo>* socket_info_entries);
 
-  int fd_;
+  int fd_ = -1;
 };
 
 }  // namespace system

@@ -1,20 +1,21 @@
 #include "src/common/system/socket_info.h"
 
 #include <arpa/inet.h>
-#include <errno.h>
+#include <linux/in6.h>
 #include <linux/inet_diag.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #include <linux/sock_diag.h>
 #include <linux/unix_diag.h>
 #include <netinet/in.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
 
-#include <linux/in6.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
+
 #include <utility>
 
 #include "src/common/base/base.h"
@@ -22,17 +23,17 @@
 namespace pl {
 namespace system {
 
-// See tcp_states.h for other states if we ever need them.
-constexpr int kTCPEstablishedState = 1;
-
 NetlinkSocketProber::NetlinkSocketProber() {
   fd_ = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_SOCK_DIAG);
-  ECHECK(fd_ > 0) << absl::Substitute("Could not create NETLINK_SOCK_DIAG connection. [fd=$0]",
-                                      fd_);
+  if (fd_ < 0) {
+    LOG(DFATAL) << absl::Substitute("Could not create NETLINK_SOCK_DIAG connection. [errno=$0]",
+                                    errno);
+    return;
+  }
 }
 
 NetlinkSocketProber::~NetlinkSocketProber() {
-  if (fd_ > 0) {
+  if (fd_ >= 0) {
     close(fd_);
   }
 }
@@ -197,21 +198,23 @@ Status NetlinkSocketProber::RecvDiagResp(std::map<int, SocketInfo>* socket_info_
   return Status::OK();
 }
 
-Status NetlinkSocketProber::InetConnections(std::map<int, SocketInfo>* socket_info_entries) {
+Status NetlinkSocketProber::InetConnections(std::map<int, SocketInfo>* socket_info_entries,
+                                            int conn_states) {
   struct inet_diag_req_v2 msg_req = {};
   msg_req.sdiag_family = AF_INET;
   msg_req.sdiag_protocol = IPPROTO_TCP;
-  msg_req.idiag_states = (1 << kTCPEstablishedState);
+  msg_req.idiag_states = conn_states;
 
   PL_RETURN_IF_ERROR(SendDiagReq(msg_req));
   PL_RETURN_IF_ERROR(RecvDiagResp<struct inet_diag_msg>(socket_info_entries));
   return Status::OK();
 }
 
-Status NetlinkSocketProber::UnixConnections(std::map<int, SocketInfo>* socket_info_entries) {
+Status NetlinkSocketProber::UnixConnections(std::map<int, SocketInfo>* socket_info_entries,
+                                            int conn_states) {
   struct unix_diag_req msg_req = {};
   msg_req.sdiag_family = AF_UNIX;
-  msg_req.udiag_states = (1 << kTCPEstablishedState);
+  msg_req.udiag_states = conn_states;
   msg_req.udiag_show = UDIAG_SHOW_PEER;
 
   PL_RETURN_IF_ERROR(SendDiagReq(msg_req));

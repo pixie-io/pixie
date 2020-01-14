@@ -2,6 +2,8 @@
 
 #include <sys/wait.h>
 
+#include <csignal>
+
 #include "src/common/base/error.h"
 
 namespace pl {

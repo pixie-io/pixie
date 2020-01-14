@@ -41,11 +41,32 @@ pl_cc_test(
 pl_cc_test(
     name = "socket_info_test",
     srcs = ["socket_info_test.cc"],
+    # TODO(oazizi/yzhao): Make this test safe to run with other tests. Right now it relies on global
+    # network state making it flaky.
+    tags = ["exclusive"],
     deps = [
         ":cc_library",
         "//src/common/system/testing:cc_library",
     ],
-    # TODO(oazizi/yzhao): Make this test safe to run with other tests. Right now it relies on global
-    # network state making it flaky.
-    tags = ["exclusive"],
+)
+
+pl_cc_test(
+    name = "socket_info_namespace_test",
+    # Downloads a container, so run-time can be higher than other tests.
+    timeout = "moderate",
+    srcs = ["socket_info_namespace_test.cc"],
+    tags = [
+        # This test is flaky on Jenkins (because creating a stimulus container is flaky),
+        # so don't run it.
+        # TODO(oazizi): Consider fixing and re-enabling.
+        "manual",
+        # This test requires root to call setns().
+        # This tag prevents the test from running on local dev machines.
+        "requires_root",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/common/system/testing:cc_library",
+    ],
 )
