@@ -6,6 +6,8 @@ apt_pkg_list = [
   'build-essential',
   'checkstyle',
   'curl',
+  # Not the newest docker CE from official docker repository, but should suffice.
+  'docker.io',
   'doxygen',
   'git',
   'graphviz',
@@ -35,6 +37,11 @@ apt_pkg_list = [
 
 apt_package apt_pkg_list do
   action :upgrade
+end
+
+execute 'enable docker' do
+  command 'update-rc.d docker enable'
+  action :run
 end
 
 apt_repository 'gcc-9.2-ppa' do

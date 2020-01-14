@@ -4,7 +4,6 @@ ENV['PATH'] = "/opt/google-cloud-sdk/bin:#{ENV['PATH']}"
 
 if node[:platform] == 'ubuntu'
   apt_pkg_list = [
-    'docker.io',
     'emacs',
     'jq',
     'vim',
@@ -13,11 +12,6 @@ if node[:platform] == 'ubuntu'
 
   apt_package apt_pkg_list do
     action :upgrade
-  end
-
-  execute 'enable docker' do
-    command 'update-rc.d docker enable'
-    action :run
   end
 
   include_recipe 'pixielabs::linux_gperftools'
