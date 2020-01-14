@@ -33,6 +33,7 @@ Status MemorySourceNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
 Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
   table_ = exec_state->table_store()->GetTable(plan_node_->TableName(), plan_node_->Tablet());
+  DCHECK(table_ != nullptr);
 
   // Determine number of chunks at Open() time
   // because Stirling may be pushing to the table

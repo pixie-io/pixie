@@ -359,19 +359,19 @@ func (mds *EtcdMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod, delet
 // UpdateSchemas updates the given schemas in the metadata store.
 func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
 	ops := make([]clientv3.Op, len(schemas))
-	computedSchemaOps := make([]clientv3.Op, len(schemas))
+
+	computedSchemaPb := metadatapb.ComputedSchema{
+		Tables: schemas,
+	}
 	for i, schemaPb := range schemas {
 		schema, err := schemaPb.Marshal()
 		if err != nil {
-			log.WithError(err).Error("Could not marshall schema update message.")
+			log.WithError(err).Error("Could not marshal schema update message.")
 			continue
 		}
 
 		schemaKey := GetAgentSchemaKey(agentID.String(), schemaPb.Name)
 		ops[i] = clientv3.OpPut(schemaKey, string(schema))
-
-		computedSchemaKey := getComputedSchemaKey(schemaPb.Name)
-		computedSchemaOps[i] = clientv3.OpPut(computedSchemaKey, string(schema))
 	}
 
 	_, err := mds.client.Txn(context.TODO()).If().Then(ops...).Commit()
@@ -379,9 +379,16 @@ func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metada
 		return err
 	}
 
+	computedSchema, err := computedSchemaPb.Marshal()
+	if err != nil {
+		log.WithError(err).Error("Could not computed schema update message.")
+		return err
+	}
+
+	computedSchemaOp := clientv3.OpPut(getComputedSchemasKey(), string(computedSchema))
 	// TODO(michelle): PL-695 This currently assumes that if a schema is available on one agent,
 	// then it is available on all agents. This should be updated so that we handle situations where that is not the case.
-	_, err = mds.client.Txn(context.TODO()).If().Then(computedSchemaOps...).Commit()
+	_, err = mds.client.Txn(context.TODO()).If().Then(computedSchemaOp).Commit()
 
 	return err
 }
@@ -394,13 +401,16 @@ func (mds *EtcdMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, er
 		return nil, err
 	}
 
-	schemas := make([]*metadatapb.SchemaInfo, len(resp.Kvs))
-	for i, kv := range resp.Kvs {
-		pb := &metadatapb.SchemaInfo{}
-		proto.Unmarshal(kv.Value, pb)
-		schemas[i] = pb
+	if len(resp.Kvs) != 1 {
+		return nil, fmt.Errorf("resp should be 1, received %v", len(resp.Kvs))
 	}
-	return schemas, nil
+	computedSchemaPb := &metadatapb.ComputedSchema{}
+	err = proto.Unmarshal(resp.Kvs[0].Value, computedSchemaPb)
+	if err != nil {
+		return nil, err
+	}
+
+	return computedSchemaPb.Tables, nil
 }
 
 func getComputedSchemaKey(schemaName string) string {
@@ -408,7 +418,7 @@ func getComputedSchemaKey(schemaName string) string {
 }
 
 func getComputedSchemasKey() string {
-	return path.Join("/", "schema", "computed")
+	return path.Join("/", "computedSchema")
 }
 
 func getServicesKey() string {

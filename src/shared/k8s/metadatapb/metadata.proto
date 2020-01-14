@@ -418,6 +418,7 @@ message ProcessInfo {
                   ];
 }
 
+// TODO(michelle/philkuz/zasgar) rename SchemaInfo because this refers more to a single relation.
 // SchemaInfo contains info for a schema that is available on an agent or agents.
 message SchemaInfo {
   // Name of the table.
@@ -446,6 +447,10 @@ message SchemaInfo {
   bool tabletized = 5;
   // The tabletization key of this schema.
   string tabletization_key = 6;
+}
+
+message ComputedSchema {
+  repeated SchemaInfo tables = 1;
 }
 
 

@@ -105,6 +105,10 @@ func (m *AgentManagerImpl) applyAgentUpdate(update *AgentUpdate) error {
 		log.WithError(err).Error("Error when updating terminated processes")
 	}
 
+	// If DoesUpdateSchema is false, then we don't check the schema info.
+	if !update.UpdateInfo.DoesUpdateSchema {
+		return nil
+	}
 	return m.mds.UpdateSchemas(update.AgentID, update.UpdateInfo.Schema)
 }
 

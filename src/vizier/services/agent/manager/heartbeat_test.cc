@@ -22,6 +22,7 @@ using ::pl::table_store::schema::Relation;
 using ::pl::testing::proto::EqualsProto;
 
 const char* kAgentUpdateInfoSchemaNoTablets = R"proto(
+does_update_schema: true
 schema {
   name: "relation0"
   columns {

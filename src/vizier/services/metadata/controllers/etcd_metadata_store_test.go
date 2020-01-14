@@ -337,20 +337,34 @@ func TestUpdateSchemas(t *testing.T) {
 		t.Fatal("Unable to get container from etcd")
 	}
 
-	assert.Equal(t, 1, len(schemaResp.Kvs))
+	if !assert.Equal(t, 1, len(schemaResp.Kvs)) {
+		t.FailNow()
+	}
 	schemaPb := &metadatapb.SchemaInfo{}
 	proto.Unmarshal(schemaResp.Kvs[0].Value, schemaPb)
 	assert.Equal(t, "a_table", schemaPb.Name)
 
-	schemaResp, err = etcdClient.Get(context.Background(), "/schema/computed/a_table")
+	schemaResp, err = etcdClient.Get(context.Background(), "/computedSchema")
 	if err != nil {
 		t.Fatal("Unable to get container from etcd")
 	}
 
-	assert.Equal(t, 1, len(schemaResp.Kvs))
-	schemaPb = &metadatapb.SchemaInfo{}
-	proto.Unmarshal(schemaResp.Kvs[0].Value, schemaPb)
-	assert.Equal(t, "a_table", schemaPb.Name)
+	if !assert.Equal(t, 1, len(schemaResp.Kvs)) {
+		t.FailNow()
+	}
+	computedSchemaPb := &metadatapb.ComputedSchema{}
+	proto.Unmarshal(schemaResp.Kvs[0].Value, computedSchemaPb)
+	if !assert.Equal(t, 1, len(computedSchemaPb.Tables)) {
+		t.Fatalf(proto.MarshalTextString(computedSchemaPb))
+	}
+	assert.Equal(t, "a_table", computedSchemaPb.Tables[0].Name)
+
+	// Make sure that that the MDS getComputedSchemas can work with data passsed in by UpdateSchemas.
+	schemas, err = mds.GetComputedSchemas()
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(schemas))
+
+	assert.Equal(t, "a_table", (*schemas[0]).Name)
 }
 
 func TestGetAgentsForHostnames(t *testing.T) {
@@ -958,26 +972,24 @@ func TestGetComputedSchemas(t *testing.T) {
 		Name:             "table1",
 		StartTimestampNS: 4,
 	}
-	c1Text, err := c1.Marshal()
-	if err != nil {
-		t.Fatal("Unable to marshal schema pb")
-	}
 
 	c2 := &metadatapb.SchemaInfo{
 		Name:             "table2",
 		StartTimestampNS: 5,
 	}
-	c2Text, err := c2.Marshal()
+
+	computedSchema := &metadatapb.ComputedSchema{
+		Tables: []*metadatapb.SchemaInfo{
+			c1, c2,
+		},
+	}
+
+	computedSchemaText, err := computedSchema.Marshal()
 	if err != nil {
 		t.Fatal("Unable to marshal schema pb")
 	}
 
-	_, err = etcdClient.Put(context.Background(), "/schema/computed/table1", string(c1Text))
-	if err != nil {
-		t.Fatal("Unable to add schema to etcd.")
-	}
-
-	_, err = etcdClient.Put(context.Background(), "/schema/computed/table2", string(c2Text))
+	_, err = etcdClient.Put(context.Background(), "/computedSchema", string(computedSchemaText))
 	if err != nil {
 		t.Fatal("Unable to add schema to etcd.")
 	}

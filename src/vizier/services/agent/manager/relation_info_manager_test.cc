@@ -23,6 +23,7 @@ class RelationInfoManagerTest : public ::testing::Test {
 };
 
 const char* kAgentUpdateInfoSchemaNoTablets = R"proto(
+does_update_schema: true
 schema {
   name: "relation0"
   columns {
@@ -66,6 +67,7 @@ TEST_F(RelationInfoManagerTest, test_update) {
 }
 
 const char* kAgentUpdateInfoSchemaHasTablets = R"proto(
+does_update_schema: true
 schema {
   name: "relation0"
   columns {

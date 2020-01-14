@@ -570,8 +570,9 @@ func TestAddToUpdateQueue(t *testing.T) {
 		})
 
 	update := &messagespb.AgentUpdateInfo{
-		Schema:         schemas,
-		ProcessCreated: createdProcesses,
+		Schema:           schemas,
+		ProcessCreated:   createdProcesses,
+		DoesUpdateSchema: true,
 	}
 
 	agtMgr.AddToUpdateQueue(u, update)
@@ -659,6 +660,7 @@ func TestAgentQueueTerminatedProcesses(t *testing.T) {
 		})
 
 	update := &messagespb.AgentUpdateInfo{
+		DoesUpdateSchema:  true,
 		Schema:            schemas,
 		ProcessTerminated: terminatedProcesses,
 	}
@@ -696,7 +698,8 @@ func TestAddToUpdateQueueFailed(t *testing.T) {
 		})
 
 	update := &messagespb.AgentUpdateInfo{
-		Schema: schemas,
+		DoesUpdateSchema: true,
+		Schema:           schemas,
 	}
 
 	agtMgr.AddToUpdateQueue(u, update)

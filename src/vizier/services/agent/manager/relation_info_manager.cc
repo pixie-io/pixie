@@ -10,6 +10,7 @@ Status RelationInfoManager::UpdateRelationInfo(const std::vector<RelationInfo>& 
 
 // TODO(philkuz) (PL-852) only send schema updates for changes to the schema.
 void RelationInfoManager::AddSchemaToUpdateInfo(messages::AgentUpdateInfo* update_info) {
+  update_info->set_does_update_schema(true);
   for (const auto& relation_info : relation_info_) {
     auto* schema = update_info->add_schema();
     schema->set_name(relation_info.name);
