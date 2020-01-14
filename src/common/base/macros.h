@@ -44,4 +44,18 @@
 #error "Unsupported compiler"
 #endif
 
+// For debugging.
+#define PL_LOG_VAR(var) LOG(INFO) << #var ": " << var;
+
+// For debugging.
+//
+// Use this to time a simple expression. For example:
+//     auto connector = SocketTraceConnector::Create(...);
+//     PL_TIME(PL_RETURN_IF_ERROR(connector->Init()));
+#define PL_TIME(exp) \
+{ \
+  ScopedTimer timer(#exp); \
+  exp; \
+}
+
 // clang-format on
