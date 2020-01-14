@@ -62,6 +62,17 @@ func (mds *KVMetadataStore) SetClusterInfo(clusterInfo ClusterInfo) {
 
 /* ================= Keys =================*/
 
+func getNamespaceFromMetadata(md *metadatapb.ObjectMetadata) string {
+	return getNamespaceFromString(md.Namespace)
+}
+
+func getNamespaceFromString(ns string) string {
+	if ns == "" {
+		ns = "default"
+	}
+	return ns
+}
+
 func getAsidKey() string {
 	return "/asid"
 }
@@ -78,6 +89,11 @@ func getAgentKey(agentID uuid.UUID) string {
 // GetHostnameAgentKey gets the key for the hostname's agent.
 func getHostnameAgentKey(hostname string) string {
 	return path.Join("/", "hostname", hostname, "agent")
+}
+
+// GetKelvinAgentKey gets the key for a kelvin node.
+func getKelvinAgentKeyPrefix() string {
+	return "/kelvin/"
 }
 
 // GetKelvinAgentKey gets the key for a kelvin node.
@@ -110,8 +126,40 @@ func getPodsKey() string {
 	return path.Join("/", "pod") + "/"
 }
 
+func getPodKey(e *metadatapb.Pod) string {
+	return getPodKeyFromStrings(e.Metadata.UID, getNamespaceFromMetadata(e.Metadata))
+}
+
+func getPodKeyFromStrings(uid string, namespace string) string {
+	return path.Join("/", "pod", namespace, uid)
+}
+
+func getContainersKey() string {
+	return path.Join("/", "containers") + "/"
+}
+
+func getContainerKey(c *metadatapb.ContainerInfo) string {
+	return getContainerKeyFromStrings(c.UID)
+}
+
+func getContainerKeyFromStrings(containerID string) string {
+	return path.Join("/", "containers", containerID, "info")
+}
+
 func getEndpointsKey() string {
 	return path.Join("/", "endpoints") + "/"
+}
+
+func getEndpointKey(e *metadatapb.Endpoints) string {
+	return path.Join(getEndpointsKey(), getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
+}
+
+func getServicePodMapKey(e *metadatapb.Endpoints) string {
+	return path.Join("/", "services", getNamespaceFromMetadata(e.Metadata), e.Metadata.Name, "pods")
+}
+
+func getServicesKey() string {
+	return path.Join("/", "service") + "/"
 }
 
 /* =============== Agent Operations ============== */
@@ -133,6 +181,22 @@ func (mds *KVMetadataStore) GetAgent(agentID uuid.UUID) (*agentpb.Agent, error) 
 	return aPb, nil
 }
 
+// GetKelvinIDs gets the IDs of the current active kelvins.
+func (mds *KVMetadataStore) GetKelvinIDs() ([]string, error) {
+	var ids []string
+
+	// Get all kelvins.
+	_, vals, err := mds.cache.GetWithPrefix(getKelvinAgentKeyPrefix())
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range vals {
+		ids = append(ids, string(v))
+	}
+
+	return ids, nil
+}
+
 // GetAgentIDForHostname gets the agent for the given hostname, if it exists.
 func (mds *KVMetadataStore) GetAgentIDForHostname(hostname string) (string, error) {
 	id, err := mds.cache.Get(getHostnameAgentKey(hostname))
@@ -144,6 +208,27 @@ func (mds *KVMetadataStore) GetAgentIDForHostname(hostname string) (string, erro
 	}
 
 	return string(id), err
+}
+
+// GetAgentsForHostnames gets the agents running on the given hostnames.
+func (mds *KVMetadataStore) GetAgentsForHostnames(hostnames *[]string) (*[]string, error) {
+	if len(*hostnames) == 0 {
+		return nil, nil
+	}
+
+	agents := []string{}
+	for _, hn := range *hostnames {
+		resp, err := mds.cache.Get(getHostnameAgentKey(hn))
+		if err != nil {
+			continue
+		}
+		if resp == nil {
+			continue
+		}
+		agents = append(agents, string(resp))
+	}
+
+	return &agents, nil
 }
 
 // DeleteAgent deletes the agent with the given ID.
@@ -381,6 +466,120 @@ func (mds *KVMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, err
 	return pods, nil
 }
 
+// GetPods gets all pods in the metadata store.
+func (mds *KVMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getPodsKey())
+	if err != nil {
+		return nil, err
+	}
+
+	pods := make([]*metadatapb.Pod, len(vals))
+	for i, val := range vals {
+		pb := &metadatapb.Pod{}
+		proto.Unmarshal(val, pb)
+		pods[i] = pb
+	}
+	return pods, nil
+}
+
+// UpdatePod adds or updates the given pod in the metadata store.
+func (mds *KVMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
+	if deleted && p.Metadata.DeletionTimestampNS == 0 {
+		p.Metadata.DeletionTimestampNS = time.Now().UnixNano()
+	}
+
+	val, err := p.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal endpoints pb")
+	}
+
+	key := getPodKey(p)
+
+	if p.Metadata.DeletionTimestampNS > 0 {
+		mds.cache.SetWithTTL(key, string(val), mds.expiryDuration)
+	} else {
+		mds.cache.Set(key, string(val))
+	}
+
+	return nil
+}
+
+/* =============== Container Operations ============== */
+
+// GetContainers gets all containers in the metadata store.
+func (mds *KVMetadataStore) GetContainers() ([]*metadatapb.ContainerInfo, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getContainersKey())
+	if err != nil {
+		return nil, err
+	}
+
+	containers := make([]*metadatapb.ContainerInfo, len(vals))
+	for i, val := range vals {
+		pb := &metadatapb.ContainerInfo{}
+		proto.Unmarshal(val, pb)
+		containers[i] = pb
+	}
+	return containers, nil
+}
+
+// UpdateContainer adds or updates the given container in the metadata store.
+func (mds *KVMetadataStore) UpdateContainer(c *metadatapb.ContainerInfo) error {
+	val, err := c.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal containerInfo pb")
+	}
+
+	key := getContainerKey(c)
+
+	if c.StopTimestampNS > 0 {
+		mds.cache.SetWithTTL(key, string(val), mds.expiryDuration)
+	} else {
+		mds.cache.Set(key, string(val))
+	}
+	return nil
+}
+
+// UpdateContainersFromPod updates the containers from the given pod in the metadata store.
+func (mds *KVMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod, deleted bool) error {
+	containers := make([]*metadatapb.ContainerStatus, 0)
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.ContainerID != "" {
+			containers = append(containers, status)
+		}
+	}
+
+	for _, container := range containers {
+		cid := formatContainerID(container.ContainerID)
+		key := getContainerKeyFromStrings(cid)
+
+		stopTime := container.StopTimestampNS
+		if deleted && stopTime == 0 {
+			stopTime = time.Now().UnixNano()
+		}
+
+		cInfo := metadatapb.ContainerInfo{
+			Name:             container.Name,
+			UID:              cid,
+			StartTimestampNS: container.StartTimestampNS,
+			StopTimestampNS:  stopTime,
+			PodUID:           pod.Metadata.UID,
+			Namespace:        getNamespaceFromMetadata(pod.Metadata),
+		}
+		val, err := cInfo.Marshal()
+		if err != nil {
+			return errors.New("Unable to marshal containerInfo pb")
+		}
+
+		if container.StopTimestampNS > 0 {
+			mds.cache.SetWithTTL(key, string(val), mds.expiryDuration)
+		} else {
+			mds.cache.Set(key, string(val))
+		}
+	}
+
+	return nil
+}
+
 /* =============== Endpoints Operations ============== */
 
 // GetNodeEndpoints gets all endpoints in the metadata store that belong to a particular hostname.
@@ -403,4 +602,100 @@ func (mds *KVMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.End
 		}
 	}
 	return endpoints, nil
+}
+
+// GetEndpoints gets all endpoints in the metadata store.
+func (mds *KVMetadataStore) GetEndpoints() ([]*metadatapb.Endpoints, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getEndpointsKey())
+	if err != nil {
+		return nil, err
+	}
+
+	endpoints := make([]*metadatapb.Endpoints, len(vals))
+	for i, val := range vals {
+		pb := &metadatapb.Endpoints{}
+		proto.Unmarshal(val, pb)
+		endpoints[i] = pb
+	}
+	return endpoints, nil
+}
+
+// UpdateEndpoints adds or updates the given endpoint in the metadata store.
+func (mds *KVMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints, deleted bool) error {
+	if deleted && e.Metadata.DeletionTimestampNS == 0 {
+		e.Metadata.DeletionTimestampNS = time.Now().UnixNano()
+	}
+
+	val, err := e.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal endpoints pb")
+	}
+
+	key := getEndpointKey(e)
+
+	// Update endpoints object.
+	if e.Metadata.DeletionTimestampNS > 0 {
+		mds.cache.SetWithTTL(key, string(val), mds.expiryDuration)
+	} else {
+		mds.cache.Set(key, string(val))
+	}
+
+	// Update service -> pod map.
+	mapKey := getServicePodMapKey(e)
+	var podIds []string
+	for _, subset := range e.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+				podIds = append(podIds, addr.TargetRef.UID)
+			}
+		}
+	}
+	mapVal := strings.Join(podIds, ",")
+
+	if e.Metadata.DeletionTimestampNS > 0 {
+		mds.cache.SetWithTTL(mapKey, mapVal, mds.expiryDuration)
+	} else {
+		mds.cache.Set(mapKey, mapVal)
+	}
+
+	return nil
+}
+
+/* =============== Service Operations ============== */
+
+// GetServices gets all services in the metadata store.
+func (mds *KVMetadataStore) GetServices() ([]*metadatapb.Service, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getServicesKey())
+	if err != nil {
+		return nil, err
+	}
+
+	services := make([]*metadatapb.Service, len(vals))
+	for i, val := range vals {
+		pb := &metadatapb.Service{}
+		proto.Unmarshal(val, pb)
+		services[i] = pb
+	}
+	return services, nil
+}
+
+// UpdateService adds or updates the given service in the metadata store.
+func (mds *KVMetadataStore) UpdateService(s *metadatapb.Service, deleted bool) error {
+	if deleted && s.Metadata.DeletionTimestampNS == 0 {
+		s.Metadata.DeletionTimestampNS = time.Now().UnixNano()
+	}
+
+	val, err := s.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal endpoints pb")
+	}
+
+	key := getServiceKey(s)
+
+	if s.Metadata.DeletionTimestampNS > 0 {
+		mds.cache.SetWithTTL(key, string(val), mds.expiryDuration)
+	} else {
+		mds.cache.Set(key, string(val))
+	}
+	return nil
 }

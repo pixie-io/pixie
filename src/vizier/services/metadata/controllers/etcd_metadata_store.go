@@ -133,21 +133,6 @@ func (mds *EtcdMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.E
 	return endpoints, nil
 }
 
-func getNamespaceFromMetadata(md *metadatapb.ObjectMetadata) string {
-	return getNamespaceFromString(md.Namespace)
-}
-
-func getNamespaceFromString(ns string) string {
-	if ns == "" {
-		ns = "default"
-	}
-	return ns
-}
-
-func getEndpointKey(e *metadatapb.Endpoints) string {
-	return path.Join(getEndpointsKey(), getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
-}
-
 // UpdatePod adds or updates the given pod in the metadata store.
 func (mds *EtcdMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
 	if deleted && p.Metadata.DeletionTimestampNS == 0 {
@@ -239,26 +224,6 @@ func (mds *EtcdMetadataStore) GetServices() ([]*metadatapb.Service, error) {
 		services[i] = pb
 	}
 	return services, nil
-}
-
-func getPodKey(e *metadatapb.Pod) string {
-	return getPodKeyFromStrings(e.Metadata.UID, getNamespaceFromMetadata(e.Metadata))
-}
-
-func getPodKeyFromStrings(uid string, namespace string) string {
-	return path.Join("/", "pod", namespace, uid)
-}
-
-func getContainersKey() string {
-	return path.Join("/", "containers") + "/"
-}
-
-func getContainerKey(c *metadatapb.ContainerInfo) string {
-	return getContainerKeyFromStrings(c.UID)
-}
-
-func getContainerKeyFromStrings(containerID string) string {
-	return path.Join("/", "containers", containerID, "info")
 }
 
 // GetAgentSchemaKey gets the etcd key for an agent's schema.
@@ -405,16 +370,8 @@ func (mds *EtcdMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, er
 	return computedSchemaPb.Tables, nil
 }
 
-func getServicesKey() string {
-	return path.Join("/", "service") + "/"
-}
-
 func getServiceKey(e *metadatapb.Service) string {
 	return path.Join("/", "service", getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
-}
-
-func getServicePodMapKey(e *metadatapb.Endpoints) string {
-	return path.Join("/", "services", getNamespaceFromMetadata(e.Metadata), e.Metadata.Name, "pods")
 }
 
 // GetAgentKeyFromUUID gets the etcd key for the agent, given the id in a UUID format.

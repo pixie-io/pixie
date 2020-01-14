@@ -452,6 +452,264 @@ func TestKVMetadataStore_GetProcesses(t *testing.T) {
 	assert.Equal(t, "process2", processes[2].Name)
 }
 
+func TestKVMetadataStore_GetPods(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/pod/").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create pods.
+	pod1 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "abcd",
+			Namespace: "test",
+			UID:       "abcd-pod",
+		},
+	}
+	pod1Text, err := pod1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal pod pb")
+	}
+
+	pod2 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "efgh",
+			Namespace: "test",
+			UID:       "efgh-pod",
+		},
+	}
+	pod2Text, err := pod2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal pod pb")
+	}
+
+	c.Set("/pod/test/abcd-pod", string(pod1Text))
+	c.Set("/pod/test/efgh-pod", string(pod2Text))
+
+	pods, err := mds.GetPods()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods))
+
+	assert.Equal(t, pod1.Metadata.Name, (*pods[0]).Metadata.Name)
+	assert.Equal(t, pod2.Metadata.Name, (*pods[1]).Metadata.Name)
+}
+
+func TestKVMetadataStore_UpdatePod(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	expectedPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PodPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	err = mds.UpdatePod(expectedPb, false)
+	if err != nil {
+		t.Fatal("Could not update pod.")
+	}
+
+	// Check that correct pod info is in etcd.
+	resp, err := c.Get("/pod/default/ijkl")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb := &metadatapb.Pod{}
+	proto.Unmarshal(resp, pb)
+
+	assert.Equal(t, expectedPb, pb)
+
+	// Test that deletion timestamp gets set.
+	err = mds.UpdatePod(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update pod.")
+	}
+
+	// Check that correct pod info is in etcd.
+	resp, err = c.Get("/pod/default/ijkl")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb = &metadatapb.Pod{}
+	proto.Unmarshal(resp, pb)
+
+	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
+
+	// Test that deletion timestamp is not set again if it is already set.
+	expectedPb.Metadata.DeletionTimestampNS = 10
+	err = mds.UpdatePod(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update pod.")
+	}
+
+	// Check that correct pod info is in etcd.
+	resp, err = c.Get("/pod/default/ijkl")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb = &metadatapb.Pod{}
+	proto.Unmarshal(resp, pb)
+	assert.Equal(t, int64(10), pb.Metadata.DeletionTimestampNS)
+}
+
+func TestKVMetadataStore_GetContainers(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/containers/").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create containers.
+	c1 := &metadatapb.ContainerInfo{
+		Name: "container_1",
+		UID:  "container_id_1",
+	}
+	c1Text, err := c1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal container pb")
+	}
+
+	c2 := &metadatapb.ContainerInfo{
+		Name: "container_2",
+		UID:  "container_id_2",
+	}
+	c2Text, err := c2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal container pb")
+	}
+
+	c.Set("/containers/container_id_1/info", string(c1Text))
+	c.Set("/containers/container_id_2/info", string(c2Text))
+
+	containers, err := mds.GetContainers()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(containers))
+
+	assert.Equal(t, c1.UID, (*containers[0]).UID)
+	assert.Equal(t, c2.UID, (*containers[1]).UID)
+}
+
+func TestKVMetadataStore_UpdateContainer(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+	expectedPb := &metadatapb.ContainerInfo{}
+	if err := proto.UnmarshalText(testutils.ContainerInfoPB, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	err = mds.UpdateContainer(expectedPb)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+
+	// Check that correct service info is in cache.
+	resp, err := c.Get("/containers/container1/info")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb := &metadatapb.ContainerInfo{}
+	proto.Unmarshal(resp, pb)
+
+	assert.Equal(t, expectedPb, pb)
+}
+
+func TestKVMetadataStore_UpdateContainersFromPod(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	podInfo := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, podInfo); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	err = mds.UpdateContainersFromPod(podInfo, false)
+	assert.Nil(t, err)
+
+	containerResp, err := c.Get("/containers/test/info")
+	assert.Nil(t, err)
+	assert.NotNil(t, containerResp)
+	containerPb := &metadatapb.ContainerInfo{}
+	proto.Unmarshal(containerResp, containerPb)
+	assert.Equal(t, "container1", containerPb.Name)
+	assert.Equal(t, "test", containerPb.UID)
+	assert.Equal(t, "ijkl", containerPb.PodUID)
+
+	// Test that deletion timestamp gets set.
+	err = mds.UpdateContainersFromPod(podInfo, true)
+	assert.Nil(t, err)
+
+	containerResp, err = c.Get("/containers/test/info")
+	assert.Nil(t, err)
+	assert.NotNil(t, containerResp)
+	containerPb = &metadatapb.ContainerInfo{}
+	proto.Unmarshal(containerResp, containerPb)
+	assert.NotEqual(t, int64(0), containerPb.StopTimestampNS)
+}
+
+func TestKVMetadataStore_UpdateContainersFromPendingPod(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/containers/").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	podInfo := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PendingPodPb, podInfo); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	err = mds.UpdateContainersFromPod(podInfo, false)
+	assert.Nil(t, err)
+
+	_, v, err := c.GetWithPrefix("/containers/")
+	assert.Nil(t, err)
+	assert.NotNil(t, v)
+}
+
 func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -550,6 +808,233 @@ func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 	assert.Equal(t, e2.Metadata.Name, (*eps[1]).Metadata.Name)
 }
 
+func TestKVMetadataStore_GetEndpoints(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/endpoints/").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create endpoints.
+	e1 := &metadatapb.Endpoints{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "abcd",
+			Namespace: "test",
+			UID:       "abcd",
+		},
+	}
+	e1Text, err := e1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal endpoint pb")
+	}
+
+	e2 := &metadatapb.Endpoints{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "efgh",
+			Namespace: "test",
+			UID:       "efgh",
+		},
+	}
+	e2Text, err := e2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal endpoint pb")
+	}
+
+	c.Set("/endpoints/test/abcd", string(e1Text))
+	c.Set("/endpoints/test/efgh", string(e2Text))
+
+	eps, err := mds.GetEndpoints()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(eps))
+
+	assert.Equal(t, e1.Metadata.Name, (*eps[0]).Metadata.Name)
+	assert.Equal(t, e2.Metadata.Name, (*eps[1]).Metadata.Name)
+}
+
+func TestKVMetadataStore_UpdateEndpoints(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	expectedPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	err = mds.UpdateEndpoints(expectedPb, false)
+	if err != nil {
+		t.Fatal("Could not update endpoints.")
+	}
+
+	// Check that correct endpoint info is in the cache.
+	resp, err := c.Get("/endpoints/a_namespace/ijkl")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb := &metadatapb.Endpoints{}
+	proto.Unmarshal(resp, pb)
+
+	mapResp, err := c.Get("/services/a_namespace/object_md/pods")
+	assert.Nil(t, err)
+	assert.NotNil(t, mapResp)
+	assert.Equal(t, "abcd,efgh", string(mapResp))
+
+	// Test that deletion timestamp gets set.
+	err = mds.UpdateEndpoints(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update endpoints.")
+	}
+
+	// Check that correct endpoint info is in etcd.
+	resp, err = c.Get("/endpoints/a_namespace/ijkl")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb = &metadatapb.Endpoints{}
+	proto.Unmarshal(resp, pb)
+	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
+
+	// Test that deletion timestamp is not set again if it is already set.
+	expectedPb.Metadata.DeletionTimestampNS = 10
+	err = mds.UpdateEndpoints(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update endpoints.")
+	}
+
+	// Check that correct endpoint info is in etcd.
+	resp, err = c.Get("/endpoints/a_namespace/ijkl")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb = &metadatapb.Endpoints{}
+	proto.Unmarshal(resp, pb)
+	assert.Equal(t, int64(10), pb.Metadata.DeletionTimestampNS)
+}
+
+func TestKVMetadataStore_GetServices(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/service/").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create services.
+	s1 := &metadatapb.Service{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "abcd",
+			Namespace: "test",
+			UID:       "abcd-service",
+		},
+	}
+	s1Text, err := s1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal service pb")
+	}
+
+	s2 := &metadatapb.Service{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "efgh",
+			Namespace: "test",
+			UID:       "efgh-service",
+		},
+	}
+	s2Text, err := s2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal service pb")
+	}
+
+	c.Set("/service/test/abcd-service", string(s1Text))
+	c.Set("/service/test/efgh-service", string(s2Text))
+
+	services, err := mds.GetServices()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(services))
+
+	assert.Equal(t, s1.Metadata.Name, (*services[0]).Metadata.Name)
+	assert.Equal(t, s2.Metadata.Name, (*services[1]).Metadata.Name)
+}
+
+func TestKVMetadataStore_UpdateService(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	expectedPb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(testutils.ServicePb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	err = mds.UpdateService(expectedPb, false)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+
+	// Check that correct service info is in etcd.
+	resp, err := c.Get("/service/a_namespace/ijkl")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb := &metadatapb.Service{}
+	proto.Unmarshal(resp, pb)
+
+	assert.Equal(t, expectedPb, pb)
+
+	// Test that deletion timestamp gets set.
+	err = mds.UpdateService(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+
+	// Check that correct service info is in etcd.
+	resp, err = c.Get("/service/a_namespace/ijkl")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb = &metadatapb.Service{}
+	proto.Unmarshal(resp, pb)
+	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
+
+	// Test that deletion timestamp is not set again if it is already set.
+	expectedPb.Metadata.DeletionTimestampNS = 10
+	err = mds.UpdateService(expectedPb, true)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+
+	// Check that correct service info is in etcd.
+	resp, err = c.Get("/service/a_namespace/ijkl")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb = &metadatapb.Service{}
+	proto.Unmarshal(resp, pb)
+	assert.Equal(t, int64(10), pb.Metadata.DeletionTimestampNS)
+}
+
 func TestKVMetadataStore_GetAgents(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -584,4 +1069,66 @@ func TestKVMetadataStore_GetAgents(t *testing.T) {
 		t.Fatal("Could not convert UUID to proto")
 	}
 	assert.Equal(t, testutils.UnhealthyAgentUUID, uid.String())
+}
+
+func TestKVMetadataStore_GetAgentsForHostnames(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		Get("/hostname/test5/agent").
+		Return(nil, nil)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	c.Set("/hostname/test/agent", "agent1")
+	c.Set("/hostname/test2/agent", "agent2")
+	c.Set("/hostname/test3/agent", "agent3")
+	c.Set("/hostname/test4/agent", "agent4")
+
+	hostnames := []string{"test", "test2", "test3", "test4", "test5"}
+
+	agents, err := mds.GetAgentsForHostnames(&hostnames)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 4, len(*agents))
+	assert.Equal(t, "agent1", (*agents)[0])
+	assert.Equal(t, "agent2", (*agents)[1])
+	assert.Equal(t, "agent3", (*agents)[2])
+	assert.Equal(t, "agent4", (*agents)[3])
+}
+
+func TestKVMetadataStore_GetKelvinIDs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/kelvin/").
+		Return(nil, nil, nil)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	c.Set("/kelvin/test", "test")
+	c.Set("/kelvin/test2", "test2")
+	c.Set("/kelvin/test3", "test3")
+	c.Set("/kelvin/test4", "test4")
+
+	kelvins, err := mds.GetKelvinIDs()
+	assert.Nil(t, err)
+
+	assert.Equal(t, 4, len(kelvins))
+	assert.Equal(t, "test", kelvins[0])
+	assert.Equal(t, "test2", kelvins[1])
+	assert.Equal(t, "test3", kelvins[2])
+	assert.Equal(t, "test4", kelvins[3])
 }
