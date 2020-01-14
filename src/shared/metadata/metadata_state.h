@@ -85,6 +85,7 @@ class K8sMetadataState : NotCopyable {
   // Alternative could be:
   // * AgentMetadataState::cluster_cidr_.
   void set_cluster_cidr(CIDRBlock cidr) { cluster_cidr_ = cidr; }
+  const auto& cluster_cidr() const { return cluster_cidr_; }
 
   const PodsByNameMap& pods_by_name() const { return pods_by_name_; }
 
