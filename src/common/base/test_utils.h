@@ -25,8 +25,7 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 
 // Early-returns the status if it is in error; otherwise, proceeds.
 // The argument expression is guaranteed to be evaluated exactly once.
-#define PL_RETURN_IF_ERROR(__status) \
-  PL_RETURN_IF_ERROR_IMPL(PL_CONCAT_NAME(__status__, __COUNTER__), __status)
+#define PL_RETURN_IF_ERROR(__status) PL_RETURN_IF_ERROR_IMPL(PL_UNIQUE_NAME(__status__), __status)
 
 #ifdef EXPECT_OK
 // There is a conflicting name in status.h in protobuf.

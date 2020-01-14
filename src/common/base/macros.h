@@ -14,6 +14,7 @@
 // Internal helper for concatenating macro values.
 #define PL_CONCAT_NAME_INNER(x, y) x##y
 #define PL_CONCAT_NAME(x, y) PL_CONCAT_NAME_INNER(x, y)
+#define PL_UNIQUE_NAME(name) PL_CONCAT_NAME(name, __COUNTER__)
 
 // Disable clang format since it insists on inlining these macros.
 // clang-format off

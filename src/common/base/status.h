@@ -139,8 +139,7 @@ inline Status StatusAdapter<pl::statuspb::Status>(const pl::statuspb::Status& s)
 
 // Early-returns the status if it is in error; otherwise, proceeds.
 // The argument expression is guaranteed to be evaluated exactly once.
-#define PL_RETURN_IF_ERROR(__status) \
-  PL_RETURN_IF_ERROR_IMPL(PL_CONCAT_NAME(__status__, __COUNTER__), __status)
+#define PL_RETURN_IF_ERROR(__status) PL_RETURN_IF_ERROR_IMPL(PL_UNIQUE_NAME(__status__), __status)
 
 #define PL_CHECK_OK_PREPEND(to_call, msg)             \
   do {                                                \

@@ -55,6 +55,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "defer_test",
+    srcs = ["defer_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "time_test",
     srcs = ["time_test.cc"],
     deps = [":cc_library"],
