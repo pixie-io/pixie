@@ -218,7 +218,7 @@ pl_cc_test(
     ],
     tags = [
         "requires_bpf",
-        # This test runs go gRPC client & server, which causes other tests to attach & detach
+        # This test runs Go gRPC client & server, which causes other tests to attach & detach
         # uprobes and slowed down significantly.
         "exclusive",
     ],

@@ -78,9 +78,12 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   UpdateTimestamps(conn_event.timestamp_ns);
 
   open_info_.timestamp_ns = conn_event.timestamp_ns;
-  Status s = ParseSockAddr(*reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
-                           &open_info_.remote_addr, &open_info_.remote_port);
-  if (!s.ok()) {
+  IPAddress addr;
+  Status s = ParseSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr), &addr);
+  if (s.ok()) {
+    open_info_.remote_addr = std::move(addr.addr_str);
+    open_info_.remote_port = addr.port;
+  } else {
     LOG(WARNING) << absl::Substitute("Could not parse IP address, msg: $0", s.msg());
     open_info_.remote_addr = "-'";
     open_info_.remote_port = 0;

@@ -101,7 +101,7 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
 constexpr uint64_t kIgnoredSymbolAddr = 0;
 
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
-  VLOG(1) << absl::StrFormat(
+  LOG(INFO) << absl::StrFormat(
       "Deploying uprobe:\n   type=%s\n   binary=%s\n   symbol=%s\n   trace_fn=%s",
       magic_enum::enum_name(probe.attach_type), probe.binary_path, probe.symbol, probe.probe_fn);
   ebpf::StatusTuple attach_status =

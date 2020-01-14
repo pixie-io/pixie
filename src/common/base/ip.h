@@ -1,15 +1,19 @@
 #pragma once
 
+// TODO(yzhao): Merge this and .cc into inet_utils.{h,cc}.
+
 #include <arpa/inet.h>
 
 #include <string>
 #include <string_view>
 #include <variant>
 
+#include "src/common/base/inet_utils.h"
 #include "src/common/base/statusor.h"
 
 namespace pl {
 
+// TODO(yzhao): Remove this as it's superseded by IPAddress in inet_utils.h.
 struct IPv4Address {
   std::string str;
   struct in_addr in_addr;
@@ -17,6 +21,7 @@ struct IPv4Address {
   static StatusOr<IPv4Address> FromStr(std::string_view addr_str);
 };
 
+// TODO(yzhao): Remove this as it's superseded by IPAddress in inet_utils.h.
 struct IPv6Address {
   std::string str;
   struct in6_addr in6_addr;
@@ -41,8 +46,12 @@ class CIDRBlock {
   // For StatusOr<CIDRBlock> to compile.
   CIDRBlock() : addr_(), prefix_length_(0) {}
 
+  // TODO(yzhao): Remove.
   bool Contains(const IPv4Address& addr) const;
+  // TODO(yzhao): Remove.
   bool Contains(const IPv6Address& addr) const;
+
+  bool Contains(const IPAddress& addr) const;
 
  private:
   std::variant<IPv4Address, IPv6Address> addr_;

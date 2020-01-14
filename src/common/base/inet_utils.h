@@ -6,19 +6,34 @@
 #include <netinet/in.h>
 
 #include <string>
+#include <utility>
+#include <variant>
 
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
 
 namespace pl {
 
+/**
+ * @brief Describes a connection from user space. This corresponds to struct conn_info_t in
+ * src/stirling/bcc_bpf_interface/socket_trace.h.
+ */
+struct IPAddress {
+  std::variant<struct in_addr, struct in6_addr> addr;
+  // TODO(yzhao): Consider removing this as it can be derived from above.
+  std::string addr_str = "-";
+  int port = -1;
+};
+
+/**
+ * Parses IPv4 address to string. Does not mutate the result argument on parse failure.
+ */
 inline Status ParseIPv4Addr(const struct in_addr& in_addr, std::string* addr) {
-  addr->resize(INET_ADDRSTRLEN);
-  if (inet_ntop(AF_INET, &in_addr, addr->data(), INET_ADDRSTRLEN) == nullptr) {
+  char buf[INET_ADDRSTRLEN];
+  if (inet_ntop(AF_INET, &in_addr, buf, INET_ADDRSTRLEN) == nullptr) {
     return error::Internal("Could not parse sockaddr (AF_INET) errno=$0", errno);
   }
-  addr->erase(addr->find('\0'));
-
+  addr->assign(buf);
   return Status::OK();
 }
 
@@ -43,12 +58,15 @@ inline Status ParseIPv4Addr(const std::string& addr_str, struct in6_addr* in6_ad
   return ParseIPv4Addr(addr_str, reinterpret_cast<struct in_addr*>(in6_addr));
 }
 
+/**
+ * Parses IPv6 address to string. Does not mutate the result argument on parse failure.
+ */
 inline Status ParseIPv6Addr(const struct in6_addr& in6_addr, std::string* addr) {
-  addr->resize(INET6_ADDRSTRLEN);
-  if (inet_ntop(AF_INET6, &in6_addr, addr->data(), INET6_ADDRSTRLEN) == nullptr) {
+  char buf[INET6_ADDRSTRLEN];
+  if (inet_ntop(AF_INET6, &in6_addr, buf, INET6_ADDRSTRLEN) == nullptr) {
     return error::InvalidArgument("Could not parse sockaddr (AF_INET6) errno=$0", errno);
   }
-  addr->erase(addr->find('\0'));
+  addr->assign(buf);
 
   return Status::OK();
 }
@@ -60,20 +78,28 @@ inline Status ParseIPv6Addr(const std::string& addr_str, struct in6_addr* in6_ad
   return Status::OK();
 }
 
-inline Status ParseSockAddr(const struct sockaddr& sa, std::string* addr, int* port) {
-  switch (sa.sa_family) {
+/**
+ * Parses sockaddr into a C++ style IPAddress. Only accept IPv4 and IPv6 addresses.
+ * Does not mutate the result argument on parse failure.
+ */
+inline Status ParseSockAddr(const struct sockaddr* sa, IPAddress* addr) {
+  switch (sa->sa_family) {
     case AF_INET: {
-      const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(&sa);
-      *port = ntohs(sa_in->sin_port);
-      return ParseIPv4Addr(sa_in->sin_addr, addr);
+      const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
+      PL_RETURN_IF_ERROR(ParseIPv4Addr(sa_in->sin_addr, &addr->addr_str));
+      addr->addr = sa_in->sin_addr;
+      addr->port = ntohs(sa_in->sin_port);
+      return Status::OK();
     }
     case AF_INET6: {
-      const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(&sa);
-      *port = ntohs(sa_in6->sin6_port);
-      return ParseIPv6Addr(sa_in6->sin6_addr, addr);
+      const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
+      PL_RETURN_IF_ERROR(ParseIPv6Addr(sa_in6->sin6_addr, &addr->addr_str));
+      addr->addr = sa_in6->sin6_addr;
+      addr->port = ntohs(sa_in6->sin6_port);
+      return Status::OK();
     }
     default:
-      return error::InvalidArgument("Unhandled sockaddr family: $0", sa.sa_family);
+      return error::InvalidArgument("Unhandled sockaddr family: $0", sa->sa_family);
   }
 }
 

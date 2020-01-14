@@ -34,16 +34,32 @@ CIDRBlock::CIDRBlock(IPv4Address addr, size_t prefix_length)
 CIDRBlock::CIDRBlock(IPv6Address addr, size_t prefix_length)
     : addr_(addr), prefix_length_(prefix_length) {}
 
+namespace {
+
+bool IPv4CIDRContains(struct in_addr cidr_ip, size_t prefix_length, struct in_addr ip) {
+  return ntohl(cidr_ip.s_addr) >> (kIPv4BitLen - prefix_length) ==
+         ntohl(ip.s_addr) >> (kIPv4BitLen - prefix_length);
+}
+
+bool IPv6CIDRContains(struct in6_addr cidr_ip, size_t prefix_length, struct in6_addr ip) {
+  for (size_t i = 0; i < prefix_length; ++i) {
+    int oct = i / 8;
+    int bit = 7 - (i % 8);
+    if ((cidr_ip.s6_addr[oct] & (1 << bit)) != (ip.s6_addr[oct] & (1 << bit))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+}  // namespace
+
 bool CIDRBlock::Contains(const IPv4Address& addr) const {
   if (!std::holds_alternative<IPv4Address>(addr_)) {
     return false;
   }
   const auto& my_addr = std::get<IPv4Address>(addr_);
-  if ((ntohl(addr.in_addr.s_addr) >> (kIPv4BitLen - prefix_length_)) !=
-      (ntohl(my_addr.in_addr.s_addr) >> (kIPv4BitLen - prefix_length_))) {
-    return false;
-  }
-  return true;
+  return IPv4CIDRContains(my_addr.in_addr, prefix_length_, addr.in_addr);
 }
 
 bool CIDRBlock::Contains(const IPv6Address& addr) const {
@@ -51,12 +67,27 @@ bool CIDRBlock::Contains(const IPv6Address& addr) const {
     return false;
   }
   const auto& my_addr = std::get<IPv6Address>(addr_);
-  for (size_t i = 0; i < prefix_length_; ++i) {
-    int oct = i / 8;
-    int bit = 7 - (i % 8);
-    if ((my_addr.in6_addr.s6_addr[oct] & (1 << bit)) != (addr.in6_addr.s6_addr[oct] & (1 << bit))) {
-      return false;
-    }
+  return IPv6CIDRContains(my_addr.in6_addr, prefix_length_, addr.in6_addr);
+}
+
+bool CIDRBlock::Contains(const IPAddress& addr) const {
+  if (std::holds_alternative<IPv4Address>(addr_) &&
+      !std::holds_alternative<struct in_addr>(addr.addr)) {
+    return false;
+  }
+  if (std::holds_alternative<IPv6Address>(addr_) &&
+      !std::holds_alternative<struct in6_addr>(addr.addr)) {
+    return false;
+  }
+  if (std::holds_alternative<IPv4Address>(addr_)) {
+    const auto& cidr_ip = std::get<IPv4Address>(addr_).in_addr;
+    const auto& ip = std::get<struct in_addr>(addr.addr);
+    return IPv4CIDRContains(cidr_ip, prefix_length_, ip);
+  }
+  if (std::holds_alternative<IPv6Address>(addr_)) {
+    const auto& cidr_ip = std::get<IPv6Address>(addr_).in6_addr;
+    const auto& ip = std::get<struct in6_addr>(addr.addr);
+    return IPv6CIDRContains(cidr_ip, prefix_length_, ip);
   }
   return true;
 }

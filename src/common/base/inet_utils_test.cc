@@ -3,7 +3,7 @@
 
 namespace pl {
 
-TEST(ParseSockAddr, Basic) {
+TEST(ParseSockAddr, IPv4) {
   // Create an IP address for the test.
   struct sockaddr_in sockaddr;
   sockaddr.sin_family = AF_INET;
@@ -11,12 +11,24 @@ TEST(ParseSockAddr, Basic) {
   sockaddr.sin_port = htons(53000);
 
   // Now check InetAddrToString produces the expected string.
-  std::string addr;
-  int port;
-  Status s = ParseSockAddr(*reinterpret_cast<struct sockaddr*>(&sockaddr), &addr, &port);
+  IPAddress addr;
+  Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
   EXPECT_OK(s);
-  EXPECT_EQ(addr, "10.1.2.3");
-  EXPECT_EQ(port, 53000);
+  EXPECT_EQ(addr.addr_str, "10.1.2.3");
+  EXPECT_EQ(addr.port, 53000);
+}
+
+TEST(ParseSockAddr, IPv6) {
+  struct sockaddr_in6 sockaddr;
+  sockaddr.sin6_family = AF_INET6;
+  EXPECT_OK(ParseIPv6Addr("::1", &sockaddr.sin6_addr));
+  sockaddr.sin6_port = htons(12345);
+
+  IPAddress addr;
+  Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
+  EXPECT_OK(s);
+  EXPECT_EQ(addr.addr_str, "::1");
+  EXPECT_EQ(addr.port, 12345);
 }
 
 TEST(ParseSockAddr, Unsupported) {
@@ -26,10 +38,11 @@ TEST(ParseSockAddr, Unsupported) {
   inet_pton(AF_INET, "10.1.2.3", &sockaddr.sin_addr);
   sockaddr.sin_port = htons(53000);
 
-  std::string addr;
-  int port;
-  Status s = ParseSockAddr(*reinterpret_cast<struct sockaddr*>(&sockaddr), &addr, &port);
+  IPAddress addr;
+  Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
   EXPECT_NOT_OK(s);
+  EXPECT_EQ(addr.addr_str, "-") << "addr_str should not be mutated";
+  EXPECT_EQ(addr.port, -1) << "port should not be mutated";
 }
 
 TEST(ParseIPAddr, ipv4) {
