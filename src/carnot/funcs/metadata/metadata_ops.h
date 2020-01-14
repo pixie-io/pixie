@@ -87,8 +87,8 @@ class UPIDToContainerIDUDF : public ScalarUDF {
   }
 };
 
-inline const md::ContainerInfo* ContainerInfoFromUPID(const pl::md::AgentMetadataState* md,
-                                                      types::UInt128Value upid_value) {
+inline const md::ContainerInfo* UPIDToContainer(const pl::md::AgentMetadataState* md,
+                                                types::UInt128Value upid_value) {
   auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
   auto upid = md::UPID(upid_uint128);
   auto pid = md->GetPIDByUPID(upid);
@@ -98,15 +98,38 @@ inline const md::ContainerInfo* ContainerInfoFromUPID(const pl::md::AgentMetadat
   return md->k8s_metadata_state().ContainerInfoByID(pid->cid());
 }
 
+inline const pl::md::PodInfo* UPIDtoPod(const pl::md::AgentMetadataState* md,
+                                        types::UInt128Value upid_value) {
+  auto container_info = UPIDToContainer(md, upid_value);
+  if (container_info == nullptr) {
+    return nullptr;
+  }
+  auto pod_info = md->k8s_metadata_state().PodInfoByID(container_info->pod_id());
+  return pod_info;
+}
+
+inline types::StringValue StringifyVector(const std::vector<std::string>& vec) {
+  if (vec.size() == 1) {
+    return std::string(vec[0]);
+  } else if (vec.size() > 1) {
+    rapidjson::StringBuffer s;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(s);
+
+    writer.StartArray();
+    for (const auto& str : vec) {
+      writer.String(str.c_str());
+    }
+    writer.EndArray();
+    return s.GetString();
+  }
+  return "";
+}
+
 class UPIDToNamespaceUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
-    auto container_info = ContainerInfoFromUPID(md, upid_value);
-    if (container_info == nullptr) {
-      return "";
-    }
-    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(container_info->pod_id());
+    auto pod_info = UPIDtoPod(md, upid_value);
     if (pod_info == nullptr) {
       return "";
     }
@@ -118,7 +141,7 @@ class UPIDToPodIDUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
-    auto container_info = ContainerInfoFromUPID(md, upid_value);
+    auto container_info = UPIDToContainer(md, upid_value);
     if (container_info == nullptr) {
       return "";
     }
@@ -130,11 +153,7 @@ class UPIDToPodNameUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
-    auto container_info = ContainerInfoFromUPID(md, upid_value);
-    if (container_info == nullptr) {
-      return "";
-    }
-    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(container_info->pod_id());
+    auto pod_info = UPIDtoPod(md, upid_value);
     if (pod_info == nullptr) {
       return "";
     }
@@ -173,35 +192,6 @@ class ServiceNameToServiceIDUDF : public ScalarUDF {
   }
 };
 
-class UPIDToK8S {
- public:
-  static const pl::md::PodInfo* UPIDtoPod(const pl::md::AgentMetadataState* md,
-                                          types::UInt128Value upid_value) {
-    auto container_info = ContainerInfoFromUPID(md, upid_value);
-    if (container_info == nullptr) {
-      return nullptr;
-    }
-    auto pod_info = md->k8s_metadata_state().PodInfoByID(container_info->pod_id());
-    return pod_info;
-  }
-  static types::StringValue StringifyVector(const std::vector<std::string>& vec) {
-    if (vec.size() == 1) {
-      return std::string(vec[0]);
-    } else if (vec.size() > 1) {
-      rapidjson::StringBuffer s;
-      rapidjson::Writer<rapidjson::StringBuffer> writer(s);
-
-      writer.StartArray();
-      for (const auto& str : vec) {
-        writer.String(str.c_str());
-      }
-      writer.EndArray();
-      return s.GetString();
-    }
-    return "";
-  }
-};
-
 /**
  * @brief Returns the service ids for services that are currently running.
  */
@@ -209,7 +199,7 @@ class UPIDToServiceIDUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
-    auto pod_info = UPIDToK8S::UPIDtoPod(md, upid_value);
+    auto pod_info = UPIDtoPod(md, upid_value);
     if (pod_info == nullptr || pod_info->services().size() == 0) {
       return "";
     }
@@ -224,7 +214,7 @@ class UPIDToServiceIDUDF : public ScalarUDF {
       }
     }
 
-    return UPIDToK8S::StringifyVector(running_service_ids);
+    return StringifyVector(running_service_ids);
   }
 };
 
@@ -235,7 +225,7 @@ class UPIDToServiceNameUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
-    auto pod_info = UPIDToK8S::UPIDtoPod(md, upid_value);
+    auto pod_info = UPIDtoPod(md, upid_value);
     if (pod_info == nullptr || pod_info->services().size() == 0) {
       return "";
     }
@@ -250,7 +240,38 @@ class UPIDToServiceNameUDF : public ScalarUDF {
             absl::Substitute("$0/$1", service_info->ns(), service_info->name()));
       }
     }
-    return UPIDToK8S::StringifyVector(running_service_names);
+    return StringifyVector(running_service_names);
+  }
+};
+
+/**
+ * @brief Returns the node name for the pod associated with the input upid.
+ */
+class UPIDToNodeNameUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto pod_info = UPIDtoPod(md, upid_value);
+    if (pod_info == nullptr) {
+      return "";
+    }
+    std::string foo = std::string(pod_info->node_name());
+    return foo;
+  }
+};
+
+/**
+ * @brief Returns the hostname for the pod associated with the input upid.
+ */
+class UPIDToHostnameUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto pod_info = UPIDtoPod(md, upid_value);
+    if (pod_info == nullptr) {
+      return "";
+    }
+    return pod_info->hostname();
   }
 };
 
@@ -278,7 +299,7 @@ class PodIDToServiceNameUDF : public ScalarUDF {
             absl::Substitute("$0/$1", service_info->ns(), service_info->name()));
       }
     }
-    return UPIDToK8S::StringifyVector(running_service_names);
+    return StringifyVector(running_service_names);
   }
 };
 
@@ -305,7 +326,7 @@ class PodIDToServiceIDUDF : public ScalarUDF {
         running_service_ids.push_back(service_id);
       }
     }
-    return UPIDToK8S::StringifyVector(running_service_ids);
+    return StringifyVector(running_service_ids);
   }
 };
 
@@ -342,7 +363,7 @@ class PodNameToServiceNameUDF : public ScalarUDF {
             absl::Substitute("$0/$1", service_info->ns(), service_info->name()));
       }
     }
-    return UPIDToK8S::StringifyVector(running_service_names);
+    return StringifyVector(running_service_names);
   }
 };
 
@@ -378,7 +399,7 @@ class PodNameToServiceIDUDF : public ScalarUDF {
         running_service_ids.push_back(service_id);
       }
     }
-    return UPIDToK8S::StringifyVector(running_service_ids);
+    return StringifyVector(running_service_ids);
   }
 };
 

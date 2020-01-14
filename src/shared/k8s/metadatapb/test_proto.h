@@ -34,6 +34,8 @@ namespace: "pl"
 start_timestamp_ns: 5
 container_ids: "pod1_container_1"
 qos_class: QOS_CLASS_GUARANTEED
+node_name: "test_node"
+hostname: "test_host"
 )";
 
 const char* kToBeTerminatedPodUpdatePbTxt = R"(
@@ -43,6 +45,8 @@ namespace: "pl"
 start_timestamp_ns: 10
 container_ids: "pod2_container_1"
 qos_class: QOS_CLASS_BEST_EFFORT
+node_name: "test_node_tbt"
+hostname: "test_host_tbt"
 )";
 
 const char* kTerminatedPodUpdatePbTxt = R"(

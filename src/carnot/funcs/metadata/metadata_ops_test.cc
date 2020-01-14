@@ -163,6 +163,40 @@ TEST_F(MetadataOpsTest, upid_to_service_name_test) {
   udf_tester.ForInput(upid2).Expect("");
 }
 
+TEST_F(MetadataOpsTest, upid_to_node_name_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto udf_tester = pl::carnot::udf::UDFTester<UPIDToNodeNameUDF>(std::move(function_ctx));
+  auto upid1 = types::UInt128Value(528280977975, 89101);
+  udf_tester.ForInput(upid1).Expect("test_node");
+  auto upid2 = types::UInt128Value(528280977975, 468);
+  udf_tester.ForInput(upid2).Expect("test_node_tbt");
+  auto upid3 = types::UInt128Value(528280977975, 123);
+  udf_tester.ForInput(upid3).Expect("");
+
+  updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               updates_.get()));
+  // upid2 previously was connected to pl/terminating_pod.
+  udf_tester.ForInput(upid2).Expect("");
+}
+
+TEST_F(MetadataOpsTest, upid_to_hostname_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto udf_tester = pl::carnot::udf::UDFTester<UPIDToHostnameUDF>(std::move(function_ctx));
+  auto upid1 = types::UInt128Value(528280977975, 89101);
+  udf_tester.ForInput(upid1).Expect("test_host");
+  auto upid2 = types::UInt128Value(528280977975, 468);
+  udf_tester.ForInput(upid2).Expect("test_host_tbt");
+  auto upid3 = types::UInt128Value(528280977975, 123);
+  udf_tester.ForInput(upid3).Expect("");
+
+  updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               updates_.get()));
+  // upid2 previously was connected to pl/terminating_pod.
+  udf_tester.ForInput(upid2).Expect("");
+}
+
 TEST_F(MetadataOpsTest, service_id_to_service_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   auto udf_tester = pl::carnot::udf::UDFTester<ServiceIDToServiceNameUDF>(std::move(function_ctx));
