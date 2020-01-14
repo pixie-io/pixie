@@ -144,10 +144,6 @@ func getNamespaceFromString(ns string) string {
 	return ns
 }
 
-func getEndpointsKey() string {
-	return path.Join("/", "endpoints") + "/"
-}
-
 func getEndpointKey(e *metadatapb.Endpoints) string {
 	return path.Join(getEndpointsKey(), getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
 }
@@ -243,10 +239,6 @@ func (mds *EtcdMetadataStore) GetServices() ([]*metadatapb.Service, error) {
 		services[i] = pb
 	}
 	return services, nil
-}
-
-func getPodsKey() string {
-	return path.Join("/", "pod") + "/"
 }
 
 func getPodKey(e *metadatapb.Pod) string {
@@ -413,14 +405,6 @@ func (mds *EtcdMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, er
 	return computedSchemaPb.Tables, nil
 }
 
-func getComputedSchemaKey(schemaName string) string {
-	return path.Join(getComputedSchemasKey(), schemaName)
-}
-
-func getComputedSchemasKey() string {
-	return path.Join("/", "computedSchema")
-}
-
 func getServicesKey() string {
 	return path.Join("/", "service") + "/"
 }
@@ -456,14 +440,6 @@ func GetKelvinAgentKey(agentID string) string {
 // GetUpdateKey gets the etcd key that the service should grab a lock on before updating any values in etcd.
 func GetUpdateKey() string {
 	return "/updateKey"
-}
-
-func getAsidKey() string {
-	return "/asid"
-}
-
-func getProcessKey(upid string) string {
-	return path.Join("/", "processes", upid)
 }
 
 func (mds *EtcdMetadataStore) updateValue(key string, value string, expire bool) error {

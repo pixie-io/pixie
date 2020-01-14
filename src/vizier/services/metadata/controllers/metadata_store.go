@@ -2,13 +2,20 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
+	"net"
 	"path"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
+	"pixielabs.ai/pixielabs/src/shared/k8s"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
@@ -55,6 +62,14 @@ func (mds *KVMetadataStore) SetClusterInfo(clusterInfo ClusterInfo) {
 
 /* ================= Keys =================*/
 
+func getAsidKey() string {
+	return "/asid"
+}
+
+func getAgentKeyPrefix() string {
+	return "/agent/"
+}
+
 // GetAgentKey gets the key for the agent.
 func getAgentKey(agentID uuid.UUID) string {
 	return path.Join("/", "agent", agentID.String())
@@ -73,6 +88,30 @@ func getKelvinAgentKey(agentID uuid.UUID) string {
 // GetAgentSchemasKey gets all schemas belonging to an agent.
 func getAgentSchemasKey(agentID uuid.UUID) string {
 	return path.Join("/", "agents", agentID.String(), "schema")
+}
+
+func getAgentSchemaKey(agentID uuid.UUID, schemaName string) string {
+	return path.Join(getAgentSchemasKey(agentID), schemaName)
+}
+
+func getComputedSchemasKey() string {
+	return path.Join("/", "computedSchema")
+}
+
+func getComputedSchemaKey(schemaName string) string {
+	return path.Join(getComputedSchemasKey(), schemaName)
+}
+
+func getProcessKey(upid string) string {
+	return path.Join("/", "processes", upid)
+}
+
+func getPodsKey() string {
+	return path.Join("/", "pod") + "/"
+}
+
+func getEndpointsKey() string {
+	return path.Join("/", "endpoints") + "/"
 }
 
 /* =============== Agent Operations ============== */
@@ -168,4 +207,200 @@ func (mds *KVMetadataStore) UpdateAgent(agentID uuid.UUID, a *agentpb.Agent) err
 
 	mds.cache.Set(getAgentKey(agentID), string(i))
 	return nil
+}
+
+// GetAgents gets all of the current active agents.
+func (mds *KVMetadataStore) GetAgents() ([]*agentpb.Agent, error) {
+	var agents []*agentpb.Agent
+
+	keys, vals, err := mds.cache.GetWithPrefix(getAgentKeyPrefix())
+	if err != nil {
+		return nil, err
+	}
+
+	for i, key := range keys {
+		// Filter out keys that aren't of the form /agent/<uuid>.
+		splitKey := strings.Split(string(key), "/")
+		if len(splitKey) != 3 {
+			continue
+		}
+
+		pb := &agentpb.Agent{}
+		proto.Unmarshal(vals[i], pb)
+		if len(pb.Info.AgentID.Data) > 0 {
+			agents = append(agents, pb)
+		}
+	}
+
+	return agents, nil
+}
+
+// GetASID gets the next assignable ASID.
+func (mds *KVMetadataStore) GetASID() (uint32, error) {
+	asid := "1" // Starting ASID.
+
+	resp, err := mds.cache.Get(getAsidKey())
+	if err != nil {
+		return 0, err
+	}
+	if resp != nil {
+		asid = string(resp)
+	}
+
+	// Convert ASID from etcd into uint32.
+	asidInt, err := strconv.ParseUint(asid, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	// Increment ASID in datastore.
+	updatedAsid := asidInt + 1
+	mds.cache.Set(getAsidKey(), fmt.Sprint(updatedAsid))
+
+	return uint32(asidInt), nil
+}
+
+/* =============== Schema Operations ============== */
+
+// UpdateSchemas updates the given schemas in the metadata store.
+func (mds *KVMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
+	computedSchemaPb := metadatapb.ComputedSchema{
+		Tables: schemas,
+	}
+	computedSchema, err := computedSchemaPb.Marshal()
+	if err != nil {
+		log.WithError(err).Error("Could not computed schema update message.")
+		return err
+	}
+
+	for _, schemaPb := range schemas {
+		schema, err := schemaPb.Marshal()
+		if err != nil {
+			log.WithError(err).Error("Could not marshall schema update message.")
+			continue
+		}
+		mds.cache.Set(getAgentSchemaKey(agentID, schemaPb.Name), string(schema))
+	}
+	// TODO(michelle): PL-695 This currently assumes that if a schema is available on one agent,
+	// then it is available on all agents. This should be updated so that we handle situations where that is not the case.
+	mds.cache.Set(getComputedSchemasKey(), string(computedSchema))
+
+	return nil
+}
+
+// GetComputedSchemas gets all computed schemas in the metadata store.
+func (mds *KVMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, error) {
+	cSchemas, err := mds.cache.Get(getComputedSchemasKey())
+	if err != nil {
+		return nil, err
+	}
+	if cSchemas == nil {
+		return nil, fmt.Errorf("Could not find any computed schemas")
+	}
+
+	computedSchemaPb := &metadatapb.ComputedSchema{}
+	err = proto.Unmarshal(cSchemas, computedSchemaPb)
+	if err != nil {
+		return nil, err
+	}
+
+	return computedSchemaPb.Tables, nil
+}
+
+/* =============== Process Operations ============== */
+
+// UpdateProcesses updates the given processes in the metadata store.
+func (mds *KVMetadataStore) UpdateProcesses(processes []*metadatapb.ProcessInfo) error {
+	for _, processPb := range processes {
+		process, err := processPb.Marshal()
+		if err != nil {
+			log.WithError(err).Error("Could not marshall processInfo.")
+			continue
+		}
+		upid := types.UInt128FromProto(processPb.UPID)
+		processKey := getProcessKey(k8s.StringFromUPID(upid))
+
+		if processPb.StopTimestampNS > 0 {
+			mds.cache.SetWithTTL(processKey, string(process), mds.expiryDuration)
+		} else {
+			mds.cache.Set(processKey, string(process))
+		}
+	}
+	return nil
+}
+
+// GetProcesses gets the process infos for the given process upids.
+func (mds *KVMetadataStore) GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error) {
+	processes := make([]*metadatapb.ProcessInfo, len(upids))
+
+	for i, upid := range upids {
+		process, err := mds.cache.Get(getProcessKey(k8s.StringFromUPID(upid)))
+		if err != nil {
+			return nil, err
+		}
+		if process == nil {
+			processes[i] = nil
+		} else {
+			processPb := metadatapb.ProcessInfo{}
+			if err := proto.Unmarshal(process, &processPb); err != nil {
+				log.WithError(err).Error("Could not unmarshal process pb.")
+				processes[i] = nil
+				continue
+			}
+			processes[i] = &processPb
+		}
+
+	}
+	return processes, nil
+}
+
+/* =============== Pod Operations ============== */
+
+// GetNodePods gets all pods belonging to a node in the metadata store.
+func (mds *KVMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getPodsKey())
+	if err != nil {
+		return nil, err
+	}
+
+	ip, _ := net.LookupIP(hostname)
+	ipStr := ""
+
+	if len(ip) > 0 {
+		ipStr = ip[0].String()
+	}
+
+	var pods []*metadatapb.Pod
+	for _, val := range vals {
+		pb := &metadatapb.Pod{}
+		proto.Unmarshal(val, pb)
+		if (pb.Status.HostIP == ipStr || hostname == "") && pb.Metadata.DeletionTimestampNS == 0 {
+			pods = append(pods, pb)
+		}
+	}
+	return pods, nil
+}
+
+/* =============== Endpoints Operations ============== */
+
+// GetNodeEndpoints gets all endpoints in the metadata store that belong to a particular hostname.
+func (mds *KVMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getEndpointsKey())
+	if err != nil {
+		return nil, err
+	}
+
+	var endpoints []*metadatapb.Endpoints
+	for _, val := range vals {
+		pb := &metadatapb.Endpoints{}
+		proto.Unmarshal(val, pb)
+		for _, subset := range pb.Subsets {
+			for _, address := range subset.Addresses {
+				if (address.NodeName == hostname || hostname == "") && pb.Metadata.DeletionTimestampNS == 0 {
+					endpoints = append(endpoints, pb)
+				}
+			}
+		}
+	}
+	return endpoints, nil
 }
