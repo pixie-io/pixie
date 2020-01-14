@@ -468,7 +468,8 @@ builders['Build & Test (gcc:opt)'] = {
 def dockerArgsForBPFTest = '--privileged --pid=host --volume /lib/modules:/lib/modules ' +
                            '--volume /usr/src:/usr/src --volume /sys:/sys'
 
-def bazelBaseArgsForBPFTest = 'bazel test --compilation_mode=opt --strategy=TestRunner=standalone'
+def bazelBaseArgsForBPFTest = 'bazel test --test_output=all --compilation_mode=opt ' +
+                              '--strategy=TestRunner=standalone'
 
 builders['Build & Test (bpf tests - opt)'] = {
   WithSourceCode {

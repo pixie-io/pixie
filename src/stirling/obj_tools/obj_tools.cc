@@ -85,19 +85,6 @@ pl::StatusOr<fs::path> ResolveMergedPath(fs::path proc_pid) {
 pl::StatusOr<fs::path> ResolveExe(fs::path proc_pid, fs::path host) {
   PL_ASSIGN_OR_RETURN(fs::path exe, utils::ReadSymlink(proc_pid/"exe"));
 
-  // TODO(PL-1297): This is needed to workaround PL-1297. host.empty() is used to instruct the code
-  // not to resolve 'merged' path.
-  //
-  // Use "target processes" to refer to the processes for which this code tries to resolve exe path.
-  // Target processes can be running inside the same container as this code. This is the setup of a
-  // Jenkins build. But for some unknown reason(s), the code cannot resolve the overlayFS path.
-  // See https://pixie-labs.atlassian.net/browse/PL-1297.
-  if (host.empty()) {
-    if (fs::exists(exe)) {
-      return exe;
-    }
-  }
-
   PL_ASSIGN_OR_RETURN(fs::path merged, ResolveMergedPath(proc_pid));
 
   // If we're running in a container, convert exe to be relative to host. As we mount host's '/'

@@ -219,7 +219,7 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPid(record_batch, c_.child_pid());
-  EXPECT_THAT(target_record_indices, Not(IsEmpty()));
+  EXPECT_THAT(target_record_indices, IsEmpty());
 
   // TODO(yzhao): We should have the same check on the trace record as
   // GRPCTraceGoTest.TestGolangGrpcService.
