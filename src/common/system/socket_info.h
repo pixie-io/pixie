@@ -30,7 +30,18 @@ struct SocketInfo {
  */
 class NetlinkSocketProber {
  public:
-  NetlinkSocketProber();
+  static StatusOr<std::unique_ptr<NetlinkSocketProber>> Create();
+
+  /**
+   * Create a socket prober within the network namespace of the provided PID.
+   * Note that this requires superuser privileges.
+   * Also note that this provides access to all connections within the network namespaces,
+   * not just those for provided PID; the PID is just a means of specifying the namespace.
+   *
+   * @param net_ns_pid PID from which the network namespace is used.
+   */
+  static StatusOr<std::unique_ptr<NetlinkSocketProber>> Create(int net_ns_pid);
+
   ~NetlinkSocketProber();
 
   /**
@@ -58,6 +69,10 @@ class NetlinkSocketProber {
                          int conn_states = kTCPEstablishedState);
 
  private:
+  NetlinkSocketProber() = default;
+
+  Status Connect();
+
   template <typename TDiagReqType>
   Status SendDiagReq(const TDiagReqType& msg_req);
 

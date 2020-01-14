@@ -102,7 +102,6 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   // TODO(yzhao): Is there a better place/time to grab the flags?
   http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
-  netlink_socket_prober_ = std::make_unique<system::NetlinkSocketProber>();
 
   ReqRespRole role_to_trace = kRoleRequestor;
   if (!FLAGS_stirling_role_to_trace.empty()) {
@@ -207,7 +206,10 @@ Status SocketTraceConnector::InitImpl() {
     LOG(INFO) << absl::Substitute("Writing output to: $0 in $1 format.", abs_path.string(), format);
   }
 
-  netlink_socket_prober_ = std::make_unique<system::NetlinkSocketProber>();
+  StatusOr<std::unique_ptr<system::NetlinkSocketProber>> s = system::NetlinkSocketProber::Create();
+  if (s.ok()) {
+    netlink_socket_prober_ = s.ConsumeValueOrDie();
+  }
 
   return Status::OK();
 }
@@ -221,6 +223,11 @@ Status SocketTraceConnector::StopImpl() {
 }
 
 void SocketTraceConnector::UpdateActiveConnections() {
+  if (netlink_socket_prober_ == nullptr) {
+    LOG(ERROR) << "Netlink socket prober not initialized";
+    return;
+  }
+
   // Grab a list of active connections, in case we need to infer the endpoints of any connections
   // with missing endpoints.
   // TODO(oazizi): Optimization is to skip this if we don't have any connection trackers with

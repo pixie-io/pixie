@@ -89,35 +89,17 @@ TEST_F(NetlinkSocketProberNamespaceTest, Basic) {
   }
 
   {
-    std::string orig_p = absl::StrCat(system::Config::GetInstance().proc_path(), "/self/ns/net");
-    int orig_fd = open(orig_p.c_str(), O_RDONLY);
-    ASSERT_GE(orig_fd, 0);
-
-    std::string p =
-        absl::StrCat(system::Config::GetInstance().proc_path(), "/", target_pid_, "/ns/net");
-    int fd = open(p.c_str(), O_RDONLY);
-    ASSERT_GE(fd, 0);
-
-    // Switch network namespaces, so socket prober sees the new network namespace.
-    ASSERT_EQ(setns(fd, 0), 0);
-    close(fd);
-
-    // NetlinkSocketProber must be instantiated after setns.
-    NetlinkSocketProber socket_prober;
+    NetlinkSocketProber socket_prober(target_pid_);
     std::map<int, SocketInfo> socket_info_entries;
     ASSERT_OK(socket_prober.InetConnections(&socket_info_entries,
                                             kTCPEstablishedState | kTCPListeningState));
     int num_conns = socket_info_entries.size();
-    EXPECT_EQ(num_conns, 1);
 
-    // Switch back to original network namespaces.
-    ASSERT_EQ(setns(orig_fd, 0), 0);
-    close(orig_fd);
+    EXPECT_EQ(num_conns, 1);
   }
 
   {
     NetlinkSocketProber socket_prober;
-
     std::map<int, SocketInfo> socket_info_entries;
     ASSERT_OK(socket_prober.InetConnections(&socket_info_entries,
                                             kTCPEstablishedState | kTCPListeningState));

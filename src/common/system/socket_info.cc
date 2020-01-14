@@ -1,6 +1,7 @@
 #include "src/common/system/socket_info.h"
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <linux/in6.h>
 #include <linux/inet_diag.h>
 #include <linux/netlink.h>
@@ -9,6 +10,8 @@
 #include <linux/unix_diag.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
 
@@ -16,20 +19,61 @@
 #include <cstdio>
 #include <cstring>
 
+#include <string>
 #include <utility>
 
 #include "src/common/base/base.h"
+#include "src/common/system/system.h"
 
 namespace pl {
 namespace system {
 
-NetlinkSocketProber::NetlinkSocketProber() {
+Status NetlinkSocketProber::Connect() {
   fd_ = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_SOCK_DIAG);
   if (fd_ < 0) {
-    LOG(DFATAL) << absl::Substitute("Could not create NETLINK_SOCK_DIAG connection. [errno=$0]",
-                                    errno);
-    return;
+    return error::Internal("Could not create NETLINK_SOCK_DIAG connection. [errno=$0]", errno);
   }
+  return Status::OK();
+}
+
+StatusOr<std::unique_ptr<NetlinkSocketProber>> NetlinkSocketProber::Create() {
+  auto socket_prober_ptr = std::unique_ptr<NetlinkSocketProber>(new NetlinkSocketProber);
+  PL_RETURN_IF_ERROR(socket_prober_ptr->Connect());
+  return socket_prober_ptr;
+}
+
+StatusOr<std::unique_ptr<NetlinkSocketProber>> NetlinkSocketProber::Create(int net_ns_pid) {
+  std::string orig_net_ns_path =
+      absl::StrCat(system::Config::GetInstance().proc_path(), "/self/ns/net");
+  int orig_net_ns_fd = open(orig_net_ns_path.c_str(), O_RDONLY);
+  if (orig_net_ns_fd < 0) {
+    return error::Internal("Could not save network namespace [path=$0]", orig_net_ns_path);
+  }
+  DEFER(close(orig_net_ns_fd););
+
+  std::string net_ns_path =
+      absl::StrCat(system::Config::GetInstance().proc_path(), "/", net_ns_pid, "/ns/net");
+  int net_ns_fd = open(net_ns_path.c_str(), O_RDONLY);
+  if (net_ns_fd < 0) {
+    return error::Internal(
+        "Could not create SocketProber in the network namespace of PID $0 [path=$1]", net_ns_pid,
+        net_ns_path);
+  }
+  DEFER(close(net_ns_fd););
+
+  // Switch network namespaces, so socket prober connects to the target network namespace.
+  int retval = setns(net_ns_fd, 0);
+  if (retval != 0) {
+    return error::Internal("Could not change to network namespace of PID $0 [errno=$1]", net_ns_pid,
+                           errno);
+  }
+
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<NetlinkSocketProber> socket_prober_ptr, Create());
+
+  // Switch back to original network namespace.
+  ECHECK_EQ(setns(orig_net_ns_fd, 0), 0) << "Could not restore network namespace.";
+
+  return socket_prober_ptr;
 }
 
 NetlinkSocketProber::~NetlinkSocketProber() {
