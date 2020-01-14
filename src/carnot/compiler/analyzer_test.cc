@@ -463,7 +463,7 @@ TEST_F(AnalyzerTest, non_float_columns) {
   EXPECT_OK(handle_status);
 }
 
-TEST_F(AnalyzerTest, assign_udf_func_ids) {
+TEST_F(AnalyzerTest, assign_udf_func_ids_consolidated_maps) {
   std::string chain_operators = absl::StrJoin(
       {"queryDF = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
        "start_time=0, end_time=10)",
@@ -478,18 +478,12 @@ TEST_F(AnalyzerTest, assign_udf_func_ids) {
   EXPECT_OK(handle_status);
 
   std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
-  EXPECT_EQ(map_nodes.size(), 4);
+  EXPECT_EQ(map_nodes.size(), 2);
   auto map_node = static_cast<MapIR*>(map_nodes[0]);
-  auto func_node = static_cast<FuncIR*>(map_node->col_exprs()[3].node);
-  EXPECT_EQ(0, func_node->func_id());
 
-  map_node = static_cast<MapIR*>(map_nodes[1]);
-  func_node = static_cast<FuncIR*>(map_node->col_exprs()[4].node);
-  EXPECT_EQ(1, func_node->func_id());
-
-  map_node = static_cast<MapIR*>(map_nodes[2]);
-  func_node = static_cast<FuncIR*>(map_node->col_exprs()[5].node);
-  EXPECT_EQ(1, func_node->func_id());
+  EXPECT_EQ(0, static_cast<FuncIR*>(map_node->col_exprs()[3].node)->func_id());
+  EXPECT_EQ(1, static_cast<FuncIR*>(map_node->col_exprs()[4].node)->func_id());
+  EXPECT_EQ(1, static_cast<FuncIR*>(map_node->col_exprs()[5].node)->func_id());
 }
 
 TEST_F(AnalyzerTest, assign_uda_func_ids) {

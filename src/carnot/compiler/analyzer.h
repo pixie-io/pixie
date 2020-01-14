@@ -59,6 +59,11 @@ class Analyzer : public RuleExecutor {
     intermediate_resolution_batch->AddRule<SetMemSourceNsTimesRule>();
   }
 
+  void CreateCombineConsecutiveMapsRule() {
+    RuleBatch* consecutive_maps = CreateRuleBatch<FailOnMax>("CombineConsecutiveMapsRule", 2);
+    consecutive_maps->AddRule<CombineConsecutiveMapsRule>();
+  }
+
   void CreateDataTypeResolutionBatch() {
     RuleBatch* intermediate_resolution_batch =
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
@@ -85,8 +90,7 @@ class Analyzer : public RuleExecutor {
     CreateVerifyUserDefinedColumnsBatch();
     CreateUniqueSinkNamesBatch();
     CreateOperatorCompileTimeExpressionRuleBatch();
-    // TODO(nserrino): Add rule to consolidate consecutive maps here before OperatorRelationRule
-    // executes.
+    CreateCombineConsecutiveMapsRule();
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();
