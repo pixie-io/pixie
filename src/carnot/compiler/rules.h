@@ -486,6 +486,14 @@ class NestedBlockingAggFnCheckRule : public Rule {
   Status CheckExpression(const ColumnExpression& col_expr);
 };
 
+class ResolveColumnIndexRule : public Rule {
+ public:
+  ResolveColumnIndexRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+};
+
 /**
  * @brief This class supports running an IR graph rule (independently) over each IR graph of a
  * DistributedPlan. This is distinct from other DistributedRules, which may modify the

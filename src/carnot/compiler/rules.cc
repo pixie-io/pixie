@@ -89,9 +89,7 @@ Status DataTypeRule::EvaluateColumnFromRelation(ColumnIR* column, const Relation
     return column->CreateIRNodeError("Column '$0' not found in parent dataframe",
                                      column->col_name());
   }
-  types::DataType col_type = relation.GetColumnType(column->col_name());
-  int64_t col_idx = relation.GetColumnIndex(column->col_name());
-  column->ResolveColumn(col_idx, col_type);
+  column->ResolveColumnType(relation);
   return Status::OK();
 }
 
@@ -168,10 +166,12 @@ StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
   // iterates through the columns, finds their relation position,
   // then create columns with index and type.
   for (const auto& col_name : col_names) {
-    int64_t i = relation.GetColumnIndex(col_name);
+    if (!relation.HasColumn(col_name)) {
+      return node->CreateIRNodeError("Column '$0' not found in parent dataframe", col_name);
+    }
     PL_ASSIGN_OR_RETURN(auto col_node, graph->CreateNode<ColumnIR>(node->ast_node(), col_name,
                                                                    /*parent_op_idx*/ 0));
-    col_node->ResolveColumn(i, relation.GetColumnType(i));
+    col_node->ResolveColumnType(relation);
     result.push_back(col_node);
   }
   return result;
@@ -432,8 +432,7 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
       PL_ASSIGN_OR_RETURN(ColumnIR * col_ir,
                           map_ir->graph_ptr()->CreateNode<ColumnIR>(
                               map_ir->ast_node(), input_col_name, 0 /*parent_op_idx*/));
-      col_ir->ResolveColumn(output_expressions.size(),
-                            parent_relation.GetColumnType(input_col_name));
+      col_ir->ResolveColumnType(parent_relation);
       output_expressions.push_back(ColumnExpression(input_col_name, col_ir));
     }
 
@@ -1011,7 +1010,7 @@ Status MetadataResolverConversionRule::CopyParentColumns(IR* graph, OperatorIR* 
     // Parent operator index is 0 because there is only 1 parent.
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir,
                         graph->CreateNode<ColumnIR>(ast_node, column_name, /*parent_op_idx*/ 0));
-    column_ir->ResolveColumn(i, parent_relation.GetColumnType(i));
+    column_ir->ResolveColumnType(parent_relation);
     col_exprs->emplace_back(column_name, column_ir);
   }
   return Status::OK();
@@ -1034,12 +1033,10 @@ Status MetadataResolverConversionRule::AddMetadataConversionFns(
     PL_ASSIGN_OR_RETURN(
         ColumnIR * column_ir,
         graph->CreateNode<ColumnIR>(md_resolver->ast_node(), key_column, /*parent_op_idx*/ 0));
-    int64_t parent_relation_idx = parent_relation.GetColumnIndex(key_column);
     PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column));
-    column_ir->ResolveColumn(parent_relation_idx, md_property->column_type());
+    column_ir->ResolveColumnType(md_property->column_type());
 
-    std::vector<types::DataType> children_data_types = {
-        parent_relation.GetColumnType(parent_relation_idx)};
+    std::vector<types::DataType> children_data_types = {parent_relation.GetColumnType(key_column)};
     PL_ASSIGN_OR_RETURN(FuncIR * conversion_func,
                         graph->CreateNode<FuncIR>(md_resolver->ast_node(),
                                                   FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
@@ -1141,15 +1138,14 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
   }
 
   ColExpressionVector col_exprs;
-  for (size_t i = 0; i < parent_relation.NumColumns(); ++i) {
-    auto input_col_name = parent_relation.GetColumnName(i);
+  for (const auto& input_col_name : parent_relation.col_names()) {
     if (dropped_columns.contains(input_col_name)) {
       continue;
     }
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir,
                         ir_graph->CreateNode<ColumnIR>(drop_ir->ast_node(), input_col_name,
                                                        /*parent_op_idx*/ 0));
-    column_ir->ResolveColumn(i, parent_relation.GetColumnType(i));
+    column_ir->ResolveColumnType(parent_relation);
     col_exprs.emplace_back(input_col_name, column_ir);
   }
 
@@ -1402,6 +1398,31 @@ Status NestedBlockingAggFnCheckRule::CheckExpression(const ColumnExpression& exp
   }
 
   return Status::OK();
+}
+
+StatusOr<bool> ResolveColumnIndexRule::Apply(IRNode* ir_node) {
+  if (!Match(ir_node, ColumnNode())) {
+    return false;
+  }
+  ColumnIR* col = static_cast<ColumnIR*>(ir_node);
+  if (col->is_col_idx_set()) {
+    return false;
+  }
+  // TODO(nserrino, philkuz): Add more cleanup for orphan nodes so that checks like this aren't
+  // necessary.
+  PL_ASSIGN_OR_RETURN(auto containing_ops, col->ContainingOperators());
+  if (!containing_ops.size()) {
+    return false;
+  }
+  PL_ASSIGN_OR_RETURN(OperatorIR * referenced_op, col->ReferencedOperator());
+  DCHECK(referenced_op->IsRelationInit());
+  Relation relation = referenced_op->relation();
+  if (!relation.HasColumn(col->col_name())) {
+    return col->CreateIRNodeError("Column '$0' does not exist in relation $1", col->col_name(),
+                                  relation.DebugString());
+  }
+  col->ResolveColumnIndex(relation);
+  return true;
 }
 
 }  // namespace compiler

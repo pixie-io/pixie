@@ -84,6 +84,11 @@ class Analyzer : public RuleExecutor<IR> {
     remove_ir_only_nodes_batch->AddRule<RemoveGroupByRule>();
   }
 
+  void CreateResolveColumnIndexBatch() {
+    RuleBatch* resolve_column_index_batch = CreateRuleBatch<FailOnMax>("ResolveColumnIndex", 2);
+    resolve_column_index_batch->AddRule<ResolveColumnIndexRule>();
+  }
+
   Status Init() {
     md_handler_ = MetadataHandler::Create();
     CreateSourceAndMetadataResolutionBatch();
@@ -94,6 +99,7 @@ class Analyzer : public RuleExecutor<IR> {
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();
+    CreateResolveColumnIndexBatch();
     return Status::OK();
   }
 

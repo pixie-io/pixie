@@ -581,6 +581,7 @@ Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {
 }
 
 Status ColumnIR::ToProto(planpb::Column* column_pb) const {
+  DCHECK(is_col_idx_set()) << absl::Substitute("Column index for '$0' is not set", col_name_);
   PL_ASSIGN_OR_RETURN(int64_t ref_op_id, ReferenceID());
   column_pb->set_node(ref_op_id);
   column_pb->set_index(col_idx());
@@ -872,6 +873,7 @@ Status ColumnIR::CopyFromNode(const IRNode* source,
   col_idx_ = column->col_idx_;
   evaluated_data_type_ = column->evaluated_data_type_;
   is_data_type_evaluated_ = column->is_data_type_evaluated_;
+  is_col_idx_set_ = column->is_col_idx_set_;
   container_op_parent_idx_ = column->container_op_parent_idx_;
   container_op_parent_idx_set_ = column->container_op_parent_idx_set_;
   return Status::OK();

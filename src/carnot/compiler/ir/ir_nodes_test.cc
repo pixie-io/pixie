@@ -286,7 +286,8 @@ TEST(ToProto, map_ir) {
   auto graph = std::make_shared<IR>();
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "col4", /*parent_op_idx*/ 0).ValueOrDie();
-  col->ResolveColumn(4, types::INT64);
+  col->ResolveColumnType(types::INT64);
+  col->ResolveColumnIndex(4);
   auto func = graph
                   ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
                                        std::vector<ExpressionIR*>({constant, col}))
@@ -345,7 +346,8 @@ TEST(ToProto, agg_ir) {
       graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "column", /*parent_op_idx*/ 0).ValueOrDie();
-  col->ResolveColumn(4, types::INT64);
+  col->ResolveColumnType(types::INT64);
+  col->ResolveColumnIndex(4);
 
   auto agg_func = graph
                       ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
@@ -353,7 +355,8 @@ TEST(ToProto, agg_ir) {
                       .ValueOrDie();
 
   auto group1 = graph->CreateNode<ColumnIR>(ast, "group1", /*parent_op_idx*/ 0).ValueOrDie();
-  group1->ResolveColumn(1, types::INT64);
+  group1->ResolveColumnType(types::INT64);
+  group1->ResolveColumnIndex(1);
 
   auto agg = graph
                  ->CreateNode<BlockingAggIR>(ast, mem_src, std::vector<ColumnIR*>{group1},
@@ -548,7 +551,8 @@ TEST(ToProto, column_tests) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto column = graph->CreateNode<ColumnIR>(ast, "column", 0).ConsumeValueOrDie();
-  column->ResolveColumn(123, types::INT64);
+  column->ResolveColumnType(types::INT64);
+  column->ResolveColumnIndex(123);
 
   auto mem_src = graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{})
                      .ConsumeValueOrDie();

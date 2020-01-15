@@ -679,10 +679,23 @@ class ColumnIR : public ExpressionIR {
   std::string col_name() const { return col_name_; }
 
   bool IsColumn() const override { return true; }
-  void ResolveColumn(int64_t col_idx, types::DataType type) {
-    col_idx_ = col_idx;
+
+  void ResolveColumnType(types::DataType type) {
     evaluated_data_type_ = type;
     is_data_type_evaluated_ = true;
+  }
+
+  void ResolveColumnType(const table_store::schema::Relation& relation) {
+    ResolveColumnType(relation.GetColumnType(col_name_));
+  }
+
+  void ResolveColumnIndex(int64_t index) {
+    col_idx_ = index;
+    is_col_idx_set_ = true;
+  }
+
+  void ResolveColumnIndex(const table_store::schema::Relation& relation) {
+    ResolveColumnIndex(relation.GetColumnIndex(col_name_));
   }
 
   /**
@@ -712,6 +725,8 @@ class ColumnIR : public ExpressionIR {
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
 
   int64_t col_idx() const { return col_idx_; }
+  bool is_col_idx_set() const { return is_col_idx_set_; }
+
   int64_t container_op_parent_idx() const { return container_op_parent_idx_; }
   bool container_op_parent_idx_set() const { return container_op_parent_idx_set_; }
 
@@ -764,6 +779,7 @@ class ColumnIR : public ExpressionIR {
   int64_t col_idx_;
   types::DataType evaluated_data_type_;
   bool is_data_type_evaluated_ = false;
+  bool is_col_idx_set_ = false;
 
   int64_t container_op_parent_idx_ = -1;
   bool container_op_parent_idx_set_ = false;

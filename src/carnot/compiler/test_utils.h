@@ -427,7 +427,8 @@ class OperatorTests : public ::testing::Test {
   ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx,
                        const table_store::schema::Relation& relation) {
     ColumnIR* column = MakeColumn(name, parent_op_idx);
-    column->ResolveColumn(relation.GetColumnIndex(name), relation.GetColumnType(name));
+    column->ResolveColumnType(relation);
+    column->ResolveColumnIndex(relation);
     return column;
   }
 

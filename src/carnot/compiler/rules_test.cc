@@ -418,7 +418,7 @@ class BlockingAggRuleTest : public RulesTest {
     auto group = MakeColumn(group_name, /* parent_op_idx */ 0);
     // Code to resolve column.
     if (resolve_agg_group) {
-      group->ResolveColumn(1, group_data_type);
+      group->ResolveColumnType(group_data_type);
     }
 
     agg = graph
