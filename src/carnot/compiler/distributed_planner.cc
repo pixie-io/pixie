@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "src/carnot/compiler/ast_visitor.h"
+#include "src/carnot/compiler/distributed_analyzer.h"
 #include "src/carnot/compiler/distributed_coordinator.h"
 #include "src/carnot/compiler/distributed_planner.h"
 #include "src/carnot/compiler/distributed_stitcher.h"
@@ -31,6 +32,9 @@ StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
   PL_ASSIGN_OR_RETURN(std::unique_ptr<DistributedPlan> distributed_plan,
                       coordinator->Coordinate(logical_plan));
   PL_RETURN_IF_ERROR(stitcher->Stitch(distributed_plan.get()));
+
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<DistributedAnalyzer> analyzer, DistributedAnalyzer::Create());
+  PL_RETURN_IF_ERROR(analyzer->Execute(distributed_plan.get()));
 
   return distributed_plan;
 }
