@@ -211,7 +211,8 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithPara
   }
 };
 
-TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
+// TODO(PL-1297): Fix the bug and re-enable this test.
+TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
   // Give some time for the client to execute and produce data into perf buffers.
   sleep(2);
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
@@ -219,7 +220,7 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPid(record_batch, c_.child_pid());
-  EXPECT_THAT(target_record_indices, IsEmpty());
+  EXPECT_THAT(target_record_indices, Not(IsEmpty()));
 
   // TODO(yzhao): We should have the same check on the trace record as
   // GRPCTraceGoTest.TestGolangGrpcService.
