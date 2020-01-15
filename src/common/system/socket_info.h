@@ -45,7 +45,7 @@ class NetlinkSocketProber {
   ~NetlinkSocketProber();
 
   /**
-   * Finds IPv4 or IPv6 TCP connections in the established state.
+   * Finds IPv4 or IPv6 TCP connections.
    *
    * @param socket_info_entries map of inode to SocketInfoEntry that will be populated with
    * established connections.
@@ -57,7 +57,7 @@ class NetlinkSocketProber {
                          int conn_states = kTCPEstablishedState);
 
   /**
-   * Finds Unix domain socket connections in the established state.
+   * Finds Unix domain socket connections.
    *
    * @param socket_info_entries map of inode to SocketInfoEntry that will be populated with
    * established connections.

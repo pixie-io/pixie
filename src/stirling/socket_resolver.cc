@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "src/common/base/base.h"
+#include "src/common/fs/inode_utils.h"
 
 namespace pl {
 namespace stirling {
@@ -32,32 +33,6 @@ bool SocketResolver::Setup() {
   return true;
 }
 
-namespace {
-
-// Extract the inode number from a string that looks like the following: "socket:[32431]"
-StatusOr<int> ExtractInodeNum(std::string_view fd_link) {
-  constexpr std::string_view kSocketPrefix = ConstStringView("socket:");
-  if (!absl::StartsWith(fd_link, kSocketPrefix)) {
-    return error::Internal("Can't infer remote endpoint. FD does not appear to be a socket");
-  }
-
-  fd_link.remove_prefix(kSocketPrefix.size());
-  if (fd_link.empty() || fd_link.front() != '[' || fd_link.back() != ']') {
-    return error::Internal("Can't infer remote endpoint. Malformed socket inode.");
-  }
-  fd_link.remove_prefix(1);
-  fd_link.remove_suffix(1);
-
-  int inode_num;
-  if (!absl::SimpleAtoi(fd_link, &inode_num)) {
-    return error::Internal("Can't infer remote endpoint. Could not parse socket inode.");
-  }
-
-  return inode_num;
-}
-
-}  // namespace
-
 bool SocketResolver::Update() {
   ECHECK(active_) << "SocketResolver must be in active state.";
   ECHECK(!first_fd_link_.empty()) << "Candidate FD link should not be empty";
@@ -84,7 +59,7 @@ bool SocketResolver::Update() {
 
   // At this point we have something like "socket:[32431]"
   // Next we extract the inode number.
-  auto status_or_inode_num = ExtractInodeNum(current_fd_link);
+  auto status_or_inode_num = fs::ExtractInodeNum(fs::kSocketInodePrefix, current_fd_link);
   if (!status_or_inode_num.ok()) {
     VLOG(2) << absl::Substitute(
         "Can't infer remote endpoint. Could not extract Inode number. Message=$0.", s.msg());

@@ -27,6 +27,7 @@ pl_cc_library(
         "//src/shared/types/proto:types_pl_cc_proto",
         "//src/common/grpcutils:cc_library",
         "//src/common/protobufs:cc_library",
+        "//src/common/fs:cc_library",
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
@@ -102,9 +103,9 @@ pl_cc_test(
 pl_cc_test(
     name = "stirling_bpf_test",
     srcs = ["stirling_bpf_test.cc"],
+    flaky = True,
     tags = ["requires_bpf"],
     deps = [":cc_library"],
-    flaky = True,
 )
 
 cc_image(
@@ -125,11 +126,11 @@ container_push(
 pl_cc_test(
     name = "socket_trace_connector_test",
     srcs = ["socket_trace_connector_test.cc"],
+    flaky = True,
     deps = [
         ":cc_library",
         "//src/stirling/testing:cc_library",
     ],
-    flaky = True,
 )
 
 pl_cc_test(
@@ -182,13 +183,13 @@ pl_cc_test(
         "//src/stirling/http/testing/go_http_client",
         "//src/stirling/http/testing/go_http_server",
     ],
+    flaky = True,
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/stirling/testing:cc_library",
     ],
-    flaky = True,
 )
 
 pl_cc_test(
