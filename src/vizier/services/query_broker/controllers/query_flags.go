@@ -16,9 +16,8 @@ const plConfigPrefix = "#pl:set "
 // Default values for config flags. If a flag is not included in this map,
 // it is not considered a valid flag that can be set.
 var defaultQueryFlags = map[string]interface{}{
-	"distributed_query": true,
-	"explain":           false,
-	"analyze":           false,
+	"explain": false,
+	"analyze": false,
 }
 
 // QueryFlags represents a set of Pixie configuration flags.
@@ -104,9 +103,8 @@ func (f *QueryFlags) set(key string, value string) error {
 // GetPlanOptions creates the plan option proto from the specified query flags.
 func (f *QueryFlags) GetPlanOptions() *planpb.PlanOptions {
 	return &planpb.PlanOptions{
-		Distributed: f.GetBool("distributed_query"),
-		Explain:     f.GetBool("explain"),
-		Analyze:     f.GetBool("analyze"),
+		Explain: f.GetBool("explain"),
+		Analyze: f.GetBool("analyze"),
 	}
 }
 

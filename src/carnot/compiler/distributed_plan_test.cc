@@ -110,7 +110,6 @@ qb_address_to_plan {
     plan_options {
       analyze: true
       explain: true
-      distributed: false
     }
     dag {
       nodes {

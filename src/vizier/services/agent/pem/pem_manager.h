@@ -24,13 +24,13 @@ class PEMManager : public Manager {
 
  protected:
   PEMManager() = delete;
-  PEMManager(sole::uuid agent_id, std::string_view nats_url, std::string_view qb_url)
-      : PEMManager(agent_id, nats_url, qb_url,
+  PEMManager(sole::uuid agent_id, std::string_view nats_url)
+      : PEMManager(agent_id, nats_url,
                    pl::stirling::Stirling::Create(pl::stirling::CreateProdSourceRegistry())) {}
 
-  PEMManager(sole::uuid agent_id, std::string_view nats_url, std::string_view qb_url,
+  PEMManager(sole::uuid agent_id, std::string_view nats_url,
              std::unique_ptr<stirling::Stirling> stirling)
-      : Manager(agent_id, /*grpc_server_port*/ 0, PEMManager::Capabilities(), nats_url, qb_url,
+      : Manager(agent_id, /*grpc_server_port*/ 0, PEMManager::Capabilities(), nats_url,
                 /*mds_url*/ ""),
         stirling_(std::move(stirling)) {}
 

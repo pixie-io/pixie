@@ -45,7 +45,7 @@ type Server struct {
 	env         querybrokerenv.QueryBrokerEnv
 	mdsClient   metadatapb.MetadataServiceClient
 	natsConn    *nats.Conn
-	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID, bool) Executor
+	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID) Executor
 	executors   map[uuid.UUID]Executor
 	// Mutex is used for managing query executor instances.
 	mux sync.Mutex
@@ -59,7 +59,7 @@ func NewServer(env querybrokerenv.QueryBrokerEnv, mdsClient metadatapb.MetadataS
 func newServer(env querybrokerenv.QueryBrokerEnv,
 	mdsClient metadatapb.MetadataServiceClient,
 	natsConn *nats.Conn,
-	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID, bool) Executor) (*Server, error) {
+	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID) Executor) (*Server, error) {
 
 	return &Server{
 		env:         env,
@@ -223,7 +223,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb
 		pemIDs[i] = utils.UUIDFromProtoOrNil(p.Info.AgentID)
 	}
 
-	queryExecutor := s.newExecutor(s.natsConn, queryID, &pemIDs, planOpts.Distributed)
+	queryExecutor := s.newExecutor(s.natsConn, queryID, &pemIDs)
 
 	s.trackExecutorForQuery(queryExecutor)
 
@@ -254,9 +254,7 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 	}
 	planOpts := flags.GetPlanOptions()
 
-	distributed := flags.GetBool("distributed_query")
-
-	planner := logicalplanner.New(distributed)
+	planner := logicalplanner.New(true)
 	defer planner.Free()
 	return s.ExecuteQueryWithPlanner(ctx, req, planner, planOpts)
 }

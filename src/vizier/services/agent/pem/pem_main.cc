@@ -13,10 +13,6 @@
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
               "The host address of the nats cluster");
 
-DEFINE_string(query_broker_addr,
-              gflags::StringFromEnv("PL_QUERY_BROKER_ADDR", "vizier-query-broker.pl.svc:50300"),
-              "The host address of Query Broker");
-
 using ::pl::stirling::Stirling;
 using ::pl::vizier::agent::Manager;
 using ::pl::vizier::agent::PEMManager;
@@ -51,8 +47,7 @@ int main(int argc, char** argv) {
   LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1", pl::VersionInfo::VersionString(),
                                 agent_id.str());
 
-  auto manager =
-      PEMManager::Create(agent_id, FLAGS_nats_url, FLAGS_query_broker_addr).ConsumeValueOrDie();
+  auto manager = PEMManager::Create(agent_id, FLAGS_nats_url).ConsumeValueOrDie();
 
   err_handler.set_manager(manager.get());
 

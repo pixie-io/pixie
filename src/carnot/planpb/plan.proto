@@ -8,13 +8,14 @@ package pl.carnot.planpb;
 option go_package = "planpb";
 
 message PlanOptions {
-  // Whether or not the plan is a distributed plan.
-  bool distributed = 1;
   // Show the execution plan for the given query without executing the query.
   bool explain = 2;
   // Execute the query and show the execution plan for the query, along with
   // query execution metrics.
   bool analyze = 3;
+
+  // Reserved for prior fields (distributed).
+  reserved 1;
 }
 
 // The plan is composed of multiple fragments which each

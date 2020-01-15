@@ -84,7 +84,7 @@ func TestExecuteQuery(t *testing.T) {
 		agentUUIDs = append(agentUUIDs, u)
 	}
 
-	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs, false)
+	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs)
 
 	// Subscribe to each agent channel.
 	sub1, err := nc.SubscribeSync(fmt.Sprintf("/agent/%s", agentUUIDStrs[0]))
@@ -163,7 +163,7 @@ func TestWaitForCompletion(t *testing.T) {
 		agentUUIDs = append(agentUUIDs, u)
 	}
 
-	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs, false)
+	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs)
 
 	// Add agent results.
 	res := new(querybrokerpb.AgentQueryResultRequest)
@@ -213,7 +213,7 @@ func TestWaitForCompletionTimeout(t *testing.T) {
 		agentUUIDs = append(agentUUIDs, u)
 	}
 
-	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs, false)
+	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs)
 
 	// Add agent results.
 	res := new(querybrokerpb.AgentQueryResultRequest)

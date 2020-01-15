@@ -34,15 +34,14 @@ using ::pl::event::Dispatcher;
 
 Manager::Manager(sole::uuid agent_id, int grpc_server_port,
                  services::shared::agent::AgentCapabilities capabilities, std::string_view nats_url,
-                 std::string_view qb_url, std::string_view mds_url)
-    : Manager(agent_id, grpc_server_port, std::move(capabilities), qb_url, mds_url,
+                 std::string_view mds_url)
+    : Manager(agent_id, grpc_server_port, std::move(capabilities), mds_url,
               Manager::CreateDefaultNATSConnector(agent_id, nats_url)) {}
 
 Manager::Manager(sole::uuid agent_id, int grpc_server_port,
-                 services::shared::agent::AgentCapabilities capabilities, std::string_view qb_url,
-                 std::string_view mds_url, std::unique_ptr<VizierNATSConnector> nats_connector)
+                 services::shared::agent::AgentCapabilities capabilities, std::string_view mds_url,
+                 std::unique_ptr<VizierNATSConnector> nats_connector)
     : grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
-      qb_stub_(Manager::CreateDefaultQueryBrokerStub(qb_url, grpc_channel_creds_)),
       time_system_(std::make_unique<pl::event::RealTimeSystem>()),
       api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
@@ -170,11 +169,6 @@ Status Manager::RegisterBackgroundHelpers() {
   PL_CHECK_OK(
       RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatNack, heartbeat_handler));
 
-  auto execute_query_handler = std::make_shared<ExecuteQueryMessageHandler>(
-      dispatcher_.get(), &info_, nats_connector_.get(), qb_stub_, carnot_.get());
-  PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
-                                     execute_query_handler));
-
   return Status::OK();
 }
 
@@ -259,22 +253,6 @@ std::unique_ptr<Manager::VizierNATSConnector> Manager::CreateDefaultNATSConnecto
 
   return std::make_unique<Manager::VizierNATSConnector>(nats_url, "update_agent" /*pub_topic*/,
                                                         agent_sub_topic, std::move(tls_config));
-}
-
-Manager::QueryBrokerServiceSPtr Manager::CreateDefaultQueryBrokerStub(
-    std::string_view query_broker_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
-  // We need to move the channel here since gRPC mocking is done by the stub.
-  auto chan = grpc::CreateChannel(std::string(query_broker_addr), channel_creds);
-  // Try to connect to the query broker.
-  grpc_connectivity_state state = chan->GetState(true);
-  while (state != grpc_connectivity_state::GRPC_CHANNEL_READY) {
-    LOG(ERROR) << "Failed to connect to query broker at: " << query_broker_addr;
-    // Do a small sleep to avoid busy loop.
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    state = chan->GetState(true);
-  }
-  LOG(INFO) << "Connected to query broker at: " << query_broker_addr;
-  return std::make_shared<Manager::QueryBrokerService::Stub>(chan);
 }
 
 Manager::MDSServiceSPtr Manager::CreateDefaultMDSStub(

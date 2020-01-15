@@ -8,7 +8,6 @@ import (
 )
 
 const validQueryWithFlag = `
-#pl:set distributed_query=true
 #pl:set analyze=true
 
 t1 = dataframe(table='http_events').range(start='-30s')
@@ -29,11 +28,11 @@ t1['range_group'] = pl.subtract(t1['time_'], pl.modulo(t1['time_'], 1000000000))
 `
 
 const invalidFlag1 = `
-#pl:set distributed_query=true extra
+#pl:set analyze=true extra
 `
 
 const invalidFlag2 = `
-#pl:set distributed_query,true
+#pl:set analyze,true
 `
 
 const nonexistentFlag = `
@@ -46,7 +45,7 @@ func TestParseQueryFlags_WithFlag(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, qf)
 
-	val := qf.GetBool("distributed_query")
+	val := qf.GetBool("analyze")
 	assert.Equal(t, true, val)
 
 	val = qf.GetBool("invalid_key")
@@ -59,8 +58,8 @@ func TestParseQueryFlags_NoFlag(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, qf)
 
-	val := qf.GetBool("distributed_query")
-	assert.Equal(t, true, val)
+	val := qf.GetBool("analyze")
+	assert.Equal(t, false, val)
 
 	val = qf.GetBool("invalid_key")
 	assert.Equal(t, false, val)
@@ -87,7 +86,6 @@ func TestParseQueryFlags_PlanOptions(t *testing.T) {
 	assert.NotNil(t, qf)
 
 	options := qf.GetPlanOptions()
-	assert.Equal(t, options.Distributed, true)
 	assert.Equal(t, options.Explain, false)
 	assert.Equal(t, options.Analyze, true)
 }

@@ -80,7 +80,6 @@ distributed_state: {
   }
 }
 plan_options: {
-	distributed: false
 	explain: false
 	analyze: false
 }
@@ -106,7 +105,6 @@ distributed_state: {
   }
 }
 plan_options: {
-	distributed: false
 	explain: false
 	analyze: true
 }
@@ -351,7 +349,7 @@ func TestServerExecuteQuery(t *testing.T) {
 		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
 		Return(getSchemaPB, nil)
 
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID, distributed bool) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		expectedMap := make(map[uuid.UUID]*planpb.Plan)
 		plannerResultPB := new(distributedpb.LogicalPlannerResult)
@@ -686,7 +684,7 @@ func TestPlannerErrorResult(t *testing.T) {
 		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
 		Return(getSchemaPB, nil)
 
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID, distributed bool) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		return mc
 	}
@@ -777,7 +775,7 @@ func TestPlannerExcludesSomeAgents(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID, _ bool) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		expectedMap := make(map[uuid.UUID]*planpb.Plan)
 
@@ -887,7 +885,7 @@ func TestErrorInStatusResult(t *testing.T) {
 		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
 		Return(getSchemaPB, nil)
 
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID, _ bool) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		return mc
 	}

@@ -22,8 +22,7 @@ using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResultRespo
 class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
  public:
   ExecuteQueryTask(ExecuteQueryMessageHandler* h, const Info* agent_info, carnot::Carnot* carnot,
-                   Manager::QueryBrokerServiceSPtr qb_stub,
-                   std::unique_ptr<messages::VizierMessage> msg)
+                   QueryBrokerServiceSPtr qb_stub, std::unique_ptr<messages::VizierMessage> msg)
       : parent_(h),
         agent_info_(agent_info),
         carnot_(carnot),
@@ -43,8 +42,10 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
                                      req_.query_str());
     }
 
-    if (req_.plan().plan_options().distributed() && agent_info_->capabilities.collects_data()) {
+    if (agent_info_->capabilities.collects_data()) {
       // In distributed mode only non data collecting nodes send data.
+      // TODO(zasgar/philkuz/michelle): We should actually just code in the Querybroker address into
+      // the plan and remove the hardcoding here.
       return;
     }
 
@@ -67,8 +68,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
 
  private:
   Status ExecuteQueryInternal(AgentQueryResponse* resp) {
-    LOG(INFO) << absl::Substitute("Executing query: id=$0, distributed=$1", query_id_.str(),
-                                  req_.plan().plan_options().distributed());
+    LOG(INFO) << absl::Substitute("Executing query: id=$0", query_id_.str());
     VLOG(1) << absl::Substitute("Query Plan: $0=$1", query_id_.str(), req_.plan().DebugString());
 
     {
@@ -97,7 +97,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
   ExecuteQueryMessageHandler* parent_;
   const Info* agent_info_;
   carnot::Carnot* carnot_;
-  Manager::QueryBrokerServiceSPtr qb_stub_;
+  QueryBrokerServiceSPtr qb_stub_;
 
   std::unique_ptr<messages::VizierMessage> msg_;
   const messages::ExecuteQueryRequest& req_;
@@ -107,7 +107,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
 ExecuteQueryMessageHandler::ExecuteQueryMessageHandler(pl::event::Dispatcher* dispatcher,
                                                        Info* agent_info,
                                                        Manager::VizierNATSConnector* nats_conn,
-                                                       Manager::QueryBrokerServiceSPtr qb_stub,
+                                                       QueryBrokerServiceSPtr qb_stub,
                                                        carnot::Carnot* carnot)
     : MessageHandler(dispatcher, agent_info, nats_conn), qb_stub_(qb_stub), carnot_(carnot) {}
 

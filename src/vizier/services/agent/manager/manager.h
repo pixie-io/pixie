@@ -18,7 +18,6 @@
 #include "src/vizier/services/agent/manager/relation_info_manager.h"
 
 #include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
-#include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
 
 namespace pl {
 namespace vizier {
@@ -49,8 +48,6 @@ class Manager : public pl::NotCopyable {
   using VizierNATSTLSConfig = pl::event::NATSTLSConfig;
   using VizierNATSConnector = pl::event::NATSConnector<pl::vizier::messages::VizierMessage>;
   using MsgCase = messages::VizierMessage::MsgCase;
-  using QueryBrokerService = pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService;
-  using QueryBrokerServiceSPtr = std::shared_ptr<Manager::QueryBrokerService::Stub>;
   using MDSService = services::metadata::MetadataService;
   using MDSServiceSPtr = std::shared_ptr<Manager::MDSService::Stub>;
 
@@ -84,10 +81,10 @@ class Manager : public pl::NotCopyable {
   // Protect constructor since we need to use Init on this class.
   Manager(sole::uuid agent_id, int grpc_server_port,
           services::shared::agent::AgentCapabilities capabilities, std::string_view nats_url,
-          std::string_view qb_url, std::string_view mds_url);
+          std::string_view mds_url);
   Manager(sole::uuid agent_id, int grpc_server_port,
-          services::shared::agent::AgentCapabilities capabilities, std::string_view qb_url,
-          std::string_view mds_url, std::unique_ptr<VizierNATSConnector> nats_connector);
+          services::shared::agent::AgentCapabilities capabilities, std::string_view mds_url,
+          std::unique_ptr<VizierNATSConnector> nats_connector);
   Status Init();
 
   void NATSMessageHandler(VizierNATSConnector::MsgType msg);
@@ -102,8 +99,6 @@ class Manager : public pl::NotCopyable {
   static std::unique_ptr<VizierNATSConnector> CreateDefaultNATSConnector(const sole::uuid& agent_id,
                                                                          std::string_view nats_url);
 
-  static QueryBrokerServiceSPtr CreateDefaultQueryBrokerStub(
-      std::string_view query_broker_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds);
   static MDSServiceSPtr CreateDefaultMDSStub(
       std::string_view mds_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds);
 
@@ -131,12 +126,12 @@ class Manager : public pl::NotCopyable {
   pl::event::Dispatcher* dispatcher() { return dispatcher_.get(); }
 
   Info* info() { return &info_; }
+  VizierNATSConnector* nats_connector() { return nats_connector_.get(); }
 
- private:
+ protected:
   // The agent capabilities.
   services::shared::agent::AgentCapabilities capabilities_;
   std::shared_ptr<grpc::ChannelCredentials> grpc_channel_creds_;
-  Manager::QueryBrokerServiceSPtr qb_stub_;
 
   // The time system to use (real or simulated).
   std::unique_ptr<pl::event::TimeSystem> time_system_;
@@ -158,6 +153,7 @@ class Manager : public pl::NotCopyable {
   std::unique_ptr<pl::md::AgentMetadataStateManager> mds_manager_;
   std::unique_ptr<RelationInfoManager> relation_info_manager_;
 
+ private:
   // Message handlers are registered per type of Vizier message.
   // same message handler can be used for multiple different types of messages.
   absl::flat_hash_map<MsgCase, std::shared_ptr<MessageHandler>> message_handlers_;
