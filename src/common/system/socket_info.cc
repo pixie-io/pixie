@@ -18,7 +18,6 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
-
 #include <string>
 #include <utility>
 
@@ -264,6 +263,40 @@ Status NetlinkSocketProber::UnixConnections(std::map<int, SocketInfo>* socket_in
   PL_RETURN_IF_ERROR(SendDiagReq(msg_req));
   PL_RETURN_IF_ERROR(RecvDiagResp<struct unix_diag_msg>(socket_info_entries));
   return Status::OK();
+}
+
+std::map<uint32_t, std::vector<int>> PIDsByNetNamespace(std::filesystem::path proc) {
+  std::map<uint32_t, std::vector<int>> result;
+
+  for (const auto& p : std::filesystem::directory_iterator(proc)) {
+    VLOG(1) << absl::Substitute("Directory: $0", p.path().string());
+    int pid = 0;
+    if (!absl::SimpleAtoi(p.path().filename().string(), &pid)) {
+      VLOG(1) << absl::Substitute("Ignoring $0: Failed to parse pid.", p.path().string());
+      continue;
+    }
+
+    std::filesystem::path net_ns_path = p.path() / "ns/net";
+
+    StatusOr<std::filesystem::path> s = fs::ReadSymlink(net_ns_path);
+    if (!s.ok()) {
+      LOG(ERROR) << absl::Substitute("Could not read network namespace file $0",
+                                     net_ns_path.c_str());
+      continue;
+    }
+    std::string net_ns_str = std::move(s.ConsumeValueOrDie());
+
+    StatusOr<uint32_t> s2 = fs::ExtractInodeNum(fs::kNetInodePrefix, net_ns_str);
+    if (!s2.ok()) {
+      LOG(ERROR) << absl::Substitute("Could not extract inode number $0 $1 $2", net_ns_path.c_str(),
+                                     net_ns_str, s2.msg());
+      continue;
+    }
+    uint32_t net_ns_inode_num = s2.ValueOrDie();
+    result[net_ns_inode_num].push_back(pid);
+  }
+
+  return result;
 }
 
 }  // namespace system

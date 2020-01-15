@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 #include <absl/strings/numbers.h>
 
@@ -19,6 +20,8 @@ namespace system {
 
 using ::testing::Contains;
 using ::testing::Not;
+using ::testing::Pair;
+using ::testing::UnorderedElementsAre;
 
 // Keep two versions of AddrPortStr, in case the host machine is using IPv6.
 std::string AddrPortStr(struct in6_addr in_addr, in_port_t in_port) {
@@ -203,6 +206,33 @@ TEST(NetlinkSocketProberTest, ClosedInetConnection) {
   ASSERT_OK(s);
 
   EXPECT_THAT(socket_info_entries, Not(Contains(HasLocalIPEndpoint(client_endpoint))));
+}
+
+TEST(PIDsByNetNamespaceTest, Basic) {
+  std::filesystem::path testdata_path =
+      TestEnvironment::PathToTestDataFile("src/common/system/testdata");
+
+  {
+    // Bazel doesn't copy symlink testdata as symlinks, so we create the missing symlink testdata
+    // here.
+    ASSERT_OK(fs::CreateSymlinkIfNotExists("net:[10001]", testdata_path / "proc/123/ns/net"));
+    ASSERT_OK(fs::CreateSymlinkIfNotExists("net:[10002]", testdata_path / "proc/456/ns/net"));
+    ASSERT_OK(fs::CreateSymlinkIfNotExists("net:[10002]", testdata_path / "proc/789/ns/net"));
+  }
+
+  std::string proc_path = TestEnvironment::PathToTestDataFile("src/common/system/testdata/proc");
+
+  std::map<uint32_t, std::vector<int>> pids_by_net_ns = PIDsByNetNamespace(proc_path);
+
+  ASSERT_EQ(pids_by_net_ns.size(), 2);
+
+  for (const auto& [inode_num, pids] : pids_by_net_ns) {
+    DCHECK(!pids.empty());
+    LOG(INFO) << absl::Substitute("inode=$0 count=$1 [0]=$2", inode_num, pids.size(), pids[0]);
+  }
+
+  EXPECT_THAT(pids_by_net_ns, Contains(Pair(10001, UnorderedElementsAre(123))));
+  EXPECT_THAT(pids_by_net_ns, Contains(Pair(10002, UnorderedElementsAre(456, 789))));
 }
 
 }  // namespace system

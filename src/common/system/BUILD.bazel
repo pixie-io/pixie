@@ -42,6 +42,9 @@ pl_cc_test(
 pl_cc_test(
     name = "socket_info_test",
     srcs = ["socket_info_test.cc"],
+    data = glob(
+        ["testdata/**/*"],
+    ),
     # TODO(oazizi/yzhao): Make this test safe to run with other tests. Right now it relies on global
     # network state making it flaky.
     tags = ["exclusive"],

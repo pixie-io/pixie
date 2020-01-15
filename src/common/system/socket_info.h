@@ -1,12 +1,15 @@
 #pragma once
 
-#include <arpa/inet.h>
-#include <linux/inet_diag.h>
-#include <linux/unix_diag.h>
 #include <netinet/in.h>
 
+#include <filesystem>
 #include <map>
-#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "src/common/fs/fs_wrapper.h"
+#include "src/common/fs/inode_utils.h"
 
 #include "src/common/base/base.h"
 
@@ -81,6 +84,8 @@ class NetlinkSocketProber {
 
   int fd_ = -1;
 };
+
+std::map<uint32_t, std::vector<int>> PIDsByNetNamespace(std::filesystem::path proc);
 
 }  // namespace system
 }  // namespace pl
