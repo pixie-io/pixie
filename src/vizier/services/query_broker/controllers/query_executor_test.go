@@ -52,6 +52,7 @@ result {
 `
 
 const queryIDStr = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+const kelvinID = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 const agent1ID = "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 const agent2ID = "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 
@@ -149,57 +150,8 @@ func TestWaitForCompletion(t *testing.T) {
 		t.Fatal("Could not parse UUID.")
 	}
 
-	agentUUIDStrs := [2]string{
-		agent1ID,
-		agent2ID,
-	}
-
-	agentUUIDs := make([]uuid.UUID, 0)
-	for _, uid := range agentUUIDStrs {
-		u, err := uuid.FromString(uid)
-		if err != nil {
-			t.Fatal("Could not parse UUID.")
-		}
-		agentUUIDs = append(agentUUIDs, u)
-	}
-
-	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs)
-
-	// Add agent results.
-	res := new(querybrokerpb.AgentQueryResultRequest)
-	if err := proto.UnmarshalText(agent1Response, res); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	e.AddResult(res)
-
-	res = new(querybrokerpb.AgentQueryResultRequest)
-	if err = proto.UnmarshalText(agent2Response, res); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	e.AddResult(res)
-
-	// Make sure that WaitForCompletion returns with correct number of results.
-	allRes, err := e.WaitForCompletion()
-	assert.Equal(t, 2, len(allRes))
-}
-
-func TestWaitForCompletionTimeout(t *testing.T) {
-	port, cleanup := testingutils.StartNATS(t)
-	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
-
-	queryUUID, err := uuid.FromString(queryIDStr)
-	if err != nil {
-		t.Fatal("Could not parse UUID.")
-	}
-
-	agentUUIDStrs := [2]string{
+	agentUUIDStrs := [3]string{
+		kelvinID,
 		agent1ID,
 		agent2ID,
 	}
@@ -226,4 +178,40 @@ func TestWaitForCompletionTimeout(t *testing.T) {
 	// Make sure that WaitForCompletion returns with correct number of results.
 	allRes, err := e.WaitForCompletion()
 	assert.Equal(t, 1, len(allRes))
+}
+
+func TestWaitForCompletionTimeout(t *testing.T) {
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	queryUUID, err := uuid.FromString(queryIDStr)
+	if err != nil {
+		t.Fatal("Could not parse UUID.")
+	}
+
+	agentUUIDStrs := [3]string{
+		kelvinID,
+		agent1ID,
+		agent2ID,
+	}
+
+	agentUUIDs := make([]uuid.UUID, 0)
+	for _, uid := range agentUUIDStrs {
+		u, err := uuid.FromString(uid)
+		if err != nil {
+			t.Fatal("Could not parse UUID.")
+		}
+		agentUUIDs = append(agentUUIDs, u)
+	}
+
+	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs)
+
+	// Make sure that WaitForCompletion returns with correct number of results.
+	allRes, err := e.WaitForCompletion()
+	assert.Equal(t, 0, len(allRes))
 }

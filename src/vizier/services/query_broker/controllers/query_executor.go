@@ -126,16 +126,17 @@ func (e *QueryExecutor) AddResult(res *querybrokerpb.AgentQueryResultRequest) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
 
+	if len(e.responseByAgent) != 0 {
+		log.
+			WithField("query_id", e.queryID.String()).
+			Error("Internal error: already have response for this query")
+		return
+	}
 	e.responseByAgent = append(e.responseByAgent, &querybrokerpb.VizierQueryResponse_ResponseByAgent{
 		AgentID:  res.AgentID,
 		Response: res.Result,
 	})
 
-	// TODO(nserrino/philkuz): Fix this to make it only wait for required agents.
-	done := len(e.responseByAgent) == len(*e.agentList)
-
-	if done {
-		// Got responses from all the agents. We can send the reply.
-		e.done <- true
-	}
+	// In the current implementation we just need to wait for the Kelvin node to respond.
+	e.done <- true
 }
