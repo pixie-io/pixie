@@ -15,7 +15,7 @@ constexpr std::string_view kNetInodePrefix = ConstStringView("net:");
  * @param inode_type_prefix The type of inode to parse for (e.g. "socket:").
  * @param link_str The link string to the inode (e.g. "socket:[32431]").
  */
-StatusOr<int> ExtractInodeNum(std::string_view inode_type_prefix, std::string_view link_str);
+StatusOr<uint32_t> ExtractInodeNum(std::string_view inode_type_prefix, std::string_view link_str);
 
 }  // namespace fs
 }  // namespace pl

@@ -36,3 +36,16 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 #define EXPECT_NOT_OK(value) EXPECT_FALSE(IsOK(::pl::StatusAdapter(value)))
 #define ASSERT_OK(value) ASSERT_TRUE(IsOK(::pl::StatusAdapter(value)))
 #define ASSERT_NOT_OK(value) ASSERT_FALSE(IsOK(::pl::StatusAdapter(value)))
+
+#define EXPECT_OK_AND_EQ(status, value)             \
+  {                                                 \
+    EXPECT_OK(status);                              \
+    if (status.ok()) {                              \
+      EXPECT_EQ(status.ConsumeValueOrDie(), value); \
+    }                                               \
+  }
+#define ASSERT_OK_AND_EQ(status, value)           \
+  {                                               \
+    ASSERT_OK(status);                            \
+    ASSERT_EQ(status.ConsumeValueOrDie(), value); \
+  }
