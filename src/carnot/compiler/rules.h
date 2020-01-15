@@ -8,6 +8,7 @@
 
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/compiler/compiler_state/registry_info.h"
+#include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/metadata_handler.h"
@@ -15,22 +16,38 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-class Rule {
+
+template <typename TPlanType>
+struct RuleTraits {};
+
+template <>
+struct RuleTraits<IR> {
+  using node_type = IRNode;
+};
+
+template <>
+struct RuleTraits<distributed::DistributedPlan> {
+  using node_type = distributed::CarnotInstance;
+};
+
+template <typename TPlanType>
+class BaseRule {
  public:
-  Rule() = delete;
-  virtual ~Rule() = default;
+  BaseRule() = delete;
+  explicit BaseRule(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
 
-  explicit Rule(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
+  virtual ~BaseRule() = default;
 
-  /**
-   * @brief Executes the rule defined in apply.
-   *
-   * @param ir_graph : the graph to operate on.
-   * @return true: if the rule changes the graph.
-   * @return false: if the rule does nothing to the graph.
-   * @return Status: error if something goes wrong during the rule application.
-   */
-  virtual StatusOr<bool> Execute(IR* ir_graph);
+  virtual StatusOr<bool> Execute(TPlanType* graph) {
+    std::vector<int64_t> topo_graph = graph->dag().TopologicalSort();
+    bool any_changed = false;
+    for (int64_t node_i : topo_graph) {
+      PL_ASSIGN_OR_RETURN(bool node_is_changed, Apply(graph->Get(node_i)));
+      any_changed = any_changed || node_is_changed;
+    }
+    PL_RETURN_IF_ERROR(EmptyDeleteQueue(graph));
+    return any_changed;
+  }
 
  protected:
   /**
@@ -38,21 +55,29 @@ class Rule {
    * Should include a check for type and should return true if it changes the node.
    * It can pass potential compiler errors through the Status.
    *
-   * @param ir_node - the node to apply this rule to.
+   * @param node - the node to apply this rule to.
    * @return true: if the rule changes the node.
    * @return false: if the rule does nothing to the node.
    * @return Status: error if something goes wrong during the rule application.
    */
+  virtual StatusOr<bool> Apply(typename RuleTraits<TPlanType>::node_type* node) = 0;
+  void DeferNodeDeletion(int64_t node) { node_delete_q.push(node); }
 
-  virtual StatusOr<bool> Apply(IRNode* ir_node) = 0;
-  void DeferNodeDeletion(int64_t);
-  Status EmptyDeleteQueue(IR* ir_graph);
-
-  CompilerState* compiler_state_;
+  Status EmptyDeleteQueue(TPlanType* graph) {
+    while (!node_delete_q.empty()) {
+      PL_RETURN_IF_ERROR(graph->DeleteNode(node_delete_q.front()));
+      node_delete_q.pop();
+    }
+    return Status::OK();
+  }
 
   // The queue containing nodes to delete.
   std::queue<int64_t> node_delete_q;
+  CompilerState* compiler_state_;
 };
+
+using Rule = BaseRule<IR>;
+using DistributedRule = BaseRule<distributed::DistributedPlan>;
 
 class DataTypeRule : public Rule {
   /**
@@ -459,6 +484,31 @@ class NestedBlockingAggFnCheckRule : public Rule {
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
   Status CheckExpression(const ColumnExpression& col_expr);
+};
+
+/**
+ * @brief This class supports running an IR graph rule (independently) over each IR graph of a
+ * DistributedPlan. This is distinct from other DistributedRules, which may modify the
+ * CarnotInstances and DistributedPlan dag.
+ * Note that this rule shares the state of its inner rule across all Carnot instances.
+ * TODO(nserrino): Add a version of this where there is a map from CarnotInstance to Rule,
+ * so that non-state-sharing use cases are supported.
+ *
+ */
+template <typename TRule>
+class DistributedIRRule : public DistributedRule {
+ public:
+  DistributedIRRule() : DistributedRule(nullptr) { subrule_ = std::make_unique<TRule>(); }
+
+  // Used for testing.
+  TRule* subrule() { return subrule_.get(); }
+
+ protected:
+  StatusOr<bool> Apply(distributed::CarnotInstance* node) override {
+    return subrule_->Execute(node->plan());
+  }
+
+  std::unique_ptr<TRule> subrule_;
 };
 
 }  // namespace compiler

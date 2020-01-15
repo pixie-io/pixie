@@ -11,7 +11,6 @@
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/metadata_handler.h"
-#include "src/carnot/compiler/rule_executor.h"
 #include "src/carnot/planpb/plan.pb.h"
 
 namespace pl {
@@ -55,6 +54,8 @@ class CarnotInstance {
   std::unique_ptr<IR> plan_;
 };
 
+// TODO(nserrino): Refactor this and IR to share a common base class for shared operations like
+// AddEdge, etc.
 class DistributedPlan {
  public:
   /**
@@ -79,6 +80,14 @@ class DistributedPlan {
 
   void AddEdge(CarnotInstance* from, CarnotInstance* to) { dag_.AddEdge(from->id(), to->id()); }
   void AddEdge(int64_t from, int64_t to) { dag_.AddEdge(from, to); }
+
+  Status DeleteNode(int64_t node) {
+    if (!dag_.HasNode(node)) {
+      return error::InvalidArgument("No node $0 exists in graph.", node);
+    }
+    dag_.DeleteNode(node);
+    return Status::OK();
+  }
 
   StatusOr<distributedpb::DistributedPlan> ToProto() const;
 

@@ -14,27 +14,6 @@ namespace compiler {
 
 using table_store::schema::Relation;
 
-Status Rule::EmptyDeleteQueue(IR* ir_graph) {
-  while (!node_delete_q.empty()) {
-    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(node_delete_q.front()));
-    node_delete_q.pop();
-  }
-  return Status::OK();
-}
-
-StatusOr<bool> Rule::Execute(IR* ir_graph) {
-  std::vector<int64_t> topo_graph = ir_graph->dag().TopologicalSort();
-  bool any_changed = false;
-  for (int64_t node_i : topo_graph) {
-    PL_ASSIGN_OR_RETURN(bool node_is_changed, Apply(ir_graph->Get(node_i)));
-    any_changed = any_changed || node_is_changed;
-  }
-  PL_RETURN_IF_ERROR(EmptyDeleteQueue(ir_graph));
-  return any_changed;
-}
-
-void Rule::DeferNodeDeletion(int64_t node) { node_delete_q.push(node); }
-
 StatusOr<bool> DataTypeRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()))) {
     // Match any function that has all args resolved.

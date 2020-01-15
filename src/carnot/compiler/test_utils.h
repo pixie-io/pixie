@@ -16,6 +16,7 @@
 
 #include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
+#include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/parser/parser.h"
 #include "src/carnot/compiler/parser/string_reader.h"
 #include "src/common/testing/testing.h"
@@ -168,6 +169,30 @@ udas {
   finalize_type:  FLOAT64
 }
 )";
+
+constexpr char kOneAgentDistributedState[] = R"proto(
+carnot_info {
+  query_broker_address: "agent"
+  has_grpc_server: false
+  has_data_store: true
+  processes_data: true
+  accepts_remote_sources: false
+}
+carnot_info {
+  query_broker_address: "kelvin"
+  grpc_address: "1111"
+  has_grpc_server: true
+  has_data_store: false
+  processes_data: false
+  accepts_remote_sources: true
+}
+)proto";
+
+distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
+  distributedpb::DistributedState physical_state_pb;
+  CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
+  return physical_state_pb;
+}
 
 /**
  * @brief Makes a test ast ptr that makes testing IRnode

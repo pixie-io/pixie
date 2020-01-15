@@ -21,32 +21,7 @@ namespace distributed {
 using ::pl::testing::proto::EqualsProto;
 using ::pl::testing::proto::Partially;
 
-constexpr char kOneAgentDistributedState[] = R"proto(
-carnot_info {
-  query_broker_address: "agent"
-  has_grpc_server: false
-  has_data_store: true
-  processes_data: true
-  accepts_remote_sources: false
-}
-carnot_info {
-  query_broker_address: "kelvin"
-  grpc_address: "1111"
-  has_grpc_server: true
-  has_data_store: false
-  processes_data: false
-  accepts_remote_sources: true
-}
-)proto";
-
-class DistributedPlanTest : public OperatorTests {
- protected:
-  distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
-    distributedpb::DistributedState physical_state_pb;
-    CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
-    return physical_state_pb;
-  }
-};
+using DistributedPlanTest = OperatorTests;
 
 constexpr char kIRProto[] = R"proto(
 qb_address_to_plan {
