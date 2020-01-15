@@ -20,18 +20,22 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const p
   return op_find->second;
 }
 
-StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
-                                                                 CompilerState* compiler_state) {
+StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
+    IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor =
-      std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(ir_graph, compiler_state));
+      std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(ir_graph, compiler_state, var_table));
   PL_RETURN_IF_ERROR(ast_visitor->Init());
   return ast_visitor;
 }
 
+StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
+                                                                 CompilerState* compiler_state) {
+  return Create(ir_graph, compiler_state, VarTable::Create());
+}
+
 Status ASTVisitorImpl::Init() {
-  var_table_ = VarTable();
-  PL_ASSIGN_OR_RETURN(var_table_[PLModule::kPLModuleObjName],
-                      PLModule::Create(ir_graph_, compiler_state_));
+  PL_ASSIGN_OR_RETURN(auto pl_module, PLModule::Create(ir_graph_, compiler_state_));
+  var_table_->Add(PLModule::kPLModuleObjName, pl_module);
   return Status::OK();
 }
 
@@ -137,7 +141,9 @@ Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstNamePtr& assign_name,
   ColExpressionVector map_exprs{{col_name, expr}};
   PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->CreateNode<MapIR>(expr_node, parent_op, map_exprs,
                                                                     /*keep_input_cols*/ true));
-  PL_ASSIGN_OR_RETURN(var_table_[assign_name_string], Dataframe::Create(ir_node));
+
+  PL_ASSIGN_OR_RETURN(auto dataframe, Dataframe::Create(ir_node));
+  var_table_->Add(assign_name_string, dataframe);
 
   return Status::OK();
 }
@@ -201,7 +207,8 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
 
   std::string assign_name = GetNameAsString(target_node);
   OperatorContext op_context({}, "", {});
-  PL_ASSIGN_OR_RETURN(var_table_[assign_name], Process(node->value, op_context));
+  PL_ASSIGN_OR_RETURN(auto processed_node, Process(node->value, op_context));
+  var_table_->Add(assign_name, processed_node);
   return Status::OK();
 }
 
@@ -304,11 +311,11 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast,
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::LookupVariable(const pypa::AstPtr& ast,
                                                      const std::string& name) {
-  auto find_name = var_table_.find(name);
-  if (find_name == var_table_.end()) {
+  auto var = var_table_->Lookup(name);
+  if (var == nullptr) {
     return CreateAstError(ast, "name '$0' is not defined", name);
   }
-  return find_name->second;
+  return var;
 }
 
 StatusOr<OperatorIR*> ASTVisitorImpl::LookupName(const pypa::AstNamePtr& name_node) {

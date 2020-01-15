@@ -17,12 +17,11 @@
 #include "src/carnot/compiler/ir/ast_utils.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/objects/dataframe.h"
+#include "src/carnot/compiler/var_table.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-
-using VarTable = std::unordered_map<std::string, QLObjectPtr>;
 
 #define PYPA_PTR_CAST(TYPE, VAL) \
   std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
@@ -45,6 +44,25 @@ struct OperatorContext {
 
 class ASTVisitorImpl : public ASTVisitor {
  public:
+  /**
+   * @brief Creates an AST Visitor with the given graph, compiler state, and variable table.
+   *
+   * @param graph
+   * @param compiler_state
+   * @param var_table
+   * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
+   */
+  static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state,
+                                                          std::shared_ptr<VarTable> var_table);
+
+  /**
+   * @brief Creates an AST Vistior with the given graph and compiler state. Variable table is
+   * created with this call.
+   *
+   * @param graph
+   * @param compiler_state
+   * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
+   */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state);
   /**
    * @brief The entry point into traversal as the root AST is a module.
@@ -86,8 +104,8 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param ir_graph
    */
-  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state)
-      : ir_graph_(ir_graph), compiler_state_(compiler_state) {}
+  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table)
+      : ir_graph_(ir_graph), compiler_state_(compiler_state), var_table_(var_table) {}
 
   Status Init();
 
@@ -334,8 +352,8 @@ class ASTVisitorImpl : public ASTVisitor {
   }
 
   IR* ir_graph_;
-  VarTable var_table_;
   CompilerState* compiler_state_;
+  std::shared_ptr<VarTable> var_table_;
 };
 
 }  // namespace compiler

@@ -209,3 +209,12 @@ pl_cc_test(
         ":cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "var_table_test",
+    srcs = ["var_table_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
