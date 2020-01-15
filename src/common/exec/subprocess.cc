@@ -1,14 +1,14 @@
 #include "src/common/exec/subprocess.h"
 
+#include <fcntl.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include <csignal>
 
 #include "src/common/base/error.h"
 
 namespace pl {
-
-SubProcess::SubProcess() : child_pid_(-1) {}
 
 Status SubProcess::Start(const std::vector<std::string>& args) {
   std::vector<char*> exec_args;
@@ -18,11 +18,26 @@ Status SubProcess::Start(const std::vector<std::string>& args) {
   }
   exec_args.push_back(nullptr);
 
+  // Create the pipe, see `man pipe2` for how these 2 file descriptors are used.
+  // Also set the pipe to be non-blocking, so when reading from pipe won't block.
+  if (pipe2(pipefd_, O_NONBLOCK) == -1) {
+    return error::Internal("Could not create pipe.");
+  }
+
   child_pid_ = fork();
   if (child_pid_ < 0) {
     return error::Internal("Could not fork!");
   }
+  // Child process.
   if (child_pid_ == 0) {
+    // Redirect STDOUT to pipe
+    if (dup2(pipefd_[kWrite], STDOUT_FILENO) == -1) {
+      return error::Internal("Could not redirect STDOUT to pipe");
+    }
+
+    close(pipefd_[kRead]);   // Close read end, as read is done by parent.
+    close(pipefd_[kWrite]);  // Close after being duplicated.
+
     // This will run "ls -la" as if it were a command:
     // char* cmd = "ls";
     // char* argv[3];
@@ -36,6 +51,7 @@ Status SubProcess::Start(const std::vector<std::string>& args) {
     }
     exit(0);
   } else {
+    close(pipefd_[kWrite]);  // Close write end, as write is done by child.
     return Status::OK();
   }
 }
@@ -52,9 +68,29 @@ int SubProcess::Wait() {
   if (child_pid_ != -1) {
     int status = -1;
     waitpid(child_pid_, &status, WUNTRACED);
+    // Close the read endpoint of the pipe. This must happen after waitpid(), otherwise the process
+    // will exits abnormally because it's STDOUT cannot be written.
+    close(pipefd_[kRead]);
     return status;
   }
   return 0;
+}
+
+std::string SubProcess::Stdout() {
+  std::string buffer;
+  buffer.resize(128);
+
+  std::string res;
+  // Try to deplete all available data from the pipe. But still proceed if there is no more data.
+  while (true) {
+    int len = read(pipefd_[kRead], buffer.data(), buffer.size());
+    if (len == -1) {
+      break;
+    }
+    buffer.resize(len);
+    res.append(buffer);
+  }
+  return res;
 }
 
 }  // namespace pl

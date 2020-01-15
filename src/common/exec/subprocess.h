@@ -15,8 +15,6 @@ namespace pl {
  */
 class SubProcess {
  public:
-  SubProcess();
-
   /**
    * @brief Start the command.
    *
@@ -39,10 +37,23 @@ class SubProcess {
    */
   int Wait();
 
+  /**
+   * @brief Return string from the child process' stdout.
+   * Returns whatever data is available, and does not block if there is no data.
+   */
+  std::string Stdout();
+
   int child_pid() const { return child_pid_; }
 
  private:
-  int child_pid_;
+  // Handy constants to access the pipe's two file descriptor array.
+  const int kRead = 0;
+  const int kWrite = 1;
+
+  int child_pid_ = -1;
+
+  // This is a pipe used to fetch the child process' STDOUT.
+  int pipefd_[2] = {};
 };
 
 }  // namespace pl
