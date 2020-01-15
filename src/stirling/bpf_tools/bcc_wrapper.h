@@ -5,7 +5,7 @@
 #include <bcc/BPF.h>
 #include <linux/perf_event.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <string>
@@ -36,8 +36,6 @@ DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
 namespace pl {
 namespace bpf_tools {
 
-namespace fs = std::experimental::filesystem;
-
 /**
  * Describes a kernel probe (kprobe).
  * Currently only works for syscalls.
@@ -58,7 +56,7 @@ struct KProbeSpec {
  */
 struct UProbeSpec {
   // The canonical path to the binary to which this uprobe is attached.
-  fs::path binary_path;
+  std::filesystem::path binary_path;
   std::string symbol;
   bpf_probe_attach_type attach_type;
   std::string probe_fn;

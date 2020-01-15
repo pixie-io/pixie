@@ -16,10 +16,11 @@ pl_cc_library(
         ],
     ),
     deps = [
-        "@com_github_serge1_elfio//:elfio",
+        "//src/common/fs:cc_library",
         "//src/common/system:cc_library",
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/utils:cc_library",
+        "@com_github_serge1_elfio//:elfio",
     ],
 )
 

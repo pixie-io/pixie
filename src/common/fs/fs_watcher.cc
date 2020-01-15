@@ -1,9 +1,8 @@
 #ifdef __linux__
 
-#include <experimental/filesystem>
-
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
 #include <iterator>
 #include <memory>
 #include <queue>
@@ -18,12 +17,10 @@
 
 namespace pl {
 
-namespace fs = std::experimental::filesystem;
-
 const uint32_t kBufferSize = 4096;
 
-fs::path FSWatcher::FSEvent::GetPath() {
-  fs::path path = fs_node_->name;
+std::filesystem::path FSWatcher::FSEvent::GetPath() {
+  std::filesystem::path path = fs_node_->name;
   FSNode* node_ptr = fs_node_->parent;
   while (node_ptr) {
     path = node_ptr->name / path;
@@ -102,13 +99,13 @@ FSWatcher::FSNodeLocation FSWatcher::LastFSNodeInPath(
   return FSNodeLocation(parent_node, current_dir_it);
 }
 
-Status FSWatcher::AddWatch(const fs::path& file_or_dir) {
+Status FSWatcher::AddWatch(const std::filesystem::path& file_or_dir) {
   if (!root_fs_node_) {
     PL_RETURN_IF_ERROR(Init());
   }
   std::string path_str = file_or_dir.string();
   std::vector<std::string_view> parsed_path =
-      absl::StrSplit(path_str, fs::path::preferred_separator, absl::SkipWhitespace());
+      absl::StrSplit(path_str, std::filesystem::path::preferred_separator, absl::SkipWhitespace());
 
   // Find and/or construct required path in the FSNode tree.
   FSNode* node_ptr = nullptr;
@@ -129,7 +126,7 @@ Status FSWatcher::AddWatch(const fs::path& file_or_dir) {
 
   // Add the watch and update related data structures.
   std::error_code ec;
-  bool is_dir = fs::is_directory(file_or_dir, ec);
+  bool is_dir = std::filesystem::is_directory(file_or_dir, ec);
   if (ec) {
     return error::Unknown("Failed to determine if $0 is a dir: $1", path_str, ec.message());
   }
@@ -187,10 +184,10 @@ Status FSWatcher::DeleteChildWatchers(FSNode* node) {
   return Status::OK();
 }
 
-Status FSWatcher::RemoveWatch(const fs::path& file_or_dir) {
+Status FSWatcher::RemoveWatch(const std::filesystem::path& file_or_dir) {
   auto path_str = file_or_dir.string();
   std::vector<std::string_view> parsed_path =
-      absl::StrSplit(path_str, fs::path::preferred_separator, absl::SkipWhitespace());
+      absl::StrSplit(path_str, std::filesystem::path::preferred_separator, absl::SkipWhitespace());
   PL_RETURN_IF_ERROR(RemoveFSNode(root_fs_node_.get(), parsed_path.begin(), parsed_path.end()));
   return Status::OK();
 }

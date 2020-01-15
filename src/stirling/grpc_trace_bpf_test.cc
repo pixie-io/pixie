@@ -8,7 +8,7 @@ extern "C" {
 #include <nghttp2/nghttp2_frame.h>
 }
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <thread>
 
 #include "src/common/exec/subprocess.h"
@@ -51,8 +51,6 @@ using ::testing::MatchesRegex;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-namespace fs = std::experimental::filesystem;
-
 constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 
 std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http_record, int pid) {
@@ -93,11 +91,13 @@ class GRPCTraceGoTest : public ::testing::Test {
   void Init(bool use_https) {
     CHECK(!FLAGS_go_greeter_client_path.empty())
         << "--go_greeter_client_path cannot be empty. You should run this test with bazel.";
-    CHECK(fs::exists(fs::path(FLAGS_go_greeter_client_path))) << FLAGS_go_greeter_client_path;
+    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_greeter_client_path)))
+        << FLAGS_go_greeter_client_path;
 
     CHECK(!FLAGS_go_greeter_server_path.empty())
         << "--go_greeter_server_path cannot be empty. You should run this test with bazel.";
-    CHECK(fs::exists(fs::path(FLAGS_go_greeter_server_path))) << FLAGS_go_greeter_server_path;
+    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_greeter_server_path)))
+        << FLAGS_go_greeter_server_path;
 
     server_path_ = FLAGS_go_greeter_server_path;
     client_path_ = FLAGS_go_greeter_client_path;

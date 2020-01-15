@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <experimental/filesystem>
 
 #include <algorithm>
+#include <filesystem>
 #include <istream>
 #include <memory>
 #include <sstream>
@@ -12,7 +12,6 @@
 
 namespace pl {
 
-namespace fs = std::experimental::filesystem;
 using std::string;
 
 constexpr char kTestDataBasePathFS[] = "src/common/fs";
@@ -33,13 +32,14 @@ class FSWatcherTest : public ::testing::Test {
     tmp_dir_ = dir_name;
     Test::SetUp();
 
-    fs::copy(GetPathToTestDataFile("testdata/fs_watcher"), tmp_dir_, fs::copy_options::recursive);
+    std::filesystem::copy(GetPathToTestDataFile("testdata/fs_watcher"), tmp_dir_,
+                          std::filesystem::copy_options::recursive);
     fs_watcher_ = FSWatcher::Create();
   }
 
   void TearDown() override {
     fs_watcher_.reset();
-    fs::remove_all(tmp_dir_);
+    std::filesystem::remove_all(tmp_dir_);
   }
 
   std::unique_ptr<FSWatcher> fs_watcher_ = nullptr;
@@ -47,15 +47,15 @@ class FSWatcherTest : public ::testing::Test {
 };
 
 TEST_F(FSWatcherTest, fs_watcher_addwatch_removewatch) {
-  fs::path dir1 = tmp_dir_ + "/dir1";
+  std::filesystem::path dir1 = tmp_dir_ + "/dir1";
   EXPECT_OK(fs_watcher_->AddWatch(dir1));
   EXPECT_EQ(1, fs_watcher_->NumWatchers());
 
-  fs::path dir2 = tmp_dir_ + "/dir2";
+  std::filesystem::path dir2 = tmp_dir_ + "/dir2";
   EXPECT_OK(fs_watcher_->AddWatch(dir2));
   EXPECT_EQ(2, fs_watcher_->NumWatchers());
 
-  fs::path file1 = tmp_dir_ + "/dir1/file1.txt";
+  std::filesystem::path file1 = tmp_dir_ + "/dir1/file1.txt";
   EXPECT_OK(fs_watcher_->AddWatch(file1));
   EXPECT_EQ(3, fs_watcher_->NumWatchers());
 
@@ -67,20 +67,20 @@ TEST_F(FSWatcherTest, fs_watcher_addwatch_removewatch) {
 }
 
 TEST_F(FSWatcherTest, fs_watcher_read_inotify_event) {
-  fs::path file1 = tmp_dir_ + "/dir1/file1.txt";
+  std::filesystem::path file1 = tmp_dir_ + "/dir1/file1.txt";
   EXPECT_OK(fs_watcher_->AddWatch(file1));
 
-  fs::path dir2 = tmp_dir_ + "/dir2";
+  std::filesystem::path dir2 = tmp_dir_ + "/dir2";
   EXPECT_OK(fs_watcher_->AddWatch(dir2));
 
   EXPECT_FALSE(fs_watcher_->HasEvents());
 
   // Modify file1.
-  fs::copy(tmp_dir_ + "/dir2/file2.txt", tmp_dir_ + "/dir1/file1.txt",
-           fs::copy_options::overwrite_existing);
+  std::filesystem::copy(tmp_dir_ + "/dir2/file2.txt", tmp_dir_ + "/dir1/file1.txt",
+                        std::filesystem::copy_options::overwrite_existing);
 
   // Create new dir3 in dir2.
-  fs::create_directory(tmp_dir_ + "/dir2/dir3");
+  std::filesystem::create_directory(tmp_dir_ + "/dir2/dir3");
 
   EXPECT_EQ(0, fs_watcher_->NumEvents());
   EXPECT_OK(fs_watcher_->ReadInotifyUpdates());

@@ -2,7 +2,7 @@
 
 #ifdef __linux__
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -31,7 +31,7 @@ StatusOr<uint32_t> ParseUname(const std::string& linux_release);
  * @param linux_release the desired linux release (e.g. 4.18.0-25-generic) to use.
  * @return Status error if unable to modify the sources.
  */
-Status ModifyKernelVersion(const std::experimental::filesystem::path& linux_headers_base,
+Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
                            const std::string& linux_release);
 
 enum class LinuxHeaderStrategy {

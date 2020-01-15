@@ -7,8 +7,6 @@ namespace pl {
 namespace stirling {
 namespace utils {
 
-namespace fs = std::experimental::filesystem;
-
 TEST(LinuxHeadersUtils, ParseUnameCases) {
   {
     auto s = ParseUname("4.18.0-25-generic");
@@ -46,15 +44,15 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
   char* tmp_dir = mkdtemp(tmp_dir_template);
   CHECK(tmp_dir != nullptr);
 
-  fs::path base_dir(tmp_dir);
-  fs::path version_h_dir = base_dir / "include/generated/uapi/linux";
-  fs::create_directories(version_h_dir);
+  std::filesystem::path base_dir(tmp_dir);
+  std::filesystem::path version_h_dir = base_dir / "include/generated/uapi/linux";
+  std::filesystem::create_directories(version_h_dir);
   std::string version_h_filename = version_h_dir / "version.h";
 
   // Write the original file to disk.
   ASSERT_OK(WriteFileFromString(version_h_filename, version_h_original));
 
-  EXPECT_OK(ModifyKernelVersion(fs::path(base_dir), "4.1.0"));
+  EXPECT_OK(ModifyKernelVersion(std::filesystem::path(base_dir), "4.1.0"));
 
   // Read the file into a string.
   auto s = ReadFileToString(version_h_filename);
@@ -66,7 +64,7 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
 )";
   EXPECT_EQ(file_contents, expected_contents);
 
-  fs::remove_all(tmp_dir);
+  std::filesystem::remove_all(tmp_dir);
 }
 
 }  // namespace utils

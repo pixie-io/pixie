@@ -6,7 +6,7 @@
 
 #include <algorithm>
 #include <chrono>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <numeric>
 #include <vector>
 
@@ -662,10 +662,10 @@ void ConnectionTracker::IterationPostTick() {
 
 void ConnectionTracker::HandleInactivity() {
   static const auto& sysconfig = system::Config::GetInstance();
-  std::experimental::filesystem::path fd_file =
+  std::filesystem::path fd_file =
       absl::StrCat(sysconfig.proc_path(), absl::Substitute("/$0/fd/$1", pid(), fd()));
 
-  if (!std::experimental::filesystem::exists(fd_file)) {
+  if (!std::filesystem::exists(fd_file)) {
     // Connection seems to be dead. Mark for immediate death.
     MarkForDeath(0);
   } else {

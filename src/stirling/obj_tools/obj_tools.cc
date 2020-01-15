@@ -3,15 +3,13 @@
 #include <filesystem>
 #include <memory>
 
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/config.h"
 #include "src/stirling/obj_tools/elf_tools.h"
-#include "src/stirling/utils/fs_wrapper.h"
 
 namespace pl {
 namespace stirling {
 namespace obj_tools {
-
-namespace fs = std::experimental::filesystem;
 
 namespace {
 
@@ -20,8 +18,8 @@ namespace {
 //
 // Reads the content of the mounts file and figures out the merged path of the underlying overlay
 // filesystem.
-pl::StatusOr<fs::path> ResolveMergedPath(fs::path proc_pid) {
-  fs::path mounts = proc_pid / "mounts";
+pl::StatusOr<std::filesystem::path> ResolveMergedPath(std::filesystem::path proc_pid) {
+  std::filesystem::path mounts = proc_pid / "mounts";
   PL_ASSIGN_OR_RETURN(std::string mounts_content, pl::ReadFileToString(mounts));
 
   // The format of /proc/<pid>/mounts is described in the man page of 'fstab':
@@ -62,7 +60,7 @@ pl::StatusOr<fs::path> ResolveMergedPath(fs::path proc_pid) {
     std::string_view s = option.substr(pos + kUpperDir.size());
     DCHECK(absl::EndsWith(option, kDiffSuffix));
     s.remove_suffix(kDiffSuffix.size());
-    return fs::path(s) / kMerged;
+    return std::filesystem::path(s) / kMerged;
   }
   return error::Internal("Failed to resolve merged path for $0", proc_pid.string());
 }
@@ -82,30 +80,32 @@ pl::StatusOr<fs::path> ResolveMergedPath(fs::path proc_pid) {
  * @return The resolved path. Either the original exe symlink if no overlay fs was found, or the
  * path to the host location if an overlay was found.
  */
-pl::StatusOr<fs::path> ResolveExe(fs::path proc_pid, fs::path host) {
-  PL_ASSIGN_OR_RETURN(fs::path exe, utils::ReadSymlink(proc_pid/"exe"));
+pl::StatusOr<std::filesystem::path> ResolveExe(std::filesystem::path proc_pid,
+                                               std::filesystem::path host) {
+  PL_ASSIGN_OR_RETURN(std::filesystem::path exe, fs::ReadSymlink(proc_pid / "exe"));
 
-  PL_ASSIGN_OR_RETURN(fs::path merged, ResolveMergedPath(proc_pid));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path merged, ResolveMergedPath(proc_pid));
 
   // If we're running in a container, convert exe to be relative to host. As we mount host's '/'
   // to '/host' inside container.
   exe = host / merged / exe;
-  if (!fs::exists(exe)) {
+  if (!std::filesystem::exists(exe)) {
     return error::InvalidArgument("Ignoring $0: Does not exist.", exe.string());
   }
 
   std::error_code ec;
-  fs::path canonical_exe = fs::canonical(exe, ec);
+  std::filesystem::path canonical_exe = std::filesystem::canonical(exe, ec);
   if (ec) {
     return error::InvalidArgument("Ignoring $0: Could not find canonical path.", exe.string());
   }
   return exe;
 }
 
-std::map<std::string, std::vector<int>> GetActiveBinaries(fs::path proc, fs::path host) {
+std::map<std::string, std::vector<int>> GetActiveBinaries(std::filesystem::path proc,
+                                                          std::filesystem::path host) {
   std::map<std::string, std::vector<int>> binaries;
   proc = host / proc;
-  for (const auto& p : fs::directory_iterator(proc)) {
+  for (const auto& p : std::filesystem::directory_iterator(proc)) {
     VLOG(1) << absl::Substitute("Directory: $0", p.path().string());
     int pid = 0;
     if (!absl::SimpleAtoi(p.path().filename().string(), &pid)) {
@@ -113,13 +113,13 @@ std::map<std::string, std::vector<int>> GetActiveBinaries(fs::path proc, fs::pat
       continue;
     }
 
-    pl::StatusOr<fs::path> exe_or = ResolveExe(p, host);
+    pl::StatusOr<std::filesystem::path> exe_or = ResolveExe(p, host);
     if (!exe_or.ok()) {
       VLOG(1) << absl::Substitute("Ignoring $0: Failed to resolve exe path, error message: $1",
                                   p.path().string(), exe_or.msg());
       continue;
     }
-    fs::path exe = exe_or.ConsumeValueOrDie();
+    std::filesystem::path exe = exe_or.ConsumeValueOrDie();
     binaries[exe].push_back(pid);
   }
 

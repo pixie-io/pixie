@@ -11,7 +11,6 @@ pl_cc_library_internal(
         ],
         exclude = ["**/*_test.cc"],
     ),
-    hdrs = ["fs.h"],
     deps = ["//src/common/base:cc_library"],
 )
 

@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
 
 #include "src/common/base/test_utils.h"
 #include "src/common/exec/subprocess.h"
@@ -28,8 +28,6 @@ using ::testing::MatchesRegex;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-namespace fs = std::experimental::filesystem;
-
 constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 
 class GoHTTPCTraceTest : public ::testing::Test {
@@ -46,11 +44,13 @@ class GoHTTPCTraceTest : public ::testing::Test {
 
     CHECK(!FLAGS_go_greeter_client_path.empty())
         << "--go_greeter_client_path cannot be empty. You should run this test with bazel.";
-    CHECK(fs::exists(fs::path(FLAGS_go_greeter_client_path))) << FLAGS_go_greeter_client_path;
+    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_greeter_client_path)))
+        << FLAGS_go_greeter_client_path;
 
     CHECK(!FLAGS_go_greeter_server_path.empty())
         << "--go_greeter_server_path cannot be empty. You should run this test with bazel.";
-    CHECK(fs::exists(fs::path(FLAGS_go_greeter_server_path))) << FLAGS_go_greeter_server_path;
+    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_greeter_server_path)))
+        << FLAGS_go_greeter_server_path;
 
     server_path_ = FLAGS_go_greeter_server_path;
     client_path_ = FLAGS_go_greeter_client_path;

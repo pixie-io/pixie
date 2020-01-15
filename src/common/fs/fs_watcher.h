@@ -16,10 +16,10 @@ class FSWatcher {
   bool HasOverflow() { return false; }
   bool NotInitialized() { return true; }
   StatusOr<FSEvent> GetNextEvent() { return error::NotImplemented("Inotify not supported"); }
-  Status AddWatch(const std::experimental::filesystem::path& file_or_dir, uint32_t flags) {
+  Status AddWatch(const std::filesystem::path& file_or_dir, uint32_t flags) {
     return error::NotImplemented("Inotify not supported");
   }
-  Status RemoveWatch(const std::experimental::filesystem::path& file_or_dir) {
+  Status RemoveWatch(const std::filesystem::path& file_or_dir) {
     return error::NotImplemented("Inotify not supported");
   }
   Status ReadInotifyUpdates() { return error::NotImplemented("Inotify not supported."); }
@@ -34,8 +34,8 @@ class FSWatcher {
 #include <sys/inotify.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <experimental/filesystem>
 
+#include <filesystem>
 #include <istream>
 #include <iterator>
 #include <memory>
@@ -105,7 +105,7 @@ class FSWatcher {
     FSEvent(FSEventType type, std::string_view name, FSNode* node)
         : type(type), name(name), fs_node_(node) {}
     FSEvent() {}
-    std::experimental::filesystem::path GetPath();
+    std::filesystem::path GetPath();
 
    private:
     FSNode* fs_node_;
@@ -139,7 +139,7 @@ class FSWatcher {
    * @param file_or_dir full path to be monitored.
    * @return Status
    */
-  Status AddWatch(const std::experimental::filesystem::path& file_or_dir);
+  Status AddWatch(const std::filesystem::path& file_or_dir);
 
   /**
    * @brief Remove an existing watch for a path.
@@ -147,7 +147,7 @@ class FSWatcher {
    * @param file_or_dir full path
    * @return Status
    */
-  Status RemoveWatch(const std::experimental::filesystem::path& file_or_dir);
+  Status RemoveWatch(const std::filesystem::path& file_or_dir);
 
   /**
    * @brief Read the inotify event queue and generate events for watchers that

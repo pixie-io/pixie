@@ -2,17 +2,14 @@
 
 #include <system_error>
 
-#include "src/stirling/utils/fs_wrapper.h"
+#include "src/common/fs/fs_wrapper.h"
 
 namespace pl {
-namespace stirling {
-namespace utils {
+namespace fs {
 
-namespace fs = std::experimental::filesystem;
-
-Status CreateSymlink(fs::path target, fs::path link) {
+Status CreateSymlink(std::filesystem::path target, std::filesystem::path link) {
   std::error_code ec;
-  fs::create_symlink(target, link, ec);
+  std::filesystem::create_symlink(target, link, ec);
   if (ec) {
     return error::Internal("Failed to create symlink $0 -> $1. Message: $2", link.string(),
                            target.string(), ec.message());
@@ -20,9 +17,9 @@ Status CreateSymlink(fs::path target, fs::path link) {
   return Status::OK();
 }
 
-Status CreateDirectories(fs::path dir) {
+Status CreateDirectories(std::filesystem::path dir) {
   std::error_code ec;
-  fs::create_directories(dir, ec);
+  std::filesystem::create_directories(dir, ec);
   if (ec) {
     return error::Internal("Failed to create directory $0. Message: $0", dir.string(),
                            ec.message());
@@ -30,17 +27,16 @@ Status CreateDirectories(fs::path dir) {
   return Status::OK();
 }
 
-pl::StatusOr<fs::path> ReadSymlink(fs::path symlink) {
+pl::StatusOr<std::filesystem::path> ReadSymlink(std::filesystem::path symlink) {
   std::error_code ec;
-  fs::path res = fs::read_symlink(symlink, ec);
+  std::filesystem::path res = std::filesystem::read_symlink(symlink, ec);
   if (ec) {
     return pl::error::Internal("Could not read symlink: $0", symlink.string());
   }
   return res;
 }
 
-}  // namespace utils
-}  // namespace stirling
+}  // namespace fs
 }  // namespace pl
 
 #endif

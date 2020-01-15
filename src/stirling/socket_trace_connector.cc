@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 #include <deque>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <utility>
 
 #include <absl/strings/match.h>
@@ -91,8 +91,6 @@ using ::pl::stirling::http2::HTTP2Message;
 using ::pl::stirling::obj_tools::GetActiveBinaries;
 using ::pl::stirling::obj_tools::GetSymAddrs;
 using ::pl::stirling::utils::WriteMapAsJSON;
-
-namespace fs = std::experimental::filesystem;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables,
@@ -194,8 +192,8 @@ Status SocketTraceConnector::InitImpl() {
     PL_RETURN_IF_ERROR(DisableSelfTracing());
   }
   if (!FLAGS_perf_buffer_events_output_path.empty()) {
-    fs::path output_path(FLAGS_perf_buffer_events_output_path);
-    fs::path abs_path = fs::absolute(output_path);
+    std::filesystem::path output_path(FLAGS_perf_buffer_events_output_path);
+    std::filesystem::path abs_path = std::filesystem::absolute(output_path);
     perf_buffer_events_output_stream_ = std::make_unique<std::ofstream>(abs_path);
     std::string format = "text";
     constexpr char kBinSuffix[] = ".bin";
