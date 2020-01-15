@@ -13,7 +13,6 @@ import {Redirect, Route, Switch} from 'react-router-dom';
 
 import {AgentDisplay} from './agent-display';
 import {DeployInstructions} from './deploy-instructions';
-import {QueryManager} from './query-manager';
 import {VizierTopNav} from './top-nav';
 
 export const CREATE_CLUSTER = gql`
