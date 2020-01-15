@@ -15,6 +15,7 @@ pl_cc_library(
         ],
     ),
     hdrs = ["system.h"],
+    deps = ["//src/common/fs:cc_library"],
 )
 
 pl_cc_library(

@@ -25,6 +25,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "fs_wrapper_test",
+    srcs = ["fs_wrapper_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "inode_utils_test",
     srcs = ["inode_utils_test.cc"],
     deps = [":cc_library"],

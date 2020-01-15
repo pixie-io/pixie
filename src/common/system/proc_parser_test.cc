@@ -5,6 +5,7 @@
 #include <memory>
 #include <sstream>
 
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/config_mock.h"
 #include "src/common/system/proc_parser.h"
 #include "src/common/testing/testing.h"
@@ -130,7 +131,18 @@ TEST_F(ProcParserTest, read_pid_metadata_null) {
 
 // This test does not work because bazel uses symlinks itself,
 // which then causes ReadProcPIDFDLink to resolve the wrong link.
-TEST_F(ProcParserTest, DISABLED_read_proc_fd_link) {
+TEST_F(ProcParserTest, read_proc_fd_link) {
+  {
+    // Bazel doesn't copy symlink testdata as symlinks, so we create the missing symlink testdata
+    // here.
+    ASSERT_OK(
+        fs::CreateSymlinkIfNotExists("/dev/null", GetPathToTestDataFile("testdata/proc/123/fd/0")));
+    ASSERT_OK(
+        fs::CreateSymlinkIfNotExists("/foobar", GetPathToTestDataFile("testdata/proc/123/fd/1")));
+    ASSERT_OK(fs::CreateSymlinkIfNotExists("socket:[12345]",
+                                           GetPathToTestDataFile("testdata/proc/123/fd/2")));
+  }
+
   std::string out;
   Status s;
 

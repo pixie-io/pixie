@@ -8,6 +8,8 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/numbers.h>
 #include <absl/strings/substitute.h>
+
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 
 namespace pl {
@@ -443,19 +445,8 @@ int64_t ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
 
 Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) const {
   std::string fpath = absl::Substitute("$0/$1/fd/$2", proc_base_path_, pid, fd);
-
-  static constexpr int kMaxFDLinkLength = 256;
-  out->resize(kMaxFDLinkLength);
-  ssize_t num_bytes = readlink(fpath.c_str(), out->data(), out->size());
-  if (num_bytes == -1) {
-    return error::Internal("readlink failed [errno=$0]", errno);
-  }
-  out->resize(num_bytes);
-
-  if (num_bytes == kMaxFDLinkLength) {
-    return error::Internal("readlink result likely truncated");
-  }
-
+  PL_ASSIGN_OR_RETURN(std::filesystem::path link, fs::ReadSymlink(fpath));
+  *out = std::move(link);
   return Status::OK();
 }
 

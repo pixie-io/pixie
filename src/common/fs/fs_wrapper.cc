@@ -36,6 +36,23 @@ pl::StatusOr<std::filesystem::path> ReadSymlink(std::filesystem::path symlink) {
   return res;
 }
 
+Status CreateSymlinkIfNotExists(std::filesystem::path target, std::filesystem::path link) {
+  PL_RETURN_IF_ERROR(fs::CreateDirectories(link.parent_path()));
+
+  // Attempt to create the symlink, but ignore the return status.
+  // Why? Because if multiple instances are running in parallel, this CreateSymlink could fail.
+  // That's okay. The real check to make sure the link is created is below.
+  Status s = fs::CreateSymlink(target, link);
+  PL_UNUSED(s);
+
+  PL_ASSIGN_OR_RETURN(std::filesystem::path actual_target, fs::ReadSymlink(link));
+  if (target != actual_target) {
+    return error::Internal("Symlink not as expected [desired=$0, actual=$1]", target.c_str(),
+                           actual_target.c_str());
+  }
+  return Status::OK();
+}
+
 }  // namespace fs
 }  // namespace pl
 
