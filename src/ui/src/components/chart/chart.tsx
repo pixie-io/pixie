@@ -1,14 +1,13 @@
 import * as moment from 'moment';
 import * as numeral from 'numeral';
 import * as React from 'react';
-import {DiscreteColorLegend, LineSeries, XAxis, XYPlot, YAxis} from 'react-vis';
+import {AutoSizer} from 'react-virtualized';
+import {DiscreteColorLegend, XAxis, YAxis} from 'react-vis';
 
 import {GQLQueryResult} from '../../../../vizier/services/api/controller/schema/schema';
 
 export interface ChartProps {
   data: GQLQueryResult;
-  height: number;
-  width: number;
 }
 
 export interface LineSeriesData {
@@ -63,4 +62,20 @@ export function TimeValueAxis() {
     <XAxis tickFormat={(value) => moment(value).format('hh:mm:ss')} />,
     <YAxis tickFormat={(value) => numeral(value).format('0.[0]a')} />,
   ];
+}
+
+interface AutoSizerProps {
+  width: number;
+  height: number;
+  [prop: string]: any;
+}
+
+export function withAutoSizer(WrappedComponent: React.ComponentType<AutoSizerProps>) {
+  return (props) => (
+    <AutoSizer>
+      {({ height, width }) => (
+        <WrappedComponent width={width} height={height} {...props} />
+      )}
+    </AutoSizer>
+  );
 }

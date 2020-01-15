@@ -1,4 +1,4 @@
-import './content.scss';
+import './tab.scss';
 
 import {APPEND_HISTORY} from 'common/local-gql';
 import {vizierGQLClient} from 'common/vizier-gql-client';
@@ -10,17 +10,16 @@ import {EXECUTE_QUERY, ExecuteQueryResult} from 'gql-types';
 import * as React from 'react';
 import {Button, Nav, Tab} from 'react-bootstrap';
 import Split from 'react-split';
-import {AutoSizer} from 'react-virtualized';
 
 import {useMutation, useQuery} from '@apollo/react-hooks';
 
-import {QueryResultViewer} from '../vizier/query-result-viewer';
 import {getCodeFromStorage, saveCodeToStorage} from './code-utils';
 import {EditorTabInfo} from './editor';
+import {ConsoleResults} from './results';
 
 const DEFAULT_CODE = '# Enter Query Here\n';
 
-export const EditorContent: React.FC<EditorTabInfo> = (props) => {
+export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
   const initialCode = getCodeFromStorage(props.id) || DEFAULT_CODE;
   const [code, setCode] = React.useState<string>(initialCode);
   const [error, setError] = React.useState('');
@@ -89,54 +88,7 @@ export const EditorContent: React.FC<EditorTabInfo> = (props) => {
           onSubmit={executeQuery}
           disabled={loading}
         />
-        <div className={`pixie-editor--result-viewer ${loading || error || !data ? 'center-content' : ''}`}>
-          {
-            loading ? <Spinner /> :
-              error ? <span>{error}</span> :
-                !!data ? (
-                  <Tab.Container defaultActiveKey='table' id='query-results-tabs'>
-                    <Nav variant='tabs' className='pixie-editor--tabs'>
-                      <Nav.Item as={Nav.Link} eventKey='table'>
-                        RESULTS
-                      </Nav.Item>
-                      <Nav.Item as={Nav.Link} eventKey='plot'>
-                        PLOT
-                      </Nav.Item>
-                      <Nav.Item as={Nav.Link} eventKey='chart'>
-                        CHART
-                      </Nav.Item>
-                    </Nav>
-                    <Tab.Content>
-                      <Tab.Pane eventKey='table'>
-                        <QueryResultViewer data={data.ExecuteQuery} />
-                      </Tab.Pane>
-                      <Tab.Pane eventKey='plot' className='pixie-editor--tab-pane-chart'>
-                        <AutoSizer>
-                          {({ height, width }) => (
-                            <ScatterPlot
-                              data={data.ExecuteQuery}
-                              height={height}
-                              width={width}
-                            />
-                          )}
-                        </AutoSizer>
-                      </Tab.Pane>
-                      <Tab.Pane eventKey='chart' className='pixie-editor--tab-pane-chart'>
-                        <AutoSizer>
-                          {({ height, width }) => (
-                            <LineChart
-                              data={data.ExecuteQuery}
-                              height={height}
-                              width={width}
-                            />
-                          )}
-                        </AutoSizer>
-                      </Tab.Pane>
-                    </Tab.Content>
-                  </Tab.Container>) :
-                  <span>No results</span>
-          }
-        </div>
+        <ConsoleResults error={error} loading={loading} data={data} />
       </Split >
     </div>
   );

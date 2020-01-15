@@ -14,10 +14,6 @@ import {
     GQLQueryErrors, GQLQueryResult,
 } from '../../../../vizier/services/api/controller/schema/schema';
 
-export interface QueryResultViewerProps {
-  data: GQLQueryResult;
-}
-
 // TODO(zasgar/michelle): remove when we upgrade to TS 3.2.
 declare function BigInt(string): any;
 
@@ -144,8 +140,8 @@ function ExpandedRowRenderer(rowData) {
   />;
 }
 
-function formatError(error: GQLQueryErrors) {
-  const parsedErrors = ParseCompilerErrors(error.compilerError);
+export const QueryResultErrors: React.FC<{ errors: GQLQueryErrors }> = ({ errors }) => {
+  const parsedErrors = ParseCompilerErrors(errors.compilerError);
   const colInfo: TableColumnInfo[] = [
     {
       dataKey: 'line',
@@ -179,7 +175,7 @@ function formatError(error: GQLQueryErrors) {
         resizableCols={false}
       />
     </div>);
-}
+};
 
 function parseTable(table: GQLDataTable): AutoSizedScrollableTableProps {
   // TODO(malthus): Figure out how to handle multiple tables. Render only the first table for now.
@@ -211,18 +207,12 @@ function parseTable(table: GQLDataTable): AutoSizedScrollableTableProps {
   };
 }
 
-export const QueryResultViewer = React.memo<QueryResultViewerProps>(({ data }) => {
-  if (!data) {
-    return <div>No Data Available</div>;
-  }
+export interface QueryResultTableProps {
+  data: GQLDataTable;
+}
 
-  if (data.error.compilerError) {
-    return formatError(data.error);
-  }
-
-  // TODO(malthus): Figure out how to handle multiple tables. Render only the first table for now.
-  const table = Array.isArray(data.table) ? data.table[0] : data.table;
-  const tableData = React.useMemo(() => parseTable(table), [table]);
+export const QueryResultTable = React.memo<QueryResultTableProps>(({ data }) => {
+  const tableData = React.useMemo(() => parseTable(data), [data]);
   return (
     <div className='query-results'>
       <AutoSizedScrollableTable

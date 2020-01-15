@@ -1,0 +1,45 @@
+@import 'theme.scss';
+
+.pixie-console-result {
+  display: flex;
+  flex-direction: column;
+
+  &-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .query-results,
+  .query-results--compiler-error {
+    height: 100%;
+    flex: unset;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tab-content {
+    flex: 1;
+  }
+
+  .tab-pane {
+    height: 100%;
+  }
+
+  .pixie-console-result--chart {
+    padding: 20px;
+  }
+}
+
+.pixie-console-result--tabs {
+  .nav-item.nav-link {
+    &.active {
+      border-bottom: solid 2px $secondary;
+    }
+
+    &:hover {
+      color: $lighter;
+    }
+  }
+}

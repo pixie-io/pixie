@@ -1,0 +1,18 @@
+@import 'theme.scss';
+
+.gutter {
+  background-color: $border-color;
+
+  &:hover {
+    cursor: row-resize;
+  }
+}
+
+.pixie-editor--content-title-row {
+  height: 3rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid $border-color;
+}

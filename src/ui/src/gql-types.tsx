@@ -1,6 +1,6 @@
 import gql from 'graphql-tag';
 
-import {GQLQueryResult} from '../../vizier/services/api/controller/schema/schema';
+import {GQLDataTable, GQLQueryResult} from '../../vizier/services/api/controller/schema/schema';
 
 export const EXECUTE_QUERY = gql`
 mutation ExecuteQuery($queryStr: String!) {
@@ -12,6 +12,7 @@ mutation ExecuteQuery($queryStr: String!) {
           colTypes
         }
         data
+        name
       }
       error {
         compilerError {

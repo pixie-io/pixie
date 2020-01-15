@@ -5,9 +5,10 @@ import {
     GQLDataTable, GQLQueryResult,
 } from '../../../../vizier/services/api/controller/schema/schema';
 import {
-    ChartProps, LineSeriesData, LineSeriesLegends, paletteColorByIndex, TimeValueAxis,
+    LineSeriesData, LineSeriesLegends, paletteColorByIndex, TimeValueAxis, withAutoSizer,
 } from './chart';
-import {extractData, parseLineData} from './data';
+import {extractData} from './data';
+import {parseData as parseLineData} from './line-chart';
 
 interface Point {
   x: number | Date;
@@ -20,19 +21,18 @@ interface ScatterPlotData {
   lines: LineSeriesData[];
 }
 
-export function parseData(data: GQLQueryResult): ScatterPlotData | null {
+export function parseData(tables: GQLDataTable[]): ScatterPlotData | null {
   try {
-    let scatter = [];
     let lines = [];
-    if (Array.isArray(data.table)) {
-      if (data.table.length > 0) {
-        scatter = getScatterPoints(data.table[0]);
-      }
-      if (data.table.length > 1) {
-        lines = parseLineData(data.table[1]);
-      }
-    } else {
-      scatter = getScatterPoints(data.table);
+    if (tables.length < 1) {
+      return null;
+    }
+    const scatter = getScatterPoints(tables[0]);
+    if (scatter.length === 0) {
+      return null;
+    }
+    if (tables.length > 1) {
+      lines = parseLineData(tables[1]);
     }
     return { points: scatter, lines };
   } catch (e) {
@@ -81,46 +81,46 @@ function formatHint(value: Point) {
   return hints;
 }
 
-export const ScatterPlot = React.memo<ChartProps>(({ data, height, width }) => {
-  const series = React.useMemo(() => parseData(data), [data]);
-  if (!series || series.points.length === 0) {
-    return null;
-  }
-  const [value, setValue] = React.useState(null);
-  const [brush, setBrush] = React.useState(null);
+export const ScatterPlot = React.memo<ScatterPlotData>(withAutoSizer(
+  ({ points, lines, height, width }) => {
+    if (points.length === 0) {
+      return null;
+    }
+    const [value, setValue] = React.useState(null);
+    const [brush, setBrush] = React.useState(null);
 
-  const lines = series.lines.map((lineData, i) => (
-    <LineSeries
-      key={`line-${i}}`}
-      data={lineData.data}
-      strokeStyle='dashed'
-      color={paletteColorByIndex(i)}
-    />
-  ));
-  return (
-    <XYPlot
-      style={{ position: 'relative' }}
-      width={width}
-      height={height}
-      onMouseLeave={() => setValue(null)}
-      xDomain={brush && [brush.left, brush.right]}
-    >
-      <MarkSeries
-        data={series.points}
-        onNearestXY={(val) => setValue(val)}
+    const lineSeries = lines.map((lineData, i) => (
+      <LineSeries
+        key={`line-${i}}`}
+        data={lineData.data}
+        strokeStyle='dashed'
+        color={paletteColorByIndex(i)}
       />
-      {lines}
-      {!!value ? <Hint value={value} format={formatHint} /> : null}
-      <Highlight
-        enableY={false}
-        onBrushEnd={(br) => setBrush(br)}
-      />
-      {...TimeValueAxis()}
-      <LineSeriesLegends
-        lines={series.lines}
-        style={{ position: 'absolute', right: 0, top: '-2.5rem' }}
-        stroke={{ strokeStyle: 'dashed' }}
-      />
-    </XYPlot >
-  );
-});
+    ));
+    return (
+      <XYPlot
+        style={{ position: 'relative' }}
+        width={width}
+        height={height}
+        onMouseLeave={() => setValue(null)}
+        xDomain={brush && [brush.left, brush.right]}
+      >
+        <MarkSeries
+          data={points}
+          onNearestXY={(val) => setValue(val)}
+        />
+        {lineSeries}
+        {!!value ? <Hint value={value} format={formatHint} /> : null}
+        <Highlight
+          enableY={false}
+          onBrushEnd={(br) => setBrush(br)}
+        />
+        {...TimeValueAxis()}
+        <LineSeriesLegends
+          lines={lines}
+          style={{ position: 'absolute', right: 0, top: '-2.5rem' }}
+          stroke={{ strokeStyle: 'dashed' }}
+        />
+      </XYPlot >
+    );
+  }));

@@ -14,8 +14,8 @@ import {ApolloProvider, useMutation, useQuery} from '@apollo/react-hooks';
 
 import {Drawer} from '../../components/drawer/drawer';
 import {saveCodeToStorage} from './code-utils';
-import {EditorContent} from './content';
 import {EditorDrawerMenu, Script} from './drawer-menu';
+import {ConsoleTab} from './tab';
 
 const NEW_TAB = 'new-tab';
 const PIXIE_EDITOR_TABS_KEY = 'pixie-editor-tabs';
@@ -141,7 +141,7 @@ export const Editor = ({ client }) => {
                   key={tab.id}
                   unmountOnExit={false}
                   className='pixie-editor-content-fullbleed'>
-                  <EditorContent {...tab} />
+                  <ConsoleTab {...tab} />
                 </Tab.Pane>,
               )}
             </Tab.Content>
