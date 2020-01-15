@@ -246,6 +246,15 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
+pl_cc_test(
+    name = "stirling_wrapper_size_test",
+    srcs = ["stirling_wrapper_size_test.cc"],
+    data = [":stirling_wrapper"],
+    # TODO(yzhao): Forces this test to run with -c opt build, so its size does not vary.
+    # Figure out if there is cleaner solution.
+    tags = ["requires_bpf"],
+)
+
 # TODO(oazizi): Currently test needs to be run manually with sudo.
 sh_test(
     name = "stirling_wrapper_kprobe_leak_test",
