@@ -75,7 +75,7 @@ void AddConnectionTrackers(Tcontainer* connection_trackers, const std::vector<ui
   conn_event.type = kConnOpen;
   conn_event.open.addr.sin6_family = AF_INET;
   conn_event.open.traffic_class.protocol = kProtocolHTTP;
-  conn_event.open.traffic_class.role = kRoleRequestor;
+  conn_event.open.traffic_class.role = kRoleClient;
 
   for (size_t i = 0; i < values.size(); ++i) {
     uint32_t conn_id = values[i];

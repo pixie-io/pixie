@@ -79,7 +79,7 @@ TEST_F(SocketTraceBPFTest, Framework) {
 // TODO(chengruizhe): Add test targeted at checking IPs.
 
 TEST_F(SocketTraceBPFTest, WriteRespCapture) {
-  ConfigureCapture(kProtocolHTTP, kRoleResponder);
+  ConfigureCapture(kProtocolHTTP, kRoleServer);
 
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>({{kHTTPRespMsg1, kHTTPRespMsg2}});
@@ -128,7 +128,7 @@ TEST_F(SocketTraceBPFTest, WriteRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, SendRespCapture) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleResponder);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleServer);
 
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>({{kHTTPRespMsg1, kHTTPRespMsg2}});
@@ -168,7 +168,7 @@ TEST_F(SocketTraceBPFTest, SendRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, ReadRespCapture) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>({{kHTTPRespMsg1, kHTTPRespMsg2}});
@@ -208,7 +208,7 @@ TEST_F(SocketTraceBPFTest, ReadRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, RecvRespCapture) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>({{kHTTPRespMsg1, kHTTPRespMsg2}});
@@ -249,7 +249,7 @@ TEST_F(SocketTraceBPFTest, RecvRespCapture) {
 
 TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleAll);
-  ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
+  ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
 
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(
@@ -281,7 +281,7 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
 }
 
 TEST_F(SocketTraceBPFTest, MultipleConnections) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
   // Two separate connections.
   testing::ClientServerSystem system1;
@@ -312,7 +312,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
 }
 
 TEST_F(SocketTraceBPFTest, StartTime) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>({{kHTTPRespMsg1, kHTTPRespMsg2}});

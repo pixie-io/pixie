@@ -73,7 +73,7 @@ struct close_info_t {
 } __attribute__((__packed__, aligned(8)));
 
 // This control_map is a bit-mask that controls which endpoints are traced in a connection.
-// The bits are defined in ReqRespRole enum, kRoleRequestor or kRoleResponder. kRoleUnknown is not
+// The bits are defined in EndpointRole enum, kRoleClient or kRoleServer. kRoleUnknown is not
 // really used, but is defined for completeness.
 // There is a control map element for each protocol.
 BPF_PERCPU_ARRAY(control_map, u64, kNumProtocols);
@@ -364,21 +364,21 @@ static __inline struct traffic_class_t infer_traffic(enum TrafficDirection direc
 
   if (is_http_response(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
-    traffic_class.role = direction == kEgress ? kRoleResponder : kRoleRequestor;
+    traffic_class.role = direction == kEgress ? kRoleServer : kRoleClient;
   } else if (is_http_request(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
-    traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
+    traffic_class.role = direction == kEgress ? kRoleClient : kRoleServer;
   } else if (is_mysql_protocol(buf, count)) {
     traffic_class.protocol = kProtocolMySQL;
-    traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
+    traffic_class.role = direction == kEgress ? kRoleClient : kRoleServer;
   } else if (is_http2_connection_preface(buf, count)) {
     traffic_class.protocol = kProtocolHTTP2;
-    traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
+    traffic_class.role = direction == kEgress ? kRoleClient : kRoleServer;
   } else if (looks_like_grpc_req_http2_headers_frame(buf, count)) {
     // Combining this with the above else if branch causes bpf loading failure.
     // TODO(yzhao): Figure out why.
     traffic_class.protocol = kProtocolHTTP2;
-    traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
+    traffic_class.role = direction == kEgress ? kRoleClient : kRoleServer;
   }
 
   return traffic_class;

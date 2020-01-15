@@ -94,7 +94,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // Updates control map value for protocol, which specifies which role(s) to trace for the given
   // protocol's traffic.
-  Status UpdateProtocolTraceRole(TrafficProtocol protocol, ReqRespRole role_to_trace);
+  Status UpdateProtocolTraceRole(TrafficProtocol protocol, EndpointRole role_to_trace);
   Status TestOnlySetTargetPID(int64_t pid);
   Status DisableSelfTracing();
 
@@ -245,7 +245,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     // TODO(yzhao): Consider removing this if protocol-specific trace role is not needed.
     // Given protocol_transfer_specs_ is already here, it makes sense to not add another member
     // variable.
-    ReqRespRole role_to_trace = kRoleRequestor;
+    EndpointRole role_to_trace = kRoleClient;
   };
 
   // This map controls how each protocol is processed and transferred.

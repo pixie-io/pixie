@@ -598,9 +598,9 @@ void ConnectionTracker::CheckTracker() {
 
 DataStream* ConnectionTracker::req_data() {
   switch (traffic_class_.role) {
-    case kRoleRequestor:
+    case kRoleClient:
       return &send_data_;
-    case kRoleResponder:
+    case kRoleServer:
       return &recv_data_;
     default:
       return nullptr;
@@ -609,9 +609,9 @@ DataStream* ConnectionTracker::req_data() {
 
 DataStream* ConnectionTracker::resp_data() {
   switch (traffic_class_.role) {
-    case kRoleRequestor:
+    case kRoleClient:
       return &recv_data_;
-    case kRoleResponder:
+    case kRoleServer:
       return &send_data_;
     default:
       return nullptr;

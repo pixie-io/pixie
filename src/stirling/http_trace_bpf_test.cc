@@ -106,7 +106,7 @@ TEST_F(GoHTTPCTraceTest, RequestAndResponse) {
 }
 
 struct TraceRoleTestParam {
-  ReqRespRole role;
+  EndpointRole role;
   size_t client_records_count;
   size_t server_records_count;
 };
@@ -136,8 +136,8 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
 
 INSTANTIATE_TEST_SUITE_P(AllTraceRoles, TraceRoleTest,
                          ::testing::Values(TraceRoleTestParam{kRoleUnknown, 0, 0},
-                                           TraceRoleTestParam{kRoleRequestor, 1, 0},
-                                           TraceRoleTestParam{kRoleResponder, 0, 1},
+                                           TraceRoleTestParam{kRoleClient, 1, 0},
+                                           TraceRoleTestParam{kRoleServer, 0, 1},
                                            TraceRoleTestParam{kRoleAll, 1, 1}));
 
 }  // namespace stirling

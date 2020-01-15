@@ -144,7 +144,7 @@ class ConnectionTracker {
    *
    * @return role.
    */
-  ReqRespRole role() const { return traffic_class_.role; }
+  EndpointRole role() const { return traffic_class_.role; }
 
   /**
    * Get PID of the connection.

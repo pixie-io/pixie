@@ -101,12 +101,12 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
 
-  ReqRespRole role_to_trace = kRoleRequestor;
+  EndpointRole role_to_trace = kRoleClient;
   if (!FLAGS_stirling_role_to_trace.empty()) {
     if (FLAGS_stirling_role_to_trace == kRoleReqStr) {
-      role_to_trace = kRoleRequestor;
+      role_to_trace = kRoleClient;
     } else if (FLAGS_stirling_role_to_trace == kRoleRespStr) {
-      role_to_trace = kRoleResponder;
+      role_to_trace = kRoleServer;
     } else if (FLAGS_stirling_role_to_trace == kRoleAllStr) {
       role_to_trace = kRoleAll;
     } else {
@@ -173,8 +173,8 @@ Status SocketTraceConnector::InitImpl() {
 
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << "Probes successfully deployed";
-  // TODO(yzhao): Consider adding a flag to switch the role to trace, i.e., between kRoleRequestor &
-  // kRoleResponder.
+  // TODO(yzhao): Consider adding a flag to switch the role to trace, i.e., between kRoleClient &
+  // kRoleServer.
   if (protocol_transfer_specs_[kProtocolHTTP].enabled) {
     PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
         kProtocolHTTP, protocol_transfer_specs_[kProtocolHTTP].role_to_trace));
@@ -269,7 +269,7 @@ Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable
 }
 
 Status SocketTraceConnector::UpdateProtocolTraceRole(TrafficProtocol protocol,
-                                                     ReqRespRole config_mask) {
+                                                     EndpointRole config_mask) {
   auto control_map_handle = bpf().get_percpu_array_table<uint64_t>(kControlMapName);
   return UpdatePerCPUArrayValue(static_cast<int>(protocol), static_cast<uint64_t>(config_mask),
                                 &control_map_handle);

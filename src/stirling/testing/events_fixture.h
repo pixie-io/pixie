@@ -27,7 +27,7 @@ class EventsFixture : public ::testing::Test {
     conn_event.open.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     conn_event.open.addr.sin6_family = AF_INET;
     conn_event.open.traffic_class.protocol = TProtocol;
-    conn_event.open.traffic_class.role = kRoleRequestor;
+    conn_event.open.traffic_class.role = kRoleClient;
     return conn_event;
   }
 
@@ -47,7 +47,7 @@ class EventsFixture : public ::testing::Test {
     socket_data_event_t event = {};
     event.attr.direction = direction;
     event.attr.traffic_class.protocol = TProtocol;
-    event.attr.traffic_class.role = kRoleRequestor;
+    event.attr.traffic_class.role = kRoleClient;
     event.attr.return_timestamp_ns = ++current_ts_ns_;
     event.attr.conn_id.upid.pid = kPID;
     event.attr.conn_id.fd = kFD;

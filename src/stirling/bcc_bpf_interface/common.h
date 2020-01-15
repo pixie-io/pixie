@@ -20,18 +20,18 @@ enum TrafficProtocol {
 };
 
 // The direction of traffic expected on a probe. Values are used in bit masks.
-enum ReqRespRole {
+enum EndpointRole {
   kRoleUnknown = 0,
-  kRoleRequestor = 1 << 1,
-  kRoleResponder = 1 << 2,
-  kRoleAll = kRoleRequestor | kRoleResponder,
+  kRoleClient = 1 << 1,
+  kRoleServer = 1 << 2,
+  kRoleAll = kRoleClient | kRoleServer,
 };
 
 struct traffic_class_t {
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).
   enum TrafficProtocol protocol;
   // Classify traffic as requests, responses or mixed.
-  enum ReqRespRole role;
+  enum EndpointRole role;
 };
 
 // UPID stands for unique pid.
