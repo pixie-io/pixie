@@ -1,0 +1,32 @@
+diff --git a/install-clang b/install-clang
+index e3942be..a5dc523 100755
+--- a/install-clang
++++ b/install-clang
+@@ -60,15 +60,15 @@ use_master=0
+ perform_clone=1            # If 0, skip the cloning (for testing only).
+ perform_stage1=1           # If 0, skip the 1st bootstrap stage (for testing only).
+ perform_stage2=1           # If 0, skip the 2nd stage compiling LLVM/clang against libc++ (for testing only).
+-perform_lldb_build=1       # If 1, attempt to build LLDB.
++perform_lldb_build=0       # If 1, attempt to build LLDB.
+ perform_lld_build=1        # If 1, attempt to build LLDB.
+-perform_extra_build=1      # If 1, attempt to build clang-extra tools.  -- TODO: clangd doesn't compile
++perform_extra_build=0      # If 1, attempt to build clang-extra tools.  -- TODO: clangd doesn't compile
+ perform_cleanup=0          # If 1, delete all source and build directories.
+ assertions=off             # If "on", enable LLVM assertions.
+ parallelism=4              # The value X to pass to make -j X to build in parallel.
+ buildtype=Release          # LLVM/clang build type.
+ mode=install               # Install from scratch.
+-targets="BPF;X86;WebAssembly"          # LLVM_TARGETS_TO_BUILD ("all" builds them all).
++targets="BPF;X86"          # LLVM_TARGETS_TO_BUILD ("all" builds them all).
+
+ # Whether to build & link shared libraries. Default is static, except for macOS
+ # where static fails.
+@@ -358,7 +358,7 @@ CC_stage2=$prefix/bin/clang
+ CXX_stage2=$prefix/bin/clang++
+ CFLAGS_stage2=""
+ CXXFLAGS_stage2="-stdlib=libc++"
+-CMAKE_stage2="${CMAKE_stage2}"
++CMAKE_stage2="${CMAKE_stage2} -DLLVM_USE_SANITIZER=Memory"
+ BUILD_TYPE_stage2=${buildtype}
+
+ if [ "${build_shared_libs}" != "on" ]; then

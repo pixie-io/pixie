@@ -35,6 +35,13 @@ def pl_copts():
 
 # Compute the final linkopts based on various options.
 def pl_linkopts():
+    return pl_common_linkopts()
+
+# Compute the test linkopts.
+def pl_test_linkopts():
+    return pl_common_linkopts()
+
+def pl_common_linkopts():
     return select({
         # The OSX system library transitively links common libraries (e.g., pthread).
         "@bazel_tools//tools/osx:darwin": [],
@@ -44,23 +51,11 @@ def pl_linkopts():
             "-llzma",
             "-lrt",
             "-ldl",
-#            "-lc++fs",
             "-Wl,--hash-style=gnu",
         ],
-    })
-
-# Compute the test linkopts.
-def pl_test_linkopts():
-    return select({
-        "@bazel_tools//tools/osx:darwin": [],
-        "//conditions:default": [
-            "-pthread",
-            "-l:libunwind.a",
-            "-llzma",
-            "-lrt",
-            "-ldl",
-#            "-lc++fs",
-        ],
+    }) + select({
+        "//bazel:use_libcpp": [],
+        "//conditions:default": ["-lstdc++fs"],
     })
 
 def _default_external_deps():

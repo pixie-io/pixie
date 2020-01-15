@@ -22,7 +22,7 @@ pl_cc_library(
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
             "//third_party/foreign_cc:bcc",
-            "@com_llvm_lib//:llvm",
+            "//:llvm",
         ],
         "//conditions:default": [],
     }),

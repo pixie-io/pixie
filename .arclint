@@ -20,7 +20,8 @@
     "(c_cpp_properties.json$)",
     "(^credentials\/.*\\.yaml)",
     "(go\\.mod$)",
-    "(go\\.sum$)"
+    "(go\\.sum$)",
+    "(.*\\.patch$)"
   ],
   "linters": {
     "build-linter": {

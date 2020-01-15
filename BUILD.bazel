@@ -102,3 +102,12 @@ container_image(
     tars = ["@linux_headers_tar_gz//file:file"],
     visibility = ["//visibility:public"],
 )
+
+alias(
+    name = "llvm",
+    actual = select({
+        "//bazel:use_libcpp": "@com_llvm_lib_libcpp//:llvm",
+        "//conditions:default": "@com_llvm_lib//:llvm",
+    }),
+    visibility = ["//visibility:public"],
+)

@@ -31,3 +31,8 @@ config_setting(
         "@bazel_tools//tools/cpp:compiler": "gcc",
     },
 )
+
+config_setting(
+    name = "use_libcpp",
+    values = {"define": "use_libcpp=1"},
+)
