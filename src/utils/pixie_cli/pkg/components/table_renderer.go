@@ -1,6 +1,7 @@
 package components
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"github.com/TylerBrock/colorjson"
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
+	uuid "github.com/satori/go.uuid"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 )
 
@@ -28,7 +30,10 @@ func getNumRows(in *schemapb.Column) int {
 		return len(u.Time64NsData.Data)
 	case *schemapb.Column_BooleanData:
 		return len(u.BooleanData.Data)
+	case *schemapb.Column_Uint128Data:
+		return len(u.Uint128Data.Data)
 	}
+
 	return 0
 }
 
@@ -127,6 +132,12 @@ func (r *TableRenderer) getRowBatchRowDataAsArray(in *schemapb.RowBatchData, bat
 			row = append(row, time.Unix(0, u.Time64NsData.Data[rowIdx]))
 		case *schemapb.Column_BooleanData:
 			row = append(row, bool(u.BooleanData.Data[rowIdx]))
+		case *schemapb.Column_Uint128Data:
+			b := make([]byte, 16)
+			b2 := b[8:]
+			binary.BigEndian.PutUint64(b, u.Uint128Data.Data[rowIdx].High)
+			binary.BigEndian.PutUint64(b2, u.Uint128Data.Data[rowIdx].Low)
+			row = append(row, uuid.FromBytesOrNil(b))
 		}
 	}
 	return row
@@ -158,6 +169,8 @@ func (r *TableRenderer) dataToString(data [][]interface{}, latencyCols map[int]b
 				}
 			case string:
 				row = append(row, r.prettyStringValue(u))
+			case uuid.UUID:
+				row = append(row, u.String())
 			default:
 				panic(fmt.Sprintf("Dont know about type: %T", u))
 			}
@@ -238,6 +251,8 @@ func (r *TableRenderer) RenderTable(t *schemapb.Table) {
 				if u1.Unix() < row2[idx].(time.Time).Unix() {
 					return true
 				}
+			case uuid.UUID:
+				return u1.String() < row2[idx].(uuid.UUID).String()
 			default:
 				panic(fmt.Sprintf("Dont know abou type: %T", u1))
 			}
