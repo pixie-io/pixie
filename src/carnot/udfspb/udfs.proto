@@ -1,6 +1,7 @@
 syntax = "proto3";
 import "src/shared/types/proto/types.proto";
 import "src/table_store/proto/schema.proto";
+import "src/carnot/planpb/plan.proto";
 
 package pl.carnot.udfspb;
 
@@ -60,6 +61,7 @@ message UDTFSourceSpec {
     string name = 1;
     pl.types.DataType arg_type = 2;
     pl.types.SemanticType semantic_type = 3;
+    pl.carnot.planpb.ScalarValue default_value = 4;
   }
 
   // Name of the UDTFSource.
