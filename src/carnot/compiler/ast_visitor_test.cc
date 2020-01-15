@@ -16,6 +16,7 @@ namespace compiler {
 using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
+using ::testing::UnorderedElementsAre;
 
 // Checks whether we can actually compile into a graph.
 TEST_F(ASTVisitorTest, compilation_test) {
@@ -899,6 +900,172 @@ TEST_F(ASTVisitorTest, CanAccessUDTF) {
   ASSERT_OK(ir_graph_status);
 }
 
+constexpr char kDefineFuncQuery[] = R"query(
+def func(abc):
+    df = pl.DataFrame(abc)
+    pl.display(df)
+
+func('http_events')
+)query";
+
+TEST_F(ASTVisitorTest, define_func_query) {
+  auto ir_graph_or_s = CompileGraph(kDefineFuncQuery);
+  ASSERT_OK(ir_graph_or_s);
+  auto ir_graph = ir_graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
+  EXPECT_EQ(mem_src->table_name(), "http_events");
+  ASSERT_EQ(mem_src->Children().size(), 1);
+  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+}
+
+constexpr char kLocalStateQuery[] = R"query(
+a = 'foo'
+def func():
+    a = 'bar'
+
+func()
+# a shoudl be 'foo'
+df = pl.DataFrame(a)
+pl.display(df, "out_table")
+)query";
+
+TEST_F(ASTVisitorTest, func_context_does_not_affect_global_context) {
+  auto ir_graph_or_s = CompileGraph(kLocalStateQuery);
+  ASSERT_OK(ir_graph_or_s);
+  auto ir_graph = ir_graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
+  EXPECT_EQ(mem_src->table_name(), "foo");
+  ASSERT_EQ(mem_src->Children().size(), 1);
+  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+  std::vector<IRNode*> strings = ir_graph->FindNodesOfType(IRNodeType::kString);
+  ASSERT_EQ(strings.size(), 3);
+  std::vector<std::string> expected_strings{"foo", "bar", "out_table"};
+  EXPECT_THAT(expected_strings, UnorderedElementsAre(static_cast<StringIR*>(strings[0])->str(),
+                                                     static_cast<StringIR*>(strings[1])->str(),
+                                                     static_cast<StringIR*>(strings[2])->str()));
+}
+
+constexpr char kNestedFuncsIndependentState[] = R"query(
+a = 'foo'
+def func1():
+    a = 'bar'
+
+def func2():
+  func1()
+  df = pl.DataFrame(a)
+  pl.display(df, "out_table")
+
+func2()
+# a shoudl be 'foo'
+)query";
+
+TEST_F(ASTVisitorTest, nested_func_calls) {
+  auto ir_graph_or_s = CompileGraph(kNestedFuncsIndependentState);
+  ASSERT_OK(ir_graph_or_s);
+  auto ir_graph = ir_graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
+  EXPECT_EQ(mem_src->table_name(), "foo");
+  ASSERT_EQ(mem_src->Children().size(), 1);
+  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+  std::vector<IRNode*> strings = ir_graph->FindNodesOfType(IRNodeType::kString);
+  ASSERT_EQ(strings.size(), 3);
+  std::vector<std::string> expected_strings{"foo", "bar", "out_table"};
+  EXPECT_THAT(expected_strings, UnorderedElementsAre(static_cast<StringIR*>(strings[0])->str(),
+                                                     static_cast<StringIR*>(strings[1])->str(),
+                                                     static_cast<StringIR*>(strings[2])->str()));
+}
+
+constexpr char kFuncDefWithType[] = R"query(
+def func(a : str):
+    df = pd.DataFrame(a)
+    pl.display(df)
+
+
+func('http_events')
+)query";
+
+// TODO(philkuz) (PL-1321) support type args.
+TEST_F(ASTVisitorTest, DISABLED_func_def_with_type) {
+  auto ir_graph_or_s = CompileGraph(kFuncDefWithType);
+  ASSERT_OK(ir_graph_or_s);
+  auto ir_graph = ir_graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
+  EXPECT_EQ(mem_src->table_name(), "http_events");
+  ASSERT_EQ(mem_src->Children().size(), 1);
+  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+}
+
+constexpr char kFuncDefWithVarKwargs[] = R"query(
+def func(**kwargs):
+    df = pd.DataFrame('http_events')
+    pl.display(df)
+
+
+func('http_events')
+)query";
+
+TEST_F(ASTVisitorTest, func_def_with_kwargs_fails) {
+  auto ir_graph_or_s = CompileGraph(kFuncDefWithVarKwargs);
+  ASSERT_NOT_OK(ir_graph_or_s);
+  EXPECT_THAT(ir_graph_or_s.status(),
+              HasCompilerError("variable length kwargs are not supported in function definitions"));
+}
+
+constexpr char kFuncDefWithVarArgs[] = R"query(
+def func(*args):
+    df = pd.DataFrame('http_events')
+    pl.display(df)
+
+
+func('http_events')
+)query";
+
+TEST_F(ASTVisitorTest, func_def_with_args_fails) {
+  auto ir_graph_or_s = CompileGraph(kFuncDefWithVarArgs);
+  ASSERT_NOT_OK(ir_graph_or_s);
+  EXPECT_THAT(ir_graph_or_s.status(),
+              HasCompilerError("variable length args are not supported in function definitions"));
+}
+
+constexpr char kFuncDefWithDefaultArgs[] = R"query(
+def func(a = 'http_events'):
+    df = pl.DataFrame(a)
+    pl.display(df)
+
+
+func('http_events')
+)query";
+
+TEST_F(ASTVisitorTest, func_def_with_default_args_fails) {
+  auto ir_graph_or_s = CompileGraph(kFuncDefWithDefaultArgs);
+  ASSERT_NOT_OK(ir_graph_or_s);
+  EXPECT_THAT(ir_graph_or_s.status(),
+              HasCompilerError("default values not supported in function definitions"));
+}
+
+constexpr char kFuncDefWithReturn[] = R"query(
+def func(a):
+    df = pl.DataFrame(a)
+    return df
+
+
+df = func('http_events')
+pl.display(df)
+)query";
+
+TEST_F(ASTVisitorTest, func_with_return_fails) {
+  auto ir_graph_or_s = CompileGraph(kFuncDefWithReturn);
+  ASSERT_NOT_OK(ir_graph_or_s);
+  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("Return statements not yet supported"));
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

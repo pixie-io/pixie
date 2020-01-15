@@ -72,9 +72,13 @@ StatusOr<IRNode*> ASTVisitorImpl::ParseAndProcessSingleExpression(
 }
 
 Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
-  pypa::AstStmtList items_list = m->body->items;
+  return ProcessASTSuite(m->body);
+}
+
+Status ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& body) {
+  pypa::AstStmtList items_list = body->items;
   if (items_list.size() == 0) {
-    return CreateAstError(m, "No runnable code found");
+    return CreateAstError(body, "No runnable code found");
   }
   // iterate through all the items on this list.
   for (pypa::AstStmt stmt : items_list) {
@@ -87,8 +91,16 @@ Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
         PL_RETURN_IF_ERROR(ProcessAssignNode(PYPA_PTR_CAST(Assign, stmt)));
         break;
       }
+      case pypa::AstType::FunctionDef: {
+        PL_RETURN_IF_ERROR(ProcessFunctionDefNode(PYPA_PTR_CAST(FunctionDef, stmt)));
+        break;
+      }
+      case pypa::AstType::Return: {
+        return CreateAstError(stmt, "Return statements not yet supported");
+      }
       default: {
-        return CreateAstError(m, "Can't parse expression of type $0", GetAstTypeName(stmt->type));
+        return CreateAstError(stmt, "Can't parse expression of type $0",
+                              GetAstTypeName(stmt->type));
       }
     }
   }
@@ -209,6 +221,95 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   OperatorContext op_context({}, "", {});
   PL_ASSIGN_OR_RETURN(auto processed_node, Process(node->value, op_context));
   var_table_->Add(assign_name, processed_node);
+  return Status::OK();
+}
+
+StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(const std::vector<std::string>& arg_names,
+                                                     const pypa::AstSuitePtr& body,
+                                                     const pypa::AstPtr& ast,
+                                                     const ParsedArgs& args) {
+  std::shared_ptr<VarTable> local_scope = var_table_->CreateChild();
+  for (const std::string& arg_name : arg_names) {
+    // TODO(philkuz) scope out making args return objects instead of IRNode*.
+    IRNode* arg = args.GetArg(arg_name);
+    QLObjectPtr arg_object;
+    if (Match(arg, Operator())) {
+      PL_ASSIGN_OR_RETURN(arg_object, Dataframe::Create(static_cast<OperatorIR*>(arg)));
+    } else {
+      DCHECK(Match(arg, Expression())) << "FuncDefHandler written to only handle Operators and "
+                                          "Expressions, received a non-op and non-expr "
+                                       << arg->type_string();
+      PL_ASSIGN_OR_RETURN(arg_object, ExprObject::Create(static_cast<ExpressionIR*>(arg)));
+    }
+    local_scope->Add(arg_name, arg_object);
+  }
+  PL_ASSIGN_OR_RETURN(auto ast_visitor,
+                      ASTVisitorImpl::Create(ir_graph_, compiler_state_, local_scope));
+  PL_RETURN_IF_ERROR(ast_visitor->ProcessASTSuite(body));
+
+  // TODO(philkuz) explore looking at how returns are handled.
+  return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast));
+}
+
+Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& node) {
+  // Create the func object.
+  // Use the new function defintion body as the function object.
+  // Every time the function is evaluated we should evlauate the body with the values for the
+  // args passed into the scope.
+  // Parse the args to create the necessary
+  auto function_name_node = node->name;
+  std::vector<std::string> parsed_arg_names;
+  for (const auto& arg : node->args.arguments) {
+    if (arg->type != AstType::Name) {
+      return CreateAstError(arg, "function parameter must be a name, not a $0",
+                            GetAstTypeName(arg->type));
+    }
+    parsed_arg_names.push_back(GetNameAsString(arg));
+  }
+  // TODO(philkuz) delete keywords from the function definition.
+  // For some reason this is kept around, not clear why, making sure that it's 0 for now.
+  DCHECK_EQ(node->args.keywords.size(), 0UL);
+
+  // The default values for args. Should be the same length as args. For now we should consider not
+  // processing these.
+  DCHECK_EQ(node->args.defaults.size(), node->args.arguments.size());
+  for (const auto& default_value : node->args.defaults) {
+    // TODO(philkuz) support default.
+    if (default_value != nullptr) {
+      return CreateAstError(default_value, "default values not supported in function definitions");
+    }
+  }
+
+  // TODO(philkuz) support *args.
+  if (node->args.args) {
+    return CreateAstError(node->args.args,
+                          "variable length args are not supported in function definitions");
+  }
+
+  // TODO(philkuz) support **kwargs
+  if (node->args.kwargs) {
+    return CreateAstError(node->args.kwargs,
+                          "variable length kwargs are not supported in function definitions");
+  }
+
+  if (function_name_node->type != AstType::Name) {
+    return CreateAstError(function_name_node, "function definition must be a name, not a $0",
+                          GetAstTypeName(function_name_node->type));
+  }
+
+  if (node->body->type != AstType::Suite) {
+    return CreateAstError(node->body, "function body of type $0 not allowed",
+                          GetAstTypeName(node->body->type));
+  }
+  pypa::AstSuitePtr body = PYPA_PTR_CAST(Suite, node->body);
+  std::string function_name = GetNameAsString(function_name_node);
+
+  PL_ASSIGN_OR_RETURN(
+      auto defined_func,
+      FuncObject::Create(function_name, parsed_arg_names, {}, false, false,
+                         std::bind(&ASTVisitorImpl::FuncDefHandler, this, parsed_arg_names, body,
+                                   std::placeholders::_1, std::placeholders::_2)));
+  var_table_->Add(function_name, defined_func);
   return Status::OK();
 }
 

@@ -110,6 +110,14 @@ class ASTVisitorImpl : public ASTVisitor {
   Status Init();
 
   /**
+   * @brief Process statements list passed in as an argument.
+   *
+   * @param body the body ast object to parse.
+   * @return Status any errors that come up.
+   */
+  Status ProcessASTSuite(const pypa::AstSuitePtr& body);
+
+  /**
    * @brief Processes any expression node into a QLObjectPtr.
    *
    * @param node
@@ -172,6 +180,18 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return Status whether the assignment worked or not.
    */
   Status ProcessAssignNode(const pypa::AstAssignPtr& node);
+
+  /**
+   * @brief ProcessFunctionDefNode handles function definitions in the query language.
+   * ```
+   * def func(blah):
+   *     return blah
+   * ```
+   *
+   * @param node
+   * @return Status of whether creation the function definition worked or not.
+   */
+  Status ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& node);
 
   /**
    * @brief Gets the function name out of the call node into a string.
@@ -350,6 +370,19 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> LookupVariable(const pypa::AstNamePtr& name) {
     return LookupVariable(name, name->id);
   }
+
+  /**
+   * @brief This is the FuncObject caller logic for functions defined inside of the query
+   *
+   * @param arg_names The name of the arguments that are passed in.
+   * @param body the body of the defined function
+   * @param ast the ast node of the function call
+   * @param args the parsed arguments passed into the function during a call.
+   * @return StatusOr<QLObjectPtr>
+   */
+  StatusOr<QLObjectPtr> FuncDefHandler(const std::vector<std::string>& arg_names,
+                                       const pypa::AstSuitePtr& body, const pypa::AstPtr& ast,
+                                       const ParsedArgs& args);
 
   IR* ir_graph_;
   CompilerState* compiler_state_;
