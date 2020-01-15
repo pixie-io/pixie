@@ -18,7 +18,7 @@ interface Point {
 
 interface ScatterPlotData {
   points: Point[];
-  lines: LineSeriesData[];
+  lines?: LineSeriesData[];
 }
 
 export function parseData(tables: GQLDataTable[]): ScatterPlotData | null {
@@ -82,7 +82,7 @@ function formatHint(value: Point) {
 }
 
 export const ScatterPlot = React.memo<ScatterPlotData>(withAutoSizer(
-  ({ points, lines, height, width }) => {
+  ({ points, lines = [], height, width }) => {
     if (points.length === 0) {
       return null;
     }
