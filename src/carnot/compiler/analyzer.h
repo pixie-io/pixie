@@ -17,7 +17,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-class Analyzer : public RuleExecutor {
+class Analyzer : public RuleExecutor<IR> {
  public:
   static StatusOr<std::unique_ptr<Analyzer>> Create(CompilerState* compiler_state) {
     std::unique_ptr<Analyzer> analyzer(new Analyzer(compiler_state));

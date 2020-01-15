@@ -17,7 +17,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-template <typename TPlanType>
+template <typename TPlan>
 struct RuleTraits {};
 
 template <>
@@ -30,7 +30,7 @@ struct RuleTraits<distributed::DistributedPlan> {
   using node_type = distributed::CarnotInstance;
 };
 
-template <typename TPlanType>
+template <typename TPlan>
 class BaseRule {
  public:
   BaseRule() = delete;
@@ -38,7 +38,7 @@ class BaseRule {
 
   virtual ~BaseRule() = default;
 
-  virtual StatusOr<bool> Execute(TPlanType* graph) {
+  virtual StatusOr<bool> Execute(TPlan* graph) {
     std::vector<int64_t> topo_graph = graph->dag().TopologicalSort();
     bool any_changed = false;
     for (int64_t node_i : topo_graph) {
@@ -60,10 +60,10 @@ class BaseRule {
    * @return false: if the rule does nothing to the node.
    * @return Status: error if something goes wrong during the rule application.
    */
-  virtual StatusOr<bool> Apply(typename RuleTraits<TPlanType>::node_type* node) = 0;
+  virtual StatusOr<bool> Apply(typename RuleTraits<TPlan>::node_type* node) = 0;
   void DeferNodeDeletion(int64_t node) { node_delete_q.push(node); }
 
-  Status EmptyDeleteQueue(TPlanType* graph) {
+  Status EmptyDeleteQueue(TPlan* graph) {
     while (!node_delete_q.empty()) {
       PL_RETURN_IF_ERROR(graph->DeleteNode(node_delete_q.front()));
       node_delete_q.pop();

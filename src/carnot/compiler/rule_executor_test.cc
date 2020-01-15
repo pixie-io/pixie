@@ -71,7 +71,7 @@ class RuleExecutorTest : public OperatorTests {
   ColumnIR* col;
 };
 
-class TestExecutor : public RuleExecutor {
+class TestExecutor : public RuleExecutor<IR> {
  public:
   static StatusOr<std::unique_ptr<TestExecutor>> Create() {
     std::unique_ptr<TestExecutor> executor(new TestExecutor());

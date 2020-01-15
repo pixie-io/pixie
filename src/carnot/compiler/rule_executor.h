@@ -67,12 +67,13 @@ class DoOnce : public Strategy {
  * @brief Rules modify the IR graph. Each rule should extend this
  * abstract class.
  */
-class RuleBatch {
+template <typename TRuleType>
+class BaseRuleBatch {
  public:
-  RuleBatch(std::string name, std::unique_ptr<Strategy> strategy)
+  BaseRuleBatch(std::string name, std::unique_ptr<Strategy> strategy)
       : name_(name), strategy_(std::move(strategy)) {}
 
-  const std::vector<std::unique_ptr<Rule>>& rules() const { return rules_; }
+  const std::vector<std::unique_ptr<TRuleType>>& rules() const { return rules_; }
   int64_t max_iterations() const { return strategy_->max_iterations(); }
   Status MaxIterationsHandler() const { return strategy_->MaxIterationsHandler(); }
 
@@ -88,14 +89,20 @@ class RuleBatch {
  private:
   std::string name_;
   std::unique_ptr<Strategy> strategy_;
-  std::vector<std::unique_ptr<Rule>> rules_;
+  std::vector<std::unique_ptr<TRuleType>> rules_;
 };
 
+using RuleBatch = BaseRuleBatch<Rule>;
+
+template <typename TPlan>
 class RuleExecutor {
+  using TRule = BaseRule<TPlan>;
+  using TRuleBatch = BaseRuleBatch<BaseRule<TPlan>>;
+
  public:
   virtual ~RuleExecutor() = default;
   // TODO(philkuz) figure out how to collect stats on the execution.
-  Status Execute(IR* ir_graph) {
+  Status Execute(TPlan* ir_graph) {
     for (const auto& rb : rule_batches) {
       bool can_continue = true;
       int64_t iteration = 0;
@@ -103,7 +110,7 @@ class RuleExecutor {
       while (can_continue) {
         iteration += 1;
         bool graph_is_updated = false;
-        for (const std::unique_ptr<Rule>& rule : rb->rules()) {
+        for (const auto& rule : rb->rules()) {
           PL_ASSIGN_OR_RETURN(bool rule_updates_graph, rule->Execute(ir_graph));
           graph_is_updated = graph_is_updated || rule_updates_graph;
         }
@@ -132,7 +139,7 @@ class RuleExecutor {
   }
 
  private:
-  std::vector<std::unique_ptr<RuleBatch>> rule_batches;
+  std::vector<std::unique_ptr<TRuleBatch>> rule_batches;
 };
 
 }  // namespace compiler
