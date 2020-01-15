@@ -30,7 +30,7 @@ class LogicalPlannerTest : public ::testing::Test {
 
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
-  auto planner = LogicalPlanner::Create(true).ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
   auto plan =
       planner
           ->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(), testutils::kQueryForTwoAgents)
@@ -40,16 +40,8 @@ TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
       << out_pb.DebugString();
 }
 
-TEST_F(LogicalPlannerTest, DISABLED_many_agents) {
-  auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
-  auto plan = planner->Plan(testutils::CreateTwoAgentsPlannerState(), testutils::kQueryForTwoAgents)
-                  .ConsumeValueOrDie();
-  auto out_pb = plan->ToProto().ConsumeValueOrDie();
-  EXPECT_THAT(out_pb, Partially(EqualsProto(testutils::kExpectedPlanTwoAgents)));
-}
-
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
-  auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
+  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
   auto plan_or_s =
       planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     testutils::kHttpRequestStats);
@@ -109,9 +101,10 @@ pl.display(joined_table)
 )pxl";
 
 TEST_F(LogicalPlannerTest, duplicate_int) {
-  auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
-  auto plan_or_s = planner->Plan(
-      testutils::CreateTwoAgentsPlannerState(testutils::kHttpEventsSchema), kCompileTimeQuery);
+  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto plan_or_s =
+      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                    kCompileTimeQuery);
   EXPECT_OK(plan_or_s);
 }
 
@@ -145,9 +138,10 @@ df = window2_agg[window2_agg['service'] != '']
 pl.display(df)
 )query";
 TEST_F(LogicalPlannerTest, NestedCompileTime) {
-  auto planner = LogicalPlanner::Create(false).ConsumeValueOrDie();
-  auto plan_or_s = planner->Plan(
-      testutils::CreateTwoAgentsPlannerState(testutils::kHttpEventsSchema), kTwoWindowQuery);
+  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
+  auto plan_or_s =
+      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                    kTwoWindowQuery);
   EXPECT_OK(plan_or_s);
 }
 }  // namespace logical_planner

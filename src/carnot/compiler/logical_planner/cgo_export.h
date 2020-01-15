@@ -11,7 +11,7 @@ typedef void* PlannerPtr;
  * @brief Makes a new planner object.
  * @return PlannePtr - pointer to the planner object.
  */
-PlannerPtr PlannerNew(bool distributed);
+PlannerPtr PlannerNew();
 
 /**
  * @brief Takes in the planner object and the schema, uses this to setup the planner and

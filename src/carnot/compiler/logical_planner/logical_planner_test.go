@@ -72,7 +72,7 @@ func TestPlanner_Simple(t *testing.T) {
 	// TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 	t.Skip("Fix me clang/gcc upgrade")
 	// Create the compiler.
-	c := logicalplanner.New(true)
+	c := logicalplanner.New()
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	query := "df = pl.DataFrame(table='table1')\npl.display(df, 'out')"
@@ -143,7 +143,7 @@ func TestPlanner_Simple(t *testing.T) {
 
 func TestPlanner_MissingTable(t *testing.T) {
 	// Create the compiler.
-	c := logicalplanner.New(false)
+	c := logicalplanner.New()
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	query := "df = pl.DataFrame(table='bad_table')\npl.display(df, 'out')"

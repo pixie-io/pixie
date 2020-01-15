@@ -33,19 +33,15 @@ StatusOr<std::unique_ptr<CompilerState>> LogicalPlanner::CreateCompilerState(
                                                    pl::CurrentTimeNS());
 }
 
-StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(bool distributed) {
+StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create() {
   auto planner = std::unique_ptr<LogicalPlanner>(new LogicalPlanner());
-  PL_RETURN_IF_ERROR(planner->Init(distributed));
+  PL_RETURN_IF_ERROR(planner->Init());
   return planner;
 }
 
-Status LogicalPlanner::Init(bool distributed) {
+Status LogicalPlanner::Init() {
   compiler_ = Compiler();
-  if (distributed) {
-    PL_ASSIGN_OR_RETURN(distributed_planner_, distributed::DistributedPlanner::Create());
-  } else {
-    PL_ASSIGN_OR_RETURN(distributed_planner_, distributed::NoKelvinPlanner::Create());
-  }
+  PL_ASSIGN_OR_RETURN(distributed_planner_, distributed::DistributedPlanner::Create());
   return Status::OK();
 }
 

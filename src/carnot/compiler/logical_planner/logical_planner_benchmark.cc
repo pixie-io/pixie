@@ -11,8 +11,8 @@ namespace compiler {
 namespace logical_planner {
 
 // NOLINTNEXTLINE : runtime/references.
-void BM_Query(benchmark::State& state, bool distributed) {
-  auto planner = LogicalPlanner::Create(distributed).ConsumeValueOrDie();
+void BM_Query(benchmark::State& state) {
+  auto planner = LogicalPlanner::Create().ConsumeValueOrDie();
   auto planner_state =
       testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema);
   for (auto _ : state) {
@@ -21,8 +21,7 @@ void BM_Query(benchmark::State& state, bool distributed) {
   }
 }
 
-BENCHMARK_CAPTURE(BM_Query, distributed, true);
-BENCHMARK_CAPTURE(BM_Query, non_distributed, false);
+BENCHMARK(BM_Query);
 
 }  // namespace logical_planner
 }  // namespace compiler

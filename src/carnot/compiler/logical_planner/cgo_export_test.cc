@@ -45,28 +45,8 @@ StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string plann
 }
 
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
-TEST_F(PlannerExportTest, DISABLED_two_agents_query_test) {
-  planner_ = PlannerNew(/* distributed */ false);
-  int result_len;
-  std::string query = "df = pl.DataFrame(table='table1')\npl.display(df, 'out')";
-
-  auto logical_planner_state = testutils::CreateTwoAgentsPlannerState();
-  auto interface_result =
-      PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), query, &result_len);
-  ASSERT_OK(interface_result);
-
-  distributedpb::LogicalPlannerResult planner_result;
-  ASSERT_TRUE(planner_result.ParseFromString(interface_result.ConsumeValueOrDie()));
-  ASSERT_OK(planner_result.status());
-  std::string expected_planner_result_str =
-      absl::Substitute("plan {$0}", testutils::kExpectedPlanTwoAgents);
-  EXPECT_THAT(planner_result, Partially(EqualsProto(expected_planner_result_str)))
-      << planner_result.DebugString();
-}
-
-// TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
-  planner_ = PlannerNew(/* distributed */ true);
+  planner_ = PlannerNew();
   int result_len;
   std::string query = "df = pl.DataFrame(table='table1')\npl.display(df, 'out')";
 
@@ -85,7 +65,7 @@ TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
 }
 
 TEST_F(PlannerExportTest, bad_queries) {
-  planner_ = PlannerNew(/* distributed */ true);
+  planner_ = PlannerNew();
   int result_len;
   // Bad table name query that should yield a compiler error.
   std::string bad_table_query =
@@ -111,7 +91,7 @@ pl.display(t1)
 // Previously had an issue where the UDF registry's memory was improperly handled, and this query
 // would cause a segfault. If this unit test passes, then that bug should be gone.
 TEST_F(PlannerExportTest, udf_in_query) {
-  planner_ = PlannerNew(/* distributed */ true);
+  planner_ = PlannerNew();
   auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
   int result_len;
   auto interface_result =

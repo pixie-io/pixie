@@ -254,7 +254,7 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 	}
 	planOpts := flags.GetPlanOptions()
 
-	planner := logicalplanner.New(true)
+	planner := logicalplanner.New()
 	defer planner.Free()
 	return s.ExecuteQueryWithPlanner(ctx, req, planner, planOpts)
 }
