@@ -29,8 +29,7 @@ namespace stirling {
  */
 struct SocketOpen {
   uint64_t timestamp_ns = 0;
-  std::string remote_addr = "-";
-  int remote_port = -1;
+  IPAddress remote_addr;
 };
 
 struct SocketClose {
@@ -179,14 +178,14 @@ class ConnectionTracker {
    *
    * @return IP.
    */
-  std::string_view remote_addr() const { return open_info_.remote_addr; }
+  std::string_view remote_addr() const { return open_info_.remote_addr.addr_str; }
 
   /**
    * Get remote IP addr of the connection.
    *
    * @return IP.
    */
-  int remote_port() const { return open_info_.remote_port; }
+  int remote_port() const { return open_info_.remote_addr.port; }
 
   /**
    * @brief Get the connection information (e.g. remote IP, port, PID, etc.) for this connection.

@@ -15,9 +15,10 @@
 namespace pl {
 
 /**
- * @brief Describes a connection from user space. This corresponds to struct conn_info_t in
+ * Describes a connection from user space. This corresponds to struct conn_info_t in
  * src/stirling/bcc_bpf_interface/socket_trace.h.
  */
+// TODO(yzhao): This should be renamed to SockAddr as IPAddress does not really have port.
 struct IPAddress {
   std::variant<struct in_addr, struct in6_addr> addr;
   // TODO(yzhao): Consider removing this as it can be derived from above.

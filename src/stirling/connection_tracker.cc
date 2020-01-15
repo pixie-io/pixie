@@ -78,15 +78,11 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   UpdateTimestamps(conn_event.timestamp_ns);
 
   open_info_.timestamp_ns = conn_event.timestamp_ns;
-  IPAddress addr;
-  Status s = ParseSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr), &addr);
-  if (s.ok()) {
-    open_info_.remote_addr = std::move(addr.addr_str);
-    open_info_.remote_port = addr.port;
-  } else {
+
+  Status s = ParseSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
+                           &open_info_.remote_addr);
+  if (!s.ok()) {
     LOG(WARNING) << absl::Substitute("Could not parse IP address, msg: $0", s.msg());
-    open_info_.remote_addr = "-'";
-    open_info_.remote_port = 0;
   }
 }
 
@@ -534,9 +530,9 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
 }
 
 void ConnectionTracker::Disable(std::string_view reason) {
-  LOG_IF(WARNING, !disabled_) << absl::Substitute("Disabling connection=$0 dest=$1:$2 reason=$3",
-                                                  ToString(conn_id_), open_info_.remote_addr,
-                                                  open_info_.remote_port, reason);
+  LOG_IF(WARNING, !disabled_) << absl::Substitute(
+      "Disabling connection=$0 dest=$1:$2 reason=$3", ToString(conn_id_),
+      open_info_.remote_addr.addr_str, open_info_.remote_addr.port, reason);
   disabled_ = true;
   // TODO(oazizi): Consider storing the reason field.
 
@@ -641,7 +637,7 @@ void ConnectionTracker::IterationPreTick(system::ProcParser* proc_parser,
                                          const std::map<int, system::SocketInfo>* connections) {
   // If remote_addr is missing, it means the connect/accept was not traced.
   // Attempt to infer the connection information, to populate remote_addr.
-  if (open_info_.remote_addr == "-" && FLAGS_infer_conn_info && connections != nullptr) {
+  if (open_info_.remote_addr.addr_str == "-" && FLAGS_infer_conn_info && connections != nullptr) {
     InferConnInfo(proc_parser, connections);
   }
 }
@@ -738,16 +734,16 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   Status s;
   switch (socket_info.family) {
     case AF_INET:
-      s = ParseIPv4Addr(socket_info.remote_addr, &open_info_.remote_addr);
-      open_info_.remote_port = ntohs(socket_info.remote_port);
+      s = ParseIPv4Addr(socket_info.remote_addr, &open_info_.remote_addr.addr_str);
+      open_info_.remote_addr.port = ntohs(socket_info.remote_port);
       if (!s.ok()) {
         LOG(ERROR) << absl::Substitute("IP parsing failed [msg=$0]", s.msg());
         return;
       }
       break;
     case AF_INET6:
-      s = ParseIPv6Addr(socket_info.remote_addr, &open_info_.remote_addr);
-      open_info_.remote_port = ntohs(socket_info.remote_port);
+      s = ParseIPv6Addr(socket_info.remote_addr, &open_info_.remote_addr.addr_str);
+      open_info_.remote_addr.port = ntohs(socket_info.remote_port);
       if (!s.ok()) {
         LOG(ERROR) << absl::Substitute("IP parsing failed [msg=$0]", s.msg());
         return;
@@ -756,8 +752,8 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
     case AF_UNIX:
       // TODO(oazizi): This actually records the source inode number. Should actually populate the
       // remote peer.
-      open_info_.remote_addr = "unix_socket";
-      open_info_.remote_port = inode_num;
+      open_info_.remote_addr.addr_str = "unix_socket";
+      open_info_.remote_addr.port = inode_num;
       unix_domain_socket = true;
       break;
     default:
@@ -765,7 +761,8 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   }
 
   LOG(INFO) << absl::Substitute("Inferred connection pid=$0 fd=$1 gen=$2 dest=$3:$4", pid(), fd(),
-                                generation(), open_info_.remote_addr, open_info_.remote_port);
+                                generation(), open_info_.remote_addr.addr_str,
+                                open_info_.remote_addr.port);
 
   // TODO(oazizi): Move this out of this function, since it is not a part of the inference.
   // I don't like side-effects.
