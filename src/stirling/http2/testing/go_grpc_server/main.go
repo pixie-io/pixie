@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"strconv"
@@ -63,6 +64,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
+	fmt.Print(lis.Addr().(*net.TCPAddr).Port)
 
 	s := grpc.NewServer()
 	pb.RegisterGreeterServer(s, &server{})

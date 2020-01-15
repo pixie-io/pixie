@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 )
@@ -25,8 +27,17 @@ func sayHello(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	port := flag.Int("port", 50050, "The port number to serve.")
+	flag.Parse()
+
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(*port))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Print(listener.Addr().(*net.TCPAddr).Port)
+
 	http.HandleFunc("/sayhello", sayHello)
-	err := http.ListenAndServe(":"+strconv.Itoa(*port), nil)
+	err = http.Serve(listener, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
