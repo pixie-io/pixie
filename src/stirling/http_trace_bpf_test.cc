@@ -9,8 +9,8 @@
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 
-DEFINE_string(go_greeter_client_path, "", "The path to the go greeter client executable.");
-DEFINE_string(go_greeter_server_path, "", "The path to the go greeter server executable.");
+DEFINE_string(go_grpc_client_path, "", "The path to the go greeter client executable.");
+DEFINE_string(go_grpc_server_path, "", "The path to the go greeter server executable.");
 
 namespace pl {
 namespace stirling {
@@ -42,18 +42,18 @@ class GoHTTPCTraceTest : public ::testing::Test {
     CHECK(socket_trace_connector_ != nullptr);
     PL_CHECK_OK(connector_->Init());
 
-    CHECK(!FLAGS_go_greeter_client_path.empty())
-        << "--go_greeter_client_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_greeter_client_path)))
-        << FLAGS_go_greeter_client_path;
+    CHECK(!FLAGS_go_grpc_client_path.empty())
+        << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
+    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_client_path)))
+        << FLAGS_go_grpc_client_path;
 
-    CHECK(!FLAGS_go_greeter_server_path.empty())
-        << "--go_greeter_server_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_greeter_server_path)))
-        << FLAGS_go_greeter_server_path;
+    CHECK(!FLAGS_go_grpc_server_path.empty())
+        << "--go_grpc_server_path cannot be empty. You should run this test with bazel.";
+    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_server_path)))
+        << FLAGS_go_grpc_server_path;
 
-    server_path_ = FLAGS_go_greeter_server_path;
-    client_path_ = FLAGS_go_greeter_client_path;
+    server_path_ = FLAGS_go_grpc_server_path;
+    client_path_ = FLAGS_go_grpc_client_path;
 
     ASSERT_OK(s_.Start({server_path_}));
 

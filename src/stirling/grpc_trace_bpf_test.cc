@@ -21,8 +21,8 @@ extern "C" {
 #include "src/stirling/http2/testing/proto/greet.grpc.pb.h"
 #include "src/stirling/socket_trace_connector.h"
 
-DEFINE_string(go_greeter_client_path, "", "The path to the go greeter client executable.");
-DEFINE_string(go_greeter_server_path, "", "The path to the go greeter server executable.");
+DEFINE_string(go_grpc_client_path, "", "The path to the go greeter client executable.");
+DEFINE_string(go_grpc_server_path, "", "The path to the go greeter server executable.");
 
 namespace pl {
 namespace stirling {
@@ -89,18 +89,18 @@ class GRPCTraceGoTest : public ::testing::Test {
         ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
 
   void Init(bool use_https) {
-    CHECK(!FLAGS_go_greeter_client_path.empty())
-        << "--go_greeter_client_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_greeter_client_path)))
-        << FLAGS_go_greeter_client_path;
+    CHECK(!FLAGS_go_grpc_client_path.empty())
+        << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
+    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_client_path)))
+        << FLAGS_go_grpc_client_path;
 
-    CHECK(!FLAGS_go_greeter_server_path.empty())
-        << "--go_greeter_server_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_greeter_server_path)))
-        << FLAGS_go_greeter_server_path;
+    CHECK(!FLAGS_go_grpc_server_path.empty())
+        << "--go_grpc_server_path cannot be empty. You should run this test with bazel.";
+    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_server_path)))
+        << FLAGS_go_grpc_server_path;
 
-    server_path_ = FLAGS_go_greeter_server_path;
-    client_path_ = FLAGS_go_greeter_client_path;
+    server_path_ = FLAGS_go_grpc_server_path;
+    client_path_ = FLAGS_go_grpc_client_path;
 
     std::string https_flag = use_https ? "--https=true" : "--https=false";
     ASSERT_OK(s_.Start({server_path_, https_flag}));

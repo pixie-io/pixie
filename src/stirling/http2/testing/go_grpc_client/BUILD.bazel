@@ -14,7 +14,7 @@ go_library(
 )
 
 go_binary(
-    name = "greeter_client",
+    name = "go_grpc_client",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )

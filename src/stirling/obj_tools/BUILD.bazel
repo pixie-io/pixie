@@ -38,11 +38,10 @@ pl_cc_test(
     name = "obj_tools_test",
     srcs = ["obj_tools_test.cc"],
     args = [
-        "--go_greeter_client_path=$(location //src/stirling/http2/testing/go_grpc_client" +
-        ":greeter_client)",
+        "--go_grpc_client_path=$(location //src/stirling/http2/testing/go_grpc_client)",
     ],
     data = [
-        "//src/stirling/http2/testing/go_grpc_client:greeter_client",
+        "//src/stirling/http2/testing/go_grpc_client",
     ],
     deps = [
         ":cc_library",

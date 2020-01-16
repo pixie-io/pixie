@@ -14,7 +14,7 @@ go_library(
 )
 
 go_binary(
-    name = "greeter_server",
+    name = "go_grpc_server",
     data = [
         "https-server.crt",
         "https-server.key",

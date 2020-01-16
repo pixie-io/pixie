@@ -5,7 +5,7 @@
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 
-DEFINE_string(go_greeter_client_path, "", "The path to the go greeter client executable.");
+DEFINE_string(go_grpc_client_path, "", "The path to the go greeter client executable.");
 
 namespace pl {
 namespace stirling {
@@ -31,10 +31,10 @@ TEST(GetActiveBinariesTest, DISABLED_CaptureTestBinary) {
 }
 
 TEST(GetSymAddrsTest, SymbolAddress) {
-  CHECK(!FLAGS_go_greeter_client_path.empty())
-      << "--go_greeter_client_path cannot be empty. You should run this test with bazel.";
+  CHECK(!FLAGS_go_grpc_client_path.empty())
+      << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
   std::map<std::string, std::vector<int>> binaries;
-  binaries[FLAGS_go_greeter_client_path] = {1, 2, 3};
+  binaries[FLAGS_go_grpc_client_path] = {1, 2, 3};
   EXPECT_THAT(GetSymAddrs(binaries), ElementsAre(Pair(1, _), Pair(2, _), Pair(3, _)));
 }
 

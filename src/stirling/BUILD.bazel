@@ -176,8 +176,8 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["http_trace_bpf_test.cc"],
     args = [
-        "--go_greeter_client_path=$(location //src/stirling/http/testing/go_http_client)",
-        "--go_greeter_server_path=$(location //src/stirling/http/testing/go_http_server)",
+        "--go_grpc_client_path=$(location //src/stirling/http/testing/go_http_client)",
+        "--go_grpc_server_path=$(location //src/stirling/http/testing/go_http_server)",
     ],
     data = [
         "//src/stirling/http/testing/go_http_client",
@@ -208,14 +208,12 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["grpc_trace_bpf_test.cc"],
     args = [
-        "--go_greeter_client_path=$(location //src/stirling/http2/testing/go_grpc_client" +
-        ":greeter_client)",
-        "--go_greeter_server_path=$(location //src/stirling/http2/testing/go_grpc_server" +
-        ":greeter_server)",
+        "--go_grpc_client_path=$(location //src/stirling/http2/testing/go_grpc_client)",
+        "--go_grpc_server_path=$(location //src/stirling/http2/testing/go_grpc_server)",
     ],
     data = [
-        "//src/stirling/http2/testing/go_grpc_client:greeter_client",
-        "//src/stirling/http2/testing/go_grpc_server:greeter_server",
+        "//src/stirling/http2/testing/go_grpc_client",
+        "//src/stirling/http2/testing/go_grpc_server",
     ],
     tags = [
         "requires_bpf",
