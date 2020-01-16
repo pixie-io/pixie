@@ -17,6 +17,9 @@ class PLModule : public QLObject {
   };
   static StatusOr<std::shared_ptr<PLModule>> Create(IR* graph, CompilerState* compiler_state);
 
+  // Constant for the modules.
+  inline static constexpr char kPLModuleObjName[] = "pl";
+
   // Constants for operators in the query language.
   inline static constexpr char kDataframeOpId[] = "DataFrame";
   inline static constexpr char kDisplayOpId[] = "display";

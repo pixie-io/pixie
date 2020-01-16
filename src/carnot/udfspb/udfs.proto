@@ -61,6 +61,7 @@ message UDTFSourceSpec {
     string name = 1;
     pl.types.DataType arg_type = 2;
     pl.types.SemanticType semantic_type = 3;
+    // Optional value.
     pl.carnot.planpb.ScalarValue default_value = 4;
   }
 

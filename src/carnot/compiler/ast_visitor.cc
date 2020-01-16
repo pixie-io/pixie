@@ -30,7 +30,8 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
 
 Status ASTVisitorImpl::Init() {
   var_table_ = VarTable();
-  PL_ASSIGN_OR_RETURN(var_table_[kPLModuleObjName], PLModule::Create(ir_graph_, compiler_state_));
+  PL_ASSIGN_OR_RETURN(var_table_[PLModule::kPLModuleObjName],
+                      PLModule::Create(ir_graph_, compiler_state_));
   return Status::OK();
 }
 

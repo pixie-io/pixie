@@ -41,6 +41,38 @@ relation {
 }
 )proto";
 
+constexpr char kUDTFDefaultValueTestPb[] = R"proto(
+name: "DefaultValueTest"
+args {
+  name: "upid"
+  arg_type: UINT128
+  semantic_type: ST_UPID
+  default_value {
+    data_type: UINT128
+    uint128_value {
+      high: 0
+      low: 1
+    }
+
+  }
+}
+executor: UDTF_SUBSET_PEM
+relation {
+  columns {
+    column_name: "time_"
+    column_type: TIME64NS
+  }
+  columns {
+    column_name: "fd"
+    column_type: INT64
+  }
+  columns {
+    column_name: "name"
+    column_type: STRING
+  }
+}
+)proto";
+
 class PLModuleTest : public QLObjectTest {
  protected:
   std::unique_ptr<compiler::RegistryInfo> SetUpRegistryInfo() {
@@ -52,6 +84,9 @@ class PLModuleTest : public QLObjectTest {
     udfspb::UDTFSourceSpec spec;
     google::protobuf::TextFormat::MergeFromString(kUDTFSourcePb, &spec);
     info->AddUDTF(spec);
+    udfspb::UDTFSourceSpec spec2;
+    google::protobuf::TextFormat::MergeFromString(kUDTFDefaultValueTestPb, &spec2);
+    info->AddUDTF(spec2);
     return info;
   }
 
@@ -130,6 +165,31 @@ TEST_F(PLModuleTest, GetUDTFMethod) {
   auto upid = md::UPID::ParseFromUUIDString(upid_value).ConsumeValueOrDie();
   EXPECT_TRUE(Match(arg_values[0], UInt128Value()));
   EXPECT_EQ(static_cast<UInt128IR*>(arg_values[0])->val(), upid.value());
+}
+
+TEST_F(PLModuleTest, UDTFDefaultValueTest) {
+  std::string udtf_name = "DefaultValueTest";
+  auto method_or_s = module_->GetMethod(udtf_name);
+
+  ASSERT_OK(method_or_s);
+  QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
+
+  ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
+  // No values.
+  auto result_or_s =
+      std::static_pointer_cast<FuncObject>(method_object)->Call({}, ast, ast_visitor.get());
+  ASSERT_OK(result_or_s);
+  auto ql_object = result_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
+  ASSERT_TRUE(Match(ql_object->node(), UDTFSource()));
+
+  auto udtf = static_cast<UDTFSourceIR*>(ql_object->node());
+  EXPECT_EQ(udtf->func_name(), udtf_name);
+  const auto& arg_values = udtf->arg_values();
+  ASSERT_EQ(arg_values.size(), 1);
+  auto uint_value = absl::MakeUint128(0, 1);
+  EXPECT_TRUE(Match(arg_values[0], UInt128Value()));
+  EXPECT_EQ(static_cast<UInt128IR*>(arg_values[0])->val(), uint_value);
 }
 
 TEST_F(PLModuleTest, GetUDTFMethodBadArguements) {

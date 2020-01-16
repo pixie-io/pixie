@@ -1,9 +1,11 @@
+#include "src/carnot/compiler/objects/pl_module.h"
+
+#include <magic_enum.hpp>
 #include <vector>
 
 #include "src/carnot/compiler/objects/dataframe.h"
 #include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/none_object.h"
-#include "src/carnot/compiler/objects/pl_module.h"
 #include "src/shared/metadata/base_types.h"
 
 namespace pl {
@@ -39,16 +41,53 @@ Status PLModule::RegisterUDFFuncs() {
   return Status::OK();
 }
 
+StatusOr<std::string> PrepareDefaultUDTFArg(const planpb::ScalarValue& scalar_value) {
+  switch (scalar_value.data_type()) {
+    case types::BOOLEAN: {
+      if (scalar_value.bool_value()) {
+        return std::string("True");
+      } else {
+        return std::string("False");
+      }
+    }
+    case types::INT64: {
+      return absl::Substitute("$0", scalar_value.int64_value());
+    }
+    case types::FLOAT64: {
+      return absl::Substitute("$0", scalar_value.float64_value());
+    }
+    case types::STRING: {
+      return scalar_value.string_value();
+    }
+    case types::UINT128: {
+      std::string upid_as_str =
+          sole::rebuild(scalar_value.uint128_value().high(), scalar_value.uint128_value().low())
+              .str();
+      return absl::Substitute("$0.$1('$2')", PLModule::kPLModuleObjName,
+                              PLModule::kUInt128ConversionId, upid_as_str);
+    }
+    default: {
+      return error::InvalidArgument("$0 not handled as a default value",
+                                    magic_enum::enum_name(scalar_value.data_type()));
+    }
+  }
+}
+
 Status PLModule::RegisterUDTFs() {
   for (const auto& udtf : compiler_state_->registry_info()->udtfs()) {
     std::vector<std::string> argument_names;
+    absl::flat_hash_map<std::string, std::string> default_values;
     for (const auto& arg : udtf.args()) {
       argument_names.push_back(arg.name());
+      if (arg.has_default_value()) {
+        DCHECK_EQ(arg.default_value().data_type(), arg.arg_type());
+        PL_ASSIGN_OR_RETURN(default_values[arg.name()], PrepareDefaultUDTFArg(arg.default_value()));
+      }
     }
 
     PL_ASSIGN_OR_RETURN(
         std::shared_ptr<FuncObject> fn_obj,
-        FuncObject::Create(udtf.name(), argument_names, {},
+        FuncObject::Create(udtf.name(), argument_names, default_values,
                            /* has_variable_len_args */ false,
                            /* has_variable_len_kwargs */ false,
                            std::bind(&UDTFSourceHandler::Eval, graph_, udtf, std::placeholders::_1,

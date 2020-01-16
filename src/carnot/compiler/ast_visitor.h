@@ -76,9 +76,6 @@ class ASTVisitorImpl : public ASTVisitor {
 
   IR* ir_graph() const { return ir_graph_; }
 
-  // Constant for the modules.
-  inline static constexpr char kPLModuleObjName[] = "pl";
-
   // Reserved column names.
   inline static constexpr char kTimeConstantColumnName[] = "time_";
 
