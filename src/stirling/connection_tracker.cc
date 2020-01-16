@@ -42,12 +42,12 @@ std::string ToString(const conn_id_t& conn_id) {
 //--------------------------------------------------------------
 
 template <>
-void ConnectionTracker::InitState<mysql::Packet>() {
-  DCHECK(std::holds_alternative<std::monostate>(state_) ||
-         (std::holds_alternative<std::unique_ptr<mysql::State>>(state_)));
-  if (std::holds_alternative<std::monostate>(state_)) {
+void ConnectionTracker::InitProtocolState<mysql::Packet>() {
+  DCHECK(std::holds_alternative<std::monostate>(protocol_state_) ||
+         (std::holds_alternative<std::unique_ptr<mysql::State>>(protocol_state_)));
+  if (std::holds_alternative<std::monostate>(protocol_state_)) {
     mysql::State s{std::map<int, mysql::PreparedStatement>()};
-    state_ = std::make_unique<mysql::State>(std::move(s));
+    protocol_state_ = std::make_unique<mysql::State>(std::move(s));
   }
 }
 
@@ -513,12 +513,12 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
     return {};
   }
 
-  InitState<mysql::Packet>();
+  InitProtocolState<mysql::Packet>();
 
   auto& req_messages = req_data()->Messages<mysql::Packet>();
   auto& resp_messages = resp_data()->Messages<mysql::Packet>();
 
-  auto state_ptr = state<mysql::State>();
+  auto state_ptr = protocol_state<mysql::State>();
 
   // ProcessMySQLPackets handles errors internally.
   std::vector<mysql::Record> result =
@@ -530,16 +530,21 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
 }
 
 void ConnectionTracker::Disable(std::string_view reason) {
-  LOG_IF(WARNING, !disabled_) << absl::Substitute(
-      "Disabling connection=$0 dest=$1:$2 reason=$3", ToString(conn_id_),
-      open_info_.remote_addr.addr_str, open_info_.remote_addr.port, reason);
-  disabled_ = true;
-  // TODO(oazizi): Consider storing the reason field.
+  set_state(State::kDisabled, reason);
 
   send_data_.Reset();
   recv_data_.Reset();
 
   // TODO(oazizi): Propagate the disable back to BPF, so it doesn't even send the data.
+}
+
+void ConnectionTracker::set_state(State state, std::string_view reason) {
+  LOG_IF(INFO, state_ != state) << absl::Substitute(
+      "Changing the state of connection=$0 dest=$1:$2, from $3 to $4, reason=$5",
+      ToString(conn_id_), open_info_.remote_addr.addr_str, open_info_.remote_addr.port, state_,
+      state, reason);
+  // TODO(oazizi/yzhao): Consider storing the reason field.
+  state_ = state;
 }
 
 bool ConnectionTracker::AllEventsReceived() const {
@@ -640,6 +645,10 @@ void ConnectionTracker::IterationPreTick(system::ProcParser* proc_parser,
   if (open_info_.remote_addr.addr_str == "-" && FLAGS_infer_conn_info && connections != nullptr) {
     InferConnInfo(proc_parser, connections);
   }
+  if (state() == State::kCollecting && role() == EndpointRole::kRoleClient) {
+    set_state(State::kTransferring, "Always transfer data from client side.");
+  }
+  // TODO(yzhao): If InferConnInfo() failed, we'd disable this tracker if it's on server side.
 }
 
 void ConnectionTracker::IterationPostTick() {

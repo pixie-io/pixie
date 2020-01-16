@@ -50,6 +50,19 @@ struct SocketClose {
  */
 class ConnectionTracker {
  public:
+  // State values change monotonically from lower to higher values; and cannot change reversely.
+  enum State {
+    // When collecting, the tracker collects data from BPF, but does not push them to table store.
+    kCollecting,
+
+    // When transferring, the tracker pushes data to table store.
+    kTransferring,
+
+    // When disabled, the tracker will silently drop existing data and silently drop any new data.
+    // It will, however, still track open and close events.
+    kDisabled,
+  };
+
   /**
    * @brief Registers a BPF connection control event into the tracker.
    *
@@ -243,13 +256,15 @@ class ConnectionTracker {
    * The tracker will still wait for a Close event to get destroyed.
    */
   void Disable(std::string_view reason = "");
+  void set_state(State state, std::string_view reason);
 
   /**
    * @brief The tracker is disabled and will not produce any new results.
    *
    * @return true if tracker is disabled.
    */
-  bool disabled() { return disabled_; }
+  bool disabled() { return state_ == State::kDisabled; }
+  State state() { return state_; }
 
   /**
    * @brief Check if all events have been received on this stream.
@@ -361,19 +376,23 @@ class ConnectionTracker {
   static constexpr int64_t kDeathCountdownIters = 3;
 
   /**
-   * Curretly, only MySQL needs to keep a state, so it has a specialized template of
-   * the InitState function, and the general template is empty.
+   * Initializes protocol state for a protocol (as specified by the message type).
+   *
+   * Currently, only MySQL needs to keep a protocol state, so it has a specialization,
+   * and the general template is empty.
    */
   template <typename TMessageType>
-  void InitState() {}
+  void InitProtocolState() {}
 
   /**
-   * state() gets the state of a connection tracker. This function is only expected to
-   * be called in a templated environment, such as in ProcessMessages<mysql::Packet>.
+   * Returns the protocol state for a protocol (as specified by the message type).
+   *
+   * This function is only expected to be called in a templated environment, such as in
+   * ProcessMessages<mysql::Packet>.
    */
-  template <typename TStateType>
-  TStateType* state() const {
-    return std::get<std::unique_ptr<TStateType>>(state_).get();
+  template <typename TProtocolStateType>
+  TProtocolStateType* protocol_state() const {
+    return std::get<std::unique_ptr<TProtocolStateType>>(protocol_state_).get();
   }
 
   template <typename TMessageType>
@@ -453,9 +472,7 @@ class ConnectionTracker {
   uint32_t num_send_events_ = 0;
   uint32_t num_recv_events_ = 0;
 
-  // When disabled, the tracker will silently drop existing data and silently drop any new data.
-  // It will, however, still track open and close events.
-  bool disabled_ = false;
+  State state_ = State::kCollecting;
 
   inline static std::chrono::seconds inactivity_duration_ = kDefaultInactivityDuration;
 
@@ -470,7 +487,7 @@ class ConnectionTracker {
    * E.g. MySQL keeps a map of previously occurred stmt prepare events as the state such
    * that future stmt execute events can match up with the correct one using stmt_id.
    */
-  std::variant<std::monostate, std::unique_ptr<mysql::State>> state_;
+  std::variant<std::monostate, std::unique_ptr<mysql::State>> protocol_state_;
 };
 
 }  // namespace stirling
