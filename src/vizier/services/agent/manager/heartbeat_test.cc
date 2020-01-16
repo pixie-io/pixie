@@ -92,6 +92,7 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     EXPECT_OK(relation_info_manager_->UpdateRelationInfo(relation_info_vec));
 
     agent_info_ = agent::Info{};
+    agent_info_.capabilities.set_collects_data(true);
 
     heartbeat_handler_ = std::make_unique<HeartbeatMessageHandler>(
         dispatcher_.get(), mds_manager_.get(), relation_info_manager_.get(), &agent_info_,
