@@ -26,7 +26,7 @@ func sayHello(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	port := flag.Int("port", 50050, "The port number to serve.")
+	port := flag.Int("port", 0, "The port number to serve.")
 	flag.Parse()
 
 	listener, err := net.Listen("tcp", ":"+strconv.Itoa(*port))

@@ -103,12 +103,14 @@ class GRPCTraceGoTest : public ::testing::Test {
     client_path_ = FLAGS_go_greeter_client_path;
 
     std::string https_flag = use_https ? "--https=true" : "--https=false";
-    PL_CHECK_OK(s_.Start({server_path_, https_flag}));
-    if (use_https) {
-      // HTTPs server takes longer to initialize, add a short delay to compensate for that.
-      sleep(2);
-    }
-    PL_CHECK_OK(c_.Start({client_path_, https_flag}));
+    ASSERT_OK(s_.Start({server_path_, https_flag}));
+
+    // Give some time for the server to start up.
+    sleep(2);
+
+    const std::string port_str = s_.Stdout();
+    ASSERT_TRUE(absl::SimpleAtoi(port_str, &s_port_));
+    ASSERT_NE(0, s_port_);
 
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
@@ -124,8 +126,6 @@ class GRPCTraceGoTest : public ::testing::Test {
   }
 
   void TearDown() override {
-    c_.Kill();
-    c_.Wait();
     s_.Kill();
     EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
   }
@@ -139,6 +139,7 @@ class GRPCTraceGoTest : public ::testing::Test {
   DataTable data_table_;
   SubProcess c_;
   SubProcess s_;
+  int s_port_ = -1;
   std::unique_ptr<ConnectorContext> ctx_;
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnector* socket_trace_connector_;
@@ -157,7 +158,8 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
   // TODO(yzhao): Add a --count flag to greeter client so we can test the case of multiple RPC calls
   // (multiple HTTP2 streams).
   SubProcess c;
-  EXPECT_OK(c.Start({client_path_, "-name=PixieLabs", "-once"}));
+  ASSERT_OK(c.Start(
+      {client_path_, "-name=PixieLabs", "-once", absl::StrCat("-address=localhost:", s_port_)}));
 
   EXPECT_OK(socket_trace_connector_->TestOnlySetTargetPID(c.child_pid()));
 
@@ -178,11 +180,10 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
 
   EXPECT_THAT(
       std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(target_record_idx)),
-      AllOf(HasSubstr(R"({":authority":"localhost:50051",)"
-                      R"(":method":"POST",)"
-                      R"(":path":"/pl.stirling.http2.testing.Greeter/SayHello",)"
-                      R"(":scheme":"http",)"
-                      R"("content-type":"application/grpc")"),
+      AllOf(HasSubstr(absl::Substitute(R"(":authority":"localhost:$0")", s_port_)),
+            HasSubstr(R"(":method":"POST")"),
+            HasSubstr(R"(":path":"/pl.stirling.http2.testing.Greeter/SayHello")"),
+            HasSubstr(R"(":scheme":"http")"), HasSubstr(R"("content-type":"application/grpc")"),
             HasSubstr(R"("grpc-timeout")"), HasSubstr(R"("te":"trailers","user-agent")")));
   EXPECT_THAT(
       std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(target_record_idx)),
@@ -193,7 +194,8 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
   EXPECT_THAT(
       std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
       HasSubstr("127.0.0.1"));
-  EXPECT_EQ(50051, record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx).val);
+  EXPECT_EQ(s_port_,
+            record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx).val);
   EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(target_record_idx).val);
   EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
             record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(target_record_idx).val);
@@ -208,6 +210,9 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithPara
     FLAGS_stirling_enable_grpc_kprobe_tracing = false;
     FLAGS_stirling_enable_grpc_uprobe_tracing = true;
     GRPCTraceGoTest::Init(GetParam());
+
+    const std::string https_flag = GetParam() ? "--https=true" : "--https=false";
+    ASSERT_OK(c_.Start({client_path_, https_flag, absl::StrCat("-address=localhost:", s_port_)}));
   }
 };
 
