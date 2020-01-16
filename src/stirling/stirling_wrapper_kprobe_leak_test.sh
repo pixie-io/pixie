@@ -7,9 +7,9 @@ BIN_DIR=.
 
 # If the script was run in a stand-alone way,
 # then build and set the correct directory of the binary.
-if [ -z "$BUILD_WORKSPACE_DIRECTORY" ]; then
+if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     bazel build //src/stirling:stirling_wrapper
-    BIN_DIR=$(bazel info bazel-bin)
+    BIN_DIR=$(bazel info bazel-bin)/src/stirling
 fi
 
 # Main test run.

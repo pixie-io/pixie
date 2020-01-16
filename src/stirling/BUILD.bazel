@@ -259,5 +259,25 @@ sh_test(
     srcs = ["stirling_wrapper_kprobe_leak_test.sh"],
     data = [":stirling_wrapper"],
     tags = ["requires_bpf"],
-    deps = ["//src/stirling/scripts:kprobe_leak_test"],
+    deps = ["//src/stirling/scripts:sh_library"],
+)
+
+sh_test(
+    name = "stirling_wrapper_test",
+    srcs = ["stirling_wrapper_test.sh"],
+    data = [":stirling_wrapper"],
+    tags = ["requires_bpf"],
+    deps = ["//src/stirling/scripts:sh_library"],
+)
+
+sh_test(
+    name = "stirling_wrapper_container_test",
+    srcs = ["stirling_wrapper_container_test.sh"],
+    data = [":stirling_wrapper_image.tar"],
+    tags = [
+        "requires_bpf",
+        #TODO(oazizi): Enable this test once fixed.
+        "manual",
+    ],
+    deps = ["//src/stirling/scripts:sh_library"],
 )

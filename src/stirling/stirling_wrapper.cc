@@ -47,6 +47,7 @@ DEFINE_string(source_name, "*", "The name of the source to report.");
 DEFINE_bool(all_sources, false,
             "If true, turns on all sources. Default turns on only prod sources.");
 DEFINE_bool(print_record_batches, true, "If true, prints captured record batches on STDOUT.");
+DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
 
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 
@@ -187,6 +188,12 @@ int main(int argc, char** argv) {
   stirling->RegisterCallback(StirlingWrapperCallback);
 
   stirling->RegisterAgentMetadataCallback(AgentMetadataCallback);
+
+  if (FLAGS_init_only) {
+    LOG(INFO) << "Exiting after init.";
+    pl::ShutdownEnvironmentOrDie();
+    return 0;
+  }
 
   // Run Data Collector.
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());

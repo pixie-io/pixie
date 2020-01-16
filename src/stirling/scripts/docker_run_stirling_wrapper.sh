@@ -1,6 +1,4 @@
-#!/bin/bash
-
-set -e
+#!/bin/bash -e
 
 usage() {
   echo "This scripts creates a stirling_wrapper image and runs it inside a container."
@@ -8,6 +6,8 @@ usage() {
   echo "Usage: $0 [-i]"
   echo " -i  : interactive (enters the shell)"
   echo " -g  : push image to gcr (otherwise image is only stored locally"
+  echo ""
+  echo "Arguments may be passed to stirling wrapper after '--'"
   exit
 }
 
@@ -16,7 +16,6 @@ parse_args() {
   INTERACTIVE=0
   USE_GCR=0
 
-  local OPTIND
   # Process the command line arguments.
   while getopts "ig" opt; do
     case ${opt} in
@@ -41,6 +40,7 @@ parse_args() {
 }
 
 parse_args "$@"
+shift $((OPTIND -1))
 
 if [ "$USE_GCR" -eq "1" ]; then
   bazel run //src/stirling:push_stirling_wrapper_image
@@ -64,7 +64,7 @@ docker run -it --init --rm \
  --env PL_HOST_PATH=/host \
  --privileged \
  $flags \
- "$image_name"
+ "$image_name" "$@"
 
 # Note: Under the new syntax, mounts should be the following:
 #  --mount type=bind,source=/,target=/host \

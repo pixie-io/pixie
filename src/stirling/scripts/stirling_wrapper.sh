@@ -1,16 +1,12 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # This script only exists because stirling_wrapper must be run as root.
 # Otherwise one would use bazel run ...
 
-set -e
+# shellcheck disable=SC1091
+source utils.sh
 
 bazel build //src/stirling:stirling_wrapper
 
 cmd=$(bazel info bazel-bin)/src/stirling/stirling_wrapper
-
-if [[ $EUID -ne 0 ]]; then
-   sudo "$cmd"
-else
-   $cmd
-fi
+run_prompt_sudo "$cmd" "$@"

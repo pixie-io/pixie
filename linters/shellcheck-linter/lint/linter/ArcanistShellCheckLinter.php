@@ -85,6 +85,7 @@ final class ArcanistShellCheckLinter extends ArcanistExternalLinter {
   protected function getMandatoryFlags() {
     $options = array();
 
+    $options[] = '-x';
     $options[] = '--format=checkstyle';
 
     if ($this->shell) {
