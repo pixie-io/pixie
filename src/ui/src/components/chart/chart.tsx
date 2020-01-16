@@ -59,8 +59,8 @@ export const LineSeriesLegends: React.FC<LineSeriesLegendProps> = ({ lines, stro
  */
 export function TimeValueAxis() {
   return [
-    <XAxis tickFormat={(value) => moment(value).format('hh:mm:ss')} />,
-    <YAxis tickFormat={(value) => numeral(value).format('0.[0]a')} />,
+    <XAxis key='x-axis' tickFormat={(value) => moment(value).format('hh:mm:ss')} />,
+    <YAxis key='y-axis' tickFormat={(value) => numeral(value).format('0.[0]a')} />,
   ];
 }
 
@@ -74,7 +74,7 @@ export function withAutoSizer(WrappedComponent: React.ComponentType<AutoSizerPro
   return (props) => (
     <AutoSizer>
       {({ height, width }) => (
-        <WrappedComponent width={width} height={height} {...props} />
+        <WrappedComponent width={Math.max(width, 0)} height={Math.max(height, 0)} {...props} />
       )}
     </AutoSizer>
   );

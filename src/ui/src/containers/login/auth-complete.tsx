@@ -7,14 +7,14 @@ export const AuthComplete = ({ location }) => {
   return (<DialogBox>
     <p className='pixie-auth-complete-msg'>
       {!err ? 'Authentication successful. Please close this page.' :
-        err === 'token' ? [
-          'Authentication failed. Please make sure the account has',
-          <br />,
-          'permission to use the site ',
-          <strong>{siteName}</strong>,
-        ] :
+        err === 'token' ?
+          (<>
+            Authentication failed. Please make sure the account has
+            <br />
+            permission to use the site <strong>{siteName}</strong>.
+          </>) :
           'Authentication failed. Please try again later.'
       }
     </p>
-  </DialogBox>);
+  </DialogBox >);
 };
