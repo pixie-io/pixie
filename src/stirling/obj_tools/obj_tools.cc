@@ -88,24 +88,33 @@ pl::StatusOr<std::filesystem::path> ResolveExe(std::filesystem::path proc_pid,
 
   // If we're running in a container, convert exe to be relative to host. As we mount host's '/'
   // to '/host' inside container.
-  exe = host / merged / exe;
-  if (!std::filesystem::exists(exe)) {
-    return error::InvalidArgument("Ignoring $0: Does not exist.", exe.string());
+  // Warning: must use operator+ (not operator/) to append exe, because it is an absolute path.
+  // TODO(oazizi): Consider defining a fs::JoinPath() function instead of operator+ to make this
+  // more clear.
+  std::filesystem::path host_exe = host;
+  host_exe += merged;
+  host_exe += exe;
+
+  if (!std::filesystem::exists(host_exe)) {
+    return error::InvalidArgument("Ignoring $0: Does not exist.", host_exe.string());
   }
 
   std::error_code ec;
-  std::filesystem::path canonical_exe = std::filesystem::canonical(exe, ec);
+  std::filesystem::path canonical_exe = std::filesystem::canonical(host_exe, ec);
   if (ec) {
-    return error::InvalidArgument("Ignoring $0: Could not find canonical path.", exe.string());
+    return error::InvalidArgument("Ignoring $0: Could not find canonical path.", host_exe.string());
   }
-  return exe;
+  return host_exe;
 }
 
 std::map<std::string, std::vector<int>> GetActiveBinaries(std::filesystem::path proc,
                                                           std::filesystem::path host) {
   std::map<std::string, std::vector<int>> binaries;
-  proc = host / proc;
-  for (const auto& p : std::filesystem::directory_iterator(proc)) {
+  // Warning: must use operator+ (not operator/) to append proc, because it is an absolute path.
+  std::filesystem::path host_proc;
+  host_proc = host;
+  host_proc += proc;
+  for (const auto& p : std::filesystem::directory_iterator(host_proc)) {
     VLOG(1) << absl::Substitute("Directory: $0", p.path().string());
     int pid = 0;
     if (!absl::SimpleAtoi(p.path().filename().string(), &pid)) {
