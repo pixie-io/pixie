@@ -23,7 +23,7 @@ RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
     -DLIBCLANG_BUILD_STATIC=ON \
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="clang;clangd;compiler-rt;libcxx;libcxxabi;polly;lld;openmp;libunwind" \
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;clangd;compiler-rt;libcxx;libcxxabi;polly;lld;openmp;libunwind" \
     ../llvm-project/llvm
 
 RUN make -j $(nproc)
@@ -57,6 +57,6 @@ RUN rm -rf /opt/clang-9.0-libc++/src
 
 WORKDIR /opt
 VOLUME /image
-ENV deb_name clang-9.0-pl4.deb
+ENV deb_name clang-9.0-pl5.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-9.0 -v 9.0-pl4 --prefix /opt clang-9.0 clang-9.0-libc++"]
+        -s dir -t deb -n clang-9.0 -v 9.0-pl5 --prefix /opt clang-9.0 clang-9.0-libc++"]
