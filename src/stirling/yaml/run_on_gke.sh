@@ -83,9 +83,11 @@ echo "-------------------------------------------"
 echo "Collecting logs"
 echo "-------------------------------------------"
 
+LOGDIR=logs
+mkdir -p "${LOGDIR}"
 timestamp=$(date +%s)
 for pod in $pods; do
-  filename=log$timestamp.$pod
+  filename="${LOGDIR}/log$timestamp.$pod"
   kubectl logs -n "${NAMESPACE}" "$pod" > "$filename"
   echo "$filename"
 done
