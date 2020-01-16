@@ -91,7 +91,10 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   // Host dir is where we must mount host directories into the container.
   const std::filesystem::path kHostDir = "/host";
 
-  std::filesystem::path host_lib_modules_dir = kHostDir / lib_modules_dir;
+  // Careful. Must use operator+ instead of operator/ here.
+  // operator/ will replace the path if the second argument appears to be an absolute path.
+  std::filesystem::path host_lib_modules_dir = kHostDir;
+  host_lib_modules_dir += lib_modules_dir;
   LOG(INFO) << absl::Substitute("Looking for host mounted headers at $0",
                                 host_lib_modules_dir.string());
 
@@ -105,13 +108,21 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
 
   std::error_code ec;
   if (std::filesystem::is_symlink(host_lib_modules_source_dir, ec)) {
-    host_lib_modules_source_dir =
-        kHostDir / std::filesystem::read_symlink(host_lib_modules_source_dir, ec);
+    auto target = std::filesystem::read_symlink(host_lib_modules_source_dir, ec);
+
+    // Careful. Must use operator+ instead of operator/ here.
+    // operator/ will replace the path if the second argument appears to be an absolute path.
+    host_lib_modules_source_dir = kHostDir;
+    host_lib_modules_source_dir += target;
     ECHECK(!ec);
   }
   if (std::filesystem::is_symlink(host_lib_modules_build_dir, ec)) {
-    host_lib_modules_build_dir =
-        kHostDir / std::filesystem::read_symlink(host_lib_modules_build_dir, ec);
+    auto target = std::filesystem::read_symlink(host_lib_modules_build_dir, ec);
+
+    // Careful. Must use operator+ instead of operator/ here.
+    // operator/ will replace the path if the second argument appears to be an absolute path.
+    host_lib_modules_build_dir = kHostDir;
+    host_lib_modules_build_dir += target;
     ECHECK(!ec);
   }
 
