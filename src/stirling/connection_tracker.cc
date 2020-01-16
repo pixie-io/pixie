@@ -672,6 +672,27 @@ void ConnectionTracker::HandleInactivity() {
   }
 }
 
+namespace {
+
+Status ParseRemoteIPAddress(const system::SocketInfo& socket_info, IPAddress* addr) {
+  switch (socket_info.family) {
+    case AF_INET:
+      // This goes first so that the result argument won't be mutated when failed.
+      PL_RETURN_IF_ERROR(ParseIPv4Addr(socket_info.remote_addr, &addr->addr_str));
+      addr->addr = reinterpret_cast<const struct in_addr&>(socket_info.remote_addr);
+      addr->port = socket_info.remote_port;
+      return Status::OK();
+    case AF_INET6:
+      PL_RETURN_IF_ERROR(ParseIPv6Addr(socket_info.remote_addr, &addr->addr_str));
+      addr->addr = socket_info.remote_addr;
+      addr->port = socket_info.remote_port;
+      return Status::OK();
+  }
+  return error::InvalidArgument("Unexpected family $0", socket_info.family);
+}
+
+}  // namespace
+
 void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
                                       const std::map<int, system::SocketInfo>* connections) {
   DCHECK(proc_parser != nullptr);
@@ -734,16 +755,8 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   Status s;
   switch (socket_info.family) {
     case AF_INET:
-      s = ParseIPv4Addr(socket_info.remote_addr, &open_info_.remote_addr.addr_str);
-      open_info_.remote_addr.port = ntohs(socket_info.remote_port);
-      if (!s.ok()) {
-        LOG(ERROR) << absl::Substitute("IP parsing failed [msg=$0]", s.msg());
-        return;
-      }
-      break;
     case AF_INET6:
-      s = ParseIPv6Addr(socket_info.remote_addr, &open_info_.remote_addr.addr_str);
-      open_info_.remote_addr.port = ntohs(socket_info.remote_port);
+      s = ParseRemoteIPAddress(socket_info, &open_info_.remote_addr);
       if (!s.ok()) {
         LOG(ERROR) << absl::Substitute("IP parsing failed [msg=$0]", s.msg());
         return;
