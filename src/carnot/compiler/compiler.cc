@@ -11,6 +11,7 @@
 #include "src/carnot/compiler/analyzer.h"
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
+#include "src/carnot/compiler/objects/pl_module.h"
 #include "src/carnot/compiler/parser/parser.h"
 #include "src/carnot/planpb/plan.pb.h"
 
@@ -51,7 +52,8 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
 Status Compiler::VerifyGraphHasMemorySink(IR* ir) {
   auto sinks = ir->GetSinks();
   if (sinks.size() == 0) {
-    return error::InvalidArgument("query does not output a result, please add a print() statement");
+    return error::InvalidArgument("query does not output a result, please add a $0.$1() statement",
+                                  PLModule::kPLModuleObjName, PLModule::kDisplayOpId);
   }
   return Status::OK();
 }

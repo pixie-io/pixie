@@ -343,7 +343,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSubscriptCall(const pypa::AstSubscr
   PL_RETURN_IF_ERROR(ValidateSubscriptValue(node->value, op_context));
   PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->value, op_context));
   if (!pyobject->HasSubscriptMethod()) {
-    return pyobject->CreateError("'$0' object is not subscriptable");
+    return pyobject->CreateError("object is not subscriptable");
   }
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> func_object, pyobject->GetSubscriptMethod());
 

@@ -2692,7 +2692,7 @@ TEST_F(CompilerTest, missing_result) {
   ASSERT_NOT_OK(missing_result_status);
 
   EXPECT_THAT(missing_result_status.status().msg(),
-              ContainsRegex("query does not output a result, please add a print.* statement"));
+              ContainsRegex("query does not output a result, please add a pl.display.* statement"));
 }
 
 constexpr char kBadDropQuery[] = R"pxl(
