@@ -568,13 +568,18 @@ void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
 }
 
 void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
-  DCHECK((traffic_class_.protocol == kProtocolUnknown) == (traffic_class_.role == kRoleUnknown));
+  // Don't allow changing active protocols or roles, unless it is from unknown to something else.
 
   if (traffic_class_.protocol == kProtocolUnknown) {
-    traffic_class_ = traffic_class;
+    traffic_class_.protocol = traffic_class.protocol;
   } else if (traffic_class.protocol != kProtocolUnknown) {
     DCHECK_EQ(traffic_class_.protocol, traffic_class.protocol)
         << "Not allowed to change the protocol of an active ConnectionTracker";
+  }
+
+  if (traffic_class_.role == kRoleUnknown) {
+    traffic_class_.role = traffic_class.role;
+  } else if (traffic_class.role != kRoleUnknown) {
     DCHECK_EQ(traffic_class_.role, traffic_class.role)
         << "Not allowed to change the role of an active ConnectionTracker";
   }
