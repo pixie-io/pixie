@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -88,7 +89,78 @@ class NetlinkSocketProber {
   int fd_ = -1;
 };
 
+/**
+ * PIDsByNetNamespace scans /proc to find all unique network namespaces.
+ *
+ * @param proc Path to proc filesystem.
+ * @return A map where key is the network namespace, and value is all the PIDs associated with that
+ * network namespace.
+ */
 std::map<uint32_t, std::vector<int>> PIDsByNetNamespace(std::filesystem::path proc);
+
+/**
+ * SocketProberManager is a wrapper around the creation of NetlinkSocketProbers,
+ * which caches socket_probers so that they can be reusued again without having to re-create
+ * a socket prober.
+ *
+ * The cache is simple, and has a notion of rounds or iterations. If a socket prober is not accessed
+ * in a given round, it will be removed in the next round. A round is defined by a call to Update().
+ */
+class SocketProberManager {
+ public:
+  /**
+   * Get a socket prober for the specified network namespace.
+   *
+   * @param ns Inode number of the network namespace.
+   * @return Raw pointer to a netlink socket prober. Pointer will be nullptr if no socket prober
+   * exists for the namespace. The manager holds the ownership of the socket prober, and the
+   * returned pointer is only guaranteed to be valid until next call to Update().
+   */
+  NetlinkSocketProber* GetSocketProber(uint32_t ns);
+
+  /**
+   * Create a socket prober for the specified network namespace.
+   *
+   * @param ns Inode number of the network namespace.
+   * @param pids Vector of PIDs associated with the namespace. At least one PID in this list must
+   * still be active, otherwise a socket prober cannot be created.
+   * @return A raw pointer a netlink socket prober, or error if a socket prober for the namespace
+   * could not be created. Raw pointer will not be nullptr. The manager maintains ownership of the
+   * created socket prober, and the returned pointer is only guaranteed to be valid until next call
+   * to Update().
+   */
+  StatusOr<NetlinkSocketProber*> CreateSocketProber(uint32_t ns, const std::vector<int>& pids);
+
+  /**
+   * Get a socket prober for the specified network namespace, or create one if it does not exist in
+   * the cache.
+   *
+   * @param ns Inode number of the network namespace.
+   * @param pids Vector of PIDs associated with the namespace. At least one PID in this list must
+   * still be active, otherwise a socket prober cannot be created.
+   * @return A raw pointer a netlink socket prober, or error if a socket prober for the namespace
+   * did not exist, and one could not be created. Raw pointer will not be nullptr. The manager
+   * maintains ownership of the socket prober, and the returned pointer is only guaranteed to be
+   * valid until next call to Update().
+   */
+  StatusOr<NetlinkSocketProber*> GetOrCreateSocketProber(uint32_t ns, const std::vector<int>& pids);
+
+  /**
+   * Removes any socket probers that were not accessed since the last call to this function.
+   */
+  void Update();
+
+ private:
+  struct TaggedSocketProber {
+    bool phase;
+    std::unique_ptr<NetlinkSocketProber> socket_prober;
+  };
+
+  // Phase is used as a 1-bit timestamp.
+  // Used to know whether a socket_prober has been recently used.
+  bool current_phase_ = false;
+  std::map<int, TaggedSocketProber> socket_probers_;
+};
 
 }  // namespace system
 }  // namespace pl

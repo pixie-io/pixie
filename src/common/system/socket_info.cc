@@ -27,6 +27,10 @@
 namespace pl {
 namespace system {
 
+//-----------------------------------------------------------------------------
+// NetlinkSocketProber
+//-----------------------------------------------------------------------------
+
 Status NetlinkSocketProber::Connect() {
   fd_ = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_SOCK_DIAG);
   if (fd_ < 0) {
@@ -265,6 +269,10 @@ Status NetlinkSocketProber::UnixConnections(std::map<int, SocketInfo>* socket_in
   return Status::OK();
 }
 
+//-----------------------------------------------------------------------------
+// PIDsByNetNamespace
+//-----------------------------------------------------------------------------
+
 std::map<uint32_t, std::vector<int>> PIDsByNetNamespace(std::filesystem::path proc) {
   std::map<uint32_t, std::vector<int>> result;
 
@@ -297,6 +305,82 @@ std::map<uint32_t, std::vector<int>> PIDsByNetNamespace(std::filesystem::path pr
   }
 
   return result;
+}
+
+//-----------------------------------------------------------------------------
+// SocketProberManager
+//-----------------------------------------------------------------------------
+
+NetlinkSocketProber* SocketProberManager::GetSocketProber(uint32_t ns) {
+  auto iter = socket_probers_.find(ns);
+  if (iter != socket_probers_.end()) {
+    // Update the phase (similar to an LRU touch).
+    iter->second.phase = current_phase_;
+
+    VLOG(2) << absl::Substitute("SocketProberManager: Retrieving entry [ns=$0]", ns);
+    return iter->second.socket_prober.get();
+  }
+  return nullptr;
+}
+
+StatusOr<NetlinkSocketProber*> SocketProberManager::CreateSocketProber(
+    uint32_t ns, const std::vector<int>& pids) {
+  StatusOr<std::unique_ptr<system::NetlinkSocketProber>> socket_prober_or = error::NotFound("");
+
+  // Use any provided PID to create a socket into the network namespace.
+  for (auto& pid : pids) {
+    socket_prober_or = system::NetlinkSocketProber::Create(pid);
+    if (socket_prober_or.ok()) {
+      break;
+    }
+  }
+
+  if (!socket_prober_or.ok()) {
+    return error::Internal(
+        "None of the provided PIDs for the provided namespace ($0) could be used to establish a "
+        "netlink connection to the namespace. It is possible the namespace no longer exists.",
+        ns);
+  }
+
+  VLOG(2) << absl::Substitute("SocketProberManager: Creating entry [ns=$0]", ns);
+
+  // This socket prober will be in the network namespace defined by ns.
+  std::unique_ptr<system::NetlinkSocketProber> socket_prober = socket_prober_or.ConsumeValueOrDie();
+  NetlinkSocketProber* socket_prober_ptr = socket_prober.get();
+  DCHECK_NE(socket_prober_ptr, nullptr);
+  socket_probers_[ns] =
+      TaggedSocketProber{.phase = current_phase_, .socket_prober = std::move(socket_prober)};
+  return socket_prober_ptr;
+}
+
+StatusOr<system::NetlinkSocketProber*> SocketProberManager::GetOrCreateSocketProber(
+    uint32_t ns, const std::vector<int>& pids) {
+  // First check to see if an existing socket prober on the namespace exists.
+  // If so, use that one.
+  NetlinkSocketProber* socket_prober_ptr = GetSocketProber(ns);
+  if (socket_prober_ptr != nullptr) {
+    return socket_prober_ptr;
+  }
+
+  // Otherwise create a socket prober.
+  return CreateSocketProber(ns, pids);
+}
+
+void SocketProberManager::Update() {
+  // Toggle the phase.
+  current_phase_ = current_phase_ ^ 1;
+
+  // Remove socket probers that were not accessed in the last phase.
+  auto iter = socket_probers_.begin();
+  while (iter != socket_probers_.end()) {
+    bool remove = (iter->second.phase == current_phase_);
+
+    VLOG_IF(2, remove) << absl::Substitute("SocketProberManager: Removing entry [ns=$0]",
+                                           iter->first);
+
+    // Update iterator, deleting if necessary as we go.
+    iter = remove ? socket_probers_.erase(iter) : ++iter;
+  }
 }
 
 }  // namespace system

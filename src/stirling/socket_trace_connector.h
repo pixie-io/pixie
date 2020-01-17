@@ -270,9 +270,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   };
   OutputFormat perf_buffer_events_output_format_ = OutputFormat::kTxt;
 
-  std::unique_ptr<system::NetlinkSocketProber> netlink_socket_prober_;
-
+  // Map of inode number to socket information for that inode.
   std::unique_ptr<std::map<int, system::SocketInfo> > socket_connections_;
+
+  // Map of saved socket probers, indexed by network ns inode.
+  system::SocketProberManager socket_probers_;
 
   std::unique_ptr<system::ProcParser> proc_parser_;
 

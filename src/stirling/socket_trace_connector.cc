@@ -207,11 +207,6 @@ Status SocketTraceConnector::InitImpl() {
     LOG(INFO) << absl::Substitute("Writing output to: $0 in $1 format.", abs_path.string(), format);
   }
 
-  StatusOr<std::unique_ptr<system::NetlinkSocketProber>> s = system::NetlinkSocketProber::Create();
-  if (s.ok()) {
-    netlink_socket_prober_ = s.ConsumeValueOrDie();
-  }
-
   return Status::OK();
 }
 
@@ -224,24 +219,39 @@ Status SocketTraceConnector::StopImpl() {
 }
 
 void SocketTraceConnector::UpdateActiveConnections() {
-  if (netlink_socket_prober_ == nullptr) {
-    LOG(ERROR) << "Netlink socket prober not initialized";
-    return;
-  }
-
   // Grab a list of active connections, in case we need to infer the endpoints of any connections
   // with missing endpoints.
-  // TODO(oazizi): Optimization is to skip this if we don't have any connection trackers with
-  // unknown remote endpoints.
+  // TODO(oazizi): Optimization is to skip this function if we don't have any connection trackers
+  // with unknown remote endpoints.
+
+  // Map key is inode number.
   socket_connections_ = std::make_unique<std::map<int, system::SocketInfo>>();
 
-  Status s;
+  std::map<uint32_t, std::vector<int>> pids_by_net_ns =
+      system::PIDsByNetNamespace(system::Config::GetInstance().proc_path());
 
-  s = netlink_socket_prober_->InetConnections(socket_connections_.get());
-  LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to probe InetConnections [msg=$0]", s.msg());
+  for (const auto& [ns, pids] : pids_by_net_ns) {
+    StatusOr<system::NetlinkSocketProber*> socket_prober_or =
+        socket_probers_.GetOrCreateSocketProber(ns, pids);
+    if (!socket_prober_or.ok()) {
+      LOG(WARNING) << absl::Substitute("Failed to create socket prober. Message: $0",
+                                       socket_prober_or.msg());
+      continue;
+    }
+    system::NetlinkSocketProber* socket_prober = socket_prober_or.ValueOrDie();
 
-  s = netlink_socket_prober_->UnixConnections(socket_connections_.get());
-  LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to probe UnixConnections [msg=$0]", s.msg());
+    Status s;
+
+    s = socket_prober->InetConnections(socket_connections_.get());
+    LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to probe InetConnections [net_ns=$0 msg=$1]",
+                                               ns, s.msg());
+
+    s = socket_prober->UnixConnections(socket_connections_.get());
+    LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to probe UnixConnections [net_ns=$0 msg=$1]",
+                                               ns, s.msg());
+  }
+
+  socket_probers_.Update();
 }
 
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,

@@ -114,5 +114,60 @@ TEST_F(NetlinkSocketProberNamespaceTest, Basic) {
   }
 }
 
+TEST_F(NetlinkSocketProberNamespaceTest, SocketProberManager) {
+  std::map<uint32_t, std::vector<int>> pids_by_net_ns =
+      PIDsByNetNamespace(system::Config::GetInstance().proc_path());
+
+  // At least two net namespaces: default, and the container we made during SetUp().
+  EXPECT_GE(pids_by_net_ns.size(), 2);
+
+  SocketProberManager socket_probers;
+
+  // First round: map should be empty.
+  for (auto& [ns, pids] : pids_by_net_ns) {
+    PL_UNUSED(pids);
+    NetlinkSocketProber* socket_prober_ptr = socket_probers.GetSocketProber(ns);
+    EXPECT_EQ(socket_prober_ptr, nullptr);
+  }
+
+  // Second round: map should become populated.
+  for (auto& [ns, pids] : pids_by_net_ns) {
+    // This might be flaky, if a network namespace was destroyed from the initial query to now.
+    // Could cause false test failures.
+    StatusOr<NetlinkSocketProber*> socket_prober_ptr_or =
+        socket_probers.GetOrCreateSocketProber(ns, pids);
+    ASSERT_OK(socket_prober_ptr_or);
+    NetlinkSocketProber* socket_prober_ptr = socket_prober_ptr_or.ValueOrDie();
+    EXPECT_NE(socket_prober_ptr, nullptr);
+  }
+
+  // Third round: map should be populated.
+  for (auto& [ns, pids] : pids_by_net_ns) {
+    PL_UNUSED(pids);
+    NetlinkSocketProber* socket_prober_ptr = socket_probers.GetSocketProber(ns);
+    EXPECT_NE(socket_prober_ptr, nullptr);
+  }
+
+  // Fourth round: A call to RemovedUnused() should not remove any sockets yet.
+  socket_probers.RemoveUnused();
+  for (auto& [ns, pids] : pids_by_net_ns) {
+    PL_UNUSED(pids);
+    NetlinkSocketProber* socket_prober_ptr = socket_probers.GetSocketProber(ns);
+    EXPECT_NE(socket_prober_ptr, nullptr);
+  }
+
+  // Fifth round: A call to RemoveUnused(), followed by no accesses.
+  socket_probers.RemoveUnused();
+  // Don't access any socket probers.
+
+  // Sixth round: If socket probers are not accessed, then they should have all been removed.
+  socket_probers.RemoveUnused();
+  for (auto& [ns, pids] : pids_by_net_ns) {
+    PL_UNUSED(pids);
+    NetlinkSocketProber* socket_prober_ptr = socket_probers.GetSocketProber(ns);
+    EXPECT_EQ(socket_prober_ptr, nullptr);
+  }
+}
+
 }  // namespace system
 }  // namespace pl
