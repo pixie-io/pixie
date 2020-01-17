@@ -30,9 +30,9 @@ using ::testing::StrEq;
 
 constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 
-class GoHTTPCTraceTest : public ::testing::Test {
+class GoHTTPTraceTest : public ::testing::Test {
  protected:
-  GoHTTPCTraceTest()
+  GoHTTPTraceTest()
       : data_table_(kHTTPTable),
         ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
 
@@ -85,7 +85,7 @@ class GoHTTPCTraceTest : public ::testing::Test {
   SocketTraceConnector* socket_trace_connector_;
 };
 
-TEST_F(GoHTTPCTraceTest, RequestAndResponse) {
+TEST_F(GoHTTPTraceTest, RequestAndResponse) {
   ASSERT_OK(
       c_.Start({client_path_, "-name=PixieLabs", absl::StrCat("-address=localhost:", s_port_)}));
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
@@ -122,7 +122,7 @@ struct TraceRoleTestParam {
   size_t server_records_count;
 };
 
-class TraceRoleTest : public GoHTTPCTraceTest,
+class TraceRoleTest : public GoHTTPTraceTest,
                       public ::testing::WithParamInterface<TraceRoleTestParam> {};
 
 TEST_P(TraceRoleTest, VerifyRecordsCount) {
