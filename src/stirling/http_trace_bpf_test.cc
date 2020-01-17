@@ -8,6 +8,7 @@
 #include "src/stirling/data_table.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
+#include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 
 DEFINE_string(go_grpc_client_path, "", "The path to the go greeter client executable.");
 DEFINE_string(go_grpc_server_path, "", "The path to the go greeter server executable.");
@@ -28,19 +29,12 @@ using ::testing::MatchesRegex;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
-
-class GoHTTPTraceTest : public ::testing::Test {
+class GoHTTPTraceTest : public testing::SocketTraceBPFTest {
  protected:
-  GoHTTPTraceTest()
-      : data_table_(kHTTPTable),
-        ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
+  GoHTTPTraceTest() : SocketTraceBPFTest() {}
 
   void SetUp() override {
-    connector_ = SocketTraceConnector::Create("socket_trace_connector");
-    socket_trace_connector_ = static_cast<SocketTraceConnector*>(connector_.get());
-    CHECK(socket_trace_connector_ != nullptr);
-    PL_CHECK_OK(connector_->Init());
+    SocketTraceBPFTest::SetUp();
 
     CHECK(!FLAGS_go_grpc_client_path.empty())
         << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
@@ -66,6 +60,8 @@ class GoHTTPTraceTest : public ::testing::Test {
   }
 
   void TearDown() override {
+    SocketTraceBPFTest::TearDown();
+
     s_.Kill();
     EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
   }
@@ -76,13 +72,10 @@ class GoHTTPTraceTest : public ::testing::Test {
   // Create a context to pass into each TransferData() in the test, using a dummy ASID.
   static constexpr uint32_t kASID = 1;
 
-  DataTable data_table_;
+  DataTable data_table_{kHTTPTable};
   SubProcess c_;
   SubProcess s_;
   int s_port_ = -1;
-  std::unique_ptr<ConnectorContext> ctx_;
-  std::unique_ptr<SourceConnector> connector_;
-  SocketTraceConnector* socket_trace_connector_;
 };
 
 TEST_F(GoHTTPTraceTest, RequestAndResponse) {
@@ -90,11 +83,11 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
       c_.Start({client_path_, "-name=PixieLabs", absl::StrCat("-address=localhost:", s_port_)}));
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
-  connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
 
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> target_record_indices =
-      testing::FindRecordIdxMatchesPid(record_batch, c_.child_pid());
+      testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid());
   ASSERT_THAT(target_record_indices, SizeIs(1));
 
   const size_t target_record_idx = target_record_indices.front();
@@ -127,20 +120,23 @@ class TraceRoleTest : public GoHTTPTraceTest,
 
 TEST_P(TraceRoleTest, VerifyRecordsCount) {
   const TraceRoleTestParam& param = GetParam();
-  EXPECT_OK(socket_trace_connector_->UpdateProtocolTraceRole(kProtocolHTTP, param.role));
+
+  auto* socket_trace_connector = static_cast<SocketTraceConnector*>(source_.get());
+  ASSERT_NE(nullptr, socket_trace_connector);
+  EXPECT_OK(socket_trace_connector->UpdateProtocolTraceRole(kProtocolHTTP, param.role));
 
   ASSERT_OK(
       c_.Start({client_path_, "-name=PixieLabs", absl::StrCat("-address=localhost:", s_port_)}));
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
-  connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
 
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> client_record_ids =
-      testing::FindRecordIdxMatchesPid(record_batch, c_.child_pid());
+      testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid());
   EXPECT_THAT(client_record_ids, SizeIs(param.client_records_count));
   const std::vector<size_t> server_record_ids =
-      testing::FindRecordIdxMatchesPid(record_batch, s_.child_pid());
+      testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, s_.child_pid());
   EXPECT_THAT(server_record_ids, SizeIs(param.server_records_count));
 }
 

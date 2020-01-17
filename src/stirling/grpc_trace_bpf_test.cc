@@ -20,6 +20,7 @@ extern "C" {
 #include "src/stirling/http2/testing/grpc_stub.h"
 #include "src/stirling/http2/testing/proto/greet.grpc.pb.h"
 #include "src/stirling/socket_trace_connector.h"
+#include "src/stirling/testing/common.h"
 
 DEFINE_string(go_grpc_client_path, "", "The path to the go greeter client executable.");
 DEFINE_string(go_grpc_server_path, "", "The path to the go greeter server executable.");
@@ -39,6 +40,7 @@ using ::pl::stirling::http2::testing::ServiceRunner;
 using ::pl::stirling::http2::testing::StreamingGreeter;
 using ::pl::stirling::http2::testing::StreamingGreeterService;
 using ::pl::stirling::testing::CreateInsecureGRPCChannel;
+using ::pl::stirling::testing::FindRecordIdxMatchesPid;
 using ::pl::stirling::testing::GRPCStub;
 using ::pl::testing::proto::EqualsProto;
 using ::pl::types::ColumnWrapperRecordBatch;
@@ -52,17 +54,6 @@ using ::testing::SizeIs;
 using ::testing::StrEq;
 
 constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
-
-std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http_record, int pid) {
-  std::vector<size_t> res;
-  for (size_t i = 0; i < http_record[kHTTPUPIDIdx]->Size(); ++i) {
-    md::UPID upid(http_record[kHTTPUPIDIdx]->Get<types::UInt128Value>(i).val);
-    if (upid.pid() == static_cast<uint64_t>(pid)) {
-      res.push_back(i);
-    }
-  }
-  return res;
-}
 
 HelloReply GetHelloReply(const ColumnWrapperRecordBatch& record_batch, const size_t idx) {
   HelloReply received_reply;
@@ -120,8 +111,6 @@ class GRPCTraceGoTest : public ::testing::Test {
     // failures when detaching them. This might be relevant to probes are inherited by child process
     // when fork() and execvp().
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
-    socket_trace_connector_ = static_cast<SocketTraceConnector*>(connector_.get());
-    CHECK(socket_trace_connector_ != nullptr);
     PL_CHECK_OK(connector_->Init());
   }
 
@@ -142,7 +131,6 @@ class GRPCTraceGoTest : public ::testing::Test {
   int s_port_ = -1;
   std::unique_ptr<ConnectorContext> ctx_;
   std::unique_ptr<SourceConnector> connector_;
-  SocketTraceConnector* socket_trace_connector_;
 };
 
 class GoGRPCKProbeTraceTest : public GRPCTraceGoTest {
@@ -161,8 +149,6 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
   ASSERT_OK(c.Start(
       {client_path_, "-name=PixieLabs", "-once", absl::StrCat("-address=localhost:", s_port_)}));
 
-  EXPECT_OK(socket_trace_connector_->TestOnlySetTargetPID(c.child_pid()));
-
   EXPECT_EQ(0, c.Wait()) << "Client should exit normally.";
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
@@ -173,7 +159,7 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
     ASSERT_GE(col->Size(), 1);
   }
   const std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPid(record_batch, c.child_pid());
+      FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c.child_pid());
   // We should get exactly one record.
   ASSERT_THAT(target_record_indices, SizeIs(1));
   const size_t target_record_idx = target_record_indices.front();
@@ -224,7 +210,7 @@ TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPid(record_batch, c_.child_pid());
+      FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid());
   EXPECT_THAT(target_record_indices, Not(IsEmpty()));
 
   // TODO(yzhao): We should have the same check on the trace record as
@@ -327,7 +313,7 @@ TEST_F(GRPCCppTest, ParseTextProtoSimpleUnaryRPCCall) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
   ASSERT_THAT(indices, SizeIs(1));
   // Was parsed as an Empty message, all fields shown as unknown fields.
   EXPECT_EQ(std::string("1: \"Hello pixielabs!\"\n"),
@@ -346,7 +332,7 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
   EXPECT_THAT(indices, SizeIs(12));
 
   for (size_t idx : indices) {
@@ -374,7 +360,7 @@ TEST_F(GRPCCppTest, DISABLED_RPCTimesOut) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
   // TODO(yzhao): ATM missing response, here because of response times out, renders requests being
   // held in buffer and not exported. Change to export requests after a certain timeout.
   EXPECT_THAT(indices, IsEmpty());
@@ -415,7 +401,7 @@ TEST_F(GRPCCppTest, ServerStreamingRPC) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
   EXPECT_THAT(indices, SizeIs(1));
 
   for (size_t idx : indices) {
@@ -448,7 +434,7 @@ TEST_F(GRPCCppTest, BidirStreamingRPC) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
   EXPECT_THAT(indices, SizeIs(1));
 
   for (size_t idx : indices) {
@@ -479,7 +465,7 @@ TEST_F(GRPCCppMiddleInterceptTest, InterceptMiddleOfTheConnection) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
   EXPECT_THAT(indices, SizeIs(3));
   for (size_t idx : indices) {
     // Header parsing would fail, because missing the head of start.
@@ -513,7 +499,7 @@ TEST_F(GRPCCppCallingNonRegisteredServiceTest, ResultsAreAsExpected) {
   CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
   EXPECT_THAT(indices, SizeIs(3));
   for (size_t idx : indices) {
     EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx)),

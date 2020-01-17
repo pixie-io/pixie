@@ -29,6 +29,7 @@ namespace stirling {
  */
 struct SocketOpen {
   uint64_t timestamp_ns = 0;
+  // TODO(yzhao): Consider using std::optional to indicate the address has not been initialized.
   IPAddress remote_addr;
 };
 
@@ -51,7 +52,7 @@ struct SocketClose {
 class ConnectionTracker {
  public:
   // State values change monotonically from lower to higher values; and cannot change reversely.
-  enum State {
+  enum class State {
     // When collecting, the tracker collects data from BPF, but does not push them to table store.
     kCollecting,
 
@@ -256,15 +257,17 @@ class ConnectionTracker {
    * The tracker will still wait for a Close event to get destroyed.
    */
   void Disable(std::string_view reason = "");
+
+  /**
+   * @brief Sets state, and logs the reason if the state actually changed.
+   */
   void set_state(State state, std::string_view reason);
 
   /**
-   * @brief The tracker is disabled and will not produce any new results.
-   *
-   * @return true if tracker is disabled.
+   * Returns a state that determine the operations performed on the traffic traced on the
+   * connection.
    */
-  bool disabled() { return state_ == State::kDisabled; }
-  State state() { return state_; }
+  State state() const { return state_; }
 
   /**
    * @brief Check if all events have been received on this stream.
@@ -309,7 +312,8 @@ class ConnectionTracker {
    * @param proc_parser Pointer to a proc_parser for access to /proc filesystem.
    * @param connections A map of inodes to endpoint information.
    */
-  void IterationPreTick(system::ProcParser* proc_parser,
+  void IterationPreTick(const std::optional<CIDRBlock>& cluster_cidr,
+                        system::ProcParser* proc_parser,
                         const std::map<int, system::SocketInfo>* connections);
 
   /**

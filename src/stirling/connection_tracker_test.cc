@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <sys/socket.h>
 
-#include "src/common/base/types.h"
+#include "src/common/base/test_utils.h"
 #include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/testing/events_fixture.h"
 
@@ -557,6 +557,39 @@ TEST_F(ConnectionTrackerTest, MySQLMessagesErasedAfterExpiration) {
 
   tracker.ProcessMessages<mysql::Record>();
   EXPECT_THAT(tracker.req_messages<mysql::Packet>(), IsEmpty());
+}
+
+TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
+  ConnectionTracker tracker;
+  std::vector<http::Record> req_resp_pairs;
+
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  conn.open.traffic_class.role = EndpointRole::kRoleServer;
+
+  // Set an address that falls in the intra-cluster address range.
+  struct sockaddr_in v4_addr = {};
+  v4_addr.sin_family = AF_INET;
+  uint16_t port = 123;
+  v4_addr.sin_port = htons(port);
+  PL_CHECK_OK(ParseIPv4Addr("1.2.3.4", &v4_addr.sin_addr));
+  memcpy(&conn.open.addr, &v4_addr, sizeof(struct sockaddr_in));
+
+  std::unique_ptr<SocketDataEvent> req0 = InitRecvEvent<kProtocolHTTP>(kHTTPReq0);
+  req0->attr.traffic_class.role = EndpointRole::kRoleServer;
+
+  std::unique_ptr<SocketDataEvent> resp0 = InitSendEvent<kProtocolHTTP>(kHTTPResp0);
+  resp0->attr.traffic_class.role = EndpointRole::kRoleServer;
+
+  tracker.AddControlEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+
+  auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
+  ASSERT_OK(cluster_cidr_or);
+
+  tracker.IterationPreTick(cluster_cidr_or.ConsumeValueOrDie(), /*proc_parser*/ nullptr,
+                           /*connections*/ nullptr);
+  EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
 }  // namespace stirling

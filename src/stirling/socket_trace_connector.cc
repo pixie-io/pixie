@@ -65,12 +65,11 @@ DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will trace and process syscalls made by itself.");
-
-const char kRoleReqStr[] = "REQ";
-const char kRoleRespStr[] = "RESP";
+const char kRoleClientStr[] = "CLIENT";
+const char kRoleServerStr[] = "SERVER";
 const char kRoleAllStr[] = "ALL";
-DEFINE_string(stirling_role_to_trace, kRoleReqStr,
-              "Must be one of [REQ|RESP|ALL]. Specify what role to trace.");
+DEFINE_string(stirling_role_to_trace, kRoleClientStr,
+              "Must be one of [CLIENT|SERVER|ALL]. Specify which role(s) will be trace by BPF.");
 
 // This flag is for survivability only, in case the host's located headers don't work.
 DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
@@ -92,6 +91,22 @@ using ::pl::stirling::obj_tools::GetActiveBinaries;
 using ::pl::stirling::obj_tools::GetSymAddrs;
 using ::pl::stirling::utils::WriteMapAsJSON;
 
+namespace {
+
+StatusOr<EndpointRole> ParseEndpointRoleFlag(std::string_view role_str) {
+  if (role_str == kRoleClientStr) {
+    return kRoleClient;
+  } else if (role_str == kRoleServerStr) {
+    return kRoleServer;
+  } else if (role_str == kRoleAllStr) {
+    return kRoleAll;
+  } else {
+    return error::InvalidArgument("Invalid flag value $0", role_str);
+  }
+}
+
+}  // namespace
+
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables,
                       std::chrono::milliseconds(FLAGS_stirling_socket_trace_sampling_period_millis),
@@ -101,20 +116,8 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
 
-  EndpointRole role_to_trace = kRoleClient;
-  if (!FLAGS_stirling_role_to_trace.empty()) {
-    if (FLAGS_stirling_role_to_trace == kRoleReqStr) {
-      role_to_trace = kRoleClient;
-    } else if (FLAGS_stirling_role_to_trace == kRoleRespStr) {
-      role_to_trace = kRoleServer;
-    } else if (FLAGS_stirling_role_to_trace == kRoleAllStr) {
-      role_to_trace = kRoleAll;
-    } else {
-      LOG(DFATAL) << absl::Substitute("--stirling_role_to_trace=$0, must be [$1|$2|$3].",
-                                      FLAGS_stirling_role_to_trace, kRoleReqStr, kRoleRespStr,
-                                      kRoleAllStr);
-    }
-  }
+  EndpointRole role_to_trace = ParseEndpointRoleFlag(FLAGS_stirling_role_to_trace).ValueOrDie();
+
   protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
   protocol_transfer_specs_[kProtocolHTTP].role_to_trace = role_to_trace;
 
@@ -769,7 +772,8 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
         continue;
       }
 
-      tracker.IterationPreTick(proc_parser_.get(), socket_connections_.get());
+      const auto& cluster_cidr = ctx->AgentMetadataState()->k8s_metadata_state().cluster_cidr();
+      tracker.IterationPreTick(cluster_cidr, proc_parser_.get(), socket_connections_.get());
 
       if (transfer_spec.transfer_fn && transfer_spec.enabled) {
         transfer_spec.transfer_fn(*this, ctx, &tracker, data_table);
@@ -798,10 +802,15 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnectionTrack
                                           DataTable* data_table) {
   VLOG(3) << absl::StrCat("Connection\n", tracker->DebugString<TEntryType>());
 
-  auto messages = tracker->ProcessMessages<TEntryType>();
-
-  for (auto& msg : messages) {
-    AppendMessage(ctx, *tracker, msg, data_table);
+  if (tracker->state() == ConnectionTracker::State::kTransferring) {
+    // ProcessMessages() parses raw events and produces messages in format that are expected by
+    // table store. But those messages are not cached inside ConnectionTracker.
+    //
+    // TODO(yzhao): Consider caching produced messages if they are not transferred.
+    auto messages = tracker->ProcessMessages<TEntryType>();
+    for (auto& msg : messages) {
+      AppendMessage(ctx, *tracker, msg, data_table);
+    }
   }
 }
 

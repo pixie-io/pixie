@@ -28,9 +28,14 @@ class SocketTraceBPFTest : public ::testing::Test {
     // Create a context to pass into each TransferData() in the test, using a dummy ASID.
     static constexpr uint32_t kASID = 1;
     auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
-    ctx_ = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
 
-    TestOnlySetTargetPID(getpid());
+    // Some tests depends on cidr not containing remote IP address.
+    auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
+    ASSERT_OK(cluster_cidr_or);
+    agent_metadata_state->k8s_metadata_state()->set_cluster_cidr(
+        cluster_cidr_or.ConsumeValueOrDie());
+
+    ctx_ = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }

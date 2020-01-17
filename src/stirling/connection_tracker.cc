@@ -110,7 +110,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetTrafficClass(event->attr.traffic_class);
 
   // A disabled tracker doesn't collect data events.
-  if (disabled()) {
+  if (state() == State::kDisabled) {
     return;
   }
 
@@ -222,7 +222,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   }
 
   // A disabled tracker doesn't collect data events.
-  if (disabled()) {
+  if (state() == State::kDisabled) {
     return;
   }
 
@@ -280,7 +280,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   }
 
   // A disabled tracker doesn't collect data events.
-  if (disabled()) {
+  if (state() == State::kDisabled) {
     return;
   }
 
@@ -331,7 +331,7 @@ Status ConnectionTracker::ExtractReqResp() {
 
 template <typename TEntryType>
 std::vector<TEntryType> ConnectionTracker::ProcessMessages() {
-  if (disabled()) {
+  if (state() == State::kDisabled) {
     return {};
   }
   return ProcessMessagesImpl<TEntryType>();
@@ -538,11 +538,28 @@ void ConnectionTracker::Disable(std::string_view reason) {
   // TODO(oazizi): Propagate the disable back to BPF, so it doesn't even send the data.
 }
 
+namespace {
+
+std::string_view StateName(ConnectionTracker::State state) {
+  switch (state) {
+    case ConnectionTracker::State::kCollecting:
+      return "kCollecting";
+    case ConnectionTracker::State::kTransferring:
+      return "kTransferring";
+    case ConnectionTracker::State::kDisabled:
+      return "kDisabled";
+    default:
+      return "GCC";
+  }
+}
+
+}  // namespace
+
 void ConnectionTracker::set_state(State state, std::string_view reason) {
   LOG_IF(INFO, state_ != state) << absl::Substitute(
       "Changing the state of connection=$0 dest=$1:$2, from $3 to $4, reason=$5",
-      ToString(conn_id_), open_info_.remote_addr.addr_str, open_info_.remote_addr.port, state_,
-      state, reason);
+      ToString(conn_id_), open_info_.remote_addr.addr_str, open_info_.remote_addr.port,
+      StateName(state_), StateName(state), reason);
   // TODO(oazizi/yzhao): Consider storing the reason field.
   state_ = state;
 }
@@ -597,7 +614,7 @@ void ConnectionTracker::CheckTracker() {
              "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
              ToString(conn_id_));
 
-  LOG_IF(ERROR, conn_id_.fd == 0 && !disabled()) << absl::Substitute(
+  LOG_IF(ERROR, conn_id_.fd == 0 && state() != State::kDisabled) << absl::Substitute(
       "FD==0, which usually means the FD was not captured correctly. Connection=$0.",
       ToString(conn_id_));
 }
@@ -643,17 +660,43 @@ bool ConnectionTracker::ReadyForDestruction() const {
   return death_countdown_ == 0;
 }
 
-void ConnectionTracker::IterationPreTick(system::ProcParser* proc_parser,
+void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster_cidr,
+                                         system::ProcParser* proc_parser,
                                          const std::map<int, system::SocketInfo>* connections) {
   // If remote_addr is missing, it means the connect/accept was not traced.
   // Attempt to infer the connection information, to populate remote_addr.
   if (open_info_.remote_addr.addr_str == "-" && FLAGS_infer_conn_info && connections != nullptr) {
     InferConnInfo(proc_parser, connections);
   }
-  if (state() == State::kCollecting && role() == EndpointRole::kRoleClient) {
-    set_state(State::kTransferring, "Always transfer data from client side.");
+  switch (role()) {
+    case EndpointRole::kRoleClient:
+      if (state() == State::kCollecting) {
+        set_state(State::kTransferring, "Always transfer data from client side.");
+      }
+      break;
+    case EndpointRole::kRoleServer:
+      if (conn_resolution_failed_) {
+        Disable("could not infer remote endpoint address");
+      }
+      if (cluster_cidr.has_value() && open_info_.remote_addr.addr_str != "-") {
+        if (cluster_cidr.value().Contains(open_info_.remote_addr)) {
+          Disable(
+              absl::Substitute("remote endpoint is inside the cluster, ConnID=$0 remote_addr=$1",
+                               ToString(conn_id_), open_info_.remote_addr.addr_str));
+        } else {
+          set_state(
+              State::kTransferring,
+              absl::Substitute("remote endpoint is inside the cluster, ConnID=$0 remote_addr=$1",
+                               ToString(conn_id_), open_info_.remote_addr.addr_str));
+        }
+      }
+      break;
+    case EndpointRole::kRoleUnknown:
+      VLOG(1) << "Role has not been inferred from BPF events yet.";
+      break;
+    case EndpointRole::kRoleAll:
+      LOG(DFATAL) << "kRoleAll should not be used.";
   }
-  // TODO(yzhao): If InferConnInfo() failed, we'd disable this tracker if it's on server side.
 }
 
 void ConnectionTracker::IterationPostTick() {
@@ -665,7 +708,7 @@ void ConnectionTracker::IterationPostTick() {
     HandleInactivity();
   }
 
-  if (!disabled() && (send_data().IsEOS() || recv_data().IsEOS())) {
+  if (state() != State::kDisabled && (send_data().IsEOS() || recv_data().IsEOS())) {
     Disable("End-of-stream");
   }
 }

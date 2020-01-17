@@ -21,7 +21,10 @@ static constexpr DataElement kMySQLElements[] = {
         "Request-response latency in nanoseconds"},
 };
 // clang-format on
+
 static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);
+
+constexpr int kMySQLUPIDIdx = kMySQLTable.ColIndex("upid");
 
 }  // namespace stirling
 }  // namespace pl
