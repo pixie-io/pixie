@@ -133,6 +133,14 @@ pl_cc_library(
     ],
 )
 
+pl_cc_binary(
+    name="libpypa_parser_test",
+    srcs=[
+        "libpypa/src/pypa/parser/test.cc",
+    ],
+    deps=[":libpypa"],
+)
+
 pl_cc_library(
     name = "aes-min",
     srcs = ["aes-min/aes-min.c"],

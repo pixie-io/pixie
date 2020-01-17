@@ -983,16 +983,14 @@ TEST_F(ASTVisitorTest, nested_func_calls) {
 
 constexpr char kFuncDefWithType[] = R"query(
 def func(a : str):
-    df = pd.DataFrame(a)
+    df = px.DataFrame(a)
     px.display(df)
 
-
-func('http_events')
+$0
 )query";
 
-// TODO(philkuz) (PL-1321) support type args.
-TEST_F(ASTVisitorTest, DISABLED_func_def_with_type) {
-  auto ir_graph_or_s = CompileGraph(kFuncDefWithType);
+TEST_F(ASTVisitorTest, func_def_with_type) {
+  auto ir_graph_or_s = CompileGraph(absl::Substitute(kFuncDefWithType, "func('http_events')"));
   ASSERT_OK(ir_graph_or_s);
   auto ir_graph = ir_graph_or_s.ConsumeValueOrDie();
   std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
@@ -1001,6 +999,35 @@ TEST_F(ASTVisitorTest, DISABLED_func_def_with_type) {
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
   ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+  // Check what would happen if the wrong type is passed in.
+  ir_graph_or_s = CompileGraph(absl::Substitute(kFuncDefWithType, "func(1)"));
+  ASSERT_NOT_OK(ir_graph_or_s);
+  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("Expected 'String', received 'Int'"));
+}
+
+constexpr char kFuncDefWithDataframe[] = R"query(
+def func(df : px.DataFrame):
+    px.display(df)
+
+$0
+)query";
+
+TEST_F(ASTVisitorTest, func_def_with_dataframe_type) {
+  auto ir_graph_or_s =
+      CompileGraph(absl::Substitute(kFuncDefWithDataframe, "func(px.DataFrame('http_events'))"));
+  ASSERT_OK(ir_graph_or_s);
+  auto ir_graph = ir_graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
+  EXPECT_EQ(mem_src->table_name(), "http_events");
+  ASSERT_EQ(mem_src->Children().size(), 1);
+  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+
+  // Check whether non-Dataframes cause a failure.
+  ir_graph_or_s = CompileGraph(absl::Substitute(kFuncDefWithDataframe, "func(1)"));
+  ASSERT_NOT_OK(ir_graph_or_s);
+  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("Expected 'DataFrame', received 'Int'"));
 }
 
 constexpr char kFuncDefWithVarKwargs[] = R"query(

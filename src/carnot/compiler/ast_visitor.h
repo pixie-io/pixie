@@ -96,6 +96,8 @@ class ASTVisitorImpl : public ASTVisitor {
 
   // Reserved column names.
   inline static constexpr char kTimeConstantColumnName[] = "time_";
+  inline static constexpr char kStringTypeName[] = "str";
+  inline static constexpr char kIntTypeName[] = "int";
 
  private:
   /**
@@ -384,9 +386,19 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param args the parsed arguments passed into the function during a call.
    * @return StatusOr<QLObjectPtr>
    */
-  StatusOr<QLObjectPtr> FuncDefHandler(const std::vector<std::string>& arg_names,
-                                       const pypa::AstSuitePtr& body, const pypa::AstPtr& ast,
-                                       const ParsedArgs& args);
+  StatusOr<QLObjectPtr> FuncDefHandler(
+      const std::vector<std::string>& arg_names,
+      const absl::flat_hash_map<std::string, pypa::AstExpr>& arg_annotations,
+      const pypa::AstSuitePtr& body, const pypa::AstPtr& ast, const ParsedArgs& args);
+
+  /**
+   * @brief Returns an error if the arg does not match the annotation.
+   *
+   * @param arg
+   * @param annotation
+   * @return Status
+   */
+  Status DoesArgMatchAnnotation(IRNode* arg, const pypa::AstExpr& annotation);
 
   /**
    * @brief Handles the return statements of function definitions.

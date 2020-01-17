@@ -6,6 +6,7 @@
 #include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/none_object.h"
 #include "src/carnot/compiler/objects/pixie_module.h"
+#include "src/carnot/compiler/objects/type_object.h"
 #include "src/carnot/compiler/parser/parser.h"
 
 namespace pl {
@@ -36,7 +37,15 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
 
 Status ASTVisitorImpl::Init() {
   PL_ASSIGN_OR_RETURN(auto pl_module, PixieModule::Create(ir_graph_, compiler_state_));
+  // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
   var_table_->Add(PixieModule::kPixieModuleObjName, pl_module);
+  // Populate the type objects
+  PL_ASSIGN_OR_RETURN(auto string_type_object, TypeObject::Create(IRNodeType::kString));
+  var_table_->Add(ASTVisitorImpl::kStringTypeName, string_type_object);
+
+  PL_ASSIGN_OR_RETURN(auto int_type_object, TypeObject::Create(IRNodeType::kInt));
+  var_table_->Add(ASTVisitorImpl::kIntTypeName, int_type_object);
+
   return Status::OK();
 }
 
@@ -231,10 +240,29 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   return Status::OK();
 }
 
-StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(const std::vector<std::string>& arg_names,
-                                                     const pypa::AstSuitePtr& body,
-                                                     const pypa::AstPtr& ast,
-                                                     const ParsedArgs& args) {
+Status ASTVisitorImpl::DoesArgMatchAnnotation(IRNode* arg, const pypa::AstExpr& annotation) {
+  DCHECK(annotation);
+  PL_ASSIGN_OR_RETURN(auto annotation_object, Process(annotation, {{}, "", {}}));
+  if (annotation_object->type() == QLObjectType::kDataframe) {
+    if (!arg->IsOperator()) {
+      return arg->CreateIRNodeError("Expected '$0', received '$1'", Dataframe::DataframeType.name(),
+                                    arg->type_string());
+    }
+    return Status::OK();
+  } else if (annotation_object->type() == QLObjectType::kType) {
+    auto type_object = std::static_pointer_cast<TypeObject>(annotation_object);
+    PL_RETURN_IF_ERROR(type_object->NodeMatches(arg));
+    return Status::OK();
+  } else {
+    return error::Unimplemented("'$0' unhandled annotation",
+                                magic_enum::enum_name(annotation_object->type()));
+  }
+}
+
+StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(
+    const std::vector<std::string>& arg_names,
+    const absl::flat_hash_map<std::string, pypa::AstExpr>& arg_annotations,
+    const pypa::AstSuitePtr& body, const pypa::AstPtr& ast, const ParsedArgs& args) {
   // TODO(philkuz) (PL-1365) figure out how to wrap the internal errors with the ast that's passed
   // in.
   PL_UNUSED(ast);
@@ -242,6 +270,9 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(const std::vector<std::stri
   for (const std::string& arg_name : arg_names) {
     // TODO(philkuz) scope out making args return objects instead of IRNode*.
     IRNode* arg = args.GetArg(arg_name);
+    if (arg_annotations.contains(arg_name)) {
+      PL_RETURN_IF_ERROR(DoesArgMatchAnnotation(arg, arg_annotations.find(arg_name)->second));
+    }
     QLObjectPtr arg_object;
     if (Match(arg, Operator())) {
       PL_ASSIGN_OR_RETURN(arg_object, Dataframe::Create(static_cast<OperatorIR*>(arg)));
@@ -266,12 +297,17 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   // Parse the args to create the necessary
   auto function_name_node = node->name;
   std::vector<std::string> parsed_arg_names;
+  absl::flat_hash_map<std::string, pypa::AstExpr> arg_annotations;
   for (const auto& arg : node->args.arguments) {
-    if (arg->type != AstType::Name) {
-      return CreateAstError(arg, "function parameter must be a name, not a $0",
+    if (arg->type != AstType::Arg) {
+      return CreateAstError(arg, "function parameter must be an argument, not a $0",
                             GetAstTypeName(arg->type));
     }
-    parsed_arg_names.push_back(GetNameAsString(arg));
+    auto arg_ptr = PYPA_PTR_CAST(Arg, arg);
+    parsed_arg_names.push_back(arg_ptr->arg);
+    if (arg_ptr->annotation) {
+      arg_annotations[arg_ptr->arg] = arg_ptr->annotation;
+    }
   }
   // TODO(philkuz) delete keywords from the function definition.
   // For some reason this is kept around, not clear why, making sure that it's 0 for now.
@@ -311,11 +347,11 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   pypa::AstSuitePtr body = PYPA_PTR_CAST(Suite, node->body);
   std::string function_name = GetNameAsString(function_name_node);
 
-  PL_ASSIGN_OR_RETURN(
-      auto defined_func,
-      FuncObject::Create(function_name, parsed_arg_names, {}, false, false,
-                         std::bind(&ASTVisitorImpl::FuncDefHandler, this, parsed_arg_names, body,
-                                   std::placeholders::_1, std::placeholders::_2)));
+  PL_ASSIGN_OR_RETURN(auto defined_func,
+                      FuncObject::Create(function_name, parsed_arg_names, {}, false, false,
+                                         std::bind(&ASTVisitorImpl::FuncDefHandler, this,
+                                                   parsed_arg_names, arg_annotations, body,
+                                                   std::placeholders::_1, std::placeholders::_2)));
   var_table_->Add(function_name, defined_func);
   return Status::OK();
 }
@@ -398,17 +434,14 @@ StatusOr<std::string> ASTVisitorImpl::GetFuncName(const pypa::AstCallPtr& node) 
 
 StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast,
                                              const OperatorContext& op_context) {
-  auto arg_ast = call_ast->arglist;
   ArgMap arg_map;
-
-  for (const auto arg : arg_ast.arguments) {
+  for (const auto arg : call_ast->arguments) {
     PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(arg, op_context));
     arg_map.args.push_back(value);
   }
 
   // Iterate through the keywords
-  for (auto& k : arg_ast.keywords) {
-    pypa::AstKeywordPtr kw_ptr = PYPA_PTR_CAST(Keyword, k);
+  for (auto& kw_ptr : call_ast->keywords) {
     std::string key = GetNameAsString(kw_ptr->name);
     PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(kw_ptr->value, op_context));
     arg_map.kwargs.emplace_back(key, value);
