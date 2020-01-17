@@ -1517,9 +1517,9 @@ class GRPCSourceGroupIR : public OperatorIR {
   std::vector<GRPCSinkIR*> dependent_sinks_;
 };
 
-struct ColumnMapping {
-  std::vector<int64_t> input_column_map;
-};
+// [Column("foo", 0)] would indicate the foo column of the 0th parent relation maps to index 0 of
+// the output relation.
+using InputColumnMapping = std::vector<ColumnIR*>;
 
 class UnionIR : public OperatorIR {
  public:
@@ -1535,19 +1535,19 @@ class UnionIR : public OperatorIR {
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   Status SetRelationFromParents();
   bool HasColumnMappings() const { return column_mappings_.size() == parents().size(); }
-  const std::vector<ColumnMapping>& column_mappings() const { return column_mappings_; }
+  const std::vector<InputColumnMapping>& column_mappings() const { return column_mappings_; }
 
  private:
   /**
    * @brief Set a parent operator's column mapping.
    *
    * @param parent_idx: the parents() idx this mapping applies to.
-   * @param input_column_map: the mapping from 1 columns unions to another. [4] would indicate the
-   * index-4 column of the input parent relation maps to index 0 of this relation.
+   * @param input_column_map: the mapping from 1 columns unions to another.
    * @return Status
    */
-  Status AddColumnMapping(const std::vector<int64_t>& input_column_map);
-  std::vector<ColumnMapping> column_mappings_;
+  Status AddColumnMapping(const InputColumnMapping& input_column_map);
+  // The vector is size N when there are N input tables.
+  std::vector<InputColumnMapping> column_mappings_;
 };
 
 /**

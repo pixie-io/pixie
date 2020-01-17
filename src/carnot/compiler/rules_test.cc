@@ -614,8 +614,22 @@ TEST_F(UnionRelationTest, union_relation_setup) {
   EXPECT_THAT(result_relation.col_names(), ElementsAreArray(expected_relation.col_names()));
 
   EXPECT_EQ(union_op->column_mappings().size(), 2);
-  for (const auto& mapping : union_op->column_mappings()) {
-    EXPECT_THAT(mapping.input_column_map, ElementsAre(0, 1, 2, 3));
+  std::vector<std::string> expected_names{"count", "cpu0", "cpu1", "cpu2"};
+  auto actual_mappings_1 = union_op->column_mappings()[0];
+  auto actual_mappings_2 = union_op->column_mappings()[1];
+
+  EXPECT_EQ(actual_mappings_1.size(), expected_names.size());
+  EXPECT_EQ(actual_mappings_2.size(), expected_names.size());
+
+  for (const auto& [i, col] : Enumerate(actual_mappings_1)) {
+    EXPECT_EQ(expected_names[i], col->col_name());
+    EXPECT_EQ(0, col->container_op_parent_idx());
+    EXPECT_EQ(mem_src1, col->ReferencedOperator().ConsumeValueOrDie());
+  }
+  for (const auto& [i, col] : Enumerate(actual_mappings_2)) {
+    EXPECT_EQ(expected_names[i], col->col_name());
+    EXPECT_EQ(1, col->container_op_parent_idx());
+    EXPECT_EQ(mem_src2, col->ReferencedOperator().ConsumeValueOrDie());
   }
 }
 
@@ -666,13 +680,23 @@ TEST_F(UnionRelationTest, union_relation_different_order) {
   EXPECT_THAT(result_relation.col_types(), ElementsAreArray(expected_relation.col_types()));
   EXPECT_THAT(result_relation.col_names(), ElementsAreArray(expected_relation.col_names()));
 
-  ASSERT_EQ(union_op->column_mappings().size(), 2);
+  EXPECT_EQ(union_op->column_mappings().size(), 2);
 
-  auto mapping0 = union_op->column_mappings()[0];
-  auto mapping1 = union_op->column_mappings()[1];
+  std::vector<std::string> expected_names{"time_", "strCol", "count"};
+  auto actual_mappings_1 = union_op->column_mappings()[0];
+  auto actual_mappings_2 = union_op->column_mappings()[1];
 
-  EXPECT_THAT(mapping0.input_column_map, ElementsAre(0, 1, 2));
-  EXPECT_THAT(mapping1.input_column_map, ElementsAre(1, 2, 0));
+  EXPECT_EQ(actual_mappings_1.size(), expected_names.size());
+  EXPECT_EQ(actual_mappings_2.size(), expected_names.size());
+
+  for (const auto& [i, col] : Enumerate(actual_mappings_1)) {
+    EXPECT_EQ(expected_names[i], col->col_name());
+    EXPECT_EQ(0, col->container_op_parent_idx());
+  }
+  for (const auto& [i, col] : Enumerate(actual_mappings_2)) {
+    EXPECT_EQ(expected_names[i], col->col_name());
+    EXPECT_EQ(1, col->container_op_parent_idx());
+  }
 }
 
 class OperatorRelationTest : public RulesTest {

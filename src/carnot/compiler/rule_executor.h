@@ -93,6 +93,7 @@ class BaseRuleBatch {
 };
 
 using RuleBatch = BaseRuleBatch<Rule>;
+using DistributedRuleBatch = BaseRuleBatch<DistributedRule>;
 
 template <typename TPlan>
 class RuleExecutor {
@@ -131,9 +132,9 @@ class RuleExecutor {
     return Status::OK();
   }
   template <typename S, typename... Args>
-  RuleBatch* CreateRuleBatch(std::string name, Args... args) {
-    std::unique_ptr<RuleBatch> rb(new RuleBatch(name, std::make_unique<S>(args...)));
-    RuleBatch* out_ptr = rb.get();
+  TRuleBatch* CreateRuleBatch(std::string name, Args... args) {
+    std::unique_ptr<TRuleBatch> rb(new TRuleBatch(name, std::make_unique<S>(args...)));
+    TRuleBatch* out_ptr = rb.get();
     rule_batches.push_back(std::move(rb));
     return out_ptr;
   }

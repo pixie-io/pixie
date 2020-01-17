@@ -992,9 +992,19 @@ TEST_F(ToProtoTests, UnionNoTime) {
   auto mem_src1 = MakeMemSource(relation);
   auto mem_src2 = MakeMemSource(relation2);
   auto union_op = MakeUnion({mem_src1, mem_src2});
+
   EXPECT_OK(union_op->SetRelation(relation));
 
+  EXPECT_FALSE(union_op->HasColumnMappings());
   EXPECT_OK(union_op->SetRelationFromParents());
+  EXPECT_TRUE(union_op->HasColumnMappings());
+
+  for (ColumnIR* col : union_op->column_mappings()[0]) {
+    col->ResolveColumnIndex(relation);
+  }
+  for (ColumnIR* col : union_op->column_mappings()[1]) {
+    col->ResolveColumnIndex(relation2);
+  }
   planpb::Operator pb;
   EXPECT_OK(union_op->ToProto(&pb));
   EXPECT_THAT(pb, EqualsProto(kExpectedUnionOpPb));
@@ -1023,12 +1033,22 @@ TEST_F(ToProtoTests, UnionHasTime) {
   auto mem_src1 = MakeMemSource(relation);
   std::reverse(std::begin(column_names), std::end(column_names));
   std::reverse(std::begin(column_types), std::end(column_types));
-  relation = Relation(column_types, column_names);
+  Relation relation2(column_types, column_names);
   auto mem_src2 = MakeMemSource(relation);
   auto union_op = MakeUnion({mem_src1, mem_src2});
-  EXPECT_OK(union_op->SetRelation(mem_src1->relation()));
 
+  EXPECT_OK(union_op->SetRelation(mem_src1->relation()));
+  EXPECT_FALSE(union_op->HasColumnMappings());
   EXPECT_OK(union_op->SetRelationFromParents());
+  EXPECT_TRUE(union_op->HasColumnMappings());
+
+  for (ColumnIR* col : union_op->column_mappings()[0]) {
+    col->ResolveColumnIndex(relation);
+  }
+  for (ColumnIR* col : union_op->column_mappings()[1]) {
+    col->ResolveColumnIndex(relation2);
+  }
+
   planpb::Operator pb;
   EXPECT_OK(union_op->ToProto(&pb));
   EXPECT_THAT(pb, EqualsProto(kExpectedUnionOpTimePb));

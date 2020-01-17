@@ -23,7 +23,16 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
   }
 
  private:
-  Status Init() { return Status::OK(); }
+  void CreateResolveColumnIndexBatch() {
+    DistributedRuleBatch* resolve_column_index_batch =
+        CreateRuleBatch<FailOnMax>("ResolveColumnIndex", 2);
+    resolve_column_index_batch->AddRule<DistributedIRRule<ResolveColumnIndexRule>>();
+  }
+
+  Status Init() {
+    CreateResolveColumnIndexBatch();
+    return Status::OK();
+  }
 };
 
 }  // namespace distributed

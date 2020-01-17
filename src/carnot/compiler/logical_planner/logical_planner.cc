@@ -1,4 +1,5 @@
 #include "src/carnot/compiler/logical_planner/logical_planner.h"
+#include "src/carnot/compiler/distributed_analyzer.h"
 
 #include <utility>
 
@@ -63,6 +64,10 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
 
   // Apply tabletization per elements of the distributed plan.
   PL_RETURN_IF_ERROR(ApplyTabletizer(distributed_plan.get()));
+
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<distributed::DistributedAnalyzer> analyzer,
+                      distributed::DistributedAnalyzer::Create());
+  PL_RETURN_IF_ERROR(analyzer->Execute(distributed_plan.get()));
   return distributed_plan;
 }
 

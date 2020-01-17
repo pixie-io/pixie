@@ -1243,8 +1243,9 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
 
   for (const auto& column_mapping : column_mappings_) {
     auto* pb_column_mapping = pb->add_column_mappings();
-    for (const auto col_idx : column_mapping.input_column_map) {
-      pb_column_mapping->add_column_indexes(col_idx);
+    for (const ColumnIR* col : column_mapping) {
+      DCHECK(col->is_col_idx_set());
+      pb_column_mapping->add_column_indexes(col->col_idx());
     }
   }
 
@@ -1259,16 +1260,26 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
   return Status::OK();
 }
 
-Status UnionIR::AddColumnMapping(const std::vector<int64_t>& column_mapping) {
+Status UnionIR::AddColumnMapping(const InputColumnMapping& column_mapping) {
   DCHECK(IsRelationInit()) << "Relation must be initialized before running this.";
   if (column_mapping.size() != relation().NumColumns()) {
-    return DExitOrIRNodeError("Expected colums mapping to match the relation size. $0 vs $1",
+    return DExitOrIRNodeError("Expected columns mapping to match the relation size. $0 vs $1",
                               column_mapping.size(), relation().NumColumns());
   }
-  column_mappings_.push_back({column_mapping});
+
+  InputColumnMapping cloned_mapping;
+  for (ColumnIR* col : column_mapping) {
+    PL_ASSIGN_OR_RETURN(auto cloned, graph_ptr()->OptionallyCloneWithEdge(this, col));
+    cloned_mapping.push_back(cloned);
+  }
+
+  column_mappings_.push_back(cloned_mapping);
   return Status::OK();
 }
 
+// TODO(nserrino, philkuz): Once we support null values in columns, we can support performing a
+// union where the output schema of the union is the combined set of the input relations, and any
+// input table that is missing a certain column will just output null.
 Status UnionIR::SetRelationFromParents() {
   DCHECK_NE(parents().size(), 0UL);
 
@@ -1277,27 +1288,25 @@ Status UnionIR::SetRelationFromParents() {
   Relation base_relation = base_parent->relation();
   PL_RETURN_IF_ERROR(SetRelation(base_relation));
 
-  for (size_t i = 0; i < parents().size(); ++i) {
-    OperatorIR* cur_parent = parents()[i];
-    Relation cur_relation = cur_parent->relation();
+  for (const auto& [parent_idx, parent] : Enumerate(parents())) {
+    Relation cur_relation = parent->relation();
     std::string err_msg = absl::Substitute(
         "Table schema disagreement between parent ops $0 and $1 of $2. $0: $3 vs $1: $4. $5",
-        base_parent->DebugString(), cur_parent->DebugString(), DebugString(),
+        base_parent->DebugString(), parent->DebugString(), DebugString(),
         base_relation.DebugString(), cur_relation.DebugString(), "$0");
     if (cur_relation.NumColumns() != base_relation.NumColumns()) {
       return CreateIRNodeError(err_msg, "Column count wrong.");
     }
-    std::vector<int64_t> column_mapping;
-    for (int64_t col_idx = 0; col_idx < static_cast<int64_t>(base_relation.NumColumns());
-         ++col_idx) {
-      std::string base_relation_name = base_relation.GetColumnName(col_idx);
-      types::DataType base_relation_type = base_relation.GetColumnType(col_idx);
-      if (!cur_relation.HasColumn(base_relation_name) ||
-          cur_relation.GetColumnType(base_relation_name) != base_relation_type) {
-        return CreateIRNodeError(
-            err_msg, absl::Substitute("Missing or wrong type for $0.", base_relation_name));
+    InputColumnMapping column_mapping;
+    for (const std::string& col_name : base_relation.col_names()) {
+      types::DataType col_type = base_relation.GetColumnType(col_name);
+      if (!cur_relation.HasColumn(col_name) || cur_relation.GetColumnType(col_name) != col_type) {
+        return CreateIRNodeError(err_msg,
+                                 absl::Substitute("Missing or wrong type for $0.", col_name));
       }
-      column_mapping.push_back(cur_relation.GetColumnIndex(base_relation_name));
+      PL_ASSIGN_OR_RETURN(auto col_node, graph_ptr()->CreateNode<ColumnIR>(
+                                             ast_node(), col_name, /*parent_op_idx*/ parent_idx));
+      column_mapping.push_back(col_node);
     }
     PL_RETURN_IF_ERROR(AddColumnMapping(column_mapping));
   }
