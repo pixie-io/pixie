@@ -2,9 +2,7 @@ import * as React from 'react';
 import {DiscreteColorLegend, LineSeries, XAxis, XYPlot} from 'react-vis';
 
 import {GQLDataTable} from '../../../../vizier/services/api/controller/schema/schema';
-import {
-    ChartProps, LineSeriesLegends, paletteColorByIndex, TimeValueAxis, withAutoSizer,
-} from './chart';
+import {LineSeriesLegends, paletteColorByIndex, TimeValueAxis, withAutoSizer} from './chart';
 import {extractData} from './data';
 
 interface Point {

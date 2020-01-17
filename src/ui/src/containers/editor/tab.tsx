@@ -88,7 +88,7 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
           onSubmit={executeQuery}
           disabled={loading}
         />
-        <ConsoleResults error={error} loading={loading} data={data} />
+        <ConsoleResults error={error} loading={loading} data={data} code={code} />
       </Split >
     </div>
   );

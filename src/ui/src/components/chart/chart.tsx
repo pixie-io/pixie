@@ -4,12 +4,6 @@ import * as React from 'react';
 import {AutoSizer} from 'react-virtualized';
 import {DiscreteColorLegend, XAxis, YAxis} from 'react-vis';
 
-import {GQLQueryResult} from '../../../../vizier/services/api/controller/schema/schema';
-
-export interface ChartProps {
-  data: GQLQueryResult;
-}
-
 export interface LineSeriesData {
   name: string;
   data: LineSeriesPoint[];
