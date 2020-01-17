@@ -362,6 +362,34 @@ Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs,
   return Status::OK();
 }
 
+StatusOr<absl::flat_hash_set<std::string>> CollectInputColumns(const ExpressionIR* expr) {
+  if (Match(expr, DataNode())) {
+    return absl::flat_hash_set<std::string>{};
+  }
+  if (Match(expr, ColumnNode())) {
+    return absl::flat_hash_set<std::string>{static_cast<const ColumnIR*>(expr)->col_name()};
+  }
+  if (!Match(expr, Func())) {
+    return error::Internal("Unexpected Expression type: $0", expr->DebugString());
+  }
+  absl::flat_hash_set<std::string> ret;
+  auto func = static_cast<const FuncIR*>(expr);
+  for (const ExpressionIR* arg : func->args()) {
+    PL_ASSIGN_OR_RETURN(auto input_cols, CollectInputColumns(arg));
+    ret.insert(input_cols.begin(), input_cols.end());
+  }
+  return ret;
+}
+
+StatusOr<std::vector<absl::flat_hash_set<std::string>>> MapIR::RequiredInputColumns() const {
+  absl::flat_hash_set<std::string> required;
+  for (const auto& expr : col_exprs_) {
+    PL_ASSIGN_OR_RETURN(auto inputs, CollectInputColumns(expr.node));
+    required.insert(inputs.begin(), inputs.end());
+  }
+  return std::vector<absl::flat_hash_set<std::string>>{required};
+}
+
 Status DropIR::Init(OperatorIR* parent, const std::vector<std::string>& drop_cols) {
   PL_RETURN_IF_ERROR(AddParent(parent));
   col_names_ = drop_cols;
@@ -398,6 +426,16 @@ Status FilterIR::SetFilterExpr(ExpressionIR* expr) {
   return Status::OK();
 }
 
+absl::flat_hash_set<std::string> ColumnsFromRelation(Relation r) {
+  auto col_names = r.col_names();
+  return {col_names.begin(), col_names.end()};
+}
+
+StatusOr<std::vector<absl::flat_hash_set<std::string>>> FilterIR::RequiredInputColumns() const {
+  DCHECK(IsRelationInit());
+  return std::vector<absl::flat_hash_set<std::string>>{ColumnsFromRelation(relation())};
+}
+
 Status FilterIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_filter_op();
   op->set_op_type(planpb::FILTER_OPERATOR);
@@ -418,6 +456,11 @@ Status LimitIR::Init(OperatorIR* parent, int64_t limit_value) {
   PL_RETURN_IF_ERROR(AddParent(parent));
   SetLimitValue(limit_value);
   return Status::OK();
+}
+
+StatusOr<std::vector<absl::flat_hash_set<std::string>>> LimitIR::RequiredInputColumns() const {
+  DCHECK(IsRelationInit());
+  return std::vector<absl::flat_hash_set<std::string>>{ColumnsFromRelation(relation())};
 }
 
 Status LimitIR::ToProto(planpb::Operator* op) const {
@@ -460,6 +503,19 @@ Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_exprs) {
     aggregate_expressions_.emplace_back(agg_expr.name, updated_expr);
   }
   return Status::OK();
+}
+
+StatusOr<std::vector<absl::flat_hash_set<std::string>>> BlockingAggIR::RequiredInputColumns()
+    const {
+  absl::flat_hash_set<std::string> required;
+  for (const auto& group : groups_) {
+    required.insert(group->col_name());
+  }
+  for (const auto& agg_expr : aggregate_expressions_) {
+    PL_ASSIGN_OR_RETURN(auto ret, CollectInputColumns(agg_expr.node));
+    required.insert(ret.begin(), ret.end());
+  }
+  return std::vector<absl::flat_hash_set<std::string>>{required};
 }
 
 Status GroupByIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups) {
@@ -1313,6 +1369,19 @@ Status UnionIR::SetRelationFromParents() {
   return Status::OK();
 }
 
+StatusOr<std::vector<absl::flat_hash_set<std::string>>> UnionIR::RequiredInputColumns() const {
+  DCHECK(HasColumnMappings());
+  std::vector<absl::flat_hash_set<std::string>> ret;
+  for (const auto& column_mapping : column_mappings_) {
+    absl::flat_hash_set<std::string> parent_names;
+    for (const ColumnIR* input_col : column_mapping) {
+      parent_names.insert(input_col->col_name());
+    }
+    ret.push_back(parent_names);
+  }
+  return ret;
+}
+
 Status UnionIR::Init(const std::vector<OperatorIR*>& parents) {
   // Support joining a table against itself by calling HandleDuplicateParents.
   PL_ASSIGN_OR_RETURN(auto transformed_parents, HandleDuplicateParents(parents));
@@ -1415,7 +1484,33 @@ Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
     PL_ASSIGN_OR_RETURN(right_on_columns_[i],
                         graph_ptr()->OptionallyCloneWithEdge(this, right_columns[i]));
   }
+  key_columns_set_ = true;
   return Status::OK();
+}
+
+StatusOr<std::vector<absl::flat_hash_set<std::string>>> JoinIR::RequiredInputColumns() const {
+  DCHECK(key_columns_set_);
+  DCHECK(output_columns_set_);
+
+  std::vector<absl::flat_hash_set<std::string>> ret(2);
+
+  for (ColumnIR* col : output_columns_) {
+    LOG(INFO) << "output_col: " << col->col_name() << ", idx: " << col->container_op_parent_idx();
+    DCHECK(col->container_op_parent_idx_set());
+    ret[col->container_op_parent_idx()].insert(col->col_name());
+  }
+  for (ColumnIR* col : left_on_columns_) {
+    LOG(INFO) << "left: " << col->col_name() << ", idx: " << col->container_op_parent_idx();
+    DCHECK(col->container_op_parent_idx_set());
+    ret[col->container_op_parent_idx()].insert(col->col_name());
+  }
+  for (ColumnIR* col : right_on_columns_) {
+    LOG(INFO) << "right: " << col->col_name() << ", idx: " << col->container_op_parent_idx();
+    DCHECK(col->container_op_parent_idx_set());
+    ret[col->container_op_parent_idx()].insert(col->col_name());
+  }
+
+  return ret;
 }
 
 Status UDTFSourceIR::Init(std::string_view func_name,

@@ -435,6 +435,13 @@ class OperatorIR : public IRNode {
 
   bool is_source() const { return is_source_; }
 
+  /**
+   * @brief For each parent (ordered by index), returns the required column names to execute this
+   * operator.
+   *
+   */
+  virtual StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const = 0;
+
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type, bool has_parents, bool is_source)
       : IRNode(id, type), is_source_(is_source), can_have_parents_(has_parents) {}
@@ -1171,6 +1178,10 @@ class MemorySourceIR : public OperatorIR {
     return tablet_value_;
   }
 
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return std::vector<absl::flat_hash_set<std::string>>{};
+  }
+
  private:
   std::string table_name_;
 
@@ -1214,6 +1225,11 @@ class MemorySinkIR : public OperatorIR {
   const std::vector<std::string>& out_columns() const { return out_columns_; }
   bool IsBlocking() const override { return true; }
 
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    absl::flat_hash_set<std::string> outputs{out_columns_.begin(), out_columns_.end()};
+    return std::vector<absl::flat_hash_set<std::string>>{outputs};
+  }
+
  private:
   std::string name_;
   std::vector<std::string> out_columns_;
@@ -1242,6 +1258,10 @@ class MetadataResolverIR : public OperatorIR {
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return error::Unimplemented("Unexpected call to MetadataResolverIR::RequiredInputColumns");
+  }
+
  private:
   std::map<std::string, MetadataProperty*> metadata_columns_;
 };
@@ -1268,6 +1288,8 @@ class MapIR : public OperatorIR {
   bool keep_input_columns() const { return keep_input_columns_; }
   void set_keep_input_columns(bool keep_input_columns) { keep_input_columns_ = keep_input_columns; }
 
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
+
  private:
   // The map from new column_names to expressions.
   ColExpressionVector col_exprs_;
@@ -1290,6 +1312,10 @@ class DropIR : public OperatorIR {
 
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return error::Unimplemented("Unexpected call to DropIR::RequiredInputColumns");
+  }
 
  private:
   // Names of the columns to drop.
@@ -1325,6 +1351,8 @@ class BlockingAggIR : public OperatorIR {
     return graph_ptr()->AddEdge(this, new_group);
   }
 
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
+
  private:
   Status SetAggExprs(const ColExpressionVector& agg_expr);
   Status SetGroups(const std::vector<ColumnIR*>& groups);
@@ -1350,6 +1378,10 @@ class GroupByIR : public OperatorIR {
     return error::Unimplemented("ToProto not implemented.");
   }
 
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return error::Unimplemented("Unexpected call to GroupByIR::RequiredInputColumns");
+  }
+
  private:
   Status SetGroups(const std::vector<ColumnIR*>& groups);
   // contains group_names and groups columns.
@@ -1369,6 +1401,8 @@ class FilterIR : public OperatorIR {
 
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
  private:
   ExpressionIR* filter_expr_ = nullptr;
@@ -1392,6 +1426,8 @@ class LimitIR : public OperatorIR {
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   inline bool IsBlocking() const override { return true; }
+
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
  private:
   int64_t limit_value_;
@@ -1433,6 +1469,10 @@ class GRPCSinkIR : public OperatorIR {
   bool DestinationAddressSet() const { return destination_address_ != ""; }
   inline bool IsBlocking() const override { return true; }
 
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return error::Unimplemented("Unexpected call to GRPCSinkIR::RequiredInputColumns");
+  }
+
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1461,6 +1501,10 @@ class GRPCSourceIR : public OperatorIR {
    * @return Status
    */
   Status Init(const table_store::schema::Relation& relation) { return SetRelation(relation); }
+
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return error::Unimplemented("Unexpected call to GRPCSourceIR::RequiredInputColumns");
+  }
 
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
@@ -1507,6 +1551,10 @@ class GRPCSourceGroupIR : public OperatorIR {
   int64_t source_id() const { return source_id_; }
   std::vector<GRPCSinkIR*> dependent_sinks() { return dependent_sinks_; }
 
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return error::Unimplemented("Unexpected call to GRPCSourceGroupIR::RequiredInputColumns");
+  }
+
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1536,6 +1584,8 @@ class UnionIR : public OperatorIR {
   Status SetRelationFromParents();
   bool HasColumnMappings() const { return column_mappings_.size() == parents().size(); }
   const std::vector<InputColumnMapping>& column_mappings() const { return column_mappings_; }
+
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
  private:
   /**
@@ -1610,10 +1660,13 @@ class JoinIR : public OperatorIR {
     for (auto g : output_columns_) {
       PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
     }
+    output_columns_set_ = true;
     return Status::OK();
   }
 
   bool specified_as_right() const { return specified_as_right_; }
+
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
  private:
   /**
@@ -1637,6 +1690,10 @@ class JoinIR : public OperatorIR {
 
   // Join type
   JoinType join_type_;
+  // Whether or not the output columns have been set yet.
+  bool output_columns_set_ = false;
+  // Whether or not the join key columns have been set.
+  bool key_columns_set_ = false;
   // The columns that are output by this join operator.
   std::vector<ColumnIR*> output_columns_;
   // The column names to set.
@@ -1698,6 +1755,10 @@ class TabletSourceGroupIR : public OperatorIR {
 
   const std::string tablet_key() const { return tablet_key_; }
 
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return error::Unimplemented("Unexpected call to TabletSourceGroupIR::RequiredInputColumns");
+  }
+
  private:
   // The key in the relation that is used as a tablet_key.
   std::string tablet_key_;
@@ -1736,6 +1797,10 @@ class UDTFSourceIR : public OperatorIR {
   Status CopyFromNodeImpl(const IRNode* source,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   const std::vector<DataIR*>& arg_values() const { return arg_values_; }
+
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
+    return std::vector<absl::flat_hash_set<std::string>>{};
+  }
 
  private:
   /**

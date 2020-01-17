@@ -1530,6 +1530,75 @@ TEST_F(OperatorTests, uint128_ir_init_from_str_bad_format) {
   EXPECT_THAT(uint128_or_s.status(), HasCompilerError(".* is not a valid UUID"));
 }
 
+TEST_F(OperatorTests, map_required_inputs) {
+  MemorySourceIR* mem_source = MakeMemSource();
+  ColumnIR* col1 = MakeColumn("test1", /*parent_op_idx*/ 0);
+  ColumnIR* col2 = MakeColumn("test2", /*parent_op_idx*/ 0);
+  ColumnIR* col3 = MakeColumn("test3", /*parent_op_idx*/ 0);
+  FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
+  MapIR* child_map =
+      MakeMap(mem_source, {{{"out11", col1}, {"out2", col2}, {"out3", add_func}}, {}});
+
+  auto inputs = child_map->RequiredInputColumns().ConsumeValueOrDie();
+  EXPECT_EQ(1, inputs.size());
+  EXPECT_THAT(inputs[0], UnorderedElementsAre("test1", "test2", "test3"));
+}
+
+TEST_F(OperatorTests, blocking_agg_required_inputs) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count1", 0)},
+                             {{"mean", MakeMeanFunc(MakeColumn("count2", 0))}});
+
+  auto inputs = agg->RequiredInputColumns().ConsumeValueOrDie();
+  EXPECT_EQ(1, inputs.size());
+  EXPECT_THAT(inputs[0], UnorderedElementsAre("count1", "count2"));
+}
+
+TEST_F(OperatorTests, join_required_inputs) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4", "col5"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  std::vector<std::string> col_names{"left_only", "col4", "col1", "right_only"};
+
+  // inner join
+  auto join =
+      MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
+               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
+  std::vector<ColumnIR*> cols{MakeColumn("left_only", 0), MakeColumn("col4", 1),
+                              MakeColumn("col1", 0), MakeColumn("right_only", 1)};
+  EXPECT_OK(join->SetOutputColumns(col_names, cols));
+
+  auto inputs = join->RequiredInputColumns().ConsumeValueOrDie();
+  EXPECT_EQ(2, inputs.size());
+  EXPECT_THAT(inputs[0], UnorderedElementsAre("left_only", "col1", "col3"));
+  EXPECT_THAT(inputs[1], UnorderedElementsAre("right_only", "col2", "col4"));
+
+  // right join
+  std::vector<ColumnIR*> left_on{MakeColumn("col1", 1), MakeColumn("col3", 1)};
+  std::vector<ColumnIR*> right_on{MakeColumn("col2", 0), MakeColumn("col4", 0)};
+
+  auto right_join =
+      graph
+          ->CreateNode<JoinIR>(ast, std::vector<OperatorIR*>{mem_src1, mem_src2}, "right", left_on,
+                               right_on, std::vector<std::string>{"_x", "_y"})
+          .ConsumeValueOrDie();
+  std::vector<ColumnIR*> right_cols{MakeColumn("left_only", 1), MakeColumn("col4", 0),
+                                    MakeColumn("col1", 1), MakeColumn("right_only", 0)};
+  EXPECT_OK(right_join->SetOutputColumns(col_names, right_cols));
+
+  auto right_inputs = right_join->RequiredInputColumns().ConsumeValueOrDie();
+  EXPECT_EQ(2, right_inputs.size());
+  EXPECT_THAT(right_inputs[0], UnorderedElementsAre("right_only", "col2", "col4"));
+  EXPECT_THAT(right_inputs[1], UnorderedElementsAre("left_only", "col1", "col3"));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
