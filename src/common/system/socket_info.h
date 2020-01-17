@@ -33,6 +33,9 @@ struct SocketInfo {
  */
 class NetlinkSocketProber {
  public:
+  /**
+   * Create a socket prober within the current network namespace.
+   */
   static StatusOr<std::unique_ptr<NetlinkSocketProber>> Create();
 
   /**

@@ -1,20 +1,11 @@
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
 #include <unistd.h>
 
-#include <fcntl.h>
-#include <sys/stat.h>
-
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <cstdlib>
 #include <string>
 
 #include <absl/strings/numbers.h>
 
 #include "src/common/base/base.h"
-#include "src/common/system/config.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/testing/testing.h"
 
@@ -40,6 +31,8 @@ class NetlinkSocketProberNamespaceTest : public ::testing::Test {
                                     std::chrono::steady_clock::now().time_since_epoch().count());
     ASSERT_OK(
         container_.Start({"timeout", "300", "docker", "run", "--rm", "--name", name, kImage}));
+
+    sleep(2);
 
     // Wait for container's server to be running.
     const int kAttempts = 10;
@@ -77,10 +70,13 @@ class NetlinkSocketProberNamespaceTest : public ::testing::Test {
 
 TEST_F(NetlinkSocketProberNamespaceTest, Basic) {
   {
-    NetlinkSocketProber socket_prober;
+    StatusOr<std::unique_ptr<NetlinkSocketProber>> socket_prober_or = NetlinkSocketProber::Create();
+    ASSERT_OK(socket_prober_or);
+    std::unique_ptr<NetlinkSocketProber> socket_prober = socket_prober_or.ConsumeValueOrDie();
+
     std::map<int, SocketInfo> socket_info_entries;
-    ASSERT_OK(socket_prober.InetConnections(&socket_info_entries,
-                                            kTCPEstablishedState | kTCPListeningState));
+    ASSERT_OK(socket_prober->InetConnections(&socket_info_entries,
+                                             kTCPEstablishedState | kTCPListeningState));
     int num_conns = socket_info_entries.size();
 
     // Assume that on any reasonable host, there will be more than 1 connection in the default
@@ -89,20 +85,27 @@ TEST_F(NetlinkSocketProberNamespaceTest, Basic) {
   }
 
   {
-    NetlinkSocketProber socket_prober(target_pid_);
+    StatusOr<std::unique_ptr<NetlinkSocketProber>> socket_prober_or =
+        NetlinkSocketProber::Create(target_pid_);
+    ASSERT_OK(socket_prober_or);
+    std::unique_ptr<NetlinkSocketProber> socket_prober = socket_prober_or.ConsumeValueOrDie();
+
     std::map<int, SocketInfo> socket_info_entries;
-    ASSERT_OK(socket_prober.InetConnections(&socket_info_entries,
-                                            kTCPEstablishedState | kTCPListeningState));
+    ASSERT_OK(socket_prober->InetConnections(&socket_info_entries,
+                                             kTCPEstablishedState | kTCPListeningState));
     int num_conns = socket_info_entries.size();
 
     EXPECT_EQ(num_conns, 1);
   }
 
   {
-    NetlinkSocketProber socket_prober;
+    StatusOr<std::unique_ptr<NetlinkSocketProber>> socket_prober_or = NetlinkSocketProber::Create();
+    ASSERT_OK(socket_prober_or);
+    std::unique_ptr<NetlinkSocketProber> socket_prober = socket_prober_or.ConsumeValueOrDie();
+
     std::map<int, SocketInfo> socket_info_entries;
-    ASSERT_OK(socket_prober.InetConnections(&socket_info_entries,
-                                            kTCPEstablishedState | kTCPListeningState));
+    ASSERT_OK(socket_prober->InetConnections(&socket_info_entries,
+                                             kTCPEstablishedState | kTCPListeningState));
     int num_conns = socket_info_entries.size();
 
     // Assume that on any reasonable host, there will be more than 1 connection in the default
