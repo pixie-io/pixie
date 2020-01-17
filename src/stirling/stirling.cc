@@ -384,7 +384,8 @@ void StirlingImpl::Stop() {
     Status s = source->Stop();
 
     // Forge on, because death is imminent!
-    LOG_IF(ERROR, !s.ok()) << s.msg();
+    LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to stop source connector '$0', error: $1",
+                                               source->source_name(), s.ToString());
   }
 }
 
