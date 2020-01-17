@@ -126,7 +126,6 @@ container_push(
 pl_cc_test(
     name = "socket_trace_connector_test",
     srcs = ["socket_trace_connector_test.cc"],
-    flaky = True,
     deps = [
         ":cc_library",
         "//src/stirling/testing:cc_library",
