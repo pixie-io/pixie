@@ -61,7 +61,7 @@ Status RemoveProbes(const char* file_path, std::vector<std::string> probes) {
     VLOG(1) << absl::Substitute("Writing $0", probe);
 
     if (write(fd, probe.data(), probe.size()) < 0) {
-      return error::Internal("Failed to write to file: $0", file_path);
+      return error::Internal("Failed to write to file: $0 [errno=$1]", file_path, errno);
     }
     // Note that even if write succeeds, it doesn't confirm that the probe was properly removed.
     // We can only confirm that we wrote to the file.

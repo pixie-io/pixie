@@ -486,7 +486,7 @@ builders['Build & Test (bpf tests - asan)'] = {
   WithSourceCode {
     dockerStep(dockerArgsForBPFTest, {
       bazelCmd(
-        bazelBaseArgsForBPFTest + " --config=asan --config=bpf ${BAZEL_SRC_FILES_PATH}",
+        bazelBaseArgsForBPFTest + " --config=bpf_asan ${BAZEL_SRC_FILES_PATH}",
         'build-bpf-asan')
     })
   }
@@ -496,7 +496,7 @@ builders['Build & Test (bpf tests - tsan)'] = {
   WithSourceCode {
     dockerStep(dockerArgsForBPFTest, {
       bazelCmd(
-        bazelBaseArgsForBPFTest + " --config=tsan --config=bpf ${BAZEL_SRC_FILES_PATH}",
+        bazelBaseArgsForBPFTest + " --config=bpf_tsan ${BAZEL_SRC_FILES_PATH}",
         'build-bpf-tsan')
     })
   }

@@ -76,7 +76,7 @@ build:asan --linkopt -fno-sanitize=vptr
 build:asan --copt -fno-sanitize-recover=all
 build:asan --linkopt -ldl
 build:asan --define tcmalloc=disabled
-build:asan --build_tag_filters=-no_asan,-manual
+build:asan --build_tag_filters=-no_asan
 build:asan --test_tag_filters=-no_asan,-requires_root,-requires_bpf
 build:asan --define signal_trace=disabled
 build:asan --copt -DADDRESS_SANITIZER=1
@@ -93,7 +93,7 @@ build:msan --define PL_CONFIG_MSAN=1
 build:msan --copt -fsanitize=memory
 build:msan --linkopt -fsanitize=memory
 build:msan --define tcmalloc=disabled
-build:msan --build_tag_filters=-no_msan,-manual
+build:msan --build_tag_filters=-no_msan
 build:msan --test_tag_filters=-no_msan,-requires_root,-requires_bpf
 build:msan --copt -fsanitize-memory-track-origins=2
 build:msan --define tcmalloc=disabled
@@ -104,17 +104,32 @@ build:tsan --define PL_CONFIG_TSAN=1
 build:tsan --copt -fsanitize=thread
 build:tsan --linkopt -fsanitize=thread
 build:tsan --define tcmalloc=disabled
-build:tsan --build_tag_filters=-no_tsan,-manual
+build:tsan --build_tag_filters=-no_tsan
 build:tsan --test_tag_filters=-no_tsan,-requires_root,-requires_bpf
 build:tsan --define tcmalloc=disabled
 
+# Note that we are lumping tests that require root into the BPF tests below
+# to minimize number of configs.
+# If there are ever a lot of tests with requires_root set, a new config is warranted.
+
 # bazel build --config bpf
-# Note that we are lumping tests that require root into BPF tests.
-# This is overkill; it is done as a shortcut.
-# If there are ever a lot of tests with requires_root, a new config is warranted.
 build:bpf --config=clang
 build:bpf --build_tag_filters=requires_bpf,requires_root
 test:bpf --test_tag_filters=requires_bpf,requires_root
+
+# bazel build --config bpf_asan
+# Need to repeat the negative build_tag_filters from config=asan,
+# because the positive build_tag_filters here can re-enable such tests.
+build:bpf_asan --config=asan
+build:bpf_asan --build_tag_filters=requires_bpf,requires_root,-no_asan
+test:bpf_asan --test_tag_filters=requires_bpf,requires_root,-no_asan
+
+# bazel build --config bpf_tsan
+# Need to repeat the negative build_tag_filters from config=tsan,
+# because the positive build_tag_filters here can re-enable such tests.
+build:bpf_tsan --config=tsan
+build:bpf_tsan --build_tag_filters=requires_bpf,requires_root,-no_tsan
+test:bpf_tsan --test_tag_filters=requires_bpf,requires_root,-no_tsan
 
 coverage --config=gcc
 coverage --cxxopt -fprofile-arcs

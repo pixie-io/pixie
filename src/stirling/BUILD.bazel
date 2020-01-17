@@ -258,7 +258,10 @@ sh_test(
     name = "stirling_wrapper_kprobe_leak_test",
     srcs = ["stirling_wrapper_kprobe_leak_test.sh"],
     data = [":stirling_wrapper"],
-    tags = ["requires_bpf"],
+    tags = [
+        "exclusive",
+        "requires_bpf",
+    ],
     deps = ["//src/stirling/scripts:sh_library"],
 )
 
@@ -266,7 +269,12 @@ sh_test(
     name = "stirling_wrapper_test",
     srcs = ["stirling_wrapper_test.sh"],
     data = [":stirling_wrapper"],
-    tags = ["requires_bpf"],
+    tags = [
+        "requires_bpf",
+        # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
+        # which will emit warnings, that will then be considered a test failure.
+        "exclusive",
+    ],
     deps = ["//src/stirling/scripts:sh_library"],
 )
 
@@ -276,8 +284,12 @@ sh_test(
     data = [":stirling_wrapper_image.tar"],
     tags = [
         "requires_bpf",
-        #TODO(oazizi): Enable this test once fixed.
-        "manual",
+        # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
+        # which will emit warnings, that will then be considered a test failure.
+        "exclusive",
+        # TODO(oazizi): This test times out in TSAN. Figure out why.
+        # Likely related to the fact that its running though docker.
+        "no_tsan",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
 )
