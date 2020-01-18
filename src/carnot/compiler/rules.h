@@ -34,12 +34,19 @@ template <typename TPlan>
 class BaseRule {
  public:
   BaseRule() = delete;
-  explicit BaseRule(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
+  explicit BaseRule(CompilerState* compiler_state) : BaseRule(compiler_state, false) {}
+  BaseRule(CompilerState* compiler_state, bool reverse_topological_execution)
+      : compiler_state_(compiler_state),
+        reverse_topological_execution_(reverse_topological_execution) {}
 
   virtual ~BaseRule() = default;
 
   virtual StatusOr<bool> Execute(TPlan* graph) {
     std::vector<int64_t> topo_graph = graph->dag().TopologicalSort();
+    if (reverse_topological_execution_) {
+      std::reverse(topo_graph.begin(), topo_graph.end());
+    }
+
     bool any_changed = false;
     for (int64_t node_i : topo_graph) {
       PL_ASSIGN_OR_RETURN(bool node_is_changed, Apply(graph->Get(node_i)));
@@ -74,6 +81,7 @@ class BaseRule {
   // The queue containing nodes to delete.
   std::queue<int64_t> node_delete_q;
   CompilerState* compiler_state_;
+  bool reverse_topological_execution_;
 };
 
 using Rule = BaseRule<IR>;
