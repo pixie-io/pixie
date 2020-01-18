@@ -259,11 +259,6 @@ class ConnectionTracker {
   void Disable(std::string_view reason = "");
 
   /**
-   * @brief Sets state, and logs the reason if the state actually changed.
-   */
-  void set_state(State state, std::string_view reason);
-
-  /**
    * Returns a state that determine the operations performed on the traffic traced on the
    * connection.
    */

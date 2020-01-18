@@ -530,38 +530,18 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
 }
 
 void ConnectionTracker::Disable(std::string_view reason) {
-  set_state(State::kDisabled, reason);
+  LOG(WARNING) << absl::Substitute("Disabling connection=$0 dest=$1:$2, reason=$3",
+                                   ToString(conn_id_), open_info_.remote_addr.addr_str,
+                                   open_info_.remote_addr.port, reason);
+
+  // TODO(oazizi/yzhao): Consider storing the reason field.
+
+  state_ = State::kDisabled;
 
   send_data_.Reset();
   recv_data_.Reset();
 
   // TODO(oazizi): Propagate the disable back to BPF, so it doesn't even send the data.
-}
-
-namespace {
-
-std::string_view StateName(ConnectionTracker::State state) {
-  switch (state) {
-    case ConnectionTracker::State::kCollecting:
-      return "kCollecting";
-    case ConnectionTracker::State::kTransferring:
-      return "kTransferring";
-    case ConnectionTracker::State::kDisabled:
-      return "kDisabled";
-    default:
-      return "GCC";
-  }
-}
-
-}  // namespace
-
-void ConnectionTracker::set_state(State state, std::string_view reason) {
-  LOG_IF(INFO, state_ != state) << absl::Substitute(
-      "Changing the state of connection=$0 dest=$1:$2, from $3 to $4, reason=$5",
-      ToString(conn_id_), open_info_.remote_addr.addr_str, open_info_.remote_addr.port,
-      StateName(state_), StateName(state), reason);
-  // TODO(oazizi/yzhao): Consider storing the reason field.
-  state_ = state;
 }
 
 bool ConnectionTracker::AllEventsReceived() const {
@@ -671,7 +651,7 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
   switch (role()) {
     case EndpointRole::kRoleClient:
       if (state() == State::kCollecting) {
-        set_state(State::kTransferring, "Always transfer data from client side.");
+        state_ = State::kTransferring;
       }
       break;
     case EndpointRole::kRoleServer:
@@ -684,10 +664,7 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
               absl::Substitute("remote endpoint is inside the cluster, ConnID=$0 remote_addr=$1",
                                ToString(conn_id_), open_info_.remote_addr.addr_str));
         } else {
-          set_state(
-              State::kTransferring,
-              absl::Substitute("remote endpoint is inside the cluster, ConnID=$0 remote_addr=$1",
-                               ToString(conn_id_), open_info_.remote_addr.addr_str));
+          state_ = State::kTransferring;
         }
       }
       break;
