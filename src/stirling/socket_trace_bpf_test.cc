@@ -13,16 +13,19 @@
 #include "src/stirling/data_table.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/client_server_system.h"
+#include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 
 namespace pl {
 namespace stirling {
 
+using ::pl::stirling::testing::FindRecordIdxMatchesPid;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::stirling::testing::TCPSocket;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::Pair;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
@@ -121,9 +124,8 @@ TEST_F(SocketTraceBPFTest, WriteRespCapture) {
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(0, col->Size());
-    }
+    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
+    EXPECT_THAT(indices, IsEmpty());
   }
 }
 
@@ -161,9 +163,8 @@ TEST_F(SocketTraceBPFTest, SendRespCapture) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(0, col->Size());
-    }
+    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
+    EXPECT_THAT(indices, IsEmpty());
   }
 }
 
@@ -201,9 +202,8 @@ TEST_F(SocketTraceBPFTest, ReadRespCapture) {
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(0, col->Size());
-    }
+    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
+    EXPECT_THAT(indices, IsEmpty());
   }
 }
 
@@ -241,9 +241,8 @@ TEST_F(SocketTraceBPFTest, RecvRespCapture) {
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(0, col->Size());
-    }
+    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
+    EXPECT_THAT(indices, IsEmpty());
   }
 }
 
@@ -261,10 +260,8 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    // Should not have captured anything.
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(0, col->Size());
-    }
+    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
+    EXPECT_THAT(indices, IsEmpty());
   }
 
   // Check that MySQL table did not capture any data.
@@ -273,10 +270,8 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    // Should not have captured anything.
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(0, col->Size());
-    }
+    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
+    EXPECT_THAT(indices, IsEmpty());
   }
 }
 

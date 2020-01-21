@@ -570,15 +570,21 @@ void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
   if (traffic_class_.protocol == kProtocolUnknown) {
     traffic_class_.protocol = traffic_class.protocol;
   } else if (traffic_class.protocol != kProtocolUnknown) {
-    DCHECK_EQ(traffic_class_.protocol, traffic_class.protocol)
-        << "Not allowed to change the protocol of an active ConnectionTracker";
+    DCHECK_EQ(traffic_class_.protocol, traffic_class.protocol) << absl::Substitute(
+        "Not allowed to change the protocol of an active ConnectionTracker: $0, old protocol: $1, "
+        "new protocol $2",
+        ToString(conn_id_), magic_enum::enum_name(traffic_class_.protocol),
+        magic_enum::enum_name(traffic_class.protocol));
   }
 
   if (traffic_class_.role == kRoleUnknown) {
     traffic_class_.role = traffic_class.role;
   } else if (traffic_class.role != kRoleUnknown) {
-    DCHECK_EQ(traffic_class_.role, traffic_class.role)
-        << "Not allowed to change the role of an active ConnectionTracker";
+    DCHECK_EQ(traffic_class_.role, traffic_class.role) << absl::Substitute(
+        "Not allowed to change the role of an active ConnectionTracker: $0, old role: $1, new "
+        "role: $2",
+        ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
+        magic_enum::enum_name(traffic_class.role));
   }
 }
 
