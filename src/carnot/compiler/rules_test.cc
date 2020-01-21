@@ -734,6 +734,32 @@ TEST_F(OperatorRelationTest, propogate_test) {
   EXPECT_FALSE(result.ValueOrDie());
 }
 
+TEST_F(OperatorRelationTest, mem_sink_with_columns_test) {
+  auto src_relation = MakeRelation();
+  MemorySourceIR* src = MakeMemSource(src_relation);
+  MemorySinkIR* sink = MakeMemSink(src, "foo", {"cpu0"});
+
+  OperatorRelationRule rule(compiler_state_.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(Relation({types::DataType::FLOAT64}, {"cpu0"}), sink->relation());
+}
+
+TEST_F(OperatorRelationTest, mem_sink_all_columns_test) {
+  auto src_relation = MakeRelation();
+  MemorySourceIR* src = MakeMemSource(src_relation);
+  MemorySinkIR* sink = MakeMemSink(src, "foo", {});
+
+  OperatorRelationRule rule(compiler_state_.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(src_relation, sink->relation());
+}
+
 TEST_F(OperatorRelationTest, JoinCreateOutputColumns) {
   std::string join_key = "key";
   Relation rel1({types::INT64, types::FLOAT64, types::STRING}, {join_key, "latency", "data"});

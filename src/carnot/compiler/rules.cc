@@ -196,6 +196,8 @@ StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) {
     // Another rule handles this.
     // TODO(philkuz) unify this rule with the drop to map rule.
     return false;
+  } else if (Match(ir_node, UnresolvedReadyOp(MemorySink()))) {
+    return SetMemorySink(static_cast<MemorySinkIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedReadyOp(Limit())) ||
              Match(ir_node, UnresolvedReadyOp(Filter())) ||
              Match(ir_node, UnresolvedReadyOp(GroupBy())) ||
@@ -467,6 +469,20 @@ StatusOr<bool> OperatorRelationRule::SetMetadataResolver(MetadataResolverIR* md_
 
 StatusOr<bool> OperatorRelationRule::SetUnion(UnionIR* union_ir) const {
   PL_RETURN_IF_ERROR(union_ir->SetRelationFromParents());
+  return true;
+}
+
+StatusOr<bool> OperatorRelationRule::SetMemorySink(MemorySinkIR* sink_ir) const {
+  if (!sink_ir->out_columns().size()) {
+    return SetOther(sink_ir);
+  }
+  auto input_relation = sink_ir->parents()[0]->relation();
+  Relation output_relation;
+  for (const auto& col_name : sink_ir->out_columns()) {
+    output_relation.AddColumn(input_relation.GetColumnType(col_name), col_name,
+                              input_relation.GetColumnDesc(col_name));
+  }
+  PL_RETURN_IF_ERROR(sink_ir->SetRelation(output_relation));
   return true;
 }
 

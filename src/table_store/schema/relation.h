@@ -47,6 +47,7 @@ class Relation {
   types::DataType GetColumnType(const std::string& col_name) const;
   const std::string& GetColumnName(size_t idx) const;
   const std::string& GetColumnDesc(size_t idx) const;
+  const std::string& GetColumnDesc(const std::string& col_name) const;
 
   // Get the debug string of this relation.
   std::string DebugString() const;

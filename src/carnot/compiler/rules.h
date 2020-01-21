@@ -153,6 +153,7 @@ class OperatorRelationRule : public Rule {
   StatusOr<bool> SetMetadataResolver(MetadataResolverIR* map_ir) const;
   StatusOr<bool> SetUnion(UnionIR* union_ir) const;
   StatusOr<bool> SetOldJoin(JoinIR* join_op) const;
+  StatusOr<bool> SetMemorySink(MemorySinkIR* map_ir) const;
   StatusOr<bool> SetOther(OperatorIR* op) const;
 
   /**

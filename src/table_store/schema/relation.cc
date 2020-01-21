@@ -80,6 +80,10 @@ const std::string& Relation::GetColumnDesc(size_t idx) const {
   return col_desc_[idx];
 }
 
+const std::string& Relation::GetColumnDesc(const std::string& col_name) const {
+  return GetColumnDesc(GetColumnIndex(col_name));
+}
+
 std::string Relation::DebugString() const {
   CHECK(col_types_.size() == col_names_.size()) << "Mismatched col names/sizes";
   std::vector<string> col_info_as_str;
