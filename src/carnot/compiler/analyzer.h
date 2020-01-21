@@ -84,6 +84,11 @@ class Analyzer : public RuleExecutor<IR> {
     remove_ir_only_nodes_batch->AddRule<RemoveGroupByRule>();
   }
 
+  void CreatePruneUnusedColumnsBatch() {
+    RuleBatch* prune_unused_columns = CreateRuleBatch<FailOnMax>("PruneUnusedColumns", 2);
+    prune_unused_columns->AddRule<PruneUnusedColumnsRule>();
+  }
+
   void CreateResolveColumnIndexBatch() {
     RuleBatch* resolve_column_index_batch = CreateRuleBatch<FailOnMax>("ResolveColumnIndex", 2);
     resolve_column_index_batch->AddRule<ResolveColumnIndexRule>();
@@ -99,6 +104,7 @@ class Analyzer : public RuleExecutor<IR> {
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();
+    CreatePruneUnusedColumnsBatch();
     CreateResolveColumnIndexBatch();
     return Status::OK();
   }

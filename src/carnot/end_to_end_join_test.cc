@@ -39,7 +39,7 @@ TEST_F(JoinTest, basic) {
   std::string queryString =
       "src1 = pl.DataFrame(table='left_table', select=['col1', 'col2'])\n"
       "src2 = pl.DataFrame(table='right_table', select=['col1', 'col2'])\n"
-      "join = src1.merge(src2, how='inner', left_on=['col1'], right_on=['col1'], "
+      "join = src1.merge(src2, how='inner', left_on=['col1', 'col2'], right_on=['col1', 'col2'], "
       "suffixes=['', '_x'])\n"
       "join['left_col1'] = join['col1']\n"
       "join['right_col2'] = join['col2']\n"

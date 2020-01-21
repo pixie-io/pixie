@@ -1244,11 +1244,14 @@ class MemorySinkIR : public OperatorIR {
 
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+  // When out_columns_ is empty, the full input relation will be written to the sink.
   const std::vector<std::string>& out_columns() const { return out_columns_; }
   bool IsBlocking() const override { return true; }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
-    absl::flat_hash_set<std::string> outputs{out_columns_.begin(), out_columns_.end()};
+    DCHECK(IsRelationInit());
+    auto out_cols = relation().col_names();
+    absl::flat_hash_set<std::string> outputs{out_cols.begin(), out_cols.end()};
     return std::vector<absl::flat_hash_set<std::string>>{outputs};
   }
 

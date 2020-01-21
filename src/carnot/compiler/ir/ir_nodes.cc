@@ -1636,6 +1636,7 @@ Status JoinIR::SetOutputColumns(const std::vector<std::string>& column_names,
 
 StatusOr<absl::flat_hash_set<std::string>> JoinIR::PruneOutputColumnsToImpl(
     const absl::flat_hash_set<std::string>& kept_columns) {
+  DCHECK_GT(column_names_.size(), 0UL);
   std::vector<ColumnIR*> new_output_cols;
   std::vector<std::string> new_output_names;
   for (const auto& [col_idx, col_name] : Enumerate(column_names_)) {

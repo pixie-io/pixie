@@ -201,14 +201,14 @@ TEST_F(AnalyzerTest, single_col_agg) {
 // Make sure the relations match the expected values.
 TEST_F(AnalyzerTest, test_relation_results) {
   // operators don't use generated columns, are just chained.
-  std::string chain_operators =
-      absl::StrJoin({"queryDF = pl.DataFrame(table='cpu', select=['upid', 'cpu0', 'cpu1', "
-                     "'cpu2', 'agent_id'], start_time=0, end_time=10)",
-                     "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
-                     "groupDF = queryDF[['cpu0', 'cpu1', 'cpu_sum']].groupby('cpu0')",
-                     "df = groupDF.agg(cpu_count=('cpu1', pl.count),cpu_mean=('cpu1', pl.mean))",
-                     "pl.display(df)"},
-                    "\n");
+  std::string chain_operators = absl::StrJoin(
+      {"queryDF = pl.DataFrame(table='cpu', select=['upid', 'cpu0', 'cpu1', "
+       "'cpu2', 'agent_id'], start_time=0, end_time=10)",
+       "pl.display(queryDF)", "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+       "groupDF = queryDF[['cpu0', 'cpu1', 'cpu_sum']].groupby('cpu0')",
+       "df = groupDF.agg(cpu_count=('cpu1', pl.count),cpu_mean=('cpu1', pl.mean))",
+       "pl.display(df)"},
+      "\n");
   auto ir_graph_status = CompileGraph(chain_operators);
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
@@ -238,8 +238,8 @@ TEST_F(AnalyzerTest, test_relation_results) {
 
   // Sink should have the same relation as before and be equivalent to its parent.
   std::vector<IRNode*> sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
-  EXPECT_EQ(sink_nodes.size(), 1);
-  auto sink_node = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  EXPECT_EQ(sink_nodes.size(), 2);
+  auto sink_node = static_cast<MemorySinkIR*>(sink_nodes[1]);
   EXPECT_THAT(sink_node->relation(), UnorderedRelationMatches(test_agg_relation));
   EXPECT_EQ(sink_node->relation(), sink_node->parents()[0]->relation());
 }  // namespace compiler
@@ -619,8 +619,9 @@ constexpr char kInnerJoinQuery[] = R"query(
 src1 = pl.DataFrame(table='cpu', select=['upid', 'cpu0','cpu1'])
 src2 = pl.DataFrame(table='network', select=['bytes_in', 'upid', 'bytes_out'])
 join = src1.merge(src2, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
+pl.display(join, 'joined')
 output = join[["upid", "bytes_in", "bytes_out", "cpu0", "cpu1"]]
-pl.display(output, 'joined')
+pl.display(output, 'mapped')
 )query";
 
 TEST_F(AnalyzerTest, join_test) {
@@ -629,13 +630,10 @@ TEST_F(AnalyzerTest, join_test) {
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   ASSERT_OK(HandleRelation(ir_graph));
 
-  JoinIR* join = nullptr;
-  for (int64_t i : ir_graph->dag().TopologicalSort()) {
-    IRNode* node = ir_graph->Get(i);
-    if (Match(node, Join())) {
-      join = static_cast<JoinIR*>(node);
-    }
-  }
+  auto join_nodes = ir_graph->FindNodesOfType(IRNodeType::kJoin);
+  ASSERT_EQ(1, join_nodes.size());
+  JoinIR* join = static_cast<JoinIR*>(join_nodes[0]);
+
   ASSERT_NE(join, nullptr);
 
   // check to make sure that equality conditions are properly processed.
@@ -653,9 +651,10 @@ TEST_F(AnalyzerTest, join_test) {
   EXPECT_THAT(join->column_names(),
               ElementsAre("upid", "cpu0", "cpu1", "bytes_in", "upid_x", "bytes_out"));
 
-  ASSERT_EQ(join->Children().size(), 1);
-  ASSERT_TRUE(Match(join->Children()[0], Map()));
-  auto map = static_cast<MapIR*>(join->Children()[0]);
+  ASSERT_EQ(join->Children().size(), 2);
+  // Ignore the sink that is there just to preserve the join output relation.
+  ASSERT_TRUE(Match(join->Children()[1], Map()));
+  auto map = static_cast<MapIR*>(join->Children()[1]);
 
   EXPECT_THAT(map->relation().col_names(),
               ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
@@ -806,6 +805,52 @@ TEST_F(AnalyzerTest, nested_agg_fails) {
   auto analyzer_status = HandleRelation(graph);
   ASSERT_NOT_OK(analyzer_status);
   EXPECT_THAT(analyzer_status.status(), HasCompilerError("agg function arg cannot be a function"));
+}
+
+TEST_F(AnalyzerTest, prune_unused_columns) {
+  auto ir_graph_status = CompileGraph(kInnerJoinFollowedByMapQuery);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_OK(analyzer_status);
+
+  // Check source nodes
+  auto source_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(2, source_nodes.size());
+
+  auto right_src = static_cast<MemorySourceIR*>(source_nodes[0]);
+  ASSERT_EQ("network", right_src->table_name());
+  EXPECT_THAT(right_src->column_names(), ElementsAre("upid", "bytes_in"));
+
+  auto left_src = static_cast<MemorySourceIR*>(source_nodes[1]);
+  ASSERT_EQ("cpu", left_src->table_name());
+  EXPECT_THAT(left_src->column_names(), ElementsAre("upid"));
+
+  // Check join node
+  auto join_nodes = ir_graph->FindNodesOfType(IRNodeType::kJoin);
+  ASSERT_EQ(1, join_nodes.size());
+  EXPECT_THAT(static_cast<JoinIR*>(join_nodes[0])->column_names(), ElementsAre("bytes_in"));
+
+  // Check map nodes
+  auto map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
+  ASSERT_EQ(3, map_nodes.size());
+
+  // TODO(nserrino): PL-1344 Maps 1 and 3 are no-ops after this column pruning,
+  // we should have a rule for detecting that and cleaning them up.
+  auto map1 = static_cast<MapIR*>(map_nodes[0])->relation();
+  EXPECT_THAT(map1.col_names(), ElementsAre("bytes_in"));
+
+  auto map2 = static_cast<MapIR*>(map_nodes[1])->relation();
+  EXPECT_THAT(map2.col_names(), ElementsAre("mb_in"));
+
+  auto map3 = static_cast<MapIR*>(map_nodes[2])->relation();
+  EXPECT_THAT(map3.col_names(), ElementsAre("mb_in"));
+
+  // Check sink node
+  auto sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(1, sink_nodes.size());
+  auto sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  EXPECT_THAT(sink->relation().col_names(), ElementsAre("mb_in"));
 }
 
 }  // namespace compiler

@@ -460,11 +460,8 @@ nodes {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
         name: "cpu"
-        column_idxs: 2
         column_idxs: 1
-        column_names: "cpu1"
         column_names: "cpu0"
-        column_types: FLOAT64
         column_types: FLOAT64
       }
     }
@@ -478,7 +475,7 @@ nodes {
           name: "pl.mean"
           args {
             column {
-              index: 1
+              index: 0
             }
           }
           args_data_types: FLOAT64
@@ -1089,20 +1086,8 @@ nodes {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
         name: "cpu"
-        column_idxs: 0
-        column_idxs: 1
-        column_idxs: 2
-        column_idxs: 3
         column_idxs: 4
-        column_names: "count"
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
         column_names: "upid"
-        column_types: INT64
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_types: FLOAT64
         column_types: UINT128
       }
     }
@@ -1113,51 +1098,16 @@ nodes {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
-          column {
-            node: 4
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 1
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 2
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 3
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 4
-          }
-        }
-        expressions {
           func {
             name: "pl.upid_to_service_name"
             args {
               column {
                 node: 4
-                index: 4
               }
             }
             args_data_types: UINT128
           }
         }
-        column_names: "count"
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
-        column_names: "upid"
         column_names: "_attr_service_name"
       }
     }
@@ -1172,48 +1122,6 @@ nodes {
             node: 31
           }
         }
-        expressions {
-          column {
-            node: 31
-            index: 1
-          }
-        }
-        expressions {
-          column {
-            node: 31
-            index: 2
-          }
-        }
-        expressions {
-          column {
-            node: 31
-            index: 3
-          }
-        }
-        expressions {
-          column {
-            node: 31
-            index: 4
-          }
-        }
-        expressions {
-          column {
-            node: 31
-            index: 5
-          }
-        }
-        expressions {
-          column {
-            node: 31
-            index: 5
-          }
-        }
-        column_names: "count"
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
-        column_names: "upid"
-        column_names: "_attr_service_name"
         column_names: "service"
       }
     }
@@ -1226,7 +1134,6 @@ nodes {
         expressions {
           column {
             node: 9
-            index: 6
           }
         }
         column_names: "service"
@@ -1286,19 +1193,10 @@ nodes {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
         name: "cpu"
-        column_idxs: 0
         column_idxs: 1
-        column_idxs: 2
-        column_idxs: 3
         column_idxs: 4
-        column_names: "count"
         column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
         column_names: "upid"
-        column_types: INT64
-        column_types: FLOAT64
-        column_types: FLOAT64
         column_types: FLOAT64
         column_types: UINT128
       }
@@ -1315,46 +1213,18 @@ nodes {
           }
         }
         expressions {
-          column {
-            node: 4
-            index: 1
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 2
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 3
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 4
-          }
-        }
-        expressions {
           func {
             name: "pl.upid_to_service_name"
             args {
               column {
                 node: 4
-                index: 4
+                index: 1
               }
             }
             args_data_types: UINT128
           }
         }
-        column_names: "count"
         column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
-        column_names: "upid"
         column_names: "_attr_service_name"
       }
     }
@@ -1375,42 +1245,7 @@ nodes {
             index: 1
           }
         }
-        expressions {
-          column {
-            node: 36
-            index: 2
-          }
-        }
-        expressions {
-          column {
-            node: 36
-            index: 3
-          }
-        }
-        expressions {
-          column {
-            node: 36
-            index: 4
-          }
-        }
-        expressions {
-          column {
-            node: 36
-            index: 5
-          }
-        }
-        expressions {
-          column {
-            node: 36
-            index: 5
-          }
-        }
-        column_names: "count"
         column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
-        column_names: "upid"
-        column_names: "_attr_service_name"
         column_names: "service"
       }
     }
@@ -1425,14 +1260,13 @@ nodes {
           args {
             column {
               node: 9
-              index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
           node: 9
-          index: 6
+          index: 1
         }
         group_names: "service"
         value_names: "mean_cpu"
@@ -1494,19 +1328,10 @@ nodes {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
         name: "cpu"
-        column_idxs: 0
         column_idxs: 1
-        column_idxs: 2
-        column_idxs: 3
         column_idxs: 4
-        column_names: "count"
         column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
         column_names: "upid"
-        column_types: INT64
-        column_types: FLOAT64
-        column_types: FLOAT64
         column_types: FLOAT64
         column_types: UINT128
       }
@@ -1523,46 +1348,18 @@ nodes {
           }
         }
         expressions {
-          column {
-            node: 4
-            index: 1
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 2
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 3
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 4
-          }
-        }
-        expressions {
           func {
             name: "pl.upid_to_service_name"
             args {
               column {
                 node: 4
-                index: 4
+                index: 1
               }
             }
             args_data_types: UINT128
           }
         }
-        column_names: "count"
         column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
-        column_names: "upid"
         column_names: "_attr_service_name"
       }
     }
@@ -1583,42 +1380,7 @@ nodes {
             index: 1
           }
         }
-        expressions {
-          column {
-            node: 40
-            index: 2
-          }
-        }
-        expressions {
-          column {
-            node: 40
-            index: 3
-          }
-        }
-        expressions {
-          column {
-            node: 40
-            index: 4
-          }
-        }
-        expressions {
-          column {
-            node: 40
-            index: 5
-          }
-        }
-        expressions {
-          column {
-            node: 40
-            index: 5
-          }
-        }
-        column_names: "count"
         column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
-        column_names: "upid"
-        column_names: "_attr_service_name"
         column_names: "service"
       }
     }
@@ -1633,18 +1395,16 @@ nodes {
           args {
             column {
               node: 9
-              index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
           node: 9
-          index: 1
         }
         groups {
           node: 9
-          index: 6
+          index: 1
         }
         group_names: "cpu0"
         group_names: "service"
@@ -1719,19 +1479,10 @@ nodes {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
         name: "cpu"
-        column_idxs: 0
         column_idxs: 1
-        column_idxs: 2
-        column_idxs: 3
         column_idxs: 4
-        column_names: "count"
         column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
         column_names: "upid"
-        column_types: INT64
-        column_types: FLOAT64
-        column_types: FLOAT64
         column_types: FLOAT64
         column_types: UINT128
       }
@@ -1754,40 +1505,19 @@ nodes {
           }
         }
         expressions {
-          column {
-            node: 4
-            index: 2
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 3
-          }
-        }
-        expressions {
-          column {
-            node: 4
-            index: 4
-          }
-        }
-        expressions {
           func {
             name: "pl.upid_to_service_name"
             args {
               column {
                 node: 4
-                index: 4
+                index: 1
               }
             }
             id: 1
             args_data_types: UINT128
           }
         }
-        column_names: "count"
         column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
         column_names: "upid"
         column_names: "_attr_service_name"
       }
@@ -1815,36 +1545,8 @@ nodes {
             index: 2
           }
         }
-        expressions {
-          column {
-            node: 47
-            index: 3
-          }
-        }
-        expressions {
-          column {
-            node: 47
-            index: 4
-          }
-        }
-        expressions {
-          column {
-            node: 47
-            index: 5
-          }
-        }
-        expressions {
-          column {
-            node: 47
-            index: 5
-          }
-        }
-        column_names: "count"
         column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
         column_names: "upid"
-        column_names: "_attr_service_name"
         column_names: "service"
       }
     }
@@ -1859,18 +1561,17 @@ nodes {
           args {
             column {
               node: 9
-              index: 1
             }
           }
           args_data_types: FLOAT64
         }
         groups {
           node: 9
-          index: 4
+          index: 1
         }
         groups {
           node: 9
-          index: 6
+          index: 2
         }
         group_names: "upid"
         group_names: "service"
@@ -2419,7 +2120,8 @@ TEST_P(MetadataSingleOps, valid_filter_metadata_proto) {
 
   auto plan = plan_status.ConsumeValueOrDie();
   // Check the select columns match the expected values.
-  EXPECT_THAT(plan, Partially(EqualsProto(expected_pb))) << "Actual proto: " << plan.DebugString();
+  EXPECT_THAT(plan, Partially(EqualsProto(expected_pb)))
+      << absl::Substitute("Actual proto for $0: $1", expected_pb_name, plan.DebugString());
 }
 
 // Indirectly maps to metadata_name_to_plan_map
