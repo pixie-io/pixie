@@ -23,7 +23,8 @@ class NetlinkSocketProberNamespaceTest : public ::testing::Test {
 
     // First pull the image.
     // Do this separately from running the container, so we can timeout on the true runtime.
-    pl::Exec("docker pull " + kImage);
+    ASSERT_OK_AND_ASSIGN(std::string out, pl::Exec("docker pull " + kImage));
+    LOG(INFO) << out;
 
     // Now run the server.
     // Run with timeout, as a backup in case we don't clean things up properly.
@@ -32,14 +33,18 @@ class NetlinkSocketProberNamespaceTest : public ::testing::Test {
     ASSERT_OK(
         container_.Start({"timeout", "300", "docker", "run", "--rm", "--name", name, kImage}));
 
-    sleep(2);
+    // It takes some time for server to come up, so we keep polling.
+    // But keep count of the attempts, because we don't want to poll infinitely.
+    int attempts_remaining = kAttempts;
 
     // Wait for container's server to be running.
-    const int kAttempts = 10;
-    for (int i = 0; i < kAttempts; ++i) {
+    for (; attempts_remaining > 0; --attempts_remaining) {
+      sleep(kSleepSeconds);
+
       // Get the pid of the container, which is the part that has runs in its own network namespace.
       std::string pid_str =
           pl::Exec(absl::Substitute("docker inspect -f '{{.State.Pid}}' $0", name)).ValueOrDie();
+      LOG(INFO) << absl::Substitute("Server PID: $0", pid_str);
 
       if (absl::SimpleAtoi(pid_str, &target_pid_)) {
         break;
@@ -47,11 +52,22 @@ class NetlinkSocketProberNamespaceTest : public ::testing::Test {
       target_pid_ = -1;
 
       // Delay before trying again.
-      LOG(INFO) << "Test Setup: Server not ready, will try again.";
-      sleep(2);
+      LOG(INFO) << absl::Substitute(
+          "Test Setup: Container not ready, will try again ($0 attempts remaining).",
+          attempts_remaining);
     }
-
+    ASSERT_GT(attempts_remaining, 0);
     ASSERT_NE(target_pid_, -1);
+
+    // Wait for server within container to come up.
+    while (!absl::StrContains(container_.Stdout(), "listening on port: 8080")) {
+      sleep(kSleepSeconds);
+      --attempts_remaining;
+      ASSERT_GT(attempts_remaining, 0);
+      LOG(INFO) << absl::Substitute(
+          "Test Setup: Server not ready, will try again ($0 attempts remaining).",
+          attempts_remaining);
+    }
   }
 
   void TearDown() override {
@@ -59,6 +75,12 @@ class NetlinkSocketProberNamespaceTest : public ::testing::Test {
     container_.Signal(SIGINT);
     container_.Wait();
   }
+
+  // Number of attempts for server to initialize.
+  inline static constexpr int kAttempts = 30;
+
+  // Number of seconds to wait between each attempt.
+  inline static constexpr int kSleepSeconds = 1;
 
   // Use the email service from hipster-shop. Really any service will do.
   inline static const std::string kImage =
