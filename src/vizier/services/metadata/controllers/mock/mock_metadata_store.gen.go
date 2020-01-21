@@ -36,16 +36,193 @@ func (m *MockMetadataStore) EXPECT() *MockMetadataStoreMockRecorder {
 	return m.recorder
 }
 
-// UpdateEndpoints mocks base method
-func (m *MockMetadataStore) UpdateEndpoints(arg0 *metadatapb.Endpoints, arg1 bool) error {
-	ret := m.ctrl.Call(m, "UpdateEndpoints", arg0, arg1)
+// GetClusterCIDR mocks base method
+func (m *MockMetadataStore) GetClusterCIDR() string {
+	ret := m.ctrl.Call(m, "GetClusterCIDR")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetClusterCIDR indicates an expected call of GetClusterCIDR
+func (mr *MockMetadataStoreMockRecorder) GetClusterCIDR() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterCIDR", reflect.TypeOf((*MockMetadataStore)(nil).GetClusterCIDR))
+}
+
+// GetAgent mocks base method
+func (m *MockMetadataStore) GetAgent(agentID go_uuid.UUID) (*agentpb.Agent, error) {
+	ret := m.ctrl.Call(m, "GetAgent", agentID)
+	ret0, _ := ret[0].(*agentpb.Agent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgent indicates an expected call of GetAgent
+func (mr *MockMetadataStoreMockRecorder) GetAgent(agentID interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgent", reflect.TypeOf((*MockMetadataStore)(nil).GetAgent), agentID)
+}
+
+// GetAgentIDForHostname mocks base method
+func (m *MockMetadataStore) GetAgentIDForHostname(hostname string) (string, error) {
+	ret := m.ctrl.Call(m, "GetAgentIDForHostname", hostname)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentIDForHostname indicates an expected call of GetAgentIDForHostname
+func (mr *MockMetadataStoreMockRecorder) GetAgentIDForHostname(hostname interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDForHostname", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentIDForHostname), hostname)
+}
+
+// DeleteAgent mocks base method
+func (m *MockMetadataStore) DeleteAgent(agentID go_uuid.UUID) error {
+	ret := m.ctrl.Call(m, "DeleteAgent", agentID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateEndpoints indicates an expected call of UpdateEndpoints
-func (mr *MockMetadataStoreMockRecorder) UpdateEndpoints(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).UpdateEndpoints), arg0, arg1)
+// DeleteAgent indicates an expected call of DeleteAgent
+func (mr *MockMetadataStoreMockRecorder) DeleteAgent(agentID interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAgent", reflect.TypeOf((*MockMetadataStore)(nil).DeleteAgent), agentID)
+}
+
+// CreateAgent mocks base method
+func (m *MockMetadataStore) CreateAgent(agentID go_uuid.UUID, a *agentpb.Agent) error {
+	ret := m.ctrl.Call(m, "CreateAgent", agentID, a)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateAgent indicates an expected call of CreateAgent
+func (mr *MockMetadataStoreMockRecorder) CreateAgent(agentID, a interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAgent", reflect.TypeOf((*MockMetadataStore)(nil).CreateAgent), agentID, a)
+}
+
+// UpdateAgent mocks base method
+func (m *MockMetadataStore) UpdateAgent(agentID go_uuid.UUID, a *agentpb.Agent) error {
+	ret := m.ctrl.Call(m, "UpdateAgent", agentID, a)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAgent indicates an expected call of UpdateAgent
+func (mr *MockMetadataStoreMockRecorder) UpdateAgent(agentID, a interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgent", reflect.TypeOf((*MockMetadataStore)(nil).UpdateAgent), agentID, a)
+}
+
+// GetAgents mocks base method
+func (m *MockMetadataStore) GetAgents() ([]*agentpb.Agent, error) {
+	ret := m.ctrl.Call(m, "GetAgents")
+	ret0, _ := ret[0].([]*agentpb.Agent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgents indicates an expected call of GetAgents
+func (mr *MockMetadataStoreMockRecorder) GetAgents() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgents", reflect.TypeOf((*MockMetadataStore)(nil).GetAgents))
+}
+
+// GetAgentsForHostnames mocks base method
+func (m *MockMetadataStore) GetAgentsForHostnames(arg0 *[]string) ([]string, error) {
+	ret := m.ctrl.Call(m, "GetAgentsForHostnames", arg0)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentsForHostnames indicates an expected call of GetAgentsForHostnames
+func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnames(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsForHostnames", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsForHostnames), arg0)
+}
+
+// GetASID mocks base method
+func (m *MockMetadataStore) GetASID() (uint32, error) {
+	ret := m.ctrl.Call(m, "GetASID")
+	ret0, _ := ret[0].(uint32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetASID indicates an expected call of GetASID
+func (mr *MockMetadataStoreMockRecorder) GetASID() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetASID", reflect.TypeOf((*MockMetadataStore)(nil).GetASID))
+}
+
+// GetKelvinIDs mocks base method
+func (m *MockMetadataStore) GetKelvinIDs() ([]string, error) {
+	ret := m.ctrl.Call(m, "GetKelvinIDs")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetKelvinIDs indicates an expected call of GetKelvinIDs
+func (mr *MockMetadataStoreMockRecorder) GetKelvinIDs() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKelvinIDs", reflect.TypeOf((*MockMetadataStore)(nil).GetKelvinIDs))
+}
+
+// GetComputedSchemas mocks base method
+func (m *MockMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, error) {
+	ret := m.ctrl.Call(m, "GetComputedSchemas")
+	ret0, _ := ret[0].([]*metadatapb.SchemaInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetComputedSchemas indicates an expected call of GetComputedSchemas
+func (mr *MockMetadataStoreMockRecorder) GetComputedSchemas() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComputedSchemas", reflect.TypeOf((*MockMetadataStore)(nil).GetComputedSchemas))
+}
+
+// UpdateSchemas mocks base method
+func (m *MockMetadataStore) UpdateSchemas(agentID go_uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
+	ret := m.ctrl.Call(m, "UpdateSchemas", agentID, schemas)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSchemas indicates an expected call of UpdateSchemas
+func (mr *MockMetadataStoreMockRecorder) UpdateSchemas(agentID, schemas interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSchemas", reflect.TypeOf((*MockMetadataStore)(nil).UpdateSchemas), agentID, schemas)
+}
+
+// UpdateProcesses mocks base method
+func (m *MockMetadataStore) UpdateProcesses(processes []*metadatapb.ProcessInfo) error {
+	ret := m.ctrl.Call(m, "UpdateProcesses", processes)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateProcesses indicates an expected call of UpdateProcesses
+func (mr *MockMetadataStoreMockRecorder) UpdateProcesses(processes interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProcesses", reflect.TypeOf((*MockMetadataStore)(nil).UpdateProcesses), processes)
+}
+
+// GetProcesses mocks base method
+func (m *MockMetadataStore) GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error) {
+	ret := m.ctrl.Call(m, "GetProcesses", upids)
+	ret0, _ := ret[0].([]*metadatapb.ProcessInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProcesses indicates an expected call of GetProcesses
+func (mr *MockMetadataStoreMockRecorder) GetProcesses(upids interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProcesses", reflect.TypeOf((*MockMetadataStore)(nil).GetProcesses), upids)
+}
+
+// GetPods mocks base method
+func (m *MockMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
+	ret := m.ctrl.Call(m, "GetPods")
+	ret0, _ := ret[0].([]*metadatapb.Pod)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPods indicates an expected call of GetPods
+func (mr *MockMetadataStoreMockRecorder) GetPods() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPods", reflect.TypeOf((*MockMetadataStore)(nil).GetPods))
 }
 
 // UpdatePod mocks base method
@@ -60,6 +237,70 @@ func (mr *MockMetadataStoreMockRecorder) UpdatePod(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePod", reflect.TypeOf((*MockMetadataStore)(nil).UpdatePod), arg0, arg1)
 }
 
+// GetNodePods mocks base method
+func (m *MockMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, error) {
+	ret := m.ctrl.Call(m, "GetNodePods", hostname)
+	ret0, _ := ret[0].([]*metadatapb.Pod)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNodePods indicates an expected call of GetNodePods
+func (mr *MockMetadataStoreMockRecorder) GetNodePods(hostname interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodePods", reflect.TypeOf((*MockMetadataStore)(nil).GetNodePods), hostname)
+}
+
+// GetEndpoints mocks base method
+func (m *MockMetadataStore) GetEndpoints() ([]*metadatapb.Endpoints, error) {
+	ret := m.ctrl.Call(m, "GetEndpoints")
+	ret0, _ := ret[0].([]*metadatapb.Endpoints)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEndpoints indicates an expected call of GetEndpoints
+func (mr *MockMetadataStoreMockRecorder) GetEndpoints() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).GetEndpoints))
+}
+
+// UpdateEndpoints mocks base method
+func (m *MockMetadataStore) UpdateEndpoints(arg0 *metadatapb.Endpoints, arg1 bool) error {
+	ret := m.ctrl.Call(m, "UpdateEndpoints", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateEndpoints indicates an expected call of UpdateEndpoints
+func (mr *MockMetadataStoreMockRecorder) UpdateEndpoints(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).UpdateEndpoints), arg0, arg1)
+}
+
+// GetNodeEndpoints mocks base method
+func (m *MockMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error) {
+	ret := m.ctrl.Call(m, "GetNodeEndpoints", hostname)
+	ret0, _ := ret[0].([]*metadatapb.Endpoints)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNodeEndpoints indicates an expected call of GetNodeEndpoints
+func (mr *MockMetadataStoreMockRecorder) GetNodeEndpoints(hostname interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodeEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).GetNodeEndpoints), hostname)
+}
+
+// GetServices mocks base method
+func (m *MockMetadataStore) GetServices() ([]*metadatapb.Service, error) {
+	ret := m.ctrl.Call(m, "GetServices")
+	ret0, _ := ret[0].([]*metadatapb.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServices indicates an expected call of GetServices
+func (mr *MockMetadataStoreMockRecorder) GetServices() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServices", reflect.TypeOf((*MockMetadataStore)(nil).GetServices))
+}
+
 // UpdateService mocks base method
 func (m *MockMetadataStore) UpdateService(arg0 *metadatapb.Service, arg1 bool) error {
 	ret := m.ctrl.Call(m, "UpdateService", arg0, arg1)
@@ -70,6 +311,19 @@ func (m *MockMetadataStore) UpdateService(arg0 *metadatapb.Service, arg1 bool) e
 // UpdateService indicates an expected call of UpdateService
 func (mr *MockMetadataStoreMockRecorder) UpdateService(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateService", reflect.TypeOf((*MockMetadataStore)(nil).UpdateService), arg0, arg1)
+}
+
+// GetContainers mocks base method
+func (m *MockMetadataStore) GetContainers() ([]*metadatapb.ContainerInfo, error) {
+	ret := m.ctrl.Call(m, "GetContainers")
+	ret0, _ := ret[0].([]*metadatapb.ContainerInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetContainers indicates an expected call of GetContainers
+func (mr *MockMetadataStoreMockRecorder) GetContainers() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContainers", reflect.TypeOf((*MockMetadataStore)(nil).GetContainers))
 }
 
 // UpdateContainer mocks base method
@@ -94,569 +348,4 @@ func (m *MockMetadataStore) UpdateContainersFromPod(arg0 *metadatapb.Pod, arg1 b
 // UpdateContainersFromPod indicates an expected call of UpdateContainersFromPod
 func (mr *MockMetadataStoreMockRecorder) UpdateContainersFromPod(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContainersFromPod", reflect.TypeOf((*MockMetadataStore)(nil).UpdateContainersFromPod), arg0, arg1)
-}
-
-// UpdateSchemas mocks base method
-func (m *MockMetadataStore) UpdateSchemas(arg0 go_uuid.UUID, arg1 []*metadatapb.SchemaInfo) error {
-	ret := m.ctrl.Call(m, "UpdateSchemas", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateSchemas indicates an expected call of UpdateSchemas
-func (mr *MockMetadataStoreMockRecorder) UpdateSchemas(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSchemas", reflect.TypeOf((*MockMetadataStore)(nil).UpdateSchemas), arg0, arg1)
-}
-
-// UpdateProcesses mocks base method
-func (m *MockMetadataStore) UpdateProcesses(arg0 []*metadatapb.ProcessInfo) error {
-	ret := m.ctrl.Call(m, "UpdateProcesses", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateProcesses indicates an expected call of UpdateProcesses
-func (mr *MockMetadataStoreMockRecorder) UpdateProcesses(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProcesses", reflect.TypeOf((*MockMetadataStore)(nil).UpdateProcesses), arg0)
-}
-
-// GetAgentsForHostnames mocks base method
-func (m *MockMetadataStore) GetAgentsForHostnames(arg0 *[]string) (*[]string, error) {
-	ret := m.ctrl.Call(m, "GetAgentsForHostnames", arg0)
-	ret0, _ := ret[0].(*[]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAgentsForHostnames indicates an expected call of GetAgentsForHostnames
-func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnames(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsForHostnames", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsForHostnames), arg0)
-}
-
-// GetKelvinIDs mocks base method
-func (m *MockMetadataStore) GetKelvinIDs() ([]string, error) {
-	ret := m.ctrl.Call(m, "GetKelvinIDs")
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetKelvinIDs indicates an expected call of GetKelvinIDs
-func (mr *MockMetadataStoreMockRecorder) GetKelvinIDs() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKelvinIDs", reflect.TypeOf((*MockMetadataStore)(nil).GetKelvinIDs))
-}
-
-// AddToAgentUpdateQueue mocks base method
-func (m *MockMetadataStore) AddToAgentUpdateQueue(arg0, arg1 string) error {
-	ret := m.ctrl.Call(m, "AddToAgentUpdateQueue", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddToAgentUpdateQueue indicates an expected call of AddToAgentUpdateQueue
-func (mr *MockMetadataStoreMockRecorder) AddToAgentUpdateQueue(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToAgentUpdateQueue", reflect.TypeOf((*MockMetadataStore)(nil).AddToAgentUpdateQueue), arg0, arg1)
-}
-
-// AddUpdatesToAgentQueue mocks base method
-func (m *MockMetadataStore) AddUpdatesToAgentQueue(arg0 string, arg1 []*metadatapb.ResourceUpdate) error {
-	ret := m.ctrl.Call(m, "AddUpdatesToAgentQueue", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddUpdatesToAgentQueue indicates an expected call of AddUpdatesToAgentQueue
-func (mr *MockMetadataStoreMockRecorder) AddUpdatesToAgentQueue(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUpdatesToAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).AddUpdatesToAgentQueue), arg0, arg1)
-}
-
-// AddToFrontOfAgentQueue mocks base method
-func (m *MockMetadataStore) AddToFrontOfAgentQueue(arg0 string, arg1 *metadatapb.ResourceUpdate) error {
-	ret := m.ctrl.Call(m, "AddToFrontOfAgentQueue", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddToFrontOfAgentQueue indicates an expected call of AddToFrontOfAgentQueue
-func (mr *MockMetadataStoreMockRecorder) AddToFrontOfAgentQueue(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToFrontOfAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).AddToFrontOfAgentQueue), arg0, arg1)
-}
-
-// GetFromAgentQueue mocks base method
-func (m *MockMetadataStore) GetFromAgentQueue(arg0 string) ([]*metadatapb.ResourceUpdate, error) {
-	ret := m.ctrl.Call(m, "GetFromAgentQueue", arg0)
-	ret0, _ := ret[0].([]*metadatapb.ResourceUpdate)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetFromAgentQueue indicates an expected call of GetFromAgentQueue
-func (mr *MockMetadataStoreMockRecorder) GetFromAgentQueue(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).GetFromAgentQueue), arg0)
-}
-
-// GetAgents mocks base method
-func (m *MockMetadataStore) GetAgents() ([]*agentpb.Agent, error) {
-	ret := m.ctrl.Call(m, "GetAgents")
-	ret0, _ := ret[0].([]*agentpb.Agent)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAgents indicates an expected call of GetAgents
-func (mr *MockMetadataStoreMockRecorder) GetAgents() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgents", reflect.TypeOf((*MockMetadataStore)(nil).GetAgents))
-}
-
-// GetNodePods mocks base method
-func (m *MockMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, error) {
-	ret := m.ctrl.Call(m, "GetNodePods", hostname)
-	ret0, _ := ret[0].([]*metadatapb.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetNodePods indicates an expected call of GetNodePods
-func (mr *MockMetadataStoreMockRecorder) GetNodePods(hostname interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodePods", reflect.TypeOf((*MockMetadataStore)(nil).GetNodePods), hostname)
-}
-
-// GetPods mocks base method
-func (m *MockMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
-	ret := m.ctrl.Call(m, "GetPods")
-	ret0, _ := ret[0].([]*metadatapb.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPods indicates an expected call of GetPods
-func (mr *MockMetadataStoreMockRecorder) GetPods() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPods", reflect.TypeOf((*MockMetadataStore)(nil).GetPods))
-}
-
-// GetContainers mocks base method
-func (m *MockMetadataStore) GetContainers() ([]*metadatapb.ContainerInfo, error) {
-	ret := m.ctrl.Call(m, "GetContainers")
-	ret0, _ := ret[0].([]*metadatapb.ContainerInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetContainers indicates an expected call of GetContainers
-func (mr *MockMetadataStoreMockRecorder) GetContainers() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContainers", reflect.TypeOf((*MockMetadataStore)(nil).GetContainers))
-}
-
-// GetNodeEndpoints mocks base method
-func (m *MockMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error) {
-	ret := m.ctrl.Call(m, "GetNodeEndpoints", hostname)
-	ret0, _ := ret[0].([]*metadatapb.Endpoints)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetNodeEndpoints indicates an expected call of GetNodeEndpoints
-func (mr *MockMetadataStoreMockRecorder) GetNodeEndpoints(hostname interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodeEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).GetNodeEndpoints), hostname)
-}
-
-// GetEndpoints mocks base method
-func (m *MockMetadataStore) GetEndpoints() ([]*metadatapb.Endpoints, error) {
-	ret := m.ctrl.Call(m, "GetEndpoints")
-	ret0, _ := ret[0].([]*metadatapb.Endpoints)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetEndpoints indicates an expected call of GetEndpoints
-func (mr *MockMetadataStoreMockRecorder) GetEndpoints() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).GetEndpoints))
-}
-
-// GetServices mocks base method
-func (m *MockMetadataStore) GetServices() ([]*metadatapb.Service, error) {
-	ret := m.ctrl.Call(m, "GetServices")
-	ret0, _ := ret[0].([]*metadatapb.Service)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetServices indicates an expected call of GetServices
-func (mr *MockMetadataStoreMockRecorder) GetServices() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServices", reflect.TypeOf((*MockMetadataStore)(nil).GetServices))
-}
-
-// GetComputedSchemas mocks base method
-func (m *MockMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, error) {
-	ret := m.ctrl.Call(m, "GetComputedSchemas")
-	ret0, _ := ret[0].([]*metadatapb.SchemaInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetComputedSchemas indicates an expected call of GetComputedSchemas
-func (mr *MockMetadataStoreMockRecorder) GetComputedSchemas() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComputedSchemas", reflect.TypeOf((*MockMetadataStore)(nil).GetComputedSchemas))
-}
-
-// GetASID mocks base method
-func (m *MockMetadataStore) GetASID() (uint32, error) {
-	ret := m.ctrl.Call(m, "GetASID")
-	ret0, _ := ret[0].(uint32)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetASID indicates an expected call of GetASID
-func (mr *MockMetadataStoreMockRecorder) GetASID() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetASID", reflect.TypeOf((*MockMetadataStore)(nil).GetASID))
-}
-
-// GetClusterCIDR mocks base method
-func (m *MockMetadataStore) GetClusterCIDR() string {
-	ret := m.ctrl.Call(m, "GetClusterCIDR")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetClusterCIDR indicates an expected call of GetClusterCIDR
-func (mr *MockMetadataStoreMockRecorder) GetClusterCIDR() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterCIDR", reflect.TypeOf((*MockMetadataStore)(nil).GetClusterCIDR))
-}
-
-// GetProcesses mocks base method
-func (m *MockMetadataStore) GetProcesses(arg0 []*types.UInt128) ([]*metadatapb.ProcessInfo, error) {
-	ret := m.ctrl.Call(m, "GetProcesses", arg0)
-	ret0, _ := ret[0].([]*metadatapb.ProcessInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetProcesses indicates an expected call of GetProcesses
-func (mr *MockMetadataStoreMockRecorder) GetProcesses(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProcesses", reflect.TypeOf((*MockMetadataStore)(nil).GetProcesses), arg0)
-}
-
-// MockNewMetadataStore is a mock of NewMetadataStore interface
-type MockNewMetadataStore struct {
-	ctrl     *gomock.Controller
-	recorder *MockNewMetadataStoreMockRecorder
-}
-
-// MockNewMetadataStoreMockRecorder is the mock recorder for MockNewMetadataStore
-type MockNewMetadataStoreMockRecorder struct {
-	mock *MockNewMetadataStore
-}
-
-// NewMockNewMetadataStore creates a new mock instance
-func NewMockNewMetadataStore(ctrl *gomock.Controller) *MockNewMetadataStore {
-	mock := &MockNewMetadataStore{ctrl: ctrl}
-	mock.recorder = &MockNewMetadataStoreMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockNewMetadataStore) EXPECT() *MockNewMetadataStoreMockRecorder {
-	return m.recorder
-}
-
-// GetClusterCIDR mocks base method
-func (m *MockNewMetadataStore) GetClusterCIDR() string {
-	ret := m.ctrl.Call(m, "GetClusterCIDR")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetClusterCIDR indicates an expected call of GetClusterCIDR
-func (mr *MockNewMetadataStoreMockRecorder) GetClusterCIDR() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterCIDR", reflect.TypeOf((*MockNewMetadataStore)(nil).GetClusterCIDR))
-}
-
-// GetAgent mocks base method
-func (m *MockNewMetadataStore) GetAgent(agentID go_uuid.UUID) (*agentpb.Agent, error) {
-	ret := m.ctrl.Call(m, "GetAgent", agentID)
-	ret0, _ := ret[0].(*agentpb.Agent)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAgent indicates an expected call of GetAgent
-func (mr *MockNewMetadataStoreMockRecorder) GetAgent(agentID interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgent", reflect.TypeOf((*MockNewMetadataStore)(nil).GetAgent), agentID)
-}
-
-// GetAgentIDForHostname mocks base method
-func (m *MockNewMetadataStore) GetAgentIDForHostname(hostname string) (string, error) {
-	ret := m.ctrl.Call(m, "GetAgentIDForHostname", hostname)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAgentIDForHostname indicates an expected call of GetAgentIDForHostname
-func (mr *MockNewMetadataStoreMockRecorder) GetAgentIDForHostname(hostname interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDForHostname", reflect.TypeOf((*MockNewMetadataStore)(nil).GetAgentIDForHostname), hostname)
-}
-
-// DeleteAgent mocks base method
-func (m *MockNewMetadataStore) DeleteAgent(agentID go_uuid.UUID) error {
-	ret := m.ctrl.Call(m, "DeleteAgent", agentID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteAgent indicates an expected call of DeleteAgent
-func (mr *MockNewMetadataStoreMockRecorder) DeleteAgent(agentID interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAgent", reflect.TypeOf((*MockNewMetadataStore)(nil).DeleteAgent), agentID)
-}
-
-// CreateAgent mocks base method
-func (m *MockNewMetadataStore) CreateAgent(agentID go_uuid.UUID, a *agentpb.Agent) error {
-	ret := m.ctrl.Call(m, "CreateAgent", agentID, a)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateAgent indicates an expected call of CreateAgent
-func (mr *MockNewMetadataStoreMockRecorder) CreateAgent(agentID, a interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAgent", reflect.TypeOf((*MockNewMetadataStore)(nil).CreateAgent), agentID, a)
-}
-
-// UpdateAgent mocks base method
-func (m *MockNewMetadataStore) UpdateAgent(agentID go_uuid.UUID, a *agentpb.Agent) error {
-	ret := m.ctrl.Call(m, "UpdateAgent", agentID, a)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateAgent indicates an expected call of UpdateAgent
-func (mr *MockNewMetadataStoreMockRecorder) UpdateAgent(agentID, a interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgent", reflect.TypeOf((*MockNewMetadataStore)(nil).UpdateAgent), agentID, a)
-}
-
-// GetAgents mocks base method
-func (m *MockNewMetadataStore) GetAgents() ([]*agentpb.Agent, error) {
-	ret := m.ctrl.Call(m, "GetAgents")
-	ret0, _ := ret[0].([]*agentpb.Agent)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAgents indicates an expected call of GetAgents
-func (mr *MockNewMetadataStoreMockRecorder) GetAgents() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgents", reflect.TypeOf((*MockNewMetadataStore)(nil).GetAgents))
-}
-
-// GetASID mocks base method
-func (m *MockNewMetadataStore) GetASID() (uint32, error) {
-	ret := m.ctrl.Call(m, "GetASID")
-	ret0, _ := ret[0].(uint32)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetASID indicates an expected call of GetASID
-func (mr *MockNewMetadataStoreMockRecorder) GetASID() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetASID", reflect.TypeOf((*MockNewMetadataStore)(nil).GetASID))
-}
-
-// GetKelvinIDs mocks base method
-func (m *MockNewMetadataStore) GetKelvinIDs() ([]string, error) {
-	ret := m.ctrl.Call(m, "GetKelvinIDs")
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetKelvinIDs indicates an expected call of GetKelvinIDs
-func (mr *MockNewMetadataStoreMockRecorder) GetKelvinIDs() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKelvinIDs", reflect.TypeOf((*MockNewMetadataStore)(nil).GetKelvinIDs))
-}
-
-// GetComputedSchemas mocks base method
-func (m *MockNewMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, error) {
-	ret := m.ctrl.Call(m, "GetComputedSchemas")
-	ret0, _ := ret[0].([]*metadatapb.SchemaInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetComputedSchemas indicates an expected call of GetComputedSchemas
-func (mr *MockNewMetadataStoreMockRecorder) GetComputedSchemas() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComputedSchemas", reflect.TypeOf((*MockNewMetadataStore)(nil).GetComputedSchemas))
-}
-
-// UpdateSchemas mocks base method
-func (m *MockNewMetadataStore) UpdateSchemas(agentID go_uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
-	ret := m.ctrl.Call(m, "UpdateSchemas", agentID, schemas)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateSchemas indicates an expected call of UpdateSchemas
-func (mr *MockNewMetadataStoreMockRecorder) UpdateSchemas(agentID, schemas interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSchemas", reflect.TypeOf((*MockNewMetadataStore)(nil).UpdateSchemas), agentID, schemas)
-}
-
-// UpdateProcesses mocks base method
-func (m *MockNewMetadataStore) UpdateProcesses(processes []*metadatapb.ProcessInfo) error {
-	ret := m.ctrl.Call(m, "UpdateProcesses", processes)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateProcesses indicates an expected call of UpdateProcesses
-func (mr *MockNewMetadataStoreMockRecorder) UpdateProcesses(processes interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProcesses", reflect.TypeOf((*MockNewMetadataStore)(nil).UpdateProcesses), processes)
-}
-
-// GetProcesses mocks base method
-func (m *MockNewMetadataStore) GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error) {
-	ret := m.ctrl.Call(m, "GetProcesses", upids)
-	ret0, _ := ret[0].([]*metadatapb.ProcessInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetProcesses indicates an expected call of GetProcesses
-func (mr *MockNewMetadataStoreMockRecorder) GetProcesses(upids interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProcesses", reflect.TypeOf((*MockNewMetadataStore)(nil).GetProcesses), upids)
-}
-
-// GetPods mocks base method
-func (m *MockNewMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
-	ret := m.ctrl.Call(m, "GetPods")
-	ret0, _ := ret[0].([]*metadatapb.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPods indicates an expected call of GetPods
-func (mr *MockNewMetadataStoreMockRecorder) GetPods() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPods", reflect.TypeOf((*MockNewMetadataStore)(nil).GetPods))
-}
-
-// UpdatePod mocks base method
-func (m *MockNewMetadataStore) UpdatePod(arg0 *metadatapb.Pod, arg1 bool) error {
-	ret := m.ctrl.Call(m, "UpdatePod", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdatePod indicates an expected call of UpdatePod
-func (mr *MockNewMetadataStoreMockRecorder) UpdatePod(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePod", reflect.TypeOf((*MockNewMetadataStore)(nil).UpdatePod), arg0, arg1)
-}
-
-// GetNodePods mocks base method
-func (m *MockNewMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, error) {
-	ret := m.ctrl.Call(m, "GetNodePods", hostname)
-	ret0, _ := ret[0].([]*metadatapb.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetNodePods indicates an expected call of GetNodePods
-func (mr *MockNewMetadataStoreMockRecorder) GetNodePods(hostname interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodePods", reflect.TypeOf((*MockNewMetadataStore)(nil).GetNodePods), hostname)
-}
-
-// GetEndpoints mocks base method
-func (m *MockNewMetadataStore) GetEndpoints() ([]*metadatapb.Endpoints, error) {
-	ret := m.ctrl.Call(m, "GetEndpoints")
-	ret0, _ := ret[0].([]*metadatapb.Endpoints)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetEndpoints indicates an expected call of GetEndpoints
-func (mr *MockNewMetadataStoreMockRecorder) GetEndpoints() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEndpoints", reflect.TypeOf((*MockNewMetadataStore)(nil).GetEndpoints))
-}
-
-// UpdateEndpoints mocks base method
-func (m *MockNewMetadataStore) UpdateEndpoints(arg0 *metadatapb.Endpoints, arg1 bool) error {
-	ret := m.ctrl.Call(m, "UpdateEndpoints", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateEndpoints indicates an expected call of UpdateEndpoints
-func (mr *MockNewMetadataStoreMockRecorder) UpdateEndpoints(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpoints", reflect.TypeOf((*MockNewMetadataStore)(nil).UpdateEndpoints), arg0, arg1)
-}
-
-// GetNodeEndpoints mocks base method
-func (m *MockNewMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error) {
-	ret := m.ctrl.Call(m, "GetNodeEndpoints", hostname)
-	ret0, _ := ret[0].([]*metadatapb.Endpoints)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetNodeEndpoints indicates an expected call of GetNodeEndpoints
-func (mr *MockNewMetadataStoreMockRecorder) GetNodeEndpoints(hostname interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodeEndpoints", reflect.TypeOf((*MockNewMetadataStore)(nil).GetNodeEndpoints), hostname)
-}
-
-// GetServices mocks base method
-func (m *MockNewMetadataStore) GetServices() ([]*metadatapb.Service, error) {
-	ret := m.ctrl.Call(m, "GetServices")
-	ret0, _ := ret[0].([]*metadatapb.Service)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetServices indicates an expected call of GetServices
-func (mr *MockNewMetadataStoreMockRecorder) GetServices() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServices", reflect.TypeOf((*MockNewMetadataStore)(nil).GetServices))
-}
-
-// UpdateService mocks base method
-func (m *MockNewMetadataStore) UpdateService(arg0 *metadatapb.Service, arg1 bool) error {
-	ret := m.ctrl.Call(m, "UpdateService", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateService indicates an expected call of UpdateService
-func (mr *MockNewMetadataStoreMockRecorder) UpdateService(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateService", reflect.TypeOf((*MockNewMetadataStore)(nil).UpdateService), arg0, arg1)
-}
-
-// GetContainers mocks base method
-func (m *MockNewMetadataStore) GetContainers() ([]*metadatapb.ContainerInfo, error) {
-	ret := m.ctrl.Call(m, "GetContainers")
-	ret0, _ := ret[0].([]*metadatapb.ContainerInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetContainers indicates an expected call of GetContainers
-func (mr *MockNewMetadataStoreMockRecorder) GetContainers() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContainers", reflect.TypeOf((*MockNewMetadataStore)(nil).GetContainers))
-}
-
-// UpdateContainer mocks base method
-func (m *MockNewMetadataStore) UpdateContainer(arg0 *metadatapb.ContainerInfo) error {
-	ret := m.ctrl.Call(m, "UpdateContainer", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateContainer indicates an expected call of UpdateContainer
-func (mr *MockNewMetadataStoreMockRecorder) UpdateContainer(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContainer", reflect.TypeOf((*MockNewMetadataStore)(nil).UpdateContainer), arg0)
-}
-
-// UpdateContainersFromPod mocks base method
-func (m *MockNewMetadataStore) UpdateContainersFromPod(arg0 *metadatapb.Pod, arg1 bool) error {
-	ret := m.ctrl.Call(m, "UpdateContainersFromPod", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateContainersFromPod indicates an expected call of UpdateContainersFromPod
-func (mr *MockNewMetadataStoreMockRecorder) UpdateContainersFromPod(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContainersFromPod", reflect.TypeOf((*MockNewMetadataStore)(nil).UpdateContainersFromPod), arg0, arg1)
 }

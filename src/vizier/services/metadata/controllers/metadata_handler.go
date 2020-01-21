@@ -22,36 +22,6 @@ const maxAgentUpdates = 10000
 
 // MetadataStore is the interface for our metadata store.
 type MetadataStore interface {
-	UpdateEndpoints(*metadatapb.Endpoints, bool) error
-	UpdatePod(*metadatapb.Pod, bool) error
-	UpdateService(*metadatapb.Service, bool) error
-	UpdateContainer(*metadatapb.ContainerInfo) error
-	UpdateContainersFromPod(*metadatapb.Pod, bool) error
-	UpdateSchemas(uuid.UUID, []*metadatapb.SchemaInfo) error
-	UpdateProcesses([]*metadatapb.ProcessInfo) error
-	GetAgentsForHostnames(*[]string) (*[]string, error)
-	GetKelvinIDs() ([]string, error)
-	AddToAgentUpdateQueue(string, string) error
-	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
-	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
-	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
-	GetAgents() ([]*agentpb.Agent, error)
-	GetNodePods(hostname string) ([]*metadatapb.Pod, error)
-	GetPods() ([]*metadatapb.Pod, error)
-	GetContainers() ([]*metadatapb.ContainerInfo, error)
-	GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error)
-	GetEndpoints() ([]*metadatapb.Endpoints, error)
-	GetServices() ([]*metadatapb.Service, error)
-	GetComputedSchemas() ([]*metadatapb.SchemaInfo, error)
-	GetASID() (uint32, error)
-	GetClusterCIDR() string
-	GetProcesses([]*types.UInt128) ([]*metadatapb.ProcessInfo, error)
-}
-
-// NewMetadataStore is the interface for our metadata store. This is the interface
-// for the new, refactored version of the metadata store. It will be renamed to
-// MetadataStore once we have updated metadata_handler to use this new interface.
-type NewMetadataStore interface {
 	GetClusterCIDR() string
 	GetAgent(agentID uuid.UUID) (*agentpb.Agent, error)
 	GetAgentIDForHostname(hostname string) (string, error)
@@ -59,6 +29,7 @@ type NewMetadataStore interface {
 	CreateAgent(agentID uuid.UUID, a *agentpb.Agent) error
 	UpdateAgent(agentID uuid.UUID, a *agentpb.Agent) error
 	GetAgents() ([]*agentpb.Agent, error)
+	GetAgentsForHostnames(*[]string) ([]string, error)
 	GetASID() (uint32, error)
 	GetKelvinIDs() ([]string, error)
 	GetComputedSchemas() ([]*metadatapb.SchemaInfo, error)
@@ -207,7 +178,9 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 	log.WithField("agents", agents).WithField("hostnames", hostnames).
 		WithField("update", updatePb).Infof("Adding update to agent queue for agents")
 
-	allAgents := *agents
+	allAgents := make([]string, len(agents))
+	copy(allAgents, agents)
+
 	if !nodeSpecific {
 		// This update is not for a specific node. Send to Kelvins as well.
 		kelvinIDs, err := mh.mds.GetKelvinIDs()
@@ -224,12 +197,11 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 		err = mh.agentManager.AddUpdatesToAgentQueue(agent, []*metadatapb.ResourceUpdate{updatePb})
 		if err != nil {
 			log.WithError(err).Error("Could not write service update to agent update queue.")
-			if i < len(*agents) { // If failed agent is not a Kelvin node, we should retry.
+			if i < len(agents) { // If failed agent is not a Kelvin node, we should retry.
 				failedHostnames = append(failedHostnames, (*hostnames)[i])
 			}
 		}
 	}
-
 	if len(failedHostnames) > 0 {
 		mh.agentUpdateCh <- &UpdateMessage{
 			Message:      updatePb,

@@ -78,17 +78,17 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	mockMds.
 		EXPECT().
 		GetAgentsForHostnames(&[]string{"this-is-a-node"}).
-		Return(&[]string{"agent-1"}, nil)
+		Return([]string{"agent-1"}, nil)
 
 	mockMds.
 		EXPECT().
 		GetAgentsForHostnames(&[]string{"node-a"}).
-		Return(&[]string{"agent-2"}, nil)
+		Return([]string{"agent-2"}, nil)
 
 	mockMds.
 		EXPECT().
 		GetAgentsForHostnames(&[]string{}).
-		Return(&[]string{}, nil)
+		Return([]string{}, nil)
 
 	mockMds.
 		EXPECT().
@@ -294,22 +294,22 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	mockMds.
 		EXPECT().
 		GetAgentsForHostnames(&[]string{"this-is-a-node"}).
-		Return(&[]string{"agent-1"}, nil)
+		Return([]string{"agent-1"}, nil)
 
 	mockMds.
 		EXPECT().
 		GetAgentsForHostnames(&[]string{"node-a"}).
-		Return(&[]string{"agent-2"}, nil)
+		Return([]string{"agent-2"}, nil)
 
 	mockMds.
 		EXPECT().
 		GetAgentsForHostnames(&[]string{"node-a"}).
-		Return(&[]string{"agent-3"}, nil)
+		Return([]string{"agent-3"}, nil)
 
 	mockMds.
 		EXPECT().
 		GetAgentsForHostnames(&[]string{}).
-		Return(&[]string{}, nil)
+		Return([]string{}, nil)
 
 	mockMds.
 		EXPECT().
@@ -654,7 +654,7 @@ func TestObjectToPodProto(t *testing.T) {
 	mockMds.
 		EXPECT().
 		GetAgentsForHostnames(&[]string{"test"}).
-		Return(&[]string{"agent-1"}, nil)
+		Return([]string{"agent-1"}, nil)
 
 	var wg sync.WaitGroup
 	wg.Add(2)

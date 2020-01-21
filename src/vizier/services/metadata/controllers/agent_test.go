@@ -22,7 +22,7 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
-func setupAgentManager(t *testing.T) (controllers.NewMetadataStore, controllers.AgentManager) {
+func setupAgentManager(t *testing.T) (controllers.MetadataStore, controllers.AgentManager) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
@@ -58,7 +58,7 @@ func setupAgentManager(t *testing.T) (controllers.NewMetadataStore, controllers.
 	return mds, agtMgr
 }
 
-func createAgentInMDS(t *testing.T, agentID string, mds controllers.NewMetadataStore, agentPb string) {
+func createAgentInMDS(t *testing.T, agentID string, mds controllers.MetadataStore, agentPb string) {
 	info := new(agentpb.Agent)
 	if err := proto.UnmarshalText(agentPb, info); err != nil {
 		t.Fatalf("Cannot Unmarshal protobuf for %s", agentID)

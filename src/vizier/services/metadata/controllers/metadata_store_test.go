@@ -1096,11 +1096,11 @@ func TestKVMetadataStore_GetAgentsForHostnames(t *testing.T) {
 	agents, err := mds.GetAgentsForHostnames(&hostnames)
 	assert.Nil(t, err)
 
-	assert.Equal(t, 4, len(*agents))
-	assert.Equal(t, "agent1", (*agents)[0])
-	assert.Equal(t, "agent2", (*agents)[1])
-	assert.Equal(t, "agent3", (*agents)[2])
-	assert.Equal(t, "agent4", (*agents)[3])
+	assert.Equal(t, 4, len(agents))
+	assert.Equal(t, "agent1", (agents)[0])
+	assert.Equal(t, "agent2", (agents)[1])
+	assert.Equal(t, "agent3", (agents)[2])
+	assert.Equal(t, "agent4", (agents)[3])
 }
 
 func TestKVMetadataStore_GetKelvinIDs(t *testing.T) {

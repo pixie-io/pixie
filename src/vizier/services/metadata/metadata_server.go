@@ -73,12 +73,6 @@ func main() {
 	}
 	defer etcdClient.Close()
 
-	etcdMds, err := controllers.NewEtcdMetadataStore(etcdClient)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to create etcd metadata store")
-	}
-	defer etcdMds.Close()
-
 	// Set up leader election.
 	leaseResp, err := etcdClient.Grant(context.TODO(), int64(10))
 	if err != nil {
@@ -137,7 +131,7 @@ func main() {
 		keepAlive = false
 	}()
 
-	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent", agtMgr, etcdMds, &isLeader)
+	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent", agtMgr, mds, &isLeader)
 
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
@@ -145,7 +139,7 @@ func main() {
 	defer mc.Close()
 
 	// Listen for K8s metadata updates.
-	mdHandler, err := controllers.NewMetadataHandler(etcdMds, &isLeader, agtMgr)
+	mdHandler, err := controllers.NewMetadataHandler(mds, &isLeader, agtMgr)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create metadata handler")
 	}
@@ -153,7 +147,7 @@ func main() {
 	mdHandler.ProcessAgentUpdates()
 
 	k8sMd, err := controllers.NewK8sMetadataController(mdHandler)
-	etcdMds.SetClusterInfo(controllers.ClusterInfo{CIDR: k8sMd.GetClusterCIDR()})
+	mds.SetClusterInfo(controllers.ClusterInfo{CIDR: k8sMd.GetClusterCIDR()})
 
 	// Set up server.
 	env, err := metadataenv.New()
@@ -163,7 +157,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	server, err := controllers.NewServer(env, agtMgr, etcdMds)
+	server, err := controllers.NewServer(env, agtMgr, mds)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}

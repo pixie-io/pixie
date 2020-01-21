@@ -27,11 +27,10 @@ type KVMetadataStore struct {
 	clusterInfo    ClusterInfo
 }
 
-// TODO(michelle): Uncomment this when we remove etcd_metadata_store.go
-// // ClusterInfo contains static information about the cluster, stored in memory.
-// type ClusterInfo struct {
-// 	CIDR string // This is the cluster CIDR block.
-// }
+// ClusterInfo contains static information about the cluster, stored in memory.
+type ClusterInfo struct {
+	CIDR string // This is the cluster CIDR block.
+}
 
 // NewKVMetadataStore creates a new key-value metadata store.
 func NewKVMetadataStore(cache *kvstore.Cache) (*KVMetadataStore, error) {
@@ -162,6 +161,10 @@ func getServicesKey() string {
 	return path.Join("/", "service") + "/"
 }
 
+func getServiceKey(e *metadatapb.Service) string {
+	return path.Join("/", "service", getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
+}
+
 /* =============== Agent Operations ============== */
 
 // GetAgent gets the agent info for the agent with the given id.
@@ -211,7 +214,7 @@ func (mds *KVMetadataStore) GetAgentIDForHostname(hostname string) (string, erro
 }
 
 // GetAgentsForHostnames gets the agents running on the given hostnames.
-func (mds *KVMetadataStore) GetAgentsForHostnames(hostnames *[]string) (*[]string, error) {
+func (mds *KVMetadataStore) GetAgentsForHostnames(hostnames *[]string) ([]string, error) {
 	if len(*hostnames) == 0 {
 		return nil, nil
 	}
@@ -228,7 +231,7 @@ func (mds *KVMetadataStore) GetAgentsForHostnames(hostnames *[]string) (*[]strin
 		agents = append(agents, string(resp))
 	}
 
-	return &agents, nil
+	return agents, nil
 }
 
 // DeleteAgent deletes the agent with the given ID.
@@ -312,7 +315,7 @@ func (mds *KVMetadataStore) GetAgents() ([]*agentpb.Agent, error) {
 
 		pb := &agentpb.Agent{}
 		proto.Unmarshal(vals[i], pb)
-		if len(pb.Info.AgentID.Data) > 0 {
+		if pb.Info != nil && len(pb.Info.AgentID.Data) > 0 {
 			agents = append(agents, pb)
 		}
 	}

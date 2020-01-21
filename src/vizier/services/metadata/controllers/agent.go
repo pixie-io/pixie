@@ -63,13 +63,13 @@ type AgentManager interface {
 // AgentManagerImpl is an implementation for AgentManager which talks to the metadata store.
 type AgentManagerImpl struct {
 	clock       utils.Clock
-	mds         NewMetadataStore
+	mds         MetadataStore
 	updateCh    chan *AgentUpdate
 	agentQueues map[string]AgentQueue
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
-func NewAgentManagerWithClock(mds NewMetadataStore, clock utils.Clock) *AgentManagerImpl {
+func NewAgentManagerWithClock(mds MetadataStore, clock utils.Clock) *AgentManagerImpl {
 	c := make(chan *AgentUpdate)
 
 	agentManager := &AgentManagerImpl{
@@ -174,7 +174,7 @@ func (m *AgentManagerImpl) AddToUpdateQueue(agentID uuid.UUID, update *messagesp
 }
 
 // NewAgentManager creates a new agent manager.
-func NewAgentManager(mds NewMetadataStore) *AgentManagerImpl {
+func NewAgentManager(mds MetadataStore) *AgentManagerImpl {
 	clock := utils.SystemClock{}
 	return NewAgentManagerWithClock(mds, clock)
 }
