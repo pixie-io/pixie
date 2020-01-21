@@ -96,7 +96,7 @@ Status NoRemoteCoordinator::InitImpl(const distributedpb::DistributedState& phys
   }
   if (data_store_nodes_.size() == 0) {
     return error::InvalidArgument(
-        "Distributed state does not have a Carnot instance that satisifies the condition "
+        "Distributed state does not have a Carnot instance that satisfies the condition "
         "`has_data_store() && processes_data()`.");
   }
   return Status::OK();
