@@ -331,9 +331,8 @@ Status ConnectionTracker::ExtractReqResp() {
 
 template <typename TEntryType>
 std::vector<TEntryType> ConnectionTracker::ProcessMessages() {
-  if (state() == State::kDisabled) {
-    return {};
-  }
+  // TODO(yzhao): Consider rename ProcessMessagesImpl() to ProcessMessages() if we end up not
+  // needing this indirection.
   return ProcessMessagesImpl<TEntryType>();
 }
 
