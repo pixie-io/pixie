@@ -8,27 +8,10 @@ namespace stirling {
 namespace utils {
 
 TEST(LinuxHeadersUtils, ParseUnameCases) {
-  {
-    auto s = ParseUname("4.18.0-25-generic");
-    ASSERT_OK(s);
-    EXPECT_EQ(266752, s.ConsumeValueOrDie());
-  }
-
-  {
-    auto s = ParseUname("4.18.0");
-    ASSERT_OK(s);
-    EXPECT_EQ(266752, s.ConsumeValueOrDie());
-  }
-
-  {
-    auto s = ParseUname("4.18.");
-    EXPECT_NOT_OK(s);
-  }
-
-  {
-    auto s = ParseUname("linux-4.18.0-25-generic");
-    EXPECT_NOT_OK(s);
-  }
+  EXPECT_OK_AND_EQ(ParseUname("4.18.0-25-generic"), 266752);
+  EXPECT_OK_AND_EQ(ParseUname("4.18.0"), 266752);
+  EXPECT_NOT_OK(ParseUname("4.18."));
+  EXPECT_NOT_OK(ParseUname("linux-4.18.0-25-generic"));
 }
 
 TEST(LinuxHeadersUtils, ModifyVersion) {
@@ -55,14 +38,10 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
   EXPECT_OK(ModifyKernelVersion(std::filesystem::path(base_dir), "4.1.0"));
 
   // Read the file into a string.
-  auto s = ReadFileToString(version_h_filename);
-  ASSERT_OK(s);
-  std::string file_contents = s.ConsumeValueOrDie();
-
   std::string expected_contents = R"(#define LINUX_VERSION_CODE 262400
 #define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
 )";
-  EXPECT_EQ(file_contents, expected_contents);
+  EXPECT_OK_AND_EQ(ReadFileToString(version_h_filename), expected_contents);
 
   std::filesystem::remove_all(tmp_dir);
 }

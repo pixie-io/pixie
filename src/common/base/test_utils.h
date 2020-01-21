@@ -25,15 +25,31 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 #define ASSERT_OK(value) ASSERT_TRUE(IsOK(::pl::StatusAdapter(value)))
 #define ASSERT_NOT_OK(value) ASSERT_FALSE(IsOK(::pl::StatusAdapter(value)))
 
-#define EXPECT_OK_AND_EQ(status, value)             \
-  {                                                 \
-    EXPECT_OK(status);                              \
-    if (status.ok()) {                              \
-      EXPECT_EQ(status.ConsumeValueOrDie(), value); \
-    }                                               \
+#define EXPECT_OK_AND(expect_fn, expr, value) \
+  {                                           \
+    auto&& __s__ = expr;                      \
+    EXPECT_OK(__s__);                         \
+    if (__s__.ok()) {                         \
+      expect_fn(__s__.ValueOrDie(), value);   \
+    }                                         \
   }
-#define ASSERT_OK_AND_EQ(status, value)           \
-  {                                               \
-    ASSERT_OK(status);                            \
-    ASSERT_EQ(status.ConsumeValueOrDie(), value); \
+#define ASSERT_OK_AND(assert_fn, expr, value) \
+  {                                           \
+    auto&& __s__ = expr;                      \
+    ASSERT_OK(__s__);                         \
+    assert_fn(__s__.ValueOrDie(), value);     \
   }
+
+#define EXPECT_OK_AND_EQ(expr, value) EXPECT_OK_AND(EXPECT_EQ, expr, value)
+#define EXPECT_OK_AND_NE(expr, value) EXPECT_OK_AND(EXPECT_NE, expr, value)
+#define EXPECT_OK_AND_LE(expr, value) EXPECT_OK_AND(EXPECT_LE, expr, value)
+#define EXPECT_OK_AND_LT(expr, value) EXPECT_OK_AND(EXPECT_LT, expr, value)
+#define EXPECT_OK_AND_GE(expr, value) EXPECT_OK_AND(EXPECT_GE, expr, value)
+#define EXPECT_OK_AND_GT(expr, value) EXPECT_OK_AND(EXPECT_GT, expr, value)
+
+#define ASSERT_OK_AND_EQ(expr, value) ASSERT_OK_AND(ASSERT_EQ, expr, value)
+#define ASSERT_OK_AND_NE(expr, value) ASSERT_OK_AND(ASSERT_NE, expr, value)
+#define ASSERT_OK_AND_LE(expr, value) ASSERT_OK_AND(ASSERT_LE, expr, value)
+#define ASSERT_OK_AND_LT(expr, value) ASSERT_OK_AND(ASSERT_LT, expr, value)
+#define ASSERT_OK_AND_GE(expr, value) ASSERT_OK_AND(ASSERT_GE, expr, value)
+#define ASSERT_OK_AND_GT(expr, value) ASSERT_OK_AND(ASSERT_GT, expr, value)

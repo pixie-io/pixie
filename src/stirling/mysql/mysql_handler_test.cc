@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <utility>
 
+#include "src/common/testing/testing.h"
 #include "src/stirling/mysql/mysql_handler.h"
 #include "src/stirling/mysql/mysql_types.h"
 #include "src/stirling/mysql/test_data.h"
@@ -33,9 +34,7 @@ TEST(HandleResultsetResponse, ValidWithEOF) {
   std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset);
 
   Record entry;
-  auto s = HandleResultsetResponse(resp_packets, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry), ParseState::kSuccess);
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kOK);
   EXPECT_EQ(entry.resp.msg, "Resultset rows = 2");
 }
@@ -45,9 +44,7 @@ TEST(HandleResultsetResponse, ValidNoEOF) {
   std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset, true);
 
   Record entry;
-  auto s = HandleResultsetResponse(resp_packets, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry), ParseState::kSuccess);
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kOK);
   EXPECT_EQ(entry.resp.msg, "Resultset rows = 2");
 }
@@ -58,9 +55,7 @@ TEST(HandleResultsetResponse, NeedsMoreData) {
   resp_packets.pop_back();
 
   Record entry;
-  auto s = HandleResultsetResponse(resp_packets, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kNeedsMoreData);
+  EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry), ParseState::kNeedsMoreData);
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kUnknown);
   EXPECT_EQ(entry.resp.msg, "");
 }
@@ -73,8 +68,7 @@ TEST(HandleResultsetResponse, InvalidResponse) {
 
   Record entry;
   State state;
-  auto s = HandleResultsetResponse(resp_packets, &entry);
-  EXPECT_FALSE(s.ok());
+  EXPECT_NOT_OK(HandleResultsetResponse(resp_packets, &entry));
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kUnknown);
   EXPECT_EQ(entry.resp.msg, "");
 }
@@ -84,9 +78,7 @@ TEST(HandleStmtPrepareOKResponse, Valid) {
 
   Record entry;
   State state;
-  auto s = HandleStmtPrepareOKResponse(packets, &state, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(HandleStmtPrepareOKResponse(packets, &state, &entry), ParseState::kSuccess);
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kOK);
   EXPECT_EQ(state.prepared_statements.size(), 1);
   EXPECT_EQ(entry.resp.msg, "");
@@ -98,9 +90,8 @@ TEST(HandleStmtPrepareOKResponse, NeedsMoreData) {
 
   Record entry;
   State state;
-  auto s = HandleStmtPrepareOKResponse(packets, &state, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kNeedsMoreData);
+  EXPECT_OK_AND_EQ(HandleStmtPrepareOKResponse(packets, &state, &entry),
+                   ParseState::kNeedsMoreData);
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kUnknown);
   EXPECT_EQ(state.prepared_statements.size(), 0);
   EXPECT_EQ(entry.resp.msg, "");

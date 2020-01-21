@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "src/common/testing/testing.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
 #include "src/stirling/mysql/mysql_types.h"
 #include "src/stirling/mysql/test_data.h"
@@ -25,9 +26,7 @@ TEST(StitcherTest, TestProcessStmtPrepareOK) {
 
   // Run function-under-test.
   Record entry;
-  StatusOr<ParseState> s = ProcessStmtPrepare(req, ok_resp_packets, &state, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(ProcessStmtPrepare(req, ok_resp_packets, &state, &entry), ParseState::kSuccess);
 
   // Check resulting state and entries.
   auto iter = state.prepared_statements.find(testdata::kStmtID);
@@ -48,9 +47,7 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
 
   // Run function-under-test.
   Record entry;
-  StatusOr<ParseState> s = ProcessStmtPrepare(req, err_resp_packets, &state, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(ProcessStmtPrepare(req, err_resp_packets, &state, &entry), ParseState::kSuccess);
 
   // Check resulting state and entries.
   auto iter = state.prepared_statements.find(testdata::kStmtID);
@@ -70,9 +67,7 @@ TEST(StitcherTest, TestProcessStmtExecute) {
 
   // Run function-under-test.
   Record entry;
-  StatusOr<ParseState> s = ProcessStmtExecute(req, resultset, &state, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(ProcessStmtExecute(req, resultset, &state, &entry), ParseState::kSuccess);
 
   // Check resulting state and entries.
   Record expected_resultset_entry{
@@ -97,9 +92,7 @@ TEST(StitcherTest, TestProcessStmtClose) {
 
   // Run function-under-test.
   Record entry;
-  StatusOr<ParseState> s = ProcessStmtClose(req, resp_packets, &state, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(ProcessStmtClose(req, resp_packets, &state, &entry), ParseState::kSuccess);
 
   // Check the resulting entries and state.
   Record expected_entry{.req = {MySQLEventType::kStmtClose, "", 0},
@@ -114,9 +107,7 @@ TEST(StitcherTest, TestProcessQuery) {
 
   // Run function-under-test.
   Record entry;
-  auto s = ProcessQuery(req, resultset, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(ProcessQuery(req, resultset, &entry), ParseState::kSuccess);
 
   // Check resulting state and entries.
   Record expected_resultset_entry{.req = {MySQLEventType::kQuery, "SELECT name FROM tag;", 0},
@@ -132,9 +123,9 @@ TEST(StitcherTest, ProcessRequestWithBasicResponse) {
 
   // Run function-under-test.
   Record entry;
-  auto s = ProcessRequestWithBasicResponse(req, /* string_req */ false, resp_packets, &entry);
-  EXPECT_TRUE(s.ok());
-  EXPECT_EQ(s.ValueOrDie(), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(
+      ProcessRequestWithBasicResponse(req, /* string_req */ false, resp_packets, &entry),
+      ParseState::kSuccess);
 
   // Check resulting state and entries.
   Record expected_entry{.req = {MySQLEventType::kPing, "", 0},
