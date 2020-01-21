@@ -91,12 +91,12 @@ TEST_F(FSWatcherTest, fs_watcher_read_inotify_event) {
   // TODO(kgandhi): Uniquify events of the same type for the same file
   // in the inotify event queue.
   EXPECT_EQ(2, fs_watcher_->NumEvents());
-  auto fs_event = fs_watcher_->GetNextEvent().ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(auto fs_event, fs_watcher_->GetNextEvent());
   EXPECT_EQ(FSWatcher::FSEventType::kModifyFile, fs_event.type);
   EXPECT_EQ(file1, fs_event.GetPath());
 
   EXPECT_EQ(1, fs_watcher_->NumEvents());
-  fs_event = fs_watcher_->GetNextEvent().ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(fs_event, fs_watcher_->GetNextEvent());
   EXPECT_EQ(FSWatcher::FSEventType::kCreateDir, fs_event.type);
   EXPECT_EQ(dir2, fs_event.GetPath());
   EXPECT_EQ("dir3", fs_event.name);

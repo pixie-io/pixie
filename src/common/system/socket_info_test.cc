@@ -78,11 +78,10 @@ TEST(NetlinkSocketProberTest, EstablishedInetConnection) {
   std::string client_endpoint = AddrPortStr(client.addr(), client.port());
   std::string server_endpoint = AddrPortStr(server.addr(), server.port());
 
-  std::unique_ptr<NetlinkSocketProber> socket_prober =
-      NetlinkSocketProber::Create().ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                       NetlinkSocketProber::Create());
   std::map<int, SocketInfo> socket_info_entries;
-  auto s = socket_prober->InetConnections(&socket_info_entries);
-  ASSERT_OK(s);
+  ASSERT_OK(socket_prober->InetConnections(&socket_info_entries));
 
   EXPECT_THAT(socket_info_entries, Contains(HasLocalIPEndpoint(client_endpoint)));
 
@@ -122,19 +121,16 @@ TEST(NetlinkSocketProberTest, EstablishedUnixConnection) {
   // Extract inode numbers.
   auto proc_parser = std::make_unique<system::ProcParser>(system::Config::GetInstance());
   std::string server_socket_id;
-  s = proc_parser->ReadProcPIDFDLink(getpid(), server_accept_fd, &server_socket_id);
-  ASSERT_OK(s);
+  ASSERT_OK(proc_parser->ReadProcPIDFDLink(getpid(), server_accept_fd, &server_socket_id));
 
   std::string client_socket_id;
-  s = proc_parser->ReadProcPIDFDLink(getpid(), client_fd, &client_socket_id);
-  ASSERT_OK(s);
+  ASSERT_OK(proc_parser->ReadProcPIDFDLink(getpid(), client_fd, &client_socket_id));
 
   // Now begin the test of NetlinkSocketProber.
-  std::unique_ptr<NetlinkSocketProber> socket_prober =
-      NetlinkSocketProber::Create().ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                       NetlinkSocketProber::Create());
   std::map<int, SocketInfo> socket_info_entries;
-  s = socket_prober->UnixConnections(&socket_info_entries);
-  ASSERT_OK(s);
+  ASSERT_OK(socket_prober->UnixConnections(&socket_info_entries));
 
   EXPECT_THAT(socket_info_entries, Contains(HasLocalUnixEndpoint(client_socket_id)));
   EXPECT_THAT(socket_info_entries, Contains(HasLocalUnixEndpoint(server_socket_id)));
@@ -154,32 +150,29 @@ TEST(NetlinkSocketProberTest, ListeningInetConnection) {
 
   // Should not find the server endpoint in established state.
   {
-    std::unique_ptr<NetlinkSocketProber> socket_prober =
-        NetlinkSocketProber::Create().ConsumeValueOrDie();
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                         NetlinkSocketProber::Create());
     std::map<int, SocketInfo> socket_info_entries;
-    auto s = socket_prober->InetConnections(&socket_info_entries, kTCPEstablishedState);
-    ASSERT_OK(s);
+    ASSERT_OK(socket_prober->InetConnections(&socket_info_entries, kTCPEstablishedState));
     EXPECT_THAT(socket_info_entries, Not(Contains(HasLocalIPEndpoint(server_endpoint))));
   }
 
   // Should find the server endpoint in listening state.
   {
-    std::unique_ptr<NetlinkSocketProber> socket_prober =
-        NetlinkSocketProber::Create().ConsumeValueOrDie();
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                         NetlinkSocketProber::Create());
     std::map<int, SocketInfo> socket_info_entries;
-    auto s = socket_prober->InetConnections(&socket_info_entries, kTCPListeningState);
-    ASSERT_OK(s);
+    ASSERT_OK(socket_prober->InetConnections(&socket_info_entries, kTCPListeningState));
     EXPECT_THAT(socket_info_entries, Contains(HasLocalIPEndpoint(server_endpoint)));
   }
 
   // Test with multiple states specified.
   {
-    std::unique_ptr<NetlinkSocketProber> socket_prober =
-        NetlinkSocketProber::Create().ConsumeValueOrDie();
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                         NetlinkSocketProber::Create());
     std::map<int, SocketInfo> socket_info_entries;
-    auto s = socket_prober->InetConnections(&socket_info_entries,
-                                            kTCPEstablishedState | kTCPListeningState);
-    ASSERT_OK(s);
+    ASSERT_OK(socket_prober->InetConnections(&socket_info_entries,
+                                             kTCPEstablishedState | kTCPListeningState));
     EXPECT_THAT(socket_info_entries, Contains(HasLocalIPEndpoint(server_endpoint)));
   }
 
@@ -199,11 +192,10 @@ TEST(NetlinkSocketProberTest, ClosedInetConnection) {
   client.Close();
   server.Close();
 
-  std::unique_ptr<NetlinkSocketProber> socket_prober =
-      NetlinkSocketProber::Create().ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                       NetlinkSocketProber::Create());
   std::map<int, SocketInfo> socket_info_entries;
-  auto s = socket_prober->InetConnections(&socket_info_entries);
-  ASSERT_OK(s);
+  ASSERT_OK(socket_prober->InetConnections(&socket_info_entries));
 
   EXPECT_THAT(socket_info_entries, Not(Contains(HasLocalIPEndpoint(client_endpoint))));
 }

@@ -7,9 +7,8 @@ namespace pl {
 TEST(ParseUUID, basic_test) {
   pl::uuidpb::UUID uuid_pb;
   *(uuid_pb.mutable_data()) = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
-  auto parsed = ParseUUID(uuid_pb);
-  ASSERT_OK(parsed);
-  EXPECT_EQ(parsed.ConsumeValueOrDie().str(), "ea8aa095-697f-49f1-b127-d50e5b6e2645");
+  ASSERT_OK_AND_ASSIGN(auto parsed, ParseUUID(uuid_pb));
+  EXPECT_EQ(parsed.str(), "ea8aa095-697f-49f1-b127-d50e5b6e2645");
 }
 
 TEST(ParseUUID, bad_input) {
@@ -33,9 +32,8 @@ TEST(UUIDUtils, regression_test) {
     auto uuid = sole::uuid4();
     pl::uuidpb::UUID uuid_proto;
     ToProto(uuid, &uuid_proto);
-    auto res = ParseUUID(uuid_proto);
-    ASSERT_OK(res);
-    EXPECT_EQ(res.ConsumeValueOrDie().str(), uuid.str());
+    ASSERT_OK_AND_ASSIGN(auto res, ParseUUID(uuid_proto));
+    EXPECT_EQ(res.str(), uuid.str());
   }
 }
 

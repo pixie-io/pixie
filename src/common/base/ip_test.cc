@@ -10,45 +10,34 @@ namespace pl {
 
 using ::testing::StrEq;
 
-TEST(IPTest, ParseIPv4Address) {
-  StatusOr<IPv4Address> addr_or = IPv4Address::FromStr("1.2.3.4");
-  EXPECT_OK(addr_or);
-}
+TEST(IPTest, ParseIPv4Address) { EXPECT_OK(IPv4Address::FromStr("1.2.3.4")); }
 
-TEST(IPTest, ParseIPv6Address) {
-  StatusOr<IPv6Address> addr6_or = IPv6Address::FromStr("::1");
-  EXPECT_OK(addr6_or);
-}
+TEST(IPTest, ParseIPv6Address) { EXPECT_OK(IPv6Address::FromStr("::1")); }
 
 TEST(CIDRBlockTest, ContainsIPv4Address) {
-  StatusOr<IPv4Address> addr_or = IPv4Address::FromStr("1.2.3.4");
-  EXPECT_OK(addr_or);
-  CIDRBlock block(addr_or.ValueOrDie(), 24);
+  ASSERT_OK_AND_ASSIGN(IPv4Address addr, IPv4Address::FromStr("1.2.3.4"));
+  CIDRBlock block(addr, 24);
   for (int i = 0; i < 256; ++i) {
-    StatusOr<IPv4Address> addr_or = IPv4Address::FromStr(absl::StrCat("1.2.3.", i));
-    ASSERT_OK(addr_or);
-    EXPECT_TRUE(block.Contains(addr_or.ValueOrDie()));
+    ASSERT_OK_AND_ASSIGN(IPv4Address addr, IPv4Address::FromStr(absl::StrCat("1.2.3.", i)));
+    EXPECT_TRUE(block.Contains(addr));
   }
   for (int i = 0; i < 256; ++i) {
-    StatusOr<IPv4Address> addr_or = IPv4Address::FromStr(absl::StrCat("1.2.4.", i));
-    ASSERT_OK(addr_or);
-    EXPECT_FALSE(block.Contains(addr_or.ValueOrDie()));
+    ASSERT_OK_AND_ASSIGN(IPv4Address addr, IPv4Address::FromStr(absl::StrCat("1.2.4.", i)));
+    EXPECT_FALSE(block.Contains(addr));
   }
 }
 
 TEST(CIDRBlockTest, ContainsIPv6Address) {
   std::string addr_str = "1111:1112:1113:1114:1115:1116:1117:1100";
-  StatusOr<IPv6Address> addr6_or = IPv6Address::FromStr(addr_str);
-  EXPECT_OK(addr6_or);
-  CIDRBlock block(addr6_or.ValueOrDie(), 120);
+  ASSERT_OK_AND_ASSIGN(IPv6Address addr6, IPv6Address::FromStr(addr_str));
+  CIDRBlock block(addr6, 120);
   for (char a = 'a'; a <= 'f'; ++a) {
     for (char b = 'a'; b <= 'f'; ++b) {
       std::string addr_str2 = "1111:1112:1113:1114:1115:1116:1117:11";
       addr_str2 += a;
       addr_str2 += b;
-      StatusOr<IPv6Address> addr6_or2 = IPv6Address::FromStr(addr_str2);
-      ASSERT_OK(addr6_or2);
-      EXPECT_TRUE(block.Contains(addr6_or2.ValueOrDie()));
+      ASSERT_OK_AND_ASSIGN(IPv6Address addr6_2, IPv6Address::FromStr(addr_str2));
+      EXPECT_TRUE(block.Contains(addr6_2));
     }
   }
 }

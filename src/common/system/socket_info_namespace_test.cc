@@ -92,9 +92,8 @@ class NetlinkSocketProberNamespaceTest : public ::testing::Test {
 
 TEST_F(NetlinkSocketProberNamespaceTest, Basic) {
   {
-    StatusOr<std::unique_ptr<NetlinkSocketProber>> socket_prober_or = NetlinkSocketProber::Create();
-    ASSERT_OK(socket_prober_or);
-    std::unique_ptr<NetlinkSocketProber> socket_prober = socket_prober_or.ConsumeValueOrDie();
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                         NetlinkSocketProber::Create());
 
     std::map<int, SocketInfo> socket_info_entries;
     ASSERT_OK(socket_prober->InetConnections(&socket_info_entries,
@@ -107,10 +106,8 @@ TEST_F(NetlinkSocketProberNamespaceTest, Basic) {
   }
 
   {
-    StatusOr<std::unique_ptr<NetlinkSocketProber>> socket_prober_or =
-        NetlinkSocketProber::Create(target_pid_);
-    ASSERT_OK(socket_prober_or);
-    std::unique_ptr<NetlinkSocketProber> socket_prober = socket_prober_or.ConsumeValueOrDie();
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                         NetlinkSocketProber::Create());
 
     std::map<int, SocketInfo> socket_info_entries;
     ASSERT_OK(socket_prober->InetConnections(&socket_info_entries,
@@ -121,9 +118,8 @@ TEST_F(NetlinkSocketProberNamespaceTest, Basic) {
   }
 
   {
-    StatusOr<std::unique_ptr<NetlinkSocketProber>> socket_prober_or = NetlinkSocketProber::Create();
-    ASSERT_OK(socket_prober_or);
-    std::unique_ptr<NetlinkSocketProber> socket_prober = socket_prober_or.ConsumeValueOrDie();
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
+                         NetlinkSocketProber::Create());
 
     std::map<int, SocketInfo> socket_info_entries;
     ASSERT_OK(socket_prober->InetConnections(&socket_info_entries,
@@ -148,34 +144,27 @@ TEST_F(NetlinkSocketProberNamespaceTest, SocketProberManager) {
   // First round: map should be empty.
   for (auto& [ns, pids] : pids_by_net_ns) {
     PL_UNUSED(pids);
-    NetlinkSocketProber* socket_prober_ptr = socket_probers.GetSocketProber(ns);
-    EXPECT_EQ(socket_prober_ptr, nullptr);
+    EXPECT_EQ(socket_probers.GetSocketProber(ns), nullptr);
   }
 
   // Second round: map should become populated.
   for (auto& [ns, pids] : pids_by_net_ns) {
     // This might be flaky, if a network namespace was destroyed from the initial query to now.
     // Could cause false test failures.
-    StatusOr<NetlinkSocketProber*> socket_prober_ptr_or =
-        socket_probers.GetOrCreateSocketProber(ns, pids);
-    ASSERT_OK(socket_prober_ptr_or);
-    NetlinkSocketProber* socket_prober_ptr = socket_prober_ptr_or.ValueOrDie();
-    EXPECT_NE(socket_prober_ptr, nullptr);
+    EXPECT_OK_AND_NE(socket_probers.GetOrCreateSocketProber(ns, pids), nullptr);
   }
 
   // Third round: map should be populated.
   for (auto& [ns, pids] : pids_by_net_ns) {
     PL_UNUSED(pids);
-    NetlinkSocketProber* socket_prober_ptr = socket_probers.GetSocketProber(ns);
-    EXPECT_NE(socket_prober_ptr, nullptr);
+    EXPECT_NE(socket_probers.GetSocketProber(ns), nullptr);
   }
 
   // Fourth round: A call to Update() should not remove any sockets yet.
   socket_probers.Update();
   for (auto& [ns, pids] : pids_by_net_ns) {
     PL_UNUSED(pids);
-    NetlinkSocketProber* socket_prober_ptr = socket_probers.GetSocketProber(ns);
-    EXPECT_NE(socket_prober_ptr, nullptr);
+    EXPECT_NE(socket_probers.GetSocketProber(ns), nullptr);
   }
 
   // Fifth round: A call to Update(), followed by no accesses.
@@ -186,8 +175,7 @@ TEST_F(NetlinkSocketProberNamespaceTest, SocketProberManager) {
   socket_probers.Update();
   for (auto& [ns, pids] : pids_by_net_ns) {
     PL_UNUSED(pids);
-    NetlinkSocketProber* socket_prober_ptr = socket_probers.GetSocketProber(ns);
-    EXPECT_EQ(socket_prober_ptr, nullptr);
+    EXPECT_EQ(socket_probers.GetSocketProber(ns), nullptr);
   }
 }
 

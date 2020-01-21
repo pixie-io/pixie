@@ -25,8 +25,7 @@ class ZlibTest : public ::testing::Test {
 
 TEST_F(ZlibTest, inflate_test) {
   auto result = pl::zlib::Inflate(GetCompressedString());
-  EXPECT_OK(result);
-  EXPECT_EQ(result.ValueOrDie(), GetExpectedResult());
+  EXPECT_OK_AND_EQ(result, GetExpectedResult());
 }
 
 }  // namespace pl

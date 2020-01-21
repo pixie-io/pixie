@@ -18,51 +18,39 @@ TEST(ReprTest, ResultsAreAsExpected) {
 TEST(AsciiHexToBytesTest, CheckConversionToString) {
   {
     std::string val = "0a2435383161353534662d";
-    auto status_or_bytes = AsciiHexToBytes<std::string>(val, {});
-    ASSERT_OK(status_or_bytes);
-    auto bytes = status_or_bytes.ValueOrDie();
-    EXPECT_EQ(bytes, "\x0a\x24\x35\x38\x31\x61\x35\x35\x34\x66\x2d");
+    EXPECT_OK_AND_EQ(AsciiHexToBytes<std::string>(val, {}),
+                     "\x0a\x24\x35\x38\x31\x61\x35\x35\x34\x66\x2d");
   }
 
   {
     std::string val = "0a:24:35:38:31:61:35:35:34:66:2d";
-    auto status_or_bytes = AsciiHexToBytes<std::string>(val, {':'});
-    ASSERT_OK(status_or_bytes);
-    auto bytes = status_or_bytes.ValueOrDie();
-    EXPECT_EQ(bytes, "\x0a\x24\x35\x38\x31\x61\x35\x35\x34\x66\x2d");
+    EXPECT_OK_AND_EQ(AsciiHexToBytes<std::string>(val, {':'}),
+                     "\x0a\x24\x35\x38\x31\x61\x35\x35\x34\x66\x2d");
   }
 
   {
     std::string val = "0a_24_35_38_31_61_35_35_34_66_2d";
-    auto status_or_bytes = AsciiHexToBytes<std::string>(val, {':', '_'});
-    ASSERT_OK(status_or_bytes);
-    auto bytes = status_or_bytes.ValueOrDie();
-    EXPECT_EQ(bytes, "\x0a\x24\x35\x38\x31\x61\x35\x35\x34\x66\x2d");
+    EXPECT_OK_AND_EQ(AsciiHexToBytes<std::string>(val, {':', '_'}),
+                     "\x0a\x24\x35\x38\x31\x61\x35\x35\x34\x66\x2d");
   }
 
   {
     std::string val = "0a 24 35 38 31 61 35 35 34 66 2d";
-    auto status_or_bytes = AsciiHexToBytes<std::string>(val, {' '});
-    ASSERT_OK(status_or_bytes);
-    auto bytes = status_or_bytes.ValueOrDie();
-    EXPECT_EQ(bytes, "\x0a\x24\x35\x38\x31\x61\x35\x35\x34\x66\x2d");
+    EXPECT_OK_AND_EQ(AsciiHexToBytes<std::string>(val, {' '}),
+                     "\x0a\x24\x35\x38\x31\x61\x35\x35\x34\x66\x2d");
   }
 
   {
     std::string val = ":0a24:3538:3161:3535:3466:2d";
-    auto status_or_bytes = AsciiHexToBytes<std::string>(val, {':', '_'});
-    ASSERT_OK(status_or_bytes);
-    auto bytes = status_or_bytes.ValueOrDie();
-    EXPECT_EQ(bytes, "\x0a\x24\x35\x38\x31\x61\x35\x35\x34\x66\x2d");
+    EXPECT_OK_AND_EQ(AsciiHexToBytes<std::string>(val, {':', '_'}),
+                     "\x0a\x24\x35\x38\x31\x61\x35\x35\x34\x66\x2d");
   }
 }
 
 TEST(AsciiHexToBytesTest, CheckConversionTypes) {
   {
     std::string val = "0a:24:35:38:31:61:35:35:34:66:2d";
-    auto status_or_bytes = AsciiHexToBytes<std::vector<uint8_t>>(val, {':'});
-    ASSERT_OK(status_or_bytes);
-    std::vector<uint8_t> bytes = status_or_bytes.ConsumeValueOrDie();
+    ASSERT_OK_AND_ASSIGN(auto bytes, AsciiHexToBytes<std::vector<uint8_t>>(val, {':'}));
     std::vector<uint8_t> expected_val = {'\x0a', '\x24', '\x35', '\x38', '\x31', '\x61',
                                          '\x35', '\x35', '\x34', '\x66', '\x2d'};
     EXPECT_EQ(bytes, expected_val);
@@ -74,14 +62,12 @@ TEST(AsciiHexToBytesTest, CheckConversionTypes) {
 TEST(AsciiHexToBytesTest, FailureCases) {
   {
     std::string val = "0z:24";
-    auto status_or_bytes = AsciiHexToBytes<std::string>(val, {':'});
-    ASSERT_NOT_OK(status_or_bytes);
+    ASSERT_NOT_OK(AsciiHexToBytes<std::string>(val, {':'}));
   }
 
   {
     std::string val = "00:24";
-    auto status_or_bytes = AsciiHexToBytes<std::string>(val, {});
-    ASSERT_NOT_OK(status_or_bytes);
+    ASSERT_NOT_OK(AsciiHexToBytes<std::string>(val, {}));
   }
 }
 
