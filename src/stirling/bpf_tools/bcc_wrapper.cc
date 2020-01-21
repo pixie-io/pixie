@@ -130,6 +130,7 @@ Status BCCWrapper::AttachUProbes(const ArrayView<UProbeSpec>& probes) {
   return Status::OK();
 }
 
+// TODO(PL-1294): This can fail in rare cases. See the cited issue. Find the root cause.
 Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
   VLOG(1) << absl::Substitute("Detaching kprobe:\n   kernel_fn=$0\n   trace_fn=$1", probe.kernel_fn,
                               probe.probe_fn);
