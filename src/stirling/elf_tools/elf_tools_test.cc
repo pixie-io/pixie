@@ -21,78 +21,63 @@ TEST(ElfReaderTest, NonExistentPath) {
 TEST(ElfReaderTest, ListSymbolsAnyMatch) {
   const std::string path = pl::TestEnvironment::PathToTestDataFile(kBinary);
 
-  pl::StatusOr<std::unique_ptr<ElfReader>> s = ElfReader::Create(path);
-  ASSERT_OK(s);
-  std::unique_ptr<ElfReader> elf_reader = s.ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
-    auto symbol_names_or = elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kAny);
-    ASSERT_OK(symbol_names_or);
-    EXPECT_THAT(symbol_names_or.ValueOrDie(), ElementsAre("CanYouFindThis"));
+    auto symbol_names = elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kAny);
+    EXPECT_OK_AND_THAT(symbol_names, ElementsAre("CanYouFindThis"));
   }
 
   {
-    auto symbol_names_or = elf_reader->ListSymbols("YouFind", SymbolMatchType::kAny);
-    ASSERT_OK(symbol_names_or);
-    EXPECT_THAT(symbol_names_or.ValueOrDie(), ElementsAre("CanYouFindThis"));
+    auto symbol_names = elf_reader->ListSymbols("YouFind", SymbolMatchType::kAny);
+    EXPECT_OK_AND_THAT(symbol_names, ElementsAre("CanYouFindThis"));
   }
 
   {
-    auto symbol_names_or = elf_reader->ListSymbols("FindThis", SymbolMatchType::kAny);
-    ASSERT_OK(symbol_names_or);
-    EXPECT_THAT(symbol_names_or.ValueOrDie(), ElementsAre("CanYouFindThis"));
+    auto symbol_names = elf_reader->ListSymbols("FindThis", SymbolMatchType::kAny);
+    EXPECT_OK_AND_THAT(symbol_names, ElementsAre("CanYouFindThis"));
   }
 }
 
 TEST(ElfReaderTest, ListSymbolsExactMatch) {
   const std::string path = pl::TestEnvironment::PathToTestDataFile(kBinary);
 
-  pl::StatusOr<std::unique_ptr<ElfReader>> s = ElfReader::Create(path);
-  ASSERT_OK(s);
-  std::unique_ptr<ElfReader> elf_reader = s.ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
-    auto symbol_names_or = elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kExact);
-    ASSERT_OK(symbol_names_or);
-    EXPECT_THAT(symbol_names_or.ValueOrDie(), ElementsAre("CanYouFindThis"));
+    auto symbol_names = elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kExact);
+    EXPECT_OK_AND_THAT(symbol_names, ElementsAre("CanYouFindThis"));
   }
 
   {
-    auto symbol_names_or = elf_reader->ListSymbols("YouFind", SymbolMatchType::kExact);
-    ASSERT_OK(symbol_names_or);
-    EXPECT_THAT(symbol_names_or.ValueOrDie(), IsEmpty());
+    auto symbol_names = elf_reader->ListSymbols("YouFind", SymbolMatchType::kExact);
+    EXPECT_OK_AND_THAT(symbol_names, IsEmpty());
   }
 
   {
-    auto symbol_names_or = elf_reader->ListSymbols("FindThis", SymbolMatchType::kExact);
-    ASSERT_OK(symbol_names_or);
-    EXPECT_THAT(symbol_names_or.ValueOrDie(), IsEmpty());
+    auto symbol_names = elf_reader->ListSymbols("FindThis", SymbolMatchType::kExact);
+    EXPECT_OK_AND_THAT(symbol_names, IsEmpty());
   }
 }
 
 TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
   const std::string path = pl::TestEnvironment::PathToTestDataFile(kBinary);
 
-  pl::StatusOr<std::unique_ptr<ElfReader>> s = ElfReader::Create(path);
-  ASSERT_OK(s);
-  std::unique_ptr<ElfReader> elf_reader = s.ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
-    auto symbol_names_or = elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kSuffix);
-    ASSERT_OK(symbol_names_or);
-    EXPECT_THAT(symbol_names_or.ValueOrDie(), ElementsAre("CanYouFindThis"));
+    auto symbol_names = elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kSuffix);
+    EXPECT_OK_AND_THAT(symbol_names, ElementsAre("CanYouFindThis"));
   }
 
   {
-    auto symbol_names_or = elf_reader->ListSymbols("YouFind", SymbolMatchType::kSuffix);
-    ASSERT_OK(symbol_names_or);
-    EXPECT_THAT(symbol_names_or.ValueOrDie(), IsEmpty());
+    auto symbol_names = elf_reader->ListSymbols("YouFind", SymbolMatchType::kSuffix);
+    EXPECT_OK_AND_THAT(symbol_names, IsEmpty());
   }
 
   {
-    auto symbol_names_or = elf_reader->ListSymbols("FindThis", SymbolMatchType::kSuffix);
-    ASSERT_OK(symbol_names_or);
-    EXPECT_THAT(symbol_names_or.ValueOrDie(), ElementsAre("CanYouFindThis"));
+    auto symbol_names = elf_reader->ListSymbols("FindThis", SymbolMatchType::kSuffix);
+    EXPECT_OK_AND_THAT(symbol_names, ElementsAre("CanYouFindThis"));
   }
 }
 
@@ -117,20 +102,8 @@ TEST(ElfReaderTest, SymbolAddress) {
 
   // Actual tests of SymbolAddress begins here.
 
-  pl::StatusOr<std::unique_ptr<ElfReader>> s = ElfReader::Create(path);
-  ASSERT_OK(s);
-  std::unique_ptr<ElfReader> elf_reader = s.ConsumeValueOrDie();
-
-  {
-    pl::StatusOr<int64_t> s = elf_reader->SymbolAddress(symbol);
-    ASSERT_OK(s);
-    EXPECT_EQ(s.ValueOrDie(), expected_symbol_addr);
-  }
-
-  {
-    pl::StatusOr<int64_t> s = elf_reader->SymbolAddress("bogus");
-    ASSERT_OK(s);
-    EXPECT_EQ(s.ValueOrDie(), -1);
-  }
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
+  EXPECT_OK_AND_EQ(elf_reader->SymbolAddress(symbol), expected_symbol_addr);
+  EXPECT_OK_AND_EQ(elf_reader->SymbolAddress("bogus"), -1);
 }
 #endif

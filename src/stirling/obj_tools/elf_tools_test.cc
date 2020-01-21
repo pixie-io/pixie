@@ -21,9 +21,7 @@ TEST(ElfReaderTest, NonExistentPath) {
 TEST(ElfReaderTest, ListSymbolsAnyMatch) {
   const std::string path = pl::TestEnvironment::PathToTestDataFile(kBinary);
 
-  pl::StatusOr<std::unique_ptr<ElfReader>> s = ElfReader::Create(path);
-  ASSERT_OK(s);
-  std::unique_ptr<ElfReader> elf_reader = s.ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   EXPECT_THAT(elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kSubstr),
               ElementsAre("CanYouFindThis"));
@@ -36,9 +34,7 @@ TEST(ElfReaderTest, ListSymbolsAnyMatch) {
 TEST(ElfReaderTest, ListSymbolsExactMatch) {
   const std::string path = pl::TestEnvironment::PathToTestDataFile(kBinary);
 
-  pl::StatusOr<std::unique_ptr<ElfReader>> s = ElfReader::Create(path);
-  ASSERT_OK(s);
-  std::unique_ptr<ElfReader> elf_reader = s.ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   EXPECT_THAT(elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kExact),
               ElementsAre("CanYouFindThis"));
@@ -49,9 +45,7 @@ TEST(ElfReaderTest, ListSymbolsExactMatch) {
 TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
   const std::string path = pl::TestEnvironment::PathToTestDataFile(kBinary);
 
-  pl::StatusOr<std::unique_ptr<ElfReader>> s = ElfReader::Create(path);
-  ASSERT_OK(s);
-  std::unique_ptr<ElfReader> elf_reader = s.ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   EXPECT_THAT(elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kSuffix),
               ElementsAre("CanYouFindThis"));
@@ -81,9 +75,7 @@ TEST(ElfReaderTest, SymbolAddress) {
 
   // Actual tests of SymbolAddress begins here.
 
-  pl::StatusOr<std::unique_ptr<ElfReader>> s = ElfReader::Create(path);
-  ASSERT_OK(s);
-  std::unique_ptr<ElfReader> elf_reader = s.ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
     std::optional<int64_t> addr = elf_reader->SymbolAddress(symbol);

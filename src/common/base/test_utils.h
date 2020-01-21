@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <utility>
+
 #include "src/common/base/status.h"
 
 namespace pl {
@@ -25,6 +27,14 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 #define ASSERT_OK(value) ASSERT_TRUE(IsOK(::pl::StatusAdapter(value)))
 #define ASSERT_NOT_OK(value) ASSERT_FALSE(IsOK(::pl::StatusAdapter(value)))
 
+#define ASSERT_OK_AND_ASSIGN_IMPL(statusor, lhs, rexpr) \
+  auto statusor = rexpr;                                \
+  ASSERT_OK(statusor);                                  \
+  lhs = std::move(statusor.ValueOrDie())
+
+#define ASSERT_OK_AND_ASSIGN(lhs, rexpr) \
+  ASSERT_OK_AND_ASSIGN_IMPL(PL_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr)
+
 #define EXPECT_OK_AND(expect_fn, expr, value) \
   {                                           \
     auto&& __s__ = expr;                      \
@@ -46,6 +56,7 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 #define EXPECT_OK_AND_LT(expr, value) EXPECT_OK_AND(EXPECT_LT, expr, value)
 #define EXPECT_OK_AND_GE(expr, value) EXPECT_OK_AND(EXPECT_GE, expr, value)
 #define EXPECT_OK_AND_GT(expr, value) EXPECT_OK_AND(EXPECT_GT, expr, value)
+#define EXPECT_OK_AND_THAT(expr, value) EXPECT_OK_AND(EXPECT_THAT, expr, value)
 
 #define ASSERT_OK_AND_EQ(expr, value) ASSERT_OK_AND(ASSERT_EQ, expr, value)
 #define ASSERT_OK_AND_NE(expr, value) ASSERT_OK_AND(ASSERT_NE, expr, value)
@@ -53,3 +64,4 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 #define ASSERT_OK_AND_LT(expr, value) ASSERT_OK_AND(ASSERT_LT, expr, value)
 #define ASSERT_OK_AND_GE(expr, value) ASSERT_OK_AND(ASSERT_GE, expr, value)
 #define ASSERT_OK_AND_GT(expr, value) ASSERT_OK_AND(ASSERT_GT, expr, value)
+#define ASSERT_OK_AND_THAT(expr, value) ASSERT_OK_AND(ASSERT_THAT, expr, value)
