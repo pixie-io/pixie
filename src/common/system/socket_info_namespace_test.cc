@@ -6,11 +6,11 @@
 #include <absl/strings/numbers.h>
 
 #include "src/common/base/base.h"
-#include "src/common/system/socket_info.h"
-#include "src/common/testing/testing.h"
-
 #include "src/common/exec/exec.h"
 #include "src/common/exec/subprocess.h"
+#include "src/common/system/config.h"
+#include "src/common/system/socket_info.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace system {
@@ -148,20 +148,20 @@ TEST_F(NetlinkSocketProberNamespaceTest, SocketProberManager) {
     EXPECT_NE(socket_prober_ptr, nullptr);
   }
 
-  // Fourth round: A call to RemovedUnused() should not remove any sockets yet.
-  socket_probers.RemoveUnused();
+  // Fourth round: A call to Update() should not remove any sockets yet.
+  socket_probers.Update();
   for (auto& [ns, pids] : pids_by_net_ns) {
     PL_UNUSED(pids);
     NetlinkSocketProber* socket_prober_ptr = socket_probers.GetSocketProber(ns);
     EXPECT_NE(socket_prober_ptr, nullptr);
   }
 
-  // Fifth round: A call to RemoveUnused(), followed by no accesses.
-  socket_probers.RemoveUnused();
+  // Fifth round: A call to Update(), followed by no accesses.
+  socket_probers.Update();
   // Don't access any socket probers.
 
   // Sixth round: If socket probers are not accessed, then they should have all been removed.
-  socket_probers.RemoveUnused();
+  socket_probers.Update();
   for (auto& [ns, pids] : pids_by_net_ns) {
     PL_UNUSED(pids);
     NetlinkSocketProber* socket_prober_ptr = socket_probers.GetSocketProber(ns);
