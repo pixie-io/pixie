@@ -135,11 +135,10 @@ gcloud beta container --project "${PROJECT}" clusters create ${CLUSTER_NAME} \
 "https://www.googleapis.com/auth/servicecontrol" \
  --num-nodes ${NUM_NODES} \
  --enable-ip-alias \
- --enable-cloud-logging \
- --enable-cloud-monitoring \
+ --enable-stackdriver-kubernetes \
  --network "${NETWORK}" \
  --subnetwork "${SUBNETWORK}" \
- --addons HorizontalPodAutoscaling,KubernetesDashboard,HttpLoadBalancing \
+ --addons HorizontalPodAutoscaling,HttpLoadBalancing \
  --no-enable-autoupgrade \
  --no-enable-autorepair \
  --labels k8s-dev-cluster=
