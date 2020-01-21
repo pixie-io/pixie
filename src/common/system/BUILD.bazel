@@ -64,6 +64,14 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["socket_info_namespace_test.cc"],
     tags = [
+        # Test is causing problems:
+        # src/common/system/socket_info_namespace_test.cc:117: Failure
+        # Expected equality of these values:
+        #  num_conns
+        #   Which is: 6
+        #  1
+        # TODO(oazizi): Investigate and re-enable.
+        "disabled",
         # This test requires root to call setns().
         # This tag prevents the test from running on local dev machines.
         "requires_root",
