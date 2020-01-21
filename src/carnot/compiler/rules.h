@@ -503,6 +503,18 @@ class ResolveColumnIndexRule : public Rule {
   StatusOr<bool> Apply(IRNode* ir_node) override;
 };
 
+class PruneUnusedColumnsRule : public Rule {
+ public:
+  PruneUnusedColumnsRule() : Rule(nullptr, /*reverse_topological_execution*/ true) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  // For each operator, store the column names that it needs to output.
+  absl::flat_hash_map<OperatorIR*, absl::flat_hash_set<std::string>> operator_to_required_outputs_;
+};
+
 /**
  * @brief This class supports running an IR graph rule (independently) over each IR graph of a
  * DistributedPlan. This is distinct from other DistributedRules, which may modify the

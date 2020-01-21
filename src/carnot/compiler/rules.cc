@@ -1441,6 +1441,31 @@ StatusOr<bool> ResolveColumnIndexRule::Apply(IRNode* ir_node) {
   return true;
 }
 
+StatusOr<bool> PruneUnusedColumnsRule::Apply(IRNode* ir_node) {
+  if (!Match(ir_node, Operator())) {
+    return false;
+  }
+  auto op = static_cast<OperatorIR*>(ir_node);
+  DCHECK(op->IsRelationInit());
+  auto changed = false;
+
+  if (operator_to_required_outputs_.contains(op)) {
+    auto required_outs = operator_to_required_outputs_.at(op);
+    auto prev_relation = op->relation();
+    PL_RETURN_IF_ERROR(op->PruneOutputColumnsTo(required_outs));
+    auto new_relation = op->relation();
+    changed = prev_relation != new_relation;
+  }
+
+  PL_ASSIGN_OR_RETURN(auto required_inputs, op->RequiredInputColumns());
+  for (const auto& [parent_idx, required_columns] : Enumerate(required_inputs)) {
+    auto parent_ptr = op->parents()[parent_idx];
+    operator_to_required_outputs_[parent_ptr] = required_columns;
+  }
+
+  return changed;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -2468,6 +2468,119 @@ TEST_F(RulesTest, CombineConsecutiveMapsRule_child_dont_keep_input_columns) {
   ASSERT_FALSE(result.ConsumeValueOrDie());
 }
 
+TEST_F(RulesTest, PruneUnusedColumnsRule_basic) {
+  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+
+  ColumnExpression expr1{"count_1", MakeColumn("count", 0)};
+  ColumnExpression expr2{"cpu0_1", MakeColumn("cpu0", 0)};
+
+  auto map = MakeMap(mem_src, {expr1, expr2}, false);
+  Relation map_relation{{types::DataType::INT64, types::DataType::FLOAT64}, {"count_1", "cpu0_1"}};
+  ASSERT_OK(map->SetRelation(map_relation));
+
+  auto sink = MakeMemSink(map, "abc", {"cpu0_1"});
+  Relation sink_relation{{types::DataType::FLOAT64}, {"cpu0_1"}};
+  ASSERT_OK(sink->SetRelation(sink_relation));
+
+  PruneUnusedColumnsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_EQ(mem_src->relation(), Relation({types::DataType::FLOAT64}, {"cpu0"}));
+  EXPECT_THAT(mem_src->column_names(), ElementsAre("cpu0"));
+
+  EXPECT_EQ(map->relation(), sink_relation);
+  EXPECT_EQ(1, map->col_exprs().size());
+  EXPECT_EQ(expr2.name, map->col_exprs()[0].name);
+  EXPECT_EQ(expr2.node, map->col_exprs()[0].node);
+
+  // Should be unchanged
+  EXPECT_EQ(sink_relation, sink->relation());
+}
+
+TEST_F(RulesTest, PruneUnusedColumnsRule_multiparent) {
+  Relation relation0{{types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"}};
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1{{types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"}};
+  auto mem_src2 = MakeMemSource(relation1);
+
+  auto join_op = MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
+                          std::vector<std::string>{"col1"}, std::vector<std::string>{"col2"});
+
+  std::vector<std::string> join_out_cols{"right_only", "col2_right", "left_only", "col1_left"};
+  ASSERT_OK(join_op->SetOutputColumns(join_out_cols,
+                                      {MakeColumn("right_only", 1), MakeColumn("col2", 1),
+                                       MakeColumn("left_only", 0), MakeColumn("col1", 0)}));
+  Relation join_relation{{types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                          types::DataType::INT64},
+                         join_out_cols};
+  ASSERT_OK(join_op->SetRelation(join_relation));
+
+  std::vector<std::string> sink_out_cols{"right_only", "col1_left"};
+  auto sink = MakeMemSink(join_op, "abc", sink_out_cols);
+  Relation sink_relation{{types::DataType::INT64, types::DataType::INT64}, sink_out_cols};
+  ASSERT_OK(sink->SetRelation(sink_relation));
+
+  PruneUnusedColumnsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  // Check mem sources
+  Relation mem_src1_relation{{types::DataType::INT64}, {"col1"}};
+  EXPECT_EQ(mem_src1_relation, mem_src1->relation());
+  EXPECT_THAT(mem_src1->column_names(), ElementsAre("col1"));
+
+  Relation mem_src2_relation{{types::DataType::INT64, types::DataType::INT64},
+                             {"right_only", "col2"}};
+  EXPECT_EQ(mem_src2_relation, mem_src2->relation());
+  EXPECT_THAT(mem_src2->column_names(), ElementsAre("right_only", "col2"));
+
+  // Check join
+  Relation new_join_relation{{types::DataType::INT64, types::DataType::INT64},
+                             {"right_only", "col1_left"}};
+  EXPECT_EQ(new_join_relation, join_op->relation());
+  EXPECT_EQ(2, join_op->output_columns().size());
+  EXPECT_EQ("right_only", join_op->output_columns()[0]->col_name());
+  EXPECT_EQ(1, join_op->output_columns()[0]->container_op_parent_idx());
+  EXPECT_EQ("col1", join_op->output_columns()[1]->col_name());
+  EXPECT_EQ(0, join_op->output_columns()[1]->container_op_parent_idx());
+  EXPECT_THAT(join_op->column_names(), ElementsAre("right_only", "col1_left"));
+
+  // Check mem sink, should be unchanged
+  EXPECT_EQ(sink_relation, sink->relation());
+}
+
+TEST_F(RulesTest, PruneUnusedColumnsRule_unchanged) {
+  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+
+  ColumnExpression expr1{"count_1", MakeColumn("count", 0)};
+  ColumnExpression expr2{"cpu0_1", MakeColumn("cpu0", 0)};
+  ColumnExpression expr3{"cpu1_1", MakeColumn("cpu1", 0)};
+  ColumnExpression expr4{"cpu2_1", MakeColumn("cpu2", 0)};
+
+  auto map = MakeMap(mem_src, {expr1, expr2, expr3, expr4}, false);
+  std::vector<std::string> out_cols{"count_1", "cpu0_1", "cpu1_1", "cpu2_1"};
+  Relation relation{{types::DataType::INT64, types::DataType::FLOAT64, types::DataType::FLOAT64,
+                     types::DataType::FLOAT64},
+                    out_cols};
+  ASSERT_OK(map->SetRelation(relation));
+
+  auto sink = MakeMemSink(map, "abc", out_cols);
+  ASSERT_OK(sink->SetRelation(relation));
+
+  PruneUnusedColumnsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_FALSE(result.ConsumeValueOrDie());
+}
+
 TEST_F(RulesTest, DistributedIRRuleTest) {
   auto physical_plan = std::make_unique<distributed::DistributedPlan>();
   distributedpb::DistributedState physical_state =
