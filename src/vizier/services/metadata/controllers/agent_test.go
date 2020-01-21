@@ -1,14 +1,9 @@
 package controllers_test
 
 import (
-	"context"
-	"errors"
-	"os"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
@@ -16,98 +11,84 @@ import (
 
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/types"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
-var etcdClient *clientv3.Client
-
-func clearEtcd(t *testing.T) {
-	_, err := etcdClient.Delete(context.Background(), "", clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal("Failed to clear etcd data.")
-	}
-}
-
-func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, *mock_controllers.MockMetadataStore, func()) {
-	clearEtcd(t)
-	cleanup := func() {}
+func setupAgentManager(t *testing.T) (controllers.NewMetadataStore, controllers.AgentManager) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
-
-	CreateAgent(t, testutils.ExistingAgentUUID, etcdClient, testutils.ExistingAgentInfo)
-	CreateAgent(t, testutils.UnhealthyAgentUUID, etcdClient, testutils.UnhealthyAgentInfo)
-	CreateAgent(t, testutils.UnhealthyKelvinAgentUUID, etcdClient, testutils.UnhealthyKelvinAgentInfo)
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		Get(gomock.Any()).
+		Return(nil, nil).
+		AnyTimes()
+	mockDs.
+		EXPECT().
+		DeleteWithPrefix(gomock.Any()).
+		Return(nil).
+		AnyTimes()
+	mockDs.
+		EXPECT().
+		GetWithPrefix(gomock.Any()).
+		Return(nil, nil, nil).
+		AnyTimes()
 
 	clock := testingutils.NewTestClock(time.Unix(0, testutils.ClockNowNS))
-	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, mockMds, clock)
+	c := kvstore.NewCache(mockDs)
+	mds, err := controllers.NewKVMetadataStore(c)
+	if err != nil {
+		t.Fatalf("Could not create metadata store")
+	}
 
-	return etcdClient, agtMgr, mockMds, cleanup
+	createAgentInMDS(t, testutils.ExistingAgentUUID, mds, testutils.ExistingAgentInfo)
+	createAgentInMDS(t, testutils.UnhealthyAgentUUID, mds, testutils.UnhealthyAgentInfo)
+	createAgentInMDS(t, testutils.UnhealthyKelvinAgentUUID, mds, testutils.UnhealthyKelvinAgentInfo)
+
+	agtMgr := controllers.NewAgentManagerWithClock(mds, clock)
+
+	return mds, agtMgr
 }
 
-func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb string) {
+func createAgentInMDS(t *testing.T, agentID string, mds controllers.NewMetadataStore, agentPb string) {
 	info := new(agentpb.Agent)
 	if err := proto.UnmarshalText(agentPb, info); err != nil {
 		t.Fatalf("Cannot Unmarshal protobuf for %s", agentID)
 	}
-	i, err := info.Marshal()
+	agUUID, err := uuid.FromString(agentID)
 	if err != nil {
-		t.Fatal("Unable to marshal agentData pb.")
+		t.Fatalf("Could not convert uuid from string")
 	}
-
-	_, err = client.Put(context.Background(), controllers.GetAgentKey(agentID), string(i))
-	if err != nil {
-		t.Fatal("Unable to add agentData to etcd.")
-	}
-
-	_, err = client.Put(context.Background(), controllers.GetHostnameAgentKey(info.Info.HostInfo.Hostname), agentID)
-	if err != nil {
-		t.Fatal("Unable to add agentData to etcd.")
-	}
-
-	if !info.Info.Capabilities.CollectsData {
-		_, err = client.Put(context.Background(), controllers.GetKelvinAgentKey(agentID), agentID)
-		if err != nil {
-			t.Fatal("Unable to add kelvin data to etcd.")
-		}
-	}
+	_, _ = mds.GetASID()
+	err = mds.CreateAgent(agUUID, info)
 
 	// Add schema info.
 	schema := new(metadatapb.SchemaInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	s, err := schema.Marshal()
+	err = mds.UpdateSchemas(agUUID, []*metadatapb.SchemaInfo{schema})
 	if err != nil {
-		t.Fatal("Unable to marshal schema pb.")
-	}
-
-	_, err = client.Put(context.Background(), controllers.GetAgentSchemaKey(agentID, schema.Name), string(s))
-	if err != nil {
-		t.Fatal("Unable to add agent schema to etcd.")
+		t.Fatalf("Could not add schema for agent")
 	}
 }
 
 func TestRegisterAgent(t *testing.T) {
-	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
+	mds, agtMgr := setupAgentManager(t)
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
 	upb := utils.ProtoFromUUID(&u)
-
-	mockMds.
-		EXPECT().
-		GetASID().
-		Return(uint32(111), nil)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -125,47 +106,34 @@ func TestRegisterAgent(t *testing.T) {
 
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(111), id)
+	assert.Equal(t, uint32(4), id)
 
-	// Check that correct agent info is in etcd.
-	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
-	if err != nil {
-		t.Fatal("Failed to get agent.")
-	}
-	assert.Equal(t, 1, len(resp.Kvs))
-	pb := &agentpb.Agent{}
-	proto.Unmarshal(resp.Kvs[0].Value, pb)
+	// Check that agent exists now.
+	agent, err := mds.GetAgent(u)
+	assert.Nil(t, err)
+	assert.NotNil(t, agent)
 
-	assert.Equal(t, int64(testutils.ClockNowNS), pb.LastHeartbeatNS)
-	assert.Equal(t, int64(testutils.ClockNowNS), pb.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(pb.Info.AgentID)
+	assert.Equal(t, int64(testutils.ClockNowNS), agent.LastHeartbeatNS)
+	assert.Equal(t, int64(testutils.ClockNowNS), agent.CreateTimeNS)
+	uid, err := utils.UUIDFromProto(agent.Info.AgentID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.NewAgentUUID, uid.String())
-	assert.Equal(t, "localhost", pb.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(111), pb.ASID)
+	assert.Equal(t, "localhost", agent.Info.HostInfo.Hostname)
+	assert.Equal(t, uint32(4), agent.ASID)
 
-	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("localhost"))
-	if err != nil {
-		t.Fatal("Failed to get agent hostname.")
-	}
-	assert.Equal(t, 1, len(resp.Kvs))
-	assert.Equal(t, testutils.NewAgentUUID, string(resp.Kvs[0].Value))
+	hostnameID, err := mds.GetAgentIDForHostname("localhost")
+	assert.Nil(t, err)
+	assert.Equal(t, testutils.NewAgentUUID, hostnameID)
 }
 
 func TestRegisterKelvinAgent(t *testing.T) {
-	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
+	mds, agtMgr := setupAgentManager(t)
 
 	u, err := uuid.FromString(testutils.KelvinAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
 	upb := utils.ProtoFromUUID(&u)
-
-	mockMds.
-		EXPECT().
-		GetASID().
-		Return(uint32(111), nil)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -181,33 +149,38 @@ func TestRegisterKelvinAgent(t *testing.T) {
 		CreateTimeNS:    4,
 	}
 
+	kelvins, err := mds.GetKelvinIDs()
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(kelvins))
+
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(111), id)
+	assert.Equal(t, uint32(4), id)
 
-	// Check that correct agent info is in etcd.
-	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
-	if err != nil {
-		t.Fatal("Failed to get agent.")
-	}
-	assert.Equal(t, 1, len(resp.Kvs))
-	pb := &agentpb.Agent{}
-	proto.Unmarshal(resp.Kvs[0].Value, pb)
-	uid, err := utils.UUIDFromProto(pb.Info.AgentID)
+	// Check that agent exists now.
+	agent, err := mds.GetAgent(u)
+	assert.Nil(t, err)
+	assert.NotNil(t, agent)
+
+	assert.Equal(t, int64(testutils.ClockNowNS), agent.LastHeartbeatNS)
+	assert.Equal(t, int64(testutils.ClockNowNS), agent.CreateTimeNS)
+	uid, err := utils.UUIDFromProto(agent.Info.AgentID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.KelvinAgentUUID, uid.String())
+	assert.Equal(t, "test", agent.Info.HostInfo.Hostname)
+	assert.Equal(t, uint32(4), agent.ASID)
 
-	resp, err = etcdClient.Get(context.Background(), controllers.GetKelvinAgentKey(testutils.KelvinAgentUUID))
-	if err != nil {
-		t.Fatal("Failed to get kelvin info.")
-	}
-	assert.Equal(t, 1, len(resp.Kvs))
-	assert.Equal(t, testutils.KelvinAgentUUID, string(resp.Kvs[0].Value))
+	hostnameID, err := mds.GetAgentIDForHostname("test")
+	assert.Nil(t, err)
+	assert.Equal(t, testutils.KelvinAgentUUID, hostnameID)
+
+	kelvins, err = mds.GetKelvinIDs()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(kelvins))
 }
 
 func TestRegisterAgentWithExistingHostname(t *testing.T) {
-	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
+	mds, agtMgr := setupAgentManager(t)
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
 	if err != nil {
@@ -218,11 +191,6 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-
-	mockMds.
-		EXPECT().
-		GetASID().
-		Return(uint32(111), nil)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -240,40 +208,33 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(111), id)
+	assert.Equal(t, uint32(4), id)
 
-	// Check that correct agent info is in etcd.
-	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
-	if err != nil {
-		t.Fatal("Failed to get agent.")
-	}
-	assert.Equal(t, 1, len(resp.Kvs))
-	pb := &agentpb.Agent{}
-	proto.Unmarshal(resp.Kvs[0].Value, pb)
+	// Check that correct agent info is in MDS.
+	agent, err := mds.GetAgent(u)
+	assert.Nil(t, err)
+	assert.NotNil(t, agent)
 
-	assert.Equal(t, int64(testutils.ClockNowNS), pb.LastHeartbeatNS)
-	assert.Equal(t, int64(testutils.ClockNowNS), pb.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(pb.Info.AgentID)
+	assert.Equal(t, int64(testutils.ClockNowNS), agent.LastHeartbeatNS)
+	assert.Equal(t, int64(testutils.ClockNowNS), agent.CreateTimeNS)
+	uid, err := utils.UUIDFromProto(agent.Info.AgentID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.NewAgentUUID, uid.String())
-	assert.Equal(t, "testhost", pb.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(111), pb.ASID)
+	assert.Equal(t, "testhost", agent.Info.HostInfo.Hostname)
+	assert.Equal(t, uint32(4), agent.ASID)
 
-	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("testhost"))
-	if err != nil {
-		t.Fatal("Failed to get agent hostname.")
-	}
-	assert.Equal(t, 1, len(resp.Kvs))
-	assert.Equal(t, testutils.NewAgentUUID, string(resp.Kvs[0].Value))
+	hostnameID, err := mds.GetAgentIDForHostname("testhost")
+	assert.Nil(t, err)
+	assert.Equal(t, testutils.NewAgentUUID, hostnameID)
 
 	// Check that previous agent has been deleted.
-	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u2))
-	assert.Equal(t, 0, len(resp.Kvs))
+	agent, err = mds.GetAgent(u2)
+	assert.Nil(t, err)
+	assert.Nil(t, agent)
 }
 
 func TestRegisterExistingAgent(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
-	defer cleanup()
+	mds, agtMgr := setupAgentManager(t)
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
 	if err != nil {
@@ -294,28 +255,21 @@ func TestRegisterExistingAgent(t *testing.T) {
 	_, err = agtMgr.RegisterAgent(agentInfo)
 	assert.NotNil(t, err)
 
-	// Check that correct agent info is in etcd.
-	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
-	if err != nil {
-		t.Fatal("Failed to get agent.")
-	}
-	assert.Equal(t, 1, len(resp.Kvs))
-	pb := &agentpb.Agent{}
-	proto.Unmarshal(resp.Kvs[0].Value, pb)
-
-	assert.Equal(t, int64(testutils.HealthyAgentLastHeartbeatNS), pb.LastHeartbeatNS) // 70 seconds in NS.
-	assert.Equal(t, int64(0), pb.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(pb.Info.AgentID)
+	// Check that correct agent info is in MDS.
+	agent, err := mds.GetAgent(u)
+	assert.Nil(t, err)
+	assert.NotNil(t, agent)
+	assert.Equal(t, int64(testutils.HealthyAgentLastHeartbeatNS), agent.LastHeartbeatNS) // 70 seconds in NS.
+	assert.Equal(t, int64(0), agent.CreateTimeNS)
+	uid, err := utils.UUIDFromProto(agent.Info.AgentID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.ExistingAgentUUID, uid.String())
-	assert.Equal(t, "testhost", pb.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(123), pb.ASID)
+	assert.Equal(t, "testhost", agent.Info.HostInfo.Hostname)
+	assert.Equal(t, uint32(123), agent.ASID)
 }
 
 func TestUpdateHeartbeat(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
-	defer cleanup()
-
+	mds, agtMgr := setupAgentManager(t)
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
@@ -325,25 +279,20 @@ func TestUpdateHeartbeat(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Check that correct agent info is in etcd.
-	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
-	if err != nil {
-		t.Fatal("Failed to get agent.")
-	}
-	assert.Equal(t, 1, len(resp.Kvs))
-	pb := &agentpb.Agent{}
-	proto.Unmarshal(resp.Kvs[0].Value, pb)
+	agent, err := mds.GetAgent(u)
+	assert.Nil(t, err)
+	assert.NotNil(t, agent)
 
-	assert.Equal(t, int64(testutils.ClockNowNS), pb.LastHeartbeatNS)
-	assert.Equal(t, int64(0), pb.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(pb.Info.AgentID)
+	assert.Equal(t, int64(testutils.ClockNowNS), agent.LastHeartbeatNS)
+	assert.Equal(t, int64(0), agent.CreateTimeNS)
+	uid, err := utils.UUIDFromProto(agent.Info.AgentID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.ExistingAgentUUID, uid.String())
-	assert.Equal(t, "testhost", pb.Info.HostInfo.Hostname)
+	assert.Equal(t, "testhost", agent.Info.HostInfo.Hostname)
 }
 
 func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
-	defer cleanup()
+	_, agtMgr := setupAgentManager(t)
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
 	if err != nil {
@@ -352,111 +301,58 @@ func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
 
 	err = agtMgr.UpdateHeartbeat(u)
 	assert.NotNil(t, err)
-
-	resp, err := etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("localhost"))
-	if err != nil {
-		t.Fatal("Failed to get agent hostname.")
-	}
-	assert.Equal(t, 0, len(resp.Kvs))
 }
 
 func TestUpdateAgentState(t *testing.T) {
-	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	agents := make([]*agentpb.Agent, 3)
-
-	agent1 := &agentpb.Agent{}
-	if err := proto.UnmarshalText(testutils.ExistingAgentInfo, agent1); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	agents[0] = agent1
-
-	agent2 := &agentpb.Agent{}
-	if err := proto.UnmarshalText(testutils.UnhealthyAgentInfo, agent2); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	agents[1] = agent2
-
-	agent3 := &agentpb.Agent{}
-	if err := proto.UnmarshalText(testutils.UnhealthyKelvinAgentInfo, agent3); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	agents[2] = agent3
-
-	mockMds.
-		EXPECT().
-		GetAgents().
-		Return(agents, nil)
+	mds, agtMgr := setupAgentManager(t)
 
 	err := agtMgr.UpdateAgentState()
 	assert.Nil(t, err)
 
-	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKey(""), clientv3.WithPrefix())
-	assert.Equal(t, 1, len(resp.Kvs))
+	agents, err := mds.GetAgents()
+	assert.Equal(t, 1, len(agents))
 
-	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentKey(testutils.UnhealthyAgentUUID))
-	// Agent should no longer exist in etcd.
-	assert.Equal(t, 0, len(resp.Kvs))
+	u, err := uuid.FromString(testutils.UnhealthyAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+	agent, err := mds.GetAgent(u)
+	assert.Nil(t, err)
+	assert.Nil(t, agent)
 
-	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("anotherhost"))
-	// Agent should no longer exist in etcd.
-	assert.Equal(t, 0, len(resp.Kvs))
-
-	// Unhealthy agent should no longer have any schemas.
-	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentSchemasKey(testutils.UnhealthyAgentUUID), clientv3.WithPrefix())
-	assert.Equal(t, 0, len(resp.Kvs))
-	// Healthy agent should still have a schema.
-	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentSchemasKey(testutils.ExistingAgentUUID), clientv3.WithPrefix())
-	assert.Equal(t, 1, len(resp.Kvs))
+	hostnameID, err := mds.GetAgentIDForHostname("anotherhost")
+	assert.Nil(t, err)
+	assert.Equal(t, "", hostnameID)
 
 	// Should have no Kelvin entries.
-	resp, err = etcdClient.Get(context.Background(), controllers.GetKelvinAgentKey(""), clientv3.WithPrefix())
-	assert.Equal(t, 0, len(resp.Kvs))
-}
-
-func TestUpdateAgentStateGetAgentsFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	agents := make([]*agentpb.Agent, 0)
-
-	mockMds.
-		EXPECT().
-		GetAgents().
-		Return(agents, errors.New("could not get agents"))
-
-	err := agtMgr.UpdateAgentState()
-	assert.NotNil(t, err)
+	kelvins, err := mds.GetKelvinIDs()
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(kelvins))
 }
 
 func TestGetActiveAgents(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	agentsMock := make([]*agentpb.Agent, 2)
-
-	agent1 := &agentpb.Agent{}
-	if err := proto.UnmarshalText(testutils.ExistingAgentInfo, agent1); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	agentsMock[0] = agent1
-
-	agent2 := &agentpb.Agent{}
-	if err := proto.UnmarshalText(testutils.UnhealthyAgentInfo, agent2); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	agentsMock[1] = agent2
-
-	mockMds.
-		EXPECT().
-		GetAgents().
-		Return(agentsMock, nil)
+	_, agtMgr := setupAgentManager(t)
 
 	agents, err := agtMgr.GetActiveAgents()
 	assert.Nil(t, err)
 
-	assert.Equal(t, 2, len(agents))
+	assert.Equal(t, 3, len(agents))
+
+	agent0Info := &agentpb.Agent{
+		LastHeartbeatNS: 0,
+		CreateTimeNS:    0,
+		Info: &agentpb.AgentInfo{
+			AgentID: &uuidpb.UUID{Data: []byte("5ba7b8109dad11d180b400c04fd430c8")},
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "abcd",
+			},
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: false,
+			},
+		},
+		ASID: 789,
+	}
+	assert.Equal(t, agent0Info, agents[0])
 
 	agent1Info := &agentpb.Agent{
 		LastHeartbeatNS: testutils.HealthyAgentLastHeartbeatNS,
@@ -472,7 +368,7 @@ func TestGetActiveAgents(t *testing.T) {
 		},
 		ASID: 123,
 	}
-	assert.Equal(t, agent1Info, agents[0])
+	assert.Equal(t, agent1Info, agents[1])
 
 	agent2Info := &agentpb.Agent{
 		LastHeartbeatNS: 0,
@@ -488,31 +384,11 @@ func TestGetActiveAgents(t *testing.T) {
 		},
 		ASID: 456,
 	}
-	assert.Equal(t, agent2Info, agents[1])
-}
-
-func TestGetActiveAgentsGetAgentsFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	agents := make([]*agentpb.Agent, 0)
-
-	mockMds.
-		EXPECT().
-		GetAgents().
-		Return(agents, errors.New("could not get agents"))
-
-	_, err := agtMgr.GetActiveAgents()
-	assert.NotNil(t, err)
+	assert.Equal(t, agent2Info, agents[2])
 }
 
 func TestAddToUpdateQueue(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	defer wg.Wait()
+	mds, agtMgr := setupAgentManager(t)
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
 	if err != nil {
@@ -553,38 +429,38 @@ func TestAddToUpdateQueue(t *testing.T) {
 	}
 	cProcessInfo[1] = cpi2
 
-	mockMds.
-		EXPECT().
-		UpdateSchemas(u, schemas).
-		DoAndReturn(func(u uuid.UUID, e []*metadatapb.SchemaInfo) error {
-			wg.Done()
-			return nil
-		})
-
-	mockMds.
-		EXPECT().
-		UpdateProcesses(cProcessInfo).
-		DoAndReturn(func(p []*metadatapb.ProcessInfo) error {
-			wg.Done()
-			return nil
-		})
-
 	update := &messagespb.AgentUpdateInfo{
-		Schema:           schemas,
-		ProcessCreated:   createdProcesses,
-		DoesUpdateSchema: true,
+		Schema:         schemas,
+		ProcessCreated: createdProcesses,
 	}
 
-	agtMgr.AddToUpdateQueue(u, update)
+	agentUpdate := controllers.AgentUpdate{
+		UpdateInfo: update,
+		AgentID:    u,
+	}
+
+	agtMgr.ApplyAgentUpdate(&agentUpdate)
+
+	upid1 := &types.UInt128{
+		Low:  uint64(89101),
+		High: uint64(528280977975),
+	}
+
+	upid2 := &types.UInt128{
+		Low:  uint64(468),
+		High: uint64(528280977975),
+	}
+
+	pInfos, err := mds.GetProcesses([]*types.UInt128{upid1, upid2})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pInfos))
+
+	assert.Equal(t, cProcessInfo[0], pInfos[0])
+	assert.Equal(t, cProcessInfo[1], pInfos[1])
 }
 
 func TestAgentQueueTerminatedProcesses(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	defer wg.Wait()
+	mds, agtMgr := setupAgentManager(t)
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
 	if err != nil {
@@ -612,17 +488,18 @@ func TestAgentQueueTerminatedProcesses(t *testing.T) {
 	}
 	terminatedProcesses[1] = tp2
 
-	processInfo := make([]*metadatapb.ProcessInfo, 2)
-	pi1 := new(metadatapb.ProcessInfo)
-	if err := proto.UnmarshalText(testutils.ProcessInfo1PB, pi1); err != nil {
+	createdProcesses := make([]*metadatapb.ProcessCreated, 2)
+
+	cp1 := new(metadatapb.ProcessCreated)
+	if err := proto.UnmarshalText(testutils.ProcessCreated1PB, cp1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	processInfo[0] = pi1
-	pi2 := new(metadatapb.ProcessInfo)
-	if err := proto.UnmarshalText(testutils.ProcessInfo2PB, pi2); err != nil {
+	createdProcesses[0] = cp1
+	cp2 := new(metadatapb.ProcessCreated)
+	if err := proto.UnmarshalText(testutils.ProcessCreated2PB, cp2); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	processInfo[1] = pi2
+	createdProcesses[1] = cp2
 
 	updatedInfo := make([]*metadatapb.ProcessInfo, 2)
 	upi1 := new(metadatapb.ProcessInfo)
@@ -638,78 +515,51 @@ func TestAgentQueueTerminatedProcesses(t *testing.T) {
 	upi2.StopTimestampNS = 10
 	updatedInfo[1] = upi2
 
-	mockMds.
-		EXPECT().
-		UpdateSchemas(u, schemas).
-		DoAndReturn(func(u uuid.UUID, e []*metadatapb.SchemaInfo) error {
-			wg.Done()
-			return nil
-		})
-
-	mockMds.
-		EXPECT().
-		GetProcesses(gomock.Any()).
-		Return(processInfo, nil)
-
-	mockMds.
-		EXPECT().
-		UpdateProcesses(updatedInfo).
-		DoAndReturn(func(p []*metadatapb.ProcessInfo) error {
-			wg.Done()
-			return nil
-		})
-
 	update := &messagespb.AgentUpdateInfo{
-		DoesUpdateSchema:  true,
+		Schema:         schemas,
+		ProcessCreated: createdProcesses,
+	}
+
+	agentUpdate := controllers.AgentUpdate{
+		UpdateInfo: update,
+		AgentID:    u,
+	}
+
+	agtMgr.ApplyAgentUpdate(&agentUpdate)
+
+	update = &messagespb.AgentUpdateInfo{
 		Schema:            schemas,
 		ProcessTerminated: terminatedProcesses,
 	}
 
-	agtMgr.AddToUpdateQueue(u, update)
-}
-
-func TestAddToUpdateQueueFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	defer wg.Wait()
-
-	u, err := uuid.FromString(testutils.NewAgentUUID)
-	if err != nil {
-		t.Fatal("Could not parse UUID from string.")
+	agentUpdate = controllers.AgentUpdate{
+		UpdateInfo: update,
+		AgentID:    u,
 	}
 
-	schemas := make([]*metadatapb.SchemaInfo, 1)
+	agtMgr.ApplyAgentUpdate(&agentUpdate)
 
-	schema1 := new(metadatapb.SchemaInfo)
-	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	schemas[0] = schema1
-
-	mockMds.
-		EXPECT().
-		UpdateSchemas(u, schemas).
-		DoAndReturn(func(u uuid.UUID, e []*metadatapb.SchemaInfo) error {
-			wg.Done()
-			return errors.New("Could not update containers")
-		})
-
-	update := &messagespb.AgentUpdateInfo{
-		DoesUpdateSchema: true,
-		Schema:           schemas,
+	upid1 := &types.UInt128{
+		Low:  uint64(89101),
+		High: uint64(528280977975),
 	}
 
-	agtMgr.AddToUpdateQueue(u, update)
+	upid2 := &types.UInt128{
+		Low:  uint64(468),
+		High: uint64(528280977975),
+	}
+
+	pInfos, err := mds.GetProcesses([]*types.UInt128{upid1, upid2})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pInfos))
+
+	assert.Equal(t, updatedInfo[0], pInfos[0])
+	assert.Equal(t, updatedInfo[1], pInfos[1])
 }
 
 func TestGetMetadataUpdates(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
+	mds, agtMgr := setupAgentManager(t)
 
-	podMock := make([]*metadatapb.Pod, 2)
 	containers := make([]*metadatapb.ContainerStatus, 2)
 
 	containers[0] = &metadatapb.ContainerStatus{
@@ -731,7 +581,6 @@ func TestGetMetadataUpdates(t *testing.T) {
 			ContainerStatuses: containers,
 		},
 	}
-	podMock[0] = pod1
 	pod2 := &metadatapb.Pod{
 		Metadata: &metadatapb.ObjectMetadata{
 			Name: "efgh",
@@ -739,29 +588,25 @@ func TestGetMetadataUpdates(t *testing.T) {
 		},
 		Status: &metadatapb.PodStatus{},
 	}
-	podMock[1] = pod2
 
-	epMock := make([]*metadatapb.Endpoints, 1)
 	ep1 := &metadatapb.Endpoints{}
 	if err := proto.UnmarshalText(testutils.EndpointsPb, ep1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	epMock[0] = ep1
+	ep1.Metadata.DeletionTimestampNS = 0
 
-	mockMds.
-		EXPECT().
-		GetNodePods("localhost").
-		Return(podMock, nil)
-
-	mockMds.
-		EXPECT().
-		GetNodeEndpoints("localhost").
-		Return(epMock, nil)
-
-	updates, err := agtMgr.GetMetadataUpdates("localhost")
+	err := mds.UpdatePod(pod1, false)
+	assert.Nil(t, err)
+	err = mds.UpdatePod(pod2, false)
 	assert.Nil(t, err)
 
-	assert.Equal(t, 5, len(updates))
+	err = mds.UpdateEndpoints(ep1, false)
+	assert.Nil(t, err)
+
+	updates, err := agtMgr.GetMetadataUpdates("")
+	assert.Nil(t, err)
+
+	assert.Equal(t, 6, len(updates))
 
 	update1 := updates[0].GetContainerUpdate()
 	assert.NotNil(t, update1)
@@ -782,76 +627,17 @@ func TestGetMetadataUpdates(t *testing.T) {
 	update5 := updates[4].GetServiceUpdate()
 	assert.NotNil(t, update5)
 	assert.Equal(t, "object_md", update5.Name)
-}
 
-func TestGetMetadataUpdatesGetPodsFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	mockMds.
-		EXPECT().
-		GetNodePods("localhost").
-		Return(nil, errors.New("Could not get pods"))
-
-	_, err := agtMgr.GetMetadataUpdates("localhost")
-	assert.NotNil(t, err)
-}
-
-func TestGetMetadataUpdatesGetEndpointsFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	podMock := make([]*metadatapb.Pod, 2)
-
-	pod1 := &metadatapb.Pod{
-		Metadata: &metadatapb.ObjectMetadata{
-			Name: "abcd",
-			UID:  "1234",
-		},
-	}
-	podMock[0] = pod1
-	pod2 := &metadatapb.Pod{
-		Metadata: &metadatapb.ObjectMetadata{
-			Name: "efgh",
-			UID:  "5678",
-		},
-	}
-	podMock[1] = pod2
-
-	mockMds.
-		EXPECT().
-		GetNodePods("localhost").
-		Return(podMock, nil)
-
-	mockMds.
-		EXPECT().
-		GetNodeEndpoints("localhost").
-		Return(nil, errors.New("Get endpoints failed"))
-
-	_, err := agtMgr.GetMetadataUpdates("localhost")
-	assert.NotNil(t, err)
-}
-
-func TestMain(m *testing.M) {
-	c, cleanup := testingutils.SetupEtcd()
-	etcdClient = c
-	code := m.Run()
-	// Can't be deferred b/c of os.Exit.
-	cleanup()
-	os.Exit(code)
+	update6 := updates[5].GetServiceUpdate()
+	assert.NotNil(t, update6)
+	assert.Equal(t, "object_md", update6.Name)
 }
 
 func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
+	_, agtMgr := setupAgentManager(t)
 
 	u1 := uuid.NewV4()
 	upb := utils.ProtoFromUUID(&u1)
-
-	mockMds.
-		EXPECT().
-		GetASID().
-		Return(uint32(111), nil)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -867,9 +653,8 @@ func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
 		CreateTimeNS:    4,
 	}
 
-	id, err := agtMgr.RegisterAgent(agentInfo)
+	_, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(111), id)
 
 	updatePb1 := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
@@ -904,8 +689,7 @@ func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
 }
 
 func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
+	_, agtMgr := setupAgentManager(t)
 
 	updatePb1 := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
@@ -928,11 +712,6 @@ func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
 	u1 := uuid.NewV4()
 	upb := utils.ProtoFromUUID(&u1)
 
-	mockMds.
-		EXPECT().
-		GetASID().
-		Return(uint32(111), nil)
-
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
@@ -947,9 +726,8 @@ func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
 		CreateTimeNS:    4,
 	}
 
-	id, err := agtMgr.RegisterAgent(agentInfo)
+	_, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(111), id)
 	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*metadatapb.ResourceUpdate{updatePb1, updatePb2})
 	assert.Nil(t, err)
 
@@ -961,8 +739,7 @@ func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
 }
 
 func TestAgent_GetFromAgentQueue(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
+	_, agtMgr := setupAgentManager(t)
 
 	updatePb := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
@@ -976,11 +753,6 @@ func TestAgent_GetFromAgentQueue(t *testing.T) {
 	u1 := uuid.NewV4()
 	upb := utils.ProtoFromUUID(&u1)
 
-	mockMds.
-		EXPECT().
-		GetASID().
-		Return(uint32(111), nil)
-
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
@@ -995,9 +767,8 @@ func TestAgent_GetFromAgentQueue(t *testing.T) {
 		CreateTimeNS:    4,
 	}
 
-	id, err := agtMgr.RegisterAgent(agentInfo)
+	_, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint32(111), id)
 	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*metadatapb.ResourceUpdate{updatePb})
 	assert.Nil(t, err)
 

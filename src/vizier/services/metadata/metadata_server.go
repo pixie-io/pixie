@@ -21,6 +21,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
@@ -106,7 +107,14 @@ func main() {
 		leaderElection.Stop()
 	}()
 
-	agtMgr := controllers.NewAgentManager(etcdClient, etcdMds)
+	etcdDS := kvstore.NewEtcdStore(etcdClient)
+	cache := kvstore.NewCache(etcdDS)
+	mds, err := controllers.NewKVMetadataStore(cache)
+	if err != nil {
+		log.WithError(err).Fatal("Could not create metadata store")
+	}
+
+	agtMgr := controllers.NewAgentManager(mds)
 	keepAlive := true
 	go func() {
 		for keepAlive {
@@ -116,6 +124,15 @@ func main() {
 			time.Sleep(10 * time.Second)
 		}
 	}()
+	go func() {
+		for keepAlive {
+			if isLeader {
+				cache.FlushToDatastore()
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
 	defer func() {
 		keepAlive = false
 	}()

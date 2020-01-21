@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/coreos/etcd/clientv3"
@@ -12,10 +13,64 @@ import (
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
+	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
+
+var etcdClient *clientv3.Client
+
+func clearEtcd(t *testing.T) {
+	_, err := etcdClient.Delete(context.Background(), "", clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal("Failed to clear etcd data.")
+	}
+}
+
+func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb string) {
+	info := new(agentpb.Agent)
+	if err := proto.UnmarshalText(agentPb, info); err != nil {
+		t.Fatalf("Cannot Unmarshal protobuf for %s", agentID)
+	}
+	i, err := info.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal agentData pb.")
+	}
+
+	_, err = client.Put(context.Background(), controllers.GetAgentKey(agentID), string(i))
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
+
+	_, err = client.Put(context.Background(), controllers.GetHostnameAgentKey(info.Info.HostInfo.Hostname), agentID)
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
+
+	if !info.Info.Capabilities.CollectsData {
+		_, err = client.Put(context.Background(), controllers.GetKelvinAgentKey(agentID), agentID)
+		if err != nil {
+			t.Fatal("Unable to add kelvin data to etcd.")
+		}
+	}
+
+	// Add schema info.
+	schema := new(metadatapb.SchemaInfo)
+	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	s, err := schema.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal schema pb.")
+	}
+
+	_, err = client.Put(context.Background(), controllers.GetAgentSchemaKey(agentID, schema.Name), string(s))
+	if err != nil {
+		t.Fatal("Unable to add agent schema to etcd.")
+	}
+}
 
 func TestUpdateEndpoints(t *testing.T) {
 	clearEtcd(t)
@@ -1101,4 +1156,13 @@ func TestGetNodeEndpoints(t *testing.T) {
 	assert.Equal(t, 2, len(eps))
 	assert.Equal(t, e1.Metadata.Name, (*eps[0]).Metadata.Name)
 	assert.Equal(t, e2.Metadata.Name, (*eps[1]).Metadata.Name)
+}
+
+func TestMain(m *testing.M) {
+	c, cleanup := testingutils.SetupEtcd()
+	etcdClient = c
+	code := m.Run()
+	// Can't be deferred b/c of os.Exit.
+	cleanup()
+	os.Exit(code)
 }

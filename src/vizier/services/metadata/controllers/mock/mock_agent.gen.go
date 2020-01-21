@@ -9,6 +9,7 @@ import (
 	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 )
@@ -156,4 +157,16 @@ func (m *MockAgentManager) AddUpdatesToAgentQueue(arg0 string, arg1 []*metadatap
 // AddUpdatesToAgentQueue indicates an expected call of AddUpdatesToAgentQueue
 func (mr *MockAgentManagerMockRecorder) AddUpdatesToAgentQueue(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUpdatesToAgentQueue", reflect.TypeOf((*MockAgentManager)(nil).AddUpdatesToAgentQueue), arg0, arg1)
+}
+
+// ApplyAgentUpdate mocks base method
+func (m *MockAgentManager) ApplyAgentUpdate(update *controllers.AgentUpdate) error {
+	ret := m.ctrl.Call(m, "ApplyAgentUpdate", update)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ApplyAgentUpdate indicates an expected call of ApplyAgentUpdate
+func (mr *MockAgentManagerMockRecorder) ApplyAgentUpdate(update interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyAgentUpdate", reflect.TypeOf((*MockAgentManager)(nil).ApplyAgentUpdate), update)
 }

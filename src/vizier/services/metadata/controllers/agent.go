@@ -1,12 +1,7 @@
 package controllers
 
 import (
-	"context"
 	"errors"
-
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/clientv3/clientv3util"
-	"github.com/gogo/protobuf/proto"
 
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -61,23 +56,23 @@ type AgentManager interface {
 	GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error)
 
 	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
+
+	ApplyAgentUpdate(update *AgentUpdate) error
 }
 
-// AgentManagerImpl is an implementation for AgentManager which talks to etcd.
+// AgentManagerImpl is an implementation for AgentManager which talks to the metadata store.
 type AgentManagerImpl struct {
-	client      *clientv3.Client
 	clock       utils.Clock
-	mds         MetadataStore
+	mds         NewMetadataStore
 	updateCh    chan *AgentUpdate
 	agentQueues map[string]AgentQueue
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
-func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, clock utils.Clock) *AgentManagerImpl {
+func NewAgentManagerWithClock(mds NewMetadataStore, clock utils.Clock) *AgentManagerImpl {
 	c := make(chan *AgentUpdate)
 
 	agentManager := &AgentManagerImpl{
-		client:      client,
 		clock:       clock,
 		mds:         mds,
 		updateCh:    c,
@@ -96,7 +91,7 @@ func (m *AgentManagerImpl) processAgentUpdates() {
 			return
 		}
 
-		err := m.applyAgentUpdate(msg)
+		err := m.ApplyAgentUpdate(msg)
 		if err != nil {
 			// Add update back to the queue to retry.
 			m.updateCh <- msg
@@ -104,7 +99,8 @@ func (m *AgentManagerImpl) processAgentUpdates() {
 	}
 }
 
-func (m *AgentManagerImpl) applyAgentUpdate(update *AgentUpdate) error {
+// ApplyAgentUpdate updates the metadata store with the information from the agent update.
+func (m *AgentManagerImpl) ApplyAgentUpdate(update *AgentUpdate) error {
 	err := m.handleCreatedProcesses(update.UpdateInfo.ProcessCreated)
 	if err != nil {
 		log.WithError(err).Error("Error when creating new processes")
@@ -115,7 +111,6 @@ func (m *AgentManagerImpl) applyAgentUpdate(update *AgentUpdate) error {
 		log.WithError(err).Error("Error when updating terminated processes")
 	}
 
-	// If DoesUpdateSchema is false, then we don't check the schema info.
 	if !update.UpdateInfo.DoesUpdateSchema {
 		return nil
 	}
@@ -179,48 +174,37 @@ func (m *AgentManagerImpl) AddToUpdateQueue(agentID uuid.UUID, update *messagesp
 }
 
 // NewAgentManager creates a new agent manager.
-func NewAgentManager(client *clientv3.Client, mds MetadataStore) *AgentManagerImpl {
+func NewAgentManager(mds NewMetadataStore) *AgentManagerImpl {
 	clock := utils.SystemClock{}
-	return NewAgentManagerWithClock(client, mds, clock)
-}
-
-func updateAgentData(agentID uuid.UUID, data *agentpb.Agent, client *clientv3.Client) error {
-	i, err := data.Marshal()
-	if err != nil {
-		return errors.New("Unable to marshal agentData pb")
-	}
-
-	// Update agentData in etcd.
-	_, err = client.Put(context.Background(), GetAgentKeyFromUUID(agentID), string(i))
-	if err != nil {
-		return errors.New("Unable to update etcd")
-	}
-	return nil
+	return NewAgentManagerWithClock(mds, clock)
 }
 
 // RegisterAgent creates a new agent.
 func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err error) {
-	ctx := context.Background()
 	info := agent.Info
 
 	// Check if agent already exists.
 	aUUID := utils.UUIDFromProtoOrNil(info.AgentID)
-	resp, err := m.client.Get(ctx, GetAgentKeyFromUUID(aUUID))
+	resp, err := m.mds.GetAgent(aUUID)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to execute etcd Get")
-	} else if len(resp.Kvs) != 0 {
+		log.WithError(err).Fatal("Failed to get agent")
+	} else if resp != nil {
 		return 0, errors.New("Agent already exists")
 	}
 
-	collectsData := info.Capabilities == nil || info.Capabilities.CollectsData
-
 	// Check there's an existing agent for the hostname.
-	resp, err = m.client.Get(ctx, GetHostnameAgentKey(info.HostInfo.Hostname))
+	hostnameAgID, err := m.mds.GetAgentIDForHostname(info.HostInfo.Hostname)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to execute etcd Get")
-	} else if len(resp.Kvs) != 0 {
-		// Another agent already exists for this hostname. Delete it.
-		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.HostInfo.Hostname, collectsData)
+		log.WithError(err).Fatal("Failed to get agent hostname")
+	} else if hostnameAgID != "" {
+		delAgID, err := uuid.FromString(hostnameAgID)
+		if err != nil {
+			log.WithError(err).Fatal("Could not parse agent ID")
+		}
+		err = m.mds.DeleteAgent(delAgID)
+		if err != nil {
+			log.WithError(err).Fatal("Could not delete agent for hostname")
+		}
 	}
 
 	// Get ASID for the new agent.
@@ -235,24 +219,10 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 		LastHeartbeatNS: m.clock.Now().UnixNano(),
 		ASID:            asid,
 	}
-	i, err := infoPb.Marshal()
+
+	err = m.mds.CreateAgent(aUUID, infoPb)
 	if err != nil {
-		return 0, errors.New("Unable to marshal agentData pb")
-	}
-
-	hostnameDNE := clientv3util.KeyMissing(GetHostnameAgentKey(info.HostInfo.Hostname))
-
-	ops := make([]clientv3.Op, 2)
-	ops[0] = clientv3.OpPut(GetHostnameAgentKey(info.HostInfo.Hostname), aUUID.String())
-	ops[1] = clientv3.OpPut(GetAgentKeyFromUUID(aUUID), string(i))
-
-	if !collectsData {
-		ops = append(ops, clientv3.OpPut(GetKelvinAgentKey(aUUID.String()), aUUID.String()))
-	}
-
-	_, err = m.client.Txn(ctx).If(hostnameDNE).Then(ops...).Commit()
-	if err != nil {
-		log.WithError(err).Fatal("Could not update agent data in etcd")
+		return 0, err
 	}
 
 	return asid, nil
@@ -260,26 +230,21 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 
 // UpdateHeartbeat updates the agent heartbeat with the current time.
 func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
-	ctx := context.Background()
-
 	// Get current AgentData.
-	resp, err := m.client.Get(ctx, GetAgentKeyFromUUID(agentID))
+	agent, err := m.mds.GetAgent(agentID)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to get existing agentData")
 		return err
 	}
-	if len(resp.Kvs) != 1 {
+	if agent == nil {
 		return errors.New("Agent does not exist")
 	}
 
 	// Update LastHeartbeatNS in AgentData.
-	pb := &agentpb.Agent{}
-	proto.Unmarshal(resp.Kvs[0].Value, pb)
-	pb.LastHeartbeatNS = m.clock.Now().UnixNano()
+	agent.LastHeartbeatNS = m.clock.Now().UnixNano()
 
-	err = updateAgentData(agentID, pb, m.client)
+	err = m.mds.UpdateAgent(agentID, agent)
 	if err != nil {
-		log.WithError(err).Fatal("Could not update agent data in etcd")
+		return err
 	}
 
 	return nil
@@ -291,33 +256,9 @@ func (m *AgentManagerImpl) UpdateAgent(info *agentpb.Agent) error {
 	return nil
 }
 
-func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, hostname string, collectsData bool) error {
-	_, err := m.client.Delete(ctx, GetAgentKey(agentID))
-	if err != nil {
-		return err
-	}
-	hostnameAgentMap := clientv3.Compare(clientv3.Value(GetHostnameAgentKey(hostname)), "=", agentID)
-
-	ops := make([]clientv3.Op, 2)
-	ops[0] = clientv3.OpDelete(GetHostnameAgentKey(hostname))
-	ops[1] = clientv3.OpDelete(GetAgentSchemasKey(agentID), clientv3.WithPrefix())
-
-	if !collectsData {
-		ops = append(ops, clientv3.OpDelete(GetKelvinAgentKey(agentID)))
-	}
-
-	_, err = m.client.Txn(ctx).If(hostnameAgentMap).Then(ops...).Commit()
-
-	return nil
-}
-
 // UpdateAgentState will run through all agents and delete those
 // that are dead.
 func (m *AgentManagerImpl) UpdateAgentState() error {
-	// TODO(michelle): PL-665 Move all etcd-specific functionality into etcd_metadata_store, so that the agent manager itself
-	// is not directly interfacing with etcd.
-	ctx := context.Background()
-
 	currentTime := m.clock.Now().UnixNano()
 
 	agentPbs, err := m.mds.GetAgents()
@@ -331,8 +272,7 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 			if err != nil {
 				log.WithError(err).Fatal("Could not convert UUID to proto")
 			}
-			collectsData := agentPb.Info.Capabilities == nil || agentPb.Info.Capabilities.CollectsData
-			err = m.deleteAgent(ctx, uid.String(), agentPb.Info.HostInfo.Hostname, collectsData)
+			err = m.mds.DeleteAgent(uid)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to delete agent from etcd")
 			}

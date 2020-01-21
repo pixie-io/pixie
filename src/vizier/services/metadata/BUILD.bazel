@@ -14,6 +14,7 @@ go_library(
         "//src/shared/version:go_default_library",
         "//src/vizier/services/metadata/controllers:go_default_library",
         "//src/vizier/services/metadata/controllers/etcd:go_default_library",
+        "//src/vizier/services/metadata/controllers/kvstore:go_default_library",
         "//src/vizier/services/metadata/metadataenv:go_default_library",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "@com_github_coreos_etcd//clientv3:go_default_library",

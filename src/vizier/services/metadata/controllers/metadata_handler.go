@@ -48,6 +48,36 @@ type MetadataStore interface {
 	GetProcesses([]*types.UInt128) ([]*metadatapb.ProcessInfo, error)
 }
 
+// NewMetadataStore is the interface for our metadata store. This is the interface
+// for the new, refactored version of the metadata store. It will be renamed to
+// MetadataStore once we have updated metadata_handler to use this new interface.
+type NewMetadataStore interface {
+	GetClusterCIDR() string
+	GetAgent(agentID uuid.UUID) (*agentpb.Agent, error)
+	GetAgentIDForHostname(hostname string) (string, error)
+	DeleteAgent(agentID uuid.UUID) error
+	CreateAgent(agentID uuid.UUID, a *agentpb.Agent) error
+	UpdateAgent(agentID uuid.UUID, a *agentpb.Agent) error
+	GetAgents() ([]*agentpb.Agent, error)
+	GetASID() (uint32, error)
+	GetKelvinIDs() ([]string, error)
+	GetComputedSchemas() ([]*metadatapb.SchemaInfo, error)
+	UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error
+	UpdateProcesses(processes []*metadatapb.ProcessInfo) error
+	GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error)
+	GetPods() ([]*metadatapb.Pod, error)
+	UpdatePod(*metadatapb.Pod, bool) error
+	GetNodePods(hostname string) ([]*metadatapb.Pod, error)
+	GetEndpoints() ([]*metadatapb.Endpoints, error)
+	UpdateEndpoints(*metadatapb.Endpoints, bool) error
+	GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error)
+	GetServices() ([]*metadatapb.Service, error)
+	UpdateService(*metadatapb.Service, bool) error
+	GetContainers() ([]*metadatapb.ContainerInfo, error)
+	UpdateContainer(*metadatapb.ContainerInfo) error
+	UpdateContainersFromPod(*metadatapb.Pod, bool) error
+}
+
 // K8sMessage is a message for K8s metadata events/updates.
 type K8sMessage struct {
 	Object     runtime.Object
