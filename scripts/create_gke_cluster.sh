@@ -9,7 +9,7 @@
 set_default_values() {
   CLUSTER_NAME="dev-cluster-${USER}"
   NUM_NODES=3
-  MACHINE_TYPE=n1-standard-1
+  MACHINE_TYPE=n1-standard-4
   IMAGE_NAME=UBUNTU
   DISK_SIZE=100
   ZONE=us-west1-a
