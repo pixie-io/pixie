@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/sessions"
@@ -14,7 +14,7 @@ func GetDefaultSession(env apienv.APIEnv, r *http.Request) (*sessions.Session, e
 	// TODO(zasgar/michelle): Figure out why our sessions aren't getting cleared and remove this hack.
 	session, err := store.Get(r, "default-session4")
 	if err != nil {
-		return nil, errors.New("error fetching session info")
+		return nil, fmt.Errorf("error fetching session info: %v", err)
 	}
 	return session, nil
 }
