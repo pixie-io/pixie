@@ -107,7 +107,7 @@ TEST_F(NetlinkSocketProberNamespaceTest, Basic) {
 
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
-                         NetlinkSocketProber::Create());
+                         NetlinkSocketProber::Create(target_pid_));
 
     std::map<int, SocketInfo> socket_info_entries;
     ASSERT_OK(socket_prober->InetConnections(&socket_info_entries,
