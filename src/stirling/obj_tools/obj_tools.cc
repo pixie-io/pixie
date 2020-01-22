@@ -86,23 +86,16 @@ pl::StatusOr<std::filesystem::path> ResolveExe(std::filesystem::path proc_pid,
 
   PL_ASSIGN_OR_RETURN(std::filesystem::path merged, ResolveMergedPath(proc_pid));
 
+  // Warning: must use JoinPath, because we are dealing with two absolute paths.
+  exe = fs::JoinPath({&merged, &exe});
+
   // If we're running in a container, convert exe to be relative to host. As we mount host's '/'
   // to '/host' inside container.
-  // Warning: must use operator+ (not operator/) to append exe, because it is an absolute path.
-  // TODO(oazizi): Consider defining a fs::JoinPath() function instead of operator+ to make this
-  // more clear.
-  std::filesystem::path host_exe = host;
-  host_exe += merged;
-  host_exe += exe;
+  // Warning: must use JoinPath, because we are dealing with two absolute paths.
+  std::filesystem::path host_exe = fs::JoinPath({&host, &exe});
 
   if (!std::filesystem::exists(host_exe)) {
     return error::InvalidArgument("Ignoring $0: Does not exist.", host_exe.string());
-  }
-
-  std::error_code ec;
-  std::filesystem::path canonical_exe = std::filesystem::canonical(host_exe, ec);
-  if (ec) {
-    return error::InvalidArgument("Ignoring $0: Could not find canonical path.", host_exe.string());
   }
   return host_exe;
 }
@@ -110,10 +103,8 @@ pl::StatusOr<std::filesystem::path> ResolveExe(std::filesystem::path proc_pid,
 std::map<std::string, std::vector<int>> GetActiveBinaries(std::filesystem::path proc,
                                                           std::filesystem::path host) {
   std::map<std::string, std::vector<int>> binaries;
-  // Warning: must use operator+ (not operator/) to append proc, because it is an absolute path.
-  std::filesystem::path host_proc;
-  host_proc = host;
-  host_proc += proc;
+  // Warning: must use JoinPath, because we are dealing with two absolute paths.
+  std::filesystem::path host_proc = fs::JoinPath({&host, &proc});
   for (const auto& p : std::filesystem::directory_iterator(host_proc)) {
     VLOG(1) << absl::Substitute("Directory: $0", p.path().string());
     int pid = 0;

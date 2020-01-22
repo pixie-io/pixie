@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include "src/common/base/base.h"
 
@@ -18,6 +19,18 @@ Status CreateSymlink(std::filesystem::path target, std::filesystem::path link);
 Status CreateDirectories(std::filesystem::path dir);
 
 pl::StatusOr<std::filesystem::path> ReadSymlink(std::filesystem::path symlink);
+
+/**
+ * Joins multiple paths together.
+ *
+ * Note that unlike std::filesystem's operator/, all arguments are treated as relative paths.
+ * For example, assuming:
+ *   std::filesystem::path a = '/path/to/a';
+ *   std::filesystem::path b = '/path/to/b';
+ * JoinPath({a, b}) returns /path/to/a/path/to/b.
+ * In contrast, a/b (std::filesystem::path's operator/) would return /path/to/b.
+ */
+std::filesystem::path JoinPath(const std::vector<const std::filesystem::path*>& paths);
 
 // Designed for use in test code only.
 Status CreateSymlinkIfNotExists(std::filesystem::path target, std::filesystem::path link);

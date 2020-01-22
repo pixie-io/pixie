@@ -21,7 +21,7 @@ Status CreateDirectories(std::filesystem::path dir) {
   std::error_code ec;
   std::filesystem::create_directories(dir, ec);
   if (ec) {
-    return error::Internal("Failed to create directory $0. Message: $0", dir.string(),
+    return error::Internal("Failed to create directory $0. Message: $1", dir.string(),
                            ec.message());
   }
   return Status::OK();
@@ -32,6 +32,17 @@ pl::StatusOr<std::filesystem::path> ReadSymlink(std::filesystem::path symlink) {
   std::filesystem::path res = std::filesystem::read_symlink(symlink, ec);
   if (ec) {
     return pl::error::Internal("Could not read symlink: $0", symlink.string());
+  }
+  return res;
+}
+
+std::filesystem::path JoinPath(const std::vector<const std::filesystem::path*>& paths) {
+  std::filesystem::path res;
+  for (const auto& p : paths) {
+    if (!res.empty() && p->is_relative()) {
+      res += std::filesystem::path::preferred_separator;
+    }
+    res += *p;
   }
   return res;
 }
