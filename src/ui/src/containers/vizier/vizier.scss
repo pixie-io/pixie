@@ -58,14 +58,12 @@
     display: flex;
 }
 
-.query-results {
-    display: flex;
-    flex: 1;
-}
-
+.query-results,
 .query-results--compiler-error {
-    display: flex;
-    flex: 1;
+  height: 100%;
+  flex: unset;
+  display: flex;
+  flex-direction: column;
 }
 
 .query-results--empty {

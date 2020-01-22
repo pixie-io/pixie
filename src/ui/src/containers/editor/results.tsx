@@ -6,8 +6,10 @@ import * as Scatter from 'components/chart/scatter';
 import {chartsFromSpec} from 'components/chart/spec';
 import {Spinner} from 'components/spinner/spinner';
 import {ExecuteQueryResult} from 'gql-types';
+// @ts-ignore : TS does not like image files.
+import * as gridViewIcon from 'images/icons/grid-view.svg';
 import * as React from 'react';
-import {Nav, Tab} from 'react-bootstrap';
+import {Button, Modal, Nav, Tab} from 'react-bootstrap';
 
 import {QueryResultErrors, QueryResultTable} from '../vizier/query-result-viewer';
 
@@ -81,6 +83,11 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
       placeholder = <span>no results</span>;
     }
 
+    const [showGridView, setShowGridView] = React.useState(false);
+    const openGridView = React.useCallback(() => setShowGridView(true), []);
+    const closeGridView = React.useCallback(() => setShowGridView(false), []);
+    const gridViewContent = React.useMemo(() => tabs.map((tab) => tab.content), [tabs]);
+
     return (
       <div className={`pixie-console-result${placeholder ? '-placeholder' : ''}`}>
         {placeholder || (
@@ -95,6 +102,13 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
                   {tab.title}
                 </Nav.Item>
               ))}
+              <Button
+                className='pixie-console-open-tile-view'
+                onClick={openGridView}
+                disabled={gridViewContent.length === 0}
+              >
+                <img src={gridViewIcon} />
+              </Button>
             </Nav>
             <Tab.Content>
               {tabs.map((tab, i) => (
@@ -109,6 +123,25 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
             </Tab.Content>
           </Tab.Container>
         )}
+        <Modal show={showGridView} onHide={closeGridView} className='pixie-console-modal'>
+          <ResultsGridView content={gridViewContent} />
+        </Modal>
       </div>
     );
   });
+
+interface ResultsGridViewProps {
+  content: React.ReactNode[];
+}
+
+const ResultsGridView = (props: ResultsGridViewProps) => {
+  const styles = React.useMemo(() => {
+    const columns = Math.round(Math.sqrt(props.content.length));
+    return {
+      gridTemplateColumns: `repeat(${columns}, auto)`,
+    };
+  }, [props.content]);
+  return (<div className='pixie-console-results-grid-view' style={styles}>
+    {props.content.map((content) => (<div>{content}</div>))}
+  </div>);
+};

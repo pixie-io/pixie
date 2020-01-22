@@ -11,14 +11,6 @@
     justify-content: center;
   }
 
-  .query-results,
-  .query-results--compiler-error {
-    height: 100%;
-    flex: unset;
-    display: flex;
-    flex-direction: column;
-  }
-
   .tab-content {
     flex: 1;
   }
@@ -41,5 +33,33 @@
     &:hover {
       color: $lighter;
     }
+  }
+}
+
+.pixie-console-open-tile-view {
+  margin-left: auto;
+  padding: .5rem;
+}
+
+.pixie-console-results-grid-view {
+  display: grid;
+  grid-gap: 2rem;
+  padding: 1rem;
+  height: 100%;
+  width: 100%;
+}
+
+.pixie-console-modal {
+  overflow-y: hidden;
+
+  .modal-dialog {
+    max-width: unset;
+    height: calc(95vh - 1.75rem);
+    width: 95vw;
+  }
+
+  .modal-content {
+    height: 100%;
+    width: 100%;
   }
 }
