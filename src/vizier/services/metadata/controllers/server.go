@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -11,6 +12,10 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
+
+// UnhealthyAgentThreshold is the amount of time where an agent is considered unhealthy if
+// its last heartbeat is greater than this value.
+const UnhealthyAgentThreshold = 30 * time.Second
 
 // Server defines an gRPC server type.
 type Server struct {
@@ -79,16 +84,22 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 		return nil, err
 	}
 
-	currentTime := s.clock.Now().UnixNano()
+	currentTime := s.clock.Now()
 
 	// Populate AgentInfoResponse.
 	agentResponses := make([]*metadatapb.AgentMetadata, 0)
 	for _, agent := range agents {
+		state := agentpb.AGENT_STATE_HEALTHY
+		timeSinceLastHb := currentTime.Sub(time.Unix(0, agent.LastHeartbeatNS))
+		if timeSinceLastHb > UnhealthyAgentThreshold {
+			state = agentpb.AGENT_STATE_UNRESPONSIVE
+		}
+
 		resp := metadatapb.AgentMetadata{
 			Agent: agent,
 			Status: &agentpb.AgentStatus{
-				NSSinceLastHeartbeat: currentTime - agent.LastHeartbeatNS,
-				State:                agentpb.AGENT_STATE_HEALTHY,
+				NSSinceLastHeartbeat: timeSinceLastHb.Nanoseconds(),
+				State:                state,
 			},
 		}
 		agentResponses = append(agentResponses, &resp)

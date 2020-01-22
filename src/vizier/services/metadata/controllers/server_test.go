@@ -79,7 +79,7 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	clock := testingutils.NewTestClock(time.Unix(0, 70))
+	clock := testingutils.NewTestClock(time.Unix(30, 11))
 
 	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
 
@@ -93,12 +93,15 @@ func TestGetAgentInfo(t *testing.T) {
 	if err := proto.UnmarshalText(testutils.Agent1StatusPB, agentResp); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
+	agentResp.Status.State = agentpb.AGENT_STATE_UNRESPONSIVE
+	agentResp.Status.NSSinceLastHeartbeat = 30*1e9 + 1 // (30s [UnhealthyAgentThreshold] + 11ns [time clock advanced] - 10ns [agent1 LastHeartBeatNS])
 	assert.Equal(t, agentResp, resp.Info[0])
 
 	agentResp = new(metadatapb.AgentMetadata)
 	if err = proto.UnmarshalText(testutils.Agent2StatusPB, agentResp); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
+	agentResp.Status.NSSinceLastHeartbeat = 30*1e9 - 9 // (30s [UnhealthyAgentThreshold] + 11ns  [time clock advanced] - 20ns [agent2 LastHeartBeatNS])
 	assert.Equal(t, agentResp, resp.Info[1])
 }
 
