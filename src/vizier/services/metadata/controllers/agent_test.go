@@ -784,42 +784,6 @@ func TestGetMetadataUpdates(t *testing.T) {
 	assert.Equal(t, "object_md", update5.Name)
 }
 
-func TestAgentAddUpdatesToAgentQueue(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
-	defer cleanup()
-
-	u, err := uuid.FromString(testutils.NewAgentUUID)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-
-	updatePb1 := &metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
-				UID:  "podUid",
-				Name: "podName",
-			},
-		},
-	}
-
-	updatePb2 := &metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
-				UID:  "podUid2",
-				Name: "podName2",
-			},
-		},
-	}
-
-	mockMds.
-		EXPECT().
-		AddUpdatesToAgentQueue(testutils.NewAgentUUID, []*metadatapb.ResourceUpdate{updatePb1, updatePb2}).
-		Return(nil)
-
-	err = agtMgr.AddUpdatesToAgentQueue(u, []*metadatapb.ResourceUpdate{updatePb1, updatePb2})
-	assert.Nil(t, err)
-}
-
 func TestGetMetadataUpdatesGetPodsFailed(t *testing.T) {
 	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
@@ -875,4 +839,174 @@ func TestMain(m *testing.M) {
 	// Can't be deferred b/c of os.Exit.
 	cleanup()
 	os.Exit(code)
+}
+
+func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
+	defer cleanup()
+
+	u1 := uuid.NewV4()
+	upb := utils.ProtoFromUUID(&u1)
+
+	mockMds.
+		EXPECT().
+		GetASID().
+		Return(uint32(111), nil)
+
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "localhost",
+			},
+			AgentID: upb,
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: true,
+			},
+		},
+		LastHeartbeatNS: 1,
+		CreateTimeNS:    4,
+	}
+
+	id, err := agtMgr.RegisterAgent(agentInfo)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uint32(111), id)
+
+	updatePb1 := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid1",
+				Name: "podName",
+			},
+		},
+	}
+
+	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*metadatapb.ResourceUpdate{updatePb1})
+	assert.Nil(t, err)
+
+	updatePb2 := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid2",
+				Name: "podName",
+			},
+		},
+	}
+
+	err = agtMgr.AddToFrontOfAgentQueue(u1.String(), updatePb2)
+	assert.Nil(t, err)
+
+	resp, err := agtMgr.GetFromAgentQueue(u1.String())
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(resp))
+	assert.Equal(t, "podUid2", resp[0].GetPodUpdate().UID)
+	assert.Equal(t, "podUid1", resp[1].GetPodUpdate().UID)
+
+}
+
+func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
+	defer cleanup()
+
+	updatePb1 := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
+		},
+	}
+
+	updatePb2 := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid2",
+				Name: "podName2",
+			},
+		},
+	}
+
+	u1 := uuid.NewV4()
+	upb := utils.ProtoFromUUID(&u1)
+
+	mockMds.
+		EXPECT().
+		GetASID().
+		Return(uint32(111), nil)
+
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "localhost",
+			},
+			AgentID: upb,
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: true,
+			},
+		},
+		LastHeartbeatNS: 1,
+		CreateTimeNS:    4,
+	}
+
+	id, err := agtMgr.RegisterAgent(agentInfo)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uint32(111), id)
+	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*metadatapb.ResourceUpdate{updatePb1, updatePb2})
+	assert.Nil(t, err)
+
+	resp, err := agtMgr.GetFromAgentQueue(u1.String())
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(resp))
+	assert.Equal(t, "podUid", resp[0].GetPodUpdate().UID)
+	assert.Equal(t, "podUid2", resp[1].GetPodUpdate().UID)
+}
+
+func TestAgent_GetFromAgentQueue(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
+	defer cleanup()
+
+	updatePb := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
+		},
+	}
+
+	u1 := uuid.NewV4()
+	upb := utils.ProtoFromUUID(&u1)
+
+	mockMds.
+		EXPECT().
+		GetASID().
+		Return(uint32(111), nil)
+
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "localhost",
+			},
+			AgentID: upb,
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: true,
+			},
+		},
+		LastHeartbeatNS: 1,
+		CreateTimeNS:    4,
+	}
+
+	id, err := agtMgr.RegisterAgent(agentInfo)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uint32(111), id)
+	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*metadatapb.ResourceUpdate{updatePb})
+	assert.Nil(t, err)
+
+	resp, err := agtMgr.GetFromAgentQueue(u1.String())
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(resp))
+	assert.Equal(t, "podUid", resp[0].GetPodUpdate().UID)
+
+	resp, err = agtMgr.GetFromAgentQueue(u1.String())
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(resp))
 }

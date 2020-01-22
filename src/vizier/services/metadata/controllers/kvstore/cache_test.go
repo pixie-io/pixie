@@ -349,5 +349,4 @@ func TestCache_DeleteWithPrefix(t *testing.T) {
 	val, err = c.Get("non_ttl_key")
 	assert.Nil(t, err)
 	assert.Equal(t, []byte("1234"), val)
-
 }

@@ -20,11 +20,19 @@ import (
 // AgentExpirationTimeout is the amount of time that we should wait to receive a heartbeat
 // from an agent before marking it as unhealthy.
 const AgentExpirationTimeout int64 = 1e9 * 60 // 60 seconds in nano-seconds.
+// MaxAgentUpdates is the total number of updates each agent can have on its queue.
+const MaxAgentUpdates int = 1024
 
 // AgentUpdate describes the update info for a given agent.
 type AgentUpdate struct {
 	UpdateInfo *messagespb.AgentUpdateInfo
 	AgentID    uuid.UUID
+}
+
+// AgentQueue represents the queue of resource updates that should be sent to an agent.
+type AgentQueue struct {
+	FailedQueue chan *metadatapb.ResourceUpdate
+	Queue       chan *metadatapb.ResourceUpdate
 }
 
 // AgentManager handles any agent updates and requests.
@@ -52,15 +60,16 @@ type AgentManager interface {
 
 	GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error)
 
-	AddUpdatesToAgentQueue(uuid.UUID, []*metadatapb.ResourceUpdate) error
+	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
 }
 
 // AgentManagerImpl is an implementation for AgentManager which talks to etcd.
 type AgentManagerImpl struct {
-	client   *clientv3.Client
-	clock    utils.Clock
-	mds      MetadataStore
-	updateCh chan *AgentUpdate
+	client      *clientv3.Client
+	clock       utils.Clock
+	mds         MetadataStore
+	updateCh    chan *AgentUpdate
+	agentQueues map[string]AgentQueue
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
@@ -68,10 +77,11 @@ func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, clock 
 	c := make(chan *AgentUpdate)
 
 	agentManager := &AgentManagerImpl{
-		client:   client,
-		clock:    clock,
-		mds:      mds,
-		updateCh: c,
+		client:      client,
+		clock:       clock,
+		mds:         mds,
+		updateCh:    c,
+		agentQueues: make(map[string]AgentQueue),
 	}
 
 	go agentManager.processAgentUpdates()
@@ -326,6 +336,11 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 			if err != nil {
 				log.WithError(err).Fatal("Failed to delete agent from etcd")
 			}
+			if queue, ok := m.agentQueues[uid.String()]; ok {
+				close(queue.Queue)
+				close(queue.FailedQueue)
+				delete(m.agentQueues, uid.String())
+			}
 		}
 	}
 
@@ -344,19 +359,60 @@ func (m *AgentManagerImpl) GetActiveAgents() ([]*agentpb.Agent, error) {
 	return agentPbs, nil
 }
 
+func (m *AgentManagerImpl) getOrCreateAgentQueue(agentID string) *AgentQueue {
+	if currQueue, ok := m.agentQueues[agentID]; ok {
+		return &currQueue
+	}
+
+	// Create update queue for agent.
+	queue := AgentQueue{
+		FailedQueue: make(chan *metadatapb.ResourceUpdate, MaxAgentUpdates),
+		Queue:       make(chan *metadatapb.ResourceUpdate, MaxAgentUpdates),
+	}
+	m.agentQueues[agentID] = queue
+	return &queue
+}
+
 // AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
 func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *metadatapb.ResourceUpdate) error {
-	return m.mds.AddToFrontOfAgentQueue(agentID, value)
+	currQueue := m.getOrCreateAgentQueue(agentID)
+	if len(currQueue.FailedQueue) >= MaxAgentUpdates {
+		return errors.New("Agent queue full, could not add to queue")
+	}
+	currQueue.FailedQueue <- value
+	return nil
 }
 
 // GetFromAgentQueue gets all items currently in the agent's update queue.
 func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) ([]*metadatapb.ResourceUpdate, error) {
-	return m.mds.GetFromAgentQueue(agentID)
+	var updates []*metadatapb.ResourceUpdate
+	if currQueue, ok := m.agentQueues[agentID]; ok {
+		fQLen := len(currQueue.FailedQueue)
+		qLen := len(currQueue.Queue)
+		for i := 0; i < fQLen; i++ {
+			update := <-currQueue.FailedQueue
+			updates = append(updates, update)
+		}
+		for i := 0; i < qLen; i++ {
+			update := <-currQueue.Queue
+			updates = append(updates, update)
+		}
+		return updates, nil
+	}
+
+	return nil, nil
 }
 
 // AddUpdatesToAgentQueue adds the given updates in order to the agent's update queue.
-func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID uuid.UUID, updates []*metadatapb.ResourceUpdate) error {
-	return m.mds.AddUpdatesToAgentQueue(agentID.String(), updates)
+func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID string, updates []*metadatapb.ResourceUpdate) error {
+	currQueue := m.getOrCreateAgentQueue(agentID)
+	if len(currQueue.Queue)+len(updates) >= MaxAgentUpdates {
+		return errors.New("Agent queue full, could not add to queue")
+	}
+	for _, update := range updates {
+		currQueue.Queue <- update
+	}
+	return nil
 }
 
 // GetMetadataUpdates gets all updates from the metadata store. If no hostname is specified, it fetches all updates

@@ -133,8 +133,8 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		AddUpdatesToAgentQueue(u, updates).
-		DoAndReturn(func(uuid.UUID, []*metadatapb.ResourceUpdate) error {
+		AddUpdatesToAgentQueue(u.String(), updates).
+		DoAndReturn(func(string, []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
@@ -241,8 +241,8 @@ func TestKelvinRegisterRequest(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		AddUpdatesToAgentQueue(u, updates).
-		DoAndReturn(func(uuid.UUID, []*metadatapb.ResourceUpdate) error {
+		AddUpdatesToAgentQueue(u.String(), updates).
+		DoAndReturn(func(string, []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})

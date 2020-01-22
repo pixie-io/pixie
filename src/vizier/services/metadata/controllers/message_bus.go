@@ -226,8 +226,7 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 	}
 
 	log.WithField("agent", agentID.String()).WithField("updates", updates).Infof("Queuing up initial updates for agent")
-
-	err = mc.agentManager.AddUpdatesToAgentQueue(agentID, updates)
+	err = mc.agentManager.AddUpdatesToAgentQueue(agentID.String(), updates)
 	if err != nil {
 		log.WithError(err).Error("Could not add initial metadata updates to agent's queue")
 	}

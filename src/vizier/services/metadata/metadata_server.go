@@ -128,7 +128,7 @@ func main() {
 	defer mc.Close()
 
 	// Listen for K8s metadata updates.
-	mdHandler, err := controllers.NewMetadataHandler(etcdMds, &isLeader)
+	mdHandler, err := controllers.NewMetadataHandler(etcdMds, &isLeader, agtMgr)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create metadata handler")
 	}

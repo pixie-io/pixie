@@ -69,13 +69,14 @@ type MetadataHandler struct {
 	agentUpdateCh chan *UpdateMessage
 	clock         utils.Clock
 	isLeader      *bool
+	agentManager  AgentManager
 
 	// This is a cache of all the leader election message.
 	leaderMsgs map[k8stypes.UID]*v1.Endpoints
 }
 
 // NewMetadataHandlerWithClock creates a new metadata handler with a clock.
-func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, clock utils.Clock) (*MetadataHandler, error) {
+func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, agtMgr AgentManager, clock utils.Clock) (*MetadataHandler, error) {
 	c := make(chan *K8sMessage)
 	agentUpdateCh := make(chan *UpdateMessage, maxAgentUpdates)
 
@@ -85,6 +86,7 @@ func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, clock utils.
 		agentUpdateCh: agentUpdateCh,
 		clock:         clock,
 		isLeader:      isLeader,
+		agentManager:  agtMgr,
 		leaderMsgs:    make(map[k8stypes.UID]*v1.Endpoints),
 	}
 
@@ -94,9 +96,9 @@ func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, clock utils.
 }
 
 // NewMetadataHandler creates a new metadata handler.
-func NewMetadataHandler(mds MetadataStore, isLeader *bool) (*MetadataHandler, error) {
+func NewMetadataHandler(mds MetadataStore, isLeader *bool, agtMgr AgentManager) (*MetadataHandler, error) {
 	clock := utils.SystemClock{}
-	return NewMetadataHandlerWithClock(mds, isLeader, clock)
+	return NewMetadataHandlerWithClock(mds, isLeader, agtMgr, clock)
 }
 
 // GetChannel returns the channel the MetadataHandler is listening to.
@@ -171,11 +173,6 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 	if err != nil {
 		return
 	}
-	update, err := updatePb.Marshal()
-	if err != nil {
-		log.WithError(err).Error("Could not marshall service update message.")
-		return
-	}
 
 	log.WithField("agents", agents).WithField("hostnames", hostnames).
 		WithField("update", updatePb).Infof("Adding update to agent queue for agents")
@@ -194,7 +191,7 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 
 	var failedHostnames []string
 	for i, agent := range allAgents {
-		err = mh.mds.AddToAgentUpdateQueue(agent, string(update))
+		err = mh.agentManager.AddUpdatesToAgentQueue(agent, []*metadatapb.ResourceUpdate{updatePb})
 		if err != nil {
 			log.WithError(err).Error("Could not write service update to agent update queue.")
 			if i < len(*agents) { // If failed agent is not a Kelvin node, we should retry.

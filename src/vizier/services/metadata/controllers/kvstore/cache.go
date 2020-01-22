@@ -20,7 +20,6 @@ type KeyValueStore interface {
 	SetAll([]TTLKeyValue) error
 	GetWithPrefix(string) ([]string, [][]byte, error)
 	GetAll([]string) ([][]byte, error)
-	DeleteAll([]string) error
 	DeleteWithPrefix(string) error
 }
 

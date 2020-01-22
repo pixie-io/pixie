@@ -399,6 +399,10 @@ func GetUpdateKey() string {
 	return "/updateKey"
 }
 
+func getAgentUpdateKeyFromString(agentID string) string {
+	return path.Join("/", "agents", agentID, "updates")
+}
+
 func (mds *EtcdMetadataStore) updateValue(key string, value string, expire bool) error {
 	leaseID := clientv3.NoLease
 	if expire {
@@ -415,10 +419,6 @@ func (mds *EtcdMetadataStore) updateValue(key string, value string, expire bool)
 	}
 
 	return nil
-}
-
-func getAgentUpdateKey(agentID string) string {
-	return path.Join("/", "agents", agentID, "updates")
 }
 
 // GetAgentsForHostnames gets the agents running on the given hostnames.
@@ -451,14 +451,14 @@ func (mds *EtcdMetadataStore) GetAgentsForHostnames(hostnames *[]string) (*[]str
 
 // AddToAgentUpdateQueue adds the given value to the agent's update queue.
 func (mds *EtcdMetadataStore) AddToAgentUpdateQueue(agentID string, value string) error {
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
+	q := etcd.NewQueue(mds.client, getAgentUpdateKeyFromString(agentID))
 
 	return q.Enqueue(value)
 }
 
 // AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
 func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *metadatapb.ResourceUpdate) error {
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
+	q := etcd.NewQueue(mds.client, getAgentUpdateKeyFromString(agentID))
 
 	i, err := value.Marshal()
 	if err != nil {
@@ -472,7 +472,7 @@ func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *meta
 func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) ([]*metadatapb.ResourceUpdate, error) {
 	var pbs []*metadatapb.ResourceUpdate
 
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
+	q := etcd.NewQueue(mds.client, getAgentUpdateKeyFromString(agentID))
 	resp, err := q.DequeueAll()
 	if err != nil {
 		return pbs, err
@@ -498,7 +498,7 @@ func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) ([]*metadatapb.R
 
 // AddUpdatesToAgentQueue adds all updates to the agent's queue in etcd.
 func (mds *EtcdMetadataStore) AddUpdatesToAgentQueue(agentID string, updates []*metadatapb.ResourceUpdate) error {
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
+	q := etcd.NewQueue(mds.client, getAgentUpdateKeyFromString(agentID))
 
 	var updateStrs []string
 	for _, update := range updates {

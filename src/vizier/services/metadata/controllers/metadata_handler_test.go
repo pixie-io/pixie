@@ -24,6 +24,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	expectedPb := &metadatapb.Endpoints{}
 	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
@@ -42,7 +43,6 @@ func TestObjectToEndpointsProto(t *testing.T) {
 			},
 		},
 	}
-	ag1Update, err := ag1UpdatePb.Marshal()
 
 	ag2UpdatePb := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -56,7 +56,6 @@ func TestObjectToEndpointsProto(t *testing.T) {
 			},
 		},
 	}
-	ag2Update, err := ag2UpdatePb.Marshal()
 
 	fullUpdatePb := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -70,7 +69,6 @@ func TestObjectToEndpointsProto(t *testing.T) {
 			},
 		},
 	}
-	fullUpdate, err := fullUpdatePb.Marshal()
 
 	mockMds.
 		EXPECT().
@@ -100,34 +98,34 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	wg.Add(4)
 	defer wg.Wait()
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-1", string(ag1Update)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("agent-1", []*metadatapb.ResourceUpdate{ag1UpdatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-2", string(ag2Update)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("agent-2", []*metadatapb.ResourceUpdate{ag2UpdatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("kelvin-1", string(fullUpdate)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("kelvin-1", []*metadatapb.ResourceUpdate{fullUpdatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("kelvin-2", string(fullUpdate)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("kelvin-2", []*metadatapb.ResourceUpdate{fullUpdatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
@@ -215,7 +213,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	}
 
 	isLeader := true
-	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader, mockAgtMgr)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -235,6 +233,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	expectedPb := &metadatapb.Endpoints{}
 	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
@@ -260,7 +259,6 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 			},
 		},
 	}
-	ag1Update, err := ag1UpdatePb.Marshal()
 
 	ag2UpdatePb := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -274,7 +272,6 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 			},
 		},
 	}
-	ag2Update, err := ag2UpdatePb.Marshal()
 
 	fullUpdatePb := &metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -288,7 +285,6 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 			},
 		},
 	}
-	fullUpdate, err := fullUpdatePb.Marshal()
 
 	mockMds.
 		EXPECT().
@@ -323,42 +319,42 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	wg.Add(5)
 	defer wg.Wait()
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-1", string(ag1Update)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("agent-1", []*metadatapb.ResourceUpdate{ag1UpdatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-2", string(ag2Update)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("agent-2", []*metadatapb.ResourceUpdate{ag2UpdatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return errors.New("Could not add to agent queue")
 		})
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-3", string(ag2Update)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("agent-3", []*metadatapb.ResourceUpdate{ag2UpdatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("kelvin-1", string(fullUpdate)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("kelvin-1", []*metadatapb.ResourceUpdate{fullUpdatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("kelvin-2", string(fullUpdate)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("kelvin-2", []*metadatapb.ResourceUpdate{fullUpdatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
@@ -446,7 +442,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	}
 
 	isLeader := true
-	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader, mockAgtMgr)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -471,6 +467,7 @@ func TestKubernetesEndpointHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	expectedPb := &metadatapb.Endpoints{}
 	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
@@ -525,7 +522,7 @@ func TestKubernetesEndpointHandler(t *testing.T) {
 	}
 
 	isLeader := true
-	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader, mockAgtMgr)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -538,6 +535,7 @@ func TestObjectToServiceProto(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	expectedPb := &metadatapb.Service{}
 	if err := proto.UnmarshalText(testutils.ServicePb, expectedPb); err != nil {
@@ -609,7 +607,7 @@ func TestObjectToServiceProto(t *testing.T) {
 	}
 
 	isLeader := true
-	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader, mockAgtMgr)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -622,6 +620,7 @@ func TestObjectToPodProto(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	expectedPb := &metadatapb.Pod{}
 	if err := proto.UnmarshalText(testutils.PodPbWithContainers, expectedPb); err != nil {
@@ -636,8 +635,6 @@ func TestObjectToPodProto(t *testing.T) {
 			},
 		},
 	}
-
-	update, err := updatePb.Marshal()
 
 	mockMds.
 		EXPECT().
@@ -663,18 +660,18 @@ func TestObjectToPodProto(t *testing.T) {
 	wg.Add(2)
 	defer wg.Wait()
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("agent-1", string(update)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("agent-1", []*metadatapb.ResourceUpdate{updatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
 
-	mockMds.
+	mockAgtMgr.
 		EXPECT().
-		AddToAgentUpdateQueue("kelvin-1", string(update)).
-		DoAndReturn(func(agent string, update string) error {
+		AddUpdatesToAgentQueue("kelvin-1", []*metadatapb.ResourceUpdate{updatePb}).
+		DoAndReturn(func(agent string, update []*metadatapb.ResourceUpdate) error {
 			wg.Done()
 			return nil
 		})
@@ -736,7 +733,7 @@ func TestObjectToPodProto(t *testing.T) {
 	}
 
 	isLeader := true
-	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader)
+	mh, err := controllers.NewMetadataHandler(mockMds, &isLeader, mockAgtMgr)
 	assert.Nil(t, err)
 
 	ch := mh.GetChannel()
@@ -804,6 +801,7 @@ func TestSyncPodData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	pods := make([]v1.Pod, 1)
 
@@ -978,7 +976,7 @@ func TestSyncPodData(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := true
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, mockAgtMgr, clock)
 	assert.Nil(t, err)
 
 	mh.SyncPodData(&podList)
@@ -989,6 +987,7 @@ func TestSyncPodData_NotLeader(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	pods := make([]v1.Pod, 1)
 
@@ -1119,7 +1118,7 @@ func TestSyncPodData_NotLeader(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := false
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, mockAgtMgr, clock)
 	assert.Nil(t, err)
 
 	mh.SyncPodData(&podList)
@@ -1130,6 +1129,7 @@ func TestSyncEndpointsData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	endpoints := make([]v1.Endpoints, 1)
 	// Create endpoints object.
@@ -1195,7 +1195,7 @@ func TestSyncEndpointsData(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := true
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, mockAgtMgr, clock)
 	assert.Nil(t, err)
 
 	mh.SyncEndpointsData(&epList)
@@ -1206,6 +1206,7 @@ func TestSyncEndpointsData_NotLeader(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	endpoints := make([]v1.Endpoints, 1)
 	// Create endpoints object.
@@ -1254,7 +1255,7 @@ func TestSyncEndpointsData_NotLeader(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := false
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, mockAgtMgr, clock)
 	assert.Nil(t, err)
 
 	mh.SyncEndpointsData(&epList)
@@ -1265,6 +1266,7 @@ func TestSyncServicesData(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	services := make([]v1.Service, 1)
 	// Create endpoints object.
@@ -1330,7 +1332,7 @@ func TestSyncServicesData(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := true
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, mockAgtMgr, clock)
 	assert.Nil(t, err)
 
 	mh.SyncServiceData(&sList)
@@ -1341,6 +1343,7 @@ func TestSyncServicesData_NotLeader(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
 	services := make([]v1.Service, 1)
 	// Create endpoints object.
@@ -1389,7 +1392,7 @@ func TestSyncServicesData_NotLeader(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	isLeader := false
-	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, mockAgtMgr, clock)
 	assert.Nil(t, err)
 
 	mh.SyncServiceData(&sList)
