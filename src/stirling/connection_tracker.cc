@@ -529,9 +529,9 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
 }
 
 void ConnectionTracker::Disable(std::string_view reason) {
-  LOG(WARNING) << absl::Substitute("Disabling connection=$0 dest=$1:$2, reason=$3",
-                                   ToString(conn_id_), open_info_.remote_addr.addr_str,
-                                   open_info_.remote_addr.port, reason);
+  LOG_IF(WARNING, state_ != State::kDisabled)
+      << absl::Substitute("Disabling connection=$0 dest=$1:$2, reason=$3", ToString(conn_id_),
+                          open_info_.remote_addr.addr_str, open_info_.remote_addr.port, reason);
 
   // TODO(oazizi/yzhao): Consider storing the reason field.
 
