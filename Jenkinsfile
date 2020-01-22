@@ -114,6 +114,13 @@ isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-master-vizier-release-buil
 // TODO(zasgar): Fix the coverage job which is broken due to GCC upgrade.
 runCoverageJob = false; // isMasterRun
 
+// Currently disabling TSAN on BPF builds because it runs too slow.
+// In particular, the uprobe deployment takes far too long. See issue:
+//    https://pixie-labs.atlassian.net/browse/PL-1329
+// The benefit of TSAN on such runs is marginal anyways, because the tests
+// are mostly single-threaded.
+runBPFWithTSAN = false;
+
 /**
   * @brief Add build info to harbormaster and badge to Jenkins.
   */
@@ -492,13 +499,16 @@ builders['Build & Test (bpf tests - asan)'] = {
   }
 }
 
-builders['Build & Test (bpf tests - tsan)'] = {
-  WithSourceCode {
-    dockerStep(dockerArgsForBPFTest, {
-      bazelCmd(
-        bazelBaseArgsForBPFTest + " --config=bpf_tsan ${BAZEL_SRC_FILES_PATH}",
-        'build-bpf-tsan')
-    })
+// Disabling TSAN on bpf runs, but leaving code here for future reference.
+if (runBPFWithTSAN) {
+  builders['Build & Test (bpf tests - tsan)'] = {
+    WithSourceCode {
+      dockerStep(dockerArgsForBPFTest, {
+        bazelCmd(
+          bazelBaseArgsForBPFTest + " --config=bpf_tsan ${BAZEL_SRC_FILES_PATH}",
+          'build-bpf-tsan')
+      })
+    }
   }
 }
 
