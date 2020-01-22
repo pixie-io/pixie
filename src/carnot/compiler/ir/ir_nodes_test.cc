@@ -1599,6 +1599,119 @@ TEST_F(OperatorTests, join_required_inputs) {
   EXPECT_THAT(right_inputs[1], UnorderedElementsAre("left_only", "col1", "col3"));
 }
 
+TEST_F(OperatorTests, prune_outputs) {
+  Relation original_relation{{types::DataType::INT64, types::DataType::FLOAT64,
+                              types::DataType::FLOAT64, types::DataType::FLOAT64},
+                             {"count", "cpu0", "cpu1", "cpu2"}};
+  Relation expected_relation{{types::DataType::FLOAT64, types::DataType::FLOAT64},
+                             {"cpu0", "cpu2"}};
+
+  auto mem_src = MakeMemSource(original_relation);
+
+  EXPECT_OK(mem_src->PruneOutputColumnsTo({"cpu0", "cpu2"}));
+  EXPECT_THAT(mem_src->column_names(), ElementsAre("cpu0", "cpu2"));
+  EXPECT_THAT(mem_src->column_index_map(), ElementsAre(1, 3));
+
+  // Check that the top-level func updated the relation.
+  EXPECT_EQ(expected_relation, mem_src->relation());
+}
+
+TEST_F(OperatorTests, prune_outputs_unchanged) {
+  auto mem_src = MakeMemSource("foo");
+  ASSERT_OK(mem_src->SetRelation(MakeRelation()));
+  mem_src->SetColumnIndexMap({0, 1, 2, 3});
+
+  EXPECT_OK(mem_src->PruneOutputColumnsTo({"count", "cpu0", "cpu1", "cpu2"}));
+  EXPECT_TRUE(mem_src->select_all());
+  EXPECT_THAT(mem_src->column_index_map(), ElementsAre(0, 1, 2, 3));
+}
+
+TEST_F(OperatorTests, map_prune_outputs) {
+  auto mem_src = MakeMemSource();
+  auto map = MakeMap(mem_src, {{"count", MakeColumn("count", 0)},
+                               {"cpu0", MakeColumn("cpu0", 0)},
+                               {"cpu1", MakeColumn("cpu1", 0)},
+                               {"cpu2", MakeColumn("cpu2", 0)}});
+  ASSERT_OK(map->SetRelation(MakeRelation()));
+  EXPECT_OK(map->PruneOutputColumnsTo({"cpu1"}));
+  auto exprs = map->col_exprs();
+  EXPECT_EQ(1, exprs.size());
+  EXPECT_EQ("cpu1", exprs[0].name);
+  EXPECT_TRUE(Match(exprs[0].node, ColumnNode("cpu1", /*parent_idx*/ 0)));
+}
+
+TEST_F(OperatorTests, agg_prune_outputs) {
+  auto mem_src = MakeMemSource();
+  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
+                             {{"cpu0", MakeMeanFunc(MakeColumn("cpu0", 0))},
+                              {"cpu1", MakeMeanFunc(MakeColumn("cpu1", 0))},
+                              {"cpu2", MakeMeanFunc(MakeColumn("cpu2", 0))}});
+  auto old_groups = agg->groups();
+  ASSERT_OK(agg->SetRelation(MakeRelation()));
+  EXPECT_OK(agg->PruneOutputColumnsTo({"cpu0"}));
+
+  // Groups shouldn't have changed
+  EXPECT_EQ(old_groups, agg->groups());
+  auto agg_exprs = agg->aggregate_expressions();
+  EXPECT_EQ(1, agg_exprs.size());
+  EXPECT_EQ("cpu0", agg_exprs[0].name);
+  EXPECT_TRUE(Match(agg_exprs[0].node, Func()));
+}
+
+TEST_F(OperatorTests, union_prune_outputs) {
+  Relation relation1 = MakeRelation();
+  Relation relation2{{types::DataType::FLOAT64, types::DataType::FLOAT64, types::DataType::INT64,
+                      types::DataType::FLOAT64},
+                     {"cpu1", "cpu2", "count", "cpu0"}};
+
+  auto union_op = MakeUnion({MakeMemSource(relation1), MakeMemSource(relation2)});
+  ASSERT_OK(union_op->SetRelationFromParents());
+
+  EXPECT_OK(union_op->PruneOutputColumnsTo({"cpu2", "count"}));
+  EXPECT_EQ(2, union_op->column_mappings().size());
+
+  for (const auto column_mapping : union_op->column_mappings()) {
+    std::vector<std::string> colnames{column_mapping[0]->col_name(), column_mapping[1]->col_name()};
+    EXPECT_THAT(colnames, ElementsAre("count", "cpu2"));
+  }
+}
+
+TEST_F(OperatorTests, join_prune_outputs) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  auto join_op =
+      MakeJoin({mem_src1, mem_src2}, "inner", relation0, relation1,
+               std::vector<std::string>{"col1", "col3"}, std::vector<std::string>{"col2", "col4"});
+
+  std::vector<ColumnIR*> output_columns{MakeColumn("left_only", 0), MakeColumn("col1", 0),
+                                        MakeColumn("col1", 1),      MakeColumn("col2", 0),
+                                        MakeColumn("col2", 1),      MakeColumn("right_only", 1)};
+  std::vector<std::string> output_column_names{"left_only", "col1", "col1_right",
+                                               "col2_left", "col2", "right_only"};
+
+  ASSERT_OK(join_op->SetOutputColumns(output_column_names, output_columns));
+  Relation prev_relation{{types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                          types::DataType::INT64, types::DataType::INT64, types::DataType::INT64},
+                         output_column_names};
+  ASSERT_OK(join_op->SetRelation(prev_relation));
+  EXPECT_OK(join_op->PruneOutputColumnsTo({"left_only", "right_only", "col1", "col2_left"}));
+
+  EXPECT_THAT(join_op->column_names(), ElementsAre("left_only", "col1", "col2_left", "right_only"));
+
+  std::vector<std::string> expected_inputs{"left_only", "col1", "col2", "right_only"};
+  for (const auto& [i, expect_colname] : Enumerate(expected_inputs)) {
+    EXPECT_EQ(expect_colname, join_op->output_columns()[i]->col_name());
+  }
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -364,9 +364,9 @@ class OperatorTests : public ::testing::Test {
 
   MemorySourceIR* MakeMemSource() { return MakeMemSource("table"); }
 
-  MemorySourceIR* MakeMemSource(const std::string& name) {
-    return graph->CreateNode<MemorySourceIR>(ast, name, std::vector<std::string>{})
-        .ConsumeValueOrDie();
+  MemorySourceIR* MakeMemSource(const std::string& name,
+                                const std::vector<std::string>& col_names = {}) {
+    return graph->CreateNode<MemorySourceIR>(ast, name, col_names).ConsumeValueOrDie();
   }
 
   MemorySourceIR* MakeMemSource(const table_store::schema::Relation& relation) {
@@ -375,7 +375,7 @@ class OperatorTests : public ::testing::Test {
 
   MemorySourceIR* MakeMemSource(const std::string& table_name,
                                 const table_store::schema::Relation& relation) {
-    MemorySourceIR* mem_source = MakeMemSource(table_name);
+    MemorySourceIR* mem_source = MakeMemSource(table_name, relation.col_names());
     EXPECT_OK(mem_source->SetRelation(relation));
     std::vector<int64_t> column_index_map;
     for (size_t i = 0; i < relation.NumColumns(); ++i) {

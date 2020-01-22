@@ -427,6 +427,15 @@ class OperatorIR : public IRNode {
   virtual bool IsBlocking() const { return false; }
 
   /**
+   * @brief Removes any output columns that are not needed to produce those listed in
+   * 'output_colnames'. It expects that the relation has already been set. It is only intended to be
+   * run on nodes that make it to the final plan (so a node like Drop would not have an
+   * implementation).
+   *
+   */
+  Status PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& output_colnames);
+
+  /**
    * @brief Returns the Operator children of this node.
    *
    * @return std::vector<OperatorIR*>: the vector of operator children of this node.
@@ -451,6 +460,15 @@ class OperatorIR : public IRNode {
    */
   StatusOr<std::vector<OperatorIR*>> HandleDuplicateParents(
       const std::vector<OperatorIR*>& parents);
+
+  /**
+   * @brief Impl for PruneOutputColumnsTo. Returns the set of column names that remain after the
+   * pruning. These are distinct from 'output_colnames' because some columns may not be listed in
+   * that set but cannot be pruned from the operator (such as a group by in a BlockingAgg).
+   *
+   */
+  virtual StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& output_colnames) = 0;
 
  private:
   bool is_source_ = false;
@@ -1182,6 +1200,10 @@ class MemorySourceIR : public OperatorIR {
     return std::vector<absl::flat_hash_set<std::string>>{};
   }
 
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& output_colnames) override;
+
  private:
   std::string table_name_;
 
@@ -1230,6 +1252,13 @@ class MemorySinkIR : public OperatorIR {
     return std::vector<absl::flat_hash_set<std::string>>{outputs};
   }
 
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& /*output_colnames*/) override {
+    // This shouldn't occur, because MemorySinkIR has no parents.
+    return error::Unimplemented("Unexpected call to MemorySinkIR::PruneOutputColumnsTo.");
+  }
+
  private:
   std::string name_;
   std::vector<std::string> out_columns_;
@@ -1262,6 +1291,12 @@ class MetadataResolverIR : public OperatorIR {
     return error::Unimplemented("Unexpected call to MetadataResolverIR::RequiredInputColumns");
   }
 
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
+    return error::Unimplemented("Unexpected call to MetadataResolverIR::PruneOutputColumnsTo.");
+  }
+
  private:
   std::map<std::string, MetadataProperty*> metadata_columns_;
 };
@@ -1290,6 +1325,10 @@ class MapIR : public OperatorIR {
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& output_colnames) override;
+
  private:
   // The map from new column_names to expressions.
   ColExpressionVector col_exprs_;
@@ -1315,6 +1354,12 @@ class DropIR : public OperatorIR {
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
     return error::Unimplemented("Unexpected call to DropIR::RequiredInputColumns");
+  }
+
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
+    return error::Unimplemented("Unexpected call to DropIR::PruneOutputColumnsTo.");
   }
 
  private:
@@ -1353,6 +1398,10 @@ class BlockingAggIR : public OperatorIR {
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& output_colnames) override;
+
  private:
   Status SetAggExprs(const ColExpressionVector& agg_expr);
   Status SetGroups(const std::vector<ColumnIR*>& groups);
@@ -1382,6 +1431,12 @@ class GroupByIR : public OperatorIR {
     return error::Unimplemented("Unexpected call to GroupByIR::RequiredInputColumns");
   }
 
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
+    return error::Unimplemented("Unexpected call to GroupByIR::PruneOutputColumnsTo.");
+  }
+
  private:
   Status SetGroups(const std::vector<ColumnIR*>& groups);
   // contains group_names and groups columns.
@@ -1403,6 +1458,12 @@ class FilterIR : public OperatorIR {
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
+
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& output_cols) override {
+    return output_cols;
+  }
 
  private:
   ExpressionIR* filter_expr_ = nullptr;
@@ -1428,6 +1489,12 @@ class LimitIR : public OperatorIR {
   inline bool IsBlocking() const override { return true; }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
+
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& output_cols) override {
+    return output_cols;
+  }
 
  private:
   int64_t limit_value_;
@@ -1476,6 +1543,10 @@ class GRPCSinkIR : public OperatorIR {
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
+    return error::Unimplemented("Unexpected call to GRPCSinkIR::PruneOutputColumnsTo.");
+  }
 
  private:
   int64_t destination_id_ = -1;
@@ -1509,6 +1580,11 @@ class GRPCSourceIR : public OperatorIR {
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
+    return error::Unimplemented("Unexpected call to GRPCSourceIR::PruneOutputColumnsTo.");
+  }
 };
 
 /**
@@ -1559,6 +1635,11 @@ class GRPCSourceGroupIR : public OperatorIR {
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
+    return error::Unimplemented("Unexpected call to GRPCSourceGroupIR::PruneOutputColumnsTo.");
+  }
+
  private:
   int64_t source_id_ = -1;
   std::string grpc_address_ = "";
@@ -1583,9 +1664,14 @@ class UnionIR : public OperatorIR {
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   Status SetRelationFromParents();
   bool HasColumnMappings() const { return column_mappings_.size() == parents().size(); }
+  Status SetColumnMappings(const std::vector<InputColumnMapping>& mappings);
   const std::vector<InputColumnMapping>& column_mappings() const { return column_mappings_; }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
+
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& kept_columns) override;
 
  private:
   /**
@@ -1653,20 +1739,14 @@ class JoinIR : public OperatorIR {
   const std::vector<std::string>& suffix_strs() const { return suffix_strs_; }
   void SetSuffixStrs(const std::vector<std::string>& suffix_strs) { suffix_strs_ = suffix_strs; }
   Status SetOutputColumns(const std::vector<std::string>& column_names,
-                          const std::vector<ColumnIR*> columns) {
-    DCHECK_EQ(column_names.size(), columns.size());
-    output_columns_ = columns;
-    column_names_ = column_names;
-    for (auto g : output_columns_) {
-      PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, g));
-    }
-    output_columns_set_ = true;
-    return Status::OK();
-  }
-
+                          const std::vector<ColumnIR*>& columns);
   bool specified_as_right() const { return specified_as_right_; }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
+
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& kept_columns) override;
 
  private:
   /**
@@ -1690,8 +1770,6 @@ class JoinIR : public OperatorIR {
 
   // Join type
   JoinType join_type_;
-  // Whether or not the output columns have been set yet.
-  bool output_columns_set_ = false;
   // Whether or not the join key columns have been set.
   bool key_columns_set_ = false;
   // The columns that are output by this join operator.
@@ -1759,6 +1837,12 @@ class TabletSourceGroupIR : public OperatorIR {
     return error::Unimplemented("Unexpected call to TabletSourceGroupIR::RequiredInputColumns");
   }
 
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
+    return error::Unimplemented("Unexpected call to TabletSourceGroupIR::PruneOutputColumnsTo.");
+  }
+
  private:
   // The key in the relation that is used as a tablet_key.
   std::string tablet_key_;
@@ -1800,6 +1884,14 @@ class UDTFSourceIR : public OperatorIR {
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
     return std::vector<absl::flat_hash_set<std::string>>{};
+  }
+
+ protected:
+  // We currently don't support materializing a subset of UDTF output columns.
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
+    auto cols = relation().col_names();
+    return absl::flat_hash_set<std::string>(cols.begin(), cols.end());
   }
 
  private:

@@ -218,6 +218,23 @@ StatusOr<std::vector<OperatorIR*>> OperatorIR::HandleDuplicateParents(
   return new_parents;
 }
 
+Status OperatorIR::PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& output_colnames) {
+  DCHECK(IsRelationInit());
+  DCHECK(output_colnames.size());
+  for (const auto& kept_colname : output_colnames) {
+    DCHECK(relation_.HasColumn(kept_colname));
+  }
+  PL_ASSIGN_OR_RETURN(auto required_columns, PruneOutputColumnsToImpl(output_colnames));
+  Relation updated_relation;
+  for (const auto& colname : relation_.col_names()) {
+    if (required_columns.contains(colname)) {
+      updated_relation.AddColumn(relation_.GetColumnType(colname), colname,
+                                 relation_.GetColumnDesc(colname));
+    }
+  }
+  return SetRelation(updated_relation);
+}
+
 std::string IRNode::DebugString() const {
   return absl::Substitute("$0(id=$1)", type_string(), id());
 }
@@ -308,6 +325,27 @@ Status MemorySourceIR::SetTimeExpressions(ExpressionIR* start_time_expr,
   return Status::OK();
 }
 
+StatusOr<absl::flat_hash_set<std::string>> MemorySourceIR::PruneOutputColumnsToImpl(
+    const absl::flat_hash_set<std::string>& output_colnames) {
+  DCHECK(column_index_map_set());
+  DCHECK(IsRelationInit());
+  std::vector<std::string> new_col_names;
+  std::vector<int64_t> new_col_index_map;
+
+  auto col_names = relation().col_names();
+  for (const auto& [idx, name] : Enumerate(col_names)) {
+    if (output_colnames.contains(name)) {
+      new_col_names.push_back(name);
+      new_col_index_map.push_back(column_index_map_[idx]);
+    }
+  }
+  if (new_col_names != relation().col_names()) {
+    column_names_ = new_col_names;
+  }
+  column_index_map_ = new_col_index_map;
+  return output_colnames;
+}
+
 Status MemorySinkIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_mem_sink_op();
   pb->set_name(name_);
@@ -388,6 +426,18 @@ StatusOr<std::vector<absl::flat_hash_set<std::string>>> MapIR::RequiredInputColu
     required.insert(inputs.begin(), inputs.end());
   }
   return std::vector<absl::flat_hash_set<std::string>>{required};
+}
+
+StatusOr<absl::flat_hash_set<std::string>> MapIR::PruneOutputColumnsToImpl(
+    const absl::flat_hash_set<std::string>& output_colnames) {
+  ColExpressionVector new_exprs;
+  for (const auto& expr : col_exprs_) {
+    if (output_colnames.contains(expr.name)) {
+      new_exprs.push_back(expr);
+    }
+  }
+  PL_RETURN_IF_ERROR(SetColExprs(new_exprs));
+  return output_colnames;
 }
 
 Status DropIR::Init(OperatorIR* parent, const std::vector<std::string>& drop_cols) {
@@ -497,6 +547,12 @@ Status BlockingAggIR::SetGroups(const std::vector<ColumnIR*>& groups) {
 }
 
 Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_exprs) {
+  for (const ColumnExpression& agg_expr : aggregate_expressions_) {
+    ExpressionIR* expr = agg_expr.node;
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, expr));
+  }
+  aggregate_expressions_.clear();
+
   for (const auto& agg_expr : agg_exprs) {
     PL_ASSIGN_OR_RETURN(auto updated_expr,
                         graph_ptr()->OptionallyCloneWithEdge(this, agg_expr.node));
@@ -516,6 +572,26 @@ StatusOr<std::vector<absl::flat_hash_set<std::string>>> BlockingAggIR::RequiredI
     required.insert(ret.begin(), ret.end());
   }
   return std::vector<absl::flat_hash_set<std::string>>{required};
+}
+
+StatusOr<absl::flat_hash_set<std::string>> BlockingAggIR::PruneOutputColumnsToImpl(
+    const absl::flat_hash_set<std::string>& output_colnames) {
+  absl::flat_hash_set<std::string> kept_columns = output_colnames;
+
+  ColExpressionVector new_aggs;
+  for (const auto& expr : aggregate_expressions_) {
+    if (output_colnames.contains(expr.name)) {
+      new_aggs.push_back(expr);
+    }
+  }
+  PL_RETURN_IF_ERROR(SetAggExprs(new_aggs));
+
+  // We always need to keep the group columns based on the current specification of aggregate,
+  // otherwise the result will change.
+  for (const ColumnIR* group : groups_) {
+    kept_columns.insert(group->col_name());
+  }
+  return kept_columns;
 }
 
 Status GroupByIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups) {
@@ -1333,6 +1409,18 @@ Status UnionIR::AddColumnMapping(const InputColumnMapping& column_mapping) {
   return Status::OK();
 }
 
+Status UnionIR::SetColumnMappings(const std::vector<InputColumnMapping>& column_mappings) {
+  for (const auto& old_mapping : column_mappings_) {
+    for (ColumnIR* col : old_mapping) {
+      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, col));
+    }
+  }
+  for (const auto& new_mapping : column_mappings) {
+    PL_RETURN_IF_ERROR(AddColumnMapping(new_mapping));
+  }
+  return Status::OK();
+}
+
 // TODO(nserrino, philkuz): Once we support null values in columns, we can support performing a
 // union where the output schema of the union is the combined set of the input relations, and any
 // input table that is missing a certain column will just output null.
@@ -1344,6 +1432,7 @@ Status UnionIR::SetRelationFromParents() {
   Relation base_relation = base_parent->relation();
   PL_RETURN_IF_ERROR(SetRelation(base_relation));
 
+  std::vector<InputColumnMapping> mappings;
   for (const auto& [parent_idx, parent] : Enumerate(parents())) {
     Relation cur_relation = parent->relation();
     std::string err_msg = absl::Substitute(
@@ -1364,9 +1453,9 @@ Status UnionIR::SetRelationFromParents() {
                                              ast_node(), col_name, /*parent_op_idx*/ parent_idx));
       column_mapping.push_back(col_node);
     }
-    PL_RETURN_IF_ERROR(AddColumnMapping(column_mapping));
+    mappings.push_back(column_mapping);
   }
-  return Status::OK();
+  return SetColumnMappings(mappings);
 }
 
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> UnionIR::RequiredInputColumns() const {
@@ -1389,6 +1478,25 @@ Status UnionIR::Init(const std::vector<OperatorIR*>& parents) {
     PL_RETURN_IF_ERROR(AddParent(p));
   }
   return Status::OK();
+}
+
+StatusOr<absl::flat_hash_set<std::string>> UnionIR::PruneOutputColumnsToImpl(
+    const absl::flat_hash_set<std::string>& kept_columns) {
+  DCHECK(IsRelationInit());
+  std::vector<InputColumnMapping> new_column_mappings;
+  for (const auto& parent_column_mapping : column_mappings_) {
+    InputColumnMapping new_parent_mapping;
+    for (ColumnIR* parent_col : parent_column_mapping) {
+      // Union matches parent columns with each other by name, but they may be in different orders
+      // in the parents.
+      if (kept_columns.contains(parent_col->col_name())) {
+        new_parent_mapping.push_back(parent_col);
+      }
+    }
+    new_column_mappings.push_back(new_parent_mapping);
+  }
+  column_mappings_ = new_column_mappings;
+  return kept_columns;
 }
 
 StatusOr<JoinIR::JoinType> JoinIR::GetJoinEnum(const std::string& join_type_str) const {
@@ -1490,27 +1598,54 @@ Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
 
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> JoinIR::RequiredInputColumns() const {
   DCHECK(key_columns_set_);
-  DCHECK(output_columns_set_);
+  DCHECK_GT(output_columns_.size(), 0UL);
 
   std::vector<absl::flat_hash_set<std::string>> ret(2);
 
   for (ColumnIR* col : output_columns_) {
-    LOG(INFO) << "output_col: " << col->col_name() << ", idx: " << col->container_op_parent_idx();
     DCHECK(col->container_op_parent_idx_set());
     ret[col->container_op_parent_idx()].insert(col->col_name());
   }
   for (ColumnIR* col : left_on_columns_) {
-    LOG(INFO) << "left: " << col->col_name() << ", idx: " << col->container_op_parent_idx();
     DCHECK(col->container_op_parent_idx_set());
     ret[col->container_op_parent_idx()].insert(col->col_name());
   }
   for (ColumnIR* col : right_on_columns_) {
-    LOG(INFO) << "right: " << col->col_name() << ", idx: " << col->container_op_parent_idx();
     DCHECK(col->container_op_parent_idx_set());
     ret[col->container_op_parent_idx()].insert(col->col_name());
   }
 
   return ret;
+}
+
+Status JoinIR::SetOutputColumns(const std::vector<std::string>& column_names,
+                                const std::vector<ColumnIR*>& columns) {
+  DCHECK_EQ(column_names.size(), columns.size());
+
+  for (auto old_col : output_columns_) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_col));
+  }
+  output_columns_ = columns;
+  column_names_ = column_names;
+
+  for (auto new_col : output_columns_) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, new_col));
+  }
+  return Status::OK();
+}
+
+StatusOr<absl::flat_hash_set<std::string>> JoinIR::PruneOutputColumnsToImpl(
+    const absl::flat_hash_set<std::string>& kept_columns) {
+  std::vector<ColumnIR*> new_output_cols;
+  std::vector<std::string> new_output_names;
+  for (const auto& [col_idx, col_name] : Enumerate(column_names_)) {
+    if (kept_columns.contains(col_name)) {
+      new_output_names.push_back(col_name);
+      new_output_cols.push_back(output_columns_[col_idx]);
+    }
+  }
+  PL_RETURN_IF_ERROR(SetOutputColumns(new_output_names, new_output_cols));
+  return kept_columns;
 }
 
 Status UDTFSourceIR::Init(std::string_view func_name,
