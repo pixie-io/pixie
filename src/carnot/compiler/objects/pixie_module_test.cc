@@ -1,4 +1,4 @@
-#include "src/carnot/compiler/objects/pl_module.h"
+#include "src/carnot/compiler/objects/pixie_module.h"
 #include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/test_utils.h"
 #include "src/shared/metadata/base_types.h"
@@ -106,13 +106,13 @@ class PLModuleTest : public QLObjectTest {
     QLObjectTest::SetUp();
     info_ = SetUpRegistryInfo();
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
-    module_ = PLModule::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
+    module_ = PixieModule::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
   }
 
   std::unique_ptr<CompilerState> compiler_state_;
   int64_t time_now_ = 1552607213931245000;
   std::unique_ptr<RegistryInfo> info_;
-  std::shared_ptr<PLModule> module_;
+  std::shared_ptr<PixieModule> module_;
 };
 
 TEST_F(PLModuleTest, ModuleFindAttributeFromRegistryInfo) {
@@ -213,7 +213,7 @@ TEST_F(PLModuleTest, uuint128_conversion) {
   ASSERT_OK(uuint128_or_s) << "uuint128 should be valid.";
   auto expected_uuint128 = uuint128_or_s.ConsumeValueOrDie();
 
-  auto method_or_s = module_->GetMethod(PLModule::kUInt128ConversionId);
+  auto method_or_s = module_->GetMethod(PixieModule::kUInt128ConversionId);
   ASSERT_OK(method_or_s);
 
   QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
@@ -233,7 +233,7 @@ TEST_F(PLModuleTest, uuint128_conversion) {
 TEST_F(PLModuleTest, uuint128_conversion_fails_on_invalid_string) {
   std::string upid_str = "bad_uuid";
 
-  auto method_or_s = module_->GetMethod(PLModule::kUInt128ConversionId);
+  auto method_or_s = module_->GetMethod(PixieModule::kUInt128ConversionId);
   ASSERT_OK(method_or_s);
 
   QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();

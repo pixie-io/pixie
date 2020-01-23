@@ -9,16 +9,16 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-class PLModule : public QLObject {
+class PixieModule : public QLObject {
  public:
-  static constexpr TypeDescriptor PLModuleType = {
+  static constexpr TypeDescriptor PixieModuleType = {
       /* name */ "pl",
       /* type */ QLObjectType::kPLModule,
   };
-  static StatusOr<std::shared_ptr<PLModule>> Create(IR* graph, CompilerState* compiler_state);
+  static StatusOr<std::shared_ptr<PixieModule>> Create(IR* graph, CompilerState* compiler_state);
 
   // Constant for the modules.
-  inline static constexpr char kPLModuleObjName[] = "pl";
+  inline static constexpr char kPixieModuleObjName[] = "pl";
 
   // Constants for operators in the query language.
   inline static constexpr char kDataframeOpId[] = "DataFrame";
@@ -29,8 +29,8 @@ class PLModule : public QLObject {
                                                      "days",    "microseconds", "milliseconds"};
 
  protected:
-  explicit PLModule(IR* graph, CompilerState* compiler_state)
-      : QLObject(PLModuleType), graph_(graph), compiler_state_(compiler_state) {}
+  explicit PixieModule(IR* graph, CompilerState* compiler_state)
+      : QLObject(PixieModuleType), graph_(graph), compiler_state_(compiler_state) {}
   Status Init();
   Status RegisterUDFFuncs();
   Status RegisterUDTFs();
@@ -65,7 +65,7 @@ class DisplayHandler {
 };
 
 /**
- * @brief Implements the pl.now() and pl.minutes,pl.hours, etc.
+ * @brief Implements the pl.now(), pl.minutes(), pl.hours(), etc.
  *
  */
 class CompileTimeFuncHandler {

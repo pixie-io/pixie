@@ -5,7 +5,7 @@
 
 #include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/metadata_object.h"
-#include "src/carnot/compiler/objects/pl_module.h"
+#include "src/carnot/compiler/objects/pixie_module.h"
 #include "src/carnot/compiler/objects/test_utils.h"
 
 namespace pl {
@@ -49,7 +49,7 @@ class DefaultArgumentsTest : public OperatorTests {
     OperatorTests::SetUp();
     info_ = SetUpRegistryInfo();
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
-    module_ = PLModule::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
+    module_ = PixieModule::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
     ast_visitor_ = ASTVisitorImpl::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
   }
 
@@ -85,13 +85,13 @@ class DefaultArgumentsTest : public OperatorTests {
   std::unique_ptr<CompilerState> compiler_state_;
   int64_t time_now_ = 1552607213931245000;
   std::unique_ptr<RegistryInfo> info_;
-  std::shared_ptr<PLModule> module_;
+  std::shared_ptr<PixieModule> module_;
 };
 
 // This test is the unit to make sure we can get all of the defaults of any method for any object
 // we choose to test.
 TEST_F(DefaultArgumentsTest, PLModule) {
-  auto module_or_s = PLModule::Create(graph.get(), compiler_state_.get());
+  auto module_or_s = PixieModule::Create(graph.get(), compiler_state_.get());
   ASSERT_OK(module_or_s);
   QLObjectPtr module = module_or_s.ConsumeValueOrDie();
   {

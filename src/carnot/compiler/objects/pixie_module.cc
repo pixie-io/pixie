@@ -1,4 +1,4 @@
-#include "src/carnot/compiler/objects/pl_module.h"
+#include "src/carnot/compiler/objects/pixie_module.h"
 
 #include <magic_enum.hpp>
 #include <vector>
@@ -11,16 +11,17 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-constexpr const char* const PLModule::kTimeFuncs[];
+constexpr const char* const PixieModule::kTimeFuncs[];
 
-StatusOr<std::shared_ptr<PLModule>> PLModule::Create(IR* graph, CompilerState* compiler_state) {
-  auto module = std::shared_ptr<PLModule>(new PLModule(graph, compiler_state));
+StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph,
+                                                           CompilerState* compiler_state) {
+  auto module = std::shared_ptr<PixieModule>(new PixieModule(graph, compiler_state));
 
   PL_RETURN_IF_ERROR(module->Init());
   return module;
 }
 
-Status PLModule::RegisterUDFFuncs() {
+Status PixieModule::RegisterUDFFuncs() {
   // TODO(philkuz) (PL-1189) remove this when the udf names no longer have the 'pl.' prefix.
   for (const auto& name : compiler_state_->registry_info()->func_names()) {
     std::string_view stripped_name = absl::StripPrefix(name, "pl.");
@@ -63,8 +64,8 @@ StatusOr<std::string> PrepareDefaultUDTFArg(const planpb::ScalarValue& scalar_va
       std::string upid_as_str =
           sole::rebuild(scalar_value.uint128_value().high(), scalar_value.uint128_value().low())
               .str();
-      return absl::Substitute("$0.$1('$2')", PLModule::kPLModuleObjName,
-                              PLModule::kUInt128ConversionId, upid_as_str);
+      return absl::Substitute("$0.$1('$2')", PixieModule::kPixieModuleObjName,
+                              PixieModule::kUInt128ConversionId, upid_as_str);
     }
     default: {
       return error::InvalidArgument("$0 not handled as a default value",
@@ -73,7 +74,7 @@ StatusOr<std::string> PrepareDefaultUDTFArg(const planpb::ScalarValue& scalar_va
   }
 }
 
-Status PLModule::RegisterUDTFs() {
+Status PixieModule::RegisterUDTFs() {
   for (const auto& udtf : compiler_state_->registry_info()->udtfs()) {
     std::vector<std::string> argument_names;
     absl::flat_hash_map<std::string, std::string> default_values;
@@ -98,7 +99,7 @@ Status PLModule::RegisterUDTFs() {
   return Status::OK();
 }
 
-Status PLModule::RegisterCompileTimeFuncs() {
+Status PixieModule::RegisterCompileTimeFuncs() {
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> now_fn,
       FuncObject::Create(kNowOpId, {}, {},
@@ -120,7 +121,7 @@ Status PLModule::RegisterCompileTimeFuncs() {
   return Status::OK();
 }
 
-Status PLModule::RegisterCompileTimeUnitFunction(std::string name) {
+Status PixieModule::RegisterCompileTimeUnitFunction(std::string name) {
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> now_fn,
       FuncObject::Create(name, {"unit"}, {},
@@ -131,7 +132,7 @@ Status PLModule::RegisterCompileTimeUnitFunction(std::string name) {
   return Status::OK();
 }
 
-Status PLModule::Init() {
+Status PixieModule::Init() {
   PL_RETURN_IF_ERROR(RegisterUDFFuncs());
   PL_RETURN_IF_ERROR(RegisterCompileTimeFuncs());
   PL_RETURN_IF_ERROR(RegisterUDTFs());
@@ -159,8 +160,8 @@ Status PLModule::Init() {
   return Status::OK();
 }
 
-StatusOr<QLObjectPtr> PLModule::GetAttributeImpl(const pypa::AstPtr& ast,
-                                                 std::string_view name) const {
+StatusOr<QLObjectPtr> PixieModule::GetAttributeImpl(const pypa::AstPtr& ast,
+                                                    std::string_view name) const {
   // If this gets to this point, should fail here.
   DCHECK(HasNonMethodAttribute(name));
 
@@ -242,7 +243,7 @@ StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::NowEval(IR* graph, const pypa::AstPtr& ast,
                                                       const ParsedArgs&) {
   // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
-  FuncIR::Op op{FuncIR::Opcode::non_op, "", PLModule::kNowOpId};
+  FuncIR::Op op{FuncIR::Opcode::non_op, "", PixieModule::kNowOpId};
   PL_ASSIGN_OR_RETURN(FuncIR * node,
                       graph->CreateNode<FuncIR>(ast, op, std::vector<ExpressionIR*>{}));
   return ExprObject::Create(node);

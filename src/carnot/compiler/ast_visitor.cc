@@ -5,7 +5,7 @@
 #include "src/carnot/compiler/objects/collection_object.h"
 #include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/none_object.h"
-#include "src/carnot/compiler/objects/pl_module.h"
+#include "src/carnot/compiler/objects/pixie_module.h"
 #include "src/carnot/compiler/parser/parser.h"
 
 namespace pl {
@@ -35,8 +35,8 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
 }
 
 Status ASTVisitorImpl::Init() {
-  PL_ASSIGN_OR_RETURN(auto pl_module, PLModule::Create(ir_graph_, compiler_state_));
-  var_table_->Add(PLModule::kPLModuleObjName, pl_module);
+  PL_ASSIGN_OR_RETURN(auto pl_module, PixieModule::Create(ir_graph_, compiler_state_));
+  var_table_->Add(PixieModule::kPixieModuleObjName, pl_module);
   return Status::OK();
 }
 
