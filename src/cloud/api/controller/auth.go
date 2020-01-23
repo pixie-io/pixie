@@ -39,9 +39,18 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		return handler.NewStatusError(http.StatusMethodNotAllowed, "not a post request")
 	}
 
-	session, err := getSessionFromEnv(env, r)
-	if err != nil {
-		return &handler.StatusError{http.StatusInternalServerError, err}
+	apiEnv, ok := env.(apienv.APIEnv)
+	if !ok {
+		return &handler.StatusError{http.StatusInternalServerError, errors.New("failed to get environment")}
+	}
+
+	// GetDefaultSession, will always return a valid session, even if it is empty.
+	// We don't check the err here because even if the preexisting
+	// session cookie is expired or couldn't be decoded, we will overwrite it below anyway.
+	session, _ := GetDefaultSession(apiEnv, r)
+	// This should never be nil, but we check to be sure.
+	if session == nil {
+		return &handler.StatusError{http.StatusInternalServerError, errors.New("failed to get session cookie")}
 	}
 
 	// Extract params from the body which consists of the Auth0 ID token.
@@ -62,6 +71,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	// However, This breaks the API contract since
 	// we don't ship back the user information, token, ID. Adding this information might make it
 	// just as expensive as performing the Login, so this needs to be investigated.
+	// This should check the err returned by GetDefaultSession.
 	//	// Bail early if the session is valid.
 	//	if len(session.Values) != 0 && session.Values["_at"] != nil {
 	//		expiresAt, ok := session.Values["_expires_at"].(int64)
