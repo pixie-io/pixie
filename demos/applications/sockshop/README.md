@@ -15,6 +15,11 @@ The two files where this was changed:
 ./monitoring_manifests/grafana/grafana-svc.yaml
 ```
 
+## Preset user credential
+
+You can login with the username `user` and password `password`. Note that they are chosen
+intentionally to be easier to memorize.
+
 ## Running the demo on GKE
 At the time of writing (Apr 2019), we had a GKE cluster running under the name `dev-cluster`.
 (See the hipster-shop README to setup a cluster from scratch.)
