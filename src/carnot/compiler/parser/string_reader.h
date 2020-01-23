@@ -21,7 +21,7 @@ namespace compiler {
  */
 class StringReader : public pypa::Reader {
  public:
-  explicit StringReader(std::string input) { lines_ = absl::StrSplit(input, '\n'); }
+  explicit StringReader(std::string_view input) { lines_ = absl::StrSplit(input, '\n'); }
 
   ~StringReader() override = default;
 

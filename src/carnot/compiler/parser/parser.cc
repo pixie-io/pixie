@@ -58,7 +58,7 @@ class PypaErrorHandler {
   std::vector<pypa::Error> errs_;
 };
 
-StatusOr<pypa::AstModulePtr> Parser::Parse(const std::string& query) {
+StatusOr<pypa::AstModulePtr> Parser::Parse(std::string_view query) {
   if (query.empty()) {
     return error::InvalidArgument("Query should not be empty.");
   }

@@ -24,7 +24,7 @@ class Parser {
    * @param query the query to compile.
    * @return the ast module that represents the query.
    */
-  StatusOr<pypa::AstModulePtr> Parse(const std::string& query);
+  StatusOr<pypa::AstModulePtr> Parse(std::string_view query);
 };
 
 }  // namespace compiler
