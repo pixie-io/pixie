@@ -45,7 +45,7 @@ class DummyTestContainer {
           pl::Exec(absl::Substitute("docker inspect -f '{{.State.Pid}}' $0", name)).ValueOrDie();
       LOG(INFO) << absl::Substitute("Server PID: $0", pid_str);
 
-      if (absl::SimpleAtoi(pid_str, &process_pid_)) {
+      if (absl::SimpleAtoi(pid_str, &process_pid_) && process_pid_ != 0) {
         break;
       }
       process_pid_ = -1;
