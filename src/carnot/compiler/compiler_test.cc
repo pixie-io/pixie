@@ -2740,6 +2740,31 @@ TEST_F(CompilerTest, BadDropQuery) {
   EXPECT_EQ(map->relation(), expected_relation);
 }
 
+constexpr char kDropWithoutListQuery[] = R"pxl(
+t1 = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'])
+t1 = t1.drop('cpu0')
+pl.display(t1)
+)pxl";
+
+TEST_F(CompilerTest, DropWithoutListQuery) {
+  auto graph_or_s = compiler_.CompileToIR(kDropWithoutListQuery, compiler_state_.get());
+  ASSERT_OK(graph_or_s);
+
+  MemorySinkIR* mem_sink;
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  for (int64_t i : graph->dag().TopologicalSort()) {
+    auto node = graph->Get(i);
+    if (Match(node, MemorySink())) {
+      mem_sink = static_cast<MemorySinkIR*>(node);
+      break;
+    }
+  }
+  ASSERT_NE(mem_sink, nullptr);
+
+  Relation expected_relation({types::FLOAT64}, {"cpu1"});
+  ASSERT_EQ(mem_sink->relation(), expected_relation);
+}
+
 TEST_F(CompilerTest, AndExpressionFailsGracefully) {
   auto query =
       absl::StrJoin({"df = pl.DataFrame('bar')", "df[df['service'] != '' && pl.asid() != 10]",

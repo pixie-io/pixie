@@ -102,7 +102,7 @@ TEST_F(DropHandlerTest, DropTest) {
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
   auto df_obj = static_cast<Dataframe*>(obj.get());
 
-  // Check to make sure that the output is a Join operator.
+  // Check to make sure that the output is a Drop operator.
   OperatorIR* op = df_obj->op();
   ASSERT_TRUE(Match(op, Drop()));
   DropIR* drop = static_cast<DropIR*>(op);
@@ -117,6 +117,27 @@ TEST_F(DropHandlerTest, DropTestNonString) {
   auto status = DropHandler::Eval(graph.get(), src, ast, args);
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(), HasCompilerError("The elements of the list must be Strings, not"));
+}
+
+TEST_F(DropHandlerTest, DropTestStringWithoutList) {
+  MemorySourceIR* src = MakeMemSource();
+  ParsedArgs args;
+  args.AddArg("columns", MakeString("foo"));
+  auto status = DropHandler::Eval(graph.get(), src, ast, args);
+  ASSERT_OK(status);
+
+  std::shared_ptr<QLObject> obj = status.ConsumeValueOrDie();
+
+  // Add compartor for type() and Dataframe.
+  ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
+  auto df_obj = static_cast<Dataframe*>(obj.get());
+
+  // Check to make sure that the output is a Drop operator.
+  OperatorIR* op = df_obj->op();
+  ASSERT_TRUE(Match(op, Drop()));
+  DropIR* drop = static_cast<DropIR*>(op);
+  // Verify that the operator does what we expect it to.
+  EXPECT_EQ(drop->col_names(), std::vector<std::string>({"foo"}));
 }
 
 // TODO(philkuz) (PL-1128) re-enable when we switch from old agg to new agg.

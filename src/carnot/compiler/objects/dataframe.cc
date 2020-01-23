@@ -232,13 +232,17 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, TupleIR* tuple) {
 StatusOr<QLObjectPtr> DropHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                         const ParsedArgs& args) {
   IRNode* columns_arg = args.GetArg("columns");
-  if (!Match(columns_arg, List())) {
+  std::vector<std::string> columns;
+  if (Match(columns_arg, String())) {
+    columns.push_back(static_cast<StringIR*>(columns_arg)->str());
+  } else if (Match(columns_arg, List())) {
+    ListIR* columns_list = static_cast<ListIR*>(columns_arg);
+    PL_ASSIGN_OR_RETURN(columns, ParseStringsFromCollection(columns_list));
+  } else {
     return columns_arg->CreateIRNodeError(
-        "Expected '$0' kwarg argument 'columns' to be a list, not $1", Dataframe::kDropOpId,
-        columns_arg->type_string());
+        "Expected '$0' kwarg argument 'columns' to be a list or a string, not $1",
+        Dataframe::kDropOpId, columns_arg->type_string());
   }
-  ListIR* columns_list = static_cast<ListIR*>(columns_arg);
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns, ParseStringsFromCollection(columns_list));
 
   PL_ASSIGN_OR_RETURN(DropIR * drop_op, graph->CreateNode<DropIR>(ast, op, columns));
   return Dataframe::Create(drop_op);
