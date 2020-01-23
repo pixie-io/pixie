@@ -8,6 +8,9 @@ script_dir="$(dirname "$0")"
 # shellcheck disable=SC1090
 source "$script_dir"/scripts/utils.sh
 
+# shellcheck disable=SC1090
+source "$script_dir"/scripts/test_utils.sh
+
 if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     # If the script was run in a stand-alone way, then build and set paths.
     pixie_root="$script_dir"/../..
