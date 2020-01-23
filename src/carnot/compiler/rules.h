@@ -516,6 +516,23 @@ class PruneUnusedColumnsRule : public Rule {
 };
 
 /**
+ * @brief This rule removes all (non-Operator) IR nodes that are not connected to an Operator.
+ *
+ */
+class CleanUpStrayIRNodesRule : public Rule {
+ public:
+  CleanUpStrayIRNodesRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  // For each IRNode that stays in the graph, we keep track of its children as well so we keep them
+  // around.
+  absl::flat_hash_set<IRNode*> connected_nodes_;
+};
+
+/**
  * @brief This class supports running an IR graph rule (independently) over each IR graph of a
  * DistributedPlan. This is distinct from other DistributedRules, which may modify the
  * CarnotInstances and DistributedPlan dag.

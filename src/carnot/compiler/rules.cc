@@ -1467,6 +1467,20 @@ StatusOr<bool> PruneUnusedColumnsRule::Apply(IRNode* ir_node) {
   return changed;
 }
 
+StatusOr<bool> CleanUpStrayIRNodesRule::Apply(IRNode* ir_node) {
+  auto ir_graph = ir_node->graph_ptr();
+  auto node_id = ir_node->id();
+
+  if (Match(ir_node, Operator()) || connected_nodes_.contains(ir_node)) {
+    for (int64_t child_id : ir_graph->dag().DependenciesOf(node_id)) {
+      connected_nodes_.insert(ir_graph->Get(child_id));
+    }
+    return false;
+  }
+  PL_RETURN_IF_ERROR(ir_graph->DeleteNode(node_id));
+  return true;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

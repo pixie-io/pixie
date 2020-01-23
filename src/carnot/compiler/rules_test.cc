@@ -2581,6 +2581,89 @@ TEST_F(RulesTest, PruneUnusedColumnsRule_unchanged) {
   ASSERT_FALSE(result.ConsumeValueOrDie());
 }
 
+TEST_F(RulesTest, CleanUpStrayIRNodesRule_basic) {
+  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+  auto count_col = MakeColumn("count", 0);
+  auto cpu1_col = MakeColumn("cpu1", 0);
+  auto cpu2_col = MakeColumn("cpu2", 0);
+  auto cpu_sum = MakeAddFunc(cpu1_col, cpu2_col);
+  ColumnExpression expr1{"count_1", count_col};
+  ColumnExpression expr2{"cpu_sum", cpu_sum};
+  ColumnExpression expr3{"cpu1_1", cpu1_col};
+
+  MakeMap(mem_src, {expr1, expr2}, false);
+  MakeMap(mem_src, {expr1, expr3}, false);
+
+  auto non_stray_nodes = graph->dag().TopologicalSort();
+
+  auto not_in_op_col = MakeColumn("not_in_op", 0);
+  auto not_in_op_int = MakeInt(10);
+  auto not_in_op_func = MakeAddFunc(not_in_op_col, not_in_op_int);
+
+  CleanUpStrayIRNodesRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_EQ(non_stray_nodes, graph->dag().TopologicalSort());
+  EXPECT_FALSE(graph->HasNode(not_in_op_int->id()));
+  EXPECT_FALSE(graph->HasNode(not_in_op_col->id()));
+  EXPECT_FALSE(graph->HasNode(not_in_op_func->id()));
+}
+
+TEST_F(RulesTest, CleanUpStrayIRNodesRule_mixed_parents) {
+  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+  auto count_col = MakeColumn("count", 0);
+  auto cpu1_col = MakeColumn("cpu1", 0);
+  auto cpu2_col = MakeColumn("cpu2", 0);
+  auto cpu_sum = MakeAddFunc(cpu1_col, cpu2_col);
+  ColumnExpression expr1{"count_1", count_col};
+  ColumnExpression expr2{"cpu_sum", cpu_sum};
+  ColumnExpression expr3{"cpu1_1", cpu1_col};
+
+  MakeMap(mem_src, {expr1, expr2}, false);
+  MakeMap(mem_src, {expr1, expr3}, false);
+
+  auto non_stray_nodes = graph->dag().TopologicalSort();
+
+  auto not_in_op_col = MakeColumn("not_in_op", 0);
+  auto not_in_op_func = MakeAddFunc(not_in_op_col, cpu1_col);
+  auto not_in_op_nested_func = MakeAddFunc(not_in_op_col, cpu_sum);
+
+  CleanUpStrayIRNodesRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_EQ(non_stray_nodes, graph->dag().TopologicalSort());
+  EXPECT_FALSE(graph->HasNode(not_in_op_col->id()));
+  EXPECT_FALSE(graph->HasNode(not_in_op_func->id()));
+  EXPECT_FALSE(graph->HasNode(not_in_op_nested_func->id()));
+}
+
+TEST_F(RulesTest, CleanUpStrayIRNodesRule_unchanged) {
+  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+  auto count_col = MakeColumn("count", 0);
+  auto cpu1_col = MakeColumn("cpu1", 0);
+  auto cpu2_col = MakeColumn("cpu2", 0);
+  auto cpu_sum = MakeAddFunc(cpu1_col, cpu2_col);
+  ColumnExpression expr1{"count_1", count_col};
+  ColumnExpression expr2{"cpu_sum", cpu_sum};
+  ColumnExpression expr3{"cpu1_1", cpu1_col};
+
+  MakeMap(mem_src, {expr1, expr2}, false);
+  MakeMap(mem_src, {expr1, expr3}, false);
+
+  auto nodes_before = graph->dag().TopologicalSort();
+
+  CleanUpStrayIRNodesRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_FALSE(result.ConsumeValueOrDie());
+
+  EXPECT_EQ(nodes_before, graph->dag().TopologicalSort());
+}
+
 TEST_F(RulesTest, DistributedIRRuleTest) {
   auto physical_plan = std::make_unique<distributed::DistributedPlan>();
   distributedpb::DistributedState physical_state =
