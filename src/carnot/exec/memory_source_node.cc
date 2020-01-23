@@ -54,42 +54,48 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
 
 Status MemorySourceNode::CloseImpl(ExecState*) { return Status::OK(); }
 
-Status MemorySourceNode::GenerateNextImpl(ExecState* exec_state) {
+StatusOr<std::unique_ptr<RowBatch>> MemorySourceNode::GetNextRowBatch(ExecState* exec_state) {
   DCHECK(table_ != nullptr);
+
+  if (current_batch_ >= table_->NumBatches()) {
+    return RowBatch::WithZeroRows(*output_descriptor_, /* eow */ true, /* eos */ true);
+  }
+
   auto offset = 0;
   auto end = -1;
   if (plan_node_->HasStartTime() && current_batch_ == start_batch_info_.batch_idx) {
     offset = start_batch_info_.row_idx;
   }
+
   // TODO(michelle): PL-388 Fix our table store to correctly support hot/cold data. For now, do not
   // support StopTime, since the current implementation is buggy.
-
-  PL_ASSIGN_OR_RETURN(const auto& row_batch,
+  PL_ASSIGN_OR_RETURN(auto row_batch,
                       table_->GetRowBatchSlice(current_batch_, plan_node_->Columns(),
                                                exec_state->exec_mem_pool(), offset, end));
+
   rows_processed_ += row_batch->num_rows();
   bytes_processed_ += row_batch->NumBytes();
   current_batch_++;
 
-  if (!HasBatchesRemaining()) {
+  if (current_batch_ >= table_->NumBatches()) {
     row_batch->set_eow(true);
     row_batch->set_eos(true);
-    eos_set_ = true;
+  }
+  return row_batch;
+}
+
+Status MemorySourceNode::GenerateNextImpl(ExecState* exec_state) {
+  PL_ASSIGN_OR_RETURN(auto row_batch, GetNextRowBatch(exec_state));
+
+  if (row_batch->eos()) {
+    eos_sent_ = true;
   }
 
   PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *row_batch));
   return Status::OK();
 }
 
-bool MemorySourceNode::HasBatchesRemaining() {
-  if (current_batch_ >= table_->NumBatches() || eos_set_) {
-    return false;
-  }
-  // TODO(michelle): PL-388 Fix our table store to correctly support hot/cold data. For now, do not
-  // support StopTime, since the current implementation is buggy.
-
-  return true;
-}
+bool MemorySourceNode::HasBatchesRemaining() { return !eos_sent_; }
 
 bool MemorySourceNode::NextBatchReady() { return true; }
 

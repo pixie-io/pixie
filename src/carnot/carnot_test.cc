@@ -476,7 +476,11 @@ TEST_F(CarnotTest, empty_range_test) {
   ASSERT_OK(s);
 
   auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(0, output_table->NumBatches());
+  EXPECT_EQ(1, output_table->NumBatches());
+  auto rb =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  EXPECT_EQ(0, rb->num_rows());
   EXPECT_EQ(3, output_table->NumColumns());
 }
 
@@ -508,7 +512,7 @@ class CarnotRangeTest
 
 std::vector<std::tuple<types::Int64Value, size_t, bool>> range_test_vals = {
     {CarnotTestUtils::big_test_col1[CarnotTestUtils::big_test_col1.size() - 1] /*sub_time*/,
-     0 /*num_batches*/, true /*start_at_now*/},
+     1 /*num_batches*/, true /*start_at_now*/},
     {CarnotTestUtils::big_test_col1[CarnotTestUtils::split_idx[1].first].val /*sub_time*/,
      CarnotTestUtils::split_idx.size() - 1 /*num_batches*/, false /*start_at_now*/}};
 

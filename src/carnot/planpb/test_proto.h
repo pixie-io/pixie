@@ -108,7 +108,7 @@ $1 {
 })";
 
 constexpr char kMemSourceOperator1[] = R"(
-name: "cpu"
+name: "$0"
 column_idxs: 1
 column_types: FLOAT64
 column_names: "usage"
@@ -840,10 +840,11 @@ planpb::Operator CreateTestFilterTwoColsString() {
   return op;
 }
 
-planpb::Operator CreateTestSource1PB() {
+planpb::Operator CreateTestSource1PB(const std::string& table_name = "cpu") {
   planpb::Operator op;
-  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op",
-                                   kMemSourceOperator1);
+  auto mem_proto = absl::Substitute(kMemSourceOperator1, table_name);
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op", mem_proto);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

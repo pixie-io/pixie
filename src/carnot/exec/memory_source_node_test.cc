@@ -52,6 +52,8 @@ class MemorySourceNodeTest : public ::testing::Test {
     std::vector<types::Int64Value> col2_in2 = {5, 6};
     EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
     EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+
+    exec_state_->table_store()->AddTable("empty", Table::Create(rel));
   }
 
   std::unique_ptr<ExecState> exec_state_;
@@ -79,6 +81,24 @@ TEST_F(MemorySourceNodeTest, basic) {
   tester.Close();
   EXPECT_EQ(5, tester.node()->RowsProcessed());
   EXPECT_EQ(sizeof(int64_t) * 5, tester.node()->BytesProcessed());
+}
+
+TEST_F(MemorySourceNodeTest, empty_table) {
+  auto op_proto = planpb::testutils::CreateTestSource1PB("empty");
+  std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
+  RowDescriptor output_rd({types::DataType::TIME64NS});
+
+  auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
+      *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 0, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Time64NSValue>({})
+          .get());
+  EXPECT_FALSE(tester.node()->HasBatchesRemaining());
+  tester.Close();
+  EXPECT_EQ(0, tester.node()->RowsProcessed());
+  EXPECT_EQ(0, tester.node()->BytesProcessed());
 }
 
 TEST_F(MemorySourceNodeTest, added_batch) {
@@ -146,8 +166,15 @@ TEST_F(MemorySourceNodeTest, empty_range) {
 
   auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
       *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 0, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Time64NSValue>({})
+          .get());
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   tester.Close();
+  EXPECT_EQ(0, tester.node()->RowsProcessed());
+  EXPECT_EQ(0, tester.node()->BytesProcessed());
 }
 
 TEST_F(MemorySourceNodeTest, all_range) {
@@ -262,8 +289,12 @@ TEST_F(MemorySourceNodeTabletTest, multiple_tablet_test) {
 
   auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
       *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 0, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Time64NSValue>({})
+          .get());
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
-  tester.Close();
   EXPECT_EQ(0, tester.node()->RowsProcessed());
   EXPECT_EQ(0, tester.node()->BytesProcessed());
 }
