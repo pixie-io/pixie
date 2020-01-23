@@ -97,12 +97,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "ip_test",
-    srcs = ["ip_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
     name = "magic_enum_test",
     srcs = ["magic_enum_test.cc"],
     deps = [":cc_library"],

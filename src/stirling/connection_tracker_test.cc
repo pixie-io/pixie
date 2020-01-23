@@ -577,11 +577,10 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
 
   tracker.AddControlEvent(conn);
 
-  auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
-  ASSERT_OK(cluster_cidr_or);
+  CIDRBlock cidr;
+  ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
 
-  tracker.IterationPreTick(cluster_cidr_or.ConsumeValueOrDie(), /*proc_parser*/ nullptr,
-                           /*connections*/ nullptr);
+  tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
@@ -600,11 +599,10 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForUnixDomainSocket) {
 
   tracker.AddControlEvent(conn);
 
-  auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
-  ASSERT_OK(cluster_cidr_or);
+  CIDRBlock cidr;
+  ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
 
-  tracker.IterationPreTick(cluster_cidr_or.ConsumeValueOrDie(), /*proc_parser*/ nullptr,
-                           /*connections*/ nullptr);
+  tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnectionTracker::State::kCollecting, tracker.state());
 }
 
@@ -633,11 +631,10 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForMismatchedIPVersion) {
 
     tracker.AddControlEvent(create_conn_event(AF_INET));
 
-    auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
-    ASSERT_OK(cluster_cidr_or);
+    CIDRBlock cidr;
+    ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
 
-    tracker.IterationPreTick(cluster_cidr_or.ConsumeValueOrDie(), /*proc_parser*/ nullptr,
-                             /*connections*/ nullptr);
+    tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnectionTracker::State::kTransferring, tracker.state());
   }
   // Then, the tracker is transferring with AF_INET6, and is disabled because of different IP
@@ -648,11 +645,10 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForMismatchedIPVersion) {
 
     tracker.AddControlEvent(create_conn_event(AF_INET6));
 
-    auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
-    ASSERT_OK(cluster_cidr_or);
+    CIDRBlock cidr;
+    ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
 
-    tracker.IterationPreTick(cluster_cidr_or.ConsumeValueOrDie(), /*proc_parser*/ nullptr,
-                             /*connections*/ nullptr);
+    tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
   }
 }

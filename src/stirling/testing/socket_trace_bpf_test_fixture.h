@@ -30,10 +30,9 @@ class SocketTraceBPFTest : public ::testing::Test {
     auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
 
     // Some tests depends on cidr not containing remote IP address.
-    auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
-    ASSERT_OK(cluster_cidr_or);
-    agent_metadata_state->k8s_metadata_state()->set_cluster_cidr(
-        cluster_cidr_or.ConsumeValueOrDie());
+    CIDRBlock cidr;
+    ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
+    agent_metadata_state->k8s_metadata_state()->set_cluster_cidr(cidr);
 
     ctx_ = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
   }

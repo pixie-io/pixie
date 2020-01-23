@@ -28,7 +28,7 @@ std::string AddrPortStr(struct in6_addr in_addr, in_port_t in_port) {
   std::string addr;
   int port;
 
-  Status s = ParseIPv6Addr(in_addr, &addr);
+  Status s = IPv6AddrToString(in_addr, &addr);
   CHECK(s.ok());
   port = ntohs(in_port);
 
@@ -39,7 +39,7 @@ std::string AddrPortStr(struct in_addr in_addr, in_port_t in_port) {
   std::string addr;
   int port;
 
-  Status s = ParseIPv4Addr(in_addr, &addr);
+  Status s = IPv4AddrToString(in_addr, &addr);
   CHECK(s.ok());
   port = ntohs(in_port);
 

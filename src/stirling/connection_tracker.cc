@@ -647,20 +647,6 @@ bool ConnectionTracker::ReadyForDestruction() const {
   return death_countdown_ == 0;
 }
 
-namespace {
-
-IPVersion GetIPVersion(const IPAddress ip_addr) {
-  if (std::holds_alternative<struct in_addr>(ip_addr.addr)) {
-    return IPVersion::kIPv4;
-  }
-  if (std::holds_alternative<struct in6_addr>(ip_addr.addr)) {
-    return IPVersion::kIPv6;
-  }
-  return IPVersion::kIPv4;
-}
-
-}  // namespace
-
 void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster_cidr,
                                          system::ProcParser* proc_parser,
                                          const std::map<int, system::SocketInfo>* connections) {
@@ -682,19 +668,16 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
       }
       if (cluster_cidr.has_value() && open_info_.remote_addr.addr_str != "-" &&
           open_info_.remote_addr.addr_str != kUnixSocket) {
-        IPVersion cluster_cidr_ipver = cluster_cidr->version();
-        IPVersion remote_addr_ipver = GetIPVersion(open_info_.remote_addr);
-
-        if (cluster_cidr->version() != GetIPVersion(open_info_.remote_addr)) {
-          Disable(absl::Substitute(
-              "Cannot trace due to mismatched IP versions, cluster_cidr is specified in $0, remote "
-              "endpoint $1, "
-              "ConnID=$2 remote_addr=$3",
-              magic_enum::enum_name(cluster_cidr_ipver), magic_enum::enum_name(remote_addr_ipver),
-              ToString(conn_id_), open_info_.remote_addr.addr_str));
+        if (cluster_cidr->ip_addr.version != open_info_.remote_addr.version) {
+          Disable(
+              absl::Substitute("cluster_cidr is specified in $0 remote endpoint $1, "
+                               "ConnID=$2 remote_addr=$3",
+                               magic_enum::enum_name(cluster_cidr->ip_addr.version),
+                               magic_enum::enum_name(open_info_.remote_addr.version),
+                               ToString(conn_id_), open_info_.remote_addr.addr_str));
           break;
         }
-        if (cluster_cidr.value().Contains(open_info_.remote_addr)) {
+        if (CIDRContainsIPAddr(*cluster_cidr, open_info_.remote_addr)) {
           Disable(
               absl::Substitute("remote endpoint is inside the cluster, ConnID=$0 remote_addr=$1",
                                ToString(conn_id_), open_info_.remote_addr.addr_str));
@@ -747,13 +730,13 @@ Status ParseRemoteIPAddress(const system::SocketInfo& socket_info, IPAddress* ad
   switch (socket_info.family) {
     case AF_INET:
       // This goes first so that the result argument won't be mutated when failed.
-      PL_RETURN_IF_ERROR(ParseIPv4Addr(socket_info.remote_addr, &addr->addr_str));
-      addr->addr = reinterpret_cast<const struct in_addr&>(socket_info.remote_addr);
+      PL_RETURN_IF_ERROR(IPv4AddrToString(socket_info.remote_addr, &addr->addr_str));
+      addr->in_addr = reinterpret_cast<const struct in_addr&>(socket_info.remote_addr);
       addr->port = socket_info.remote_port;
       return Status::OK();
     case AF_INET6:
-      PL_RETURN_IF_ERROR(ParseIPv6Addr(socket_info.remote_addr, &addr->addr_str));
-      addr->addr = socket_info.remote_addr;
+      PL_RETURN_IF_ERROR(IPv6AddrToString(socket_info.remote_addr, &addr->addr_str));
+      addr->in_addr = socket_info.remote_addr;
       addr->port = socket_info.remote_port;
       return Status::OK();
   }

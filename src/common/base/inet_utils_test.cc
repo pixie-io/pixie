@@ -3,6 +3,8 @@
 
 namespace pl {
 
+using ::testing::StrEq;
+
 TEST(ParseSockAddr, IPv4) {
   // Create an IP address for the test.
   struct sockaddr_in sockaddr;
@@ -52,7 +54,7 @@ TEST(ParseIPAddr, ipv4) {
 
   // Now check for the expected string.
   std::string addr;
-  Status s = ParseIPv4Addr(in_addr, &addr);
+  Status s = IPv4AddrToString(in_addr, &addr);
   EXPECT_OK(s);
   EXPECT_EQ(addr, "1.2.3.4");
 }
@@ -64,7 +66,7 @@ TEST(ParseIPAddr, ipv6) {
 
   // Now check for the expected string.
   std::string addr;
-  Status s = ParseIPv6Addr(in6_addr, &addr);
+  Status s = IPv6AddrToString(in6_addr, &addr);
   EXPECT_OK(s);
   // Note that formatting is slightly different (zeros removed).
   EXPECT_EQ(addr, "2001:db8:85a3::8a2e:370:7334");
@@ -77,10 +79,70 @@ TEST(ParseIPAddr, ipv4_using_in6_addr) {
 
   // Now check for the expected string.
   std::string addr;
-  Status s = ParseIPv4Addr(in6_addr, &addr);
+  Status s = IPv4AddrToString(in6_addr, &addr);
   EXPECT_OK(s);
   // Note that formatting is slightly different (zeros removed).
   EXPECT_EQ(addr, "1.2.3.4");
+}
+
+TEST(CIDRBlockTest, ContainsIPv4Address) {
+  CIDRBlock block;
+  ASSERT_OK(ParseCIDRBlock("1.2.3.4/24", &block));
+  for (int i = 0; i < 256; ++i) {
+    IPAddress addr;
+    EXPECT_OK(ParseIPAddress(absl::StrCat("1.2.3.", i), &addr));
+    EXPECT_TRUE(CIDRContainsIPAddr(block, addr));
+  }
+  for (int i = 0; i < 256; ++i) {
+    IPAddress addr;
+    EXPECT_OK(ParseIPAddress(absl::StrCat("1.2.4.", i), &addr));
+    EXPECT_FALSE(CIDRContainsIPAddr(block, addr));
+  }
+}
+
+TEST(CIDRBlockTest, ContainsIPv6Address) {
+  CIDRBlock block;
+  ASSERT_OK(ParseCIDRBlock("1111:1112:1113:1114:1115:1116:1117:1100/120", &block));
+  for (char a = 'a'; a <= 'f'; ++a) {
+    for (char b = 'a'; b <= 'f'; ++b) {
+      std::string addr_str2 = "1111:1112:1113:1114:1115:1116:1117:11";
+      addr_str2 += a;
+      addr_str2 += b;
+      IPAddress addr6_2;
+      EXPECT_OK(ParseIPAddress(addr_str2, &addr6_2));
+      EXPECT_TRUE(CIDRContainsIPAddr(block, addr6_2));
+    }
+  }
+}
+
+TEST(CIDRBlockTest, ParsesIPv4String) {
+  CIDRBlock block;
+  EXPECT_OK(ParseCIDRBlock("1.2.3.4/32", &block));
+  EXPECT_OK(ParseCIDRBlock("1.2.3.4/0", &block));
+  EXPECT_THAT(ParseCIDRBlock("1.2.3.4/-1", &block).msg(),
+              StrEq("Prefix length must be >= 0, got: '-1'"));
+  EXPECT_THAT(ParseCIDRBlock("1.2.3.4/33", &block).msg(),
+              StrEq("Prefix length for IPv4 CIDR block must be <=32, got: '33'"));
+}
+
+TEST(CIDRBlockTest, ParsesIPv6String) {
+  CIDRBlock block;
+  EXPECT_OK(ParseCIDRBlock("::1/0", &block));
+  EXPECT_OK(ParseCIDRBlock("::1/128", &block));
+  EXPECT_THAT(ParseCIDRBlock("::1/-1", &block).msg(),
+              StrEq("Prefix length must be >= 0, got: '-1'"));
+  EXPECT_THAT(ParseCIDRBlock("::1/129", &block).msg(),
+              StrEq("Prefix length for IPv6 CIDR block must be <=128, got: '129'"));
+}
+
+TEST(CIDRBlockTest, ParseInvalidIPAddressString) {
+  CIDRBlock block;
+  EXPECT_THAT(ParseCIDRBlock("", &block).msg(),
+              StrEq("The format must be <ipv4/6 address>/<prefix length>, got: ''"));
+  EXPECT_THAT(ParseCIDRBlock("non-ip/0", &block).msg(),
+              StrEq("Cannot parse input 'non-ip' as IP address"));
+  EXPECT_THAT(ParseCIDRBlock("aaa", &block).msg(),
+              StrEq("The format must be <ipv4/6 address>/<prefix length>, got: 'aaa'"));
 }
 
 }  // namespace pl
