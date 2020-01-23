@@ -414,8 +414,8 @@ std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
   auto& req_messages = req_stream->Messages<http2::Frame>();
   auto& resp_messages = resp_stream->Messages<http2::Frame>();
 
-  StitchAndInflateHeaderBlocks(req_stream->Inflater()->inflater(), &req_messages);
-  StitchAndInflateHeaderBlocks(resp_stream->Inflater()->inflater(), &resp_messages);
+  StitchAndInflateHeaderBlocks(req_stream->HTTP2Inflater()->inflater(), &req_messages);
+  StitchAndInflateHeaderBlocks(resp_stream->HTTP2Inflater()->inflater(), &resp_messages);
 
   // First stitch all frames to form gRPC messages.
   ParseState req_stitch_state = StitchFramesToGRPCMessages(req_messages, &reqs);

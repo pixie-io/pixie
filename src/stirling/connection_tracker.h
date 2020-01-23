@@ -425,9 +425,11 @@ class ConnectionTracker {
   bool conn_resolution_failed_ = false;
 
   struct conn_id_t conn_id_ = {};
-  traffic_class_t traffic_class_{kProtocolUnknown, kRoleUnknown};
-
+  struct traffic_class_t traffic_class_ {
+    kProtocolUnknown, kRoleUnknown
+  };
   SocketOpen open_info_;
+  SocketClose close_info_;
 
   // The data collected by the stream, one per direction.
   DataStream send_data_;
@@ -453,9 +455,6 @@ class ConnectionTracker {
   static constexpr int kHTTP2StreamIDIncrement = 2;
 
   // --- End uprobe-based HTTP2 members.
-
-  // The connection close info.
-  SocketClose close_info_;
 
   // The timestamp of the last activity on this connection.
   // Recorded as the latest timestamp on a BPF event.

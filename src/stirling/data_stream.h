@@ -87,7 +87,7 @@ class DataStream {
    */
   bool IsEOS() const { return last_parse_state_ == ParseState::kEOS; }
 
-  http2::Inflater* Inflater() {
+  http2::Inflater* HTTP2Inflater() {
     if (inflater_ == nullptr) {
       inflater_ = std::make_unique<http2::Inflater>();
     }
@@ -210,8 +210,6 @@ class DataStream {
 
   // Only meaningful for kprobe HTTP2 tracing. Uprobe tracing extracts plain text header fields from
   // http2 library, therefore does not need to inflate headers.
-  //
-  // See also Inflater().
   //
   // TODO(yzhao): We can put this into a std::variant.
   std::unique_ptr<http2::Inflater> inflater_;
