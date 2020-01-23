@@ -48,3 +48,13 @@ pl_cc_test(
         "//src/common/exec:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "proc_path_tools_test",
+    srcs = ["proc_path_tools_test.cc"],
+    tags = ["requires_root"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+    ],
+)

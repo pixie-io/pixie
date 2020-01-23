@@ -1,7 +1,5 @@
 #include "src/stirling/obj_tools/obj_tools.h"
 
-#include "src/common/exec/exec.h"
-#include "src/common/exec/subprocess.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 

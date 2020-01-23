@@ -72,5 +72,6 @@ pl_cc_test(
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/common/system/testing:cc_library",
+        "//src/common/testing/test_utils:cc_library",
     ],
 )
