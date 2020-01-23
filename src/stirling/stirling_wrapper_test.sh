@@ -1,28 +1,41 @@
 #!/bin/bash -e
 
-cd "$(dirname "$0")"
+# Clean-up any spawned background processes on exit.
+trap 'kill $(jobs -p) &> /dev/null || true' SIGINT SIGTERM EXIT
 
-# Assuming this script was run through bazel, the executable should be here.
-BIN_DIR=.
+script_dir="$(dirname "$0")"
 
-# If the script was run in a stand-alone way,
-# then build and set the correct directory of the binary.
-if [ -z "${BUILD_WORKSPACE_DIRECTORY}" ] && [ -z "${TEST_TMPDIR}" ]; then
-    bazel build //src/stirling:stirling_wrapper_image.tar
-    BIN_DIR=$(bazel info bazel-bin)/src/stirling
+# shellcheck disable=SC1090
+source "$script_dir"/scripts/utils.sh
+
+if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
+    # If the script was run in a stand-alone way, then build and set paths.
+    pixie_root="$script_dir"/../..
+    stirling_wrapper=$pixie_root/$(bazel_build //src/stirling:stirling_wrapper)
+    go_grpc_server=$pixie_root/$(bazel_build //src/stirling/http2/testing/go_grpc_server:go_grpc_server)
+    go_grpc_client=$pixie_root/$(bazel_build //src/stirling/http2/testing/go_grpc_client:go_grpc_client)
+else
+    # If the script was run through bazel, the locations are passed as arguments.
+    stirling_wrapper=$1
+    go_grpc_server=$2
+    go_grpc_client=$3
 fi
 
-# shellcheck disable=SC1091
-source scripts/utils.sh
+###############################################################################
+# Test set-up
+###############################################################################
+
+# Run a GRPC client server as a uprobe target.
+run_uprobe_target "$go_grpc_server" "$go_grpc_client"
+
+echo "Test Setup complete."
 
 ###############################################################################
 # Main test: Run stirling_wrapper.
 ###############################################################################
 
-cmd="${BIN_DIR}/stirling_wrapper"
 flags="--init_only"
-
-out=$(run_prompt_sudo "$cmd" $flags 2>&1)
+out=$(run_prompt_sudo "$stirling_wrapper" $flags 2>&1)
 
 ###############################################################################
 # Check output for errors/warnings.

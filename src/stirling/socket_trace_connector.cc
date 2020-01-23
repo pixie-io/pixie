@@ -155,6 +155,7 @@ Status SocketTraceConnector::InitImpl() {
 
   PL_RETURN_IF_ERROR(InitBPFCode(/*cflags*/ {}));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
+  LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
 
   // TODO(yzhao): Factor this block into a helper function.
   // TODO(oazizi/yzhao): Should uprobe uses different set of perf buffers than the kprobes?
@@ -172,10 +173,14 @@ Status SocketTraceConnector::InitImpl() {
     PL_ASSIGN_OR_RETURN(const std::vector<bpf_tools::UProbeSpec> specs,
                         ResolveUProbeTmpls(binaries, kUProbeTmpls));
     PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
+    LOG(INFO) << absl::Substitute("Number of uprobes deployed = $0", specs.size());
   }
 
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
-  LOG(INFO) << "Probes successfully deployed";
+  LOG(INFO) << absl::Substitute("Number of perf buffers opened = $0", kPerfBufferSpecs.size());
+
+  LOG(INFO) << "Probes successfully deployed.";
+
   // TODO(yzhao): Consider adding a flag to switch the role to trace, i.e., between kRoleClient &
   // kRoleServer.
   if (protocol_transfer_specs_[kProtocolHTTP].enabled) {
