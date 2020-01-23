@@ -93,6 +93,19 @@ Status Dataframe::Init() {
                                std::placeholders::_2)));
   AddMethod(kGroupByOpId, group_by_fn);
 
+  /**
+   * # Equivalent to the python method method syntax:
+   * def append(self, fn):
+   *     ...
+   */
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> union_fn,
+      FuncObject::Create(kUnionOpId, {"objs"}, {}, /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&UnionHandler::Eval, graph(), op(), std::placeholders::_1,
+                                   std::placeholders::_2)));
+  AddMethod(kUnionOpId, union_fn);
+
   attributes_.emplace(kMetadataAttrName);
   return Status::OK();
 }
@@ -339,6 +352,27 @@ StatusOr<std::vector<ColumnIR*>> GroupByHandler::ParseByFunction(IRNode* by) {
     columns.push_back(col);
   }
   return columns;
+}
+
+StatusOr<QLObjectPtr> UnionHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                         const ParsedArgs& args) {
+  IRNode* objs_arg = args.GetArg("objs");
+
+  std::vector<OperatorIR*> parents{op};
+  if (Match(objs_arg, Operator())) {
+    parents.push_back(static_cast<OperatorIR*>(objs_arg));
+  } else if (Match(objs_arg, ListWithChildren(Operator()))) {
+    for (auto child : static_cast<ListIR*>(objs_arg)->children()) {
+      parents.push_back(static_cast<OperatorIR*>(child));
+    }
+  } else {
+    return objs_arg->CreateIRNodeError(
+        "Expected '$0' kwarg argument 'objs' to be a dataframe or a list of dataframes, not $1",
+        Dataframe::kUnionOpId, objs_arg->type_string());
+  }
+
+  PL_ASSIGN_OR_RETURN(UnionIR * union_op, graph->CreateNode<UnionIR>(ast, parents));
+  return Dataframe::Create(union_op);
 }
 
 }  // namespace compiler

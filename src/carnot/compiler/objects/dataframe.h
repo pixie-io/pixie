@@ -47,6 +47,7 @@ class Dataframe : public QLObject {
   inline static constexpr char kLimitOpId[] = "head";
   inline static constexpr char kMergeOpId[] = "merge";
   inline static constexpr char kGroupByOpId[] = "groupby";
+  inline static constexpr char kUnionOpId[] = "append";
   // Attribute names.
   inline static constexpr char kMetadataAttrName[] = "ctx";
 
@@ -184,6 +185,24 @@ class GroupByHandler {
 
  private:
   static StatusOr<std::vector<ColumnIR*>> ParseByFunction(IRNode* by);
+};
+
+/**
+ * @brief Handles the append() method and creates the union node.
+ *
+ */
+class UnionHandler {
+ public:
+  /**
+   * @brief Evaluates the groupby operator.
+   *
+   * @param df the dataframe that's a parent to the groupby function.
+   * @param ast the ast node that signifies where the query was written.
+   * @param args the arguments for groupby()
+   * @return StatusOr<QLObjectPtr>
+   */
+  static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                    const ParsedArgs& args);
 };
 
 }  // namespace compiler

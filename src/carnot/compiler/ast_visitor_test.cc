@@ -1066,6 +1066,30 @@ TEST_F(ASTVisitorTest, func_with_return_fails) {
   ASSERT_NOT_OK(ir_graph_or_s);
   EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("Return statements not yet supported"));
 }
+
+using UnionTest = ASTVisitorTest;
+// Union Tests
+TEST_F(UnionTest, basic) {
+  std::string union_single = absl::StrJoin(
+      {
+          "df1 = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+          "df2 = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=10, end_time=20)",
+          "both = df1.append(df2)",
+      },
+      "\n");
+  EXPECT_OK(CompileGraph(union_single));
+  std::string union_array = absl::StrJoin(
+      {
+          "df1 = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+          "df2 = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=10, end_time=20)",
+          "df3 = pl.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=20, end_time=30)",
+          "list_of_dfs = [df2, df3]",
+          "all = df1.append(objs=list_of_dfs)",
+      },
+      "\n");
+  EXPECT_OK(CompileGraph(union_array));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -541,6 +541,44 @@ TEST_F(DataframeTest, AttributeMetadataSubscriptTest) {
   EXPECT_EQ(metadata_node->name(), "service");
 }
 
+using UnionHandlerTest = DataframeTest;
+TEST_F(UnionHandlerTest, UnionTest_array) {
+  MemorySourceIR* src1 = MakeMemSource();
+  MemorySourceIR* src2 = MakeMemSource();
+  MemorySourceIR* src3 = MakeMemSource();
+  ParsedArgs args;
+  args.AddArg("objs", MakeList(src2, src3));
+  auto status = UnionHandler::Eval(graph.get(), src1, ast, args);
+  ASSERT_OK(status);
+
+  std::shared_ptr<QLObject> obj = status.ConsumeValueOrDie();
+  ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
+  auto df_obj = static_cast<Dataframe*>(obj.get());
+
+  // Check to make sure that the output is a Union operator.
+  OperatorIR* op = df_obj->op();
+  ASSERT_TRUE(Match(op, Union()));
+  EXPECT_THAT(op->parents(), ElementsAre(src1, src2, src3));
+}
+
+TEST_F(UnionHandlerTest, UnionTest_single) {
+  MemorySourceIR* src1 = MakeMemSource();
+  MemorySourceIR* src2 = MakeMemSource();
+  ParsedArgs args;
+  args.AddArg("objs", src2);
+  auto status = UnionHandler::Eval(graph.get(), src1, ast, args);
+  ASSERT_OK(status);
+
+  std::shared_ptr<QLObject> obj = status.ConsumeValueOrDie();
+  ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
+  auto df_obj = static_cast<Dataframe*>(obj.get());
+
+  // Check to make sure that the output is a Union operator.
+  OperatorIR* op = df_obj->op();
+  ASSERT_TRUE(Match(op, Union()));
+  EXPECT_THAT(op->parents(), ElementsAre(src1, src2));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
