@@ -9,6 +9,7 @@ enum MetadataType {
   // Definite types in the 1-1000 range.
   METADATA_TYPE_UNKNOWN = 0;
   UPID = 1;
+  PID = 2;
   // IDs are 1000-1999
   CONTAINER_ID = 1000;
   POD_ID = 1001;

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "src/carnot/compiler/ir/ir_nodes.h"
+#include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/metadatapb/metadata.pb.h"
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
@@ -39,6 +40,14 @@ class IdMetadataProperty : public MetadataProperty {
   // TODO(philkuz) udate this fits format when we have a better idea what the format should be.
   // ExprFitsFormat always evaluates to true because id format is not yet defined.
   bool ExprFitsFormat(ExpressionIR*) const override { return true; }
+  std::string ExplainFormat() const override { return ""; }
+};
+
+class Int64MetadataProperty : public MetadataProperty {
+ public:
+  explicit Int64MetadataProperty(MetadataType metadata_type, std::vector<MetadataType> key_columns)
+      : MetadataProperty(metadata_type, types::DataType::INT64, key_columns) {}
+  bool ExprFitsFormat(ExpressionIR* expr) const override { return Match(expr, Int()); }
   std::string ExplainFormat() const override { return ""; }
 };
 

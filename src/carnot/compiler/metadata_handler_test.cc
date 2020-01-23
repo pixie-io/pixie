@@ -5,16 +5,32 @@
 
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-TEST(MetadataPropertyTests, retreival) {
+TEST(MetadataPropertyTests, retrieval) {
   auto md_handle = MetadataHandler::Create();
   EXPECT_TRUE(md_handle->HasProperty("service_name"));
   EXPECT_TRUE(md_handle->HasProperty("pod_name"));
+  EXPECT_TRUE(md_handle->HasProperty("pid"));
   EXPECT_OK(md_handle->GetProperty("pod_name"));
   EXPECT_OK(md_handle->GetProperty("service_name"));
+  EXPECT_OK(md_handle->GetProperty("pid"));
+}
+
+TEST(MetadataPropertyTests, types) {
+  auto md_handle = MetadataHandler::Create();
+
+  auto id_prop = md_handle->GetProperty("container_id").ConsumeValueOrDie();
+  EXPECT_EQ(types::DataType::STRING, id_prop->column_type());
+
+  auto name_prop = md_handle->GetProperty("pod_name").ConsumeValueOrDie();
+  EXPECT_EQ(types::DataType::STRING, name_prop->column_type());
+
+  auto int64_prop = md_handle->GetProperty("pid").ConsumeValueOrDie();
+  EXPECT_EQ(types::DataType::INT64, int64_prop->column_type());
 }
 
 class MetadataHandlerTests : public ::testing::Test {
