@@ -13,6 +13,8 @@
 
 namespace pl {
 
+enum class IPVersion { kIPv4, kIPv6 };
+
 // TODO(yzhao): Remove this as it's superseded by IPAddress in inet_utils.h.
 struct IPv4Address {
   std::string str;
@@ -53,7 +55,10 @@ class CIDRBlock {
 
   bool Contains(const IPAddress& addr) const;
 
+  IPVersion version() const { return version_; }
+
  private:
+  IPVersion version_;
   std::variant<IPv4Address, IPv6Address> addr_;
   size_t prefix_length_;
 };

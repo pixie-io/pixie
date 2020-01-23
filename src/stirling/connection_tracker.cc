@@ -30,6 +30,8 @@ DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
 namespace pl {
 namespace stirling {
 
+const char kUnixSocket[] = "unix_socket";
+
 namespace {
 std::string ToString(const conn_id_t& conn_id) {
   return absl::Substitute("[pid=$0 start_time_ticks=$1 fd=$2 gen=$3]", conn_id.upid.pid,
@@ -645,6 +647,20 @@ bool ConnectionTracker::ReadyForDestruction() const {
   return death_countdown_ == 0;
 }
 
+namespace {
+
+IPVersion GetIPVersion(const IPAddress ip_addr) {
+  if (std::holds_alternative<struct in_addr>(ip_addr.addr)) {
+    return IPVersion::kIPv4;
+  }
+  if (std::holds_alternative<struct in6_addr>(ip_addr.addr)) {
+    return IPVersion::kIPv6;
+  }
+  return IPVersion::kIPv4;
+}
+
+}  // namespace
+
 void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster_cidr,
                                          system::ProcParser* proc_parser,
                                          const std::map<int, system::SocketInfo>* connections) {
@@ -662,15 +678,29 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
     case EndpointRole::kRoleServer:
       if (conn_resolution_failed_) {
         Disable("could not infer remote endpoint address");
+        break;
       }
-      if (cluster_cidr.has_value() && open_info_.remote_addr.addr_str != "-") {
+      if (cluster_cidr.has_value() && open_info_.remote_addr.addr_str != "-" &&
+          open_info_.remote_addr.addr_str != kUnixSocket) {
+        IPVersion cluster_cidr_ipver = cluster_cidr->version();
+        IPVersion remote_addr_ipver = GetIPVersion(open_info_.remote_addr);
+
+        if (cluster_cidr->version() != GetIPVersion(open_info_.remote_addr)) {
+          Disable(absl::Substitute(
+              "Cannot trace due to mismatched IP versions, cluster_cidr is specified in $0, remote "
+              "endpoint $1, "
+              "ConnID=$2 remote_addr=$3",
+              magic_enum::enum_name(cluster_cidr_ipver), magic_enum::enum_name(remote_addr_ipver),
+              ToString(conn_id_), open_info_.remote_addr.addr_str));
+          break;
+        }
         if (cluster_cidr.value().Contains(open_info_.remote_addr)) {
           Disable(
               absl::Substitute("remote endpoint is inside the cluster, ConnID=$0 remote_addr=$1",
                                ToString(conn_id_), open_info_.remote_addr.addr_str));
-        } else {
-          state_ = State::kTransferring;
+          break;
         }
+        state_ = State::kTransferring;
       }
       break;
     case EndpointRole::kRoleUnknown:
@@ -804,7 +834,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
     case AF_UNIX:
       // TODO(oazizi): This actually records the source inode number. Should actually populate the
       // remote peer.
-      open_info_.remote_addr.addr_str = "unix_socket";
+      open_info_.remote_addr.addr_str = kUnixSocket;
       open_info_.remote_addr.port = inode_num;
       unix_domain_socket = true;
       break;

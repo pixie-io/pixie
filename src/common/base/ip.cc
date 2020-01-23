@@ -29,10 +29,10 @@ StatusOr<IPv6Address> IPv6Address::FromStr(std::string_view addr_str) {
 }
 
 CIDRBlock::CIDRBlock(IPv4Address addr, size_t prefix_length)
-    : addr_(addr), prefix_length_(prefix_length) {}
+    : version_(IPVersion::kIPv4), addr_(addr), prefix_length_(prefix_length) {}
 
 CIDRBlock::CIDRBlock(IPv6Address addr, size_t prefix_length)
-    : addr_(addr), prefix_length_(prefix_length) {}
+    : version_(IPVersion::kIPv6), addr_(addr), prefix_length_(prefix_length) {}
 
 namespace {
 

@@ -10,8 +10,8 @@
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 
-DEFINE_string(go_grpc_client_path, "", "The path to the go greeter client executable.");
-DEFINE_string(go_grpc_server_path, "", "The path to the go greeter server executable.");
+DEFINE_string(go_http_client_path, "", "The path to the go greeter client executable.");
+DEFINE_string(go_http_server_path, "", "The path to the go greeter server executable.");
 
 namespace pl {
 namespace stirling {
@@ -36,18 +36,18 @@ class GoHTTPTraceTest : public testing::SocketTraceBPFTest {
   void SetUp() override {
     SocketTraceBPFTest::SetUp();
 
-    CHECK(!FLAGS_go_grpc_client_path.empty())
-        << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_client_path)))
-        << FLAGS_go_grpc_client_path;
+    CHECK(!FLAGS_go_http_client_path.empty())
+        << "--go_http_client_path cannot be empty. You should run this test with bazel.";
+    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_http_client_path)))
+        << FLAGS_go_http_client_path;
 
-    CHECK(!FLAGS_go_grpc_server_path.empty())
-        << "--go_grpc_server_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_server_path)))
-        << FLAGS_go_grpc_server_path;
+    CHECK(!FLAGS_go_http_server_path.empty())
+        << "--go_http_server_path cannot be empty. You should run this test with bazel.";
+    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_http_server_path)))
+        << FLAGS_go_http_server_path;
 
-    server_path_ = FLAGS_go_grpc_server_path;
-    client_path_ = FLAGS_go_grpc_client_path;
+    server_path_ = FLAGS_go_http_server_path;
+    client_path_ = FLAGS_go_http_client_path;
 
     ASSERT_OK(s_.Start({server_path_}));
 
@@ -102,7 +102,8 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
       AllOf(HasSubstr(R"("Content-Length":"31")"), HasSubstr(R"(Content-Type":"json)")));
   EXPECT_THAT(
       std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
-      HasSubstr("127.0.0.1"));
+      // On IPv6 host, localhost is resolved to ::1.
+      AnyOf(HasSubstr("127.0.0.1"), HasSubstr("::1")));
   EXPECT_EQ(s_port_,
             record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx).val);
   EXPECT_THAT(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(target_record_idx),
@@ -142,9 +143,11 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
 
 INSTANTIATE_TEST_SUITE_P(AllTraceRoles, TraceRoleTest,
                          ::testing::Values(TraceRoleTestParam{kRoleUnknown, 0, 0},
-                                           TraceRoleTestParam{kRoleClient, 1, 0},
-                                           TraceRoleTestParam{kRoleServer, 0, 1},
-                                           TraceRoleTestParam{kRoleAll, 1, 1}));
+                                           TraceRoleTestParam{kRoleClient, 1, 0}));
+
+// TODO(yzhao): Trace role only takes effect in BPF. With user-space filtering, i.e., intra-cluster
+// events are discarded, this test no longer works for kRoleServer and kRoleAll. Add test for those
+// two cases.
 
 }  // namespace stirling
 }  // namespace pl

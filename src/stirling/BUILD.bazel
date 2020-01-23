@@ -175,8 +175,8 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["http_trace_bpf_test.cc"],
     args = [
-        "--go_grpc_client_path=$(location //src/stirling/http/testing/go_http_client)",
-        "--go_grpc_server_path=$(location //src/stirling/http/testing/go_http_server)",
+        "--go_http_client_path=$(location //src/stirling/http/testing/go_http_client)",
+        "--go_http_server_path=$(location //src/stirling/http/testing/go_http_server)",
     ],
     data = [
         "//src/stirling/http/testing/go_http_client",

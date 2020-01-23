@@ -559,6 +559,7 @@ TEST_F(ConnectionTrackerTest, MySQLMessagesErasedAfterExpiration) {
   EXPECT_THAT(tracker.req_messages<mysql::Packet>(), IsEmpty());
 }
 
+// Tests that tracker state is kDisabled if the remote address is in the cluster's CIDR range.
 TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   ConnectionTracker tracker;
   std::vector<http::Record> req_resp_pairs;
@@ -574,15 +575,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   PL_CHECK_OK(ParseIPv4Addr("1.2.3.4", &v4_addr.sin_addr));
   memcpy(&conn.open.addr, &v4_addr, sizeof(struct sockaddr_in));
 
-  std::unique_ptr<SocketDataEvent> req0 = InitRecvEvent<kProtocolHTTP>(kHTTPReq0);
-  req0->attr.traffic_class.role = EndpointRole::kRoleServer;
-
-  std::unique_ptr<SocketDataEvent> resp0 = InitSendEvent<kProtocolHTTP>(kHTTPResp0);
-  resp0->attr.traffic_class.role = EndpointRole::kRoleServer;
-
   tracker.AddControlEvent(conn);
-  tracker.AddDataEvent(std::move(req0));
-  tracker.AddDataEvent(std::move(resp0));
 
   auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
   ASSERT_OK(cluster_cidr_or);
@@ -590,6 +583,78 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   tracker.IterationPreTick(cluster_cidr_or.ConsumeValueOrDie(), /*proc_parser*/ nullptr,
                            /*connections*/ nullptr);
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
+}
+
+// Tests that tracker state is kCollecting if the remote address is Unix domain socket.
+TEST_F(ConnectionTrackerTest, TrackerDisabledForUnixDomainSocket) {
+  ConnectionTracker tracker;
+  std::vector<http::Record> req_resp_pairs;
+
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  conn.open.traffic_class.role = EndpointRole::kRoleServer;
+
+  // Set an address that falls in the intra-cluster address range.
+  struct sockaddr_in v4_addr = {};
+  v4_addr.sin_family = AF_UNIX;
+  memcpy(&conn.open.addr, &v4_addr, sizeof(struct sockaddr_in));
+
+  tracker.AddControlEvent(conn);
+
+  auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
+  ASSERT_OK(cluster_cidr_or);
+
+  tracker.IterationPreTick(cluster_cidr_or.ConsumeValueOrDie(), /*proc_parser*/ nullptr,
+                           /*connections*/ nullptr);
+  EXPECT_EQ(ConnectionTracker::State::kCollecting, tracker.state());
+}
+
+// Tests that tracker is disabled if the cluster CIDR and remote address are specified in different
+// IP version.
+TEST_F(ConnectionTrackerTest, TrackerDisabledForMismatchedIPVersion) {
+  auto create_conn_event = [this](int sin_family) {
+    struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+    conn.open.traffic_class.role = EndpointRole::kRoleServer;
+
+    // Set an address that falls in the intra-cluster address range.
+    struct sockaddr_in v4_addr = {};
+    v4_addr.sin_family = sin_family;
+    uint16_t port = 123;
+    v4_addr.sin_port = htons(port);
+    // Note that address is outside of the CIDR block specified below.
+    PL_CHECK_OK(ParseIPv4Addr("4.3.2.1", &v4_addr.sin_addr));
+    memcpy(&conn.open.addr, &v4_addr, sizeof(struct sockaddr_in));
+    return conn;
+  };
+  // First, tracker is set to kTransferring because the remote address is not part of the cluster
+  // CIDR block.
+  {
+    ConnectionTracker tracker;
+    std::vector<http::Record> req_resp_pairs;
+
+    tracker.AddControlEvent(create_conn_event(AF_INET));
+
+    auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
+    ASSERT_OK(cluster_cidr_or);
+
+    tracker.IterationPreTick(cluster_cidr_or.ConsumeValueOrDie(), /*proc_parser*/ nullptr,
+                             /*connections*/ nullptr);
+    EXPECT_EQ(ConnectionTracker::State::kTransferring, tracker.state());
+  }
+  // Then, the tracker is transferring with AF_INET6, and is disabled because of different IP
+  // versions.
+  {
+    ConnectionTracker tracker;
+    std::vector<http::Record> req_resp_pairs;
+
+    tracker.AddControlEvent(create_conn_event(AF_INET6));
+
+    auto cluster_cidr_or = CIDRBlock::FromStr("1.2.3.4/14");
+    ASSERT_OK(cluster_cidr_or);
+
+    tracker.IterationPreTick(cluster_cidr_or.ConsumeValueOrDie(), /*proc_parser*/ nullptr,
+                             /*connections*/ nullptr);
+    EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
+  }
 }
 
 }  // namespace stirling
