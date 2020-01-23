@@ -139,7 +139,7 @@ StatusOr<QLObjectPtr> JoinHandler::Eval(IR* graph, OperatorIR* op, const pypa::A
   // TODO(philkuz) consider using a struct instead of a vector because it's a fixed size.
   if (!Match(suffixes_node, CollectionWithChildren(String()))) {
     return suffixes_node->CreateIRNodeError(
-        "'suffixes' must be a tuple with 2 strings for the left and right suffixes. Received $0",
+        "'suffixes' must be a list with 2 strings for the left and right suffixes. Received $0",
         suffixes_node->type_string());
   }
 
@@ -147,7 +147,7 @@ StatusOr<QLObjectPtr> JoinHandler::Eval(IR* graph, OperatorIR* op, const pypa::A
                       ParseStringsFromCollection(static_cast<ListIR*>(suffixes_node)));
   if (suffix_strs.size() != 2) {
     return suffixes_node->CreateIRNodeError(
-        "'suffixes' must be a tuple with 2 elements. Received $0", suffix_strs.size());
+        "'suffixes' must be a list with 2 elements. Received $0", suffix_strs.size());
   }
 
   PL_ASSIGN_OR_RETURN(JoinIR * join_op,
@@ -266,17 +266,18 @@ StatusOr<QLObjectPtr> LimitHandler::Eval(IR* graph, OperatorIR* op, const pypa::
 StatusOr<QLObjectPtr> SubscriptHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                              const ParsedArgs& args) {
   IRNode* key = args.GetArg("key");
-  if (!key->IsExpression()) {
-    return key->CreateIRNodeError("subscript argument must have an expression. '$0' not allowed",
-                                  key->type_string());
-  }
   if (Match(key, String())) {
     return EvalColumn(graph, op, ast, static_cast<StringIR*>(key));
   }
-  if (Match(key, List())) {
+  if (Match(key, ListWithChildren(String()))) {
     return EvalKeep(graph, op, ast, static_cast<ListIR*>(key));
   }
-  return EvalFilter(graph, op, ast, static_cast<ExpressionIR*>(key));
+  if (key->IsExpression()) {
+    return EvalFilter(graph, op, ast, static_cast<ExpressionIR*>(key));
+  }
+  return key->CreateIRNodeError(
+      "subscript argument must have a list of strings or expression. '$0' not allowed",
+      key->type_string());
 }
 
 StatusOr<QLObjectPtr> SubscriptHandler::EvalFilter(IR* graph, OperatorIR* op,

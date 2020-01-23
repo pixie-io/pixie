@@ -128,6 +128,8 @@ class IRNode {
   virtual std::string DebugString() const;
   virtual bool IsOperator() const = 0;
   virtual bool IsExpression() const = 0;
+  virtual bool IsCollection() const = 0;
+
   IRNodeType type() const { return type_; }
   std::string type_string() const { return TypeString(type()); }
   static std::string TypeString(const IRNodeType& node_type) {
@@ -388,6 +390,7 @@ class OperatorIR : public IRNode {
   OperatorIR() = delete;
   bool IsOperator() const override { return true; }
   bool IsExpression() const override { return false; }
+  bool IsCollection() const override { return false; }
   table_store::schema::Relation relation() const { return relation_; }
   Status SetRelation(table_store::schema::Relation relation) {
     relation_init_ = true;
@@ -484,11 +487,11 @@ class ExpressionIR : public IRNode {
 
   bool IsOperator() const override { return false; }
   bool IsExpression() const override { return true; }
+  bool IsCollection() const override { return false; }
   virtual types::DataType EvaluatedDataType() const = 0;
   virtual bool IsDataTypeEvaluated() const = 0;
   virtual bool IsColumn() const { return false; }
   virtual bool IsData() const { return false; }
-  virtual bool IsCollection() const { return false; }
   virtual bool IsFunction() const { return false; }
   virtual Status ToProto(planpb::ScalarExpression* expr) const = 0;
 
@@ -866,32 +869,28 @@ class UInt128IR : public DataIR {
  * vector of pointers to the contained nodes in the collection.
  *
  */
-class CollectionIR : public ExpressionIR {
+class CollectionIR : public IRNode {
  public:
   CollectionIR() = delete;
-  CollectionIR(int64_t id, IRNodeType type) : ExpressionIR(id, type) {}
-  Status Init(const std::vector<ExpressionIR*>& children);
+  CollectionIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
+  Status Init(const std::vector<IRNode*>& children);
 
-  std::vector<ExpressionIR*> children() const { return children_; }
+  std::vector<IRNode*> children() const { return children_; }
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override =
       0;
 
+  bool IsOperator() const override { return false; }
+  bool IsExpression() const override { return false; }
   bool IsCollection() const override { return true; }
-  bool IsDataTypeEvaluated() const override { return true; }
-  types::DataType EvaluatedDataType() const override { return types::DATA_TYPE_UNKNOWN; }
-
-  Status ToProto(planpb::ScalarExpression*) const override {
-    return error::Unimplemented("Collections aren't supported in expressions.");
-  }
 
  protected:
   Status CopyFromCollection(const CollectionIR* source,
                             absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map);
-  Status SetChildren(const std::vector<ExpressionIR*>& children);
+  Status SetChildren(const std::vector<IRNode*>& children);
 
  private:
-  std::vector<ExpressionIR*> children_;
+  std::vector<IRNode*> children_;
 };
 
 class ListIR : public CollectionIR {

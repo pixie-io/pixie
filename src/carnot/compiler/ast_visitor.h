@@ -258,10 +258,10 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param elements elements of the input collection
    * @param op_context: The context of the operator which this is contained within.
-   * @return StatusOr<std::vector<ExpressionIR*>> the IR representation of the list.
+   * @return StatusOr<std::vector<IRNode*>> the IR representation of the list.
    */
-  StatusOr<std::vector<ExpressionIR*>> ProcessCollectionChildren(const pypa::AstExprList& elements,
-                                                                 const OperatorContext& op_context);
+  StatusOr<std::vector<IRNode*>> ProcessCollectionChildren(const pypa::AstExprList& elements,
+                                                           const OperatorContext& op_context);
 
   /**
    * @brief Processes a list ptr into an IR node.

@@ -802,11 +802,9 @@ Status UInt128IR::CopyFromNodeImpl(const IRNode* source,
   return Status::OK();
 }
 
-Status CollectionIR::Init(const std::vector<ExpressionIR*>& children) {
-  return SetChildren(children);
-}
+Status CollectionIR::Init(const std::vector<IRNode*>& children) { return SetChildren(children); }
 
-Status CollectionIR::SetChildren(const std::vector<ExpressionIR*>& children) {
+Status CollectionIR::SetChildren(const std::vector<IRNode*>& children) {
   if (!children_.empty()) {
     return CreateIRNodeError(
         "CollectionIR already has children and likely has been created already.");
@@ -1024,9 +1022,9 @@ Status StringIR::CopyFromNodeImpl(const IRNode* source,
 
 Status CollectionIR::CopyFromCollection(
     const CollectionIR* source, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
-  std::vector<ExpressionIR*> new_children;
-  for (const ExpressionIR* child : source->children()) {
-    PL_ASSIGN_OR_RETURN(ExpressionIR * new_child, graph_ptr()->CopyNode(child, copied_nodes_map));
+  std::vector<IRNode*> new_children;
+  for (const IRNode* child : source->children()) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_child, graph_ptr()->CopyNode(child, copied_nodes_map));
     new_children.push_back(new_child);
   }
   return SetChildren(new_children);

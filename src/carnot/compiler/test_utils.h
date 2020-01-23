@@ -599,14 +599,14 @@ class OperatorTests : public ::testing::Test {
   template <typename... Args>
   ListIR* MakeList(Args... args) {
     ListIR* list =
-        graph->CreateNode<ListIR>(ast, std::vector<ExpressionIR*>{args...}).ConsumeValueOrDie();
+        graph->CreateNode<ListIR>(ast, std::vector<IRNode*>{args...}).ConsumeValueOrDie();
     return list;
   }
 
   template <typename... Args>
   TupleIR* MakeTuple(Args... args) {
     TupleIR* tuple =
-        graph->CreateNode<TupleIR>(ast, std::vector<ExpressionIR*>{args...}).ConsumeValueOrDie();
+        graph->CreateNode<TupleIR>(ast, std::vector<IRNode*>{args...}).ConsumeValueOrDie();
     return tuple;
   }
 

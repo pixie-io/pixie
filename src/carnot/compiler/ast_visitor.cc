@@ -2,6 +2,7 @@
 
 #include "src/carnot/compiler/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
+#include "src/carnot/compiler/objects/collection_object.h"
 #include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/none_object.h"
 #include "src/carnot/compiler/objects/pl_module.h"
@@ -466,34 +467,30 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessStr(const pypa::AstStrPtr& ast) {
   return ExprObject::Create(node);
 }
 
-StatusOr<std::vector<ExpressionIR*>> ASTVisitorImpl::ProcessCollectionChildren(
+StatusOr<std::vector<IRNode*>> ASTVisitorImpl::ProcessCollectionChildren(
     const pypa::AstExprList& elements, const OperatorContext& op_context) {
-  std::vector<ExpressionIR*> children;
+  std::vector<IRNode*> children;
   for (auto& child : elements) {
     PL_ASSIGN_OR_RETURN(IRNode * child_node, ProcessData(child, op_context));
-    if (!child_node->IsExpression()) {
-      return CreateAstError(child, "Can't support '$0' as a Collection member.",
-                            child_node->type_string());
-    }
-    children.push_back(static_cast<ExpressionIR*>(child_node));
+    children.push_back(child_node);
   }
   return children;
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessList(const pypa::AstListPtr& ast,
                                                   const OperatorContext& op_context) {
-  PL_ASSIGN_OR_RETURN(std::vector<ExpressionIR*> expr_vec,
+  PL_ASSIGN_OR_RETURN(std::vector<IRNode*> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
   PL_ASSIGN_OR_RETURN(ListIR * node, ir_graph_->CreateNode<ListIR>(ast, expr_vec));
-  return ExprObject::Create(node);
+  return CollectionObject::Create(node);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
                                                    const OperatorContext& op_context) {
-  PL_ASSIGN_OR_RETURN(std::vector<ExpressionIR*> expr_vec,
+  PL_ASSIGN_OR_RETURN(std::vector<IRNode*> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
   PL_ASSIGN_OR_RETURN(TupleIR * node, ir_graph_->CreateNode<TupleIR>(ast, expr_vec));
-  return ExprObject::Create(node);
+  return CollectionObject::Create(node);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& node) {

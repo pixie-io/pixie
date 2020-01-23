@@ -18,7 +18,16 @@ namespace compiler {
 // are QLObjects themselves. Fully declared in "src/carnot/compiler/objects/funcobject.h".
 class FuncObject;
 
-enum class QLObjectType { kMisc = 0, kDataframe, kFunction, kExpr, kNone, kPLModule, kMetadata };
+enum class QLObjectType {
+  kMisc = 0,
+  kDataframe,
+  kFunction,
+  kExpr,
+  kCollection,
+  kNone,
+  kPLModule,
+  kMetadata
+};
 
 class TypeDescriptor {
  public:

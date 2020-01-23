@@ -123,7 +123,7 @@ TEST(IRTest, CollectionSharedNodes) {
   auto ast = MakeTestAstPtr();
   auto ig = std::make_shared<IR>();
   auto expr = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
-  std::vector<ExpressionIR*> children{expr, expr};
+  std::vector<IRNode*> children{expr, expr};
 
   auto list = ig->CreateNode<ListIR>(ast, children).ValueOrDie();
   ASSERT_EQ(2, list->children().size());

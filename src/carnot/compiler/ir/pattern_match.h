@@ -778,9 +778,7 @@ inline ColumnMatch ColumnNode() { return ColumnMatch(); }
 
 struct CollectionMatch : public ParentMatch {
   CollectionMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool Match(const IRNode* node) const override {
-    return node->IsExpression() && static_cast<const ExpressionIR*>(node)->IsCollection();
-  }
+  bool Match(const IRNode* node) const override { return node->IsCollection(); }
 };
 
 inline CollectionMatch Collection() { return CollectionMatch(); }

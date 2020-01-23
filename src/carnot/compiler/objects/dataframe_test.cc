@@ -410,8 +410,10 @@ TEST_F(SubscriptTest, SubscriptCanHandleErrorInput) {
   auto qlo_or_s = SubscriptHandler::Eval(graph.get(), src, ast, parsed_args);
   ASSERT_NOT_OK(qlo_or_s);
 
-  EXPECT_THAT(qlo_or_s.status(),
-              HasCompilerError("subscript argument must have an expression. '.*' not allowed"));
+  EXPECT_THAT(
+      qlo_or_s.status(),
+      HasCompilerError(
+          "subscript argument must have a list of strings or expression. '.*' not allowed"));
 }
 
 TEST_F(SubscriptTest, SubscriptCreateColumn) {
