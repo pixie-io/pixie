@@ -24,14 +24,14 @@ let plugins = [
   new CaseSensitivePathsPlugin(),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
-    chunks: ['main', 'manifest', 'commons', 'vendor'],
+    chunks: ['main', 'commons~main~subdomain', 'vendor'],
     template: 'index.html',
     filename: 'index.html',
   }),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
-    chunks: ['main', 'manifest', 'commons', 'vendor'],
-    template: 'subdomain-index.html',
+    chunks: ['subdomain', 'commons~main~subdomain', 'vendor'],
+    template: 'index.html',
     filename: 'subdomain-index.html',
   }),
   new CopyPlugin([
@@ -47,7 +47,6 @@ let plugins = [
   ]),
 ];
 
-let entryFiles = [];
 
 if (isDevServer) {
   // enable HMR globally
@@ -55,7 +54,6 @@ if (isDevServer) {
   // prints more readable module names in the browser console on HMR updates
   plugins.push(new webpack.NamedModulesPlugin());
 
-  entryFiles = [require.resolve('react-dev-utils/webpackHotDevClient'), 'index.tsx'];
 } else {
   // Archive plugin has problems with dev server.
   plugins.push(
@@ -63,8 +61,6 @@ if (isDevServer) {
       output: join(resolve(__dirname, 'dist'), 'bundle'),
       format: ['tar'],
     }));
-
-  entryFiles = ['index.tsx'];
 }
 
 var webpackConfig = {
@@ -86,7 +82,10 @@ var webpackConfig = {
     },
     proxy: [],
   },
-  entry: entryFiles,
+  entry: {
+    main: 'main.tsx',
+    subdomain: 'subdomain.tsx',
+  },
   mode: isDevServer ? 'development' : 'production',
   module: {
     rules: [
