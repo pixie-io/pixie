@@ -182,6 +182,10 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
 
   int64_t tablet_source_group_id = tablet_source_group->id();
   int64_t filter_id = filter->id();
+  int64_t filter_expr_id = filter_expr->id();
+  int64_t column_id = column->id();
+  int64_t tablet_id = tablet->id();
+  int64_t mem_src_id = mem_src->id();
 
   EXPECT_THAT(graph, HasEdge(tablet_source_group, filter));
   EXPECT_THAT(graph, HasEdge(filter, filter_expr));
@@ -197,17 +201,17 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
   EXPECT_TRUE(result.ConsumeValueOrDie());
 
   // Graph is cleaned up.
-  EXPECT_THAT(graph, Not(HasEdge(tablet_source_group, filter)));
-  EXPECT_THAT(graph, Not(HasEdge(filter, filter_expr)));
-  EXPECT_THAT(graph, Not(HasEdge(filter_expr, column)));
-  EXPECT_THAT(graph, Not(HasEdge(filter_expr, tablet)));
-  EXPECT_THAT(graph, Not(HasEdge(filter, mem_sink)));
+  EXPECT_THAT(graph, Not(HasEdge(tablet_source_group_id, filter_id)));
+  EXPECT_THAT(graph, Not(HasEdge(filter_id, filter_expr_id)));
+  EXPECT_THAT(graph, Not(HasEdge(filter_expr_id, column_id)));
+  EXPECT_THAT(graph, Not(HasEdge(filter_expr_id, tablet_id)));
+  EXPECT_THAT(graph, Not(HasEdge(filter_id, mem_sink->id())));
 
   // Check to see that the group is no longer available
   EXPECT_FALSE(graph->HasNode(tablet_source_group_id));
   EXPECT_FALSE(graph->HasNode(filter_id));
   // Tablet source group produces a new memory source.
-  EXPECT_FALSE(graph->HasNode(mem_src->id()));
+  EXPECT_FALSE(graph->HasNode(mem_src_id));
   EXPECT_TRUE(graph->HasNode(mem_sink->id()));
 
   // Check to see that mem_sink1 has a new parent that is a union.

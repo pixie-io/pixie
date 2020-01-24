@@ -296,7 +296,6 @@ class IR {
   Status DeleteEdge(int64_t from_node, int64_t to_node);
   Status DeleteEdge(IRNode* from_node, IRNode* to_node);
   Status DeleteNode(int64_t node);
-  Status DeleteNodeAndChildren(int64_t node);
 
   /**
    * @brief Adds an edge between the parent and child nodes in the DAG.

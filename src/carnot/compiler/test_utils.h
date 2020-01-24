@@ -615,68 +615,51 @@ class OperatorTests : public ::testing::Test {
 };
 
 struct HasEdgeMatcher {
-  HasEdgeMatcher(IRNode* from, IRNode* to) : from_(from), to_(to) {}
+  HasEdgeMatcher(int64_t from, int64_t to) : from_(from), to_(to) {}
 
   bool MatchAndExplain(std::shared_ptr<IR> graph, ::testing::MatchResultListener* listener) const {
     return MatchAndExplain(graph.get(), listener);
   }
   bool MatchAndExplain(IR* graph, ::testing::MatchResultListener* listener) const {
-    if (from_ == nullptr) {
-      (*listener) << "from node is null";
+    if (!graph->HasNode(from_)) {
+      (*listener) << "graph doesn't have from node with id " << from_;
       return false;
     }
-    if (to_ == nullptr) {
-      (*listener) << "to node is null";
-      return false;
-    }
-
-    if (!graph->HasNode(from_->id())) {
-      (*listener) << "graph doesn't have from node with id " << from_->id();
-      return false;
-    }
-    if (!graph->HasNode(to_->id())) {
-      (*listener) << "graph doesn't have to node with id " << to_->id();
+    if (!graph->HasNode(to_)) {
+      (*listener) << "graph doesn't have to node with id " << to_;
       return false;
     }
 
-    if (!graph->dag().HasEdge(from_->id(), to_->id())) {
-      (*listener) << absl::Substitute("no edge ($0, $1)", from_->DebugString(), to_->DebugString());
+    if (!graph->dag().HasEdge(from_, to_)) {
+      (*listener) << absl::Substitute("no edge ($0, $1)", graph->Get(from_)->DebugString(),
+                                      graph->Get(to_)->DebugString());
       return false;
     }
 
-    (*listener) << absl::Substitute("has edge ($0, $1)", from_->DebugString(), to_->DebugString());
+    (*listener) << absl::Substitute("has edge ($0, $1)", graph->Get(from_)->DebugString(),
+                                    graph->Get(to_)->DebugString());
     return true;
   }
 
   void DescribeTo(::std::ostream* os) const {
-    if (from_ == nullptr) {
-      *os << absl::Substitute("WARNING from not found.");
-      return;
-    } else if (to_ == nullptr) {
-      *os << absl::Substitute("WARNING to not found.");
-      return;
-    }
-    *os << absl::Substitute("has edge ($0, $1)", from_->DebugString(), to_->DebugString());
+    *os << absl::Substitute("has edge ($0, $1)", from_, to_);
   }
 
   void DescribeNegationTo(::std::ostream* os) const {
-    if (from_ == nullptr) {
-      *os << absl::Substitute("WARNING from not found.");
-      return;
-    } else if (to_ == nullptr) {
-      *os << absl::Substitute("WARNING to not found.");
-      return;
-    }
-    *os << absl::Substitute("does not have edge ($0, $1)", from_->DebugString(),
-                            to_->DebugString());
+    *os << absl::Substitute("does not have edge ($0, $1)", from_, to_);
   }
 
-  IRNode* from_;
-  IRNode* to_;
+  int64_t from_;
+  int64_t to_;
 };
 
 template <typename... Args>
 inline ::testing::PolymorphicMatcher<HasEdgeMatcher> HasEdge(IRNode* from, IRNode* to) {
+  return ::testing::MakePolymorphicMatcher(HasEdgeMatcher(from->id(), to->id()));
+}
+
+template <typename... Args>
+inline ::testing::PolymorphicMatcher<HasEdgeMatcher> HasEdge(int64_t from, int64_t to) {
   return ::testing::MakePolymorphicMatcher(HasEdgeMatcher(from, to));
 }
 

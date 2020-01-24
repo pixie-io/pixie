@@ -1555,6 +1555,9 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
   MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
   ASSERT_OK(md_resolver->AddMetadata(&property));
 
+  auto resolver_cols = md_resolver->metadata_columns();
+  auto resolver_id = md_resolver->id();
+
   auto md_relation = table_store::schema::Relation(relation);
   md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
@@ -1575,8 +1578,8 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
 
   // Check to make sure there are no edges between the mem_src and md_resolver.
   // Check to make sure there are no edges between the filter and md_resolver.
-  EXPECT_FALSE(graph->dag().HasEdge(mem_src->id(), md_resolver->id()));
-  EXPECT_FALSE(graph->dag().HasEdge(md_resolver->id(), filter->id()));
+  EXPECT_FALSE(graph->dag().HasEdge(mem_src->id(), resolver_id));
+  EXPECT_FALSE(graph->dag().HasEdge(resolver_id, filter->id()));
 
   // Check to make sure new edges are referenced.
   EXPECT_TRUE(graph->dag().HasEdge(mem_src->id(), new_op->id()));
@@ -1585,7 +1588,7 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
 
   ColExpressionVector vec = md_mapper->col_exprs();
-  ASSERT_EQ(relation.NumColumns() + md_resolver->metadata_columns().size(), vec.size());
+  ASSERT_EQ(relation.NumColumns() + resolver_cols.size(), vec.size());
   // Check to see that all of the parent columns are there
   int64_t cur_idx = 0;
   for (const std::string& parent_col_name : relation.col_names()) {
@@ -1598,7 +1601,7 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
   }
 
   // Check to see that the metadata columns have the correct format.
-  for (const auto& md_iter : md_resolver->metadata_columns()) {
+  for (const auto& md_iter : resolver_cols) {
     std::string md_col_name = md_iter.first;
     ColumnExpression expr_pair = vec[cur_idx];
     EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
@@ -1632,6 +1635,9 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
   md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
+  auto resolver_cols = md_resolver->metadata_columns();
+  auto resolver_id = md_resolver->id();
+
   MetadataIR* metadata_ir = MakeMetadataIR("pod_name", /* parent_op_idx */ 0);
   ASSERT_OK(metadata_ir->ResolveMetadataColumn(md_resolver, &property));
   FilterIR* filter = MakeFilter(md_resolver, metadata_ir);
@@ -1642,7 +1648,7 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
   EXPECT_TRUE(status.ValueOrDie());
 
   OperatorIR* new_op = filter->parents()[0];
-  EXPECT_NE(new_op, md_resolver);
+  EXPECT_NE(new_op->id(), resolver_id);
   ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
 
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
@@ -1652,7 +1658,7 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
   int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
 
   // Check to see that the metadata columns have the correct format.
-  for (const auto& md_iter : md_resolver->metadata_columns()) {
+  for (const auto& md_iter : resolver_cols) {
     std::string md_col_name = md_iter.first;
     ColumnExpression expr_pair = vec[cur_idx];
     EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
@@ -1714,6 +1720,9 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
   MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
   ASSERT_OK(md_resolver->AddMetadata(&property));
 
+  auto resolver_id = md_resolver->id();
+  auto resolver_cols = md_resolver->metadata_columns();
+
   auto md_relation = table_store::schema::Relation(relation);
   md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
@@ -1728,7 +1737,7 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
   EXPECT_TRUE(status.ValueOrDie());
 
   OperatorIR* new_op = filter->parents()[0];
-  EXPECT_NE(new_op, md_resolver);
+  EXPECT_NE(new_op->id(), resolver_id);
   ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
 
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
@@ -1737,7 +1746,7 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
   int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
 
   // Check to see that the metadata columns have the correct format.
-  for (const auto& md_iter : md_resolver->metadata_columns()) {
+  for (const auto& md_iter : resolver_cols) {
     std::string md_col_name = md_iter.first;
     ColumnExpression expr_pair = vec[cur_idx];
     EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
@@ -1770,6 +1779,9 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
   ASSERT_OK(md_resolver->AddMetadata(&property1));
   ASSERT_OK(md_resolver->AddMetadata(&property2));
 
+  auto resolver_id = md_resolver->id();
+  auto resolver_cols = md_resolver->metadata_columns();
+
   auto md_relation = table_store::schema::Relation(relation);
   md_relation.AddColumn(property1.column_type(), property1.GetColumnRepr());
   md_relation.AddColumn(property2.column_type(), property2.GetColumnRepr());
@@ -1783,7 +1795,7 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
   EXPECT_TRUE(status.ValueOrDie());
 
   OperatorIR* new_op = filter->parents()[0];
-  EXPECT_NE(new_op, md_resolver);
+  EXPECT_NE(new_op->id(), resolver_id);
   ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
 
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
@@ -1792,7 +1804,7 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
   int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
 
   // Check to see that the metadata columns have the correct format.
-  for (const auto& md_iter : md_resolver->metadata_columns()) {
+  for (const auto& md_iter : resolver_cols) {
     std::string md_col_name = md_iter.first;
     ColumnExpression expr_pair = vec[cur_idx];
     EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
@@ -1837,6 +1849,7 @@ TEST_F(MetadataResolverConversionTest, remove_extra_resolver) {
   EXPECT_OK(filter->SetRelation(md_relation));
 
   MetadataResolverIR* md_resolver2 = MakeMetadataResolver(filter);
+  auto resolver2_id = md_resolver2->id();
   ASSERT_OK(md_resolver2->AddMetadata(&property));
   // Filter just copies columns, so relation is the same.
   EXPECT_OK(md_resolver2->SetRelation(md_relation));
@@ -1854,7 +1867,7 @@ TEST_F(MetadataResolverConversionTest, remove_extra_resolver) {
   EXPECT_TRUE(status.ValueOrDie());
 
   EXPECT_EQ(agg->parents()[0], filter);
-  EXPECT_EQ(graph->dag().DependenciesOf(md_resolver2->id()).size(), 0UL);
+  EXPECT_FALSE(graph->HasNode(resolver2_id));
 }
 
 TEST_F(RulesTest, drop_to_map) {
@@ -1868,13 +1881,15 @@ TEST_F(RulesTest, drop_to_map) {
   EXPECT_OK(mem_src->SetRelation(cpu_relation));
   EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2));
 
+  auto drop_id = drop->id();
+
   // Apply the rule.
   DropToMapOperatorRule rule(compiler_state_.get());
   auto status = rule.Execute(graph.get());
   ASSERT_OK(status);
   EXPECT_TRUE(status.ValueOrDie());
 
-  EXPECT_FALSE(graph->dag().HasNode(drop->id()));
+  EXPECT_FALSE(graph->dag().HasNode(drop_id));
 
   ASSERT_EQ(mem_src->Children().size(), 1);
   EXPECT_TRUE(Match(mem_src->Children()[0], Map()));
@@ -1902,6 +1917,7 @@ TEST_F(RulesTest, drop_middle_columns) {
   DropIR* drop =
       graph->CreateNode<DropIR>(ast, mem_src, std::vector<std::string>{"window", "quantiles"})
           .ConsumeValueOrDie();
+  auto drop_id = drop->id();
   MemorySinkIR* sink = MakeMemSink(drop, "sink");
 
   EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2));
@@ -1912,7 +1928,7 @@ TEST_F(RulesTest, drop_middle_columns) {
   ASSERT_OK(status);
   EXPECT_TRUE(status.ValueOrDie());
 
-  EXPECT_FALSE(graph->dag().HasNode(drop->id()));
+  EXPECT_FALSE(graph->dag().HasNode(drop_id));
 
   ASSERT_EQ(mem_src->Children().size(), 1);
   EXPECT_TRUE(Match(mem_src->Children()[0], Map()));
@@ -2323,6 +2339,7 @@ TEST_F(RulesTest, CombineConsecutiveMapsRule_basic) {
 
   auto map1 = MakeMap(mem_src, {parent_expr}, true);
   auto map2 = MakeMap(map1, {child_expr}, true);
+  auto map2_id = map2->id();
   auto sink1 = MakeMemSink(map2, "abc");
   auto sink2 = MakeMemSink(map2, "def");
 
@@ -2332,7 +2349,7 @@ TEST_F(RulesTest, CombineConsecutiveMapsRule_basic) {
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
   EXPECT_TRUE(graph->HasNode(map1->id()));
-  EXPECT_FALSE(graph->HasNode(map2->id()));
+  EXPECT_FALSE(graph->HasNode(map2_id));
   EXPECT_THAT(map1->Children(), ElementsAre(sink1, sink2));
 
   auto expected_map = MakeMap(mem_src, {parent_expr, child_expr}, true);
@@ -2352,6 +2369,8 @@ TEST_F(RulesTest, CombineConsecutiveMapsRule_multiple_with_break) {
   auto map2 = MakeMap(map1, {expr2}, true);
   auto map3 = MakeMap(map2, {expr3}, true);
   auto map4 = MakeMap(map3, {expr4}, true);
+  auto map2_id = map2->id();
+  auto map3_id = map3->id();
 
   auto sink1 = MakeMemSink(map4, "abc");
   auto sink2 = MakeMemSink(map4, "def");
@@ -2362,8 +2381,8 @@ TEST_F(RulesTest, CombineConsecutiveMapsRule_multiple_with_break) {
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
   EXPECT_TRUE(graph->HasNode(map1->id()));
-  EXPECT_FALSE(graph->HasNode(map2->id()));
-  EXPECT_FALSE(graph->HasNode(map3->id()));
+  EXPECT_FALSE(graph->HasNode(map2_id));
+  EXPECT_FALSE(graph->HasNode(map3_id));
   EXPECT_TRUE(graph->HasNode(map4->id()));
   EXPECT_THAT(map1->Children(), ElementsAre(map4));
   EXPECT_THAT(map4->Children(), ElementsAre(sink1, sink2));
@@ -2382,6 +2401,7 @@ TEST_F(RulesTest, CombineConsecutiveMapsRule_name_reassignment) {
   auto map2 = MakeMap(map1, {child_expr}, true);
   auto sink1 = MakeMemSink(map2, "abc");
   auto sink2 = MakeMemSink(map2, "def");
+  auto map2_id = map2->id();
 
   CombineConsecutiveMapsRule rule;
   auto result = rule.Execute(graph.get());
@@ -2389,7 +2409,7 @@ TEST_F(RulesTest, CombineConsecutiveMapsRule_name_reassignment) {
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
   EXPECT_TRUE(graph->HasNode(map1->id()));
-  EXPECT_FALSE(graph->HasNode(map2->id()));
+  EXPECT_FALSE(graph->HasNode(map2_id));
   EXPECT_THAT(map1->Children(), ElementsAre(sink1, sink2));
 
   auto expected_map = MakeMap(mem_src, {child_expr}, true);
@@ -2438,6 +2458,7 @@ TEST_F(RulesTest, CombineConsecutiveMapsRule_parent_dont_keep_input_columns) {
 
   auto map1 = MakeMap(mem_src, {parent_expr}, false);
   auto map2 = MakeMap(map1, {child_expr}, true);
+  auto map2_id = map2->id();
   auto sink1 = MakeMemSink(map2, "abc");
   auto sink2 = MakeMemSink(map2, "def");
 
@@ -2447,7 +2468,7 @@ TEST_F(RulesTest, CombineConsecutiveMapsRule_parent_dont_keep_input_columns) {
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
   EXPECT_TRUE(graph->HasNode(map1->id()));
-  EXPECT_FALSE(graph->HasNode(map2->id()));
+  EXPECT_FALSE(graph->HasNode(map2_id));
   EXPECT_THAT(map1->Children(), ElementsAre(sink1, sink2));
 
   auto expected_map = MakeMap(mem_src, {parent_expr, child_expr}, true);
@@ -2642,6 +2663,9 @@ TEST_F(RulesTest, CleanUpStrayIRNodesRule_basic) {
   auto not_in_op_col = MakeColumn("not_in_op", 0);
   auto not_in_op_int = MakeInt(10);
   auto not_in_op_func = MakeAddFunc(not_in_op_col, not_in_op_int);
+  auto not_in_op_col_id = not_in_op_col->id();
+  auto not_in_op_int_id = not_in_op_int->id();
+  auto not_in_op_func_id = not_in_op_func->id();
 
   CleanUpStrayIRNodesRule rule;
   auto result = rule.Execute(graph.get());
@@ -2649,9 +2673,13 @@ TEST_F(RulesTest, CleanUpStrayIRNodesRule_basic) {
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
   EXPECT_EQ(non_stray_nodes, graph->dag().TopologicalSort());
-  EXPECT_FALSE(graph->HasNode(not_in_op_int->id()));
-  EXPECT_FALSE(graph->HasNode(not_in_op_col->id()));
-  EXPECT_FALSE(graph->HasNode(not_in_op_func->id()));
+  EXPECT_FALSE(graph->HasNode(not_in_op_int_id));
+  EXPECT_FALSE(graph->HasNode(not_in_op_col_id));
+  EXPECT_FALSE(graph->HasNode(not_in_op_func_id));
+
+  result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_FALSE(result.ConsumeValueOrDie());
 }
 
 TEST_F(RulesTest, CleanUpStrayIRNodesRule_mixed_parents) {
@@ -2672,6 +2700,9 @@ TEST_F(RulesTest, CleanUpStrayIRNodesRule_mixed_parents) {
   auto not_in_op_col = MakeColumn("not_in_op", 0);
   auto not_in_op_func = MakeAddFunc(not_in_op_col, cpu1_col);
   auto not_in_op_nested_func = MakeAddFunc(not_in_op_col, cpu_sum);
+  auto not_in_op_col_id = not_in_op_col->id();
+  auto not_in_op_func_id = not_in_op_func->id();
+  auto not_in_op_nested_func_id = not_in_op_nested_func->id();
 
   CleanUpStrayIRNodesRule rule;
   auto result = rule.Execute(graph.get());
@@ -2679,9 +2710,9 @@ TEST_F(RulesTest, CleanUpStrayIRNodesRule_mixed_parents) {
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
   EXPECT_EQ(non_stray_nodes, graph->dag().TopologicalSort());
-  EXPECT_FALSE(graph->HasNode(not_in_op_col->id()));
-  EXPECT_FALSE(graph->HasNode(not_in_op_func->id()));
-  EXPECT_FALSE(graph->HasNode(not_in_op_nested_func->id()));
+  EXPECT_FALSE(graph->HasNode(not_in_op_col_id));
+  EXPECT_FALSE(graph->HasNode(not_in_op_func_id));
+  EXPECT_FALSE(graph->HasNode(not_in_op_nested_func_id));
 }
 
 TEST_F(RulesTest, CleanUpStrayIRNodesRule_unchanged) {

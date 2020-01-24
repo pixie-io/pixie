@@ -45,20 +45,8 @@ Status IR::DeleteNode(int64_t node) {
     return error::InvalidArgument("No node $0 exists in graph.", node);
   }
   dag_.DeleteNode(node);
+  id_node_map_.erase(node);
   return Status::OK();
-}
-
-Status IR::DeleteNodeAndChildren(int64_t node) {
-  if (dag_.ParentsOf(node).size() != 0) {
-    // TODO(philkuz) if this errors out unexpectedly, it's because you used a non-tree dag.
-    return Get(node)->CreateIRNodeError("$0 still is a child of $1.", Get(node)->DebugString(),
-                                        absl::StrJoin(dag_.ParentsOf(node), ","));
-  }
-  for (int64_t child_node : dag_.DependenciesOf(node)) {
-    PL_RETURN_IF_ERROR(DeleteEdge(node, child_node));
-    PL_RETURN_IF_ERROR(DeleteNodeAndChildren(child_node));
-  }
-  return DeleteNode(node);
 }
 
 StatusOr<IRNode*> IR::MakeNodeWithType(IRNodeType node_type, int64_t new_node_id) {
