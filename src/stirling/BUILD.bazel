@@ -267,6 +267,9 @@ sh_test(
         "requires_bpf",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
+    # Sometimes stirling_wrapper gets stuck after receiving SIGHUP, the test waits for
+    # stirling_wrapper process to exit and eventually times out.
+    flaky = True,
 )
 
 sh_test(
