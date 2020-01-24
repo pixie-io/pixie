@@ -765,6 +765,9 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
   //               is small (currently only 2).
   //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
 
+  // TODO(yzhao/oazizi): Do we need to do on every TransferStreams, or can it be cached?
+  const auto& cluster_cidr = ctx->AgentMetadataState()->k8s_metadata_state().cluster_cidr();
+
   // Outer loop iterates through tracker sets (keyed by PID+FD),
   // while inner loop iterates through generations of trackers for that PID+FD pair.
   auto tracker_set_it = connection_trackers_.begin();
@@ -787,7 +790,6 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
         continue;
       }
 
-      const auto& cluster_cidr = ctx->AgentMetadataState()->k8s_metadata_state().cluster_cidr();
       tracker.IterationPreTick(cluster_cidr, proc_parser_.get(), socket_connections_.get());
 
       if (transfer_spec.transfer_fn && transfer_spec.enabled) {
