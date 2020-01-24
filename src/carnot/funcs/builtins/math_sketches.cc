@@ -5,8 +5,8 @@ namespace carnot {
 namespace builtins {
 
 void RegisterMathSketchesOrDie(udf::Registry* registry) {
-  registry->RegisterOrDie<QuantilesUDA<types::Int64Value>>("pl.quantiles");
-  registry->RegisterOrDie<QuantilesUDA<types::Float64Value>>("pl.quantiles");
+  registry->RegisterOrDie<QuantilesUDA<types::Int64Value>>("px.quantiles");
+  registry->RegisterOrDie<QuantilesUDA<types::Float64Value>>("px.quantiles");
 }
 
 }  // namespace builtins

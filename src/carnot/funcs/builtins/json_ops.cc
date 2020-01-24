@@ -7,9 +7,9 @@ namespace carnot {
 namespace builtins {
 
 void RegisterJSONOpsOrDie(udf::Registry* registry) {
-  registry->RegisterOrDie<PluckUDF>("pl.pluck");
-  registry->RegisterOrDie<PluckAsInt64UDF>("pl.pluck_int64");
-  registry->RegisterOrDie<PluckAsFloat64UDF>("pl.pluck_float64");
+  registry->RegisterOrDie<PluckUDF>("px.pluck");
+  registry->RegisterOrDie<PluckAsInt64UDF>("px.pluck_int64");
+  registry->RegisterOrDie<PluckAsFloat64UDF>("px.pluck_float64");
 }
 
 }  // namespace builtins

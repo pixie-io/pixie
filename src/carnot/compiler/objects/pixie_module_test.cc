@@ -10,7 +10,7 @@ using ::pl::table_store::schema::Relation;
 
 constexpr char kRegInfoProto[] = R"proto(
 scalar_udfs {
-  name: "pl.equals"
+  name: "px.equals"
   exec_arg_types: UINT128
   exec_arg_types: UINT128
   return_type: BOOLEAN
@@ -73,7 +73,7 @@ relation {
 }
 )proto";
 
-class PLModuleTest : public QLObjectTest {
+class PixieModuleTest : public QLObjectTest {
  protected:
   std::unique_ptr<compiler::RegistryInfo> SetUpRegistryInfo() {
     udfspb::UDFInfo udf_proto;
@@ -115,7 +115,7 @@ class PLModuleTest : public QLObjectTest {
   std::shared_ptr<PixieModule> module_;
 };
 
-TEST_F(PLModuleTest, ModuleFindAttributeFromRegistryInfo) {
+TEST_F(PixieModuleTest, ModuleFindAttributeFromRegistryInfo) {
   auto attr_or_s = module_->GetAttribute(ast, "equals");
 
   ASSERT_OK(attr_or_s);
@@ -133,15 +133,16 @@ TEST_F(PLModuleTest, ModuleFindAttributeFromRegistryInfo) {
   EXPECT_EQ(func->carnot_op_name(), "equals");
 }
 
-TEST_F(PLModuleTest, AttributeNotFound) {
+TEST_F(PixieModuleTest, AttributeNotFound) {
   std::string attribute = "bar";
   auto attr_or_s = module_->GetAttribute(ast, attribute);
 
   ASSERT_NOT_OK(attr_or_s);
-  EXPECT_THAT(attr_or_s.status(), HasCompilerError("'pl' object has no attribute .*$0", attribute));
+  EXPECT_THAT(attr_or_s.status(), HasCompilerError("'$1' object has no attribute .*$0", attribute,
+                                                   PixieModule::kPixieModuleObjName));
 }
 
-TEST_F(PLModuleTest, GetUDTFMethod) {
+TEST_F(PixieModuleTest, GetUDTFMethod) {
   std::string upid_value = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c";
   auto upid_str = MakeString(upid_value);
   std::string network_conns_udtf_name = "OpenNetworkConnections";
@@ -167,7 +168,7 @@ TEST_F(PLModuleTest, GetUDTFMethod) {
   EXPECT_EQ(static_cast<UInt128IR*>(arg_values[0])->val(), upid.value());
 }
 
-TEST_F(PLModuleTest, UDTFDefaultValueTest) {
+TEST_F(PixieModuleTest, UDTFDefaultValueTest) {
   std::string udtf_name = "DefaultValueTest";
   auto method_or_s = module_->GetMethod(udtf_name);
 
@@ -192,7 +193,7 @@ TEST_F(PLModuleTest, UDTFDefaultValueTest) {
   EXPECT_EQ(static_cast<UInt128IR*>(arg_values[0])->val(), uint_value);
 }
 
-TEST_F(PLModuleTest, GetUDTFMethodBadArguements) {
+TEST_F(PixieModuleTest, GetUDTFMethodBadArguements) {
   std::string network_conns_udtf_name = "OpenNetworkConnections";
   auto method_or_s = module_->GetMethod(network_conns_udtf_name);
 
@@ -207,7 +208,7 @@ TEST_F(PLModuleTest, GetUDTFMethodBadArguements) {
               HasCompilerError("missing 1 required positional arguments 'upid'"));
 }
 
-TEST_F(PLModuleTest, uuint128_conversion) {
+TEST_F(PixieModuleTest, uuint128_conversion) {
   std::string uuint128_str = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c";
   auto uuint128_or_s = md::UPID::ParseFromUUIDString(uuint128_str);
   ASSERT_OK(uuint128_or_s) << "uuint128 should be valid.";
@@ -230,7 +231,7 @@ TEST_F(PLModuleTest, uuint128_conversion) {
   EXPECT_EQ(static_cast<UInt128IR*>(expr->GetExpr())->val(), expected_uuint128.value());
 }
 
-TEST_F(PLModuleTest, uuint128_conversion_fails_on_invalid_string) {
+TEST_F(PixieModuleTest, uuint128_conversion_fails_on_invalid_string) {
   std::string upid_str = "bad_uuid";
 
   auto method_or_s = module_->GetMethod(PixieModule::kUInt128ConversionId);

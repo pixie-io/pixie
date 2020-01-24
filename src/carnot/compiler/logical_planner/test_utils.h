@@ -154,33 +154,33 @@ constexpr char kTabletValueTpl[] = R"proto(
 tablets: "$0"
 )proto";
 
-constexpr char kQueryForTwoAgents[] = "df = pl.DataFrame(table = 'table1')\npl.display(df, 'out')";
+constexpr char kQueryForTwoAgents[] = "df = px.DataFrame(table = 'table1')\npx.display(df, 'out')";
 
 constexpr char kHttpRequestStats[] = R"pxl(
-t1 = pl.DataFrame(table='http_events', start_time='-30s')
+t1 = px.DataFrame(table='http_events', start_time='-30s')
 
 t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t1['failure'] = t1['http_resp_status'] >= 400
-t1['range_group'] = t1['time_'] - pl.modulo(t1['time_'], 1000000000)
+t1['range_group'] = t1['time_'] - px.modulo(t1['time_'], 1000000000)
 
 quantiles_agg = t1.groupby('service').agg(
-  latency_quantiles=('http_resp_latency_ms', pl.quantiles),
-  errors=('failure', pl.mean),
-  throughput_total=('http_resp_status', pl.count),
+  latency_quantiles=('http_resp_latency_ms', px.quantiles),
+  errors=('failure', px.mean),
+  throughput_total=('http_resp_status', px.count),
 )
 
-quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p50')
-quantiles_agg['latency_p90'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
-quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
+quantiles_agg['latency_p50'] = px.pluck(quantiles_agg['latency_quantiles'], 'p50')
+quantiles_agg['latency_p90'] = px.pluck(quantiles_agg['latency_quantiles'], 'p90')
+quantiles_agg['latency_p99'] = px.pluck(quantiles_agg['latency_quantiles'], 'p99')
 quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
 
 # The Range aggregate to calcualte the requests per second.
 requests_agg = t1.groupby(['service', 'range_group']).agg(
-  requests_per_window=('http_resp_status', pl.count),
+  requests_per_window=('http_resp_status', px.count),
 )
 
-rps_table = requests_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
+rps_table = requests_agg.groupby('service').agg(rps=('requests_per_window',px.mean))
 
 joined_table = quantiles_table.merge(rps_table,
                                      how='inner',
@@ -203,7 +203,7 @@ joined_table = joined_table[[
   'throughput (rps)',
   'throughput total']]
 df = joined_table[joined_table['service'] != '']
-pl.display(df)
+px.display(df)
 )pxl";
 
 distributedpb::DistributedState LoadDistributedStatePb(const std::string& distributed_state_str) {

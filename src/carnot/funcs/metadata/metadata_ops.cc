@@ -14,31 +14,31 @@ void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry) {
   /*****************************************
    * Scalar UDFs.
    *****************************************/
-  registry->RegisterOrDie<ASIDUDF>("pl.asid");
-  registry->RegisterOrDie<UPIDToASIDUDF>("pl.upid_to_asid");
-  registry->RegisterOrDie<PodIDToPodNameUDF>("pl.pod_id_to_pod_name");
-  registry->RegisterOrDie<PodNameToPodIDUDF>("pl.pod_name_to_pod_id");
-  registry->RegisterOrDie<ServiceIDToServiceNameUDF>("pl.service_id_to_service_name");
-  registry->RegisterOrDie<ServiceNameToServiceIDUDF>("pl.service_name_to_service_id");
-  registry->RegisterOrDie<UPIDToContainerIDUDF>("pl.upid_to_container_id");
-  registry->RegisterOrDie<UPIDToNamespaceUDF>("pl.upid_to_namespace");
-  registry->RegisterOrDie<UPIDToPodIDUDF>("pl.upid_to_pod_id");
-  registry->RegisterOrDie<UPIDToPodNameUDF>("pl.upid_to_pod_name");
-  registry->RegisterOrDie<UPIDToServiceNameUDF>("pl.upid_to_service_name");
-  registry->RegisterOrDie<UPIDToServiceIDUDF>("pl.upid_to_service_id");
-  registry->RegisterOrDie<UPIDToNodeNameUDF>("pl.upid_to_node_name");
-  registry->RegisterOrDie<UPIDToHostnameUDF>("pl.upid_to_hostname");
-  registry->RegisterOrDie<PodIDToServiceNameUDF>("pl.pod_id_to_service_name");
-  registry->RegisterOrDie<PodIDToServiceIDUDF>("pl.pod_id_to_service_id");
-  registry->RegisterOrDie<PodNameToServiceNameUDF>("pl.pod_name_to_service_name");
-  registry->RegisterOrDie<PodNameToServiceIDUDF>("pl.pod_name_to_service_id");
-  registry->RegisterOrDie<UPIDToStringUDF>("pl.upid_to_string");
-  registry->RegisterOrDie<UPIDToPIDUDF>("pl.upid_to_pid");
-  registry->RegisterOrDie<PodIDToPodStartTimeUDF>("pl.pod_id_to_start_time");
-  registry->RegisterOrDie<PodNameToPodStartTimeUDF>("pl.pod_name_to_start_time");
-  registry->RegisterOrDie<PodNameToPodStatusUDF>("pl.pod_name_to_status");
-  registry->RegisterOrDie<UPIDToCmdLineUDF>("pl.upid_to_cmdline");
-  registry->RegisterOrDie<HostnameUDF>("pl._exec_hostname");
+  registry->RegisterOrDie<ASIDUDF>("px.asid");
+  registry->RegisterOrDie<UPIDToASIDUDF>("px.upid_to_asid");
+  registry->RegisterOrDie<PodIDToPodNameUDF>("px.pod_id_to_pod_name");
+  registry->RegisterOrDie<PodNameToPodIDUDF>("px.pod_name_to_pod_id");
+  registry->RegisterOrDie<ServiceIDToServiceNameUDF>("px.service_id_to_service_name");
+  registry->RegisterOrDie<ServiceNameToServiceIDUDF>("px.service_name_to_service_id");
+  registry->RegisterOrDie<UPIDToContainerIDUDF>("px.upid_to_container_id");
+  registry->RegisterOrDie<UPIDToNamespaceUDF>("px.upid_to_namespace");
+  registry->RegisterOrDie<UPIDToPodIDUDF>("px.upid_to_pod_id");
+  registry->RegisterOrDie<UPIDToPodNameUDF>("px.upid_to_pod_name");
+  registry->RegisterOrDie<UPIDToServiceNameUDF>("px.upid_to_service_name");
+  registry->RegisterOrDie<UPIDToServiceIDUDF>("px.upid_to_service_id");
+  registry->RegisterOrDie<UPIDToNodeNameUDF>("px.upid_to_node_name");
+  registry->RegisterOrDie<UPIDToHostnameUDF>("px.upid_to_hostname");
+  registry->RegisterOrDie<PodIDToServiceNameUDF>("px.pod_id_to_service_name");
+  registry->RegisterOrDie<PodIDToServiceIDUDF>("px.pod_id_to_service_id");
+  registry->RegisterOrDie<PodNameToServiceNameUDF>("px.pod_name_to_service_name");
+  registry->RegisterOrDie<PodNameToServiceIDUDF>("px.pod_name_to_service_id");
+  registry->RegisterOrDie<UPIDToStringUDF>("px.upid_to_string");
+  registry->RegisterOrDie<UPIDToPIDUDF>("px.upid_to_pid");
+  registry->RegisterOrDie<PodIDToPodStartTimeUDF>("px.pod_id_to_start_time");
+  registry->RegisterOrDie<PodNameToPodStartTimeUDF>("px.pod_name_to_start_time");
+  registry->RegisterOrDie<PodNameToPodStatusUDF>("px.pod_name_to_status");
+  registry->RegisterOrDie<UPIDToCmdLineUDF>("px.upid_to_cmdline");
+  registry->RegisterOrDie<HostnameUDF>("px._exec_hostname");
 
   /*****************************************
    * Aggregate UDFs.

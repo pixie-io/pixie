@@ -37,15 +37,15 @@ class JoinTest : public ::testing::Test {
 
 TEST_F(JoinTest, basic) {
   std::string queryString =
-      "src1 = pl.DataFrame(table='left_table', select=['col1', 'col2'])\n"
-      "src2 = pl.DataFrame(table='right_table', select=['col1', 'col2'])\n"
+      "src1 = px.DataFrame(table='left_table', select=['col1', 'col2'])\n"
+      "src2 = px.DataFrame(table='right_table', select=['col1', 'col2'])\n"
       "join = src1.merge(src2, how='inner', left_on=['col1', 'col2'], right_on=['col1', 'col2'], "
       "suffixes=['', '_x'])\n"
       "join['left_col1'] = join['col1']\n"
       "join['right_col2'] = join['col2']\n"
       "df = join[['left_col1', 'right_col2']]\n"
       "# fix this\n"
-      "pl.display(df, 'unused_param')";
+      "px.display(df, 'unused_param')";
 
   auto query = absl::StrJoin({queryString}, "\n");
   auto query_id = sole::uuid4();
@@ -77,13 +77,13 @@ TEST_F(JoinTest, basic) {
 
 TEST_F(JoinTest, self_join) {
   std::string queryString =
-      "src1 = pl.DataFrame(table='left_table', select=['col1', 'col2'])\n"
+      "src1 = px.DataFrame(table='left_table', select=['col1', 'col2'])\n"
       "join = src1.merge(src1, how='inner', left_on=['col1'], right_on=['col1'], "
       "suffixes=['', '_x'])\n"
       "join['left_col1'] = join['col1']\n"
       "join['right_col2'] = join['col2_x']\n"
       "output = join[['left_col1', 'right_col2']]\n"
-      "pl.display(output)";
+      "px.display(output)";
 
   auto query = absl::StrJoin({queryString}, "\n");
   auto query_id = sole::uuid4();

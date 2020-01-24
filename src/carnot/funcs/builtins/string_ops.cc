@@ -12,13 +12,13 @@ void RegisterStringOpsOrDie(udf::Registry* registry) {
    * Scalar UDFs.
    *****************************************/
   // String contains.
-  registry->RegisterOrDie<ContainsUDF>("pl.contains");
-  registry->RegisterOrDie<LengthUDF>("pl.length");
-  registry->RegisterOrDie<FindUDF>("pl.find");
-  registry->RegisterOrDie<SubstringUDF>("pl.substring");
-  registry->RegisterOrDie<ToLowerUDF>("pl.tolower");
-  registry->RegisterOrDie<ToUpperUDF>("pl.toupper");
-  registry->RegisterOrDie<TrimUDF>("pl.trim");
+  registry->RegisterOrDie<ContainsUDF>("px.contains");
+  registry->RegisterOrDie<LengthUDF>("px.length");
+  registry->RegisterOrDie<FindUDF>("px.find");
+  registry->RegisterOrDie<SubstringUDF>("px.substring");
+  registry->RegisterOrDie<ToLowerUDF>("px.tolower");
+  registry->RegisterOrDie<ToUpperUDF>("px.toupper");
+  registry->RegisterOrDie<TrimUDF>("px.trim");
 
   /*****************************************
    * Aggregate UDFs.

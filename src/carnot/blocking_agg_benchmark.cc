@@ -26,21 +26,21 @@ using table_store::Table;
 using table_store::schema::RowDescriptor;
 
 constexpr char kGroupByNoneQuery[] = R"pxl(
-df = pl.DataFrame(table='test_table', select=['col0', 'col1'])
-df = df.agg(sum=('col1', pl.sum))
-pl.display(df, '$0')
+df = px.DataFrame(table='test_table', select=['col0', 'col1'])
+df = df.agg(sum=('col1', px.sum))
+px.display(df, '$0')
 )pxl";
 
 constexpr char kGroupByOneQuery[] = R"pxl(
-df = pl.DataFrame(table='test_table', select=['col0', 'col1'])
-df = df.groupby('col0').agg(sum=('col1', pl.sum))
-pl.display(df, '$0')
+df = px.DataFrame(table='test_table', select=['col0', 'col1'])
+df = df.groupby('col0').agg(sum=('col1', px.sum))
+px.display(df, '$0')
 )pxl";
 
 constexpr char kGroupByTwoQuery[] = R"pxl(
-df = pl.DataFrame(table='test_table', select=['col0', 'col1', 'col2'])
-df = df.groupby(['col0', 'col1']).agg(sum=('col2', pl.sum))
-pl.display(df, '$0')
+df = px.DataFrame(table='test_table', select=['col0', 'col1', 'col2'])
+df = df.groupby(['col0', 'col1']).agg(sum=('col2', px.sum))
+px.display(df, '$0')
 )pxl";
 
 std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> table_store) {

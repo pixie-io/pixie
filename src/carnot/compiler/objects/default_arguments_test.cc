@@ -16,7 +16,7 @@ using ::testing::ElementsAre;
 
 constexpr char kRegInfoProto[] = R"proto(
 scalar_udfs {
-  name: "pl.equals"
+  name: "px.equals"
   exec_arg_types: UINT128
   exec_arg_types: UINT128
   return_type: BOOLEAN

@@ -36,9 +36,9 @@ class DistributedAnalyzerTest : public OperatorTests {
 };
 
 constexpr char kSimpleQuery[] = R"pxl(
-t1 = pl.DataFrame(table='http_events', start_time='-120s')
+t1 = px.DataFrame(table='http_events', start_time='-120s')
 t1.http_resp_latency_ms = t1.http_resp_latency_ns / 1.0E6
-pl.display(t1)
+px.display(t1)
 )pxl";
 
 TEST_F(DistributedAnalyzerTest, resolve_column_indexes) {

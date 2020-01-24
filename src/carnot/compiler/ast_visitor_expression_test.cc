@@ -6,6 +6,7 @@
 #include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
+#include "src/carnot/compiler/objects/pixie_module.h"
 #include "src/carnot/compiler/parser/parser.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/common/base/base.h"
@@ -25,12 +26,12 @@ using ::testing::ElementsAreArray;
 
 constexpr char kRegInfoProto[] = R"proto(
 udas {
-  name: "pl.mean"
+  name: "px.mean"
   update_arg_types: FLOAT64
   finalize_type: FLOAT64
 }
 scalar_udfs {
-  name: "pl.equals"
+  name: "px.equals"
   exec_arg_types: UINT128
   exec_arg_types: UINT128
   return_type: BOOLEAN
@@ -82,7 +83,7 @@ TEST_F(ASTExpressionTest, Integer) {
 }
 
 TEST_F(ASTExpressionTest, PLModule) {
-  auto parse_result = parser.Parse("pl.mean");
+  auto parse_result = parser.Parse("px.mean");
   auto visitor_result =
       ast_visitor->ProcessSingleExpressionModule(parse_result.ConsumeValueOrDie());
 
@@ -94,12 +95,13 @@ TEST_F(ASTExpressionTest, PLModule) {
 }
 
 TEST_F(ASTExpressionTest, PLModuleWrongName) {
-  auto parse_result = parser.Parse("pl.blah");
+  auto parse_result = parser.Parse("px.blah");
   auto visitor_result =
       ast_visitor->ProcessSingleExpressionModule(parse_result.ConsumeValueOrDie());
 
   ASSERT_NOT_OK(visitor_result);
-  EXPECT_THAT(visitor_result.status(), HasCompilerError("'pl' object has no attribute 'blah'"));
+  EXPECT_THAT(visitor_result.status(), HasCompilerError("'$0' object has no attribute 'blah'",
+                                                        PixieModule::kPixieModuleObjName));
 }
 }  // namespace compiler
 }  // namespace carnot

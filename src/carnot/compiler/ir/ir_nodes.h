@@ -111,7 +111,8 @@ inline std::ostream& operator<<(std::ostream& out, IRNodeType node_type) {
   return out << kIRNodeStrings[static_cast<int64_t>(node_type)];
 }
 
-inline static constexpr char kPLFuncPrefix[] = "pl";
+// TODO(philkuz) Remove this dependency by removing px prefix in the carnot func registry.
+inline static constexpr char kPLFuncPrefix[] = "px";
 
 /**
  * @brief Node class for the IR.

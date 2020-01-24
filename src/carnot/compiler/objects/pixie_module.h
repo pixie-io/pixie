@@ -12,13 +12,14 @@ namespace compiler {
 class PixieModule : public QLObject {
  public:
   static constexpr TypeDescriptor PixieModuleType = {
-      /* name */ "pl",
+      /* name */ "px",
       /* type */ QLObjectType::kPLModule,
   };
   static StatusOr<std::shared_ptr<PixieModule>> Create(IR* graph, CompilerState* compiler_state);
 
   // Constant for the modules.
-  inline static constexpr char kPixieModuleObjName[] = "pl";
+  inline static constexpr char kPixieModuleObjName[] = "px";
+  inline static constexpr char kOldPixieModuleObjName[] = "pl";
 
   // Constants for operators in the query language.
   inline static constexpr char kDataframeOpId[] = "DataFrame";

@@ -28,7 +28,7 @@ using pl::testing::proto::Partially;
 
 constexpr char kUDFInfoPb[] = R"proto(
 scalar_udfs {
-  name: "pl.greaterThanEqual"
+  name: "px.greaterThanEqual"
   exec_arg_types: INT64
   exec_arg_types: INT64
   return_type: BOOLEAN
@@ -65,7 +65,7 @@ StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string plann
 TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
   planner_ = MakePlanner();
   int result_len;
-  std::string query = "df = pl.DataFrame(table='table1')\npl.display(df, 'out')";
+  std::string query = "df = px.DataFrame(table='table1')\npx.display(df, 'out')";
 
   auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
   auto interface_result =
@@ -86,8 +86,8 @@ TEST_F(PlannerExportTest, bad_queries) {
   int result_len;
   // Bad table name query that should yield a compiler error.
   std::string bad_table_query =
-      "df = pl.DataFrame(table='bad_table_name')\n"
-      "pl.display(df, 'out')";
+      "df = px.DataFrame(table='bad_table_name')\n"
+      "px.display(df, 'out')";
   auto logical_planner_state = testutils::CreateTwoAgentsPlannerState();
   auto interface_result =
       PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), bad_table_query, &result_len);
@@ -100,9 +100,9 @@ TEST_F(PlannerExportTest, bad_queries) {
 }
 
 constexpr char kUDFQuery[] = R"query(
-t1 = pl.DataFrame(table='table1', start_time='-30s')
+t1 = px.DataFrame(table='table1', start_time='-30s')
 t1 = t1[t1['cpu_cycles'] >= 0]
-pl.display(t1)
+px.display(t1)
 )query";
 
 // Previously had an issue where the UDF registry's memory was improperly handled, and this query

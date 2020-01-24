@@ -51,31 +51,31 @@ TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
 }
 
 constexpr char kCompileTimeQuery[] = R"pxl(
-t1 = pl.DataFrame(table='http_events', start_time='-120s')
+t1 = px.DataFrame(table='http_events', start_time='-120s')
 
 t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 t1['failure'] = t1['http_resp_status'] >= 400
-t1['range_group'] = t1['time_'] - pl.modulo(t1['time_'], 2000000000)
-t1['s'] = pl.bin(t1['time_'],pl.seconds(3))
+t1['range_group'] = t1['time_'] - px.modulo(t1['time_'], 2000000000)
+t1['s'] = px.bin(t1['time_'],px.seconds(3))
 
 quantiles_agg = t1.groupby('service').agg(
-  latency_quantiles=('http_resp_latency_ms', pl.quantiles),
-  errors=('failure', pl.mean),
-  throughput_total=('http_resp_status', pl.count),
+  latency_quantiles=('http_resp_latency_ms', px.quantiles),
+  errors=('failure', px.mean),
+  throughput_total=('http_resp_status', px.count),
 )
 
-quantiles_agg['latency_p50'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p50')
-quantiles_agg['latency_p90'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p90')
-quantiles_agg['latency_p99'] = pl.pluck(quantiles_agg['latency_quantiles'], 'p99')
+quantiles_agg['latency_p50'] = px.pluck(quantiles_agg['latency_quantiles'], 'p50')
+quantiles_agg['latency_p90'] = px.pluck(quantiles_agg['latency_quantiles'], 'p90')
+quantiles_agg['latency_p99'] = px.pluck(quantiles_agg['latency_quantiles'], 'p99')
 quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
 
 # The Range aggregate to calcualte the requests per second.
 requests_agg = t1.groupby(['service', 'range_group']).agg(
-  requests_per_window=('http_resp_status', pl.count),
+  requests_per_window=('http_resp_status', px.count),
 )
 
-rps_table = requests_agg.groupby('service').agg(rps=('requests_per_window',pl.mean))
+rps_table = requests_agg.groupby('service').agg(rps=('requests_per_window',px.mean))
 
 joined_table = quantiles_table.merge(rps_table,
                                      how='inner',
@@ -97,9 +97,9 @@ joined_table = joined_table[[
   'errors',
   'throughput (rps)',
   'throughput total']]
-joined_table['asid'] = pl.asid()
-joined_table = joined_table[joined_table['service'] != '' and pl.asid() == 3870]
-pl.display(joined_table)
+joined_table['asid'] = px.asid()
+joined_table = joined_table[joined_table['service'] != '' and px.asid() == 3870]
+px.display(joined_table)
 )pxl";
 
 TEST_F(LogicalPlannerTest, duplicate_int) {
@@ -111,33 +111,33 @@ TEST_F(LogicalPlannerTest, duplicate_int) {
 }
 
 constexpr char kTwoWindowQuery[] = R"query(
-t1 = pl.DataFrame(table='http_events', start_time='-300s')
+t1 = px.DataFrame(table='http_events', start_time='-300s')
 t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
 # edit this to increase/decrease window. Dont go lower than 1 second.
-t1['window1'] = pl.bin(t1['time_'], pl.seconds(10))
-t1['window2'] = pl.bin(t1['time_'] + pl.seconds(5), pl.seconds(10))
+t1['window1'] = px.bin(t1['time_'], px.seconds(10))
+t1['window2'] = px.bin(t1['time_'] + px.seconds(5), px.seconds(10))
 # groupby 1sec intervals per window
 window1_agg = t1.groupby(['service', 'window1']).agg(
-  quantiles=('http_resp_latency_ms', pl.quantiles),
+  quantiles=('http_resp_latency_ms', px.quantiles),
 )
-window1_agg['p50'] = pl.pluck(window1_agg['quantiles'], 'p50')
-window1_agg['p90'] = pl.pluck(window1_agg['quantiles'], 'p90')
-window1_agg['p99'] = pl.pluck(window1_agg['quantiles'], 'p99')
+window1_agg['p50'] = px.pluck(window1_agg['quantiles'], 'p50')
+window1_agg['p90'] = px.pluck(window1_agg['quantiles'], 'p90')
+window1_agg['p99'] = px.pluck(window1_agg['quantiles'], 'p99')
 window1_agg['time_'] = window1_agg['window1']
 # window1_agg = window1_agg.drop('window1')
 
 window2_agg = t1.groupby(['service', 'window2']).agg(
-  quantiles=('http_resp_latency_ms', pl.quantiles),
+  quantiles=('http_resp_latency_ms', px.quantiles),
 )
-window2_agg['p50'] = pl.pluck(window2_agg['quantiles'], 'p50')
-window2_agg['p90'] = pl.pluck(window2_agg['quantiles'], 'p90')
-window2_agg['p99'] = pl.pluck(window2_agg['quantiles'], 'p99')
+window2_agg['p50'] = px.pluck(window2_agg['quantiles'], 'p50')
+window2_agg['p90'] = px.pluck(window2_agg['quantiles'], 'p90')
+window2_agg['p99'] = px.pluck(window2_agg['quantiles'], 'p99')
 window2_agg['time_'] = window2_agg['window2']
 # window2_agg = window2_agg.drop('window2')
 
 df = window2_agg[window2_agg['service'] != '']
-pl.display(df)
+px.display(df)
 )query";
 TEST_F(LogicalPlannerTest, NestedCompileTime) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();

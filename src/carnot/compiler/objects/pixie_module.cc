@@ -24,7 +24,7 @@ StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph,
 Status PixieModule::RegisterUDFFuncs() {
   // TODO(philkuz) (PL-1189) remove this when the udf names no longer have the 'pl.' prefix.
   for (const auto& name : compiler_state_->registry_info()->func_names()) {
-    std::string_view stripped_name = absl::StripPrefix(name, "pl.");
+    std::string_view stripped_name = absl::StripPrefix(name, "px.");
     // attributes_.emplace(stripped_name);
 
     PL_ASSIGN_OR_RETURN(
@@ -141,7 +141,9 @@ Status PixieModule::Init() {
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> dataframe_fn,
       FuncObject::Create(kDataframeOpId, {"table", "select", "start_time", "end_time"},
-                         {{"select", "[]"}, {"start_time", "0"}, {"end_time", "pl.now()"}},
+                         {{"select", "[]"},
+                          {"start_time", "0"},
+                          {"end_time", absl::Substitute("$0.$1()", kPixieModuleObjName, kNowOpId)}},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(&DataFrameHandler::Eval, graph_, std::placeholders::_1,

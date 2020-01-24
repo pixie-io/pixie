@@ -194,7 +194,7 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
   EXPECT_FALSE(func->IsDataTypeEvaluated());
   auto result_or_s = data_rule.Execute(graph.get());
   ASSERT_NOT_OK(result_or_s);
-  EXPECT_THAT(result_or_s.status(), HasCompilerError("Could not find function 'pl.gobeldy'."));
+  EXPECT_THAT(result_or_s.status(), HasCompilerError("Could not find function 'px.gobeldy'."));
 }
 
 // Checks to make sure that agg functions work properly.
@@ -1422,7 +1422,7 @@ TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
 
   EXPECT_NOT_OK(status);
   EXPECT_THAT(status.status(),
-              HasCompilerError("Function \'pl.equals\' with metadata arg in "
+              HasCompilerError("Function \'px.equals\' with metadata arg in "
                                "conjunction with \'\\[Int\\]\' is not supported."));
 }
 
@@ -1437,7 +1437,7 @@ TEST_F(FormatMetadataTest, only_equal_supported) {
 
   EXPECT_NOT_OK(status);
   EXPECT_THAT(status.status(),
-              HasCompilerError("Function \'pl.add\' with metadata arg in "
+              HasCompilerError("Function \'px.add\' with metadata arg in "
                                "conjunction with \'\\[String\\]\' is not supported."));
 }
 
@@ -1603,7 +1603,7 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
         "Expected function for idx $0, got $1.", cur_idx, expr_pair.node->type_string());
     FuncIR* func = static_cast<FuncIR*>(expr_pair.node);
     std::string udf_name = absl::Substitute(
-        "pl.$0_to_$1", MetadataProperty::GetMetadataString(conversion_column), md_col_name);
+        "px.$0_to_$1", MetadataProperty::GetMetadataString(conversion_column), md_col_name);
     EXPECT_EQ(udf_name, func->func_name());
     ASSERT_EQ(func->args().size(), 1) << absl::Substitute("for idx $0.", cur_idx);
     ExpressionIR* func_arg = func->args()[0];
@@ -1657,7 +1657,7 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
         "Expected function for idx $0, got $1.", cur_idx, expr_pair.node->type_string());
     FuncIR* func = static_cast<FuncIR*>(expr_pair.node);
     std::string udf_name = absl::Substitute(
-        "pl.$0_to_$1", MetadataProperty::GetMetadataString(conversion_column), md_col_name);
+        "px.$0_to_$1", MetadataProperty::GetMetadataString(conversion_column), md_col_name);
     EXPECT_EQ(udf_name, func->func_name());
     ASSERT_EQ(func->args().size(), 1) << absl::Substitute("for idx $0.", cur_idx);
     ExpressionIR* func_arg = func->args()[0];
@@ -1742,7 +1742,7 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
         "Expected function for idx $0, got $1.", cur_idx, expr_pair.node->type_string());
     FuncIR* func = static_cast<FuncIR*>(expr_pair.node);
     std::string udf_name =
-        absl::Substitute("pl.$0_to_$1", MetadataProperty::kUniquePIDColumn, md_col_name);
+        absl::Substitute("px.$0_to_$1", MetadataProperty::kUniquePIDColumn, md_col_name);
     EXPECT_EQ(udf_name, func->func_name());
     ASSERT_EQ(func->args().size(), 1) << absl::Substitute("for idx $0.", cur_idx);
     ExpressionIR* func_arg = func->args()[0];
@@ -1797,7 +1797,7 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
         "Expected function for idx $0, got $1.", cur_idx, expr_pair.node->type_string());
     FuncIR* func = static_cast<FuncIR*>(expr_pair.node);
     std::string udf_name =
-        absl::Substitute("pl.$0_to_$1", MetadataProperty::kUniquePIDColumn, md_col_name);
+        absl::Substitute("px.$0_to_$1", MetadataProperty::kUniquePIDColumn, md_col_name);
     EXPECT_EQ(udf_name, func->func_name());
     ASSERT_EQ(func->args().size(), 1) << absl::Substitute("for idx $0.", cur_idx);
     ExpressionIR* func_arg = func->args()[0];
