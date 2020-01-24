@@ -27,7 +27,8 @@ class EventsFixture : public ::testing::Test {
     conn_event.open.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     conn_event.open.addr.sin6_family = AF_INET;
     conn_event.open.traffic_class.protocol = TProtocol;
-    conn_event.open.traffic_class.role = kRoleClient;
+    conn_event.open.traffic_class.role =
+        (TProtocol == kProtocolHTTP2Uprobe) ? kRoleUnknown : kRoleClient;
     return conn_event;
   }
 

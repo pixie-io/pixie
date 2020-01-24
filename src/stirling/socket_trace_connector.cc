@@ -640,51 +640,12 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          http2::NewRecord record, DataTable* data_table) {
   DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  // With three pieces of information, we can classify a frame as part of request or response
-  // stream:
-  // ROLE, STREAM_ID, EVENT_TYPE -> classification
-  // client, client-initiated (odd) stream, write  -> request
-  // client, client-initiated (odd) stream, read   -> response
-  // client, server-initiated (even) stream, write -> response
-  // client, server-initiated (even) stream, read  -> request
-  // server, client-initiated (odd) stream, write  -> response
-  // server, client-initiated (odd) stream, read   -> request
-  // server, server-initiated (even) stream, write -> request
-  // server, server-initiated (even) stream, read  -> response
-  //
-  // While the STREAM_ID and EVENT_TYPE are easy to figure out, the ROLE is a bit harder
-  // in cases where the beginning of the connection was not recorded.
-  //
-  // So instead of this truth table, we instead just examine the headers to classify
-  // request/response streams. In particular, we look for :method and :status.
-
-  bool send_has_method = !record.send.headers.ValueByKey(":method", "").empty();
-  bool recv_has_method = !record.recv.headers.ValueByKey(":method", "").empty();
-  bool send_has_status = !record.send.headers.ValueByKey(":status", "").empty();
-  bool recv_has_status = !record.recv.headers.ValueByKey(":status", "").empty();
-
-  LOG_IF(WARNING, send_has_method == recv_has_method)
-      << absl::Substitute(":method only expected in only one direction (total = $0).",
-                          send_has_method + recv_has_method);
-  LOG_IF(WARNING, send_has_status == recv_has_status)
-      << absl::Substitute(":status only expected in only one direction (total = $0).",
-                          send_has_status + recv_has_status);
-  LOG_IF(WARNING, send_has_method && send_has_status)
-      << ":method and :status not expected in same direction (send).";
-  LOG_IF(WARNING, recv_has_method && recv_has_status)
-      << ":method and :status not expected in same direction (recv).";
-
-  // Check for either :method in sender or :status in recv, for robustness.
-  // Since we can capture data mid-stream, the more robust option is looking for :status.
-  // But keep both in case of dropped perf buffer events.
-  bool requestor_role = send_has_method || recv_has_status;
-
   http2::HalfStream* req_stream;
   http2::HalfStream* resp_stream;
 
   // Depending on whether the traced entity was the requestor or responder,
   // we need to flip the interpretation of the half-streams.
-  if (requestor_role) {
+  if (conn_tracker.role() == kRoleClient) {
     req_stream = &record.send;
     resp_stream = &record.recv;
   } else {

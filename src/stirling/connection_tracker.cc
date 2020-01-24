@@ -212,6 +212,20 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
   return half_stream_ptr;
 }
 
+EndpointRole InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2HeaderEvent>& hdr) {
+  // Look for standard headers to infer role.
+  // Could look at others (:scheme, :path, :authority), but this seems sufficient.
+
+  if (hdr->name == ":method") {
+    return (write_event) ? kRoleClient : kRoleServer;
+  }
+  if (hdr->name == ":status") {
+    return (write_event) ? kRoleServer : kRoleClient;
+  }
+
+  return kRoleUnknown;
+}
+
 void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   SetConnID(hdr->attr.conn_id);
   traffic_class_.protocol = kProtocolHTTP2Uprobe;
@@ -248,6 +262,18 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     default:
       LOG(WARNING) << "Unexpected event type";
       return;
+  }
+
+  // TODO(oazizi): Once we have more confidence that the ECHECK below doesn't fire, restructure this
+  // code so it only calls InferHTTP2Role when the current role is Unknown.
+  EndpointRole role = InferHTTP2Role(write_event, hdr);
+  if (traffic_class_.role == kRoleUnknown) {
+    traffic_class_.role = role;
+  } else {
+    ECHECK(role == kRoleUnknown || role == traffic_class_.role) << absl::Substitute(
+        "The role of an active ConnectionTracker was changed: $0 role: $1 -> $2",
+        ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
+        magic_enum::enum_name(role));
   }
 
   http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
@@ -844,6 +870,7 @@ template <typename TEntryType>
 std::string ConnectionTracker::DebugString(std::string_view prefix) const {
   std::string info;
   info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, pid(), fd(), generation());
+  info += absl::Substitute("state=$0\n", magic_enum::enum_name(state()));
   info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, remote_addr(), remote_port());
   info += absl::Substitute("$0protocol=$1\n", prefix, magic_enum::enum_name(protocol()));
   info += absl::Substitute("$0recv queue\n", prefix);

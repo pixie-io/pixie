@@ -64,6 +64,7 @@ TEST_F(ConnectionTrackerTest, info_string) {
   std::string debug_info = tracker.DebugString<http::Record>();
 
   std::string expected_output = R"(pid=12345 fd=3 gen=1
+state=kCollecting
 remote_addr=0.0.0.0:0
 protocol=kProtocolHTTP
 recv queue
@@ -81,6 +82,7 @@ send queue
   debug_info = tracker.DebugString<http::Record>();
 
   expected_output = R"(pid=12345 fd=3 gen=1
+state=kCollecting
 remote_addr=0.0.0.0:0
 protocol=kProtocolHTTP
 recv queue

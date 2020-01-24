@@ -9,6 +9,7 @@
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
+#include "src/common/testing/testing.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
@@ -36,6 +37,13 @@ class SocketTraceConnectorTest : public testing::EventsFixture {
     ASSERT_NE(nullptr, source_);
 
     auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
+
+    // Set the CIDR for HTTP2ServerTest, which would otherwise not output any data,
+    // because it would think the server is in the cluster.
+    CIDRBlock cidr_block;
+    ASSERT_OK(ParseCIDRBlock("1.2.3.4/32", &cidr_block));
+    agent_metadata_state->k8s_metadata_state()->set_cluster_cidr(cidr_block);
+
     ctx_ = std::make_unique<ConnectorContext>(agent_metadata_state);
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.
