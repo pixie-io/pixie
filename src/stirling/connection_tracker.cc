@@ -346,13 +346,13 @@ Status ConnectionTracker::ExtractReqResp() {
   if (resp_data_ptr == nullptr) {
     return error::Internal("Unexpected nullptr for resp_data");
   }
-  resp_data_ptr->template ExtractMessages<TMessageType>(MessageType::kResponse);
+  resp_data_ptr->template ProcessEvents<TMessageType>(MessageType::kResponse);
 
   DataStream* req_data_ptr = req_data();
   if (req_data_ptr == nullptr) {
     return error::Internal("Unexpected nullptr for req_data");
   }
-  req_data_ptr->template ExtractMessages<TMessageType>(MessageType::kRequest);
+  req_data_ptr->template ProcessEvents<TMessageType>(MessageType::kRequest);
 
   return Status::OK();
 }

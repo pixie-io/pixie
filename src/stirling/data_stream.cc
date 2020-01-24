@@ -41,27 +41,6 @@ void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
 }
 
 template <typename TMessageType>
-std::deque<TMessageType>& DataStream::Messages() {
-  DCHECK(std::holds_alternative<std::monostate>(messages_) ||
-         std::holds_alternative<std::deque<TMessageType>>(messages_))
-      << "Must hold the default std::monostate, or the same type as requested. "
-         "I.e., ConnectionTracker cannot change the type it holds during runtime.";
-  if (std::holds_alternative<std::monostate>(messages_)) {
-    // Reset the type to the expected type.
-    messages_ = std::deque<TMessageType>();
-  }
-
-  return std::get<std::deque<TMessageType>>(messages_);
-}
-
-template <typename TMessageType>
-const std::deque<TMessageType>& DataStream::Messages() const {
-  DCHECK(std::holds_alternative<std::deque<TMessageType>>(messages_))
-      << "Must hold the same type as requested.";
-  return std::get<std::deque<TMessageType>>(messages_);
-}
-
-template <typename TMessageType>
 size_t DataStream::AppendEvents(EventParser<TMessageType>* parser) const {
   size_t append_count = 0;
 
@@ -130,7 +109,7 @@ ParseSyncType SelectSyncType(int64_t stuck_count) {
 
 }  // namespace
 
-// ExtractMessages() processes the events in the DataStream to extract parsed messages.
+// ProcessEvents() processes the events in the DataStream to extract parsed messages.
 //
 // It considers contiguous events from the head of the stream. Any missing events in the sequence
 // are treated as lost forever; it is not expected that these events arrive in a subsequent
@@ -141,28 +120,30 @@ ParseSyncType SelectSyncType(int64_t stuck_count) {
 // independently of each other.
 //
 // To be robust to lost events, which are not necessarily aligned to parseable entity boundaries,
-// ExtractMessages() will invoke a call to ParseMessages() with a stream recovery argument when
+// ProcessEvents() will invoke a call to ParseMessages() with a stream recovery argument when
 // necessary.
 template <typename TMessageType>
-std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
+void DataStream::ProcessEvents(MessageType type) {
   auto& typed_messages = Messages<TMessageType>();
 
   // TODO(oazizi): Convert to ECHECK once we have more confidence.
-  LOG_IF(WARNING, IsEOS()) << "Calling ExtractMessages on stream that is at EOS.";
+  LOG_IF(WARNING, IsEOS()) << "Calling ProcessEvents on stream that is at EOS.";
 
   const size_t orig_offset = offset_;
   const size_t orig_seq_num = next_seq_num_;
 
   // A description of some key variables in this function:
   //
-  // Member variables hold state across calls to ExtractMessages():
-  // - stuck_count_: Number of calls to ExtractMessages() where no progress has been made.
+  // Member variables hold state across calls to ProcessEvents():
+  // - process_events_stuck_count_: Number of calls to ProcessEvents() where no progress has been
+  // made.
   //                 indicates an unparseable event at the head that is blocking progress.
   //
   // - has_new_events_: An optimization to avoid the expensive call to ParseMessages() when
   //                    nothing has changed in the DataStream. Note that we *do* want to call
-  //                    ParseMessages() even when there are no new events, if the stuck_count_
-  //                    is high enough and we want to attempt a stream recovery.
+  //                    ParseMessages() even when there are no new events, if the
+  //                    process_events_stuck_count_ is high enough and we want to attempt a stream
+  //                    recovery.
   //
   // Local variables are intermediate computations to help simplify the code:
   // - keep_processing: Controls the loop iterations. If we hit a gap in the stream events,
@@ -174,7 +155,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   //                 Used for the first iteration only.
 
   // We appear to be stuck with an an unparseable sequence of events blocking the head.
-  bool attempt_sync = SelectSyncType(stuck_count_) != ParseSyncType::None;
+  bool attempt_sync = SelectSyncType(process_events_stuck_count_) != ParseSyncType::None;
 
   bool keep_processing = has_new_events_ || attempt_sync;
 
@@ -187,7 +168,8 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
     size_t num_events_appended = AppendEvents(&parser);
 
     // Now parse all the appended events.
-    parse_result = parser.ParseMessages(type, &typed_messages, SelectSyncType(stuck_count_));
+    parse_result =
+        parser.ParseMessages(type, &typed_messages, SelectSyncType(process_events_stuck_count_));
 
     if (num_events_appended != events_.size()) {
       // We weren't able to append all events, which means we ran into a missing event.
@@ -201,7 +183,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
       offset_ = 0;
 
       // Update stuck count so we use the correct sync type on the next iteration.
-      stuck_count_ = 0;
+      process_events_stuck_count_ = 0;
 
       keep_processing = (parse_result.state != ParseState::kEOS);
     } else {
@@ -223,7 +205,9 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   // Note that missing events is handled separately (not considered stuck).
   bool events_but_no_progress =
       !events_.empty() && (next_seq_num_ == orig_seq_num) && (offset_ == orig_offset);
-  stuck_count_ = (events_but_no_progress) ? stuck_count_ + 1 : 0;
+  if (events_but_no_progress) {
+    ++process_events_stuck_count_;
+  }
 
   if (parse_result.state == ParseState::kEOS) {
     ECHECK(!events_but_no_progress);
@@ -232,38 +216,23 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
 
   // has_new_events_ should be false for the next transfer cycle.
   has_new_events_ = false;
-
-  return typed_messages;
 }
+
+template void DataStream::ProcessEvents<http::HTTPMessage>(MessageType type);
+template void DataStream::ProcessEvents<http2::Frame>(MessageType type);
+template void DataStream::ProcessEvents<mysql::Packet>(MessageType type);
 
 void DataStream::Reset() {
   events_.clear();
   messages_ = std::monostate();
   offset_ = 0;
-  stuck_count_ = 0;
+  process_events_stuck_count_ = 0;
   // TODO(yzhao): It's likely the case that we'll want to preserve the inflater under the situations
   // where the HEADERS frames have not been lost. Detecting and responding to them probably will
   // change the semantic of Reset(), such that it will means different thing for different
   // protocols.
   inflater_.reset(nullptr);
 }
-
-template <typename TMessageType>
-bool DataStream::Empty() const {
-  return events_.empty() && (std::holds_alternative<std::monostate>(messages_) ||
-                             std::get<std::deque<TMessageType>>(messages_).empty());
-}
-
-template bool DataStream::Empty<http::HTTPMessage>() const;
-template bool DataStream::Empty<http2::Frame>() const;
-template bool DataStream::Empty<mysql::Packet>() const;
-
-template std::deque<http::HTTPMessage>& DataStream::ExtractMessages(MessageType type);
-template std::deque<http2::Frame>& DataStream::ExtractMessages(MessageType type);
-template std::deque<mysql::Packet>& DataStream::ExtractMessages(MessageType type);
-
-template std::deque<http2::Stream>& DataStream::Messages();
-template const std::deque<http2::Stream>& DataStream::Messages() const;
 
 }  // namespace stirling
 }  // namespace pl

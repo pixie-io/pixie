@@ -41,7 +41,7 @@ class DataStream {
    * @return deque of parsed messages.
    */
   template <typename TMessageType>
-  std::deque<TMessageType>& ExtractMessages(MessageType type);
+  void ProcessEvents(MessageType type);
 
   /**
    * Returns the current set of parsed messages.
@@ -49,9 +49,24 @@ class DataStream {
    * @return deque of messages.
    */
   template <typename TMessageType>
-  std::deque<TMessageType>& Messages();
+  std::deque<TMessageType>& Messages() {
+    DCHECK(std::holds_alternative<std::monostate>(messages_) ||
+           std::holds_alternative<std::deque<TMessageType>>(messages_))
+        << "Must hold the default std::monostate, or the same type as requested. "
+           "I.e., ConnectionTracker cannot change the type it holds during runtime.";
+    if (std::holds_alternative<std::monostate>(messages_)) {
+      // Reset the type to the expected type.
+      messages_ = std::deque<TMessageType>();
+    }
+    return std::get<std::deque<TMessageType>>(messages_);
+  }
+
   template <typename TMessageType>
-  const std::deque<TMessageType>& Messages() const;
+  const std::deque<TMessageType>& Messages() const {
+    DCHECK(std::holds_alternative<std::deque<TMessageType>>(messages_))
+        << "Must hold the same type as requested.";
+    return std::get<std::deque<TMessageType>>(messages_);
+  }
 
   /**
    * @brief Clears all unparsed and parsed data from the Datastream.
@@ -63,7 +78,10 @@ class DataStream {
    * @return true if empty of all data.
    */
   template <typename TMessageType>
-  bool Empty() const;
+  bool Empty() const {
+    return events_.empty() && (std::holds_alternative<std::monostate>(messages_) ||
+                               std::get<std::deque<TMessageType>>(messages_).empty());
+  }
 
   /**
    * @brief Checks if the DataStream is in a Stuck state, which means that it has
@@ -73,7 +91,7 @@ class DataStream {
    */
   bool IsStuck() const {
     constexpr int kMaxStuckCount = 3;
-    return stuck_count_ > kMaxStuckCount;
+    return process_events_stuck_count_ > kMaxStuckCount;
   }
 
   /**
@@ -181,7 +199,7 @@ class DataStream {
 
   // To support partially processed events,
   // the stream may start at an offset in the first raw data event.
-  uint64_t offset_ = 0;
+  size_t offset_ = 0;
 
   // Vector of parsed HTTP/MySQL messages.
   // Once parsed, the raw data events should be discarded.
@@ -198,14 +216,14 @@ class DataStream {
       messages_;
 
   // The following state keeps track of whether the raw events were touched or not since the last
-  // call to ExtractMessages(). It enables ExtractMessages() to exit early if nothing has changed.
+  // call to ProcessEvents(). It enables ProcessEvents() to exit early if nothing has changed.
   bool has_new_events_ = false;
 
-  // Number of consecutive calls to ExtractMessages(), where there are a non-zero number of events,
+  // Number of consecutive calls to ProcessEvents(), where there are a non-zero number of events,
   // but no parsed messages are produced.
-  int stuck_count_ = 0;
+  int process_events_stuck_count_ = 0;
 
-  // A copy of the parse state from the last call to ExtractMessages().
+  // A copy of the parse state from the last call to ProcessEvents().
   ParseState last_parse_state_ = ParseState::kInvalid;
 
   // Only meaningful for kprobe HTTP2 tracing. Uprobe tracing extracts plain text header fields from
