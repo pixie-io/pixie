@@ -72,10 +72,11 @@ StatusOr<IRNode*> ASTVisitorImpl::ParseAndProcessSingleExpression(
 }
 
 Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
-  return ProcessASTSuite(m->body);
+  return ProcessASTSuite(m->body, /*is_function_definition_body*/ false).status();
 }
 
-Status ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& body) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& body,
+                                                      bool is_function_definition_body) {
   pypa::AstStmtList items_list = body->items;
   if (items_list.size() == 0) {
     return CreateAstError(body, "No runnable code found");
@@ -96,7 +97,12 @@ Status ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& body) {
         break;
       }
       case pypa::AstType::Return: {
-        return CreateAstError(stmt, "Return statements not yet supported");
+        // If we are not parsing a function definition's body then we must error.
+        if (!is_function_definition_body) {
+          return CreateAstError(stmt, "'return' outside function");
+        }
+        // We exit early if the function definition return is used.
+        return ProcessFuncDefReturn(PYPA_PTR_CAST(Return, stmt));
       }
       default: {
         return CreateAstError(stmt, "Can't parse expression of type $0",
@@ -104,7 +110,8 @@ Status ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& body) {
       }
     }
   }
-  return Status::OK();
+  // If we reach the end of the stmt list before hitting a return, return a NoneObject.
+  return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(body));
 }
 
 Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstSubscriptPtr& subscript,
@@ -228,6 +235,9 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(const std::vector<std::stri
                                                      const pypa::AstSuitePtr& body,
                                                      const pypa::AstPtr& ast,
                                                      const ParsedArgs& args) {
+  // TODO(philkuz) (PL-1365) figure out how to wrap the internal errors with the ast that's passed
+  // in.
+  PL_UNUSED(ast);
   std::shared_ptr<VarTable> local_scope = var_table_->CreateChild();
   for (const std::string& arg_name : arg_names) {
     // TODO(philkuz) scope out making args return objects instead of IRNode*.
@@ -245,10 +255,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(const std::vector<std::stri
   }
   PL_ASSIGN_OR_RETURN(auto ast_visitor,
                       ASTVisitorImpl::Create(ir_graph_, compiler_state_, local_scope));
-  PL_RETURN_IF_ERROR(ast_visitor->ProcessASTSuite(body));
-
-  // TODO(philkuz) explore looking at how returns are handled.
-  return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast));
+  return ast_visitor->ProcessASTSuite(body, /*is_function_definition_body*/ true);
 }
 
 Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& node) {
@@ -619,6 +626,15 @@ StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
   DCHECK(ql_object->HasNode());
   return ql_object->node();
 }
+
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefReturn(const pypa::AstReturnPtr& ret) {
+  if (ret->value == nullptr) {
+    return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ret));
+  }
+
+  return Process(ret->value, {{}, "", {}});
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

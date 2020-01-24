@@ -1061,10 +1061,28 @@ df = func('http_events')
 px.display(df)
 )query";
 
-TEST_F(ASTVisitorTest, func_with_return_fails) {
+TEST_F(ASTVisitorTest, func_can_return_object) {
   auto ir_graph_or_s = CompileGraph(kFuncDefWithReturn);
+  ASSERT_OK(ir_graph_or_s);
+  auto ir_graph = ir_graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
+  EXPECT_EQ(mem_src->table_name(), "http_events");
+  ASSERT_EQ(mem_src->Children().size(), 1);
+  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+}
+
+constexpr char kRawReturnNoFuncDef[] = R"query(
+df = px.DataFrame('http_events')
+return px.display(df)
+)query";
+
+TEST_F(ASTVisitorTest, return_outside_of_funcdef_fails) {
+  // Makes sure that a return statement outside of the funcdef does not do anything.
+  auto ir_graph_or_s = CompileGraph(kRawReturnNoFuncDef);
   ASSERT_NOT_OK(ir_graph_or_s);
-  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("Return statements not yet supported"));
+  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("'return' outside function"));
 }
 
 using UnionTest = ASTVisitorTest;
@@ -1088,6 +1106,29 @@ TEST_F(UnionTest, basic) {
       },
       "\n");
   EXPECT_OK(CompileGraph(union_array));
+}
+
+constexpr char kFuncDefWithEmptyReturn[] = R"query(
+def func(a):
+    df = px.DataFrame(a)
+    px.display(df)
+    return
+
+
+func('http_events')
+)query";
+
+TEST_F(ASTVisitorTest, func_with_empty_return) {
+  // Tests to make sure we can have a function return nothing but still processes.
+  auto ir_graph_or_s = CompileGraph(kFuncDefWithEmptyReturn);
+  ASSERT_OK(ir_graph_or_s);
+  auto ir_graph = ir_graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
+  EXPECT_EQ(mem_src->table_name(), "http_events");
+  ASSERT_EQ(mem_src->Children().size(), 1);
+  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
 }
 
 }  // namespace compiler

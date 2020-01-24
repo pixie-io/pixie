@@ -113,9 +113,13 @@ class ASTVisitorImpl : public ASTVisitor {
    * @brief Process statements list passed in as an argument.
    *
    * @param body the body ast object to parse.
+   * @param is_function_definition_body whether the body is in a function definition. There are some
+   * extra steps that occur when is_function_definition_body is true, ie processing Return
+   * statements.
    * @return Status any errors that come up.
    */
-  Status ProcessASTSuite(const pypa::AstSuitePtr& body);
+  StatusOr<QLObjectPtr> ProcessASTSuite(const pypa::AstSuitePtr& body,
+                                        bool is_function_definition_body);
 
   /**
    * @brief Processes any expression node into a QLObjectPtr.
@@ -383,6 +387,14 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> FuncDefHandler(const std::vector<std::string>& arg_names,
                                        const pypa::AstSuitePtr& body, const pypa::AstPtr& ast,
                                        const ParsedArgs& args);
+
+  /**
+   * @brief Handles the return statements of function definitions.
+   *
+   * @param ret the return ast node
+   * @return StatusOr<QLObjectPtr> the ql object ptr meant by the return statement.
+   */
+  StatusOr<QLObjectPtr> ProcessFuncDefReturn(const pypa::AstReturnPtr& ret);
 
   IR* ir_graph_;
   CompilerState* compiler_state_;
