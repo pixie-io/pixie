@@ -619,7 +619,6 @@ StatusOr<ExpressionIR*> OperatorCompileTimeExpressionRule::EvalCompileTimeSubExp
   if (Match(expr, CompileTimeFunc())) {
     EvaluateCompileTimeExpr evaluator(compiler_state_);
     PL_ASSIGN_OR_RETURN(auto evaled, evaluator.Evaluate(expr));
-    DeferNodeDeletion(expr->id());
     return evaled;
   }
 
@@ -742,7 +741,6 @@ StatusOr<ExpressionIR*> ConvertMemSourceStringTimesRule::ConvertStringTimes(Expr
     int64_t time_repr = compiler_state_->time_now().val + int_val;
     PL_ASSIGN_OR_RETURN(auto out_node,
                         node->graph_ptr()->CreateNode<IntIR>(node->ast_node(), time_repr));
-    DeferNodeDeletion(node->id());
     return out_node;
   } else if (Match(node, Func())) {
     auto func_node = static_cast<FuncIR*>(node);
@@ -1181,7 +1179,7 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
     PL_RETURN_IF_ERROR(casted_node->ReplaceParent(drop_ir, map_ir));
   }
   PL_RETURN_IF_ERROR(drop_ir->RemoveParent(parent_op));
-  DeferNodeDeletion(drop_ir->id());
+  PL_RETURN_IF_ERROR(ir_graph->DeleteNode(drop_ir->id()));
   return true;
 }
 
@@ -1276,7 +1274,7 @@ StatusOr<bool> RemoveGroupByRule::RemoveGroupBy(GroupByIR* groupby) {
     return groupby->CreateIRNodeError("'groupby()' should be followed by an 'agg()' not a $0",
                                       groupby->Children()[0]->type_string());
   }
-  DeferNodeDeletion(groupby->id());
+  PL_RETURN_IF_ERROR(groupby->graph_ptr()->DeleteNode(groupby->id()));
   return true;
 }
 
@@ -1360,7 +1358,7 @@ Status CombineConsecutiveMapsRule::CombineMaps(
   for (auto grandchild : child->Children()) {
     PL_RETURN_IF_ERROR(grandchild->ReplaceParent(child, parent));
   }
-  DeferNodeDeletion(child->id());
+  PL_RETURN_IF_ERROR(child->graph_ptr()->DeleteNode(child->id()));
   return Status::OK();
 }
 

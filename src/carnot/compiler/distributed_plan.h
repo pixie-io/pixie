@@ -80,9 +80,10 @@ class DistributedPlan {
 
   void AddEdge(CarnotInstance* from, CarnotInstance* to) { dag_.AddEdge(from->id(), to->id()); }
   void AddEdge(int64_t from, int64_t to) { dag_.AddEdge(from, to); }
+  bool HasNode(int64_t node_id) const { return dag_.HasNode(node_id); }
 
   Status DeleteNode(int64_t node) {
-    if (!dag_.HasNode(node)) {
+    if (!HasNode(node)) {
       return error::InvalidArgument("No node $0 exists in graph.", node);
     }
     dag_.DeleteNode(node);

@@ -943,7 +943,7 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsAfterRightJoin) {
                      {"key_x", "latency", "data", "key_y", "cpu_usage"}));
 }
 
-class CompilerTimeExpressionTest : public RulesTest {
+class CompileTimeExpressionTest : public RulesTest {
  protected:
   void SetUp() override {
     RulesTest::SetUp();
@@ -964,7 +964,7 @@ class CompilerTimeExpressionTest : public RulesTest {
   MemorySourceIR* mem_src;
 };
 
-TEST_F(CompilerTimeExpressionTest, mem_src_one_argument_string) {
+TEST_F(CompileTimeExpressionTest, mem_src_one_argument_string) {
   int64_t num_minutes_ago = 2;
   std::chrono::nanoseconds exp_time = std::chrono::minutes(num_minutes_ago);
   int64_t expected_time = time_now - exp_time.count();
@@ -988,7 +988,7 @@ TEST_F(CompilerTimeExpressionTest, mem_src_one_argument_string) {
   EXPECT_EQ(static_cast<IntIR*>(end_res)->val(), expected_time);
 }
 
-TEST_F(CompilerTimeExpressionTest, mem_src_two_argument_string) {
+TEST_F(CompileTimeExpressionTest, mem_src_two_argument_string) {
   int64_t start_num_minutes_ago = 2;
   int64_t stop_num_minutes_ago = 1;
   std::chrono::nanoseconds exp_stop_time = std::chrono::minutes(stop_num_minutes_ago);
@@ -1017,7 +1017,7 @@ TEST_F(CompilerTimeExpressionTest, mem_src_two_argument_string) {
   EXPECT_EQ(static_cast<IntIR*>(end_res)->val(), expected_stop_time);
 }
 
-TEST_F(CompilerTimeExpressionTest, mem_src_set_times) {
+TEST_F(CompileTimeExpressionTest, mem_src_set_times) {
   auto start = graph->CreateNode<IntIR>(ast, 19).ValueOrDie();
   auto stop = graph->CreateNode<IntIR>(ast, 20).ValueOrDie();
 
@@ -1032,7 +1032,7 @@ TEST_F(CompilerTimeExpressionTest, mem_src_set_times) {
   EXPECT_EQ(mem_src->time_stop_ns(), 20);
 }
 
-TEST_F(CompilerTimeExpressionTest, map_nested) {
+TEST_F(CompileTimeExpressionTest, map_nested) {
   auto top_level = MakeConstantAddition(4, 6);
   auto nested =
       MakeFunc("non_compile", std::vector<ExpressionIR*>{MakeConstantAddition(5, 6), MakeInt(2)});
@@ -1069,7 +1069,7 @@ TEST_F(CompilerTimeExpressionTest, map_nested) {
   EXPECT_EQ(2, static_cast<IntIR*>(col_exprs[2].node)->val());
 }
 
-TEST_F(CompilerTimeExpressionTest, filter_eval) {
+TEST_F(CompileTimeExpressionTest, filter_eval) {
   auto col = MakeColumn("cpu0", /* parent_op_idx */ 0);
   auto expr = MakeConstantAddition(5, 6);
   auto filter_func = MakeEqualsFunc(col, expr);
@@ -1083,7 +1083,7 @@ TEST_F(CompilerTimeExpressionTest, filter_eval) {
   EXPECT_EQ(IRNodeType::kFunc, filter->filter_expr()->type());
 }
 
-TEST_F(CompilerTimeExpressionTest, filter_no_eval) {
+TEST_F(CompileTimeExpressionTest, filter_no_eval) {
   auto col = MakeColumn("cpu0", /* parent_op_idx */ 0);
   auto expr = MakeInt(5);
   auto filter_func = graph
@@ -1097,7 +1097,7 @@ TEST_F(CompilerTimeExpressionTest, filter_no_eval) {
   EXPECT_FALSE(result.ValueOrDie());
 }
 
-TEST_F(CompilerTimeExpressionTest, mem_src_one_argument_function) {
+TEST_F(CompileTimeExpressionTest, mem_src_one_argument_function) {
   auto start = MakeConstantAddition(4, 6);
   auto stop = graph->CreateNode<IntIR>(ast, 13).ValueOrDie();
   EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
@@ -1113,7 +1113,7 @@ TEST_F(CompilerTimeExpressionTest, mem_src_one_argument_function) {
   EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 13);
 }
 
-TEST_F(CompilerTimeExpressionTest, mem_src_two_argument_function) {
+TEST_F(CompileTimeExpressionTest, mem_src_two_argument_function) {
   auto start = MakeConstantAddition(4, 6);
   auto stop = MakeConstantAddition(123, 321);
   EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
@@ -1127,7 +1127,7 @@ TEST_F(CompilerTimeExpressionTest, mem_src_two_argument_function) {
   EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 444);
 }
 
-TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
+TEST_F(CompileTimeExpressionTest, subtraction_handling) {
   IntIR* constant1 = graph->CreateNode<IntIR>(ast, 111).ValueOrDie();
   IntIR* constant2 = graph->CreateNode<IntIR>(ast, 11).ValueOrDie();
   IntIR* start = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
@@ -1147,7 +1147,7 @@ TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
   EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 100);
 }
 
-TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
+TEST_F(CompileTimeExpressionTest, multiplication_handling) {
   IntIR* constant1 = graph->CreateNode<IntIR>(ast, 3).ValueOrDie();
   IntIR* constant2 = graph->CreateNode<IntIR>(ast, 8).ValueOrDie();
   IntIR* start = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
@@ -1167,7 +1167,7 @@ TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
   EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 24);
 }
 
-TEST_F(CompilerTimeExpressionTest, already_completed) {
+TEST_F(CompileTimeExpressionTest, already_completed) {
   IntIR* constant1 = graph->CreateNode<IntIR>(ast, 24).ValueOrDie();
   IntIR* constant2 = graph->CreateNode<IntIR>(ast, 8).ValueOrDie();
 

@@ -49,6 +49,10 @@ class BaseRule {
 
     bool any_changed = false;
     for (int64_t node_i : topo_graph) {
+      // The node may have been deleted by a prior call to Apply on a parent or child node.
+      if (!graph->HasNode(node_i)) {
+        continue;
+      }
       PL_ASSIGN_OR_RETURN(bool node_is_changed, Apply(graph->Get(node_i)));
       any_changed = any_changed || node_is_changed;
     }

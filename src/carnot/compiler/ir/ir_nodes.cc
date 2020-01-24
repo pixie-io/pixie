@@ -36,8 +36,23 @@ Status IR::DeleteEdge(int64_t from_node, int64_t to_node) {
   dag_.DeleteEdge(from_node, to_node);
   return Status::OK();
 }
+
 Status IR::DeleteEdge(IRNode* from_node, IRNode* to_node) {
   return DeleteEdge(from_node->id(), to_node->id());
+}
+
+Status IR::DeleteOrphansInSubtree(int64_t id) {
+  auto children = dag_.DependenciesOf(id);
+  // If the node has valid parents, then don't delete it.
+  auto parents = dag_.ParentsOf(id);
+  if (parents.size()) {
+    return Status::OK();
+  }
+  PL_RETURN_IF_ERROR(DeleteNode(id));
+  for (auto child_id : children) {
+    PL_RETURN_IF_ERROR(DeleteOrphansInSubtree(child_id));
+  }
+  return Status::OK();
 }
 
 Status IR::DeleteNode(int64_t node) {
@@ -299,6 +314,9 @@ Status MemorySourceIR::SetTimeExpressions(ExpressionIR* start_time_expr,
   CHECK(start_time_expr != nullptr);
   CHECK(end_time_expr != nullptr);
 
+  auto old_start_time_expr = start_time_expr_;
+  auto old_end_time_expr = end_time_expr_;
+
   if (start_time_expr_) {
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, start_time_expr_));
   }
@@ -309,6 +327,14 @@ Status MemorySourceIR::SetTimeExpressions(ExpressionIR* start_time_expr,
   PL_ASSIGN_OR_RETURN(start_time_expr_,
                       graph_ptr()->OptionallyCloneWithEdge(this, start_time_expr));
   PL_ASSIGN_OR_RETURN(end_time_expr_, graph_ptr()->OptionallyCloneWithEdge(this, end_time_expr));
+
+  if (old_start_time_expr) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_start_time_expr->id()));
+  }
+  if (old_end_time_expr) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_end_time_expr->id()));
+  }
+
   has_time_expressions_ = true;
   return Status::OK();
 }
@@ -351,13 +377,16 @@ Status MemorySinkIR::ToProto(planpb::Operator* op) const {
 }
 
 Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
-  for (const ColumnExpression& mapped_expression : col_exprs_) {
-    ExpressionIR* expr = mapped_expression.node;
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, expr));
-  }
+  auto old_exprs = col_exprs_;
   col_exprs_.clear();
+  for (const ColumnExpression& expr : old_exprs) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, expr.node));
+  }
   for (const auto& expr : exprs) {
     PL_RETURN_IF_ERROR(AddColExpr(expr));
+  }
+  for (const ColumnExpression& expr : old_exprs) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(expr.node->id()));
   }
   return Status::OK();
 }
@@ -460,10 +489,14 @@ Status FilterIR::Init(OperatorIR* parent, ExpressionIR* expr) {
 }
 
 Status FilterIR::SetFilterExpr(ExpressionIR* expr) {
-  if (filter_expr_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, filter_expr_));
+  auto old_filter_expr = filter_expr_;
+  if (old_filter_expr) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_filter_expr));
   }
   PL_ASSIGN_OR_RETURN(filter_expr_, graph_ptr()->OptionallyCloneWithEdge(this, expr));
+  if (old_filter_expr) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_filter_expr->id()));
+  }
   return Status::OK();
 }
 
@@ -538,6 +571,7 @@ Status BlockingAggIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& gro
 }
 
 Status BlockingAggIR::SetGroups(const std::vector<ColumnIR*>& groups) {
+  DCHECK(groups_.empty());
   groups_.resize(groups.size());
   for (size_t i = 0; i < groups.size(); ++i) {
     PL_ASSIGN_OR_RETURN(groups_[i], graph_ptr()->OptionallyCloneWithEdge(this, groups[i]));
@@ -546,6 +580,7 @@ Status BlockingAggIR::SetGroups(const std::vector<ColumnIR*>& groups) {
 }
 
 Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_exprs) {
+  auto old_agg_expressions = aggregate_expressions_;
   for (const ColumnExpression& agg_expr : aggregate_expressions_) {
     ExpressionIR* expr = agg_expr.node;
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, expr));
@@ -557,6 +592,11 @@ Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_exprs) {
                         graph_ptr()->OptionallyCloneWithEdge(this, agg_expr.node));
     aggregate_expressions_.emplace_back(agg_expr.name, updated_expr);
   }
+
+  for (const auto& old_agg_expr : old_agg_expressions) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_agg_expr.node->id()));
+  }
+
   return Status::OK();
 }
 
@@ -599,6 +639,7 @@ Status GroupByIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups)
 }
 
 Status GroupByIR::SetGroups(const std::vector<ColumnIR*>& groups) {
+  DCHECK(groups_.empty());
   groups_.resize(groups.size());
   for (size_t i = 0; i < groups.size(); ++i) {
     PL_ASSIGN_OR_RETURN(groups_[i], graph_ptr()->OptionallyCloneWithEdge(this, groups[i]));
@@ -914,6 +955,7 @@ Status MetadataIR::ResolveMetadataColumn(MetadataResolverIR* resolver_op,
 Status MetadataLiteralIR::Init(DataIR* literal) { return SetLiteral(literal); }
 
 Status MetadataLiteralIR::SetLiteral(DataIR* literal) {
+  DCHECK_EQ(literal_, nullptr);
   PL_ASSIGN_OR_RETURN(literal_, graph_ptr()->OptionallyCloneWithEdge(this, literal));
   return Status::OK();
 }
@@ -972,7 +1014,7 @@ StatusOr<std::unique_ptr<IR>> IR::Clone() const {
 }
 
 Status OperatorIR::CopyParentsFrom(const OperatorIR* source_op) {
-  DCHECK_EQ(parents_.size(), 0UL);
+  DCHECK(parents_.empty());
   for (const auto& parent : source_op->parents()) {
     IRNode* new_parent = graph_ptr()->Get(parent->id());
     DCHECK(Match(new_parent, Operator()));
@@ -1051,6 +1093,7 @@ Status FuncIR::CopyFromNodeImpl(const IRNode* node,
   is_data_type_evaluated_ = func->is_data_type_evaluated_;
 
   for (const ExpressionIR* arg : func->args_) {
+    // auto id = arg->id();
     PL_ASSIGN_OR_RETURN(ExpressionIR * new_arg, graph_ptr()->CopyNode(arg, copied_nodes_map));
     PL_RETURN_IF_ERROR(AddArg(new_arg));
   }
@@ -1390,12 +1433,6 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
 }
 
 Status UnionIR::AddColumnMapping(const InputColumnMapping& column_mapping) {
-  DCHECK(IsRelationInit()) << "Relation must be initialized before running this.";
-  if (column_mapping.size() != relation().NumColumns()) {
-    return DExitOrIRNodeError("Expected columns mapping to match the relation size. $0 vs $1",
-                              column_mapping.size(), relation().NumColumns());
-  }
-
   InputColumnMapping cloned_mapping;
   for (ColumnIR* col : column_mapping) {
     PL_ASSIGN_OR_RETURN(auto cloned, graph_ptr()->OptionallyCloneWithEdge(this, col));
@@ -1407,13 +1444,20 @@ Status UnionIR::AddColumnMapping(const InputColumnMapping& column_mapping) {
 }
 
 Status UnionIR::SetColumnMappings(const std::vector<InputColumnMapping>& column_mappings) {
-  for (const auto& old_mapping : column_mappings_) {
+  auto old_mappings = column_mappings_;
+  column_mappings_.clear();
+  for (const auto& old_mapping : old_mappings) {
     for (ColumnIR* col : old_mapping) {
       PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, col));
     }
   }
   for (const auto& new_mapping : column_mappings) {
     PL_RETURN_IF_ERROR(AddColumnMapping(new_mapping));
+  }
+  for (const auto& old_mapping : old_mappings) {
+    for (ColumnIR* col : old_mapping) {
+      PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(col->id()));
+    }
   }
   return Status::OK();
 }
@@ -1422,7 +1466,7 @@ Status UnionIR::SetColumnMappings(const std::vector<InputColumnMapping>& column_
 // union where the output schema of the union is the combined set of the input relations, and any
 // input table that is missing a certain column will just output null.
 Status UnionIR::SetRelationFromParents() {
-  DCHECK_NE(parents().size(), 0UL);
+  DCHECK(!parents().empty());
 
   std::vector<Relation> relations;
   OperatorIR* base_parent = parents()[0];
@@ -1479,7 +1523,6 @@ Status UnionIR::Init(const std::vector<OperatorIR*>& parents) {
 
 StatusOr<absl::flat_hash_set<std::string>> UnionIR::PruneOutputColumnsToImpl(
     const absl::flat_hash_set<std::string>& kept_columns) {
-  DCHECK(IsRelationInit());
   std::vector<InputColumnMapping> new_column_mappings;
   for (const auto& parent_column_mapping : column_mappings_) {
     InputColumnMapping new_parent_mapping;
@@ -1492,7 +1535,7 @@ StatusOr<absl::flat_hash_set<std::string>> UnionIR::PruneOutputColumnsToImpl(
     }
     new_column_mappings.push_back(new_parent_mapping);
   }
-  column_mappings_ = new_column_mappings;
+  PL_RETURN_IF_ERROR(SetColumnMappings(new_column_mappings));
   return kept_columns;
 }
 
@@ -1579,6 +1622,8 @@ Status JoinIR::Init(const std::vector<OperatorIR*>& parents, const std::string& 
 
 Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
                               const std::vector<ColumnIR*>& right_columns) {
+  DCHECK(left_on_columns_.empty());
+  DCHECK(right_on_columns_.empty());
   left_on_columns_.resize(left_columns.size());
   for (size_t i = 0; i < left_columns.size(); ++i) {
     PL_ASSIGN_OR_RETURN(left_on_columns_[i],
@@ -1595,7 +1640,7 @@ Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
 
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> JoinIR::RequiredInputColumns() const {
   DCHECK(key_columns_set_);
-  DCHECK_GT(output_columns_.size(), 0UL);
+  DCHECK(!output_columns_.empty());
 
   std::vector<absl::flat_hash_set<std::string>> ret(2);
 
@@ -1618,22 +1663,25 @@ StatusOr<std::vector<absl::flat_hash_set<std::string>>> JoinIR::RequiredInputCol
 Status JoinIR::SetOutputColumns(const std::vector<std::string>& column_names,
                                 const std::vector<ColumnIR*>& columns) {
   DCHECK_EQ(column_names.size(), columns.size());
-
-  for (auto old_col : output_columns_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_col));
-  }
+  auto old_output_cols = output_columns_;
   output_columns_ = columns;
   column_names_ = column_names;
 
+  for (auto old_col : old_output_cols) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_col));
+  }
   for (auto new_col : output_columns_) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, new_col));
+  }
+  for (auto old_col : old_output_cols) {
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_col->id()));
   }
   return Status::OK();
 }
 
 StatusOr<absl::flat_hash_set<std::string>> JoinIR::PruneOutputColumnsToImpl(
     const absl::flat_hash_set<std::string>& kept_columns) {
-  DCHECK_GT(column_names_.size(), 0UL);
+  DCHECK(!column_names_.empty());
   std::vector<ColumnIR*> new_output_cols;
   std::vector<std::string> new_output_names;
   for (const auto& [col_idx, col_name] : Enumerate(column_names_)) {
