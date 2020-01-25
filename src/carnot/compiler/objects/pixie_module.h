@@ -48,15 +48,6 @@ class PixieModule : public QLObject {
 };
 
 /**
- * @brief Implements the pl.DataFrame() logic.
- *
- */
-class DataFrameHandler {
- public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args);
-};
-
-/**
  * @brief Implements the pl.display() logic.
  *
  */

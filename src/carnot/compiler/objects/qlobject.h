@@ -118,7 +118,10 @@ class QLObject {
    */
   const absl::flat_hash_set<std::string>& AllAttributes() const { return attributes_; }
 
-  const TypeDescriptor& type_descriptor() { return type_descriptor_; }
+  const TypeDescriptor& type_descriptor() const { return type_descriptor_; }
+  std::string_view name() const { return type_descriptor_.name(); }
+  QLObjectType type() const { return type_descriptor_.type(); }
+
   IRNode* node() const { return node_; }
 
   /**

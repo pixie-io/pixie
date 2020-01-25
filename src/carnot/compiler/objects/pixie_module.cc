@@ -139,18 +139,6 @@ Status PixieModule::Init() {
 
   // Setup methods.
   PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> dataframe_fn,
-      FuncObject::Create(kDataframeOpId, {"table", "select", "start_time", "end_time"},
-                         {{"select", "[]"},
-                          {"start_time", "0"},
-                          {"end_time", absl::Substitute("$0.$1()", kPixieModuleObjName, kNowOpId)}},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&DataFrameHandler::Eval, graph_, std::placeholders::_1,
-                                   std::placeholders::_2)));
-  AddMethod(kDataframeOpId, dataframe_fn);
-
-  PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> display_fn,
       FuncObject::Create(
           kDisplayOpId, {"out", "name", "cols"}, {{"name", "'output'"}, {"cols", "[]"}},
@@ -159,57 +147,17 @@ Status PixieModule::Init() {
           std::bind(&DisplayHandler::Eval, graph_, std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kDisplayOpId, display_fn);
 
+  attributes_.insert(kDataframeOpId);
+
   return Status::OK();
 }
 
-StatusOr<QLObjectPtr> PixieModule::GetAttributeImpl(const pypa::AstPtr& ast,
-                                                    std::string_view name) const {
-  // If this gets to this point, should fail here.
-  DCHECK(HasNonMethodAttribute(name));
-
-  PL_ASSIGN_OR_RETURN(
-      FuncIR * func,
-      graph_->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", std::string(name)},
-                                 std::vector<ExpressionIR*>{}));
-  return ExprObject::Create(func);
-}
-
-StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,
-                                             const ParsedArgs& args) {
-  IRNode* table = args.GetArg("table");
-  IRNode* select = args.GetArg("select");
-  IRNode* start_time = args.GetArg("start_time");
-  IRNode* end_time = args.GetArg("end_time");
-  if (!Match(table, String())) {
-    return table->CreateIRNodeError("'table' must be a string, got $0", table->type_string());
+StatusOr<std::shared_ptr<QLObject>> PixieModule::GetAttributeImpl(const pypa::AstPtr& ast,
+                                                                  std::string_view attr) const {
+  if (attr == kDataframeOpId) {
+    return Dataframe::Create(graph_);
   }
-
-  if (!Match(select, ListWithChildren(String()))) {
-    return select->CreateIRNodeError("'select' must be a list of strings.");
-  }
-
-  if (!start_time->IsExpression()) {
-    return start_time->CreateIRNodeError("'start_time' must be an expression");
-  }
-
-  if (!end_time->IsExpression()) {
-    return start_time->CreateIRNodeError("'end_time' must be an expression");
-  }
-
-  std::string table_name = static_cast<StringIR*>(table)->str();
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
-                      ParseStringsFromCollection(static_cast<ListIR*>(select)));
-  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
-                      graph->CreateNode<MemorySourceIR>(ast, table_name, columns));
-  // If both start_time and end_time are default arguments, then we don't substitute them.
-  if (!(args.default_subbed_args().contains("start_time") &&
-        args.default_subbed_args().contains("end_time"))) {
-    ExpressionIR* start_time_expr = static_cast<ExpressionIR*>(start_time);
-    ExpressionIR* end_time_expr = static_cast<ExpressionIR*>(end_time);
-    PL_RETURN_IF_ERROR(mem_source_op->SetTimeExpressions(start_time_expr, end_time_expr));
-  }
-
-  return Dataframe::Create(mem_source_op);
+  return CreateAstError(ast, "'$0' has not attribute '$1'", name(), attr);
 }
 
 StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,

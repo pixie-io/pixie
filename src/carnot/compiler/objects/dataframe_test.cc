@@ -140,8 +140,7 @@ TEST_F(DropHandlerTest, DropTestStringWithoutList) {
   EXPECT_EQ(drop->col_names(), std::vector<std::string>({"foo"}));
 }
 
-// TODO(philkuz) (PL-1128) re-enable when we switch from old agg to new agg.
-TEST_F(DataframeTest, DISABLED_AggTest) {
+TEST_F(DataframeTest, AggTest) {
   MemorySourceIR* src = MakeMemSource();
 
   auto df_or_s = Dataframe::Create(src);
@@ -184,7 +183,7 @@ TEST_F(DataframeTest, DISABLED_AggTest) {
   ASSERT_THAT(col_names, UnorderedElementsAre("col1", "col2"));
 }
 
-TEST_F(DataframeTest, DISABLED_AggFailsWithPosArgs) {
+TEST_F(DataframeTest, AggFailsWithPosArgs) {
   MemorySourceIR* src = MakeMemSource();
 
   auto df_or_s = Dataframe::Create(src);
@@ -577,6 +576,28 @@ TEST_F(UnionHandlerTest, UnionTest_single) {
   OperatorIR* op = df_obj->op();
   ASSERT_TRUE(Match(op, Union()));
   EXPECT_THAT(op->parents(), ElementsAre(src1, src2));
+}
+
+TEST_F(DataframeTest, ConstructorTest) {
+  auto df_or_s = Dataframe::Create(graph.get());
+  ASSERT_OK(df_or_s);
+  std::shared_ptr<QLObject> srcdf = df_or_s.ConsumeValueOrDie();
+
+  auto get_method_status = srcdf->GetCallMethod();
+  ASSERT_OK(get_method_status);
+  FuncObject* func_obj = static_cast<FuncObject*>(get_method_status.ConsumeValueOrDie().get());
+  ArgMap args({{}, {MakeString("http_events")}});
+
+  std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
+  // Add compartor for type() and Dataframe.
+  ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
+  auto df_obj = static_cast<Dataframe*>(obj.get());
+
+  // Check to make sure that the output is a Join operator.
+  OperatorIR* op = df_obj->op();
+  ASSERT_TRUE(Match(op, MemorySource()));
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(op);
+  EXPECT_EQ(mem_src->table_name(), "http_events");
 }
 
 }  // namespace compiler

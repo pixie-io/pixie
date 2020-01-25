@@ -20,10 +20,11 @@ namespace compiler {
 class Dataframe : public QLObject {
  public:
   static constexpr TypeDescriptor DataframeType = {
-      /* name */ "Dataframe",
+      /* name */ "DataFrame",
       /* type */ QLObjectType::kDataframe,
   };
   static StatusOr<std::shared_ptr<Dataframe>> Create(OperatorIR* op);
+  static StatusOr<std::shared_ptr<Dataframe>> Create(IR* graph);
 
   /**
    * @brief Get the operator that this dataframe represents.
@@ -37,7 +38,7 @@ class Dataframe : public QLObject {
    *
    * @return IR*
    */
-  IR* graph() const { return op_->graph_ptr(); }
+  IR* graph() const { return graph_; }
 
   // Method names.
   inline static constexpr char kMapOpId[] = "map";
@@ -52,7 +53,8 @@ class Dataframe : public QLObject {
   inline static constexpr char kMetadataAttrName[] = "ctx";
 
  protected:
-  explicit Dataframe(OperatorIR* op) : QLObject(DataframeType, op), op_(op) {}
+  explicit Dataframe(OperatorIR* op, IR* graph)
+      : QLObject(DataframeType, op), op_(op), graph_(graph) {}
   StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
                                                        std::string_view name) const override;
 
@@ -61,6 +63,7 @@ class Dataframe : public QLObject {
 
  private:
   OperatorIR* op_;
+  IR* graph_;
 };
 
 /**
@@ -203,6 +206,15 @@ class UnionHandler {
    */
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                     const ParsedArgs& args);
+};
+
+/**
+ * @brief Implements the DataFrame() constructor logic.
+ *
+ */
+class DataFrameHandler {
+ public:
+  static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args);
 };
 
 }  // namespace compiler

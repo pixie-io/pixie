@@ -245,6 +245,14 @@ TEST_F(PixieModuleTest, uuint128_conversion_fails_on_invalid_string) {
   ASSERT_NOT_OK(result_or_s);
   EXPECT_THAT(result_or_s.status(), HasCompilerError(".* is not a valid UUID"));
 }
+
+TEST_F(PixieModuleTest, dataframe_as_attribute) {
+  auto attr_or_s = module_->GetAttribute(ast, PixieModule::kDataframeOpId);
+  ASSERT_OK(attr_or_s);
+
+  QLObjectPtr attr_object = attr_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(attr_object->type_descriptor().type() == QLObjectType::kDataframe);
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
