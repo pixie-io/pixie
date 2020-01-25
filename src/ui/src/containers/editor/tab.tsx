@@ -61,7 +61,7 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
   }, []);
   // Pass up data to Editor to send to Voyager.
   if (data) {
-    if (data.ExecuteQuery.table.length > 0) {
+    if (data.ExecuteQuery.table && data.ExecuteQuery.table.length > 0) {
       props.updateResults(data.ExecuteQuery.table[0].data);
     }
   }
