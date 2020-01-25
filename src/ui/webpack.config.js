@@ -54,6 +54,12 @@ if (isDevServer) {
   // prints more readable module names in the browser console on HMR updates
   plugins.push(new webpack.NamedModulesPlugin());
 
+  plugins.push(new webpack.SourceMapDevToolPlugin({
+    filename: 'sourcemaps/[file].map',
+    exclude: [/node_modules/, /vendor/, /vendor\.chunk\.js/, /vendor\.js/],
+  }));
+
+  entryFiles = [require.resolve('react-dev-utils/webpackHotDevClient'), 'index.tsx'];
 } else {
   // Archive plugin has problems with dev server.
   plugins.push(
@@ -65,7 +71,7 @@ if (isDevServer) {
 
 var webpackConfig = {
   context: resolve(__dirname, 'src'),
-  devtool: 'source-map',
+  devtool: false, // We use the SourceMapDevToolPlugin to generate source-maps.
   devServer: {
     contentBase: resolve(__dirname, 'dist'),
     https: true,
@@ -132,6 +138,18 @@ var webpackConfig = {
       {
         test: /\.toml$/,
         use: ['raw-loader'],
+      },
+      {
+        test: /\.(woff(2)?|ttf|eot)(\?v=\d+\.\d+\.\d+)?$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: '[name].[ext]',
+              outputPath: 'fonts/',
+            },
+          },
+        ],
       },
     ],
   },

@@ -17,3 +17,77 @@ describe('ResultsToCsv test', () => {
     );
   });
 });
+
+describe('ResultsToJSON', () => {
+  it('returns the correct results', () => {
+    const table = {
+      relation: {
+        columns: [
+          {
+            columnName: 'test',
+            columnType: 'STRING',
+          },
+          {
+            columnName: 'column2',
+            columnType: 'BOOLEAN',
+          },
+        ],
+      },
+      rowBatches: [
+        {
+          cols: [
+            {
+              stringData: {
+                data: [
+                  'abcd',
+                  'efg',
+                ],
+              },
+            },
+            {
+              booleanData: {
+                data: [
+                  true,
+                  false,
+                ],
+              },
+            },
+          ],
+          numRows: '2',
+          eow: true,
+          eos: false,
+        },
+        {
+          cols: [
+            {
+              stringData: {
+                data: [
+                  'hi',
+                ],
+              },
+            },
+            {
+              booleanData: {
+                data: [
+                  true,
+                ],
+              },
+            },
+          ],
+          numRows: '1',
+          eow: true,
+          eos: true,
+        },
+      ],
+      name: 'output',
+    };
+
+    const expectedOutput = [
+      {test: 'abcd', column2: true },
+      {test: 'efg', column2: false },
+      {test: 'hi', column2: true},
+    ];
+
+    expect(ResultDataUtils.ResultsToJSON(table)).toEqual(expectedOutput);
+  });
+});

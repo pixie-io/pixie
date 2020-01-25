@@ -14,13 +14,15 @@ import {CHECK_VIZIER, CREATE_CLUSTER, GET_CLUSTER, Vizier, VizierMain} from './v
 // Mock CodeMirror component because it does not mount properly in Jest.
 jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
 jest.mock('common/vizier-gql-client', () => ({}));
-
+// Mock DataVoyager component because it does not mount properly in Jest.
+// (See: https://github.com/vega/voyager/issues/812)
+jest.mock('datavoyager', () => ({ CreateVoyager: () => ({updateData: () => { return; } }) }));
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 describe.skip('<VizierMain/> test', () => {
   it('should have sidebar if Vizier is connected', async () => {
     const mocks = [
-      {
+    {
         request: {
           query: CHECK_VIZIER,
           variables: {},

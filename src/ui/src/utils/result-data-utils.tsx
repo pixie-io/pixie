@@ -1,4 +1,5 @@
 import * as _ from 'lodash';
+import {extractData} from '../components/chart/data';
 
 export function ResultsToCsv(results) {
   const jsonResults = JSON.parse(results);
@@ -27,4 +28,29 @@ export function ResultsToCsv(results) {
   });
 
   return csvStr;
+}
+
+export function ResultsToJSON(results) {
+    let resValues = [];
+
+    for (const batch of results.rowBatches) {
+      const formattedBatch = [];
+      for (let i = 0; i < parseInt(batch.numRows, 10); i++) {
+        formattedBatch.push({});
+      }
+
+      batch.cols.forEach((col, i) => {
+        const type = results.relation.columns[i].columnType;
+        const name = results.relation.columns[i].columnName;
+
+        const extractedData = extractData(type, col);
+
+        extractedData.forEach((d, j) => {
+          formattedBatch[j][name] = d;
+        });
+      });
+      resValues = resValues.concat(formattedBatch);
+    }
+
+    return resValues;
 }

@@ -56,6 +56,16 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
     });
   }, [code]);
 
+  const updateVoyager = React.useCallback(() => {
+    props.updateVoyager();
+  }, []);
+  // Pass up data to Editor to send to Voyager.
+  if (data) {
+    if (data.ExecuteQuery.table.length > 0) {
+      props.updateResults(data.ExecuteQuery.table[0].data);
+    }
+  }
+
   React.useEffect(() => {
     saveCodeToStorage(props.id, code);
   }, [code]);
@@ -76,6 +86,17 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
           onClick={executeQuery}>
           Execute
         </Button>
+        {
+          localStorage.getItem('px-voyager') === 'true' ?
+            <Button
+              size='sm'
+              variant='primary'
+              onClick={updateVoyager}
+              style={{ marginLeft: '5px'}}
+            >
+              Voyager
+            </Button> : null
+        }
       </div>
       <Split
         style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
