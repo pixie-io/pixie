@@ -1640,6 +1640,16 @@ TEST_F(OperatorTests, map_prune_outputs) {
   EXPECT_TRUE(Match(exprs[0].node, ColumnNode("cpu1", /*parent_idx*/ 0)));
 }
 
+TEST_F(OperatorTests, filter_prune_outputs) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto filter = MakeFilter(mem_src, MakeEqualsFunc(MakeColumn("cpu0", 0), MakeColumn("cpu1", 0)));
+
+  ASSERT_OK(filter->SetRelation(MakeRelation()));
+
+  EXPECT_OK(filter->PruneOutputColumnsTo({"cpu1"}));
+  EXPECT_THAT(filter->relation().col_names(), UnorderedElementsAre("cpu0", "cpu1"));
+}
+
 TEST_F(OperatorTests, agg_prune_outputs) {
   auto mem_src = MakeMemSource();
   auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},

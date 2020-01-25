@@ -67,6 +67,9 @@ class RulesTest : public OperatorTests {
             .ValueOrDie();
     return graph->CreateNode<FilterIR>(ast, parent, filter_func).ValueOrDie();
   }
+  FilterIR* MakeFilter(OperatorIR* parent, FuncIR* filter_expr) {
+    return graph->CreateNode<FilterIR>(ast, parent, filter_expr).ValueOrDie();
+  }
   using OperatorTests::MakeBlockingAgg;
   BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
     auto agg_func = graph
@@ -2494,6 +2497,46 @@ TEST_F(RulesTest, PruneUnusedColumnsRule_basic) {
   EXPECT_EQ(1, map->col_exprs().size());
   EXPECT_EQ(expr2.name, map->col_exprs()[0].name);
   EXPECT_EQ(expr2.node, map->col_exprs()[0].node);
+
+  // Should be unchanged
+  EXPECT_EQ(sink_relation, sink->relation());
+}
+
+TEST_F(RulesTest, PruneUnusedColumnsRule_filter) {
+  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+
+  ColumnExpression expr1{"count_1", MakeColumn("count", 0)};
+  ColumnExpression expr2{"cpu0_1", MakeColumn("cpu0", 0)};
+
+  auto map = MakeMap(mem_src, {expr1, expr2}, false);
+  Relation map_relation{{types::DataType::INT64, types::DataType::FLOAT64}, {"count_1", "cpu0_1"}};
+  ASSERT_OK(map->SetRelation(map_relation));
+
+  auto filter = MakeFilter(map, MakeEqualsFunc(MakeColumn("count_1", 0), MakeColumn("cpu0_1", 0)));
+  ASSERT_OK(filter->SetRelation(map_relation));
+
+  auto sink = MakeMemSink(filter, "abc", {"cpu0_1"});
+  Relation sink_relation{{types::DataType::FLOAT64}, {"cpu0_1"}};
+  ASSERT_OK(sink->SetRelation(sink_relation));
+
+  PruneUnusedColumnsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_EQ(mem_src->relation(),
+            Relation({types::DataType::INT64, types::DataType::FLOAT64}, {
+                                                                             "count",
+                                                                             "cpu0",
+                                                                         }));
+  EXPECT_THAT(mem_src->column_names(), ElementsAre("count", "cpu0"));
+
+  EXPECT_EQ(map_relation, map->relation());
+  EXPECT_EQ(2, map->col_exprs().size());
+  EXPECT_EQ(expr1.name, map->col_exprs()[0].name);
+  EXPECT_EQ(expr1.node, map->col_exprs()[0].node);
+  EXPECT_EQ(expr2.name, map->col_exprs()[1].name);
+  EXPECT_EQ(expr2.node, map->col_exprs()[1].node);
 
   // Should be unchanged
   EXPECT_EQ(sink_relation, sink->relation());

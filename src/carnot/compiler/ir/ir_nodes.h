@@ -1464,9 +1464,7 @@ class FilterIR : public OperatorIR {
 
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
-      const absl::flat_hash_set<std::string>& output_cols) override {
-    return output_cols;
-  }
+      const absl::flat_hash_set<std::string>& output_cols) override;
 
  private:
   ExpressionIR* filter_expr_ = nullptr;

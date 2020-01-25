@@ -407,6 +407,9 @@ StatusOr<absl::flat_hash_set<std::string>> CollectInputColumns(const ExpressionI
   if (Match(expr, ColumnNode())) {
     return absl::flat_hash_set<std::string>{static_cast<const ColumnIR*>(expr)->col_name()};
   }
+  if (Match(expr, MetadataLiteral())) {
+    return CollectInputColumns(static_cast<const MetadataLiteralIR*>(expr)->literal());
+  }
   if (!Match(expr, Func())) {
     return error::Internal("Unexpected Expression type: $0", expr->DebugString());
   }
@@ -484,6 +487,14 @@ absl::flat_hash_set<std::string> ColumnsFromRelation(Relation r) {
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> FilterIR::RequiredInputColumns() const {
   DCHECK(IsRelationInit());
   return std::vector<absl::flat_hash_set<std::string>>{ColumnsFromRelation(relation())};
+}
+
+StatusOr<absl::flat_hash_set<std::string>> FilterIR::PruneOutputColumnsToImpl(
+    const absl::flat_hash_set<std::string>& output_cols) {
+  PL_ASSIGN_OR_RETURN(auto filter_cols, CollectInputColumns(filter_expr_));
+  auto filter_and_outputs = output_cols;
+  filter_and_outputs.insert(filter_cols.begin(), filter_cols.end());
+  return filter_and_outputs;
 }
 
 Status FilterIR::ToProto(planpb::Operator* op) const {
