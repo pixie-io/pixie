@@ -26,7 +26,8 @@ enum class QLObjectType {
   kCollection,
   kNone,
   kPLModule,
-  kMetadata
+  kMetadata,
+  kType,
 };
 
 class TypeDescriptor {

@@ -71,6 +71,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "type_object_test",
+    srcs = ["type_object_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
     name = "pixie_module_test",
     srcs = ["pixie_module_test.cc"],
     deps = [
