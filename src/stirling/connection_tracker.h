@@ -11,7 +11,7 @@
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
-#include "src/stirling/common/go_grpc.h"
+#include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/data_stream.h"
 #include "src/stirling/mysql/mysql_parse.h"

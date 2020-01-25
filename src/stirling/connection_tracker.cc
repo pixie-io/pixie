@@ -16,7 +16,7 @@
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
-#include "src/stirling/common/go_grpc.h"
+#include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/message_types.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
 

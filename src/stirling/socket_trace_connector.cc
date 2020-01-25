@@ -20,7 +20,7 @@
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/common/event_parser.h"
-#include "src/stirling/common/go_grpc.h"
+#include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/http2/grpc.h"
 #include "src/stirling/http2/http2.h"
 #include "src/stirling/mysql/mysql_parse.h"
