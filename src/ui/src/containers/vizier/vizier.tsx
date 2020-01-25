@@ -46,24 +46,12 @@ const PATH_TO_HEADER_TITLE = {
   '/vizier/query': 'Query',
 };
 
-export interface RouterInfo {
-  pathname: string;
-}
-
 interface VizierState {
   creatingCluster: boolean;
 }
 
-interface VizierProps {
-  location: RouterInfo;
-}
-
 interface ClusterInstructionsProps {
   message: string;
-}
-
-interface VizierMainProps {
-  pathname: string;
 }
 
 const ClusterInstructions = (props: ClusterInstructionsProps) => (
@@ -86,7 +74,7 @@ const ClusterInstructions = (props: ClusterInstructionsProps) => (
  */
 const EditorWithApollo = withApollo(Editor);
 
-export class VizierMain extends React.Component<VizierMainProps, { loaded: boolean }> {
+export class VizierMain extends React.Component<{}, { loaded: boolean }> {
   constructor(props) {
     super(props);
     this.state = { loaded: false };
@@ -123,7 +111,7 @@ export class VizierMain extends React.Component<VizierMainProps, { loaded: boole
   }
 }
 
-export class Vizier extends React.Component<VizierProps, VizierState> {
+export class Vizier extends React.Component<{}, VizierState> {
   constructor(props) {
     super(props);
 
@@ -157,11 +145,7 @@ export class Vizier extends React.Component<VizierProps, VizierState> {
                 }
 
                 if (data.cluster.status === 'VZ_ST_HEALTHY') {
-                  return (
-                    <VizierMain
-                      pathname={this.props.location.pathname}
-                    />
-                  );
+                  return (<VizierMain />);
                 } else if (data.cluster.status === 'VZ_ST_UNHEALTHY') {
                   const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
                   return <ClusterInstructions message={clusterStarting} />;

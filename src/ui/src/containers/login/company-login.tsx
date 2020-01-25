@@ -1,3 +1,5 @@
+import './company-login.scss';
+
 import Axios from 'axios';
 import {DialogBox} from 'components/dialog-box/dialog-box';
 import {DOMAIN_NAME} from 'containers/constants';

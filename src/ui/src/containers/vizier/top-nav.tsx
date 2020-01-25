@@ -7,6 +7,9 @@ import * as logoImage from 'images/pixieLogo-light.svg';
 import * as React from 'react';
 import {Dropdown, Nav, Navbar, NavDropdown} from 'react-bootstrap';
 import {Link, NavLink} from 'react-router-dom';
+import {getRedirectPath} from 'utils/redirect-utils';
+
+const LOGOUT_URL = getRedirectPath('id', '/logout', {});
 
 export function VizierTopNav() {
   return (
@@ -21,7 +24,7 @@ export function VizierTopNav() {
         <NavDropdown.Item as={NavLink} to='/agents'>Admin</NavDropdown.Item>
         <NavDropdown.Item href='/docs/getting-started' target='_blank'>Docs</NavDropdown.Item>
         <Dropdown.Divider />
-        <NavDropdown.Item as={NavLink} to='/logout'>Logout</NavDropdown.Item>
+        <NavDropdown.Item href={LOGOUT_URL}>Logout</NavDropdown.Item>
       </NavDropdown>
     </Navbar>
   );

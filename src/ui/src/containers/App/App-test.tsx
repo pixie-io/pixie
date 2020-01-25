@@ -12,6 +12,6 @@ describe('<App/> test', () => {
   it('should have correct routes', async () => {
     const app = await shallowAsync(<App />);
 
-    expect(app.find(Route)).toHaveLength(3);
+    expect(app.find(Route)).toHaveLength(4);
   });
 });

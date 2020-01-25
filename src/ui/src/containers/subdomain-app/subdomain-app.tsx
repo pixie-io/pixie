@@ -2,7 +2,6 @@ import './subdomain-app.scss';
 
 import {getCloudGQLClient} from 'common/cloud-gql-client';
 import {VersionInfo} from 'components/version-info/version-info';
-import Login from 'containers/login';
 import Vizier from 'containers/vizier';
 import * as React from 'react';
 import {ApolloProvider} from 'react-apollo';
@@ -36,12 +35,7 @@ export class SubdomainApp extends React.Component {
                 flexDirection: 'column',
                 overflow: 'auto',
               }}>
-                <Switch>
-                  <Route path='/login' component={Login} />
-                  <Route path='/create-site' component={Login} />
-                  <Route path='/logout' component={Login} />
-                  <Route component={Vizier} />
-                </Switch>
+                <Vizier />
               </div>
             </ApolloProvider>
           </Router>

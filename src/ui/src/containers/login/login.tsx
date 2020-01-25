@@ -1,37 +1,19 @@
 import './login.scss';
 
 import * as React from 'react';
-import {Route, Switch} from 'react-router-dom';
+import {Route, Router, Switch} from 'react-router-dom';
+import history from 'utils/pl-history';
 
-import {AuthComplete} from './auth-complete';
-import {CompanyCreate, CompanyLogin} from './company-login';
 import {Logout} from './logout';
-import {UserCreate, UserLogin} from './user-login';
+import {UserLogin} from './user-login';
 
-interface LoginProps {
-  match: any;
-}
-
-export class Login extends React.Component<LoginProps, {}> {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
-    const matchPath = this.props.match.path;
-    return (
-      <div className='login'>
-        <div className='login-body'>
-          <Switch>
-            <Route exact path={`/create`} component={CompanyCreate} />
-            <Route exact path={`/login`} component={UserLogin} />
-            <Route exact path={`/create-site`} component={UserCreate} />
-            <Route exact path={`/logout`} component={Logout} />
-            <Route exact path={`/auth-complete`} component={AuthComplete} />
-            <Route path={`/`} component={CompanyLogin} />
-          </Switch>
-        </div>
-      </div>
-    );
-  }
-}
+export const Login = () => (
+  <div className='pixie-login center-content'>
+    <Router history={history}>
+      <Switch>
+        <Route exact path='/login' component={UserLogin} />
+        <Route exact path='/logout' component={Logout} />
+      </Switch>
+    </Router>
+  </div>
+);

@@ -24,13 +24,19 @@ let plugins = [
   new CaseSensitivePathsPlugin(),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
-    chunks: ['main', 'commons~main~subdomain', 'vendor'],
+    chunks: ['main', 'commons~login~main', 'commons~login~main~subdomain', 'commons~main~subdomain', 'vendor'],
     template: 'index.html',
     filename: 'index.html',
   }),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
-    chunks: ['subdomain', 'commons~main~subdomain', 'vendor'],
+    chunks: ['login', 'commons~login~main', 'commons~login~main~subdomain', 'vendor'],
+    template: 'index.html',
+    filename: 'login-index.html',
+  }),
+  new HtmlWebpackPlugin({
+    alwaysWriteToDisk: true,
+    chunks: ['subdomain', 'commons~login~main~subdomain', 'commons~main~subdomain', 'vendor'],
     template: 'index.html',
     filename: 'subdomain-index.html',
   }),
@@ -83,6 +89,7 @@ var webpackConfig = {
         // TODO(malthus): This doesn't fully work for the dev server right
         // now, because navigating to root always goes to index.html.
         {from: /^\/(create(?!-site)|auth-complete)$/, to: '/index.html'},
+        {from: /^\/(login|logout)$/, to: '/login-index.html'},
         {from: /.*/, to: '/subdomain-index.html'},
       ],
     },
@@ -90,6 +97,7 @@ var webpackConfig = {
   },
   entry: {
     main: 'main.tsx',
+    login: 'login-index.tsx',
     subdomain: 'subdomain.tsx',
   },
   mode: isDevServer ? 'development' : 'production',

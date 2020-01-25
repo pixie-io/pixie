@@ -1,33 +1,3 @@
-@import url(https://fonts.googleapis.com/css?family=Roboto:300,300italic,400,400italic,500,500italic,900,900italic);
-
-#root {
-  flex: 1;
-  font-family: Roboto;
-}
-
-html {
-  height: 100%;
-  font-family: Roboto;
-}
-
-body {
-  height: 100%;
-  overflow: hidden;
-  margin: 0;
-  display: flex;
-  box-sizing: border-box;
-}
-
-.main-page {
-  display: flex;
-  flex-direction: row;
-  height: 100%;
-  width: 100vw;
-}
-
-.content {
-  flex: 1;
-  min-width: 400px;
-  min-height: 500px;
-  overflow-y: auto;
+.pixie-main-app {
+  background-color: white;
 }

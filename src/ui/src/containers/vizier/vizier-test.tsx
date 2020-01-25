@@ -38,9 +38,7 @@ describe.skip('<VizierMain/> test', () => {
     const app = mount(
       <Router>
         <MockedProvider mocks={mocks} addTypename={false}>
-          <VizierMain
-            pathname={'test'}
-          />
+          <VizierMain />
         </MockedProvider>
       </Router>);
 
@@ -66,9 +64,7 @@ describe.skip('<VizierMain/> test', () => {
     const app = mount(
       <Router>
         <MockedProvider mocks={mocks} addTypename={false}>
-          <VizierMain
-            pathname={'test'}
-          />
+          <VizierMain />
         </MockedProvider>
       </Router>);
 
@@ -114,9 +110,7 @@ describe.skip('<Vizier/> test', () => {
     const app = mount(
       <Router>
         <MockedProvider mocks={mocks} addTypename={false}>
-          <Vizier
-            location={{ pathname: 'query' }}
-          />
+          <Vizier />
         </MockedProvider>
       </Router>);
 
@@ -150,9 +144,7 @@ describe.skip('<Vizier/> test', () => {
     const app = mount(
       <Router>
         <MockedProvider mocks={mocks} addTypename={false}>
-          <Vizier
-            location={{ pathname: 'query' }}
-          />
+          <Vizier />
         </MockedProvider>
       </Router>);
 
@@ -182,9 +174,7 @@ describe.skip('<Vizier/> test', () => {
     const app = mount(
       <Router>
         <MockedProvider mocks={mocks} addTypename={false}>
-          <Vizier
-            location={{ pathname: 'query' }}
-          />
+          <Vizier />
         </MockedProvider>
       </Router>);
 
@@ -220,9 +210,7 @@ describe.skip('<Vizier/> test', () => {
     const app = mount(
       <Router>
         <MockedProvider mocks={mocks} addTypename={false}>
-          <Vizier
-            location={{ pathname: 'query' }}
-          />
+          <Vizier />
         </MockedProvider>
       </Router>);
 

@@ -1,3 +1,31 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:300,300italic,400,400italic,500,500italic,900,900italic);
+
+#root {
+  font-family: Roboto;
+  height: 100%;
+  width: 100%;
+}
+
+html {
+  height: 100%;
+  font-family: Roboto;
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.center-content {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;;
+}
+
 @import "./theme.scss";
 
 .spacer {
