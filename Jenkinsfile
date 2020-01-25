@@ -297,16 +297,6 @@ def processAllExtractedBazelLogs() {
   })
 }
 
-/**
-  * dockerStepWithBazelDeps with stashing of logs for the passed in Bazel command.
-  */
-def dockerStepWithBazelCmd(String dockerConfig = '', String dockerImage = devDockerImageWithTag,
-                           String bazelCmdStr, String name) {
-  dockerStep(dockerConfig, dockerImage) {
-    bazelCmd(bazelCmdStr, "${name}-testlogs")
-  }
-}
-
 def archiveUILogs() {
   step([
     $class: 'XUnitBuilder',
@@ -468,7 +458,9 @@ builders['Build & Test All (opt + UI)'] = {
 
 builders['Build & Test (gcc:opt)'] = {
   WithSourceCode {
-    dockerStepWithBazelCmd("bazel test --config=gcc --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-gcc-opt')
+    dockerStep {
+      bazelCmd("bazel test --config=gcc --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-gcc-opt')
+    }
   }
 }
 
@@ -628,9 +620,11 @@ TEST_ITERATIONS=10
 
 regressionBuilders['Test (opt)'] = {
   WithSourceCode {
-    dockerStepWithBazelCmd(
-      "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} --runs_per_test ${TEST_ITERATIONS}",
-      'build-opt')
+    dockerStep {
+      bazelCmd(
+        "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} --runs_per_test ${TEST_ITERATIONS}",
+        'build-opt')
+    }
   }
 }
 
