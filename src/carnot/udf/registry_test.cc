@@ -294,6 +294,25 @@ class UDTFWithConstructor : public UDTF<UDTFWithConstructor> {
   int x_ = 0;
 };
 
+class BasicUDTFOneCol : public UDTF<BasicUDTFOneCol> {
+ public:
+  static constexpr auto Executor() { return udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+
+  static constexpr auto InitArgs() {
+    return MakeArray(UDTFArg::Make<types::INT64>("some_int", "Int arg", 123),
+                     UDTFArg::Make<types::STRING>("some_string", "String arg"));
+  }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("out_str", types::DataType::STRING, types::PatternType::GENERAL, "string result"));
+  }
+
+  Status Init(FunctionContext*, types::Int64Value, types::StringValue) { return Status::OK(); }
+
+  bool NextRecord(FunctionContext*, RecordWriter*) { return false; }
+};
+
 TEST(Registry, init_with_factory) {
   Registry registry("test registry");
   registry.RegisterFactoryOrDie<UDTFWithConstructor, UDTFWithConstructor::Factory>("test_udtf",
@@ -311,6 +330,42 @@ TEST(Registry, init_with_factory) {
   EXPECT_EQ(std::string(output_rel[0].desc()), "string result");
 
   EXPECT_EQ(def->executor(), udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS);
+}
+
+constexpr char kExpectedUDTFInfo[] = R"pbtxt(
+udtfs {
+  name: "test_udtf"
+  args {
+    name: "some_int"
+    arg_type: INT64
+    semantic_type: ST_NONE
+    default_value {
+      int64_value: 123
+    }
+  }
+  args {
+    name: "some_string"
+    arg_type: STRING
+    semantic_type: ST_NONE
+  }
+  executor: UDTF_ALL_AGENTS
+  relation {
+    columns {
+      column_name: "out_str"
+      column_type: STRING
+    }
+  }
+}
+)pbtxt";
+
+TEST(Registry, udtf_to_proto) {
+  Registry registry("test registry");
+  registry.RegisterOrDie<BasicUDTFOneCol>("test_udtf");
+  auto udf_info = registry.ToProto();
+
+  udfspb::UDFInfo expected_udf_info;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedUDTFInfo, &expected_udf_info));
+  EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_udf_info, udf_info));
 }
 
 }  // namespace udf

@@ -19,6 +19,18 @@ class AnyUDTF : public BaseFunc {
 template <typename Derived>
 class UDTF;
 
+namespace internal {
+template <types::DataType dt>
+struct DefaultValueTraits {
+  using value_view_type = typename types::DataTypeTraits<dt>::value_type;
+};
+
+template <>
+struct DefaultValueTraits<types::STRING> {
+  using value_view_type = std::string_view;
+};
+}  // namespace internal
+
 /**
  * UDTFArg contains argument information for UDTFs. These are input parameters of the UDTF.
  *
@@ -26,18 +38,30 @@ class UDTF;
  */
 class UDTFArg {
  public:
-  constexpr UDTFArg() = delete;
-  constexpr UDTFArg(std::string_view name, types::DataType type, std::string_view desc)
-      : UDTFArg(name, type, types::SemanticType::ST_NONE, desc) {}
+  // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+  using DefaultValue =
+      std::variant<std::monostate, types::BoolValue, types::Int64Value, types::Float64Value,
+                   types::Time64NSValue, types::UInt128Value, std::string_view>;
+  template <types::DataType dt, types::SemanticType st = types::ST_NONE>
+  static constexpr UDTFArg Make(
+      std::string_view name, std::string_view desc,
+      typename internal::DefaultValueTraits<dt>::value_view_type default_val) {
+    return UDTFArg(name, dt, st, desc, DefaultValue(default_val));
+  }
 
-  constexpr UDTFArg(std::string_view name, types::DataType type, types::SemanticType stype,
-                    std::string_view desc)
-      : name_(name), type_(type), stype_(stype), desc_(desc) {
-    for (auto c : name) {
-      COMPILE_TIME_ASSERT(c != ' ', "Col name can't contain spaces");
-    }
-    COMPILE_TIME_ASSERT(type != types::DataType::DATA_TYPE_UNKNOWN, "Col type cannot be unknown");
-    COMPILE_TIME_ASSERT(desc.size() != 0, "Description must be specified");
+  template <types::DataType dt, types::SemanticType st = types::ST_NONE>
+  static constexpr UDTFArg Make(std::string_view name, std::string_view desc) {
+    return UDTFArg(name, dt, st, desc);
+  }
+
+  bool has_default_val() const { return !std::holds_alternative<std::monostate>(default_val_); }
+
+  template <types::DataType dt>
+  typename internal::DefaultValueTraits<dt>::value_view_type GetDefaultValue() const {
+    using ret_type = typename internal::DefaultValueTraits<dt>::value_view_type;
+    CHECK(dt == type_) << "In correct type for default value";
+    CHECK(std::holds_alternative<ret_type>(default_val_)) << "In correct alternative";
+    return std::get<ret_type>(default_val_);
   }
 
   constexpr const std::string_view name() const { return name_; }
@@ -45,11 +69,24 @@ class UDTFArg {
   constexpr types::SemanticType stype() const { return stype_; }
   constexpr const std::string_view desc() const { return desc_; }
 
+ protected:
+  constexpr UDTFArg() = delete;
+  constexpr UDTFArg(std::string_view name, types::DataType type, types::SemanticType stype,
+                    std::string_view desc, DefaultValue default_val = std::monostate{})
+      : name_(name), type_(type), stype_(stype), desc_(desc), default_val_(default_val) {
+    for (auto c : name) {
+      COMPILE_TIME_ASSERT(c != ' ', "Col name can't contain spaces");
+    }
+    COMPILE_TIME_ASSERT(type != types::DataType::DATA_TYPE_UNKNOWN, "Col type cannot be unknown");
+    COMPILE_TIME_ASSERT(desc.size() != 0, "Description must be specified");
+  }
+
  private:
   std::string_view name_;
   types::DataType type_;
   types::SemanticType stype_;
   std::string_view desc_;
+  DefaultValue default_val_;
 };
 
 /**

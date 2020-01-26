@@ -29,7 +29,8 @@ TEST(InvalidUDTF1, bad_init_args_fn) {
 class InvalidUDTF2 : public UDTF<InvalidUDTF2> {
  public:
   static constexpr auto InitArgs() {
-    return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"));
+    return MakeArray(UDTFArg::Make<types::INT64>("some_int", "Int arg", 123),
+                     UDTFArg::Make<types::STRING>("some_str", "string arg", "init str"));
   }
 };
 
@@ -45,7 +46,7 @@ TEST(InvalidUDTF2, missing_init_fn) {
 class PartialUDTF3 : public UDTF<PartialUDTF3> {
  public:
   static constexpr auto InitArgs() {
-    return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"));
+    return MakeArray(UDTFArg::Make<types::INT64>("some_int", "Int arg"));
   }
 
   Status Init(FunctionContext*, types::Int64Value) { return Status::OK(); }
@@ -64,7 +65,7 @@ TEST(PartialUDTF3, correct_init_types) {
 class InvalidUDTF4 : public UDTF<InvalidUDTF4> {
  public:
   static constexpr auto InitArgs() {
-    return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"));
+    return MakeArray(UDTFArg::Make<types::INT64>("some_int", "Int arg"));
   }
 
   Status Init(FunctionContext*, types::StringValue) { return Status::OK(); }
@@ -96,8 +97,8 @@ class BasicUDTFOneCol : public UDTF<BasicUDTFOneCol> {
   static constexpr auto Executor() { return udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
 
   static constexpr auto InitArgs() {
-    return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"),
-                     UDTFArg("some_string", types::DataType::STRING, "String arg"));
+    return MakeArray(UDTFArg::Make<types::INT64>("some_int", "Int arg"),
+                     UDTFArg::Make<types::STRING>("some_string", "String arg"));
   }
 
   static constexpr auto OutputRelation() {

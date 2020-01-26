@@ -36,8 +36,8 @@ using table_store::schema::RowDescriptor;
 class BasicTestUDTF : public UDTF<BasicTestUDTF> {
  public:
   static constexpr auto InitArgs() {
-    return MakeArray(UDTFArg("some_int", types::DataType::INT64, "Int arg"),
-                     UDTFArg("some_string", types::DataType::STRING, "String arg"));
+    return MakeArray(UDTFArg::Make<types::DataType::INT64>("some_int", "Int arg"),
+                     UDTFArg::Make<types::DataType::STRING>("some_string", "String arg"));
   }
 
   static constexpr auto Executor() { return udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }

@@ -52,6 +52,48 @@ void Registry::ToProto(const UDADefinition& def, udfspb::UDASpec* spec) {
   spec->set_name(def.name());
 }
 
+namespace {
+// PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+template <types::DataType dt, size_t S = sizeof(dt)>
+void DefaultToScalarValue(const UDTFArg&, planpb::ScalarValue*) {
+  static_assert(S == 0, "This template func must be specialized for type");
+}
+
+template <>
+void DefaultToScalarValue<types::BOOLEAN>(const UDTFArg& arg, planpb::ScalarValue* out) {
+  out->set_bool_value(arg.GetDefaultValue<types::BOOLEAN>().val);
+}
+
+template <>
+void DefaultToScalarValue<types::INT64>(const UDTFArg& arg, planpb::ScalarValue* out) {
+  out->set_int64_value(arg.GetDefaultValue<types::INT64>().val);
+}
+
+template <>
+void DefaultToScalarValue<types::TIME64NS>(const UDTFArg& arg, planpb::ScalarValue* out) {
+  out->set_time64_ns_value(arg.GetDefaultValue<types::TIME64NS>().val);
+}
+
+template <>
+void DefaultToScalarValue<types::FLOAT64>(const UDTFArg& arg, planpb::ScalarValue* out) {
+  out->set_float64_value(arg.GetDefaultValue<types::FLOAT64>().val);
+}
+
+template <>
+void DefaultToScalarValue<types::UINT128>(const UDTFArg& arg, planpb::ScalarValue* out) {
+  auto out_val = out->mutable_uint128_value();
+  auto casted_arg = arg.GetDefaultValue<types::UINT128>();
+
+  out_val->set_high(casted_arg.High64());
+  out_val->set_high(casted_arg.Low64());
+}
+
+template <>
+void DefaultToScalarValue<types::STRING>(const UDTFArg& arg, planpb::ScalarValue* out) {
+  out->set_string_value(std::string(arg.GetDefaultValue<types::STRING>()));
+}
+}  // namespace
+
 void Registry::ToProto(const UDTFDefinition& def, udfspb::UDTFSourceSpec* spec) {
   spec->set_name(def.name());
   spec->set_executor(def.executor());
@@ -61,6 +103,13 @@ void Registry::ToProto(const UDTFDefinition& def, udfspb::UDTFSourceSpec* spec) 
     new_arg->set_name(std::string(arg.name()));
     new_arg->set_arg_type(arg.type());
     new_arg->set_semantic_type(arg.stype());
+    if (arg.has_default_val()) {
+      auto arg_type = arg.type();
+#define TYPE_CASE(_dt_) DefaultToScalarValue<_dt_>(arg, new_arg->mutable_default_value());
+
+      PL_SWITCH_FOREACH_DATATYPE(arg_type, TYPE_CASE);
+#undef TYPE_CASE
+    }
   }
 
   for (const auto& c : def.output_relation()) {
