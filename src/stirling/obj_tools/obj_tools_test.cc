@@ -22,7 +22,7 @@ using ::testing::Pair;
 // the overlayfs' 'merged' directory.
 //
 // TODO(PL-1297): This test fails on Jenkins because of the cited bug.
-TEST(GetActiveBinariesTest, DISABLED_CaptureTestBinary) {
+TEST(GetActiveBinariesTest, CaptureTestBinary) {
   const std::map<std::string, std::vector<int>> binaries = GetActiveBinaries("/proc", /*host*/ {});
   EXPECT_THAT(binaries, Contains(Pair(EndsWith("src/stirling/obj_tools/obj_tools_test"), _)))
       << "Should see the test process itself";

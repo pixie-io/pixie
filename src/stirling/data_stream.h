@@ -82,6 +82,7 @@ class DataStream {
     return events_.empty() && (std::holds_alternative<std::monostate>(messages_) ||
                                std::get<std::deque<TMessageType>>(messages_).empty());
   }
+  const auto& events() const { return events_; }
 
   /**
    * @brief Checks if the DataStream is in a Stuck state, which means that it has

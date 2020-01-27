@@ -79,7 +79,7 @@ class GRPCTraceGoTest : public ::testing::Test {
       : data_table_(kHTTPTable),
         ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
 
-  void Init(bool use_https) {
+  void LaunchServer(bool use_https) {
     CHECK(!FLAGS_go_grpc_client_path.empty())
         << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
     CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_client_path)))
@@ -95,6 +95,7 @@ class GRPCTraceGoTest : public ::testing::Test {
 
     std::string https_flag = use_https ? "--https=true" : "--https=false";
     ASSERT_OK(s_.Start({server_path_, https_flag}));
+    LOG(INFO) << "Server PID: " << s_.child_pid();
 
     // Give some time for the server to start up.
     sleep(2);
@@ -102,7 +103,9 @@ class GRPCTraceGoTest : public ::testing::Test {
     const std::string port_str = s_.Stdout();
     ASSERT_TRUE(absl::SimpleAtoi(port_str, &s_port_));
     ASSERT_NE(0, s_port_);
+  }
 
+  void InitSocketTraceConnector() {
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
     FLAGS_stirling_enable_parsing_protobufs = false;
@@ -138,7 +141,8 @@ class GoGRPCKProbeTraceTest : public GRPCTraceGoTest {
   void SetUp() override {
     FLAGS_stirling_enable_grpc_kprobe_tracing = true;
     FLAGS_stirling_enable_grpc_uprobe_tracing = false;
-    GRPCTraceGoTest::Init(/*use_https*/ false);
+    GRPCTraceGoTest::LaunchServer(/*use_https*/ false);
+    GRPCTraceGoTest::InitSocketTraceConnector();
   }
 };
 
@@ -195,15 +199,26 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithPara
   void SetUp() override {
     FLAGS_stirling_enable_grpc_kprobe_tracing = false;
     FLAGS_stirling_enable_grpc_uprobe_tracing = true;
-    GRPCTraceGoTest::Init(GetParam());
+    GRPCTraceGoTest::LaunchServer(GetParam());
 
+    // Uprobes are attached to running processes. Launch client before initializing tracer.
     const std::string https_flag = GetParam() ? "--https=true" : "--https=false";
-    ASSERT_OK(c_.Start({client_path_, https_flag, absl::StrCat("-address=localhost:", s_port_)}));
+    ASSERT_OK(c_.Start({client_path_, https_flag, "-name=PixieLabs",
+                        absl::StrCat("-address=localhost:", s_port_)}));
+    LOG(INFO) << "Client PID: " << c_.child_pid();
+
+    GRPCTraceGoTest::InitSocketTraceConnector();
+  }
+
+  void TearDown() override {
+    c_.Kill();
+    EXPECT_EQ(9, c_.Wait()) << "Client should have been killed.";
+
+    GRPCTraceGoTest::TearDown();
   }
 };
 
-// TODO(PL-1297): Fix the bug and re-enable this test.
-TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
+TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   // Give some time for the client to execute and produce data into perf buffers.
   sleep(2);
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
@@ -211,10 +226,32 @@ TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
   types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid());
-  EXPECT_THAT(target_record_indices, Not(IsEmpty()));
+  EXPECT_GE(target_record_indices.size(), 1);
 
-  // TODO(yzhao): We should have the same check on the trace record as
-  // GRPCTraceGoTest.TestGolangGrpcService.
+  // We should get exactly one record.
+  const size_t idx = target_record_indices.front();
+  const std::string scheme_text = GetParam() ? R"(":scheme":"https")" : R"(":scheme":"http")";
+
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx)),
+      AllOf(HasSubstr(absl::Substitute(R"(":authority":"localhost:$0")", s_port_)),
+            HasSubstr(R"(":method":"POST")"), HasSubstr(scheme_text),
+            HasSubstr(absl::StrCat(R"(":scheme":)", GetParam() ? R"("https")" : R"("http")")),
+            HasSubstr(R"("content-type":"application/grpc")"), HasSubstr(R"("grpc-timeout")"),
+            HasSubstr(R"("te":"trailers","user-agent")")));
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx)),
+      AllOf(HasSubstr(R"(":status":"200")"), HasSubstr(R"("content-type":"application/grpc")"),
+            HasSubstr(R"("grpc-message":"")"), HasSubstr(R"("grpc-status":"0"})")));
+  EXPECT_THAT(std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(idx)),
+              HasSubstr("127.0.0.1"));
+  EXPECT_EQ(s_port_, record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(idx).val);
+  EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(idx).val);
+  EXPECT_EQ(0, record_batch[kHTTPMinorVersionIdx]->Get<types::Int64Value>(idx).val);
+  EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
+            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(idx).val);
+  EXPECT_THAT(GetHelloReply(record_batch, idx),
+              EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
 }
 
 INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceUprobingTest, ::testing::Values(true, false));

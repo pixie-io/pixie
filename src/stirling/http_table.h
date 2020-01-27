@@ -51,6 +51,7 @@ constexpr int kHTTPUPIDIdx = kHTTPTable.ColIndex("upid");
 constexpr int kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
 constexpr int kHTTPRemotePortIdx = kHTTPTable.ColIndex("remote_port");
 constexpr int kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");
+constexpr int kHTTPMinorVersionIdx = kHTTPTable.ColIndex("http_minor_version");
 constexpr int kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type");
 constexpr int kHTTPReqHeadersIdx = kHTTPTable.ColIndex("http_req_headers");
 constexpr int kHTTPReqMethodIdx = kHTTPTable.ColIndex("http_req_method");

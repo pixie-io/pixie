@@ -711,7 +711,8 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
       }
       break;
     case EndpointRole::kRoleUnknown:
-      VLOG(1) << "Role has not been inferred from BPF events yet.";
+      LOG_IF(DFATAL, !send_data_.events().empty() || !recv_data_.events().empty())
+          << "Role has not been inferred from BPF events yet. conn_id: " << ToString(conn_id_);
       break;
     case EndpointRole::kRoleAll:
       LOG(DFATAL) << "kRoleAll should not be used.";
