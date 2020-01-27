@@ -499,20 +499,19 @@ StatusOr<ExpressionIR*> EvaluateCompileTimeExpr::Evaluate(ExpressionIR* ir_node)
 
   auto func_ir = static_cast<FuncIR*>(ir_node);
 
-  std::vector<ExpressionIR*> evaled_args;
-  for (const auto& arg : func_ir->args()) {
+  for (const auto& [i, arg] : Enumerate(func_ir->args())) {
     PL_ASSIGN_OR_RETURN(auto new_arg, Evaluate(arg));
-    evaled_args.push_back(new_arg);
+    PL_RETURN_IF_ERROR(func_ir->UpdateArg(i, new_arg));
   }
 
   if (Match(func_ir, CompileTimeIntegerArithmetic())) {
-    return EvalArithmetic(evaled_args, func_ir);
+    return EvalArithmetic(func_ir);
   }
   if (Match(func_ir, CompileTimeNow())) {
-    return EvalTimeNow(evaled_args, func_ir);
+    return EvalTimeNow(func_ir);
   }
   if (Match(func_ir, CompileTimeUnitTime())) {
-    return EvalUnitTime(evaled_args, func_ir);
+    return EvalUnitTime(func_ir);
   }
 
   if (Match(func_ir, CompileTimeFunc())) {
@@ -520,22 +519,17 @@ StatusOr<ExpressionIR*> EvaluateCompileTimeExpr::Evaluate(ExpressionIR* ir_node)
         "Node is a compile time func but it did not match any known compile time funcs");
   }
 
-  // Walk the tree of all functions to evaluate subtrees that are able to be evaluated at compile
-  // time, even if this function is not able to be evaluated at this point.
-  PL_ASSIGN_OR_RETURN(FuncIR * new_func, func_ir->graph_ptr()->CreateNode<FuncIR>(
-                                             ir_node->ast_node(), func_ir->op(), evaled_args));
-  return new_func;
+  return func_ir;
 }
 
-StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalArithmetic(std::vector<ExpressionIR*> args,
-                                                         FuncIR* func_ir) {
-  if (args.size() != 2) {
+StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalArithmetic(FuncIR* func_ir) {
+  if (func_ir->args().size() != 2) {
     return func_ir->CreateIRNodeError("Expected 2 argument to $0 call, got $1.",
-                                      func_ir->carnot_op_name(), args.size());
+                                      func_ir->carnot_op_name(), func_ir->args().size());
   }
 
   std::vector<IntIR*> casted;
-  for (const auto& arg : args) {
+  for (const auto& arg : func_ir->args()) {
     if (arg->type() != IRNodeType::kInt) {
       return func_ir->CreateIRNodeError("Expected integer arguments only to function $0",
                                         func_ir->carnot_op_name());
@@ -564,25 +558,23 @@ StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalArithmetic(std::vector<ExpressionI
   return func_ir->graph_ptr()->CreateNode<IntIR>(func_ir->ast_node(), result);
 }
 
-StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalTimeNow(std::vector<ExpressionIR*> args,
-                                                      FuncIR* func_ir) {
-  CHECK_EQ(args.size(), 0U) << "Received unexpected args for " << func_ir->carnot_op_name()
-                            << " function";
+StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalTimeNow(FuncIR* func_ir) {
+  CHECK_EQ(func_ir->args().size(), 0U)
+      << "Received unexpected args for " << func_ir->carnot_op_name() << " function";
   return func_ir->graph_ptr()->CreateNode<IntIR>(func_ir->ast_node(),
                                                  compiler_state_->time_now().val);
 }
 
-StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalUnitTime(std::vector<ExpressionIR*> args,
-                                                       FuncIR* func_ir) {
-  CHECK_EQ(args.size(), 1U) << "Expected exactly 1 arg for " << func_ir->carnot_op_name()
-                            << " function";
+StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalUnitTime(FuncIR* func_ir) {
+  CHECK_EQ(func_ir->args().size(), 1U)
+      << "Expected exactly 1 arg for " << func_ir->carnot_op_name() << " function";
   auto fn_type_iter = kUnitTimeFnStr.find(func_ir->carnot_op_name());
   if (fn_type_iter == kUnitTimeFnStr.end()) {
     return func_ir->CreateIRNodeError("Time unit function '$0' not found",
                                       func_ir->carnot_op_name());
   }
 
-  auto arg = args[0];
+  auto arg = func_ir->args()[0];
   if (!Match(arg, Int())) {
     return func_ir->CreateIRNodeError("Expected integer for argument in ",
                                       func_ir->carnot_op_name());

@@ -217,9 +217,9 @@ class EvaluateCompileTimeExpr {
   StatusOr<ExpressionIR*> Evaluate(ExpressionIR* ir_node);
 
  private:
-  StatusOr<IntIR*> EvalArithmetic(std::vector<ExpressionIR*> args, FuncIR* ir_node);
-  StatusOr<IntIR*> EvalTimeNow(std::vector<ExpressionIR*> args, FuncIR* ir_node);
-  StatusOr<IntIR*> EvalUnitTime(std::vector<ExpressionIR*> evaled_args, FuncIR* ir_node);
+  StatusOr<IntIR*> EvalArithmetic(FuncIR* ir_node);
+  StatusOr<IntIR*> EvalTimeNow(FuncIR* ir_node);
+  StatusOr<IntIR*> EvalUnitTime(FuncIR* ir_node);
 
   CompilerState* compiler_state_;
 };
