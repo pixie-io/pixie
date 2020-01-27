@@ -4,6 +4,7 @@ import {vizierGQLClient} from 'common/vizier-gql-client';
 import {DialogBox} from 'components/dialog-box/dialog-box';
 import {Spinner} from 'components/spinner/spinner';
 import {Editor} from 'containers/editor';
+import LiveView from 'containers/live/live';
 import gql from 'graphql-tag';
 // @ts-ignore : TS does not like image files.
 import * as loadingSvg from 'images/icons/loading-dark.svg';
@@ -73,6 +74,7 @@ const ClusterInstructions = (props: ClusterInstructionsProps) => (
  *  TODO(malthus): Refactor apollo usage to all use hooks.
  */
 const EditorWithApollo = withApollo(Editor);
+const LiveViewWithApollo = withApollo(LiveView);
 
 export class VizierMain extends React.Component<{}, { loaded: boolean }> {
   constructor(props) {
@@ -145,7 +147,12 @@ export class Vizier extends React.Component<{}, VizierState> {
                 }
 
                 if (data.cluster.status === 'VZ_ST_HEALTHY') {
-                  return (<VizierMain />);
+                  return (
+                    <Switch>
+                      <Route path='/live' component={LiveViewWithApollo} />
+                      <Route component={VizierMain} />
+                    </Switch>
+                  );
                 } else if (data.cluster.status === 'VZ_ST_UNHEALTHY') {
                   const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
                   return <ClusterInstructions message={clusterStarting} />;
