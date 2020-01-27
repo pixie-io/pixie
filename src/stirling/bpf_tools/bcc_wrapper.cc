@@ -41,7 +41,17 @@ StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(
   for (const auto& [binary, pid_vec] : binaries) {
     PL_UNUSED(pid_vec);
     VLOG(1) << absl::Substitute("Processing probes for $0", binary);
-    PL_ASSIGN_OR_RETURN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(binary));
+
+    StatusOr<std::unique_ptr<ElfReader>> elf_reader_status = ElfReader::Create(binary);
+    if (!elf_reader_status.ok()) {
+      LOG(WARNING) << absl::Substitute(
+          "Cannot analyze binary $0 for uprobe deployment. "
+          "If file is under /var/lib/docker, container may have terminated. "
+          "Message = $1",
+          binary, elf_reader_status.msg());
+      continue;
+    }
+    std::unique_ptr<ElfReader> elf_reader = elf_reader_status.ConsumeValueOrDie();
 
     for (const auto& tmpl : tmpls) {
       // Non-trivial designated initializers not supported, as we need to do

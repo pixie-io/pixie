@@ -467,11 +467,10 @@ builders['Build & Test (gcc:opt)'] = {
   }
 }
 
-def dockerArgsForBPFTest = '--privileged --pid=host ' +
-                           '-v /lib/modules:/lib/modules -v /usr/src:/usr/src -v /sys:/sys'
+def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host'
 
 def bazelBaseArgsForBPFTest = 'bazel test --test_output=all --compilation_mode=opt ' +
-                              '--strategy=TestRunner=standalone'
+                              '--strategy=TestRunner=standalone --action_env=PL_HOST_PATH'
 
 builders['Build & Test (bpf tests - opt)'] = {
   WithSourceCode {
