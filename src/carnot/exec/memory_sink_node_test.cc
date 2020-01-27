@@ -90,6 +90,47 @@ TEST_F(MemorySinkNodeTest, basic) {
   EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->batch(1)->Equals(
       col2_rb2_arrow));
 }
+
+TEST_F(MemorySinkNodeTest, zero_row_row_batch) {
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::BOOLEAN});
+  RowDescriptor output_rd({});
+
+  std::vector<types::Int64Value> col1_rb1 = {1, 2};
+  std::vector<types::BoolValue> col2_rb1 = {true, false};
+  auto col1_rb1_arrow = types::ToArrow(col1_rb1, arrow::default_memory_pool());
+  auto col2_rb1_arrow = types::ToArrow(col2_rb1, arrow::default_memory_pool());
+
+  std::vector<types::Int64Value> col1_rb2 = {3, 4};
+  std::vector<types::BoolValue> col2_rb2 = {false, true};
+  auto col1_rb2_arrow = types::ToArrow(col1_rb2, arrow::default_memory_pool());
+  auto col2_rb2_arrow = types::ToArrow(col2_rb2, arrow::default_memory_pool());
+
+  auto tester = exec::ExecNodeTester<MemorySinkNode, plan::MemorySinkOperator>(
+      *plan_node_, output_rd, {input_rd}, exec_state_.get());
+
+  tester.ConsumeNext(RowBatchBuilder(input_rd, 0, /*eow*/ false, /*eos*/ false)
+                         .AddColumn<types::Int64Value>({})
+                         .AddColumn<types::BoolValue>({})
+                         .get(),
+                     false, 0);
+
+  // Tests that a 0-row rb doesn't get written to the output table
+  EXPECT_EQ(0, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({3, 4})
+                       .AddColumn<types::BoolValue>({false, true})
+                       .get(),
+                   false, 0)
+      .Close();
+
+  EXPECT_EQ(1, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
+  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(0)->batch(0)->Equals(
+      col1_rb2_arrow));
+  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->batch(0)->Equals(
+      col2_rb2_arrow));
+}
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

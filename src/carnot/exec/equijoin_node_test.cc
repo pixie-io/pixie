@@ -365,6 +365,70 @@ TEST_F(JoinNodeTest, unordered_no_matches) {
       .Close();
 }
 
+TEST_F(JoinNodeTest, zero_row_row_batch_right) {
+  // Left table input: [left_0:String, left_1:Int64]
+  // Right table input: [right_0:Int64, right_1:String]
+  // Output table: [left_1:Int, right_1:String, right_0:Int64]
+  // Full outer join on left_0=right_1
+  const char* proto = R"(
+  type: INNER
+  equality_conditions {
+    left_column_index: 0
+    right_column_index: 1
+  }
+  output_columns: {
+    parent_index: 0
+    column_index: 1
+  }
+  output_columns: {
+    parent_index: 1
+    column_index: 1
+  }
+  output_columns: {
+    parent_index: 1
+    column_index: 0
+  }
+  column_names: "left_1"
+  column_names: "right_1"
+  column_names: "right_0"
+  rows_per_batch: 5
+)";
+
+  // Left
+  RowDescriptor input_rd_0({types::DataType::TIME64NS, types::DataType::INT64});
+  // Right
+  RowDescriptor input_rd_1({types::DataType::INT64, types::DataType::TIME64NS});
+  // Left[1], Right[1], Right[0]
+  RowDescriptor output_rd(
+      {types::DataType::INT64, types::DataType::TIME64NS, types::DataType::INT64});
+
+  auto plan_node = PlanNodeFromPbtxt(proto);
+  auto tester = exec::ExecNodeTester<EquijoinNode, plan::JoinOperator>(
+      *plan_node, output_rd, {input_rd_0, input_rd_1}, exec_state_.get());
+
+  tester
+      // Build table
+      .ConsumeNext(RowBatchBuilder(input_rd_0, 5, /*eow*/ true, /*eos*/ true)
+                       .AddColumn<types::Time64NSValue>({101, 102, 101, 103, 101})
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4, 5})
+                       .get(),
+                   0, 0)
+      // Probe table
+      .ConsumeNext(RowBatchBuilder(input_rd_1, 0, true, true)
+                       .AddColumn<types::Int64Value>({})
+                       .AddColumn<types::Time64NSValue>({})
+                       .get(),
+                   1, 1)
+      // No matches
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 0, true, true)
+                          .AddColumn<types::Int64Value>({})
+                          .AddColumn<types::Time64NSValue>({})
+                          .AddColumn<types::Int64Value>({})
+                          .get(),
+                      /*unordered */ false)
+      .Close();
+}
+
 TEST_F(JoinNodeTest, unordered_many_matches) {
   // Left table input: [left_0:Time, left_1:Int64]
   // Right table input: [right_0:Int64, right_1:Time]

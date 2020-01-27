@@ -219,6 +219,33 @@ TEST_F(AggNodeTest, no_groups_blocking) {
       .Close();
 }
 
+TEST_F(AggNodeTest, zero_row_row_batch) {
+  auto plan_node = PlanNodeFromPbtxt(kBlockingNoGroupAgg);
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
+
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<AggNode, plan::AggregateOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4})
+                       .AddColumn<types::Int64Value>({2, 5, 6, 8})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd, 0, true, true)
+                       .AddColumn<types::Int64Value>({})
+                       .AddColumn<types::Int64Value>({})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true, true)
+                          .AddColumn<types::Int64Value>({Int64Value(10)})
+                          .get(),
+                      false)
+      .Close();
+}
+
 TEST_F(AggNodeTest, single_group_blocking) {
   auto plan_node = PlanNodeFromPbtxt(kBlockingSingleGroupAgg);
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});

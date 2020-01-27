@@ -92,6 +92,53 @@ TEST_F(FilterNodeTest, basic) {
       .Close();
 }
 
+TEST_F(FilterNodeTest, zero_row_row_batch) {
+  auto op_proto = planpb::testutils::CreateTestFilterTwoCols();
+  plan_node_ = plan::FilterOperator::FromProto(op_proto, /*id*/ 1);
+
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::STRING});
+  RowDescriptor output_rd(
+      {types::DataType::INT64, types::DataType::INT64, types::DataType::STRING});
+
+  auto tester = exec::ExecNodeTester<FilterNode, plan::FilterOperator>(
+      *plan_node_, output_rd, {input_rd}, exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 1, 3, 4})
+                       .AddColumn<types::Int64Value>({1, 3, 6, 9})
+                       .AddColumn<types::StringValue>({"ABC", "DEF", "HELLO", "WORLD"})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 2, false, false)
+                          .AddColumn<types::Int64Value>({1, 1})
+                          .AddColumn<types::Int64Value>({1, 3})
+                          .AddColumn<types::StringValue>({"ABC", "DEF"})
+                          .get())
+      .ConsumeNext(RowBatchBuilder(input_rd, 0, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({})
+                       .AddColumn<types::Int64Value>({})
+                       .AddColumn<types::StringValue>({})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 0, false, false)
+                          .AddColumn<types::Int64Value>({})
+                          .AddColumn<types::Int64Value>({})
+                          .AddColumn<types::StringValue>({})
+                          .get())
+      .ConsumeNext(RowBatchBuilder(input_rd, 3, true, true)
+                       .AddColumn<types::Int64Value>({1, 2, 3})
+                       .AddColumn<types::Int64Value>({1, 4, 6})
+                       .AddColumn<types::StringValue>({"Hello", "world", "now"})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true, true)
+                          .AddColumn<types::Int64Value>({1})
+                          .AddColumn<types::Int64Value>({1})
+                          .AddColumn<types::StringValue>({"Hello"})
+                          .get())
+      .Close();
+}
+
 // TODO(zasgar/michelle): For some reason this test is not working. Need to debug.
 TEST_F(FilterNodeTest, string_pred) {
   auto op_proto = planpb::testutils::CreateTestFilterTwoColsString();

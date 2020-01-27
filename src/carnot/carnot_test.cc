@@ -454,8 +454,8 @@ TEST_F(CarnotTest, range_test_single_rb) {
 }
 
 TEST_F(CarnotTest, empty_range_test) {
-  // Tests that a table that has no rows that fall within the query's range returns an empty
-  // rowbatch.
+  // Tests that a table that has no rows that fall within the query's range, doesn't write any
+  // rowbatches to the output table.
   auto query = absl::StrJoin(
       {
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', "
@@ -476,12 +476,7 @@ TEST_F(CarnotTest, empty_range_test) {
   ASSERT_OK(s);
 
   auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(1, output_table->NumBatches());
-  auto rb =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
-  EXPECT_EQ(0, rb->num_rows());
-  EXPECT_EQ(3, output_table->NumColumns());
+  EXPECT_EQ(0, output_table->NumBatches());
 }
 
 class CarnotRangeTest
@@ -512,7 +507,7 @@ class CarnotRangeTest
 
 std::vector<std::tuple<types::Int64Value, size_t, bool>> range_test_vals = {
     {CarnotTestUtils::big_test_col1[CarnotTestUtils::big_test_col1.size() - 1] /*sub_time*/,
-     1 /*num_batches*/, true /*start_at_now*/},
+     0 /*num_batches*/, true /*start_at_now*/},
     {CarnotTestUtils::big_test_col1[CarnotTestUtils::split_idx[1].first].val /*sub_time*/,
      CarnotTestUtils::split_idx.size() - 1 /*num_batches*/, false /*start_at_now*/}};
 
@@ -831,10 +826,11 @@ TEST_P(CarnotFilterTest, int_filter) {
 
   auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
 
-  EXPECT_EQ(3, output_table->NumBatches());
   EXPECT_EQ(5, output_table->NumColumns());
   std::vector<int64_t> column_selector_vec({0, 1, 2, 3, 4});
   EXPECT_EQ(output_table->NumColumns(), column_selector_vec.size());
+
+  int output_batch_idx = 0;
 
   // iterate through the batches
   for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
@@ -856,14 +852,27 @@ TEST_P(CarnotFilterTest, int_filter) {
         strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
       }
     }
-    auto rb = output_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
-                  .ConsumeValueOrDie();
-    EXPECT_TRUE(rb->ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(3)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
-    EXPECT_TRUE(rb->ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
+    // If the filter filters out the entire batch, skip this batch
+    if (time_out.size() > 0) {
+      auto rb =
+          output_table
+              ->GetRowBatch(output_batch_idx, column_selector_vec, arrow::default_memory_pool())
+              .ConsumeValueOrDie();
+      output_batch_idx++;
+      EXPECT_TRUE(rb->ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
+      EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
+      EXPECT_TRUE(rb->ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
+      EXPECT_TRUE(
+          rb->ColumnAt(3)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
+      EXPECT_TRUE(
+          rb->ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
+    }
   }
+
+  // Output_batch_idx is the number of rowbatches that the comparison function found to be
+  // non-empty, this ensures that that is equal to the number of rowbatches that were actually
+  // outputted.
+  EXPECT_EQ(output_batch_idx, output_table->NumBatches());
 }
 INSTANTIATE_TEST_SUITE_P(CarnotFilterTestSuite, CarnotFilterTest,
                          ::testing::ValuesIn(filter_test_values));

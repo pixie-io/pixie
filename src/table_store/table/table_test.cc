@@ -524,5 +524,23 @@ TEST(TableTest, transfer_empty_record_batch_test) {
   EXPECT_EQ(table.NumBatches(), 0);
 }
 
+TEST(TableTest, write_zero_row_row_batch) {
+  schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
+  schema::RowDescriptor rd({types::DataType::BOOLEAN, types::DataType::INT64});
+
+  std::shared_ptr<Table> table_ptr = Table::Create(rel);
+
+  auto result = schema::RowBatch::WithZeroRows(rd, /*eow*/ false, /*eos*/ false);
+  ASSERT_OK(result);
+  auto rb_ptr = result.ConsumeValueOrDie();
+
+  EXPECT_OK(table_ptr->WriteRowBatch(*rb_ptr));
+  EXPECT_EQ(table_ptr->NumBatches(), 1);
+
+  auto status = table_ptr->GetRowBatch(0, {0, 1}, arrow::default_memory_pool());
+  ASSERT_OK(status);
+  EXPECT_EQ(status.ConsumeValueOrDie()->num_rows(), 0);
+}
+
 }  // namespace table_store
 }  // namespace pl

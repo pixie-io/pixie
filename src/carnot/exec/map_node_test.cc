@@ -80,6 +80,38 @@ TEST_F(MapNodeTest, basic) {
       .Close();
 }
 
+TEST_F(MapNodeTest, zero_row_row_batch) {
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<MapNode, plan::MapOperator>(*plan_node_, output_rd, {},
+                                                                 exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4})
+                       .AddColumn<types::Int64Value>({1, 3, 6, 9})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 4, false, false)
+                          .AddColumn<types::Int64Value>({2, 5, 9, 13})
+                          .get())
+      .ConsumeNext(RowBatchBuilder(input_rd, 0, true, true)
+                       .AddColumn<types::Int64Value>({})
+                       .AddColumn<types::Int64Value>({})
+                       .get(),
+                   0)
+      .ExpectRowBatch(
+          RowBatchBuilder(output_rd, 0, true, true).AddColumn<types::Int64Value>({}).get())
+      .ConsumeNext(RowBatchBuilder(input_rd, 3, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 2, 3})
+                       .AddColumn<types::Int64Value>({1, 4, 6})
+                       .get(),
+                   0)
+      .ExpectRowBatch(
+          RowBatchBuilder(output_rd, 3, false, false).AddColumn<types::Int64Value>({2, 6, 9}).get())
+      .Close();
+}
+
 TEST_F(MapNodeTest, child_fail) {
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
