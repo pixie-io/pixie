@@ -82,12 +82,28 @@ class RulesTest : public OperatorTests {
         .ValueOrDie();
   }
 
+  void TearDown() override {
+    if (skip_check_stray_nodes_) {
+      return;
+    }
+    CleanUpStrayIRNodesRule cleanup;
+    auto before = graph->DebugString();
+    auto result = cleanup.Execute(graph.get());
+    ASSERT_OK(result);
+    ASSERT_FALSE(result.ConsumeValueOrDie())
+        << "Rule left stray non-Operator IRNodes in graph: " << before;
+  }
+
+  // skip_check_stray_nodes_ should only be set to 'true' for tests of rules when they return an
+  // error.
+  bool skip_check_stray_nodes_ = false;
   std::unique_ptr<CompilerState> compiler_state_;
   std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   table_store::schema::Relation cpu_relation;
   std::unique_ptr<MetadataHandler> md_handler;
 };
+
 class DataTypeRuleTest : public RulesTest {
  protected:
   void SetUp() override {
@@ -379,17 +395,14 @@ TEST_F(SourceRelationTest, missing_columns) {
 }
 
 TEST_F(SourceRelationTest, UDTFDoesNothing) {
-  auto upid_str = MakeString("5525adaadadadadad");
-
   udfspb::UDTFSourceSpec udtf_spec;
   Relation relation{{types::INT64, types::STRING}, {"fd", "name"}};
   ASSERT_OK(relation.ToProto(udtf_spec.mutable_relation()));
 
   auto udtf =
       graph
-          ->CreateNode<UDTFSourceIR>(
-              ast, "GetOpenNetworkConnections",
-              absl::flat_hash_map<std::string, ExpressionIR*>{{"upid", upid_str}}, udtf_spec)
+          ->CreateNode<UDTFSourceIR>(ast, "GetOpenNetworkConnections",
+                                     absl::flat_hash_map<std::string, ExpressionIR*>{}, udtf_spec)
           .ConsumeValueOrDie();
 
   EXPECT_TRUE(udtf->IsRelationInit());
@@ -659,6 +672,8 @@ TEST_F(UnionRelationTest, union_relations_disagree) {
           "cpu1:FLOAT64, "
           "cpu2:FLOAT64\\] vs MemorySource\\(id=[0-9]*\\): \\[count:INT64, cpu0:FLOAT64\\]. "
           "Column count wrong."));
+
+  skip_check_stray_nodes_ = true;
 }
 
 TEST_F(UnionRelationTest, union_relation_different_order) {
@@ -1379,6 +1394,10 @@ TEST_F(FormatMetadataTest, string_matches_format) {
   EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
   EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kString);
 
+  // Add the func as part of a map so that CleanUpStrayIRNodesRule passes.
+  MemorySourceIR* mem_src = MakeMemSource();
+  MakeMap(mem_src, {ColumnExpression{"col", equals_func}}, true);
+
   MetadataFunctionFormatRule rule(compiler_state_.get());
   auto status = rule.Execute(graph.get());
 
@@ -1405,6 +1424,10 @@ TEST_F(FormatMetadataTest, bad_format) {
   EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
   EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kString);
 
+  // Add the func as part of a map so that CleanUpStrayIRNodesRule passes.
+  MemorySourceIR* mem_src = MakeMemSource();
+  MakeMap(mem_src, {ColumnExpression{"col", equals_func}}, true);
+
   MetadataFunctionFormatRule rule(compiler_state_.get());
   auto status = rule.Execute(graph.get());
 
@@ -1423,6 +1446,10 @@ TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
   EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kInt);
   auto status = rule.Execute(graph.get());
 
+  // Add the func as part of a map so that CleanUpStrayIRNodesRule passes.
+  MemorySourceIR* mem_src = MakeMemSource();
+  MakeMap(mem_src, {ColumnExpression{"col", equals_func}}, true);
+
   EXPECT_NOT_OK(status);
   EXPECT_THAT(status.status(),
               HasCompilerError("Function \'px.equals\' with metadata arg in "
@@ -1437,6 +1464,10 @@ TEST_F(FormatMetadataTest, only_equal_supported) {
   EXPECT_EQ(add_func->args()[0]->type(), IRNodeType::kMetadata);
   EXPECT_EQ(add_func->args()[1]->type(), IRNodeType::kString);
   auto status = rule.Execute(graph.get());
+
+  // Add the func as part of a map so that CleanUpStrayIRNodesRule passes.
+  MemorySourceIR* mem_src = MakeMemSource();
+  MakeMap(mem_src, {ColumnExpression{"col", add_func}}, true);
 
   EXPECT_NOT_OK(status);
   EXPECT_THAT(status.status(),
@@ -1689,7 +1720,7 @@ TEST_F(MetadataResolverConversionTest, missing_conversion_column) {
   md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
-  MetadataIR* metadata_ir = MakeMetadataIR("pod_name", /* parent_op_idx */ 0);
+  MetadataIR* metadata_ir = MakeMetadataIR("pod_name", /*parent_op_idx*/ 0);
   ASSERT_OK(metadata_ir->ResolveMetadataColumn(md_resolver, &property));
   MakeFilter(md_resolver, metadata_ir);
 
@@ -1702,6 +1733,8 @@ TEST_F(MetadataResolverConversionTest, missing_conversion_column) {
                   "Can\'t resolve metadata because of lack of converting columns in the parent. "
                   "Need one of "
                   "\\[upid\\]. Parent relation has columns \\[count,cpu0,cpu1,cpu2\\] available."));
+
+  skip_check_stray_nodes_ = true;
 }
 
 // When the parent relation has multiple columns that can be converted into
@@ -1992,8 +2025,16 @@ TEST_F(RulesTest, eval_compile_time_test) {
                                              std::vector<ExpressionIR*>{mult_func})
                         .ValueOrDie();
 
+  // Add the func as part of a map so that CleanUpStrayIRNodesRule passes.
+  MemorySourceIR* mem_src = MakeMemSource();
+  auto map = MakeMap(mem_src, {ColumnExpression{"col", hours_func}}, true);
+
   EvaluateCompileTimeExpr evaluator(compiler_state_.get());
   auto evaluted = evaluator.Evaluate(hours_func).ValueOrDie();
+
+  // Update so CleanUpStrayIRNodesRule passes.
+  ASSERT_OK(map->UpdateColExpr("col", evaluted));
+
   EXPECT_EQ(IRNodeType::kInt, evaluted->type());
   auto casted_int = static_cast<IntIR*>(evaluted);
   std::chrono::nanoseconds time_output = 190 * std::chrono::hours(1);
@@ -2013,6 +2054,10 @@ TEST_F(RulesTest, eval_partial_compile_time_test) {
           ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "not_hours"},
                                std::vector<ExpressionIR*>{mult_func})
           .ValueOrDie();
+
+  // Add the func as part of a map so that CleanUpStrayIRNodesRule passes.
+  MemorySourceIR* mem_src = MakeMemSource();
+  MakeMap(mem_src, {ColumnExpression{"col", not_hours_func}}, true);
 
   EvaluateCompileTimeExpr evaluator(compiler_state_.get());
   auto evaluted = evaluator.Evaluate(not_hours_func).ValueOrDie();

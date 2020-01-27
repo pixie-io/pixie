@@ -1266,7 +1266,13 @@ StatusOr<bool> RemoveGroupByRule::RemoveGroupBy(GroupByIR* groupby) {
     return groupby->CreateIRNodeError("'groupby()' should be followed by an 'agg()' not a $0",
                                       groupby->Children()[0]->type_string());
   }
-  PL_RETURN_IF_ERROR(groupby->graph_ptr()->DeleteNode(groupby->id()));
+  auto graph = groupby->graph_ptr();
+  auto groupby_id = groupby->id();
+  auto groupby_children = graph->dag().DependenciesOf(groupby->id());
+  PL_RETURN_IF_ERROR(graph->DeleteNode(groupby_id));
+  for (const auto& child_id : groupby_children) {
+    PL_RETURN_IF_ERROR(graph->DeleteOrphansInSubtree(child_id));
+  }
   return true;
 }
 

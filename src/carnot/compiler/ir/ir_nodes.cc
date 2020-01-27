@@ -309,24 +309,25 @@ Status MemorySourceIR::Init(const std::string& table_name,
   return Status::OK();
 }
 
-Status MemorySourceIR::SetTimeExpressions(ExpressionIR* start_time_expr,
-                                          ExpressionIR* end_time_expr) {
-  CHECK(start_time_expr != nullptr);
-  CHECK(end_time_expr != nullptr);
+Status MemorySourceIR::SetTimeExpressions(ExpressionIR* new_start_time_expr,
+                                          ExpressionIR* new_end_time_expr) {
+  CHECK(new_start_time_expr != nullptr);
+  CHECK(new_end_time_expr != nullptr);
 
   auto old_start_time_expr = start_time_expr_;
   auto old_end_time_expr = end_time_expr_;
 
   if (start_time_expr_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, start_time_expr_));
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_start_time_expr));
   }
   if (end_time_expr_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, end_time_expr_));
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_end_time_expr));
   }
 
   PL_ASSIGN_OR_RETURN(start_time_expr_,
-                      graph_ptr()->OptionallyCloneWithEdge(this, start_time_expr));
-  PL_ASSIGN_OR_RETURN(end_time_expr_, graph_ptr()->OptionallyCloneWithEdge(this, end_time_expr));
+                      graph_ptr()->OptionallyCloneWithEdge(this, new_start_time_expr));
+  PL_ASSIGN_OR_RETURN(end_time_expr_,
+                      graph_ptr()->OptionallyCloneWithEdge(this, new_end_time_expr));
 
   if (old_start_time_expr) {
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_start_time_expr->id()));
@@ -401,9 +402,10 @@ Status MapIR::UpdateColExpr(std::string_view name, ExpressionIR* expr) {
   PL_ASSIGN_OR_RETURN(auto expr_node, graph_ptr()->OptionallyCloneWithEdge(this, expr));
   for (size_t i = 0; i < col_exprs_.size(); ++i) {
     if (col_exprs_[i].name == name) {
-      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, col_exprs_[i].node));
+      auto old_expr = col_exprs_[i].node;
       col_exprs_[i].node = expr_node;
-      return Status::OK();
+      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_expr));
+      return graph_ptr()->DeleteOrphansInSubtree(old_expr->id());
     }
   }
   return error::Internal("Column $0 does not exist in Map", name);
@@ -885,6 +887,17 @@ Status FuncIR::AddArg(ExpressionIR* arg) {
   }
   args_.push_back(arg);
   return graph_ptr()->AddEdge(this, arg);
+}
+
+Status FuncIR::UpdateArg(int64_t idx, ExpressionIR* arg) {
+  CHECK_LT(idx, static_cast<int64_t>(args_.size()))
+      << "Tried to update arg of index greater than number of args.";
+  ExpressionIR* old_arg = args_[idx];
+  args_[idx] = arg;
+  PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_arg));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, arg));
+  PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_arg->id()));
+  return Status::OK();
 }
 
 Status FuncIR::AddOrCloneArg(ExpressionIR* arg) {
@@ -1664,6 +1677,7 @@ Status JoinIR::SetOutputColumns(const std::vector<std::string>& column_names,
                                 const std::vector<ColumnIR*>& columns) {
   DCHECK_EQ(column_names.size(), columns.size());
   auto old_output_cols = output_columns_;
+
   output_columns_ = columns;
   column_names_ = column_names;
 

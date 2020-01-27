@@ -975,15 +975,7 @@ class FuncIR : public ExpressionIR {
     evaluated_data_type_ = type;
     is_data_type_evaluated_ = true;
   }
-  Status UpdateArg(int64_t idx, ExpressionIR* arg) {
-    CHECK_LT(idx, static_cast<int64_t>(args_.size()))
-        << "Tried to update arg of index greater than number of args.";
-    ExpressionIR* old_arg = args_[idx];
-    args_[idx] = arg;
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_arg));
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, arg));
-    return Status::OK();
-  }
+  Status UpdateArg(int64_t idx, ExpressionIR* arg);
 
   Status AddArg(ExpressionIR* arg);
   // Adds the arg if it isn't already present in the func, otherwise clones it so that there is no

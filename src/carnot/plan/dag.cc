@@ -100,8 +100,8 @@ void DAG::DeleteNode(int64_t node) {
 }
 
 void DAG::AddEdge(int64_t from_node, int64_t to_node) {
-  CHECK(HasNode(from_node)) << "from_node does not exist";
-  CHECK(HasNode(to_node)) << "to_node does not exist";
+  CHECK(HasNode(from_node)) << absl::Substitute("from_node $0 does not exist", from_node);
+  CHECK(HasNode(to_node)) << absl::Substitute("to_node $0 does not exist", to_node);
 
   AddForwardEdge(from_node, to_node);
   AddReverseEdge(to_node, from_node);
@@ -267,6 +267,10 @@ std::unordered_set<int64_t> DAG::Orphans() {
 }
 
 vector<int64_t> DAG::TopologicalSort() const {
+  if (!nodes_.size()) {
+    return {};
+  }
+
   // Implements Kahn's algorithm:
   // https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm;
   std::vector<int64_t> ordered;
