@@ -26,6 +26,9 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
 
+const cacheFlushPeriod = 1 * time.Second
+const cacheClearPeriod = 2 * time.Second
+
 func etcdTLSConfig() (*tls.Config, error) {
 	tlsCert := viper.GetString("client_tls_cert")
 	tlsKey := viper.GetString("client_tls_key")
@@ -122,8 +125,12 @@ func main() {
 		for keepAlive {
 			if isLeader {
 				cache.FlushToDatastore()
+				time.Sleep(cacheFlushPeriod)
+			} else {
+				cache.Clear()
+				time.Sleep(cacheClearPeriod)
 			}
-			time.Sleep(1 * time.Second)
+
 		}
 	}()
 

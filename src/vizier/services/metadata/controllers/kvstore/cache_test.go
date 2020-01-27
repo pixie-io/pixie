@@ -350,3 +350,52 @@ func TestCache_DeleteWithPrefix(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, []byte("1234"), val)
 }
+
+func TestCache_Clear(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	c.SetWithTTL("anew_key", "efgh", time.Second*1)
+	c.SetWithTTL("another_key", "abc", time.Second*10)
+	c.SetWithTTL("a_key", "xyz", time.Second*10)
+	c.Set("non_ttl_key", "1234")
+
+	mockDs.
+		EXPECT().
+		Get("anew_key").
+		Return(nil, nil)
+	mockDs.
+		EXPECT().
+		Get("another_key").
+		Return(nil, nil)
+	mockDs.
+		EXPECT().
+		Get("a_key").
+		Return(nil, nil)
+	mockDs.
+		EXPECT().
+		Get("non_ttl_key").
+		Return(nil, nil)
+
+	c.Clear()
+
+	val, err := c.Get("anew_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+
+	val, err = c.Get("another_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+
+	val, err = c.Get("a_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+
+	val, err = c.Get("non_ttl_key")
+	assert.Nil(t, err)
+	assert.Equal(t, []byte(nil), val)
+}

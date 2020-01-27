@@ -252,3 +252,11 @@ func (c *Cache) DeleteWithPrefix(prefix string) error {
 
 	return c.datastore.DeleteWithPrefix(prefix)
 }
+
+// Clear deletes all keys and values from the cache.
+func (c *Cache) Clear() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.cacheMap = make(map[string]entry)
+}

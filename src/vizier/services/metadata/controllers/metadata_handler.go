@@ -134,6 +134,10 @@ func (mh *MetadataHandler) ProcessNextAgentUpdate() bool {
 		return more
 	}
 
+	if !*mh.isLeader {
+		return true
+	}
+
 	// Apply updates.
 	mh.updateAgentQueues(msg.Message, msg.Hostnames, msg.NodeSpecific)
 
@@ -146,10 +150,6 @@ func (mh *MetadataHandler) MetadataListener() {
 		msg, more := <-mh.ch
 		if !more {
 			return
-		}
-
-		if !*mh.isLeader {
-			continue
 		}
 
 		switch msg.ObjectType {
@@ -434,10 +434,6 @@ func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.Resou
 
 // SyncPodData syncs the data in etcd according to the current active pods.
 func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
-	if !*mh.isLeader {
-		return
-	}
-
 	activePods := map[string]bool{}
 	activeContainers := map[string]bool{}
 
@@ -504,10 +500,6 @@ func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
 
 // SyncEndpointsData syncs the data in etcd according to the current active pods.
 func (mh *MetadataHandler) SyncEndpointsData(epList *v1.EndpointsList) {
-	if !*mh.isLeader {
-		return
-	}
-
 	activeEps := map[string]bool{}
 
 	currentTime := mh.clock.Now().UnixNano()
@@ -538,10 +530,6 @@ func (mh *MetadataHandler) SyncEndpointsData(epList *v1.EndpointsList) {
 
 // SyncServiceData syncs the data in etcd according to the current active pods.
 func (mh *MetadataHandler) SyncServiceData(sList *v1.ServiceList) {
-	if !*mh.isLeader {
-		return
-	}
-
 	activeServices := map[string]bool{}
 
 	currentTime := mh.clock.Now().UnixNano()
