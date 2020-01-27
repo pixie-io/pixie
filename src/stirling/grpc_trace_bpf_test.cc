@@ -218,7 +218,7 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithPara
   }
 };
 
-TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
+TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
   // Give some time for the client to execute and produce data into perf buffers.
   sleep(2);
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
@@ -226,7 +226,7 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid());
-  EXPECT_GE(target_record_indices.size(), 1);
+  ASSERT_GE(target_record_indices.size(), 1);
 
   // We should get exactly one record.
   const size_t idx = target_record_indices.front();
@@ -254,7 +254,8 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
               EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
 }
 
-INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceUprobingTest, ::testing::Values(true, false));
+INSTANTIATE_TEST_SUITE_P(DISABLED_SecurityModeTest, GRPCTraceUprobingTest,
+                         ::testing::Values(true, false));
 
 class GRPCCppTest : public ::testing::Test {
  protected:
