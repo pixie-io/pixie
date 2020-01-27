@@ -273,7 +273,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::unique_ptr<std::map<int, system::SocketInfo> > socket_connections_;
 
   // Map of saved socket probers, indexed by network ns inode.
-  system::SocketProberManager socket_probers_;
+  std::unique_ptr<system::SocketProberManager> socket_probers_;
 
   std::unique_ptr<system::ProcParser> proc_parser_;
 

@@ -338,8 +338,9 @@ StatusOr<NetlinkSocketProber*> SocketProberManager::CreateSocketProber(
   if (!socket_prober_or.ok()) {
     return error::Internal(
         "None of the provided PIDs for the provided namespace ($0) could be used to establish a "
-        "netlink connection to the namespace. It is possible the namespace no longer exists.",
-        ns);
+        "netlink connection to the namespace. It is possible the namespace no longer exists. Error "
+        "message for last attempt: $1",
+        ns, socket_prober_or.msg());
   }
 
   VLOG(2) << absl::Substitute("SocketProberManager: Creating entry [ns=$0]", ns);

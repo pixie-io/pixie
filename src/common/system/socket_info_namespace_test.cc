@@ -71,43 +71,44 @@ TEST_F(NetlinkSocketProberNamespaceTest, SocketProberManager) {
   // At least two net namespaces: default, and the container we made during SetUp().
   EXPECT_GE(pids_by_net_ns.size(), 2);
 
-  SocketProberManager socket_probers;
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<SocketProberManager> socket_probers,
+                       SocketProberManager::Create());
 
   // First round: map should be empty.
   for (auto& [ns, pids] : pids_by_net_ns) {
     PL_UNUSED(pids);
-    EXPECT_EQ(socket_probers.GetSocketProber(ns), nullptr);
+    EXPECT_EQ(socket_probers->GetSocketProber(ns), nullptr);
   }
 
   // Second round: map should become populated.
   for (auto& [ns, pids] : pids_by_net_ns) {
     // This might be flaky, if a network namespace was destroyed from the initial query to now.
     // Could cause false test failures.
-    EXPECT_OK_AND_NE(socket_probers.GetOrCreateSocketProber(ns, pids), nullptr);
+    EXPECT_OK_AND_NE(socket_probers->GetOrCreateSocketProber(ns, pids), nullptr);
   }
 
   // Third round: map should be populated.
   for (auto& [ns, pids] : pids_by_net_ns) {
     PL_UNUSED(pids);
-    EXPECT_NE(socket_probers.GetSocketProber(ns), nullptr);
+    EXPECT_NE(socket_probers->GetSocketProber(ns), nullptr);
   }
 
   // Fourth round: A call to Update() should not remove any sockets yet.
-  socket_probers.Update();
+  socket_probers->Update();
   for (auto& [ns, pids] : pids_by_net_ns) {
     PL_UNUSED(pids);
-    EXPECT_NE(socket_probers.GetSocketProber(ns), nullptr);
+    EXPECT_NE(socket_probers->GetSocketProber(ns), nullptr);
   }
 
   // Fifth round: A call to Update(), followed by no accesses.
-  socket_probers.Update();
+  socket_probers->Update();
   // Don't access any socket probers.
 
   // Sixth round: If socket probers are not accessed, then they should have all been removed.
-  socket_probers.Update();
+  socket_probers->Update();
   for (auto& [ns, pids] : pids_by_net_ns) {
     PL_UNUSED(pids);
-    EXPECT_EQ(socket_probers.GetSocketProber(ns), nullptr);
+    EXPECT_EQ(socket_probers->GetSocketProber(ns), nullptr);
   }
 }
 

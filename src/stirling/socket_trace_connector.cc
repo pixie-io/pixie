@@ -17,6 +17,7 @@
 #include "src/common/base/utils.h"
 #include "src/common/grpcutils/utils.h"
 #include "src/common/protobufs/recordio.h"
+#include "src/common/system/socket_info.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/common/event_parser.h"
@@ -112,7 +113,6 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
                       std::chrono::milliseconds(FLAGS_stirling_socket_trace_sampling_period_millis),
                       kDefaultPushPeriod),
       bpf_tools::BCCWrapper(kBCCScript) {
-  // TODO(yzhao): Is there a better place/time to grab the flags?
   http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
 
@@ -129,6 +129,14 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
 
   protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled =
       FLAGS_stirling_enable_grpc_uprobe_tracing;
+
+  StatusOr<std::unique_ptr<system::SocketProberManager>> s = system::SocketProberManager::Create();
+  if (!s.ok()) {
+    LOG(WARNING) << absl::Substitute("Failed to set up socket prober manager. Message: $0",
+                                     s.msg());
+  } else {
+    socket_probers_ = s.ConsumeValueOrDie();
+  }
 }
 
 Status SocketTraceConnector::InitImpl() {
@@ -224,6 +232,8 @@ Status SocketTraceConnector::StopImpl() {
 }
 
 void SocketTraceConnector::UpdateActiveConnections() {
+  DCHECK(socket_probers_ != nullptr);
+
   // Grab a list of active connections, in case we need to infer the endpoints of any connections
   // with missing endpoints.
   // TODO(oazizi): Optimization is to skip this function if we don't have any connection trackers
@@ -237,7 +247,7 @@ void SocketTraceConnector::UpdateActiveConnections() {
 
   for (const auto& [ns, pids] : pids_by_net_ns) {
     StatusOr<system::NetlinkSocketProber*> socket_prober_or =
-        socket_probers_.GetOrCreateSocketProber(ns, pids);
+        socket_probers_->GetOrCreateSocketProber(ns, pids);
     if (!socket_prober_or.ok()) {
       LOG(WARNING) << absl::Substitute("Failed to create socket prober. Message: $0",
                                        socket_prober_or.msg());
@@ -256,7 +266,7 @@ void SocketTraceConnector::UpdateActiveConnections() {
                                                ns, s.msg());
   }
 
-  socket_probers_.Update();
+  socket_probers_->Update();
 }
 
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
@@ -270,7 +280,9 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   ReadPerfBuffer(table_num);
 
   // Set-up current state for connection inference purposes.
-  UpdateActiveConnections();
+  if (socket_probers_ != nullptr) {
+    UpdateActiveConnections();
+  }
 
   TransferStreams(ctx, table_num, data_table);
 }

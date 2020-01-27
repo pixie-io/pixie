@@ -21,8 +21,6 @@
 #include "src/stirling/mysql/mysql_stitcher.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
-DEFINE_bool(infer_conn_info, true,
-            "Whether to attempt connection inference when remote endpoint information is missing.");
 DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
               "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
               "connection info is cleared.");
@@ -678,9 +676,10 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
                                          const std::map<int, system::SocketInfo>* connections) {
   // If remote_addr is missing, it means the connect/accept was not traced.
   // Attempt to infer the connection information, to populate remote_addr.
-  if (open_info_.remote_addr.addr_str == "-" && FLAGS_infer_conn_info && connections != nullptr) {
+  if (open_info_.remote_addr.addr_str == "-" && connections != nullptr) {
     InferConnInfo(proc_parser, connections);
   }
+
   switch (role()) {
     case EndpointRole::kRoleClient:
       if (state() == State::kCollecting) {

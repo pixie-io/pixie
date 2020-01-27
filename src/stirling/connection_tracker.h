@@ -18,7 +18,6 @@
 #include "src/stirling/socket_resolver.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
-DECLARE_bool(infer_conn_info);
 
 namespace pl {
 namespace stirling {

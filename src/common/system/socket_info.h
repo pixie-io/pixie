@@ -108,6 +108,13 @@ std::map<uint32_t, std::vector<int>> PIDsByNetNamespace(std::filesystem::path pr
  */
 class SocketProberManager {
  public:
+  static StatusOr<std::unique_ptr<SocketProberManager>> Create() {
+    if (!IsRoot()) {
+      return error::Internal("SocketProber requires root privileges");
+    }
+    return std::unique_ptr<SocketProberManager>(new SocketProberManager);
+  }
+
   /**
    * Get a socket prober for the specified network namespace.
    *
@@ -151,6 +158,8 @@ class SocketProberManager {
   void Update();
 
  private:
+  SocketProberManager() = default;
+
   struct TaggedSocketProber {
     bool phase;
     std::unique_ptr<NetlinkSocketProber> socket_prober;
