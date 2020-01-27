@@ -9,6 +9,15 @@ namespace pl {
 const int kIPv4BitLen = 32;
 const int kIPv6BitLen = 128;
 
+IPAddress MapIPv4ToIPv6(const IPAddress& addr) {
+  DCHECK(addr.version == IPVersion::kIPv4);
+  DCHECK(!addr.addr_str.empty());
+  const std::string v6_addr_str = absl::StrCat("::ffff:", addr.addr_str);
+  IPAddress v6_addr;
+  ECHECK_OK(ParseIPAddress(v6_addr_str, &v6_addr));
+  return v6_addr;
+}
+
 Status ParseSockAddr(const struct sockaddr* sa, IPAddress* addr) {
   switch (sa->sa_family) {
     case AF_INET: {
@@ -115,6 +124,11 @@ Status ParseCIDRBlock(std::string_view cidr_str, CIDRBlock* cidr) {
   cidr->ip_addr = std::move(addr);
   cidr->prefix_length = prefix_length;
   return Status::OK();
+}
+
+CIDRBlock MapIPv4ToIPv6(const CIDRBlock& addr) {
+  const int kBitPrefixLen = 96;
+  return CIDRBlock{MapIPv4ToIPv6(addr.ip_addr), kBitPrefixLen + addr.prefix_length};
 }
 
 }  // namespace pl

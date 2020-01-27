@@ -182,6 +182,7 @@ pl_cc_test(
         "//src/stirling/http/testing/go_http_client",
         "//src/stirling/http/testing/go_http_server",
     ],
+    # This test sometimes times out.
     flaky = True,
     tags = ["requires_bpf"],
     deps = [

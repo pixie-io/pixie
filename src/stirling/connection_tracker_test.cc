@@ -608,47 +608,62 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForUnixDomainSocket) {
   EXPECT_EQ(ConnectionTracker::State::kCollecting, tracker.state());
 }
 
-// Tests that tracker is disabled if the cluster CIDR and remote address are specified in different
-// IP version.
-TEST_F(ConnectionTrackerTest, TrackerDisabledForMismatchedIPVersion) {
-  auto create_conn_event = [this](int sin_family) {
-    struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
-    conn.open.traffic_class.role = EndpointRole::kRoleServer;
+namespace {
 
-    // Set an address that falls in the intra-cluster address range.
-    struct sockaddr_in v4_addr = {};
-    v4_addr.sin_family = sin_family;
-    uint16_t port = 123;
-    v4_addr.sin_port = htons(port);
-    // Note that address is outside of the CIDR block specified below.
-    PL_CHECK_OK(ParseIPv4Addr("4.3.2.1", &v4_addr.sin_addr));
-    memcpy(&conn.open.addr, &v4_addr, sizeof(struct sockaddr_in));
-    return conn;
-  };
-  // First, tracker is set to kTransferring because the remote address is not part of the cluster
-  // CIDR block.
+void SetIPv4RemoteAddr(std::string_view addr_str, struct socket_control_event_t* conn) {
+  // Set an address that falls in the intra-cluster address range.
+  struct sockaddr_in v4_addr = {};
+  v4_addr.sin_family = AF_INET;
+  uint16_t port = 123;
+  v4_addr.sin_port = htons(port);
+  // Note that address is outside of the CIDR block specified below.
+  PL_CHECK_OK(ParseIPv4Addr(addr_str, &v4_addr.sin_addr));
+  memcpy(&conn->open.addr, &v4_addr, sizeof(struct sockaddr_in));
+}
+
+void SetIPv6RemoteAddr(std::string_view addr_str, struct socket_control_event_t* conn) {
+  // Set an address that falls in the intra-cluster address range.
+  struct sockaddr_in6 v6_addr = {};
+  v6_addr.sin6_family = AF_INET6;
+  uint16_t port = 123;
+  v6_addr.sin6_port = htons(port);
+  // Note that address is outside of the CIDR block specified below.
+  PL_CHECK_OK(ParseIPv6Addr(addr_str, &v6_addr.sin6_addr));
+  memcpy(&conn->open.addr, &v6_addr, sizeof(struct sockaddr_in6));
+}
+
+}  // namespace
+
+// Tests that tracker is disabled after mapping the addresses from IPv4 to IPv6.
+TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
   {
     ConnectionTracker tracker;
     std::vector<http::Record> req_resp_pairs;
 
-    tracker.AddControlEvent(create_conn_event(AF_INET));
+    struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+    conn.open.traffic_class.role = EndpointRole::kRoleServer;
+    SetIPv6RemoteAddr("::ffff:1.2.3.4", &conn);
+
+    tracker.AddControlEvent(conn);
 
     CIDRBlock cidr;
     ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
 
     tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
-    EXPECT_EQ(ConnectionTracker::State::kTransferring, tracker.state());
+    EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
   }
-  // Then, the tracker is transferring with AF_INET6, and is disabled because of different IP
-  // versions.
   {
     ConnectionTracker tracker;
     std::vector<http::Record> req_resp_pairs;
 
-    tracker.AddControlEvent(create_conn_event(AF_INET6));
+    struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+    conn.open.traffic_class.role = EndpointRole::kRoleServer;
+    SetIPv4RemoteAddr("1.2.3.4", &conn);
+
+    tracker.AddControlEvent(conn);
 
     CIDRBlock cidr;
-    ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
+    ASSERT_OK(ParseCIDRBlock("::ffff:1.2.3.4/120", &cidr));
 
     tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());

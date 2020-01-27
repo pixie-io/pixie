@@ -97,6 +97,12 @@ Status ParseSockAddr(const struct sockaddr* sa, IPAddress* addr);
 Status ParseIPAddress(std::string_view addr_str, IPAddress* ip_addr);
 
 /**
+ * Returns an IPAddress in IPv6 format that follows the mapping rule:
+ * https://en.wikipedia.org/wiki/IPv6#IPv4-mapped_IPv6_addresses
+ */
+IPAddress MapIPv4ToIPv6(const IPAddress& addr);
+
+/**
  * Classless Inter Domain Routing Block. Follows the notations at:
  * https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
  */
@@ -115,5 +121,11 @@ Status ParseCIDRBlock(std::string_view cidr_str, CIDRBlock* cidr);
  * Returns true if block contains ip_addr.
  */
 bool CIDRContainsIPAddr(const CIDRBlock& block, const IPAddress& ip_addr);
+
+/**
+ * Returns a CIDRBlock in IPv6 format that follows the mapping rule:
+ * https://en.wikipedia.org/wiki/IPv6#IPv4-mapped_IPv6_addresses
+ */
+CIDRBlock MapIPv4ToIPv6(const CIDRBlock& addr);
 
 }  // namespace pl

@@ -69,7 +69,7 @@ DEFINE_bool(stirling_disable_self_tracing, true,
 const char kRoleClientStr[] = "CLIENT";
 const char kRoleServerStr[] = "SERVER";
 const char kRoleAllStr[] = "ALL";
-DEFINE_string(stirling_role_to_trace, kRoleClientStr,
+DEFINE_string(stirling_role_to_trace, kRoleAllStr,
               "Must be one of [CLIENT|SERVER|ALL]. Specify which role(s) will be trace by BPF.");
 
 // This flag is for survivability only, in case the host's located headers don't work.

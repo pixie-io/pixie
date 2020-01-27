@@ -145,4 +145,24 @@ TEST(CIDRBlockTest, ParseInvalidIPAddressString) {
               StrEq("The format must be <ipv4/6 address>/<prefix length>, got: 'aaa'"));
 }
 
+TEST(MapIPv4ToIPv6Test, WorksAsExpected) {
+  IPAddress v4_addr;
+  EXPECT_OK(ParseIPAddress("1.2.3.4", &v4_addr));
+  {
+    IPAddress v6_addr = MapIPv4ToIPv6(v4_addr);
+    EXPECT_EQ("::ffff:1.2.3.4", v6_addr.addr_str);
+    std::string v6_addr_str;
+    EXPECT_OK(IPv6AddrToString(std::get<struct in6_addr>(v6_addr.in_addr), &v6_addr_str));
+    EXPECT_EQ("::ffff:1.2.3.4", v6_addr_str);
+  }
+  {
+    CIDRBlock v4_cidr{v4_addr, 10};
+    CIDRBlock v6_cidr = MapIPv4ToIPv6(v4_cidr);
+    EXPECT_EQ("::ffff:1.2.3.4", v6_cidr.ip_addr.addr_str);
+    std::string v6_addr_str;
+    EXPECT_OK(IPv6AddrToString(std::get<struct in6_addr>(v6_cidr.ip_addr.in_addr), &v6_addr_str));
+    EXPECT_EQ("::ffff:1.2.3.4", v6_addr_str);
+  }
+}
+
 }  // namespace pl

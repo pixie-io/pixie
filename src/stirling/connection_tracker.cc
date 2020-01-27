@@ -693,22 +693,21 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
       }
       if (cluster_cidr.has_value() && open_info_.remote_addr.addr_str != "-" &&
           open_info_.remote_addr.addr_str != kUnixSocket) {
-        if (cluster_cidr->ip_addr.version != open_info_.remote_addr.version) {
-          Disable(
-              absl::Substitute("cluster_cidr is specified in $0 remote endpoint $1, "
-                               "ConnID=$2 remote_addr=$3",
-                               magic_enum::enum_name(cluster_cidr->ip_addr.version),
-                               magic_enum::enum_name(open_info_.remote_addr.version),
-                               ToString(conn_id_), open_info_.remote_addr.addr_str));
-          break;
+        CIDRBlock cidr = cluster_cidr.value();
+        IPAddress remote_addr = open_info_.remote_addr;
+        if (cidr.ip_addr.version == IPVersion::kIPv4 && remote_addr.version == IPVersion::kIPv6) {
+          cidr = MapIPv4ToIPv6(cidr);
         }
-        if (CIDRContainsIPAddr(*cluster_cidr, open_info_.remote_addr)) {
-          Disable(
-              absl::Substitute("remote endpoint is inside the cluster, ConnID=$0 remote_addr=$1",
-                               ToString(conn_id_), open_info_.remote_addr.addr_str));
-          break;
+        if (cidr.ip_addr.version == IPVersion::kIPv6 && remote_addr.version == IPVersion::kIPv4) {
+          remote_addr = MapIPv4ToIPv6(remote_addr);
         }
-        state_ = State::kTransferring;
+        if (CIDRContainsIPAddr(cidr, remote_addr)) {
+          Disable(
+              "Server's remote endpoint is inside the cluster. "
+              "Traffic to be traced by client-side tracing.");
+        } else {
+          state_ = State::kTransferring;
+        }
       }
       break;
     case EndpointRole::kRoleUnknown:
