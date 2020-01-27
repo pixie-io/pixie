@@ -39,6 +39,7 @@ docker run --rm -it \
        -v "$HOME/.minikube:/root/.minikube" \
        -v "$HOME/.kube:/root/.kube" \
        -v /var/run/docker.sock:/var/run/docker.sock \
+       -v /var/lib/docker:/var/lib/docker \
        -v "$HOME/.minikube:$HOME/.minikube" \
        -v "$GOPATH/src/pixielabs.ai:/pl/src/pixielabs.ai" \
        ${extra_args} \
