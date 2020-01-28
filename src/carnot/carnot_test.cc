@@ -105,6 +105,29 @@ TEST_F(CarnotTest, register_metadata) {
   EXPECT_EQ(1, callback_calls);
 }
 
+TEST_F(CarnotTest, literal_only) {
+  auto query = absl::StrJoin(
+      {
+          "df = px.DataFrame(table='test_table')",
+          "df = df.agg(count=('col1', px.mean))",
+          "df.col2 = 1",
+          "px.display(df[['col2']])",
+      },
+      "\n");
+  auto query_uuid = sole::uuid4();
+  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
+  ASSERT_OK(s);
+
+  auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
+  EXPECT_EQ(1, output_table->NumBatches());
+
+  std::vector<types::Int64Value> expected1 = {1};
+
+  auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
+                 .ConsumeValueOrDie();
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(expected1, arrow::default_memory_pool())));
+}
+
 TEST_F(CarnotTest, map_test) {
   std::vector<types::Float64Value> col1_in1 = {1.5, 3.2, 8.3};
   std::vector<types::Float64Value> col1_in2 = {5.1, 11.1};

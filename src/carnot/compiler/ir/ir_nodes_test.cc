@@ -1626,6 +1626,16 @@ TEST_F(OperatorTests, prune_outputs_unchanged) {
   EXPECT_THAT(mem_src->column_index_map(), ElementsAre(0, 1, 2, 3));
 }
 
+TEST_F(OperatorTests, prune_outputs_keep_one) {
+  auto mem_src = MakeMemSource("foo");
+  ASSERT_OK(mem_src->SetRelation(MakeRelation()));
+  mem_src->SetColumnIndexMap({0, 1, 2, 3});
+
+  EXPECT_OK(mem_src->PruneOutputColumnsTo({}));
+  EXPECT_THAT(mem_src->column_names(), ElementsAre("count"));
+  EXPECT_THAT(mem_src->column_index_map(), ElementsAre(0));
+}
+
 TEST_F(OperatorTests, map_prune_outputs) {
   auto mem_src = MakeMemSource();
   auto map = MakeMap(mem_src, {{"count", MakeColumn("count", 0)},

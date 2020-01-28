@@ -223,11 +223,19 @@ StatusOr<std::vector<OperatorIR*>> OperatorIR::HandleDuplicateParents(
 
 Status OperatorIR::PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& output_colnames) {
   DCHECK(IsRelationInit());
-  DCHECK(output_colnames.size());
   for (const auto& kept_colname : output_colnames) {
     DCHECK(relation_.HasColumn(kept_colname));
   }
-  PL_ASSIGN_OR_RETURN(auto required_columns, PruneOutputColumnsToImpl(output_colnames));
+
+  auto output_cols = output_colnames;
+  // Ensure that we always output at least one column, unless it's a memory sink,
+  // in which case it's ok to output 0 columns.
+  if (!Match(this, MemorySink())) {
+    if (!output_cols.size()) {
+      output_cols.insert(relation().col_names()[0]);
+    }
+  }
+  PL_ASSIGN_OR_RETURN(auto required_columns, PruneOutputColumnsToImpl(output_cols));
   Relation updated_relation;
   for (const auto& colname : relation_.col_names()) {
     if (required_columns.contains(colname)) {
