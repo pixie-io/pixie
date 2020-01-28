@@ -283,8 +283,15 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     ECHECK(hdr->value.empty());
 
     // Only expect one end_stream signal per stream direction.
-    ECHECK(!half_stream_ptr->end_stream) << absl::Substitute(
-        "stream_id: $0, conn_id: $1", hdr->attr.stream_id, ToString(hdr->attr.conn_id));
+    // Note: Duplicate calls to the writeHeaders (calls with same arguments) have been observed.
+    // It happens rarely, and root cause is unknown. It does not appear to be a retransmission due
+    // to dropped packets (as that is handled by the TCP layer).
+    // For now, just print a warning. The only harm is duplicated headers in the tables.
+    // Note that the duplicates are not necessarily restricted to headers which have the end_stream
+    // flag set; the end_stream cases are just the easiest to detect.
+    LOG_IF(WARNING, half_stream_ptr->end_stream)
+        << absl::Substitute("Duplicate end_stream flag in header. stream_id: $0, conn_id: $1",
+                            hdr->attr.stream_id, ToString(hdr->attr.conn_id));
 
     half_stream_ptr->end_stream = true;
     return;
@@ -333,6 +340,15 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   }
 
   http2::HalfStream* half_stream_ptr = HalfStreamPtr(data->attr.stream_id, write_event);
+
+  // Note: Duplicate calls to the writeHeaders have been observed (though they are rare).
+  // It is not yet known if duplicate data also occurs. This log will help us figure out if such
+  // cases exist. Note that the duplicates are not related to the end_stream flag being set;
+  // the end_stream cases are just the easiest to detect.
+  LOG_IF(WARNING, half_stream_ptr->end_stream && data->attr.end_stream)
+      << absl::Substitute("Duplicate end_stream flag in data. stream_id: $0, conn_id: $1",
+                          data->attr.stream_id, ToString(data->attr.conn_id));
+
   half_stream_ptr->data += data->payload;
   half_stream_ptr->end_stream |= data->attr.end_stream;
   half_stream_ptr->UpdateTimestamp(data->attr.timestamp_ns);
