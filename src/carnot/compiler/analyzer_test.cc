@@ -853,6 +853,21 @@ TEST_F(AnalyzerTest, prune_unused_columns) {
   EXPECT_THAT(sink->relation().col_names(), ElementsAre("mb_in"));
 }
 
+constexpr char kReassignedColname[] = R"pxl(
+t1 = px.DataFrame(table='http_events', start_time='-5s')
+t1.foo = t1.time_
+t1.foo = px.bin(t1.time_, px.hours(1))
+px.display(t1)
+)pxl";
+
+TEST_F(AnalyzerTest, reassigned_map_colname) {
+  auto ir_graph_status = CompileGraph(kReassignedColname);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_OK(analyzer_status);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
