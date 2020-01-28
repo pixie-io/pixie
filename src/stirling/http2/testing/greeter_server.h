@@ -22,31 +22,14 @@ class GreeterService final : public Greeter::Service {
  public:
   ::grpc::Status SayHello(::grpc::ServerContext* /*context*/, const HelloRequest* request,
                           HelloReply* response) override {
-    WaitForSignalIfEnabled();
     response->set_message(absl::StrCat("Hello ", request->name(), "!"));
     return ::grpc::Status::OK;
   }
   ::grpc::Status SayHelloAgain(::grpc::ServerContext* /*context*/, const HelloRequest* request,
                                HelloReply* response) override {
-    WaitForSignalIfEnabled();
     response->set_message(absl::StrCat("Hello ", request->name(), "!"));
     return ::grpc::Status::OK;
   }
-
-  void set_enable_cond_wait(bool v) { enable_cond_wait_ = v; }
-  void Notify() { cond_var_.notify_all(); }
-  // Wait for external signal, to simulate timeout.
-  void WaitForSignalIfEnabled() {
-    if (enable_cond_wait_) {
-      std::unique_lock<std::mutex> lock(mutex_);
-      cond_var_.wait(lock);
-    }
-  }
-
- private:
-  bool enable_cond_wait_ = false;
-  std::mutex mutex_;
-  std::condition_variable cond_var_;
 };
 
 class Greeter2Service final : public Greeter2::Service {

@@ -386,27 +386,6 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
   }
 }
 
-// Tests to show the captured results from a timed out RPC call.
-// TODO(yzhao): Sometime the tracer can still capture data, which breaks Jeninks build. Root causing
-// and fix it.
-TEST_F(GRPCCppTest, DISABLED_RPCTimesOut) {
-  greeter_service_.set_enable_cond_wait(true);
-  auto statuses = CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs"});
-  ASSERT_THAT(statuses, SizeIs(1));
-  EXPECT_EQ(::grpc::StatusCode::DEADLINE_EXCEEDED, statuses[0].error_code());
-
-  source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
-
-  types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
-  // TODO(yzhao): ATM missing response, here because of response times out, renders requests being
-  // held in buffer and not exported. Change to export requests after a certain timeout.
-  EXPECT_THAT(indices, IsEmpty());
-
-  // Wait for RPC call to timeout, and then unblock the server.
-  greeter_service_.Notify();
-}
-
 template <typename ProtoType>
 std::vector<ProtoType> ParseProtobufRecords(absl::string_view buf) {
   std::vector<ProtoType> res;
