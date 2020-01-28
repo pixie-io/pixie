@@ -33,6 +33,10 @@ export function ResultsToCsv(results) {
 export function ResultsToJSON(results) {
     let resValues = [];
 
+    if (!results.rowBatches) {
+      return resValues;
+    }
+
     for (const batch of results.rowBatches) {
       const formattedBatch = [];
       for (let i = 0; i < parseInt(batch.numRows, 10); i++) {

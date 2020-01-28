@@ -90,4 +90,26 @@ describe('ResultsToJSON', () => {
 
     expect(ResultDataUtils.ResultsToJSON(table)).toEqual(expectedOutput);
   });
+
+  it('returns the correct results for empty tables', () => {
+    const table = {
+      relation: {
+        columns: [
+          {
+            columnName: 'test',
+            columnType: 'STRING',
+          },
+          {
+            columnName: 'column2',
+            columnType: 'BOOLEAN',
+          },
+        ],
+      },
+      name: 'output',
+    };
+
+    const expectedOutput = [];
+
+    expect(ResultDataUtils.ResultsToJSON(table)).toEqual(expectedOutput);
+  });
 });
