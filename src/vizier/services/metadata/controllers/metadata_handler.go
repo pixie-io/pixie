@@ -211,6 +211,25 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 	}
 }
 
+func (mh *MetadataHandler) updateEndpoints(e *v1.Endpoints, deleted bool) (*metadatapb.Endpoints, error) {
+	// Don't record the endpoint if there is no nodename.
+	if len(e.Subsets) > 0 && len(e.Subsets[0].Addresses) > 0 && e.Subsets[0].Addresses[0].NodeName == nil {
+		log.Info("Received endpoint with no nodename: " + e.String())
+		return nil, nil
+	}
+
+	pb, err := protoutils.EndpointsToProto(e)
+	if err != nil {
+		return nil, err
+	}
+	err = mh.mds.UpdateEndpoints(pb, deleted)
+	if err != nil {
+		return nil, err
+	}
+
+	return pb, nil
+}
+
 func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType watch.EventType) {
 	e := o.(*v1.Endpoints)
 	// kube-scheduler and kube-controller-manager endpoints (and
@@ -240,19 +259,12 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType w
 		}
 	}
 
-	// Don't record the endpoint if there is no nodename.
-	if len(e.Subsets) > 0 && len(e.Subsets[0].Addresses) > 0 && e.Subsets[0].Addresses[0].NodeName == nil {
-		log.Info("Received endpoint with no nodename: " + e.String())
+	pb, err := mh.updateEndpoints(e, eventType == watch.Deleted)
+	if err != nil {
+		log.WithError(err).Fatal("Could not write endpoints update")
+	}
+	if pb == nil {
 		return
-	}
-
-	pb, err := protoutils.EndpointsToProto(e)
-	if err != nil {
-		log.WithError(err).Fatal("Could not convert endpoints object to protobuf.")
-	}
-	err = mh.mds.UpdateEndpoints(pb, eventType == watch.Deleted)
-	if err != nil {
-		log.WithError(err).Fatal("Could not write endpoints protobuf to metadata store.")
 	}
 
 	// Add endpoint update to agent update queues.
@@ -276,22 +288,31 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType w
 	}
 }
 
+func (mh *MetadataHandler) updatePod(e *v1.Pod, deleted bool) (*metadatapb.Pod, error) {
+	pb, err := protoutils.PodToProto(e)
+	if err != nil {
+		return nil, err
+	}
+
+	err = mh.mds.UpdatePod(pb, deleted)
+	if err != nil {
+		return nil, err
+	}
+
+	err = mh.mds.UpdateContainersFromPod(pb, deleted)
+	if err != nil {
+		return nil, err
+	}
+
+	return pb, nil
+}
+
 func (mh *MetadataHandler) handlePodMetadata(o runtime.Object, eventType watch.EventType) {
 	e := o.(*v1.Pod)
 
-	pb, err := protoutils.PodToProto(e)
+	pb, err := mh.updatePod(e, eventType == watch.Deleted)
 	if err != nil {
-		log.WithError(err).Fatal("Could not convert pod object to protobuf.")
-	}
-
-	err = mh.mds.UpdatePod(pb, eventType == watch.Deleted)
-	if err != nil {
-		log.WithError(err).Fatal("Could not write pod protobuf to metadata store.")
-	}
-
-	err = mh.mds.UpdateContainersFromPod(pb, eventType == watch.Deleted)
-	if err != nil {
-		log.WithError(err).Fatal("Could not write container protobufs to metadata store.")
+		log.WithError(err).Fatal("Could not write pod update")
 	}
 
 	// Add pod update to agent update queue.
@@ -314,15 +335,24 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object, eventType watch.E
 	}
 }
 
-func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object, eventType watch.EventType) {
-	e := o.(*v1.Service)
+func (mh *MetadataHandler) updateService(e *v1.Service, deleted bool) (*metadatapb.Service, error) {
 	pb, err := protoutils.ServiceToProto(e)
 	if err != nil {
-		log.WithError(err).Fatal("Could not convert service object to protobuf.")
+		return nil, err
 	}
-	err = mh.mds.UpdateService(pb, eventType == watch.Deleted)
+	err = mh.mds.UpdateService(pb, deleted)
 	if err != nil {
-		log.WithError(err).Fatal("Could not write service protobuf to metadata store.")
+		return nil, err
+	}
+	return pb, err
+}
+
+func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object, eventType watch.EventType) {
+	e := o.(*v1.Service)
+
+	_, err := mh.updateService(e, eventType == watch.Deleted)
+	if err != nil {
+		log.WithError(err).Fatal("Could not write service update")
 	}
 }
 
@@ -445,6 +475,11 @@ func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
 		for _, container := range item.Status.ContainerStatuses {
 			activeContainers[formatContainerID(container.ContainerID)] = true
 		}
+		// Update pod/containers in metadata store.
+		_, err := mh.updatePod(&item, false)
+		if err != nil {
+			log.WithField("pod", item).WithError(err).Error("Could not update pod in metadata store during sync")
+		}
 	}
 
 	// Find all pods in etcd.
@@ -507,6 +542,12 @@ func (mh *MetadataHandler) SyncEndpointsData(epList *v1.EndpointsList) {
 	// Create a map so that we can easily check which endpoints are currently active by ID.
 	for _, item := range epList.Items {
 		activeEps[string(item.ObjectMeta.UID)] = true
+
+		// Update endpoint in metadata store.
+		_, err := mh.updateEndpoints(&item, false)
+		if err != nil {
+			log.WithField("endpoint", item).WithError(err).Error("Could not update endpoint in metadata store during sync")
+		}
 	}
 
 	// Find all endpoints in etcd.
@@ -537,6 +578,12 @@ func (mh *MetadataHandler) SyncServiceData(sList *v1.ServiceList) {
 	// Create a map so that we can easily check which services are currently active by ID.
 	for _, item := range sList.Items {
 		activeServices[string(item.ObjectMeta.UID)] = true
+
+		// Update service in metadata store.
+		_, err := mh.updateService(&item, false)
+		if err != nil {
+			log.WithField("service", item).WithError(err).Error("Could not update service in metadata store during sync")
+		}
 	}
 
 	// Find all services in etcd.

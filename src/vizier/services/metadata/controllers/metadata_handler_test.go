@@ -12,6 +12,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
@@ -838,6 +839,9 @@ func TestSyncPodData(t *testing.T) {
 	}
 	pods[0] = activePod
 
+	activeListPodPb, err := protoutils.PodToProto(&activePod)
+	assert.Nil(t, err)
+
 	podList := v1.PodList{
 		Items: pods,
 	}
@@ -951,12 +955,22 @@ func TestSyncPodData(t *testing.T) {
 
 	mockMds.
 		EXPECT().
+		UpdatePod(activeListPodPb, false).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
 		UpdatePod(deletedUndeadPodPb, false).
 		Return(nil)
 
 	mockMds.
 		EXPECT().
 		UpdatePod(anotherDeletedUndeadPodPb, false).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
+		UpdateContainersFromPod(activeListPodPb, false).
 		Return(nil)
 
 	mockMds.
@@ -1004,6 +1018,8 @@ func TestSyncEndpointsData(t *testing.T) {
 		ObjectMeta: md,
 	}
 	endpoints[0] = activeEndpoint
+	activeListEndpointPb, err := protoutils.EndpointsToProto(&activeEndpoint)
+	assert.Nil(t, err)
 
 	epList := v1.EndpointsList{
 		Items: endpoints,
@@ -1048,6 +1064,11 @@ func TestSyncEndpointsData(t *testing.T) {
 
 	mockMds.
 		EXPECT().
+		UpdateEndpoints(activeListEndpointPb, false).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
 		UpdateEndpoints(deletedUndeadEpPb, false).
 		Return(nil)
 
@@ -1081,6 +1102,8 @@ func TestSyncServicesData(t *testing.T) {
 		ObjectMeta: md,
 	}
 	services[0] = activeService
+	activeListSvcPb, err := protoutils.ServiceToProto(&activeService)
+	assert.Nil(t, err)
 
 	sList := v1.ServiceList{
 		Items: services,
@@ -1122,6 +1145,11 @@ func TestSyncServicesData(t *testing.T) {
 		EXPECT().
 		GetServices().
 		Return(etcdServices, nil)
+
+	mockMds.
+		EXPECT().
+		UpdateService(activeListSvcPb, false).
+		Return(nil)
 
 	mockMds.
 		EXPECT().
