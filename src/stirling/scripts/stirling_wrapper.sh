@@ -3,8 +3,10 @@
 # This script only exists because stirling_wrapper must be run as root.
 # Otherwise one would use bazel run ...
 
-# shellcheck disable=SC1091
-source utils.sh
+script_dir=$(dirname "$0")
+
+# shellcheck disable=SC1090
+source "$script_dir"/utils.sh
 
 bazel build //src/stirling:stirling_wrapper
 
