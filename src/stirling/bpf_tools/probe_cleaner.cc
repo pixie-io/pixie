@@ -95,7 +95,7 @@ Status CleanProbesFromSysFile(const char* file_path, std::string_view marker) {
 
 }  // namespace
 
-Status KprobeCleaner(std::string_view marker) {
+Status CleanProbes(std::string_view marker) {
   PL_RETURN_IF_ERROR(CleanProbesFromSysFile(kAttachedKProbesFile, marker));
   PL_RETURN_IF_ERROR(CleanProbesFromSysFile(kAttachedUProbesFile, marker));
   return Status::OK();

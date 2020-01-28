@@ -42,7 +42,7 @@ Status RemoveProbes(const char* file_path, std::vector<std::string> probes);
  * @return error if issues accessing sysfs, or if there are still probes leftover after the cleanup
  * process.
  */
-Status KprobeCleaner(std::string_view marker);
+Status CleanProbes(std::string_view marker);
 
 }  // namespace utils
 }  // namespace stirling

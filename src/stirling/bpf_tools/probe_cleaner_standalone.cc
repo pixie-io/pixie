@@ -10,7 +10,7 @@ DEFINE_string(cleanup_marker, kPixieMarker, "Marker to search for when deleting 
 int main(int argc, char** argv) {
   pl::InitEnvironmentOrDie(&argc, argv);
 
-  pl::Status s = pl::stirling::utils::KprobeCleaner(kPixieMarker);
+  pl::Status s = pl::stirling::utils::CleanProbes(kPixieMarker);
   LOG_IF(ERROR, !s.ok()) << s.msg();
 
   pl::ShutdownEnvironmentOrDie();
