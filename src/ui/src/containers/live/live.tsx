@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import {DARK_THEME} from 'common/mui-theme';
 import * as React from 'react';
 
@@ -7,12 +8,15 @@ import {createStyles, makeStyles, Theme, ThemeProvider} from '@material-ui/core/
 import EditIcon from '@material-ui/icons/Edit';
 import MenuIcon from '@material-ui/icons/Menu';
 import ShareIcon from '@material-ui/icons/Share';
+import ToggleButton from '@material-ui/lab/ToggleButton';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
       height: '100%',
       width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
     },
     topBar: {
       display: 'flex',
@@ -23,11 +27,31 @@ const useStyles = makeStyles((theme: Theme) =>
       marginLeft: theme.spacing(2),
       flexGrow: 1,
     },
+    main: {
+      flex: 1,
+      minHeight: 0,
+      display: 'flex',
+    },
+    editorToggle: {
+      border: 'none',
+    },
+    editor: {
+      flexGrow: 1,
+      display: 'none',
+      '&.editor-open': {
+        display: 'block',
+      },
+    },
+    canvas: {
+      flexGrow: 1,
+    },
   }));
 
 const LiveView = () => {
   const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
+  const [editorOpen, setEditorOpen] = React.useState<boolean>(false);
   const toggleDrawer = (open: boolean) => () => { setDrawerOpen(open); };
+  const toggleEditor = React.useCallback(() => setEditorOpen((opened) => !opened), []);
 
   const classes = useStyles();
 
@@ -41,15 +65,20 @@ const LiveView = () => {
         <IconButton>
           <ShareIcon />
         </IconButton>
-        <IconButton>
+        <ToggleButton className={classes.editorToggle} selected={editorOpen} onChange={toggleEditor}>
           <EditIcon />
-        </IconButton>
+        </ToggleButton>
       </div>
-      <div>Live view goes here</div>
+      <div className={classes.main}>
+        <div className={clsx(classes.editor, editorOpen && 'editor-open')}>
+          editor goes here
+        </div>
+        <div className={classes.canvas}>Live view goes here</div>
+      </div>
       <Drawer open={drawerOpen} onClose={toggleDrawer(false)}>
         <div>drawer content</div>
       </Drawer>
-    </div>
+    </div >
   );
 };
 
