@@ -14,7 +14,7 @@
 namespace pl {
 namespace system {
 
-class NetlinkSocketProberNamespaceTest : public ::testing::Test {
+class NetNamespaceTest : public ::testing::Test {
  protected:
   void SetUp() override { container_.Run(); }
   void TearDown() override { container_.Stop(); }
@@ -22,7 +22,14 @@ class NetlinkSocketProberNamespaceTest : public ::testing::Test {
   DummyTestContainer container_;
 };
 
-TEST_F(NetlinkSocketProberNamespaceTest, Basic) {
+TEST_F(NetNamespaceTest, NetNamespace) {
+  ASSERT_OK_AND_ASSIGN(uint32_t net_ns, NetNamespace(system::Config::GetInstance().proc_path(),
+                                                     container_.process_pid()));
+  EXPECT_NE(net_ns, 0);
+  EXPECT_NE(net_ns, -1);
+}
+
+TEST_F(NetNamespaceTest, NetlinkSocketProber) {
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<NetlinkSocketProber> socket_prober,
                          NetlinkSocketProber::Create());
@@ -64,7 +71,7 @@ TEST_F(NetlinkSocketProberNamespaceTest, Basic) {
   }
 }
 
-TEST_F(NetlinkSocketProberNamespaceTest, SocketProberManager) {
+TEST_F(NetNamespaceTest, SocketProberManager) {
   std::map<uint32_t, std::vector<int>> pids_by_net_ns =
       PIDsByNetNamespace(system::Config::GetInstance().proc_path());
 

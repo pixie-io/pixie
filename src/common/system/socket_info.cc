@@ -273,6 +273,18 @@ Status NetlinkSocketProber::UnixConnections(std::map<int, SocketInfo>* socket_in
 // PIDsByNetNamespace
 //-----------------------------------------------------------------------------
 
+StatusOr<uint32_t> NetNamespace(std::filesystem::path proc, uint32_t pid) {
+  return NetNamespace(proc / std::to_string(pid));
+}
+
+StatusOr<uint32_t> NetNamespace(std::filesystem::path proc_pid) {
+  std::filesystem::path net_ns_path = proc_pid / "ns/net";
+  PL_ASSIGN_OR_RETURN(std::filesystem::path net_ns_link, fs::ReadSymlink(net_ns_path));
+  PL_ASSIGN_OR_RETURN(uint32_t net_ns_inode_num,
+                      fs::ExtractInodeNum(fs::kNetInodePrefix, net_ns_link.string()));
+  return net_ns_inode_num;
+}
+
 std::map<uint32_t, std::vector<int>> PIDsByNetNamespace(std::filesystem::path proc) {
   std::map<uint32_t, std::vector<int>> result;
 
@@ -284,24 +296,15 @@ std::map<uint32_t, std::vector<int>> PIDsByNetNamespace(std::filesystem::path pr
       continue;
     }
 
-    std::filesystem::path net_ns_path = p.path() / "ns/net";
-
-    StatusOr<std::filesystem::path> s = fs::ReadSymlink(net_ns_path);
-    if (!s.ok()) {
-      LOG(ERROR) << absl::Substitute("Could not read network namespace file $0",
-                                     net_ns_path.c_str());
+    StatusOr<uint32_t> net_ns_inode_num_status = NetNamespace(p);
+    if (!net_ns_inode_num_status.ok()) {
+      LOG(ERROR) << absl::Substitute(
+          "Could not determine network namespace for pid $0. Message=$1.", pid,
+          net_ns_inode_num_status.msg());
       continue;
     }
-    std::string net_ns_str = std::move(s.ConsumeValueOrDie());
 
-    StatusOr<uint32_t> s2 = fs::ExtractInodeNum(fs::kNetInodePrefix, net_ns_str);
-    if (!s2.ok()) {
-      LOG(ERROR) << absl::Substitute("Could not extract inode number $0 $1 $2", net_ns_path.c_str(),
-                                     net_ns_str, s2.msg());
-      continue;
-    }
-    uint32_t net_ns_inode_num = s2.ValueOrDie();
-    result[net_ns_inode_num].push_back(pid);
+    result[net_ns_inode_num_status.ValueOrDie()].push_back(pid);
   }
 
   return result;

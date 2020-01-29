@@ -90,6 +90,23 @@ class NetlinkSocketProber {
 };
 
 /**
+ * Returns the net namespace identifier (inode number) for the PID.
+ *
+ * @param proc Path to the proc filesystem.
+ * @param pid PID for which network namespace is desired.
+ * @return Network namespace as an inode number, or error if it could not be determined.
+ */
+StatusOr<uint32_t> NetNamespace(std::filesystem::path proc, uint32_t pid);
+
+/**
+ * Returns the net namespace identifier (inode number) for the PID.
+ *
+ * @param proc_pid Path to the process under proc filesystem (e.g. /proc/<pid>).
+ * @return Network namespace as an inode number, or error if it could not be determined.
+ */
+StatusOr<uint32_t> NetNamespace(std::filesystem::path proc_pid);
+
+/**
  * PIDsByNetNamespace scans /proc to find all unique network namespaces.
  *
  * @param proc Path to proc filesystem.
