@@ -20,7 +20,7 @@ void InitEnvironmentOrDieImpl(int* argc, char** argv) {
 }
 
 void ShutdownEnvironmentOrDieImpl() {
-  LOG(INFO) << "Shutdown: ";
+  LOG(INFO) << "Shutting down";
   google::ShutdownGoogleLogging();
 }
 
