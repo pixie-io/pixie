@@ -696,17 +696,18 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
     InferConnInfo(proc_parser, connections);
   }
 
+  // Normally, we don't want to trace Unix domain sockets.
+  if (open_info_.remote_addr.addr_str == kUnixSocket && !FLAGS_enable_unix_domain_sockets) {
+    Disable("Unix domain socket");
+  }
+
   switch (role()) {
-    case EndpointRole::kRoleClient:
+    case EndpointRole::kRoleServer:
       if (state() == State::kCollecting) {
         state_ = State::kTransferring;
       }
       break;
-    case EndpointRole::kRoleServer:
-      if (conn_resolution_failed_) {
-        Disable("could not infer remote endpoint address");
-        break;
-      }
+    case EndpointRole::kRoleClient:
       if (cluster_cidr.has_value() && open_info_.remote_addr.addr_str != "-" &&
           open_info_.remote_addr.addr_str != kUnixSocket) {
         CIDRBlock cidr = cluster_cidr.value();
@@ -717,13 +718,17 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
         if (cidr.ip_addr.version == IPVersion::kIPv6 && remote_addr.version == IPVersion::kIPv4) {
           remote_addr = MapIPv4ToIPv6(remote_addr);
         }
+
         if (CIDRContainsIPAddr(cidr, remote_addr)) {
           Disable(
-              "Server's remote endpoint is inside the cluster. "
-              "Traffic to be traced by client-side tracing.");
+              "Clients's remote endpoint is inside the cluster. "
+              "Traffic to be traced by server-side tracing.");
         } else {
           state_ = State::kTransferring;
         }
+      } else if (conn_resolution_failed_) {
+        Disable("could not infer remote endpoint address");
+        break;
       }
       break;
     case EndpointRole::kRoleUnknown:
@@ -844,7 +849,6 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   // Success! Now copy the inferred socket information into the ConnectionTracker.
   const system::SocketInfo& socket_info = iter->second;
 
-  bool unix_domain_socket = false;
   Status s;
   switch (socket_info.family) {
     case AF_INET:
@@ -860,7 +864,6 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
       // remote peer.
       open_info_.remote_addr.addr_str = kUnixSocket;
       open_info_.remote_addr.port = inode_num;
-      unix_domain_socket = true;
       break;
     default:
       LOG(DFATAL) << absl::Substitute("Unexpected family $0", socket_info.family);
@@ -869,13 +872,6 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   LOG(INFO) << absl::Substitute("Inferred connection pid=$0 fd=$1 gen=$2 dest=$3:$4", pid(), fd(),
                                 generation(), open_info_.remote_addr.addr_str,
                                 open_info_.remote_addr.port);
-
-  // TODO(oazizi): Move this out of this function, since it is not a part of the inference.
-  // I don't like side-effects.
-  if (unix_domain_socket && !FLAGS_enable_unix_domain_sockets) {
-    // Turns out we've been tracing a Unix domain socket, so disable tracker to stop tracing it.
-    Disable("Unix domain socket");
-  }
 
   // No need for the resolver anymore, so free its memory.
   conn_resolver_.reset();

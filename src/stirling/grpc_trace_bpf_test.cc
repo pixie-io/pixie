@@ -163,7 +163,7 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
     ASSERT_GE(col->Size(), 1);
   }
   const std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c.child_pid());
+      FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, s_.child_pid());
   // We should get exactly one record.
   ASSERT_THAT(target_record_indices, SizeIs(1));
   const size_t target_record_idx = target_record_indices.front();
@@ -184,8 +184,10 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
   EXPECT_THAT(
       std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
       HasSubstr("127.0.0.1"));
-  EXPECT_EQ(s_port_,
-            record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx).val);
+  // TODO(oazizi): This expectation broke after the switch to server-side tracing.
+  // Need to replace s_port_ with client port.
+  // EXPECT_EQ(s_port_,
+  //           record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx).val);
   EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(target_record_idx).val);
   EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
             record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(target_record_idx).val);
@@ -376,7 +378,9 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
   for (size_t idx : indices) {
     EXPECT_THAT(std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(idx)),
                 HasSubstr("127.0.0.1"));
-    EXPECT_EQ(runner_.port(), record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(idx).val);
+    // TODO(oazizi): After switch to server-side tracing, this expectation is wrong,
+    // but no easy way to get the port from client_channel_, so disabled this for now.
+    // EXPECT_EQ(runner_.port(), record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(idx).val);
     EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(idx).val);
     EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
               record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(idx).val);

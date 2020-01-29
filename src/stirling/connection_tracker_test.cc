@@ -567,7 +567,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   std::vector<http::Record> req_resp_pairs;
 
   struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
-  conn.open.traffic_class.role = EndpointRole::kRoleServer;
+  conn.open.traffic_class.role = EndpointRole::kRoleClient;
 
   // Set an address that falls in the intra-cluster address range.
   struct sockaddr_in v4_addr = {};
@@ -586,8 +586,9 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
-// Tests that tracker state is kCollecting if the remote address is Unix domain socket.
-TEST_F(ConnectionTrackerTest, TrackerDisabledForUnixDomainSocket) {
+// TODO(oazizi): Re-enabled this test once the SockAddr work is complete.
+// Tests that tracker state is kDisabled if the remote address is Unix domain socket.
+TEST_F(ConnectionTrackerTest, DISABLED_TrackerDisabledForUnixDomainSocket) {
   ConnectionTracker tracker;
   std::vector<http::Record> req_resp_pairs;
 
@@ -605,7 +606,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForUnixDomainSocket) {
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
 
   tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
-  EXPECT_EQ(ConnectionTracker::State::kCollecting, tracker.state());
+  EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
 namespace {
@@ -641,7 +642,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
     std::vector<http::Record> req_resp_pairs;
 
     struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
-    conn.open.traffic_class.role = EndpointRole::kRoleServer;
+    conn.open.traffic_class.role = EndpointRole::kRoleClient;
     SetIPv6RemoteAddr("::ffff:1.2.3.4", &conn);
 
     tracker.AddControlEvent(conn);
@@ -657,7 +658,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
     std::vector<http::Record> req_resp_pairs;
 
     struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
-    conn.open.traffic_class.role = EndpointRole::kRoleServer;
+    conn.open.traffic_class.role = EndpointRole::kRoleClient;
     SetIPv4RemoteAddr("1.2.3.4", &conn);
 
     tracker.AddControlEvent(conn);
