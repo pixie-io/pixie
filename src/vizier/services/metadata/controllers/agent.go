@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"sync"
 
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -66,6 +67,7 @@ type AgentManagerImpl struct {
 	mds         MetadataStore
 	updateCh    chan *AgentUpdate
 	agentQueues map[string]AgentQueue
+	queueMu     sync.Mutex
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
@@ -276,15 +278,22 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 			if err != nil {
 				log.WithError(err).Fatal("Failed to delete agent from etcd")
 			}
-			if queue, ok := m.agentQueues[uid.String()]; ok {
-				close(queue.Queue)
-				close(queue.FailedQueue)
-				delete(m.agentQueues, uid.String())
-			}
+			m.closeAgentQueue(uid)
 		}
 	}
 
 	return nil
+}
+
+func (m *AgentManagerImpl) closeAgentQueue(uid uuid.UUID) {
+	m.queueMu.Lock()
+	defer m.queueMu.Unlock()
+
+	if queue, ok := m.agentQueues[uid.String()]; ok {
+		close(queue.Queue)
+		close(queue.FailedQueue)
+		delete(m.agentQueues, uid.String())
+	}
 }
 
 // GetActiveAgents gets all of the current active agents.
@@ -315,6 +324,9 @@ func (m *AgentManagerImpl) getOrCreateAgentQueue(agentID string) *AgentQueue {
 
 // AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
 func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *metadatapb.ResourceUpdate) error {
+	m.queueMu.Lock()
+	defer m.queueMu.Unlock()
+
 	currQueue := m.getOrCreateAgentQueue(agentID)
 	if len(currQueue.FailedQueue) >= MaxAgentUpdates {
 		return errors.New("Agent queue full, could not add to queue")
@@ -325,6 +337,9 @@ func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *metadat
 
 // GetFromAgentQueue gets all items currently in the agent's update queue.
 func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) ([]*metadatapb.ResourceUpdate, error) {
+	m.queueMu.Lock()
+	defer m.queueMu.Unlock()
+
 	var updates []*metadatapb.ResourceUpdate
 	if currQueue, ok := m.agentQueues[agentID]; ok {
 		fQLen := len(currQueue.FailedQueue)
@@ -345,6 +360,9 @@ func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) ([]*metadatapb.Reso
 
 // AddUpdatesToAgentQueue adds the given updates in order to the agent's update queue.
 func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID string, updates []*metadatapb.ResourceUpdate) error {
+	m.queueMu.Lock()
+	defer m.queueMu.Unlock()
+
 	currQueue := m.getOrCreateAgentQueue(agentID)
 	if len(currQueue.Queue)+len(updates) >= MaxAgentUpdates {
 		return errors.New("Agent queue full, could not add to queue")
