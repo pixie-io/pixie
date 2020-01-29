@@ -64,3 +64,11 @@ pl_cc_test(
         "@com_google_absl//absl/hash:hash_testing",
     ],
 )
+
+pl_cc_test(
+    name = "metadata_state_test",
+    srcs = ["metadata_state_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)

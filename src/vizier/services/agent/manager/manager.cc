@@ -225,6 +225,9 @@ void Manager::HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessag
   if (status.ok()) {
     LOG(INFO) << "cluster_cidr is set to: " << cluster_cidr_str;
     cluster_cidr_opt = cidr;
+  } else {
+    LOG(ERROR) << absl::Substitute("Cloud not obtain cluster_cidr, cidr string: '$0'",
+                                   cluster_cidr_str);
   }
 
   mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
