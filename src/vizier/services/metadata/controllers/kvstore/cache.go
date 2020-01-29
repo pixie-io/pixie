@@ -177,6 +177,9 @@ func (c *Cache) GetAll(keys []string) ([][]byte, error) {
 
 // GetWithPrefix gets all keys and values with the given prefix.
 func (c *Cache) GetWithPrefix(prefix string) (keys []string, values [][]byte, err error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	keys = make([]string, 0)
 	values = make([][]byte, 0)
 
