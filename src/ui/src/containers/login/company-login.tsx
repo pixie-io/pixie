@@ -5,7 +5,6 @@ import {DialogBox} from 'components/dialog-box/dialog-box';
 import {DOMAIN_NAME} from 'containers/constants';
 import * as React from 'react';
 import {Button, Form, FormControl, InputGroup} from 'react-bootstrap';
-import {HotKeys} from 'react-hotkeys';
 import {Link} from 'react-router-dom';
 import analytics from 'utils/analytics';
 import * as RedirectUtils from 'utils/redirect-utils';
@@ -25,10 +24,6 @@ function checkSiteAvailability(siteName: string): Promise<boolean> {
     throw new Error('Failed to check site name availability. Please try again later.');
   });
 }
-
-const HOT_KEY_MAP = {
-  CLICK_CONTINUE: ['enter'],
-};
 
 interface CompanyDialogProps {
   title: string;
@@ -92,7 +87,8 @@ class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogSta
     }
   }
 
-  onSubmit = () => {
+  onSubmit = (event) => {
+    event.preventDefault();
     const siteName = this.inputRef.current.value;
     analytics.track('Site check start', { siteName });
     this.setState({
@@ -116,33 +112,26 @@ class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogSta
       <DialogBox width={480}>
         <div className='company-login-content'>
           <h3>{this.props.title}</h3>
-          <div style={{ width: '100%' }}>
+          <Form style={{ width: '100%' }} onSubmit={this.onSubmit}>
             <label htmlFor='company'>Site Name</label>
-            <HotKeys
-              className='hotkey-container'
-              focused={true}
-              keyMap={HOT_KEY_MAP}
-              handlers={{ CLICK_CONTINUE: this.onSubmit }}
-            >
-              <InputGroup size='sm'>
-                <FormControl
-                  className='company-login-content--input'
-                  ref={this.inputRef}
-                  placeholder='yourcompanyname'
-                  disabled={this.state.loading}
-                  onChange={this.inputOnChange}
-                />
-                <InputGroup.Append>
-                  <InputGroup.Text id='company'>{'.' + DOMAIN_NAME}</InputGroup.Text>
-                </InputGroup.Append>
-              </InputGroup>
-            </HotKeys>
+            <InputGroup size='sm'>
+              <FormControl
+                className='company-login-content--input'
+                ref={this.inputRef}
+                placeholder='yourcompanyname'
+                disabled={this.state.loading}
+                onChange={this.inputOnChange}
+              />
+              <InputGroup.Append>
+                <InputGroup.Text id='company'>{'.' + DOMAIN_NAME}</InputGroup.Text>
+              </InputGroup.Append>
+            </InputGroup>
             <div className='company-login-content--error'>
               {this.state.error}
             </div>
             <Button
               className='company-login-content--submit'
-              onClick={this.onSubmit}
+              type='submit'
               variant='info'
               disabled={this.state.loading}
             >
@@ -152,7 +141,7 @@ class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogSta
               {this.props.footerText + ' '}
               <Link to={this.props.footerLink}>{this.props.footerLinkText}</Link>
             </div>
-          </div>
+          </Form>
         </div>
       </DialogBox>
     );

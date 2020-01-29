@@ -1,14 +1,18 @@
 import clsx from 'clsx';
 import {DARK_THEME} from 'common/mui-theme';
 import * as React from 'react';
+import {GlobalHotKeys} from 'react-hotkeys';
 
 import Drawer from '@material-ui/core/Drawer';
 import IconButton from '@material-ui/core/IconButton';
 import {createStyles, makeStyles, Theme, ThemeProvider} from '@material-ui/core/styles';
 import EditIcon from '@material-ui/icons/Edit';
+import InputIcon from '@material-ui/icons/Input';
 import MenuIcon from '@material-ui/icons/Menu';
 import ShareIcon from '@material-ui/icons/Share';
 import ToggleButton from '@material-ui/lab/ToggleButton';
+
+import CommandInput from './command-input';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -47,16 +51,29 @@ const useStyles = makeStyles((theme: Theme) =>
     },
   }));
 
+const COMMAND_KEYMAP = {
+  PIXIE_COMMAND: ['Meta+k', 'Control+k'],
+};
+
 const LiveView = () => {
   const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
-  const [editorOpen, setEditorOpen] = React.useState<boolean>(false);
   const toggleDrawer = (open: boolean) => () => { setDrawerOpen(open); };
+
+  const [editorOpen, setEditorOpen] = React.useState<boolean>(false);
   const toggleEditor = React.useCallback(() => setEditorOpen((opened) => !opened), []);
+
+  const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
+  const toggleCommandOpen = React.useCallback(() => setCommandOpen((open) => !open), []);
 
   const classes = useStyles();
 
+  const hotkeyHandlers = React.useMemo(() => ({
+    PIXIE_COMMAND: toggleCommandOpen,
+  }), []);
+
   return (
     <div className={classes.root}>
+      <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
       <div className={classes.topBar}>
         <IconButton onClick={toggleDrawer(true)}>
           <MenuIcon />
@@ -68,6 +85,9 @@ const LiveView = () => {
         <ToggleButton className={classes.editorToggle} selected={editorOpen} onChange={toggleEditor}>
           <EditIcon />
         </ToggleButton>
+        <IconButton onClick={toggleCommandOpen}>
+          <InputIcon />
+        </IconButton>
       </div>
       <div className={classes.main}>
         <div className={clsx(classes.editor, editorOpen && 'editor-open')}>
@@ -78,6 +98,7 @@ const LiveView = () => {
       <Drawer open={drawerOpen} onClose={toggleDrawer(false)}>
         <div>drawer content</div>
       </Drawer>
+      <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
     </div >
   );
 };
