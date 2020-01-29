@@ -22,7 +22,6 @@ namespace exec {
 class UDTFSourceNode : public SourceNode {
  public:
   UDTFSourceNode() = default;
-  bool HasBatchesRemaining() override;
   bool NextBatchReady() override;
 
  protected:

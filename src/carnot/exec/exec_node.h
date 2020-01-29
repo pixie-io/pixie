@@ -156,6 +156,10 @@ class ExecNode {
     for (size_t i = 0; i < children_.size(); ++i) {
       PL_RETURN_IF_ERROR(children_[i]->ConsumeNext(exec_state, rb, parent_ids_for_children_[i]));
     }
+    if (rb.eos()) {
+      DCHECK(!sent_eos_);
+      sent_eos_ = true;
+    }
     return Status::OK();
   }
 
@@ -181,6 +185,8 @@ class ExecNode {
 
   std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
   std::vector<table_store::schema::RowDescriptor> input_descriptors_;
+  // Whether or not the node sent EOS to its children.
+  bool sent_eos_ = false;
 
  private:
   // Unowned reference to the children. Must remain valid for the duration of query.
@@ -209,7 +215,7 @@ class ProcessingNode : public ExecNode {
 class SourceNode : public ExecNode {
  public:
   SourceNode() : ExecNode(ExecNodeType::kSourceNode) {}
-  virtual bool HasBatchesRemaining() = 0;
+  virtual bool HasBatchesRemaining() { return !sent_eos_; }
   virtual bool NextBatchReady() = 0;
   int64_t BytesProcessed() const { return bytes_processed_; }
   int64_t RowsProcessed() const { return rows_processed_; }

@@ -83,18 +83,11 @@ StatusOr<std::unique_ptr<RowBatch>> MemorySourceNode::GetNextRowBatch(ExecState*
 
 Status MemorySourceNode::GenerateNextImpl(ExecState* exec_state) {
   PL_ASSIGN_OR_RETURN(auto row_batch, GetNextRowBatch(exec_state));
-
-  if (row_batch->eos()) {
-    eos_sent_ = true;
-  }
-
   PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *row_batch));
   return Status::OK();
 }
 
-bool MemorySourceNode::HasBatchesRemaining() { return !eos_sent_; }
-
-bool MemorySourceNode::NextBatchReady() { return true; }
+bool MemorySourceNode::NextBatchReady() { return HasBatchesRemaining(); }
 
 }  // namespace exec
 }  // namespace carnot

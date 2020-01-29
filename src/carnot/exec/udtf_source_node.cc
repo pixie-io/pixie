@@ -93,13 +93,13 @@ Status UDTFSourceNode::GenerateNextImpl(ExecState* exec_state) {
     outputs_raw.emplace_back(out.get());
   }
 
-  has_more_batches_ = udtf_def_->ExecBatchUpdate(udtf_inst_.get(), function_ctx_.get(),
-                                                 kUDTFBatchSize, &outputs_raw);
+  auto has_more_batches = udtf_def_->ExecBatchUpdate(udtf_inst_.get(), function_ctx_.get(),
+                                                     kUDTFBatchSize, &outputs_raw);
 
   DCHECK_GT(outputs.size(), 0);
 
   auto rb_or_s = table_store::schema::RowBatch::FromColumnBuilders(
-      *output_descriptor_, /*eow*/ !has_more_batches_, /*eow*/ !has_more_batches_, &outputs);
+      *output_descriptor_, /*eow*/ !has_more_batches, /*eow*/ !has_more_batches, &outputs);
   if (!rb_or_s.ok()) {
     return rb_or_s.status();
   }
@@ -108,9 +108,7 @@ Status UDTFSourceNode::GenerateNextImpl(ExecState* exec_state) {
   return SendRowBatchToChildren(exec_state, *rb);
 }
 
-bool UDTFSourceNode::HasBatchesRemaining() { return has_more_batches_; }
-
-bool UDTFSourceNode::NextBatchReady() { return has_more_batches_; }
+bool UDTFSourceNode::NextBatchReady() { return HasBatchesRemaining(); }
 
 }  // namespace exec
 }  // namespace carnot

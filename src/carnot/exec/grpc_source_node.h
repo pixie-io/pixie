@@ -25,7 +25,6 @@ namespace exec {
 class GRPCSourceNode : public SourceNode {
  public:
   GRPCSourceNode() = default;
-  bool HasBatchesRemaining() override;
   bool NextBatchReady() override;
   virtual Status EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest> row_batch);
 
@@ -41,7 +40,6 @@ class GRPCSourceNode : public SourceNode {
   Status OptionallyPopRowBatch();
 
   static constexpr std::chrono::microseconds grpc_timeout_us_{150 * 1000};
-  bool sent_eos_ = false;
   std::unique_ptr<table_store::schema::RowBatch> next_up_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<carnotpb::RowBatchRequest>> row_batch_queue_;
 

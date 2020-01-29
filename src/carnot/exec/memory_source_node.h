@@ -22,7 +22,6 @@ using table_store::schema::RowBatch;
 class MemorySourceNode : public SourceNode {
  public:
   MemorySourceNode() = default;
-  bool HasBatchesRemaining() override;
   bool NextBatchReady() override;
 
  protected:
@@ -38,7 +37,6 @@ class MemorySourceNode : public SourceNode {
 
   int64_t num_batches_;
   int64_t current_batch_ = 0;
-  bool eos_sent_ = false;
   table_store::BatchPosition start_batch_info_;
 
   std::unique_ptr<plan::MemorySourceOperator> plan_node_;

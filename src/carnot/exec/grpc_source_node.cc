@@ -32,17 +32,9 @@ Status GRPCSourceNode::OpenImpl(ExecState*) { return Status::OK(); }
 Status GRPCSourceNode::CloseImpl(ExecState*) { return Status::OK(); }
 
 Status GRPCSourceNode::GenerateNextImpl(ExecState* exec_state) {
-  if (sent_eos_) {
-    return Status::OK();
-  }
   PL_RETURN_IF_ERROR(OptionallyPopRowBatch());
-
   PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *next_up_));
-  if (next_up_->eos()) {
-    sent_eos_ = true;
-  }
   next_up_ = nullptr;
-
   return Status::OK();
 }
 
@@ -52,8 +44,6 @@ Status GRPCSourceNode::EnqueueRowBatch(std::unique_ptr<carnotpb::RowBatchRequest
   }
   return Status::OK();
 }
-
-bool GRPCSourceNode::HasBatchesRemaining() { return !sent_eos_; }
 
 Status GRPCSourceNode::OptionallyPopRowBatch() {
   if (next_up_ != nullptr) {
