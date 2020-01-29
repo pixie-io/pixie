@@ -67,21 +67,19 @@ std::string AggNode::DebugStringImpl() {
   return "";
 }
 
-Status AggNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,
-                         const std::vector<RowDescriptor>& input_descriptors) {
+Status AggNode::InitImpl(const plan::Operator& plan_node) {
   CHECK(plan_node.op_type() == planpb::OperatorType::AGGREGATE_OPERATOR);
   const auto* agg_plan_node = static_cast<const plan::AggregateOperator*>(&plan_node);
 
   // Copy the plan node to local object.
   plan_node_ = std::make_unique<plan::AggregateOperator>(*agg_plan_node);
-  output_descriptor_ = std::make_unique<RowDescriptor>(output_descriptor);
 
-  // Check and store the input_descriptors.
-  if (input_descriptors.size() != 1) {
+  // Check the input_descriptors.
+  if (input_descriptors_.size() != 1) {
     return error::InvalidArgument("Aggregate operator expects a single input relation, got $0",
-                                  input_descriptors.size());
+                                  input_descriptors_.size());
   }
-  input_descriptor_ = std::make_unique<RowDescriptor>(input_descriptors[0]);
+  input_descriptor_ = std::make_unique<RowDescriptor>(input_descriptors_[0]);
 
   // Check the value expressions and make sure they are correct.
   for (const auto& value : plan_node_->values()) {
@@ -91,7 +89,7 @@ Status AggNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& o
   }
 
   size_t output_size = plan_node_->values().size() + plan_node_->groups().size();
-  if (output_size != output_descriptor.size()) {
+  if (output_size != output_descriptor_->size()) {
     return error::InvalidArgument("Output size mismatch in aggregate");
   }
 

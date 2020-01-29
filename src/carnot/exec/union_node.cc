@@ -27,15 +27,13 @@ std::string UnionNode::DebugStringImpl() {
   return absl::Substitute("Exec::UnionNode<$0>", absl::StrJoin(plan_node_->column_names(), ","));
 }
 
-Status UnionNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,
-                           const std::vector<RowDescriptor>& input_descriptors) {
+Status UnionNode::InitImpl(const plan::Operator& plan_node) {
   CHECK(plan_node.op_type() == planpb::OperatorType::UNION_OPERATOR);
   const auto* union_plan_node = static_cast<const plan::UnionOperator*>(&plan_node);
   plan_node_ = std::make_unique<plan::UnionOperator>(*union_plan_node);
-  output_descriptor_ = std::make_unique<RowDescriptor>(output_descriptor);
   output_rows_per_batch_ =
       plan_node_->rows_per_batch() == 0 ? kDefaultUnionRowBatchSize : plan_node_->rows_per_batch();
-  num_parents_ = input_descriptors.size();
+  num_parents_ = input_descriptors_.size();
 
   return Status::OK();
 }

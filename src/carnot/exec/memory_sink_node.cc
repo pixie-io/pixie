@@ -24,17 +24,20 @@ std::string MemorySinkNode::DebugStringImpl() {
                           input_descriptor_->DebugString());
 }
 
-Status MemorySinkNode::InitImpl(
-    const plan::Operator& plan_node, const table_store::schema::RowDescriptor&,
-    const std::vector<table_store::schema::RowDescriptor>& input_descriptors) {
+Status MemorySinkNode::InitImpl(const plan::Operator& plan_node) {
   CHECK(plan_node.op_type() == planpb::OperatorType::MEMORY_SINK_OPERATOR);
   const auto* sink_plan_node = static_cast<const plan::MemorySinkOperator*>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::MemorySinkOperator>(*sink_plan_node);
-  input_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(input_descriptors[0]);
+  if (input_descriptors_.size() != 1) {
+    return error::InvalidArgument("MemorySink operator expects a single input relation, got $0",
+                                  input_descriptors_.size());
+  }
+  input_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(input_descriptors_[0]);
 
   return Status::OK();
 }
+
 Status MemorySinkNode::PrepareImpl(ExecState* exec_state_) {
   // Create Table.
   std::vector<std::string> col_names;

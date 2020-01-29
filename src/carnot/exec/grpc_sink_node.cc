@@ -22,14 +22,13 @@ std::string GRPCSinkNode::DebugStringImpl() {
                           input_descriptor_->DebugString());
 }
 
-Status GRPCSinkNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor&,
-                              const std::vector<RowDescriptor>& input_descriptors) {
+Status GRPCSinkNode::InitImpl(const plan::Operator& plan_node) {
   CHECK(plan_node.op_type() == planpb::OperatorType::GRPC_SINK_OPERATOR);
-  if (input_descriptors.size() != 1) {
+  if (input_descriptors_.size() != 1) {
     return error::InvalidArgument("GRPCSink operator expects a single input relation, got $0",
-                                  input_descriptors.size());
+                                  input_descriptors_.size());
   }
-  input_descriptor_ = std::make_unique<RowDescriptor>(input_descriptors[0]);
+  input_descriptor_ = std::make_unique<RowDescriptor>(input_descriptors_[0]);
   const auto* sink_plan_node = static_cast<const plan::GRPCSinkOperator*>(&plan_node);
   plan_node_ = std::make_unique<plan::GRPCSinkOperator>(*sink_plan_node);
   return Status::OK();

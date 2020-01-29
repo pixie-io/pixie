@@ -58,9 +58,7 @@ class AggNode : public ProcessingNode {
   Status AggregateGroupByClause(ExecState* exec_state, const table_store::schema::RowBatch& rb);
 
   std::string DebugStringImpl() override;
-  Status InitImpl(
-      const plan::Operator& plan_node, const table_store::schema::RowDescriptor& output_descriptor,
-      const std::vector<table_store::schema::RowDescriptor>& input_descriptors) override;
+  Status InitImpl(const plan::Operator& plan_node) override;
   Status PrepareImpl(ExecState* exec_state) override;
   Status OpenImpl(ExecState* exec_state) override;
   Status CloseImpl(ExecState* exec_state) override;
@@ -85,7 +83,6 @@ class AggNode : public ProcessingNode {
 
   // Store information about aggregate node from the query planner.
   std::unique_ptr<plan::AggregateOperator> plan_node_;
-  std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
   std::unique_ptr<table_store::schema::RowDescriptor> input_descriptor_;
 
   std::unique_ptr<udf::FunctionContext> function_ctx_;

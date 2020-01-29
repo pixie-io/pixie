@@ -26,9 +26,7 @@ class GRPCSinkNode : public SinkNode {
 
  protected:
   std::string DebugStringImpl() override;
-  Status InitImpl(
-      const plan::Operator& plan_node, const table_store::schema::RowDescriptor& output_descriptor,
-      const std::vector<table_store::schema::RowDescriptor>& input_descriptors) override;
+  Status InitImpl(const plan::Operator& plan_node) override;
   Status PrepareImpl(ExecState* exec_state) override;
   Status OpenImpl(ExecState* exec_state) override;
   Status CloseImpl(ExecState* exec_state) override;

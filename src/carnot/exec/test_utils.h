@@ -205,9 +205,7 @@ class ExecNodeTester {
                  const table_store::schema::RowDescriptor& output_descriptor,
                  std::vector<table_store::schema::RowDescriptor> input_descriptors,
                  ExecState* exec_state)
-      : output_descriptor_(output_descriptor),
-        input_descriptors_(input_descriptors),
-        exec_state_(exec_state) {
+      : exec_state_(exec_state) {
     exec_node_ = std::make_unique<TExecNode>();
     const auto* casted_plan_node = static_cast<const TPlanNode*>(&plan_node);
     // copy the plan node to local object;
@@ -217,7 +215,7 @@ class ExecNodeTester {
       exec_node_->AddChild(&mock_child_, 0);
     }
 
-    auto s = exec_node_->Init(*plan_node_, output_descriptor_, input_descriptors_);
+    auto s = exec_node_->Init(*plan_node_, output_descriptor, input_descriptors);
     EXPECT_OK(s) << s.msg();
     s = exec_node_->Prepare(exec_state_);
     EXPECT_OK(s) << s.msg();
@@ -434,8 +432,6 @@ class ExecNodeTester {
   MockExecNode mock_child_;
   std::unique_ptr<TExecNode> exec_node_;
   std::unique_ptr<TPlanNode> plan_node_;
-  table_store::schema::RowDescriptor output_descriptor_;
-  std::vector<table_store::schema::RowDescriptor> input_descriptors_;
   ExecState* exec_state_;
   std::queue<std::unique_ptr<table_store::schema::RowBatch>> current_row_batches_;
 };

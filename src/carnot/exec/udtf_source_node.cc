@@ -28,13 +28,10 @@ constexpr int kUDTFBatchSize = 1024;
 
 std::string UDTFSourceNode::DebugStringImpl() { return std::string(); }
 
-Status UDTFSourceNode::InitImpl(
-    const plan::Operator& plan_node, const table_store::schema::RowDescriptor& output_descriptor,
-    const std::vector<table_store::schema::RowDescriptor>& /*input_descriptors*/) {
+Status UDTFSourceNode::InitImpl(const plan::Operator& plan_node) {
   const auto* source_plan_node = static_cast<const plan::UDTFSourceOperator*>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::UDTFSourceOperator>(*source_plan_node);
-  output_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(output_descriptor);
 
   return Status::OK();
 }

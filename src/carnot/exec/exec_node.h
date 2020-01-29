@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -36,7 +37,9 @@ class ExecNode {
   Status Init(const plan::Operator& plan_node,
               const table_store::schema::RowDescriptor& output_descriptor,
               std::vector<table_store::schema::RowDescriptor> input_descriptors) {
-    return InitImpl(plan_node, output_descriptor, input_descriptors);
+    output_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(output_descriptor);
+    input_descriptors_ = input_descriptors;
+    return InitImpl(plan_node);
   }
 
   /**
@@ -156,15 +159,12 @@ class ExecNode {
     return Status::OK();
   }
 
- protected:
   explicit ExecNode(ExecNodeType type) : type_(type) {}
 
   // Defines the protected implementations of the non-virtual interface functions
   // defined above.
   virtual std::string DebugStringImpl() = 0;
-  virtual Status InitImpl(
-      const plan::Operator& plan_node, const table_store::schema::RowDescriptor& output_descriptor,
-      const std::vector<table_store::schema::RowDescriptor>& input_descriptors) = 0;
+  virtual Status InitImpl(const plan::Operator& plan_node) = 0;
   virtual Status PrepareImpl(ExecState* exec_state) = 0;
   virtual Status OpenImpl(ExecState* exec_state) = 0;
   virtual Status CloseImpl(ExecState* exec_state) = 0;
@@ -178,6 +178,9 @@ class ExecNode {
   }
 
   bool is_closed() { return is_closed_; }
+
+  std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
+  std::vector<table_store::schema::RowDescriptor> input_descriptors_;
 
  private:
   // Unowned reference to the children. Must remain valid for the duration of query.

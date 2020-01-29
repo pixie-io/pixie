@@ -20,15 +20,13 @@ std::string LimitNode::DebugStringImpl() {
   return absl::Substitute("Exec::LimitNode<$0>", plan_node_->DebugString());
 }
 
-Status LimitNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,
-                           const std::vector<RowDescriptor>& input_descriptors) {
+Status LimitNode::InitImpl(const plan::Operator& plan_node) {
   CHECK(plan_node.op_type() == planpb::OperatorType::LIMIT_OPERATOR);
   const auto* limit_plan_node = static_cast<const plan::LimitOperator*>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::LimitOperator>(*limit_plan_node);
   // NOTE: We expect output and input descriptors to match.
-  DCHECK(output_descriptor == input_descriptors[0]);
-  output_descriptor_ = std::make_unique<RowDescriptor>(output_descriptor);
+  DCHECK(*output_descriptor_ == input_descriptors_[0]);
 
   return Status::OK();
 }

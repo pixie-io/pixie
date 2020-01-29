@@ -32,16 +32,14 @@ std::string FilterNode::DebugStringImpl() {
   return absl::Substitute("Exec::FilterNode<$0>", evaluator_->DebugString());
 }
 
-Status FilterNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,
-                            const std::vector<RowDescriptor>& input_descriptors) {
+Status FilterNode::InitImpl(const plan::Operator& plan_node) {
   CHECK(plan_node.op_type() == planpb::OperatorType::FILTER_OPERATOR);
   const auto* filter_plan_node = static_cast<const plan::FilterOperator*>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::FilterOperator>(*filter_plan_node);
-  output_descriptor_ = std::make_unique<RowDescriptor>(output_descriptor);
-  PL_UNUSED(input_descriptors);
   return Status::OK();
 }
+
 Status FilterNode::PrepareImpl(ExecState* exec_state) {
   function_ctx_ = exec_state->CreateFunctionContext();
   evaluator_ = std::make_unique<VectorNativeScalarExpressionEvaluator>(

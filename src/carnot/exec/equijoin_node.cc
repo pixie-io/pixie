@@ -32,17 +32,14 @@ bool EquijoinNode::IsProbeTable(size_t parent_index) {
   return (parent_index == 0) == (probe_table_ == EquijoinNode::JoinInputTable::kLeftTable);
 }
 
-Status EquijoinNode::InitImpl(
-    const plan::Operator& plan_node, const table_store::schema::RowDescriptor& output_descriptor,
-    const std::vector<table_store::schema::RowDescriptor>& input_descriptors) {
+Status EquijoinNode::InitImpl(const plan::Operator& plan_node) {
   CHECK(plan_node.op_type() == planpb::OperatorType::JOIN_OPERATOR);
-  if (input_descriptors.size() != 2) {
+  if (input_descriptors_.size() != 2) {
     return error::InvalidArgument("Join operator expects a two input relations, got $0",
-                                  input_descriptors.size());
+                                  input_descriptors_.size());
   }
   const auto* join_plan_node = static_cast<const plan::JoinOperator*>(&plan_node);
   plan_node_ = std::make_unique<plan::JoinOperator>(*join_plan_node);
-  output_descriptor_ = std::make_unique<RowDescriptor>(output_descriptor);
   output_rows_per_batch_ =
       plan_node_->rows_per_batch() == 0 ? kDefaultJoinRowBatchSize : plan_node_->rows_per_batch();
 
@@ -76,8 +73,8 @@ Status EquijoinNode::InitImpl(
     int64_t left_index = eq_condition.left_column_index();
     int64_t right_index = eq_condition.right_column_index();
 
-    CHECK_EQ(input_descriptors[0].type(left_index), input_descriptors[1].type(right_index));
-    key_data_types_.emplace_back(input_descriptors[0].type(left_index));
+    CHECK_EQ(input_descriptors_[0].type(left_index), input_descriptors_[1].type(right_index));
+    key_data_types_.emplace_back(input_descriptors_[0].type(left_index));
 
     build_spec_.key_indices.emplace_back(
         probe_table_ == EquijoinNode::JoinInputTable::kLeftTable ? right_index : left_index);
@@ -89,7 +86,7 @@ Status EquijoinNode::InitImpl(
   for (size_t i = 0; i < output_cols.size(); ++i) {
     auto parent_index = output_cols[i].parent_index();
     auto input_column_index = output_cols[i].column_index();
-    auto dt = input_descriptors[parent_index].type(input_column_index);
+    auto dt = input_descriptors_[parent_index].type(input_column_index);
 
     TableSpec& selected_spec = IsProbeTable(parent_index) ? probe_spec_ : build_spec_;
     selected_spec.input_col_indices.emplace_back(input_column_index);

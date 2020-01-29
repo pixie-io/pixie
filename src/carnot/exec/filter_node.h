@@ -24,9 +24,7 @@ class FilterNode : public ProcessingNode {
 
  protected:
   std::string DebugStringImpl() override;
-  Status InitImpl(
-      const plan::Operator& plan_node, const table_store::schema::RowDescriptor& output_descriptor,
-      const std::vector<table_store::schema::RowDescriptor>& input_descriptors) override;
+  Status InitImpl(const plan::Operator& plan_node) override;
   Status PrepareImpl(ExecState* exec_state) override;
   Status OpenImpl(ExecState* exec_state) override;
   Status CloseImpl(ExecState* exec_state) override;
@@ -36,7 +34,6 @@ class FilterNode : public ProcessingNode {
  private:
   std::unique_ptr<VectorNativeScalarExpressionEvaluator> evaluator_;
   std::unique_ptr<plan::FilterOperator> plan_node_;
-  std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
   std::unique_ptr<udf::FunctionContext> function_ctx_;
 };
 

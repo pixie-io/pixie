@@ -18,14 +18,11 @@ std::string MemorySourceNode::DebugStringImpl() {
                           output_descriptor_->DebugString());
 }
 
-Status MemorySourceNode::InitImpl(const plan::Operator& plan_node,
-                                  const table_store::schema::RowDescriptor& output_descriptor,
-                                  const std::vector<table_store::schema::RowDescriptor>&) {
+Status MemorySourceNode::InitImpl(const plan::Operator& plan_node) {
   CHECK(plan_node.op_type() == planpb::OperatorType::MEMORY_SOURCE_OPERATOR);
   const auto* source_plan_node = static_cast<const plan::MemorySourceOperator*>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::MemorySourceOperator>(*source_plan_node);
-  output_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(output_descriptor);
 
   return Status::OK();
 }
