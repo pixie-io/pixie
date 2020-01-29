@@ -152,7 +152,7 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
 
   size_t index;
   if (stream_id < *oldest_active_stream_id_ptr) {
-    LOG(WARNING) << absl::Substitute(
+    LOG_EVERY_N(WARNING, 100) << absl::Substitute(
         "Stream ID ($0) is lower than the current head stream ID ($1). "
         "Not expected, but will handle it anyways. If not a data race, "
         "this could be indicative of a bug that could result in a memory leak.",
@@ -162,7 +162,7 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
                       ((*oldest_active_stream_id_ptr - stream_id) / kHTTP2StreamIDIncrement);
     // Reset everything for now.
     if (new_size - streams_deque_ptr->size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
-      LOG(ERROR) << absl::Substitute(
+      LOG_EVERY_N(ERROR, 100) << absl::Substitute(
           "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
           "all streams on this connection.",
           stream_id, *oldest_active_stream_id_ptr + streams_deque_ptr->size() * 2);
@@ -184,7 +184,7 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
     // If we are to grow by more than some threshold, then something appears wrong.
     // Reset everything for now.
     if (new_size - streams_deque_ptr->size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
-      LOG(ERROR) << absl::Substitute(
+      LOG_EVERY_N(ERROR, 100) << absl::Substitute(
           "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
           "all streams on this connection",
           stream_id, *oldest_active_stream_id_ptr + streams_deque_ptr->size() * 2);
@@ -571,7 +571,7 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
 }
 
 void ConnectionTracker::Disable(std::string_view reason) {
-  LOG_IF(WARNING, state_ != State::kDisabled)
+  VLOG_IF(1, state_ != State::kDisabled)
       << absl::Substitute("Disabling connection=$0 dest=$1:$2, reason=$3", ToString(conn_id_),
                           open_info_.remote_addr.addr_str, open_info_.remote_addr.port, reason);
 
