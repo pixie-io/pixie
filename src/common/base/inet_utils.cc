@@ -2,8 +2,6 @@
 
 #include <vector>
 
-#include "src/common/base/statusor.h"
-
 namespace pl {
 
 const int kIPv4BitLen = 32;

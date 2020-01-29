@@ -50,7 +50,7 @@ class SocketResolver {
    * @param time The time at which the socket inode number is requested.
    * @return the socket inode number, if it is known. Otherwise, returns std::nullopt_t.
    */
-  std::optional<int> InferSocket(std::chrono::time_point<std::chrono::steady_clock> time);
+  std::optional<uint32_t> InferSocket(std::chrono::time_point<std::chrono::steady_clock> time);
 
   /**
    * Whether the tracking is still active. Once inactive, then resolver will not collect any new

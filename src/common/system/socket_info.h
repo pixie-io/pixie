@@ -22,7 +22,7 @@ constexpr int kTCPEstablishedState = 1 << 1;
 constexpr int kTCPListeningState = 1 << 10;
 
 struct SocketInfo {
-  uint8_t family;
+  sa_family_t family;
   struct in6_addr local_addr;
   uint32_t local_port;
   struct in6_addr remote_addr;

@@ -833,11 +833,12 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
     return;
   }
 
-  std::optional<int> inode_num_or_nullopt = conn_resolver_->InferSocket(last_update_timestamp_);
+  std::optional<uint32_t> inode_num_or_nullopt =
+      conn_resolver_->InferSocket(last_update_timestamp_);
   if (!inode_num_or_nullopt) {
     return;
   }
-  int inode_num = *inode_num_or_nullopt;
+  uint32_t inode_num = *inode_num_or_nullopt;
 
   // We found the inode number, now lets see if it maps to a known connection.
   auto iter = connections->find(inode_num);

@@ -72,7 +72,7 @@ bool SocketResolver::Update() {
   return true;
 }
 
-std::optional<int> SocketResolver::InferSocket(
+std::optional<uint32_t> SocketResolver::InferSocket(
     std::chrono::time_point<std::chrono::steady_clock> time) {
   if (time > first_timestamp_ && time < last_timestamp_) {
     return inode_num_;
