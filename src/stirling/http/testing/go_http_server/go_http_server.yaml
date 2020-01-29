@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-http-server
+  namespace: stirling-testing
+  labels:
+    name: go-http-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: go-http-server
+  template:
+    metadata:
+      labels:
+        name: go-http-server
+    spec:
+      containers:
+      - name: go-http-server
+        # Replace with your own username.
+        image: gcr.io/pl-dev-infra/demos/go_http_server:{{USER}}
+        ports:
+        - containerPort: 50051
+        args:
+        - --port=50051
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fe
+  labels:
+    name: fe
+  namespace: stirling-testing
+  annotations:
+    cloud.google.com/load-balancer-type: "internal"
+spec:
+  type: LoadBalancer
+  ports:
+  - protocol: "TCP"
+    port: 50051
+    targetPort: 50051
+  selector:
+    name: go-http-server
