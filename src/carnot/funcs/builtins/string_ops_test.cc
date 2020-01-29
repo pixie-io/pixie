@@ -51,6 +51,14 @@ TEST(StringOps, basic_string_trim_test) {
   udf_tester.ForInput(" pixieLabs ").Expect("pixieLabs");
   udf_tester.ForInput("pixie").Expect("pixie");
 }
+
+TEST(StringOps, basic_string_strip_prefix) {
+  auto udf_tester = udf::UDFTester<StripPrefixUDF>();
+  udf_tester.ForInput("sock-shop/", "sock-shop/carts").Expect("carts");
+  udf_tester.ForInput("sock-shop/carts", "sock-shop/carts").Expect("");
+  udf_tester.ForInput("sock-shop/carts123", "sock-shop/carts").Expect("sock-shop/carts");
+}
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl

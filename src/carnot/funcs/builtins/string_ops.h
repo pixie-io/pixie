@@ -62,6 +62,13 @@ class TrimUDF : public udf::ScalarUDF {
   }
 };
 
+class StripPrefixUDF : public udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, StringValue prefix, StringValue s) {
+    return StringValue(absl::StripPrefix(s, prefix));
+  }
+};
+
 void RegisterStringOpsOrDie(udf::Registry* registry);
 }  // namespace builtins
 }  // namespace carnot

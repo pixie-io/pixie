@@ -19,6 +19,7 @@ void RegisterStringOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<ToLowerUDF>("px.tolower");
   registry->RegisterOrDie<ToUpperUDF>("px.toupper");
   registry->RegisterOrDie<TrimUDF>("px.trim");
+  registry->RegisterOrDie<StripPrefixUDF>("px.strip_prefix");
 
   /*****************************************
    * Aggregate UDFs.
