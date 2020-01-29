@@ -67,14 +67,15 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
   int64_t ts = CurrentTimeNS();
   PL_RETURN_IF_ERROR(ApplyK8sUpdates(ts, shadow_state.get(), &incoming_k8s_updates_));
 
-  // Look for dead pods. Normally, we would count on the K8s updates to take care of this,
-  // but the initial set of pods that are received from the MDS includes pods that
-  // belong to other nodes, so we have to do this. Also adds a layer of robustness.
-  // TODO(oazizi): Consider removing this once MDS only sends pods belonging to this node/agent.
-  RemoveDeadPods(ts, shadow_state.get(), md_reader_.get());
-
-  // Update PID information.
-  PL_RETURN_IF_ERROR(ProcessPIDUpdates(ts, shadow_state.get(), md_reader_.get(), &pid_updates_));
+  if (collects_data_) {
+    // Look for dead pods. Normally, we would count on the K8s updates to take care of this,
+    // but the initial set of pods that are received from the MDS includes pods that
+    // belong to other nodes, so we have to do this. Also adds a layer of robustness.
+    // TODO(oazizi): Consider removing this once MDS only sends pods belonging to this node/agent.
+    RemoveDeadPods(ts, shadow_state.get(), md_reader_.get());
+    // Update PID information.
+    PL_RETURN_IF_ERROR(ProcessPIDUpdates(ts, shadow_state.get(), md_reader_.get(), &pid_updates_));
+  }
 
   // Increment epoch and update ts.
   ++epoch_id;

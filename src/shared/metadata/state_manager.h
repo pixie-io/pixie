@@ -36,10 +36,10 @@ class AgentMetadataStateManager {
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
   using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
 
-  explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid,
+  explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid, bool collects_data,
                                      absl::optional<CIDRBlock> cluster_cidr_opt,
                                      const pl::system::Config& config)
-      : asid_(asid) {
+      : asid_(asid), collects_data_(collects_data) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
     agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid);
     if (cluster_cidr_opt.has_value()) {
@@ -103,6 +103,7 @@ class AgentMetadataStateManager {
   std::unique_ptr<CGroupMetadataReader> md_reader_;
   std::shared_ptr<AgentMetadataState> agent_metadata_state_;
   absl::base_internal::SpinLock agent_metadata_state_lock_;
+  bool collects_data_;
 
   std::mutex metadata_state_update_lock_;
 

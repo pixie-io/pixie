@@ -129,8 +129,6 @@ class Manager : public pl::NotCopyable {
   VizierNATSConnector* nats_connector() { return nats_connector_.get(); }
 
  protected:
-  // The agent capabilities.
-  services::shared::agent::AgentCapabilities capabilities_;
   std::shared_ptr<grpc::ChannelCredentials> grpc_channel_creds_;
 
   // The time system to use (real or simulated).
