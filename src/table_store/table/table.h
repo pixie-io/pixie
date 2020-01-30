@@ -198,12 +198,15 @@ class Table : public NotCopyable {
   Status DeleteNextRowBatch();
 
   int64_t FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
-                                      arrow::MemoryPool* mem_pool);
+                                      arrow::MemoryPool* mem_pool)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(cold_batches_lock_);
   int64_t FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
-                                      arrow::MemoryPool* mem_pool, int64_t start, int64_t end);
+                                      arrow::MemoryPool* mem_pool, int64_t start, int64_t end)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(cold_batches_lock_);
   std::shared_ptr<arrow::Array> GetColumnBatch(int64_t col, int64_t batch,
-                                               arrow::MemoryPool* mem_pool);
-
+                                               arrow::MemoryPool* mem_pool)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(cold_batches_lock_);
+  int64_t NumBatchesUnlocked() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(cold_batches_lock_);
   schema::RowDescriptor desc_;
   std::vector<std::shared_ptr<Column>> columns_;
   // TODO(michelle): (PL-388) Change hot_batches_ to a list-based queue.
@@ -214,6 +217,8 @@ class Table : public NotCopyable {
   // with beginning and end indices.
   mutable std::deque<std::unique_ptr<pl::types::ColumnWrapperRecordBatch>> hot_batches_;
   mutable absl::base_internal::SpinLock hot_batches_lock_;
+
+  mutable absl::base_internal::SpinLock cold_batches_lock_;
 
   int64_t bytes_ = 0;
   int64_t max_table_size_ = 0;

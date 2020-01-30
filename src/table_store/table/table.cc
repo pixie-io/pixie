@@ -122,6 +122,8 @@ StatusOr<std::unique_ptr<schema::RowBatch>> Table::GetRowBatchSlice(int64_t row_
     rb_types.push_back(desc_.type(col_idx));
   }
 
+  absl::base_internal::SpinLockHolder cold_lock(&cold_batches_lock_);
+
   auto num_cold_batches = !columns_.empty() ? columns_[0]->numBatches() : 0;
   // If i > num_cold_batches, hot_idx is the index of the batch that we want from the hot columns.
   auto hot_idx = row_batch_idx - num_cold_batches;
@@ -164,6 +166,8 @@ StatusOr<std::unique_ptr<schema::RowBatch>> Table::GetRowBatchSlice(int64_t row_
 
 Status Table::DeleteNextRowBatch() {
   // First delete row batches from cold columns.
+  absl::base_internal::SpinLockHolder cold_lock(&cold_batches_lock_);
+
   if (!columns_.empty() && columns_[0]->numBatches() > 0) {
     auto rb_size = 0;
     for (auto col : columns_) {
@@ -224,9 +228,13 @@ Status Table::WriteRowBatch(schema::RowBatch rb) {
 
   PL_RETURN_IF_ERROR(ExpireRowBatches(rb_bytes));
 
-  for (int64_t i = 0; i < rb.num_columns(); i++) {
-    auto s = columns_[i]->AddBatch(rb.ColumnAt(i));
-    PL_RETURN_IF_ERROR(s);
+  {
+    absl::base_internal::SpinLockHolder cold_lock(&cold_batches_lock_);
+
+    for (int64_t i = 0; i < rb.num_columns(); i++) {
+      auto s = columns_[i]->AddBatch(rb.ColumnAt(i));
+      PL_RETURN_IF_ERROR(s);
+    }
   }
   bytes_ += rb_bytes;
   return Status::OK();
@@ -268,12 +276,18 @@ Status Table::TransferRecordBatch(
 }
 
 int64_t Table::NumBatches() const {
+  absl::base_internal::SpinLockHolder cold_lock(&cold_batches_lock_);
+  absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
+
+  return NumBatchesUnlocked();
+}
+
+int64_t Table::NumBatchesUnlocked() const {
   auto num_batches = 0;
   if (!columns_.empty()) {
     num_batches += columns_[0]->numBatches();
   }
 
-  absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
   num_batches += hot_batches_.size();
 
   return num_batches;
@@ -292,7 +306,7 @@ int64_t Table::FindTimeColumn() {
 
 std::shared_ptr<arrow::Array> Table::GetColumnBatch(int64_t col, int64_t batch,
                                                     arrow::MemoryPool* mem_pool) {
-  DCHECK(static_cast<int64_t>(NumBatches()) > batch);
+  DCHECK(static_cast<int64_t>(NumBatchesUnlocked()) > batch);
   DCHECK(static_cast<int64_t>(columns_.size()) > col);
 
   if (batch >= columns_[col]->numBatches()) {
@@ -305,11 +319,15 @@ std::shared_ptr<arrow::Array> Table::GetColumnBatch(int64_t col, int64_t batch,
 int64_t Table::FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
                                            arrow::MemoryPool* mem_pool) {
   DCHECK(columns_[time_col_idx]->data_type() == types::DataType::TIME64NS);
-  return FindBatchGreaterThanOrEqual(time_col_idx, time, mem_pool, 0, NumBatches() - 1);
+
+  return FindBatchGreaterThanOrEqual(time_col_idx, time, mem_pool, 0, NumBatchesUnlocked() - 1);
 }
 
 BatchPosition Table::FindBatchPositionGreaterThanOrEqual(int64_t time,
                                                          arrow::MemoryPool* mem_pool) {
+  absl::base_internal::SpinLockHolder cold_lock(&cold_batches_lock_);
+  absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
+
   BatchPosition batch_pos = {-1, -1};
 
   int64_t time_col_idx = FindTimeColumn();
