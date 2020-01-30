@@ -118,7 +118,8 @@ StatusOr<std::unique_ptr<schema::RowBatch>> Table::GetRowBatchSlice(int64_t row_
 
   // Get column types for row descriptor.
   std::vector<types::DataType> rb_types;
-  for (auto col_idx : cols) {
+  for (int64_t col_idx : cols) {
+    DCHECK(col_idx < static_cast<int64_t>(desc_.size()));
     rb_types.push_back(desc_.type(col_idx));
   }
 

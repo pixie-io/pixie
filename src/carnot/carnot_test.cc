@@ -32,6 +32,7 @@ class CarnotTest : public ::testing::Test {
     empty_table_ = table_store::Table::Create(
         table_store::schema::Relation({types::UINT128, types::INT64}, {"upid", "cycles"}));
     table_store_->AddTable("empty_table", empty_table_);
+    table_store_->AddTable("duration_table", CarnotTestUtils::TestDuration64Table());
   }
 
   // TODO(nserrino/philkuz): Move this logic somewhere more reusable.
@@ -81,6 +82,34 @@ TEST_F(CarnotTest, basic) {
           .ConsumeValueOrDie();
   EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+}
+
+TEST_F(CarnotTest, basic_duration_test) {
+  std::vector<types::Duration64NSValue> col1_0_expected = {2, 4, 6};
+
+  auto query = absl::StrJoin(
+      {
+          "df = px.DataFrame(table='duration_table', select=['col1'])",
+          "df.col1 = df.col1 + df.col1",
+          "px.display(df, 'test_output')",
+      },
+      "\n");
+  auto query_id = sole::uuid4();
+  auto s = carnot_->ExecuteQuery(query, query_id, 0);
+  ASSERT_OK(s);
+  auto res = s.ConsumeValueOrDie();
+  EXPECT_EQ(3, res.rows_processed);
+  EXPECT_EQ(3 * sizeof(int64_t), res.bytes_processed);
+  EXPECT_GT(res.compile_time_ns, 0);
+  EXPECT_GT(res.exec_time_ns, 0);
+
+  auto output_table = table_store_->GetTable(GetTableName(query_id, 0));
+  EXPECT_EQ(1, output_table->NumBatches());
+
+  auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
+                 .ConsumeValueOrDie();
+  EXPECT_TRUE(
+      rb1->ColumnAt(0)->Equals(types::ToArrow(col1_0_expected, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, register_metadata) {

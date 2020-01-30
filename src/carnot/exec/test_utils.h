@@ -95,6 +95,17 @@ class CarnotTestUtils {
     return table;
   }
 
+  static std::shared_ptr<table_store::Table> TestDuration64Table() {
+    table_store::schema::Relation rel({types::DataType::DURATION64NS}, {"col1"});
+    auto table = table_store::Table::Create(rel);
+
+    auto col1 = table->GetColumn(0);
+    std::vector<types::Duration64NSValue> col1_in1 = {1, 2, 3};
+    PL_CHECK_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+
+    return table;
+  }
+
   static const std::vector<types::Int64Value> big_test_col1;
   static const std::vector<types::Float64Value> big_test_col2;
   static const std::vector<types::Int64Value> big_test_col3;

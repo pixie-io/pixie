@@ -61,17 +61,20 @@ inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
  * #undef TYPE_CASE
  *
  * Will run the function ExtractFoo with the correct args (at runtime).
+ *
+ * PL_CARNOT_UPDATE_FOR_NEW_TYPES.
  */
-#define PL_SWITCH_FOREACH_DATATYPE(_dt_, _CASE_MACRO_)                                \
-  do {                                                                                \
-    auto __dt_var__ = (_dt_);                                                         \
-    switch (__dt_var__) {                                                             \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::BOOLEAN, _CASE_MACRO_);  \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::INT64, _CASE_MACRO_);    \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::UINT128, _CASE_MACRO_);  \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::TIME64NS, _CASE_MACRO_); \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::FLOAT64, _CASE_MACRO_);  \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::STRING, _CASE_MACRO_);   \
-      PL_SWITCH_FOREACH_DATATYPE_DEFAULT_CASE(__dt_var__);                            \
-    }                                                                                 \
+#define PL_SWITCH_FOREACH_DATATYPE(_dt_, _CASE_MACRO_)                                    \
+  do {                                                                                    \
+    auto __dt_var__ = (_dt_);                                                             \
+    switch (__dt_var__) {                                                                 \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::BOOLEAN, _CASE_MACRO_);      \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::INT64, _CASE_MACRO_);        \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::UINT128, _CASE_MACRO_);      \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::TIME64NS, _CASE_MACRO_);     \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::DURATION64NS, _CASE_MACRO_); \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::FLOAT64, _CASE_MACRO_);      \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::STRING, _CASE_MACRO_);       \
+      PL_SWITCH_FOREACH_DATATYPE_DEFAULT_CASE(__dt_var__);                                \
+    }                                                                                     \
   } while (0)

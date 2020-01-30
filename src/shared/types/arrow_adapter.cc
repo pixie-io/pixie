@@ -32,6 +32,8 @@ DataType ArrowToDataType(const arrow::Type::type& arrow_type) {
       return DataType::STRING;
     case Type::TIME64:
       return DataType::TIME64NS;
+    case Type::DURATION:
+      return DataType::DURATION64NS;
     default:
       CHECK(0) << "Unknown arrow data type: " << arrow_type;
   }
@@ -52,6 +54,8 @@ arrow::Type::type ToArrowType(const DataType& udf_type) {
       return Type::STRING;
     case DataType::TIME64NS:
       return Type::INT64;
+    case DataType::DURATION64NS:
+      return Type::INT64;
     default:
       CHECK(0) << "Unknown udf data type: " << udf_type;
   }
@@ -68,6 +72,8 @@ int64_t ArrowTypeToBytes(const arrow::Type::type& arrow_type) {
     case Type::FLOAT:
       return sizeof(float);
     case Type::TIME64:
+      return sizeof(int64_t);
+    case Type::DURATION:
       return sizeof(int64_t);
     case Type::DOUBLE:
       return sizeof(double);
@@ -90,6 +96,7 @@ std::unique_ptr<arrow::ArrayBuilder> MakeArrowBuilder(const DataType& data_type,
     BUILDER_CASE(DataType::FLOAT64, mem_pool);
     BUILDER_CASE(DataType::STRING, mem_pool);
     BUILDER_CASE(DataType::TIME64NS, mem_pool);
+    BUILDER_CASE(DataType::DURATION64NS, mem_pool);
     default:
       CHECK(0) << "Unknown data type: " << static_cast<int>(data_type);
   }
