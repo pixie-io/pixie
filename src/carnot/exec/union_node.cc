@@ -50,12 +50,11 @@ Status UnionNode::InitializeColumnBuilders() {
 Status UnionNode::PrepareImpl(ExecState*) {
   size_t num_output_cols = output_descriptor_->size();
 
-  parent_eoses_.resize(num_parents_);
+  flushed_parent_eoses_.resize(num_parents_);
 
   if (plan_node_->order_by_time()) {
     // Set up parent stream state.
     parent_row_batches_.resize(num_parents_);
-    received_rows_.resize(num_parents_);
     row_cursors_.resize(num_parents_);
     time_columns_.resize(num_parents_);
     data_columns_.resize(num_parents_, std::vector<arrow::Array*>(num_output_cols));
@@ -72,7 +71,7 @@ Status UnionNode::OpenImpl(ExecState*) { return Status::OK(); }
 Status UnionNode::CloseImpl(ExecState*) { return Status::OK(); }
 
 bool UnionNode::InputsComplete() {
-  for (bool parent_eos : parent_eoses_) {
+  for (bool parent_eos : flushed_parent_eoses_) {
     if (!parent_eos) {
       return false;
     }
@@ -87,21 +86,8 @@ std::shared_ptr<arrow::Array> UnionNode::GetInputColumn(const RowBatch& rb, size
   return rb.ColumnAt(input_index);
 }
 
-bool UnionNode::ReadyToMerge() {
-  for (size_t parent = 0; parent < row_cursors_.size(); ++parent) {
-    if (parent_eoses_[parent]) {
-      continue;
-    }
-    // Return if we still need more data from one of the input streams.
-    if (!received_rows_[parent] || !parent_row_batches_[parent].size()) {
-      return false;
-    }
-  }
-  return true;
-}
-
 types::Time64NSValue UnionNode::GetTimeAtParentCursor(size_t parent_index) const {
-  DCHECK(!parent_eoses_[parent_index]);
+  DCHECK(!flushed_parent_eoses_[parent_index]);
   DCHECK(time_columns_[parent_index] != nullptr);
   return types::GetValueFromArrowArray<types::TIME64NS>(time_columns_[parent_index],
                                                         row_cursors_[parent_index]);
@@ -121,6 +107,7 @@ Status UnionNode::AppendRow(size_t parent) {
 }
 
 Status UnionNode::OptionallyFlushRowBatch(ExecState* exec_state) {
+  DCHECK(!sent_eos_);
   bool eos = InputsComplete();
   int64_t output_rows = column_builders_[0]->length();
   if (output_rows < static_cast<int64_t>(output_rows_per_batch_) && !eos) {
@@ -133,24 +120,26 @@ Status UnionNode::OptionallyFlushRowBatch(ExecState* exec_state) {
 }
 
 Status UnionNode::MergeData(ExecState* exec_state) {
-  // This will happen if the last remaining row batches in a stream were all empty.
-  if (InputsComplete()) {
-    return OptionallyFlushRowBatch(exec_state);
-  }
-
-  while (ReadyToMerge() && !InputsComplete()) {
+  while (!sent_eos_) {
     // Get the smallest time out of all of the current streams.
     std::vector<size_t> parent_streams;
     parent_streams.reserve(row_cursors_.size());
 
     for (size_t parent = 0; parent < row_cursors_.size(); ++parent) {
-      if (!parent_eoses_[parent]) {
-        parent_streams.push_back(parent);
+      if (flushed_parent_eoses_[parent]) {
+        continue;
       }
+      // If we lack necessary data, we can't merge anymore.
+      if (!parent_row_batches_[parent].size()) {
+        return Status::OK();
+      }
+      parent_streams.push_back(parent);
     }
 
-    // ReadyToMerge() shouldn't return true if this could happen.
-    DCHECK(parent_streams.size());
+    // If we have reached end of stream for all of our inputs, flush the queue.
+    if (!parent_streams.size()) {
+      return OptionallyFlushRowBatch(exec_state);
+    }
 
     std::sort(parent_streams.begin(), parent_streams.end(),
               [this](size_t parent_a, size_t parent_b) {
@@ -180,18 +169,18 @@ Status UnionNode::MergeData(ExecState* exec_state) {
       const auto& rb = parent_row_batches_[parent][0];
       bool pop_row_batch = ++row_cursors_[parent] == static_cast<size_t>(rb.num_rows());
       if (pop_row_batch && rb.eos()) {
-        parent_eoses_[parent] = true;
+        flushed_parent_eoses_[parent] = true;
       }
 
-      // Flush the current RowBatch if necessary.
-      PL_RETURN_IF_ERROR(OptionallyFlushRowBatch(exec_state));
-
       if (pop_row_batch) {
-        // Delete the row batch from our buffer and update the cursor.
+        // Delete the top row batch from our buffer and update the cursor.
         parent_row_batches_[parent].erase(parent_row_batches_[parent].begin());
         row_cursors_[parent] = 0;
         CacheNextRowBatch(parent);
       }
+
+      // Flush the current RowBatch if necessary.
+      PL_RETURN_IF_ERROR(OptionallyFlushRowBatch(exec_state));
     }
   }
 
@@ -202,7 +191,7 @@ void UnionNode::CacheNextRowBatch(size_t parent) {
   // Purge all of the 0-row RowBatches.
   while (parent_row_batches_[parent].size() && parent_row_batches_[parent][0].num_rows() == 0) {
     if (parent_row_batches_[parent][0].eos()) {
-      parent_eoses_[parent] = true;
+      flushed_parent_eoses_[parent] = true;
     }
     parent_row_batches_[parent].erase(parent_row_batches_[parent].begin());
   }
@@ -219,9 +208,6 @@ void UnionNode::CacheNextRowBatch(size_t parent) {
 
 Status UnionNode::ConsumeNextOrdered(ExecState* exec_state, const RowBatch& rb,
                                      size_t parent_index) {
-  if (rb.num_rows() > 0) {
-    received_rows_[parent_index] = true;
-  }
   parent_row_batches_[parent_index].push_back(rb);
   CacheNextRowBatch(parent_index);
   return MergeData(exec_state);
@@ -230,7 +216,7 @@ Status UnionNode::ConsumeNextOrdered(ExecState* exec_state, const RowBatch& rb,
 Status UnionNode::ConsumeNextUnordered(ExecState* exec_state, const RowBatch& rb,
                                        size_t parent_index) {
   if (rb.eos()) {
-    parent_eoses_[parent_index] = true;
+    flushed_parent_eoses_[parent_index] = true;
   }
   RowBatch output_rb(*output_descriptor_, rb.num_rows());
   for (size_t i = 0; i < output_descriptor_->size(); ++i) {
