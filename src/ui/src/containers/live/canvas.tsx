@@ -31,10 +31,15 @@ const Canvas = (props: CanvasProps) => {
   } as VisualizationSpec),
     [props.spec]);
 
+  const resize = React.useCallback(() => {
+    // Dispatch a window resize event to signal the chart to redraw. As suggested in:
+    // https://vega.github.io/vega-lite/docs/size.html#specifying-responsive-width-and-height
+    window.dispatchEvent(new Event('resize'));
+  }, []);
+
   return (
-    <AutoSizer>
+    <AutoSizer onResize={resize}>
       {({ height, width }) => (
-        // TODO(malthus): Figure out how to force vega to redraw the canvas on resize.
         <VegaLite
           style={{ height, width }}
           spec={spec}

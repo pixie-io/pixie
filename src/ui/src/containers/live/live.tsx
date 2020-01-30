@@ -88,7 +88,12 @@ const LiveView = () => {
         <IconButton>
           <ShareIcon />
         </IconButton>
-        <ToggleButton className={classes.editorToggle} selected={editorOpen} onChange={toggleEditor}>
+        <ToggleButton
+          className={classes.editorToggle}
+          selected={editorOpen}
+          onChange={toggleEditor}
+          value='editorOpened'
+        >
           <EditIcon />
         </ToggleButton>
         <IconButton onClick={toggleCommandOpen}>
