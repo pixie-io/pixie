@@ -549,6 +549,23 @@ class CleanUpStrayIRNodesRule : public Rule {
 };
 
 /**
+ * @brief This rule removes all Operator nodes that are not connected to a Memory Sink.
+ *
+ */
+class PruneUnconnectedOperatorsRule : public Rule {
+ public:
+  PruneUnconnectedOperatorsRule() : Rule(nullptr, /*reverse_topological_execution*/ true) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  // For each IRNode that stays in the graph, we keep track of its children as well so we keep them
+  // around.
+  absl::flat_hash_set<IRNode*> sink_connected_nodes_;
+};
+
+/**
  * @brief This class supports running an IR graph rule (independently) over each IR graph of a
  * DistributedPlan. This is distinct from other DistributedRules, which may modify the
  * CarnotInstances and DistributedPlan dag.

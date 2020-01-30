@@ -750,6 +750,7 @@ TEST_F(CompilerTest, reused_result) {
           "'http_resp_latency_ns'], start_time='-1m')",
           "x = queryDF[queryDF['http_resp_latency_ns'] < 1000000]",
           "px.display(queryDF, 'out');",
+          "px.display(x);",
       },
 
       "\n");
@@ -767,8 +768,7 @@ TEST_F(CompilerTest, reused_result) {
   ASSERT_TRUE(Match(src_child1, Filter()));
   FilterIR* filter_child = static_cast<FilterIR*>(src_child1);
   EXPECT_TRUE(Match(filter_child->filter_expr(), LessThan(ColumnNode(), Int(1000000))));
-  // Filter should not have children.
-  EXPECT_EQ(filter_child->Children().size(), 0);
+  EXPECT_EQ(filter_child->Children().size(), 1);
 
   OperatorIR* src_child2 = mem_src->Children()[1];
   ASSERT_TRUE(Match(src_child2, MemorySink()));
@@ -2805,6 +2805,46 @@ TEST_F(CompilerTest, MetadataNoDuplicateColumnsQuery) {
   // ensure service_name is in relation but _attr_service_name is not
   Relation expected_relation({types::UINT128, types::STRING}, {"upid", "service_name"});
   ASSERT_EQ(mem_sink->relation(), expected_relation);
+}
+
+TEST_F(CompilerTest, UnusedOperatorsRemoved) {
+  std::string query = absl::StrJoin(
+      {
+          "queryDF = px.DataFrame(table='http_table', select=['time_', 'upid', 'http_resp_status', "
+          "'http_resp_latency_ns'], start_time='-1m')",
+          "filter = queryDF[queryDF['http_resp_latency_ns'] < 1000000]",
+          "drop = filter.drop(['http_resp_latency_ns', 'upid', 'http_resp_status'])",
+          "unused_map = filter",
+          "unused_map.http_resp_latency_ns = unused_map['http_resp_latency_ns'] * 2",
+          "px.display(drop, 'out');",
+      },
+
+      "\n");
+  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get());
+  VLOG(2) << plan_status.ToString();
+  ASSERT_OK(plan_status);
+  auto plan = plan_status.ConsumeValueOrDie();
+  std::vector<IRNode*> mem_srcs = plan->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(mem_srcs.size(), 1);
+  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
+
+  EXPECT_EQ(mem_src->Children().size(), 1);
+
+  OperatorIR* src_child = mem_src->Children()[0];
+  ASSERT_TRUE(Match(src_child, Filter()));
+  FilterIR* filter_src_child = static_cast<FilterIR*>(src_child);
+  EXPECT_TRUE(Match(filter_src_child->filter_expr(), LessThan(ColumnNode(), Int(1000000))));
+  EXPECT_EQ(filter_src_child->Children().size(), 1);
+
+  OperatorIR* filter_child1 = filter_src_child->Children()[0];
+  ASSERT_TRUE(Match(filter_child1, Map()));
+  EXPECT_EQ(filter_child1->Children().size(), 1);
+
+  OperatorIR* filter_child_child = filter_child1->Children()[0];
+  ASSERT_TRUE(Match(filter_child_child, MemorySink()));
+  MemorySinkIR* mem_sink = static_cast<MemorySinkIR*>(filter_child_child);
+  Relation expected_relation({types::TIME64NS}, {"time_"});
+  EXPECT_EQ(mem_sink->relation(), expected_relation);
 }
 }  // namespace compiler
 }  // namespace carnot

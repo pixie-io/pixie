@@ -95,6 +95,11 @@ class Analyzer : public RuleExecutor<IR> {
     resolve_column_index_batch->AddRule<ResolveColumnIndexRule>();
   }
 
+  void CreatePruneUnconnectedOpsBatch() {
+    RuleBatch* prune_ops_batch = CreateRuleBatch<FailOnMax>("PruneUnconnectedOps", 2);
+    prune_ops_batch->AddRule<PruneUnconnectedOperatorsRule>();
+  }
+
   Status Init() {
     md_handler_ = MetadataHandler::Create();
     CreateSourceAndMetadataResolutionBatch();
@@ -105,6 +110,7 @@ class Analyzer : public RuleExecutor<IR> {
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();
+    CreatePruneUnconnectedOpsBatch();
     CreatePruneUnusedColumnsBatch();
     CreateResolveColumnIndexBatch();
     return Status::OK();

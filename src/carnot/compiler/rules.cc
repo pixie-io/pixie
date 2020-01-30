@@ -1477,6 +1477,42 @@ StatusOr<bool> CleanUpStrayIRNodesRule::Apply(IRNode* ir_node) {
   return true;
 }
 
+StatusOr<bool> PruneUnconnectedOperatorsRule::Apply(IRNode* ir_node) {
+  auto ir_graph = ir_node->graph_ptr();
+  auto node_id = ir_node->id();
+
+  if (Match(ir_node, MemorySink()) || sink_connected_nodes_.contains(ir_node)) {
+    for (int64_t parent_id : ir_graph->dag().ParentsOf(node_id)) {
+      sink_connected_nodes_.insert(ir_graph->Get(parent_id));
+    }
+    return false;
+  }
+  if (!Match(ir_node, Operator())) return false;
+  std::vector<int64_t> nodes_to_remove;
+  nodes_to_remove.push_back(node_id);
+
+  // Remove child IR nodes that will become orphaned once the node is deleted.
+  for (int64_t child_id : ir_graph->dag().DependenciesOf(node_id)) {
+    auto child = ir_graph->Get(child_id);
+    if (Match(child, Operator())) {
+      continue;
+    }
+    // Remove a child if none of its children are Operators.
+    auto child_child_ids = ir_graph->dag().DependenciesOf(child_id);
+    if (!std::any_of(child_child_ids.begin(), child_child_ids.end(), [ir_graph](int64_t node_id) {
+          return Match(ir_graph->Get(node_id), Operator());
+        })) {
+      nodes_to_remove.push_back(child_id);
+    }
+  }
+
+  for (auto node_id : nodes_to_remove) {
+    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(node_id));
+  }
+
+  return true;
+}
+
 StatusOr<bool> DropMetadataColumnsFromSinksRule::Apply(IRNode* ir_node) {
   if (!Match(ir_node, MemorySink())) {
     return false;
