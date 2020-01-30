@@ -399,7 +399,7 @@ def checkoutAndInitialize() {
  *****************************************************************************/
 def builders = [:]
 
-builders['Build & Test (dbg & tidy)'] = {
+builders['Build & Test (dbg)'] = {
   WithSourceCode {
     dockerStep {
       bazelCmd("bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}", 'build-dbg')
