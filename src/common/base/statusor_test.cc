@@ -1,3 +1,5 @@
+#include <memory>
+
 #include "src/common/base/statusor.h"
 #include "src/common/testing/testing.h"
 
@@ -33,6 +35,22 @@ TEST(StatusOr, ValuesAndErrors) {
   s = StatusOr<string>(Status(pl::statuspb::UNKNOWN, "some error"));
   ASSERT_FALSE(s.ok());
   EXPECT_EQ(s.msg(), "some error");
+}
+
+TEST(StatusOr, Pointers) {
+  auto string_uptr = std::make_unique<std::string>();
+  std::string* string_ptr = string_uptr.get();
+
+  StatusOr<std::string*> s(string_ptr);
+  ASSERT_OK(s);
+  EXPECT_EQ(s.ValueOrDie(), string_ptr);
+  EXPECT_EQ(s.ConsumeValueOrDie(), string_ptr);
+}
+
+TEST(StatusOr, NullPointer) {
+  StatusOr<string*> s(nullptr);
+  ASSERT_OK(s);
+  EXPECT_EQ(s.ValueOrDie(), nullptr);
 }
 
 TEST(StatusOr, DefaultCtor) {

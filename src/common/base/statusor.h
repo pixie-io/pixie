@@ -77,8 +77,6 @@ class StatusOr {
   const T& ValueOrDie() const;
   T& ValueOrDie();
 
-  void CheckValueNotNull(const T& value);
-
   // Moves the current value.
   T ConsumeValueOrDie();
 
@@ -92,10 +90,7 @@ class StatusOr {
   template <typename U>
   struct IsNull {
     // For non-pointer U, a reference can never be NULL.
-    static inline bool IsValueNull(const U& t) {
-      PL_UNUSED(t);
-      return false;
-    }
+    static inline bool IsValueNull(const U& /* t */) { return false; }
   };
 
   template <typename U>
@@ -109,9 +104,7 @@ class StatusOr {
 };
 
 template <typename T>
-StatusOr<T>::StatusOr(const T& value) : value_(value) {
-  CheckValueNotNull(value);
-}
+StatusOr<T>::StatusOr(const T& value) : value_(value) {}
 
 template <typename T>
 const T& StatusOr<T>::ValueOrDie() const {
@@ -142,22 +135,12 @@ StatusOr<T>::StatusOr(const Status& status) : status_(status) {
 
 template <typename T>
 StatusOr<T>::StatusOr(T&& value) {
-  CheckValueNotNull(value);
-  value_ = std::move(value);
-}
-
-template <typename T>
-void StatusOr<T>::CheckValueNotNull(const T& value) {
-  assert(!IsNull<T>::IsValueNull(value));
-  if (IsNull<T>::IsValueNull(value)) {
-    status_ =
-        Status(pl::statuspb::INTERNAL, "NULL is not a valid constructor argument to StatusOr<T*>");
+  if constexpr (!std::is_pointer<T>::value) {
+    value_ = std::move(value);
+  } else {
+    value_ = value;
   }
 }
-
-// Internal helper for concatenating macro values.
-#define PL_STATUS_MACROS_CONCAT_NAME_INNER(x, y) x##y
-#define PL_STATUS_MACROS_CONCAT_NAME(x, y) PL_STATUS_MACROS_CONCAT_NAME_INNER(x, y)
 
 #define PL_ASSIGN_OR_RETURN_IMPL(statusor, lhs, rexpr) \
   auto statusor = (rexpr);                             \
