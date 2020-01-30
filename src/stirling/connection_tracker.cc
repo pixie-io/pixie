@@ -711,11 +711,13 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
       if (cluster_cidr.has_value() && open_info_.remote_addr.addr_str != "-" &&
           open_info_.remote_addr.addr_str != kUnixSocket) {
         CIDRBlock cidr = cluster_cidr.value();
-        IPAddress remote_addr = open_info_.remote_addr;
-        if (cidr.ip_addr.version == IPVersion::kIPv4 && remote_addr.version == IPVersion::kIPv6) {
+        SockAddr remote_addr = open_info_.remote_addr;
+        if (cidr.ip_addr.family == SockAddrFamily::kIPv4 &&
+            remote_addr.family == SockAddrFamily::kIPv6) {
           cidr = MapIPv4ToIPv6(cidr);
         }
-        if (cidr.ip_addr.version == IPVersion::kIPv6 && remote_addr.version == IPVersion::kIPv4) {
+        if (cidr.ip_addr.family == SockAddrFamily::kIPv6 &&
+            remote_addr.family == SockAddrFamily::kIPv4) {
           remote_addr = MapIPv4ToIPv6(remote_addr);
         }
 
@@ -772,18 +774,18 @@ void ConnectionTracker::HandleInactivity() {
 
 namespace {
 
-Status ParseRemoteIPAddress(const system::SocketInfo& socket_info, IPAddress* addr) {
+Status ParseRemoteIPAddress(const system::SocketInfo& socket_info, SockAddr* sock_addr) {
   switch (socket_info.family) {
     case AF_INET:
       // This goes first so that the result argument won't be mutated when failed.
-      PL_RETURN_IF_ERROR(IPv4AddrToString(socket_info.remote_addr, &addr->addr_str));
-      addr->in_addr = reinterpret_cast<const struct in_addr&>(socket_info.remote_addr);
-      addr->port = socket_info.remote_port;
+      PL_RETURN_IF_ERROR(IPv4AddrToString(socket_info.remote_addr, &sock_addr->addr_str));
+      sock_addr->addr = reinterpret_cast<const struct in_addr&>(socket_info.remote_addr);
+      sock_addr->port = socket_info.remote_port;
       return Status::OK();
     case AF_INET6:
-      PL_RETURN_IF_ERROR(IPv6AddrToString(socket_info.remote_addr, &addr->addr_str));
-      addr->in_addr = socket_info.remote_addr;
-      addr->port = socket_info.remote_port;
+      PL_RETURN_IF_ERROR(IPv6AddrToString(socket_info.remote_addr, &sock_addr->addr_str));
+      sock_addr->addr = socket_info.remote_addr;
+      sock_addr->port = socket_info.remote_port;
       return Status::OK();
   }
   return error::InvalidArgument("Unexpected family $0", socket_info.family);

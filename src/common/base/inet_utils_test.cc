@@ -13,7 +13,7 @@ TEST(ParseSockAddr, IPv4) {
   sockaddr.sin_port = htons(53000);
 
   // Now check InetAddrToString produces the expected string.
-  IPAddress addr;
+  SockAddr addr;
   Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
   EXPECT_OK(s);
   EXPECT_EQ(addr.addr_str, "10.1.2.3");
@@ -26,7 +26,7 @@ TEST(ParseSockAddr, IPv6) {
   EXPECT_OK(ParseIPv6Addr("::1", &sockaddr.sin6_addr));
   sockaddr.sin6_port = htons(12345);
 
-  IPAddress addr;
+  SockAddr addr;
   Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
   EXPECT_OK(s);
   EXPECT_EQ(addr.addr_str, "::1");
@@ -40,7 +40,7 @@ TEST(ParseSockAddr, Unsupported) {
   inet_pton(AF_INET, "10.1.2.3", &sockaddr.sin_addr);
   sockaddr.sin_port = htons(53000);
 
-  IPAddress addr;
+  SockAddr addr;
   Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
   EXPECT_NOT_OK(s);
   EXPECT_EQ(addr.addr_str, "-") << "addr_str should not be mutated";
@@ -89,12 +89,12 @@ TEST(CIDRBlockTest, ContainsIPv4Address) {
   CIDRBlock block;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/24", &block));
   for (int i = 0; i < 256; ++i) {
-    IPAddress addr;
+    SockAddr addr;
     EXPECT_OK(ParseIPAddress(absl::StrCat("1.2.3.", i), &addr));
     EXPECT_TRUE(CIDRContainsIPAddr(block, addr));
   }
   for (int i = 0; i < 256; ++i) {
-    IPAddress addr;
+    SockAddr addr;
     EXPECT_OK(ParseIPAddress(absl::StrCat("1.2.4.", i), &addr));
     EXPECT_FALSE(CIDRContainsIPAddr(block, addr));
   }
@@ -108,7 +108,7 @@ TEST(CIDRBlockTest, ContainsIPv6Address) {
       std::string addr_str2 = "1111:1112:1113:1114:1115:1116:1117:11";
       addr_str2 += a;
       addr_str2 += b;
-      IPAddress addr6_2;
+      SockAddr addr6_2;
       EXPECT_OK(ParseIPAddress(addr_str2, &addr6_2));
       EXPECT_TRUE(CIDRContainsIPAddr(block, addr6_2));
     }
@@ -146,13 +146,13 @@ TEST(CIDRBlockTest, ParseInvalidIPAddressString) {
 }
 
 TEST(MapIPv4ToIPv6Test, WorksAsExpected) {
-  IPAddress v4_addr;
+  SockAddr v4_addr;
   EXPECT_OK(ParseIPAddress("1.2.3.4", &v4_addr));
   {
-    IPAddress v6_addr = MapIPv4ToIPv6(v4_addr);
+    SockAddr v6_addr = MapIPv4ToIPv6(v4_addr);
     EXPECT_EQ("::ffff:1.2.3.4", v6_addr.addr_str);
     std::string v6_addr_str;
-    EXPECT_OK(IPv6AddrToString(std::get<struct in6_addr>(v6_addr.in_addr), &v6_addr_str));
+    EXPECT_OK(IPv6AddrToString(std::get<struct in6_addr>(v6_addr.addr), &v6_addr_str));
     EXPECT_EQ("::ffff:1.2.3.4", v6_addr_str);
   }
   {
@@ -160,7 +160,7 @@ TEST(MapIPv4ToIPv6Test, WorksAsExpected) {
     CIDRBlock v6_cidr = MapIPv4ToIPv6(v4_cidr);
     EXPECT_EQ("::ffff:1.2.3.4", v6_cidr.ip_addr.addr_str);
     std::string v6_addr_str;
-    EXPECT_OK(IPv6AddrToString(std::get<struct in6_addr>(v6_cidr.ip_addr.in_addr), &v6_addr_str));
+    EXPECT_OK(IPv6AddrToString(std::get<struct in6_addr>(v6_cidr.ip_addr.addr), &v6_addr_str));
     EXPECT_EQ("::ffff:1.2.3.4", v6_addr_str);
   }
 }

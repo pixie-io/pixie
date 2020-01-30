@@ -14,16 +14,15 @@
 
 namespace pl {
 
-enum class IPVersion { kIPv4, kIPv6 };
+enum class SockAddrFamily { kIPv4, kIPv6 };
 
 /**
  * Describes a connection from user space. This corresponds to struct conn_info_t in
  * src/stirling/bcc_bpf_interface/socket_trace.h.
  */
-// TODO(yzhao): This should be renamed to SockAddr as IPAddress does not really have port.
-struct IPAddress {
-  IPVersion version = IPVersion::kIPv4;
-  std::variant<struct in_addr, struct in6_addr> in_addr;
+struct SockAddr {
+  SockAddrFamily family = SockAddrFamily::kIPv4;
+  std::variant<struct in_addr, struct in6_addr> addr;
   // TODO(yzhao): Consider removing this as it can be derived from above.
   std::string addr_str = "-";
   int port = -1;
@@ -86,28 +85,28 @@ inline Status ParseIPv6Addr(std::string_view addr_str_view, struct in6_addr* in6
 }
 
 /**
- * Parses sockaddr into a C++ style IPAddress. Only accept IPv4 and IPv6 addresses.
+ * Parses sockaddr into a C++ style SockAddr. Only accept IPv4 and IPv6 addresses.
  * Does not mutate the result argument on parse failure.
  */
-Status ParseSockAddr(const struct sockaddr* sa, IPAddress* addr);
+Status ParseSockAddr(const struct sockaddr* sa, SockAddr* addr);
 
 /**
  * Parses a string as IPv4 or IPv6 address.
  */
-Status ParseIPAddress(std::string_view addr_str, IPAddress* ip_addr);
+Status ParseIPAddress(std::string_view addr_str, SockAddr* ip_addr);
 
 /**
- * Returns an IPAddress in IPv6 format that follows the mapping rule:
+ * Returns a SockAddr in IPv6 format that follows the mapping rule:
  * https://en.wikipedia.org/wiki/IPv6#IPv4-mapped_IPv6_addresses
  */
-IPAddress MapIPv4ToIPv6(const IPAddress& addr);
+SockAddr MapIPv4ToIPv6(const SockAddr& addr);
 
 /**
  * Classless Inter Domain Routing Block. Follows the notations at:
  * https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
  */
 struct CIDRBlock {
-  IPAddress ip_addr;
+  SockAddr ip_addr;
   size_t prefix_length = 0;
 };
 
@@ -120,7 +119,7 @@ Status ParseCIDRBlock(std::string_view cidr_str, CIDRBlock* cidr);
 /**
  * Returns true if block contains ip_addr.
  */
-bool CIDRContainsIPAddr(const CIDRBlock& block, const IPAddress& ip_addr);
+bool CIDRContainsIPAddr(const CIDRBlock& block, const SockAddr& ip_addr);
 
 /**
  * Returns a CIDRBlock in IPv6 format that follows the mapping rule:

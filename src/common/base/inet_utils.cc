@@ -7,30 +7,30 @@ namespace pl {
 const int kIPv4BitLen = 32;
 const int kIPv6BitLen = 128;
 
-IPAddress MapIPv4ToIPv6(const IPAddress& addr) {
-  DCHECK(addr.version == IPVersion::kIPv4);
+SockAddr MapIPv4ToIPv6(const SockAddr& addr) {
+  DCHECK(addr.family == SockAddrFamily::kIPv4);
   DCHECK(!addr.addr_str.empty());
   const std::string v6_addr_str = absl::StrCat("::ffff:", addr.addr_str);
-  IPAddress v6_addr;
+  SockAddr v6_addr;
   ECHECK_OK(ParseIPAddress(v6_addr_str, &v6_addr));
   return v6_addr;
 }
 
-Status ParseSockAddr(const struct sockaddr* sa, IPAddress* addr) {
+Status ParseSockAddr(const struct sockaddr* sa, SockAddr* addr) {
   switch (sa->sa_family) {
     case AF_INET: {
       const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
       PL_RETURN_IF_ERROR(IPv4AddrToString(sa_in->sin_addr, &addr->addr_str));
-      addr->version = IPVersion::kIPv4;
-      addr->in_addr = sa_in->sin_addr;
+      addr->family = SockAddrFamily::kIPv4;
+      addr->addr = sa_in->sin_addr;
       addr->port = ntohs(sa_in->sin_port);
       return Status::OK();
     }
     case AF_INET6: {
       const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
       PL_RETURN_IF_ERROR(IPv6AddrToString(sa_in6->sin6_addr, &addr->addr_str));
-      addr->version = IPVersion::kIPv6;
-      addr->in_addr = sa_in6->sin6_addr;
+      addr->family = SockAddrFamily::kIPv6;
+      addr->addr = sa_in6->sin6_addr;
       addr->port = ntohs(sa_in6->sin6_port);
       return Status::OK();
     }
@@ -39,16 +39,16 @@ Status ParseSockAddr(const struct sockaddr* sa, IPAddress* addr) {
   }
 }
 
-Status ParseIPAddress(std::string_view addr_str_view, IPAddress* ip_addr) {
+Status ParseIPAddress(std::string_view addr_str_view, SockAddr* ip_addr) {
   struct in_addr v4_addr = {};
   struct in6_addr v6_addr = {};
 
   if (ParseIPv4Addr(addr_str_view, &v4_addr).ok()) {
-    ip_addr->version = IPVersion::kIPv4;
-    ip_addr->in_addr = v4_addr;
+    ip_addr->family = SockAddrFamily::kIPv4;
+    ip_addr->addr = v4_addr;
   } else if (ParseIPv6Addr(addr_str_view, &v6_addr).ok()) {
-    ip_addr->version = IPVersion::kIPv6;
-    ip_addr->in_addr = v6_addr;
+    ip_addr->family = SockAddrFamily::kIPv6;
+    ip_addr->addr = v6_addr;
   } else {
     return error::InvalidArgument("Cannot parse input '$0' as IP address", addr_str_view);
   }
@@ -77,17 +77,17 @@ bool IPv6CIDRContains(struct in6_addr cidr_ip, size_t prefix_length, struct in6_
 
 }  // namespace
 
-bool CIDRContainsIPAddr(const CIDRBlock& block, const IPAddress& ip_addr) {
-  DCHECK(block.ip_addr.version == ip_addr.version) << absl::Substitute(
-      "CIDRBlock IPVersion: '$0' IP address: '$1'", magic_enum::enum_name(block.ip_addr.version),
-      magic_enum::enum_name(ip_addr.version));
-  switch (block.ip_addr.version) {
-    case IPVersion::kIPv4:
-      return IPv4CIDRContains(std::get<struct in_addr>(block.ip_addr.in_addr), block.prefix_length,
-                              std::get<struct in_addr>(ip_addr.in_addr));
-    case IPVersion::kIPv6:
-      return IPv6CIDRContains(std::get<struct in6_addr>(block.ip_addr.in_addr), block.prefix_length,
-                              std::get<struct in6_addr>(ip_addr.in_addr));
+bool CIDRContainsIPAddr(const CIDRBlock& block, const SockAddr& ip_addr) {
+  DCHECK(block.ip_addr.family == ip_addr.family) << absl::Substitute(
+      "CIDRBlock SockAddrFamily: '$0' IP address: '$1'",
+      magic_enum::enum_name(block.ip_addr.family), magic_enum::enum_name(ip_addr.family));
+  switch (ip_addr.family) {
+    case SockAddrFamily::kIPv4:
+      return IPv4CIDRContains(std::get<struct in_addr>(block.ip_addr.addr), block.prefix_length,
+                              std::get<struct in_addr>(ip_addr.addr));
+    case SockAddrFamily::kIPv6:
+      return IPv6CIDRContains(std::get<struct in6_addr>(block.ip_addr.addr), block.prefix_length,
+                              std::get<struct in6_addr>(ip_addr.addr));
   }
   return false;
 }
@@ -107,14 +107,14 @@ Status ParseCIDRBlock(std::string_view cidr_str, CIDRBlock* cidr) {
     return error::InvalidArgument("Prefix length must be >= 0, got: '$0'", prefix_length);
   }
 
-  IPAddress addr;
+  SockAddr addr;
   PL_RETURN_IF_ERROR(ParseIPAddress(fields[0], &addr));
 
-  if (addr.version == IPVersion::kIPv4 && prefix_length > kIPv4BitLen) {
+  if (addr.family == SockAddrFamily::kIPv4 && prefix_length > kIPv4BitLen) {
     return error::InvalidArgument("Prefix length for IPv4 CIDR block must be <=$0, got: '$1'",
                                   kIPv4BitLen, prefix_length);
   }
-  if (addr.version == IPVersion::kIPv6 && prefix_length > kIPv6BitLen) {
+  if (addr.family == SockAddrFamily::kIPv6 && prefix_length > kIPv6BitLen) {
     return error::InvalidArgument("Prefix length for IPv6 CIDR block must be <=$0, got: '$1'",
                                   kIPv6BitLen, prefix_length);
   }

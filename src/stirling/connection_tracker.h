@@ -29,7 +29,7 @@ namespace stirling {
 struct SocketOpen {
   uint64_t timestamp_ns = 0;
   // TODO(yzhao): Consider using std::optional to indicate the address has not been initialized.
-  IPAddress remote_addr;
+  SockAddr remote_addr;
 };
 
 struct SocketClose {
