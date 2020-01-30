@@ -12,7 +12,9 @@ import MenuIcon from '@material-ui/icons/Menu';
 import ShareIcon from '@material-ui/icons/Share';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
+import Canvas from './canvas';
 import CommandInput from './command-input';
+import demoSpec from './demo';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -21,6 +23,7 @@ const useStyles = makeStyles((theme: Theme) =>
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
+      backgroundColor: theme.palette.background.default,
     },
     topBar: {
       display: 'flex',
@@ -35,19 +38,22 @@ const useStyles = makeStyles((theme: Theme) =>
       flex: 1,
       minHeight: 0,
       display: 'flex',
+      margin: theme.spacing(2),
     },
     editorToggle: {
       border: 'none',
     },
     editor: {
-      flexGrow: 1,
+      flex: 1,
+      minWidth: 0,
       display: 'none',
       '&.editor-open': {
         display: 'block',
       },
     },
     canvas: {
-      flexGrow: 1,
+      flex: 1,
+      minWidth: 0,
     },
   }));
 
@@ -93,7 +99,9 @@ const LiveView = () => {
         <div className={clsx(classes.editor, editorOpen && 'editor-open')}>
           editor goes here
         </div>
-        <div className={classes.canvas}>Live view goes here</div>
+        <div className={classes.canvas}>
+          <Canvas spec={demoSpec} />
+        </div>
       </div>
       <Drawer open={drawerOpen} onClose={toggleDrawer(false)}>
         <div>drawer content</div>
