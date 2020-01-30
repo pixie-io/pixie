@@ -15,6 +15,7 @@ go_library(
         "//src/carnot/compiler/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/compiler/logical_planner:go_default_library",
         "//src/carnot/planpb:plan_pl_go_proto",
+        "//src/carnot/queryresultspb:query_results_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",

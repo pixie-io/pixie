@@ -194,64 +194,58 @@ func TestVizierExecuteQuery(t *testing.T) {
 	u, _ := uuid.FromString("65294d6a-6ceb-48a7-96b0-9a1eb7d467cb")
 	upb := utils.ProtoFromUUID(&u)
 
-	resp.Responses = append(resp.Responses, &service.VizierQueryResponse_ResponseByAgent{
-		Response: &service.AgentQueryResponse{
-			QueryID: upb,
-			QueryResult: &qrpb.QueryResult{
-
-				Tables: []*schemapb.Table{
-					{
-						Name: "table1",
-						Relation: &schemapb.Relation{
-							Columns: []*schemapb.Relation_ColumnInfo{
-								{
-									ColumnName: "scolE",
-									ColumnType: typespb.BOOLEAN,
-								},
-								{
-									ColumnName: "scolI",
-									ColumnType: typespb.STRING,
-								},
-							},
+	queryResult := &qrpb.QueryResult{
+		Tables: []*schemapb.Table{
+			{
+				Name: "table1",
+				Relation: &schemapb.Relation{
+					Columns: []*schemapb.Relation_ColumnInfo{
+						{
+							ColumnName: "scolE",
+							ColumnType: typespb.BOOLEAN,
 						},
-						RowBatches: []*schemapb.RowBatchData{
+						{
+							ColumnName: "scolI",
+							ColumnType: typespb.STRING,
+						},
+					},
+				},
+				RowBatches: []*schemapb.RowBatchData{
+					{
+						Cols: []*schemapb.Column{
 							{
-								Cols: []*schemapb.Column{
-									{
-										ColData: &schemapb.Column_StringData{
-											StringData: &schemapb.StringColumn{
-												Data: []schemapb_types.StringData{
-													[]byte("hello"),
-													[]byte("test"),
-												},
-											},
+								ColData: &schemapb.Column_StringData{
+									StringData: &schemapb.StringColumn{
+										Data: []schemapb_types.StringData{
+											[]byte("hello"),
+											[]byte("test"),
 										},
 									},
 								},
 							},
 						},
 					},
-					{
-						Name: "abcd",
-						Relation: &schemapb.Relation{
-							Columns: []*schemapb.Relation_ColumnInfo{
-								{
-									ColumnName: "aCol",
-									ColumnType: typespb.STRING,
-								},
-							},
+				},
+			},
+			{
+				Name: "abcd",
+				Relation: &schemapb.Relation{
+					Columns: []*schemapb.Relation_ColumnInfo{
+						{
+							ColumnName: "aCol",
+							ColumnType: typespb.STRING,
 						},
-						RowBatches: []*schemapb.RowBatchData{
+					},
+				},
+				RowBatches: []*schemapb.RowBatchData{
+					{
+						Cols: []*schemapb.Column{
 							{
-								Cols: []*schemapb.Column{
-									{
-										ColData: &schemapb.Column_StringData{
-											StringData: &schemapb.StringColumn{
-												Data: []schemapb_types.StringData{
-													[]byte("abc"),
-													[]byte("def"),
-												},
-											},
+								ColData: &schemapb.Column_StringData{
+									StringData: &schemapb.StringColumn{
+										Data: []schemapb_types.StringData{
+											[]byte("abc"),
+											[]byte("def"),
 										},
 									},
 								},
@@ -261,9 +255,10 @@ func TestVizierExecuteQuery(t *testing.T) {
 				},
 			},
 		},
-	})
+	}
 	resp.QueryID = upb
 	resp.Status = &statuspb.Status{}
+	resp.QueryResult = queryResult
 	env.client.EXPECT().
 		ExecuteQuery(gomock.Any(), gomock.Any()).
 		Return(&resp, nil).

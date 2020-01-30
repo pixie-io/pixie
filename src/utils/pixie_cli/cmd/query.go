@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/jsonpb"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -74,23 +73,17 @@ func formatAsJSON(r *querybrokerpb.VizierQueryResponse) error {
 
 func formatResultsAsTable(r *querybrokerpb.VizierQueryResponse) {
 	t := components.NewTableRenderer()
-	fmt.Printf("Got %d Response(s)\n", len(r.Responses))
-	for _, agentResp := range r.Responses {
-		agentUUID := uuid.FromStringOrNil(string(agentResp.AgentID.Data))
-
-		fmt.Printf("Agent ID: %s\n", agentUUID)
-		queryResult := agentResp.Response.QueryResult
-		execStats := queryResult.ExecutionStats
-		timingStats := queryResult.TimingInfo
-		bytesProcessed := float64(execStats.BytesProcessed)
-		execTimeNS := float64(timingStats.ExecutionTimeNs)
-		for _, table := range queryResult.Tables {
-			t.RenderTable(table)
-		}
-		fmt.Printf("Compilation Time: %.2f ms\n", float64(timingStats.CompilationTimeNs)/1.0e6)
-		fmt.Printf("Execution Time: %.2f ms\n", execTimeNS/1.0e6)
-		fmt.Printf("Bytes processed: %.2f KB\n", bytesProcessed/1024)
+	queryResult := r.QueryResult
+	execStats := queryResult.ExecutionStats
+	timingStats := queryResult.TimingInfo
+	bytesProcessed := float64(execStats.BytesProcessed)
+	execTimeNS := float64(timingStats.ExecutionTimeNs)
+	for _, table := range queryResult.Tables {
+		t.RenderTable(table)
 	}
+	fmt.Printf("Compilation Time: %.2f ms\n", float64(timingStats.CompilationTimeNs)/1.0e6)
+	fmt.Printf("Execution Time: %.2f ms\n", execTimeNS/1.0e6)
+	fmt.Printf("Bytes processed: %.2f KB\n", bytesProcessed/1024)
 }
 
 func getQueryString(path string) (string, error) {

@@ -90,14 +90,6 @@ message AgentQueryResultResponse {}
 
 // VizierQueryResponse is returned by Vizier in response to a query.
 message VizierQueryResponse {
-  message ResponseByAgent {
-    uuidpb.UUID agent_id      = 1 [
-      (gogoproto.customname) = "AgentID"
-    ];
-
-    AgentQueryResponse response = 2;
-  }
-  repeated ResponseByAgent responses = 1;
   // Status message carries information
   // about any potential failures, ie compiler error failures
   pl.statuspb.Status status = 2;
@@ -105,4 +97,8 @@ message VizierQueryResponse {
   uuidpb.UUID query_id = 3 [
     (gogoproto.customname) = "QueryID"
   ];
+
+  pl.carnot.queryresultspb.QueryResult query_result = 4;
+  // Reserved for deprecated ResponsesByAgent.
+  reserved 1;
 }

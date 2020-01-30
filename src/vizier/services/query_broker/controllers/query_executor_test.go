@@ -17,26 +17,9 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
-const agent1Response = `
+const kelvinResponse = `
 agent_id: {
   data: "21285cdd1de94ab1ae6a0ba08c8c676c"
-}
-result {
-  query_id {
-    data: "11285cdd1de94ab1ae6a0ba08c8c676c"
-  }
-  query_result {
-    tables {
-      relation {
-      }
-    }
-  }
-}
-`
-
-const agent2Response = `
-agent_id: {
-  data: "31285cdd1de94ab1ae6a0ba08c8c676c"
 }
 result {
   query_id {
@@ -80,7 +63,7 @@ func TestExecuteQuery(t *testing.T) {
 	for _, uid := range agentUUIDStrs {
 		u, err := uuid.FromString(uid)
 		if err != nil {
-			t.Fatal("Could not parse UUID.")
+			t.Fatal(err)
 		}
 		agentUUIDs = append(agentUUIDs, u)
 	}
@@ -169,7 +152,7 @@ func TestWaitForCompletion(t *testing.T) {
 
 	// Add agent results.
 	res := new(querybrokerpb.AgentQueryResultRequest)
-	if err := proto.UnmarshalText(agent1Response, res); err != nil {
+	if err := proto.UnmarshalText(kelvinResponse, res); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -177,7 +160,7 @@ func TestWaitForCompletion(t *testing.T) {
 
 	// Make sure that WaitForCompletion returns with correct number of results.
 	allRes, err := e.WaitForCompletion()
-	assert.Equal(t, 1, len(allRes))
+	assert.NotNil(t, allRes)
 }
 
 func TestWaitForCompletionTimeout(t *testing.T) {
@@ -211,7 +194,6 @@ func TestWaitForCompletionTimeout(t *testing.T) {
 
 	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs)
 
-	// Make sure that WaitForCompletion returns with correct number of results.
-	allRes, err := e.WaitForCompletion()
-	assert.Equal(t, 0, len(allRes))
+	queryResult, err := e.WaitForCompletion()
+	assert.Nil(t, queryResult)
 }

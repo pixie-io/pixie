@@ -313,117 +313,6 @@ errors {
 	}
 }`
 
-func TestServerExecuteQuery(t *testing.T) {
-	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
-	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-
-	getAgentsPB := new(metadatapb.AgentInfoResponse)
-	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	mds.
-		EXPECT().
-		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
-		Return(getAgentsPB, nil)
-
-	getSchemaPB := new(metadatapb.SchemaResponse)
-	if err := proto.UnmarshalText(getSchemaResponse, getSchemaPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	mds.
-		EXPECT().
-		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
-		Return(getSchemaPB, nil)
-
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
-		mc := mock_controllers.NewMockExecutor(ctrl)
-		expectedMap := make(map[uuid.UUID]*planpb.Plan)
-		plannerResultPB := new(distributedpb.LogicalPlannerResult)
-
-		if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
-			t.Fatal("Cannot Unmarshal protobuf.")
-		}
-
-		plan := plannerResultPB.Plan
-		for carnotID, agentPlan := range plan.QbAddressToPlan {
-			u, err := uuid.FromString(carnotID)
-			if !assert.Nil(t, err) {
-				t.Fatal("Cannot parse uuid")
-			}
-			expectedMap[u] = agentPlan
-		}
-
-		assert.Equal(t, 1, len(expectedMap))
-
-		mc.
-			EXPECT().
-			ExecuteQuery(expectedMap)
-
-		mc.
-			EXPECT().
-			GetQueryID()
-
-		var a []*querybrokerpb.VizierQueryResponse_ResponseByAgent
-
-		agentRespPB := new(querybrokerpb.VizierQueryResponse_ResponseByAgent)
-		if err := proto.UnmarshalText(responseByAgent, agentRespPB); err != nil {
-			t.Fatal("Cannot Unmarshal protobuf.")
-		}
-
-		a = append(a, agentRespPB)
-		mc.
-			EXPECT().
-			WaitForCompletion().
-			Return(a, nil)
-
-		return mc
-	}
-
-	// Set up server.
-	env, err := querybrokerenv.New()
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	plannerResultPB := new(distributedpb.LogicalPlannerResult)
-	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	planner := mock_controllers.NewMockPlanner(ctrl)
-	planner.EXPECT().
-		Plan(plannerStatePB, testQuery).
-		Return(plannerResultPB, nil)
-
-	s, err := newServer(env, mds, nc, createExecutorMock)
-	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
-		QueryStr: testQuery,
-	}, planner, &planpb.PlanOptions{Analyze: true})
-
-	if !assert.Nil(t, err) {
-		t.Fatalf(err.Error())
-	}
-
-	assert.Equal(t, 1, len(results.Responses))
-}
-
 func TestServerExecuteQueryTimeout(t *testing.T) {
 	// Start NATS.
 	port, cleanup := testingutils.StartNATS(t)
@@ -483,13 +372,13 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 
 	s, err := NewServer(env, mds, nc)
 
-	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
+	queryResult, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
 	}, planner, &planpb.PlanOptions{Analyze: true})
 	if err != nil {
 		t.Fatal("Failed to return results from ExecuteQuery.")
 	}
-	assert.Equal(t, 0, len(results.Responses))
+	assert.Nil(t, queryResult.QueryResult)
 }
 
 func TestReceiveAgentQueryResult(t *testing.T) {
@@ -510,7 +399,7 @@ func TestReceiveAgentQueryResult(t *testing.T) {
 	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
 
 	req := new(querybrokerpb.AgentQueryResultRequest)
-	if err := proto.UnmarshalText(agent1Response, req); err != nil {
+	if err := proto.UnmarshalText(kelvinResponse, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -518,7 +407,7 @@ func TestReceiveAgentQueryResult(t *testing.T) {
 		EXPECT().
 		AddResult(req)
 
-		// Set up server.
+	// Set up server.
 	env, err := querybrokerenv.New()
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
@@ -558,12 +447,6 @@ func TestGetAgentInfo(t *testing.T) {
 	defer ctrl.Finish()
 
 	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-
-	req := new(querybrokerpb.AgentQueryResultRequest)
-	if err := proto.UnmarshalText(agent1Response, req); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
 	getAgentsPB := &metadatapb.AgentInfoResponse{}
 	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
@@ -610,12 +493,6 @@ func TestGetMultipleAgentInfo(t *testing.T) {
 	defer ctrl.Finish()
 
 	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-
-	req := new(querybrokerpb.AgentQueryResultRequest)
-	if err := proto.UnmarshalText(agent1Response, req); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
 	getAgentsPB := &metadatapb.AgentInfoResponse{}
 	if err := proto.UnmarshalText(getMultipleAgentsResponse, getAgentsPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
@@ -729,124 +606,6 @@ func TestPlannerErrorResult(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	assert.Equal(t, agentRespPB.Status, result.Status)
-}
-
-// This test makes sure that the planner can safely drop carnot instances
-// during planning and not cause issues during execution because the engine waits for no reason.
-func TestPlannerExcludesSomeAgents(t *testing.T) {
-	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
-	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-
-	// Add both agents to this so that the planner does have the option to receive both.
-	getAgentsPB := new(metadatapb.AgentInfoResponse)
-	if err := proto.UnmarshalText(getMultipleAgentsResponse, getAgentsPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	mds.
-		EXPECT().
-		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
-		Return(getAgentsPB, nil)
-
-	getSchemaPB := new(metadatapb.SchemaResponse)
-	if err := proto.UnmarshalText(getSchemaResponse, getSchemaPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	mds.
-		EXPECT().
-		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
-		Return(getSchemaPB, nil)
-
-	plannerResultPB := new(distributedpb.LogicalPlannerResult)
-	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
-		mc := mock_controllers.NewMockExecutor(ctrl)
-		expectedMap := make(map[uuid.UUID]*planpb.Plan)
-
-		// This plan should only have one agent, so we should be able to run with it.
-		plan := plannerResultPB.Plan
-		for carnotID, agentPlan := range plan.QbAddressToPlan {
-			u, err := uuid.FromString(carnotID)
-			if err != nil {
-				t.Fatal("Cannot parse uuid")
-			}
-			expectedMap[u] = agentPlan
-		}
-
-		assert.Equal(t, 1, len(expectedMap))
-
-		mc.
-			EXPECT().
-			ExecuteQuery(expectedMap)
-
-		mc.
-			EXPECT().
-			GetQueryID()
-
-		var a []*querybrokerpb.VizierQueryResponse_ResponseByAgent
-
-		agentRespPB := new(querybrokerpb.VizierQueryResponse_ResponseByAgent)
-		if err := proto.UnmarshalText(responseByAgent, agentRespPB); err != nil {
-			t.Fatal("Cannot Unmarshal protobuf.")
-		}
-		a = append(a, agentRespPB)
-
-		mc.
-			EXPECT().
-			WaitForCompletion().
-			Return(a, nil)
-
-		return mc
-	}
-
-	// Set up server.
-	env, err := querybrokerenv.New()
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	// The state passes in multiple agents.
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(multipleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	if !assert.Equal(t, 2, len(plannerStatePB.DistributedState.CarnotInfo)) {
-		t.FailNow()
-	}
-
-	planner := mock_controllers.NewMockPlanner(ctrl)
-	planner.EXPECT().
-		Plan(plannerStatePB, testQuery).
-		Return(plannerResultPB, nil)
-
-	s, err := newServer(env, mds, nc, createExecutorMock)
-	// _, err = s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
-	results, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
-		QueryStr: testQuery,
-	}, planner, &planpb.PlanOptions{})
-
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	assert.Equal(t, 1, len(results.Responses))
 }
 
 func TestErrorInStatusResult(t *testing.T) {

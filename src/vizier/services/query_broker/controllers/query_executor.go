@@ -10,6 +10,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
+	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
@@ -18,12 +19,12 @@ import (
 // QueryExecutor is responsible for handling a query's execution, from sending requests to agents, to
 // tracking the responses.
 type QueryExecutor struct {
-	queryID         uuid.UUID
-	agentList       *[]uuid.UUID
-	responseByAgent []*querybrokerpb.VizierQueryResponse_ResponseByAgent
-	conn            *nats.Conn
-	mux             sync.Mutex
-	done            chan bool
+	queryID     uuid.UUID
+	agentList   *[]uuid.UUID
+	queryResult *queryresultspb.QueryResult
+	conn        *nats.Conn
+	mux         sync.Mutex
+	done        chan bool
 }
 
 // NewQueryExecutor creates a Query Executor for a specific query.
@@ -100,8 +101,8 @@ func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan) error {
 	return nil
 }
 
-// WaitForCompletion waits until each agent has returned a result.
-func (e *QueryExecutor) WaitForCompletion() ([]*querybrokerpb.VizierQueryResponse_ResponseByAgent, error) {
+// WaitForCompletion waits until we have received the results (or timeout).
+func (e *QueryExecutor) WaitForCompletion() (*queryresultspb.QueryResult, error) {
 	// Wait for chan or timeout.
 	timeout := false
 	select {
@@ -118,25 +119,20 @@ func (e *QueryExecutor) WaitForCompletion() ([]*querybrokerpb.VizierQueryRespons
 	e.mux.Lock()
 	defer e.mux.Unlock()
 
-	return e.responseByAgent, nil
+	return e.queryResult, nil
 }
 
 // AddResult adds a result from an agent to the list of results to be returned.
 func (e *QueryExecutor) AddResult(res *querybrokerpb.AgentQueryResultRequest) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
-
-	if len(e.responseByAgent) != 0 {
+	if e.queryResult != nil {
 		log.
 			WithField("query_id", e.queryID.String()).
 			Error("Internal error: already have response for this query")
 		return
 	}
-	e.responseByAgent = append(e.responseByAgent, &querybrokerpb.VizierQueryResponse_ResponseByAgent{
-		AgentID:  res.AgentID,
-		Response: res.Result,
-	})
-
+	e.queryResult = res.Result.QueryResult
 	// In the current implementation we just need to wait for the Kelvin node to respond.
 	e.done <- true
 }

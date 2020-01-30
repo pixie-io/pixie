@@ -15,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/compiler"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
@@ -38,7 +39,7 @@ type Planner interface {
 // Executor is the interface for a query executor.
 type Executor interface {
 	ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan) error
-	WaitForCompletion() ([]*querybrokerpb.VizierQueryResponse_ResponseByAgent, error)
+	WaitForCompletion() (*queryresultspb.QueryResult, error)
 	AddResult(res *querybrokerpb.AgentQueryResultRequest)
 	GetQueryID() uuid.UUID
 }
@@ -234,18 +235,17 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb
 		return nil, err
 	}
 
-	responses, err := queryExecutor.WaitForCompletion()
+	queryResult, err := queryExecutor.WaitForCompletion()
 	if err != nil {
 		return nil, err
 	}
 
 	queryResponse := &querybrokerpb.VizierQueryResponse{
-		QueryID:   utils.ProtoFromUUID(&queryID),
-		Responses: responses,
+		QueryID:     utils.ProtoFromUUID(&queryID),
+		QueryResult: queryResult,
 	}
 
 	s.deleteExecutorForQuery(queryID)
-
 	return queryResponse, nil
 }
 
@@ -256,7 +256,6 @@ func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
 	}
 	proto.Unmarshal(b, udfInfoPb)
 	return nil
-
 }
 
 // ExecuteQuery executes a query on multiple agents and compute node.
@@ -323,14 +322,11 @@ func (s *Server) ReceiveAgentQueryResult(ctx context.Context, req *querybrokerpb
 	}
 
 	exec, ok := setExecutor(queryID)
-
 	if !ok {
 		return nil, errors.New("Query ID not present")
 	}
 
 	exec.AddResult(req)
-
 	queryResponse := &querybrokerpb.AgentQueryResultResponse{}
-
 	return queryResponse, nil
 }

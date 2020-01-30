@@ -2,14 +2,13 @@ package controller
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"math"
 	"sort"
 	"time"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/graph-gophers/graphql-go"
+
+	"github.com/golang/protobuf/jsonpb"
 	uuid "github.com/satori/go.uuid"
 
 	"pixielabs.ai/pixielabs/src/carnot/compiler"
@@ -74,7 +73,6 @@ func makeErrorFromStatus(status *statuspb.Status) (*QueryError, error) {
 // ExecuteQuery executes a query on vizier.
 func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs) (*QueryResultResolver, error) {
 	client := q.Env.QueryBrokerClient()
-	// TODO(michelle/zasgar) is there any reason we don't have a query id here? Might as well start it off somewhere here instead of down the line.
 	req := qbpb.QueryRequest{QueryStr: *args.QueryStr}
 
 	resp, err := client.ExecuteQuery(ctx, &req)
@@ -98,27 +96,7 @@ func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs
 		return errorResult, nil
 	}
 
-	// Find the response with the most data.
-	var maxQR *qrpb.QueryResult
-	// TODO(zasgar/michelle): This is a placeholder until we add results merging.
-	// This simply selects the largest resulting table.
-	maxResultsSize := int(-1)
-	for _, r := range resp.Responses {
-		if r.Response.Status != nil && r.Response.Status.ErrCode != statuspb.OK {
-			return nil, fmt.Errorf("failed to execute: %s", r.Response.Status.Msg)
-		}
-		if maxResultsSize < r.Response.QueryResult.Tables[0].Size() {
-			maxQR = r.Response.QueryResult
-			maxResultsSize = r.Response.QueryResult.Tables[0].Size()
-		}
-	}
-
-	if maxResultsSize < 0 {
-		return nil, errors.New("no results were returned")
-	}
-
-	// Always return response from first agent.
-	return &QueryResultResolver{u, maxQR, &QueryError{}}, nil
+	return &QueryResultResolver{u, resp.QueryResult, &QueryError{}}, nil
 }
 
 /**
