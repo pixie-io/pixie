@@ -48,65 +48,20 @@ struct ArgMap {
 
 enum class IRNodeType {
   kAny = -1,
-  kMemorySource,
-  kMemorySink,
-  kMap,
-  kDrop,
-  kBlockingAgg,
-  kFilter,
-  kLimit,
-  kString,
-  kUInt128,
-  kFloat,
-  kInt,
-  kBool,
-  kFunc,
-  kList,
-  kTuple,
-  kColumn,
-  kTime,
-  kMetadata,
-  kMetadataResolver,
-  kMetadataLiteral,
-  kGRPCSourceGroup,
-  kGRPCSource,
-  kGRPCSink,
-  kUnion,
-  kJoin,
-  kTabletSourceGroup,
-  kGroupBy,
-  kUDTFSource,
+#undef PL_IR_NODE
+#define PL_IR_NODE(NAME) k##NAME,
+#include "src/carnot/compiler/ir/ir_nodes.inl"
+#undef PL_IR_NODE
   number_of_types  // This is not a real type, but is used to verify strings are inline
                    // with enums.
 };
-static constexpr const char* kIRNodeStrings[] = {"MemorySource",
-                                                 "MemorySink",
-                                                 "Map",
-                                                 "Drop",
-                                                 "BlockingAgg",
-                                                 "Filter",
-                                                 "Limit",
-                                                 "String",
-                                                 "UInt128Value",
-                                                 "Float",
-                                                 "Int",
-                                                 "Bool",
-                                                 "Func",
-                                                 "List",
-                                                 "Tuple",
-                                                 "Column",
-                                                 "Time",
-                                                 "Metadata",
-                                                 "MetadataResolver",
-                                                 "MetadataLiteral",
-                                                 "GRPCSourceGroup",
-                                                 "GRPCSource",
-                                                 "GRPCSink",
-                                                 "Union",
-                                                 "Join",
-                                                 "TabletSourceGroup",
-                                                 "GroupBy",
-                                                 "UDTFSource"};
+static constexpr const char* kIRNodeStrings[] = {
+#undef PL_IR_NODE
+#define PL_IR_NODE(NAME) #NAME,
+// NOLINTNEXTLINE : build/include
+#include "src/carnot/compiler/ir/ir_nodes.inl"
+#undef PL_IR_NODE
+};
 inline std::ostream& operator<<(std::ostream& out, IRNodeType node_type) {
   return out << kIRNodeStrings[static_cast<int64_t>(node_type)];
 }

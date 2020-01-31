@@ -10,6 +10,7 @@ pl_cc_library(
         [
             "*.cc",
             "*.h",
+            "ir_nodes.inl",
         ],
         exclude = [
             "**/*_test.cc",

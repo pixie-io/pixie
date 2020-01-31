@@ -66,62 +66,13 @@ Status IR::DeleteNode(int64_t node) {
 
 StatusOr<IRNode*> IR::MakeNodeWithType(IRNodeType node_type, int64_t new_node_id) {
   switch (node_type) {
-    case IRNodeType::kMemorySource:
-      return MakeNode<MemorySourceIR>(new_node_id);
-    case IRNodeType::kMemorySink:
-      return MakeNode<MemorySinkIR>(new_node_id);
-    case IRNodeType::kMap:
-      return MakeNode<MapIR>(new_node_id);
-    case IRNodeType::kDrop:
-      return MakeNode<DropIR>(new_node_id);
-    case IRNodeType::kBlockingAgg:
-      return MakeNode<BlockingAggIR>(new_node_id);
-    case IRNodeType::kFilter:
-      return MakeNode<FilterIR>(new_node_id);
-    case IRNodeType::kLimit:
-      return MakeNode<LimitIR>(new_node_id);
-    case IRNodeType::kString:
-      return MakeNode<StringIR>(new_node_id);
-    case IRNodeType::kUInt128:
-      return MakeNode<UInt128IR>(new_node_id);
-    case IRNodeType::kFloat:
-      return MakeNode<FloatIR>(new_node_id);
-    case IRNodeType::kInt:
-      return MakeNode<IntIR>(new_node_id);
-    case IRNodeType::kBool:
-      return MakeNode<BoolIR>(new_node_id);
-    case IRNodeType::kFunc:
-      return MakeNode<FuncIR>(new_node_id);
-    case IRNodeType::kList:
-      return MakeNode<ListIR>(new_node_id);
-    case IRNodeType::kTuple:
-      return MakeNode<TupleIR>(new_node_id);
-    case IRNodeType::kColumn:
-      return MakeNode<ColumnIR>(new_node_id);
-    case IRNodeType::kTime:
-      return MakeNode<TimeIR>(new_node_id);
-    case IRNodeType::kMetadata:
-      return MakeNode<MetadataIR>(new_node_id);
-    case IRNodeType::kMetadataResolver:
-      return MakeNode<MetadataResolverIR>(new_node_id);
-    case IRNodeType::kMetadataLiteral:
-      return MakeNode<MetadataLiteralIR>(new_node_id);
-    case IRNodeType::kGRPCSourceGroup:
-      return MakeNode<GRPCSourceGroupIR>(new_node_id);
-    case IRNodeType::kGRPCSource:
-      return MakeNode<GRPCSourceIR>(new_node_id);
-    case IRNodeType::kGRPCSink:
-      return MakeNode<GRPCSinkIR>(new_node_id);
-    case IRNodeType::kUnion:
-      return MakeNode<UnionIR>(new_node_id);
-    case IRNodeType::kJoin:
-      return MakeNode<JoinIR>(new_node_id);
-    case IRNodeType::kTabletSourceGroup:
-      return MakeNode<TabletSourceGroupIR>(new_node_id);
-    case IRNodeType::kGroupBy:
-      return MakeNode<GroupByIR>(new_node_id);
-    case IRNodeType::kUDTFSource:
-      return MakeNode<UDTFSourceIR>(new_node_id);
+#undef PL_IR_NODE
+#define PL_IR_NODE(NAME)    \
+  case IRNodeType::k##NAME: \
+    return MakeNode<NAME##IR>(new_node_id);
+#include "src/carnot/compiler/ir/ir_nodes.inl"
+#undef PL_IR_NODE
+
     case IRNodeType::kAny:
     case IRNodeType::number_of_types:
       break;
