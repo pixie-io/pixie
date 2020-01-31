@@ -28,7 +28,9 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
     snt.response_backlog.emplace_back(std::move(req));
     return Status::OK();
   }
-  return snt.source_node->EnqueueRowBatch(std::move(req));
+  PL_RETURN_IF_ERROR(snt.source_node->EnqueueRowBatch(std::move(req)));
+  query_map.restart_execution_func_();
+  return Status::OK();
 }
 
 ::grpc::Status GRPCRouter::TransferRowBatch(
@@ -52,12 +54,14 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
 }
 
 Status GRPCRouter::AddGRPCSourceNode(sole::uuid query_id, int64_t source_id,
-                                     GRPCSourceNode* source_node) {
+                                     GRPCSourceNode* source_node,
+                                     std::function<void()> restart_execution) {
   // We need to check and see if there is backlog data, if so flush it from the vector.
   SourceNodeTracker* snt = nullptr;
   {
     absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
     snt = &(query_node_map_[query_id].source_node_trackers[source_id]);
+    query_node_map_[query_id].restart_execution_func_ = restart_execution;
   }
   absl::base_internal::SpinLockHolder snt_lock(&snt->node_lock);
   snt->source_node = source_node;

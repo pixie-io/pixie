@@ -39,9 +39,11 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
                                   ::grpc::ServerReader<::pl::carnotpb::RowBatchRequest>* reader,
                                   ::pl::carnotpb::RowBatchResponse* response) override;
   /**
-   * Adds the specified source node to the router.
+   * Adds the specified source node to the router. Includes a function that should be called to
+   * retrigger execution of the graph if currently yielded.
    */
-  Status AddGRPCSourceNode(sole::uuid query_id, int64_t source_id, GRPCSourceNode* source_node);
+  Status AddGRPCSourceNode(sole::uuid query_id, int64_t source_id, GRPCSourceNode* source_node,
+                           std::function<void()> restart_execution);
 
   /**
    * Delete all the metadata and backlog data for a query. Deleting a non-existing query is ignored.
@@ -71,6 +73,7 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
     QueryTracker() : create_time(std::chrono::steady_clock::now()) {}
     absl::node_hash_map<int64_t, SourceNodeTracker> source_node_trackers;
     std::chrono::steady_clock::time_point create_time;
+    std::function<void()> restart_execution_func_;
   };
 
   // TODO(zasgar/michelle): We should periodically delete stale queries as part of garbage

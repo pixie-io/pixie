@@ -123,7 +123,7 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
 
-  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node);
+  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node, [] {});
   ASSERT_OK(s);
   EXPECT_EQ(2, source_node.row_batches.size());
   EXPECT_EQ(1, source_node.row_batches.at(0)->row_batch().cols(0).int64_data().data(0));
@@ -144,9 +144,13 @@ TEST_F(GRPCRouterTest, basic_router_test) {
       plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
-  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node);
+
+  auto num_continues = 0;
+  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node,
+                                       [&] { num_continues++; });
   ASSERT_OK(s);
   EXPECT_EQ(0, source_node.row_batches.size());
+  EXPECT_EQ(0, num_continues);
 
   // Create row batches.
   auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
@@ -181,6 +185,7 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   EXPECT_EQ(2, source_node.row_batches.size());
   EXPECT_EQ(1, source_node.row_batches.at(0)->row_batch().cols(0).int64_data().data(0));
   EXPECT_EQ(4, source_node.row_batches.at(1)->row_batch().cols(0).int64_data().data(0));
+  EXPECT_EQ(2, num_continues);
 }
 
 TEST_F(GRPCRouterTest, delete_node_router_test) {
@@ -195,7 +200,7 @@ TEST_F(GRPCRouterTest, delete_node_router_test) {
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
 
-  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node);
+  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node, [] {});
   ASSERT_OK(s);
 
   service_->DeleteQuery(query_uuid);
@@ -253,7 +258,7 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
   std::thread read_thread([&] {
     auto idx = 0;
 
-    auto s = service_->AddGRPCSourceNode(query_uuid, /* source_id */ 0, &source_node);
+    auto s = service_->AddGRPCSourceNode(query_uuid, /* source_id */ 0, &source_node, [] {});
     ASSERT_OK(s);
     do {
       auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& rb, int64_t) {
