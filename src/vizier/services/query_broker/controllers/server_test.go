@@ -177,6 +177,12 @@ df = dataframe(table='', select=['_time'])
 display(df, 'out')
 `
 
+const invalidFlagQuery = `
+#pl:set thisisnotaflag=true
+df = dataframe(table='perf_and_http', select=['_time'])
+display(df, 'out')
+`
+
 const testLogicalPlan = `
 dag: {
 	nodes: {
@@ -371,14 +377,50 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 		Return(plannerResultPB, nil)
 
 	s, err := NewServer(env, mds, nc)
-
+	queryID := uuid.NewV4()
 	queryResult, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: testQuery,
-	}, planner, &planpb.PlanOptions{Analyze: true})
+	}, queryID, planner, &planpb.PlanOptions{Analyze: true})
 	if err != nil {
 		t.Fatal("Failed to return results from ExecuteQuery.")
 	}
 	assert.Nil(t, queryResult.QueryResult)
+}
+
+func TestExecuteQueryInvalidFlags(t *testing.T) {
+	// Start NATS.
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
+
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+		mc := mock_controllers.NewMockExecutor(ctrl)
+		return mc
+	}
+
+	// Set up server.
+	env, err := querybrokerenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	s, err := newServer(env, mds, nc, createExecutorMock)
+
+	result, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+		QueryStr: invalidFlagQuery,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "thisisnotaflag is not a valid flag", result.Status.Msg)
 }
 
 func TestReceiveAgentQueryResult(t *testing.T) {
@@ -593,9 +635,10 @@ func TestPlannerErrorResult(t *testing.T) {
 		Return(badPlannerResultPB, nil)
 
 	s, err := newServer(env, mds, nc, createExecutorMock)
+	queryID := uuid.NewV4()
 	result, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
-	}, planner, &planpb.PlanOptions{Analyze: true})
+	}, queryID, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Cannot execute query.")
@@ -677,9 +720,10 @@ func TestErrorInStatusResult(t *testing.T) {
 
 	s, err := newServer(env, mds, nc, createExecutorMock)
 
+	queryID := uuid.NewV4()
 	result, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
 		QueryStr: badQuery,
-	}, planner, &planpb.PlanOptions{Analyze: true})
+	}, queryID, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Error while executing query.")

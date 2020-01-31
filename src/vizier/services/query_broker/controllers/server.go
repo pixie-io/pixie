@@ -155,7 +155,7 @@ func makePlannerState(pemInfo []*agentpb.Agent, kelvinList []*agentpb.Agent, sch
 }
 
 // ExecuteQueryWithPlanner executes a query with the provided planner.
-func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb.QueryRequest, planner Planner, planOpts *planpb.PlanOptions) (*querybrokerpb.VizierQueryResponse, error) {
+func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*querybrokerpb.VizierQueryResponse, error) {
 	// Get the table schema that is presumably shared across agents.
 	mdsSchemaReq := &metadatapb.SchemaRequest{}
 	mdsSchemaResp, err := s.mdsClient.GetSchemas(ctx, mdsSchemaReq)
@@ -187,9 +187,6 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
-	queryID := uuid.NewV4()
 
 	log.WithField("query_id", queryID).Infof("Running query: %s", req.QueryStr)
 	start := time.Now()
@@ -260,9 +257,20 @@ func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
 
 // ExecuteQuery executes a query on multiple agents and compute node.
 func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
+	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
+	queryID := uuid.NewV4()
+
 	flags, err := ParseQueryFlags(req.QueryStr)
 	if err != nil {
-		return nil, err
+		queryIDPB := utils.ProtoFromUUID(&queryID)
+
+		return &querybrokerpb.VizierQueryResponse{
+			QueryID: queryIDPB,
+			Status: &statuspb.Status{
+				ErrCode: statuspb.INVALID_ARGUMENT,
+				Msg:     err.Error(),
+			},
+		}, nil
 	}
 	planOpts := flags.GetPlanOptions()
 
@@ -272,7 +280,7 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 	}
 	planner := logicalplanner.New(&udfInfo)
 	defer planner.Free()
-	return s.ExecuteQueryWithPlanner(ctx, req, planner, planOpts)
+	return s.ExecuteQueryWithPlanner(ctx, req, queryID, planner, planOpts)
 }
 
 // GetSchemas returns the schemas in the system.

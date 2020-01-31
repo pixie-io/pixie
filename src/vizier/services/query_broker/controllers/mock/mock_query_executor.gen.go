@@ -39,7 +39,6 @@ func (m *MockPlanner) EXPECT() *MockPlannerMockRecorder {
 
 // Plan mocks base method
 func (m *MockPlanner) Plan(planState *distributedpb.LogicalPlannerState, query string) (*distributedpb.LogicalPlannerResult, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Plan", planState, query)
 	ret0, _ := ret[0].(*distributedpb.LogicalPlannerResult)
 	ret1, _ := ret[1].(error)
@@ -48,19 +47,16 @@ func (m *MockPlanner) Plan(planState *distributedpb.LogicalPlannerState, query s
 
 // Plan indicates an expected call of Plan
 func (mr *MockPlannerMockRecorder) Plan(planState, query interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Plan", reflect.TypeOf((*MockPlanner)(nil).Plan), planState, query)
 }
 
 // Free mocks base method
 func (m *MockPlanner) Free() {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Free")
 }
 
 // Free indicates an expected call of Free
 func (mr *MockPlannerMockRecorder) Free() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Free", reflect.TypeOf((*MockPlanner)(nil).Free))
 }
 
@@ -89,7 +85,6 @@ func (m *MockExecutor) EXPECT() *MockExecutorMockRecorder {
 
 // ExecuteQuery mocks base method
 func (m *MockExecutor) ExecuteQuery(planMap map[go_uuid.UUID]*planpb.Plan) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExecuteQuery", planMap)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -97,13 +92,11 @@ func (m *MockExecutor) ExecuteQuery(planMap map[go_uuid.UUID]*planpb.Plan) error
 
 // ExecuteQuery indicates an expected call of ExecuteQuery
 func (mr *MockExecutorMockRecorder) ExecuteQuery(planMap interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteQuery", reflect.TypeOf((*MockExecutor)(nil).ExecuteQuery), planMap)
 }
 
 // WaitForCompletion mocks base method
 func (m *MockExecutor) WaitForCompletion() (*queryresultspb.QueryResult, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WaitForCompletion")
 	ret0, _ := ret[0].(*queryresultspb.QueryResult)
 	ret1, _ := ret[1].(error)
@@ -112,25 +105,21 @@ func (m *MockExecutor) WaitForCompletion() (*queryresultspb.QueryResult, error) 
 
 // WaitForCompletion indicates an expected call of WaitForCompletion
 func (mr *MockExecutorMockRecorder) WaitForCompletion() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForCompletion", reflect.TypeOf((*MockExecutor)(nil).WaitForCompletion))
 }
 
 // AddResult mocks base method
 func (m *MockExecutor) AddResult(res *querybrokerpb.AgentQueryResultRequest) {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "AddResult", res)
 }
 
 // AddResult indicates an expected call of AddResult
 func (mr *MockExecutorMockRecorder) AddResult(res interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddResult", reflect.TypeOf((*MockExecutor)(nil).AddResult), res)
 }
 
 // GetQueryID mocks base method
 func (m *MockExecutor) GetQueryID() go_uuid.UUID {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetQueryID")
 	ret0, _ := ret[0].(go_uuid.UUID)
 	return ret0
@@ -138,6 +127,5 @@ func (m *MockExecutor) GetQueryID() go_uuid.UUID {
 
 // GetQueryID indicates an expected call of GetQueryID
 func (mr *MockExecutorMockRecorder) GetQueryID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetQueryID", reflect.TypeOf((*MockExecutor)(nil).GetQueryID))
 }
