@@ -19,7 +19,13 @@ function label_to_path() {
 function update_one_build_label() {
   build_label="$1"
   echo "Updating ${build_label} ..."
-  bazel build "${build_label}" &>/dev/null
+
+  # Exits with message if the bazel build command goes wrong.
+  if ! out=$(bazel build "${build_label}" 2>&1); then
+    echo "${out}"
+    exit 1
+  fi
+
   path=$(label_to_path "${build_label}")
   dir=$(dirname "${path}")
   name=$(basename "${path}")
