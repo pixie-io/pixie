@@ -117,9 +117,9 @@ describe.skip('<ScrollableTable/> test', () => {
         { col1: 3, col2: 'world', col3: 300 },
       ]}
       columnInfo={[
-        { dataKey: 'col1', label: 'Col1' },
-        { dataKey: 'col2', label: 'Col2' },
-        { dataKey: 'col3', label: 'Col3' },
+        { dataKey: 'col1', label: 'Col1', width: 0 },
+        { dataKey: 'col2', label: 'Col2', width: 0 },
+        { dataKey: 'col3', label: 'Col3', width: 0 },
       ]}
       height={300}
       width={300}

@@ -18,7 +18,7 @@ export interface TableColumnInfo {
   label: string;
   key?: number;
   flexGrow?: number;  // The factor that this column width can grow by.
-  width?: number;     // The width of the column.
+  width: number;     // The width of the column.
   resizable?: boolean;
   type?: string;
 }
@@ -46,10 +46,6 @@ export interface ScrollableTableState {
   widths: number[];
 }
 
-function DefaultRowRenderer(props) {
-  return defaultTableRowRenderer(props);
-}
-
 function RowRenderer(props) {
   const rowProps = _.omit(props, 'style', 'key');
   return (
@@ -58,7 +54,7 @@ function RowRenderer(props) {
       key={'row-' + props.key}
       style={props.style}
     >
-      <DefaultRowRenderer {...rowProps} />
+      {defaultTableRowRenderer(rowProps)}
       {_.has(this.state.expandedRows, props.index) ?
         <div className='scrollable-table--expanded'>{this.props.expandRenderer(props.rowData)}</div> : null}
     </div>
