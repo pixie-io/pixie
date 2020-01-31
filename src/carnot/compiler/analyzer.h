@@ -69,6 +69,7 @@ class Analyzer : public RuleExecutor<IR> {
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
     intermediate_resolution_batch->AddRule<DataTypeRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<OperatorRelationRule>(compiler_state_);
+    intermediate_resolution_batch->AddRule<DropMetadataColumnsFromSinksRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }
 

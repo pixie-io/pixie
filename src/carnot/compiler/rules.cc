@@ -1477,6 +1477,31 @@ StatusOr<bool> CleanUpStrayIRNodesRule::Apply(IRNode* ir_node) {
   return true;
 }
 
+StatusOr<bool> DropMetadataColumnsFromSinksRule::Apply(IRNode* ir_node) {
+  if (!Match(ir_node, MemorySink())) {
+    return false;
+  }
+  auto sink = static_cast<MemorySinkIR*>(ir_node);
+  auto col_names = sink->relation().col_names();
+  std::vector<std::string> new_out_columns;
+  Relation new_relation;
+  for (const auto& [idx, col_name] : Enumerate(col_names)) {
+    if (!absl::StartsWith(col_name, MetadataProperty::kMetadataColumnPrefix)) {
+      new_relation.AddColumn(sink->relation().col_types()[idx], col_name);
+      if (std::find(sink->out_columns().begin(), sink->out_columns().end(), col_name) !=
+          sink->out_columns().end()) {
+        new_out_columns.push_back(col_name);
+      }
+    }
+  }
+  if (new_relation == sink->relation()) {
+    return false;
+  }
+  PL_RETURN_IF_ERROR(sink->SetOutColumns(new_out_columns));
+  PL_RETURN_IF_ERROR(sink->SetRelation(new_relation));
+  return true;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

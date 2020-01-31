@@ -1034,13 +1034,11 @@ nodes {
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: UINT128
-        column_types: STRING
         column_names: "count"
         column_names: "cpu0"
         column_names: "cpu1"
         column_names: "cpu2"
         column_names: "upid"
-        column_names: "_attr_service_name"
       }
     }
   }
@@ -1671,11 +1669,9 @@ nodes {
         column_types: UINT128
         column_types: STRING
         column_types: FLOAT64
-        column_types: STRING
         column_names: "upid"
         column_names: "service"
         column_names: "mean_cpu"
-        column_names: "_attr_service_name"
       }
     }
   }
@@ -2783,6 +2779,32 @@ TEST_F(CompilerTest, CommentOnlyCodeShouldFailGracefullly) {
   ASSERT_NOT_OK(ir_graph_or_s);
 
   EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("No runnable code found"));
+}
+
+constexpr char kMetadataNoDuplicatesQuery[] = R"pxl(
+t1 = px.DataFrame(table='cpu', start_time='-5s', select=['upid'])
+t1.service_name = t1.ctx['service_name']
+px.display(t1)
+)pxl";
+
+TEST_F(CompilerTest, MetadataNoDuplicateColumnsQuery) {
+  auto graph_or_s = compiler_.CompileToIR(kMetadataNoDuplicatesQuery, compiler_state_.get());
+  ASSERT_OK(graph_or_s);
+
+  MemorySinkIR* mem_sink;
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  for (int64_t i : graph->dag().TopologicalSort()) {
+    auto node = graph->Get(i);
+    if (Match(node, MemorySink())) {
+      mem_sink = static_cast<MemorySinkIR*>(node);
+      break;
+    }
+  }
+  ASSERT_NE(mem_sink, nullptr);
+
+  // ensure service_name is in relation but _attr_service_name is not
+  Relation expected_relation({types::UINT128, types::STRING}, {"upid", "service_name"});
+  ASSERT_EQ(mem_sink->relation(), expected_relation);
 }
 }  // namespace compiler
 }  // namespace carnot

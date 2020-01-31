@@ -378,6 +378,18 @@ class MetadataResolverConversionRule : public Rule {
   bool DoesMapOnlyCopy(MapIR* map) const;
 };
 
+class DropMetadataColumnsFromSinksRule : public Rule {
+  /**
+   * @brief Drop all columns with the "_attr_" prefix from MemorySinks.
+   */
+
+ public:
+  explicit DropMetadataColumnsFromSinksRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+};
+
 class DropToMapOperatorRule : public Rule {
   /**
    * @brief Takes a DropIR and converts it to the corresponding Map IR.
