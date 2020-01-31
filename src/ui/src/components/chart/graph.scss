@@ -1,0 +1,21 @@
+@import "../../theme.scss";
+
+#pixie-graph {
+    height: 100%;
+    overflow: auto;
+}
+
+svg .cluster rect {
+    opacity: 0;
+}
+
+.node rect {
+  stroke: #999;
+  fill: #fff;
+  stroke-width: 1.5px;
+}
+
+.edgePath path {
+  stroke: #333;
+  stroke-width: 1.5px;
+}
