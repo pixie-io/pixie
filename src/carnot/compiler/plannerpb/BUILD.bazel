@@ -1,0 +1,36 @@
+# gazelle:ignore
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_test_library")
+
+pl_proto_library(
+    name = "query_flags_pl_proto",
+    srcs = ["query_flags.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/carnot/planpb:plan_pl_proto",
+        "//src/shared/types/proto:types_pl_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+    ],
+)
+
+pl_cc_proto_library(
+    name = "query_flags_pl_cc_proto",
+    proto = ":query_flags_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/carnot/planpb:plan_pl_cc_proto",
+        "//src/shared/types/proto:types_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+    ],
+)
+
+pl_go_proto_library(
+    name = "query_flags_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb",
+    proto = ":query_flags_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/carnot/planpb:plan_pl_go_proto",
+        "//src/shared/types/proto:types_pl_go_proto",
+    ],
+)

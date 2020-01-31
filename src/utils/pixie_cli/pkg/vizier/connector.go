@@ -11,6 +11,7 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
@@ -89,7 +90,7 @@ func (c *Connector) ExecuteScript(q string) (*querybrokerpb.VizierQueryResponse,
 	queryID := c.nextQueryID()
 	fmt.Fprintln(os.Stderr, "Executing Script: ", queryID.String())
 
-	reqPb := &querybrokerpb.QueryRequest{}
+	reqPb := &plannerpb.QueryRequest{}
 	reqPb.QueryStr = q
 
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)

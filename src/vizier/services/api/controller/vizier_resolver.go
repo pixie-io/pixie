@@ -15,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	qrpb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
@@ -73,7 +74,7 @@ func makeErrorFromStatus(status *statuspb.Status) (*QueryError, error) {
 // ExecuteQuery executes a query on vizier.
 func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs) (*QueryResultResolver, error) {
 	client := q.Env.QueryBrokerClient()
-	req := qbpb.QueryRequest{QueryStr: *args.QueryStr}
+	req := plannerpb.QueryRequest{QueryStr: *args.QueryStr}
 
 	resp, err := client.ExecuteQuery(ctx, &req)
 	if err != nil {

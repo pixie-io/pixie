@@ -8,6 +8,7 @@ import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
 	querybrokerpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 	reflect "reflect"
 )
@@ -56,7 +57,7 @@ func (mr *MockQueryBrokerServiceClientMockRecorder) GetAgentInfo(ctx, in interfa
 }
 
 // ExecuteQuery mocks base method
-func (m *MockQueryBrokerServiceClient) ExecuteQuery(ctx context.Context, in *querybrokerpb.QueryRequest, opts ...grpc.CallOption) (*querybrokerpb.VizierQueryResponse, error) {
+func (m *MockQueryBrokerServiceClient) ExecuteQuery(ctx context.Context, in *plannerpb.QueryRequest, opts ...grpc.CallOption) (*querybrokerpb.VizierQueryResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
@@ -154,7 +155,7 @@ func (mr *MockQueryBrokerServiceServerMockRecorder) GetAgentInfo(arg0, arg1 inte
 }
 
 // ExecuteQuery mocks base method
-func (m *MockQueryBrokerServiceServer) ExecuteQuery(arg0 context.Context, arg1 *querybrokerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
+func (m *MockQueryBrokerServiceServer) ExecuteQuery(arg0 context.Context, arg1 *plannerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExecuteQuery", arg0, arg1)
 	ret0, _ := ret[0].(*querybrokerpb.VizierQueryResponse)

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	compilerpb "pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
@@ -378,7 +379,7 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 
 	s, err := NewServer(env, mds, nc)
 	queryID := uuid.NewV4()
-	queryResult, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
+	queryResult, err := s.ExecuteQueryWithPlanner(context.Background(), &plannerpb.QueryRequest{
 		QueryStr: testQuery,
 	}, queryID, planner, &planpb.PlanOptions{Analyze: true})
 	if err != nil {
@@ -416,7 +417,7 @@ func TestExecuteQueryInvalidFlags(t *testing.T) {
 
 	s, err := newServer(env, mds, nc, createExecutorMock)
 
-	result, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+	result, err := s.ExecuteQuery(context.Background(), &plannerpb.QueryRequest{
 		QueryStr: invalidFlagQuery,
 	})
 	assert.Nil(t, err)
@@ -636,7 +637,7 @@ func TestPlannerErrorResult(t *testing.T) {
 
 	s, err := newServer(env, mds, nc, createExecutorMock)
 	queryID := uuid.NewV4()
-	result, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
+	result, err := s.ExecuteQueryWithPlanner(context.Background(), &plannerpb.QueryRequest{
 		QueryStr: badQuery,
 	}, queryID, planner, &planpb.PlanOptions{Analyze: true})
 
@@ -721,7 +722,7 @@ func TestErrorInStatusResult(t *testing.T) {
 	s, err := newServer(env, mds, nc, createExecutorMock)
 
 	queryID := uuid.NewV4()
-	result, err := s.ExecuteQueryWithPlanner(context.Background(), &querybrokerpb.QueryRequest{
+	result, err := s.ExecuteQueryWithPlanner(context.Background(), &plannerpb.QueryRequest{
 		QueryStr: badQuery,
 	}, queryID, planner, &planpb.PlanOptions{Analyze: true})
 

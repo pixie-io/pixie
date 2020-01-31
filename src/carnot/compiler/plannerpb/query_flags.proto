@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+import "src/shared/types/proto/types.proto";
+import "src/carnot/planpb/plan.proto";
+
+package pl.carnot.compiler.plannerpb;
+
+option go_package = "plannerpb";
+
+
+// QueryFlagsSpec specifies the flags that are defined within a query.
+message QueryFlagsSpec {
+  message Flag {
+      // The data type that this flag accepts
+      types.DataType data_type = 1;
+      // The semantic type that this flag accepts
+      types.SemanticType semantic_type = 2;
+      // The name of the flag.
+      string name = 3;
+      // The description of what this flag does.
+      string description = 4;
+      // The optional default value assigned to this flag.
+      pl.carnot.planpb.ScalarValue default_value =5;
+  }
+  repeated Flag flags = 1;
+}
+
+// QueryRequest is the body of the request made to the planner.
+message QueryRequest {
+  string query_str = 1;
+  message FlagValue {
+    string flag_name = 1;
+    pl.carnot.planpb.ScalarValue flag_value = 2;
+  }
+  repeated FlagValue flag_values = 2;
+  // TODO(zasgar): Add proto query.
+}

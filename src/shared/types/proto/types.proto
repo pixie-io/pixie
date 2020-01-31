@@ -48,4 +48,5 @@ enum SemanticType {
   ST_NONE = 1;
   ST_AGENT_UID = 100;
   ST_UPID = 200;
+  ST_SERVICE_NAME = 300;
 }

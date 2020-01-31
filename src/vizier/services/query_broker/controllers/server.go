@@ -18,6 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
@@ -156,7 +157,7 @@ func makePlannerState(pemInfo []*agentpb.Agent, kelvinList []*agentpb.Agent, sch
 }
 
 // ExecuteQueryWithPlanner executes a query with the provided planner.
-func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *querybrokerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*querybrokerpb.VizierQueryResponse, error) {
+func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*querybrokerpb.VizierQueryResponse, error) {
 	// Get the table schema that is presumably shared across agents.
 	mdsSchemaReq := &metadatapb.SchemaRequest{}
 	mdsSchemaResp, err := s.mdsClient.GetSchemas(ctx, mdsSchemaReq)
@@ -265,7 +266,7 @@ func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
 }
 
 // ExecuteQuery executes a query on multiple agents and compute node.
-func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
+func (s *Server) ExecuteQuery(ctx context.Context, req *plannerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
 	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
 	queryID := uuid.NewV4()
 
