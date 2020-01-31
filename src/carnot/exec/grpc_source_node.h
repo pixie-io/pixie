@@ -37,10 +37,10 @@ class GRPCSourceNode : public SourceNode {
   Status GenerateNextImpl(ExecState* exec_state) override;
 
  private:
-  Status OptionallyPopRowBatch();
+  Status PopRowBatch();
 
   static constexpr std::chrono::microseconds grpc_timeout_us_{150 * 1000};
-  std::unique_ptr<table_store::schema::RowBatch> next_up_;
+  std::unique_ptr<table_store::schema::RowBatch> rb_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<carnotpb::RowBatchRequest>> row_batch_queue_;
 
   std::unique_ptr<plan::GRPCSourceOperator> plan_node_;
