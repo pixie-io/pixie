@@ -268,7 +268,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   OutputFormat perf_buffer_events_output_format_ = OutputFormat::kTxt;
 
   // Portal to query for connections, by pid and inode.
-  std::unique_ptr<system::SocketInfoManager> socket_info_db_;
+  std::unique_ptr<system::SocketInfoManager> socket_info_mgr_;
 
   std::unique_ptr<system::ProcParser> proc_parser_;
 

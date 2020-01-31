@@ -687,20 +687,7 @@ bool ConnectionTracker::ReadyForDestruction() const {
   return death_countdown_ == 0;
 }
 
-void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster_cidr,
-                                         system::ProcParser* proc_parser,
-                                         system::SocketInfoManager* socket_info_db) {
-  // If remote_addr is missing, it means the connect/accept was not traced.
-  // Attempt to infer the connection information, to populate remote_addr.
-  if (open_info_.remote_addr.addr_str == "-" && socket_info_db != nullptr) {
-    InferConnInfo(proc_parser, socket_info_db);
-  }
-
-  // Normally, we don't want to trace Unix domain sockets.
-  if (open_info_.remote_addr.addr_str == kUnixSocket && !FLAGS_enable_unix_domain_sockets) {
-    Disable("Unix domain socket");
-  }
-
+void ConnectionTracker::UpdateState(const std::optional<CIDRBlock>& cluster_cidr) {
   switch (role()) {
     case EndpointRole::kRoleServer:
       if (state() == State::kCollecting) {
@@ -740,6 +727,29 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
     case EndpointRole::kRoleAll:
       LOG(DFATAL) << "kRoleAll should not be used.";
   }
+}
+
+void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster_cidr,
+                                         system::ProcParser* proc_parser,
+                                         system::SocketInfoManager* socket_info_mgr) {
+  // Might not always be true, but for now there's nothing IterationPreTick does that
+  // should be applied to a disabled tracker. This is in contrast to IterationPostTick.
+  if (state_ == State::kDisabled) {
+    return;
+  }
+
+  // If remote_addr is missing, it means the connect/accept was not traced.
+  // Attempt to infer the connection information, to populate remote_addr.
+  if (open_info_.remote_addr.addr_str == "-" && socket_info_mgr != nullptr) {
+    InferConnInfo(proc_parser, socket_info_mgr);
+  }
+
+  // Normally, we don't want to trace Unix domain sockets.
+  if (open_info_.remote_addr.addr_str == kUnixSocket && !FLAGS_enable_unix_domain_sockets) {
+    Disable("Unix domain socket");
+  }
+
+  UpdateState(cluster_cidr);
 }
 
 void ConnectionTracker::IterationPostTick() {
@@ -795,9 +805,9 @@ Status ParseSocketInfoRemoteAddr(const system::SocketInfo& socket_info, SockAddr
 }  // namespace
 
 void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
-                                      system::SocketInfoManager* socket_info_db) {
+                                      system::SocketInfoManager* socket_info_mgr) {
   DCHECK(proc_parser != nullptr);
-  DCHECK(socket_info_db != nullptr);
+  DCHECK(socket_info_mgr != nullptr);
 
   if (conn_resolution_failed_) {
     // We've previously tried and failed to perform connection inference,
@@ -844,7 +854,8 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   uint32_t inode_num = *inode_num_or_nullopt;
 
   // We found the inode number, now lets see if it maps to a known connection.
-  StatusOr<const system::SocketInfo*> socket_info_status = socket_info_db->Lookup(pid(), inode_num);
+  StatusOr<const system::SocketInfo*> socket_info_status =
+      socket_info_mgr->Lookup(pid(), inode_num);
   if (!socket_info_status.ok()) {
     LOG(WARNING) << absl::Substitute("Could not map inode to a connection. Message = $0",
                                      socket_info_status.msg());

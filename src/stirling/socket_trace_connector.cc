@@ -136,7 +136,7 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     LOG(WARNING) << absl::Substitute("Failed to set up socket prober manager. Message: $0",
                                      s.msg());
   } else {
-    socket_info_db_ = s.ConsumeValueOrDie();
+    socket_info_mgr_ = s.ConsumeValueOrDie();
   }
 }
 
@@ -243,8 +243,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   ReadPerfBuffer(table_num);
 
   // Set-up current state for connection inference purposes.
-  if (socket_info_db_ != nullptr) {
-    socket_info_db_->Flush();
+  if (socket_info_mgr_ != nullptr) {
+    socket_info_mgr_->Flush();
   }
 
   TransferStreams(ctx, table_num, data_table);
@@ -726,7 +726,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
         continue;
       }
 
-      tracker.IterationPreTick(cluster_cidr, proc_parser_.get(), socket_info_db_.get());
+      tracker.IterationPreTick(cluster_cidr, proc_parser_.get(), socket_info_mgr_.get());
 
       if (transfer_spec.transfer_fn && transfer_spec.enabled) {
         transfer_spec.transfer_fn(*this, ctx, &tracker, data_table);
