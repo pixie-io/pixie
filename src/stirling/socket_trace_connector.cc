@@ -130,12 +130,13 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled =
       FLAGS_stirling_enable_grpc_uprobe_tracing;
 
-  StatusOr<std::unique_ptr<system::SocketProberManager>> s = system::SocketProberManager::Create();
+  StatusOr<std::unique_ptr<system::SocketInfoManager>> s =
+      system::SocketInfoManager::Create(system::Config::GetInstance().proc_path());
   if (!s.ok()) {
     LOG(WARNING) << absl::Substitute("Failed to set up socket prober manager. Message: $0",
                                      s.msg());
   } else {
-    socket_probers_ = s.ConsumeValueOrDie();
+    socket_info_db_ = s.ConsumeValueOrDie();
   }
 }
 
@@ -231,44 +232,6 @@ Status SocketTraceConnector::StopImpl() {
   return Status::OK();
 }
 
-void SocketTraceConnector::UpdateActiveConnections() {
-  DCHECK(socket_probers_ != nullptr);
-
-  // Grab a list of active connections, in case we need to infer the endpoints of any connections
-  // with missing endpoints.
-  // TODO(oazizi): Optimization is to skip this function if we don't have any connection trackers
-  // with unknown remote endpoints.
-
-  // Map key is inode number.
-  socket_connections_ = std::make_unique<std::map<int, system::SocketInfo>>();
-
-  std::map<uint32_t, std::vector<int>> pids_by_net_ns =
-      system::PIDsByNetNamespace(system::Config::GetInstance().proc_path());
-
-  for (const auto& [ns, pids] : pids_by_net_ns) {
-    StatusOr<system::NetlinkSocketProber*> socket_prober_or =
-        socket_probers_->GetOrCreateSocketProber(ns, pids);
-    if (!socket_prober_or.ok()) {
-      LOG(WARNING) << absl::Substitute("Failed to create socket prober. Message: $0",
-                                       socket_prober_or.msg());
-      continue;
-    }
-    system::NetlinkSocketProber* socket_prober = socket_prober_or.ValueOrDie();
-
-    Status s;
-
-    s = socket_prober->InetConnections(socket_connections_.get());
-    LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to probe InetConnections [net_ns=$0 msg=$1]",
-                                               ns, s.msg());
-
-    s = socket_prober->UnixConnections(socket_connections_.get());
-    LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to probe UnixConnections [net_ns=$0 msg=$1]",
-                                               ns, s.msg());
-  }
-
-  socket_probers_->Update();
-}
-
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
   DCHECK_LT(table_num, kTables.size())
@@ -280,8 +243,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   ReadPerfBuffer(table_num);
 
   // Set-up current state for connection inference purposes.
-  if (socket_probers_ != nullptr) {
-    UpdateActiveConnections();
+  if (socket_info_db_ != nullptr) {
+    socket_info_db_->Flush();
   }
 
   TransferStreams(ctx, table_num, data_table);
@@ -763,7 +726,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
         continue;
       }
 
-      tracker.IterationPreTick(cluster_cidr, proc_parser_.get(), socket_connections_.get());
+      tracker.IterationPreTick(cluster_cidr, proc_parser_.get(), socket_info_db_.get());
 
       if (transfer_spec.transfer_fn && transfer_spec.enabled) {
         transfer_spec.transfer_fn(*this, ctx, &tracker, data_table);

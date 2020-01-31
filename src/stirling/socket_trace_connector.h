@@ -213,8 +213,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event);
   void AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event);
 
-  void UpdateActiveConnections();
-
   // Transfer of messages to the data table.
   void TransferStreams(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
 
@@ -269,11 +267,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   };
   OutputFormat perf_buffer_events_output_format_ = OutputFormat::kTxt;
 
-  // Map of inode number to socket information for that inode.
-  std::unique_ptr<std::map<int, system::SocketInfo> > socket_connections_;
-
-  // Map of saved socket probers, indexed by network ns inode.
-  std::unique_ptr<system::SocketProberManager> socket_probers_;
+  // Portal to query for connections, by pid and inode.
+  std::unique_ptr<system::SocketInfoManager> socket_info_db_;
 
   std::unique_ptr<system::ProcParser> proc_parser_;
 

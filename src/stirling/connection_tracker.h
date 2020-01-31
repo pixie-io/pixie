@@ -103,8 +103,7 @@ class ConnectionTracker {
    * @param proc_parser Pointer to a proc_parser for access to /proc filesystem.
    * @param connections A map of inodes to endpoint information.
    */
-  void InferConnInfo(system::ProcParser* proc_parser,
-                     const std::map<int, system::SocketInfo>* connections);
+  void InferConnInfo(system::ProcParser* proc_parser, system::SocketInfoManager* socket_info_db);
 
   /**
    * @brief Processes the connection tracker, parsing raw events into messages,
@@ -307,8 +306,7 @@ class ConnectionTracker {
    * @param connections A map of inodes to endpoint information.
    */
   void IterationPreTick(const std::optional<CIDRBlock>& cluster_cidr,
-                        system::ProcParser* proc_parser,
-                        const std::map<int, system::SocketInfo>* connections);
+                        system::ProcParser* proc_parser, system::SocketInfoManager* socket_info_db);
 
   /**
    * @brief Sets a the duration after which a connection is deemed to be inactive.

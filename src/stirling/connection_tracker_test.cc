@@ -586,7 +586,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
-// TODO(oazizi): Re-enabled this test once the SockAddr work is complete.
+// TODO(oazizi): Re-enable this test once the SockAddr work is complete.
 // Tests that tracker state is kDisabled if the remote address is Unix domain socket.
 TEST_F(ConnectionTrackerTest, DISABLED_TrackerDisabledForUnixDomainSocket) {
   ConnectionTracker tracker;
