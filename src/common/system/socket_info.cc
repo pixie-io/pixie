@@ -200,9 +200,9 @@ Status ProcessDiagMsg(const struct unix_diag_msg& diag_msg, unsigned int len,
   SocketInfo socket_info = {};
   socket_info.family = diag_msg.udiag_family;
   socket_info.local_port = diag_msg.udiag_ino;
-  socket_info.local_addr = {};
+  socket_info.local_addr = un_path_t{};
   socket_info.remote_port = peer;
-  socket_info.remote_addr = {};
+  socket_info.remote_addr = un_path_t{};
 
   socket_info_entries->insert({diag_msg.udiag_ino, std::move(socket_info)});
 
