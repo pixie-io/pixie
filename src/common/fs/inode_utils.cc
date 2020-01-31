@@ -6,7 +6,7 @@ namespace fs {
 // Extract the inode number from a string that looks like the following: "socket:[32431]"
 StatusOr<uint32_t> ExtractInodeNum(std::string_view inode_type_prefix, std::string_view link_str) {
   if (!absl::StartsWith(link_str, inode_type_prefix)) {
-    return error::Internal("FD does not appear to be a valid inode string");
+    return error::Internal("FD does not appear to be a valid inode string. FD link = $0", link_str);
   }
 
   link_str.remove_prefix(inode_type_prefix.size());

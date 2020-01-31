@@ -392,5 +392,61 @@ void SocketProberManager::Update() {
   }
 }
 
+//-----------------------------------------------------------------------------
+// SocketInfoManager
+//-----------------------------------------------------------------------------
+
+StatusOr<std::unique_ptr<SocketInfoManager>> SocketInfoManager::Create(
+    std::filesystem::path proc_path, int conn_states) {
+  std::unique_ptr<SocketInfoManager> socket_info_db_ptr(
+      new SocketInfoManager(proc_path, conn_states));
+  PL_ASSIGN_OR_RETURN(socket_info_db_ptr->socket_probers_, SocketProberManager::Create());
+  return socket_info_db_ptr;
+}
+
+StatusOr<system::SocketInfo*> SocketInfoManager::Lookup(uint32_t pid, uint32_t inode_num) {
+  PL_ASSIGN_OR_RETURN(uint32_t net_ns, system::NetNamespace(cfg_proc_path_, pid));
+
+  // Step 1: Get the map of connections for this network namespace.
+  // Create the map if it doesn't already exist.
+  std::map<int, system::SocketInfo>* namespace_conns;
+
+  auto ns_iter = connections_.find(net_ns);
+  if (ns_iter != connections_.end()) {
+    // Found a map of connections for this network namespace, so use it.
+    namespace_conns = &ns_iter->second;
+  } else {
+    // No map of connections for this network namespace, so use a socker prober to populate one.
+    PL_ASSIGN_OR_RETURN(system::NetlinkSocketProber * socket_prober,
+                        socket_probers_->GetOrCreateSocketProber(net_ns, {static_cast<int>(pid)}));
+    DCHECK(socket_prober != nullptr);
+
+    ns_iter = connections_.insert(ns_iter, {net_ns, {}});
+    namespace_conns = &ns_iter->second;
+
+    Status s;
+
+    s = socket_prober->InetConnections(namespace_conns, cfg_conn_states_);
+    LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to probe InetConnections [net_ns=$0 msg=$1]",
+                                               net_ns, s.msg());
+
+    s = socket_prober->UnixConnections(namespace_conns, cfg_conn_states_);
+    LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to probe UnixConnections [net_ns=$0 msg=$1]",
+                                               net_ns, s.msg());
+
+    ++num_socket_prober_calls_;
+  }
+
+  // Step 2: Lookup the inode.
+  auto iter = namespace_conns->find(inode_num);
+  if (iter == namespace_conns->end()) {
+    // Likely not a TCP/Unix connection (could be UDP, netlink, etc.).
+    // Not an error, so just return nullptr.
+    return nullptr;
+  }
+
+  return &iter->second;
+}
+
 }  // namespace system
 }  // namespace pl

@@ -28,6 +28,7 @@ namespace pl {
 namespace system {
 
 // See tcp_states.h for other states if we ever need them.
+// Note: These are not an enum, so they can be or'ed together.
 constexpr int kTCPEstablishedState = 1 << 1;
 constexpr int kTCPListeningState = 1 << 10;
 
@@ -199,5 +200,83 @@ class SocketProberManager {
   std::map<int, TaggedSocketProber> socket_probers_;
 };
 
-}  // namespace system
+/**
+ * SocketInfoManager is a caching manager of known sockets in the system.
+ *
+ * There is a primary Lookup interface to query for information on a socket, by inode number.
+ *
+ * SocketInfoManager manages its cache at the network namespace level. If a query is made to a new
+ * network namespace, the information is gathered and then cached. Future queries will operate off
+ * that snapshot of the known connections, for efficiency.
+ *
+ * Note that no attempt is made to check if new connections have been created after the snapshot is
+ * established. This responsibility is on the user, who must explicitly call Flush(), so that new
+ * connections can be discovered.
+ */
+class SocketInfoManager {
+ public:
+  /**
+   * Create a new instance of SocketInfoManager.
+   *
+   * @param proc_path Path to the /proc filesystem
+   * @param conn_states The connection states to probe for (established, listening, etc.).
+   * @return unique_ptr to the SocketInfoManager, or error if there were not enough privileges to
+   * initialize the SocketInfoManager.
+   */
+  static StatusOr<std::unique_ptr<SocketInfoManager>> Create(
+      std::filesystem::path proc_path, int conn_states = kTCPEstablishedState);
+
+  /**
+   * Primary lookup mechanism: Gives socket info for a given inode number.
+   *
+   * @param pid The PID owning the connection. Used to determine the network namespace.
+   * @param inode_num The inode number of the local socket.
+   * @return Information for socket, incluing remote endpoint information. Returns error if
+   * information could not be queries. Returns nullptr if query was successful, but socket does not
+   * appear to be a TCP or Unix socket.
+   */
+  StatusOr<system::SocketInfo*> Lookup(uint32_t pid, uint32_t inode_num);
+
+  /**
+   * Flushes the cache so new connections can be discovered.
+   */
+  void Flush() {
+    socket_probers_->Update();
+    connections_.clear();
+    num_socket_prober_calls_ = 0;
+  }
+
+  /**
+   * Number of socket prober queries made since the last Flush() (or init).
+   * Cached responses are not included in this count.
+   * Useful for performance optimization, since socket prober queries are expensive.
+   */
+  int num_socket_prober_calls() { return num_socket_prober_calls_; }
+
+ private:
+  SocketInfoManager(std::filesystem::path proc_path, int conn_states)
+      : cfg_proc_path_(proc_path), cfg_conn_states_(conn_states) {}
+
+  const std::filesystem::path cfg_proc_path_;
+
+  // The connection states that are considered this SocketInfoManager.
+  // For example, SocketInfoManager can hold only a list of Established connections.
+  // See connection states at the top of this file.
+  const int cfg_conn_states_;
+
+  // Two-level to socket information:
+  // First key is namespace inode; second key is socket inode.
+  std::map<int, std::map<int, SocketInfo>> connections_;
+
+  // Portal through which new connection information is gathered,
+  // and populated into connections_.
+  std::unique_ptr<SocketProberManager> socket_probers_;
+
+  // Keep statistics of how many socket_prober calls were made.
+  // Useful for performance optimization, since socket_prober calls are expensive.
+  // This count does not include count of cached responses.
+  int num_socket_prober_calls_ = 0;
+};
+
+};  // namespace system
 }  // namespace pl

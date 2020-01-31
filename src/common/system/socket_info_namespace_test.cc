@@ -119,5 +119,53 @@ TEST_F(NetNamespaceTest, SocketProberManager) {
   }
 }
 
+TEST_F(NetNamespaceTest, SocketInfoManager) {
+  const std::string kProcPath = system::Config::GetInstance().proc_path();
+  const int kPID = container_.process_pid();
+
+  ASSERT_OK_AND_ASSIGN(
+      std::unique_ptr<SocketInfoManager> socket_info_db,
+      SocketInfoManager::Create(kProcPath, kTCPEstablishedState | kTCPListeningState));
+  ASSERT_NE(socket_info_db.get(), nullptr);
+
+  {
+    // Non-existent inode should return nullptr.
+    // 3 is very unlikely to be used as an inode number.
+    const uint32_t kUnusedInode = 3;
+    ASSERT_OK_AND_ASSIGN(system::SocketInfo * socket_info,
+                         socket_info_db->Lookup(kPID, kUnusedInode));
+    EXPECT_EQ(socket_info, nullptr);
+    EXPECT_EQ(socket_info_db->num_socket_prober_calls(), 1);
+  }
+
+  {
+    // Hacky: For the container in question, FD 6 is a valid socket FD.
+    // If container is changed, or if the container is found to have races, this needs to be
+    // updated. TOOD(oazizi): Make this more programmatic.
+    uint32_t kFD = 6;
+    std::string fd_path = absl::Substitute("$0/$1/fd/$2", kProcPath, kPID, kFD);
+    ASSERT_OK_AND_ASSIGN(std::filesystem::path fd_link, fs::ReadSymlink(fd_path));
+    ASSERT_OK_AND_ASSIGN(uint32_t inode_num,
+                         fs::ExtractInodeNum(fs::kSocketInodePrefix, fd_link.string()));
+    ASSERT_OK_AND_ASSIGN(system::SocketInfo * socket_info, socket_info_db->Lookup(kPID, inode_num));
+    ASSERT_NE(socket_info, nullptr);
+    EXPECT_EQ(socket_info->family, AF_INET);
+
+    // Expecting caching to be in effect.
+    EXPECT_EQ(socket_info_db->num_socket_prober_calls(), 1);
+
+    socket_info_db->Flush();
+
+    // Flush resets counter
+    EXPECT_EQ(socket_info_db->num_socket_prober_calls(), 0);
+    ASSERT_OK_AND_ASSIGN(socket_info, socket_info_db->Lookup(kPID, inode_num));
+    ASSERT_NE(socket_info, nullptr);
+    EXPECT_EQ(socket_info->family, AF_INET);
+
+    // After flush, we should have made one more call.
+    EXPECT_EQ(socket_info_db->num_socket_prober_calls(), 1);
+  }
+}
+
 }  // namespace system
 }  // namespace pl
