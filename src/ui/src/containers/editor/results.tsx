@@ -1,21 +1,18 @@
 import './results.scss';
 
-import {tablesFromResults} from 'components/chart/data';
+import {extractData, tablesFromResults} from 'components/chart/data';
 import * as Graph from 'components/chart/graph';
 import * as LineChart from 'components/chart/line-chart';
 import * as Scatter from 'components/chart/scatter';
-
-import {extractData} from 'components/chart/data';
 import {chartsFromSpec} from 'components/chart/spec';
 import {Spinner} from 'components/spinner/spinner';
-
+import {QueryResultErrors, QueryResultTable} from 'containers/vizier/query-result-viewer';
+import {VoyagerTrigger} from 'containers/vizier/voyager';
 import {ExecuteQueryResult} from 'gql-types';
 // @ts-ignore : TS does not like image files.
 import * as gridViewIcon from 'images/icons/grid-view.svg';
 import * as React from 'react';
 import {Button, Modal, Nav, Tab} from 'react-bootstrap';
-
-import {QueryResultErrors, QueryResultTable} from '../vizier/query-result-viewer';
 
 interface ConsoleResultsProps {
   loading?: boolean;
@@ -128,6 +125,7 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
               >
                 <img src={gridViewIcon} />
               </Button>
+              <VoyagerTrigger data={data} />
             </Nav>
             <Tab.Content>
               {tabs.map((tab, i) => (
@@ -148,6 +146,8 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
       </div>
     );
   });
+
+ConsoleResults.displayName = 'ConsoleResults';
 
 interface ResultsGridViewProps {
   content: React.ReactNode[];

@@ -13,7 +13,6 @@ import * as uuid from 'uuid/v1';
 import {ApolloProvider, useMutation, useQuery} from '@apollo/react-hooks';
 
 import {Drawer} from '../../components/drawer/drawer';
-import {Voyager} from '../vizier/voyager';
 import {saveCodeToStorage} from './code-utils';
 import {EditorDrawerMenu, Script} from './drawer-menu';
 import {ConsoleTab} from './tab';
@@ -25,8 +24,6 @@ const PIXIE_EDITOR_LAST_OPEN_TAB_KEY = 'pixie-editor-last-opened';
 export interface EditorTabInfo {
   title: string;
   id: string;
-  updateVoyager?: () => void;
-  updateResults?: (results: string) => void;
 }
 
 interface EditorState {
@@ -56,10 +53,6 @@ export const Editor = ({ client }) => {
 
   const [state, setState] = React.useState<EditorState>({ tabs: savedTabs, activeTab: lastOpenTab });
 
-  // These state values are for Voyager.
-  const [resultsState, setResultsState] = React.useState<string>('');
-  const [voyagerOpenState, setVoyagerOpenState] = React.useState<boolean>(false);
-
   React.useEffect(() => {
     localStorage.setItem(PIXIE_EDITOR_TABS_KEY, JSON.stringify(state.tabs));
   }, [state.tabs]);
@@ -74,16 +67,6 @@ export const Editor = ({ client }) => {
       return;
     }
     setState(({ tabs }) => ({ tabs, activeTab: id }));
-  };
-
-  const updateResultsState = (results: string) => {
-    setResultsState(results);
-  };
-
-  const updateVoyagerOpenState = () => {
-    setVoyagerOpenState((voyagerState) => {
-      return !voyagerState;
-    });
   };
 
   const deleteTab = (id) => {
@@ -127,10 +110,7 @@ export const Editor = ({ client }) => {
 
   return (
     <ApolloProvider client={client}>
-      <div className='pixie-voyager' style={{ display: voyagerOpenState ? 'block' : 'none'}}>
-        <Voyager data={resultsState}/>
-      </div>
-      <div className='pixie-editor-container' style={{ display: voyagerOpenState ? 'none' : 'flex', height: '100%'}}>
+      <div className='pixie-editor-container' style={{ display: 'flex', height: '100%' }}>
         <Drawer
           openedWidth='15vw'
           defaultOpened={data && data.drawerOpened}
@@ -161,10 +141,7 @@ export const Editor = ({ client }) => {
                   key={tab.id}
                   unmountOnExit={false}
                   className='pixie-editor-content-fullbleed'>
-                  <ConsoleTab {...tab}
-                    updateResults={updateResultsState}
-                    updateVoyager={updateVoyagerOpenState}
-                  />
+                  <ConsoleTab {...tab} />
                 </Tab.Pane>,
               )}
             </Tab.Content>
