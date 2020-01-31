@@ -31,6 +31,14 @@ struct SockAddr {
 };
 
 /**
+ * Checks if the IPv6 addr is a mappped IPv4 address (e.g. ::ffff:x.x.x.x).
+ */
+inline bool IsIPv4Mapped(const struct in6_addr& a) {
+  return ((a.s6_addr16[0]) == 0) && ((a.s6_addr16[1]) == 0) && ((a.s6_addr16[2]) == 0) &&
+         ((a.s6_addr16[3]) == 0) && ((a.s6_addr16[4]) == 0) && ((a.s6_addr16[5]) == 0xFFFF);
+}
+
+/**
  * Parses IPv4 address to string. Does not mutate the result argument on parse failure.
  */
 inline Status IPv4AddrToString(const struct in_addr& in_addr, std::string* addr) {
@@ -66,13 +74,25 @@ inline Status ParseIPv4Addr(std::string_view addr_str_view, struct in6_addr* in6
 }
 
 /**
- * Parses IPv6 address to string. Does not mutate the result argument on parse failure.
+ * Parses IPv6 address to string. IPv4 mapped address are printed in IPv4 style.
+ * Does not mutate the result argument on parse failure.
  */
 inline Status IPv6AddrToString(const struct in6_addr& in6_addr, std::string* addr) {
   char buf[INET6_ADDRSTRLEN];
-  if (inet_ntop(AF_INET6, &in6_addr, buf, INET6_ADDRSTRLEN) == nullptr) {
-    return error::InvalidArgument("Could not parse sockaddr (AF_INET6) errno=$0", errno);
+  if (!IsIPv4Mapped(in6_addr)) {
+    if (inet_ntop(AF_INET6, &in6_addr, buf, INET6_ADDRSTRLEN) == nullptr) {
+      return error::InvalidArgument("Could not parse sockaddr (AF_INET6) errno=$0", errno);
+    }
+  } else {
+    // We have an IPv4 address mapped as IPv6.
+    // The IPv4 IP is located in the last 32-bit word of IPv6 address.
+    const int kIPv4Offset = 3;
+    if (inet_ntop(AF_INET, &in6_addr.s6_addr32[kIPv4Offset], buf, INET_ADDRSTRLEN) == nullptr) {
+      return error::InvalidArgument(
+          "Could not parse sockaddr (AF_INET mapped as AF_INET6) errno=$0", errno);
+    }
   }
+
   addr->assign(buf);
 
   return Status::OK();

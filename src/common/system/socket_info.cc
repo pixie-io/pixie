@@ -2,7 +2,6 @@
 
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <linux/in6.h>
 #include <linux/inet_diag.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>

@@ -121,6 +121,19 @@ TEST(ParseIPAddr, ipv6) {
   EXPECT_EQ(addr, "2001:db8:85a3::8a2e:370:7334");
 }
 
+TEST(ParseIPAddr, ipv4_mapped_into_ipv6) {
+  // Test address.
+  struct in6_addr in6_addr;
+  EXPECT_OK(ParseIPv6Addr("::ffff:1.2.3.4", &in6_addr));
+
+  // Now check for the expected string.
+  std::string addr;
+  Status s = IPv6AddrToString(in6_addr, &addr);
+  EXPECT_OK(s);
+  // Note that formatting is slightly different (zeros removed).
+  EXPECT_EQ(addr, "1.2.3.4");
+}
+
 TEST(ParseIPAddr, ipv4_using_in6_addr) {
   // Create an IP address for the test.
   struct in6_addr in6_addr;
@@ -202,7 +215,7 @@ TEST(MapIPv4ToIPv6Test, WorksAsExpected) {
     EXPECT_EQ("::ffff:1.2.3.4", v6_addr.addr_str);
     std::string v6_addr_str;
     EXPECT_OK(IPv6AddrToString(std::get<struct in6_addr>(v6_addr.addr), &v6_addr_str));
-    EXPECT_EQ("::ffff:1.2.3.4", v6_addr_str);
+    EXPECT_EQ("1.2.3.4", v6_addr_str);
   }
   {
     CIDRBlock v4_cidr{v4_addr, 10};
@@ -210,7 +223,7 @@ TEST(MapIPv4ToIPv6Test, WorksAsExpected) {
     EXPECT_EQ("::ffff:1.2.3.4", v6_cidr.ip_addr.addr_str);
     std::string v6_addr_str;
     EXPECT_OK(IPv6AddrToString(std::get<struct in6_addr>(v6_cidr.ip_addr.addr), &v6_addr_str));
-    EXPECT_EQ("::ffff:1.2.3.4", v6_addr_str);
+    EXPECT_EQ("1.2.3.4", v6_addr_str);
   }
 }
 
