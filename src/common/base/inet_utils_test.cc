@@ -5,6 +5,42 @@ namespace pl {
 
 using ::testing::StrEq;
 
+TEST(ParseInetAddr, Basic) {
+  struct in_addr in_addr;
+  inet_pton(AF_INET, "10.1.2.3", &in_addr);
+  in_port_t in_port = htons(12345);
+
+  SockAddr addr;
+  ASSERT_OK(ParseInetAddr(in_addr, in_port, &addr));
+  EXPECT_EQ(addr.addr_str, "10.1.2.3");
+  EXPECT_EQ(addr.port, 12345);
+}
+
+TEST(ParseInet6Addr, Basic) {
+  struct in6_addr in6_addr = IN6ADDR_LOOPBACK_INIT;
+  in_port_t in6_port = htons(12345);
+
+  SockAddr addr;
+  ASSERT_OK(ParseInet6Addr(in6_addr, in6_port, &addr));
+  EXPECT_EQ(addr.addr_str, "::1");
+  EXPECT_EQ(addr.port, 12345);
+}
+
+TEST(ParseUnixAddr, Basic) {
+  // Using sun_path rom struct sockaddr_un:
+  // struct sockaddr_un {
+  //   sa_family_t sun_family;               /* AF_UNIX */
+  //   char        sun_path[108];            /* Pathname */
+  // };
+  const char path[108] = "/path/to/unix/domain/socket";
+  uint32_t inode_num = 54321;
+
+  SockAddr addr;
+  ASSERT_OK(ParseUnixAddr(path, inode_num, &addr));
+  EXPECT_EQ(addr.addr_str, "unix_socket");
+  EXPECT_EQ(addr.port, 54321);
+}
+
 TEST(ParseSockAddr, IPv4) {
   // Create an IP address for the test.
   struct sockaddr_in sockaddr;
@@ -33,10 +69,23 @@ TEST(ParseSockAddr, IPv6) {
   EXPECT_EQ(addr.port, 12345);
 }
 
+TEST(ParseSockAddr, Unix) {
+  struct sockaddr_un sockaddr;
+  sockaddr.sun_family = AF_UNIX;
+  const char kUnixPath[108] = "/path/to/unix/domain/socket";
+  memcpy(&sockaddr.sun_path, kUnixPath, sizeof(kUnixPath));
+
+  SockAddr addr;
+  Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
+  EXPECT_OK(s);
+  EXPECT_EQ(addr.addr_str, "unix_socket");
+  EXPECT_EQ(addr.port, -1);
+}
+
 TEST(ParseSockAddr, Unsupported) {
   // Create an IP address for the test.
   struct sockaddr_in sockaddr;
-  sockaddr.sin_family = AF_UNIX;
+  sockaddr.sin_family = AF_APPLETALK;
   inet_pton(AF_INET, "10.1.2.3", &sockaddr.sin_addr);
   sockaddr.sin_port = htons(53000);
 

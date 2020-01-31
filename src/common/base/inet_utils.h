@@ -1,9 +1,11 @@
 #pragma once
 
-// C++-style wrappers of C-style IP addresses APIs.
+// C++-style wrappers of C-style socket addresses.
+// TODO(oazizi): Consider renaming the file to sock_utils instead of inet_utils.
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/un.h>
 
 #include <string>
 #include <utility>
@@ -14,7 +16,7 @@
 
 namespace pl {
 
-enum class SockAddrFamily { kIPv4, kIPv6 };
+enum class SockAddrFamily { kIPv4, kIPv6, kUnix };
 
 /**
  * Describes a connection from user space. This corresponds to struct conn_info_t in
@@ -22,7 +24,7 @@ enum class SockAddrFamily { kIPv4, kIPv6 };
  */
 struct SockAddr {
   SockAddrFamily family = SockAddrFamily::kIPv4;
-  std::variant<struct in_addr, struct in6_addr> addr;
+  std::variant<struct in_addr, struct in6_addr, std::string> addr;
   // TODO(yzhao): Consider removing this as it can be derived from above.
   std::string addr_str = "-";
   int port = -1;
@@ -83,6 +85,21 @@ inline Status ParseIPv6Addr(std::string_view addr_str_view, struct in6_addr* in6
   }
   return Status::OK();
 }
+
+/**
+ * Parses a C-style sockaddr_in (IPv4) to a C++ style SockAddr.
+ */
+Status ParseInetAddr(struct in_addr in_addr, in_port_t port, SockAddr* addr);
+
+/**
+ * Parses a C-style sockaddr_in6 (IPv6) to a C++ style SockAddr.
+ */
+Status ParseInet6Addr(struct in6_addr in6_addr, in_port_t port, SockAddr* addr);
+
+/**
+ * Parses a C-style sockaddr_un (unix domain socket) to a C++ style SockAddr.
+ */
+Status ParseUnixAddr(const char* sun_path, uint32_t inode, SockAddr* addr);
 
 /**
  * Parses sockaddr into a C++ style SockAddr. Only accept IPv4 and IPv6 addresses.

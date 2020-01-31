@@ -773,24 +773,25 @@ void ConnectionTracker::HandleInactivity() {
 }
 
 namespace {
-
-Status ParseRemoteIPAddress(const system::SocketInfo& socket_info, SockAddr* sock_addr) {
+Status ParseSocketInfoRemoteAddr(const system::SocketInfo& socket_info, SockAddr* addr) {
+  Status s;
   switch (socket_info.family) {
     case AF_INET:
-      // This goes first so that the result argument won't be mutated when failed.
-      PL_RETURN_IF_ERROR(IPv4AddrToString(socket_info.remote_addr, &sock_addr->addr_str));
-      sock_addr->addr = reinterpret_cast<const struct in_addr&>(socket_info.remote_addr);
-      sock_addr->port = socket_info.remote_port;
-      return Status::OK();
+      PL_RETURN_IF_ERROR(ParseInetAddr(std::get<struct in_addr>(socket_info.remote_addr),
+                                       socket_info.remote_port, addr));
+      break;
     case AF_INET6:
-      PL_RETURN_IF_ERROR(IPv6AddrToString(socket_info.remote_addr, &sock_addr->addr_str));
-      sock_addr->addr = socket_info.remote_addr;
-      sock_addr->port = socket_info.remote_port;
-      return Status::OK();
+      PL_RETURN_IF_ERROR(ParseInet6Addr(std::get<struct in6_addr>(socket_info.remote_addr),
+                                        socket_info.remote_port, addr));
+      break;
+    case AF_UNIX:
+      PL_RETURN_IF_ERROR(ParseUnixAddr(std::get<struct un_path_t>(socket_info.remote_addr).path,
+                                       socket_info.remote_port, addr));
+      break;
   }
-  return error::InvalidArgument("Unexpected family $0", socket_info.family);
-}
 
+  return Status::OK();
+}
 }  // namespace
 
 void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
@@ -852,24 +853,11 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   // Success! Now copy the inferred socket information into the ConnectionTracker.
   const system::SocketInfo& socket_info = iter->second;
 
-  Status s;
-  switch (socket_info.family) {
-    case AF_INET:
-    case AF_INET6:
-      s = ParseRemoteIPAddress(socket_info, &open_info_.remote_addr);
-      if (!s.ok()) {
-        LOG(ERROR) << absl::Substitute("IP parsing failed [msg=$0]", s.msg());
-        return;
-      }
-      break;
-    case AF_UNIX:
-      // TODO(oazizi): This actually records the source inode number. Should actually populate the
-      // remote peer.
-      open_info_.remote_addr.addr_str = kUnixSocket;
-      open_info_.remote_addr.port = inode_num;
-      break;
-    default:
-      LOG(DFATAL) << absl::Substitute("Unexpected family $0", socket_info.family);
+  Status s = ParseSocketInfoRemoteAddr(socket_info, &open_info_.remote_addr);
+  if (!s.ok()) {
+    LOG(ERROR) << absl::Substitute("Remote address (type=$0) parsing failed. Message: $1",
+                                   socket_info.family, s.msg());
+    return;
   }
 
   LOG(INFO) << absl::Substitute("Inferred connection pid=$0 fd=$1 gen=$2 dest=$3:$4", pid(), fd(),

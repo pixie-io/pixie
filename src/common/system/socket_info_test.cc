@@ -49,10 +49,11 @@ std::string AddrPortStr(struct in_addr in_addr, in_port_t in_port) {
 MATCHER_P(HasLocalIPEndpoint, endpoint, "") {
   switch (arg.second.family) {
     case AF_INET:
-      return AddrPortStr(*reinterpret_cast<const struct in_addr*>(&arg.second.local_addr),
-                         arg.second.local_port) == endpoint;
+      return AddrPortStr(std::get<struct in_addr>(arg.second.local_addr), arg.second.local_port) ==
+             endpoint;
     case AF_INET6:
-      return AddrPortStr(arg.second.local_addr, arg.second.local_port) == endpoint;
+      return AddrPortStr(std::get<struct in6_addr>(arg.second.local_addr), arg.second.local_port) ==
+             endpoint;
     default:
       return false;
   }

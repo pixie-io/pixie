@@ -149,9 +149,14 @@ Status ProcessDiagMsg(const struct inet_diag_msg& diag_msg, unsigned int len,
   SocketInfo socket_info = {};
   socket_info.family = diag_msg.idiag_family;
   socket_info.local_port = diag_msg.id.idiag_sport;
-  socket_info.local_addr = *reinterpret_cast<const struct in6_addr*>(&diag_msg.id.idiag_src);
   socket_info.remote_port = diag_msg.id.idiag_dport;
-  socket_info.remote_addr = *reinterpret_cast<const struct in6_addr*>(&diag_msg.id.idiag_dst);
+  if (socket_info.family == AF_INET) {
+    socket_info.local_addr = *reinterpret_cast<const struct in_addr*>(&diag_msg.id.idiag_src);
+    socket_info.remote_addr = *reinterpret_cast<const struct in_addr*>(&diag_msg.id.idiag_dst);
+  } else {
+    socket_info.local_addr = *reinterpret_cast<const struct in6_addr*>(&diag_msg.id.idiag_src);
+    socket_info.remote_addr = *reinterpret_cast<const struct in6_addr*>(&diag_msg.id.idiag_dst);
+  }
 
   socket_info_entries->insert({diag_msg.idiag_inode, std::move(socket_info)});
 

@@ -14,6 +14,16 @@
 
 #include "src/common/base/base.h"
 
+// For convenience, a unix domain socket path, from struct sockaddr_un.
+// Leave outside the namespace, so it feels like an OS struct.
+// struct sockaddr_un {
+//   sa_family_t sun_family;               /* AF_UNIX */
+//   char        sun_path[108];            /* Pathname */
+// };
+struct un_path_t {
+  char path[108];
+};
+
 namespace pl {
 namespace system {
 
@@ -23,9 +33,10 @@ constexpr int kTCPListeningState = 1 << 10;
 
 struct SocketInfo {
   sa_family_t family;
-  struct in6_addr local_addr;
+  std::variant<struct in6_addr, struct in_addr, struct un_path_t> local_addr;
+  std::variant<struct in6_addr, struct in_addr, struct un_path_t> remote_addr;
+  // Use uint32_t instead of in_port_t, since it represents an inode for unix domain sockets.
   uint32_t local_port;
-  struct in6_addr remote_addr;
   uint32_t remote_port;
 };
 

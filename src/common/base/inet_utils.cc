@@ -16,22 +16,46 @@ SockAddr MapIPv4ToIPv6(const SockAddr& addr) {
   return v6_addr;
 }
 
+Status ParseInetAddr(struct in_addr in_addr, in_port_t port, SockAddr* addr) {
+  // This goes first so that the result argument won't be mutated when failed.
+  PL_RETURN_IF_ERROR(IPv4AddrToString(in_addr, &addr->addr_str));
+  addr->family = SockAddrFamily::kIPv4;
+  addr->addr = reinterpret_cast<const struct in_addr&>(in_addr);
+  addr->port = ntohs(port);
+  return Status::OK();
+}
+
+Status ParseInet6Addr(struct in6_addr in6_addr, in_port_t port, SockAddr* addr) {
+  PL_RETURN_IF_ERROR(IPv6AddrToString(in6_addr, &addr->addr_str));
+  addr->family = SockAddrFamily::kIPv6;
+  addr->addr = reinterpret_cast<const struct in6_addr&>(in6_addr);
+  addr->port = ntohs(port);
+  return Status::OK();
+}
+
+Status ParseUnixAddr(const char* sun_path, uint32_t inode_num, SockAddr* addr) {
+  addr->addr_str = "unix_socket";
+  addr->family = SockAddrFamily::kUnix;
+  addr->addr = std::string(sun_path);
+  addr->port = inode_num;
+  return Status::OK();
+}
+
 Status ParseSockAddr(const struct sockaddr* sa, SockAddr* addr) {
   switch (sa->sa_family) {
     case AF_INET: {
       const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
-      PL_RETURN_IF_ERROR(IPv4AddrToString(sa_in->sin_addr, &addr->addr_str));
-      addr->family = SockAddrFamily::kIPv4;
-      addr->addr = sa_in->sin_addr;
-      addr->port = ntohs(sa_in->sin_port);
+      PL_RETURN_IF_ERROR(ParseInetAddr(sa_in->sin_addr, sa_in->sin_port, addr));
       return Status::OK();
     }
     case AF_INET6: {
       const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
-      PL_RETURN_IF_ERROR(IPv6AddrToString(sa_in6->sin6_addr, &addr->addr_str));
-      addr->family = SockAddrFamily::kIPv6;
-      addr->addr = sa_in6->sin6_addr;
-      addr->port = ntohs(sa_in6->sin6_port);
+      PL_RETURN_IF_ERROR(ParseInet6Addr(sa_in6->sin6_addr, sa_in6->sin6_port, addr));
+      return Status::OK();
+    }
+    case AF_UNIX: {
+      const auto* sa_un = reinterpret_cast<const struct sockaddr_un*>(sa);
+      PL_RETURN_IF_ERROR(ParseUnixAddr(sa_un->sun_path, -1, addr));
       return Status::OK();
     }
     default:
@@ -88,6 +112,9 @@ bool CIDRContainsIPAddr(const CIDRBlock& block, const SockAddr& ip_addr) {
     case SockAddrFamily::kIPv6:
       return IPv6CIDRContains(std::get<struct in6_addr>(block.ip_addr.addr), block.prefix_length,
                               std::get<struct in6_addr>(ip_addr.addr));
+    default:
+      LOG(DFATAL) << absl::Substitute("Unexpected SockAddr family: $0",
+                                      magic_enum::enum_name(ip_addr.family));
   }
   return false;
 }
