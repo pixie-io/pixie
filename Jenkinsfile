@@ -549,6 +549,23 @@ builders['Lint & Docs'] = {
  * The build script starts here.
  ********************************************/
 def buildScriptForCommits = {
+  if (isMasterRun) {
+    // If there is a later build queued up, we want to stop the current build so
+    // we can execute the later build instead.
+    def q = Jenkins.instance.queue
+    abortBuild = false
+    q.items.each {
+      if (it.task.name == "pixielabs-master") {
+        abortBuild = true
+      }
+    }
+
+    if (abortBuild) {
+      echo "Stopping current build because a later build is already enqueued"
+      return
+    }
+  }
+
   if (isPhabricatorTriggeredBuild()) {
     codeReviewPreBuild()
   }
