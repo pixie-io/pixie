@@ -333,11 +333,11 @@ NetlinkSocketProber* SocketProberManager::GetSocketProber(uint32_t ns) {
 
 StatusOr<NetlinkSocketProber*> SocketProberManager::CreateSocketProber(
     uint32_t ns, const std::vector<int>& pids) {
-  StatusOr<std::unique_ptr<system::NetlinkSocketProber>> socket_prober_or = error::NotFound("");
+  StatusOr<std::unique_ptr<NetlinkSocketProber>> socket_prober_or = error::NotFound("");
 
   // Use any provided PID to create a socket into the network namespace.
   for (auto& pid : pids) {
-    socket_prober_or = system::NetlinkSocketProber::Create(pid);
+    socket_prober_or = NetlinkSocketProber::Create(pid);
     if (socket_prober_or.ok()) {
       break;
     }
@@ -354,7 +354,7 @@ StatusOr<NetlinkSocketProber*> SocketProberManager::CreateSocketProber(
   VLOG(2) << absl::Substitute("SocketProberManager: Creating entry [ns=$0]", ns);
 
   // This socket prober will be in the network namespace defined by ns.
-  std::unique_ptr<system::NetlinkSocketProber> socket_prober = socket_prober_or.ConsumeValueOrDie();
+  std::unique_ptr<NetlinkSocketProber> socket_prober = socket_prober_or.ConsumeValueOrDie();
   NetlinkSocketProber* socket_prober_ptr = socket_prober.get();
   DCHECK_NE(socket_prober_ptr, nullptr);
   socket_probers_[ns] =
@@ -362,7 +362,7 @@ StatusOr<NetlinkSocketProber*> SocketProberManager::CreateSocketProber(
   return socket_prober_ptr;
 }
 
-StatusOr<system::NetlinkSocketProber*> SocketProberManager::GetOrCreateSocketProber(
+StatusOr<NetlinkSocketProber*> SocketProberManager::GetOrCreateSocketProber(
     uint32_t ns, const std::vector<int>& pids) {
   // First check to see if an existing socket prober on the namespace exists.
   // If so, use that one.
@@ -404,12 +404,12 @@ StatusOr<std::unique_ptr<SocketInfoManager>> SocketInfoManager::Create(
   return socket_info_db_ptr;
 }
 
-StatusOr<system::SocketInfo*> SocketInfoManager::Lookup(uint32_t pid, uint32_t inode_num) {
-  PL_ASSIGN_OR_RETURN(uint32_t net_ns, system::NetNamespace(cfg_proc_path_, pid));
+StatusOr<SocketInfo*> SocketInfoManager::Lookup(uint32_t pid, uint32_t inode_num) {
+  PL_ASSIGN_OR_RETURN(uint32_t net_ns, NetNamespace(cfg_proc_path_, pid));
 
   // Step 1: Get the map of connections for this network namespace.
   // Create the map if it doesn't already exist.
-  std::map<int, system::SocketInfo>* namespace_conns;
+  std::map<int, SocketInfo>* namespace_conns;
 
   auto ns_iter = connections_.find(net_ns);
   if (ns_iter != connections_.end()) {
@@ -417,7 +417,7 @@ StatusOr<system::SocketInfo*> SocketInfoManager::Lookup(uint32_t pid, uint32_t i
     namespace_conns = &ns_iter->second;
   } else {
     // No map of connections for this network namespace, so use a socker prober to populate one.
-    PL_ASSIGN_OR_RETURN(system::NetlinkSocketProber * socket_prober,
+    PL_ASSIGN_OR_RETURN(NetlinkSocketProber * socket_prober,
                         socket_probers_->GetOrCreateSocketProber(net_ns, {static_cast<int>(pid)}));
     DCHECK(socket_prober != nullptr);
 

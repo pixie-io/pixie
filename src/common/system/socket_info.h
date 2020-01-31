@@ -235,7 +235,7 @@ class SocketInfoManager {
    * information could not be queries. Returns nullptr if query was successful, but socket does not
    * appear to be a TCP or Unix socket.
    */
-  StatusOr<system::SocketInfo*> Lookup(uint32_t pid, uint32_t inode_num);
+  StatusOr<SocketInfo*> Lookup(uint32_t pid, uint32_t inode_num);
 
   /**
    * Flushes the cache so new connections can be discovered.
