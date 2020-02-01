@@ -27,16 +27,21 @@ using pl::testing::proto::EqualsProto;
 class LogicalPlannerTest : public ::testing::Test {
  protected:
   void SetUp() { info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb(); }
+  plannerpb::QueryRequest MakeQueryRequest(const std::string& query) {
+    plannerpb::QueryRequest query_request;
+    query_request.set_query_str(query);
+    return query_request;
+  }
   udfspb::UDFInfo info_;
 };
 
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto plan =
-      planner
-          ->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(), testutils::kQueryForTwoAgents)
-          .ConsumeValueOrDie();
+  auto plan = planner
+                  ->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(),
+                         MakeQueryRequest(testutils::kQueryForTwoAgents))
+                  .ConsumeValueOrDie();
   auto out_pb = plan->ToProto().ConsumeValueOrDie();
   EXPECT_THAT(out_pb, Partially(EqualsProto(testutils::kExpectedPlanTwoAgentOneKelvin)))
       << out_pb.DebugString();
@@ -46,7 +51,7 @@ TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
       planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    testutils::kHttpRequestStats);
+                    MakeQueryRequest(testutils::kHttpRequestStats));
   EXPECT_OK(plan_or_s);
 }
 
@@ -106,7 +111,7 @@ TEST_F(LogicalPlannerTest, duplicate_int) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
       planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    kCompileTimeQuery);
+                    MakeQueryRequest(kCompileTimeQuery));
   EXPECT_OK(plan_or_s);
 }
 
@@ -143,7 +148,7 @@ TEST_F(LogicalPlannerTest, NestedCompileTime) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
       planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    kTwoWindowQuery);
+                    MakeQueryRequest(kTwoWindowQuery));
   EXPECT_OK(plan_or_s);
 }
 }  // namespace logical_planner

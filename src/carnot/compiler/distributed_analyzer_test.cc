@@ -29,8 +29,10 @@ class DistributedAnalyzerTest : public OperatorTests {
   std::unique_ptr<DistributedPlan> PlanQuery(const std::string& query) {
     auto udf_info = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
     auto planner = logical_planner::LogicalPlanner::Create(udf_info).ConsumeValueOrDie();
+    plannerpb::QueryRequest query_request;
+    query_request.set_query_str(query);
     // Test via the logical planner for the convenience of being able to test a query string.
-    return planner->Plan(CreateTwoAgentsOneKelvinPlannerState(kHttpEventsSchema), query)
+    return planner->Plan(CreateTwoAgentsOneKelvinPlannerState(kHttpEventsSchema), query_request)
         .ConsumeValueOrDie();
   }
 };

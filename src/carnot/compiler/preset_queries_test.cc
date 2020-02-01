@@ -14,6 +14,7 @@
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/logical_planner/logical_planner.h"
 #include "src/carnot/compiler/logical_planner/test_utils.h"
+#include "src/carnot/compiler/plannerpb/query_flags.pb.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/funcs/metadata/metadata_ops.h"
 #include "src/carnot/planpb/plan.pb.h"
@@ -102,7 +103,9 @@ TEST_F(PresetQueriesTest, PresetQueries) {
     auto planner = logical_planner::LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
     auto multi_agent_state =
         logical_planner::testutils::CreateOneAgentOneKelvinPlannerState(schema_);
-    auto plan_or_s = planner->Plan(multi_agent_state, query.second);
+    plannerpb::QueryRequest query_request;
+    query_request.set_query_str(query.second);
+    auto plan_or_s = planner->Plan(multi_agent_state, query_request);
     EXPECT_OK(plan_or_s) << "Query '" << query.first << "' failed";
   }
 
@@ -111,7 +114,9 @@ TEST_F(PresetQueriesTest, PresetQueries) {
     auto planner = logical_planner::LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
     auto multi_agent_state =
         logical_planner::testutils::CreateOneAgentOneKelvinPlannerState(schema_);
-    auto plan_or_s = planner->Plan(multi_agent_state, query.second);
+    plannerpb::QueryRequest query_request;
+    query_request.set_query_str(query.second);
+    auto plan_or_s = planner->Plan(multi_agent_state, query_request);
     EXPECT_OK(plan_or_s) << "Query '" << query.first << "' failed";
   }
 }

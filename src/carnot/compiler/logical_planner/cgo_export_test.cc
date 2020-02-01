@@ -9,6 +9,7 @@
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/logical_planner/test_utils.h"
+#include "src/carnot/compiler/plannerpb/query_flags.pb.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
@@ -42,6 +43,13 @@ class PlannerExportTest : public ::testing::Test {
     // or figure out a different way to handle this.
     udf_info_str_ = kUDFInfoPb;
   }
+
+  plannerpb::QueryRequest MakeQueryRequest(const std::string& query) {
+    plannerpb::QueryRequest query_request;
+    query_request.set_query_str(query);
+    return query_request;
+  }
+
   void TearDown() override { PlannerFree(planner_); }
   PlannerPtr MakePlanner() { return PlannerNew(udf_info_str_.c_str(), udf_info_str_.length()); }
   PlannerPtr planner_;
@@ -49,9 +57,9 @@ class PlannerExportTest : public ::testing::Test {
 };
 
 StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string planner_state,
-                                       std::string query, int* resultLen) {
+                                       std::string query_result, int* resultLen) {
   char* result = PlannerPlan(planner_ptr, planner_state.c_str(), planner_state.length(),
-                             query.c_str(), query.length(), resultLen);
+                             query_result.c_str(), query_result.length(), resultLen);
   if (*resultLen == 0) {
     return error::InvalidArgument("Planner failed to return.");
   }
@@ -66,10 +74,11 @@ TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
   planner_ = MakePlanner();
   int result_len;
   std::string query = "df = px.DataFrame(table='table1')\npx.display(df, 'out')";
+  auto query_request = MakeQueryRequest(query);
 
   auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
-  auto interface_result =
-      PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), query, &result_len);
+  auto interface_result = PlannerPlanGoStr(planner_, logical_planner_state.DebugString(),
+                                           query_request.DebugString(), &result_len);
   ASSERT_OK(interface_result);
 
   distributedpb::LogicalPlannerResult planner_result;
@@ -89,8 +98,9 @@ TEST_F(PlannerExportTest, bad_queries) {
       "df = px.DataFrame(table='bad_table_name')\n"
       "px.display(df, 'out')";
   auto logical_planner_state = testutils::CreateTwoAgentsPlannerState();
-  auto interface_result =
-      PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), bad_table_query, &result_len);
+  auto query_request = MakeQueryRequest(bad_table_query);
+  auto interface_result = PlannerPlanGoStr(planner_, logical_planner_state.DebugString(),
+                                           query_request.DebugString(), &result_len);
   // The compiler should successfully compile and a proto should be returned.
   ASSERT_OK(interface_result);
   distributedpb::LogicalPlannerResult planner_result_pb;
@@ -111,13 +121,30 @@ TEST_F(PlannerExportTest, udf_in_query) {
   planner_ = MakePlanner();
   auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
   int result_len;
+  auto query_request = MakeQueryRequest(kUDFQuery);
+  auto interface_result = PlannerPlanGoStr(planner_, logical_planner_state.DebugString(),
+                                           query_request.DebugString(), &result_len);
+  // The compiler should successfully compile and a proto should be returned.
+  ASSERT_OK(interface_result);
+  distributedpb::LogicalPlannerResult planner_result_pb;
+  ASSERT_TRUE(planner_result_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
+  EXPECT_OK(planner_result_pb.status());
+}
+
+TEST_F(PlannerExportTest, pass_query_string_instead_of_req_should_fail) {
+  planner_ = MakePlanner();
+  auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
+  int result_len;
+  // Pass in kUDFQuery instead of query_request object here.
   auto interface_result =
       PlannerPlanGoStr(planner_, logical_planner_state.DebugString(), kUDFQuery, &result_len);
   // The compiler should successfully compile and a proto should be returned.
   ASSERT_OK(interface_result);
   distributedpb::LogicalPlannerResult planner_result_pb;
   ASSERT_TRUE(planner_result_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
-  EXPECT_OK(planner_result_pb.status());
+  ASSERT_NOT_OK(planner_result_pb.status());
+  EXPECT_THAT(planner_result_pb.status().msg(),
+              ::testing::ContainsRegex("Failed to process the query request.*"));
 }
 
 }  // namespace logical_planner

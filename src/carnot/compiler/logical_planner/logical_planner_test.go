@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
@@ -87,7 +89,10 @@ func TestPlanner_Simple(t *testing.T) {
 	query := "df = px.DataFrame(table='table1')\npx.display(df, 'out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
 	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
-	plannerResultPB, err := c.Plan(plannerStatePB, query)
+	queryRequestPB := &plannerpb.QueryRequest{
+		QueryStr: query,
+	}
+	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)
 
 	if err != nil {
 		log.Fatalln("Failed to plan:", err)
@@ -158,7 +163,10 @@ func TestPlanner_MissingTable(t *testing.T) {
 	query := "df = px.DataFrame(table='bad_table')\npx.display(df, 'out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
 	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
-	plannerResultPB, err := c.Plan(plannerStatePB, query)
+	queryRequestPB := &plannerpb.QueryRequest{
+		QueryStr: query,
+	}
+	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)
 
 	if err != nil {
 		log.Fatalln("Failed to plan:", err)

@@ -50,13 +50,14 @@ Status LogicalPlanner::Init(const udfspb::UDFInfo& udf_info) {
 }
 
 StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
-    const distributedpb::LogicalPlannerState& logical_state, const std::string& query) {
+    const distributedpb::LogicalPlannerState& logical_state,
+    const plannerpb::QueryRequest& query_request) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
   // Compile into the IR.
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
                       CreateCompilerState(logical_state, registry_info.get()));
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> single_node_plan,
-                      compiler_.CompileToIR(query, compiler_state.get()));
+                      compiler_.CompileToIR(query_request.query_str(), compiler_state.get()));
   // Create the distributed plan.
   PL_ASSIGN_OR_RETURN(std::unique_ptr<distributed::DistributedPlan> distributed_plan,
                       distributed_planner_->Plan(logical_state.distributed_state(),

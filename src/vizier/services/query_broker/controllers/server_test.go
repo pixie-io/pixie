@@ -372,16 +372,17 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
+	queryRequest := &plannerpb.QueryRequest{
+		QueryStr: testQuery,
+	}
 	planner := mock_controllers.NewMockPlanner(ctrl)
 	planner.EXPECT().
-		Plan(plannerStatePB, testQuery).
+		Plan(plannerStatePB, queryRequest).
 		Return(plannerResultPB, nil)
 
 	s, err := NewServer(env, mds, nc)
 	queryID := uuid.NewV4()
-	queryResult, err := s.ExecuteQueryWithPlanner(context.Background(), &plannerpb.QueryRequest{
-		QueryStr: testQuery,
-	}, queryID, planner, &planpb.PlanOptions{Analyze: true})
+	queryResult, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest, queryID, planner, &planpb.PlanOptions{Analyze: true})
 	if err != nil {
 		t.Fatal("Failed to return results from ExecuteQuery.")
 	}
@@ -417,9 +418,11 @@ func TestExecuteQueryInvalidFlags(t *testing.T) {
 
 	s, err := newServer(env, mds, nc, createExecutorMock)
 
-	result, err := s.ExecuteQuery(context.Background(), &plannerpb.QueryRequest{
+	queryRequest := &plannerpb.QueryRequest{
 		QueryStr: invalidFlagQuery,
-	})
+	}
+
+	result, err := s.ExecuteQuery(context.Background(), queryRequest)
 	assert.Nil(t, err)
 	assert.Equal(t, "thisisnotaflag is not a valid flag", result.Status.Msg)
 }
@@ -630,16 +633,18 @@ func TestPlannerErrorResult(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
+	queryRequest := &plannerpb.QueryRequest{
+		QueryStr: badQuery,
+	}
 	planner := mock_controllers.NewMockPlanner(ctrl)
 	planner.EXPECT().
-		Plan(plannerStatePB, badQuery).
+		Plan(plannerStatePB, queryRequest).
 		Return(badPlannerResultPB, nil)
 
 	s, err := newServer(env, mds, nc, createExecutorMock)
 	queryID := uuid.NewV4()
-	result, err := s.ExecuteQueryWithPlanner(context.Background(), &plannerpb.QueryRequest{
-		QueryStr: badQuery,
-	}, queryID, planner, &planpb.PlanOptions{Analyze: true})
+	result, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest,
+		queryID, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Cannot execute query.")
@@ -715,16 +720,18 @@ func TestErrorInStatusResult(t *testing.T) {
 	}
 
 	planner := mock_controllers.NewMockPlanner(ctrl)
+	queryRequest := &plannerpb.QueryRequest{
+		QueryStr: badQuery,
+	}
+
 	planner.EXPECT().
-		Plan(plannerStatePB, badQuery).
+		Plan(plannerStatePB, queryRequest).
 		Return(badPlannerResultPB, nil)
 
 	s, err := newServer(env, mds, nc, createExecutorMock)
 
 	queryID := uuid.NewV4()
-	result, err := s.ExecuteQueryWithPlanner(context.Background(), &plannerpb.QueryRequest{
-		QueryStr: badQuery,
-	}, queryID, planner, &planpb.PlanOptions{Analyze: true})
+	result, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest, queryID, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Error while executing query.")

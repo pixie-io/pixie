@@ -7,6 +7,7 @@
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/distributed_planner.h"
+#include "src/carnot/compiler/plannerpb/query_flags.pb.h"
 #include "src/carnot/compiler/tablet_rules.h"
 
 namespace pl {
@@ -36,7 +37,8 @@ class LogicalPlanner : public NotCopyable {
    * @return std::unique_ptr<DistributedPlan> or error if one occurs during compilation.
    */
   StatusOr<std::unique_ptr<distributed::DistributedPlan>> Plan(
-      const distributedpb::LogicalPlannerState& logical_state, const std::string& query);
+      const distributedpb::LogicalPlannerState& logical_state,
+      const plannerpb::QueryRequest& query);
 
   Status Init(std::unique_ptr<compiler::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);

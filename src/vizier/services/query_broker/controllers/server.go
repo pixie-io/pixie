@@ -33,7 +33,7 @@ import (
 
 // Planner describes the interface for any planner.
 type Planner interface {
-	Plan(planState *distributedpb.LogicalPlannerState, query string) (*distributedpb.LogicalPlannerResult, error)
+	Plan(planState *distributedpb.LogicalPlannerState, req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error)
 	Free()
 }
 
@@ -198,7 +198,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	}(start)
 
 	// Compile the query plan.
-	plannerResultPB, err := planner.Plan(plannerState, req.QueryStr)
+	plannerResultPB, err := planner.Plan(plannerState, req)
 	if err != nil {
 		return nil, err
 	}

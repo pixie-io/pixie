@@ -29,6 +29,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/compiler"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	"pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 )
@@ -42,17 +43,18 @@ type GoPlanner struct {
 func New(udfInfo *udfspb.UDFInfo) GoPlanner {
 	var ret GoPlanner
 	udfInfoStr := proto.MarshalTextString(udfInfo)
-	ret.planner = C.PlannerNewGoStr( udfInfoStr)
+	ret.planner = C.PlannerNewGoStr(udfInfoStr)
 
 	return ret
 }
 
 // Plan the query with the passed in state, then return the result as a planner result protobuf.
-func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, query string) (*distributedpb.LogicalPlannerResult, error) {
+func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, queryRequest *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
 	var resultLen C.int
 	// TODO(philkuz) change this into the serialized (not human readable version) and figure out bytes[] passing.
 	stateStr := proto.MarshalTextString(planState)
-	res := C.PlannerPlanGoStr(cm.planner, stateStr, query, &resultLen)
+	queryRequestStr := proto.MarshalTextString(queryRequest)
+	res := C.PlannerPlanGoStr(cm.planner, stateStr, queryRequestStr, &resultLen)
 	defer C.StrFree(res)
 	lp := C.GoBytes(unsafe.Pointer(res), resultLen)
 	if resultLen == 0 {

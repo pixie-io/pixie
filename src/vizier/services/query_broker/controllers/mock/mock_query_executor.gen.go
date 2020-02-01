@@ -8,6 +8,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	go_uuid "github.com/satori/go.uuid"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	queryresultspb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	querybrokerpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
@@ -38,7 +39,7 @@ func (m *MockPlanner) EXPECT() *MockPlannerMockRecorder {
 }
 
 // Plan mocks base method
-func (m *MockPlanner) Plan(planState *distributedpb.LogicalPlannerState, query string) (*distributedpb.LogicalPlannerResult, error) {
+func (m *MockPlanner) Plan(planState *distributedpb.LogicalPlannerState, query *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
 	ret := m.ctrl.Call(m, "Plan", planState, query)
 	ret0, _ := ret[0].(*distributedpb.LogicalPlannerResult)
 	ret1, _ := ret[1].(error)

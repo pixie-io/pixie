@@ -77,28 +77,45 @@ PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
 }
 
 char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
-                  int planner_state_str_len, const char* query_str_c, int query_str_len,
-                  int* resultLen) {
+                  int planner_state_str_len, const char* query_request_str_c,
+                  int query_request_str_len, int* resultLen) {
   DCHECK(planner_state_str_c != nullptr);
-  DCHECK(query_str_c != nullptr);
+  DCHECK(query_request_str_c != nullptr);
   std::string planner_state_pb_str(planner_state_str_c,
                                    planner_state_str_c + planner_state_str_len);
-  std::string query_str(query_str_c, query_str_c + query_str_len);
+  std::string query_request_pb_str(query_request_str_c,
+                                   query_request_str_c + query_request_str_len);
 
+  // Load in the planner state protobuf.
   pl::carnot::compiler::distributedpb::LogicalPlannerState planner_state_pb;
   // TODO(philkuz) convert this to read serialized calls instead of human readable.
-  bool str_merge_success =
+  bool planner_state_merge_success =
       google::protobuf::TextFormat::MergeFromString(planner_state_pb_str, &planner_state_pb);
-  if (!str_merge_success) {
-    LOG(ERROR) << absl::Substitute("Couldn't process the logical planner state: $0.",
-                                   planner_state_pb_str);
-    return ExitEarly("The state of the execution system couldn't be parsed", resultLen);
+  if (!planner_state_merge_success) {
+    std::string err =
+        absl::Substitute("Failed to process the logical planner state: $0.", planner_state_pb_str);
+    LOG(ERROR) << err;
+    return ExitEarly(err, resultLen);
+  }
+
+  // Load in the query request protobuf.
+  pl::carnot::compiler::plannerpb::QueryRequest query_request_pb;
+  // TODO(philkuz) convert this to read serialized calls instead of human readable.
+  bool query_request_merge_success =
+      google::protobuf::TextFormat::MergeFromString(query_request_pb_str, &query_request_pb);
+  LOG(INFO) << "query request";
+  LOG(INFO) << query_request_pb.DebugString();
+  if (!query_request_merge_success) {
+    std::string err =
+        absl::Substitute("Failed to process the query request: $0.", query_request_pb_str);
+    LOG(ERROR) << err;
+    return ExitEarly(err, resultLen);
   }
 
   auto planner =
       reinterpret_cast<pl::carnot::compiler::logical_planner::LogicalPlanner*>(planner_ptr);
 
-  auto distributed_plan_status = planner->Plan(planner_state_pb, query_str);
+  auto distributed_plan_status = planner->Plan(planner_state_pb, query_request_pb);
   if (!distributed_plan_status.ok()) {
     return ExitEarly(distributed_plan_status.status(), resultLen);
   }

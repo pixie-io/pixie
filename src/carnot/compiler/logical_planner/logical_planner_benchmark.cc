@@ -17,8 +17,10 @@ void BM_Query(benchmark::State& state) {
   auto planner = LogicalPlanner::Create(info).ConsumeValueOrDie();
   auto planner_state =
       testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  plannerpb::QueryRequest query_request;
+  query_request.set_query_str(testutils::kHttpRequestStats);
   for (auto _ : state) {
-    auto plan_or_s = planner->Plan(planner_state, testutils::kHttpRequestStats);
+    auto plan_or_s = planner->Plan(planner_state, query_request);
     EXPECT_OK(plan_or_s);
   }
 }
