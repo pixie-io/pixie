@@ -451,7 +451,11 @@ func (mds *KVMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, err
 		return nil, err
 	}
 
-	ip, _ := net.LookupIP(hostname)
+	ip, err := net.LookupIP(hostname)
+	if err != nil && hostname != "" {
+		log.WithError(err).Error("Could not lookup IP for host")
+		return nil, err
+	}
 	ipStr := ""
 
 	if len(ip) > 0 {
@@ -462,6 +466,9 @@ func (mds *KVMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, err
 	for _, val := range vals {
 		pb := &metadatapb.Pod{}
 		proto.Unmarshal(val, pb)
+		if pb.Status.HostIP == "" {
+			log.WithField("pod_name", pb.Metadata.Name).Info("Pod has no hostIP")
+		}
 		if (pb.Status.HostIP == ipStr || hostname == "") && pb.Metadata.DeletionTimestampNS == 0 {
 			pods = append(pods, pb)
 		}
