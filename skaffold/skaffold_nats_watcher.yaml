@@ -1,5 +1,4 @@
----
-apiVersion: skaffold/v1beta13
+apiVersion: skaffold/v2alpha3
 kind: Config
 build:
   artifacts:
@@ -11,14 +10,14 @@ build:
     dateTime: {}
 deploy:
   kustomize:
-    path: k8s/utils/dev
+    paths:
+    - k8s/utils/dev
 profiles:
 - name: minikube
-  activation:
-  - kubeContext: minikube
   patches:
-  # Don't push images in the minikube build.
   - op: replace
     path: /build/local
     value:
       push: false
+  activation:
+  - kubeContext: minikube

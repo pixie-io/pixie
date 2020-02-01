@@ -1,5 +1,4 @@
----
-apiVersion: skaffold/v1beta13
+apiVersion: skaffold/v2alpha3
 kind: Config
 build:
   artifacts:
@@ -7,89 +6,88 @@ build:
     context: .
     bazel:
       target: //src/vizier/services/agent/pem:pem_image.tar
-      args: ["--compilation_mode=dbg"]
-
+      args:
+      - --compilation_mode=dbg
   - image: gcr.io/pl-dev-infra/vizier/kelvin_image
     context: .
     bazel:
       target: //src/vizier/services/agent/kelvin:kelvin_image.tar
-      args: ["--compilation_mode=dbg"]
-
+      args:
+      - --compilation_mode=dbg
   - image: gcr.io/pl-dev-infra/vizier/metadata_server_image
     context: .
     bazel:
       target: //src/vizier/services/metadata:metadata_server_image.tar
-      args: ["--compilation_mode=dbg"]
-
+      args:
+      - --compilation_mode=dbg
   - image: gcr.io/pl-dev-infra/vizier/query_broker_server_image
     context: .
     bazel:
       target: //src/vizier/services/query_broker:query_broker_server_image.tar
-      args: ["--compilation_mode=dbg"]
-
+      args:
+      - --compilation_mode=dbg
   - image: gcr.io/pl-dev-infra/vizier/api_server_image
     context: .
     bazel:
       target: //src/vizier/services/api:api_server_image.tar
-      args: ["--compilation_mode=dbg"]
-
+      args:
+      - --compilation_mode=dbg
   - image: gcr.io/pl-dev-infra/vizier/proxy_server_image
     context: .
     bazel:
       target: //src/vizier/services/proxy:proxy_server_prod_image.tar
-      args: ["--compilation_mode=dbg"]
-
+      args:
+      - --compilation_mode=dbg
   - image: gcr.io/pl-dev-infra/vizier/logtailer_image
     context: .
     bazel:
       target: //src/vizier/utils/logtailer:logtailer_image.tar
-      args: ["--compilation_mode=dbg"]
-
+      args:
+      - --compilation_mode=dbg
   - image: gcr.io/pl-dev-infra/vizier/cloud_connector_server_image
     context: .
     bazel:
       target: //src/vizier/services/cloud_connector:cloud_connector_server_image.tar
-      args: ["--compilation_mode=dbg"]
-
+      args:
+      - --compilation_mode=dbg
   - image: gcr.io/pl-dev-infra/vizier/certmgr_server_image
     context: .
     bazel:
       target: //src/vizier/services/certmgr:certmgr_server_image.tar
-      args: ["--compilation_mode=dbg"]
-
-  local:
-    push: true
+      args:
+      - --compilation_mode=dbg
   tagPolicy:
     dateTime: {}
+  local:
+    push: true
 deploy:
   kustomize:
-    path: k8s/vizier/dev
-
+    paths:
+    - k8s/vizier/dev
 profiles:
 - name: minikube
-  activation:
-  - kubeContext: minikube
   patches:
-  # Don't push images in the minikube build.
   - op: replace
     path: /build/local
     value:
       push: false
-
+  activation:
+  - kubeContext: minikube
 - name: opt
   patches:
   - op: add
     path: /build/artifacts/context=./bazel/args
-    value: ["--compilation_mode=opt"]
-
+    value:
+    - --compilation_mode=opt
 - name: asan
   patches:
   - op: add
     path: /build/artifacts/context=./bazel/args
-    value: ["--config=asan"]
-
+    value:
+    - --config=asan
 - name: tsan
   patches:
   - op: add
     path: /build/artifacts/context=./bazel/args
-    value: ["--config=tsan"]
+    value:
+    - --config=tsan
