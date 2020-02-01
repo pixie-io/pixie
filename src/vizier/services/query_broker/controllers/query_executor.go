@@ -9,8 +9,12 @@ import (
 	"github.com/nats-io/go-nats"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
-	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
+	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
+	"pixielabs.ai/pixielabs/src/table_store/proto/types"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
@@ -22,6 +26,8 @@ type QueryExecutor struct {
 	queryID     uuid.UUID
 	agentList   *[]uuid.UUID
 	queryResult *queryresultspb.QueryResult
+	// extraTables are tables get added to results as sidecars. For example, things like query plan.
+	extraTables []*schemapb.Table
 	conn        *nats.Conn
 	mux         sync.Mutex
 	done        chan bool
@@ -30,16 +36,57 @@ type QueryExecutor struct {
 // NewQueryExecutor creates a Query Executor for a specific query.
 func NewQueryExecutor(natsConn *nats.Conn, queryID uuid.UUID, agentList *[]uuid.UUID) Executor {
 	return &QueryExecutor{
-		queryID:   queryID,
-		agentList: agentList,
-		conn:      natsConn,
-		done:      make(chan bool, 1),
+		queryID:     queryID,
+		agentList:   agentList,
+		conn:        natsConn,
+		extraTables: make([]*schemapb.Table, 0),
+		done:        make(chan bool, 1),
 	}
 }
 
 // GetQueryID gets the ID for the query that the queryExecutor is responsible for.
 func (e *QueryExecutor) GetQueryID() uuid.UUID {
 	return e.queryID
+}
+
+// AddQueryPlanToResult adds the query plan to the list of output tables.
+func (e *QueryExecutor) AddQueryPlanToResult(plan *distributedpb.DistributedPlan, planMap map[uuid.UUID]*planpb.Plan) error {
+
+	queryPlan, err := getQueryPlanAsDotString(plan, planMap)
+	if err != nil {
+		log.WithError(err).Error("error with query plan")
+	}
+
+	e.extraTables = append(e.extraTables, &schemapb.Table{
+		Relation: &schemapb.Relation{Columns: []*schemapb.Relation_ColumnInfo{
+			{
+				ColumnName: "query_plan",
+				ColumnType: typespb.STRING,
+				ColumnDesc: "The query plan",
+			},
+		}},
+		Name: "__query_plan__",
+		RowBatches: []*schemapb.RowBatchData{
+			{
+				Cols: []*schemapb.Column{
+					{
+						ColData: &schemapb.Column_StringData{
+							StringData: &schemapb.StringColumn{
+								Data: []types.StringData{
+									[]byte(queryPlan),
+								},
+							},
+						},
+					},
+				},
+				NumRows: 1,
+				Eos:     true,
+				Eow:     true,
+			},
+		},
+	})
+
+	return nil
 }
 
 // ExecuteQuery executes a query by sending query fragments to relevant agents.
@@ -126,6 +173,7 @@ func (e *QueryExecutor) WaitForCompletion() (*queryresultspb.QueryResult, error)
 func (e *QueryExecutor) AddResult(res *querybrokerpb.AgentQueryResultRequest) {
 	e.mux.Lock()
 	defer e.mux.Unlock()
+
 	if e.queryResult != nil {
 		log.
 			WithField("query_id", e.queryID.String()).
@@ -133,6 +181,9 @@ func (e *QueryExecutor) AddResult(res *querybrokerpb.AgentQueryResultRequest) {
 		return
 	}
 	e.queryResult = res.Result.QueryResult
+	if len(e.extraTables) > 0 {
+		e.queryResult.Tables = append(e.queryResult.Tables, e.extraTables...)
+	}
 	// In the current implementation we just need to wait for the Kelvin node to respond.
 	e.done <- true
 }

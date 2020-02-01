@@ -95,6 +95,18 @@ func (mr *MockExecutorMockRecorder) ExecuteQuery(planMap interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteQuery", reflect.TypeOf((*MockExecutor)(nil).ExecuteQuery), planMap)
 }
 
+// AddQueryPlanToResult mocks base method
+func (m *MockExecutor) AddQueryPlanToResult(arg0 *distributedpb.DistributedPlan, arg1 map[go_uuid.UUID]*planpb.Plan) error {
+	ret := m.ctrl.Call(m, "AddQueryPlanToResult", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddQueryPlanToResult indicates an expected call of AddQueryPlanToResult
+func (mr *MockExecutorMockRecorder) AddQueryPlanToResult(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddQueryPlanToResult", reflect.TypeOf((*MockExecutor)(nil).AddQueryPlanToResult), arg0, arg1)
+}
+
 // WaitForCompletion mocks base method
 func (m *MockExecutor) WaitForCompletion() (*queryresultspb.QueryResult, error) {
 	ret := m.ctrl.Call(m, "WaitForCompletion")

@@ -1807,3 +1807,17 @@ go_repository(
     sum = "h1:UzxH1uaGZRpMKDhJyBz0pexz6yUoBU3x8bJsRk/HV6U=",
     version = "v3.1.0",
 )
+
+go_repository(
+    name = "com_github_awalterschulze_gographviz",
+    importpath = "github.com/awalterschulze/gographviz",
+    sum = "h1:+cdNqtOJWjvepyhxy23G7z7vmpYCoC65AP0nqi1f53s=",
+    version = "v0.0.0-20190522210029-fa59802746ab",
+)
+
+go_repository(
+    name = "com_github_emicklei_dot",
+    importpath = "github.com/emicklei/dot",
+    sum = "h1:bkzvwgIhhw/cuxxnJy5/5+ZL3GnhFxFfv0eolHtWE2w=",
+    version = "v0.10.1",
+)

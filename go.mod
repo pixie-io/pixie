@@ -11,6 +11,7 @@ require (
 	github.com/abiosoft/ishell v2.0.0+incompatible
 	github.com/abiosoft/readline v0.0.0-20180607040430-155bce2042db // indirect
 	github.com/ajstarks/svgo v0.0.0-20181006003313-6ce6a3bcf6cd // indirect
+	github.com/awalterschulze/gographviz v0.0.0-20190522210029-fa59802746ab // indirect
 	github.com/badoux/checkmail v0.0.0-20181210160741-9661bd69e9ad
 	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/blang/semver v3.5.1+incompatible
@@ -32,6 +33,7 @@ require (
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/docker/go-units v0.3.3 // indirect
+	github.com/emicklei/dot v0.10.1
 	github.com/fatih/color v1.7.0
 	github.com/flynn-archive/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
