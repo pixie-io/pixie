@@ -32,9 +32,9 @@ if node[:platform] == 'ubuntu'
     '68a2297eb099d1a76097905a2ce334e3155004ec08cdea85f24527be3c48e856'
 
   default['skaffold']['download_path'] =
-    'https://storage.googleapis.com/skaffold/releases/v1.3.1/skaffold-linux-amd64'
+    'https://storage.googleapis.com/pl-infra-dev-artifacts/skaffold/84eafe1c/skaffold-linux-amd64'
   default['skaffold']['sha256']        =
-    'ab5b4b832e63add8795cdecdd59f89055a8d0bd625de3e59ace918ecb25db27b'
+    '40b678384fb26c5b429160bf9d4b5cf60a619ce3f6b5d771335bde74df123024'
 
   default['kubectl']['download_path'] =
     'https://storage.googleapis.com/kubernetes-release/release/v1.14.6/bin/linux/amd64/kubectl'
