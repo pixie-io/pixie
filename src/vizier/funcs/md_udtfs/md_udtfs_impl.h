@@ -179,6 +179,30 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
   std::shared_ptr<MDSStub> stub_;
 };
 
+/**
+ * This UDTF dumps the debug string for the current metadata state.
+ */
+class GetDebugMDState final : public carnot::udf::UDTF<GetDebugMDState> {
+ public:
+  // TODO(zasgar/philkuz): Switch this to all agents after we finish support for this in the
+  // compiler
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_PEM; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(ColInfo("asid", types::DataType::INT64, types::PatternType::GENERAL,
+                             "The short ID of the agent"),
+                     ColInfo("debug_state", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The debug state of metadata on the agent"));
+  }
+
+  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+    rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
+    rw->Append<IndexOf("debug_state")>(ctx->metadata_state()->DebugString());
+    // no more records.
+    return false;
+  }
+};
+
 }  // namespace md
 }  // namespace funcs
 }  // namespace vizier

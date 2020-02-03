@@ -15,6 +15,8 @@ void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Regist
                                                                                       ctx);
   registry->RegisterFactoryOrDie<GetAgentStatus, UDTFWithMDFactory<GetAgentStatus>>(
       "GetAgentStatus", ctx);
+
+  registry->RegisterOrDie<GetDebugMDState>("_DebugMDState");
 }
 
 }  // namespace md
