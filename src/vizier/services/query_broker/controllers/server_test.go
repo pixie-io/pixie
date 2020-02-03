@@ -178,7 +178,7 @@ display(df, 'out')
 `
 
 const invalidFlagQuery = `
-#pl:set thisisnotaflag=true
+#px:set thisisnotaflag=true
 df = dataframe(table='perf_and_http', select=['_time'])
 display(df, 'out')
 `

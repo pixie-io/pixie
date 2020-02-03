@@ -11,7 +11,7 @@ import (
 )
 
 // The prefix which a PL Config line should begin with.
-const plConfigPrefix = "#pl:set "
+const plConfigPrefix = "#px:set "
 
 // Default values for config flags. If a flag is not included in this map,
 // it is not considered a valid flag that can be set.

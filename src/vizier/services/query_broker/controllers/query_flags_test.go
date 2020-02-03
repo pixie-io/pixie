@@ -8,7 +8,7 @@ import (
 )
 
 const validQueryWithFlag = `
-#pl:set analyze=true
+#px:set analyze=true
 
 t1 = dataframe(table='http_events').range(start='-30s')
 
@@ -28,15 +28,15 @@ t1['range_group'] = pl.subtract(t1['time_'], pl.modulo(t1['time_'], 1000000000))
 `
 
 const invalidFlag1 = `
-#pl:set analyze=true extra
+#px:set analyze=true extra
 `
 
 const invalidFlag2 = `
-#pl:set analyze,true
+#px:set analyze,true
 `
 
 const nonexistentFlag = `
-#pl:set ABCD=efgh
+#px:set ABCD=efgh
 `
 
 func TestParseQueryFlags_WithFlag(t *testing.T) {
