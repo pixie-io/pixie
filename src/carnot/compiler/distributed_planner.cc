@@ -23,15 +23,16 @@ StatusOr<std::unique_ptr<DistributedPlanner>> DistributedPlanner::Create() {
 Status DistributedPlanner::Init() { return Status::OK(); }
 
 StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
-    const distributedpb::DistributedState& distributed_state, CompilerState* compiler_state,
+    const distributedpb::DistributedState& distributed_state, CompilerState*,
     const IR* logical_plan) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<Coordinator> coordinator,
                       Coordinator::Create(distributed_state));
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<Stitcher> stitcher, Stitcher::Create(compiler_state));
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<DistributedPlan> distributed_plan,
                       coordinator->Coordinate(logical_plan));
-  PL_RETURN_IF_ERROR(stitcher->Stitch(distributed_plan.get()));
+
+  // PL_ASSIGN_OR_RETURN(std::unique_ptr<Stitcher> stitcher, Stitcher::Create(compiler_state));
+  // PL_RETURN_IF_ERROR(stitcher->Stitch(distributed_plan.get()));
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<distributed::DistributedAnalyzer> analyzer,
                       distributed::DistributedAnalyzer::Create());

@@ -4,60 +4,35 @@
 #include <vector>
 
 #include "src/carnot/compiler/distributed_stitcher.h"
-#include "src/carnot/compiler/grpc_source_conversion.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
 namespace distributed {
 
-StatusOr<std::unique_ptr<Stitcher>> Stitcher::Create(CompilerState* compiler_state) {
-  return std::unique_ptr<Stitcher>(new Stitcher(compiler_state));
-}
-
-Status Stitcher::Stitch(DistributedPlan* plan) {
-  PL_RETURN_IF_ERROR(PrepareDistributedPlan(plan));
-  PL_RETURN_IF_ERROR(AssociateEdges(plan));
-  return FinalizePlan(plan);
-}
-
-Status Stitcher::PrepareDistributedPlan(DistributedPlan* plan) {
-  for (int64_t node : plan->dag().TopologicalSort()) {
-    auto carnot = plan->Get(node);
-    PL_RETURN_IF_ERROR(SetSourceGroupGRPCAddress(carnot));
+StatusOr<bool> SetSourceGroupGRPCAddressRule::Apply(IRNode* ir_node) {
+  if (Match(ir_node, GRPCSourceGroup())) {
+    static_cast<GRPCSourceGroupIR*>(ir_node)->SetGRPCAddress(grpc_address_);
+    return true;
   }
-  return Status::OK();
+
+  return false;
 }
 
-Status Stitcher::AssociateEdges(DistributedPlan* plan) {
-  for (int64_t from : plan->dag().TopologicalSort()) {
-    for (int64_t to : plan->dag().DependenciesOf(from)) {
-      auto from_carnot = plan->Get(from);
-      auto to_carnot = plan->Get(to);
-      PL_RETURN_IF_ERROR(ConnectGraphs(from_carnot->plan(), to_carnot->plan()));
-    }
+StatusOr<bool> AssociateDistributedPlanEdgesRule::Apply(CarnotInstance* from_carnot_instance) {
+  bool did_connect_any_graph = false;
+  for (int64_t to_carnot_instance_id :
+       from_carnot_instance->distributed_plan()->dag().DependenciesOf(from_carnot_instance->id())) {
+    CarnotInstance* to_carnot_instance =
+        from_carnot_instance->distributed_plan()->Get(to_carnot_instance_id);
+    PL_ASSIGN_OR_RETURN(bool did_connect_this_graph,
+                        ConnectGraphs(from_carnot_instance->plan(), to_carnot_instance->plan()));
+    did_connect_any_graph |= did_connect_this_graph;
   }
-  return Status::OK();
+  return did_connect_any_graph;
 }
 
-Status Stitcher::FinalizePlan(DistributedPlan* plan) {
-  for (int64_t node : plan->dag().TopologicalSort()) {
-    auto carnot = plan->Get(node);
-    PL_RETURN_IF_ERROR(FinalizeGraph(carnot->plan()));
-  }
-  return Status::OK();
-}
-
-Status Stitcher::SetSourceGroupGRPCAddress(CarnotInstance* carnot_instance) {
-  SetSourceGroupGRPCAddressRule rule(carnot_instance->carnot_info().grpc_address(),
-                                     carnot_instance->carnot_info().query_broker_address());
-  PL_ASSIGN_OR_RETURN(auto updated, rule.Execute(carnot_instance->plan()));
-  // TODO(philkuz) determine whether we should check if something is updated or not.
-  PL_UNUSED(updated);
-  return Status::OK();
-}
-
-Status Stitcher::ConnectGraphs(IR* from_graph, IR* to_graph) {
+StatusOr<bool> AssociateDistributedPlanEdgesRule::ConnectGraphs(IR* from_graph, IR* to_graph) {
   // Make a map of from's destination_ids to : GRPC sink ids
   absl::flat_hash_map<int64_t, GRPCSinkIR*> bridge_id_to_sink_map;
   for (int64_t i : from_graph->dag().TopologicalSort()) {
@@ -77,38 +52,18 @@ Status Stitcher::ConnectGraphs(IR* from_graph, IR* to_graph) {
       bridge_id_to_source_map[source->source_id()] = source;
     }
   }
-
+  bool did_connect_graph = false;
   for (const auto& [bridge_id, sink] : bridge_id_to_sink_map) {
     auto source_map_iter = bridge_id_to_source_map.find(bridge_id);
     DCHECK(source_map_iter != bridge_id_to_source_map.end());
     GRPCSourceGroupIR* source_group = source_map_iter->second;
     PL_RETURN_IF_ERROR(source_group->AddGRPCSink(sink));
+    did_connect_graph = true;
   }
 
   // TODO(philkuz) handle issues where source_map has keys that aren't called.
   // Really just take the time to figure it all out.
-  return Status::OK();
-}
-
-Status Stitcher::FinalizeGraph(IR* graph) {
-  // TODO(philkuz) compiler_state will be used for pruning the graph later on.
-  PL_UNUSED(compiler_state_);
-  // TODO(philkuz) make a rule executor for finalizing the physical plan.
-  GRPCSourceGroupConversionRule rule;
-  PL_ASSIGN_OR_RETURN(bool result, rule.Execute(graph));
-  PL_UNUSED(result);
-  // TODO(philkuz) do something with the result here.
-  // TODO(philkuz) do something to check for non-physical nodes.
-  return Status::OK();
-}
-
-StatusOr<bool> SetSourceGroupGRPCAddressRule::Apply(IRNode* ir_node) {
-  if (Match(ir_node, GRPCSourceGroup())) {
-    static_cast<GRPCSourceGroupIR*>(ir_node)->SetGRPCAddress(grpc_address_);
-    return true;
-  }
-
-  return false;
+  return did_connect_graph;
 }
 }  // namespace distributed
 }  // namespace compiler

@@ -58,8 +58,6 @@ class DistributedRulesTest : public OperatorTests {
 
     std::unique_ptr<Coordinator> coordinator =
         Coordinator::Create(logical_state_.distributed_state()).ConsumeValueOrDie();
-    std::unique_ptr<Stitcher> stitcher =
-        Stitcher::Create(compiler_state_.get()).ConsumeValueOrDie();
 
     Compiler compiler;
     std::shared_ptr<IR> single_node_plan =
@@ -67,7 +65,6 @@ class DistributedRulesTest : public OperatorTests {
 
     std::unique_ptr<DistributedPlan> distributed_plan =
         coordinator->Coordinate(single_node_plan.get()).ConsumeValueOrDie();
-    PL_CHECK_OK(stitcher->Stitch(distributed_plan.get()));
     return distributed_plan;
   }
 

@@ -18,6 +18,9 @@ namespace carnot {
 namespace compiler {
 namespace distributed {
 
+// Forward declare here so that CarnotInstance has access.
+class DistributedPlan;
+
 /**
  * @brief Object that represents a physical entity that uses the Carnot stream engine.
  * Contains the current plan on the node as well as physical information about the node.
@@ -25,8 +28,9 @@ namespace distributed {
  */
 class CarnotInstance {
  public:
-  CarnotInstance(int64_t id, const distributedpb::CarnotInfo& carnot_info)
-      : id_(id), carnot_info_(carnot_info) {}
+  CarnotInstance(int64_t id, const distributedpb::CarnotInfo& carnot_info,
+                 DistributedPlan* parent_plan)
+      : id_(id), carnot_info_(carnot_info), distributed_plan_(parent_plan) {}
 
   const std::string& QueryBrokerAddress() const { return carnot_info_.query_broker_address(); }
   int64_t id() const { return id_; }
@@ -38,6 +42,7 @@ class CarnotInstance {
   distributedpb::CarnotInfo carnot_info() const { return carnot_info_; }
 
   IR* plan() const { return plan_.get(); }
+  DistributedPlan* distributed_plan() const { return distributed_plan_; }
 
   std::string DebugString() const {
     return absl::Substitute("Carnot(id=$0, qb_address=$1)", id(), QueryBrokerAddress());
@@ -49,6 +54,8 @@ class CarnotInstance {
   // The specification of this carnot instance.
   distributedpb::CarnotInfo carnot_info_;
   std::unique_ptr<IR> plan_;
+  // The distributed plan that this instance belongs to.
+  DistributedPlan* distributed_plan_;
 };
 
 // TODO(nserrino): Refactor this and IR to share a common base class for shared operations like

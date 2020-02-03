@@ -30,7 +30,7 @@ StatusOr<distributedpb::DistributedPlan> DistributedPlan::ToProto() const {
 int64_t DistributedPlan::AddCarnot(const distributedpb::CarnotInfo& carnot_info) {
   int64_t carnot_id = id_counter_;
   ++id_counter_;
-  auto instance = std::make_unique<CarnotInstance>(carnot_id, carnot_info);
+  auto instance = std::make_unique<CarnotInstance>(carnot_id, carnot_info, this);
   id_to_node_map_.emplace(carnot_id, std::move(instance));
   dag_.AddNode(carnot_id);
   return carnot_id;
