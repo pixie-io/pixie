@@ -130,13 +130,13 @@ export class DeployInstructionsContent extends React.Component<DeployInstruction
             </div>
             <p />
             <CodeSnippet showCopy={true} language='bash'>
-              {'chmod +x pixie'}
+              {'chmod +x px'}
             </CodeSnippet>
             <CodeSnippet showCopy={true} language='bash'>
-              {'./pixie auth login --site="' + sitename + '"'}
+              {'./px auth login --site="' + sitename + '"'}
             </CodeSnippet>
             <CodeSnippet showCopy={true} language='bash'>
-              {'./pixie deploy --cluster_id "' + clusterID + '"'}
+              {'./px deploy --cluster_id "' + clusterID + '"'}
             </CodeSnippet>
             <br />
             <div><span className='deploy-instructions--step'>Step 3:
@@ -144,7 +144,7 @@ export class DeployInstructionsContent extends React.Component<DeployInstruction
             </div>
             <p />
             <CodeSnippet showCopy={true} language='bash'>
-              {'./pixie proxy'}
+              {'./px proxy'}
             </CodeSnippet>
           </div>
           <div className='deploy-instructions--footer' style={{ width: '100%' }}>

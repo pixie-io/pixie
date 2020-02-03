@@ -13,18 +13,18 @@ echo "The release tag is: ${release_tag}"
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
 
-bazel build -c opt --stamp //src/utils/pixie_cli:pixie_mac
+bazel build -c opt --stamp //src/utils/pixie_cli:px_darwin
 
-bazel build -c opt --stamp //src/utils/pixie_cli:pixie
+bazel build -c opt --stamp //src/utils/pixie_cli:px
 
-mac_binary=bazel-bin/src/utils/pixie_cli/darwin_amd64_pure_stripped/pixie_mac
-linux_binary=bazel-bin/src/utils/pixie_cli/linux_amd64_stripped/pixie
+mac_binary=bazel-bin/src/utils/pixie_cli/darwin_amd64_pure_stripped/px_mac
+linux_binary=bazel-bin/src/utils/pixie_cli/linux_amd64_stripped/px
 output_path="gs://pixie-prod-artifacts/cli/${release_tag}"
 
 sha256sum ${mac_binary} | awk '{print $1}' > sha
-gsutil -h 'Content-Disposition:filename=pixie' cp ${mac_binary} "${output_path}/cli_darwin_amd64"
+gsutil -h 'Content-Disposition:filename=px' cp ${mac_binary} "${output_path}/cli_darwin_amd64"
 gsutil cp sha "${output_path}/cli_darwin_amd64.sha256"
 
 sha256sum ${linux_binary} | awk '{print $1}' > sha
-gsutil -h 'Content-Disposition:filename=pixie' cp ${linux_binary} "${output_path}/cli_linux_amd64"
+gsutil -h 'Content-Disposition:filename=px' cp ${linux_binary} "${output_path}/cli_linux_amd64"
 gsutil cp sha "${output_path}/cli_linux_amd64.sha256"

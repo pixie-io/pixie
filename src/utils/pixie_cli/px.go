@@ -22,6 +22,6 @@ func main() {
 	c.Fprintln(os.Stderr, pixie)
 
 	log.SetOutput(os.Stderr)
-	log.Info("Pixie Admin CLI")
+	log.Info("Pixie CLI")
 	cmd.Execute()
 }

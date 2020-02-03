@@ -2,7 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["pixie.go"],
+    srcs = ["px.go"],
     importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli",
     visibility = ["//visibility:private"],
     deps = [
@@ -13,13 +13,13 @@ go_library(
 )
 
 go_binary(
-    name = "pixie",
+    name = "px",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )
 
 go_binary(
-    name = "pixie_mac",
+    name = "px_darwin",
     goos = "darwin",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],

@@ -37,10 +37,10 @@ func init() {
 
 // RootCmd is the base command for Cobra.
 var RootCmd = &cobra.Command{
-	Use:   "pixie-admin",
-	Short: "Pixie admin cli",
+	Use:   "px",
+	Short: "Pixie CLI",
 	// TODO(zasgar): Add description and update this.
-	Long: `Pixie Description (TBD)`,
+	Long: `The Pixie command line interface.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		p := cmd
 		for p != nil && p != UpdateCmd {
