@@ -48,6 +48,7 @@ function formatInt64Data(val: string): string {
 
 
 function extractData(colType: string, col: any, rowIdx): string {
+  // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
   switch (colType) {
     case 'STRING':
       return col.stringData.data[rowIdx];
@@ -56,6 +57,8 @@ function extractData(colType: string, col: any, rowIdx): string {
       // so we can easily just divide by 1000 and convert to time.
       const data = col.time64nsData.data[rowIdx];
       return new Date(parseFloat(data) / 1000000).toLocaleString();
+    case 'DURATION64NS':
+      return formatInt64Data(col.duration64nsData.data[rowIdx]);
     case 'INT64':
       return formatInt64Data(col.int64Data.data[rowIdx]);
     case 'UINT128':

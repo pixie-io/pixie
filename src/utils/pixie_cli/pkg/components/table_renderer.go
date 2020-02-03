@@ -28,6 +28,8 @@ func getNumRows(in *schemapb.Column) int {
 		return len(u.Int64Data.Data)
 	case *schemapb.Column_Time64NsData:
 		return len(u.Time64NsData.Data)
+	case *schemapb.Column_Duration64NsData:
+		return len(u.Duration64NsData.Data)
 	case *schemapb.Column_BooleanData:
 		return len(u.BooleanData.Data)
 	case *schemapb.Column_Uint128Data:
@@ -130,6 +132,8 @@ func (r *TableRenderer) getRowBatchRowDataAsArray(in *schemapb.RowBatchData, bat
 			}
 		case *schemapb.Column_Time64NsData:
 			row = append(row, time.Unix(0, u.Time64NsData.Data[rowIdx]))
+		case *schemapb.Column_Duration64NsData:
+			row = append(row, u.Duration64NsData.Data[rowIdx])
 		case *schemapb.Column_BooleanData:
 			row = append(row, bool(u.BooleanData.Data[rowIdx]))
 		case *schemapb.Column_Uint128Data:
