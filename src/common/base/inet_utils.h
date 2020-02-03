@@ -16,19 +16,22 @@
 
 namespace pl {
 
-enum class SockAddrFamily { kIPv4, kIPv6, kUnix };
+enum class SockAddrFamily { kUninitialized, kIPv4, kIPv6, kUnix };
 
 /**
  * Describes a connection from user space. This corresponds to struct conn_info_t in
  * src/stirling/bcc_bpf_interface/socket_trace.h.
  */
 struct SockAddr {
-  SockAddrFamily family = SockAddrFamily::kIPv4;
+  SockAddrFamily family = SockAddrFamily::kUninitialized;
   std::variant<struct in_addr, struct in6_addr, std::string> addr;
-  // TODO(yzhao): Consider removing this as it can be derived from above.
-  std::string addr_str = "-";
-  int port = -1;
+  int port;
+
+  std::string AddrStr() const;
 };
+
+// The IPv4 IP is located in the last 32-bit word of IPv6 address.
+constexpr int kIPv4Offset = 3;
 
 /**
  * Checks if the IPv6 addr is a mappped IPv4 address (e.g. ::ffff:x.x.x.x).
@@ -84,9 +87,6 @@ inline Status IPv6AddrToString(const struct in6_addr& in6_addr, std::string* add
       return error::InvalidArgument("Could not parse sockaddr (AF_INET6) errno=$0", errno);
     }
   } else {
-    // We have an IPv4 address mapped as IPv6.
-    // The IPv4 IP is located in the last 32-bit word of IPv6 address.
-    const int kIPv4Offset = 3;
     if (inet_ntop(AF_INET, &in6_addr.s6_addr32[kIPv4Offset], buf, INET_ADDRSTRLEN) == nullptr) {
       return error::InvalidArgument(
           "Could not parse sockaddr (AF_INET mapped as AF_INET6) errno=$0", errno);
@@ -109,23 +109,23 @@ inline Status ParseIPv6Addr(std::string_view addr_str_view, struct in6_addr* in6
 /**
  * Parses a C-style sockaddr_in (IPv4) to a C++ style SockAddr.
  */
-Status ParseInetAddr(struct in_addr in_addr, in_port_t port, SockAddr* addr);
+void PopulateInetAddr(struct in_addr in_addr, in_port_t port, SockAddr* addr);
 
 /**
  * Parses a C-style sockaddr_in6 (IPv6) to a C++ style SockAddr.
  */
-Status ParseInet6Addr(struct in6_addr in6_addr, in_port_t port, SockAddr* addr);
+void PopulateInet6Addr(struct in6_addr in6_addr, in_port_t port, SockAddr* addr);
 
 /**
  * Parses a C-style sockaddr_un (unix domain socket) to a C++ style SockAddr.
  */
-Status ParseUnixAddr(const char* sun_path, uint32_t inode, SockAddr* addr);
+void PopulateUnixAddr(const char* sun_path, uint32_t inode, SockAddr* addr);
 
 /**
  * Parses sockaddr into a C++ style SockAddr. Only accept IPv4 and IPv6 addresses.
  * Does not mutate the result argument on parse failure.
  */
-Status ParseSockAddr(const struct sockaddr* sa, SockAddr* addr);
+Status PopulateSockAddr(const struct sockaddr* sa, SockAddr* addr);
 
 /**
  * Parses a string as IPv4 or IPv6 address.

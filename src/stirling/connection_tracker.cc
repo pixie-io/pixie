@@ -28,8 +28,6 @@ DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
 namespace pl {
 namespace stirling {
 
-const char kUnixSocket[] = "unix_socket";
-
 namespace {
 std::string ToString(const conn_id_t& conn_id) {
   return absl::Substitute("[pid=$0 start_time_ticks=$1 fd=$2 gen=$3]", conn_id.upid.pid,
@@ -79,8 +77,8 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
 
   open_info_.timestamp_ns = conn_event.timestamp_ns;
 
-  Status s = ParseSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
-                           &open_info_.remote_addr);
+  Status s = PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
+                              &open_info_.remote_addr);
   if (!s.ok()) {
     LOG(WARNING) << absl::Substitute("Could not parse IP address, msg: $0", s.msg());
   }
@@ -573,7 +571,7 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
 void ConnectionTracker::Disable(std::string_view reason) {
   VLOG_IF(1, state_ != State::kDisabled)
       << absl::Substitute("Disabling connection=$0 dest=$1:$2, reason=$3", ToString(conn_id_),
-                          open_info_.remote_addr.addr_str, open_info_.remote_addr.port, reason);
+                          open_info_.remote_addr.AddrStr(), open_info_.remote_addr.port, reason);
 
   // TODO(oazizi/yzhao): Consider storing the reason field.
 
@@ -695,8 +693,9 @@ void ConnectionTracker::UpdateState(const std::optional<CIDRBlock>& cluster_cidr
       }
       break;
     case EndpointRole::kRoleClient:
-      if (cluster_cidr.has_value() && open_info_.remote_addr.addr_str != "-" &&
-          open_info_.remote_addr.addr_str != kUnixSocket) {
+      if (cluster_cidr.has_value() &&
+          open_info_.remote_addr.family != SockAddrFamily::kUninitialized &&
+          open_info_.remote_addr.family != SockAddrFamily::kUnix) {
         CIDRBlock cidr = cluster_cidr.value();
         SockAddr remote_addr = open_info_.remote_addr;
         if (cidr.ip_addr.family == SockAddrFamily::kIPv4 &&
@@ -740,12 +739,13 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
 
   // If remote_addr is missing, it means the connect/accept was not traced.
   // Attempt to infer the connection information, to populate remote_addr.
-  if (open_info_.remote_addr.addr_str == "-" && socket_info_mgr != nullptr) {
+  if (open_info_.remote_addr.family == SockAddrFamily::kUninitialized &&
+      socket_info_mgr != nullptr) {
     InferConnInfo(proc_parser, socket_info_mgr);
   }
 
   // Normally, we don't want to trace Unix domain sockets.
-  if (open_info_.remote_addr.addr_str == kUnixSocket && !FLAGS_enable_unix_domain_sockets) {
+  if (open_info_.remote_addr.family == SockAddrFamily::kUnix && !FLAGS_enable_unix_domain_sockets) {
     Disable("Unix domain socket");
   }
 
@@ -784,20 +784,21 @@ void ConnectionTracker::HandleInactivity() {
 
 namespace {
 Status ParseSocketInfoRemoteAddr(const system::SocketInfo& socket_info, SockAddr* addr) {
-  Status s;
   switch (socket_info.family) {
     case AF_INET:
-      PL_RETURN_IF_ERROR(ParseInetAddr(std::get<struct in_addr>(socket_info.remote_addr),
-                                       socket_info.remote_port, addr));
+      PopulateInetAddr(std::get<struct in_addr>(socket_info.remote_addr), socket_info.remote_port,
+                       addr);
       break;
     case AF_INET6:
-      PL_RETURN_IF_ERROR(ParseInet6Addr(std::get<struct in6_addr>(socket_info.remote_addr),
-                                        socket_info.remote_port, addr));
+      PopulateInet6Addr(std::get<struct in6_addr>(socket_info.remote_addr), socket_info.remote_port,
+                        addr);
       break;
     case AF_UNIX:
-      PL_RETURN_IF_ERROR(ParseUnixAddr(std::get<struct un_path_t>(socket_info.remote_addr).path,
-                                       socket_info.remote_port, addr));
+      PopulateUnixAddr(std::get<struct un_path_t>(socket_info.remote_addr).path,
+                       socket_info.remote_port, addr);
       break;
+    default:
+      return error::Internal("Unknown socket_info family: $0", socket_info.family);
   }
 
   return Status::OK();
@@ -879,7 +880,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   }
 
   LOG(INFO) << absl::Substitute("Inferred connection pid=$0 fd=$1 gen=$2 dest=$3:$4", pid(), fd(),
-                                generation(), open_info_.remote_addr.addr_str,
+                                generation(), open_info_.remote_addr.AddrStr(),
                                 open_info_.remote_addr.port);
 
   // No need for the resolver anymore, so free its memory.
@@ -891,7 +892,8 @@ std::string ConnectionTracker::DebugString(std::string_view prefix) const {
   std::string info;
   info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, pid(), fd(), generation());
   info += absl::Substitute("state=$0\n", magic_enum::enum_name(state()));
-  info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, remote_addr(), remote_port());
+  info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, remote_endpoint().AddrStr(),
+                           remote_endpoint().port);
   info += absl::Substitute("$0protocol=$1\n", prefix, magic_enum::enum_name(protocol()));
   info += absl::Substitute("$0recv queue\n", prefix);
   info += recv_data().DebugString<typename GetMessageType<TEntryType>::type>(

@@ -5,28 +5,28 @@ namespace pl {
 
 using ::testing::StrEq;
 
-TEST(ParseInetAddr, Basic) {
+TEST(PopulateInetAddr, Basic) {
   struct in_addr in_addr;
   inet_pton(AF_INET, "10.1.2.3", &in_addr);
   in_port_t in_port = htons(12345);
 
   SockAddr addr;
-  ASSERT_OK(ParseInetAddr(in_addr, in_port, &addr));
-  EXPECT_EQ(addr.addr_str, "10.1.2.3");
+  PopulateInetAddr(in_addr, in_port, &addr);
+  EXPECT_EQ(addr.AddrStr(), "10.1.2.3");
   EXPECT_EQ(addr.port, 12345);
 }
 
-TEST(ParseInet6Addr, Basic) {
+TEST(PopulateInet6Addr, Basic) {
   struct in6_addr in6_addr = IN6ADDR_LOOPBACK_INIT;
   in_port_t in6_port = htons(12345);
 
   SockAddr addr;
-  ASSERT_OK(ParseInet6Addr(in6_addr, in6_port, &addr));
-  EXPECT_EQ(addr.addr_str, "::1");
+  PopulateInet6Addr(in6_addr, in6_port, &addr);
+  EXPECT_EQ(addr.AddrStr(), "::1");
   EXPECT_EQ(addr.port, 12345);
 }
 
-TEST(ParseUnixAddr, Basic) {
+TEST(PopulateUnixAddr, Basic) {
   // Using sun_path rom struct sockaddr_un:
   // struct sockaddr_un {
   //   sa_family_t sun_family;               /* AF_UNIX */
@@ -36,8 +36,8 @@ TEST(ParseUnixAddr, Basic) {
   uint32_t inode_num = 54321;
 
   SockAddr addr;
-  ASSERT_OK(ParseUnixAddr(path, inode_num, &addr));
-  EXPECT_EQ(addr.addr_str, "unix_socket");
+  PopulateUnixAddr(path, inode_num, &addr);
+  EXPECT_EQ(addr.AddrStr(), "unix_socket");
   EXPECT_EQ(addr.port, 54321);
 }
 
@@ -50,9 +50,8 @@ TEST(ParseSockAddr, IPv4) {
 
   // Now check InetAddrToString produces the expected string.
   SockAddr addr;
-  Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
-  EXPECT_OK(s);
-  EXPECT_EQ(addr.addr_str, "10.1.2.3");
+  ASSERT_OK(PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr));
+  EXPECT_EQ(addr.AddrStr(), "10.1.2.3");
   EXPECT_EQ(addr.port, 53000);
 }
 
@@ -63,9 +62,8 @@ TEST(ParseSockAddr, IPv6) {
   sockaddr.sin6_port = htons(12345);
 
   SockAddr addr;
-  Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
-  EXPECT_OK(s);
-  EXPECT_EQ(addr.addr_str, "::1");
+  ASSERT_OK(PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr));
+  EXPECT_EQ(addr.AddrStr(), "::1");
   EXPECT_EQ(addr.port, 12345);
 }
 
@@ -76,24 +74,21 @@ TEST(ParseSockAddr, Unix) {
   memcpy(&sockaddr.sun_path, kUnixPath, sizeof(kUnixPath));
 
   SockAddr addr;
-  Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
-  EXPECT_OK(s);
-  EXPECT_EQ(addr.addr_str, "unix_socket");
+  ASSERT_OK(PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr));
+  EXPECT_EQ(addr.AddrStr(), "unix_socket");
   EXPECT_EQ(addr.port, -1);
 }
 
 TEST(ParseSockAddr, Unsupported) {
   // Create an IP address for the test.
   struct sockaddr_in sockaddr;
-  sockaddr.sin_family = AF_APPLETALK;
+  sockaddr.sin_family = AF_UNSPEC;
   inet_pton(AF_INET, "10.1.2.3", &sockaddr.sin_addr);
   sockaddr.sin_port = htons(53000);
 
   SockAddr addr;
-  Status s = ParseSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
-  EXPECT_NOT_OK(s);
-  EXPECT_EQ(addr.addr_str, "-") << "addr_str should not be mutated";
-  EXPECT_EQ(addr.port, -1) << "port should not be mutated";
+  EXPECT_NOT_OK(PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr));
+  EXPECT_EQ(addr.family, SockAddrFamily::kUninitialized) << "addr should not be mutated";
 }
 
 TEST(ParseIPAddr, ipv4) {
@@ -212,18 +207,12 @@ TEST(MapIPv4ToIPv6Test, WorksAsExpected) {
   EXPECT_OK(ParseIPAddress("1.2.3.4", &v4_addr));
   {
     SockAddr v6_addr = MapIPv4ToIPv6(v4_addr);
-    EXPECT_EQ("::ffff:1.2.3.4", v6_addr.addr_str);
-    std::string v6_addr_str;
-    EXPECT_OK(IPv6AddrToString(std::get<struct in6_addr>(v6_addr.addr), &v6_addr_str));
-    EXPECT_EQ("1.2.3.4", v6_addr_str);
+    EXPECT_EQ("1.2.3.4", v6_addr.AddrStr());
   }
   {
     CIDRBlock v4_cidr{v4_addr, 10};
     CIDRBlock v6_cidr = MapIPv4ToIPv6(v4_cidr);
-    EXPECT_EQ("::ffff:1.2.3.4", v6_cidr.ip_addr.addr_str);
-    std::string v6_addr_str;
-    EXPECT_OK(IPv6AddrToString(std::get<struct in6_addr>(v6_cidr.ip_addr.addr), &v6_addr_str));
-    EXPECT_EQ("1.2.3.4", v6_addr_str);
+    EXPECT_EQ("1.2.3.4", v6_cidr.ip_addr.AddrStr());
   }
 }
 

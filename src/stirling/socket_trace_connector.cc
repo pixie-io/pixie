@@ -547,8 +547,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("upid")>(upid.value());
   // Note that there is a string copy here,
   // But std::move is not allowed because we re-use conn object.
-  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
-  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
   r.Append<r.ColIndex("http_major_version")>(1);
   r.Append<r.ColIndex("http_minor_version")>(resp_message.http_minor_version);
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(DetectContentType(resp_message)));
@@ -590,8 +590,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
-  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
-  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
   r.Append<r.ColIndex("http_major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("http_minor_version")>(0);
@@ -647,8 +647,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(req_stream->timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
-  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
-  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
   r.Append<r.ColIndex("http_major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("http_minor_version")>(0);
@@ -678,8 +678,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   RecordBuilder<&kMySQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
-  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
-  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
   r.Append<r.ColIndex("req_cmd")>(static_cast<uint64_t>(entry.req.cmd));
   r.Append<r.ColIndex("req_body")>(std::move(entry.req.msg));
   r.Append<r.ColIndex("resp_status")>(static_cast<uint64_t>(entry.resp.status));

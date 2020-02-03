@@ -14,7 +14,7 @@ TEST(K8sMetadataStateTest, CloneCopiedClusterCIDR) {
   state.set_cluster_cidr(block);
   auto state_copy = state.Clone();
   ASSERT_TRUE(state_copy->cluster_cidr().has_value());
-  EXPECT_EQ(block.ip_addr.addr_str, state_copy->cluster_cidr()->ip_addr.addr_str);
+  EXPECT_EQ(block.ip_addr.AddrStr(), state_copy->cluster_cidr()->ip_addr.AddrStr());
   EXPECT_EQ(block.prefix_length, state_copy->cluster_cidr()->prefix_length);
 }
 

@@ -7,55 +7,78 @@ namespace pl {
 const int kIPv4BitLen = 32;
 const int kIPv6BitLen = 128;
 
+std::string SockAddr::AddrStr() const {
+  std::string out;
+
+  Status s;
+  switch (family) {
+    case SockAddrFamily::kUninitialized:
+      out = "-";
+      break;
+    case SockAddrFamily::kIPv4:
+      s = IPv4AddrToString(std::get<struct in_addr>(addr), &out);
+      break;
+    case SockAddrFamily::kIPv6:
+      s = IPv6AddrToString(std::get<struct in6_addr>(addr), &out);
+      break;
+    case SockAddrFamily::kUnix:
+      out = "unix_socket";
+      break;
+  }
+
+  if (!s.ok()) {
+    out = s.msg();
+  }
+
+  return out;
+}
+
 SockAddr MapIPv4ToIPv6(const SockAddr& addr) {
   DCHECK(addr.family == SockAddrFamily::kIPv4);
-  DCHECK(!addr.addr_str.empty());
-  const std::string v6_addr_str = absl::StrCat("::ffff:", addr.addr_str);
+
+  struct in6_addr mapped_addr = {{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0, 0, 0, 0}}};
+  mapped_addr.s6_addr32[kIPv4Offset] = std::get<struct in_addr>(addr.addr).s_addr;
+
   SockAddr v6_addr;
-  ECHECK_OK(ParseIPAddress(v6_addr_str, &v6_addr));
+  v6_addr.family = SockAddrFamily::kIPv6;
+  v6_addr.addr = mapped_addr;
+  v6_addr.port = addr.port;
   return v6_addr;
 }
 
-Status ParseInetAddr(struct in_addr in_addr, in_port_t port, SockAddr* addr) {
-  // This goes first so that the result argument won't be mutated when failed.
-  PL_RETURN_IF_ERROR(IPv4AddrToString(in_addr, &addr->addr_str));
+void PopulateInetAddr(struct in_addr in_addr, in_port_t port, SockAddr* addr) {
   addr->family = SockAddrFamily::kIPv4;
-  addr->addr = reinterpret_cast<const struct in_addr&>(in_addr);
+  addr->addr = in_addr;
   addr->port = ntohs(port);
-  return Status::OK();
 }
 
-Status ParseInet6Addr(struct in6_addr in6_addr, in_port_t port, SockAddr* addr) {
-  PL_RETURN_IF_ERROR(IPv6AddrToString(in6_addr, &addr->addr_str));
+void PopulateInet6Addr(struct in6_addr in6_addr, in_port_t port, SockAddr* addr) {
   addr->family = SockAddrFamily::kIPv6;
-  addr->addr = reinterpret_cast<const struct in6_addr&>(in6_addr);
+  addr->addr = in6_addr;
   addr->port = ntohs(port);
-  return Status::OK();
 }
 
-Status ParseUnixAddr(const char* sun_path, uint32_t inode_num, SockAddr* addr) {
-  addr->addr_str = "unix_socket";
+void PopulateUnixAddr(const char* sun_path, uint32_t inode_num, SockAddr* addr) {
   addr->family = SockAddrFamily::kUnix;
   addr->addr = std::string(sun_path);
   addr->port = inode_num;
-  return Status::OK();
 }
 
-Status ParseSockAddr(const struct sockaddr* sa, SockAddr* addr) {
+Status PopulateSockAddr(const struct sockaddr* sa, SockAddr* addr) {
   switch (sa->sa_family) {
     case AF_INET: {
       const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
-      PL_RETURN_IF_ERROR(ParseInetAddr(sa_in->sin_addr, sa_in->sin_port, addr));
+      PopulateInetAddr(sa_in->sin_addr, sa_in->sin_port, addr);
       return Status::OK();
     }
     case AF_INET6: {
       const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
-      PL_RETURN_IF_ERROR(ParseInet6Addr(sa_in6->sin6_addr, sa_in6->sin6_port, addr));
+      PopulateInet6Addr(sa_in6->sin6_addr, sa_in6->sin6_port, addr);
       return Status::OK();
     }
     case AF_UNIX: {
       const auto* sa_un = reinterpret_cast<const struct sockaddr_un*>(sa);
-      PL_RETURN_IF_ERROR(ParseUnixAddr(sa_un->sun_path, -1, addr));
+      PopulateUnixAddr(sa_un->sun_path, -1, addr);
       return Status::OK();
     }
     default:
@@ -76,7 +99,6 @@ Status ParseIPAddress(std::string_view addr_str_view, SockAddr* ip_addr) {
   } else {
     return error::InvalidArgument("Cannot parse input '$0' as IP address", addr_str_view);
   }
-  ip_addr->addr_str = addr_str_view;
 
   return Status::OK();
 }

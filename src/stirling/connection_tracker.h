@@ -186,18 +186,11 @@ class ConnectionTracker {
   uint32_t generation() const { return conn_id_.generation; }
 
   /**
-   * Get remote IP addr of the connection.
+   * Get remote IP endpoint of the connection.
    *
    * @return IP.
    */
-  std::string_view remote_addr() const { return open_info_.remote_addr.addr_str; }
-
-  /**
-   * Get remote IP addr of the connection.
-   *
-   * @return IP.
-   */
-  int remote_port() const { return open_info_.remote_addr.port; }
+  const SockAddr& remote_endpoint() const { return open_info_.remote_addr; }
 
   /**
    * @brief Get the connection information (e.g. remote IP, port, PID, etc.) for this connection.
