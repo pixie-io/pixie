@@ -1,17 +1,11 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/olekukonko/tablewriter"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
 func init() {
@@ -33,52 +27,12 @@ var GetCmd = &cobra.Command{
 		format, _ := cmd.Flags().GetString("output")
 		format = strings.ToLower(format)
 		v := mustConnectDefaultVizier(cloudAddr)
+		q := `px.display(px.GetAgentStatus())`
 
-		res, err := v.GetAgentInfo()
+		res, err := v.ExecuteScript(q)
 		if err != nil {
-			log.WithError(err).Fatal("Failed to get agent info")
+			log.WithError(err).Fatal("Failed to execute query")
 		}
-
-		err = nil
-		switch format {
-		case "json":
-			err = formatAgentResultsAsJSON(res)
-		case "pb":
-			var b []byte
-			b, err = res.Marshal()
-			if err == nil {
-				fmt.Printf("%s", string(b))
-			}
-		case "pbtxt":
-			fmt.Print(res.String())
-		default:
-			formatAgentResultsAsTable(res)
-		}
-
-		if err != nil {
-			log.WithError(err).Fatalln("Failed to print results")
-		}
+		mustFormatQueryResults(res, format)
 	},
-}
-
-func formatAgentResultsAsJSON(r *querybrokerpb.AgentInfoResponse) error {
-	m := jsonpb.Marshaler{}
-	return m.Marshal(os.Stdout, r)
-}
-
-func formatAgentResultsAsTable(r *querybrokerpb.AgentInfoResponse) {
-	fmt.Printf("Number of agents: %d\n", len(r.Info))
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Agent ID", "Hostname", "Last Heartbeat (ms)", "State"})
-	for _, agentInfo := range r.Info {
-		id := uuid.FromStringOrNil(string(agentInfo.Agent.Info.AgentID.Data))
-		hbTime := agentInfo.Status.NSSinceLastHeartbeat
-		table.Append([]string{id.String(),
-			agentInfo.Agent.Info.HostInfo.Hostname,
-			fmt.Sprintf("%d", int(hbTime/1000000)),
-			agentInfo.Status.State.String(),
-		})
-	}
-	table.Render()
 }

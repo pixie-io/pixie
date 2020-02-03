@@ -41,29 +41,32 @@ var RunCmd = &cobra.Command{
 		if err != nil {
 			log.WithError(err).Fatal("Failed to execute query")
 		}
-
-		err = nil
-		switch format {
-		case "json":
-			{
-				err = formatAsJSON(res)
-			}
-		case "pb":
-			var b []byte
-			b, err = res.Marshal()
-			if err == nil {
-				fmt.Printf("%s", string(b))
-			}
-		case "pbtxt":
-			fmt.Print(res.String())
-		default:
-			formatResultsAsTable(res)
-		}
-
-		if err != nil {
-			log.WithError(err).Fatalln("Failed to print results")
-		}
+		mustFormatQueryResults(res, format)
 	},
+}
+
+func mustFormatQueryResults(res *querybrokerpb.VizierQueryResponse, format string) {
+	var err error = nil
+	switch format {
+	case "json":
+		{
+			err = formatAsJSON(res)
+		}
+	case "pb":
+		var b []byte
+		b, err = res.Marshal()
+		if err == nil {
+			fmt.Printf("%s", string(b))
+		}
+	case "pbtxt":
+		fmt.Print(res.String())
+	default:
+		formatResultsAsTable(res)
+	}
+
+	if err != nil {
+		log.WithError(err).Fatalln("Failed to print results")
+	}
 }
 
 func formatAsJSON(r *querybrokerpb.VizierQueryResponse) error {
