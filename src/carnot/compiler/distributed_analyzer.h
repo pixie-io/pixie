@@ -3,6 +3,7 @@
 
 #include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/rule_executor.h"
+#include "src/carnot/compiler/tablet_rules.h"
 
 namespace pl {
 namespace carnot {
@@ -23,6 +24,12 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
   }
 
  private:
+  void CreateTabletizerBatch() {
+    // TryUntilMax used because this should only be run once.
+    DistributedRuleBatch* tabletizer_batch = CreateRuleBatch<TryUntilMax>("TabletizePlans", 1);
+    tabletizer_batch->AddRule<DistributedTabletizerRule>();
+  }
+
   void CreateResolveColumnIndexBatch() {
     DistributedRuleBatch* resolve_column_index_batch =
         CreateRuleBatch<FailOnMax>("ResolveColumnIndex", 2);
@@ -30,6 +37,7 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
   }
 
   Status Init() {
+    CreateTabletizerBatch();
     CreateResolveColumnIndexBatch();
     return Status::OK();
   }

@@ -66,7 +66,6 @@ class LogicalPlanner : public NotCopyable {
 
   StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
       const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* registry_info);
-  Status ApplyTabletizer(distributed::DistributedPlan* distributed_plan);
 
   Compiler compiler_;
   std::unique_ptr<distributed::Planner> distributed_planner_;

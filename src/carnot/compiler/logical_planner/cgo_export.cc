@@ -67,8 +67,6 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
   // TODO(philkuz) convert this to read serialized calls instead of human readable.
   bool query_request_merge_success =
       google::protobuf::TextFormat::MergeFromString(query_request_pb_str, &query_request_pb);
-  LOG(INFO) << "query request";
-  LOG(INFO) << query_request_pb.DebugString();
   if (!query_request_merge_success) {
     std::string err =
         absl::Substitute("Failed to process the query request: $0.", query_request_pb_str);

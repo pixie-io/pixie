@@ -63,22 +63,10 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
                       distributed_planner_->Plan(logical_state.distributed_state(),
                                                  compiler_state.get(), single_node_plan.get()));
 
-  // Apply tabletization per elements of the distributed plan.
-  PL_RETURN_IF_ERROR(ApplyTabletizer(distributed_plan.get()));
-
   PL_ASSIGN_OR_RETURN(std::unique_ptr<distributed::DistributedAnalyzer> analyzer,
                       distributed::DistributedAnalyzer::Create());
   PL_RETURN_IF_ERROR(analyzer->Execute(distributed_plan.get()));
   return distributed_plan;
-}
-
-Status LogicalPlanner::ApplyTabletizer(distributed::DistributedPlan* distributed_plan) {
-  for (int64_t node_i : distributed_plan->dag().nodes()) {
-    auto carnot_instance = distributed_plan->Get(node_i);
-    PL_RETURN_IF_ERROR(
-        distributed::Tabletizer::Execute(carnot_instance->carnot_info(), carnot_instance->plan()));
-  }
-  return Status::OK();
 }
 
 }  // namespace logical_planner

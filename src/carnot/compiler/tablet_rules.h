@@ -30,7 +30,7 @@ class TabletSourceConversionRule : public Rule {
   StatusOr<bool> ReplaceMemorySourceWithTabletSourceGroup(MemorySourceIR* mem_source_ir);
   const distributedpb::TableInfo* GetTableInfo(const std::string& table_name);
 
-  const distributedpb::CarnotInfo& carnot_info_;
+  distributedpb::CarnotInfo carnot_info_;
 };
 
 /**
@@ -77,6 +77,20 @@ class MemorySourceTabletRule : public Rule {
 class Tabletizer {
  public:
   static StatusOr<bool> Execute(const distributedpb::CarnotInfo& carnot_info, IR* ir_plan);
+};
+
+class DistributedTabletizerRule : public DistributedRule {
+ public:
+  DistributedTabletizerRule() : DistributedRule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(distributed::CarnotInstance* node) override {
+    TabletSourceConversionRule rule1(node->carnot_info());
+    MemorySourceTabletRule rule2;
+    PL_ASSIGN_OR_RETURN(bool rule1_changed, rule1.Execute(node->plan()));
+    PL_ASSIGN_OR_RETURN(bool rule2_changed, rule2.Execute(node->plan()));
+    return rule1_changed || rule2_changed;
+  }
 };
 
 }  // namespace distributed
