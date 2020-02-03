@@ -440,9 +440,10 @@ StatusOr<SocketInfo*> SocketInfoManager::Lookup(uint32_t pid, uint32_t inode_num
   // Step 2: Lookup the inode.
   auto iter = namespace_conns->find(inode_num);
   if (iter == namespace_conns->end()) {
-    // Likely not a TCP/Unix connection (could be UDP, netlink, etc.).
-    // Not an error, so just return nullptr.
-    return nullptr;
+    return error::NotFound(
+        "Likely not a TCP/Unix connection (might be some other socket type). Alternatively, might "
+        "be looking in the wrong net namespace, which can happen if the target PID has connections "
+        "in multiple namespaces.");
   }
 
   return &iter->second;

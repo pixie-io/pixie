@@ -1,5 +1,3 @@
-#include <unistd.h>
-
 #include <gtest/gtest.h>
 #include <string>
 
@@ -132,9 +130,7 @@ TEST_F(NetNamespaceTest, SocketInfoManager) {
     // Non-existent inode should return nullptr.
     // 3 is very unlikely to be used as an inode number.
     const uint32_t kUnusedInode = 3;
-    ASSERT_OK_AND_ASSIGN(system::SocketInfo * socket_info,
-                         socket_info_db->Lookup(kPID, kUnusedInode));
-    EXPECT_EQ(socket_info, nullptr);
+    ASSERT_NOT_OK(socket_info_db->Lookup(kPID, kUnusedInode));
     EXPECT_EQ(socket_info_db->num_socket_prober_calls(), 1);
   }
 

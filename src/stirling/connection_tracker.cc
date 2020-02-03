@@ -850,6 +850,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   std::optional<uint32_t> inode_num_or_nullopt =
       conn_resolver_->InferSocket(last_update_timestamp_);
   if (!inode_num_or_nullopt) {
+    // This is not a conn resolution failure. We just need more time to figure out the right inode.
     return;
   }
   uint32_t inode_num = *inode_num_or_nullopt;
@@ -858,22 +859,20 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   StatusOr<const system::SocketInfo*> socket_info_status =
       socket_info_mgr->Lookup(pid(), inode_num);
   if (!socket_info_status.ok()) {
+    conn_resolver_ = nullptr;
+    conn_resolution_failed_ = true;
     LOG(WARNING) << absl::Substitute("Could not map inode to a connection. Message = $0",
                                      socket_info_status.msg());
     return;
   }
   const system::SocketInfo* socket_info = socket_info_status.ValueOrDie();
-  if (socket_info == nullptr) {
-    VLOG(1) << absl::Substitute(
-        "[pid=$0 inode=$1]. Could not resolve endpoint. Likely not a TCP/Unix connection.", pid(),
-        inode_num);
-    return;
-  }
 
   // Success! Now copy the inferred socket information into the ConnectionTracker.
 
   Status s = ParseSocketInfoRemoteAddr(*socket_info, &open_info_.remote_addr);
   if (!s.ok()) {
+    conn_resolver_ = nullptr;
+    conn_resolution_failed_ = true;
     LOG(ERROR) << absl::Substitute("Remote address (type=$0) parsing failed. Message: $1",
                                    socket_info->family, s.msg());
     return;
