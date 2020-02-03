@@ -59,14 +59,8 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> single_node_plan,
                       compiler_.CompileToIR(query_request.query_str(), compiler_state.get()));
   // Create the distributed plan.
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<distributed::DistributedPlan> distributed_plan,
-                      distributed_planner_->Plan(logical_state.distributed_state(),
-                                                 compiler_state.get(), single_node_plan.get()));
-
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<distributed::DistributedAnalyzer> analyzer,
-                      distributed::DistributedAnalyzer::Create());
-  PL_RETURN_IF_ERROR(analyzer->Execute(distributed_plan.get()));
-  return distributed_plan;
+  return distributed_planner_->Plan(logical_state.distributed_state(), compiler_state.get(),
+                                    single_node_plan.get());
 }
 
 }  // namespace logical_planner
