@@ -80,14 +80,14 @@ func (*Connector) nextQueryID() uuid.UUID {
 	return uuid.NewV4()
 }
 
-// ExecuteQuery executes the specified query.
-func (c *Connector) ExecuteQuery(q string) (*querybrokerpb.VizierQueryResponse, error) {
+// ExecuteScript executes the specified script.
+func (c *Connector) ExecuteScript(q string) (*querybrokerpb.VizierQueryResponse, error) {
 	q = strings.TrimSpace(q)
 	if len(q) == 0 {
 		return nil, errors.New("input query is empty")
 	}
 	queryID := c.nextQueryID()
-	fmt.Fprintln(os.Stderr, "Executing Query: ", queryID.String())
+	fmt.Fprintln(os.Stderr, "Executing Script: ", queryID.String())
 
 	reqPb := &querybrokerpb.QueryRequest{}
 	reqPb.QueryStr = q

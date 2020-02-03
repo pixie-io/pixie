@@ -16,28 +16,28 @@ import (
 )
 
 func init() {
-	QueryCmd.Flags().StringP("output", "o", "", "Output format: one of: json|proto")
-	QueryCmd.Flags().StringP("file", "f", "", "Query file, specify - for STDIN")
+	RunCmd.Flags().StringP("output", "o", "", "Output format: one of: json|proto")
+	RunCmd.Flags().StringP("file", "f", "", "Script file, specify - for STDIN")
 }
 
-// QueryCmd is the "query" command.
-var QueryCmd = &cobra.Command{
-	Use:   "query",
-	Short: "Execute a query",
+// RunCmd is the "query" command.
+var RunCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Execute a script",
 	Run: func(cmd *cobra.Command, args []string) {
 		cloudAddr := viper.GetString("cloud_addr")
 		format, _ := cmd.Flags().GetString("output")
 		format = strings.ToLower(format)
 
-		queryFile, _ := cmd.Flags().GetString("file")
-		q, err := getQueryString(queryFile)
+		scriptFile, _ := cmd.Flags().GetString("file")
+		q, err := getScriptString(scriptFile)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to get query string")
 		}
 
 		v := mustConnectDefaultVizier(cloudAddr)
 
-		res, err := v.ExecuteQuery(q)
+		res, err := v.ExecuteScript(q)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to execute query")
 		}
@@ -86,7 +86,7 @@ func formatResultsAsTable(r *querybrokerpb.VizierQueryResponse) {
 	fmt.Printf("Bytes processed: %.2f KB\n", bytesProcessed/1024)
 }
 
-func getQueryString(path string) (string, error) {
+func getScriptString(path string) (string, error) {
 	var qb []byte
 	var err error
 	if path == "-" {
@@ -108,7 +108,7 @@ func getQueryString(path string) (string, error) {
 	}
 
 	if len(qb) == 0 {
-		return "", errors.New("query string is empty")
+		return "", errors.New("script string is empty")
 	}
 	return string(qb), nil
 }

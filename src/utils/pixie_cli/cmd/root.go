@@ -28,7 +28,7 @@ func init() {
 	RootCmd.AddCommand(LoadClusterSecretsCmd)
 	RootCmd.AddCommand(UpdateCmd)
 	RootCmd.AddCommand(ProxyCmd)
-	RootCmd.AddCommand(QueryCmd)
+	RootCmd.AddCommand(RunCmd)
 	RootCmd.AddCommand(GetCmd)
 
 	// Super secret flags for Pixies.
