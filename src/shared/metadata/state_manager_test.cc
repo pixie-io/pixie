@@ -159,8 +159,10 @@ class AgentMetadataStateTest : public ::testing::Test {
   static constexpr int kASID = 123;
   static constexpr char kHostname[] = "myhost";
 
-  AgentMetadataStateTest() : metadata_state_(kHostname, kASID) {}
+  AgentMetadataStateTest()
+      : agent_id_(sole::uuid4()), metadata_state_(kHostname, kASID, agent_id_) {}
 
+  sole::uuid agent_id_;
   AgentMetadataState metadata_state_;
 };
 
@@ -173,6 +175,7 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
 
   EXPECT_EQ("myhost", metadata_state_.hostname());
   EXPECT_EQ(123, metadata_state_.asid());
+  EXPECT_EQ(agent_id_.str(), metadata_state_.agent_id().str());
 
   K8sMetadataState* state = metadata_state_.k8s_metadata_state();
   EXPECT_THAT(state->pods_by_name(), UnorderedElementsAre(Pair(Pair("pl", "pod1"), "pod_id1")));

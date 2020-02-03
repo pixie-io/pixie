@@ -26,8 +26,9 @@ using ::testing::AnyOf;
 class MetadataOpsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    metadata_state_ =
-        std::make_shared<pl::md::AgentMetadataState>(/* hostname */ "myhost", /* asid */ 1);
+    agent_id_ = sole::uuid4();
+    metadata_state_ = std::make_shared<pl::md::AgentMetadataState>(/* hostname */ "myhost",
+                                                                   /* asid */ 1, agent_id_);
     // Apply updates to metadata state.
     updates_ =
         std::make_unique<moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>>();
@@ -52,7 +53,7 @@ class MetadataOpsTest : public ::testing::Test {
 
     ASSERT_OK(s);
   }
-
+  sole::uuid agent_id_;
   std::shared_ptr<pl::md::AgentMetadataState> metadata_state_;
   std::unique_ptr<moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>> updates_;
 };

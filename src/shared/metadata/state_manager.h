@@ -36,18 +36,19 @@ class AgentMetadataStateManager {
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
   using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
 
-  explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid, bool collects_data,
-                                     absl::optional<CIDRBlock> cluster_cidr_opt,
+  explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid, sole::uuid agent_id,
+                                     bool collects_data, absl::optional<CIDRBlock> cluster_cidr_opt,
                                      const pl::system::Config& config)
-      : asid_(asid), collects_data_(collects_data) {
+      : asid_(asid), agent_id_(agent_id), collects_data_(collects_data) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
-    agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid);
+    agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid, agent_id);
     if (cluster_cidr_opt.has_value()) {
       agent_metadata_state_->k8s_metadata_state()->set_cluster_cidr(cluster_cidr_opt.value());
     }
   }
 
-  uint32_t asid() { return asid_; }
+  uint32_t asid() const { return asid_; }
+  const sole::uuid& agent_id() const { return agent_id_; }
 
   /**
    * This returns the current valid K8sMetadataState. The state is periodically updated
@@ -100,6 +101,7 @@ class AgentMetadataStateManager {
 
  private:
   uint32_t asid_;
+  sole::uuid agent_id_;
   std::unique_ptr<CGroupMetadataReader> md_reader_;
   std::shared_ptr<AgentMetadataState> agent_metadata_state_;
   absl::base_internal::SpinLock agent_metadata_state_lock_;
