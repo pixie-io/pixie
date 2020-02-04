@@ -238,7 +238,6 @@ class GetUDTFList final : public carnot::udf::UDTF<GetUDTFList> {
       init_args.SetObject();
       rapidjson::Value init_args_arr(rapidjson::kArrayType);
       for (const auto& arg : udtf_def->init_arguments()) {
-        PL_UNUSED(arg);
         rapidjson::Value val(rapidjson::kObjectType);
         val.AddMember("name", internal::StringRef(arg.name()), init_args.GetAllocator());
         val.AddMember("type", internal::StringRef(magic_enum::enum_name(arg.type())),
@@ -255,7 +254,6 @@ class GetUDTFList final : public carnot::udf::UDTF<GetUDTFList> {
       relation.SetObject();
       rapidjson::Value relation_arr(rapidjson::kArrayType);
       for (const auto& arg : udtf_def->output_relation()) {
-        PL_UNUSED(arg);
         rapidjson::Value val(rapidjson::kObjectType);
 
         val.AddMember("name", internal::StringRef(arg.name()), relation.GetAllocator());
@@ -281,6 +279,116 @@ class GetUDTFList final : public carnot::udf::UDTF<GetUDTFList> {
       rw->Append<IndexOf("executor")>(std::string(magic_enum::enum_name(udtf_def->executor())));
       rw->Append<IndexOf("init_args")>(init_args_sb.GetString());
       rw->Append<IndexOf("output_relation")>(relation_sb.GetString());
+
+      ++registry_map_iter_;
+      break;
+    }
+
+    return registry_map_iter_ != registry_map_.end();
+  }
+
+ private:
+  const carnot::udf::Registry::RegistryMap& registry_map_;
+  carnot::udf::Registry::RegistryMap::const_iterator registry_map_iter_;
+};
+
+class GetUDFList final : public carnot::udf::UDTF<GetUDFList> {
+ public:
+  GetUDFList() = delete;
+  explicit GetUDFList(const carnot::udf::Registry* func_registry)
+      : registry_map_(func_registry->map()), registry_map_iter_(registry_map_.begin()) {}
+
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(ColInfo("name", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The name of the Scalar UDF"),
+                     ColInfo("return_type", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The return type of the Scalar UDF"),
+                     ColInfo("args", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The argument types of the scalar UDF"));
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    while (registry_map_iter_ != registry_map_.end()) {
+      if (registry_map_iter_->second->kind() != carnot::udf::UDFDefinitionKind::kScalarUDF) {
+        ++registry_map_iter_;
+        continue;
+      }
+      auto* udf_def = static_cast<carnot::udf::ScalarUDFDefinition*>(
+          registry_map_iter_->second->GetDefinition());
+
+      rapidjson::Document args;
+      args.SetObject();
+      rapidjson::Value args_arr(rapidjson::kArrayType);
+      for (const auto& arg : udf_def->exec_arguments()) {
+        args_arr.PushBack(internal::StringRef(magic_enum::enum_name(arg)), args.GetAllocator());
+      }
+      args.AddMember("args", args_arr.Move(), args.GetAllocator());
+
+      rapidjson::StringBuffer args_sb;
+      rapidjson::Writer<rapidjson::StringBuffer> args_writer(args_sb);
+      args.Accept(args_writer);
+
+      rw->Append<IndexOf("name")>(udf_def->name());
+      rw->Append<IndexOf("return_type")>(
+          std::string(magic_enum::enum_name(udf_def->exec_return_type())));
+      rw->Append<IndexOf("args")>(args_sb.GetString());
+
+      ++registry_map_iter_;
+      break;
+    }
+
+    return registry_map_iter_ != registry_map_.end();
+  }
+
+ private:
+  const carnot::udf::Registry::RegistryMap& registry_map_;
+  carnot::udf::Registry::RegistryMap::const_iterator registry_map_iter_;
+};
+
+class GetUDAList final : public carnot::udf::UDTF<GetUDAList> {
+ public:
+  GetUDAList() = delete;
+  explicit GetUDAList(const carnot::udf::Registry* func_registry)
+      : registry_map_(func_registry->map()), registry_map_iter_(registry_map_.begin()) {}
+
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(ColInfo("name", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The name of the UDA"),
+                     ColInfo("return_type", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The return type of the UDA"),
+                     ColInfo("args", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The argument types of the UDA"));
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    while (registry_map_iter_ != registry_map_.end()) {
+      if (registry_map_iter_->second->kind() != carnot::udf::UDFDefinitionKind::kUDA) {
+        ++registry_map_iter_;
+        continue;
+      }
+      auto* uda_def =
+          static_cast<carnot::udf::UDADefinition*>(registry_map_iter_->second->GetDefinition());
+
+      rapidjson::Document args;
+      args.SetObject();
+      rapidjson::Value args_arr(rapidjson::kArrayType);
+      for (const auto& arg : uda_def->update_arguments()) {
+        args_arr.PushBack(internal::StringRef(magic_enum::enum_name(arg)), args.GetAllocator());
+      }
+      args.AddMember("args", args_arr.Move(), args.GetAllocator());
+
+      rapidjson::StringBuffer args_sb;
+      rapidjson::Writer<rapidjson::StringBuffer> args_writer(args_sb);
+      args.Accept(args_writer);
+
+      rw->Append<IndexOf("name")>(uda_def->name());
+      rw->Append<IndexOf("return_type")>(
+          std::string(magic_enum::enum_name(uda_def->finalize_return_type())));
+      rw->Append<IndexOf("args")>(args_sb.GetString());
 
       ++registry_map_iter_;
       break;
