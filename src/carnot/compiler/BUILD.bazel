@@ -218,3 +218,13 @@ pl_cc_test(
         ":test_utils",
     ],
 )
+
+pl_cc_test(
+    name = "distributed_rules_test",
+    srcs = ["distributed_rules_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+        "//src/carnot/compiler/logical_planner:test_utils",
+    ],
+)

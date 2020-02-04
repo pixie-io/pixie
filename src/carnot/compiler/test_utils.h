@@ -441,6 +441,9 @@ class OperatorTests : public ::testing::Test {
   StringIR* MakeString(std::string val) {
     return graph->CreateNode<StringIR>(ast, val).ConsumeValueOrDie();
   }
+  UInt128IR* MakeUInt128(std::string val) {
+    return graph->CreateNode<UInt128IR>(ast, val).ConsumeValueOrDie();
+  }
 
   IntIR* MakeInt(int64_t val) { return graph->CreateNode<IntIR>(ast, val).ConsumeValueOrDie(); }
 
@@ -691,6 +694,56 @@ relation {
   columns {
     column_name: "name"
     column_type: STRING
+  }
+}
+)proto";
+
+constexpr char kUDTFAgentUID[] = R"proto(
+name: "RunningProcesses"
+args {
+  name: "agent_uid"
+  arg_type: STRING
+  semantic_type: ST_AGENT_UID
+}
+executor: UDTF_ALL_AGENTS
+relation {
+  columns {
+    column_name: "asid"
+    column_type: INT64
+  }
+  columns {
+    column_name: "name"
+    column_type: STRING
+  }
+}
+)proto";
+
+constexpr char kUDTFAllAgents[] = R"proto(
+name: "_Test_MD_State"
+executor: UDTF_ALL_AGENTS
+relation {
+  columns {
+    column_name: "asid"
+    column_type: INT64
+  }
+  columns {
+    column_name: "debug_state"
+    column_type: STRING
+  }
+}
+)proto";
+
+constexpr char kUDTFServiceUpTimePb[] = R"proto(
+name: "ServiceUpTime"
+executor: UDTF_ONE_KELVIN
+relation {
+  columns {
+    column_name: "service"
+    column_type: STRING
+  }
+  columns {
+    column_name: "up_time"
+    column_type: INT64
   }
 }
 )proto";
