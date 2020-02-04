@@ -28,24 +28,6 @@ class IR;
 class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
 
-/**
- * @brief NameToNode is a struct to store string, node pairs. This enables Arg data structures to
- * preserve input order of these arguments which is probably expected by the user and gives
- * deterministic guarantees that hashmaps can't.
- *
- */
-struct NameToNode {
-  NameToNode(std::string_view n, IRNode* nd) : name(n), node(nd) {}
-  std::string name;
-  IRNode* node;
-};
-
-struct ArgMap {
-  // Kwargs is a vector because we want to preserve the input order for display of the tables.
-  std::vector<NameToNode> kwargs;
-  std::vector<IRNode*> args;
-};
-
 enum class IRNodeType {
   kAny = -1,
 #undef PL_IR_NODE
@@ -410,6 +392,12 @@ class OperatorIR : public IRNode {
    */
   virtual StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const = 0;
 
+  static bool NodeMatches(IRNode* input);
+  // This is different from type_string() which assumes a leaf node IRNode type on a specific
+  // object. Sometimes when producing error messages, we want to print out that something did not
+  // match an "Operator" generally, when any "leaf" type of Operator would have been a match.
+  static std::string class_type_string() { return "Operator"; }
+
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type, bool has_parents, bool is_source)
       : IRNode(id, type), is_source_(is_source), can_have_parents_(has_parents) {}
@@ -450,6 +438,8 @@ class ExpressionIR : public IRNode {
   virtual bool IsData() const { return false; }
   virtual bool IsFunction() const { return false; }
   virtual Status ToProto(planpb::ScalarExpression* expr) const = 0;
+  static bool NodeMatches(IRNode* input);
+  static std::string class_type_string() { return "Expression"; }
 
  protected:
   ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
@@ -784,6 +774,8 @@ class StringIR : public DataIR {
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   Status ToProtoImpl(planpb::ScalarValue* value) const override;
+  static bool NodeMatches(IRNode* input);
+  static std::string class_type_string() { return TypeString(IRNodeType::kString); }
 
  private:
   std::string str_;
@@ -855,6 +847,8 @@ class ListIR : public CollectionIR {
   explicit ListIR(int64_t id) : CollectionIR(id, IRNodeType::kList) {}
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+  static bool NodeMatches(IRNode* input);
+  static std::string class_type_string() { return TypeString(IRNodeType::kList); }
 };
 
 class TupleIR : public CollectionIR {
@@ -863,6 +857,8 @@ class TupleIR : public CollectionIR {
   explicit TupleIR(int64_t id) : CollectionIR(id, IRNodeType::kTuple) {}
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+  static bool NodeMatches(IRNode* input);
+  static std::string class_type_string() { return TypeString(IRNodeType::kTuple); }
 };
 
 struct ColumnExpression {
@@ -944,6 +940,8 @@ class FuncIR : public ExpressionIR {
 
   Status ToProto(planpb::ScalarExpression* expr) const override;
   bool IsFunction() const override { return true; }
+  static bool NodeMatches(IRNode* input);
+  static std::string class_type_string() { return "Func"; }
 
  private:
   std::string func_prefix_ = kPLFuncPrefix;
@@ -989,6 +987,8 @@ class IntIR : public DataIR {
     return absl::Substitute("$0, $1)", DataIR::DebugString(), val());
   }
   Status ToProtoImpl(planpb::ScalarValue* value) const override;
+  static bool NodeMatches(IRNode* input);
+  static std::string class_type_string() { return TypeString(IRNodeType::kInt); }
 
  private:
   int64_t val_;
@@ -1860,6 +1860,20 @@ class UDTFSourceIR : public OperatorIR {
   std::vector<DataIR*> arg_values_;
   udfspb::UDTFSourceSpec udtf_spec_;
 };
+
+template <typename TIRNode>
+inline StatusOr<TIRNode*> AsNodeType(IRNode* node, std::string_view node_name) {
+  if (!TIRNode::NodeMatches(node)) {
+    return node->CreateIRNodeError("Could not get $0 as type '$1', received '$2'", node_name,
+                                   TIRNode::class_type_string(), node->type_string());
+  }
+  return static_cast<TIRNode*>(node);
+}
+
+template <>
+inline StatusOr<IRNode*> AsNodeType<IRNode>(IRNode* node, std::string_view /* node_name */) {
+  return node;
+}
 
 }  // namespace compiler
 }  // namespace carnot

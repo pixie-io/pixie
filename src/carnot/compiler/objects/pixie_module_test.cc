@@ -153,7 +153,7 @@ TEST_F(PixieModuleTest, GetUDTFMethod) {
 
   ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
   auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)
-                         ->Call({{{"upid", upid_str}}, {}}, ast, ast_visitor.get());
+                         ->Call(MakeArgMap({{"upid", upid_str}}, {}), ast, ast_visitor.get());
   ASSERT_OK(result_or_s);
   auto ql_object = result_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -220,15 +220,16 @@ TEST_F(PixieModuleTest, uuint128_conversion) {
   QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
 
-  auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)
-                         ->Call({{{"uuid", MakeString(uuint128_str)}}, {}}, ast, ast_visitor.get());
+  auto result_or_s =
+      std::static_pointer_cast<FuncObject>(method_object)
+          ->Call(MakeArgMap({{"uuid", MakeString(uuint128_str)}}, {}), ast, ast_visitor.get());
   ASSERT_OK(result_or_s);
   QLObjectPtr uuint128_str_object = result_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(uuint128_str_object->type_descriptor().type() == QLObjectType::kExpr);
 
   std::shared_ptr<ExprObject> expr = std::static_pointer_cast<ExprObject>(uuint128_str_object);
-  ASSERT_EQ(expr->GetExpr()->type(), IRNodeType::kUInt128);
-  EXPECT_EQ(static_cast<UInt128IR*>(expr->GetExpr())->val(), expected_uuint128.value());
+  ASSERT_EQ(expr->node()->type(), IRNodeType::kUInt128);
+  EXPECT_EQ(static_cast<UInt128IR*>(expr->node())->val(), expected_uuint128.value());
 }
 
 TEST_F(PixieModuleTest, uuint128_conversion_fails_on_invalid_string) {
@@ -240,8 +241,9 @@ TEST_F(PixieModuleTest, uuint128_conversion_fails_on_invalid_string) {
   QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
 
-  auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)
-                         ->Call({{{"uuid", MakeString(upid_str)}}, {}}, ast, ast_visitor.get());
+  auto result_or_s =
+      std::static_pointer_cast<FuncObject>(method_object)
+          ->Call(MakeArgMap({{"uuid", MakeString(upid_str)}}, {}), ast, ast_visitor.get());
   ASSERT_NOT_OK(result_or_s);
   EXPECT_THAT(result_or_s.status(), HasCompilerError(".* is not a valid UUID"));
 }

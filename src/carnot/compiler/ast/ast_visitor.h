@@ -40,6 +40,9 @@ class ASTVisitor {
    * @param op_context the operator context to operate with.
    * @return StatusOr<IRNode*> the graph representation of the expression, or an error if the
    * operator fails.
+   *
+   * TODO(nserrino, philkuz): Have this return a QLObjectPtr instead of an IRNode so that non
+   * IRNode objects (like int or None) can be processed here.
    */
   virtual StatusOr<IRNode*> ProcessSingleExpressionModule(const pypa::AstModulePtr& m) = 0;
 
@@ -49,6 +52,9 @@ class ASTVisitor {
    * @param str the input string
    * @return StatusOr<IRNode*> the IR of the expression or an error if something fails during
    * processing.
+   *
+   * TODO(nserrino, philkuz): Same as above, have this return a QLObjectPtr instead of an IRNode
+   * so that non IRNode objects (like int or None) can be processed here.
    */
   virtual StatusOr<IRNode*> ParseAndProcessSingleExpression(std::string_view str) = 0;
 };

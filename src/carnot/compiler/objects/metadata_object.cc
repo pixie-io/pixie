@@ -26,12 +26,8 @@ Status MetadataObject::Init() {
 
 StatusOr<QLObjectPtr> MetadataObject::SubscriptHandler(const pypa::AstPtr& ast,
                                                        const ParsedArgs& args) {
-  IRNode* key = args.GetArg("key");
-  if (!Match(key, String())) {
-    return key->CreateIRNodeError("expected 'key' to be a str, got '$0'", key->type_string());
-  }
-
-  std::string key_value = static_cast<StringIR*>(key)->str();
+  PL_ASSIGN_OR_RETURN(StringIR * key, GetArgAs<StringIR>(args, "key"));
+  std::string key_value = key->str();
   // Lookup the key
   IR* ir_graph = key->graph_ptr();
 

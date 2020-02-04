@@ -398,7 +398,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param annotation
    * @return Status
    */
-  Status DoesArgMatchAnnotation(IRNode* arg, const pypa::AstExpr& annotation);
+  Status DoesArgMatchAnnotation(QLObjectPtr arg, const pypa::AstExpr& annotation);
 
   /**
    * @brief Handles the return statements of function definitions.

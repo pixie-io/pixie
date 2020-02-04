@@ -8,6 +8,7 @@
 #include <pypa/ast/ast.hh>
 
 #include "src/carnot/compiler/ast/ast_visitor.h"
+#include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/objects/qlobject.h"
 
 namespace pl {
@@ -15,38 +16,67 @@ namespace carnot {
 namespace compiler {
 
 /**
+ * @brief NameToNode is a struct to store string, node pairs. This enables Arg data structures to
+ * preserve input order of these arguments which is probably expected by the user and gives
+ * deterministic guarantees that hashmaps can't.
+ *
+ */
+struct NameToNode {
+  NameToNode(std::string_view n, QLObjectPtr nd) : name(n), node(nd) {}
+  std::string name;
+  QLObjectPtr node;
+};
+
+struct ArgMap {
+  // Kwargs is a vector because we want to preserve the input order for display of the tables.
+  std::vector<NameToNode> kwargs;
+  std::vector<QLObjectPtr> args;
+};
+/**
  * @brief Data structure that contains parsed arguments. This separates the concerns of parsing
  * arguments from the actual implementation by storing evaluated arguments into a map.
  */
 class ParsedArgs {
  public:
-  void AddArg(std::string_view arg_name, IRNode* node) {
+  void AddArg(std::string_view arg_name, QLObjectPtr node) {
     DCHECK(!HasArgOrKwarg(arg_name));
     args_[arg_name] = node;
   }
 
-  void SubDefaultArg(std::string_view arg_name, IRNode* node) {
+  Status AddArg(std::string_view arg_name, IRNode* node) {
+    PL_ASSIGN_OR_RETURN(auto obj, QLObject::FromIRNode(node));
+    AddArg(arg_name, obj);
+    return Status::OK();
+  }
+
+  void SubDefaultArg(std::string_view arg_name, QLObjectPtr node) {
     default_subbed_args_.emplace(arg_name);
     AddArg(arg_name, node);
   }
 
   bool HasArgOrKwarg(std::string_view arg_name) { return HasArg(arg_name) || HasKwarg(arg_name); }
 
-  IRNode* GetArg(std::string_view arg_name) const {
+  QLObjectPtr GetArg(std::string_view arg_name) const {
     DCHECK(args_.contains(arg_name)) << absl::Substitute("arg '$0' not found", arg_name);
     return args_.find(arg_name)->second;
   }
 
-  void AddKwarg(std::string_view arg_name, IRNode* node) {
+  void AddKwarg(std::string_view arg_name, QLObjectPtr node) {
     DCHECK(!HasArgOrKwarg(arg_name));
     kwargs_.emplace_back(arg_name, node);
   }
 
-  void AddVariableArg(IRNode* node) { variable_args_.push_back(node); }
+  Status AddKwarg(std::string_view arg_name, IRNode* node) {
+    PL_ASSIGN_OR_RETURN(auto obj, QLObject::FromIRNode(node));
+    AddKwarg(arg_name, obj);
+    return Status::OK();
+  }
+
+  void AddVariableArg(QLObjectPtr node) { variable_args_.push_back(node); }
 
   const std::vector<NameToNode>& kwargs() const { return kwargs_; }
-  const absl::flat_hash_map<std::string, IRNode*>& args() const { return args_; }
-  const std::vector<IRNode*>& variable_args() const { return variable_args_; }
+  const absl::flat_hash_map<std::string, QLObjectPtr>& args() const { return args_; }
+  const std::vector<QLObjectPtr>& variable_args() const { return variable_args_; }
   const absl::flat_hash_set<std::string>& default_subbed_args() const {
     return default_subbed_args_;
   }
@@ -63,11 +93,11 @@ class ParsedArgs {
   }
 
   // The mapping of named, non-variable arguments to the ir representation.
-  absl::flat_hash_map<std::string, IRNode*> args_;
+  absl::flat_hash_map<std::string, QLObjectPtr> args_;
   // Holder for extra kw args if the function has a **kwargs argument.
   std::vector<NameToNode> kwargs_;
   // Variable arguments that are passed in.
-  std::vector<IRNode*> variable_args_;
+  std::vector<QLObjectPtr> variable_args_;
   // The set of arguments that wer substituted with defaults.
   absl::flat_hash_set<std::string> default_subbed_args_;
 };
@@ -123,7 +153,7 @@ class FuncObject : public QLObject {
   StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast,
                                    ASTVisitor* ast_visitor);
 
-  StatusOr<IRNode*> GetDefault(std::string_view arg, ASTVisitor* ast_visitor);
+  StatusOr<QLObjectPtr> GetDefault(std::string_view arg, ASTVisitor* ast_visitor);
   bool HasDefault(std::string_view arg);
 
   std::string FormatArguments(const absl::flat_hash_set<std::string> args);
@@ -141,6 +171,19 @@ class FuncObject : public QLObject {
   // Whether the function takes *args as an argument.
   bool has_variable_len_args_;
 };
+
+template <typename TIRNode>
+StatusOr<TIRNode*> GetArgAs(QLObjectPtr arg, std::string_view arg_name) {
+  if (!arg->HasNode()) {
+    return error::InvalidArgument("Could not get IRNode from arg '$0'", arg_name);
+  }
+  return AsNodeType<TIRNode>(arg->node(), arg_name);
+}
+
+template <typename TIRNode>
+StatusOr<TIRNode*> GetArgAs(const ParsedArgs& args, std::string_view arg_name) {
+  return GetArgAs<TIRNode>(args.GetArg(arg_name), arg_name);
+}
 
 }  // namespace compiler
 }  // namespace carnot

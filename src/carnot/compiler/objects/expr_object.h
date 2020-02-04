@@ -25,13 +25,8 @@ class ExprObject : public QLObject {
     return std::shared_ptr<ExprObject>(new ExprObject(expr));
   }
 
-  ExpressionIR* GetExpr() const { return expr_; }
-
  protected:
-  explicit ExprObject(ExpressionIR* expr) : QLObject(ExprType, expr), expr_(expr) {}
-
- private:
-  ExpressionIR* expr_ = nullptr;
+  explicit ExprObject(ExpressionIR* expr) : QLObject(ExprType, expr) {}
 };
 
 }  // namespace compiler

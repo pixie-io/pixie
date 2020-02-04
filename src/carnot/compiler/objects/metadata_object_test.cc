@@ -20,7 +20,8 @@ TEST_F(MetadataObjectTest, SubscriptWithString) {
   ASSERT_TRUE(metadata->HasSubscriptMethod());
   std::shared_ptr<FuncObject> func = metadata->GetSubscriptMethod().ConsumeValueOrDie();
 
-  auto func_result_or_s = func->Call(ArgMap{{}, {MakeString("service")}}, ast, ast_visitor.get());
+  auto func_result_or_s =
+      func->Call(MakeArgMap({}, {MakeString("service")}), ast, ast_visitor.get());
   ASSERT_OK(func_result_or_s);
 
   auto func_result = func_result_or_s.ConsumeValueOrDie();
@@ -42,9 +43,10 @@ TEST_F(MetadataObjectTest, ErrorsOnSubscriptWithNonString) {
   std::shared_ptr<FuncObject> func = metadata->GetSubscriptMethod().ConsumeValueOrDie();
 
   auto func_result_or_s =
-      func->Call(ArgMap{{}, {MakeList(MakeString("service"))}}, ast, ast_visitor.get());
+      func->Call(MakeArgMap({}, {MakeList(MakeString("service"))}), ast, ast_visitor.get());
   ASSERT_NOT_OK(func_result_or_s);
-  EXPECT_THAT(func_result_or_s.status(), HasCompilerError("expected 'key' to be a str, got '.*'"));
+  EXPECT_THAT(func_result_or_s.status(),
+              HasCompilerError("Could not get key as type 'String', received 'List"));
 }
 
 }  // namespace compiler

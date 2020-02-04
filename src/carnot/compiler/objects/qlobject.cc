@@ -1,8 +1,10 @@
-#include "src/carnot/compiler/objects/qlobject.h"
-
 #include <vector>
 
+#include "src/carnot/compiler/objects/collection_object.h"
+#include "src/carnot/compiler/objects/dataframe.h"
+#include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/funcobject.h"
+#include "src/carnot/compiler/objects/qlobject.h"
 
 namespace pl {
 namespace carnot {
@@ -23,6 +25,19 @@ StatusOr<std::shared_ptr<QLObject>> QLObject::GetAttribute(const pypa::AstPtr& a
     return CreateAstError(ast, "'$0' object has no attribute '$1'", type_descriptor_.name(), name);
   }
   return GetAttributeImpl(ast, name);
+}
+
+StatusOr<QLObjectPtr> QLObject::FromIRNode(IRNode* node) {
+  if (Match(node, Operator())) {
+    return Dataframe::Create(static_cast<OperatorIR*>(node));
+  } else if (Match(node, Collection())) {
+    return CollectionObject::Create(static_cast<CollectionIR*>(node));
+  } else if (Match(node, Expression())) {
+    return ExprObject::Create(static_cast<ExpressionIR*>(node));
+  } else {
+    return node->CreateIRNodeError("Could not create QL object from IRNode of type $0",
+                                   node->type_string());
+  }
 }
 
 }  // namespace compiler

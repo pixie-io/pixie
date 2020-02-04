@@ -240,8 +240,10 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   return Status::OK();
 }
 
-Status ASTVisitorImpl::DoesArgMatchAnnotation(IRNode* arg, const pypa::AstExpr& annotation) {
+Status ASTVisitorImpl::DoesArgMatchAnnotation(QLObjectPtr ql_arg, const pypa::AstExpr& annotation) {
   DCHECK(annotation);
+  DCHECK(ql_arg->HasNode());
+  auto arg = ql_arg->node();
   PL_ASSIGN_OR_RETURN(auto annotation_object, Process(annotation, {{}, "", {}}));
   if (annotation_object->type() == QLObjectType::kDataframe) {
     if (!arg->IsOperator()) {
@@ -268,19 +270,11 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(
   PL_UNUSED(ast);
   std::shared_ptr<VarTable> local_scope = var_table_->CreateChild();
   for (const std::string& arg_name : arg_names) {
-    // TODO(philkuz) scope out making args return objects instead of IRNode*.
-    IRNode* arg = args.GetArg(arg_name);
+    QLObjectPtr arg_object = args.GetArg(arg_name);
+
     if (arg_annotations.contains(arg_name)) {
-      PL_RETURN_IF_ERROR(DoesArgMatchAnnotation(arg, arg_annotations.find(arg_name)->second));
-    }
-    QLObjectPtr arg_object;
-    if (Match(arg, Operator())) {
-      PL_ASSIGN_OR_RETURN(arg_object, Dataframe::Create(static_cast<OperatorIR*>(arg)));
-    } else {
-      DCHECK(Match(arg, Expression())) << "FuncDefHandler written to only handle Operators and "
-                                          "Expressions, received a non-op and non-expr "
-                                       << arg->type_string();
-      PL_ASSIGN_OR_RETURN(arg_object, ExprObject::Create(static_cast<ExpressionIR*>(arg)));
+      PL_RETURN_IF_ERROR(
+          DoesArgMatchAnnotation(arg_object, arg_annotations.find(arg_name)->second));
     }
     local_scope->Add(arg_name, arg_object);
   }
@@ -401,10 +395,9 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSubscriptCall(const pypa::AstSubscr
   }
 
   OperatorContext new_op_context(op_context.parent_ops, op_context.operator_name, dfs);
-  PL_ASSIGN_OR_RETURN(IRNode * ir_node,
-                      ProcessData(PYPA_PTR_CAST(Index, slice)->value, new_op_context));
+  PL_ASSIGN_OR_RETURN(QLObjectPtr arg, Process(PYPA_PTR_CAST(Index, slice)->value, new_op_context));
   ArgMap args;
-  args.args.push_back(ir_node);
+  args.args.push_back(arg);
   return func_object->Call(args, node, this);
 }
 
@@ -436,14 +429,14 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast,
                                              const OperatorContext& op_context) {
   ArgMap arg_map;
   for (const auto arg : call_ast->arguments) {
-    PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(arg, op_context));
+    PL_ASSIGN_OR_RETURN(auto value, Process(arg, op_context));
     arg_map.args.push_back(value);
   }
 
   // Iterate through the keywords
   for (auto& kw_ptr : call_ast->keywords) {
     std::string key = GetNameAsString(kw_ptr->name);
-    PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(kw_ptr->value, op_context));
+    PL_ASSIGN_OR_RETURN(auto value, Process(kw_ptr->value, op_context));
     arg_map.kwargs.emplace_back(key, value);
   }
 

@@ -167,7 +167,7 @@ TEST_F(QLObjectTest, GetSubscriptMethod) {
   EXPECT_FALSE(func_attr->HasNode());
 
   auto out_object =
-      func_attr->Call(ArgMap{{}, {MakeInt(10)}}, ast, ast_visitor.get()).ConsumeValueOrDie();
+      func_attr->Call(MakeArgMap({}, {MakeInt(10)}), ast, ast_visitor.get()).ConsumeValueOrDie();
   // just validate that the correct thing happened.
   ASSERT_TRUE(out_object->type_descriptor().type() == TestQLObject2::TestQLObjectType.type());
   ASSERT_TRUE(out_object->type_descriptor().name() == TestQLObject2::TestQLObjectType.name());
@@ -184,7 +184,7 @@ TEST_F(QLObjectTest, GetCallMethod) {
   EXPECT_FALSE(func_attr->HasNode());
 
   auto out_object =
-      func_attr->Call(ArgMap{{}, {MakeInt(10)}}, ast, ast_visitor.get()).ConsumeValueOrDie();
+      func_attr->Call(MakeArgMap({}, {MakeInt(10)}), ast, ast_visitor.get()).ConsumeValueOrDie();
   // just validate that the correct thing happened.
   ASSERT_TRUE(out_object->type_descriptor().type() == TestQLObject2::TestQLObjectType.type());
   ASSERT_TRUE(out_object->type_descriptor().name() == TestQLObject2::TestQLObjectType.name());

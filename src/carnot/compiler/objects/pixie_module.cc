@@ -162,23 +162,14 @@ StatusOr<std::shared_ptr<QLObject>> PixieModule::GetAttributeImpl(const pypa::As
 
 StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
                                            const ParsedArgs& args) {
-  IRNode* out = args.GetArg("out");
-  IRNode* name = args.GetArg("name");
+  PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(args, "out"));
+  PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(args, "name"));
 
-  if (!Match(out, Operator())) {
-    return out->CreateIRNodeError("'out' must be a dataframe", out->type_string());
-  }
-
-  if (!Match(name, String())) {
-    return name->CreateIRNodeError("'name' must be a string");
-  }
-
-  OperatorIR* out_op = static_cast<OperatorIR*>(out);
-  std::string out_name = static_cast<StringIR*>(name)->str();
+  std::string out_name = name->str();
   std::vector<std::string> columns;
 
   // TODO(PL-1197) support output columns in the analyzer rules.
-  // IRNode* cols = args.GetArg("cols");
+  // PL_ASSIGN_OR_RETURN(IRNode* cols, GetArgAs<IRNode*>(args, "cols"));
   // if (!Match(cols, ListWithChildren(String()))) {
   //   return cols->CreateIRNodeError("'cols' must be a list of strings.");
   // }
@@ -203,11 +194,8 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::string ti
                                                        const ParsedArgs& args) {
   // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
   std::vector<ExpressionIR*> expr_args;
-  IRNode* unit = args.GetArg("unit");
-  if (!Match(unit, Expression())) {
-    return unit->CreateIRNodeError("Argument must be an expression, got a $0", unit->type_string());
-  }
-  expr_args.push_back(static_cast<ExpressionIR*>(unit));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * unit, GetArgAs<ExpressionIR>(args, "unit"));
+  expr_args.push_back(unit);
   FuncIR::Op op{FuncIR::Opcode::non_op, "", time_name};
   PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
   return ExprObject::Create(node);
@@ -215,10 +203,7 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::string ti
 
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
                                                                 const ParsedArgs& args) {
-  IRNode* uuid_str = args.GetArg("uuid");
-  if (!Match(uuid_str, String())) {
-    return uuid_str->CreateIRNodeError("'uuid' must be a str, got a $0", uuid_str->type_string());
-  }
+  PL_ASSIGN_OR_RETURN(StringIR * uuid_str, GetArgAs<StringIR>(args, "uuid"));
   auto upid_or_s = md::UPID::ParseFromUUIDString(static_cast<StringIR*>(uuid_str)->str());
   if (!upid_or_s.ok()) {
     return uuid_str->CreateIRNodeError(upid_or_s.msg());
@@ -233,10 +218,15 @@ StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, std::string name, const pypa::
                                        const ParsedArgs& args) {
   std::vector<ExpressionIR*> expr_args;
   for (const auto& arg : args.variable_args()) {
-    if (!Match(arg, Expression())) {
-      return arg->CreateIRNodeError("Argument must be an expression, got a $0", arg->type_string());
+    if (!arg->HasNode()) {
+      return CreateAstError(ast, "Argument to udf '$0' must be an expression", name);
     }
-    expr_args.push_back(static_cast<ExpressionIR*>(arg));
+    auto ir_node = arg->node();
+    if (!Match(ir_node, Expression())) {
+      return ir_node->CreateIRNodeError("Argument must be an expression, got a $0",
+                                        ir_node->type_string());
+    }
+    expr_args.push_back(static_cast<ExpressionIR*>(ir_node));
   }
   FuncIR::Op op{FuncIR::Opcode::non_op, "", name};
   PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
@@ -295,8 +285,7 @@ StatusOr<QLObjectPtr> UDTFSourceHandler::Eval(IR* graph,
   absl::flat_hash_map<std::string, ExpressionIR*> arg_map;
   for (const auto& arg : udtf_source_spec.args()) {
     DCHECK(args.args().contains(arg.name()));
-    IRNode* arg_node = args.GetArg(arg.name());
-
+    PL_ASSIGN_OR_RETURN(IRNode * arg_node, GetArgAs<IRNode>(args, arg.name()));
     PL_ASSIGN_OR_RETURN(arg_map[arg.name()], EvaluateExpression(graph, arg_node, arg));
   }
   PL_ASSIGN_OR_RETURN(

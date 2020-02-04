@@ -1736,6 +1736,14 @@ Status UDTFSourceIR::CopyFromNodeImpl(
   return SetArgValues(arg_values);
 }
 
+bool OperatorIR::NodeMatches(IRNode* node) { return Match(node, Operator()); }
+bool StringIR::NodeMatches(IRNode* node) { return Match(node, String()); }
+bool IntIR::NodeMatches(IRNode* node) { return Match(node, Int()); }
+bool ListIR::NodeMatches(IRNode* node) { return Match(node, List()); }
+bool TupleIR::NodeMatches(IRNode* node) { return Match(node, Tuple()); }
+bool FuncIR::NodeMatches(IRNode* node) { return Match(node, Func()); }
+bool ExpressionIR::NodeMatches(IRNode* node) { return Match(node, Expression()); }
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

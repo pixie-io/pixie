@@ -42,9 +42,16 @@ class TypeDescriptor {
   QLObjectType type_;
 };
 
+class QLObject;
+// Alias for convenience.
+using QLObjectPtr = std::shared_ptr<QLObject>;
+
 class QLObject {
  public:
   virtual ~QLObject() = default;
+
+  static StatusOr<QLObjectPtr> FromIRNode(IRNode* node);
+
   /**
    * @brief Gets the Method with specified name.
    *
@@ -238,9 +245,6 @@ class QLObject {
   IRNode* node_ = nullptr;
   pypa::AstPtr ast_ = nullptr;
 };
-
-// Alias for convenience.
-using QLObjectPtr = std::shared_ptr<QLObject>;
 
 }  // namespace compiler
 }  // namespace carnot

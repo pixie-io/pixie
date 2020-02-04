@@ -94,7 +94,7 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
       missing_pos_args.emplace(arg);
       continue;
     }
-    PL_ASSIGN_OR_RETURN(IRNode * default_node, GetDefault(arg, ast_visitor));
+    PL_ASSIGN_OR_RETURN(auto default_node, GetDefault(arg, ast_visitor));
     parsed_args.SubDefaultArg(arg, default_node);
   }
 
@@ -110,12 +110,14 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
 
 bool FuncObject::HasDefault(std::string_view arg) { return defaults_.find(arg) != defaults_.end(); }
 
-StatusOr<IRNode*> FuncObject::GetDefault(std::string_view arg, ASTVisitor* ast_visitor) {
+StatusOr<QLObjectPtr> FuncObject::GetDefault(std::string_view arg, ASTVisitor* ast_visitor) {
   //  Check if the argument exists among the defaults.
   if (!defaults_.contains(arg)) {
     return error::InvalidArgument("");
   }
-  return ast_visitor->ParseAndProcessSingleExpression(defaults_.find(arg)->second);
+  PL_ASSIGN_OR_RETURN(auto ir_node,
+                      ast_visitor->ParseAndProcessSingleExpression(defaults_.find(arg)->second));
+  return QLObject::FromIRNode(ir_node);
 }
 
 std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> args) {

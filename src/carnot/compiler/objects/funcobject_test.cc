@@ -36,12 +36,10 @@ class TestQLObject : public QLObject {
 };
 
 StatusOr<QLObjectPtr> SimpleFunc(const pypa::AstPtr&, const ParsedArgs& args) {
-  IRNode* node = args.GetArg("simple");
-  if (!Match(node, Int())) {
-    return node->CreateIRNodeError("Expected int");
-  }
-  auto out_obj = std::make_shared<TestQLObject>(static_cast<IntIR*>(node)->val());
-  for (const auto& [arg, value] : args.kwargs()) {
+  PL_ASSIGN_OR_RETURN(IntIR * node, GetArgAs<IntIR>(args, "simple"));
+  auto out_obj = std::make_shared<TestQLObject>(node->val());
+  for (const auto& [arg, val] : args.kwargs()) {
+    auto value = val->node();
     if (!Match(value, String())) {
       return value->CreateIRNodeError("Expected string $0", value->DebugString());
     }
@@ -52,19 +50,18 @@ StatusOr<QLObjectPtr> SimpleFunc(const pypa::AstPtr&, const ParsedArgs& args) {
 }
 
 StatusOr<QLObjectPtr> SimpleFuncForVarArgs(const pypa::AstPtr&, const ParsedArgs& args) {
-  IRNode* node = args.GetArg("simple");
-  if (!Match(node, Int())) {
-    return node->CreateIRNodeError("Expected int");
-  }
+  PL_ASSIGN_OR_RETURN(IntIR * node, GetArgAs<IntIR>(args, "simple"));
   auto out_obj = std::make_shared<TestQLObject>(static_cast<IntIR*>(node)->val());
-  for (const auto& [idx, value] : Enumerate(args.variable_args())) {
+  for (const auto& [idx, val] : Enumerate(args.variable_args())) {
+    auto value = val->node();
     if (!Match(value, String())) {
       return value->CreateIRNodeError("Expected string $0", value->DebugString());
     }
     out_obj->AddKwargValue(absl::Substitute("arg$0", idx), static_cast<StringIR*>(value)->str());
   }
 
-  for (const auto& [arg, value] : args.kwargs()) {
+  for (const auto& [arg, val] : args.kwargs()) {
+    auto value = val->node();
     if (!Match(value, String())) {
       return value->CreateIRNodeError("Expected string $0", value->DebugString());
     }
@@ -81,7 +78,7 @@ TEST_F(PyFuncTest, PosArgsExecute) {
                          std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
           .ConsumeValueOrDie();
 
-  ArgMap args{{}, {MakeInt(123)}};
+  ArgMap args = MakeArgMap({}, {MakeInt(123)});
   std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kMisc);
   auto test_obj = static_cast<TestQLObject*>(obj.get());
@@ -112,7 +109,7 @@ TEST_F(PyFuncTest, ExtraPosArg) {
                          std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
           .ConsumeValueOrDie();
 
-  ArgMap args{{}, {MakeInt(1), MakeInt(2)}};
+  ArgMap args = MakeArgMap({}, {MakeInt(1), MakeInt(2)});
   auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(), HasCompilerError("func.* takes 1 arguments but 2 were given."));
@@ -136,7 +133,7 @@ TEST_F(PyFuncTest, ExtraKwargNoKwargsSupport) {
                          std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
           .ConsumeValueOrDie();
 
-  ArgMap args{{{"blah", MakeString("blah")}}, {MakeInt(1)}};
+  ArgMap args = MakeArgMap({{"blah", MakeString("blah")}}, {MakeInt(1)});
   auto status = func_obj->Call(args, ast, ast_visitor.get());
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(),
@@ -150,7 +147,7 @@ TEST_F(PyFuncTest, ExtraKwargWithKwargsSupport) {
                          std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2))
           .ConsumeValueOrDie();
 
-  ArgMap args{{{"blah1", MakeString("blah2")}}, {MakeInt(123)}};
+  ArgMap args = MakeArgMap({{"blah1", MakeString("blah2")}}, {MakeInt(123)});
   std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kMisc);
   auto test_obj = static_cast<TestQLObject*>(obj.get());
@@ -202,7 +199,7 @@ TEST_F(PyFuncTest, TestVariableArgs) {
           std::bind(&SimpleFuncForVarArgs, std::placeholders::_1, std::placeholders::_2))
           .ConsumeValueOrDie();
 
-  ArgMap args{{}, {MakeInt(123), MakeString("str123"), MakeString("str321")}};
+  ArgMap args = MakeArgMap({}, {MakeInt(123), MakeString("str123"), MakeString("str321")});
   std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kMisc);
   auto test_obj = static_cast<TestQLObject*>(obj.get());
@@ -221,8 +218,8 @@ TEST_F(PyFuncTest, VariableArgsAndKwargs) {
           std::bind(&SimpleFuncForVarArgs, std::placeholders::_1, std::placeholders::_2))
           .ConsumeValueOrDie();
 
-  ArgMap args{{{"kwarg1", MakeString("str222")}, {"kwarg2", MakeString("str333")}},
-              {MakeInt(123), MakeString("str123"), MakeString("str321")}};
+  ArgMap args = MakeArgMap({{"kwarg1", MakeString("str222")}, {"kwarg2", MakeString("str333")}},
+                           {MakeInt(123), MakeString("str123"), MakeString("str321")});
   std::shared_ptr<QLObject> obj = func_obj->Call(args, ast, ast_visitor.get()).ConsumeValueOrDie();
   ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kMisc);
   auto test_obj = static_cast<TestQLObject*>(obj.get());

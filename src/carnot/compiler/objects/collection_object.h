@@ -23,14 +23,8 @@ class CollectionObject : public QLObject {
     return std::shared_ptr<CollectionObject>(new CollectionObject(collection));
   }
 
-  CollectionIR* GetCollection() const { return collection_; }
-
  protected:
-  explicit CollectionObject(CollectionIR* collection)
-      : QLObject(CollectionType, collection), collection_(collection) {}
-
- private:
-  CollectionIR* collection_ = nullptr;
+  explicit CollectionObject(CollectionIR* collection) : QLObject(CollectionType, collection) {}
 };
 
 }  // namespace compiler
