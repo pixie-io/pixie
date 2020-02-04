@@ -1,6 +1,7 @@
 import 'react-virtualized/styles.css'; // Only needs to be imported once.
 import './scrollable-table.scss';
 
+import ModalTrigger from 'components/modal';
 // @ts-ignore : TS does not like image files.
 import * as expanded from 'images/icons/expanded.svg';
 // @ts-ignore : TS does not like image files.
@@ -8,7 +9,10 @@ import * as unexpanded from 'images/icons/unexpanded.svg';
 import * as _ from 'lodash';
 import * as React from 'react';
 import {DraggableCore} from 'react-draggable';
-import {AutoSizer, Column, defaultTableRowRenderer, Table} from 'react-virtualized';
+import {AutoSizer, Column, defaultTableRowRenderer, Table, TableRowProps} from 'react-virtualized';
+
+import {IconButton} from '@material-ui/core';
+import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 
 const ROW_HEIGHT = 40;
 const EXPANDED_ROW_HEIGHT = 300;
@@ -46,8 +50,24 @@ export interface ScrollableTableState {
   widths: number[];
 }
 
-function RowRenderer(props) {
+function RowRenderer(props: TableRowProps) {
   const rowProps = _.omit(props, 'style', 'key');
+  let expandedContent = null;
+  if (_.has(this.state.expandedRows, props.index)) {
+    const content = this.props.expandRenderer(props.rowData);
+    expandedContent = (
+      <div className='scrollable-table--expanded'>
+        <ModalTrigger
+          trigger={<IconButton><OpenInNewIcon /></IconButton>}
+          triggerClassName='scrollable-table--expanded-modal-trigger'
+          content={content}
+          contentClassName='scrollable-table--expanded-modal-content'
+        />
+        {content}
+      </div>
+    );
+  }
+
   return (
     <div
       className={'scrollable-table--row-' + (props.index % 2 === 0 ? 'even' : 'odd')}
@@ -55,8 +75,7 @@ function RowRenderer(props) {
       style={props.style}
     >
       {defaultTableRowRenderer(rowProps)}
-      {_.has(this.state.expandedRows, props.index) ?
-        <div className='scrollable-table--expanded'>{this.props.expandRenderer(props.rowData)}</div> : null}
+      {expandedContent}
     </div>
   );
 }

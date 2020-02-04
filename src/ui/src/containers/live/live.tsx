@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import {DARK_THEME} from 'common/mui-theme';
 import * as React from 'react';
 import {GlobalHotKeys} from 'react-hotkeys';
 
@@ -116,10 +115,4 @@ const LiveView = () => {
   );
 };
 
-export default () => (
-  // Wrap the component with the theme provider here for now.
-  // TODO(malthus): Remove this once the whole app switches to MUI.
-  <ThemeProvider theme={DARK_THEME}>
-    <LiveView />
-  </ThemeProvider>
-);
+export default LiveView;

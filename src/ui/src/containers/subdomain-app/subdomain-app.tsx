@@ -1,13 +1,16 @@
 import './subdomain-app.scss';
 
 import {getCloudGQLClient} from 'common/cloud-gql-client';
+import {DARK_THEME} from 'common/mui-theme';
 import {VersionInfo} from 'components/version-info/version-info';
 import Vizier from 'containers/vizier';
 import * as React from 'react';
 import {ApolloProvider} from 'react-apollo';
-import {Route, Router, Switch} from 'react-router-dom';
+import {Router} from 'react-router-dom';
 import {isProd} from 'utils/env';
 import history from 'utils/pl-history';
+
+import {ThemeProvider} from '@material-ui/core/styles';
 
 export class SubdomainApp extends React.Component {
   state = {
@@ -25,7 +28,7 @@ export class SubdomainApp extends React.Component {
     return !client ?
       <div>Loading...</div> :
       (
-        <>
+        <ThemeProvider theme={DARK_THEME}>
           <Router history={history}>
             <ApolloProvider client={client}>
               <div style={{
@@ -40,7 +43,7 @@ export class SubdomainApp extends React.Component {
             </ApolloProvider>
           </Router>
           {!isProd() ? <VersionInfo /> : null}
-        </>
+        </ThemeProvider>
       );
   }
 }

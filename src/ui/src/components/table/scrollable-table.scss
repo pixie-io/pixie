@@ -1,4 +1,4 @@
-@import "../../theme.scss";
+@import "theme.scss";
 
 .scrollable-table--cell {
   display: flex;
@@ -51,4 +51,20 @@
 
 .scrollable-table--drag-handle:hover {
   color: $white;
+}
+
+.scrollable-table--expanded {
+  position: relative;
+}
+
+.scrollable-table--expanded-modal-content {
+  margin: 3rem;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.scrollable-table--expanded-modal-trigger {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
