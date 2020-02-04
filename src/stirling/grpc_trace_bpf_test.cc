@@ -220,14 +220,14 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithPara
   }
 };
 
-TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
+TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   // Give some time for the client to execute and produce data into perf buffers.
   sleep(2);
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid());
+      FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, s_.child_pid());
   ASSERT_GE(target_record_indices.size(), 1);
 
   // We should get exactly one record.
@@ -247,7 +247,6 @@ TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
             HasSubstr(R"("grpc-message":"")"), HasSubstr(R"("grpc-status":"0"})")));
   EXPECT_THAT(std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(idx)),
               HasSubstr("127.0.0.1"));
-  EXPECT_EQ(s_port_, record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(idx).val);
   EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(idx).val);
   EXPECT_EQ(0, record_batch[kHTTPMinorVersionIdx]->Get<types::Int64Value>(idx).val);
   EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
@@ -256,8 +255,7 @@ TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
               EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
 }
 
-INSTANTIATE_TEST_SUITE_P(DISABLED_SecurityModeTest, GRPCTraceUprobingTest,
-                         ::testing::Values(true, false));
+INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceUprobingTest, ::testing::Values(true, false));
 
 class GRPCCppTest : public ::testing::Test {
  protected:

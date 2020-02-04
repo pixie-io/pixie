@@ -469,8 +469,10 @@ builders['Build & Test (gcc:opt)'] = {
 
 def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host'
 
+// TODO(PL-1297): With '--action_env=PL_HOST_PATH', the cited bug still happens. Fix the bug and add
+// it back.
 def bazelBaseArgsForBPFTest = 'bazel test --test_output=all --compilation_mode=opt ' +
-                              '--strategy=TestRunner=standalone --action_env=PL_HOST_PATH'
+                              '--strategy=TestRunner=standalone'
 
 builders['Build & Test (bpf tests - opt)'] = {
   WithSourceCode {
