@@ -1,0 +1,16 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kelvin
+spec:
+  template:
+    spec:
+      containers:
+      - name: kelvin
+        resources:
+          limits:
+            memory: 1024Mi
+          requests:
+            cpu: 400m
+            memory: 1024Mi

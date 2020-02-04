@@ -2,6 +2,9 @@ apiVersion: skaffold/v2alpha3
 kind: Config
 build:
   artifacts:
+  # NOTE: If you move either pem/kelvin for the first two spots
+  # then you will have to update the ASAN/TSAN yaml-path
+  # index below.
   - image: gcr.io/pl-dev-infra/vizier/pem_image
     context: .
     bazel:
@@ -82,12 +85,28 @@ profiles:
 - name: asan
   patches:
   - op: add
-    path: /build/artifacts/context=./bazel/args
+    path: /build/artifacts/0/bazel/args
     value:
     - --config=asan
+  - op: add
+    path: /build/artifacts/1/bazel/args
+    value:
+    - --config=asan
+  - op: replace
+    path: /deploy/kustomize/paths
+    value:
+    - k8s/vizier/sanitizer
 - name: tsan
   patches:
   - op: add
-    path: /build/artifacts/context=./bazel/args
+    path: /build/artifacts/0/bazel/args
     value:
     - --config=tsan
+  - op: add
+    path: /build/artifacts/1/bazel/args
+    value:
+    - --config=tsan
+  - op: replace
+    path: /deploy/kustomize/paths
+    value:
+    - k8s/vizier/sanitizer

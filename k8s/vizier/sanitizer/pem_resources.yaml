@@ -1,0 +1,16 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vizier-pem
+spec:
+  template:
+    spec:
+      containers:
+      - name: pem
+        resources:
+          limits:
+            memory: 2048Mi
+          requests:
+            cpu: 400m
+            memory: 2048Mi
