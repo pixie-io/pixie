@@ -26,17 +26,6 @@ using ::pl::system::kTCPListeningState;
 using ::pl::system::SocketInfo;
 using ::pl::system::SocketInfoManager;
 
-#define PL_ASSIGN_OR_EXIT_IMPL(statusor, lhs, rexpr) \
-  auto statusor = (rexpr);                           \
-  if (!statusor.ok()) {                              \
-    LOG(ERROR) << statusor.msg();                    \
-    exit(1);                                         \
-  }                                                  \
-  lhs = std::move(statusor.ValueOrDie())
-
-#define PL_ASSIGN_OR_EXIT(lhs, rexpr) \
-  PL_ASSIGN_OR_EXIT_IMPL(PL_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr)
-
 std::string IPv4AddrToString(struct in_addr addr, in_port_t port) {
   std::string out;
   Status s = pl::IPv4AddrToString(addr, &out);

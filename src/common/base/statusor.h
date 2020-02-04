@@ -142,15 +142,24 @@ StatusOr<T>::StatusOr(T&& value) {
   }
 }
 
-#define PL_ASSIGN_OR_RETURN_IMPL(statusor, lhs, rexpr) \
-  auto statusor = (rexpr);                             \
-  if (!statusor.ok()) {                                \
-    return statusor.status();                          \
-  }                                                    \
+#define PL_ASSIGN_OR_IMPL(statusor, lhs, rexpr, ...) \
+  auto statusor = (rexpr);                           \
+  if (!statusor.ok()) {                              \
+    auto& __s__ = statusor;                          \
+    __VA_ARGS__;                                     \
+  }                                                  \
   lhs = std::move(statusor.ValueOrDie())
 
-#define PL_ASSIGN_OR_RETURN(lhs, rexpr) \
-  PL_ASSIGN_OR_RETURN_IMPL(PL_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr)
+// When using PL_ASSIGN_OR(), use  '__s__' to access the statusor object in the 'or' case.
+// See PL_ASSIGN_OR_RETURN for an example.
+#define PL_ASSIGN_OR(lhs, rexpr, ...) \
+  PL_ASSIGN_OR_IMPL(PL_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr, __VA_ARGS__)
+
+#define PL_ASSIGN_OR_RETURN(lhs, rexpr) PL_ASSIGN_OR(lhs, rexpr, return __s__.status())
+
+// Be careful using this, since it will exit the whole binary.
+// Meant for use in top-level main() of binaries.
+#define PL_ASSIGN_OR_EXIT(lhs, rexpr) PL_ASSIGN_OR(lhs, rexpr, LOG(ERROR) << __s__.msg(); exit(1);)
 
 // Adapter for status.
 template <typename T>
