@@ -31,7 +31,7 @@ class NoneObject : public QLObject {
    */
   explicit NoneObject(pypa::AstPtr ast) : QLObject(NoneType, ast) {}
 
-  explicit NoneObject(IRNode* node) : QLObject(NoneType, node) {}
+  NoneObject() : QLObject(NoneType) {}
 };
 
 }  // namespace compiler

@@ -185,9 +185,8 @@ StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
   // PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
   //                     ParseStringsFromCollection(static_cast<ListIR*>(cols)));
 
-  PL_ASSIGN_OR_RETURN(MemorySinkIR * mem_sink_op,
-                      graph->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
-  return StatusOr(std::make_shared<NoneObject>(mem_sink_op));
+  PL_RETURN_IF_ERROR(graph->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
+  return StatusOr(std::make_shared<NoneObject>());
 }
 
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::NowEval(IR* graph, const pypa::AstPtr& ast,

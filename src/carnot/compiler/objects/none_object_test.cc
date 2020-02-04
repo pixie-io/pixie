@@ -12,12 +12,10 @@ namespace compiler {
 using ::testing::ElementsAre;
 class NoneObjectTest : public OperatorTests {};
 TEST_F(NoneObjectTest, TestNoMethodsWork) {
-  MemorySourceIR* src = MakeMemSource();
-  MemorySinkIR* sink = MakeMemSink(src, "bar");
-  std::shared_ptr<NoneObject> none = std::make_shared<NoneObject>(sink);
+  std::shared_ptr<NoneObject> none = std::make_shared<NoneObject>();
   auto status = none->GetMethod("agg");
   ASSERT_NOT_OK(status);
-  EXPECT_THAT(status.status(), HasCompilerError("'None' object has no attribute 'agg'"));
+  EXPECT_EQ("'None' object has no attribute 'agg'", status.status().msg());
 }
 
 }  // namespace compiler
