@@ -1,12 +1,14 @@
 @import "../../theme.scss";
 
 #pixie-graph {
-    height: 100%;
-    overflow: auto;
+  height: 100%;
+  overflow: auto;
 }
 
 svg .cluster rect {
-    opacity: 0;
+  fill: #e7e7e7;
+  stroke: #999;
+  stroke-width: 1.5px;
 }
 
 .node rect {
