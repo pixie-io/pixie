@@ -81,6 +81,7 @@ struct RegistryTraits<T, typename std::enable_if_t<std::is_base_of_v<UDTF<T>, T>
  */
 class Registry {
  public:
+  using RegistryMap = std::map<RegistryKey, std::unique_ptr<UDFDefinition>>;
   explicit Registry(std::string name) : name_(std::move(name)) {}
   virtual ~Registry() = default;
 
@@ -165,6 +166,8 @@ class Registry {
   std::string DebugString();
   udfspb::UDFInfo ToProto();
 
+  const RegistryMap& map() const { return map_; }
+
  private:
   /**
    * Get the UDF/UDA/UDTF definition.
@@ -179,7 +182,7 @@ class Registry {
   void ToProto(const UDTFDefinition& def, udfspb::UDTFSourceSpec* spec);
 
   std::string name_;
-  std::map<RegistryKey, std::unique_ptr<UDFDefinition>> map_;
+  RegistryMap map_;
 };
 
 }  // namespace udf

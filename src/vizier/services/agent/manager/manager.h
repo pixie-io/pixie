@@ -77,6 +77,8 @@ class Manager : public pl::NotCopyable {
   virtual Status PostRegisterHook() { return Status::OK(); }
   const Info* info() const { return &info_; }
 
+  const carnot::Carnot* carnot() const { return carnot_.get(); }
+
  protected:
   // Protect constructor since we need to use Init on this class.
   Manager(sole::uuid agent_id, int grpc_server_port,
@@ -121,7 +123,6 @@ class Manager : public pl::NotCopyable {
   table_store::TableStore* table_store() { return table_store_.get(); }
   pl::md::AgentMetadataStateManager* mds_manager() { return mds_manager_.get(); }
   RelationInfoManager* relation_info_manager() { return relation_info_manager_.get(); }
-
   pl::event::TimeSystem* time_system() { return time_system_.get(); }
   pl::event::Dispatcher* dispatcher() { return dispatcher_.get(); }
 

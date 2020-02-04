@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "src/carnot/udf/base.h"
@@ -120,6 +121,11 @@ class ColInfo {
   constexpr types::DataType type() const { return type_; }
   constexpr types::PatternType ptype() const { return ptype_; }
   constexpr const std::string_view desc() const { return desc_; }
+
+  std::string DebugString() const {
+    return absl::Substitute("$0:$1:$2:$3", name(), magic_enum::enum_name(type()),
+                            magic_enum::enum_name(ptype()), desc());
+  }
 
  protected:
   const std::string_view name_;

@@ -65,6 +65,8 @@ class CarnotImpl final : public Carnot {
     agent_md_callback_ = func;
   };
 
+  const udf::Registry* FuncRegistry() const override { return engine_state_->func_registry(); }
+
  private:
   Status RegisterUDFs(exec::ExecState* exec_state, plan::Plan* plan);
 

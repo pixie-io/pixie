@@ -67,6 +67,8 @@ class EngineState : public NotCopyable {
                                                      time_now);
   }
 
+  const udf::Registry* func_registry() const { return func_registry_.get(); }
+
  private:
   std::unique_ptr<udf::Registry> func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;

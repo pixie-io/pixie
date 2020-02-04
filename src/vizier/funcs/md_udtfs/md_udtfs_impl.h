@@ -1,5 +1,9 @@
 #pragma once
 
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -9,9 +13,11 @@
 #include <grpcpp/grpcpp.h>
 #include <magic_enum.hpp>
 
+#include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"
 #include "src/common/uuid/uuid.h"
+#include "src/vizier/services/agent/manager/manager.h"
 
 namespace pl {
 namespace vizier {
@@ -30,6 +36,20 @@ class UDTFWithMDFactory : public carnot::udf::UDTFFactory {
 
  private:
   const VizierFuncFactoryContext& ctx_;
+};
+
+template <typename TUDTF>
+class UDTFWithRegistryFactory : public carnot::udf::UDTFFactory {
+ public:
+  UDTFWithRegistryFactory() = delete;
+  explicit UDTFWithRegistryFactory(const carnot::udf::Registry* registry) : registry_(registry) {}
+
+  std::unique_ptr<carnot::udf::AnyUDTF> Make() override {
+    return std::make_unique<TUDTF>(registry_);
+  }
+
+ private:
+  const carnot::udf::Registry* registry_;
 };
 
 /**
@@ -177,6 +197,101 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
   int idx_ = 0;
   std::unique_ptr<pl::vizier::services::metadata::AgentInfoResponse> resp_;
   std::shared_ptr<MDSStub> stub_;
+};
+
+namespace internal {
+rapidjson::GenericStringRef<char> StringRef(std::string_view s) {
+  return rapidjson::GenericStringRef<char>(s.data(), s.size());
+}
+
+}  // namespace internal
+
+class GetUDTFList final : public carnot::udf::UDTF<GetUDTFList> {
+ public:
+  GetUDTFList() = delete;
+  explicit GetUDTFList(const carnot::udf::Registry* func_registry)
+      : registry_map_(func_registry->map()), registry_map_iter_(registry_map_.begin()) {}
+
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(ColInfo("name", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The name of the UDTF"),
+                     ColInfo("executor", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The location where the UDTF is executed"),
+                     ColInfo("init_args", types::DataType::STRING, types::PatternType::GENERAL,
+                             "The init arguments to the UDTF"),
+                     ColInfo("output_relation", types::DataType::STRING,
+                             types::PatternType::GENERAL, "The output relation of the UDTF"));
+  }
+
+  bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    while (registry_map_iter_ != registry_map_.end()) {
+      if (registry_map_iter_->second->kind() != carnot::udf::UDFDefinitionKind::kUDTF) {
+        ++registry_map_iter_;
+        continue;
+      }
+      auto* udtf_def =
+          static_cast<carnot::udf::UDTFDefinition*>(registry_map_iter_->second->GetDefinition());
+
+      rapidjson::Document init_args;
+      init_args.SetObject();
+      rapidjson::Value init_args_arr(rapidjson::kArrayType);
+      for (const auto& arg : udtf_def->init_arguments()) {
+        PL_UNUSED(arg);
+        rapidjson::Value val(rapidjson::kObjectType);
+        val.AddMember("name", internal::StringRef(arg.name()), init_args.GetAllocator());
+        val.AddMember("type", internal::StringRef(magic_enum::enum_name(arg.type())),
+                      init_args.GetAllocator());
+        val.AddMember("stype", internal::StringRef(magic_enum::enum_name(arg.stype())),
+                      init_args.GetAllocator());
+        val.AddMember("desc", internal::StringRef(arg.desc()), init_args.GetAllocator());
+
+        init_args_arr.PushBack(val.Move(), init_args.GetAllocator());
+      }
+      init_args.AddMember("args", init_args_arr.Move(), init_args.GetAllocator());
+
+      rapidjson::Document relation;
+      relation.SetObject();
+      rapidjson::Value relation_arr(rapidjson::kArrayType);
+      for (const auto& arg : udtf_def->output_relation()) {
+        PL_UNUSED(arg);
+        rapidjson::Value val(rapidjson::kObjectType);
+
+        val.AddMember("name", internal::StringRef(arg.name()), relation.GetAllocator());
+        val.AddMember("type", internal::StringRef(magic_enum::enum_name(arg.type())),
+                      relation.GetAllocator());
+        val.AddMember("ptype", internal::StringRef(magic_enum::enum_name(arg.ptype())),
+                      relation.GetAllocator());
+        val.AddMember("desc", internal::StringRef(arg.desc()), relation.GetAllocator());
+
+        relation_arr.PushBack(val.Move(), init_args.GetAllocator());
+      }
+      relation.AddMember("relation", relation_arr.Move(), relation.GetAllocator());
+
+      rapidjson::StringBuffer init_args_sb;
+      rapidjson::Writer<rapidjson::StringBuffer> init_args_writer(init_args_sb);
+      init_args.Accept(init_args_writer);
+
+      rapidjson::StringBuffer relation_sb;
+      rapidjson::Writer<rapidjson::StringBuffer> relation_writer(relation_sb);
+      relation.Accept(relation_writer);
+
+      rw->Append<IndexOf("name")>(udtf_def->name());
+      rw->Append<IndexOf("executor")>(std::string(magic_enum::enum_name(udtf_def->executor())));
+      rw->Append<IndexOf("init_args")>(init_args_sb.GetString());
+      rw->Append<IndexOf("output_relation")>(relation_sb.GetString());
+
+      ++registry_map_iter_;
+      break;
+    }
+
+    return registry_map_iter_ != registry_map_.end();
+  }
+
+ private:
+  const carnot::udf::Registry::RegistryMap& registry_map_;
+  carnot::udf::Registry::RegistryMap::const_iterator registry_map_iter_;
 };
 
 /**

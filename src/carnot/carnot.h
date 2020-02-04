@@ -72,6 +72,11 @@ class Carnot : public NotCopyable {
    * Registers the callback for updating the agents metadata state.
    */
   virtual void RegisterAgentMetadataCallback(AgentMetadataCallbackFunc func) = 0;
+
+  /**
+   * Returns a const pointer to carnot's function registry.
+   */
+  virtual const udf::Registry* FuncRegistry() const = 0;
 };
 
 }  // namespace carnot
