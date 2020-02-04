@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -12,6 +12,7 @@ pl_cc_library(
         exclude = [
             "**/*_mock.h",
             "**/*_test.cc",
+            "socket_info_tool.cc",
         ],
     ),
     hdrs = ["system.h"],
@@ -73,5 +74,13 @@ pl_cc_test(
         "//src/common/exec:cc_library",
         "//src/common/system/testing:cc_library",
         "//src/common/testing/test_utils:cc_library",
+    ],
+)
+
+pl_cc_binary(
+    name = "socket_info_tool",
+    srcs = ["socket_info_tool.cc"],
+    deps = [
+        ":cc_library",
     ],
 )

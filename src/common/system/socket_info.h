@@ -227,13 +227,21 @@ class SocketInfoManager {
       std::filesystem::path proc_path, int conn_states = kTCPEstablishedState);
 
   /**
-   * Primary lookup mechanism: Gives socket info for a given inode number.
+   * Return all socket info for a given network namespace.
+   *
+   * @param pid The PID used to determine the network namespace.
+   * @return A map with inode number as key, and socket information as value. Returns error if
+   * information could not be queried.
+   */
+  StatusOr<std::map<int, system::SocketInfo>*> GetNamespaceConns(uint32_t pid);
+
+  /**
+   * Search for the socket info of a given inode number.
    *
    * @param pid The PID owning the connection. Used to determine the network namespace.
    * @param inode_num The inode number of the local socket.
-   * @return Information for socket, incluing remote endpoint information. Returns error if
-   * information could not be queries. Returns nullptr if query was successful, but socket does not
-   * appear to be a TCP or Unix socket.
+   * @return Information for socket, including remote endpoint information. Returns error if
+   * information could not be queried.
    */
   StatusOr<SocketInfo*> Lookup(uint32_t pid, uint32_t inode_num);
 

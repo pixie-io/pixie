@@ -404,7 +404,7 @@ StatusOr<std::unique_ptr<SocketInfoManager>> SocketInfoManager::Create(
   return socket_info_db_ptr;
 }
 
-StatusOr<SocketInfo*> SocketInfoManager::Lookup(uint32_t pid, uint32_t inode_num) {
+StatusOr<std::map<int, SocketInfo>*> SocketInfoManager::GetNamespaceConns(uint32_t pid) {
   PL_ASSIGN_OR_RETURN(uint32_t net_ns, NetNamespace(cfg_proc_path_, pid));
 
   // Step 1: Get the map of connections for this network namespace.
@@ -436,6 +436,15 @@ StatusOr<SocketInfo*> SocketInfoManager::Lookup(uint32_t pid, uint32_t inode_num
 
     ++num_socket_prober_calls_;
   }
+
+  return namespace_conns;
+}
+
+StatusOr<SocketInfo*> SocketInfoManager::Lookup(uint32_t pid, uint32_t inode_num) {
+  // Step 1: Get the map of connections for this network namespace.
+  // Create the map if it doesn't already exist.
+  std::map<int, SocketInfo>* namespace_conns;
+  PL_ASSIGN_OR_RETURN(namespace_conns, GetNamespaceConns(pid));
 
   // Step 2: Lookup the inode.
   auto iter = namespace_conns->find(inode_num);

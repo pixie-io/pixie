@@ -1,0 +1,146 @@
+#include "src/common/base/base.h"
+#include "src/common/base/inet_utils.h"
+#include "src/common/fs/fs_wrapper.h"
+#include "src/common/system/socket_info.h"
+
+DEFINE_int32(pid, -1,
+             "The network namespace to report, specified by any PID belonging to the namespace. If "
+             "-1, current PID is used.");
+DEFINE_int32(fd, -1, "The FD to report. If -1, all sockets are reported.");
+DEFINE_string(proc_path, "/proc", "Path to proc filesystem");
+
+constexpr char kProgramDescription[] =
+    "A tool that probes for the linux kernel for socket connections.\n"
+    "\n"
+    " - This program will probe the Linux kernel for all TCP and Unix domain sockets in a network "
+    "namespace, and show information about the connections. The target network namespace can be"
+    "specified via a PID that belongs to a different network namespace.\n"
+    " - By specifying a file descriptor that refers to a socket, only the information for "
+    "that socket will be shown.\n"
+    "\n"
+    "Note that this program must be run as root.";
+
+using ::pl::Status;
+using ::pl::system::kTCPEstablishedState;
+using ::pl::system::kTCPListeningState;
+using ::pl::system::SocketInfo;
+using ::pl::system::SocketInfoManager;
+
+#define PL_ASSIGN_OR_EXIT_IMPL(statusor, lhs, rexpr) \
+  auto statusor = (rexpr);                           \
+  if (!statusor.ok()) {                              \
+    LOG(ERROR) << statusor.msg();                    \
+    exit(1);                                         \
+  }                                                  \
+  lhs = std::move(statusor.ValueOrDie())
+
+#define PL_ASSIGN_OR_EXIT(lhs, rexpr) \
+  PL_ASSIGN_OR_EXIT_IMPL(PL_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr)
+
+std::string IPv4AddrToString(struct in_addr addr, in_port_t port) {
+  std::string out;
+  Status s = pl::IPv4AddrToString(addr, &out);
+  if (!s.ok()) {
+    out = "<error>";
+  }
+  return absl::StrCat(out, ":", port);
+}
+
+std::string IPv6AddrToString(struct in6_addr addr, in_port_t port) {
+  std::string out;
+  Status s = pl::IPv4AddrToString(addr, &out);
+  if (!s.ok()) {
+    out = "<error>";
+  }
+  return absl::StrCat(out, ":", port);
+}
+
+std::string UnixAddrToString(struct un_path_t path, uint32_t inode) {
+  return absl::StrCat(path.path, ":", inode);
+}
+
+std::string ToString(const SocketInfo& socket_info) {
+  std::string family;
+  std::string local_addr;
+  std::string remote_addr;
+
+  switch (socket_info.family) {
+    case AF_INET:
+      family = "TCP";
+      local_addr = IPv4AddrToString(std::get<struct in_addr>(socket_info.local_addr),
+                                    socket_info.local_port);
+      remote_addr = IPv4AddrToString(std::get<struct in_addr>(socket_info.remote_addr),
+                                     socket_info.remote_port);
+      break;
+    case AF_INET6:
+      family = "TCP6";
+      local_addr = IPv6AddrToString(std::get<struct in6_addr>(socket_info.local_addr),
+                                    socket_info.local_port);
+      remote_addr = IPv6AddrToString(std::get<struct in6_addr>(socket_info.remote_addr),
+                                     socket_info.remote_port);
+      break;
+    case AF_UNIX:
+      family = "Unix-socket";
+      local_addr = UnixAddrToString(std::get<struct un_path_t>(socket_info.local_addr),
+                                    socket_info.local_port);
+      remote_addr = UnixAddrToString(std::get<struct un_path_t>(socket_info.remote_addr),
+                                     socket_info.remote_port);
+      break;
+    default:
+      family = std::to_string(socket_info.family);
+      local_addr = "<unknown>";
+      remote_addr = "<unknown>";
+  }
+  return absl::StrCat("family=", family, " local_addr=", local_addr, " remote_addr=", remote_addr);
+}
+
+int main(int argc, char** argv) {
+  gflags::SetUsageMessage(kProgramDescription);
+  pl::InitEnvironmentOrDie(&argc, argv);
+
+  const std::string kProcPath = FLAGS_proc_path;
+  int32_t pid = FLAGS_pid;
+  int32_t fd = FLAGS_fd;
+
+  if (pid == -1) {
+    pid = getpid();
+    std::cout << "No PID specified. Assuming network namespace of current PID." << std::endl;
+  }
+
+  PL_ASSIGN_OR_EXIT(std::unique_ptr<SocketInfoManager> socket_info_db,
+                    SocketInfoManager::Create(kProcPath, 0xfff));
+
+  if (fd == -1) {
+    std::cout << absl::Substitute("Querying network namespace of pid=$0 (all connections):", pid)
+              << std::endl;
+    std::map<int, SocketInfo>* namespace_conns;
+    PL_ASSIGN_OR_EXIT(namespace_conns, socket_info_db->GetNamespaceConns(pid));
+
+    int i = 0;
+    for (const auto& x : *namespace_conns) {
+      std::cout << absl::Substitute(" $0: inode=$1 $2", i, x.first, ToString(x.second))
+                << std::endl;
+      ++i;
+    }
+
+    if (i == 0) {
+      std::cout << "No data" << std::endl;
+    }
+  } else {
+    std::cout << absl::Substitute("Querying pid=$0 fd=$1:", pid, fd) << std::endl;
+    std::string fd_path = absl::Substitute("$0/$1/fd/$2", kProcPath, pid, fd);
+    PL_ASSIGN_OR_EXIT(std::filesystem::path fd_link, pl::fs::ReadSymlink(fd_path));
+    PL_ASSIGN_OR_EXIT(uint32_t inode_num,
+                      pl::fs::ExtractInodeNum(pl::fs::kSocketInodePrefix, fd_link.string()));
+
+    PL_ASSIGN_OR_EXIT(SocketInfo * socket_info, socket_info_db->Lookup(pid, inode_num));
+    if (socket_info == nullptr) {
+      std::cout << "No data" << std::endl;
+      return 1;
+    }
+
+    std::cout << ToString(*socket_info) << std::endl;
+  }
+
+  return 0;
+}
