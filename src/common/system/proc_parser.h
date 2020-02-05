@@ -170,6 +170,24 @@ class ProcParser {
    */
   Status ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) const;
 
+  /**
+   * UIDs associated with a process.
+   */
+  struct ProcUIDs {
+    std::string real;
+    std::string effective;
+    // http://man7.org/linux/man-pages/man2/setresgid.2.html
+    std::string saved_set;
+    // http://man7.org/linux/man-pages/man2/setfsuid.2.html
+    std::string filesystem;
+  };
+
+  /**
+   * Writes 4 UIDs (real, effective, saved set, and filesystem) recorded in /proc/<pid>/status.
+   * Returns OK if succeeded.
+   */
+  Status ReadUIDs(int32_t pid, ProcUIDs* uids) const;
+
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
       const std::vector<std::string_view>& dev_stat_record, NetworkStats* out);

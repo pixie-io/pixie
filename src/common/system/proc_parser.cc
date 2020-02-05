@@ -450,5 +450,41 @@ Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) 
   return Status::OK();
 }
 
+// Looking for UIDs in <proc_path>/<pid>/status, the content looks like:
+// $ cat /proc/2578/status
+// Name:  apache2
+// Umask: 0022
+// State: S (sleeping)
+// ...
+// Uid: 33 33 33 33
+// ...
+Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
+  std::filesystem::path proc_pid_status_path =
+      std::filesystem::path(proc_base_path_) / std::to_string(pid) / "status";
+  PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_status_path));
+
+  constexpr std::string_view kUIDPrefix = "Uid:";
+  const std::vector<std::string_view> lines = absl::StrSplit(content, "\n");
+  std::string_view uid_line;
+  for (const auto& line : lines) {
+    if (absl::StartsWith(line, kUIDPrefix)) {
+      uid_line = line;
+      break;
+    }
+  }
+  std::vector<std::string_view> fields =
+      absl::StrSplit(uid_line, absl::ByAnyChar("\t "), absl::SkipEmpty());
+  constexpr size_t kFieldCount = 5;
+  if (fields.size() != kFieldCount) {
+    return error::Internal("Proc path '$0' returns incorrect result '$1'",
+                           proc_pid_status_path.string(), uid_line);
+  }
+  uids->real = fields[1];
+  uids->effective = fields[2];
+  uids->saved_set = fields[3];
+  uids->filesystem = fields[4];
+  return Status::OK();
+}
+
 }  // namespace system
 }  // namespace pl

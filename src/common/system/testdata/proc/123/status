@@ -1,0 +1,54 @@
+Name:	apache2
+Umask:	0022
+State:	S (sleeping)
+Tgid:	2578
+Ngid:	0
+Pid:	2578
+PPid:	1460
+TracerPid:	0
+Uid:	33	34	35	36
+Gid:	33	34	35	36
+FDSize:	64
+Groups:	33 
+NStgid:	2578
+NSpid:	2578
+NSpgid:	1460
+NSsid:	1460
+VmPeak:	  440460 kB
+VmSize:	  440312 kB
+VmLck:	       0 kB
+VmPin:	       0 kB
+VmHWM:	   12820 kB
+VmRSS:	   12820 kB
+RssAnon:	    5468 kB
+RssFile:	    7352 kB
+RssShmem:	       0 kB
+VmData:	    6768 kB
+VmStk:	     132 kB
+VmExe:	     628 kB
+VmLib:	   64740 kB
+VmPTE:	     532 kB
+VmSwap:	       0 kB
+HugetlbPages:	       0 kB
+CoreDumping:	0
+Threads:	1
+SigQ:	0/126774
+SigPnd:	0000000000000000
+ShdPnd:	0000000000000000
+SigBlk:	0000000000000000
+SigIgn:	0000000001001002
+SigCgt:	00000001880046e9
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	0000003fffffffff
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+Seccomp:	0
+Speculation_Store_Bypass:	thread vulnerable
+Cpus_allowed:	fff
+Cpus_allowed_list:	0-11
+Mems_allowed:	00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001
+Mems_allowed_list:	0
+voluntary_ctxt_switches:	1
+nonvoluntary_ctxt_switches:	0

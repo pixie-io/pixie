@@ -13,13 +13,14 @@
 namespace pl {
 namespace system {
 
-using std::string;
+using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 using ::testing::Return;
 
 constexpr char kTestDataBasePath[] = "src/common/system";
 
 namespace {
-string GetPathToTestDataFile(const string& fname) {
+std::string GetPathToTestDataFile(const std::string& fname) {
   return TestEnvironment::PathToTestDataFile(std::string(kTestDataBasePath) + "/" + fname);
 }
 }  // namespace
@@ -160,6 +161,15 @@ TEST_F(ProcParserTest, read_proc_fd_link) {
 
   s = parser_->ReadProcPIDFDLink(123, 3, &out);
   EXPECT_NOT_OK(s);
+}
+
+TEST_F(ProcParserTest, ReadUIDs) {
+  ProcParser::ProcUIDs uids;
+  ASSERT_OK(parser_->ReadUIDs(123, &uids));
+  EXPECT_EQ("33", uids.real);
+  EXPECT_EQ("34", uids.effective);
+  EXPECT_EQ("35", uids.saved_set);
+  EXPECT_EQ("36", uids.filesystem);
 }
 
 }  // namespace system
