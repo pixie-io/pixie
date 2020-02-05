@@ -30,7 +30,6 @@ class NoneObject : public QLObject {
    * @param ast the ast ptr for the
    */
   explicit NoneObject(pypa::AstPtr ast) : QLObject(NoneType, ast) {}
-
   NoneObject() : QLObject(NoneType) {}
 };
 

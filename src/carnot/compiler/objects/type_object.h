@@ -38,6 +38,8 @@ class TypeObject : public QLObject {
                                    node->type_string());
   }
 
+  IRNodeType ir_node_type() { return node_type_; }
+
  protected:
   /**
    * @brief Construct a Type object that represents the null value in Python.

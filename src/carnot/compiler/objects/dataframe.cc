@@ -158,7 +158,6 @@ StatusOr<QLObjectPtr> JoinHandler::Eval(IR* graph, OperatorIR* op, const pypa::A
   PL_ASSIGN_OR_RETURN(IRNode * left_on_node, GetArgAs<IRNode>(args, "left_on"));
   PL_ASSIGN_OR_RETURN(IRNode * right_on_node, GetArgAs<IRNode>(args, "right_on"));
   PL_ASSIGN_OR_RETURN(ListIR * suffixes_node, GetArgAs<ListIR>(args, "suffixes"));
-
   std::string how_type = how->str();
 
   PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> left_on_cols, ProcessCols(left_on_node, "left_on", 0));
