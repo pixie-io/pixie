@@ -69,6 +69,20 @@ StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string plann
   return lp_str;
 }
 
+StatusOr<std::string> PlannerGetAvailableFlagsGoStr(PlannerPtr planner_ptr,
+                                                    std::string query_request, int* resultLen) {
+  char* result = PlannerGetAvailableFlags(planner_ptr, query_request.c_str(),
+                                          query_request.length(), resultLen);
+
+  if (*resultLen == 0) {
+    return error::InvalidArgument("GetAvailableFlags failed to return");
+  }
+
+  std::string flags_spec_str(result, result + *resultLen);
+  delete[] result;
+  return flags_spec_str;
+}
+
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
   planner_ = MakePlanner();
@@ -145,6 +159,21 @@ TEST_F(PlannerExportTest, pass_query_string_instead_of_req_should_fail) {
   ASSERT_NOT_OK(planner_result_pb.status());
   EXPECT_THAT(planner_result_pb.status().msg(),
               ::testing::ContainsRegex("Failed to process the query request.*"));
+}
+
+// For now GetAvailableFlags returns an empty QueryFlagsSpec, this test makes sure
+// there aren't any errors along the way
+TEST_F(PlannerExportTest, get_available_flags_empty_flags) {
+  planner_ = MakePlanner();
+  int result_len;
+  auto query_request = MakeQueryRequest("");
+  auto interface_result =
+      PlannerGetAvailableFlagsGoStr(planner_, query_request.DebugString(), &result_len);
+
+  ASSERT_OK(interface_result);
+  pl::carnot::compiler::plannerpb::GetAvailableFlagsResult get_flags_result;
+  ASSERT_TRUE(get_flags_result.ParseFromString(interface_result.ConsumeValueOrDie()));
+  EXPECT_OK(get_flags_result.status());
 }
 
 }  // namespace logical_planner

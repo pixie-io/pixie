@@ -19,6 +19,14 @@ package logicalplanner
 //   											 _GoStringLen(query),
 //   											 resultLen);
 // }
+//
+// char* PlannerGetAvailableFlagsGoStr(PlannerPtr planner_ptr,
+// 																			_GoString_ queryRequest, int* resultLen) {
+// 	return PlannerGetAvailableFlags(planner_ptr,
+// 																	_GoStringPtr(queryRequest),
+// 																	_GoStringLen(queryRequest),
+// 																	resultLen);
+// }
 import "C"
 import (
 	"errors"
@@ -66,6 +74,25 @@ func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, queryRequ
 		return plan, fmt.Errorf("error: '%s'; string: '%s'", err, string(lp))
 	}
 	return plan, nil
+}
+
+// GetAvailableFlags gets the spec of the flags that a query can accept.
+func (cm GoPlanner) GetAvailableFlags(queryRequest *plannerpb.QueryRequest) (*plannerpb.GetAvailableFlagsResult, error) {
+	var resultLen C.int
+	queryRequestStr := proto.MarshalTextString(queryRequest)
+	res := C.PlannerGetAvailableFlagsGoStr(cm.planner, queryRequestStr, &resultLen)
+	defer C.StrFree(res)
+	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
+	if resultLen == 0 {
+		return nil, errors.New("no result returned")
+	}
+
+	resultPB := &plannerpb.GetAvailableFlagsResult{}
+	if err := proto.Unmarshal(resultBytes, resultPB); err != nil {
+		return resultPB, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
+	}
+
+	return resultPB, nil
 }
 
 // Free the memory used by the planner.

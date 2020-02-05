@@ -28,6 +28,19 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
                   int planner_state_str_len, const char* query, int query_len, int* resultLen);
 
 /**
+ * @brief Takes in the planner object and the query request, uses this to determine what flags the
+ * query accepts
+ *
+ * @param planner Pointer to the Planner
+ * @param query_request_str_c The query request proto serialized to a string
+ * @param query_request_str_len  The length of the serialized query request.
+ * @param requestLen A pointer to an int that stores the length of the result.
+ * @return char* The QueryFlagsSpec, serialized as a string.
+ */
+char* PlannerGetAvailableFlags(PlannerPtr planner_ptr, const char* query_request_str_c,
+                               int query_request_str_len, int* resultLen);
+
+/**
  * @brief Frees up the memory handled by the planner.
  *
  * @param planner_ptr - pointer to the planner ptr.

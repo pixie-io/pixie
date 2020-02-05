@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+import "src/common/base/proto/status.proto";
 import "src/shared/types/proto/types.proto";
 import "src/carnot/planpb/plan.proto";
 
@@ -7,20 +8,19 @@ package pl.carnot.compiler.plannerpb;
 
 option go_package = "plannerpb";
 
-
 // QueryFlagsSpec specifies the flags that are defined within a query.
 message QueryFlagsSpec {
   message Flag {
-      // The data type that this flag accepts
-      types.DataType data_type = 1;
-      // The semantic type that this flag accepts
-      types.SemanticType semantic_type = 2;
-      // The name of the flag.
-      string name = 3;
-      // The description of what this flag does.
-      string description = 4;
-      // The optional default value assigned to this flag.
-      pl.carnot.planpb.ScalarValue default_value =5;
+    // The data type that this flag accepts
+    types.DataType data_type = 1;
+    // The semantic type that this flag accepts
+    types.SemanticType semantic_type = 2;
+    // The name of the flag.
+    string name = 3;
+    // The description of what this flag does.
+    string description = 4;
+    // The optional default value assigned to this flag.
+    pl.carnot.planpb.ScalarValue default_value = 5;
   }
   repeated Flag flags = 1;
 }
@@ -34,4 +34,11 @@ message QueryRequest {
   }
   repeated FlagValue flag_values = 2;
   // TODO(zasgar): Add proto query.
+}
+
+message GetAvailableFlagsResult {
+  // The spec for the flags that the given query accepts
+  QueryFlagsSpec query_flags = 1;
+  // The status from the compiler
+  pl.statuspb.Status status = 2;
 }

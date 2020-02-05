@@ -40,6 +40,20 @@ class LogicalPlanner : public NotCopyable {
       const distributedpb::LogicalPlannerState& logical_state,
       const plannerpb::QueryRequest& query);
 
+  /**
+   * @brief Takes in a query request and outputs the flag spec for that request.
+   *
+   * @param query_request: the query request from the UI
+   * @return QueryFlagsSpec or an error if one occurs during compilation.
+   *
+   * Currently, not implemented and just returns an empty QueryFlagsSpec
+   */
+  StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(
+      const plannerpb::QueryRequest& /* query_request */) {
+    plannerpb::QueryFlagsSpec query_flags;
+    return query_flags;
+  }
+
   Status Init(std::unique_ptr<compiler::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);
 

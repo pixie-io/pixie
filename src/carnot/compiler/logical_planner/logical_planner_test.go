@@ -192,3 +192,26 @@ func TestPlanner_MissingTable(t *testing.T) {
 	}
 
 }
+
+// TestPlanner_GetAvailableFlags makes sure that we can call GetAvailableFlags
+// and we receive a status ok. Currently, GetAvailableFlags always returns an empty
+// flag spec.
+func TestPlanner_GetAvailableFlags(t *testing.T) {
+	// Create the planner.
+	c := logicalplanner.New(&udfspb.UDFInfo{})
+	defer c.Free()
+	// Note that the string can't be empty since the cgo interface treats an empty string
+	// as an error
+	queryRequestPB := &plannerpb.QueryRequest{
+		QueryStr: " ",
+	}
+	getFlagsResultPB, err := c.GetAvailableFlags(queryRequestPB)
+
+	if err != nil {
+		log.Fatalln("Failed to get flags: ", err)
+		os.Exit(1)
+	}
+
+	status := getFlagsResultPB.Status
+	assert.Equal(t, status.ErrCode, statuspb.OK)
+}
