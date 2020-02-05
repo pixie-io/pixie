@@ -3,14 +3,14 @@
 #include <deque>
 #include <string>
 #include <vector>
+#include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/common/event_parser.h"
-#include "src/stirling/mysql/mysql_types.h"
 
 namespace pl {
 namespace stirling {
 
 /**
- * Parses the input string as a sequence of MySQL packets.
+ * Parses the input string as a sequence of CQL binary protocol frames.
  *
  * @param type Whether to process bytes as requests or responses.
  * @param buf The raw data to be parsed.
@@ -20,10 +20,10 @@ namespace stirling {
  */
 template <>
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
-                          std::deque<mysql::Packet>* messages);
+                          std::deque<cass::Frame>* messages);
 
 template <>
-size_t FindMessageBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos);
+size_t FindMessageBoundary<cass::Frame>(MessageType type, std::string_view buf, size_t start_pos);
 
 }  // namespace stirling
 }  // namespace pl

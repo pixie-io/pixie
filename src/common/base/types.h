@@ -16,9 +16,9 @@ namespace pl {
  * where the regular std::string_view constructor only goes to the null character.
  * But can be used in other cases as well, without harm.
  */
-template <size_t N>
-inline constexpr std::string_view ConstStringView(const char (&a)[N]) {
-  return std::string_view(a, N - 1);
+template <typename TCharType = char, size_t N>
+inline constexpr std::basic_string_view<TCharType> ConstStringView(const TCharType (&a)[N]) {
+  return std::basic_string_view<TCharType>(a, N - 1);
 }
 
 template <typename TCharType = char, size_t N>
@@ -26,9 +26,9 @@ inline std::basic_string<TCharType> ConstString(const char (&a)[N]) {
   return std::basic_string<TCharType>(reinterpret_cast<const TCharType*>(a), N - 1);
 }
 
-template <size_t N>
-inline constexpr std::string_view CharArrayStringView(const char (&a)[N]) {
-  return std::string_view(a, N);
+template <typename TCharType = char, size_t N>
+inline constexpr std::basic_string_view<TCharType> CharArrayStringView(const TCharType (&a)[N]) {
+  return std::basic_string_view<TCharType>(a, N);
 }
 
 /**

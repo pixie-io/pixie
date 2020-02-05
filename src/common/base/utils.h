@@ -134,7 +134,8 @@ std::basic_string_view<CharType> CreateStringView(const char (&arr)[N]) {
 }
 
 /**
- * @brief Returns a string_view for a different character type from the input C-style string.
+ * @brief Returns a string_view for a different character type from the input type.
+ * Useful to convert basic_string_view<char> to basic_string_view<uint8_t> and vice versa.
  */
 template <typename CharType = char, typename TContainer>
 std::basic_string_view<CharType> CreateStringView(const TContainer& s) {

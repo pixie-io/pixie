@@ -19,7 +19,7 @@ namespace utils {
  */
 template <typename TIntType = uint32_t>
 TIntType LittleEndianByteStrToInt(std::string_view str) {
-  DCHECK(str.size() <= sizeof(TIntType));
+  DCHECK_LE(str.size(), sizeof(TIntType));
   TIntType result = 0;
   for (size_t i = 0; i < str.size(); i++) {
     result = static_cast<uint8_t>(str[str.size() - 1 - i]) + (result << 8);
@@ -29,7 +29,7 @@ TIntType LittleEndianByteStrToInt(std::string_view str) {
 
 template <typename TFloatType>
 TFloatType LittleEndianByteStrToFloat(std::string_view str) {
-  DCHECK(str.size() == sizeof(TFloatType));
+  DCHECK_EQ(str.size(), sizeof(TFloatType));
   return *reinterpret_cast<const TFloatType*>(str.data());
 }
 

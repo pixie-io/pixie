@@ -2,7 +2,6 @@
 
 #include <arpa/inet.h>
 #include <deque>
-#include <string>
 #include <string_view>
 #include <utility>
 
@@ -14,7 +13,8 @@ namespace pl {
 namespace stirling {
 
 namespace mysql {
-ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
+
+ParseState Parse(MessageType type, std::string_view* buf, mysql::Packet* result) {
   if (type != MessageType::kRequest && type != MessageType::kResponse) {
     return ParseState::kInvalid;
   }
@@ -35,7 +35,7 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
   }
 
   int packet_length = utils::LittleEndianByteStrToInt(buf->substr(0, kPacketHeaderLength - 1));
-  int buffer_length = buf->length();
+  ssize_t buffer_length = buf->length();
 
   // 3 bytes of packet length and 1 byte of packet number.
   if (buffer_length < kPacketHeaderLength + packet_length) {
@@ -47,6 +47,7 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
 
   return ParseState::kSuccess;
 }
+
 }  // namespace mysql
 
 // TODO(chengruizhe): Could be templatized with HTTP Parser
