@@ -84,3 +84,9 @@ pl_cc_binary(
         ":cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "uid_test",
+    srcs = ["uid_test.cc"],
+    deps = [":cc_library"],
+)

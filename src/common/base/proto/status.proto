@@ -30,6 +30,8 @@ enum Code {
   UNIMPLEMENTED = 10;
   // No resources available for action.
   RESOURCE_UNAVAILABLE = 11;
+  // Syscall errors.
+  SYSTEM = 12;
   // Use default instead of specifying all entries here. Otherwise, code might get
   // hard to maintain.
   DO_NOT_USE_ = 100;
