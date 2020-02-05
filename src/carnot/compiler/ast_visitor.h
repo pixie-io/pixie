@@ -50,10 +50,12 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param graph
    * @param compiler_state
    * @param var_table
+   * @param is_child
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state,
-                                                          std::shared_ptr<VarTable> var_table);
+                                                          std::shared_ptr<VarTable> var_table,
+                                                          bool is_child);
 
   /**
    * @brief Creates an AST Vistior with the given graph and compiler state. Variable table is
@@ -93,6 +95,7 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<IRNode*> ParseAndProcessSingleExpression(std::string_view str) override;
 
   IR* ir_graph() const { return ir_graph_; }
+  std::shared_ptr<VarTable> var_table() const { return var_table_; }
 
   // Reserved column names.
   inline static constexpr char kTimeConstantColumnName[] = "time_";
@@ -109,7 +112,7 @@ class ASTVisitorImpl : public ASTVisitor {
   ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table)
       : ir_graph_(ir_graph), compiler_state_(compiler_state), var_table_(var_table) {}
 
-  Status Init();
+  Status InitGlobals();
 
   /**
    * @brief Process statements list passed in as an argument.

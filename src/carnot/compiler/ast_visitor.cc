@@ -23,10 +23,13 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const p
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table) {
+    IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table,
+    bool is_child = false) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor =
       std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(ir_graph, compiler_state, var_table));
-  PL_RETURN_IF_ERROR(ast_visitor->Init());
+  if (!is_child) {
+    PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
+  }
   return ast_visitor;
 }
 
@@ -35,14 +38,13 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
   return Create(ir_graph, compiler_state, VarTable::Create());
 }
 
-Status ASTVisitorImpl::Init() {
+Status ASTVisitorImpl::InitGlobals() {
   PL_ASSIGN_OR_RETURN(auto pl_module, PixieModule::Create(ir_graph_, compiler_state_));
   // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
   var_table_->Add(PixieModule::kPixieModuleObjName, pl_module);
   // Populate the type objects
   PL_ASSIGN_OR_RETURN(auto string_type_object, TypeObject::Create(IRNodeType::kString));
   var_table_->Add(ASTVisitorImpl::kStringTypeName, string_type_object);
-
   PL_ASSIGN_OR_RETURN(auto int_type_object, TypeObject::Create(IRNodeType::kInt));
   var_table_->Add(ASTVisitorImpl::kIntTypeName, int_type_object);
 
@@ -278,8 +280,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(
     }
     local_scope->Add(arg_name, arg_object);
   }
-  PL_ASSIGN_OR_RETURN(auto ast_visitor,
-                      ASTVisitorImpl::Create(ir_graph_, compiler_state_, local_scope));
+  PL_ASSIGN_OR_RETURN(auto ast_visitor, ASTVisitorImpl::Create(ir_graph_, compiler_state_,
+                                                               local_scope, /* is_child */ true));
   return ast_visitor->ProcessASTSuite(body, /*is_function_definition_body*/ true);
 }
 

@@ -1158,6 +1158,44 @@ TEST_F(ASTVisitorTest, func_with_empty_return) {
   ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
 }
 
+constexpr char kFuncDefDoesntDupGlobals[] = R"pxl(
+int = '123'
+string = 'abc'
+def func():
+    return int
+
+def func2():
+    return string
+
+foo = func()
+bar = func2()
+)pxl";
+TEST_F(ASTVisitorTest, func_def_doesnt_make_new_globals) {
+  Parser parser;
+  auto ast_or_s = parser.Parse(kFuncDefDoesntDupGlobals);
+  ASSERT_OK(ast_or_s);
+  auto ast = ast_or_s.ConsumeValueOrDie();
+  std::shared_ptr<IR> ir = std::make_shared<IR>();
+  auto ast_walker_or_s = ASTVisitorImpl::Create(ir.get(), compiler_state_.get());
+  ASSERT_OK(ast_walker_or_s);
+  auto ast_walker = ast_walker_or_s.ConsumeValueOrDie();
+  ASSERT_OK(ast_walker->ProcessModuleNode(ast));
+  auto var_table = ast_walker->var_table();
+
+  // If the ast_visitor recreates `int` in the new function
+  // then the return value of the function will be the Int TypeObject
+  // and thus won't have a node
+  auto func_return_obj = var_table->Lookup("foo");
+  ASSERT_TRUE(func_return_obj->HasNode());
+  ASSERT_TRUE(Match(func_return_obj->node(), String()));
+  ASSERT_EQ(static_cast<StringIR*>(func_return_obj->node())->str(), "123");
+
+  auto func2_return_obj = var_table->Lookup("string");
+  ASSERT_TRUE(func2_return_obj->HasNode());
+  ASSERT_TRUE(Match(func2_return_obj->node(), String()));
+  ASSERT_EQ(static_cast<StringIR*>(func2_return_obj->node())->str(), "abc");
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
