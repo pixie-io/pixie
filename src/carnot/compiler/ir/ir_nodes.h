@@ -590,6 +590,9 @@ class DataIR : public ExpressionIR {
    */
   Status ToProto(planpb::ScalarValue* column_pb) const;
 
+  static StatusOr<DataIR*> FromProto(IR* ir, std::string_view name,
+                                     const planpb::ScalarValue& value);
+
   /**
    * @brief The implementation of ToProto for DataIR derived classes.
    * Each implementation should only be one line such as

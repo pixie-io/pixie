@@ -11,7 +11,23 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-Status FlagsObject::Init() {
+StatusOr<absl::flat_hash_map<std::string, DataIR*>> ParseFlagValues(IR* ir,
+                                                                    const FlagValues& flag_values) {
+  absl::flat_hash_map<std::string, DataIR*> map;
+  for (const auto& flag : flag_values) {
+    auto name = absl::Substitute("flag $0", flag.flag_name());
+    PL_ASSIGN_OR_RETURN(auto parsed_value, DataIR::FromProto(ir, name, flag.flag_value()));
+    if (map.contains(flag.flag_name())) {
+      return error::InvalidArgument("Received duplicate values for $0", name);
+    }
+    map[flag.flag_name()] = parsed_value;
+  }
+  return map;
+}
+
+Status FlagsObject::Init(const FlagValues& flag_values) {
+  PL_ASSIGN_OR_RETURN(input_flag_values_, ParseFlagValues(ir_graph_, flag_values));
+
   std::shared_ptr<FuncObject> subscript_fn(new FuncObject(
       kSubscriptMethodName, {"key"}, {}, /* has_variable_len_args */ false,
       /* has_variable_len_kwargs */ false,
@@ -68,21 +84,29 @@ StatusOr<QLObjectPtr> FlagsObject::DefineFlagHandler(const pypa::AstPtr& ast,
         defaultval->type_string());
   }
 
-  if (flag_values_.contains(flag_name)) {
+  if (registered_flag_values_.contains(flag_name)) {
     return CreateAstError(ast, "Flag $0 already registered", flag_name);
   }
 
-  // TODO(nserrino): Support returning values provided by Flag protobufs, not just return defaults.
-  if (!type->NodeMatches(defaultval).ok()) {
-    return CreateAstError(ast, "For flag $0 expected type $1 but received type $2", flag_name,
-                          IRNode::TypeString(type->ir_node_type()), defaultval->type_string());
+  DataIR* flag_value = nullptr;
+  // Get the default if this query didn't receive a value for this flag.
+  if (input_flag_values_.contains(flag_name)) {
+    flag_value = input_flag_values_.at(flag_name);
+  } else {
+    flag_value = static_cast<DataIR*>(defaultval);
   }
-  flag_values_[flag_name] = static_cast<DataIR*>(defaultval);
+
+  // TODO(nserrino): Support returning values provided by Flag protobufs, not just return defaults.
+  if (!type->NodeMatches(flag_value).ok()) {
+    return CreateAstError(ast, "For flag $0 expected type $1 but received type $2", flag_name,
+                          IRNode::TypeString(type->ir_node_type()), flag_value->type_string());
+  }
+  registered_flag_values_[flag_name] = flag_value;
   return StatusOr(std::make_shared<NoneObject>());
 }
 
 bool FlagsObject::HasNonMethodAttribute(std::string_view name) const {
-  return flag_values_.contains(name);
+  return registered_flag_values_.contains(name);
 }
 
 StatusOr<QLObjectPtr> FlagsObject::GetAttributeImpl(const pypa::AstPtr& ast,
@@ -94,8 +118,8 @@ StatusOr<QLObjectPtr> FlagsObject::GetAttributeImpl(const pypa::AstPtr& ast,
   if (!HasNonMethodAttribute(flag_name)) {
     return CreateAstError(ast, "Flag $0 not registered", flag_name);
   }
-  DCHECK(flag_values_.contains(flag_name));
-  return ExprObject::Create(flag_values_.at(flag_name));
+  DCHECK(registered_flag_values_.contains(flag_name));
+  return ExprObject::Create(registered_flag_values_.at(flag_name));
 }
 
 StatusOr<QLObjectPtr> FlagsObject::GetFlagHandler(const pypa::AstPtr& ast, const ParsedArgs& args) {

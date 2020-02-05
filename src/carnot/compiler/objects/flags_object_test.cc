@@ -19,7 +19,10 @@ class FlagsObjectTest : public QLObjectTest {
  protected:
   void SetUp() override {
     QLObjectTest::SetUp();
-    flags_obj_ = FlagsObject::Create().ConsumeValueOrDie();
+    FlagValue flag;
+    flag.set_flag_name("foo");
+    EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_flag_value()));
+    flags_obj_ = FlagsObject::Create(graph.get(), {flag}).ConsumeValueOrDie();
   }
 
   StatusOr<std::shared_ptr<ExprObject>> GetFlagSubscript(const std::string& flag_name) {
@@ -72,14 +75,16 @@ TEST_F(FlagsObjectTest, TestBasicAttribute) {
   ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int", MakeInt(123)));
   ASSERT_OK(CallParseFlags());
 
+  // Get non-default value
   auto res_or_s = GetFlagAttribute("foo");
   ASSERT_OK(res_or_s);
   auto expr = res_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(expr->HasNode());
   EXPECT_EQ(IRNodeType::kString, expr->node()->type());
   auto strval = static_cast<StringIR*>(expr->node());
-  EXPECT_EQ("default", strval->str());
+  EXPECT_EQ("non-default", strval->str());
 
+  // Get default value
   res_or_s = GetFlagAttribute("bar");
   ASSERT_OK(res_or_s);
   expr = res_or_s.ConsumeValueOrDie();
@@ -94,14 +99,16 @@ TEST_F(FlagsObjectTest, TestBasicSubscript) {
   ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int", MakeInt(123)));
   ASSERT_OK(CallParseFlags());
 
+  // Get non-default value
   auto res_or_s = GetFlagSubscript("foo");
   ASSERT_OK(res_or_s);
   auto expr = res_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(expr->HasNode());
   EXPECT_EQ(IRNodeType::kString, expr->node()->type());
   auto strval = static_cast<StringIR*>(expr->node());
-  EXPECT_EQ("default", strval->str());
+  EXPECT_EQ("non-default", strval->str());
 
+  // Get default value
   res_or_s = GetFlagSubscript("bar");
   ASSERT_OK(res_or_s);
   expr = res_or_s.ConsumeValueOrDie();

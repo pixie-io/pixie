@@ -675,6 +675,33 @@ Status DataIR::ToProto(planpb::ScalarValue* value_pb) const {
   return ToProtoImpl(value_pb);
 }
 
+StatusOr<DataIR*> DataIR::FromProto(IR* ir, std::string_view name,
+                                    const planpb::ScalarValue& value) {
+  switch (value.data_type()) {
+    case types::BOOLEAN: {
+      return ir->CreateNode<BoolIR>(/*ast*/ nullptr, value.bool_value());
+    }
+    case types::INT64: {
+      return ir->CreateNode<IntIR>(/*ast*/ nullptr, value.int64_value());
+    }
+    case types::FLOAT64: {
+      return ir->CreateNode<FloatIR>(/*ast*/ nullptr, value.float64_value());
+    }
+    case types::STRING: {
+      return ir->CreateNode<StringIR>(/*ast*/ nullptr, value.string_value());
+    }
+    case types::UINT128: {
+      std::string upid_str =
+          sole::rebuild(value.uint128_value().high(), value.uint128_value().low()).str();
+      return ir->CreateNode<UInt128IR>(/*ast*/ nullptr, upid_str);
+    }
+    default: {
+      return error::InvalidArgument("Error processing $0: $1 not handled as a default data type.",
+                                    name, magic_enum::enum_name(value.data_type()));
+    }
+  }
+}
+
 Status IntIR::ToProtoImpl(planpb::ScalarValue* value) const {
   value->set_int64_value(val_);
   return Status::OK();
