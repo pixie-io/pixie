@@ -5,10 +5,21 @@ import {VisualizationSpec} from 'vega-embed';
 
 import {Theme, useTheme} from '@material-ui/core/styles';
 
+import {VegaContext} from './context';
+
 function specsFromTheme(theme: Theme) {
   return {
     background: theme.palette.background.default,
   };
+}
+
+function parseSpecs(spec: string): VisualizationSpec {
+  try {
+    const vega = JSON.parse(spec);
+    return vega as VisualizationSpec;
+  } catch (e) {
+    return {};
+  }
 }
 
 const BASE_SPECS = {
@@ -18,18 +29,20 @@ const BASE_SPECS = {
 };
 
 interface CanvasProps {
-  spec: object;
   data?: any;
 }
 
 const Canvas = (props: CanvasProps) => {
   const theme = useTheme();
-  const spec = React.useMemo(() => ({
-    ...props.spec,
-    ...BASE_SPECS,
-    ...specsFromTheme(theme),
-  } as VisualizationSpec),
-    [props.spec]);
+  const inputJSON = React.useContext(VegaContext);
+  const spec = React.useMemo(() => {
+    const inputSpec = parseSpecs(inputJSON);
+    return {
+      ...inputSpec,
+      ...BASE_SPECS,
+      ...specsFromTheme(theme),
+    } as VisualizationSpec;
+  }, [inputJSON]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:

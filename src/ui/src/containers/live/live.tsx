@@ -4,7 +4,7 @@ import {GlobalHotKeys} from 'react-hotkeys';
 
 import Drawer from '@material-ui/core/Drawer';
 import IconButton from '@material-ui/core/IconButton';
-import {createStyles, makeStyles, Theme, ThemeProvider} from '@material-ui/core/styles';
+import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import EditIcon from '@material-ui/icons/Edit';
 import InputIcon from '@material-ui/icons/Input';
 import MenuIcon from '@material-ui/icons/Menu';
@@ -13,7 +13,8 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';
 import CommandInput from './command-input';
-import demoSpec from './demo';
+import LiveContextProvider from './context';
+import Editor from './editor';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -37,7 +38,7 @@ const useStyles = makeStyles((theme: Theme) =>
       flex: 1,
       minHeight: 0,
       display: 'flex',
-      margin: theme.spacing(2),
+      margin: theme.spacing(0, 2, 2),
     },
     editorToggle: {
       border: 'none',
@@ -46,7 +47,7 @@ const useStyles = makeStyles((theme: Theme) =>
       flex: 1,
       minWidth: 0,
       display: 'none',
-      '&.editor-open': {
+      '&.opened': {
         display: 'block',
       },
     },
@@ -77,41 +78,43 @@ const LiveView = () => {
   }), []);
 
   return (
-    <div className={classes.root}>
-      <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
-      <div className={classes.topBar}>
-        <IconButton onClick={toggleDrawer(true)}>
-          <MenuIcon />
-        </IconButton>
-        <div className={classes.title}>title goes here</div>
-        <IconButton>
-          <ShareIcon />
-        </IconButton>
-        <ToggleButton
-          className={classes.editorToggle}
-          selected={editorOpen}
-          onChange={toggleEditor}
-          value='editorOpened'
-        >
-          <EditIcon />
-        </ToggleButton>
-        <IconButton onClick={toggleCommandOpen}>
-          <InputIcon />
-        </IconButton>
-      </div>
-      <div className={classes.main}>
-        <div className={clsx(classes.editor, editorOpen && 'editor-open')}>
-          editor goes here
+    <LiveContextProvider>
+      <div className={classes.root}>
+        <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
+        <div className={classes.topBar}>
+          <IconButton onClick={toggleDrawer(true)}>
+            <MenuIcon />
+          </IconButton>
+          <div className={classes.title}>title goes here</div>
+          <IconButton>
+            <ShareIcon />
+          </IconButton>
+          <ToggleButton
+            className={classes.editorToggle}
+            selected={editorOpen}
+            onChange={toggleEditor}
+            value='editorOpened'
+          >
+            <EditIcon />
+          </ToggleButton>
+          <IconButton onClick={toggleCommandOpen}>
+            <InputIcon />
+          </IconButton>
         </div>
-        <div className={classes.canvas}>
-          <Canvas spec={demoSpec} />
+        <div className={classes.main}>
+          <div className={clsx(classes.editor, editorOpen && 'opened')}>
+            <Editor />
+          </div>
+          <div className={classes.canvas}>
+            <Canvas />
+          </div>
         </div>
-      </div>
-      <Drawer open={drawerOpen} onClose={toggleDrawer(false)}>
-        <div>drawer content</div>
-      </Drawer>
-      <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
-    </div >
+        <Drawer open={drawerOpen} onClose={toggleDrawer(false)}>
+          <div>drawer content</div>
+        </Drawer>
+        <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
+      </div >
+    </LiveContextProvider>
   );
 };
 
