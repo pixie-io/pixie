@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <set>
 #include <unordered_map>
 
 #include "src/carnot/exec/agg_node.h"
@@ -19,6 +20,7 @@
 #include "src/carnot/exec/union_node.h"
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/plan_state.h"
+#include "src/common/perf/perf.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {
@@ -49,7 +51,6 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
         return OnOperatorImpl<plan::AggregateOperator, AggNode>(node, &descriptors);
       })
       .OnMemorySource([&](auto& node) {
-        sources_.push_back(node.id());
         return OnOperatorImpl<plan::MemorySourceOperator, MemorySourceNode>(node, &descriptors);
       })
       .OnFilter([&](auto& node) {
@@ -65,7 +66,6 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
         return OnOperatorImpl<plan::JoinOperator, EquijoinNode>(node, &descriptors);
       })
       .OnGRPCSource([&](auto& node) {
-        sources_.emplace_back(node.id());
         auto s = OnOperatorImpl<plan::GRPCSourceOperator, GRPCSourceNode>(node, &descriptors);
         PL_RETURN_IF_ERROR(s);
         return exec_state->grpc_router()->AddGRPCSourceNode(
@@ -75,10 +75,73 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
         return OnOperatorImpl<plan::GRPCSinkOperator, GRPCSinkNode>(node, &descriptors);
       })
       .OnUDTFSource([&](auto& node) {
-        sources_.emplace_back(node.id());
         return OnOperatorImpl<plan::UDTFSourceOperator, UDTFSourceNode>(node, &descriptors);
       })
       .Walk(pf_);
+
+  return Status::OK();
+}
+
+bool ExecutionGraph::YieldWithTimeout() {
+  std::unique_lock<std::mutex> lock(execution_mutex_);
+  if (continue_) {
+    continue_ = false;
+    return false;
+  }
+  auto timed_out = !(execution_cv_.wait_for(lock, yield_timeout_ms_, [this] { return continue_; }));
+  return timed_out;
+}
+
+void ExecutionGraph::Continue() {
+  std::lock_guard<std::mutex> lock(execution_mutex_);
+  continue_ = true;
+  execution_cv_.notify_one();
+}
+
+Status ExecutionGraph::ExecuteSources() {
+  std::set<SourceNode*> running_sources;
+  for (auto node_id : sources_) {
+    auto node = nodes_.find(node_id);
+    if (node == nodes_.end()) {
+      return error::NotFound("Could not find SourceNode $0.", node_id);
+    }
+    running_sources.insert(static_cast<SourceNode*>(node->second));
+  }
+
+  while (running_sources.size() > 0) {
+    std::vector<SourceNode*> completed_sources;
+    for (SourceNode* source : running_sources) {
+      while (exec_state_->keep_running() && source->NextBatchReady()) {
+        PL_RETURN_IF_ERROR(source->GenerateNext(exec_state_));
+      }
+      if (!source->HasBatchesRemaining()) {
+        completed_sources.push_back(source);
+      }
+
+      if (!exec_state_->keep_running()) {
+        return Status::OK();
+      }
+    }
+
+    for (SourceNode* source : completed_sources) {
+      running_sources.erase(source);
+    }
+
+    if (running_sources.size()) {
+      auto timer = ElapsedTimer();
+      timer.Start();
+      bool timed_out = YieldWithTimeout();
+      timer.Stop();
+      if (timed_out) {
+        LOG(WARNING) << absl::Substitute("Timed out loading source data after $0 ms",
+                                         timer.ElapsedTime_us() / 1000.0);
+        for (SourceNode* source : running_sources) {
+          PL_RETURN_IF_ERROR(source->SendEndOfStream(exec_state_));
+        }
+        return Status::OK();
+      }
+    }
+  }
 
   return Status::OK();
 }
@@ -100,20 +163,7 @@ Status ExecutionGraph::Execute() {
     PL_RETURN_IF_ERROR(node->Open(exec_state_));
   }
 
-  // For each source, generate rowbatches until none are remaining.
-  for (auto node_id : sources_) {
-    auto node = nodes_.find(node_id);
-    if (node == nodes_.end()) {
-      return error::NotFound("Could not find SourceNode.");
-    }
-    if (static_cast<SourceNode*>(node->second)->HasBatchesRemaining()) {
-      do {
-        // TODO(michelle): Determine if there are ways that this can hit deadlock.
-        PL_RETURN_IF_ERROR(node->second->GenerateNext(exec_state_));
-      } while (exec_state_->keep_running() &&
-               static_cast<SourceNode*>(node->second)->HasBatchesRemaining());
-    }
-  }
+  PL_RETURN_IF_ERROR(ExecuteSources());
 
   for (auto node : nodes) {
     PL_RETURN_IF_ERROR(node->Close(exec_state_));
@@ -121,6 +171,7 @@ Status ExecutionGraph::Execute() {
 
   return Status::OK();
 }
+
 std::vector<std::string> ExecutionGraph::OutputTables() const {
   std::vector<std::string> output_tables;
   // Go through the sinks.

@@ -60,7 +60,9 @@ Status GRPCSourceNode::OptionallyPopRowBatch() {
 }
 
 bool GRPCSourceNode::NextBatchReady() {
-  return next_up_ != nullptr || row_batch_queue_.size_approx() > 0;
+  return HasBatchesRemaining();
+  // TODO(nserrino PL-1318): Uncomment this and replace above once the grpc router can poke the exec
+  // graph. return next_up_ != nullptr || row_batch_queue_.size_approx() > 0;
 }
 
 }  // namespace exec

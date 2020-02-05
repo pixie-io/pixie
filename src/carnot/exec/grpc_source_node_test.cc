@@ -49,7 +49,8 @@ TEST_F(GRPCSourceNodeTest, basic) {
 
   for (auto i = 0; i < 3; ++i) {
     EXPECT_TRUE(tester.node()->HasBatchesRemaining());
-    EXPECT_FALSE(tester.node()->NextBatchReady());
+    // TODO(nserrino): Uncomment once GRPC source node changes land PL-1318.
+    // EXPECT_FALSE(tester.node()->NextBatchReady());
 
     std::vector<types::Int64Value> data(i, i);
     auto rb = RowBatchBuilder(output_rd, i, /*eow*/ i == 2, /*eos*/ i == 2)

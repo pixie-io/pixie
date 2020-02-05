@@ -180,7 +180,6 @@ class ExecNode {
   virtual Status ConsumeNextImpl(ExecState*, const table_store::schema::RowBatch&, size_t) {
     return error::Unimplemented("Implement in derived class (if sink or processing)");
   }
-
   bool is_closed() { return is_closed_; }
 
   std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
@@ -219,6 +218,11 @@ class SourceNode : public ExecNode {
   virtual bool NextBatchReady() = 0;
   int64_t BytesProcessed() const { return bytes_processed_; }
   int64_t RowsProcessed() const { return rows_processed_; }
+  Status SendEndOfStream(ExecState* exec_state) {
+    PL_ASSIGN_OR_RETURN(auto rb, table_store::schema::RowBatch::WithZeroRows(
+                                     *output_descriptor_, /*eow*/ true, /*eos*/ true));
+    return SendRowBatchToChildren(exec_state, *rb);
+  }
 
  protected:
   int64_t rows_processed_ = 0;

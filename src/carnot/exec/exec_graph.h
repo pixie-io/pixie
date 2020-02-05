@@ -29,6 +29,8 @@ struct ExecutionStats {
   int64_t rows_processed;
 };
 
+constexpr std::chrono::milliseconds kDefaultYieldTimeoutMS{100};
+
 /**
  * An Execution Graph defines the structure of execution nodes for a given plan fragment.
  */
@@ -44,6 +46,7 @@ class ExecutionGraph {
    */
   Status Init(std::shared_ptr<table_store::schema::Schema> schema, plan::PlanState* plan_state,
               ExecState* exec_state, plan::PlanFragment* pf);
+
   std::vector<int64_t> sources() { return sources_; }
   StatusOr<ExecNode*> node(int64_t id) {
     auto node = nodes_.find(id);
@@ -52,11 +55,37 @@ class ExecutionGraph {
     }
     return node->second;
   }
+
+  /**
+   * Executes the current graph until there is no more work that can be done synchronously.
+   */
   Status Execute();
+  /**
+   * Re-awakens Execute() when there is more work available to do.
+   */
+  void Continue();
+
   std::vector<std::string> OutputTables() const;
   ExecutionStats GetStats() const;
 
+  void AddNode(int64_t id, ExecNode* node) {
+    nodes_[id] = node;
+    if (node->IsSource()) {
+      sources_.push_back(id);
+    }
+  }
+
+  /**
+   * For unit testing, set exec_state_ in the cases where the normal Init() hasn't been called.
+   */
+  void testing_set_exec_state(ExecState* exec_state) { exec_state_ = exec_state; }
+
  private:
+  /**
+   * Yields the execution of the current graph until Continue() is called or the timeout is reached.
+   */
+  bool YieldWithTimeout();
+
   /**
    * For the given operator type, creates the corresponding execution node and updates the structure
    * of the execution graph.
@@ -90,7 +119,8 @@ class ExecutionGraph {
     // Create ExecNode.
     auto execNode = pool_.Add(new TNode());
     auto s = execNode->Init(node, output_descriptor, input_descriptors);
-    nodes_.insert({node.id(), execNode});
+
+    AddNode(node.id(), execNode);
 
     // Update parents' children.
     for (size_t i = 0; i < parents.size(); ++i) {
@@ -104,6 +134,8 @@ class ExecutionGraph {
     return Status::OK();
   }
 
+  Status ExecuteSources();
+
   ExecState* exec_state_;
   ObjectPool pool_;
   std::shared_ptr<table_store::schema::Schema> schema_;
@@ -112,6 +144,13 @@ class ExecutionGraph {
   std::vector<int64_t> sources_;
   std::vector<int64_t> sinks_;
   std::unordered_map<int64_t, ExecNode*> nodes_;
+
+  // How long in milliseconds to wait on a node when there is no other work to do.
+  std::chrono::milliseconds yield_timeout_ms_{kDefaultYieldTimeoutMS};
+  // Whether or not the graph should continue executing or wait for more work to do.
+  bool continue_ = false;
+  std::mutex execution_mutex_;
+  std::condition_variable execution_cv_;
 };
 
 }  // namespace exec

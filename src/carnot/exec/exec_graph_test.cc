@@ -46,13 +46,9 @@ class MultiplyUDF : public udf::ScalarUDF {
   }
 };
 
-class ExecGraphTest : public ::testing::Test {
+class BaseExecGraphTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    planpb::PlanFragment pf_pb;
-    ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kPlanFragmentWithFourNodes, &pf_pb));
-    ASSERT_OK(plan_fragment_->Init(pf_pb));
-
+  void SetUpExecState() {
     func_registry_ = std::make_unique<udf::Registry>("test_registry");
     func_registry_->RegisterOrDie<AddUDF>("add");
     func_registry_->RegisterOrDie<MultiplyUDF>("multiply");
@@ -61,9 +57,24 @@ class ExecGraphTest : public ::testing::Test {
     exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
                                               MockKelvinStubGenerator, sole::uuid4());
   }
+
   std::unique_ptr<udf::Registry> func_registry_;
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
   std::unique_ptr<ExecState> exec_state_ = nullptr;
+};
+
+class ExecGraphTest : public BaseExecGraphTest {
+ protected:
+  void SetUp() override {
+    SetUpPlanFragment();
+    SetUpExecState();
+  }
+
+  void SetUpPlanFragment() {
+    planpb::PlanFragment pf_pb;
+    ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kPlanFragmentWithFourNodes, &pf_pb));
+    ASSERT_OK(plan_fragment_->Init(pf_pb));
+  }
 };
 
 TEST_F(ExecGraphTest, basic) {
@@ -236,6 +247,67 @@ TEST_F(ExecGraphTest, execute_time) {
                   .ConsumeValueOrDie()
                   ->ColumnAt(0)
                   ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
+}
+
+class YieldingExecGraphTest : public BaseExecGraphTest {
+ protected:
+  void SetUp() { SetUpExecState(); }
+};
+
+TEST_F(YieldingExecGraphTest, yield) {
+  ExecutionGraph e;
+  e.testing_set_exec_state(exec_state_.get());
+
+  RowDescriptor output_rd({types::DataType::INT64});
+  MockSourceNode yielding_source(output_rd);
+  MockSourceNode non_yielding_source(output_rd);
+  e.AddNode(1, &yielding_source);
+  e.AddNode(2, &non_yielding_source);
+
+  auto set_eos = [&](ExecState*) { non_yielding_source.SendEOS(); };
+
+  // Setup
+  EXPECT_CALL(non_yielding_source, PrepareImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+  EXPECT_CALL(non_yielding_source, OpenImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+  EXPECT_CALL(yielding_source, PrepareImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+  EXPECT_CALL(yielding_source, OpenImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+
+  // Non-yielding
+  EXPECT_CALL(non_yielding_source, NextBatchReady())
+      .Times(3)
+      .WillOnce(::testing::Return(true))
+      .WillOnce(::testing::Return(true))
+      .WillOnce(::testing::Return(false));
+
+  EXPECT_CALL(non_yielding_source, GenerateNextImpl(::testing::_))
+      .Times(2)
+      .WillOnce(::testing::Return(Status::OK()))
+      .WillOnce(::testing::DoAll(::testing::Invoke(set_eos), ::testing::Return(Status::OK())));
+
+  // We don't set expectations on GenerateNextImpl for the yielding source, because
+  // in TSAN the timeout may or may not occur resulting in different outputs.
+
+  // Cleanup
+  EXPECT_CALL(non_yielding_source, CloseImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+  EXPECT_CALL(yielding_source, CloseImpl(::testing::_))
+      .Times(1)
+      .WillOnce(::testing::Return(Status::OK()));
+
+  std::thread exec_thread([&] { ASSERT_OK(e.Execute()); });
+
+  // Prod yielding node
+  e.Continue();
+  exec_thread.join();
 }
 
 }  // namespace exec
