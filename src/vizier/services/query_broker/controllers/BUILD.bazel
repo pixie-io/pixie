@@ -55,6 +55,7 @@ go_test(
         "//src/carnot/compiler/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/compiler/plannerpb:query_flags_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
+        "//src/common/base/proto:status_pl_go_proto",
         "//src/utils:go_default_library",
         "//src/utils/testingutils:go_default_library",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",

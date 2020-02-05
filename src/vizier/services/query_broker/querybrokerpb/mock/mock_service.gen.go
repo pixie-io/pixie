@@ -116,6 +116,26 @@ func (mr *MockQueryBrokerServiceClientMockRecorder) ReceiveAgentQueryResult(ctx,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReceiveAgentQueryResult", reflect.TypeOf((*MockQueryBrokerServiceClient)(nil).ReceiveAgentQueryResult), varargs...)
 }
 
+// GetAvailableFlags mocks base method
+func (m *MockQueryBrokerServiceClient) GetAvailableFlags(ctx context.Context, in *plannerpb.QueryRequest, opts ...grpc.CallOption) (*plannerpb.GetAvailableFlagsResult, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetAvailableFlags", varargs...)
+	ret0, _ := ret[0].(*plannerpb.GetAvailableFlagsResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAvailableFlags indicates an expected call of GetAvailableFlags
+func (mr *MockQueryBrokerServiceClientMockRecorder) GetAvailableFlags(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailableFlags", reflect.TypeOf((*MockQueryBrokerServiceClient)(nil).GetAvailableFlags), varargs...)
+}
+
 // MockQueryBrokerServiceServer is a mock of QueryBrokerServiceServer interface
 type MockQueryBrokerServiceServer struct {
 	ctrl     *gomock.Controller
@@ -197,4 +217,19 @@ func (m *MockQueryBrokerServiceServer) ReceiveAgentQueryResult(arg0 context.Cont
 func (mr *MockQueryBrokerServiceServerMockRecorder) ReceiveAgentQueryResult(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReceiveAgentQueryResult", reflect.TypeOf((*MockQueryBrokerServiceServer)(nil).ReceiveAgentQueryResult), arg0, arg1)
+}
+
+// GetAvailableFlags mocks base method
+func (m *MockQueryBrokerServiceServer) GetAvailableFlags(arg0 context.Context, arg1 *plannerpb.QueryRequest) (*plannerpb.GetAvailableFlagsResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAvailableFlags", arg0, arg1)
+	ret0, _ := ret[0].(*plannerpb.GetAvailableFlagsResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAvailableFlags indicates an expected call of GetAvailableFlags
+func (mr *MockQueryBrokerServiceServerMockRecorder) GetAvailableFlags(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailableFlags", reflect.TypeOf((*MockQueryBrokerServiceServer)(nil).GetAvailableFlags), arg0, arg1)
 }

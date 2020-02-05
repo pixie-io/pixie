@@ -13,6 +13,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	mock_metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/mock"
@@ -737,4 +738,35 @@ func TestErrorInStatusResult(t *testing.T) {
 		t.Fatal("Error while executing query.")
 	}
 	assert.Equal(t, result.Status, badPlannerResultPB.Status)
+}
+
+func TestGetAvailableFlags(t *testing.T) {
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	s, err := NewServer(nil, nil, nil)
+
+	if err != nil {
+		t.Fatal("Creating server failed.")
+	}
+
+	queryRequest := &plannerpb.QueryRequest{
+		QueryStr: " ",
+	}
+
+	statusOkPB := &statuspb.Status{ErrCode: statuspb.OK}
+
+	getFlagsResultPB := &plannerpb.GetAvailableFlagsResult{
+		QueryFlags: &plannerpb.QueryFlagsSpec{},
+		Status:     statusOkPB,
+	}
+
+	planner := mock_controllers.NewMockPlanner(ctrl)
+	planner.EXPECT().GetAvailableFlags(queryRequest).Return(getFlagsResultPB, nil)
+
+	resp, err := s.GetAvailableFlagsWithPlanner(context.Background(), queryRequest, planner)
+	assert.Equal(t, getFlagsResultPB, resp)
+
+	assert.Nil(t, err)
 }

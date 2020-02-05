@@ -34,6 +34,7 @@ import (
 // Planner describes the interface for any planner.
 type Planner interface {
 	Plan(planState *distributedpb.LogicalPlannerState, req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error)
+	GetAvailableFlags(req *plannerpb.QueryRequest) (*plannerpb.GetAvailableFlagsResult, error)
 	Free()
 }
 
@@ -347,4 +348,25 @@ func (s *Server) ReceiveAgentQueryResult(ctx context.Context, req *querybrokerpb
 	exec.AddResult(req)
 	queryResponse := &querybrokerpb.AgentQueryResultResponse{}
 	return queryResponse, nil
+}
+
+// GetAvailableFlagsWithPlanner gets the flag specs for a given query from the given planner
+func (s *Server) GetAvailableFlagsWithPlanner(ctx context.Context, req *plannerpb.QueryRequest, planner Planner) (*plannerpb.GetAvailableFlagsResult, error) {
+	resultPB, err := planner.GetAvailableFlags(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resultPB, nil
+}
+
+// GetAvailableFlags gets the flags specs from a given query from the logical planner.
+func (s *Server) GetAvailableFlags(ctx context.Context, req *plannerpb.QueryRequest) (*plannerpb.GetAvailableFlagsResult, error) {
+	var udfInfo udfspb.UDFInfo
+	if err := loadUDFInfo(&udfInfo); err != nil {
+		return nil, err
+	}
+	planner := logicalplanner.New(&udfInfo)
+	defer planner.Free()
+	return s.GetAvailableFlagsWithPlanner(ctx, req, planner)
 }

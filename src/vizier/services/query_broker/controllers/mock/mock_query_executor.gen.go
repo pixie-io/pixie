@@ -6,7 +6,7 @@ package mock_controllers
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	go_uuid "github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
@@ -39,25 +39,44 @@ func (m *MockPlanner) EXPECT() *MockPlannerMockRecorder {
 }
 
 // Plan mocks base method
-func (m *MockPlanner) Plan(planState *distributedpb.LogicalPlannerState, query *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
-	ret := m.ctrl.Call(m, "Plan", planState, query)
+func (m *MockPlanner) Plan(planState *distributedpb.LogicalPlannerState, req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Plan", planState, req)
 	ret0, _ := ret[0].(*distributedpb.LogicalPlannerResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Plan indicates an expected call of Plan
-func (mr *MockPlannerMockRecorder) Plan(planState, query interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Plan", reflect.TypeOf((*MockPlanner)(nil).Plan), planState, query)
+func (mr *MockPlannerMockRecorder) Plan(planState, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Plan", reflect.TypeOf((*MockPlanner)(nil).Plan), planState, req)
+}
+
+// GetAvailableFlags mocks base method
+func (m *MockPlanner) GetAvailableFlags(req *plannerpb.QueryRequest) (*plannerpb.GetAvailableFlagsResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAvailableFlags", req)
+	ret0, _ := ret[0].(*plannerpb.GetAvailableFlagsResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAvailableFlags indicates an expected call of GetAvailableFlags
+func (mr *MockPlannerMockRecorder) GetAvailableFlags(req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailableFlags", reflect.TypeOf((*MockPlanner)(nil).GetAvailableFlags), req)
 }
 
 // Free mocks base method
 func (m *MockPlanner) Free() {
+	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Free")
 }
 
 // Free indicates an expected call of Free
 func (mr *MockPlannerMockRecorder) Free() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Free", reflect.TypeOf((*MockPlanner)(nil).Free))
 }
 
@@ -85,7 +104,8 @@ func (m *MockExecutor) EXPECT() *MockExecutorMockRecorder {
 }
 
 // ExecuteQuery mocks base method
-func (m *MockExecutor) ExecuteQuery(planMap map[go_uuid.UUID]*planpb.Plan) error {
+func (m *MockExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExecuteQuery", planMap)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -93,11 +113,13 @@ func (m *MockExecutor) ExecuteQuery(planMap map[go_uuid.UUID]*planpb.Plan) error
 
 // ExecuteQuery indicates an expected call of ExecuteQuery
 func (mr *MockExecutorMockRecorder) ExecuteQuery(planMap interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteQuery", reflect.TypeOf((*MockExecutor)(nil).ExecuteQuery), planMap)
 }
 
 // AddQueryPlanToResult mocks base method
-func (m *MockExecutor) AddQueryPlanToResult(arg0 *distributedpb.DistributedPlan, arg1 map[go_uuid.UUID]*planpb.Plan) error {
+func (m *MockExecutor) AddQueryPlanToResult(arg0 *distributedpb.DistributedPlan, arg1 map[uuid.UUID]*planpb.Plan) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddQueryPlanToResult", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -105,11 +127,13 @@ func (m *MockExecutor) AddQueryPlanToResult(arg0 *distributedpb.DistributedPlan,
 
 // AddQueryPlanToResult indicates an expected call of AddQueryPlanToResult
 func (mr *MockExecutorMockRecorder) AddQueryPlanToResult(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddQueryPlanToResult", reflect.TypeOf((*MockExecutor)(nil).AddQueryPlanToResult), arg0, arg1)
 }
 
 // WaitForCompletion mocks base method
 func (m *MockExecutor) WaitForCompletion() (*queryresultspb.QueryResult, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WaitForCompletion")
 	ret0, _ := ret[0].(*queryresultspb.QueryResult)
 	ret1, _ := ret[1].(error)
@@ -118,27 +142,32 @@ func (m *MockExecutor) WaitForCompletion() (*queryresultspb.QueryResult, error) 
 
 // WaitForCompletion indicates an expected call of WaitForCompletion
 func (mr *MockExecutorMockRecorder) WaitForCompletion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForCompletion", reflect.TypeOf((*MockExecutor)(nil).WaitForCompletion))
 }
 
 // AddResult mocks base method
 func (m *MockExecutor) AddResult(res *querybrokerpb.AgentQueryResultRequest) {
+	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "AddResult", res)
 }
 
 // AddResult indicates an expected call of AddResult
 func (mr *MockExecutorMockRecorder) AddResult(res interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddResult", reflect.TypeOf((*MockExecutor)(nil).AddResult), res)
 }
 
 // GetQueryID mocks base method
-func (m *MockExecutor) GetQueryID() go_uuid.UUID {
+func (m *MockExecutor) GetQueryID() uuid.UUID {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetQueryID")
-	ret0, _ := ret[0].(go_uuid.UUID)
+	ret0, _ := ret[0].(uuid.UUID)
 	return ret0
 }
 
 // GetQueryID indicates an expected call of GetQueryID
 func (mr *MockExecutorMockRecorder) GetQueryID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetQueryID", reflect.TypeOf((*MockExecutor)(nil).GetQueryID))
 }

@@ -25,12 +25,13 @@ service QueryBrokerService {
   rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
   // This is an incoming request from the agents, containing results for a query.
   rpc ReceiveAgentQueryResult(AgentQueryResultRequest) returns (AgentQueryResultResponse) {}
+  // This is an incoming request to Vizier to get the Flag spec from a query.
+  rpc GetAvailableFlags(pl.carnot.compiler.plannerpb.QueryRequest)
+      returns (pl.carnot.compiler.plannerpb.GetAvailableFlagsResult) {}
 }
 
 // The schema information per agent.
-message Schema {
-  repeated pl.table_store.schemapb.Relation relations = 1;
-}
+message Schema { repeated pl.table_store.schemapb.Relation relations = 1; }
 
 // The schema request.
 message SchemaRequest {}
@@ -38,9 +39,7 @@ message SchemaRequest {}
 // The schema response from Vizier.
 message SchemaResponse {
   message SchemaByAgent {
-    uuidpb.UUID agent_id      = 1 [
-      (gogoproto.customname) = "AgentID"
-    ];
+    uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
     Schema schema = 2;
   }
   repeated SchemaByAgent schema_by_agent = 1;
@@ -54,8 +53,8 @@ message AgentInfoResponse {
 }
 
 message AgentMetadata {
-    pl.vizier.services.shared.agent.Agent agent  = 1;
-    pl.vizier.services.shared.agent.AgentStatus status  = 2;
+  pl.vizier.services.shared.agent.Agent agent = 1;
+  pl.vizier.services.shared.agent.AgentStatus status = 2;
 }
 
 // TODO(zasgar/michelle): We should change this after we add the compute nodes.
@@ -66,9 +65,7 @@ message AgentQueryResponse {
   pl.statuspb.Status status = 1;
 
   // The ID of the returned query.
-  uuidpb.UUID query_id = 2 [
-    (gogoproto.customname) = "QueryID"
-  ];
+  uuidpb.UUID query_id = 2 [ (gogoproto.customname) = "QueryID" ];
 
   pl.carnot.queryresultspb.QueryResult query_result = 3;
 }
@@ -76,9 +73,7 @@ message AgentQueryResponse {
 // AgentQueryResultRequest is a request from the agent to the query broker containing the
 // results from a query.
 message AgentQueryResultRequest {
-  uuidpb.UUID agent_id      = 1 [
-    (gogoproto.customname) = "AgentID"
-  ];
+  uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
   AgentQueryResponse result = 2;
 }
 
@@ -90,9 +85,7 @@ message VizierQueryResponse {
   // about any potential failures, ie compiler error failures
   pl.statuspb.Status status = 2;
   // The id for the query
-  uuidpb.UUID query_id = 3 [
-    (gogoproto.customname) = "QueryID"
-  ];
+  uuidpb.UUID query_id = 3 [ (gogoproto.customname) = "QueryID" ];
 
   pl.carnot.queryresultspb.QueryResult query_result = 4;
   // Reserved for deprecated ResponsesByAgent.
