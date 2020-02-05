@@ -3,6 +3,7 @@
 #include <deque>
 #include <string>
 #include <vector>
+
 #include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/common/event_parser.h"
 

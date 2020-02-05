@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "src/stirling/utils/req_resp_pair.h"
+
 namespace pl {
 namespace stirling {
 namespace cass {
@@ -66,9 +68,40 @@ struct FrameHeader {
 struct Frame {
   FrameHeader hdr;
   std::string msg;
+  uint64_t timestamp_ns = 0;
+  bool consumed = false;
 };
 
 constexpr int kFrameHeaderLength = 9;
+
+//-----------------------------------------------------------------------------
+// Table Store Entry Level Structs
+//-----------------------------------------------------------------------------
+
+struct Request {
+  ReqOp op;
+
+  // The body of the request, if request has a single string parameter. Otherwise empty for now.
+  std::string msg;
+
+  // Timestamp of the request packet.
+  uint64_t timestamp_ns;
+};
+
+struct Response {
+  RespOp op;
+
+  // Any relevant response message.
+  std::string msg;
+
+  // Timestamp of the response packet.
+  uint64_t timestamp_ns;
+};
+
+/**
+ *  Record is the primary output of the mysql parser.
+ */
+using Record = ReqRespPair<Request, Response>;
 
 }  // namespace cass
 }  // namespace stirling

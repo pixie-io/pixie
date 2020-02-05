@@ -19,7 +19,7 @@ constexpr uint8_t kQueryFrame[] = {
 constexpr uint8_t kBadOpcodeFrame[] = {0x04, 0x00, 0x00, 0x06, 0xff, 0x00,
                                        0x00, 0x00, 0x02, 0x00, 0x00};
 
-TEST(CassParseTest, Basic) {
+TEST(CqlParseTest, Basic) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kQueryFrame));
 
   std::deque<Frame> frames;
@@ -36,7 +36,7 @@ TEST(CassParseTest, Basic) {
   EXPECT_THAT(frames[0].msg, testing::HasSubstr("SELECT * FROM system.schema_keyspaces ;"));
 }
 
-TEST(CassParseTest, NeedsMoreData) {
+TEST(CqlParseTest, NeedsMoreData) {
   std::string_view frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kQueryFrame));
   frame_view.remove_suffix(10);
 
@@ -47,7 +47,7 @@ TEST(CassParseTest, NeedsMoreData) {
   ASSERT_EQ(frames.size(), 0);
 }
 
-TEST(CassParseTest, BadOpcode) {
+TEST(CqlParseTest, BadOpcode) {
   std::string_view frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadOpcodeFrame));
 
