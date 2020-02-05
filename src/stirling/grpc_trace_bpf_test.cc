@@ -220,7 +220,7 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithPara
   }
 };
 
-TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
+TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
   // Give some time for the client to execute and produce data into perf buffers.
   sleep(2);
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
