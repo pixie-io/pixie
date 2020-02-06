@@ -287,7 +287,6 @@ TEST(ToProto, map_ir) {
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "col4", /*parent_op_idx*/ 0).ValueOrDie();
   col->ResolveColumnType(types::INT64);
-  col->ResolveColumnIndex(4);
   auto func = graph
                   ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
                                        std::vector<ExpressionIR*>({constant, col}))
@@ -300,6 +299,10 @@ TEST(ToProto, map_ir) {
           ->CreateNode<MemorySourceIR>(
               ast, "table_name", std::vector<std::string>{"col0", "col1", "col2", "col3", "col4"})
           .ValueOrDie();
+  table_store::schema::Relation relation(
+      {types::INT64, types::INT64, types::INT64, types::INT64, types::INT64},
+      {"col0", "col1", "col2", "col3", "col4"});
+  EXPECT_OK(mem_src->SetRelation(relation));
   auto map = graph
                  ->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"col_name", func}},
                                      /* keep_input_columns */ false)
@@ -326,7 +329,7 @@ constexpr char kExpectedAggPb[] = R"(
       args {
         column {
           node: 0
-          index: 4
+          index: 2
         }
       }
     }
@@ -342,12 +345,16 @@ constexpr char kExpectedAggPb[] = R"(
 TEST(ToProto, agg_ir) {
   auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
-  auto mem_src =
-      graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{}).ValueOrDie();
+  auto mem_src = graph
+                     ->CreateNode<MemorySourceIR>(
+                         ast, "source", std::vector<std::string>{"col1", "group1", "column"})
+                     .ValueOrDie();
+  table_store::schema::Relation rel({types::INT64, types::INT64, types::INT64},
+                                    {"col1", "group1", "column"});
+  EXPECT_OK(mem_src->SetRelation(rel));
   auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
   auto col = graph->CreateNode<ColumnIR>(ast, "column", /*parent_op_idx*/ 0).ValueOrDie();
   col->ResolveColumnType(types::INT64);
-  col->ResolveColumnIndex(4);
 
   auto agg_func = graph
                       ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
@@ -356,7 +363,6 @@ TEST(ToProto, agg_ir) {
 
   auto group1 = graph->CreateNode<ColumnIR>(ast, "group1", /*parent_op_idx*/ 0).ValueOrDie();
   group1->ResolveColumnType(types::INT64);
-  group1->ResolveColumnIndex(1);
 
   auto agg = graph
                  ->CreateNode<BlockingAggIR>(ast, mem_src, std::vector<ColumnIR*>{group1},
@@ -544,7 +550,7 @@ TEST(ToProto, func_tests) {
 constexpr char kColumnPbTxt[] = R"proto(
 column {
   node: $0
-  index: 123
+  index: 1
 })proto";
 
 TEST(ToProto, column_tests) {
@@ -552,10 +558,12 @@ TEST(ToProto, column_tests) {
   auto graph = std::make_shared<IR>();
   auto column = graph->CreateNode<ColumnIR>(ast, "column", 0).ConsumeValueOrDie();
   column->ResolveColumnType(types::INT64);
-  column->ResolveColumnIndex(123);
 
-  auto mem_src = graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{})
-                     .ConsumeValueOrDie();
+  auto mem_src =
+      graph->CreateNode<MemorySourceIR>(ast, "source", std::vector<std::string>{"foo", "column"})
+          .ConsumeValueOrDie();
+  table_store::schema::Relation rel({types::INT64, types::INT64}, {"foo", "column"});
+  EXPECT_OK(mem_src->SetRelation(rel));
   graph->CreateNode<MapIR>(ast, mem_src, ColExpressionVector{{"column", column}}, false)
       .ConsumeValueOrDie();
 
@@ -999,12 +1007,6 @@ TEST_F(ToProtoTests, UnionNoTime) {
   EXPECT_OK(union_op->SetRelationFromParents());
   EXPECT_TRUE(union_op->HasColumnMappings());
 
-  for (ColumnIR* col : union_op->column_mappings()[0]) {
-    col->ResolveColumnIndex(relation);
-  }
-  for (ColumnIR* col : union_op->column_mappings()[1]) {
-    col->ResolveColumnIndex(relation2);
-  }
   planpb::Operator pb;
   EXPECT_OK(union_op->ToProto(&pb));
   EXPECT_THAT(pb, EqualsProto(kExpectedUnionOpPb));
@@ -1034,20 +1036,13 @@ TEST_F(ToProtoTests, UnionHasTime) {
   std::reverse(std::begin(column_names), std::end(column_names));
   std::reverse(std::begin(column_types), std::end(column_types));
   Relation relation2(column_types, column_names);
-  auto mem_src2 = MakeMemSource(relation);
+  auto mem_src2 = MakeMemSource(relation2);
   auto union_op = MakeUnion({mem_src1, mem_src2});
 
   EXPECT_OK(union_op->SetRelation(mem_src1->relation()));
   EXPECT_FALSE(union_op->HasColumnMappings());
   EXPECT_OK(union_op->SetRelationFromParents());
   EXPECT_TRUE(union_op->HasColumnMappings());
-
-  for (ColumnIR* col : union_op->column_mappings()[0]) {
-    col->ResolveColumnIndex(relation);
-  }
-  for (ColumnIR* col : union_op->column_mappings()[1]) {
-    col->ResolveColumnIndex(relation2);
-  }
 
   planpb::Operator pb;
   EXPECT_OK(union_op->ToProto(&pb));

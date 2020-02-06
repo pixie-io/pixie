@@ -511,14 +511,6 @@ class NestedBlockingAggFnCheckRule : public Rule {
   Status CheckExpression(const ColumnExpression& col_expr);
 };
 
-class ResolveColumnIndexRule : public Rule {
- public:
-  ResolveColumnIndexRule() : Rule(nullptr) {}
-
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-};
-
 class PruneUnusedColumnsRule : public Rule {
  public:
   PruneUnusedColumnsRule() : Rule(nullptr, /*reverse_topological_execution*/ true) {}

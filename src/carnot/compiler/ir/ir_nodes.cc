@@ -652,9 +652,7 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
 
   for (ColumnIR* group : groups_) {
     auto group_pb = pb->add_groups();
-    PL_ASSIGN_OR_RETURN(int64_t ref_op_id, group->ReferenceID());
-    group_pb->set_node(ref_op_id);
-    group_pb->set_index(group->col_idx());
+    PL_RETURN_IF_ERROR(group->ToProto(group_pb));
     pb->add_group_names(group->col_name());
   }
 
@@ -740,11 +738,20 @@ Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {
   return Status::OK();
 }
 
+StatusOr<int64_t> ColumnIR::GetColumnIndex() const {
+  PL_ASSIGN_OR_RETURN(auto op, ReferencedOperator());
+  if (!op->relation().HasColumn(col_name())) {
+    return CreateIRNodeError("Column '$0' does not exist in relation $1", col_name(),
+                             op->relation().DebugString());
+  }
+  return op->relation().GetColumnIndex(col_name());
+}
+
 Status ColumnIR::ToProto(planpb::Column* column_pb) const {
-  DCHECK(is_col_idx_set()) << absl::Substitute("Column index for '$0' is not set", col_name_);
   PL_ASSIGN_OR_RETURN(int64_t ref_op_id, ReferenceID());
   column_pb->set_node(ref_op_id);
-  column_pb->set_index(col_idx());
+  PL_ASSIGN_OR_RETURN(auto index, GetColumnIndex());
+  column_pb->set_index(index);
   return Status::OK();
 }
 
@@ -1040,10 +1047,8 @@ Status ColumnIR::CopyFromNode(const IRNode* source,
   const ColumnIR* column = static_cast<const ColumnIR*>(source);
   col_name_ = column->col_name_;
   col_name_set_ = column->col_name_set_;
-  col_idx_ = column->col_idx_;
   evaluated_data_type_ = column->evaluated_data_type_;
   is_data_type_evaluated_ = column->is_data_type_evaluated_;
-  is_col_idx_set_ = column->is_col_idx_set_;
   container_op_parent_idx_ = column->container_op_parent_idx_;
   container_op_parent_idx_set_ = column->container_op_parent_idx_set_;
   return Status::OK();
@@ -1415,8 +1420,8 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
   for (const auto& column_mapping : column_mappings_) {
     auto* pb_column_mapping = pb->add_column_mappings();
     for (const ColumnIR* col : column_mapping) {
-      DCHECK(col->is_col_idx_set());
-      pb_column_mapping->add_column_indexes(col->col_idx());
+      PL_ASSIGN_OR_RETURN(auto index, col->GetColumnIndex());
+      pb_column_mapping->add_column_indexes(index);
     }
   }
 
@@ -1576,8 +1581,10 @@ Status JoinIR::ToProto(planpb::Operator* op) const {
   pb->set_type(join_enum_type);
   for (int64_t i = 0; i < static_cast<int64_t>(left_on_columns_.size()); i++) {
     auto eq_condition = pb->add_equality_conditions();
-    eq_condition->set_left_column_index(left_on_columns_[i]->col_idx());
-    eq_condition->set_right_column_index(right_on_columns_[i]->col_idx());
+    PL_ASSIGN_OR_RETURN(auto left_index, left_on_columns_[i]->GetColumnIndex());
+    PL_ASSIGN_OR_RETURN(auto right_index, right_on_columns_[i]->GetColumnIndex());
+    eq_condition->set_left_column_index(left_index);
+    eq_condition->set_right_column_index(right_index);
   }
 
   for (ColumnIR* col : output_columns_) {
@@ -1586,7 +1593,8 @@ Status JoinIR::ToProto(planpb::Operator* op) const {
     DCHECK_LT(parent_idx, 2);
     parent_col->set_parent_index(col->container_op_parent_idx());
     DCHECK(col->IsDataTypeEvaluated()) << "Column not evaluated";
-    parent_col->set_column_index(col->col_idx());
+    PL_ASSIGN_OR_RETURN(auto index, col->GetColumnIndex());
+    parent_col->set_column_index(index);
   }
 
   for (const auto& col_name : column_names_) {

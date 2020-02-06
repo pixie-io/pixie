@@ -1412,31 +1412,6 @@ Status NestedBlockingAggFnCheckRule::CheckExpression(const ColumnExpression& exp
   return Status::OK();
 }
 
-StatusOr<bool> ResolveColumnIndexRule::Apply(IRNode* ir_node) {
-  if (!Match(ir_node, ColumnNode())) {
-    return false;
-  }
-  ColumnIR* col = static_cast<ColumnIR*>(ir_node);
-  if (col->is_col_idx_set()) {
-    return false;
-  }
-  // TODO(nserrino, philkuz): Add more cleanup for orphan nodes so that checks like this aren't
-  // necessary.
-  PL_ASSIGN_OR_RETURN(auto containing_ops, col->ContainingOperators());
-  if (!containing_ops.size()) {
-    return false;
-  }
-  PL_ASSIGN_OR_RETURN(OperatorIR * referenced_op, col->ReferencedOperator());
-  DCHECK(referenced_op->IsRelationInit());
-  Relation relation = referenced_op->relation();
-  if (!relation.HasColumn(col->col_name())) {
-    return col->CreateIRNodeError("Column '$0' does not exist in relation $1", col->col_name(),
-                                  relation.DebugString());
-  }
-  col->ResolveColumnIndex(relation);
-  return true;
-}
-
 StatusOr<bool> PruneUnusedColumnsRule::Apply(IRNode* ir_node) {
   if (!Match(ir_node, Operator())) {
     return false;

@@ -428,7 +428,6 @@ class OperatorTests : public ::testing::Test {
                        const table_store::schema::Relation& relation) {
     ColumnIR* column = MakeColumn(name, parent_op_idx);
     column->ResolveColumnType(relation);
-    column->ResolveColumnIndex(relation);
     return column;
   }
 

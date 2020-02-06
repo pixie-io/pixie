@@ -30,15 +30,8 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
     tabletizer_batch->AddRule<DistributedTabletizerRule>();
   }
 
-  void CreateResolveColumnIndexBatch() {
-    DistributedRuleBatch* resolve_column_index_batch =
-        CreateRuleBatch<FailOnMax>("ResolveColumnIndex", 2);
-    resolve_column_index_batch->AddRule<DistributedIRRule<ResolveColumnIndexRule>>();
-  }
-
   Status Init() {
     CreateTabletizerBatch();
-    CreateResolveColumnIndexBatch();
     return Status::OK();
   }
 };

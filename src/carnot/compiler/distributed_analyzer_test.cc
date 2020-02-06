@@ -37,26 +37,6 @@ class DistributedAnalyzerTest : public OperatorTests {
   }
 };
 
-constexpr char kSimpleQuery[] = R"pxl(
-t1 = px.DataFrame(table='http_events', start_time='-120s')
-t1.http_resp_latency_ms = t1.http_resp_latency_ns / 1.0E6
-px.display(t1)
-)pxl";
-
-TEST_F(DistributedAnalyzerTest, resolve_column_indexes) {
-  auto plan = PlanQuery(kSimpleQuery);
-
-  std::unordered_map<int64_t, int64_t> expected_num_cols_by_id{{0, 34}, {1, 17}, {2, 17}};
-  for (int64_t carnot_id : plan->dag().TopologicalSort()) {
-    IR* graph = plan->Get(carnot_id)->plan();
-    std::vector<IRNode*> cols = graph->FindNodesOfType(IRNodeType::kColumn);
-    EXPECT_EQ(cols.size(), expected_num_cols_by_id.at(carnot_id));
-    for (auto col : cols) {
-      EXPECT_TRUE(static_cast<ColumnIR*>(col)->is_col_idx_set());
-    }
-  }
-}
-
 }  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot

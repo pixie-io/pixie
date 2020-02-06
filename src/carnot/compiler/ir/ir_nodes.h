@@ -666,15 +666,6 @@ class ColumnIR : public ExpressionIR {
     ResolveColumnType(relation.GetColumnType(col_name_));
   }
 
-  void ResolveColumnIndex(int64_t index) {
-    col_idx_ = index;
-    is_col_idx_set_ = true;
-  }
-
-  void ResolveColumnIndex(const table_store::schema::Relation& relation) {
-    ResolveColumnIndex(relation.GetColumnIndex(col_name_));
-  }
-
   /**
    * @brief The operators containing this column. There can be multiple, but all of these operators
    * should share a common parent (ReferencedOperators).
@@ -701,8 +692,7 @@ class ColumnIR : public ExpressionIR {
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
 
-  int64_t col_idx() const { return col_idx_; }
-  bool is_col_idx_set() const { return is_col_idx_set_; }
+  StatusOr<int64_t> GetColumnIndex() const;
 
   int64_t container_op_parent_idx() const { return container_op_parent_idx_; }
   bool container_op_parent_idx_set() const { return container_op_parent_idx_set_; }
@@ -752,11 +742,8 @@ class ColumnIR : public ExpressionIR {
  private:
   std::string col_name_;
   bool col_name_set_ = false;
-  // The column index in the relation.
-  int64_t col_idx_;
   types::DataType evaluated_data_type_;
   bool is_data_type_evaluated_ = false;
-  bool is_col_idx_set_ = false;
 
   int64_t container_op_parent_idx_ = -1;
   bool container_op_parent_idx_set_ = false;

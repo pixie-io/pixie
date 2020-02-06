@@ -90,11 +90,6 @@ class Analyzer : public RuleExecutor<IR> {
     prune_unused_columns->AddRule<PruneUnusedColumnsRule>();
   }
 
-  void CreateResolveColumnIndexBatch() {
-    RuleBatch* resolve_column_index_batch = CreateRuleBatch<FailOnMax>("ResolveColumnIndex", 2);
-    resolve_column_index_batch->AddRule<ResolveColumnIndexRule>();
-  }
-
   void CreatePruneUnconnectedOpsBatch() {
     RuleBatch* prune_ops_batch = CreateRuleBatch<FailOnMax>("PruneUnconnectedOps", 2);
     prune_ops_batch->AddRule<PruneUnconnectedOperatorsRule>();
@@ -112,7 +107,6 @@ class Analyzer : public RuleExecutor<IR> {
     CreateRemoveIROnlyNodesBatch();
     CreatePruneUnconnectedOpsBatch();
     CreatePruneUnusedColumnsBatch();
-    CreateResolveColumnIndexBatch();
     return Status::OK();
   }
 
