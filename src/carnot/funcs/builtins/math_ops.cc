@@ -12,193 +12,186 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
    * Scalar UDFs.
    *****************************************/
   // Addition
-  registry->RegisterOrDie<AddUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
-      "px.add");
+  registry->RegisterOrDie<AddUDF<types::Int64Value, types::Int64Value, types::Int64Value>>("add");
   registry->RegisterOrDie<AddUDF<types::Float64Value, types::Float64Value, types::Int64Value>>(
-      "px.add");
+      "add");
   registry->RegisterOrDie<AddUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
-      "px.add");
+      "add");
   registry->RegisterOrDie<AddUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
-      "px.add");
+      "add");
   registry->RegisterOrDie<AddUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>(
-      "px.add");
+      "add");
   registry
       ->RegisterOrDie<AddUDF<types::Time64NSValue, types::Duration64NSValue, types::Time64NSValue>>(
-          "px.add");
+          "add");
   registry->RegisterOrDie<
-      AddUDF<types::Duration64NSValue, types::Duration64NSValue, types::Duration64NSValue>>(
-      "px.add");
+      AddUDF<types::Duration64NSValue, types::Duration64NSValue, types::Duration64NSValue>>("add");
   // Subtraction
   registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
-      "px.subtract");
+      "subtract");
   registry->RegisterOrDie<SubtractUDF<types::Float64Value, types::Float64Value, types::Int64Value>>(
-      "px.subtract");
+      "subtract");
   registry->RegisterOrDie<SubtractUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
-      "px.subtract");
+      "subtract");
   registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Time64NSValue, types::Int64Value>>(
-      "px.subtract");
+      "subtract");
   registry
       ->RegisterOrDie<SubtractUDF<types::Int64Value, types::Time64NSValue, types::Time64NSValue>>(
-          "px.subtract");
+          "subtract");
   registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Int64Value, types::Time64NSValue>>(
-      "px.subtract");
+      "subtract");
   registry
       ->RegisterOrDie<SubtractUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
-          "px.subtract");
+          "subtract");
   registry->RegisterOrDie<
       SubtractUDF<types::Time64NSValue, types::Time64NSValue, types::Duration64NSValue>>(
-      "px.subtract");
+      "subtract");
   registry->RegisterOrDie<
       SubtractUDF<types::Duration64NSValue, types::Duration64NSValue, types::Duration64NSValue>>(
-      "px.subtract");
+      "subtract");
 
   // Division
   registry->RegisterOrDie<DivideUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
-      "px.divide");
+      "divide");
   registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Float64Value, types::Int64Value>>(
-      "px.divide");
+      "divide");
   registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
-      "px.divide");
+      "divide");
   registry->RegisterOrDie<DivideUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
-      "px.divide");
+      "divide");
 
   // Multiplication
   registry->RegisterOrDie<MultiplyUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
-      "px.multiply");
+      "multiply");
   registry->RegisterOrDie<MultiplyUDF<types::Float64Value, types::Float64Value, types::Int64Value>>(
-      "px.multiply");
+      "multiply");
   registry->RegisterOrDie<MultiplyUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
-      "px.multiply");
+      "multiply");
   registry
       ->RegisterOrDie<MultiplyUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
-          "px.multiply");
+          "multiply");
 
   // Modulo
   registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Time64NSValue, types::Int64Value>>(
-      "px.modulo");
+      "modulo");
   registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Time64NSValue, types::Time64NSValue>>(
-      "px.modulo");
+      "modulo");
   registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Int64Value, types::Time64NSValue>>(
-      "px.modulo");
+      "modulo");
   registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
-      "px.modulo");
+      "modulo");
 
   // Or (||)
-  registry->RegisterOrDie<LogicalOrUDF<types::Int64Value, types::Int64Value>>("px.logicalOr");
-  registry->RegisterOrDie<LogicalOrUDF<types::BoolValue, types::BoolValue>>("px.logicalOr");
+  registry->RegisterOrDie<LogicalOrUDF<types::Int64Value, types::Int64Value>>("logicalOr");
+  registry->RegisterOrDie<LogicalOrUDF<types::BoolValue, types::BoolValue>>("logicalOr");
   // And (&&)
-  registry->RegisterOrDie<LogicalAndUDF<types::Int64Value, types::Int64Value>>("px.logicalAnd");
-  registry->RegisterOrDie<LogicalAndUDF<types::BoolValue, types::BoolValue>>("px.logicalAnd");
+  registry->RegisterOrDie<LogicalAndUDF<types::Int64Value, types::Int64Value>>("logicalAnd");
+  registry->RegisterOrDie<LogicalAndUDF<types::BoolValue, types::BoolValue>>("logicalAnd");
   // Not (!)
-  registry->RegisterOrDie<LogicalNotUDF<types::Int64Value>>("px.logicalNot");
-  registry->RegisterOrDie<LogicalNotUDF<types::BoolValue>>("px.logicalNot");
+  registry->RegisterOrDie<LogicalNotUDF<types::Int64Value>>("logicalNot");
+  registry->RegisterOrDie<LogicalNotUDF<types::BoolValue>>("logicalNot");
   // Negate (-)
-  registry->RegisterOrDie<NegateUDF<types::Int64Value>>("px.negate");
-  registry->RegisterOrDie<NegateUDF<types::Float64Value>>("px.negate");
+  registry->RegisterOrDie<NegateUDF<types::Int64Value>>("negate");
+  registry->RegisterOrDie<NegateUDF<types::Float64Value>>("negate");
   // ==
-  registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Int64Value>>("px.equal");
-  registry->RegisterOrDie<EqualUDF<types::StringValue, types::StringValue>>("px.equal");
-  registry->RegisterOrDie<EqualUDF<types::BoolValue, types::BoolValue>>("px.equal");
-  registry->RegisterOrDie<EqualUDF<types::BoolValue, types::Int64Value>>("px.equal");
-  registry->RegisterOrDie<EqualUDF<types::Int64Value, types::BoolValue>>("px.equal");
-  registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Float64Value>>("px.equal");
-  registry->RegisterOrDie<EqualUDF<types::Float64Value, types::Int64Value>>("px.equal");
-  registry->RegisterOrDie<EqualUDF<types::UInt128Value, types::UInt128Value>>("px.equal");
-  registry->RegisterOrDie<EqualUDF<types::Duration64NSValue, types::Duration64NSValue>>("px.equal");
-  registry->RegisterOrDie<EqualUDF<types::Time64NSValue, types::Time64NSValue>>("px.equal");
-  registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>("px.equal");
+  registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Int64Value>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::StringValue, types::StringValue>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::BoolValue, types::BoolValue>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::BoolValue, types::Int64Value>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::Int64Value, types::BoolValue>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Float64Value>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::Float64Value, types::Int64Value>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::UInt128Value, types::UInt128Value>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::Duration64NSValue, types::Duration64NSValue>>("equal");
+  registry->RegisterOrDie<EqualUDF<types::Time64NSValue, types::Time64NSValue>>("equal");
+  registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>("equal");
 
   // !=
-  registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::Int64Value>>("px.notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::StringValue, types::StringValue>>("px.notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::BoolValue, types::BoolValue>>("px.notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::BoolValue, types::Int64Value>>("px.notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::BoolValue>>("px.notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::Float64Value>>("px.notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::Float64Value, types::Int64Value>>("px.notEqual");
-  registry->RegisterOrDie<ApproxNotEqualUDF<types::Float64Value, types::Float64Value>>(
-      "px.notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::Time64NSValue, types::Time64NSValue>>("px.notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::Int64Value>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::StringValue, types::StringValue>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::BoolValue, types::BoolValue>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::BoolValue, types::Int64Value>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::BoolValue>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::Float64Value>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::Float64Value, types::Int64Value>>("notEqual");
+  registry->RegisterOrDie<ApproxNotEqualUDF<types::Float64Value, types::Float64Value>>("notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::Time64NSValue, types::Time64NSValue>>("notEqual");
   registry->RegisterOrDie<NotEqualUDF<types::Duration64NSValue, types::Duration64NSValue>>(
-      "px.notEqual");
+      "notEqual");
   // ~=
-  registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>(
-      "px.approxEqual");
+  registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>("approxEqual");
   // >
-  registry->RegisterOrDie<GreaterThanUDF<types::Int64Value, types::Int64Value>>("px.greaterThan");
-  registry->RegisterOrDie<GreaterThanUDF<types::Float64Value, types::Float64Value>>(
-      "px.greaterThan");
-  registry->RegisterOrDie<GreaterThanUDF<types::StringValue, types::StringValue>>("px.greaterThan");
+  registry->RegisterOrDie<GreaterThanUDF<types::Int64Value, types::Int64Value>>("greaterThan");
+  registry->RegisterOrDie<GreaterThanUDF<types::Float64Value, types::Float64Value>>("greaterThan");
+  registry->RegisterOrDie<GreaterThanUDF<types::StringValue, types::StringValue>>("greaterThan");
   // >=
   registry->RegisterOrDie<GreaterThanEqualUDF<types::Int64Value, types::Int64Value>>(
-      "px.greaterThanEqual");
+      "greaterThanEqual");
   registry->RegisterOrDie<GreaterThanEqualUDF<types::Float64Value, types::Float64Value>>(
-      "px.greaterThanEqual");
+      "greaterThanEqual");
   registry->RegisterOrDie<GreaterThanUDF<types::StringValue, types::StringValue>>(
-      "px.greaterThanEqual");
+      "greaterThanEqual");
 
   registry->RegisterOrDie<GreaterThanUDF<types::Time64NSValue, types::Time64NSValue>>(
-      "px.greaterThanEqual");
+      "greaterThanEqual");
   registry->RegisterOrDie<GreaterThanUDF<types::Duration64NSValue, types::Duration64NSValue>>(
-      "px.greaterThanEqual");
+      "greaterThanEqual");
   // <
-  registry->RegisterOrDie<LessThanUDF<types::Int64Value, types::Int64Value>>("px.lessThan");
-  registry->RegisterOrDie<LessThanUDF<types::Float64Value, types::Float64Value>>("px.lessThan");
-  registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("px.lessThan");
+  registry->RegisterOrDie<LessThanUDF<types::Int64Value, types::Int64Value>>("lessThan");
+  registry->RegisterOrDie<LessThanUDF<types::Float64Value, types::Float64Value>>("lessThan");
+  registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("lessThan");
   // <=
-  registry->RegisterOrDie<LessThanEqualUDF<types::Int64Value, types::Int64Value>>(
-      "px.lessThanEqual");
+  registry->RegisterOrDie<LessThanEqualUDF<types::Int64Value, types::Int64Value>>("lessThanEqual");
   registry->RegisterOrDie<LessThanEqualUDF<types::Float64Value, types::Float64Value>>(
-      "px.lessThanEqual");
+      "lessThanEqual");
   registry->RegisterOrDie<LessThanEqualUDF<types::Time64NSValue, types::Time64NSValue>>(
-      "px.lessThanEqual");
+      "lessThanEqual");
   registry->RegisterOrDie<LessThanEqualUDF<types::Duration64NSValue, types::Duration64NSValue>>(
-      "px.lessThanEqual");
-  registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("px.lessThanEqual");
+      "lessThanEqual");
+  registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("lessThanEqual");
 
   // Bin
-  registry->RegisterOrDie<BinUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
-      "px.bin");
+  registry->RegisterOrDie<BinUDF<types::Int64Value, types::Int64Value, types::Int64Value>>("bin");
   registry->RegisterOrDie<BinUDF<types::Int64Value, types::Int64Value, types::Time64NSValue>>(
-      "px.bin");
+      "bin");
   registry->RegisterOrDie<BinUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>(
-      "px.bin");
+      "bin");
   registry->RegisterOrDie<BinUDF<types::Time64NSValue, types::Time64NSValue, types::Time64NSValue>>(
-      "px.bin");
+      "bin");
 
   // Round
-  registry->RegisterOrDie<RoundUDF>("px.round");
+  registry->RegisterOrDie<RoundUDF>("round");
 
   /*****************************************
    * Aggregate UDFs.
    *****************************************/
   // Mean
-  registry->RegisterOrDie<MeanUDA<types::Float64Value>>("px.mean");
-  registry->RegisterOrDie<MeanUDA<types::Int64Value>>("px.mean");
-  registry->RegisterOrDie<MeanUDA<types::Duration64NSValue>>("px.mean");
-  registry->RegisterOrDie<MeanUDA<types::BoolValue>>("px.mean");
+  registry->RegisterOrDie<MeanUDA<types::Float64Value>>("mean");
+  registry->RegisterOrDie<MeanUDA<types::Int64Value>>("mean");
+  registry->RegisterOrDie<MeanUDA<types::Duration64NSValue>>("mean");
+  registry->RegisterOrDie<MeanUDA<types::BoolValue>>("mean");
   // Sum
-  registry->RegisterOrDie<SumUDA<types::Float64Value>>("px.sum");
-  registry->RegisterOrDie<SumUDA<types::Int64Value>>("px.sum");
-  registry->RegisterOrDie<SumUDA<types::Duration64NSValue>>("px.sum");
-  registry->RegisterOrDie<SumUDA<types::BoolValue>>("px.sum");
+  registry->RegisterOrDie<SumUDA<types::Float64Value>>("sum");
+  registry->RegisterOrDie<SumUDA<types::Int64Value>>("sum");
+  registry->RegisterOrDie<SumUDA<types::Duration64NSValue>>("sum");
+  registry->RegisterOrDie<SumUDA<types::BoolValue>>("sum");
   // Max
-  registry->RegisterOrDie<MaxUDA<types::Float64Value>>("px.max");
-  registry->RegisterOrDie<MaxUDA<types::Int64Value>>("px.max");
-  registry->RegisterOrDie<MaxUDA<types::Time64NSValue>>("px.max");
-  registry->RegisterOrDie<MaxUDA<types::Duration64NSValue>>("px.max");
+  registry->RegisterOrDie<MaxUDA<types::Float64Value>>("max");
+  registry->RegisterOrDie<MaxUDA<types::Int64Value>>("max");
+  registry->RegisterOrDie<MaxUDA<types::Time64NSValue>>("max");
+  registry->RegisterOrDie<MaxUDA<types::Duration64NSValue>>("max");
   // Min
-  registry->RegisterOrDie<MinUDA<types::Float64Value>>("px.min");
-  registry->RegisterOrDie<MinUDA<types::Int64Value>>("px.min");
-  registry->RegisterOrDie<MinUDA<types::Time64NSValue>>("px.min");
-  registry->RegisterOrDie<MinUDA<types::Duration64NSValue>>("px.min");
+  registry->RegisterOrDie<MinUDA<types::Float64Value>>("min");
+  registry->RegisterOrDie<MinUDA<types::Int64Value>>("min");
+  registry->RegisterOrDie<MinUDA<types::Time64NSValue>>("min");
+  registry->RegisterOrDie<MinUDA<types::Duration64NSValue>>("min");
   // Count
-  registry->RegisterOrDie<CountUDA<types::Float64Value>>("px.count");
-  registry->RegisterOrDie<CountUDA<types::Int64Value>>("px.count");
-  registry->RegisterOrDie<CountUDA<types::Time64NSValue>>("px.count");
-  registry->RegisterOrDie<CountUDA<types::Duration64NSValue>>("px.count");
-  registry->RegisterOrDie<CountUDA<types::BoolValue>>("px.count");
-  registry->RegisterOrDie<CountUDA<types::StringValue>>("px.count");
+  registry->RegisterOrDie<CountUDA<types::Float64Value>>("count");
+  registry->RegisterOrDie<CountUDA<types::Int64Value>>("count");
+  registry->RegisterOrDie<CountUDA<types::Time64NSValue>>("count");
+  registry->RegisterOrDie<CountUDA<types::Duration64NSValue>>("count");
+  registry->RegisterOrDie<CountUDA<types::BoolValue>>("count");
+  registry->RegisterOrDie<CountUDA<types::StringValue>>("count");
 }
 
 }  // namespace builtins

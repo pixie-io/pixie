@@ -29,7 +29,7 @@ using ::testing::ContainsRegex;
 
 constexpr char kExtraScalarUDFs[] = R"proto(
 scalar_udfs {
-  name: "px.equal"
+  name: "equal"
   exec_arg_types: UINT128
   exec_arg_types: UINT128
   return_type: BOOLEAN
@@ -169,7 +169,7 @@ nodes {
         }
         expressions {
           func {
-            name: "px.divide"
+            name: "divide"
             args {
               column {
                 node: 6
@@ -197,7 +197,7 @@ nodes {
       op_type: AGGREGATE_OPERATOR
       agg_op {
         values {
-          name: "px.mean"
+          name: "mean"
           args {
             column {
               node: 14
@@ -207,7 +207,7 @@ nodes {
           args_data_types: FLOAT64
         }
         values {
-          name: "px.mean"
+          name: "mean"
           args {
             column {
               node: 14
@@ -472,7 +472,7 @@ nodes {
       agg_op {
         windowed: false
         values {
-          name: "px.mean"
+          name: "mean"
           args {
             column {
               index: 0
@@ -593,7 +593,7 @@ nodes {
       filter_op {
         expression {
           func {
-            name: "px.$0"
+            name: "$0"
             args {
               column {
               }
@@ -953,7 +953,7 @@ nodes {
         }
         expressions {
           func {
-            name: "px.upid_to_service_name"
+            name: "upid_to_service_name"
             args {
               column {
                 node: 4
@@ -980,7 +980,7 @@ nodes {
       filter_op {
         expression {
           func {
-            name: "px.equal"
+            name: "equal"
             args {
               column {
                 node: 22
@@ -1097,7 +1097,7 @@ nodes {
       map_op {
         expressions {
           func {
-            name: "px.upid_to_service_name"
+            name: "upid_to_service_name"
             args {
               column {
                 node: 4
@@ -1212,7 +1212,7 @@ nodes {
         }
         expressions {
           func {
-            name: "px.upid_to_service_name"
+            name: "upid_to_service_name"
             args {
               column {
                 node: 4
@@ -1254,7 +1254,7 @@ nodes {
       op_type: AGGREGATE_OPERATOR
       agg_op {
         values {
-          name: "px.mean"
+          name: "mean"
           args {
             column {
               node: 9
@@ -1347,7 +1347,7 @@ nodes {
         }
         expressions {
           func {
-            name: "px.upid_to_service_name"
+            name: "upid_to_service_name"
             args {
               column {
                 node: 4
@@ -1389,7 +1389,7 @@ nodes {
       op_type: AGGREGATE_OPERATOR
       agg_op {
         values {
-          name: "px.mean"
+          name: "mean"
           args {
             column {
               node: 9
@@ -1504,7 +1504,7 @@ nodes {
         }
         expressions {
           func {
-            name: "px.upid_to_service_name"
+            name: "upid_to_service_name"
             args {
               column {
                 node: 4
@@ -1555,7 +1555,7 @@ nodes {
       op_type: AGGREGATE_OPERATOR
       agg_op {
         values {
-          name: "px.mean"
+          name: "mean"
           args {
             column {
               node: 9
@@ -1601,7 +1601,7 @@ nodes {
         }
         expressions {
           func {
-            name: "px.upid_to_service_name"
+            name: "upid_to_service_name"
             args {
               column {
                 node: 20
@@ -1625,7 +1625,7 @@ nodes {
       filter_op {
         expression {
           func {
-            name: "px.equal"
+            name: "equal"
             args {
               column {
                 node: 53
@@ -1761,7 +1761,7 @@ nodes {
         }
         expressions {
           func {
-            name: "px.upid_to_service_name"
+            name: "upid_to_service_name"
             args {
               column {
                 index: 4
@@ -1786,7 +1786,7 @@ nodes {
       op_type: AGGREGATE_OPERATOR
       agg_op {
         values {
-          name: "px.mean"
+          name: "mean"
           args {
             column {
               index: 1
@@ -1813,7 +1813,7 @@ nodes {
       filter_op {
         expression {
           func {
-            name: "px.equal"
+            name: "equal"
             args {
               column {
                 index: 1
@@ -1946,7 +1946,7 @@ nodes {
         }
         expressions {
           func {
-            name: "px.upid_to_service_id"
+            name: "upid_to_service_id"
             args {
               column {
                 index: 4
@@ -1971,7 +1971,7 @@ nodes {
       op_type: AGGREGATE_OPERATOR
       agg_op {
         values {
-          name: "px.mean"
+          name: "mean"
           args {
             column {
               index: 1
@@ -2012,7 +2012,7 @@ nodes {
         }
         expressions {
           func {
-            name: "px.service_id_to_service_name"
+            name: "service_id_to_service_name"
             args {
               column {
                 index: 1
@@ -2036,7 +2036,7 @@ nodes {
       filter_op {
         expression {
           func {
-            name: "px.equal"
+            name: "equal"
             args {
               column {
                 index: 3

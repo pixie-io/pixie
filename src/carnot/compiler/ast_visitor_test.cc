@@ -718,7 +718,7 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
   EXPECT_EQ(static_cast<StringIR*>(mem_src->start_time_expr())->str(), "-1m");
   EXPECT_TRUE(Match(mem_src->end_time_expr(), Func()));
   auto stop_time_func = static_cast<FuncIR*>(mem_src->end_time_expr());
-  EXPECT_EQ(stop_time_func->func_name(), "px.now");
+  EXPECT_EQ(stop_time_func->func_name(), "now");
 }
 
 TEST_F(ASTVisitorTest, MemorySourceDefaultStartAndStop) {

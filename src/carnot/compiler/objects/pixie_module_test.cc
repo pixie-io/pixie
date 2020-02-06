@@ -10,7 +10,7 @@ using ::pl::table_store::schema::Relation;
 
 constexpr char kRegInfoProto[] = R"proto(
 scalar_udfs {
-  name: "px.equals"
+  name: "equals"
   exec_arg_types: UINT128
   exec_arg_types: UINT128
   return_type: BOOLEAN

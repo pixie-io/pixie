@@ -26,12 +26,12 @@ using ::testing::ElementsAreArray;
 
 constexpr char kRegInfoProto[] = R"proto(
 udas {
-  name: "px.mean"
+  name: "mean"
   update_arg_types: FLOAT64
   finalize_type: FLOAT64
 }
 scalar_udfs {
-  name: "px.equals"
+  name: "equals"
   exec_arg_types: UINT128
   exec_arg_types: UINT128
   return_type: BOOLEAN

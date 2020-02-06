@@ -29,142 +29,142 @@ using table_store::schema::Relation;
 
 constexpr char kExpectedUDFInfo[] = R"(
 scalar_udfs {
-  name: "px.divide"
+  name: "divide"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type:FLOAT64
 }
 scalar_udfs {
-  name: "px.divide"
+  name: "divide"
   exec_arg_types: INT64
   exec_arg_types: FLOAT64
   return_type:FLOAT64
 }
 scalar_udfs {
-  name: "px.add"
+  name: "add"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type:  FLOAT64
 }
 scalar_udfs {
-  name: "px.add"
+  name: "add"
   exec_arg_types: INT64
   exec_arg_types: INT64
   return_type:  INT64
 }
 scalar_udfs {
-  name: "px.add"
+  name: "add"
   exec_arg_types: TIME64NS
   exec_arg_types: INT64
   return_type:  INT64
 }
 scalar_udfs {
-  name: "px.equal"
+  name: "equal"
   exec_arg_types: STRING
   exec_arg_types: STRING
   return_type: BOOLEAN
 }
 scalar_udfs {
-  name: "px.equal"
+  name: "equal"
   exec_arg_types: UINT128
   exec_arg_types: UINT128
   return_type: BOOLEAN
 }
 scalar_udfs {
-  name: "px.equal"
+  name: "equal"
   exec_arg_types: INT64
   exec_arg_types: INT64
   return_type: BOOLEAN
 }
 scalar_udfs {
-  name: "px.notEqual"
+  name: "notEqual"
   exec_arg_types: STRING
   exec_arg_types: STRING
   return_type: BOOLEAN
 }
 scalar_udfs {
-  name: "px.multiply"
+  name: "multiply"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type:  FLOAT64
 }
 scalar_udfs {
-  name: "px.logicalAnd"
+  name: "logicalAnd"
   exec_arg_types: BOOLEAN
   exec_arg_types: BOOLEAN
   return_type:  BOOLEAN
 }
 scalar_udfs {
-  name: "px.subtract"
+  name: "subtract"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type:  FLOAT64
 }
 scalar_udfs {
-  name: "px.upid_to_service_id"
+  name: "upid_to_service_id"
   exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
-  name: "px.upid_to_service_name"
+  name: "upid_to_service_name"
   exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
-  name: "px.service_id_to_service_name"
+  name: "service_id_to_service_name"
   exec_arg_types: STRING
   return_type: STRING
 }
 scalar_udfs {
-  name: "px.bin"
+  name: "bin"
   exec_arg_types: TIME64NS
   exec_arg_types: INT64
   return_type: TIME64NS
 }
 scalar_udfs {
-  name: "px.bin"
+  name: "bin"
   exec_arg_types: INT64
   exec_arg_types: INT64
   return_type: INT64
 }
 scalar_udfs {
-  name: "px.pluck"
+  name: "pluck"
   exec_arg_types: FLOAT64
   exec_arg_types: STRING
   return_type: FLOAT64
 }
 udas {
-  name: "px.count"
+  name: "count"
   update_arg_types: FLOAT64
   finalize_type:  INT64
 }
 udas {
-  name: "px.count"
+  name: "count"
   update_arg_types: INT64
   finalize_type:  INT64
 }
 udas {
-  name: "px.count"
+  name: "count"
   update_arg_types: BOOLEAN
   finalize_type:  INT64
 }
 udas {
-  name: "px.sum"
+  name: "sum"
   update_arg_types: INT64
   finalize_type:  INT64
 }
 udas {
-  name: "px.count"
+  name: "count"
   update_arg_types: STRING
   finalize_type:  INT64
 }
 udas {
-  name: "px.mean"
+  name: "mean"
   update_arg_types: FLOAT64
   finalize_type:  FLOAT64
 }
 udas {
-  name: "px.quantiles"
+  name: "quantiles"
   update_arg_types: FLOAT64
   finalize_type:  FLOAT64
 }

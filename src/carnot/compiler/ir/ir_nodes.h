@@ -901,9 +901,7 @@ class FuncIR : public ExpressionIR {
                             }));
   }
 
-  std::string func_name() const {
-    return absl::Substitute("$0.$1", func_prefix_, op_.carnot_op_name);
-  }
+  std::string func_name() const { return op_.carnot_op_name; }
   std::string carnot_op_name() const { return op_.carnot_op_name; }
 
   int64_t func_id() const { return func_id_; }

@@ -261,7 +261,7 @@ constexpr char kExpectedMapPb[] = R"(
     expressions {
       func {
         id: 1
-        name: "px.add"
+        name: "add"
         args {
           constant {
             data_type: INT64
@@ -318,7 +318,7 @@ constexpr char kExpectedAggPb[] = R"(
   agg_op {
     windowed: false
     values {
-      name: "px.mean"
+      name: "mean"
       id: 0
       args {
         constant {
@@ -482,7 +482,7 @@ TEST(ToProto, bool_ir) {
 
 constexpr char kSimpleFuncPbTxt[] = R"proto(
 func{
-  name: "px.foobar1"
+  name: "foobar1"
   args {
     constant {
       data_type: INT64
@@ -501,7 +501,7 @@ func{
 
 constexpr char kNestedFuncPbTxt[] = R"proto(
 func {
-  name: "px.foobar2"
+  name: "foobar2"
   args {
     constant {
       data_type: INT64

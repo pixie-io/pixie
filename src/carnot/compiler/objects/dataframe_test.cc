@@ -174,7 +174,7 @@ TEST_F(DataframeTest, AggTest) {
   for (const auto& [index, expr] : Enumerate(agg->aggregate_expressions())) {
     ASSERT_TRUE(Match(expr.node, Func())) << index;
     FuncIR* fn = static_cast<FuncIR*>(expr.node);
-    EXPECT_EQ(fn->func_name(), "px.mean") << index;
+    EXPECT_EQ(fn->func_name(), "mean") << index;
     ASSERT_EQ(fn->args().size(), 1) << index;
     ASSERT_TRUE(Match(fn->args()[0], ColumnNode())) << index;
     ColumnIR* col = static_cast<ColumnIR*>(fn->args()[0]);

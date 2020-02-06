@@ -23,22 +23,22 @@ TEST_F(UDFExporterTest, udf_proto) {
   auto registry_info = ExportUDFInfo().ConsumeValueOrDie();
 
   // Contains a math op.
-  auto udf_status = registry_info->GetUDF("px.add", {types::FLOAT64, types::FLOAT64});
+  auto udf_status = registry_info->GetUDF("add", {types::FLOAT64, types::FLOAT64});
   EXPECT_OK(udf_status);
   EXPECT_TRUE(udf_status.ConsumeValueOrDie() == types::FLOAT64);
 
   // Contains a string op.
-  udf_status = registry_info->GetUDF("px.pluck", {types::STRING, types::STRING});
+  udf_status = registry_info->GetUDF("pluck", {types::STRING, types::STRING});
   EXPECT_OK(udf_status);
   EXPECT_TRUE(udf_status.ConsumeValueOrDie() == types::STRING);
 
   // Contains metadata ops.
-  udf_status = registry_info->GetUDF("px.upid_to_pod_id", {types::UINT128});
+  udf_status = registry_info->GetUDF("upid_to_pod_id", {types::UINT128});
   EXPECT_OK(udf_status);
   EXPECT_TRUE(udf_status.ConsumeValueOrDie() == types::STRING);
 
   // Contains aggregate ops.
-  auto uda_status = registry_info->GetUDA("px.count", {types::BOOLEAN});
+  auto uda_status = registry_info->GetUDA("count", {types::BOOLEAN});
   EXPECT_OK(uda_status);
   EXPECT_TRUE(uda_status.ConsumeValueOrDie() == types::INT64);
 }
