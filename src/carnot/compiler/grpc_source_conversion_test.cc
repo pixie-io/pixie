@@ -112,9 +112,8 @@ TEST_F(GRPCSourceConversionTest, no_sinks_affiliated) {
   GRPCSourceGroupConversionRule rule;
   auto result = rule.Execute(graph.get());
   ASSERT_NOT_OK(result);
-  EXPECT_THAT(
-      result.status(),
-      HasCompilerError("GRPCSourceGroup\\(id=[0-9]*\\) must be affiliated with remote sinks."));
+  EXPECT_THAT(result.status(), HasCompilerError("GRPCSourceGroup\\(id=[0-9]*\\), source_id=[0-9]*, "
+                                                "must be affiliated with remote sinks"));
 }
 
 TEST_F(GRPCSourceConversionTest, multiple_grpc_source_groups) {

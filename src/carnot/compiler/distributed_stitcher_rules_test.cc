@@ -10,7 +10,7 @@
 #include "src/carnot/compiler/distributed_coordinator.h"
 #include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/distributed_planner.h"
-#include "src/carnot/compiler/distributed_stitcher.h"
+#include "src/carnot/compiler/distributed_stitcher_rules.h"
 #include "src/carnot/compiler/grpc_source_conversion.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/logical_planner/test_utils.h"
@@ -24,6 +24,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 namespace distributed {
+using logical_planner::testutils::DistributedRulesTest;
 using logical_planner::testutils::kOneAgentOneKelvinDistributedState;
 using logical_planner::testutils::kOneAgentThreeKelvinsDistributedState;
 using logical_planner::testutils::kThreeAgentsOneKelvinDistributedState;
@@ -33,19 +34,8 @@ using ::testing::HasSubstr;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
-class StitcherTest : public OperatorTests {
+class StitcherTest : public DistributedRulesTest {
  protected:
-  void SetUpImpl() override {
-    auto rel_map = std::make_unique<RelationMap>();
-    auto cpu_relation = table_store::schema::Relation(
-        std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
-                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
-        std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
-    rel_map->emplace("cpu", cpu_relation);
-
-    info_ = std::make_unique<compiler::RegistryInfo>();
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
-  }
   distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
     distributedpb::DistributedState physical_state_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
@@ -175,10 +165,6 @@ class StitcherTest : public OperatorTests {
 
     EXPECT_THAT(source_ids, UnorderedElementsAreArray(destination_ids));
   }
-
-  std::unique_ptr<CompilerState> compiler_state_;
-  std::unique_ptr<compiler::RegistryInfo> info_;
-  int64_t time_now = 1552607213931245000;
 };
 
 TEST_F(StitcherTest, one_pem_one_kelvin) {
@@ -285,6 +271,107 @@ TEST_F(StitcherTest, three_pems_one_kelvin) {
     SCOPED_TRACE("three_pems_one_kelvin");
     TestGRPCBridgesExpandedCorrectly(data_sources, {kelvin});
   }
+}
+
+// Test to see whether we can stitch a graph to itself.
+TEST_F(StitcherTest, stitch_self_together_with_udtf) {
+  auto ps = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
+  // px.ServiceUpTime() is a Kelvin-Only UDTF, so it should only run on Kelvin.
+  auto physical_plan = PlanQuery("px.display(px.ServiceUpTime())", ps);
+
+  EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
+  CarnotInstance* kelvin = physical_plan->Get(0);
+
+  std::string kelvin_qb_address = "kelvin";
+  ASSERT_EQ(kelvin->carnot_info().query_broker_address(), kelvin_qb_address);
+
+  CarnotInstance* pem = physical_plan->Get(1);
+  ASSERT_EQ(pem->carnot_info().query_broker_address(), "agent");
+  // Remove the pem instance as if we were a rule that would remove the PEM because it doens't run
+  // the UDTF.
+  EXPECT_OK(physical_plan->DeleteNode(1));
+  {
+    SCOPED_TRACE("stitch_kelvin_to_self");
+    TestBeforeSetSourceGroupGRPCAddress({kelvin}, {kelvin});
+  }
+
+  // Execute the address rule.
+  DistributedSetSourceGroupGRPCAddressRule rule;
+  auto node_changed_or_s = rule.Execute(physical_plan.get());
+  ASSERT_OK(node_changed_or_s);
+  ASSERT_TRUE(node_changed_or_s.ConsumeValueOrDie());
+
+  {
+    SCOPED_TRACE("stitch_kelvin_to_self");
+    TestGRPCAddressSet({kelvin});
+  }
+
+  // Associate the edges of the graph.
+  AssociateDistributedPlanEdgesRule distributed_edges_rule;
+  node_changed_or_s = distributed_edges_rule.Execute(physical_plan.get());
+  ASSERT_OK(node_changed_or_s);
+  ASSERT_TRUE(node_changed_or_s.ConsumeValueOrDie());
+
+  {
+    SCOPED_TRACE("stitch_kelvin_to_self");
+    TestGRPCBridgesWiring({kelvin}, {kelvin});
+  }
+}
+
+// Test to see whether we can stitch a graph to itself.
+TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
+  auto ps = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
+  // px._Test_MDState() is an all agent so it should run on every pem and kelvin.
+  auto physical_plan = PlanQuery("px.display(px._Test_MD_State())", ps);
+
+  EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
+  CarnotInstance* kelvin = physical_plan->Get(0);
+
+  std::string kelvin_qb_address = "kelvin";
+  ASSERT_EQ(kelvin->carnot_info().query_broker_address(), kelvin_qb_address);
+
+  CarnotInstance* pem = physical_plan->Get(1);
+  ASSERT_EQ(pem->carnot_info().query_broker_address(), "agent");
+  {
+    SCOPED_TRACE("stitch_all_together");
+    TestBeforeSetSourceGroupGRPCAddress({kelvin, pem}, {kelvin});
+  }
+
+  // Execute the address rule.
+  DistributedSetSourceGroupGRPCAddressRule rule;
+  auto node_changed_or_s = rule.Execute(physical_plan.get());
+  ASSERT_OK(node_changed_or_s);
+  ASSERT_TRUE(node_changed_or_s.ConsumeValueOrDie());
+
+  {
+    SCOPED_TRACE("stitch_all_together");
+    TestGRPCAddressSet({kelvin});
+  }
+
+  // Associate the edges of the graph.
+  AssociateDistributedPlanEdgesRule distributed_edges_rule;
+  node_changed_or_s = distributed_edges_rule.Execute(physical_plan.get());
+  ASSERT_OK(node_changed_or_s);
+  ASSERT_TRUE(node_changed_or_s.ConsumeValueOrDie());
+
+  // Manually test to make sure kelvin has grpc sinks as well as pem to make sure they are all
+  // connected.
+  auto kelvin_plan = kelvin->plan();
+  auto pem_plan = pem->plan();
+
+  auto kelvin_grpc_sinks = kelvin_plan->FindNodesOfType(IRNodeType::kGRPCSink);
+  ASSERT_EQ(kelvin_grpc_sinks.size(), 1);
+  auto kelvin_grpc_sink = static_cast<GRPCSinkIR*>(kelvin_grpc_sinks[0]);
+
+  auto pem_grpc_sinks = pem_plan->FindNodesOfType(IRNodeType::kGRPCSink);
+  ASSERT_EQ(pem_grpc_sinks.size(), 1);
+  auto pem_grpc_sink = static_cast<GRPCSinkIR*>(pem_grpc_sinks[0]);
+
+  auto grpc_sources = kelvin_plan->FindNodesOfType(IRNodeType::kGRPCSourceGroup);
+  ASSERT_EQ(grpc_sources.size(), 1);
+  auto kelvin_grpc_source = static_cast<GRPCSourceGroupIR*>(grpc_sources[0]);
+  EXPECT_THAT(kelvin_grpc_source->dependent_sinks(),
+              UnorderedElementsAre(pem_grpc_sink, kelvin_grpc_sink));
 }
 
 }  // namespace distributed

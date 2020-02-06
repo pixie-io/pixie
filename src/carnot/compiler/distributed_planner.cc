@@ -7,7 +7,6 @@
 #include "src/carnot/compiler/distributed_analyzer.h"
 #include "src/carnot/compiler/distributed_coordinator.h"
 #include "src/carnot/compiler/distributed_planner.h"
-#include "src/carnot/compiler/distributed_stitcher.h"
 #include "src/carnot/compiler/rules.h"
 namespace pl {
 namespace carnot {
@@ -30,9 +29,6 @@ StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<DistributedPlan> distributed_plan,
                       coordinator->Coordinate(logical_plan));
-
-  // PL_ASSIGN_OR_RETURN(std::unique_ptr<Stitcher> stitcher, Stitcher::Create(compiler_state));
-  // PL_RETURN_IF_ERROR(stitcher->Stitch(distributed_plan.get()));
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<distributed::DistributedAnalyzer> analyzer,
                       distributed::DistributedAnalyzer::Create());

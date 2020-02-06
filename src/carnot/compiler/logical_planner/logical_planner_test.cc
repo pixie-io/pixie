@@ -48,9 +48,8 @@ TEST_F(LogicalPlannerTest, two_agents_one_kelvin) {
 
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto plan_or_s =
-      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    MakeQueryRequest(testutils::kHttpRequestStats));
+  auto ps = testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto plan_or_s = planner->Plan(ps, MakeQueryRequest(testutils::kHttpRequestStats));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());

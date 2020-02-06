@@ -295,20 +295,13 @@ StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const
   auto physical_plan = std::make_unique<DistributedPlan>();
   int64_t remote_node_id = physical_plan->AddCarnot(GetRemoteProcessor());
 
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> remote_plan, split_plan->after_blocking->Clone());
+  // TODO(philkuz) Need to update the Blocking Split Plan to better represent what we expect.
+  // TODO(philkuz) (PL-1469) Future support for grabbing data from multiple Kelvin nodes.
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> remote_plan, split_plan->original_plan->Clone());
   physical_plan->Get(remote_node_id)->AddPlan(std::move(remote_plan));
-
-  if (!HasExecutableNodes(split_plan->before_blocking.get())) {
-    return physical_plan;
-  }
 
   for (const auto& data_store_info : data_store_nodes_) {
     PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> source_plan, split_plan->before_blocking->Clone());
-    PL_RETURN_IF_ERROR(PrunePlan(source_plan.get(), data_store_info));
-
-    if (!HasExecutableNodes(source_plan.get())) {
-      continue;
-    }
 
     int64_t source_node_id = physical_plan->AddCarnot(data_store_info);
     physical_plan->Get(source_node_id)->AddPlan(std::move(source_plan));

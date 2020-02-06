@@ -2,7 +2,8 @@
 #include <memory>
 
 #include "src/carnot/compiler/distributed_plan.h"
-#include "src/carnot/compiler/distributed_stitcher.h"
+#include "src/carnot/compiler/distributed_rules.h"
+#include "src/carnot/compiler/distributed_stitcher_rules.h"
 #include "src/carnot/compiler/grpc_source_conversion.h"
 #include "src/carnot/compiler/rule_executor.h"
 #include "src/carnot/compiler/tablet_rules.h"
@@ -15,7 +16,6 @@ namespace distributed {
 /**
  * @brief Executes a set of DistributedRules on an input DistributedPlan, matching the way
  * the Analyzer executes a set of Rules on an input IR.
- *
  */
 class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
  public:
@@ -32,6 +32,16 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
     tabletizer_batch->AddRule<DistributedTabletizerRule>();
   }
 
+  void CreateSourcePruneBatch() {
+    DistributedRuleBatch* source_prune_batch = CreateRuleBatch<TryUntilMax>("SourcePruneBatch", 2);
+    source_prune_batch->AddRule<DistributedPruneUnavailableSourcesRule>();
+  }
+
+  void CreatePlanPruneBatch() {
+    DistributedRuleBatch* plan_prune_batch = CreateRuleBatch<TryUntilMax>("PlanPruneBatch", 2);
+    plan_prune_batch->AddRule<PruneEmptyPlansRule>();
+  }
+
   void CreateStitcherBatch() {
     DistributedRuleBatch* stitcher_batch =
         CreateRuleBatch<TryUntilMax>("StitchGRPCBridgesBetweenPlans", 1);
@@ -42,6 +52,8 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
 
   Status Init() {
     CreateTabletizerBatch();
+    CreateSourcePruneBatch();
+    CreatePlanPruneBatch();
     CreateStitcherBatch();
     return Status::OK();
   }

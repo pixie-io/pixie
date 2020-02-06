@@ -32,6 +32,7 @@ pl_cc_test_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cc_library",
+        "//src/carnot/compiler:test_utils",
     ],
 )
 

@@ -52,73 +52,38 @@ class CoordinatorTest : public OperatorTests {
     DCHECK_EQ(new_node->type(), old_node->type());
     return static_cast<TIR*>(new_node);
   }
+  void VerifyHasDataSourcePlan(IR* plan) {
+    auto mem_src_nodes = plan->FindNodesOfType(IRNodeType::kMemorySource);
+    ASSERT_EQ(mem_src_nodes.size(), 1);
+    MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_src_nodes[0]);
+    ASSERT_EQ(mem_src->Children().size(), 1);
+    EXPECT_TRUE(Match(mem_src->Children()[0], GRPCSink()));
+  }
+
+  // Verifies whether the PEM plan matches what we expect.
+  void VerifyPEMPlan(IR* plan) {
+    // Should have 4 operators.
+    EXPECT_EQ(plan->FindNodesThatMatch(Operator()).size(), 2);
+    SCOPED_TRACE("Verify PEM plan");
+    VerifyHasDataSourcePlan(plan);
+  }
+
+  // Verifies whether the Kelvin Merger plan matches what we expect.
+  void VerifyKelvinMergerPlan(IR* plan) {
+    EXPECT_EQ(plan->FindNodesThatMatch(Operator()).size(), 4);
+    SCOPED_TRACE("Verify Kelvin merger plan");
+    VerifyHasDataSourcePlan(plan);
+
+    auto grpc_src_nodes = plan->FindNodesOfType(IRNodeType::kGRPCSourceGroup);
+    ASSERT_EQ(grpc_src_nodes.size(), 1);
+    GRPCSourceGroupIR* grpc_src = static_cast<GRPCSourceGroupIR*>(grpc_src_nodes[0]);
+    ASSERT_EQ(grpc_src->Children().size(), 1);
+    EXPECT_TRUE(Match(grpc_src->Children()[0], MemorySink()))
+        << grpc_src->Children()[0]->DebugString();
+  }
 };
 
-constexpr char kAgentSimplePlan[] = R"proto(
-dag {
-  nodes {
-    id: 1
-  }
-}
-nodes {
-  id: 1
-  dag {
-    nodes {
-      sorted_children: 2
-    }
-    nodes {
-      id: 2
-    }
-  }
-  nodes {
-    op {
-      op_type: MEMORY_SOURCE_OPERATOR
-    }
-  }
-  nodes {
-    id: 2
-    op {
-      op_type: GRPC_SINK_OPERATOR
-      grpc_sink_op {
-      }
-    }
-  }
-}
-)proto";
-
-constexpr char kKelvinSimplePlan[] = R"proto(
-dag {
-  nodes {
-    id: 1
-  }
-}
-nodes {
-  id: 1
-  dag {
-    nodes {
-      id: 3
-      sorted_children: 1
-    }
-    nodes {
-      id: 1
-    }
-  }
-  nodes {
-    id: 3
-    op {
-      op_type: GRPC_SOURCE_OPERATOR
-    }
-  }
-  nodes {
-    id: 1
-    op {
-      op_type: MEMORY_SINK_OPERATOR
-    }
-  }
-}
-)proto";
-
-TEST_F(CoordinatorTest, one_agent_one_kelvin) {
+TEST_F(CoordinatorTest, one_pem_one_kelvin) {
   auto ps = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
   auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
@@ -128,19 +93,21 @@ TEST_F(CoordinatorTest, one_agent_one_kelvin) {
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
 
   auto kelvin_instance = physical_plan->Get(0);
-  EXPECT_THAT(kelvin_instance->plan()->ToProto().ConsumeValueOrDie(),
-              Partially(EqualsProto(kKelvinSimplePlan)));
   EXPECT_THAT(kelvin_instance->carnot_info().query_broker_address(), ContainsRegex("kelvin"));
+  {
+    SCOPED_TRACE("one agent one kelvin -> kelvin plan");
+    VerifyKelvinMergerPlan(kelvin_instance->plan());
+  }
 
-  // Agents should be instance 1
-  auto agent_instance = physical_plan->Get(1);
-  EXPECT_THAT(agent_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
-
-  EXPECT_THAT(agent_instance->plan()->ToProto().ConsumeValueOrDie(),
-              Partially(EqualsProto(kAgentSimplePlan)));
+  auto pem_instance = physical_plan->Get(1);
+  EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
+  {
+    SCOPED_TRACE("one agent one kelvin -> pem plan");
+    VerifyPEMPlan(pem_instance->plan());
+  }
 }
 
-TEST_F(CoordinatorTest, three_agents_one_kelvin) {
+TEST_F(CoordinatorTest, three_pems_one_kelvin) {
   auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
   auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
@@ -150,20 +117,22 @@ TEST_F(CoordinatorTest, three_agents_one_kelvin) {
   ASSERT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(3, 2, 1, 0));
   auto kelvin_instance = physical_plan->Get(0);
   EXPECT_THAT(kelvin_instance->carnot_info().query_broker_address(), ContainsRegex("kelvin"));
-  EXPECT_THAT(kelvin_instance->plan()->ToProto().ConsumeValueOrDie(),
-              Partially(EqualsProto(kKelvinSimplePlan)));
+  {
+    SCOPED_TRACE("three pems one kelvin -> " +
+                 kelvin_instance->carnot_info().query_broker_address());
+    VerifyKelvinMergerPlan(kelvin_instance->plan());
+  }
 
   // Agents are 1,2,3.
   for (int64_t i = 1; i <= 3; ++i) {
-    auto agent_instance = physical_plan->Get(i);
-    EXPECT_THAT(agent_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
-
-    EXPECT_THAT(agent_instance->plan()->ToProto().ConsumeValueOrDie(),
-                Partially(EqualsProto(kAgentSimplePlan)));
+    auto pem_instance = physical_plan->Get(i);
+    SCOPED_TRACE("three pems one kelvin -> " + pem_instance->carnot_info().query_broker_address());
+    EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
+    VerifyPEMPlan(pem_instance->plan());
   }
 }
 
-TEST_F(CoordinatorTest, one_agent_three_kelvin) {
+TEST_F(CoordinatorTest, one_pem_three_kelvin) {
   auto ps = LoadDistributedStatePb(kOneAgentThreeKelvinsDistributedState);
   auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
@@ -175,15 +144,17 @@ TEST_F(CoordinatorTest, one_agent_three_kelvin) {
 
   auto kelvin_instance = physical_plan->Get(0);
   EXPECT_THAT(kelvin_instance->carnot_info().query_broker_address(), ContainsRegex("kelvin"));
-  EXPECT_THAT(kelvin_instance->plan()->ToProto().ConsumeValueOrDie(),
-              Partially(EqualsProto(kKelvinSimplePlan)));
+  {
+    SCOPED_TRACE("one agent one kelvin -> kelvin plan");
+    VerifyKelvinMergerPlan(kelvin_instance->plan());
+  }
 
-  // Agents should be instance 1
-  auto agent_instance = physical_plan->Get(1);
-  EXPECT_THAT(agent_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
-
-  EXPECT_THAT(agent_instance->plan()->ToProto().ConsumeValueOrDie(),
-              Partially(EqualsProto(kAgentSimplePlan)));
+  auto pem_instance = physical_plan->Get(1);
+  EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
+  {
+    SCOPED_TRACE("one agent one kelvin -> pem plan");
+    VerifyPEMPlan(pem_instance->plan());
+  }
 }
 
 constexpr char kBadAgentSpecificationState[] = R"proto(
@@ -244,102 +215,6 @@ TEST_F(CoordinatorTest, bad_kelvin_spec) {
   EXPECT_EQ(coordinator_status.status().msg(),
             "Distributed state does not have a Carnot instance that satisifies the condition "
             "`processes_data() && accepts_remote_sources()`.");
-}
-
-constexpr char kUDTFServiceUpTimePb[] = R"proto(
-name: "ServiceUpTime"
-executor: UDTF_ONE_KELVIN
-relation {
-  columns {
-    column_name: "service"
-    column_type: STRING
-  }
-  columns {
-    column_name: "up_time"
-    column_type: INT64
-  }
-}
-)proto";
-
-TEST_F(CoordinatorTest, udtf_on_one_kelvin) {
-  udfspb::UDTFSourceSpec udtf_spec;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUDTFServiceUpTimePb, &udtf_spec));
-  Relation udtf_relation;
-  ASSERT_OK(udtf_relation.FromProto(&udtf_spec.relation()));
-
-  auto udtf = MakeUDTFSource(udtf_spec, {}, {});
-  auto mem_sink = MakeMemSink(udtf, "out");
-
-  auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
-  auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
-
-  auto physical_plan = coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
-  ASSERT_EQ(physical_plan->dag().nodes().size(), 1UL);
-  IR* plan = physical_plan->Get(0)->plan();
-
-  auto new_udtf = GetEquivalentInNewPlan(plan, udtf);
-  EXPECT_EQ(new_udtf->Children().size(), 1UL);
-  EXPECT_EQ(new_udtf->Children()[0], GetEquivalentInNewPlan(plan, mem_sink));
-}
-
-constexpr char kUDTFOpenConnsPb[] = R"proto(
-name: "OpenNetworkConnections"
-args {
-  name: "upid"
-  arg_type: UINT128
-  semantic_type: ST_UPID
-}
-executor: UDTF_SUBSET_PEM
-relation {
-  columns {
-    column_name: "time_"
-    column_type: TIME64NS
-  }
-  columns {
-    column_name: "fd"
-    column_type: INT64
-  }
-  columns {
-    column_name: "name"
-    column_type: STRING
-  }
-}
-)proto";
-
-TEST_F(CoordinatorTest, udtf_run_on_som_pems) {
-  udfspb::UDTFSourceSpec udtf_spec;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUDTFOpenConnsPb, &udtf_spec));
-  Relation udtf_relation;
-  ASSERT_OK(udtf_relation.FromProto(&udtf_spec.relation()));
-  uint32_t asid = 123;
-  md::UPID upid(asid, 456, 3420030816657ULL);
-  std::string upid_str =
-      sole::rebuild(absl::Uint128High64(upid.value()), absl::Uint128Low64(upid.value())).str();
-
-  UInt128IR* uint128 = graph->CreateNode<UInt128IR>(ast, upid_str).ConsumeValueOrDie();
-  auto udtf = MakeUDTFSource(udtf_spec, {"upid"}, {uint128});
-  auto mem_sink = MakeMemSink(udtf, "out");
-
-  auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
-  auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
-
-  auto physical_plan = coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
-  ASSERT_EQ(physical_plan->dag().nodes().size(), 2UL);
-  auto topo_sort = physical_plan->dag().TopologicalSort();
-  auto agent_instance = physical_plan->Get(topo_sort[0]);
-  EXPECT_EQ(agent_instance->carnot_info().query_broker_address(), "agent1");
-  // Verify that we actually got the right agent_instance
-  EXPECT_EQ(agent_instance->carnot_info().asid(), asid);
-  auto kelvin_instance = physical_plan->Get(topo_sort[1]);
-  EXPECT_EQ(kelvin_instance->carnot_info().query_broker_address(), "kelvin");
-  auto agent_plan = agent_instance->plan();
-  auto kelvin_plan = kelvin_instance->plan();
-  auto new_udtf = GetEquivalentInNewPlan(agent_plan, udtf);
-  ASSERT_EQ(new_udtf->Children().size(), 1UL);
-  EXPECT_EQ(new_udtf->Children()[0]->type(), IRNodeType::kGRPCSink);
-  auto new_mem_sink = GetEquivalentInNewPlan(kelvin_plan, mem_sink);
-  ASSERT_EQ(new_mem_sink->parents().size(), 1UL);
-  EXPECT_EQ(new_mem_sink->parents()[0]->type(), IRNodeType::kGRPCSourceGroup);
 }
 
 }  // namespace distributed

@@ -196,12 +196,14 @@ bool DistributedSplitter::IsChildOpOnKelvin(bool is_parent_on_kelvin, OperatorIR
 
 absl::flat_hash_map<int64_t, bool> DistributedSplitter::GetKelvinNodes(
     const std::vector<OperatorIR*>& sources) {
+  // TODO(philkuz)  update on_kelvin to actually be on_data_processor and flip bools around.
   absl::flat_hash_map<int64_t, bool> on_kelvin;
   // Loop through all of the sources and see if they must be located on Kelvin.
   std::queue<OperatorIR*> child_q;
+  // Sources only run on data sources.
   for (auto src_op : sources) {
     DCHECK(Match(src_op, SourceOperator()));
-    on_kelvin[src_op->id()] = IsSourceOnKelvin(src_op);
+    on_kelvin[src_op->id()] = false;
     child_q.push(src_op);
   }
 
@@ -246,7 +248,7 @@ StatusOr<std::unique_ptr<BlockingSplitPlan>> DistributedSplitter::SplitKelvinAnd
                       CreateGRPCBridge(logical_plan, on_kelvin, source_ids));
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> pem_plan, grpc_bridge_plan->Clone());
-  auto kelvin_plan = std::move(grpc_bridge_plan);
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> kelvin_plan, grpc_bridge_plan->Clone());
 
   BlockingSplitNodeIDGroups nodes = GetSplitGroups(kelvin_plan.get(), on_kelvin);
   // Removes all of the nodes that are not on PEM.
@@ -257,6 +259,7 @@ StatusOr<std::unique_ptr<BlockingSplitPlan>> DistributedSplitter::SplitKelvinAnd
   auto split_plan = std::make_unique<BlockingSplitPlan>();
   split_plan->after_blocking = std::move(kelvin_plan);
   split_plan->before_blocking = std::move(pem_plan);
+  split_plan->original_plan = std::move(grpc_bridge_plan);
   return split_plan;
 }
 

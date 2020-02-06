@@ -65,6 +65,7 @@ namespace distributed {
  * Sink
  *
  */
+// TODO(philkuz) (PL-1470) Clean up splitter
 class BlockingOperatorGRPCBridgeRule : public Rule {
  public:
   BlockingOperatorGRPCBridgeRule() : Rule(nullptr) {}
@@ -105,8 +106,10 @@ class BlockingOperatorGRPCBridgeRule : public Rule {
 struct BlockingSplitPlan {
   // The plan that occcurs before blocking nodes.
   std::unique_ptr<IR> before_blocking;
-  // The plan that occcurs after blocking nodes.
+  // The plan that occcurs after and including blocking nodes.
   std::unique_ptr<IR> after_blocking;
+  // The that has both the before and after blocking nodes.
+  std::unique_ptr<IR> original_plan;
 };
 
 /**
@@ -136,7 +139,7 @@ class DistributedSplitter : public NotCopyable {
    * @return StatusOr<std::unique_ptr<BlockingSplitPLan>>: the plan split along blocking lines.
    */
   static StatusOr<std::unique_ptr<BlockingSplitPlan>> SplitKelvinAndAgents(const IR* logical_plan);
-  // TODO(philkuz) remove this old strategy.
+  // TODO(philkuz) remove this old strategy and clean up all uses.
   static StatusOr<std::unique_ptr<BlockingSplitPlan>> SplitAtBlockingNode(const IR* logical_plan);
 
  private:

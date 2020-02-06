@@ -74,6 +74,11 @@ class SplitterTest : public OperatorTests {
   }
 
   template <typename TIR>
+  bool HasEquivalentInNewPlan(IR* new_graph, TIR* old_node) {
+    return new_graph->HasNode(old_node->id());
+  }
+
+  template <typename TIR>
   TIR* GetEquivalentInNewPlan(IR* new_graph, TIR* old_node) {
     DCHECK(new_graph->HasNode(old_node->id()));
     IRNode* new_node = new_graph->Get(old_node->id());
@@ -518,82 +523,6 @@ TEST_F(SplitterTest, two_paths) {
   HasGRPCSourceGroupParent(mem_sink2->id(), after_blocking, "Branch2");
 }
 
-constexpr char kUDTFServiceUpTimePb[] = R"proto(
-name: "ServiceUpTime"
-executor: UDTF_ONE_KELVIN
-relation {
-  columns {
-    column_name: "service"
-    column_type: STRING
-  }
-  columns {
-    column_name: "up_time"
-    column_type: INT64
-  }
-}
-)proto";
-
-TEST_F(SplitterTest, UDTFOnOneKelvin) {
-  udfspb::UDTFSourceSpec udtf_spec;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUDTFServiceUpTimePb, &udtf_spec));
-  Relation udtf_relation;
-  ASSERT_OK(udtf_relation.FromProto(&udtf_spec.relation()));
-
-  auto udtf = MakeUDTFSource(udtf_spec, {}, {});
-  auto mem_sink = MakeMemSink(udtf, "out");
-
-  DistributedSplitter splitter;
-  std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
-  auto before_blocking = split_plan->before_blocking.get();
-  auto after_blocking = split_plan->after_blocking.get();
-
-  // Because this only executes on the Kelvin, there should not be anything in before_blocking.
-  EXPECT_EQ(before_blocking->dag().nodes().size(), 0) << before_blocking->DebugString();
-
-  auto new_udtf = GetEquivalentInNewPlan(after_blocking, udtf);
-  EXPECT_EQ(new_udtf->Children().size(), 1UL);
-  EXPECT_EQ(new_udtf->Children()[0], GetEquivalentInNewPlan(after_blocking, mem_sink));
-}
-
-TEST_F(SplitterTest, UDTFOnOneKelvinWithJoin) {
-  Relation src_relation{{types::STRING, types::INT64}, {"service", "rx_bytes"}};
-  auto mem_src = MakeMemSource(src_relation);
-
-  udfspb::UDTFSourceSpec udtf_spec;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUDTFServiceUpTimePb, &udtf_spec));
-  Relation udtf_relation;
-  ASSERT_OK(udtf_relation.FromProto(&udtf_spec.relation()));
-
-  auto udtf = MakeUDTFSource(udtf_spec, {}, {});
-  auto join =
-      MakeJoin({mem_src, udtf}, "inner", src_relation, udtf_relation, {"service"}, {"service"});
-  MakeMemSink(join, "out");
-
-  DistributedSplitter splitter;
-  std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
-  auto before_blocking = split_plan->before_blocking.get();
-  auto after_blocking = split_plan->after_blocking.get();
-
-  MemorySourceIR* new_mem_src = GetEquivalentInNewPlan(before_blocking, mem_src);
-  ASSERT_EQ(new_mem_src->Children().size(), 1UL);
-
-  OperatorIR* mem_src_child = new_mem_src->Children()[0];
-  ASSERT_EQ(mem_src_child->type(), IRNodeType::kGRPCSink);
-  GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(mem_src_child);
-
-  UDTFSourceIR* new_udtf = GetEquivalentInNewPlan(after_blocking, udtf);
-  JoinIR* new_join = GetEquivalentInNewPlan(after_blocking, join);
-  EXPECT_THAT(new_udtf->Children(), ElementsAre(new_join));
-
-  // Parent 0 should be the GRPC Source Group that corresponds with the above grpc_sink.
-  ASSERT_EQ(new_join->parents()[0]->type(), IRNodeType::kGRPCSourceGroup);
-  GRPCSourceGroupIR* grpc_source_group = static_cast<GRPCSourceGroupIR*>(new_join->parents()[0]);
-
-  EXPECT_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
-}
-
 constexpr char kUDTFOpenConnsPb[] = R"proto(
 name: "OpenNetworkConnections"
 args {
@@ -634,6 +563,7 @@ TEST_F(SplitterTest, UDTFOnSubsetOfPEMs) {
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
 
+  ASSERT_TRUE(HasEquivalentInNewPlan(before_blocking, udtf));
   UDTFSourceIR* new_udtf = GetEquivalentInNewPlan(before_blocking, udtf);
   ASSERT_EQ(new_udtf->Children().size(), 1UL);
 
@@ -641,56 +571,13 @@ TEST_F(SplitterTest, UDTFOnSubsetOfPEMs) {
   ASSERT_EQ(udtf_child->type(), IRNodeType::kGRPCSink);
   GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(udtf_child);
 
+  ASSERT_TRUE(HasEquivalentInNewPlan(after_blocking, sink));
   MemorySinkIR* new_sink = GetEquivalentInNewPlan(after_blocking, sink);
   EXPECT_EQ(new_sink->parents().size(), 1);
 
   // Parent 0 should be the GRPC Source Group that corresponds with the above grpc_sink.
   ASSERT_EQ(new_sink->parents()[0]->type(), IRNodeType::kGRPCSourceGroup);
   GRPCSourceGroupIR* grpc_source_group = static_cast<GRPCSourceGroupIR*>(new_sink->parents()[0]);
-
-  EXPECT_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
-}
-
-TEST_F(SplitterTest, UDTFOnManyPEMsJoinWithUDTFOneKelvin) {
-  udfspb::UDTFSourceSpec udtf_pem_spec;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUDTFOpenConnsPb, &udtf_pem_spec));
-  Relation udtf_pem_relation;
-  ASSERT_OK(udtf_pem_relation.FromProto(&udtf_pem_spec.relation()));
-
-  std::string upid_value = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c";
-  auto udtf_pems = MakeUDTFSource(udtf_pem_spec, {{"upid", MakeString(upid_value)}});
-
-  udfspb::UDTFSourceSpec udtf_kelvin_spec;
-  ASSERT_TRUE(
-      google::protobuf::TextFormat::MergeFromString(kUDTFServiceUpTimePb, &udtf_kelvin_spec));
-  Relation udtf_kelvin_relation;
-  ASSERT_OK(udtf_kelvin_relation.FromProto(&udtf_kelvin_spec.relation()));
-
-  auto udtf_kelvins = MakeUDTFSource(udtf_kelvin_spec, {});
-  auto join = MakeJoin({udtf_pems, udtf_kelvins}, "inner", udtf_pem_relation, udtf_kelvin_relation,
-                       {"name"}, {"service"});
-  MakeMemSink(join, "out");
-
-  DistributedSplitter splitter;
-  std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
-  auto before_blocking = split_plan->before_blocking.get();
-  auto after_blocking = split_plan->after_blocking.get();
-
-  UDTFSourceIR* new_udtf_pems = GetEquivalentInNewPlan(before_blocking, udtf_pems);
-  ASSERT_EQ(new_udtf_pems->Children().size(), 1UL);
-
-  OperatorIR* udtf_pems_child = new_udtf_pems->Children()[0];
-  ASSERT_EQ(udtf_pems_child->type(), IRNodeType::kGRPCSink);
-  GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(udtf_pems_child);
-
-  UDTFSourceIR* new_udtf_kelvins = GetEquivalentInNewPlan(after_blocking, udtf_kelvins);
-  JoinIR* new_join = GetEquivalentInNewPlan(after_blocking, join);
-  EXPECT_THAT(new_udtf_kelvins->Children(), ElementsAre(new_join));
-
-  // Parent 0 should be the GRPC Source Group that corresponds with the above grpc_sink.
-  ASSERT_EQ(new_join->parents()[0]->type(), IRNodeType::kGRPCSourceGroup);
-  GRPCSourceGroupIR* grpc_source_group = static_cast<GRPCSourceGroupIR*>(new_join->parents()[0]);
 
   EXPECT_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
 }

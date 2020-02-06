@@ -23,9 +23,15 @@ StatusOr<bool> PruneUnavailableSourcesRule::RemoveSourceIfNotNecessary(OperatorI
   return false;
 }
 
+Status DeleteSourceAndChildren(OperatorIR* source_op) {
+  DCHECK(source_op->is_source());
+  // TODO(PL-1468) figure out how to delete the Join parents.
+  return source_op->graph_ptr()->DeleteOrphansInSubtree(source_op->id());
+}
+
 StatusOr<bool> PruneUnavailableSourcesRule::MaybePruneMemorySource(MemorySourceIR* mem_src) {
   if (!AgentSupportsMemorySources()) {
-    PL_RETURN_IF_ERROR(mem_src->graph_ptr()->DeleteOrphansInSubtree(mem_src->id()));
+    PL_RETURN_IF_ERROR(DeleteSourceAndChildren(mem_src));
     return true;
   }
   return false;
@@ -42,7 +48,7 @@ StatusOr<bool> PruneUnavailableSourcesRule::MaybePruneUDTFSource(UDTFSourceIR* u
     return false;
   }
   // Otherwise, we remove the source.
-  PL_RETURN_IF_ERROR(udtf_src->graph_ptr()->DeleteOrphansInSubtree(udtf_src->id()));
+  PL_RETURN_IF_ERROR(DeleteSourceAndChildren(udtf_src));
   return true;
 }
 
@@ -126,6 +132,14 @@ StatusOr<bool> DistributedPruneUnavailableSourcesRule::Apply(
     distributed::CarnotInstance* carnot_instance) {
   PruneUnavailableSourcesRule rule(carnot_instance->carnot_info());
   return rule.Execute(carnot_instance->plan());
+}
+
+StatusOr<bool> PruneEmptyPlansRule::Apply(distributed::CarnotInstance* node) {
+  if (node->plan()->FindNodesThatMatch(Operator()).size() > 0) {
+    return false;
+  }
+  PL_RETURN_IF_ERROR(node->distributed_plan()->DeleteNode(node->id()));
+  return true;
 }
 
 }  // namespace distributed

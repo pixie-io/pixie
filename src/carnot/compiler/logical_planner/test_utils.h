@@ -8,10 +8,15 @@
 #include <vector>
 
 #include <absl/strings/substitute.h>
+#include "src/carnot/compiler/compiler.h"
+#include "src/carnot/compiler/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed_planner.h"
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
+#include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_graph.h"
+#include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/base/base.h"
 
 namespace pl {
@@ -117,6 +122,27 @@ relation_map {
     columns {
       column_name: "http_resp_latency_ns"
       column_type: INT64
+    }
+  }
+}
+relation_map {
+  key: "cpu"
+  value {
+    columns {
+      column_name: "count"
+      column_type: INT64
+    }
+    columns {
+      column_name: "cpu0"
+      column_type: FLOAT64
+    }
+    columns {
+      column_name: "cpu1"
+      column_type: FLOAT64
+    }
+    columns {
+      column_name: "cpu2"
+      column_type: FLOAT64
     }
   }
 }
@@ -933,6 +959,64 @@ carnot_info {
   asid: 333
 }
 )proto";
+
+class DistributedRulesTest : public OperatorTests {
+ protected:
+  void SetUpImpl() override {
+    registry_info_ = std::make_unique<RegistryInfo>();
+    logical_state_ = CreateTwoAgentsOneKelvinPlannerState(kHttpEventsSchema);
+    auto udf_info = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
+    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(
+        absl::Substitute("udtfs{$0}", kUDTFAllAgents), &udf_info));
+    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(
+        absl::Substitute("udtfs{$0}", kUDTFServiceUpTimePb), &udf_info));
+    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(
+        absl::Substitute("udtfs{$0}", kUDTFOpenNetworkConnections), &udf_info));
+
+    ASSERT_OK(registry_info_->Init(udf_info));
+    compiler_state_ = std::make_unique<compiler::CompilerState>(
+        MakeRelationMap(logical_state_.schema()), registry_info_.get(), 1234);
+  }
+
+  std::unique_ptr<RelationMap> MakeRelationMap(const pl::table_store::schemapb::Schema& schema_pb) {
+    auto rel_map = std::make_unique<pl::carnot::compiler::RelationMap>();
+    for (auto& relation_pair : schema_pb.relation_map()) {
+      pl::table_store::schema::Relation rel;
+      PL_CHECK_OK(rel.FromProto(&relation_pair.second));
+      rel_map->emplace(relation_pair.first, rel);
+    }
+
+    return rel_map;
+  }
+
+  std::unique_ptr<distributed::DistributedPlan> PlanQuery(
+      const std::string& query, const distributedpb::DistributedState& distributed_state) {
+    // Create a CompilerState obj using the relation map and grabbing the current time.
+
+    std::unique_ptr<distributed::Coordinator> coordinator =
+        distributed::Coordinator::Create(distributed_state).ConsumeValueOrDie();
+
+    Compiler compiler;
+    std::shared_ptr<IR> single_node_plan =
+        compiler.CompileToIR(query, compiler_state_.get(), {}).ConsumeValueOrDie();
+
+    std::unique_ptr<distributed::DistributedPlan> distributed_plan =
+        coordinator->Coordinate(single_node_plan.get()).ConsumeValueOrDie();
+    return distributed_plan;
+  }
+  std::unique_ptr<distributed::DistributedPlan> PlanQuery(const std::string& query) {
+    return PlanQuery(query, logical_state_.distributed_state());
+  }
+
+  bool IsPEM(const distributedpb::CarnotInfo& carnot_instance) {
+    return carnot_instance.has_data_store() && carnot_instance.processes_data() &&
+           !carnot_instance.has_grpc_server();
+  }
+
+  std::unique_ptr<RegistryInfo> registry_info_;
+  std::unique_ptr<CompilerState> compiler_state_;
+  distributedpb::LogicalPlannerState logical_state_;
+};
 
 }  // namespace testutils
 }  // namespace logical_planner

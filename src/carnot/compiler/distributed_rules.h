@@ -14,7 +14,7 @@ namespace distributed {
 
 class PruneUnavailableSourcesRule : public Rule {
  public:
-  explicit PruneUnavailableSourcesRule(const distributedpb::CarnotInfo& carnot_info)
+  explicit PruneUnavailableSourcesRule(distributedpb::CarnotInfo carnot_info)
       : Rule(nullptr), carnot_info_(carnot_info) {}
   StatusOr<bool> Apply(IRNode* node) override;
 
@@ -31,7 +31,7 @@ class PruneUnavailableSourcesRule : public Rule {
   bool IsKelvin(const distributedpb::CarnotInfo& carnot_info);
   bool IsPEM(const distributedpb::CarnotInfo& carnot_info);
 
-  const distributedpb::CarnotInfo& carnot_info_;
+  distributedpb::CarnotInfo carnot_info_;
 };
 
 /**
@@ -42,6 +42,18 @@ class PruneUnavailableSourcesRule : public Rule {
 class DistributedPruneUnavailableSourcesRule : public DistributedRule {
  public:
   DistributedPruneUnavailableSourcesRule() : DistributedRule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(distributed::CarnotInstance* node) override;
+};
+
+/**
+ * @brief Prunes out plans that don't have nodes.
+ *
+ */
+class PruneEmptyPlansRule : public DistributedRule {
+ public:
+  PruneEmptyPlansRule() : DistributedRule(nullptr) {}
 
  protected:
   StatusOr<bool> Apply(distributed::CarnotInstance* node) override;
