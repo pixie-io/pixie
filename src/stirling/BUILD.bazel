@@ -221,6 +221,8 @@ pl_cc_test(
         # uprobes and slowed down significantly.
         "exclusive",
     ],
+    # TODO(PL-1412): GRPCTraceUprobingTest.CaptureRPCTraceRecord sometimes captures no data.
+    flaky = True,
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",

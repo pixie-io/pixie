@@ -183,7 +183,7 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
             R"("grpc-status":"0"})"));
   EXPECT_THAT(
       std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
-      HasSubstr("127.0.0.1"));
+      AnyOf(HasSubstr("127.0.0.1"), HasSubstr("::1")));
   // TODO(oazizi): This expectation broke after the switch to server-side tracing.
   // Need to replace s_port_ with client port.
   // EXPECT_EQ(s_port_,
@@ -220,7 +220,7 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithPara
   }
 };
 
-TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
+TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   // Give some time for the client to execute and produce data into perf buffers.
   sleep(2);
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
@@ -246,7 +246,7 @@ TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
       AllOf(HasSubstr(R"(":status":"200")"), HasSubstr(R"("content-type":"application/grpc")"),
             HasSubstr(R"("grpc-message":"")"), HasSubstr(R"("grpc-status":"0"})")));
   EXPECT_THAT(std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(idx)),
-              HasSubstr("127.0.0.1"));
+              AnyOf(HasSubstr("127.0.0.1"), HasSubstr("::1")));
   EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(idx).val);
   EXPECT_EQ(0, record_batch[kHTTPMinorVersionIdx]->Get<types::Int64Value>(idx).val);
   EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
@@ -375,7 +375,7 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
 
   for (size_t idx : indices) {
     EXPECT_THAT(std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(idx)),
-                HasSubstr("127.0.0.1"));
+                AnyOf(HasSubstr("127.0.0.1"), HasSubstr("::1")));
     // TODO(oazizi): After switch to server-side tracing, this expectation is wrong,
     // but no easy way to get the port from client_channel_, so disabled this for now.
     // EXPECT_EQ(runner_.port(), record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(idx).val);
