@@ -43,6 +43,8 @@ class PypaErrorHandler {
                   std::make_unique<compilerpb::CompilerErrorGroup>(error_group));
   }
 
+  bool HasErrors() { return errs_.size() > 0; }
+
  private:
   void CreateLineColError(compilerpb::LineColError* line_col_err_pb, pypa::Error err) {
     int64_t line = err.cur.line;
@@ -69,11 +71,13 @@ StatusOr<pypa::AstModulePtr> Parser::Parse(std::string_view query) {
   pypa::ParserOptions options;
 
   options.docstrings = false;
+  options.printerrors = false;
   options.error_handler =
       std::bind(&PypaErrorHandler::HandlerFunc, &pypa_error_handler, std::placeholders::_1);
   pypa::Lexer lexer(std::make_unique<StringReader>(query));
 
-  if (!pypa::parse(lexer, ast, symbols, options)) {
+  pypa::parse(lexer, ast, symbols, options);
+  if (pypa_error_handler.HasErrors()) {
     return pypa_error_handler.ProcessErrors();
   }
   return ast;
