@@ -1197,6 +1197,46 @@ TEST_F(ASTVisitorTest, func_def_doesnt_make_new_globals) {
   ASSERT_EQ(static_cast<StringIR*>(func2_return_obj->node())->str(), "abc");
 }
 
+using FlagsTest = ASTVisitorTest;
+
+constexpr char kFlagValueQuery[] = R"pxl(
+px.flags('foo', type=str, description='a random param', default='default')
+px.flags.parse()
+queryDF = px.DataFrame(table='cpu', select=['cpu0'])
+queryDF['foo_flag'] = px.flags.foo
+px.display(queryDF, 'map')
+)pxl";
+
+TEST_F(FlagsTest, use_default_value) {
+  auto graph_or_s = CompileGraph(kFlagValueQuery);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
+  ASSERT_EQ(map_nodes.size(), 1);
+  MapIR* map = static_cast<MapIR*>(map_nodes[0]);
+  EXPECT_EQ(1, map->col_exprs().size());
+  auto expr = map->col_exprs()[0].node;
+  EXPECT_EQ(IRNodeType::kString, expr->type());
+  EXPECT_EQ("default", static_cast<StringIR*>(expr)->str());
+}
+
+TEST_F(FlagsTest, use_non_default_value) {
+  FlagValue flag;
+  flag.set_flag_name("foo");
+  EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_flag_value()));
+
+  auto graph_or_s = CompileGraph(kFlagValueQuery, {flag});
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
+  ASSERT_EQ(map_nodes.size(), 1);
+  MapIR* map = static_cast<MapIR*>(map_nodes[0]);
+  EXPECT_EQ(1, map->col_exprs().size());
+  auto expr = map->col_exprs()[0].node;
+  EXPECT_EQ(IRNodeType::kString, expr->type());
+  EXPECT_EQ("non-default", static_cast<StringIR*>(expr)->str());
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

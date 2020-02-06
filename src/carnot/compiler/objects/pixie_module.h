@@ -4,14 +4,13 @@
 #include <vector>
 
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
+#include "src/carnot/compiler/objects/flags_object.h"
 #include "src/carnot/compiler/objects/funcobject.h"
 #include "src/carnot/compiler/plannerpb/query_flags.pb.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-
-using FlagValues = std::vector<plannerpb::QueryRequest::FlagValue>;
 
 class PixieModule : public QLObject {
  public:
@@ -29,6 +28,7 @@ class PixieModule : public QLObject {
   // Constants for operators in the query language.
   inline static constexpr char kDataframeOpId[] = "DataFrame";
   inline static constexpr char kDisplayOpId[] = "display";
+  inline static constexpr char kFlagsOpId[] = "flags";
   inline static constexpr char kNowOpId[] = "now";
   inline static constexpr char kUInt128ConversionId[] = "uint128";
   static const constexpr char* const kTimeFuncs[] = {"minutes", "hours",        "seconds",
@@ -38,6 +38,7 @@ class PixieModule : public QLObject {
   explicit PixieModule(IR* graph, CompilerState* compiler_state)
       : QLObject(PixieModuleType), graph_(graph), compiler_state_(compiler_state) {}
   Status Init(const FlagValues& flag_values);
+  Status RegisterFlags(const FlagValues& flag_values);
   Status RegisterUDFFuncs();
   Status RegisterUDTFs();
   Status RegisterCompileTimeFuncs();
@@ -50,6 +51,7 @@ class PixieModule : public QLObject {
   IR* graph_;
   CompilerState* compiler_state_;
   absl::flat_hash_set<std::string> compiler_time_fns_;
+  std::shared_ptr<FlagsObject> flags_object_;
 };
 
 /**

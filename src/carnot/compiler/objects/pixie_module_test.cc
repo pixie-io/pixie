@@ -1,6 +1,7 @@
 #include "src/carnot/compiler/objects/pixie_module.h"
 #include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/test_utils.h"
+#include "src/carnot/compiler/objects/type_object.h"
 #include "src/shared/metadata/base_types.h"
 
 namespace pl {
@@ -106,8 +107,12 @@ class PixieModuleTest : public QLObjectTest {
     QLObjectTest::SetUp();
     info_ = SetUpRegistryInfo();
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
-    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), /*flag values*/ {})
-                  .ConsumeValueOrDie();
+
+    FlagValue flag;
+    flag.set_flag_name("foo");
+    EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_flag_value()));
+
+    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), {flag}).ConsumeValueOrDie();
   }
 
   std::unique_ptr<CompilerState> compiler_state_;
@@ -256,6 +261,40 @@ TEST_F(PixieModuleTest, dataframe_as_attribute) {
   QLObjectPtr attr_object = attr_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(attr_object->type_descriptor().type() == QLObjectType::kDataframe);
 }
+
+TEST_F(PixieModuleTest, flags_object_receives_values) {
+  auto attr_or_s = module_->GetAttribute(ast, PixieModule::kFlagsOpId);
+  ASSERT_OK(attr_or_s);
+
+  QLObjectPtr flags_obj = attr_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(flags_obj->type_descriptor().type() == QLObjectType::kFlags);
+
+  // Register foo flag
+  std::vector<QLObjectPtr> args;
+  args.push_back(QLObject::FromIRNode(MakeString("foo")).ConsumeValueOrDie());
+  std::vector<NameToNode> kwargs;
+  kwargs.push_back({"type", std::static_pointer_cast<QLObject>(
+                                TypeObject::Create(IRNodeType::kString).ConsumeValueOrDie())});
+  kwargs.push_back({"description", QLObject::FromIRNode(MakeString("bar")).ConsumeValueOrDie()});
+  kwargs.push_back({"default", QLObject::FromIRNode(MakeString("default")).ConsumeValueOrDie()});
+  ArgMap argmap{kwargs, args};
+
+  auto register_method = flags_obj->GetCallMethod().ConsumeValueOrDie();
+  ASSERT_OK(register_method->Call(argmap, ast, ast_visitor.get()));
+
+  // Parse flags
+  auto parse_method = flags_obj->GetMethod("parse").ConsumeValueOrDie();
+  ASSERT_OK(parse_method->Call(ArgMap{}, ast, ast_visitor.get()));
+
+  // Get foo flag
+  auto ql_object = flags_obj->GetAttribute(ast, "foo").ConsumeValueOrDie();
+  EXPECT_TRUE(QLObjectType::kExpr == ql_object->type_descriptor().type());
+  auto expr = std::static_pointer_cast<ExprObject>(ql_object);
+  ASSERT_TRUE(expr->HasNode());
+  EXPECT_TRUE(expr->node()->type() == IRNodeType::kString);
+  EXPECT_EQ("non-default", static_cast<StringIR*>(expr->node())->str());
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

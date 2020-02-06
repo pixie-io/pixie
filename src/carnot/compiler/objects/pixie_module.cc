@@ -21,6 +21,12 @@ StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph, CompilerSt
   return module;
 }
 
+Status PixieModule::RegisterFlags(const FlagValues& flag_values) {
+  PL_ASSIGN_OR_RETURN(flags_object_, FlagsObject::Create(graph_, flag_values));
+  attributes_.insert(kFlagsOpId);
+  return Status::OK();
+}
+
 Status PixieModule::RegisterUDFFuncs() {
   // TODO(philkuz) (PL-1189) remove this when the udf names no longer have the 'pl.' prefix.
   for (const auto& name : compiler_state_->registry_info()->func_names()) {
@@ -132,8 +138,7 @@ Status PixieModule::RegisterCompileTimeUnitFunction(std::string name) {
 }
 
 Status PixieModule::Init(const FlagValues& flag_values) {
-  // TODO(nserrino): Add in FlagsObject
-  PL_UNUSED(flag_values);
+  PL_RETURN_IF_ERROR(RegisterFlags(flag_values));
   PL_RETURN_IF_ERROR(RegisterUDFFuncs());
   PL_RETURN_IF_ERROR(RegisterCompileTimeFuncs());
   PL_RETURN_IF_ERROR(RegisterUDTFs());
@@ -158,7 +163,10 @@ StatusOr<std::shared_ptr<QLObject>> PixieModule::GetAttributeImpl(const pypa::As
   if (attr == kDataframeOpId) {
     return Dataframe::Create(graph_);
   }
-  return CreateAstError(ast, "'$0' has not attribute '$1'", name(), attr);
+  if (attr == kFlagsOpId) {
+    return std::static_pointer_cast<QLObject>(flags_object_);
+  }
+  return CreateAstError(ast, "'$0' has no attribute '$1'", name(), attr);
 }
 
 StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,

@@ -2851,6 +2851,42 @@ TEST_F(CompilerTest, UnusedOperatorsRemoved) {
   Relation expected_relation({types::TIME64NS}, {"time_"});
   EXPECT_EQ(mem_sink->relation(), expected_relation);
 }
+
+constexpr char kFlagValueQuery[] = R"pxl(
+px.flags('foo', type=int, description='a random param', default=2)
+px.flags.parse()
+queryDF = px.DataFrame(table='cpu', select=['upid'])
+queryDF['foo_flag'] = px.flags.foo
+px.display(queryDF, 'map')
+)pxl";
+
+TEST_F(CompilerTest, FlagValueQUery) {
+  FlagValue flag;
+  flag.set_flag_name("foo");
+  flag.mutable_flag_value()->set_data_type(types::DataType::INT64);
+  flag.mutable_flag_value()->set_int64_value(100);
+
+  auto graph_or_s = compiler_.CompileToIR(kFlagValueQuery, compiler_state_.get(), {flag});
+  ASSERT_OK(graph_or_s);
+
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
+  EXPECT_EQ(1, map_nodes.size());
+  auto map = static_cast<MapIR*>(map_nodes[0]);
+  EXPECT_EQ(2, map->col_exprs().size());
+  auto foo_expr = map->col_exprs()[1].node;
+  EXPECT_EQ(IRNodeType::kInt, foo_expr->type());
+
+  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+
+  EXPECT_EQ(1, sink_nodes.size());
+  MemorySinkIR* mem_sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+
+  // ensure service_name is in relation but _attr_service_name is not
+  Relation expected_relation({types::UINT128, types::INT64}, {"upid", "foo_flag"});
+  ASSERT_EQ(mem_sink->relation(), expected_relation);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

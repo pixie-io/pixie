@@ -748,12 +748,13 @@ class ASTVisitorTest : public OperatorTests {
         std::make_unique<CompilerState>(std::move(relation_map_), registry_info_.get(), time_now);
   }
 
-  StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {
+  StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query,
+                                             const FlagValues& flag_values = {}) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
-    PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state_.get(),
-                                                                /*flag values*/ {}));
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        ASTVisitorImpl::Create(ir.get(), compiler_state_.get(), flag_values));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ir;
