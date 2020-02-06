@@ -81,9 +81,6 @@ class StatusOr {
   T ConsumeValueOrDie();
 
   std::string ToString() const {
-    if (ok()) {
-      return "OK";
-    }
     return status().ToString();
   }
 
