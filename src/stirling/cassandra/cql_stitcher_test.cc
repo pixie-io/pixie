@@ -5,6 +5,7 @@
 #include "src/stirling/cassandra/cql_stitcher.h"
 
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 
 namespace pl {
 namespace stirling {
@@ -26,6 +27,18 @@ constexpr uint8_t kErrorMsg[] = {0x00, 0x00, 0x22, 0x00, 0x00, 0x23, 0x75, 0x6e,
                                  0x6c, 0x65, 0x20, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x6b,
                                  0x65, 0x79, 0x73, 0x70, 0x61, 0x63, 0x65, 0x73};
 std::string_view kErrorMsgStr = CreateStringView<char>(CharArrayStringView<uint8_t>(kErrorMsg));
+
+std::string_view kOptionsMsgStr = "";
+
+constexpr uint8_t kSupportedMsg[] = {
+    0x00, 0x03, 0x00, 0x11, 0x50, 0x52, 0x4f, 0x54, 0x4f, 0x43, 0x4f, 0x4c, 0x5f, 0x56, 0x45, 0x52,
+    0x53, 0x49, 0x4f, 0x4e, 0x53, 0x00, 0x03, 0x00, 0x04, 0x33, 0x2f, 0x76, 0x33, 0x00, 0x04, 0x34,
+    0x2f, 0x76, 0x34, 0x00, 0x09, 0x35, 0x2f, 0x76, 0x35, 0x2d, 0x62, 0x65, 0x74, 0x61, 0x00, 0x0b,
+    0x43, 0x4f, 0x4d, 0x50, 0x52, 0x45, 0x53, 0x53, 0x49, 0x4f, 0x4e, 0x00, 0x02, 0x00, 0x06, 0x73,
+    0x6e, 0x61, 0x70, 0x70, 0x79, 0x00, 0x03, 0x6c, 0x7a, 0x34, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5f,
+    0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x00, 0x01, 0x00, 0x05, 0x33, 0x2e, 0x34, 0x2e, 0x34};
+std::string_view kSupportedMsgStr =
+    CreateStringView<char>(CharArrayStringView<uint8_t>(kSupportedMsg));
 
 Frame CreateFrame(uint16_t stream, Opcode opcode, std::string_view msg, uint64_t timestamp_ns) {
   Frame f;
@@ -119,6 +132,54 @@ TEST(CassStitcherTest, OutOfOrder) {
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(resp_frames.size(), 0);
   EXPECT_EQ(records.size(), 0);
+}
+
+TEST(CassStitcherTest, OpEvent) {
+  std::deque<Frame> req_frames;
+  std::deque<Frame> resp_frames;
+  std::vector<Record> records;
+
+  resp_frames.push_back(CreateFrame(-1, Opcode::kEvent, "Foo", 3));
+
+  records = ProcessFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  ASSERT_EQ(records.size(), 1);
+
+  Record& record = records.front();
+
+  EXPECT_EQ(record.req.op, ReqOp::kRegister);
+  EXPECT_EQ(record.resp.op, RespOp::kEvent);
+
+  EXPECT_EQ(record.req.msg, "-");
+  EXPECT_THAT(record.resp.msg, "Foo");
+
+  // Expecting zero latency.
+  EXPECT_EQ(record.req.timestamp_ns, record.resp.timestamp_ns);
+}
+
+TEST(CassStitcherTest, OptionsSupported) {
+  std::deque<Frame> req_frames;
+  std::deque<Frame> resp_frames;
+  std::vector<Record> records;
+
+  req_frames.push_back(CreateFrame(0, Opcode::kOptions, kOptionsMsgStr, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kSupported, kSupportedMsgStr, 2));
+
+  records = ProcessFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  ASSERT_EQ(records.size(), 1);
+
+  Record& record = records.front();
+
+  EXPECT_EQ(record.req.op, ReqOp::kOptions);
+  EXPECT_EQ(record.resp.op, RespOp::kSupported);
+
+  EXPECT_THAT(record.req.msg, IsEmpty());
+  EXPECT_THAT(record.resp.msg, HasSubstr("PROTOCOL_VERSIONS"));
+  EXPECT_THAT(record.resp.msg, HasSubstr("COMPRESSION"));
+  EXPECT_THAT(record.resp.msg, HasSubstr("CQL_VERSION"));
 }
 
 }  // namespace cass

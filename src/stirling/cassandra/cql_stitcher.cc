@@ -11,23 +11,60 @@ namespace pl {
 namespace stirling {
 namespace cass {
 
-StatusOr<Record> ProcessReqRespPair(const Frame& req_frame, const Frame& resp_frame) {
-  ECHECK_LT(req_frame.timestamp_ns, resp_frame.timestamp_ns);
-
-  // For now, we just copy the frame contents. Eventually, this will turn into a switch statement by
-  // op type, and there will be further op-specific processing.
-
+StatusOr<Record> ProcessEventFrame(Frame* resp_frame) {
+  // Make a fake request to go along with the response.
+  // - Use REGISTER op, since that was what set up the events in the first place.
+  // - Use response timestamp, so any calculated latencies are reported as 0.
   Request req;
-  req.op = static_cast<ReqOp>(req_frame.hdr.opcode);
-  req.msg = std::move(req_frame.msg);
-  req.timestamp_ns = req_frame.timestamp_ns;
+  req.op = ReqOp::kRegister;
+  req.msg = "-";
+  req.timestamp_ns = resp_frame->timestamp_ns;
 
   Response resp;
-  resp.op = static_cast<RespOp>(resp_frame.hdr.opcode);
-  resp.msg = std::move(resp_frame.msg);
-  resp.timestamp_ns = resp_frame.timestamp_ns;
+  resp.op = static_cast<RespOp>(resp_frame->hdr.opcode);
+  resp.msg = std::move(resp_frame->msg);
+  resp.timestamp_ns = resp_frame->timestamp_ns;
 
   return Record{req, resp};
+}
+
+StatusOr<Record> ProcessSimpleReqResp(Frame* req_frame, Frame* resp_frame) {
+  Request req;
+  req.op = static_cast<ReqOp>(req_frame->hdr.opcode);
+  req.msg = req_frame->msg;
+  req.timestamp_ns = req_frame->timestamp_ns;
+
+  Response resp;
+  resp.op = static_cast<RespOp>(resp_frame->hdr.opcode);
+  resp.msg = std::move(resp_frame->msg);
+  resp.timestamp_ns = resp_frame->timestamp_ns;
+
+  return Record{req, resp};
+}
+
+StatusOr<Record> ProcessReqRespPair(Frame* req_frame, Frame* resp_frame) {
+  ECHECK_LT(req_frame->timestamp_ns, resp_frame->timestamp_ns);
+
+  switch (static_cast<ReqOp>(req_frame->hdr.opcode)) {
+    case ReqOp::kStartup:
+      return ProcessSimpleReqResp(req_frame, resp_frame);
+    case ReqOp::kAuthResponse:
+      return ProcessSimpleReqResp(req_frame, resp_frame);
+    case ReqOp::kOptions:
+      return ProcessSimpleReqResp(req_frame, resp_frame);
+    case ReqOp::kQuery:
+      return ProcessSimpleReqResp(req_frame, resp_frame);
+    case ReqOp::kPrepare:
+      return ProcessSimpleReqResp(req_frame, resp_frame);
+    case ReqOp::kExecute:
+      return ProcessSimpleReqResp(req_frame, resp_frame);
+    case ReqOp::kBatch:
+      return ProcessSimpleReqResp(req_frame, resp_frame);
+    case ReqOp::kRegister:
+      return ProcessSimpleReqResp(req_frame, resp_frame);
+    default:
+      return error::Internal("Unhandled opcode $0", magic_enum::enum_name(req_frame->hdr.opcode));
+  }
 }
 
 // Currently ProcessFrames() uses a response-led matching algorithm.
@@ -44,17 +81,29 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, std::deque<Fram
   for (auto& resp_frame : *resp_frames) {
     bool found_match = false;
 
+    // Event responses are special: they have no request.
+    if (resp_frame.hdr.opcode == Opcode::kEvent) {
+      StatusOr<Record> record_status = ProcessEventFrame(&resp_frame);
+      if (record_status.ok()) {
+        entries.push_back(record_status.ConsumeValueOrDie());
+      } else {
+        LOG(ERROR) << record_status.msg();
+      }
+      resp_frames->pop_front();
+      continue;
+    }
+
     // Search for matching req frame
     for (auto& req_frame : *req_frames) {
       if (resp_frame.hdr.stream == req_frame.hdr.stream) {
         VLOG(2) << absl::Substitute("req_op=$0 msg=$1", magic_enum::enum_name(req_frame.hdr.opcode),
                                     req_frame.msg);
 
-        StatusOr<Record> record_status = ProcessReqRespPair(req_frame, resp_frame);
+        StatusOr<Record> record_status = ProcessReqRespPair(&req_frame, &resp_frame);
         if (record_status.ok()) {
           entries.push_back(record_status.ConsumeValueOrDie());
         } else {
-          LOG(ERROR) << record_status.msg();
+          LOG(ERROR) << record_status.ToString();
         }
 
         // Found a match, so remove both request and response.
