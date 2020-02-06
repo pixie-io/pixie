@@ -113,7 +113,7 @@ describe('<CompanyCreate/> test', () => {
     setImmediate(() => {
       app.update();
       expect(redirectMock.mock.calls).toHaveLength(1);
-      expect(redirectMock.mock.calls[0]).toEqual(['id', '/login', { siteName: 'test-site', 'no-cache': 'true' }]);
+      expect(redirectMock.mock.calls[0]).toEqual(['id', '/login', { siteName: 'test-site', no_cache: 'true' }]);
       done();
     });
   });

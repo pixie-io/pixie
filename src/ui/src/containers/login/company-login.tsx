@@ -58,7 +58,7 @@ export const CompanyCreate = () => {
       if (!available) {
         throw new Error('Sorry, the site already exists. Try a different name.');
       }
-      RedirectUtils.redirect('id', '/login', { siteName, 'no-cache': 'true' });
+      RedirectUtils.redirect('id', '/login', { siteName, no_cache: 'true' });
     }}
   />);
 };
