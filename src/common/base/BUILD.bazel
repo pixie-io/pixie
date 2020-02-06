@@ -1,12 +1,15 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library_internal", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library_internal", "pl_cc_test")
 
 pl_cc_library_internal(
     name = "cc_library",
     srcs = glob(
         ["*.cc"],
-        exclude = ["**/*_test.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
     ),
     hdrs = glob(
         ["*.h"],
@@ -100,4 +103,12 @@ pl_cc_test(
     name = "magic_enum_test",
     srcs = ["magic_enum_test.cc"],
     deps = [":cc_library"],
+)
+
+pl_cc_binary(
+    name = "bytes_to_int_benchmark",
+    srcs = ["bytes_to_int_benchmark.cc"],
+    deps = [
+        "@com_google_benchmark//:benchmark_main",
+    ],
 )

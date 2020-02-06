@@ -131,7 +131,11 @@ enum class MySQLColType : uint8_t {
   kGeometry = 0xff,
 };
 
+// See https://dev.mysql.com/doc/internals/en/mysql-packet.html.
 constexpr int kPacketHeaderLength = 4;
+
+// Part of kPacketHeaderLength.
+constexpr int kPayloadLengthLength = 3;
 
 // Constants for StmtExecute packet, where the payload is as follows:
 // bytes  description

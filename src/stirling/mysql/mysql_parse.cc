@@ -14,7 +14,7 @@ namespace stirling {
 
 namespace mysql {
 
-ParseState Parse(MessageType type, std::string_view* buf, mysql::Packet* result) {
+ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
   if (type != MessageType::kRequest && type != MessageType::kResponse) {
     return ParseState::kInvalid;
   }
@@ -34,7 +34,7 @@ ParseState Parse(MessageType type, std::string_view* buf, mysql::Packet* result)
     }
   }
 
-  int packet_length = utils::LittleEndianByteStrToInt(buf->substr(0, kPacketHeaderLength - 1));
+  int packet_length = utils::LittleEndianByteStrToInt<int, kPayloadLengthLength>(*buf);
   ssize_t buffer_length = buf->length();
 
   // 3 bytes of packet length and 1 byte of packet number.

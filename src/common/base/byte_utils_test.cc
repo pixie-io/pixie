@@ -77,25 +77,25 @@ TEST(UtilsTest, TestReverseBytes) {
 }
 
 TEST(UtilsTest, TestLittleEndianByteStrToInt) {
-  // Note that int32_t vs uint32_t doesn't really make a difference.
-  // So just use the more convenient receiver type.
-
   // uint32_t cases.
   EXPECT_EQ(LittleEndianByteStrToInt<uint32_t>(ConstString("\x78\x56\x34\x12")), 0x12345678);
-  EXPECT_EQ(LittleEndianByteStrToInt<uint32_t>(ConstString("\xc6\x00\x00")), 0x0000c6);
+  EXPECT_EQ((LittleEndianByteStrToInt<uint32_t, 3>(ConstString("\xc6\x00\x00"))), 0x0000c6);
   EXPECT_EQ(LittleEndianByteStrToInt<uint32_t>(ConstString("\x33\x77\xbb\xff")), 0xffbb7733);
   EXPECT_EQ(LittleEndianByteStrToInt<uint32_t>(ConstString("\x33\x77\xbb\xff")), -0x4488cd);
 
   // int32_t cases.
   EXPECT_EQ(LittleEndianByteStrToInt<int32_t>(ConstString("\x78\x56\x34\x12")), 0x12345678);
-  EXPECT_EQ(LittleEndianByteStrToInt<int32_t>(ConstString("\xc6\x00\x00")), 0x0000c6);
+  EXPECT_EQ((LittleEndianByteStrToInt<int32_t, 3>(ConstString("\xc6\x00\x00"))), 0x0000c6);
   EXPECT_EQ(LittleEndianByteStrToInt<int32_t>(ConstString("\x33\x77\xbb\xff")), 0xffbb7733);
   EXPECT_EQ(LittleEndianByteStrToInt<int32_t>(ConstString("\x33\x77\xbb\xff")), -0x4488cd);
 
-  // 64-bit case.
+  // 64-bit cases.
   EXPECT_EQ(LittleEndianByteStrToInt<int64_t>(
                 std::string(ConstStringView("\xf0\xde\xbc\x9a\x78\x56\x34\x12"))),
             0x123456789abcdef0);
+  EXPECT_EQ(LittleEndianByteStrToInt<int64_t>(
+                std::string(ConstStringView("\xf0\xde\xbc\x9a\x78\x56\x34\xf2"))),
+            -0xdcba98765432110);
 }
 
 TEST(UtilsTest, TestLittleEndianByteStrToFloat) {

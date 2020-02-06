@@ -8,21 +8,26 @@ namespace pl {
 namespace utils {
 
 /**
- * Convert a string of bytes to an integer, assuming little-endian ordering.
+ * Convert a string of bytes to an integer, assuming bytes follow little-endian ordering.
  *
- * The string must not be longer than the int type, otherwise behavior is undefined,
- * although a DCHECK will fire in debug mode.
- *
- * @tparam TIntType The receiver int type. Signed vs unsigned decode to the same raw bytes.
- * @param str The sequence of bytes.
+ * @tparam T The receiver int type. Signed vs unsigned decode to the same raw bytes.
+ * @tparam N Number of bytes to process from the source buffer. N must be <= sizeof(T).
+ * If N < sizeof(T), the remaining bytes are assumed to be zero.
+ * @param buf The sequence of bytes.
  * @return The decoded int value.
  */
-template <typename TIntType = uint32_t>
-TIntType LittleEndianByteStrToInt(std::string_view str) {
-  DCHECK_LE(str.size(), sizeof(TIntType));
-  TIntType result = 0;
-  for (size_t i = 0; i < str.size(); i++) {
-    result = static_cast<uint8_t>(str[str.size() - 1 - i]) + (result << 8);
+template <typename T, int N = sizeof(T)>
+T LittleEndianByteStrToInt(std::string_view buf) {
+  // Doesn't make sense to process more bytes than the destination type.
+  // Less bytes is okay, on the other hand, since the value will still fit.
+  static_assert(N <= sizeof(T));
+
+  // Source buffer must have enough bytes.
+  DCHECK_GE(buf.size(), N);
+
+  T result = 0;
+  for (size_t i = 0; i < N; i++) {
+    result = static_cast<uint8_t>(buf[N - 1 - i]) + (result << 8);
   }
   return result;
 }
