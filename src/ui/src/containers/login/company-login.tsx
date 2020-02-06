@@ -43,7 +43,7 @@ export const CompanyLogin = () => {
       if (available) {
         throw new Error('The site doesn\'t exist. Please check the name and try again.');
       }
-      RedirectUtils.redirect('id', '/login', { ['site_name']: siteName });
+      RedirectUtils.redirect('id', '/login', { siteName });
     }}
   />);
 };
@@ -58,7 +58,7 @@ export const CompanyCreate = () => {
       if (!available) {
         throw new Error('Sorry, the site already exists. Try a different name.');
       }
-      RedirectUtils.redirect('id', '/create-site', { ['site_name']: siteName });
+      RedirectUtils.redirect('id', '/login', { siteName, 'no-cache': 'true' });
     }}
   />);
 };

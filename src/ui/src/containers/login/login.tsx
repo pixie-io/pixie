@@ -1,7 +1,7 @@
 import './login.scss';
 
 import * as React from 'react';
-import {Route, Router, Switch} from 'react-router-dom';
+import {Redirect, Route, Router, Switch} from 'react-router-dom';
 import history from 'utils/pl-history';
 
 import {Logout} from './logout';
@@ -13,6 +13,7 @@ export const Login = () => (
       <Switch>
         <Route exact path='/login' component={UserLogin} />
         <Route exact path='/logout' component={Logout} />
+        <Redirect to='login' />
       </Switch>
     </Router>
   </div>

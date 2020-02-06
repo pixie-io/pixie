@@ -4,18 +4,21 @@ import {mount} from 'enzyme';
 import * as React from 'react';
 import {Button, InputGroup} from 'react-bootstrap';
 import {BrowserRouter as Router, Route} from 'react-router-dom';
+import * as redirectUtils from 'utils/redirect-utils';
 
 import {CompanyCreate, CompanyLogin} from './company-login';
 
 jest.mock('containers/constants', () => ({ DOMAIN_NAME: 'dev.withpixie.dev' }));
-// Mock out window.location because jsdom doesn't handle redirects.
-const windowLocation = JSON.stringify(window.location);
-delete window.location;
-Object.defineProperty(window, 'location', {
-  value: JSON.parse(windowLocation),
-});
+jest.mock('utils/analytics', () => ({ default: { track: jest.fn() } }));
 
-describe.skip('<CompanyCreate/> test', () => {
+jest.mock('utils/redirect-utils', () => ({ redirect: jest.fn() }));
+const redirectMock = redirectUtils.redirect as jest.Mock;
+
+describe('<CompanyCreate/> test', () => {
+  beforeEach(() => {
+    redirectMock.mockClear();
+  });
+
   it('should have correct content', () => {
     const app = mount(<Router><CompanyCreate /></Router>);
 
@@ -60,7 +63,7 @@ describe.skip('<CompanyCreate/> test', () => {
 
     const button = app.find(Button);
     expect(button.get(0).props.disabled).toBe(false);
-    button.at(0).simulate('click');
+    button.at(0).simulate('submit');
 
     setImmediate(() => {
       app.update();
@@ -83,7 +86,7 @@ describe.skip('<CompanyCreate/> test', () => {
 
     const button = app.find(Button);
     expect(button.get(0).props.disabled).toBe(false);
-    button.at(0).simulate('click');
+    button.at(0).simulate('submit');
 
     setImmediate(() => {
       app.update();
@@ -93,9 +96,34 @@ describe.skip('<CompanyCreate/> test', () => {
       done();
     });
   });
+
+  it('should redirect to login if site exists', (done) => {
+    const mock = new MockAdapter(Axios);
+
+    mock.onGet('/api/site/check').reply(200, {
+      available: true,
+    });
+    const app = mount(<Router><CompanyCreate /></Router>);
+
+    const input = app.find('input').getDOMNode() as HTMLInputElement;
+    input.value = 'test-site';
+    const button = app.find(Button);
+    button.simulate('submit');
+
+    setImmediate(() => {
+      app.update();
+      expect(redirectMock.mock.calls).toHaveLength(1);
+      expect(redirectMock.mock.calls[0]).toEqual(['id', '/login', { siteName: 'test-site', 'no-cache': 'true' }]);
+      done();
+    });
+  });
 });
 
-describe.skip('<CompanyLogin/> test', () => {
+describe('<CompanyLogin/> test', () => {
+  beforeEach(() => {
+    redirectMock.mockClear();
+  });
+
   it('should have correct content', () => {
     const app = mount(<Router><CompanyLogin /></Router>);
 
@@ -118,7 +146,7 @@ describe.skip('<CompanyLogin/> test', () => {
 
     const button = app.find(Button);
     expect(button.get(0).props.disabled).toBe(false);
-    button.at(0).simulate('click');
+    button.at(0).simulate('submit');
 
     setImmediate(() => {
       app.update();
@@ -138,13 +166,34 @@ describe.skip('<CompanyLogin/> test', () => {
 
     const button = app.find(Button);
     expect(button.get(0).props.disabled).toBe(false);
-    button.at(0).simulate('click');
+    button.at(0).simulate('submit');
 
     setImmediate(() => {
       app.update();
       expect(app.find('.company-login-content--error')
         .at(0).text()).toEqual('');
       expect(app.find(Button).get(0).props.disabled).toBe(false);
+      done();
+    });
+  });
+
+  it('should redirect to login if site exists', (done) => {
+    const mock = new MockAdapter(Axios);
+
+    mock.onGet('/api/site/check').reply(200, {
+      available: false,
+    });
+    const app = mount(<Router><CompanyLogin /></Router>);
+
+    const input = app.find('input').getDOMNode() as HTMLInputElement;
+    input.value = 'test-site';
+    const button = app.find(Button);
+    button.simulate('submit');
+
+    setImmediate(() => {
+      app.update();
+      expect(redirectMock.mock.calls).toHaveLength(1);
+      expect(redirectMock.mock.calls[0]).toEqual(['id', '/login', { siteName: 'test-site' }]);
       done();
     });
   });
@@ -162,7 +211,7 @@ describe.skip('<CompanyLogin/> test', () => {
 
     const button = app.find(Button);
     expect(button.get(0).props.disabled).toBe(false);
-    button.at(0).simulate('click');
+    button.at(0).simulate('submit');
 
     setImmediate(() => {
       app.update();
