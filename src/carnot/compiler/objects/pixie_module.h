@@ -1,13 +1,17 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/compiler/objects/funcobject.h"
+#include "src/carnot/compiler/plannerpb/query_flags.pb.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
+
+using FlagValues = std::vector<plannerpb::QueryRequest::FlagValue>;
 
 class PixieModule : public QLObject {
  public:
@@ -15,7 +19,8 @@ class PixieModule : public QLObject {
       /* name */ "px",
       /* type */ QLObjectType::kPLModule,
   };
-  static StatusOr<std::shared_ptr<PixieModule>> Create(IR* graph, CompilerState* compiler_state);
+  static StatusOr<std::shared_ptr<PixieModule>> Create(IR* graph, CompilerState* compiler_state,
+                                                       const FlagValues& flag_values);
 
   // Constant for the modules.
   inline static constexpr char kPixieModuleObjName[] = "px";
@@ -32,7 +37,7 @@ class PixieModule : public QLObject {
  protected:
   explicit PixieModule(IR* graph, CompilerState* compiler_state)
       : QLObject(PixieModuleType), graph_(graph), compiler_state_(compiler_state) {}
-  Status Init();
+  Status Init(const FlagValues& flag_values);
   Status RegisterUDFFuncs();
   Status RegisterUDTFs();
   Status RegisterCompileTimeFuncs();

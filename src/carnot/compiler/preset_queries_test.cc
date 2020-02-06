@@ -94,7 +94,7 @@ class PresetQueriesTest : public ::testing::Test {
 TEST_F(PresetQueriesTest, PresetQueries) {
   // Test compilation
   for (const auto& query : preset_queries_) {
-    auto plan = compiler_.Compile(query.second, compiler_state_.get());
+    auto plan = compiler_.Compile(query.second, compiler_state_.get(), /*query_flags*/ {});
     ASSERT_OK(plan) << "Query '" << query.first << "' failed";
   }
 

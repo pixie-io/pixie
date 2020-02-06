@@ -21,15 +21,19 @@ class Compiler {
  public:
   /**
    * Compile the query into a logical plan.
-   * @param query the query to compile.
+   * @param query the query to compile
+   * @param compiler_state compiler state
+   * @param flag_values values for flags passed in with the query
    * @return the logical plan in the form of a plan protobuf message.
    */
-  StatusOr<planpb::Plan> Compile(const std::string& query, CompilerState* compiler_state);
-  StatusOr<std::shared_ptr<IR>> CompileToIR(const std::string& query,
-                                            CompilerState* compiler_state);
+  StatusOr<planpb::Plan> Compile(const std::string& query, CompilerState* compiler_state,
+                                 const FlagValues& flag_values);
+  StatusOr<std::shared_ptr<IR>> CompileToIR(const std::string& query, CompilerState* compiler_state,
+                                            const FlagValues& flag_values);
 
  private:
-  StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state);
+  StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state,
+                                          const FlagValues& flag_values);
 
   Status UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state);
   Status VerifyGraphHasMemorySink(IR* ir);

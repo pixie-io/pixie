@@ -48,7 +48,8 @@ class ASTExpressionTest : public ::testing::Test {
     compiler_state_ =
         std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now_);
     graph = std::make_shared<IR>();
-    ast_visitor = ASTVisitorImpl::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
+    ast_visitor = ASTVisitorImpl::Create(graph.get(), compiler_state_.get(), /*flag values*/ {})
+                      .ConsumeValueOrDie();
   }
   std::shared_ptr<RegistryInfo> info_;
   Parser parser;

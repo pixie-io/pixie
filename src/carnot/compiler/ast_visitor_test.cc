@@ -1176,7 +1176,8 @@ TEST_F(ASTVisitorTest, func_def_doesnt_make_new_globals) {
   ASSERT_OK(ast_or_s);
   auto ast = ast_or_s.ConsumeValueOrDie();
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  auto ast_walker_or_s = ASTVisitorImpl::Create(ir.get(), compiler_state_.get());
+  auto ast_walker_or_s =
+      ASTVisitorImpl::Create(ir.get(), compiler_state_.get(), /*flag values*/ {});
   ASSERT_OK(ast_walker_or_s);
   auto ast_walker = ast_walker_or_s.ConsumeValueOrDie();
   ASSERT_OK(ast_walker->ProcessModuleNode(ast));

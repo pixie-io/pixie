@@ -13,11 +13,11 @@ namespace carnot {
 namespace compiler {
 constexpr const char* const PixieModule::kTimeFuncs[];
 
-StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph,
-                                                           CompilerState* compiler_state) {
+StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph, CompilerState* compiler_state,
+                                                           const FlagValues& flag_values) {
   auto module = std::shared_ptr<PixieModule>(new PixieModule(graph, compiler_state));
 
-  PL_RETURN_IF_ERROR(module->Init());
+  PL_RETURN_IF_ERROR(module->Init(flag_values));
   return module;
 }
 
@@ -131,7 +131,9 @@ Status PixieModule::RegisterCompileTimeUnitFunction(std::string name) {
   return Status::OK();
 }
 
-Status PixieModule::Init() {
+Status PixieModule::Init(const FlagValues& flag_values) {
+  // TODO(nserrino): Add in FlagsObject
+  PL_UNUSED(flag_values);
   PL_RETURN_IF_ERROR(RegisterUDFFuncs());
   PL_RETURN_IF_ERROR(RegisterCompileTimeFuncs());
   PL_RETURN_IF_ERROR(RegisterUDTFs());

@@ -1182,8 +1182,8 @@ TEST_F(CarnotTest, pass_logical_plan) {
   std::unique_ptr<compiler::CompilerState> compiler_state =
       std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
                                                 current_time);
-  StatusOr<planpb::Plan> logical_plan_status =
-      compiler.Compile(absl::Substitute(query, logical_plan_table_name), compiler_state.get());
+  StatusOr<planpb::Plan> logical_plan_status = compiler.Compile(
+      absl::Substitute(query, logical_plan_table_name), compiler_state.get(), /*query flags*/ {});
   ASSERT_OK(logical_plan_status);
   planpb::Plan plan = logical_plan_status.ConsumeValueOrDie();
   auto plan_uuid = sole::uuid4();
@@ -1243,8 +1243,8 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
   std::unique_ptr<compiler::CompilerState> compiler_state =
       std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
                                                 current_time);
-  StatusOr<planpb::Plan> logical_plan_status =
-      compiler.Compile(absl::Substitute(query, table_name), compiler_state.get());
+  StatusOr<planpb::Plan> logical_plan_status = compiler.Compile(
+      absl::Substitute(query, table_name), compiler_state.get(), /*query flags*/ {});
   ASSERT_OK(logical_plan_status);
   planpb::Plan plan = logical_plan_status.ConsumeValueOrDie();
   ASSERT_OK(carnot_->ExecutePlan(plan, sole::uuid4()));
@@ -1281,7 +1281,8 @@ TEST_F(CarnotTest, empty_table_yields_empty_results) {
   std::unique_ptr<compiler::CompilerState> compiler_state =
       std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
                                                 current_time);
-  StatusOr<planpb::Plan> plan_or_s = compiler.Compile(query, compiler_state.get());
+  StatusOr<planpb::Plan> plan_or_s =
+      compiler.Compile(query, compiler_state.get(), /*query flags*/ {});
   ASSERT_OK(plan_or_s);
   planpb::Plan plan = plan_or_s.ConsumeValueOrDie();
   ASSERT_OK(carnot_->ExecutePlan(plan, sole::uuid4()));

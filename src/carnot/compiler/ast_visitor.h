@@ -17,6 +17,7 @@
 #include "src/carnot/compiler/ir/ast_utils.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/objects/dataframe.h"
+#include "src/carnot/compiler/objects/pixie_module.h"
 #include "src/carnot/compiler/var_table.h"
 
 namespace pl {
@@ -45,27 +46,17 @@ struct OperatorContext {
 class ASTVisitorImpl : public ASTVisitor {
  public:
   /**
-   * @brief Creates an AST Visitor with the given graph, compiler state, and variable table.
+   * @brief Creates a top-level AST Visitor with the given graph and compiler state.
+   * Variable table and the pixie module are created with this call.
    *
    * @param graph
    * @param compiler_state
-   * @param var_table
-   * @param is_child
+   * @param flag_values
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state,
-                                                          std::shared_ptr<VarTable> var_table,
-                                                          bool is_child);
+                                                          const FlagValues& flag_values);
 
-  /**
-   * @brief Creates an AST Vistior with the given graph and compiler state. Variable table is
-   * created with this call.
-   *
-   * @param graph
-   * @param compiler_state
-   * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
-   */
-  static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state);
   /**
    * @brief The entry point into traversal as the root AST is a module.
    *
@@ -112,7 +103,15 @@ class ASTVisitorImpl : public ASTVisitor {
   ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table)
       : ir_graph_(ir_graph), compiler_state_(compiler_state), var_table_(var_table) {}
 
-  Status InitGlobals();
+  /**
+   * @brief Creates a child AST Visitor from the top-level AST Visitor, sharing the graph,
+   * compiler_state, and creating a child var table.
+   *
+   * @return std::shared_ptr<ASTVisitorImpl>
+   */
+  std::shared_ptr<ASTVisitorImpl> CreateChild();
+
+  Status InitGlobals(const FlagValues& flag_values);
 
   /**
    * @brief Process statements list passed in as an argument.

@@ -22,24 +22,22 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const p
   return op_find->second;
 }
 
-StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table,
-    bool is_child = false) {
-  std::shared_ptr<ASTVisitorImpl> ast_visitor =
-      std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(ir_graph, compiler_state, var_table));
-  if (!is_child) {
-    PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
-  }
+StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* graph,
+                                                                 CompilerState* compiler_state,
+                                                                 const FlagValues& flag_values) {
+  std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(
+      new ASTVisitorImpl(graph, compiler_state, VarTable::Create()));
+  PL_RETURN_IF_ERROR(ast_visitor->InitGlobals(flag_values));
   return ast_visitor;
 }
 
-StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* ir_graph,
-                                                                 CompilerState* compiler_state) {
-  return Create(ir_graph, compiler_state, VarTable::Create());
+std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
+  return std::shared_ptr<ASTVisitorImpl>(
+      new ASTVisitorImpl(ir_graph_, compiler_state_, var_table_->CreateChild()));
 }
 
-Status ASTVisitorImpl::InitGlobals() {
-  PL_ASSIGN_OR_RETURN(auto pl_module, PixieModule::Create(ir_graph_, compiler_state_));
+Status ASTVisitorImpl::InitGlobals(const FlagValues& flag_values) {
+  PL_ASSIGN_OR_RETURN(auto pl_module, PixieModule::Create(ir_graph_, compiler_state_, flag_values));
   // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
   var_table_->Add(PixieModule::kPixieModuleObjName, pl_module);
   // Populate the type objects
@@ -270,7 +268,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(
   // TODO(philkuz) (PL-1365) figure out how to wrap the internal errors with the ast that's passed
   // in.
   PL_UNUSED(ast);
-  std::shared_ptr<VarTable> local_scope = var_table_->CreateChild();
+
+  auto func_visitor = CreateChild();
   for (const std::string& arg_name : arg_names) {
     QLObjectPtr arg_object = args.GetArg(arg_name);
 
@@ -278,11 +277,10 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(
       PL_RETURN_IF_ERROR(
           DoesArgMatchAnnotation(arg_object, arg_annotations.find(arg_name)->second));
     }
-    local_scope->Add(arg_name, arg_object);
+    func_visitor->var_table()->Add(arg_name, arg_object);
   }
-  PL_ASSIGN_OR_RETURN(auto ast_visitor, ASTVisitorImpl::Create(ir_graph_, compiler_state_,
-                                                               local_scope, /* is_child */ true));
-  return ast_visitor->ProcessASTSuite(body, /*is_function_definition_body*/ true);
+
+  return func_visitor->ProcessASTSuite(body, /*is_function_definition_body*/ true);
 }
 
 Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& node) {

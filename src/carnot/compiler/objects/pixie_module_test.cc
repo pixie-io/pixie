@@ -106,7 +106,8 @@ class PixieModuleTest : public QLObjectTest {
     QLObjectTest::SetUp();
     info_ = SetUpRegistryInfo();
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
-    module_ = PixieModule::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
+    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), /*flag values*/ {})
+                  .ConsumeValueOrDie();
   }
 
   std::unique_ptr<CompilerState> compiler_state_;
