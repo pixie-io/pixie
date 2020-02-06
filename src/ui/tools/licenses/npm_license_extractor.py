@@ -9,6 +9,11 @@ import re
 import os
 import prepared_licenses
 
+# Constant key values
+REPOSITORY_KEY = 'repository'
+PUBLISHER_KEY = 'publisher'
+LICENSES_KEYS = 'licenses'
+
 
 def get_file_at_url(url):
     r = urllib2.urlopen(url)
@@ -34,10 +39,11 @@ OWNER_MAPPING_DICT = {
 
 def get_project_name(project_name, license_details):
 
-    if 'repository' not in license_details:
+    if REPOSITORY_KEY not in license_details:
         return project_name
 
-    new_project_name = get_package_name_from_url(license_details['repository'])
+    new_project_name = get_package_name_from_url(
+        license_details[REPOSITORY_KEY])
     if not new_project_name:
         return project_name
 
@@ -51,12 +57,15 @@ def special_owner_mapping(name):
 
 
 def _find_owner_impl(license_details):
-    if 'publisher' in license_details:
-        owner = license_details['publisher']
+    if PUBLISHER_KEY in license_details:
+        owner = license_details[PUBLISHER_KEY]
         return owner.encode('ascii', errors='ignore')
 
+    if REPOSITORY_KEY not in license_details:
+        return ''
+
     # work around to Guess at who the owner is.
-    repository = license_details['repository']
+    repository = license_details[REPOSITORY_KEY]
     matches = re.findall('github.com/(.*?)/', repository)
     if len(matches) == 0:
         return ""
@@ -69,11 +78,11 @@ def find_owner(license_details):
 
 
 def make_license(license_details):
-    if 'licenses' not in license_details:
+    if LICENSES_KEYS not in license_details:
         print(license_details['path'], 'no license options found')
         return ''
-    licenses = license_details['licenses']
 
+    licenses = license_details[LICENSES_KEYS]
     owner = find_owner(license_details)
 
     if 'MIT' in licenses:
