@@ -17,7 +17,7 @@ bazel build -c opt --stamp //src/utils/pixie_cli:px_darwin
 
 bazel build -c opt --stamp //src/utils/pixie_cli:px
 
-mac_binary=bazel-bin/src/utils/pixie_cli/darwin_amd64_pure_stripped/px_mac
+mac_binary=bazel-bin/src/utils/pixie_cli/darwin_amd64_pure_stripped/px_darwin
 linux_binary=bazel-bin/src/utils/pixie_cli/linux_amd64_stripped/px
 output_path="gs://pixie-prod-artifacts/cli/${release_tag}"
 
