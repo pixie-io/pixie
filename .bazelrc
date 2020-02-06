@@ -61,12 +61,10 @@ build --config=clang
 
 # Default mac config. Same as clang except we can't statically link,
 # and mac does not use libstdc++.
-build:macos --config=clang
 build:macos --action_env=BAZEL_LINKLIBS
 build:macos --action_env=BAZEL_LINKOPTS
 
 # bazel build --config asan ...
-build:asan --config=clang
 build:asan --define PL_CONFIG_ASAN=1
 build:asan --copt -D__SANITIZE_ADDRESS__
 build:asan --copt -fsanitize=address,undefined
@@ -99,7 +97,6 @@ build:msan --copt -fsanitize-memory-track-origins=2
 build:msan --define tcmalloc=disabled
 
 # bazel build --config tsan
-build:tsan --config=clang
 build:tsan --define PL_CONFIG_TSAN=1
 build:tsan --copt -fsanitize=thread
 build:tsan --linkopt -fsanitize=thread
@@ -113,7 +110,6 @@ build:tsan --define tcmalloc=disabled
 # If there are ever a lot of tests with requires_root set, a new config is warranted.
 
 # bazel build --config bpf
-build:bpf --config=clang
 build:bpf --build_tag_filters=requires_bpf,requires_root
 build:bpf --test_tag_filters=requires_bpf,requires_root,-disabled
 
