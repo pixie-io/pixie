@@ -144,8 +144,15 @@ var webpackConfig = {
         use: ['style-loader', 'css-loader'],
       },
       {
-        test: /\.toml$/,
-        use: ['raw-loader'],
+        test: /\.toml$/i,
+        use: [
+          {
+            loader: 'raw-loader',
+            options: {
+              esModule: false,
+            },
+          },
+        ],
       },
       {
         test: /\.(woff(2)?|ttf|eot)(\?v=\d+\.\d+\.\d+)?$/,

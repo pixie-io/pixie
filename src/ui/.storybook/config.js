@@ -1,8 +1,8 @@
-import { addDecorator, configure } from '@storybook/react';
-import { withInfo } from '@storybook/addon-info';
-import { withNotes } from '@storybook/addon-notes';
+import {addDecorator, configure} from '@storybook/react';
+import {withInfo} from '@storybook/addon-info';
+import {withNotes} from '@storybook/addon-notes';
 
-import '../src/index.scss';
+import './styles.scss';
 
 addDecorator(withInfo);
 addDecorator(withNotes);
