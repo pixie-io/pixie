@@ -7,6 +7,56 @@
 namespace pl {
 namespace utils {
 
+TEST(UtilsTest, TestReverseBytes) {
+  {
+    char result[4];
+    char input[] = {'\x12', '\x34', '\x56', '\x78'};
+    ReverseBytes(input, result);
+    char expected[] = "\x78\x56\x34\x12";
+    EXPECT_EQ(result[0], expected[0]);
+    EXPECT_EQ(result[1], expected[1]);
+    EXPECT_EQ(result[2], expected[2]);
+    EXPECT_EQ(result[3], expected[3]);
+  }
+
+  {
+    uint8_t result[4];
+    uint8_t input[] = {'\x12', '\x34', '\x56', '\x78'};
+    ReverseBytes(input, result);
+    uint8_t expected[] = "\x78\x56\x34\x12";
+    EXPECT_EQ(result[0], expected[0]);
+    EXPECT_EQ(result[1], expected[1]);
+    EXPECT_EQ(result[2], expected[2]);
+    EXPECT_EQ(result[3], expected[3]);
+  }
+}
+
+TEST(UtilsTest, TestLEndianBytesToInt) {
+  // uint32_t cases.
+  EXPECT_EQ(LEndianBytesToInt<uint32_t>(ConstString("\x78\x56\x34\x12")), 0x12345678);
+  EXPECT_EQ((LEndianBytesToInt<uint32_t, 3>(ConstString("\xc6\x00\x00"))), 0x0000c6);
+  EXPECT_EQ(LEndianBytesToInt<uint32_t>(ConstString("\x33\x77\xbb\xff")), 0xffbb7733);
+
+  // int32_t cases.
+  EXPECT_EQ(LEndianBytesToInt<int32_t>(ConstString("\x78\x56\x34\x12")), 0x12345678);
+  EXPECT_EQ((LEndianBytesToInt<int32_t, 3>(ConstString("\xc6\x00\x00"))), 0x0000c6);
+  EXPECT_EQ(LEndianBytesToInt<int32_t>(ConstString("\x33\x77\xbb\xff")), -0x4488cd);
+
+  // 64-bit cases.
+  EXPECT_EQ(
+      LEndianBytesToInt<int64_t>(std::string(ConstStringView("\xf0\xde\xbc\x9a\x78\x56\x34\x12"))),
+      0x123456789abcdef0);
+  EXPECT_EQ(
+      LEndianBytesToInt<int64_t>(std::string(ConstStringView("\xf0\xde\xbc\x9a\x78\x56\x34\xf2"))),
+      -0xdcba98765432110);
+}
+
+TEST(UtilsTest, TestLEndianBytesToFloat) {
+  EXPECT_FLOAT_EQ(LEndianBytesToFloat<float>(ConstString("\x33\x33\x23\x41")), 10.2f);
+  EXPECT_DOUBLE_EQ(LEndianBytesToFloat<double>(ConstString("\x66\x66\x66\x66\x66\x66\x24\x40")),
+                   10.2);
+}
+
 TEST(UtilsTest, TestIntToLEndianBytes) {
   {
     char result[4];
@@ -52,56 +102,24 @@ TEST(UtilsTest, TestIntToLEndianBytes) {
   }
 }
 
-TEST(UtilsTest, TestReverseBytes) {
-  {
-    char result[4];
-    char input[] = {'\x12', '\x34', '\x56', '\x78'};
-    ReverseBytes(input, result);
-    char expected[] = "\x78\x56\x34\x12";
-    EXPECT_EQ(result[0], expected[0]);
-    EXPECT_EQ(result[1], expected[1]);
-    EXPECT_EQ(result[2], expected[2]);
-    EXPECT_EQ(result[3], expected[3]);
-  }
-
-  {
-    uint8_t result[4];
-    uint8_t input[] = {'\x12', '\x34', '\x56', '\x78'};
-    ReverseBytes(input, result);
-    uint8_t expected[] = "\x78\x56\x34\x12";
-    EXPECT_EQ(result[0], expected[0]);
-    EXPECT_EQ(result[1], expected[1]);
-    EXPECT_EQ(result[2], expected[2]);
-    EXPECT_EQ(result[3], expected[3]);
-  }
-}
-
-TEST(UtilsTest, TestLEndianBytesToInt) {
+TEST(UtilsTest, TestBEndianBytesToInt) {
   // uint32_t cases.
-  EXPECT_EQ(LEndianBytesToInt<uint32_t>(ConstString("\x78\x56\x34\x12")), 0x12345678);
-  EXPECT_EQ((LEndianBytesToInt<uint32_t, 3>(ConstString("\xc6\x00\x00"))), 0x0000c6);
-  EXPECT_EQ(LEndianBytesToInt<uint32_t>(ConstString("\x33\x77\xbb\xff")), 0xffbb7733);
-  EXPECT_EQ(LEndianBytesToInt<uint32_t>(ConstString("\x33\x77\xbb\xff")), -0x4488cd);
+  EXPECT_EQ(BEndianBytesToInt<uint32_t>(ConstString("\x12\x34\x56\x78")), 0x12345678);
+  EXPECT_EQ((BEndianBytesToInt<uint32_t, 3>(ConstString("\x00\x00\xc6"))), 0x0000c6);
+  EXPECT_EQ(BEndianBytesToInt<uint32_t>(ConstString("\xff\xbb\x77\x33")), 0xffbb7733);
 
   // int32_t cases.
-  EXPECT_EQ(LEndianBytesToInt<int32_t>(ConstString("\x78\x56\x34\x12")), 0x12345678);
-  EXPECT_EQ((LEndianBytesToInt<int32_t, 3>(ConstString("\xc6\x00\x00"))), 0x0000c6);
-  EXPECT_EQ(LEndianBytesToInt<int32_t>(ConstString("\x33\x77\xbb\xff")), 0xffbb7733);
-  EXPECT_EQ(LEndianBytesToInt<int32_t>(ConstString("\x33\x77\xbb\xff")), -0x4488cd);
+  EXPECT_EQ(BEndianBytesToInt<int32_t>(ConstString("\x12\x34\x56\x78")), 0x12345678);
+  EXPECT_EQ((BEndianBytesToInt<int32_t, 3>(ConstString("\x00\x00\xc6"))), 0x0000c6);
+  EXPECT_EQ(BEndianBytesToInt<int32_t>(ConstString("\xff\xbb\x77\x33")), -0x4488cd);
 
   // 64-bit cases.
   EXPECT_EQ(
-      LEndianBytesToInt<int64_t>(std::string(ConstStringView("\xf0\xde\xbc\x9a\x78\x56\x34\x12"))),
+      BEndianBytesToInt<int64_t>(std::string(ConstStringView("\x12\x34\x56\x78\x9a\xbc\xde\xf0"))),
       0x123456789abcdef0);
   EXPECT_EQ(
-      LEndianBytesToInt<int64_t>(std::string(ConstStringView("\xf0\xde\xbc\x9a\x78\x56\x34\xf2"))),
+      BEndianBytesToInt<int64_t>(std::string(ConstStringView("\xf2\x34\x56\x78\x9a\xbc\xde\xf0"))),
       -0xdcba98765432110);
-}
-
-TEST(UtilsTest, TestLEndianBytesToFloat) {
-  EXPECT_FLOAT_EQ(LEndianBytesToFloat<float>(ConstString("\x33\x33\x23\x41")), 10.2f);
-  EXPECT_DOUBLE_EQ(LEndianBytesToFloat<double>(ConstString("\x66\x66\x66\x66\x66\x66\x24\x40")),
-                   10.2);
 }
 
 }  // namespace utils
