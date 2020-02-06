@@ -36,10 +36,6 @@
     color: $white;
 }
 
-.query-results .ReactVirtualized__Table__row {
-    font-size: 0.8rem;
-}
-
 .query-executor .ReactCodeMirror .CodeMirror-vscrollbar,
 .query-executor .ReactCodeMirror .CodeMirror-scrollbar-filler {
     display: none !important;
@@ -56,21 +52,6 @@
 
 .query-executor--footer {
     display: flex;
-}
-
-.query-results,
-.query-results--compiler-error {
-  height: 100%;
-  flex: unset;
-  display: flex;
-  flex-direction: column;
-}
-
-.query-results--empty {
-    justify-content: center;
-    align-items: center;
-    display: flex;
-    flex: 1;
 }
 
 .query-executor .content-box .content-box--content {

@@ -1,5 +1,6 @@
 import './format-data.scss';
 
+import clsx from 'clsx';
 import * as numeral from 'numeral';
 import * as React from 'react';
 
@@ -12,6 +13,7 @@ interface JSONDataProps {
   data: any;
   indentation?: number;
   multiline?: boolean;
+  className?: string;
 }
 
 export function formatFloat64Data(val: number): string {
@@ -53,7 +55,7 @@ export function looksLikeAlertCol(colName: string, colType: string) {
   return false;
 }
 
-export function JSONData(props) {
+export const JSONData = React.memo<JSONDataProps>((props) => {
   const indentation = props.indentation ? props.indentation : 0;
   let data = props.data;
   let cls = String(typeof data);
@@ -73,7 +75,7 @@ export function JSONData(props) {
 
   if (typeof data === 'object' && data !== null) {
     return (
-      <span className='formatted_data--json'>
+      <span className={clsx('formatted_data--json', props.className)}>
         {'{ '}
         {props.multiline ? <br /> : null}
         {
@@ -94,8 +96,8 @@ export function JSONData(props) {
         <span style={{ marginLeft: props.multiline ? indentation * JSON_INDENT_PX : 0 }}>{' }'}</span>
       </span>);
   }
-  return <span className={'formatted_data--json-' + cls}>{String(data)}</span>;
-}
+  return <span className={clsx(`formatted_data--json-${cls}`, props.className)}>{String(data)}</span>;
+});
 
 export function LatencyData(data: string) {
   const floatVal = parseFloat(data);

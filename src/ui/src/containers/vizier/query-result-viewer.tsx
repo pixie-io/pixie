@@ -1,4 +1,4 @@
-import './vizier.scss';
+import './query-result-viewer.scss';
 
 import {
     AutoSizedScrollableTable, AutoSizedScrollableTableProps, TableColumnInfo,
@@ -138,6 +138,7 @@ function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
 
 function ExpandedRowRenderer(rowData) {
   return <FormatData.JSONData
+    className='query-results-expanded-row'
     data={rowData}
     multiline={true}
   />;
