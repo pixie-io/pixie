@@ -17,7 +17,7 @@ namespace utils {
  * @return The decoded int value.
  */
 template <typename T, int N = sizeof(T)>
-T LittleEndianByteStrToInt(std::string_view buf) {
+T LEndianBytesToInt(std::string_view buf) {
   // Doesn't make sense to process more bytes than the destination type.
   // Less bytes is okay, on the other hand, since the value will still fit.
   static_assert(N <= sizeof(T));
@@ -33,7 +33,7 @@ T LittleEndianByteStrToInt(std::string_view buf) {
 }
 
 template <typename TFloatType>
-TFloatType LittleEndianByteStrToFloat(std::string_view str) {
+TFloatType LEndianBytesToFloat(std::string_view str) {
   DCHECK_EQ(str.size(), sizeof(TFloatType));
   return *reinterpret_cast<const TFloatType*>(str.data());
 }
@@ -53,7 +53,7 @@ void ReverseBytes(const TCharType (&bytes)[N], TCharType (&result)[N]) {
  * @param result the destination buffer.
  */
 template <typename TCharType, size_t N>
-void IntToLittleEndianByteStr(int64_t num, TCharType (&result)[N]) {
+void IntToLEndianBytes(int64_t num, TCharType (&result)[N]) {
   static_assert(N <= sizeof(int64_t));
   for (size_t i = 0; i < N; i++) {
     result[i] = (num >> (i * 8));

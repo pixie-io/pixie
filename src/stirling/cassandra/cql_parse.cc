@@ -35,9 +35,9 @@ ParseState Parse(MessageType type, std::string_view* buf, Frame* result) {
 
   result->hdr.version = static_cast<uint8_t>((*buf)[0]);
   result->hdr.flags = static_cast<uint8_t>((*buf)[1]);
-  result->hdr.stream = ntohs(utils::LittleEndianByteStrToInt<uint16_t>(buf->substr(2, 2)));
+  result->hdr.stream = ntohs(utils::LEndianBytesToInt<uint16_t>(buf->substr(2, 2)));
   result->hdr.opcode = static_cast<Opcode>(opcode.value());
-  result->hdr.length = ntohl(utils::LittleEndianByteStrToInt<int32_t>(buf->substr(5, 4)));
+  result->hdr.length = ntohl(utils::LEndianBytesToInt<int32_t>(buf->substr(5, 4)));
 
   // Do we have all the data for the frame?
   if (static_cast<ssize_t>(buf->length()) < kFrameHeaderLength + result->hdr.length) {

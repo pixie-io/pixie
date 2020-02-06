@@ -35,24 +35,24 @@ StatusOr<int64_t> ProcessLengthEncodedInt(std::string_view s, size_t* offset) {
     case kLencIntPrefix2b:
       s.remove_prefix(1);
       CHECK_LENGTH(s, 2);
-      result = utils::LittleEndianByteStrToInt<int64_t, 2>(s);
+      result = utils::LEndianBytesToInt<int64_t, 2>(s);
       *offset += (1 + 2);
       break;
     case kLencIntPrefix3b:
       s.remove_prefix(1);
       CHECK_LENGTH(s, 3);
-      result = utils::LittleEndianByteStrToInt<int64_t, 3>(s);
+      result = utils::LEndianBytesToInt<int64_t, 3>(s);
       *offset += (1 + 3);
       break;
     case kLencIntPrefix8b:
       s.remove_prefix(1);
       CHECK_LENGTH(s, 8);
-      result = utils::LittleEndianByteStrToInt<int64_t, 8>(s);
+      result = utils::LEndianBytesToInt<int64_t, 8>(s);
       *offset += (1 + 8);
       break;
     default:
       CHECK_LENGTH(s, 1);
-      result = utils::LittleEndianByteStrToInt<int64_t, 1>(s);
+      result = utils::LEndianBytesToInt<int64_t, 1>(s);
       *offset += 1;
       break;
   }
@@ -77,7 +77,7 @@ Status DissectIntParam(std::string_view msg, size_t* offset, std::string* param)
   if (msg.size() < *offset + length) {
     return error::Internal("Not enough bytes to dissect int param.");
   }
-  *param = std::to_string(utils::LittleEndianByteStrToInt<int64_t, length>(msg.substr(*offset)));
+  *param = std::to_string(utils::LEndianBytesToInt<int64_t, length>(msg.substr(*offset)));
   *offset += length;
   return Status::OK();
 }
@@ -94,8 +94,7 @@ Status DissectFloatParam(std::string_view msg, size_t* offset, std::string* para
   if (msg.size() < *offset + length) {
     return error::Internal("Not enough bytes to dissect float param.");
   }
-  *param =
-      std::to_string(utils::LittleEndianByteStrToFloat<TFloatType>(msg.substr(*offset, length)));
+  *param = std::to_string(utils::LEndianBytesToFloat<TFloatType>(msg.substr(*offset, length)));
   *offset += length;
   return Status::OK();
 }

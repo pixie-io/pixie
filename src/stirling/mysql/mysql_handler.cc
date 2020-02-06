@@ -26,7 +26,7 @@ void HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
   // https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html
   entry->resp.msg = packet.msg.substr(9);
 
-  int error_code = utils::LittleEndianByteStrToInt<int, 2>(packet.msg.substr(1));
+  int error_code = utils::LEndianBytesToInt<int, 2>(packet.msg.substr(1));
   // TODO(oazizi): Add error code into resp msg.
   PL_UNUSED(error_code);
 
@@ -178,11 +178,10 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
     return error::Internal("Expected StmtPrepareOK packet");
   }
 
-  int stmt_id = utils::LittleEndianByteStrToInt<int, 4>(first_resp_packet.msg.substr(1));
-  size_t num_col = utils::LittleEndianByteStrToInt<size_t, 2>(first_resp_packet.msg.substr(5));
-  size_t num_param = utils::LittleEndianByteStrToInt<size_t, 2>(first_resp_packet.msg.substr(7));
-  size_t warning_count =
-      utils::LittleEndianByteStrToInt<size_t, 2>(first_resp_packet.msg.substr(10));
+  int stmt_id = utils::LEndianBytesToInt<int, 4>(first_resp_packet.msg.substr(1));
+  size_t num_col = utils::LEndianBytesToInt<size_t, 2>(first_resp_packet.msg.substr(5));
+  size_t num_param = utils::LEndianBytesToInt<size_t, 2>(first_resp_packet.msg.substr(7));
+  size_t warning_count = utils::LEndianBytesToInt<size_t, 2>(first_resp_packet.msg.substr(10));
 
   // TODO(chengruizhe): Handle missing packets more robustly. Assuming no missing packet.
   // If num_col or num_param is non-zero, they will be followed by EOF.
@@ -368,7 +367,7 @@ void HandleStmtExecuteRequest(const Packet& req_packet,
   entry->req.timestamp_ns = req_packet.timestamp_ns;
 
   int stmt_id =
-      utils::LittleEndianByteStrToInt<int, kStmtIDBytes>(req_packet.msg.substr(kStmtIDStartOffset));
+      utils::LEndianBytesToInt<int, kStmtIDBytes>(req_packet.msg.substr(kStmtIDStartOffset));
 
   auto iter = prepare_map->find(stmt_id);
   if (iter == prepare_map->end()) {
@@ -418,7 +417,7 @@ void HandleStmtCloseRequest(const Packet& req_packet, std::map<int, PreparedStat
   entry->req.timestamp_ns = req_packet.timestamp_ns;
 
   int stmt_id =
-      utils::LittleEndianByteStrToInt<int, kStmtIDBytes>(req_packet.msg.substr(kStmtIDStartOffset));
+      utils::LEndianBytesToInt<int, kStmtIDBytes>(req_packet.msg.substr(kStmtIDStartOffset));
   auto iter = prepare_map->find(stmt_id);
   if (iter == prepare_map->end()) {
     // We may have missed the prepare statement (e.g. due to the missing start of connection
