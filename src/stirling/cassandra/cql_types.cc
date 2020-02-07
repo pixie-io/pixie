@@ -29,8 +29,7 @@ StatusOr<std::basic_string<TCharType>> ExtractBytesCore(std::string_view* buf, i
     return error::ResourceUnavailable("Insufficient number of bytes");
   }
 
-  // TODO(oazizi): Optimization when input and output types match,
-  // no need to create tbuf.
+  // TODO(oazizi): Optimization when input and output types match: no need for tbuf.
   auto tbuf = CreateStringView<TCharType>(*buf);
   std::basic_string<TCharType> str(tbuf.substr(0, len));
   buf->remove_prefix(len);
@@ -43,12 +42,9 @@ Status ExtractBytesCore(std::string_view* buf, TCharType* out) {
     return error::Internal("Insufficient number of bytes");
   }
 
-  // TODO(oazizi): Optimization when input and output types match,
-  // no need to create tbuf.
+  // TODO(oazizi): Optimization when input and output types match: no need for tbuf.
   auto tbuf = CreateStringView<TCharType>(*buf);
-  for (size_t i = 0; i < N; ++i) {
-    out[i] = tbuf[i];
-  }
+  memcpy(out, tbuf.data(), N);
   buf->remove_prefix(N);
   return Status::OK();
 }
@@ -81,9 +77,36 @@ StatusOr<std::string> ExtractLongString(std::string_view* buf) {
 // [uuid] A 16 bytes long uuid.
 StatusOr<sole::uuid> ExtractUUID(std::string_view* buf) {
   sole::uuid uuid;
-  PL_ASSIGN_OR_RETURN(uuid.cd, ExtractLong(buf));
+
+  // Logically, we want to get the different components of the UUID, and ensure correct byte-order.
+  // For example, see datastax:
+  // https://github.com/datastax/cpp-driver/blob/bbbbd7bc3eaba1b10ad8ac6f53c41fa93ee718db/src/serialization.hpp
+  // They do it in components, because each component is big-endian ordered.
+  // The ordering of bytes for the entire UUID is effectively:
+  //   input:  {15 ...........  8  7  6  5  4  3  2  1  0}
+  //   output: {8 ............ 15}{6  7}{4  5}{0  1  2  3}
+  //
+  // Equivalent code would be:
+  //   PL_ASSIGN_OR_RETURN(uint64_t time_low, ExtractInt(buf));
+  //   PL_ASSIGN_OR_RETURN(uint64_t time_mid, ExtractShort(buf));
+  //   PL_ASSIGN_OR_RETURN(uint64_t time_hi_version, ExtractShort(buf));
+  //   PL_ASSIGN_OR_RETURN(uint64_t clock_seq_and_node, ExtractLong(buf));
+  //
+  // But then we constitute the components according to the following formula,
+  // from uuid1() in sole.hpp:
+  //
+  //   uuid.ab = (time_low << 32) | (time_mid << 16) | time_hi_version;
+  //   uuid.cd = clock_seq_and_node;
+  //
+  // But we notice that the outcome of all this is:
+  //   uuid.ab = {0  1  2  3}{4  5}{6  7}
+  //   uuid.cd = {8 ................. 15}
+  //
+  // And we realize that we can achieve this directly with the following shortcut:
+
   PL_ASSIGN_OR_RETURN(uuid.ab, ExtractLong(buf));
-  // TODO(oazizi): Handle endianness.
+  PL_ASSIGN_OR_RETURN(uuid.cd, ExtractLong(buf));
+
   return uuid;
 }
 

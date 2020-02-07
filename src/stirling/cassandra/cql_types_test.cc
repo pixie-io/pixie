@@ -79,6 +79,8 @@ constexpr std::string_view kStringMultiMap = ConstStringView(
     "\x00\x09"
     "Vancouver");
 constexpr std::string_view kEmptyStringMultiMap = ConstStringView("\x00\x00");
+constexpr std::string_view kUUID =
+    ConstStringView("\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f");
 
 //------------------------
 // ExtractInt
@@ -440,7 +442,29 @@ TEST(ExtractStringMultiMap, EmptyMap) {
 // ExtractUUID
 //------------------------
 
-// TODO(oazizi): Add tests.
+TEST(ExtractUUID, Exact) {
+  std::string_view buf(kUUID);
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ExtractUUID(&buf));
+  EXPECT_EQ(uuid.str(), "00010203-0405-0607-0809-0a0b0c0d0e0f");
+  ASSERT_TRUE(buf.empty());
+}
+
+TEST(ExtractUUID, Empty) {
+  std::string_view buf(kEmpty);
+  ASSERT_NOT_OK(ExtractStringMultiMap(&buf));
+}
+
+TEST(ExtractUUID, Undersized) {
+  std::string_view buf(kUUID.data(), kUUID.size() - 1);
+  ASSERT_NOT_OK(ExtractStringMultiMap(&buf));
+}
+
+TEST(ExtractUUID, Oversized) {
+  std::string_view buf(kUUID.data(), kUUID.size() + 1);
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ExtractUUID(&buf));
+  EXPECT_EQ(uuid.str(), "00010203-0405-0607-0809-0a0b0c0d0e0f");
+  ASSERT_FALSE(buf.empty());
+}
 
 //------------------------
 // ExtractInet

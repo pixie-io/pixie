@@ -50,7 +50,7 @@ T LEndianBytesToInt(std::string_view buf) {
 
   T result = 0;
   for (size_t i = 0; i < N; i++) {
-    result = static_cast<uint8_t>(buf[N - 1 - i]) + (result << 8);
+    result = static_cast<uint8_t>(buf[N - 1 - i]) | (result << 8);
   }
   return result;
 }
@@ -103,7 +103,7 @@ T BEndianBytesToInt(std::string_view buf) {
 
   T result = 0;
   for (size_t i = 0; i < N; i++) {
-    result = static_cast<uint8_t>(buf[i]) + (result << 8);
+    result = static_cast<uint8_t>(buf[i]) | (result << 8);
   }
   return result;
 }
