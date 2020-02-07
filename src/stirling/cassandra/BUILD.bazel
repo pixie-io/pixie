@@ -12,6 +12,7 @@ pl_cc_library(
     deps = [
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
+        "@com_github_rlyeh_sole//:sole",
     ],
 )
 
@@ -24,5 +25,11 @@ pl_cc_test(
 pl_cc_test(
     name = "cql_stitcher_test",
     srcs = ["cql_stitcher_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "cql_types_test",
+    srcs = ["cql_types_test.cc"],
     deps = [":cc_library"],
 )
