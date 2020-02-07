@@ -1237,6 +1237,27 @@ TEST_F(FlagsTest, use_non_default_value) {
   EXPECT_EQ("non-default", static_cast<StringIR*>(expr)->str());
 }
 
+constexpr char kAvailableFlags[] = R"(
+flags {
+  data_type: STRING
+  semantic_type: ST_NONE
+  name: "foo"
+  description: "a random param"
+  default_value: {
+    data_type: STRING
+    string_value: "default"
+  }
+}
+)";
+
+TEST_F(FlagsTest, get_available_flags) {
+  auto flags_or_s = GetAvailableFlags(kFlagValueQuery);
+  ASSERT_OK(flags_or_s);
+  auto flags = flags_or_s.ConsumeValueOrDie();
+
+  EXPECT_THAT(flags, testing::proto::EqualsProto(kAvailableFlags));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

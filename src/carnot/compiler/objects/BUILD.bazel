@@ -21,6 +21,7 @@ pl_cc_library(
         "//src/carnot/compiler/ir:cc_library",
         "//src/carnot/compiler/parser:cc_library",
         "//src/carnot/compiler/plannerpb:query_flags_pl_cc_proto",
+        "//src/shared/types/proto:types_pl_cc_proto",
         "//third_party:libpypa",
     ],
 )

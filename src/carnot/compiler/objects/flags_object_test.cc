@@ -2,18 +2,19 @@
 #include <memory>
 #include <vector>
 
-#include <absl/container/flat_hash_map.h>
-
 #include "src/carnot/compiler/objects/flags_object.h"
 #include "src/carnot/compiler/objects/none_object.h"
 #include "src/carnot/compiler/objects/qlobject.h"
 #include "src/carnot/compiler/objects/test_utils.h"
 #include "src/carnot/compiler/objects/type_object.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
 using ::testing::ElementsAre;
+
+using ::pl::testing::proto::EqualsProto;
 
 class FlagsObjectTest : public QLObjectTest {
  protected:
@@ -94,6 +95,57 @@ TEST_F(FlagsObjectTest, TestBasicAttribute) {
   EXPECT_EQ(123, intval->val());
 }
 
+constexpr char kAvailableFlags[] = R"(
+flags {
+  data_type: INT64
+  semantic_type: ST_NONE
+  name: "bar"
+  description: "an int"
+  default_value: {
+    data_type: INT64
+    int64_value: 123
+  }
+}
+flags {
+  data_type: STRING
+  semantic_type: ST_NONE
+  name: "foo"
+  description: "a string"
+  default_value: {
+    data_type: STRING
+    string_value: "default"
+  }
+}
+)";
+
+TEST_F(FlagsObjectTest, TestGetAvailableFlags) {
+  ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
+  ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int", MakeInt(123)));
+  ASSERT_OK(CallParseFlags());
+
+  auto res_or_s = flags_obj_->GetAvailableFlags(ast);
+  EXPECT_OK(res_or_s);
+  auto flags = res_or_s.ConsumeValueOrDie();
+
+  EXPECT_THAT(flags, EqualsProto(kAvailableFlags));
+}
+
+TEST_F(FlagsObjectTest, TestGetAvailableFlagsNoFlagsNoParse) {
+  auto res_or_s = flags_obj_->GetAvailableFlags(ast);
+  EXPECT_OK(res_or_s);
+  auto flags = res_or_s.ConsumeValueOrDie();
+  EXPECT_EQ(0, flags.flags_size());
+}
+
+TEST_F(FlagsObjectTest, TestGetAvailableFlagsWithFlagsNoParseError) {
+  ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int", MakeInt(123)));
+  auto s = flags_obj_->GetAvailableFlags(ast);
+  ASSERT_NOT_OK(s);
+  EXPECT_THAT(
+      s.status(),
+      HasCompilerError("Flags registered with px.flags, but px.flags.parse.* has not been called"));
+}
+
 TEST_F(FlagsObjectTest, TestBasicSubscript) {
   ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
   ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int", MakeInt(123)));
@@ -130,8 +182,9 @@ TEST_F(FlagsObjectTest, TestErrorOnMissingFlag) {
 TEST_F(FlagsObjectTest, TestErrorOnMismatchedType) {
   auto s = CallRegisterFlag("foo", IRNodeType::kInt, "an int", MakeString("default"));
   ASSERT_NOT_OK(s);
-  EXPECT_THAT(s.status(),
-              HasCompilerError("For flag foo expected type Int but received type String"));
+  EXPECT_THAT(
+      s.status(),
+      HasCompilerError("For default value of flag foo expected type Int but received type String"));
 }
 
 // TODO(nserrino): Support compile time expressions

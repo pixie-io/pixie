@@ -18,6 +18,7 @@ pl_cc_library(
     hdrs = ["ast_visitor.h"],
     deps = [
         "//src/carnot/compiler/ir:cc_library",
+        "//src/carnot/compiler/plannerpb:query_flags_pl_cc_proto",
         "//third_party:libpypa",
     ],
 )

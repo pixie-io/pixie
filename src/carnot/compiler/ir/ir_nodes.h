@@ -570,6 +570,25 @@ class MetadataProperty : public NotCopyable {
 
 class DataIR : public ExpressionIR {
  public:
+  static types::DataType DataType(IRNodeType type) {
+    switch (type) {
+      case IRNodeType::kBool:
+        return types::DataType::BOOLEAN;
+      case IRNodeType::kFloat:
+        return types::DataType::FLOAT64;
+      case IRNodeType::kInt:
+        return types::DataType::INT64;
+      case IRNodeType::kString:
+        return types::DataType::STRING;
+      case IRNodeType::kTime:
+        return types::DataType::TIME64NS;
+      case IRNodeType::kUInt128:
+        return types::DataType::UINT128;
+      default:
+        CHECK(false) << absl::Substitute("Invalid IRNodeType for DataIR: $0", TypeString(type));
+    }
+  }
+
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return true; }
   bool IsData() const override { return true; }
@@ -604,8 +623,8 @@ class DataIR : public ExpressionIR {
   virtual Status ToProtoImpl(planpb::ScalarValue* value) const = 0;
 
  protected:
-  DataIR(int64_t id, IRNodeType type, types::DataType data_type)
-      : ExpressionIR(id, type), evaluated_data_type_(data_type) {}
+  DataIR(int64_t id, IRNodeType type)
+      : ExpressionIR(id, type), evaluated_data_type_(DataType(type)) {}
 
  private:
   types::DataType evaluated_data_type_;
@@ -757,7 +776,7 @@ class ColumnIR : public ExpressionIR {
 class StringIR : public DataIR {
  public:
   StringIR() = delete;
-  explicit StringIR(int64_t id) : DataIR(id, IRNodeType::kString, types::DataType::STRING) {}
+  explicit StringIR(int64_t id) : DataIR(id, IRNodeType::kString) {}
   Status Init(std::string str);
   std::string str() const { return str_; }
   Status CopyFromNodeImpl(const IRNode* node,
@@ -774,7 +793,7 @@ class StringIR : public DataIR {
 class UInt128IR : public DataIR {
  public:
   UInt128IR() = delete;
-  explicit UInt128IR(int64_t id) : DataIR(id, IRNodeType::kUInt128, types::DataType::UINT128) {}
+  explicit UInt128IR(int64_t id) : DataIR(id, IRNodeType::kUInt128) {}
 
   /**
    * @brief Inits the UInt128 from a absl::uint128 value.
@@ -948,7 +967,7 @@ class FuncIR : public ExpressionIR {
 class FloatIR : public DataIR {
  public:
   FloatIR() = delete;
-  explicit FloatIR(int64_t id) : DataIR(id, IRNodeType::kFloat, types::DataType::FLOAT64) {}
+  explicit FloatIR(int64_t id) : DataIR(id, IRNodeType::kFloat) {}
   Status Init(double val);
 
   double val() const { return val_; }
@@ -964,7 +983,7 @@ class FloatIR : public DataIR {
 class IntIR : public DataIR {
  public:
   IntIR() = delete;
-  explicit IntIR(int64_t id) : DataIR(id, IRNodeType::kInt, types::DataType::INT64) {}
+  explicit IntIR(int64_t id) : DataIR(id, IRNodeType::kInt) {}
   Status Init(int64_t val);
 
   int64_t val() const { return val_; }
@@ -985,7 +1004,7 @@ class IntIR : public DataIR {
 class BoolIR : public DataIR {
  public:
   BoolIR() = delete;
-  explicit BoolIR(int64_t id) : DataIR(id, IRNodeType::kBool, types::DataType::BOOLEAN) {}
+  explicit BoolIR(int64_t id) : DataIR(id, IRNodeType::kBool) {}
   Status Init(bool val);
 
   bool val() const { return val_; }
@@ -1001,7 +1020,7 @@ class BoolIR : public DataIR {
 class TimeIR : public DataIR {
  public:
   TimeIR() = delete;
-  explicit TimeIR(int64_t id) : DataIR(id, IRNodeType::kTime, types::DataType::TIME64NS) {}
+  explicit TimeIR(int64_t id) : DataIR(id, IRNodeType::kTime) {}
   Status Init(int64_t val);
 
   bool val() const { return val_ != 0; }

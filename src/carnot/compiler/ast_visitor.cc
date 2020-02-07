@@ -84,6 +84,22 @@ Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
   return ProcessASTSuite(m->body, /*is_function_definition_body*/ false).status();
 }
 
+StatusOr<plannerpb::QueryFlagsSpec> ASTVisitorImpl::GetAvailableFlags(const pypa::AstModulePtr& m) {
+  PL_RETURN_IF_ERROR(ProcessModuleNode(m));
+  if (!var_table_->HasVariable(PixieModule::kPixieModuleObjName)) {
+    return CreateAstError(m, "ASTVisitorImpl has no value $0", PixieModule::kPixieModuleObjName);
+  }
+  auto px = var_table_->Lookup(PixieModule::kPixieModuleObjName);
+  PL_ASSIGN_OR_RETURN(auto flags_obj, px->GetAttribute(m, PixieModule::kFlagsOpId));
+  if (flags_obj->type() != QLObjectType::kFlags) {
+    return CreateAstError(m, "Expected $0.$1 to be a FlagsObject, received $0",
+                          PixieModule::kPixieModuleObjName, PixieModule::kFlagsOpId,
+                          flags_obj->name());
+  }
+  auto flags = std::static_pointer_cast<FlagsObject>(flags_obj);
+  return flags->GetAvailableFlags(m);
+}
+
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& body,
                                                       bool is_function_definition_body) {
   pypa::AstStmtList items_list = body->items;

@@ -85,6 +85,8 @@ class ASTVisitorImpl : public ASTVisitor {
    */
   StatusOr<IRNode*> ParseAndProcessSingleExpression(std::string_view str) override;
 
+  StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstModulePtr&) override;
+
   IR* ir_graph() const { return ir_graph_; }
   std::shared_ptr<VarTable> var_table() const { return var_table_; }
 
