@@ -450,6 +450,16 @@ Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) 
   return Status::OK();
 }
 
+std::string_view LineWithPrefix(std::string_view content, std::string_view prefix) {
+  const std::vector<std::string_view> lines = absl::StrSplit(content, "\n");
+  for (const auto& line : lines) {
+    if (absl::StartsWith(line, prefix)) {
+      return line;
+    }
+  }
+  return {};
+}
+
 // Looking for UIDs in <proc_path>/<pid>/status, the content looks like:
 // $ cat /proc/2578/status
 // Name:  apache2
@@ -464,14 +474,7 @@ Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
   PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_status_path));
 
   constexpr std::string_view kUIDPrefix = "Uid:";
-  const std::vector<std::string_view> lines = absl::StrSplit(content, "\n");
-  std::string_view uid_line;
-  for (const auto& line : lines) {
-    if (absl::StartsWith(line, kUIDPrefix)) {
-      uid_line = line;
-      break;
-    }
-  }
+  std::string_view uid_line = LineWithPrefix(content, kUIDPrefix);
   std::vector<std::string_view> fields =
       absl::StrSplit(uid_line, absl::ByAnyChar("\t "), absl::SkipEmpty());
   constexpr size_t kFieldCount = 5;
@@ -483,6 +486,36 @@ Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
   uids->effective = fields[2];
   uids->saved_set = fields[3];
   uids->filesystem = fields[4];
+  return Status::OK();
+}
+
+// Looking for NSpid: in <proc_path>/<pid>/status, the content looks like:
+// $ cat /proc/2578/status
+// Name:  apache2
+// Umask: 0022
+// State: S (sleeping)
+// ...
+// NSpid: 33 33
+// ...
+//
+// There may not be a second pid if the process is not running inside a namespace.
+Status ProcParser::ReadNSPid(pid_t pid, NSPid* ns_pid) const {
+  std::filesystem::path proc_pid_status_path =
+      std::filesystem::path(proc_base_path_) / std::to_string(pid) / "status";
+  PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_status_path));
+
+  constexpr std::string_view kNSPidPrefix = "NStgid:";
+  std::string_view ns_pid_line = LineWithPrefix(content, kNSPidPrefix);
+  std::vector<std::string_view> fields =
+      absl::StrSplit(ns_pid_line, absl::ByAnyChar("\t "), absl::SkipEmpty());
+  if (fields.size() < 2) {
+    return error::InvalidArgument("NSpid line in '$0' is invalid: '$1'",
+                                  proc_pid_status_path.string(), ns_pid_line);
+  }
+  ns_pid->pid.assign(fields[1]);
+  for (size_t i = 2; i < fields.size(); ++i) {
+    ns_pid->ns_pids.push_back(std::string(fields[i]));
+  }
   return Status::OK();
 }
 
