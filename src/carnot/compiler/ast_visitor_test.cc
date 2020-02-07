@@ -1258,6 +1258,93 @@ TEST_F(FlagsTest, get_available_flags) {
   EXPECT_THAT(flags, testing::proto::EqualsProto(kAvailableFlags));
 }
 
+constexpr char kFlagInFuncQuery[] = R"pxl(
+def make_an_int_flag(flag_name, description, defval):
+  px.flags(flag_name, type=int, description=description, default=defval)
+
+make_an_int_flag('abc', 'an int flag', 123)
+px.flags('foo', type=str, description='a random param', default='default')
+make_an_int_flag('xyz', 'another int flag', 456)
+px.flags.parse()
+queryDF = px.DataFrame(table='cpu', select=['cpu0'])
+queryDF.foo = px.flags.foo
+queryDF.abc = px.flags.abc
+queryDF.xyz = px.flags.xyz
+px.display(queryDF, 'map')
+)pxl";
+
+TEST_F(FlagsTest, flags_in_func) {
+  FlagValue flag;
+  flag.set_flag_name("xyz");
+  EXPECT_OK(MakeInt(789)->ToProto(flag.mutable_flag_value()));
+
+  auto graph_or_s = CompileGraph(kFlagInFuncQuery, {flag});
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
+  ASSERT_EQ(map_nodes.size(), 3);
+
+  MapIR* map = static_cast<MapIR*>(map_nodes[0]);
+  EXPECT_EQ(1, map->col_exprs().size());
+  auto expr = map->col_exprs()[0].node;
+  EXPECT_EQ(IRNodeType::kString, expr->type());
+  EXPECT_EQ("default", static_cast<StringIR*>(expr)->str());
+
+  map = static_cast<MapIR*>(map_nodes[1]);
+  EXPECT_EQ(1, map->col_exprs().size());
+  expr = map->col_exprs()[0].node;
+  EXPECT_EQ(IRNodeType::kInt, expr->type());
+  EXPECT_EQ(123, static_cast<IntIR*>(expr)->val());
+
+  // Override default value
+  map = static_cast<MapIR*>(map_nodes[2]);
+  EXPECT_EQ(1, map->col_exprs().size());
+  expr = map->col_exprs()[0].node;
+  EXPECT_EQ(IRNodeType::kInt, expr->type());
+  EXPECT_EQ(789, static_cast<IntIR*>(expr)->val());
+}
+
+constexpr char kAvailableFlagsFunc[] = R"(
+flags {
+  data_type: INT64
+  semantic_type: ST_NONE
+  name: "abc"
+  description: "an int flag"
+  default_value: {
+    data_type: INT64
+    int64_value: 123
+  }
+}
+flags {
+  data_type: STRING
+  semantic_type: ST_NONE
+  name: "foo"
+  description: "a random param"
+  default_value: {
+    data_type: STRING
+    string_value: "default"
+  }
+}
+flags {
+  data_type: INT64
+  semantic_type: ST_NONE
+  name: "xyz"
+  description: "another int flag"
+  default_value: {
+    data_type: INT64
+    int64_value: 456
+  }
+}
+)";
+
+TEST_F(FlagsTest, get_available_flags_in_func) {
+  auto flags_or_s = GetAvailableFlags(kFlagInFuncQuery);
+  ASSERT_OK(flags_or_s);
+  auto flags = flags_or_s.ConsumeValueOrDie();
+
+  EXPECT_THAT(flags, testing::proto::EqualsProto(kAvailableFlagsFunc));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
