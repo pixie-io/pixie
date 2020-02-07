@@ -79,7 +79,6 @@ cmake_external(
     make_commands = [
         "make -j ${nproc} -C src/cc install",
     ],
-    out_include_dir = "include",
     static_libraries = [
         "libapi-static.a",
         "libbcc.a",
