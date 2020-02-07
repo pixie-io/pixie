@@ -71,7 +71,7 @@ build:asan --copt -fsanitize=address,undefined
 build:asan --linkopt -fsanitize=address,undefined
 build:asan --copt -fno-sanitize=vptr
 build:asan --linkopt -fno-sanitize=vptr
-build:asan --copt -fno-sanitize-recover=all
+build:asan --copt -fsanitize-recover=all
 build:asan --linkopt -ldl
 build:asan --define tcmalloc=disabled
 build:asan --build_tag_filters=-no_asan
@@ -99,6 +99,7 @@ build:msan --define tcmalloc=disabled
 # bazel build --config tsan
 build:tsan --define PL_CONFIG_TSAN=1
 build:tsan --copt -fsanitize=thread
+build:tsan --copt -fsanitize-recover=all
 build:tsan --linkopt -fsanitize=thread
 build:tsan --define tcmalloc=disabled
 build:tsan --build_tag_filters=-no_tsan

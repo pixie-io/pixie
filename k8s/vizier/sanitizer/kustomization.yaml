@@ -3,5 +3,5 @@ kind: Kustomization
 resources:
 - ../dev
 patchesStrategicMerge:
-- pem_resources.yaml
-- kelvin_resources.yaml
+- pem_deployment.yaml
+- kelvin_deployment.yaml

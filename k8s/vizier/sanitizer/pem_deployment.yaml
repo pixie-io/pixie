@@ -1,0 +1,21 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vizier-pem
+spec:
+  template:
+    spec:
+      containers:
+      - name: pem
+        env:
+        - name: ASAN_OPTIONS
+          value: "halt_on_error=0"
+        - name: TSAN_OPTIONS
+          value: "halt_on_error=0"
+        resources:
+          limits:
+            memory: 2048Mi
+          requests:
+            cpu: 400m
+            memory: 2048Mi
