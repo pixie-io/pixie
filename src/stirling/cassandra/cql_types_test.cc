@@ -81,6 +81,15 @@ constexpr std::string_view kStringMultiMap = ConstStringView(
 constexpr std::string_view kEmptyStringMultiMap = ConstStringView("\x00\x00");
 constexpr std::string_view kUUID =
     ConstStringView("\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f");
+constexpr std::string_view kInetV4 = ConstStringView(
+    "\x04"
+    "\x01\x02\x03\x04"
+    "\x00\x00\x00\x50");
+
+constexpr std::string_view kInetV6 = ConstStringView(
+    "\x10"
+    "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x01\x02\x03\x04"
+    "\x00\x00\x00\x50");
 
 //------------------------
 // ExtractInt
@@ -470,7 +479,30 @@ TEST(ExtractUUID, Oversized) {
 // ExtractInet
 //------------------------
 
-// TODO(oazizi): Add tests.
+TEST(ExtractInet, ExactV4) {
+  std::string_view buf(kInetV4);
+  ASSERT_OK_AND_ASSIGN(SockAddr addr, ExtractInet(&buf));
+  ASSERT_EQ(addr.family, SockAddrFamily::kIPv4);
+  struct in_addr expected_addr;
+  inet_pton(AF_INET, "1.2.3.4", &expected_addr);
+  ASSERT_EQ(std::get<struct in_addr>(addr.addr).s_addr, expected_addr.s_addr);
+  ASSERT_EQ(addr.port, 80);
+  ASSERT_TRUE(buf.empty());
+}
+
+TEST(ExtractInet, ExactV6) {
+  std::string_view buf(kInetV6);
+  ASSERT_OK_AND_ASSIGN(SockAddr addr, ExtractInet(&buf));
+  ASSERT_EQ(addr.family, SockAddrFamily::kIPv6);
+  struct in6_addr expected_addr;
+  inet_pton(AF_INET6, "::FFFF:1.2.3.4", &expected_addr);
+  struct in6_addr actual_addr = std::get<struct in6_addr>(addr.addr);
+  for (int i = 0; i < 16; ++i) {
+    EXPECT_EQ(actual_addr.s6_addr[i], expected_addr.s6_addr[i]);
+  }
+  ASSERT_EQ(addr.port, 80);
+  ASSERT_TRUE(buf.empty());
+}
 
 //------------------------
 // ExtractConsistency

@@ -150,8 +150,9 @@ StatusOr<SockAddr> ExtractInet(std::string_view* buf) {
   switch (n) {
     case 4: {
       addr.family = SockAddrFamily::kIPv4;
-      PL_ASSIGN_OR_RETURN(uint32_t a, ExtractIntCore<uint32_t>(buf));
-      addr.addr = in_addr{a};
+      addr.addr = in_addr{};
+      PL_RETURN_IF_ERROR(
+          (ExtractBytesCore<uint8_t, 4>(buf, reinterpret_cast<uint8_t*>(&addr.addr))));
     } break;
     case 16: {
       addr.family = SockAddrFamily::kIPv6;
