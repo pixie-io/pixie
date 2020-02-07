@@ -9,7 +9,6 @@ constexpr char kTime[] = "time_";
 constexpr char kUPID[] = "upid";
 constexpr char kYoungGCTime[] = "young_gc_time";
 constexpr char kFullGCTime[] = "full_gc_time";
-constexpr char kTotalGCTime[] = "total_gc_time";
 constexpr char kUsedHeapSize[] = "used_heap_size";
 constexpr char kTotalHeapSize[] = "total_heap_size";
 constexpr char kMaxHeapSize[] = "max_heap_size";
@@ -22,8 +21,6 @@ constexpr DataElement kJVMStatsElements[] = {
         "Young generation garbage collection time in nanoseconds."},
         {kFullGCTime, types::DataType::DURATION64NS, types::PatternType::METRIC_COUNTER,
         "Full garbage collection time in nanoseconds."},
-        {kTotalGCTime, types::DataType::DURATION64NS, types::PatternType::METRIC_COUNTER,
-        "Total garbage collection time in nanoseconds."},
         {kUsedHeapSize, types::DataType::INT64, types::PatternType::METRIC_GAUGE,
          "Used heap size in bytes."},
         {kTotalHeapSize, types::DataType::INT64, types::PatternType::METRIC_GAUGE,
@@ -41,7 +38,6 @@ DEFINE_IDX(kTime);
 DEFINE_IDX(kUPID);
 DEFINE_IDX(kYoungGCTime);
 DEFINE_IDX(kFullGCTime);
-DEFINE_IDX(kTotalGCTime);
 DEFINE_IDX(kUsedHeapSize);
 DEFINE_IDX(kTotalHeapSize);
 DEFINE_IDX(kMaxHeapSize);

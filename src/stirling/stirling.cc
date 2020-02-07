@@ -19,6 +19,7 @@
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
 
+#include "src/stirling/jvm_stats_connector.h"
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/proc_stat_connector.h"
 #include "src/stirling/seq_gen_connector.h"
@@ -30,10 +31,11 @@ namespace stirling {
 
 std::unique_ptr<SourceRegistry> CreateAllSourceRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<SeqGenConnector>("sequences");
+  registry->RegisterOrDie<JVMStatsConnector>("jvm_stats");
   registry->RegisterOrDie<FakeProcStatConnector>("fake_proc_stat");
-  registry->RegisterOrDie<ProcStatConnector>("proc_stat");
   registry->RegisterOrDie<PIDRuntimeConnector>("bcc_cpu_stat");
+  registry->RegisterOrDie<ProcStatConnector>("proc_stat");
+  registry->RegisterOrDie<SeqGenConnector>("sequences");
   registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
   registry->RegisterOrDie<SystemStatsConnector>("system_stats");
   return registry;
@@ -41,6 +43,7 @@ std::unique_ptr<SourceRegistry> CreateAllSourceRegistry() {
 
 std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
+  registry->RegisterOrDie<JVMStatsConnector>("jvm_stats");
   registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
   registry->RegisterOrDie<SystemStatsConnector>("system_stats");
   return registry;

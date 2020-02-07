@@ -18,7 +18,6 @@ void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_n
   r.Append<kUPIDIdx>({});
   r.Append<kYoungGCTimeIdx>({});
   r.Append<kFullGCTimeIdx>({});
-  r.Append<kTotalGCTimeIdx>({});
   r.Append<kUsedHeapSizeIdx>({});
   r.Append<kTotalHeapSizeIdx>({});
   r.Append<kMaxHeapSizeIdx>({});
