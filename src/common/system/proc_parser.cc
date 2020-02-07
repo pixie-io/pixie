@@ -486,5 +486,17 @@ Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
   return Status::OK();
 }
 
+std::map<int, std::filesystem::path> ListProcPidPaths(std::filesystem::path proc) {
+  std::map<int, std::filesystem::path> res;
+  for (const auto& p : std::filesystem::directory_iterator(proc)) {
+    int pid = 0;
+    if (!absl::SimpleAtoi(p.path().filename().string(), &pid)) {
+      continue;
+    }
+    res[pid] = p.path();
+  }
+  return res;
+}
+
 }  // namespace system
 }  // namespace pl

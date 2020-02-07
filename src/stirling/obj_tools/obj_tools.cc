@@ -5,6 +5,7 @@
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/config.h"
+#include "src/common/system/proc_parser.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/obj_tools/proc_path_tools.h"
 
@@ -14,21 +15,17 @@ namespace obj_tools {
 
 std::map<std::string, std::vector<int>> GetActiveBinaries(std::filesystem::path proc,
                                                           std::filesystem::path host) {
-  std::map<std::string, std::vector<int>> binaries;
   // Warning: must use JoinPath, because we are dealing with two absolute paths.
   std::filesystem::path host_proc = fs::JoinPath({&host, &proc});
-  for (const auto& p : std::filesystem::directory_iterator(host_proc)) {
-    VLOG(1) << absl::Substitute("Directory: $0", p.path().string());
-    int pid = 0;
-    if (!absl::SimpleAtoi(p.path().filename().string(), &pid)) {
-      VLOG(1) << absl::Substitute("Ignoring $0: Failed to parse pid.", p.path().string());
-      continue;
-    }
+
+  std::map<std::string, std::vector<int>> binaries;
+  for (const auto& [pid, p] : system::ListProcPidPaths(host_proc)) {
+    VLOG(1) << absl::Substitute("Directory: $0", p.string());
 
     pl::StatusOr<std::filesystem::path> exe_or = ResolveProcExe(p);
     if (!exe_or.ok()) {
       VLOG(1) << absl::Substitute("Ignoring $0: Failed to resolve exe path, error message: $1",
-                                  p.path().string(), exe_or.msg());
+                                  p.string(), exe_or.msg());
       continue;
     }
 

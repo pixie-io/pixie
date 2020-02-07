@@ -1,6 +1,8 @@
 #pragma once
 
+#include <filesystem>
 #include <istream>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -201,6 +203,11 @@ class ProcParser {
   int64_t clock_realtime_offset_;
   std::string proc_base_path_;
 };
+
+/**
+ * Returns a map of <pid>:<proc/pid path>. Ignores non-numeric entries.
+ */
+std::map<int, std::filesystem::path> ListProcPidPaths(std::filesystem::path proc);
 
 }  // namespace system
 }  // namespace pl
