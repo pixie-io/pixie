@@ -519,6 +519,17 @@ class HostnameUDF : public ScalarUDF {
   }
 };
 
+class PodIPToPodIDUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the pod id of pod with given pod_ip
+   */
+  StringValue Exec(FunctionContext* ctx, StringValue pod_ip) {
+    auto md = GetMetadataState(ctx);
+    return md->k8s_metadata_state().PodIDByIP(pod_ip);
+  }
+};
+
 void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry);
 
 }  // namespace metadata

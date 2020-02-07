@@ -74,6 +74,7 @@ class K8sMetadataState : NotCopyable {
       absl::flat_hash_map<K8sNameIdent, UID, K8sIdentHashEq::Hash, K8sIdentHashEq::Eq>;
 
   using ServicesByNameMap = PodsByNameMap;
+  using PodsByPodIpMap = absl::flat_hash_map<std::string, UID>;
 
   // This is not satisfactory, as it violates the general pattern of this class, where mutations
   // are applied asynchronously through the Handle*() functions.
@@ -112,6 +113,13 @@ class K8sMetadataState : NotCopyable {
    * @return the pod id or empty string if the pod does not exist.
    */
   UID PodIDByName(K8sNameIdentView pod_name) const;
+
+  /**
+   * PodIDByIP returns the PodID for the pod with the given IP.
+   * @param pod_ip string of the pod ip.
+   * @return the pod_id or empty string if the pod does not exist.
+   */
+  UID PodIDByIP(std::string_view pod_ip) const;
 
   /**
    * ContainerInfoByID returns the container info by ID.
@@ -170,6 +178,11 @@ class K8sMetadataState : NotCopyable {
    * Mapping of services by name.
    */
   ServicesByNameMap services_by_name_;
+
+  /**
+   * Mapping of Pods by host ip.
+   */
+  PodsByPodIpMap pods_by_ip_;
 
   /**
    * Mapping of containers by ID.

@@ -36,6 +36,7 @@ container_ids: "pod1_container_1"
 qos_class: QOS_CLASS_GUARANTEED
 node_name: "test_node"
 hostname: "test_host"
+pod_ip: "1.1.1.1"
 )";
 
 const char* kToBeTerminatedPodUpdatePbTxt = R"(

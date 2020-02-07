@@ -63,6 +63,7 @@ constexpr char kUpdate2_1Pbtxt[] = R"(
     start_timestamp_ns: 1200
     container_ids: "container_id2"
     qos_class: QOS_CLASS_BURSTABLE
+    pod_ip: "1.1.1.1"
   }
 )";
 

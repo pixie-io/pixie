@@ -8,7 +8,7 @@ namespace md {
 
 TEST(PodInfo, basic_accessors) {
   PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kSucceeded, "testnode",
-                   "testhost");
+                   "testhost", "1.2.3.4");
   pod_info.set_start_time_ns(123);
   pod_info.set_stop_time_ns(256);
 
@@ -28,7 +28,7 @@ TEST(PodInfo, basic_accessors) {
 
 TEST(PodInfo, debug_string) {
   PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kRunning, "testnode",
-                   "testhost");
+                   "testhost", "1.1.1.1");
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(absl::Substitute("$0<Pod:ns=pl:name=pod1:uid=123:state=R>", Indent(i)),
               pod_info.DebugString(i));
@@ -40,7 +40,7 @@ TEST(PodInfo, debug_string) {
 
 TEST(PodInfo, add_delete_containers) {
   PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kRunning, "testnode",
-                   "testhost");
+                   "testhost", "1.2.3.4");
   pod_info.AddContainer("ABCD");
   pod_info.AddContainer("ABCD2");
   pod_info.AddContainer("ABCD3");
@@ -54,7 +54,7 @@ TEST(PodInfo, add_delete_containers) {
 
 TEST(PodInfo, clone) {
   PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kBurstable, PodPhase::kRunning, "testnode",
-                   "testhost");
+                   "testhost", "1.2.3.4");
   pod_info.set_start_time_ns(123);
   pod_info.set_stop_time_ns(256);
   pod_info.AddContainer("ABCD");

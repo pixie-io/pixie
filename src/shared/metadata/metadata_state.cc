@@ -38,6 +38,11 @@ UID K8sMetadataState::PodIDByName(K8sNameIdentView pod_name) const {
   return (it == pods_by_name_.end()) ? "" : it->second;
 }
 
+UID K8sMetadataState::PodIDByIP(std::string_view pod_ip) const {
+  auto it = pods_by_ip_.find(pod_ip);
+  return (it == pods_by_ip_.end()) ? "" : it->second;
+}
+
 UID K8sMetadataState::ServiceIDByName(K8sNameIdentView service_name) const {
   auto it = services_by_name_.find(service_name);
   return (it == services_by_name_.end()) ? "" : it->second;
@@ -64,6 +69,11 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
     other->pods_by_name_[k] = v;
   }
 
+  other->pods_by_ip_.reserve(pods_by_ip_.size());
+  for (const auto& [k, v] : pods_by_ip_) {
+    other->pods_by_ip_[k] = v;
+  }
+
   other->containers_by_id_.reserve(containers_by_id_.size());
   for (const auto& [k, v] : containers_by_id_) {
     other->containers_by_id_[k] = v->Clone();
@@ -88,6 +98,11 @@ std::string K8sMetadataState::DebugString(int indent_level) const {
   str += prefix + "Containers:\n";
   for (const auto& it : containers_by_id_) {
     str += absl::Substitute("$0\n", it.second->DebugString(indent_level + 1));
+  }
+  str += "\n";
+  str += prefix + "Ips:\n";
+  for (const auto& [k, v] : pods_by_ip_) {
+    str += absl::Substitute("pod_id: $0, ip: $1", v, k);
   }
   return str;
 }
@@ -122,8 +137,11 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
   pod_info->set_stop_time_ns(update.stop_timestamp_ns());
   pod_info->set_node_name(update.node_name());
   pod_info->set_hostname(update.hostname());
+  pod_info->set_pod_ip(update.pod_ip());
+  LOG(INFO) << "name: " << update.name() << " pod_ip: " << update.pod_ip();
 
   pods_by_name_[{ns, name}] = object_uid;
+  pods_by_ip_[update.pod_ip()] = object_uid;
   return Status::OK();
 }
 
@@ -136,6 +154,7 @@ Status K8sMetadataState::HandleContainerUpdate(const ContainerUpdate& update) {
     VLOG(1) << "Adding Container: " << container->DebugString();
     it = containers_by_id_.try_emplace(cid, std::move(container)).first;
   }
+  LOG(INFO) << "container update: " << update.name();
 
   auto* container_info = it->second.get();
   container_info->set_stop_time_ns(update.stop_timestamp_ns());
@@ -170,6 +189,8 @@ Status K8sMetadataState::HandleServiceUpdate(const ServiceUpdate& update) {
   }
   service_info->set_start_time_ns(update.start_timestamp_ns());
   service_info->set_stop_time_ns(update.stop_timestamp_ns());
+
+  LOG(INFO) << "service update: " << update.name();
 
   services_by_name_[{ns, name}] = service_uid;
   return Status::OK();

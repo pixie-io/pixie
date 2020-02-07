@@ -511,6 +511,10 @@ message PodUpdate {
   string node_name = 9;
 
   string hostname = 10;
+
+  string pod_ip = 12 [
+                      (gogoproto.customname) = "PodIP"
+                      ];
 }
 
 // ContainerUpdate contains information about running containers.

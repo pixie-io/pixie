@@ -40,6 +40,7 @@ void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<PodNameToPodStatusUDF>("pod_name_to_status");
   registry->RegisterOrDie<UPIDToCmdLineUDF>("upid_to_cmdline");
   registry->RegisterOrDie<HostnameUDF>("_exec_hostname");
+  registry->RegisterOrDie<PodIPToPodIDUDF>("ip_to_pod_id");
 
   /*****************************************
    * Aggregate UDFs.

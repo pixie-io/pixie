@@ -351,6 +351,13 @@ TEST_F(MetadataOpsTest, hostname) {
   EXPECT_EQ(udf.Exec(function_ctx.get()), "myhost");
 }
 
+TEST_F(MetadataOpsTest, pod_ip) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+
+  PodIPToPodIDUDF udf;
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1"), "1_uid");
+}
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot

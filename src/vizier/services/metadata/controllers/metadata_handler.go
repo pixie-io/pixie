@@ -439,6 +439,7 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 				Phase:            pod.Status.Phase,
 				NodeName:         podName,
 				Hostname:         hostname,
+				PodIP:            pod.Status.PodIP,
 			},
 		},
 	}
