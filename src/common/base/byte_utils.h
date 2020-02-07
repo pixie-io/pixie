@@ -7,11 +7,27 @@
 namespace pl {
 namespace utils {
 
-template <typename TCharType, size_t N>
-void ReverseBytes(const TCharType (&bytes)[N], TCharType (&result)[N]) {
+template <size_t N>
+void ReverseBytes(uint8_t* x, uint8_t* y) {
   for (size_t k = 0; k < N; k++) {
-    result[k] = bytes[N - k - 1];
+    y[k] = x[N - k - 1];
   }
+}
+
+template <typename TCharType, size_t N>
+void ReverseBytes(TCharType (&x)[N], TCharType (&y)[N]) {
+  uint8_t* x_bytes = reinterpret_cast<uint8_t*>(x);
+  uint8_t* y_bytes = reinterpret_cast<uint8_t*>(y);
+  ReverseBytes<N>(x_bytes, y_bytes);
+}
+
+template <typename T>
+T ReverseBytes(T x) {
+  T y;
+  uint8_t* x_bytes = reinterpret_cast<uint8_t*>(&x);
+  uint8_t* y_bytes = reinterpret_cast<uint8_t*>(&y);
+  ReverseBytes<sizeof(T)>(x_bytes, y_bytes);
+  return y;
 }
 
 /**
@@ -90,6 +106,20 @@ T BEndianBytesToInt(std::string_view buf) {
     result = static_cast<uint8_t>(buf[i]) + (result << 8);
   }
   return result;
+}
+
+/**
+ * Convert a big-endian string of bytes to a float/double.
+ *
+ * @tparam T The receiver float type.
+ * @param buf The sequence of bytes.
+ * @return The decoded float value.
+ */
+template <typename TFloatType>
+TFloatType BEndianBytesToFloat(std::string_view str) {
+  DCHECK_EQ(str.size(), sizeof(TFloatType));
+  TFloatType val = *reinterpret_cast<const TFloatType*>(str.data());
+  return ReverseBytes<TFloatType>(val);
 }
 
 }  // namespace utils
