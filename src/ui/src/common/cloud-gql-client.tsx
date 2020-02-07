@@ -44,6 +44,12 @@ const client = new ApolloClient({
 
 let loaded = false;
 
+// getCloudGQLClientSync returns the GQL client immediately,
+// without waiting for cache persist initialization.
+export function getCloudGQLClientSync() {
+  return client;
+}
+
 export async function getCloudGQLClient() {
   if (loaded) {
     return client;

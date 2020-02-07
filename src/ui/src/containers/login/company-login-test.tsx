@@ -113,7 +113,7 @@ describe('<CompanyCreate/> test', () => {
     setImmediate(() => {
       app.update();
       expect(redirectMock.mock.calls).toHaveLength(1);
-      expect(redirectMock.mock.calls[0]).toEqual(['id', '/login', { siteName: 'test-site', no_cache: 'true' }]);
+      expect(redirectMock.mock.calls[0]).toEqual(['id', '/create-site', { site_name: 'test-site', no_cache: 'true' }]);
       done();
     });
   });
@@ -193,7 +193,7 @@ describe('<CompanyLogin/> test', () => {
     setImmediate(() => {
       app.update();
       expect(redirectMock.mock.calls).toHaveLength(1);
-      expect(redirectMock.mock.calls[0]).toEqual(['id', '/login', { siteName: 'test-site' }]);
+      expect(redirectMock.mock.calls[0]).toEqual(['id', '/login', { site_name: 'test-site' }]);
       done();
     });
   });

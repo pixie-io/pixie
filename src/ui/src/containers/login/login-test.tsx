@@ -8,6 +8,6 @@ describe('<Login/> test', () => {
   it('should have correct routes', () => {
     const app = shallow(<Login />);
 
-    expect(app.find(Route)).toHaveLength(2);
+    expect(app.find(Route)).toHaveLength(3);
   });
 });

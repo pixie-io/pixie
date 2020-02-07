@@ -24,19 +24,25 @@ let plugins = [
   new CaseSensitivePathsPlugin(),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
-    chunks: ['main', 'commons~login~main', 'commons~login~main~subdomain', 'commons~main~subdomain', 'vendor'],
+    chunks: ['main', 'commons~login~main~subdomain', 'commons~main~subdomain', 'vendor'],
     template: 'index.html',
     filename: 'index.html',
   }),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
-    chunks: ['login', 'commons~login~main', 'commons~login~main~subdomain', 'vendor'],
+    chunks: ['login', 'commons~login~main~subdomain', 'commons~login~subdomain', 'vendor'],
     template: 'index.html',
     filename: 'login-index.html',
   }),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
-    chunks: ['subdomain', 'commons~login~main~subdomain', 'commons~main~subdomain', 'vendor'],
+    chunks: [
+      'subdomain',
+      'commons~login~main~subdomain',
+      'commons~main~subdomain',
+      'commons~login~subdomain',
+      'vendor',
+    ],
     template: 'index.html',
     filename: 'subdomain-index.html',
   }),
@@ -88,8 +94,8 @@ var webpackConfig = {
       rewrites: [
         // TODO(malthus): This doesn't fully work for the dev server right
         // now, because navigating to root always goes to index.html.
-        {from: /^\/(create(?!-site)|auth-complete)$/, to: '/index.html'},
-        {from: /^\/(login|logout)$/, to: '/login-index.html'},
+        {from: /^\/(create|auth-complete)$/, to: '/index.html'},
+        {from: /^\/(login|logout|create-site)$/, to: '/login-index.html'},
         {from: /.*/, to: '/subdomain-index.html'},
       ],
     },
