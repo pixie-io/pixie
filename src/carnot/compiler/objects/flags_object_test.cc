@@ -220,11 +220,17 @@ TEST_F(FlagsObjectTest, TestErrorOnReparse) {
 }
 
 TEST_F(FlagsObjectTest, TestErrorDefineAfterParse) {
+  ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
   ASSERT_OK(CallParseFlags());
-  auto s = CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default"));
+  auto s = CallRegisterFlag("abc", IRNodeType::kString, "another string", MakeString("default"));
   ASSERT_NOT_OK(s);
   EXPECT_THAT(s.status(),
-              HasCompilerError("Could not add flag foo after px.flags.parse.* has been called"));
+              HasCompilerError("Could not add flag abc after px.flags.parse.* has been called"));
+}
+
+TEST_F(FlagsObjectTest, TestErrorUnregisteredFlag) {
+  auto s = CallParseFlags();
+  EXPECT_THAT(s.status(), HasCompilerError("Received flag foo which was not registered in script"));
 }
 
 }  // namespace compiler

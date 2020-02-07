@@ -143,6 +143,13 @@ StatusOr<QLObjectPtr> FlagsObject::ParseFlagsHandler(const pypa::AstPtr& ast,
   if (parsed_flags_) {
     return CreateAstError(ast, "px.flags.parse() must only be called once");
   }
+  for (const auto& [flag_name, flag_value] : input_flag_values_) {
+    PL_UNUSED(flag_value);
+    if (!flag_types_.contains(flag_name)) {
+      return CreateAstError(ast, "Received flag $0 which was not registered in script", flag_name);
+    }
+  }
+
   parsed_flags_ = true;
   return StatusOr(std::make_shared<NoneObject>());
 }
