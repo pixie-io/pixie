@@ -70,14 +70,6 @@ class SourceRegistry : public NotCopyable {
     PL_CHECK_OK(status);
   }
 
-  StatusOr<RegistryElement> GetRegistryElement(const std::string& name) const {
-    auto it = sources_map_.find(name);
-    if (it == sources_map_.end()) {
-      return error::NotFound("The data source with name \"$0\" was not found", name);
-    }
-    return it->second;
-  }
-
  protected:
   std::unordered_map<std::string, RegistryElement> sources_map_;
 };

@@ -26,7 +26,9 @@ TEST_F(SourceRegistryTest, register_sources) {
   std::string name;
   {
     name = "fake_proc_stat";
-    ASSERT_OK_AND_ASSIGN(auto element, registry_.GetRegistryElement("test_fake_proc_cpu_source"));
+    auto iter = registry_.sources().find("test_fake_proc_cpu_source");
+    auto element = iter->second;
+    ASSERT_NE(registry_.sources().end(), iter);
     auto source_fn = element.create_source_fn;
     auto source = source_fn(name);
     EXPECT_EQ(name, source->source_name());
@@ -34,14 +36,16 @@ TEST_F(SourceRegistryTest, register_sources) {
 
   {
     name = "proc_stat";
-    ASSERT_OK_AND_ASSIGN(auto element, registry_.GetRegistryElement("test_proc_stat_source"));
+    auto iter = registry_.sources().find("test_proc_stat_source");
+    ASSERT_NE(registry_.sources().end(), iter);
+    auto element = iter->second;
     auto source_fn = element.create_source_fn;
     auto source = source_fn(name);
     EXPECT_EQ(name, source->source_name());
   }
 
   // Unavailable source connectors should not make their way into the registry.
-  EXPECT_NOT_OK(registry_.GetRegistryElement("unavailable_source"));
+  EXPECT_EQ(registry_.sources().end(), registry_.sources().find("unavailable_source"));
 
   auto all_sources = registry_.sources();
   EXPECT_EQ(2, all_sources.size());
