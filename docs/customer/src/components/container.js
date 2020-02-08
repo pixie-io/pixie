@@ -1,6 +1,6 @@
 import system from 'system-components/emotion';
 
-const Container = system(
+export const Container = system(
   {
     is: 'div',
     px: 3,

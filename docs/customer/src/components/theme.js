@@ -1,4 +1,4 @@
-const theme = {
+export const theme = {
   fonts: {
     mono: '"Roboto Mono", Menlo, monospace',
   },

@@ -23,7 +23,7 @@ exports.createPages = ({ graphql, actions }) => {
             }
           }
         `,
-      ).then(result => {
+      ).then((result) => {
         if (result.errors) {
           console.log(result.errors); // eslint-disable-line no-console
           reject(result.errors);
@@ -61,7 +61,7 @@ exports.onCreateBabelConfig = ({ actions }) => {
 exports.onCreateNode = ({ node, getNode, actions }) => {
   const { createNodeField } = actions;
 
-  if (node.internal.type === `Mdx`) {
+  if (node.internal.type === 'Mdx') {
     const parent = getNode(node.parent);
     let value = parent.relativePath.replace(parent.ext, '');
 
@@ -70,7 +70,7 @@ exports.onCreateNode = ({ node, getNode, actions }) => {
     }
 
     createNodeField({
-      name: `slug`,
+      name: 'slug',
       node,
       value: `/${value}`,
     });

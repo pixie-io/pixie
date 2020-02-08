@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { StaticQuery, graphql } from 'gatsby';
 import styled from 'react-emotion';
 import { ExternalLink } from 'react-feather';
@@ -5,7 +6,7 @@ import Link from './link';
 import './styles.css';
 import config from '../../config';
 
-const forcedNavOrder = config.sidebar.forcedNavOrder;
+const { forcedNavOrder } = config.sidebar;
 
 const Sidebar = styled('aside')`
   width: 100%;
@@ -21,42 +22,43 @@ const Sidebar = styled('aside')`
   top: 0;
   padding-right: 0;
   background-color: #0b1420;
-//  /* Safari 4-5, Chrome 1-9 */
-//  background: linear-gradient(#0b1420, #132E38);
-//  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#0b1420), to(#132E38));
-//  /* Safari 5.1, Chrome 10+ */
-//  background: -webkit-linear-gradient(top, #0b1420, #132E38);
-//  /* Firefox 3.6+ */
-//  background: -moz-linear-gradient(top, #0b1420, #132E38);
-//  /* IE 10 */
-//  background: -ms-linear-gradient(top, #0b1420, #132E38);
-//  /* Opera 11.10+ */
-//  background: -o-linear-gradient(top, #0b1420, #132E38);
-
+  //  /* Safari 4-5, Chrome 1-9 */
+  //  background: linear-gradient(#0b1420, #132E38);
+  //  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#0b1420), to(#132E38));
+  //  /* Safari 5.1, Chrome 10+ */
+  //  background: -webkit-linear-gradient(top, #0b1420, #132E38);
+  //  /* Firefox 3.6+ */
+  //  background: -moz-linear-gradient(top, #0b1420, #132E38);
+  //  /* IE 10 */
+  //  background: -ms-linear-gradient(top, #0b1420, #132E38);
+  //  /* Opera 11.10+ */
+  //  background: -o-linear-gradient(top, #0b1420, #132E38);
 `;
 
 // eslint-disable-next-line no-unused-vars
-const ListItem = styled(({ className, active, level, ...props }) => {
+const ListItem = styled(({
+  className, active, level, ...props
+}) => {
   if (level === 0) {
     return (
       <li className={className}>
         <Link {...props} />
       </li>
     );
-  } else if (level === 1) {
+  }
+  if (level === 1) {
     const customClass = active ? 'active' : '';
     return (
-      <li className={'subLevel ' + customClass}>
-        <Link {...props} />
-      </li>
-    );
-  } else {
-    return (
-      <li className={className}>
+      <li className={`subLevel ${customClass}`}>
         <Link {...props} />
       </li>
     );
   }
+  return (
+    <li className={className}>
+      <Link {...props} />
+    </li>
+  );
 })`
   list-style: none;
 
@@ -69,12 +71,11 @@ const ListItem = styled(({ className, active, level, ...props }) => {
     position: relative;
 
     &:hover {
-      background-color: #132E38;
+      background-color: #132e38;
     }
 
-    ${(props) =>
-    props.active &&
-      `
+    ${(props) => props.active
+      && `
       color: #fff;
       background-color: #3E8177;
     `} // external link icon
@@ -82,22 +83,6 @@ const ListItem = styled(({ className, active, level, ...props }) => {
       float: right;
       margin-right: 1rem;
     }
-  }
-`;
-
-const Divider = styled((props) => (
-  <li {...props}>
-    <hr />
-  </li>
-))`
-  list-style: none;
-  padding: 0.5rem 0;
-
-  hr {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    border-bottom: 1px solid #ede7f3;
   }
 `;
 
@@ -132,26 +117,26 @@ const SidebarLayout = ({ location }) => (
 
             if (prefix && forcedNavOrder.find((url) => url === `/${prefix}`)) {
               return { ...acc, [`/${prefix}`]: [...acc[`/${prefix}`], cur] };
-            } else {
-              return { ...acc, items: [...acc.items, cur] };
             }
+            return { ...acc, items: [...acc.items, cur] };
           },
           { items: [] },
         );
 
       /* tslint:disable */
       const nav = forcedNavOrder
-        .reduce((acc, cur) => {
-          return acc.concat(navItems[cur]);
-        }, [])
+        .reduce((acc, cur) => acc.concat(navItems[cur]), [])
         .concat(navItems.items)
         .map((slug) => {
           const { node } = allMdx.edges.find(
-            ({ node }) => node.fields.slug === slug,
+            (n2) => n2.node.fields.slug === slug,
           );
           let isActive = false;
-          if (location && (location.pathname === node.fields.slug
-              || location.pathname === (config.gatsby.pathPrefix + node.fields.slug))) {
+          if (
+            location
+            && (location.pathname === node.fields.slug
+              || location.pathname === config.gatsby.pathPrefix + node.fields.slug)
+          ) {
             isActive = true;
           }
 
@@ -170,17 +155,19 @@ const SidebarLayout = ({ location }) => (
 
       return (
         <Sidebar>
-          <ul className={'sideBarUL'}>
+          <ul className="sideBarUL">
             {nav}
             {config.sidebar.links.map((link, key) => {
               if (link.link !== '' && link.text !== '') {
                 return (
+                  // eslint-disable-next-line
                   <ListItem key={key} to={link.link}>
                     {link.text}
                     <ExternalLink size={14} />
                   </ListItem>
                 );
               }
+              return null;
             })}
           </ul>
         </Sidebar>

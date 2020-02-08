@@ -1,21 +1,21 @@
 const config = {
-  gatsby : {
-    pathPrefix : '/docs',
-    siteUrl : 'https://docs.pixielabs.ai',
-    gaTrackingId : null,
+  gatsby: {
+    pathPrefix: '/docs',
+    siteUrl: 'https://docs.pixielabs.ai',
+    gaTrackingId: null,
   },
-  header : {
-    logo : '',
-    title : '',
-    githubUrl : '',
-    helpUrl : '',
-    tweetText : '',
-    links : [
-      {text : '', link : ''},
+  header: {
+    logo: '',
+    title: '',
+    githubUrl: '',
+    helpUrl: '',
+    tweetText: '',
+    links: [
+      { text: '', link: '' },
     ],
   },
-  sidebar : {
-    forcedNavOrder : [
+  sidebar: {
+    forcedNavOrder: [
       '/getting-started',
       '/getting-started/system-overview',
       '/getting-started/compatibility-requirements',
@@ -41,16 +41,16 @@ const config = {
       '/misc/privacy-policy',
       '/misc/terms-conditions',
     ],
-    links : [
-      {text : '', link : ''},
+    links: [
+      { text: '', link: '' },
     ],
   },
-  siteMetadata : {
-    title : 'Pixie Labs Customer Docs',
-    description : 'Customer docs for the Pixie platform ',
-    ogImage : null,
-    docsLocation : 'https://github.com/pixie-labs/pixielabs/docs/customer',
-    favicon : 'src/components/images/favicon.svg',
+  siteMetadata: {
+    title: 'Pixie Labs Customer Docs',
+    description: 'Customer docs for the Pixie platform ',
+    ogImage: null,
+    docsLocation: 'https://github.com/pixie-labs/pixielabs/docs/customer',
+    favicon: 'src/components/images/favicon.svg',
   },
 };
 

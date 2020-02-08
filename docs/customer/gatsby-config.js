@@ -1,11 +1,12 @@
 require('dotenv').config();
 const config = require('./config');
+
 const plugins = [
   'gatsby-plugin-sitemap',
   {
-    resolve: `gatsby-plugin-layout`,
+    resolve: 'gatsby-plugin-layout',
     options: {
-        component: require.resolve(`./src/templates/docs.js`),
+      component: require.resolve('./src/templates/docs.js'),
     },
   },
   'gatsby-plugin-styled-components',
@@ -14,7 +15,7 @@ const plugins = [
     options: {
       gatsbyRemarkPlugins: [
         {
-          resolve: `gatsby-remark-relative-images`,
+          resolve: 'gatsby-remark-relative-images',
         },
         {
           resolve: 'gatsby-remark-images',
@@ -42,7 +43,7 @@ const plugins = [
     },
   },
   {
-    resolve: `gatsby-plugin-gtag`,
+    resolve: 'gatsby-plugin-gtag',
     options: {
       // your google analytics tracking id
       trackingId: config.gatsby.gaTrackingId,
@@ -62,8 +63,11 @@ module.exports = {
     docsLocation: config.siteMetadata.docsLocation,
     ogImage: config.siteMetadata.ogImage,
     favicon: config.siteMetadata.favicon,
-    logo: { link: config.header.logoLink ?
-      config.header.logoLink : '/', image: config.header.logo }, // backwards compatible
+    logo: {
+      link: config.header.logoLink
+        ? config.header.logoLink : '/',
+      image: config.header.logo,
+    }, // backwards compatible
     headerTitle: config.header.title,
     githubUrl: config.header.githubUrl,
     helpUrl: config.header.helpUrl,
@@ -71,5 +75,5 @@ module.exports = {
     headerLinks: config.header.links,
     siteUrl: config.gatsby.siteUrl,
   },
-  plugins: plugins,
+  plugins,
 };

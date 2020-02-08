@@ -15,8 +15,7 @@ const notificationTypes = {
   },
 };
 
-const getColor = (type = 'info', shade = 'dark') =>
-  notificationTypes[type][shade];
+const getColor = (type = 'info', shade = 'dark') => notificationTypes[type][shade];
 
 const Notification = styled('section')`
   color: ${(props) => getColor(props.type, 'light')};
