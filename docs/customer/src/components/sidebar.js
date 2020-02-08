@@ -155,7 +155,7 @@ const SidebarLayout = ({ location }) => (
 
       return (
         <Sidebar>
-          <ul className="sideBarUL">
+          <ul className='sideBarUL'>
             {nav}
             {config.sidebar.links.map((link, key) => {
               if (link.link !== '' && link.text !== '') {

@@ -41,42 +41,42 @@ const Header = ({ location }) => (
         },
       } = data;
       return (
-        <div className="navBarWrapper">
-          <nav className="navbar navbar-default navBarDefault">
-            <div className="navbar-header">
+        <div className='navBarWrapper'>
+          <nav className='navbar navbar-default navBarDefault'>
+            <div className='navbar-header'>
               <button
-                type="button"
-                className="navbar-toggle collapsed navBarToggle"
-                data-toggle="collapse"
-                data-target="#navbar"
-                aria-expanded="false"
-                aria-controls="navbar"
+                type='button'
+                className='navbar-toggle collapsed navBarToggle'
+                data-toggle='collapse'
+                data-target='#navbar'
+                aria-expanded='false'
+                aria-controls='navbar'
               >
-                <span className="sr-only">Toggle navigation</span>
-                <span className="icon-bar" />
-                <span className="icon-bar" />
-                <span className="icon-bar" />
+                <span className='sr-only'>Toggle navigation</span>
+                <span className='icon-bar' />
+                <span className='icon-bar' />
+                <span className='icon-bar' />
               </button>
-              <Link to="/" className="navbar-brand navBarBrand">
-                <img className="img-responsive" src={logoImg} alt="logo" />
+              <Link to='/' className='navbar-brand navBarBrand'>
+                <img className='img-responsive' src={logoImg} alt='logo' />
                 {headerTitle}
               </Link>
             </div>
             <div
-              id="navbar"
-              className="navbar-collapse collapse navBarCollapse"
+              id='navbar'
+              className='navbar-collapse collapse navBarCollapse'
             >
-              <div className="visible-xs">
+              <div className='visible-xs'>
                 <Sidebar location={location} />
                 <hr />
               </div>
-              <ul className="nav navbar-nav navBarUL">
+              <ul className='nav navbar-nav navBarUL'>
                 {githubUrl !== '' ? (
-                  <li className="githubBtn">
+                  <li className='githubBtn'>
                     <GitHubButton
                       href={githubUrl}
-                      data-show-count="true"
-                      aria-label="Star on GitHub"
+                      data-show-count='true'
+                      aria-label='Star on GitHub'
                     >
                       Star
                     </GitHubButton>
@@ -88,18 +88,18 @@ const Header = ({ location }) => (
                   </li>
                 ) : null}
               </ul>
-              <ul className="nav navbar-nav navBarUL navbar-right">
+              <ul className='nav navbar-nav navBarUL navbar-right'>
                 {tweetText !== '' ? (
                   <li>
                     <a
                       href={`https://twitter.com/intent/tweet?&text=${tweetText}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target='_blank'
+                      rel='noopener noreferrer'
                     >
                       <img
-                        className="twitterIcon"
+                        className='twitterIcon'
                         src={twitter}
-                        alt="Twitter"
+                        alt='Twitter'
                       />
                     </a>
                   </li>
@@ -111,8 +111,8 @@ const Header = ({ location }) => (
                       <li key={key}>
                         <a
                           href={link.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          target='_blank'
+                          rel='noopener noreferrer'
                         >
                           {link.text}
                         </a>

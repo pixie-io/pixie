@@ -105,31 +105,31 @@ export default class MDXRuntimeTest extends Component {
         <ApolloProvider client={cloudClient}>
           <Helmet>
             {metaTitle ? <title>{metaTitle}</title> : null}
-            {metaTitle ? <meta name="title" content={metaTitle} /> : null}
+            {metaTitle ? <meta name='title' content={metaTitle} /> : null}
             {metaDescription ? (
-              <meta name="description" content={metaDescription} />
+              <meta name='description' content={metaDescription} />
             ) : null}
             {metaTitle ? (
-              <meta property="og:title" content={metaTitle} />
+              <meta property='og:title' content={metaTitle} />
             ) : null}
             {metaDescription ? (
-              <meta property="og:description" content={metaDescription} />
+              <meta property='og:description' content={metaDescription} />
             ) : null}
             {metaTitle ? (
-              <meta property="twitter:title" content={metaTitle} />
+              <meta property='twitter:title' content={metaTitle} />
             ) : null}
             {metaDescription ? (
-              <meta property="twitter:description" content={metaDescription} />
+              <meta property='twitter:description' content={metaDescription} />
             ) : null}
-            <link rel="canonical" href={canonicalUrl} />
+            <link rel='canonical' href={canonicalUrl} />
           </Helmet>
-          <div className="titleWrapper">
-            <h1 className="title">{mdx.fields.title}</h1>
+          <div className='titleWrapper'>
+            <h1 className='title'>{mdx.fields.title}</h1>
           </div>
-          <div className="mainWrapper">
+          <div className='mainWrapper'>
             <MDXRenderer>{mdx.body}</MDXRenderer>
           </div>
-          <div className="addPaddTopBottom">
+          <div className='addPaddTopBottom'>
             <NextPrevious mdx={mdx} nav={nav} />
           </div>
         </ApolloProvider>

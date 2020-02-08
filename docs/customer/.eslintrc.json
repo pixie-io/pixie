@@ -14,7 +14,8 @@
           "rules": {
               "react/jsx-filename-extension": "off",
               "react/prop-types": [2, {"skipUndeclared": true}],
-              "react/jsx-props-no-spreading": [0]
+              "react/jsx-props-no-spreading": [0],
+              "jsx-quotes": ["error", "prefer-single"]
             }
         }
     ],
@@ -35,5 +36,6 @@
         "@typescript-eslint"
     ],
     "rules": {
+        "quotes": [2, "single", "avoid-escape"]
     }
 }

@@ -37,7 +37,7 @@ const CodeBlock = ({ children: exampleCode, ...props }) => {
     <Highlight
       {...defaultProps}
       code={exampleCode}
-      language="javascript"
+      language='javascript'
       theme={prismTheme}
     >
       {({
