@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+node --harmony_array_includes "$@"
