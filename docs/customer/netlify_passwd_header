@@ -1,0 +1,4 @@
+# Obviously this is not super secure.
+# TODO(zasgar) figure out if this can be specified somewhere else.
+/*
+  Basic-Auth: pixie:WKihKrktaxkQbVJw
