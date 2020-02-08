@@ -31,6 +31,12 @@ pl_cc_library_internal(
 )
 
 pl_cc_test(
+    name = "env_test",
+    srcs = ["env_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "status_test",
     srcs = ["status_test.cc"],
     deps = [

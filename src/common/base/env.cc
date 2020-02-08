@@ -1,6 +1,7 @@
 #include "src/common/base/env.h"
 
 #include <absl/debugging/symbolize.h>
+#include <cstdlib>
 #include <mutex>  // NOLINT
 
 namespace pl {
@@ -31,5 +32,13 @@ void InitEnvironmentOrDie(int* argc, char** argv) {
 }
 
 void ShutdownEnvironmentOrDie() { std::call_once(shutdown_once, ShutdownEnvironmentOrDieImpl); }
+
+std::optional<std::string> GetEnv(const std::string& env_var) {
+  const char* var = getenv(env_var.c_str());
+  if (var == nullptr) {
+    return std::nullopt;
+  }
+  return std::string(var);
+}
 
 }  // namespace pl

@@ -130,13 +130,15 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   VLOG(1) << absl::Substitute("build_dir $0", host_lib_modules_build_dir.string());
 
   if (std::filesystem::exists(host_lib_modules_source_dir)) {
-    PL_RETURN_IF_ERROR(fs::CreateSymlink(host_lib_modules_source_dir, lib_modules_source_dir));
+    PL_RETURN_IF_ERROR(
+        fs::CreateSymlinkIfNotExists(host_lib_modules_source_dir, lib_modules_source_dir));
     LOG(INFO) << absl::Substitute("Linked linux headers found at $0",
                                   host_lib_modules_source_dir.string());
   }
 
   if (std::filesystem::exists(host_lib_modules_build_dir)) {
-    PL_RETURN_IF_ERROR(fs::CreateSymlink(host_lib_modules_build_dir, lib_modules_build_dir));
+    PL_RETURN_IF_ERROR(
+        fs::CreateSymlinkIfNotExists(host_lib_modules_build_dir, lib_modules_build_dir));
     LOG(INFO) << absl::Substitute("Linked linux headers found at $0",
                                   host_lib_modules_build_dir.string());
   }
@@ -156,8 +158,8 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir,
   LOG(INFO) << absl::Substitute("Looking for packaged headers at $0", packaged_headers.string());
   if (std::filesystem::exists(packaged_headers)) {
     PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers, uname));
-    PL_RETURN_IF_ERROR(fs::CreateSymlink(packaged_headers, lib_modules_build_dir));
-    LOG(INFO) << "Successfully installed packaged copy of headers.";
+    PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers, lib_modules_build_dir));
+    LOG(INFO) << "Successfully installed packaged copy of headers at " << lib_modules_build_dir;
     return Status::OK();
   }
 
