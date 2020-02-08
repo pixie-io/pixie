@@ -40,3 +40,9 @@ pl_cc_test(
     ],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "java_test",
+    srcs = ["java_test.cc"],
+    deps = [":cc_library"],
+)
