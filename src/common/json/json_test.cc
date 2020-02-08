@@ -1,0 +1,44 @@
+#include "src/common/json/json.h"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+namespace pl {
+namespace stirling {
+namespace utils {
+
+using ::testing::StrEq;
+
+TEST(ToJSONStringTest, MapStringString) {
+  std::map<std::string, std::string> map = {
+      {"m", "13"}, {"w", "23"}, {"i", "9"},  {"e", "5"}, {"r", "18"}, {"z", "26"}, {"u", "21"},
+      {"k", "11"}, {"s", "19"}, {"q", "17"}, {"d", "4"}, {"a", "1"},  {"y", "25"}, {"g", "7"},
+      {"p", "16"}, {"b", "2"},  {"c", "3"},  {"h", "8"}, {"x", "24"}, {"v", "22"}, {"j", "10"},
+      {"n", "14"}, {"t", "20"}, {"o", "15"}, {"f", "6"}, {"l", "12"}};
+
+  // Note that the output is sorted by key, since std::map is sorted by key.
+  EXPECT_THAT(
+      ToJSONString(map),
+      StrEq(R"({"a":"1","b":"2","c":"3","d":"4","e":"5","f":"6","g":"7","h":"8","i":"9","j":"10",)"
+            R"("k":"11","l":"12","m":"13","n":"14","o":"15","p":"16","q":"17","r":"18","s":"19",)"
+            R"("t":"20","u":"21","v":"22","w":"23","x":"24","y":"25","z":"26"})"));
+}
+
+TEST(ToJSONStringTest, VectorString) {
+  std::vector<std::string> vec = {"foo", "bar"};
+  EXPECT_THAT(ToJSONString(vec), StrEq(R"(["foo","bar"])"));
+}
+
+TEST(ToJSONStringTest, Nested) {
+  std::map<std::string, std::vector<std::string>> obj = {
+      {"USA", {"New York", "San Francisco"}}, {"Canada", {"Toronto", "Montreal", "Vancouver"}}};
+  EXPECT_THAT(
+      ToJSONString(obj),
+      StrEq(R"({"Canada":["Toronto","Montreal","Vancouver"],"USA":["New York","San Francisco"]})"));
+}
+
+// Note: if making a test using std::unordered_map, ensure that the test is robust to ordering.
+
+}  // namespace utils
+}  // namespace stirling
+}  // namespace pl

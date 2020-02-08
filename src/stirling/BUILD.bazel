@@ -25,21 +25,22 @@ pl_cc_library(
     deps = [
         "//src/shared/types:cc_library",
         "//src/shared/types/proto:types_pl_cc_proto",
+        "//src/shared/metadata:cc_library",
         "//src/common/grpcutils:cc_library",
         "//src/common/protobufs:cc_library",
         "//src/common/fs:cc_library",
+        "//src/common/json:cc_library",
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
-        "//demos/applications/hipster_shop:cc_library",
         "//src/stirling/mysql:cc_library",
         "//src/stirling/http:cc_library",
         "//src/stirling/http2:cc_library",
-        "//src/shared/metadata:cc_library",
         "//src/stirling/proto:sock_event_pl_cc_proto",
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/obj_tools:cc_library",
+        "//demos/applications/hipster_shop:cc_library",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
             "//src/stirling/bcc_bpf:socket_trace",
@@ -224,14 +225,14 @@ pl_cc_test(
         "//src/stirling/http2/testing/go_grpc_client",
         "//src/stirling/http2/testing/go_grpc_server",
     ],
+    # TODO(PL-1412): GRPCTraceUprobingTest.CaptureRPCTraceRecord sometimes captures no data.
+    flaky = True,
     tags = [
         "requires_bpf",
         # This test runs Go gRPC client & server, which causes other tests to attach & detach
         # uprobes and slowed down significantly.
         "exclusive",
     ],
-    # TODO(PL-1412): GRPCTraceUprobingTest.CaptureRPCTraceRecord sometimes captures no data.
-    flaky = True,
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
@@ -260,7 +261,10 @@ pl_cc_test(
     name = "stirling_wrapper_size_test",
     srcs = ["stirling_wrapper_size_test.cc"],
     data = [":stirling_wrapper"],
-    tags = ["no_tsan", "no_asan"],
+    tags = [
+        "no_asan",
+        "no_tsan",
+    ],
 )
 
 # TODO(oazizi): Currently test needs to be run manually with sudo.
@@ -272,14 +276,14 @@ sh_test(
         "//src/stirling/http2/testing/go_grpc_client",
         "//src/stirling/http2/testing/go_grpc_server",
     ],
+    # Sometimes stirling_wrapper gets stuck after receiving SIGHUP, the test waits for
+    # stirling_wrapper process to exit and eventually times out.
+    flaky = True,
     tags = [
         "exclusive",
         "requires_bpf",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
-    # Sometimes stirling_wrapper gets stuck after receiving SIGHUP, the test waits for
-    # stirling_wrapper process to exit and eventually times out.
-    flaky = True,
 )
 
 sh_test(

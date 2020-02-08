@@ -26,12 +26,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "json_test",
-    srcs = ["json_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
     name = "hsperfdata_test",
     srcs = ["hsperfdata_test.cc"],
     data = [

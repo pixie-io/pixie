@@ -16,6 +16,7 @@
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
 #include "src/common/grpcutils/utils.h"
+#include "src/common/json/json.h"
 #include "src/common/protobufs/recordio.h"
 #include "src/common/system/socket_info.h"
 #include "src/shared/metadata/metadata.h"
@@ -28,7 +29,6 @@
 #include "src/stirling/obj_tools/obj_tools.h"
 #include "src/stirling/proto/sock_event.pb.h"
 #include "src/stirling/socket_trace_connector.h"
-#include "src/stirling/utils/json.h"
 #include "src/stirling/utils/linux_headers.h"
 
 // TODO(yzhao): Consider simplify the semantic by filtering entirely on content type.
@@ -90,7 +90,7 @@ using ::pl::stirling::grpc::PBWireToText;
 using ::pl::stirling::http2::HTTP2Message;
 using ::pl::stirling::obj_tools::GetActiveBinaries;
 using ::pl::stirling::obj_tools::GetSymAddrs;
-using ::pl::stirling::utils::WriteMapAsJSON;
+using ::pl::stirling::utils::ToJSONString;
 
 namespace {
 
@@ -552,11 +552,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_major_version")>(1);
   r.Append<r.ColIndex("http_minor_version")>(resp_message.http_minor_version);
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(DetectContentType(resp_message)));
-  r.Append<r.ColIndex("http_req_headers")>(WriteMapAsJSON(req_message.http_headers));
+  r.Append<r.ColIndex("http_req_headers")>(ToJSONString(req_message.http_headers));
   r.Append<r.ColIndex("http_req_method")>(std::move(req_message.http_req_method));
   r.Append<r.ColIndex("http_req_path")>(std::move(req_message.http_req_path));
   r.Append<r.ColIndex("http_req_body")>("-");
-  r.Append<r.ColIndex("http_resp_headers")>(WriteMapAsJSON(resp_message.http_headers));
+  r.Append<r.ColIndex("http_resp_headers")>(ToJSONString(resp_message.http_headers));
   r.Append<r.ColIndex("http_resp_status")>(resp_message.http_resp_status);
   r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.http_resp_message));
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.http_msg_body));
@@ -595,9 +595,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("http_minor_version")>(0);
-  r.Append<r.ColIndex("http_req_headers")>(WriteMapAsJSON(req_message.headers));
+  r.Append<r.ColIndex("http_req_headers")>(ToJSONString(req_message.headers));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
-  r.Append<r.ColIndex("http_resp_headers")>(WriteMapAsJSON(resp_message.headers));
+  r.Append<r.ColIndex("http_resp_headers")>(ToJSONString(resp_message.headers));
   r.Append<r.ColIndex("http_req_method")>(method);
   r.Append<r.ColIndex("http_req_path")>(req_message.headers.ValueByKey(":path"));
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
@@ -652,9 +652,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("http_minor_version")>(0);
-  r.Append<r.ColIndex("http_req_headers")>(WriteMapAsJSON(req_stream->headers));
+  r.Append<r.ColIndex("http_req_headers")>(ToJSONString(req_stream->headers));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
-  r.Append<r.ColIndex("http_resp_headers")>(WriteMapAsJSON(resp_stream->headers));
+  r.Append<r.ColIndex("http_resp_headers")>(ToJSONString(resp_stream->headers));
   r.Append<r.ColIndex("http_req_method")>(method);
   r.Append<r.ColIndex("http_req_path")>(req_stream->headers.ValueByKey(":path"));
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
