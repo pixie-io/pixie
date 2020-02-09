@@ -1,8 +1,0 @@
-{
-  "phabricator.uri" : "https://phab.pixielabs.ai/",
-  "repository.callsign": "PCD",
-  "arc.land.onto.default": "master",
-  "base": "git:merge-base(origin/master), arc:prompt",
-  "arc.feature.start.default": "origin/master",
-    "load": ["./linters"]
-}

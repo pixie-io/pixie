@@ -1,9 +1,0 @@
-[build]
-  publish ="public/"
-  command = "yarn install && yarn lint && gatsby build && cp netlify_passwd_header public/_headers"
-
-[context.production]
-  # No password on prod.
-  # command = "yarn install && yarn lint && gatsby build"
-  # For now password protect all, until we are ready to make these public.
-  command = "yarn install && yarn lint && gatsby build && cp netlify_passwd_header public/_headers"
