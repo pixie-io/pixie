@@ -49,3 +49,6 @@
 [submodule "third_party/aes-min"]
 	path = third_party/aes-min
 	url = git@github.com:pixie-labs/aes-min.git
+[submodule "docs/customer"]
+	path = docs/customer
+	url = git@github.com:pixie-labs/docs-customer
