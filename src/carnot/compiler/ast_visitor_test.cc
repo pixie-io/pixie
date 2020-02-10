@@ -93,7 +93,7 @@ TEST_F(ASTVisitorTest, nonexistant_operator_names) {
       "px.DataFrame(table='cpu', select=['cpu0']).brange(start=0,stop=10)";
   graph_or_s = CompileGraph(wrong_range_op_name);
   ASSERT_NOT_OK(graph_or_s);
-  EXPECT_THAT(graph_or_s.status(), HasCompilerError("'expression' object is not callable"));
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("dataframe has no method 'brange'"));
 }
 
 TEST_F(ASTVisitorTest, assign_functionality) {

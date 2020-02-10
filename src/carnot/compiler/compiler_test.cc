@@ -2887,6 +2887,19 @@ TEST_F(CompilerTest, FlagValueQUery) {
   ASSERT_EQ(mem_sink->relation(), expected_relation);
 }
 
+constexpr char kUndefinedFuncError[] = R"pxl(
+queryDF = px.DataFrame(table='cpu', select=['upid'])
+queryDF.foo = queryDF.bar(queryDF.upid)
+px.display(queryDF, 'map')
+)pxl";
+
+TEST_F(CompilerTest, UndefinedFuncError) {
+  auto graph_or_s = compiler_.CompileToIR(kUndefinedFuncError, compiler_state_.get(), {});
+  ASSERT_NOT_OK(graph_or_s);
+
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("dataframe has no method 'bar'"));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

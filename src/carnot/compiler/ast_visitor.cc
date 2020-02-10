@@ -501,6 +501,14 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessCallNode(const pypa::AstCallPtr& no
   // pyobject declared up here because we need this object to be allocated when
   // func_object->Call() is made.
   PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->function, op_context));
+  if (pyobject->type_descriptor().type() == QLObjectType::kExpr) {
+    if (Match(pyobject->node(), ColumnNode())) {
+      return CreateAstError(node, "dataframe has no method '$0'",
+                            static_cast<ColumnIR*>(pyobject->node())->col_name());
+    }
+    return CreateAstError(node, "expression object is not callable");
+  }
+
   if (pyobject->type_descriptor().type() != QLObjectType::kFunction) {
     PL_ASSIGN_OR_RETURN(func_object, pyobject->GetCallMethod());
   } else {
