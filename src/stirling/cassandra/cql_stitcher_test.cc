@@ -21,6 +21,14 @@ constexpr uint8_t kStartupMsg[] = {0x00, 0x01, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5
                                    0x05, 0x33, 0x2e, 0x30, 0x2e, 0x30};
 std::string_view kStartupMsgStr = StringView(kStartupMsg);
 
+constexpr uint8_t kAuthResponseMsg[] = {0x00, 0x00, 0x00, 0x14, 0x00, 0x63, 0x61, 0x73,
+                                        0x73, 0x61, 0x6e, 0x64, 0x72, 0x61, 0x00, 0x63,
+                                        0x61, 0x73, 0x73, 0x61, 0x6e, 0x64, 0x72, 0x61};
+std::string_view kAuthResponseMsgStr = StringView(kAuthResponseMsg);
+
+constexpr uint8_t kAuthSuccessMsg[] = {0xff, 0xff, 0xff, 0xff};
+std::string_view kAuthSuccessMsgStr = StringView(kAuthSuccessMsg);
+
 constexpr uint8_t kRegisterMsg[] = {0x00, 0x03, 0x00, 0x0f, 0x54, 0x4f, 0x50, 0x4f, 0x4c, 0x4f,
                                     0x47, 0x59, 0x5f, 0x43, 0x48, 0x41, 0x4e, 0x47, 0x45, 0x00,
                                     0x0d, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x43, 0x48,
@@ -369,6 +377,28 @@ TEST(CassStitcherTest, ExecuteResult) {
 
   // TODO(oazizi): Enable once parsing of results in complete.
   // EXPECT_EQ(record.resp.msg, "");
+}
+
+TEST(CassStitcherTest, AuthResponseAuthSuccess) {
+  std::deque<Frame> req_frames;
+  std::deque<Frame> resp_frames;
+  std::vector<Record> records;
+
+  req_frames.push_back(CreateFrame(0, Opcode::kAuthResponse, kAuthResponseMsgStr, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kAuthSuccess, kAuthSuccessMsgStr, 2));
+
+  records = ProcessFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  ASSERT_EQ(records.size(), 1);
+
+  Record& record = records.front();
+
+  EXPECT_EQ(record.req.op, ReqOp::kAuthResponse);
+  EXPECT_EQ(record.resp.op, RespOp::kAuthSuccess);
+
+  EXPECT_EQ(record.req.msg, ConstStringView("\0cassandra\0cassandra"));
+  EXPECT_EQ(record.resp.msg, "");
 }
 
 }  // namespace cass

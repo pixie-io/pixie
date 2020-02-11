@@ -44,6 +44,24 @@ Status ProcessStartupReq(Frame* req_frame, Request* req) {
   return Status::OK();
 }
 
+Status ProcessAuthResponseReq(Frame* req_frame, Request* req) {
+  TypeDecoder decoder(req_frame->msg);
+  PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
+
+  std::string_view token_str = CreateStringView<char>(token);
+
+  DCHECK(req->msg.empty());
+  req->msg = token_str;
+
+  return Status::OK();
+}
+
+Status ProcessOptionsReq(Frame* req_frame, Request* req) {
+  ECHECK(req_frame->hdr.length == 0) << "Options frame not expected to have a body";
+  DCHECK(req->msg.empty());
+  return Status::OK();
+}
+
 Status ProcessRegisterReq(Frame* req_frame, Request* req) {
   TypeDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(StringList event_types, decoder.ExtractStringList());
@@ -176,6 +194,30 @@ Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
   return Status::OK();
 }
 
+Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
+  TypeDecoder decoder(resp_frame->msg);
+  PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
+
+  std::string token_hex = BytesToString(token);
+
+  DCHECK(resp->msg.empty());
+  resp->msg = token_hex;
+
+  return Status::OK();
+}
+
+Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
+  TypeDecoder decoder(resp_frame->msg);
+  PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
+
+  std::string token_hex = BytesToString(token);
+
+  DCHECK(resp->msg.empty());
+  resp->msg = token_hex;
+
+  return Status::OK();
+}
+
 Status ProcessReq(Frame* req_frame, Request* req) {
   req->op = static_cast<ReqOp>(req_frame->hdr.opcode);
   req->timestamp_ns = req_frame->timestamp_ns;
@@ -184,9 +226,9 @@ Status ProcessReq(Frame* req_frame, Request* req) {
     case ReqOp::kStartup:
       return ProcessStartupReq(req_frame, req);
     case ReqOp::kAuthResponse:
-      return ProcessSimpleReq(req_frame, req);
+      return ProcessAuthResponseReq(req_frame, req);
     case ReqOp::kOptions:
-      return ProcessSimpleReq(req_frame, req);
+      return ProcessOptionsReq(req_frame, req);
     case ReqOp::kQuery:
       return ProcessQueryReq(req_frame, req);
     case ReqOp::kPrepare:
@@ -220,9 +262,9 @@ Status ProcessResp(Frame* resp_frame, Response* resp) {
     case RespOp::kEvent:
       return ProcessSimpleResp(resp_frame, resp);
     case RespOp::kAuthChallenge:
-      return ProcessSimpleResp(resp_frame, resp);
+      return ProcessAuthChallengeResp(resp_frame, resp);
     case RespOp::kAuthSuccess:
-      return ProcessSimpleResp(resp_frame, resp);
+      return ProcessAuthSuccessResp(resp_frame, resp);
     default:
       return error::Internal("Unhandled opcode $0", magic_enum::enum_name(resp->op));
   }
