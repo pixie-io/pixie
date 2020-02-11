@@ -47,6 +47,12 @@ StatusOr<uint16_t> ExtractShort(std::string_view* buf);
 // [byte]
 StatusOr<uint8_t> ExtractByte(std::string_view* buf);
 
+// [float]
+StatusOr<float> ExtractFloat(std::string_view* buf);
+
+// [double]
+StatusOr<double> ExtractDouble(std::string_view* buf);
+
 // [string] A [short] n, followed by n bytes representing an UTF-8 string.
 StatusOr<std::string> ExtractString(std::string_view* buf);
 

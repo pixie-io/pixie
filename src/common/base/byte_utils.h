@@ -63,9 +63,11 @@ T LEndianBytesToInt(std::string_view buf) {
  * @return The decoded float value.
  */
 template <typename TFloatType>
-TFloatType LEndianBytesToFloat(std::string_view str) {
-  DCHECK_EQ(str.size(), sizeof(TFloatType));
-  return *reinterpret_cast<const TFloatType*>(str.data());
+TFloatType LEndianBytesToFloat(std::string_view buf) {
+  // Source buffer must have enough bytes.
+  DCHECK_GE(buf.size(), sizeof(TFloatType));
+
+  return *reinterpret_cast<const TFloatType*>(buf.data());
 }
 
 /**
@@ -116,9 +118,11 @@ T BEndianBytesToInt(std::string_view buf) {
  * @return The decoded float value.
  */
 template <typename TFloatType>
-TFloatType BEndianBytesToFloat(std::string_view str) {
-  DCHECK_EQ(str.size(), sizeof(TFloatType));
-  TFloatType val = *reinterpret_cast<const TFloatType*>(str.data());
+TFloatType BEndianBytesToFloat(std::string_view buf) {
+  // Source buffer must have enough bytes.
+  DCHECK_GE(buf.size(), sizeof(TFloatType));
+
+  TFloatType val = *reinterpret_cast<const TFloatType*>(buf.data());
   return ReverseBytes<TFloatType>(val);
 }
 

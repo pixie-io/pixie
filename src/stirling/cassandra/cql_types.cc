@@ -23,6 +23,16 @@ StatusOr<TIntType> ExtractIntCore(std::string_view* buf) {
   return val;
 }
 
+template <typename TFloatType>
+StatusOr<TFloatType> ExtractFloatCore(std::string_view* buf) {
+  if (buf->size() < sizeof(TFloatType)) {
+    return error::ResourceUnavailable("Insufficient number of bytes");
+  }
+  TFloatType val = utils::BEndianBytesToFloat<TFloatType>(*buf);
+  buf->remove_prefix(sizeof(TFloatType));
+  return val;
+}
+
 template <typename TCharType>
 StatusOr<std::basic_string<TCharType>> ExtractBytesCore(std::string_view* buf, int64_t len) {
   if (static_cast<ssize_t>(buf->size()) < len) {
@@ -60,6 +70,12 @@ StatusOr<uint16_t> ExtractShort(std::string_view* buf) { return ExtractIntCore<u
 
 // [byte] A 2 bytes unsigned integer
 StatusOr<uint8_t> ExtractByte(std::string_view* buf) { return ExtractIntCore<uint8_t>(buf); }
+
+// [float]
+StatusOr<float> ExtractFloat(std::string_view* buf) { return ExtractFloatCore<float>(buf); }
+
+// [double]
+StatusOr<double> ExtractDouble(std::string_view* buf) { return ExtractFloatCore<double>(buf); }
 
 // [string] A [short] n, followed by n bytes representing an UTF-8 string.
 StatusOr<std::string> ExtractString(std::string_view* buf) {

@@ -19,6 +19,8 @@ constexpr std::string_view kByte = ConstStringView("\x01");
 constexpr std::string_view kShort = ConstStringView("\x01\x23");
 constexpr std::string_view kInt = ConstStringView("\x01\x23\x45\x67");
 constexpr std::string_view kLong = ConstStringView("\x01\x23\x45\x67\x89\xab\xcd\xef");
+constexpr std::string_view kFloat = ConstStringView("\x41\x23\x33\x33");
+constexpr std::string_view kDouble = ConstStringView("\x40\x24\x66\x66\x66\x66\x66\x66");
 constexpr std::string_view kString = ConstStringView(
     "\x00\x1a"
     "abcdefghijklmnopqrstuvwxyz");
@@ -192,6 +194,58 @@ TEST(ExtractByte, Undersized) {
 TEST(ExtractByte, Oversized) {
   std::string_view buf(kByte.data(), kByte.size() + 1);
   ASSERT_OK_AND_EQ(ExtractByte(&buf), 0x01);
+  ASSERT_FALSE(buf.empty());
+}
+
+//------------------------
+// ExtractFloat
+//------------------------
+
+TEST(ExtractFloat, Exact) {
+  std::string_view buf(kFloat);
+  ASSERT_OK_AND_EQ(ExtractFloat(&buf), 10.2f);
+  ASSERT_TRUE(buf.empty());
+}
+
+TEST(ExtractFloat, Empty) {
+  std::string_view buf(kEmpty);
+  ASSERT_NOT_OK(ExtractFloat(&buf));
+}
+
+TEST(ExtractFloat, Undersized) {
+  std::string_view buf(kFloat.data(), kFloat.size() - 1);
+  ASSERT_NOT_OK(ExtractFloat(&buf));
+}
+
+TEST(ExtractFloat, Oversized) {
+  std::string_view buf(kFloat.data(), kFloat.size() + 1);
+  ASSERT_OK_AND_EQ(ExtractFloat(&buf), 10.2f);
+  ASSERT_FALSE(buf.empty());
+}
+
+//------------------------
+// ExtractDouble
+//------------------------
+
+TEST(ExtractDouble, Exact) {
+  std::string_view buf(kDouble);
+  ASSERT_OK_AND_EQ(ExtractDouble(&buf), 10.2);
+  ASSERT_TRUE(buf.empty());
+}
+
+TEST(ExtractDouble, Empty) {
+  std::string_view buf(kEmpty);
+  ASSERT_NOT_OK(ExtractDouble(&buf));
+}
+
+TEST(ExtractDouble, Undersized) {
+  std::string_view buf(kDouble.data(), kDouble.size() - 1);
+  ASSERT_NOT_OK(ExtractDouble(&buf));
+}
+
+TEST(ExtractDouble, Oversized) {
+  std::string_view buf(kDouble.data(), kDouble.size() + 1);
+  ASSERT_OK_AND_EQ(ExtractDouble(&buf), 10.2);
   ASSERT_FALSE(buf.empty());
 }
 
