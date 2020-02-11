@@ -7,7 +7,7 @@
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
 #include "src/stirling/cassandra/cass_types.h"
-#include "src/stirling/cassandra/cql_types.h"
+#include "src/stirling/cassandra/type_decoder.h"
 
 namespace pl {
 namespace stirling {
@@ -29,8 +29,8 @@ Status ProcessSimpleResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessStartupReq(Frame* req_frame, Request* req) {
-  std::string_view body = req_frame->msg;
-  PL_ASSIGN_OR_RETURN(StringMap options, ExtractStringMap(&body));
+  TypeDecoder decoder(req_frame->msg);
+  PL_ASSIGN_OR_RETURN(StringMap options, decoder.ExtractStringMap());
 
   DCHECK(req->msg.empty());
   req->msg = utils::ToJSONString(options);
@@ -39,8 +39,8 @@ Status ProcessStartupReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessRegisterReq(Frame* req_frame, Request* req) {
-  std::string_view body = req_frame->msg;
-  PL_ASSIGN_OR_RETURN(StringList event_types, ExtractStringList(&body));
+  TypeDecoder decoder(req_frame->msg);
+  PL_ASSIGN_OR_RETURN(StringList event_types, decoder.ExtractStringList());
 
   DCHECK(req->msg.empty());
   req->msg = utils::ToJSONString(event_types);
@@ -49,10 +49,10 @@ Status ProcessRegisterReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessQueryReq(Frame* req_frame, Request* req) {
-  std::string_view body = req_frame->msg;
-  PL_ASSIGN_OR_RETURN(std::string query, ExtractLongString(&body));
-  PL_ASSIGN_OR_RETURN(uint16_t consistency, ExtractShort(&body));
-  PL_ASSIGN_OR_RETURN(uint8_t flags, ExtractByte(&body));
+  TypeDecoder decoder(req_frame->msg);
+  PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
+  PL_ASSIGN_OR_RETURN(uint16_t consistency, decoder.ExtractShort());
+  PL_ASSIGN_OR_RETURN(uint8_t flags, decoder.ExtractByte());
 
   bool flag_values = flags & 0x01;
   bool flag_skip_metadata = flags & 0x02;
@@ -67,35 +67,35 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
   std::vector<std::basic_string<uint8_t>> values;
   std::vector<std::basic_string<uint8_t>> names;
   if (flag_values) {
-    PL_ASSIGN_OR_RETURN(uint16_t num_values, ExtractShort(&body));
+    PL_ASSIGN_OR_RETURN(uint16_t num_values, decoder.ExtractShort());
     for (int i = 0; i < num_values; ++i) {
       if (flag_with_names_for_values) {
-        PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> name_i, ExtractBytes(&body));
+        PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> name_i, decoder.ExtractBytes());
         names.push_back(std::move(name_i));
       }
-      PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> value_i, ExtractBytes(&body));
+      PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> value_i, decoder.ExtractBytes());
       values.push_back(std::move(value_i));
     }
   }
 
   int32_t page_size = 0;
   if (flag_page_size) {
-    PL_ASSIGN_OR_RETURN(page_size, ExtractInt(&body));
+    PL_ASSIGN_OR_RETURN(page_size, decoder.ExtractInt());
   }
 
   std::basic_string<uint8_t> paging_state;
   if (flag_with_paging_state) {
-    PL_ASSIGN_OR_RETURN(paging_state, ExtractBytes(&body));
+    PL_ASSIGN_OR_RETURN(paging_state, decoder.ExtractBytes());
   }
 
   uint16_t serial_consistency = 0;
   if (flag_with_serial_consistency) {
-    PL_ASSIGN_OR_RETURN(serial_consistency, ExtractShort(&body));
+    PL_ASSIGN_OR_RETURN(serial_consistency, decoder.ExtractShort());
   }
 
   int64_t timestamp;
   if (flag_with_default_timestamp) {
-    PL_ASSIGN_OR_RETURN(timestamp, ExtractLong(&body));
+    PL_ASSIGN_OR_RETURN(timestamp, decoder.ExtractLong());
   }
 
   // TODO(oazizi): Incorporate some of these into req->msg, especially values.
@@ -113,8 +113,8 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
-  std::string_view body = resp_frame->msg;
-  PL_ASSIGN_OR_RETURN(StringMultiMap options, ExtractStringMultiMap(&body));
+  TypeDecoder decoder(resp_frame->msg);
+  PL_ASSIGN_OR_RETURN(StringMultiMap options, decoder.ExtractStringMultiMap());
 
   DCHECK(resp->msg.empty());
   resp->msg = utils::ToJSONString(options);

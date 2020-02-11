@@ -1,4 +1,4 @@
-#include "src/stirling/cassandra/cql_types.h"
+#include "src/stirling/cassandra/type_decoder.h"
 
 #include <algorithm>
 #include <utility>
@@ -14,12 +14,12 @@ namespace cass {
 // also intrinsically convert from big-endian to host ordering.
 
 template <typename TIntType>
-StatusOr<TIntType> ExtractIntCore(std::string_view* buf) {
-  if (buf->size() < sizeof(TIntType)) {
+StatusOr<TIntType> TypeDecoder::ExtractIntCore() {
+  if (buf_.size() < sizeof(TIntType)) {
     return error::ResourceUnavailable("Insufficient number of bytes");
   }
-  TIntType val = utils::BEndianBytesToInt<TIntType>(*buf);
-  buf->remove_prefix(sizeof(TIntType));
+  TIntType val = utils::BEndianBytesToInt<TIntType>(buf_);
+  buf_.remove_prefix(sizeof(TIntType));
   return val;
 }
 
@@ -34,42 +34,42 @@ StatusOr<TFloatType> ExtractFloatCore(std::string_view* buf) {
 }
 
 template <typename TCharType>
-StatusOr<std::basic_string<TCharType>> ExtractBytesCore(std::string_view* buf, int64_t len) {
-  if (static_cast<ssize_t>(buf->size()) < len) {
+StatusOr<std::basic_string<TCharType>> TypeDecoder::ExtractBytesCore(int64_t len) {
+  if (static_cast<ssize_t>(buf_.size()) < len) {
     return error::ResourceUnavailable("Insufficient number of bytes");
   }
 
   // TODO(oazizi): Optimization when input and output types match: no need for tbuf.
-  auto tbuf = CreateStringView<TCharType>(*buf);
+  auto tbuf = CreateStringView<TCharType>(buf_);
   std::basic_string<TCharType> str(tbuf.substr(0, len));
-  buf->remove_prefix(len);
+  buf_.remove_prefix(len);
   return str;
 }
 
 template <typename TCharType, size_t N>
-Status ExtractBytesCore(std::string_view* buf, TCharType* out) {
-  if (buf->size() < N) {
+Status TypeDecoder::ExtractBytesCore(TCharType* out) {
+  if (buf_.size() < N) {
     return error::Internal("Insufficient number of bytes");
   }
 
   // TODO(oazizi): Optimization when input and output types match: no need for tbuf.
-  auto tbuf = CreateStringView<TCharType>(*buf);
+  auto tbuf = CreateStringView<TCharType>(buf_);
   memcpy(out, tbuf.data(), N);
-  buf->remove_prefix(N);
+  buf_.remove_prefix(N);
   return Status::OK();
 }
 
 // [int] A 4 bytes signed integer
-StatusOr<int32_t> ExtractInt(std::string_view* buf) { return ExtractIntCore<int32_t>(buf); }
+StatusOr<int32_t> TypeDecoder::ExtractInt() { return ExtractIntCore<int32_t>(); }
 
 // [long] A 8 bytes signed integer
-StatusOr<int64_t> ExtractLong(std::string_view* buf) { return ExtractIntCore<int64_t>(buf); }
+StatusOr<int64_t> TypeDecoder::ExtractLong() { return ExtractIntCore<int64_t>(); }
 
 // [short] A 2 bytes unsigned integer
-StatusOr<uint16_t> ExtractShort(std::string_view* buf) { return ExtractIntCore<uint16_t>(buf); }
+StatusOr<uint16_t> TypeDecoder::ExtractShort() { return ExtractIntCore<uint16_t>(); }
 
 // [byte] A 2 bytes unsigned integer
-StatusOr<uint8_t> ExtractByte(std::string_view* buf) { return ExtractIntCore<uint8_t>(buf); }
+StatusOr<uint8_t> TypeDecoder::ExtractByte() { return ExtractIntCore<uint8_t>(); }
 
 // [float]
 StatusOr<float> ExtractFloat(std::string_view* buf) { return ExtractFloatCore<float>(buf); }
@@ -78,20 +78,20 @@ StatusOr<float> ExtractFloat(std::string_view* buf) { return ExtractFloatCore<fl
 StatusOr<double> ExtractDouble(std::string_view* buf) { return ExtractFloatCore<double>(buf); }
 
 // [string] A [short] n, followed by n bytes representing an UTF-8 string.
-StatusOr<std::string> ExtractString(std::string_view* buf) {
-  PL_ASSIGN_OR_RETURN(uint16_t len, ExtractShort(buf));
-  return ExtractBytesCore<char>(buf, len);
+StatusOr<std::string> TypeDecoder::ExtractString() {
+  PL_ASSIGN_OR_RETURN(uint16_t len, ExtractShort());
+  return ExtractBytesCore<char>(len);
 }
 
 // [long string] An [int] n, followed by n bytes representing an UTF-8 string.
-StatusOr<std::string> ExtractLongString(std::string_view* buf) {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt(buf));
+StatusOr<std::string> TypeDecoder::ExtractLongString() {
+  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
   len = std::max(len, 0);
-  return ExtractBytesCore<char>(buf, len);
+  return ExtractBytesCore<char>(len);
 }
 
 // [uuid] A 16 bytes long uuid.
-StatusOr<sole::uuid> ExtractUUID(std::string_view* buf) {
+StatusOr<sole::uuid> TypeDecoder::ExtractUUID() {
   sole::uuid uuid;
 
   // Logically, we want to get the different components of the UUID, and ensure correct byte-order.
@@ -120,19 +120,19 @@ StatusOr<sole::uuid> ExtractUUID(std::string_view* buf) {
   //
   // And we realize that we can achieve this directly with the following shortcut:
 
-  PL_ASSIGN_OR_RETURN(uuid.ab, ExtractLong(buf));
-  PL_ASSIGN_OR_RETURN(uuid.cd, ExtractLong(buf));
+  PL_ASSIGN_OR_RETURN(uuid.ab, ExtractLong());
+  PL_ASSIGN_OR_RETURN(uuid.cd, ExtractLong());
 
   return uuid;
 }
 
 // [string list] A [short] n, followed by n [string].
-StatusOr<StringList> ExtractStringList(std::string_view* buf) {
-  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort(buf));
+StatusOr<StringList> TypeDecoder::ExtractStringList() {
+  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
 
   StringList string_list;
   for (int i = 0; i < n; ++i) {
-    PL_ASSIGN_OR_RETURN(std::string s, ExtractString(buf));
+    PL_ASSIGN_OR_RETURN(std::string s, ExtractString());
     string_list.push_back(std::move(s));
   }
 
@@ -141,16 +141,16 @@ StatusOr<StringList> ExtractStringList(std::string_view* buf) {
 
 // [bytes] A [int] n, followed by n bytes if n >= 0. If n < 0,
 //         no byte should follow and the value represented is `null`.
-StatusOr<std::basic_string<uint8_t>> ExtractBytes(std::string_view* buf) {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt(buf));
+StatusOr<std::basic_string<uint8_t>> TypeDecoder::ExtractBytes() {
+  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
   len = std::max(len, 0);
-  return ExtractBytesCore<uint8_t>(buf, len);
+  return ExtractBytesCore<uint8_t>(len);
 }
 
 // [short bytes]  A [short] n, followed by n bytes if n >= 0.
-StatusOr<std::basic_string<uint8_t>> ExtractShortBytes(std::string_view* buf) {
-  PL_ASSIGN_OR_RETURN(uint16_t len, ExtractShort(buf));
-  return ExtractBytesCore<uint8_t>(buf, len);
+StatusOr<std::basic_string<uint8_t>> TypeDecoder::ExtractShortBytes() {
+  PL_ASSIGN_OR_RETURN(uint16_t len, ExtractShort());
+  return ExtractBytesCore<uint8_t>(len);
 }
 
 // [inet] An address (ip and port) to a node. It consists of one
@@ -158,8 +158,8 @@ StatusOr<std::basic_string<uint8_t>> ExtractShortBytes(std::string_view* buf) {
 //        [byte] representing the IP address (in practice n can only be
 //        either 4 (IPv4) or 16 (IPv6)), following by one [int]
 //        representing the port.
-StatusOr<SockAddr> ExtractInet(std::string_view* buf) {
-  PL_ASSIGN_OR_RETURN(uint8_t n, ExtractByte(buf));
+StatusOr<SockAddr> TypeDecoder::ExtractInet() {
+  PL_ASSIGN_OR_RETURN(uint8_t n, ExtractByte());
 
   SockAddr addr;
 
@@ -167,31 +167,29 @@ StatusOr<SockAddr> ExtractInet(std::string_view* buf) {
     case 4: {
       addr.family = SockAddrFamily::kIPv4;
       addr.addr = in_addr{};
-      PL_RETURN_IF_ERROR(
-          (ExtractBytesCore<uint8_t, 4>(buf, reinterpret_cast<uint8_t*>(&addr.addr))));
+      PL_RETURN_IF_ERROR((ExtractBytesCore<uint8_t, 4>(reinterpret_cast<uint8_t*>(&addr.addr))));
     } break;
     case 16: {
       addr.family = SockAddrFamily::kIPv6;
       addr.addr = in6_addr{};
-      PL_RETURN_IF_ERROR(
-          (ExtractBytesCore<uint8_t, 16>(buf, reinterpret_cast<uint8_t*>(&addr.addr))));
+      PL_RETURN_IF_ERROR((ExtractBytesCore<uint8_t, 16>(reinterpret_cast<uint8_t*>(&addr.addr))));
     } break;
   }
 
-  PL_ASSIGN_OR_RETURN(addr.port, ExtractInt(buf));
+  PL_ASSIGN_OR_RETURN(addr.port, ExtractInt());
 
   return addr;
 }
 
 // [string map] A [short] n, followed by n pair <k><v> where <k> and <v>
 //              are [string].
-StatusOr<StringMap> ExtractStringMap(std::string_view* buf) {
-  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort(buf));
+StatusOr<StringMap> TypeDecoder::ExtractStringMap() {
+  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
 
   StringMap string_map;
   for (int i = 0; i < n; ++i) {
-    PL_ASSIGN_OR_RETURN(std::string key, ExtractString(buf));
-    PL_ASSIGN_OR_RETURN(std::string val, ExtractString(buf));
+    PL_ASSIGN_OR_RETURN(std::string key, ExtractString());
+    PL_ASSIGN_OR_RETURN(std::string val, ExtractString());
     string_map.insert({std::move(key), std::move(val)});
   }
 
@@ -200,13 +198,13 @@ StatusOr<StringMap> ExtractStringMap(std::string_view* buf) {
 
 // [string multimap] A [short] n, followed by n pair <k><v> where <k> is a
 //                   [string] and <v> is a [string list].
-StatusOr<StringMultiMap> ExtractStringMultiMap(std::string_view* buf) {
-  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort(buf));
+StatusOr<StringMultiMap> TypeDecoder::ExtractStringMultiMap() {
+  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
 
   StringMultiMap string_multimap;
   for (int i = 0; i < n; ++i) {
-    PL_ASSIGN_OR_RETURN(std::string key, ExtractString(buf));
-    PL_ASSIGN_OR_RETURN(StringList val, ExtractStringList(buf));
+    PL_ASSIGN_OR_RETURN(std::string key, ExtractString());
+    PL_ASSIGN_OR_RETURN(StringList val, ExtractStringList());
     string_multimap.insert({std::move(key), std::move(val)});
   }
 
