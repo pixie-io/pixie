@@ -14,6 +14,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/fs:cc_library",
+        "//src/common/system:cc_library",
         "@com_github_tencent_rapidjson//:rapidjson",
         "//src/stirling/common:cc_library",
     ],
@@ -38,5 +39,11 @@ pl_cc_test(
 pl_cc_test(
     name = "java_test",
     srcs = ["java_test.cc"],
-    deps = [":cc_library"],
+    data = [
+        "//src/stirling/testing/java:hello_world",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+    ],
 )

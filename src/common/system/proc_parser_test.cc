@@ -173,10 +173,9 @@ TEST_F(ProcParserTest, ReadUIDs) {
 }
 
 TEST_F(ProcParserTest, ReadNSPid) {
-  ProcParser::NSPid ns_pid = {};
-  ASSERT_OK(parser_->ReadNSPid(123, &ns_pid));
-  EXPECT_EQ("2578", ns_pid.pid);
-  EXPECT_THAT(ns_pid.ns_pids, ElementsAre("24", "25"));
+  std::vector<std::string> ns_pids;
+  ASSERT_OK(parser_->ReadNSPid(123, &ns_pids));
+  EXPECT_THAT(ns_pids, ElementsAre("2578", "24", "25"));
 }
 
 }  // namespace system

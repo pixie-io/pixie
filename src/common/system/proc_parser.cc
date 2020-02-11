@@ -499,7 +499,7 @@ Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
 // ...
 //
 // There may not be a second pid if the process is not running inside a namespace.
-Status ProcParser::ReadNSPid(pid_t pid, NSPid* ns_pid) const {
+Status ProcParser::ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const {
   std::filesystem::path proc_pid_status_path =
       std::filesystem::path(proc_base_path_) / std::to_string(pid) / "status";
   PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_status_path));
@@ -512,9 +512,8 @@ Status ProcParser::ReadNSPid(pid_t pid, NSPid* ns_pid) const {
     return error::InvalidArgument("NSpid line in '$0' is invalid: '$1'",
                                   proc_pid_status_path.string(), ns_pid_line);
   }
-  ns_pid->pid.assign(fields[1]);
-  for (size_t i = 2; i < fields.size(); ++i) {
-    ns_pid->ns_pids.push_back(std::string(fields[i]));
+  for (size_t i = 1; i < fields.size(); ++i) {
+    ns_pids->push_back(std::string(fields[i]));
   }
   return Status::OK();
 }

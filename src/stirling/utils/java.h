@@ -1,8 +1,11 @@
 #pragma once
 
+#include <filesystem>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include "src/common/base/statusor.h"
 
 namespace pl {
 namespace stirling {
@@ -33,6 +36,11 @@ class Stats {
 
   std::vector<Stat> stats_;
 };
+
+/**
+ * Returns the path of the hsperfdata for a JVM process.
+ */
+StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid);
 
 }  // namespace stirling
 }  // namespace pl

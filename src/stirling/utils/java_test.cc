@@ -3,6 +3,14 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <string>
+#include <string_view>
+
+#include "src/common/base/test_utils.h"
+#include "src/common/exec/subprocess.h"
+#include "src/common/testing/test_environment.h"
+
 namespace pl {
 namespace stirling {
 
@@ -28,6 +36,22 @@ TEST(StatsTest, CommoneValues) {
   EXPECT_EQ(4, stats.UsedHeapSizeBytes());
   EXPECT_EQ(4, stats.TotalHeapSizeBytes());
   EXPECT_EQ(2, stats.MaxHeapSizeBytes());
+}
+
+TEST(HsperfdataPathTest, ResultIsAsExpected) {
+  const std::string_view kClassPath = "src/stirling/testing/java";
+  SubProcess hello_world;
+  const auto class_path = std::filesystem::path(TestEnvironment::TestRunDir()) / kClassPath;
+
+  EXPECT_OK(hello_world.Start({"java", "-cp", class_path.string(), "HelloWorld"}));
+  // Give some time for the JVM process to write the data file.
+  sleep(2);
+
+  auto hsperfdata_path_or = HsperfdataPath(hello_world.child_pid());
+  EXPECT_OK(hsperfdata_path_or);
+  EXPECT_TRUE(std::filesystem::exists(hsperfdata_path_or.ValueOrDie()));
+  hello_world.Kill();
+  EXPECT_EQ(9, hello_world.Wait()) << "Server should have been killed.";
 }
 
 }  // namespace stirling

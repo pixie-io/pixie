@@ -190,20 +190,13 @@ class ProcParser {
    */
   Status ReadUIDs(int32_t pid, ProcUIDs* uids) const;
 
-  // http://man7.org/linux/man-pages/man5/proc.5.html
-  struct NSPid {
-    // The leftmost tgid of the NSpid line at the /proc/<pid>/status file.
-    std::string pid;
-    // The remaining tgids of inner namspaces.
-    std::vector<std::string> ns_pids;
-  };
-
   /**
    * Reads and outputs the namespace pid for a host pid.
    * Returns error::NotFound() if no namespace PID is found.
    * Returns other types of error if failed.
+   * http://man7.org/linux/man-pages/man5/proc.5.html
    */
-  Status ReadNSPid(pid_t pid, NSPid* ns_pid) const;
+  Status ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const;
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(

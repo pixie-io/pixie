@@ -1,0 +1,10 @@
+package(default_visibility = ["//visibility:public"])
+
+# TODO(yzhao): Create a java_binary rule to replace the pre-built .class file.
+filegroup(
+    name = "hello_world",
+    srcs = [
+        "HelloWorld.java",
+        "HelloWorld.class",
+    ],
+)
