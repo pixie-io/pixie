@@ -48,6 +48,70 @@ Status ProcessRegisterReq(Frame* req_frame, Request* req) {
   return Status::OK();
 }
 
+Status ProcessQueryReq(Frame* req_frame, Request* req) {
+  std::string_view body = req_frame->msg;
+  PL_ASSIGN_OR_RETURN(std::string query, ExtractLongString(&body));
+  PL_ASSIGN_OR_RETURN(uint16_t consistency, ExtractShort(&body));
+  PL_ASSIGN_OR_RETURN(uint8_t flags, ExtractByte(&body));
+
+  bool flag_values = flags & 0x01;
+  bool flag_skip_metadata = flags & 0x02;
+  bool flag_page_size = flags & 0x04;
+  bool flag_with_paging_state = flags & 0x08;
+  bool flag_with_serial_consistency = flags & 0x10;
+  bool flag_with_default_timestamp = flags & 0x20;
+  bool flag_with_names_for_values = flags & 0x40;
+
+  PL_UNUSED(flag_skip_metadata);
+
+  std::vector<std::basic_string<uint8_t>> values;
+  std::vector<std::basic_string<uint8_t>> names;
+  if (flag_values) {
+    PL_ASSIGN_OR_RETURN(uint16_t num_values, ExtractShort(&body));
+    for (int i = 0; i < num_values; ++i) {
+      if (flag_with_names_for_values) {
+        PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> name_i, ExtractBytes(&body));
+        names.push_back(std::move(name_i));
+      }
+      PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> value_i, ExtractBytes(&body));
+      values.push_back(std::move(value_i));
+    }
+  }
+
+  int32_t page_size = 0;
+  if (flag_page_size) {
+    PL_ASSIGN_OR_RETURN(page_size, ExtractInt(&body));
+  }
+
+  std::basic_string<uint8_t> paging_state;
+  if (flag_with_paging_state) {
+    PL_ASSIGN_OR_RETURN(paging_state, ExtractBytes(&body));
+  }
+
+  uint16_t serial_consistency = 0;
+  if (flag_with_serial_consistency) {
+    PL_ASSIGN_OR_RETURN(serial_consistency, ExtractShort(&body));
+  }
+
+  int64_t timestamp;
+  if (flag_with_default_timestamp) {
+    PL_ASSIGN_OR_RETURN(timestamp, ExtractLong(&body));
+  }
+
+  // TODO(oazizi): Incorporate some of these into req->msg, especially values.
+  PL_UNUSED(values);
+  PL_UNUSED(names);
+  PL_UNUSED(consistency);
+  PL_UNUSED(page_size);
+  PL_UNUSED(paging_state);
+  PL_UNUSED(serial_consistency);
+  PL_UNUSED(timestamp);
+
+  req->msg = query;
+
+  return Status::OK();
+}
+
 Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
   std::string_view body = resp_frame->msg;
   PL_ASSIGN_OR_RETURN(StringMultiMap options, ExtractStringMultiMap(&body));
@@ -70,7 +134,7 @@ Status ProcessReq(Frame* req_frame, Request* req) {
     case ReqOp::kOptions:
       return ProcessSimpleReq(req_frame, req);
     case ReqOp::kQuery:
-      return ProcessSimpleReq(req_frame, req);
+      return ProcessQueryReq(req_frame, req);
     case ReqOp::kPrepare:
       return ProcessSimpleReq(req_frame, req);
     case ReqOp::kExecute:
