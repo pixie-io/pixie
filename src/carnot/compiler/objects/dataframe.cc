@@ -143,8 +143,8 @@ Status Dataframe::Init() {
                                                    std::placeholders::_1, std::placeholders::_2)));
   AddMethod(kRollingOpId, rolling_fn);
 
-  attributes_.emplace(kMetadataAttrName);
-  return Status::OK();
+  PL_ASSIGN_OR_RETURN(auto md, MetadataObject::Create(op()));
+  return AssignAttribute(kMetadataAttrName, md);
 }
 
 StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
@@ -152,8 +152,8 @@ StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
   // If this gets to this point, should fail here.
   DCHECK(HasNonMethodAttribute(name));
 
-  if (name == kMetadataAttrName) {
-    return MetadataObject::Create(op());
+  if (QLObject::HasNonMethodAttribute(name)) {
+    return QLObject::GetAttributeImpl(ast, name);
   }
   // We evaluate schemas in the analyzer, so at this point assume 'name' is a valid column.
   PL_ASSIGN_OR_RETURN(ColumnIR * column,

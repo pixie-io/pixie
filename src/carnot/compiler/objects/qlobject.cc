@@ -27,6 +27,11 @@ StatusOr<std::shared_ptr<QLObject>> QLObject::GetAttribute(const pypa::AstPtr& a
   return GetAttributeImpl(ast, name);
 }
 
+Status QLObject::AssignAttribute(std::string_view attr_name, QLObjectPtr object) {
+  attributes_[attr_name] = object;
+  return Status::OK();
+}
+
 StatusOr<QLObjectPtr> QLObject::FromIRNode(IRNode* node) {
   if (Match(node, Operator())) {
     return Dataframe::Create(static_cast<OperatorIR*>(node));

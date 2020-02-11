@@ -172,16 +172,16 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(body));
 }
 
-Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstSubscriptPtr& subscript,
-                                            const pypa::AstPtr& expr_node) {
+Status ASTVisitorImpl::ProcessSubscriptAssignment(const pypa::AstSubscriptPtr& subscript,
+                                                  const pypa::AstPtr& expr_node) {
   OperatorContext process_column_context({}, "", {});
   PL_ASSIGN_OR_RETURN(auto processed_column, Process(subscript, process_column_context));
   return ProcessMapAssignment(PYPA_PTR_CAST(Name, subscript->value), processed_column->node(),
                               expr_node);
 }
 
-Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstAttributePtr& attribute,
-                                            const pypa::AstPtr& expr_node) {
+Status ASTVisitorImpl::ProcessAttributeAssignment(const pypa::AstAttributePtr& attribute,
+                                                  const pypa::AstPtr& expr_node) {
   OperatorContext process_column_context({}, "", {});
   PL_ASSIGN_OR_RETURN(auto processed_column, Process(attribute, process_column_context));
   return ProcessMapAssignment(PYPA_PTR_CAST(Name, attribute->value), processed_column->node(),
@@ -273,12 +273,12 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   // Get the name that we are targeting.
   auto target_node = node->targets[0];
 
-  // Special handler for this type of map statement: df['foo'] = df['bar']
+  // Special handler for this type of statement: df['foo'] = df['bar']
   if (target_node->type == AstType::Subscript) {
-    return ProcessMapAssignment(PYPA_PTR_CAST(Subscript, node->targets[0]), node->value);
+    return ProcessSubscriptAssignment(PYPA_PTR_CAST(Subscript, node->targets[0]), node->value);
   }
   if (target_node->type == AstType::Attribute) {
-    return ProcessMapAssignment(PYPA_PTR_CAST(Attribute, node->targets[0]), node->value);
+    return ProcessAttributeAssignment(PYPA_PTR_CAST(Attribute, node->targets[0]), node->value);
   }
 
   if (target_node->type != AstType::Name) {

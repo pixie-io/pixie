@@ -5,6 +5,7 @@
 
 #include "src/carnot/compiler/objects/expr_object.h"
 #include "src/carnot/compiler/objects/metadata_object.h"
+#include "src/carnot/compiler/objects/none_object.h"
 #include "src/carnot/compiler/objects/pixie_module.h"
 #include "src/carnot/compiler/objects/test_utils.h"
 
@@ -154,7 +155,7 @@ class TestQLObject : public QLObject {
             .ConsumeValueOrDie();
     AddMethod("default_func", func_obj);
     if (has_attr) {
-      attributes_.emplace(kSpecialAttr);
+      PL_CHECK_OK(AssignAttribute(kSpecialAttr, std::make_shared<NoneObject>()));
     }
   }
 

@@ -1258,6 +1258,49 @@ TEST_F(FlagsTest, get_available_flags) {
   EXPECT_THAT(flags, testing::proto::EqualsProto(kAvailableFlags));
 }
 
+// constexpr char kRenameFlagsQuery[] = R"pxl(
+// px.flags('foo', type=str, description='a random param', default='default')
+// pflags = px.flags
+// px.flags = 1
+// pflags.parse()
+// queryDF = px.DataFrame(table='cpu', select=['cpu0'])
+// px.display(queryDF, 'map')
+// )pxl";
+
+// TEST_F(FlagsTest, reassign_px_flags) {
+//   auto graph_or_s = CompileGraph(kRenameFlagsQuery);
+//   ASSERT_OK(graph_or_s);
+//   auto graph = graph_or_s.ConsumeValueOrDie();
+//   std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
+//   ASSERT_EQ(map_nodes.size(), 1);
+//   MapIR* map = static_cast<MapIR*>(map_nodes[0]);
+//   EXPECT_EQ(1, map->col_exprs().size());
+//   auto expr = map->col_exprs()[0].node;
+//   EXPECT_EQ(IRNodeType::kString, expr->type());
+//   EXPECT_EQ("default", static_cast<StringIR*>(expr)->str());
+// }
+
+// constexpr char kRenameFlagsAvailable[] = R"(
+// flags {
+//   data_type: STRING
+//   semantic_type: ST_NONE
+//   name: "foo"
+//   description: "a random param"
+//   default_value: {
+//     data_type: STRING
+//     string_value: "default"
+//   }
+// }
+// )";
+
+// TEST_F(FlagsTest, get_available_flags_reassign) {
+//   auto flags_or_s = GetAvailableFlags(kRenameFlagsQuery);
+//   ASSERT_OK(flags_or_s);
+//   auto flags = flags_or_s.ConsumeValueOrDie();
+
+//   EXPECT_THAT(flags, testing::proto::EqualsProto(kRenameFlagsAvailable));
+// }
+
 constexpr char kFlagInFuncQuery[] = R"pxl(
 def make_an_int_flag(flag_name, description, defval):
   px.flags(flag_name, type=int, description=description, default=defval)

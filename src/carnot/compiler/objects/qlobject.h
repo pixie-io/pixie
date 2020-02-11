@@ -112,8 +112,10 @@ class QLObject {
   bool HasSubscriptMethod() const { return HasMethod(kSubscriptMethodName); }
   bool HasCallMethod() const { return HasMethod(kCallMethodName); }
 
+  Status AssignAttribute(std::string_view attr_name, QLObjectPtr object);
+
   StatusOr<std::shared_ptr<QLObject>> GetAttribute(const pypa::AstPtr& ast,
-                                                   std::string_view name) const;
+                                                   std::string_view attr_name) const;
 
   bool HasAttribute(std::string_view name) const {
     return HasNonMethodAttribute(name) || HasMethod(name);
@@ -122,9 +124,16 @@ class QLObject {
   /**
    * @brief Returns the name of all attributes that are not methods.
    *
-   * @return const absl::flat_hash_set<std::string>&  the set of all attributes.
+   * @return absl::flat_hash_set<std::string> the set of all attributes.
    */
-  const absl::flat_hash_set<std::string>& AllAttributes() const { return attributes_; }
+  absl::flat_hash_set<std::string> AllAttributes() const {
+    absl::flat_hash_set<std::string> attrs;
+    for (const auto& [k, v] : attributes_) {
+      PL_UNUSED(v);
+      attrs.insert(k);
+    }
+    return attrs;
+  }
 
   const TypeDescriptor& type_descriptor() const { return type_descriptor_; }
   std::string_view name() const { return type_descriptor_.name(); }
@@ -206,42 +215,30 @@ class QLObject {
 
   void AddSubscriptMethod(std::shared_ptr<FuncObject> func_object);
 
-  /**
-   * @brief NVI for GetAttribute(). GetAttribute is not simple in our objects model. GetAttribute
-   * should return an IRNode but there are cases where we don't want to return the same IRNode each
-   * time GetAttribute("x") is called, instead we want to create a new IRNode.
-   *
-   * This excludes the possibility of holding a map of strings to IRNodes or QLObjects.
-   *
-   * Instead we have the children of QLObject implement this NVI so the children make the creation
-   * vs maintenance choice.
-   *
-   * Note -> to be compatible with the AST visitor and not cause unnecessary errors, the QLObject
-   * returned by must have QLObject->node() set by using one of the QLObject Constructors with an
-   * IRNode* node argument when constructing their own objects.
-   *
-   * // TODO(reviewer) should we make this into a Pure virtual function?
-   *
-   * @return StatusOr<std::shared_ptr<QLObject>>
-   */
-  virtual StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr&,
-                                                               std::string_view) const {
-    return error::Unimplemented("");
+  virtual bool HasNonMethodAttribute(std::string_view name) const {
+    return attributes_.contains(name);
   }
 
-  virtual bool HasNonMethodAttribute(std::string_view name) const {
-    return AllAttributes().contains(name);
+  /**
+   * @brief nvi for GetAttributeImpl. Necessary so that dataframes, which have any value
+   * as a possible attribute (because we don't know their column names) are able to override
+   * and implement their own.
+   *
+   */
+  virtual StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& /*ast*/,
+                                                               std::string_view attr_name) const {
+    DCHECK(HasNonMethodAttribute(attr_name));
+    return attributes_.at(attr_name);
   }
 
   // Reserved keyword for call.
   inline static constexpr char kCallMethodName[] = "__call__";
   inline static constexpr char kSubscriptMethodName[] = "__getitem__";
 
-  // Attributes set.
-  absl::flat_hash_set<std::string> attributes_;
-
  private:
   absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> methods_;
+  absl::flat_hash_map<std::string, QLObjectPtr> attributes_;
+
   TypeDescriptor type_descriptor_;
   IRNode* node_ = nullptr;
   pypa::AstPtr ast_ = nullptr;

@@ -131,13 +131,14 @@ class TestQLObject2 : public QLObject {
             .ConsumeValueOrDie();
     AddSubscriptMethod(func_obj);
     AddCallMethod(func_obj);
-    attributes_.emplace(kSpecialAttr);
   }
 
   StatusOr<QLObjectPtr> SimpleFunc(const pypa::AstPtr&, const ParsedArgs&) {
     auto out_obj = std::make_shared<TestQLObject2>();
     return StatusOr<QLObjectPtr>(out_obj);
   }
+
+  bool HasNonMethodAttribute(std::string_view name) const override { return name == kSpecialAttr; }
 
   StatusOr<QLObjectPtr> GetAttributeImpl(const pypa::AstPtr&,
                                          std::string_view name) const override {

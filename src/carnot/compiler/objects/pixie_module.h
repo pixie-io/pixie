@@ -44,9 +44,6 @@ class PixieModule : public QLObject {
   Status RegisterCompileTimeFuncs();
   Status RegisterCompileTimeUnitFunction(std::string name);
 
-  StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
-                                                       std::string_view name) const override;
-
  private:
   IR* graph_;
   CompilerState* compiler_state_;

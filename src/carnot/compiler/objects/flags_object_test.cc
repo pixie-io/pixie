@@ -149,15 +149,14 @@ TEST_F(FlagsObjectTest, TestErrorOnMissingFlag) {
 
   auto s = GetFlagSubscript("bar");
   ASSERT_NOT_OK(s);
-  EXPECT_THAT(s.status(), HasCompilerError("Flag bar not registered"));
+  EXPECT_THAT(s.status(), HasCompilerError("'flags' object has no attribute 'bar'"));
 }
 
 TEST_F(FlagsObjectTest, TestErrorOnMissingFlagValue) {
   ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
   ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kString, "a string"));
-  ASSERT_OK(CallParseFlags());
+  auto s = CallParseFlags();
 
-  auto s = GetFlagSubscript("bar");
   ASSERT_NOT_OK(s);
   EXPECT_THAT(s.status(),
               HasCompilerError("Did not receive a value for required flag bar \\(type String\\)"));

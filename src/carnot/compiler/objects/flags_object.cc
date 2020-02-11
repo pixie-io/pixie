@@ -126,27 +126,12 @@ StatusOr<QLObjectPtr> FlagsObject::GetAttributeImpl(const pypa::AstPtr& ast,
     return CreateAstError(ast, "Cannot access flags before px.flags.parse() has been called",
                           flag_name);
   }
-  if (!HasFlag(flag_name)) {
-    return CreateAstError(ast, "Flag $0 not registered", flag_name);
-  }
-  if (input_flag_values_.contains(flag_name)) {
-    return ExprObject::Create(input_flag_values_.at(flag_name));
-  }
-  if (default_flag_values_.contains(flag_name)) {
-    return ExprObject::Create(default_flag_values_.at(flag_name));
-  }
-  if (default_zero_values_) {
-    PL_ASSIGN_OR_RETURN(auto zero_val, DataIR::ZeroValueForType(
-                                           ir_graph_, flag_types_.at(flag_name)->ir_node_type()));
-    return ExprObject::Create(zero_val);
-  }
-  return CreateAstError(ast, "Did not receive a value for required flag $0 (type $1)", flag_name,
-                        IRNode::TypeString(flag_types_.at(flag_name)->ir_node_type()));
+  return QLObject::GetAttributeImpl(ast, flag_name);
 }
 
 StatusOr<QLObjectPtr> FlagsObject::GetFlagHandler(const pypa::AstPtr& ast, const ParsedArgs& args) {
   PL_ASSIGN_OR_RETURN(StringIR * flag_name, GetArgAs<StringIR>(args, "key"));
-  return GetAttributeImpl(ast, flag_name->str());
+  return GetAttribute(ast, flag_name->str());
 }
 
 StatusOr<QLObjectPtr> FlagsObject::ParseFlagsHandler(const pypa::AstPtr& ast,
@@ -154,11 +139,33 @@ StatusOr<QLObjectPtr> FlagsObject::ParseFlagsHandler(const pypa::AstPtr& ast,
   if (parsed_flags_) {
     return CreateAstError(ast, "px.flags.parse() must only be called once");
   }
+
   for (const auto& [flag_name, flag_value] : input_flag_values_) {
     PL_UNUSED(flag_value);
     if (!flag_types_.contains(flag_name)) {
       return CreateAstError(ast, "Received flag $0 which was not registered in script", flag_name);
     }
+  }
+
+  // Assign an attribute to each flag
+  for (const auto& [flag_name, flag_type] : flag_types_) {
+    PL_UNUSED(flag_type);
+    DataIR* assign_value = nullptr;
+    if (input_flag_values_.contains(flag_name)) {
+      assign_value = input_flag_values_.at(flag_name);
+    } else if (default_flag_values_.contains(flag_name)) {
+      assign_value = default_flag_values_.at(flag_name);
+    } else if (default_zero_values_) {
+      PL_ASSIGN_OR_RETURN(assign_value, DataIR::ZeroValueForType(
+                                            ir_graph_, flag_types_.at(flag_name)->ir_node_type()));
+    } else {
+      return CreateAstError(ast, "Did not receive a value for required flag $0 (type $1)",
+                            flag_name,
+                            IRNode::TypeString(flag_types_.at(flag_name)->ir_node_type()));
+    }
+
+    PL_ASSIGN_OR_RETURN(auto obj, ExprObject::Create(assign_value));
+    PL_RETURN_IF_ERROR(AssignAttribute(flag_name, obj));
   }
 
   parsed_flags_ = true;

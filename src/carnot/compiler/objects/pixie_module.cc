@@ -22,9 +22,8 @@ StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph, CompilerSt
 }
 
 Status PixieModule::RegisterFlags(const FlagValues& flag_values) {
-  PL_ASSIGN_OR_RETURN(flags_object_, FlagsObject::Create(graph_, flag_values));
-  attributes_.insert(kFlagsOpId);
-  return Status::OK();
+  PL_ASSIGN_OR_RETURN(auto flags, FlagsObject::Create(graph_, flag_values));
+  return AssignAttribute(kFlagsOpId, flags);
 }
 
 Status PixieModule::RegisterUDFFuncs() {
@@ -151,22 +150,11 @@ Status PixieModule::Init(const FlagValues& flag_values) {
           /* has_variable_len_args */ false,
           /* has_variable_len_kwargs */ false,
           std::bind(&DisplayHandler::Eval, graph_, std::placeholders::_1, std::placeholders::_2)));
+
   AddMethod(kDisplayOpId, display_fn);
-
-  attributes_.insert(kDataframeOpId);
-
+  PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(graph_));
+  PL_RETURN_IF_ERROR(AssignAttribute(kDataframeOpId, base_df));
   return Status::OK();
-}
-
-StatusOr<std::shared_ptr<QLObject>> PixieModule::GetAttributeImpl(const pypa::AstPtr& ast,
-                                                                  std::string_view attr) const {
-  if (attr == kDataframeOpId) {
-    return Dataframe::Create(graph_);
-  }
-  if (attr == kFlagsOpId) {
-    return std::static_pointer_cast<QLObject>(flags_object_);
-  }
-  return CreateAstError(ast, "'$0' has no attribute '$1'", name(), attr);
 }
 
 StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
