@@ -5,66 +5,141 @@
 #include <utility>
 
 #include "src/common/base/base.h"
+#include "src/common/json/json.h"
 #include "src/stirling/cassandra/cass_types.h"
+#include "src/stirling/cassandra/cql_types.h"
 
 namespace pl {
 namespace stirling {
 namespace cass {
 
-StatusOr<Record> ProcessEventFrame(Frame* resp_frame) {
-  // Make a fake request to go along with the response.
-  // - Use REGISTER op, since that was what set up the events in the first place.
-  // - Use response timestamp, so any calculated latencies are reported as 0.
-  Request req;
-  req.op = ReqOp::kRegister;
-  req.msg = "-";
-  req.timestamp_ns = resp_frame->timestamp_ns;
-
-  Response resp;
-  resp.op = static_cast<RespOp>(resp_frame->hdr.opcode);
-  resp.msg = std::move(resp_frame->msg);
-  resp.timestamp_ns = resp_frame->timestamp_ns;
-
-  return Record{req, resp};
+void CheckReqRespPair(const Record& r) {
+  PL_UNUSED(r);
+  // TODO(oazizi): Add some checks here.
 }
 
-StatusOr<Record> ProcessSimpleReqResp(Frame* req_frame, Frame* resp_frame) {
-  Request req;
-  req.op = static_cast<ReqOp>(req_frame->hdr.opcode);
-  req.msg = req_frame->msg;
-  req.timestamp_ns = req_frame->timestamp_ns;
+Status ProcessSimpleReq(Frame* req_frame, Request* req) {
+  req->msg = req_frame->msg;
+  return Status::OK();
+}
 
-  Response resp;
-  resp.op = static_cast<RespOp>(resp_frame->hdr.opcode);
-  resp.msg = std::move(resp_frame->msg);
-  resp.timestamp_ns = resp_frame->timestamp_ns;
+Status ProcessSimpleResp(Frame* resp_frame, Response* resp) {
+  resp->msg = std::move(resp_frame->msg);
+  return Status::OK();
+}
 
-  return Record{req, resp};
+Status ProcessStartupReq(Frame* req_frame, Request* req) {
+  std::string_view body = req_frame->msg;
+  PL_ASSIGN_OR_RETURN(StringMap options, ExtractStringMap(&body));
+
+  DCHECK(req->msg.empty());
+  req->msg = utils::ToJSONString(options);
+
+  return Status::OK();
+}
+
+Status ProcessRegisterReq(Frame* req_frame, Request* req) {
+  std::string_view body = req_frame->msg;
+  PL_ASSIGN_OR_RETURN(StringList event_types, ExtractStringList(&body));
+
+  DCHECK(req->msg.empty());
+  req->msg = utils::ToJSONString(event_types);
+
+  return Status::OK();
+}
+
+Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
+  std::string_view body = resp_frame->msg;
+  PL_ASSIGN_OR_RETURN(StringMultiMap options, ExtractStringMultiMap(&body));
+
+  DCHECK(resp->msg.empty());
+  resp->msg = utils::ToJSONString(options);
+
+  return Status::OK();
+}
+
+Status ProcessReq(Frame* req_frame, Request* req) {
+  req->op = static_cast<ReqOp>(req_frame->hdr.opcode);
+  req->timestamp_ns = req_frame->timestamp_ns;
+
+  switch (req->op) {
+    case ReqOp::kStartup:
+      return ProcessStartupReq(req_frame, req);
+    case ReqOp::kAuthResponse:
+      return ProcessSimpleReq(req_frame, req);
+    case ReqOp::kOptions:
+      return ProcessSimpleReq(req_frame, req);
+    case ReqOp::kQuery:
+      return ProcessSimpleReq(req_frame, req);
+    case ReqOp::kPrepare:
+      return ProcessSimpleReq(req_frame, req);
+    case ReqOp::kExecute:
+      return ProcessSimpleReq(req_frame, req);
+    case ReqOp::kBatch:
+      return ProcessSimpleReq(req_frame, req);
+    case ReqOp::kRegister:
+      return ProcessRegisterReq(req_frame, req);
+    default:
+      return error::Internal("Unhandled opcode $0", magic_enum::enum_name(req->op));
+  }
+}
+
+Status ProcessResp(Frame* resp_frame, Response* resp) {
+  resp->op = static_cast<RespOp>(resp_frame->hdr.opcode);
+  resp->timestamp_ns = resp_frame->timestamp_ns;
+
+  switch (resp->op) {
+    case RespOp::kError:
+      return ProcessSimpleResp(resp_frame, resp);
+    case RespOp::kReady:
+      return ProcessSimpleResp(resp_frame, resp);
+    case RespOp::kAuthenticate:
+      return ProcessSimpleResp(resp_frame, resp);
+    case RespOp::kSupported:
+      return ProcessSupportedResp(resp_frame, resp);
+    case RespOp::kResult:
+      return ProcessSimpleResp(resp_frame, resp);
+    case RespOp::kEvent:
+      return ProcessSimpleResp(resp_frame, resp);
+    case RespOp::kAuthChallenge:
+      return ProcessSimpleResp(resp_frame, resp);
+    case RespOp::kAuthSuccess:
+      return ProcessSimpleResp(resp_frame, resp);
+    default:
+      return error::Internal("Unhandled opcode $0", magic_enum::enum_name(resp->op));
+  }
 }
 
 StatusOr<Record> ProcessReqRespPair(Frame* req_frame, Frame* resp_frame) {
-  ECHECK_LT(req_frame->timestamp_ns, resp_frame->timestamp_ns);
+  Record r;
+  PL_RETURN_IF_ERROR(ProcessReq(req_frame, &r.req));
+  PL_RETURN_IF_ERROR(ProcessResp(resp_frame, &r.resp));
 
-  switch (static_cast<ReqOp>(req_frame->hdr.opcode)) {
-    case ReqOp::kStartup:
-      return ProcessSimpleReqResp(req_frame, resp_frame);
-    case ReqOp::kAuthResponse:
-      return ProcessSimpleReqResp(req_frame, resp_frame);
-    case ReqOp::kOptions:
-      return ProcessSimpleReqResp(req_frame, resp_frame);
-    case ReqOp::kQuery:
-      return ProcessSimpleReqResp(req_frame, resp_frame);
-    case ReqOp::kPrepare:
-      return ProcessSimpleReqResp(req_frame, resp_frame);
-    case ReqOp::kExecute:
-      return ProcessSimpleReqResp(req_frame, resp_frame);
-    case ReqOp::kBatch:
-      return ProcessSimpleReqResp(req_frame, resp_frame);
-    case ReqOp::kRegister:
-      return ProcessSimpleReqResp(req_frame, resp_frame);
-    default:
-      return error::Internal("Unhandled opcode $0", magic_enum::enum_name(req_frame->hdr.opcode));
-  }
+  ECHECK_LT(req_frame->timestamp_ns, resp_frame->timestamp_ns);
+  CheckReqRespPair(r);
+  return r;
+}
+
+StatusOr<Record> ProcessSolitaryResp(Frame* resp_frame) {
+  Record r;
+
+  // For now, Event is the only supported solitary response.
+  // If this ever changes, the code below needs to be adapted.
+  DCHECK(resp_frame->hdr.opcode == Opcode::kEvent);
+
+  // Make a fake request to go along with the response.
+  // - Use REGISTER op, since that was what set up the events in the first place.
+  // - Use response timestamp, so any calculated latencies are reported as 0.
+  r.req.op = ReqOp::kRegister;
+  r.req.msg = "-";
+  r.req.timestamp_ns = resp_frame->timestamp_ns;
+
+  // A little inefficient because it will go through a switch statement again,
+  // when we actually know the op. But keep it this way for consistency.
+  PL_RETURN_IF_ERROR(ProcessResp(resp_frame, &r.resp));
+
+  CheckReqRespPair(r);
+  return r;
 }
 
 // Currently ProcessFrames() uses a response-led matching algorithm.
@@ -83,7 +158,7 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, std::deque<Fram
 
     // Event responses are special: they have no request.
     if (resp_frame.hdr.opcode == Opcode::kEvent) {
-      StatusOr<Record> record_status = ProcessEventFrame(&resp_frame);
+      StatusOr<Record> record_status = ProcessSolitaryResp(&resp_frame);
       if (record_status.ok()) {
         entries.push_back(record_status.ConsumeValueOrDie());
       } else {

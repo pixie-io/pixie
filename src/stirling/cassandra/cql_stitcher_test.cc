@@ -11,6 +11,19 @@ namespace pl {
 namespace stirling {
 namespace cass {
 
+constexpr uint8_t kStartupMsg[] = {0x00, 0x01, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5f,
+                                   0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x00,
+                                   0x05, 0x33, 0x2e, 0x30, 0x2e, 0x30};
+std::string_view kStartupMsgStr = CreateStringView<char>(CharArrayStringView<uint8_t>(kStartupMsg));
+
+constexpr uint8_t kRegisterMsg[] = {0x00, 0x03, 0x00, 0x0f, 0x54, 0x4f, 0x50, 0x4f, 0x4c, 0x4f,
+                                    0x47, 0x59, 0x5f, 0x43, 0x48, 0x41, 0x4e, 0x47, 0x45, 0x00,
+                                    0x0d, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x43, 0x48,
+                                    0x41, 0x4e, 0x47, 0x45, 0x00, 0x0d, 0x53, 0x43, 0x48, 0x45,
+                                    0x4d, 0x41, 0x5f, 0x43, 0x48, 0x41, 0x4e, 0x47, 0x45};
+std::string_view kRegisterMsgStr =
+    CreateStringView<char>(CharArrayStringView<uint8_t>(kRegisterMsg));
+
 // Captured request packet body after issuing the following in cqlsh:
 //   SELECT * FROM system.schema_keyspaces ;
 constexpr uint8_t kQueryMsg[] = {
@@ -158,6 +171,50 @@ TEST(CassStitcherTest, OpEvent) {
   EXPECT_EQ(record.req.timestamp_ns, record.resp.timestamp_ns);
 }
 
+TEST(CassStitcherTest, StartupReady) {
+  std::deque<Frame> req_frames;
+  std::deque<Frame> resp_frames;
+  std::vector<Record> records;
+
+  req_frames.push_back(CreateFrame(0, Opcode::kStartup, kStartupMsgStr, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kReady, "", 2));
+
+  records = ProcessFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  ASSERT_EQ(records.size(), 1);
+
+  Record& record = records.front();
+
+  EXPECT_EQ(record.req.op, ReqOp::kStartup);
+  EXPECT_EQ(record.resp.op, RespOp::kReady);
+
+  EXPECT_EQ(record.req.msg, R"({"CQL_VERSION":"3.0.0"})");
+  EXPECT_THAT(record.resp.msg, IsEmpty());
+}
+
+TEST(CassStitcherTest, RegisterReady) {
+  std::deque<Frame> req_frames;
+  std::deque<Frame> resp_frames;
+  std::vector<Record> records;
+
+  req_frames.push_back(CreateFrame(0, Opcode::kRegister, kRegisterMsgStr, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kReady, "", 2));
+
+  records = ProcessFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  ASSERT_EQ(records.size(), 1);
+
+  Record& record = records.front();
+
+  EXPECT_EQ(record.req.op, ReqOp::kRegister);
+  EXPECT_EQ(record.resp.op, RespOp::kReady);
+
+  EXPECT_EQ(record.req.msg, R"(["TOPOLOGY_CHANGE","STATUS_CHANGE","SCHEMA_CHANGE"])");
+  EXPECT_THAT(record.resp.msg, IsEmpty());
+}
+
 TEST(CassStitcherTest, OptionsSupported) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
@@ -177,9 +234,9 @@ TEST(CassStitcherTest, OptionsSupported) {
   EXPECT_EQ(record.resp.op, RespOp::kSupported);
 
   EXPECT_THAT(record.req.msg, IsEmpty());
-  EXPECT_THAT(record.resp.msg, HasSubstr("PROTOCOL_VERSIONS"));
-  EXPECT_THAT(record.resp.msg, HasSubstr("COMPRESSION"));
-  EXPECT_THAT(record.resp.msg, HasSubstr("CQL_VERSION"));
+  EXPECT_EQ(
+      record.resp.msg,
+      R"({"COMPRESSION":["snappy","lz4"],"CQL_VERSION":["3.4.4"],"PROTOCOL_VERSIONS":["3/v3","4/v4","5/v5-beta"]})");
 }
 
 }  // namespace cass
