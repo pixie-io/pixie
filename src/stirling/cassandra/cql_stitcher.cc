@@ -184,6 +184,26 @@ Status ProcessExecuteReq(Frame* req_frame, Request* req) {
   return Status::OK();
 }
 
+Status ProcessErrorResp(Frame* resp_frame, Response* resp) {
+  TypeDecoder decoder(resp_frame->msg);
+  PL_ASSIGN_OR_RETURN(int32_t error_code, decoder.ExtractInt());
+  PL_ASSIGN_OR_RETURN(std::string error_msg, decoder.ExtractString());
+
+  DCHECK(resp->msg.empty());
+  resp->msg = absl::Substitute("[$0] $1", error_code, error_msg);
+
+  return Status::OK();
+}
+
+Status ProcessReadyResp(Frame* resp_frame, Response* resp) {
+  TypeDecoder decoder(resp_frame->msg);
+  ECHECK(decoder.eof()) << "READY frame not expected to have a body";
+
+  DCHECK(resp->msg.empty());
+
+  return Status::OK();
+}
+
 Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
   TypeDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(StringMultiMap options, decoder.ExtractStringMultiMap());
@@ -260,9 +280,9 @@ Status ProcessResp(Frame* resp_frame, Response* resp) {
 
   switch (resp->op) {
     case RespOp::kError:
-      return ProcessSimpleResp(resp_frame, resp);
+      return ProcessErrorResp(resp_frame, resp);
     case RespOp::kReady:
-      return ProcessSimpleResp(resp_frame, resp);
+      return ProcessReadyResp(resp_frame, resp);
     case RespOp::kAuthenticate:
       return ProcessAuthenticateResp(resp_frame, resp);
     case RespOp::kSupported:

@@ -133,34 +133,7 @@ Frame CreateFrame(uint16_t stream, Opcode opcode, std::string_view msg, uint64_t
   return f;
 }
 
-TEST(CassStitcherTest, Basic) {
-  std::deque<Frame> req_frames;
-  std::deque<Frame> resp_frames;
-  std::vector<Record> records;
-
-  records = ProcessFrames(&req_frames, &resp_frames);
-  EXPECT_TRUE(resp_frames.empty());
-  EXPECT_EQ(req_frames.size(), 0);
-  EXPECT_EQ(records.size(), 0);
-
-  req_frames.push_back(CreateFrame(0, Opcode::kQuery, kBadQueryMsgStr, 1));
-  resp_frames.push_back(CreateFrame(0, Opcode::kError, kBadQueryErrorMsgStr, 2));
-
-  records = ProcessFrames(&req_frames, &resp_frames);
-  EXPECT_TRUE(resp_frames.empty());
-  EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
-
-  Record& record = records.front();
-
-  EXPECT_EQ(record.req.op, ReqOp::kQuery);
-  EXPECT_EQ(record.resp.op, RespOp::kError);
-
-  EXPECT_THAT(record.req.msg, HasSubstr("SELECT * FROM system.schema_keyspaces ;"));
-  EXPECT_THAT(record.resp.msg, HasSubstr("unconfigured table schema_keyspaces"));
-}
-
-TEST(CassStitcherTest, OutOfOrder) {
+TEST(CassStitcherTest, OutOfOrderMatching) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
@@ -329,6 +302,33 @@ TEST(CassStitcherTest, QueryResult) {
 
   // TODO(oazizi): Enable once parsing of results in complete.
   // EXPECT_EQ(record.resp.msg, "");
+}
+
+TEST(CassStitcherTest, QueryError) {
+  std::deque<Frame> req_frames;
+  std::deque<Frame> resp_frames;
+  std::vector<Record> records;
+
+  records = ProcessFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  EXPECT_EQ(records.size(), 0);
+
+  req_frames.push_back(CreateFrame(0, Opcode::kQuery, kBadQueryMsgStr, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kError, kBadQueryErrorMsgStr, 2));
+
+  records = ProcessFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  ASSERT_EQ(records.size(), 1);
+
+  Record& record = records.front();
+
+  EXPECT_EQ(record.req.op, ReqOp::kQuery);
+  EXPECT_EQ(record.resp.op, RespOp::kError);
+
+  EXPECT_EQ(record.req.msg, "SELECT * FROM system.schema_keyspaces ;");
+  EXPECT_EQ(record.resp.msg, "[8704] unconfigured table schema_keyspaces");
 }
 
 TEST(CassStitcherTest, PrepareResult) {
