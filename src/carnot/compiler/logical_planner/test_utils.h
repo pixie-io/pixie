@@ -305,17 +305,24 @@ distributedpb::LogicalPlannerState CreateOneAgentOneKelvinPlannerState() {
   return CreateOneAgentOneKelvinPlannerState(kSchema);
 }
 
-distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState(const std::string& schema) {
-  distributedpb::LogicalPlannerState plan;
+std::string TwoAgentsOneKelvinDistributedState() {
   std::string table_name = "table1";
   std::string tabletization_key = "upid";
   std::string table_info1 = MakeTableInfoStr(table_name, tabletization_key, {"1", "2"});
   std::string table_info2 = MakeTableInfoStr(table_name, tabletization_key, {"3", "4"});
-  std::string distributed_state_proto =
-      MakeDistributedState({MakeAgentCarnotInfo("agent1", 123, {table_info1}),
-                            MakeAgentCarnotInfo("agent2", 456, {table_info2}),
-                            MakeKelvinCarnotInfo("kelvin", "1111", 789)});
+  return MakeDistributedState({MakeAgentCarnotInfo("agent1", 123, {table_info1}),
+                               MakeAgentCarnotInfo("agent2", 456, {table_info2}),
+                               MakeKelvinCarnotInfo("kelvin", "1111", 789)});
+}
 
+distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState(const std::string& schema) {
+  std::string distributed_state_proto = TwoAgentsOneKelvinDistributedState();
+  return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
+}
+
+distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState(
+    table_store::schemapb::Schema schema) {
+  auto distributed_state_proto = TwoAgentsOneKelvinDistributedState();
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
 
