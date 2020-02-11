@@ -31,6 +31,7 @@ class NoneObject : public QLObject {
    */
   explicit NoneObject(pypa::AstPtr ast) : QLObject(NoneType, ast) {}
   NoneObject() : QLObject(NoneType) {}
+  bool CanAssignAttribute(std::string_view /*attr_name*/) const override { return false; }
 };
 
 }  // namespace compiler

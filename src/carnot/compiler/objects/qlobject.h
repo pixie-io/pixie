@@ -112,6 +112,7 @@ class QLObject {
   bool HasSubscriptMethod() const { return HasMethod(kSubscriptMethodName); }
   bool HasCallMethod() const { return HasMethod(kCallMethodName); }
 
+  virtual bool CanAssignAttribute(std::string_view /*attr_name*/) const { return true; }
   Status AssignAttribute(std::string_view attr_name, QLObjectPtr object);
 
   StatusOr<std::shared_ptr<QLObject>> GetAttribute(const pypa::AstPtr& ast,

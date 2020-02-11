@@ -175,7 +175,8 @@ class ASTVisitorImpl : public ASTVisitor {
                                     const pypa::AstPtr& expr_node);
   Status ProcessAttributeAssignment(const pypa::AstAttributePtr& assign_node,
                                     const pypa::AstPtr& expr_node);
-  Status ProcessMapAssignment(const pypa::AstNamePtr& assign_name, IRNode* processed_column,
+  Status ProcessMapAssignment(const pypa::AstPtr& assign_target,
+                              std::shared_ptr<Dataframe> parent_df, IRNode* target,
                               const pypa::AstPtr& expr_node);
   /**
    * @brief ProcessAssignNode handles lines where an expression is assigned to a value.
@@ -437,6 +438,8 @@ class ASTVisitorImpl : public ASTVisitor {
   IR* ir_graph_;
   CompilerState* compiler_state_;
   std::shared_ptr<VarTable> var_table_;
+  // Keep a handle on the global pixie module in case px gets reassigned.
+  std::shared_ptr<PixieModule> pixie_module_;
 };
 
 }  // namespace compiler

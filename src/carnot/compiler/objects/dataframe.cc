@@ -161,6 +161,16 @@ StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
   return ExprObject::Create(column);
 }
 
+StatusOr<std::shared_ptr<Dataframe>> Dataframe::FromColumnAssignment(const pypa::AstPtr& expr_node,
+                                                                     ColumnIR* column,
+                                                                     ExpressionIR* expr) {
+  auto col_name = column->col_name();
+  ColExpressionVector map_exprs{{col_name, expr}};
+  PL_ASSIGN_OR_RETURN(MapIR * ir_node, graph_->CreateNode<MapIR>(expr_node, op(), map_exprs,
+                                                                 /*keep_input_cols*/ true));
+  return Dataframe::Create(ir_node);
+}
+
 StatusOr<QLObjectPtr> JoinHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                         const ParsedArgs& args) {
   // GetArg returns non-nullptr or errors out in Debug mode. No need

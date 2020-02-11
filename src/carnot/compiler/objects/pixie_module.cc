@@ -22,8 +22,8 @@ StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph, CompilerSt
 }
 
 Status PixieModule::RegisterFlags(const FlagValues& flag_values) {
-  PL_ASSIGN_OR_RETURN(auto flags, FlagsObject::Create(graph_, flag_values));
-  return AssignAttribute(kFlagsOpId, flags);
+  PL_ASSIGN_OR_RETURN(flags_object_, FlagsObject::Create(graph_, flag_values));
+  return AssignAttribute(kFlagsOpId, flags_object_);
 }
 
 Status PixieModule::RegisterUDFFuncs() {

@@ -33,6 +33,7 @@ class PixieModule : public QLObject {
   inline static constexpr char kUInt128ConversionId[] = "uint128";
   static const constexpr char* const kTimeFuncs[] = {"minutes", "hours",        "seconds",
                                                      "days",    "microseconds", "milliseconds"};
+  std::shared_ptr<FlagsObject> flags_object() { return flags_object_; }
 
  protected:
   explicit PixieModule(IR* graph, CompilerState* compiler_state)
@@ -48,6 +49,7 @@ class PixieModule : public QLObject {
   IR* graph_;
   CompilerState* compiler_state_;
   absl::flat_hash_set<std::string> compiler_time_fns_;
+  // Keep a handle on flags_object separate from attributes in case it gets reassigned.
   std::shared_ptr<FlagsObject> flags_object_;
 };
 

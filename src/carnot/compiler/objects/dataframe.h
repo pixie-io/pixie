@@ -53,6 +53,9 @@ class Dataframe : public QLObject {
   // Attribute names.
   inline static constexpr char kMetadataAttrName[] = "ctx";
 
+  StatusOr<std::shared_ptr<Dataframe>> FromColumnAssignment(const pypa::AstPtr& expr_node,
+                                                            ColumnIR* column, ExpressionIR* expr);
+
  protected:
   explicit Dataframe(OperatorIR* op, IR* graph)
       : QLObject(DataframeType, op), op_(op), graph_(graph) {}
@@ -63,8 +66,8 @@ class Dataframe : public QLObject {
   bool HasNonMethodAttribute(std::string_view /* name */) const override { return true; }
 
  private:
-  OperatorIR* op_;
-  IR* graph_;
+  OperatorIR* op_ = nullptr;
+  IR* graph_ = nullptr;
 };
 
 /**

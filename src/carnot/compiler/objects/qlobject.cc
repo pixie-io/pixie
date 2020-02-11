@@ -28,6 +28,9 @@ StatusOr<std::shared_ptr<QLObject>> QLObject::GetAttribute(const pypa::AstPtr& a
 }
 
 Status QLObject::AssignAttribute(std::string_view attr_name, QLObjectPtr object) {
+  if (!CanAssignAttribute(attr_name)) {
+    return CreateError("Cannot assign attribute $0 to object of type $1", attr_name, name());
+  }
   attributes_[attr_name] = object;
   return Status::OK();
 }

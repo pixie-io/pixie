@@ -1258,48 +1258,49 @@ TEST_F(FlagsTest, get_available_flags) {
   EXPECT_THAT(flags, testing::proto::EqualsProto(kAvailableFlags));
 }
 
-// constexpr char kRenameFlagsQuery[] = R"pxl(
-// px.flags('foo', type=str, description='a random param', default='default')
-// pflags = px.flags
-// px.flags = 1
-// pflags.parse()
-// queryDF = px.DataFrame(table='cpu', select=['cpu0'])
-// px.display(queryDF, 'map')
-// )pxl";
+constexpr char kRenameFlagsQuery[] = R"pxl(
+px.flags('foo', type=str, description='a random param', default='default')
+pflags = px.flags
+px.flags = 1
+pflags.parse()
+queryDF = px.DataFrame(table='cpu', select=['cpu0'])
+queryDF['foo'] = px.flags
+px.display(queryDF, 'map')
+)pxl";
 
-// TEST_F(FlagsTest, reassign_px_flags) {
-//   auto graph_or_s = CompileGraph(kRenameFlagsQuery);
-//   ASSERT_OK(graph_or_s);
-//   auto graph = graph_or_s.ConsumeValueOrDie();
-//   std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
-//   ASSERT_EQ(map_nodes.size(), 1);
-//   MapIR* map = static_cast<MapIR*>(map_nodes[0]);
-//   EXPECT_EQ(1, map->col_exprs().size());
-//   auto expr = map->col_exprs()[0].node;
-//   EXPECT_EQ(IRNodeType::kString, expr->type());
-//   EXPECT_EQ("default", static_cast<StringIR*>(expr)->str());
-// }
+TEST_F(FlagsTest, reassign_px_flags) {
+  auto graph_or_s = CompileGraph(kRenameFlagsQuery);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
+  ASSERT_EQ(map_nodes.size(), 1);
+  MapIR* map = static_cast<MapIR*>(map_nodes[0]);
+  EXPECT_EQ(1, map->col_exprs().size());
+  auto expr = map->col_exprs()[0].node;
+  EXPECT_EQ(IRNodeType::kInt, expr->type());
+  EXPECT_EQ(1, static_cast<IntIR*>(expr)->val());
+}
 
-// constexpr char kRenameFlagsAvailable[] = R"(
-// flags {
-//   data_type: STRING
-//   semantic_type: ST_NONE
-//   name: "foo"
-//   description: "a random param"
-//   default_value: {
-//     data_type: STRING
-//     string_value: "default"
-//   }
-// }
-// )";
+constexpr char kRenameFlagsAvailable[] = R"(
+flags {
+  data_type: STRING
+  semantic_type: ST_NONE
+  name: "foo"
+  description: "a random param"
+  default_value: {
+    data_type: STRING
+    string_value: "default"
+  }
+}
+)";
 
-// TEST_F(FlagsTest, get_available_flags_reassign) {
-//   auto flags_or_s = GetAvailableFlags(kRenameFlagsQuery);
-//   ASSERT_OK(flags_or_s);
-//   auto flags = flags_or_s.ConsumeValueOrDie();
+TEST_F(FlagsTest, get_available_flags_reassign) {
+  auto flags_or_s = GetAvailableFlags(kRenameFlagsQuery);
+  ASSERT_OK(flags_or_s);
+  auto flags = flags_or_s.ConsumeValueOrDie();
 
-//   EXPECT_THAT(flags, testing::proto::EqualsProto(kRenameFlagsAvailable));
-// }
+  EXPECT_THAT(flags, testing::proto::EqualsProto(kRenameFlagsAvailable));
+}
 
 constexpr char kFlagInFuncQuery[] = R"pxl(
 def make_an_int_flag(flag_name, description, defval):
@@ -1386,6 +1387,43 @@ TEST_F(FlagsTest, get_available_flags_in_func) {
   auto flags = flags_or_s.ConsumeValueOrDie();
 
   EXPECT_THAT(flags, testing::proto::EqualsProto(kAvailableFlagsFunc));
+}
+
+constexpr char kReassignPixieMethodsQuery[] = R"pxl(
+pixie = px
+make_a_df = pixie.DataFrame
+px.my_new_attr = 'cpu0'
+queryDF = make_a_df(table='cpu', select=[px.my_new_attr])
+pixie.display(queryDF, 'table_name')
+)pxl";
+
+TEST_F(ASTVisitorTest, reassign_px_attrs) {
+  auto graph_or_s = CompileGraph(kReassignPixieMethodsQuery);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> src_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
+  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(src_nodes.size(), 1);
+  ASSERT_EQ(sink_nodes.size(), 1);
+  MemorySourceIR* src = static_cast<MemorySourceIR*>(src_nodes[0]);
+  EXPECT_THAT(src->column_names(), ElementsAre("cpu0"));
+  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  EXPECT_EQ("table_name", sink->name());
+  EXPECT_THAT(sink->parents(), ElementsAre(src));
+}
+
+constexpr char kReassignPixieQuery[] = R"pxl(
+pixie = px
+make_a_df = pixie.DataFrame
+px = 'cpu0'
+queryDF = make_a_df(table='cpu', select=[px])
+pixie.display(queryDF, 'map')
+)pxl";
+
+TEST_F(ASTVisitorTest, reassign_px_error) {
+  auto graph_or_s = CompileGraph(kReassignPixieQuery);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("Cannot reassign Pixie Module px"));
 }
 
 }  // namespace compiler

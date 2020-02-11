@@ -46,9 +46,9 @@ std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
 }
 
 Status ASTVisitorImpl::InitGlobals(const FlagValues& flag_values) {
-  PL_ASSIGN_OR_RETURN(auto pl_module, PixieModule::Create(ir_graph_, compiler_state_, flag_values));
+  PL_ASSIGN_OR_RETURN(pixie_module_, PixieModule::Create(ir_graph_, compiler_state_, flag_values));
   // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
-  var_table_->Add(PixieModule::kPixieModuleObjName, pl_module);
+  var_table_->Add(PixieModule::kPixieModuleObjName, pixie_module_);
   // Populate the type objects
   PL_ASSIGN_OR_RETURN(auto string_type_object, TypeObject::Create(IRNodeType::kString));
   var_table_->Add(ASTVisitorImpl::kStringTypeName, string_type_object);
@@ -119,17 +119,7 @@ Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
 
 StatusOr<plannerpb::QueryFlagsSpec> ASTVisitorImpl::GetAvailableFlags(const pypa::AstModulePtr& m) {
   PL_RETURN_IF_ERROR(ProcessModuleNode(m));
-  if (!var_table_->HasVariable(PixieModule::kPixieModuleObjName)) {
-    return CreateAstError(m, "ASTVisitorImpl has no value $0", PixieModule::kPixieModuleObjName);
-  }
-  auto px = var_table_->Lookup(PixieModule::kPixieModuleObjName);
-  PL_ASSIGN_OR_RETURN(auto flags_obj, px->GetAttribute(m, PixieModule::kFlagsOpId));
-  if (flags_obj->type() != QLObjectType::kFlags) {
-    return CreateAstError(m, "Expected $0.$1 to be a FlagsObject, received $0",
-                          PixieModule::kPixieModuleObjName, PixieModule::kFlagsOpId,
-                          flags_obj->name());
-  }
-  auto flags = std::static_pointer_cast<FlagsObject>(flags_obj);
+  auto flags = pixie_module_->flags_object();
   return flags->GetAvailableFlags(m);
 }
 
@@ -172,57 +162,80 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(body));
 }
 
+// Assignment by subscript is more restrictive than assignment by attribute.
+// Subscript assignment is currently only valid for creating map expressions such as the following:
+// df['foo'] = 1+2
 Status ASTVisitorImpl::ProcessSubscriptAssignment(const pypa::AstSubscriptPtr& subscript,
                                                   const pypa::AstPtr& expr_node) {
-  OperatorContext process_column_context({}, "", {});
-  PL_ASSIGN_OR_RETURN(auto processed_column, Process(subscript, process_column_context));
-  return ProcessMapAssignment(PYPA_PTR_CAST(Name, subscript->value), processed_column->node(),
-                              expr_node);
-}
+  PL_ASSIGN_OR_RETURN(auto processed_node, ProcessData(subscript, {{}, "", {}}));
+  PL_ASSIGN_OR_RETURN(auto processed_target_table, Process(subscript->value, {{}, "", {}}));
 
-Status ASTVisitorImpl::ProcessAttributeAssignment(const pypa::AstAttributePtr& attribute,
-                                                  const pypa::AstPtr& expr_node) {
-  OperatorContext process_column_context({}, "", {});
-  PL_ASSIGN_OR_RETURN(auto processed_column, Process(attribute, process_column_context));
-  return ProcessMapAssignment(PYPA_PTR_CAST(Name, attribute->value), processed_column->node(),
-                              expr_node);
-}
-
-Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstNamePtr& assign_name,
-                                            IRNode* processed_column,
-                                            const pypa::AstPtr& expr_node) {
-  if (!Match(processed_column, ColumnNode())) {
-    return CreateAstError(assign_name, "Can't assign to node of type $0",
-                          processed_column->type_string());
+  if (processed_target_table->type() != QLObjectType::kDataframe) {
+    return CreateAstError(subscript, "Can't assign to node via subscript of type $0",
+                          processed_target_table->name());
   }
-  ColumnIR* column = static_cast<ColumnIR*>(processed_column);
-  auto col_name = column->col_name();
-  PL_RETURN_IF_ERROR(ir_graph_->DeleteNode(column->id()));
 
-  // Check to make sure this dataframe exists
-  PL_ASSIGN_OR_RETURN(auto parent_op, LookupName(assign_name));
-  auto assign_name_string = GetNameAsString(assign_name);
+  return ProcessMapAssignment(subscript->value,
+                              std::static_pointer_cast<Dataframe>(processed_target_table),
+                              processed_node, expr_node);
+}
+
+// Assignment by attribute supports all of the cases that subscript assignment does,
+// in addition to assigning to
+Status ASTVisitorImpl::ProcessAttributeAssignment(const pypa::AstAttributePtr& attr,
+                                                  const pypa::AstPtr& expr_node) {
+  PL_ASSIGN_OR_RETURN(auto processed_target, Process(attr->value, {{}, "", {}}));
+
+  if (processed_target->type() != QLObjectType::kDataframe) {
+    PL_ASSIGN_OR_RETURN(std::string attr_name, GetAttributeStr(attr));
+    PL_ASSIGN_OR_RETURN(auto processed_value,
+                        Process(PYPA_PTR_CAST(Call, expr_node), {{}, "", {}}));
+    return processed_target->AssignAttribute(attr_name, processed_value);
+  }
+
+  // If the target is a Dataframe, we are doing a Subscript map assignment like "df.foo = 2".
+  // We need to do special handling here as opposed to the above logic in order to produce a new
+  // dataframe.
+  PL_ASSIGN_OR_RETURN(auto processed_node, ProcessData(attr, {{}, "", {}}));
+  return ProcessMapAssignment(attr->value, std::static_pointer_cast<Dataframe>(processed_target),
+                              processed_node, expr_node);
+}
+
+Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstPtr& assign_target,
+                                            std::shared_ptr<Dataframe> parent_df, IRNode* target,
+                                            const pypa::AstPtr& expr_node) {
+  if (assign_target->type != AstType::Name) {
+    return CreateAstError(assign_target,
+                          "Can only assign to Dataframe by subscript from Name, received $0",
+                          GetAstTypeName(assign_target->type));
+  }
+  auto assign_name_string = GetNameAsString(assign_target);
+
+  if (!Match(target, ColumnNode())) {
+    return CreateAstError(assign_target, "Can't assign to node of type $0", target->type_string());
+  }
+  auto target_column = static_cast<ColumnIR*>(target);
+
+  if (!parent_df->op()) {
+    return CreateAstError(assign_target,
+                          "Cannot assign column to dataframe that does not contain an operator");
+  }
 
   // Maps can only assign to the same table as the input table when of the form:
   // df['foo'] = df['bar'] + 2
-  OperatorContext op_context{{parent_op}, Dataframe::kMapOpId, {assign_name_string}};
+  OperatorContext op_context{{parent_df->op()}, Dataframe::kMapOpId, {assign_name_string}};
   PL_ASSIGN_OR_RETURN(auto result, ProcessData(expr_node, op_context));
   if (!result->IsExpression()) {
     return CreateAstError(
         expr_node, "Expected to receive expression as map subscript assignment value, received $0.",
         result->type_string());
   }
-  auto expr = static_cast<ExpressionIR*>(result);
-
-  // Pull in all columns needed in fn.
-  ColExpressionVector map_exprs{{col_name, expr}};
-  PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->CreateNode<MapIR>(expr_node, parent_op, map_exprs,
-                                                                    /*keep_input_cols*/ true));
-
-  PL_ASSIGN_OR_RETURN(auto dataframe, Dataframe::Create(ir_node));
+  PL_ASSIGN_OR_RETURN(auto dataframe,
+                      parent_df->FromColumnAssignment(expr_node, target_column,
+                                                      static_cast<ExpressionIR*>(result)));
   var_table_->Add(assign_name_string, dataframe);
 
-  return Status::OK();
+  return ir_graph_->DeleteNode(target_column->id());
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::Process(const pypa::AstExpr& node,
@@ -286,6 +299,13 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   }
 
   std::string assign_name = GetNameAsString(target_node);
+  if (assign_name == PixieModule::kPixieModuleObjName) {
+    // TODO(nserrino, philkuz): Allow reassignment of the pixie module.
+    // It doesn't work right now because default values like "px.now()" are hard-coded
+    // into funcs, so if px goes away they can't be processed correctly.
+    return CreateAstError(node, "Cannot reassign Pixie Module $0", assign_name);
+  }
+
   OperatorContext op_context({}, "", {});
   PL_ASSIGN_OR_RETURN(auto processed_node, Process(node->value, op_context));
   var_table_->Add(assign_name, processed_node);
