@@ -21,6 +21,13 @@ constexpr uint8_t kStartupMsg[] = {0x00, 0x01, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5
                                    0x05, 0x33, 0x2e, 0x30, 0x2e, 0x30};
 std::string_view kStartupMsgStr = StringView(kStartupMsg);
 
+constexpr uint8_t kAuthenticateMsg[] = {0x00, 0x2f, 0x6f, 0x72, 0x67, 0x2e, 0x61, 0x70, 0x61, 0x63,
+                                        0x68, 0x65, 0x2e, 0x63, 0x61, 0x73, 0x73, 0x61, 0x6e, 0x64,
+                                        0x72, 0x61, 0x2e, 0x61, 0x75, 0x74, 0x68, 0x2e, 0x50, 0x61,
+                                        0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x41, 0x75, 0x74, 0x68,
+                                        0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x6f, 0x72};
+std::string_view kAuthenticateMsgStr = StringView(kAuthenticateMsg);
+
 constexpr uint8_t kAuthResponseMsg[] = {0x00, 0x00, 0x00, 0x14, 0x00, 0x63, 0x61, 0x73,
                                         0x73, 0x61, 0x6e, 0x64, 0x72, 0x61, 0x00, 0x63,
                                         0x61, 0x73, 0x73, 0x61, 0x6e, 0x64, 0x72, 0x61};
@@ -377,6 +384,28 @@ TEST(CassStitcherTest, ExecuteResult) {
 
   // TODO(oazizi): Enable once parsing of results in complete.
   // EXPECT_EQ(record.resp.msg, "");
+}
+
+TEST(CassStitcherTest, StartupAuthenticate) {
+  std::deque<Frame> req_frames;
+  std::deque<Frame> resp_frames;
+  std::vector<Record> records;
+
+  req_frames.push_back(CreateFrame(0, Opcode::kStartup, kStartupMsgStr, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kAuthenticate, kAuthenticateMsgStr, 2));
+
+  records = ProcessFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  ASSERT_EQ(records.size(), 1);
+
+  Record& record = records.front();
+
+  EXPECT_EQ(record.req.op, ReqOp::kStartup);
+  EXPECT_EQ(record.resp.op, RespOp::kAuthenticate);
+
+  EXPECT_EQ(record.req.msg, R"({"CQL_VERSION":"3.0.0"})");
+  EXPECT_THAT(record.resp.msg, "org.apache.cassandra.auth.PasswordAuthenticator");
 }
 
 TEST(CassStitcherTest, AuthResponseAuthSuccess) {

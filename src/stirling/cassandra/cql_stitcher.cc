@@ -194,6 +194,16 @@ Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
   return Status::OK();
 }
 
+Status ProcessAuthenticateResp(Frame* resp_frame, Response* resp) {
+  TypeDecoder decoder(resp_frame->msg);
+  PL_ASSIGN_OR_RETURN(std::string authenticator_name, decoder.ExtractString());
+
+  DCHECK(resp->msg.empty());
+  resp->msg = std::move(authenticator_name);
+
+  return Status::OK();
+}
+
 Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
   TypeDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
@@ -254,7 +264,7 @@ Status ProcessResp(Frame* resp_frame, Response* resp) {
     case RespOp::kReady:
       return ProcessSimpleResp(resp_frame, resp);
     case RespOp::kAuthenticate:
-      return ProcessSimpleResp(resp_frame, resp);
+      return ProcessAuthenticateResp(resp_frame, resp);
     case RespOp::kSupported:
       return ProcessSupportedResp(resp_frame, resp);
     case RespOp::kResult:
