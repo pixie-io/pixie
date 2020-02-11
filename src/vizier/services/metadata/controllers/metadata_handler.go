@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"reflect"
+	"strconv"
 	"strings"
 
 	uuid "github.com/satori/go.uuid"
@@ -464,20 +465,27 @@ func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.Resou
 }
 
 // SyncPodData syncs the data in etcd according to the current active pods.
-func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
+func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) int {
 	activePods := map[string]bool{}
 	activeContainers := map[string]bool{}
 
 	currentTime := mh.clock.Now().UnixNano()
-
+	rv := 0
 	// Create a map so that we can easily check which pods and containers are currently active by ID.
 	for _, item := range podList.Items {
+		i, err := strconv.Atoi(item.ObjectMeta.ResourceVersion)
+		if err != nil {
+			log.WithError(err).Error("Could not get RV from pod")
+		}
+		if i > rv {
+			rv = i
+		}
 		activePods[string(item.ObjectMeta.UID)] = true
 		for _, container := range item.Status.ContainerStatuses {
 			activeContainers[formatContainerID(container.ContainerID)] = true
 		}
 		// Update pod/containers in metadata store.
-		_, err := mh.updatePod(&item, false)
+		_, err = mh.updatePod(&item, false)
 		if err != nil {
 			log.WithField("pod", item).WithError(err).Error("Could not update pod in metadata store during sync")
 		}
@@ -532,20 +540,29 @@ func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
 			}
 		}
 	}
+
+	return rv
 }
 
 // SyncEndpointsData syncs the data in etcd according to the current active pods.
-func (mh *MetadataHandler) SyncEndpointsData(epList *v1.EndpointsList) {
+func (mh *MetadataHandler) SyncEndpointsData(epList *v1.EndpointsList) int {
 	activeEps := map[string]bool{}
 
 	currentTime := mh.clock.Now().UnixNano()
-
+	rv := 0
 	// Create a map so that we can easily check which endpoints are currently active by ID.
 	for _, item := range epList.Items {
+		i, err := strconv.Atoi(item.ObjectMeta.ResourceVersion)
+		if err != nil {
+			log.WithError(err).Error("Could not get RV from pod")
+		}
+		if i > rv {
+			rv = i
+		}
 		activeEps[string(item.ObjectMeta.UID)] = true
 
 		// Update endpoint in metadata store.
-		_, err := mh.updateEndpoints(&item, false)
+		_, err = mh.updateEndpoints(&item, false)
 		if err != nil {
 			log.WithField("endpoint", item).WithError(err).Error("Could not update endpoint in metadata store during sync")
 		}
@@ -568,20 +585,29 @@ func (mh *MetadataHandler) SyncEndpointsData(epList *v1.EndpointsList) {
 			}
 		}
 	}
+
+	return rv
 }
 
 // SyncServiceData syncs the data in etcd according to the current active pods.
-func (mh *MetadataHandler) SyncServiceData(sList *v1.ServiceList) {
+func (mh *MetadataHandler) SyncServiceData(sList *v1.ServiceList) int {
 	activeServices := map[string]bool{}
 
 	currentTime := mh.clock.Now().UnixNano()
-
+	rv := 0
 	// Create a map so that we can easily check which services are currently active by ID.
 	for _, item := range sList.Items {
+		i, err := strconv.Atoi(item.ObjectMeta.ResourceVersion)
+		if err != nil {
+			log.WithError(err).Error("Could not get RV from pod")
+		}
+		if i > rv {
+			rv = i
+		}
 		activeServices[string(item.ObjectMeta.UID)] = true
 
 		// Update service in metadata store.
-		_, err := mh.updateService(&item, false)
+		_, err = mh.updateService(&item, false)
 		if err != nil {
 			log.WithField("service", item).WithError(err).Error("Could not update service in metadata store during sync")
 		}
@@ -604,4 +630,6 @@ func (mh *MetadataHandler) SyncServiceData(sList *v1.ServiceList) {
 			}
 		}
 	}
+
+	return rv
 }

@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+	"math"
 	"regexp"
 	"strings"
 
@@ -15,6 +17,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
 )
 
 const kubeSystemNs = "kube-system"
@@ -22,8 +25,9 @@ const kubeProxyPodPrefix = "kube-proxy"
 
 // K8sMetadataController listens to any metadata updates from the K8s API.
 type K8sMetadataController struct {
-	mdHandler *MetadataHandler
-	clientset *kubernetes.Clientset
+	mdHandler  *MetadataHandler
+	clientset  *kubernetes.Clientset
+	startingRV int
 }
 
 // NewK8sMetadataController creates a new K8sMetadataController.
@@ -47,19 +51,22 @@ func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, err
 	if err != nil {
 		log.Info("Could not list all pods")
 	}
-	mdh.SyncPodData(pods.(*v1.PodList))
+	pRv := mdh.SyncPodData(pods.(*v1.PodList))
 
 	eps, err := mc.listObject("endpoints")
 	if err != nil {
 		log.Info("Could not list all endpoints")
 	}
-	mdh.SyncEndpointsData(eps.(*v1.EndpointsList))
+	eRv := mdh.SyncEndpointsData(eps.(*v1.EndpointsList))
 
 	services, err := mc.listObject("services")
 	if err != nil {
 		log.Info("Could not list all services")
 	}
-	mdh.SyncServiceData(services.(*v1.ServiceList))
+	sRv := mdh.SyncServiceData(services.(*v1.ServiceList))
+
+	// Start watcher at the earliest resource version.
+	mc.startingRV = int(math.Min(float64(pRv), math.Min(float64(eRv), float64(sRv))))
 
 	// Start up Watchers.
 	go mc.startWatcher("pods")
@@ -79,13 +86,12 @@ func (mc *K8sMetadataController) listObject(resource string) (runtime.Object, er
 func (mc *K8sMetadataController) startWatcher(resource string) {
 	// Start up watcher for the given resource.
 	watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), resource, v1.NamespaceAll, fields.Everything())
-	opts := metav1.ListOptions{}
-	watch, err := watcher.Watch(opts)
+	retryWatcher, err := watch.NewRetryWatcher(fmt.Sprintf("%d", mc.startingRV), watcher)
 	if err != nil {
 		log.WithError(err).Fatal("Could not start watcher for k8s resource: " + resource)
 	}
 
-	for c := range watch.ResultChan() {
+	for c := range retryWatcher.ResultChan() {
 		msg := &K8sMessage{
 			Object:     c.Object,
 			ObjectType: resource,
@@ -93,6 +99,7 @@ func (mc *K8sMetadataController) startWatcher(resource string) {
 		}
 		mc.mdHandler.GetChannel() <- msg
 	}
+	log.WithField("resource", resource).Info("k8s watcher channel closed")
 }
 
 // GetClusterCIDR get the CIDR for the current cluster.
