@@ -8,10 +8,22 @@ namespace pl {
 
 using ::testing::StrEq;
 
-TEST(ReprTest, ResultsAreAsExpected) {
-  EXPECT_THAT(Repr("test\b"), StrEq(R"(test\x08)"));
-  EXPECT_THAT(Repr("test\xab"), StrEq(R"(test\xAB)"));
-  EXPECT_THAT(Repr("test\b", Radix::kBin, PrintConvPolicy::kToDigit),
+TEST(BytesToStringTest, Hex) {
+  EXPECT_THAT(BytesToString<PrintStyle::kHex>("\x03\x74\x32\xaa"), StrEq(R"(\x03\x74\x32\xAA)"));
+  EXPECT_THAT(BytesToString<PrintStyle::kHexCompact>("\x03\x74\x32\xaa"), StrEq("037432AA"));
+}
+
+TEST(BytesToStringTest, HexAsciiMix) {
+  EXPECT_THAT(BytesToString<PrintStyle::kHexAsciiMix>("test\b"), StrEq(R"(test\x08)"));
+  EXPECT_THAT(BytesToString<PrintStyle::kHexAsciiMix>("test\xab"), StrEq(R"(test\xAB)"));
+  EXPECT_THAT(BytesToString<PrintStyle::kHexAsciiMix>("\x74"
+                                                      "est"
+                                                      "\xab"),
+              StrEq(R"(test\xAB)"));
+}
+
+TEST(BytesToStringTest, Bin) {
+  EXPECT_THAT(BytesToString<PrintStyle::kBin>("test\b"),
               StrEq(R"(\b01110100\b01100101\b01110011\b01110100\b00001000)"));
 }
 
