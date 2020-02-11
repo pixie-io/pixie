@@ -13,6 +13,12 @@ namespace pl {
 namespace stirling {
 namespace cass {
 
+namespace {
+std::string BytesToString(std::basic_string_view<uint8_t> x) {
+  return pl::BytesToString<PrintStyle::kHexCompact>(CreateStringView<char>(x));
+}
+}  // namespace
+
 void CheckReqRespPair(const Record& r) {
   PL_UNUSED(r);
   // TODO(oazizi): Add some checks here.
@@ -48,66 +54,114 @@ Status ProcessRegisterReq(Frame* req_frame, Request* req) {
   return Status::OK();
 }
 
-Status ProcessQueryReq(Frame* req_frame, Request* req) {
-  TypeDecoder decoder(req_frame->msg);
-  PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
-  PL_ASSIGN_OR_RETURN(uint16_t consistency, decoder.ExtractShort());
-  PL_ASSIGN_OR_RETURN(uint8_t flags, decoder.ExtractByte());
+struct QueryParameters {
+  uint16_t consistency;
+  uint16_t flags;
+  std::vector<std::basic_string<uint8_t>> values;
+  std::vector<std::string> names;
+  int32_t page_size = 0;
+  std::basic_string<uint8_t> paging_state;
+  uint16_t serial_consistency = 0;
+  int64_t timestamp = 0;
+};
 
-  bool flag_values = flags & 0x01;
-  bool flag_skip_metadata = flags & 0x02;
-  bool flag_page_size = flags & 0x04;
-  bool flag_with_paging_state = flags & 0x08;
-  bool flag_with_serial_consistency = flags & 0x10;
-  bool flag_with_default_timestamp = flags & 0x20;
-  bool flag_with_names_for_values = flags & 0x40;
+StatusOr<QueryParameters> ProcessQueryParameters(TypeDecoder* decoder) {
+  QueryParameters qp;
 
+  PL_ASSIGN_OR_RETURN(qp.consistency, decoder->ExtractShort());
+  PL_ASSIGN_OR_RETURN(qp.flags, decoder->ExtractByte());
+
+  bool flag_values = qp.flags & 0x01;
+  bool flag_skip_metadata = qp.flags & 0x02;
+  bool flag_page_size = qp.flags & 0x04;
+  bool flag_with_paging_state = qp.flags & 0x08;
+  bool flag_with_serial_consistency = qp.flags & 0x10;
+  bool flag_with_default_timestamp = qp.flags & 0x20;
+  bool flag_with_names_for_values = qp.flags & 0x40;
   PL_UNUSED(flag_skip_metadata);
 
-  std::vector<std::basic_string<uint8_t>> values;
-  std::vector<std::basic_string<uint8_t>> names;
   if (flag_values) {
-    PL_ASSIGN_OR_RETURN(uint16_t num_values, decoder.ExtractShort());
+    PL_ASSIGN_OR_RETURN(uint16_t num_values, decoder->ExtractShort());
     for (int i = 0; i < num_values; ++i) {
       if (flag_with_names_for_values) {
-        PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> name_i, decoder.ExtractBytes());
-        names.push_back(std::move(name_i));
+        PL_ASSIGN_OR_RETURN(std::string name_i, decoder->ExtractString());
+        qp.names.push_back(std::move(name_i));
       }
-      PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> value_i, decoder.ExtractBytes());
-      values.push_back(std::move(value_i));
+      PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> value_i, decoder->ExtractBytes());
+      qp.values.push_back(std::move(value_i));
     }
   }
 
-  int32_t page_size = 0;
   if (flag_page_size) {
-    PL_ASSIGN_OR_RETURN(page_size, decoder.ExtractInt());
+    PL_ASSIGN_OR_RETURN(qp.page_size, decoder->ExtractInt());
   }
 
-  std::basic_string<uint8_t> paging_state;
   if (flag_with_paging_state) {
-    PL_ASSIGN_OR_RETURN(paging_state, decoder.ExtractBytes());
+    PL_ASSIGN_OR_RETURN(qp.paging_state, decoder->ExtractBytes());
   }
 
-  uint16_t serial_consistency = 0;
   if (flag_with_serial_consistency) {
-    PL_ASSIGN_OR_RETURN(serial_consistency, decoder.ExtractShort());
+    PL_ASSIGN_OR_RETURN(qp.serial_consistency, decoder->ExtractShort());
   }
 
-  int64_t timestamp;
   if (flag_with_default_timestamp) {
-    PL_ASSIGN_OR_RETURN(timestamp, decoder.ExtractLong());
+    PL_ASSIGN_OR_RETURN(qp.timestamp, decoder->ExtractLong());
   }
 
-  // TODO(oazizi): Incorporate some of these into req->msg, especially values.
-  PL_UNUSED(values);
-  PL_UNUSED(names);
-  PL_UNUSED(consistency);
-  PL_UNUSED(page_size);
-  PL_UNUSED(paging_state);
-  PL_UNUSED(serial_consistency);
-  PL_UNUSED(timestamp);
+  return qp;
+}
 
+Status ProcessQueryReq(Frame* req_frame, Request* req) {
+  TypeDecoder decoder(req_frame->msg);
+  PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
+  PL_ASSIGN_OR_RETURN(QueryParameters qp, ProcessQueryParameters(&decoder));
+
+  // TODO(oazizi): This is just a placeholder.
+  // Real implementation should figure out what type each value is, and cast into the appropriate
+  // type. This, however, will be hard unless we have observed the preceding Prepare request.
+  std::vector<std::string> hex_values;
+  for (const auto& value_i : qp.values) {
+    hex_values.push_back(BytesToString(value_i));
+  }
+
+  DCHECK(req->msg.empty());
   req->msg = query;
+
+  // For now, just tag the parameter values to the end.
+  // TODO(oazizi): Make this prettier.
+  if (!hex_values.empty()) {
+    req->msg += "\n";
+    req->msg += utils::ToJSONString(hex_values);
+  }
+
+  return Status::OK();
+}
+
+Status ProcessPrepareReq(Frame* req_frame, Request* req) {
+  TypeDecoder decoder(req_frame->msg);
+  PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
+
+  DCHECK(req->msg.empty());
+  req->msg = query;
+
+  return Status::OK();
+}
+
+Status ProcessExecuteReq(Frame* req_frame, Request* req) {
+  TypeDecoder decoder(req_frame->msg);
+  PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> id, decoder.ExtractShortBytes());
+  PL_ASSIGN_OR_RETURN(QueryParameters qp, ProcessQueryParameters(&decoder));
+
+  // TODO(oazizi): This is just a placeholder.
+  // Real implementation should figure out what type each value is, and cast into the appropriate
+  // type. This, however, will be hard unless we have observed the preceding Prepare request.
+  std::vector<std::string> hex_values;
+  for (const auto& value_i : qp.values) {
+    hex_values.push_back(BytesToString(value_i));
+  }
+
+  DCHECK(req->msg.empty());
+  req->msg = utils::ToJSONString(hex_values);
 
   return Status::OK();
 }
@@ -136,9 +190,9 @@ Status ProcessReq(Frame* req_frame, Request* req) {
     case ReqOp::kQuery:
       return ProcessQueryReq(req_frame, req);
     case ReqOp::kPrepare:
-      return ProcessSimpleReq(req_frame, req);
+      return ProcessPrepareReq(req_frame, req);
     case ReqOp::kExecute:
-      return ProcessSimpleReq(req_frame, req);
+      return ProcessExecuteReq(req_frame, req);
     case ReqOp::kBatch:
       return ProcessSimpleReq(req_frame, req);
     case ReqOp::kRegister:
