@@ -342,6 +342,15 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<FuncIR::Op> GetOp(const std::string& python_op, pypa::AstPtr node);
 
   /**
+   * @brief Returns the FuncIR::Op struct that corresponds to a python_op representation for a unary
+   * operator.
+   *
+   * @param python_op: the string representation as found in the AST.
+   * @param node: the pointer to ast.
+   * @return StatusOr<FuncIR::Op>: the struct that corresponds to a python op representation.
+   */
+  StatusOr<FuncIR::Op> GetUnaryOp(const std::string& python_op, const pypa::AstPtr node);
+  /**
    * @brief Handler for Binary operations.
    *
    * @param ast
@@ -369,6 +378,15 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return the evaluated data compare object.
    */
   StatusOr<QLObjectPtr> ProcessDataCompare(const pypa::AstComparePtr& node,
+                                           const OperatorContext& op_context);
+  /**
+   * @brief Processes unary operator nodes
+   *
+   * @param node
+   * @param op_context
+   * @return the evaluated unary operator object
+   */
+  StatusOr<QLObjectPtr> ProcessDataUnaryOp(const pypa::AstUnaryOpPtr& node,
                                            const OperatorContext& op_context);
   /**
    * @brief  Returns the variable specified by the name pointer.

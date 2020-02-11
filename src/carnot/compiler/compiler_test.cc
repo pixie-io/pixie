@@ -2900,6 +2900,24 @@ TEST_F(CompilerTest, UndefinedFuncError) {
   EXPECT_THAT(graph_or_s.status(), HasCompilerError("dataframe has no method 'bar'"));
 }
 
+TEST_F(CompilerTest, TestUnaryOperators) {
+  std::string query = absl::StrJoin(
+      {
+          "df = px.DataFrame(table='cpu', select=['cpu0'])",
+          "df.foo = 1",
+          "df.foo2 = ~df.foo",
+          "df.bar = -df.cpu0",
+          "df.bar2 = +df.bar",
+          "df = df[not df.foo == df.bar]",
+          "df.bool = df.foo != df.bar",
+          "df.baz = not df.bool",
+          "px.display(df)",
+      },
+      "\n");
+
+  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get(), {});
+  ASSERT_OK(plan_status);
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

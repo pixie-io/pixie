@@ -897,6 +897,9 @@ class FuncIR : public ExpressionIR {
     logand,
     logor,
     mod,
+    negate,
+    lognot,
+    invert,
     number_of_ops
   };
   struct Op {
@@ -905,6 +908,7 @@ class FuncIR : public ExpressionIR {
     std::string carnot_op_name;
   };
   static std::unordered_map<std::string, Op> op_map;
+  static std::unordered_map<std::string, Op> unary_op_map;
 
   FuncIR() = delete;
   Opcode opcode() const { return op_.op_code; }

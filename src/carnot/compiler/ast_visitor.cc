@@ -22,6 +22,15 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const p
   return op_find->second;
 }
 
+StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
+                                                const pypa::AstPtr node) {
+  auto op_find = FuncIR::unary_op_map.find(python_op);
+  if (op_find == FuncIR::op_map.end()) {
+    return CreateAstError(node, "Unary Operator '$0' not handled", python_op);
+  }
+  return op_find->second;
+}
+
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* graph,
                                                                  CompilerState* compiler_state,
                                                                  const FlagValues& flag_values) {
@@ -223,6 +232,9 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::Process(const pypa::AstExpr& node,
     }
     case AstType::Compare: {
       return ProcessDataCompare(PYPA_PTR_CAST(Compare, node), op_context);
+    }
+    case AstType::UnaryOp: {
+      return ProcessDataUnaryOp(PYPA_PTR_CAST(UnaryOp, node), op_context);
     }
     default:
       return CreateAstError(node, "Expression node '$0' not defined", GetAstTypeName(node->type));
@@ -653,6 +665,24 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataCompare(const pypa::AstCompareP
 
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
+  return ExprObject::Create(ir_node);
+}
+
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpPtr& node,
+                                                         const OperatorContext& op_context) {
+  PL_ASSIGN_OR_RETURN(IRNode * operand, ProcessData(node->operand, op_context));
+  if (!operand->IsExpression()) {
+    return CreateAstError(node, "Expected operand of unary op to be expression, but got $0",
+                          operand->type_string());
+  }
+
+  std::string op_str = pypa::to_string(node->op);
+  PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetUnaryOp(op_str, node));
+  if (op.op_code == FuncIR::Opcode::non_op) {
+    return ExprObject::Create(static_cast<ExpressionIR*>(operand));
+  }
+  std::vector<ExpressionIR*> args = {static_cast<ExpressionIR*>(operand)};
+  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node);
 }
 

@@ -64,6 +64,12 @@ class NegateUDF : public udf::ScalarUDF {
   TArg1 Exec(FunctionContext*, TArg1 b1) { return -b1.val; }
 };
 
+template <typename TArg1>
+class InvertUDF : public udf::ScalarUDF {
+ public:
+  TArg1 Exec(FunctionContext*, TArg1 b1) { return ~b1.val; }
+};
+
 template <typename TArg1, typename TArg2>
 class EqualUDF : public udf::ScalarUDF {
  public:

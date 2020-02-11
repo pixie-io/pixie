@@ -93,6 +93,8 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   // Negate (-)
   registry->RegisterOrDie<NegateUDF<types::Int64Value>>("negate");
   registry->RegisterOrDie<NegateUDF<types::Float64Value>>("negate");
+  // Invert (~)
+  registry->RegisterOrDie<InvertUDF<types::Int64Value>>("invert");
   // ==
   registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Int64Value>>("equal");
   registry->RegisterOrDie<EqualUDF<types::StringValue, types::StringValue>>("equal");

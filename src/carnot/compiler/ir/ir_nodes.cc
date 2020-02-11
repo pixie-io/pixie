@@ -866,6 +866,14 @@ std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
     {"and", {FuncIR::Opcode::logand, "and", "logicalAnd"}},
     {"or", {FuncIR::Opcode::logor, "or", "logicalOr"}}};
 
+std::unordered_map<std::string, FuncIR::Op> FuncIR::unary_op_map{
+    // + as a unary operator returns its operand unchanged.
+    {"+", {FuncIR::Opcode::non_op, "+", ""}},
+    {"-", {FuncIR::Opcode::negate, "-", "negate"}},
+    {"not", {FuncIR::Opcode::lognot, "not", "logicalNot"}},
+    {"~", {FuncIR::Opcode::invert, "~", "invert"}},
+};
+
 Status FuncIR::Init(Op op, const std::vector<ExpressionIR*>& args) {
   op_ = op;
   for (auto a : args) {
