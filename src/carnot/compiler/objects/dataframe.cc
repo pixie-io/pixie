@@ -130,6 +130,19 @@ Status Dataframe::Init() {
                                    std::placeholders::_2)));
   AddMethod(kUnionOpId, union_fn);
 
+  /**
+   * # Equivalent to the python method syntax:
+   * def rolling(self, window, on="time_"):
+   *     ...
+   */
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> rolling_fn,
+                      FuncObject::Create(kRollingOpId, {"window", "on"}, {{"on", "'time_'"}},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ false,
+                                         std::bind(&RollingHandler::Eval, graph(), op(),
+                                                   std::placeholders::_1, std::placeholders::_2)));
+  AddMethod(kRollingOpId, rolling_fn);
+
   attributes_.emplace(kMetadataAttrName);
   return Status::OK();
 }
@@ -142,7 +155,6 @@ StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
   if (name == kMetadataAttrName) {
     return MetadataObject::Create(op());
   }
-
   // We evaluate schemas in the analyzer, so at this point assume 'name' is a valid column.
   PL_ASSIGN_OR_RETURN(ColumnIR * column,
                       graph()->CreateNode<ColumnIR>(ast, std::string(name), /* parent_op_idx */ 0));
@@ -372,6 +384,24 @@ StatusOr<QLObjectPtr> UnionHandler::Eval(IR* graph, OperatorIR* op, const pypa::
 
   PL_ASSIGN_OR_RETURN(UnionIR * union_op, graph->CreateNode<UnionIR>(ast, parents));
   return Dataframe::Create(union_op);
+}
+
+StatusOr<QLObjectPtr> RollingHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                           const ParsedArgs& args) {
+  PL_ASSIGN_OR_RETURN(StringIR * window_col_name, GetArgAs<StringIR>(args, "on"));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * window_size, GetArgAs<ExpressionIR>(args, "window"));
+
+  if (window_col_name->str() != "time_") {
+    return window_col_name->CreateIRNodeError(
+        "Windowing is only supported on time_ at the moment, not $0", window_col_name->str());
+  }
+
+  PL_ASSIGN_OR_RETURN(ColumnIR * window_col,
+                      graph->CreateNode<ColumnIR>(ast, window_col_name->str(), /* parent_idx */ 0));
+
+  PL_ASSIGN_OR_RETURN(RollingIR * rolling_op,
+                      graph->CreateNode<RollingIR>(ast, op, window_col, window_size));
+  return Dataframe::Create(rolling_op);
 }
 
 StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,

@@ -143,6 +143,7 @@ inline ClassMatch<IRNodeType::kTabletSourceGroup> TabletSourceGroup() {
 inline ClassMatch<IRNodeType::kList> List() { return ClassMatch<IRNodeType::kList>(); }
 inline ClassMatch<IRNodeType::kTuple> Tuple() { return ClassMatch<IRNodeType::kTuple>(); }
 inline ClassMatch<IRNodeType::kGroupBy> GroupBy() { return ClassMatch<IRNodeType::kGroupBy>(); }
+inline ClassMatch<IRNodeType::kRolling> Rolling() { return ClassMatch<IRNodeType::kRolling>(); }
 inline ClassMatch<IRNodeType::kUDTFSource> UDTFSource() {
   return ClassMatch<IRNodeType::kUDTFSource>();
 }

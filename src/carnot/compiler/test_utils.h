@@ -420,6 +420,12 @@ class OperatorTests : public ::testing::Test {
     return agg;
   }
 
+  RollingIR* MakeRolling(OperatorIR* parent, ColumnIR* window_col, DataIR* window_size) {
+    RollingIR* rolling =
+        graph->CreateNode<RollingIR>(ast, parent, window_col, window_size).ConsumeValueOrDie();
+    return rolling;
+  }
+
   ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx) {
     ColumnIR* column = graph->CreateNode<ColumnIR>(ast, name, parent_op_idx).ConsumeValueOrDie();
     return column;
@@ -609,6 +615,8 @@ class OperatorTests : public ::testing::Test {
         graph->CreateNode<TupleIR>(ast, std::vector<IRNode*>{args...}).ConsumeValueOrDie();
     return tuple;
   }
+
+  TimeIR* MakeTime(int64_t t) { return graph->CreateNode<TimeIR>(ast, t).ConsumeValueOrDie(); }
 
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;

@@ -36,8 +36,11 @@ class Analyzer : public RuleExecutor<IR> {
                                                                        md_handler_.get());
     source_and_metadata_resolution_batch->AddRule<MetadataFunctionFormatRule>(compiler_state_);
     source_and_metadata_resolution_batch->AddRule<SetupJoinTypeRule>();
-    source_and_metadata_resolution_batch->AddRule<MergeGroupByIntoAggRule>();
-    source_and_metadata_resolution_batch->AddRule<ConvertMemSourceStringTimesRule>(compiler_state_);
+    source_and_metadata_resolution_batch->AddRule<MergeGroupByIntoGroupAcceptorRule>(
+        IRNodeType::kBlockingAgg);
+    source_and_metadata_resolution_batch->AddRule<MergeGroupByIntoGroupAcceptorRule>(
+        IRNodeType::kRolling);
+    source_and_metadata_resolution_batch->AddRule<ConvertStringTimesRule>(compiler_state_);
     source_and_metadata_resolution_batch->AddRule<NestedBlockingAggFnCheckRule>();
   }
 

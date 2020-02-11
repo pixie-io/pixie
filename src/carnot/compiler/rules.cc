@@ -201,7 +201,7 @@ StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) {
   } else if (Match(ir_node, UnresolvedReadyOp(Limit())) ||
              Match(ir_node, UnresolvedReadyOp(Filter())) ||
              Match(ir_node, UnresolvedReadyOp(GroupBy())) ||
-             Match(ir_node, UnresolvedReadyOp(MemorySink()))) {
+             Match(ir_node, UnresolvedReadyOp(Rolling()))) {
     // Explicitly match because the general matcher keeps causing problems.
     return SetOther(static_cast<OperatorIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedReadyOp())) {
@@ -595,6 +595,8 @@ StatusOr<bool> OperatorCompileTimeExpressionRule::Apply(IRNode* ir_node) {
     return EvalFilter(static_cast<FilterIR*>(ir_node));
   } else if (Match(ir_node, MemorySource())) {
     return EvalMemorySource(static_cast<MemorySourceIR*>(ir_node));
+  } else if (Match(ir_node, Rolling())) {
+    return EvalRolling(static_cast<RollingIR*>(ir_node));
   } else if (Match(ir_node, Limit())) {
     // TODO(nserrino, philkuz): (PL-1161) Add support for compile time evaluation of Limit argument.
     return false;
@@ -667,16 +669,31 @@ StatusOr<bool> OperatorCompileTimeExpressionRule::EvalMemorySource(MemorySourceI
   return true;
 }
 
-StatusOr<bool> ConvertMemSourceStringTimesRule::Apply(IRNode* node) {
-  if (!Match(node, MemorySource())) {
+StatusOr<bool> OperatorCompileTimeExpressionRule::EvalRolling(RollingIR* rolling) {
+  PL_ASSIGN_OR_RETURN(auto new_window_size, EvalCompileTimeSubExpressions(rolling->window_size()));
+  auto changed = new_window_size->id() != rolling->window_size()->id();
+  PL_RETURN_IF_ERROR(rolling->ReplaceWindowSize(new_window_size));
+  return changed;
+}
+
+// This feels like the wrong way to be handling String->Time Conversion,
+// should consider rearchitecting it
+StatusOr<bool> ConvertStringTimesRule::Apply(IRNode* node) {
+  if (Match(node, MemorySource())) {
+    MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(node);
+    return HandleMemSrc(mem_src);
+  } else if (Match(node, Rolling())) {
+    RollingIR* rolling = static_cast<RollingIR*>(node);
+    return HandleRolling(rolling);
+  } else {
     return false;
   }
+}
 
-  MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(node);
+StatusOr<bool> ConvertStringTimesRule::HandleMemSrc(MemorySourceIR* mem_src) {
   if (mem_src->IsTimeSet() || !mem_src->HasTimeExpressions()) {
     return false;
   }
-
   bool start_has_string_time = HasStringTime(mem_src->start_time_expr());
   bool end_has_string_time = HasStringTime(mem_src->end_time_expr());
 
@@ -688,17 +705,27 @@ StatusOr<bool> ConvertMemSourceStringTimesRule::Apply(IRNode* node) {
   ExpressionIR* end_time = mem_src->end_time_expr();
 
   if (start_has_string_time) {
-    PL_ASSIGN_OR_RETURN(start_time, ConvertStringTimes(start_time));
+    PL_ASSIGN_OR_RETURN(start_time, ConvertStringTimes(start_time, /* relative_time */ true));
   }
   if (end_has_string_time) {
-    PL_ASSIGN_OR_RETURN(end_time, ConvertStringTimes(end_time));
+    PL_ASSIGN_OR_RETURN(end_time, ConvertStringTimes(end_time, /* relative_time */ true));
   }
 
   PL_RETURN_IF_ERROR(mem_src->SetTimeExpressions(start_time, end_time));
   return true;
 }
 
-bool ConvertMemSourceStringTimesRule::HasStringTime(const ExpressionIR* node) {
+StatusOr<bool> ConvertStringTimesRule::HandleRolling(RollingIR* rolling) {
+  if (!HasStringTime(rolling->window_size())) {
+    return false;
+  }
+  PL_ASSIGN_OR_RETURN(ExpressionIR * new_window_size,
+                      ConvertStringTimes(rolling->window_size(), /* relative_time */ false));
+  PL_RETURN_IF_ERROR(rolling->ReplaceWindowSize(new_window_size));
+  return true;
+}
+
+bool ConvertStringTimesRule::HasStringTime(const ExpressionIR* node) {
   if (Match(node, String())) {
     return true;
   }
@@ -714,10 +741,13 @@ bool ConvertMemSourceStringTimesRule::HasStringTime(const ExpressionIR* node) {
   return false;
 }
 
-// Support taking strings like "-2m" into a memory source.
+// Support taking strings like "-2m" into a memory source or rolling operator.
+// relative_time determines whether to add in the current compiler time or just
+// use the time given by the string
 // TODO(nserrino, philkuz) Figure out if we can generalize so that it can work in other operators
 // without polluting our approach to types.
-StatusOr<ExpressionIR*> ConvertMemSourceStringTimesRule::ConvertStringTimes(ExpressionIR* node) {
+StatusOr<ExpressionIR*> ConvertStringTimesRule::ConvertStringTimes(ExpressionIR* node,
+                                                                   bool relative_time) {
   // Mem sources treat expressions differently than other nodes, so if we run into one with
   // a shared parent, we should clone it to make sure that that operator doesn't get the same
   // special case treatment of the expression.
@@ -730,14 +760,17 @@ StatusOr<ExpressionIR*> ConvertMemSourceStringTimesRule::ConvertStringTimes(Expr
   if (Match(node, String())) {
     auto str_node = static_cast<StringIR*>(node);
     PL_ASSIGN_OR_RETURN(int64_t int_val, StringToTimeInt(str_node->str()));
-    int64_t time_repr = compiler_state_->time_now().val + int_val;
+    int64_t time_repr = int_val;
+    if (relative_time) {
+      time_repr += compiler_state_->time_now().val;
+    }
     PL_ASSIGN_OR_RETURN(auto out_node,
                         node->graph_ptr()->CreateNode<IntIR>(node->ast_node(), time_repr));
     return out_node;
   } else if (Match(node, Func())) {
     auto func_node = static_cast<FuncIR*>(node);
     for (const auto& [idx, arg] : Enumerate(func_node->args())) {
-      PL_ASSIGN_OR_RETURN(auto eval_result, ConvertStringTimes(arg));
+      PL_ASSIGN_OR_RETURN(auto eval_result, ConvertStringTimes(arg, relative_time));
       if (eval_result != arg) {
         PL_RETURN_IF_ERROR(func_node->UpdateArg(idx, eval_result));
       }
@@ -1219,14 +1252,36 @@ Status SetupJoinTypeRule::ConvertRightJoinToLeftJoin(JoinIR* join_ir) {
   return join_ir->SetJoinType(JoinIR::JoinType::kLeft);
 }
 
-StatusOr<bool> MergeGroupByIntoAggRule::Apply(IRNode* ir_node) {
-  if (Match(ir_node, OperatorWithParent(BlockingAgg(), GroupBy()))) {
-    return AddGroupByDataIntoAgg(static_cast<BlockingAggIR*>(ir_node));
+StatusOr<bool> MergeGroupByIntoGroupAcceptorRule::Apply(IRNode* ir_node) {
+  if (Match(ir_node, OperatorWithParent(Operator(), GroupBy())) &&
+      ir_node->type() == group_acceptor_type_) {
+    return AddGroupByDataIntoGroupAcceptor(static_cast<GroupAcceptorIR*>(ir_node));
   }
   return false;
 }
 
-StatusOr<ColumnIR*> MergeGroupByIntoAggRule::CopyColumn(ColumnIR* g) {
+StatusOr<bool> MergeGroupByIntoGroupAcceptorRule::AddGroupByDataIntoGroupAcceptor(
+    GroupAcceptorIR* acceptor_node) {
+  DCHECK_EQ(acceptor_node->parents().size(), 1UL);
+  OperatorIR* parent = acceptor_node->parents()[0];
+  DCHECK(Match(parent, GroupBy()));
+  GroupByIR* groupby = static_cast<GroupByIR*>(parent);
+  std::vector<ColumnIR*> new_groups(acceptor_node->groups());
+  for (ColumnIR* g : groupby->groups()) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * col, CopyColumn(g));
+    new_groups.push_back(col);
+  }
+  PL_RETURN_IF_ERROR(acceptor_node->SetGroups(new_groups));
+
+  DCHECK_EQ(groupby->parents().size(), 1UL);
+  OperatorIR* groupby_parent = groupby->parents()[0];
+
+  PL_RETURN_IF_ERROR(acceptor_node->ReplaceParent(groupby, groupby_parent));
+
+  return true;
+}
+
+StatusOr<ColumnIR*> MergeGroupByIntoGroupAcceptorRule::CopyColumn(ColumnIR* g) {
   if (Match(g, Metadata())) {
     return g->graph_ptr()->CreateNode<MetadataIR>(g->ast_node(), g->col_name(),
                                                   g->container_op_parent_idx());
@@ -1234,24 +1289,6 @@ StatusOr<ColumnIR*> MergeGroupByIntoAggRule::CopyColumn(ColumnIR* g) {
 
   return g->graph_ptr()->CreateNode<ColumnIR>(g->ast_node(), g->col_name(),
                                               g->container_op_parent_idx());
-}
-
-StatusOr<bool> MergeGroupByIntoAggRule::AddGroupByDataIntoAgg(BlockingAggIR* agg_node) {
-  DCHECK_EQ(agg_node->parents().size(), 1UL);
-  OperatorIR* parent = agg_node->parents()[0];
-  DCHECK(Match(parent, GroupBy()));
-  GroupByIR* groupby = static_cast<GroupByIR*>(parent);
-  for (ColumnIR* g : groupby->groups()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col, CopyColumn(g));
-    PL_RETURN_IF_ERROR(agg_node->AddGroup(col));
-  }
-
-  DCHECK_EQ(groupby->parents().size(), 1UL);
-  OperatorIR* groupby_parent = groupby->parents()[0];
-
-  PL_RETURN_IF_ERROR(agg_node->ReplaceParent(groupby, groupby_parent));
-
-  return true;
 }
 
 StatusOr<bool> RemoveGroupByRule::Apply(IRNode* ir_node) {
@@ -1263,8 +1300,9 @@ StatusOr<bool> RemoveGroupByRule::Apply(IRNode* ir_node) {
 
 StatusOr<bool> RemoveGroupByRule::RemoveGroupBy(GroupByIR* groupby) {
   if (groupby->Children().size() != 0) {
-    return groupby->CreateIRNodeError("'groupby()' should be followed by an 'agg()' not a $0",
-                                      groupby->Children()[0]->type_string());
+    return groupby->CreateIRNodeError(
+        "'groupby()' should be followed by an 'agg()' or a 'rolling()' not a $0",
+        groupby->Children()[0]->type_string());
   }
   auto graph = groupby->graph_ptr();
   auto groupby_id = groupby->id();

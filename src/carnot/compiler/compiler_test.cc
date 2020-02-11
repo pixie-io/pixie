@@ -2918,6 +2918,94 @@ TEST_F(CompilerTest, TestUnaryOperators) {
   auto plan_status = compiler_.CompileToIR(query, compiler_state_.get(), {});
   ASSERT_OK(plan_status);
 }
+
+// ENABLE and modify these tests once we know where rolling is getting merged into
+constexpr char kRollingTimeStringQuery[] = R"pxl(
+t1 = px.DataFrame(table='http_events', select=['time_', 'remote_port'])
+t1 = t1.rolling('3s')
+px.display(t1)
+)pxl";
+TEST_F(CompilerTest, DISABLED_RollingTimeStringQuery) {
+  auto graph_or_s = compiler_.CompileToIR(kRollingTimeStringQuery, compiler_state_.get(), {});
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+
+  std::vector<IRNode*> rolling_nodes = graph->FindNodesOfType(IRNodeType::kRolling);
+  ASSERT_EQ(rolling_nodes.size(), 1);
+  auto rolling = static_cast<RollingIR*>(rolling_nodes[0]);
+
+  ASSERT_EQ(rolling->window_col()->col_name(), "time_");
+  ASSERT_TRUE(Match(rolling->window_size(), Int()));
+  IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
+  ASSERT_EQ(window_size_int->val(),
+            std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(3)).count());
+  Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
+  EXPECT_EQ(rolling_relation, rolling->relation());
+  // TODO(james): the rolling will likely get merged into some kind of Agg or MergedAgg so this test
+  // will nechange.
+}
+
+constexpr char kRollingIntQuery[] = R"pxl(
+t1 = px.DataFrame(table='http_events', select=['time_', 'remote_port'])
+t1 = t1.rolling(3000)
+px.display(t1)
+)pxl";
+TEST_F(CompilerTest, DISABLED_RollingIntQuery) {
+  auto graph_or_s = compiler_.CompileToIR(kRollingIntQuery, compiler_state_.get(), {});
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+
+  std::vector<IRNode*> rolling_nodes = graph->FindNodesOfType(IRNodeType::kRolling);
+  ASSERT_EQ(rolling_nodes.size(), 1);
+  auto rolling = static_cast<RollingIR*>(rolling_nodes[0]);
+
+  ASSERT_EQ(rolling->window_col()->col_name(), "time_");
+  ASSERT_TRUE(Match(rolling->window_size(), Int()));
+  IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
+  ASSERT_EQ(window_size_int->val(), 3000);
+  Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
+  EXPECT_EQ(rolling_relation, rolling->relation());
+  // TODO(james): the rolling will likely get merged into some kind of Agg or MergedAgg so this test
+  // will need to change.
+}
+
+constexpr char kRollingCompileTimeExprEvalQuery[] = R"pxl(
+t1 = px.DataFrame(table='http_events', select=['time_', 'remote_port'])
+t1 = t1.rolling(1 + px.now())
+px.display(t1)
+)pxl";
+TEST_F(CompilerTest, DISABLED_RollingCompileTimeExprEvalQuery) {
+  auto graph_or_s =
+      compiler_.CompileToIR(kRollingCompileTimeExprEvalQuery, compiler_state_.get(), {});
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+
+  std::vector<IRNode*> rolling_nodes = graph->FindNodesOfType(IRNodeType::kRolling);
+  ASSERT_EQ(rolling_nodes.size(), 1);
+  auto rolling = static_cast<RollingIR*>(rolling_nodes[0]);
+
+  ASSERT_EQ(rolling->window_col()->col_name(), "time_");
+  ASSERT_TRUE(Match(rolling->window_size(), Int()));
+  IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
+  ASSERT_EQ(window_size_int->val(), compiler_state_->time_now().val + 1);
+  Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
+  EXPECT_EQ(rolling_relation, rolling->relation());
+  // TODO(james): the rolling will likely get merged into some kind of Agg or MergedAgg so this test
+  // will need to change.
+}
+
+constexpr char kRollingNonTimeColumn[] = R"pxl(
+t1 = px.DataFrame(table='cpu', select=['cpu0'])
+t1 = t1.rolling(1, on='cpu0')
+px.display(t1)
+)pxl";
+TEST_F(CompilerTest, RollingNonTimeUnsupported) {
+  auto graph_or_s = compiler_.CompileToIR(kRollingNonTimeColumn, compiler_state_.get(), {});
+  ASSERT_NOT_OK(graph_or_s);
+
+  EXPECT_THAT(graph_or_s.status(),
+              HasCompilerError("Windowing is only supported on time_ at the moment"));
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

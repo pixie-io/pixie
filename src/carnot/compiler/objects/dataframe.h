@@ -49,6 +49,7 @@ class Dataframe : public QLObject {
   inline static constexpr char kMergeOpId[] = "merge";
   inline static constexpr char kGroupByOpId[] = "groupby";
   inline static constexpr char kUnionOpId[] = "append";
+  inline static constexpr char kRollingOpId[] = "rolling";
   // Attribute names.
   inline static constexpr char kMetadataAttrName[] = "ctx";
 
@@ -202,6 +203,23 @@ class UnionHandler {
    * @param df the dataframe that's a parent to the groupby function.
    * @param ast the ast node that signifies where the query was written.
    * @param args the arguments for groupby()
+   * @return StatusOr<QLObjectPtr>
+   */
+  static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
+                                    const ParsedArgs& args);
+};
+
+/**
+ * @brief Handles the rolling() method and creates the rolling node.
+ *
+ */
+class RollingHandler {
+ public:
+  /**
+   *  @brief Evaluates the rolling operator.
+   * @param df the dataframe that's a parent to the rolling function.
+   * @param ast the ast node that signifies where the query was written.
+   * @param args the arguments for rolling()
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,

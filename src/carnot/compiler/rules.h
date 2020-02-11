@@ -158,6 +158,7 @@ class OperatorRelationRule : public Rule {
   StatusOr<bool> SetUnion(UnionIR* union_ir) const;
   StatusOr<bool> SetOldJoin(JoinIR* join_op) const;
   StatusOr<bool> SetMemorySink(MemorySinkIR* map_ir) const;
+  StatusOr<bool> SetRolling(RollingIR* rolling_ir) const;
   StatusOr<bool> SetOther(OperatorIR* op) const;
 
   /**
@@ -243,28 +244,32 @@ class OperatorCompileTimeExpressionRule : public Rule {
   StatusOr<bool> EvalMap(MapIR* expr);
   StatusOr<bool> EvalFilter(FilterIR* expr);
   StatusOr<bool> EvalMemorySource(MemorySourceIR* expr);
+  StatusOr<bool> EvalRolling(RollingIR* rolling);
   StatusOr<ExpressionIR*> EvalCompileTimeSubExpressions(ExpressionIR* expr);
 
   StatusOr<IntIR*> EvalExpression(IRNode* ir_node, bool convert_string_times);
 };
 
-class ConvertMemSourceStringTimesRule : public Rule {
+class ConvertStringTimesRule : public Rule {
   /**
-   * @brief ConvertMemSourceStringTimesRuleUsed to support taking strings like "-2m"
-   * into a memory source. Currently special-cased in the system in order to provide
-   * an ergonomic way to specify times in a memory source without disrupting the more
+   * @brief ConverStringTimesRuleUsed to support taking strings like "-2m"
+   * into a memory source or a rolling operator. Currently special-cased in the system in order to
+   * provide an ergonomic way to specify times in a memory source without disrupting the more
    * general constant-folding code in OperatorCompileTimeExpressionRule.
    * TODO(nserrino/philkuz): figure out if users will want to pass strings in as expressions
-   * to memory sources that should NOT be converted to a time, and remove this rule if so.
+   * to memory sources or rolling operators that should NOT be converted to a time, and remove this
+   * rule if so.
    *
    */
  public:
-  explicit ConvertMemSourceStringTimesRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+  explicit ConvertStringTimesRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
+  StatusOr<bool> HandleMemSrc(MemorySourceIR* mem_src);
+  StatusOr<bool> HandleRolling(RollingIR* rolling);
   bool HasStringTime(const ExpressionIR* expr);
-  StatusOr<ExpressionIR*> ConvertStringTimes(ExpressionIR* expr);
+  StatusOr<ExpressionIR*> ConvertStringTimes(ExpressionIR* expr, bool relative_time);
 };
 
 class SetMemSourceNsTimesRule : public Rule {
@@ -424,24 +429,27 @@ class SetupJoinTypeRule : public Rule {
 };
 
 /**
- * @brief This rule finds every agg that follows a groupby and then copies the attributes
- * it contains into the aggregate.
+ * @brief This rule finds every GroupAcceptorIR of the passed in type (i.e. agg or rolling) that
+ * follows a groupby and then copies the groups of the groupby into the group acceptor.
  *
  * This rule is not responsible for removing groupbys that satisfy this condition - instead
  * RemoveGroupByRule handles this. There are cases where a groupby might be used by multiple aggs so
  * we can't remove them from the graph.
  *
  */
-class MergeGroupByIntoAggRule : public Rule {
+class MergeGroupByIntoGroupAcceptorRule : public Rule {
  public:
-  MergeGroupByIntoAggRule() : Rule(nullptr) {}
+  explicit MergeGroupByIntoGroupAcceptorRule(IRNodeType group_acceptor_type)
+      : Rule(nullptr), group_acceptor_type_(group_acceptor_type) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
 
  private:
-  StatusOr<bool> AddGroupByDataIntoAgg(BlockingAggIR* ir_node);
+  StatusOr<bool> AddGroupByDataIntoGroupAcceptor(GroupAcceptorIR* acceptor_node);
   StatusOr<ColumnIR*> CopyColumn(ColumnIR* g);
+
+  IRNodeType group_acceptor_type_;
 };
 
 /**
@@ -555,6 +563,21 @@ class PruneUnconnectedOperatorsRule : public Rule {
   // For each IRNode that stays in the graph, we keep track of its children as well so we keep them
   // around.
   absl::flat_hash_set<IRNode*> sink_connected_nodes_;
+};
+
+/**
+ * @brief This rule the window_size expression in RollingIR nodes
+ *
+ */
+class ResolveWindowSizeRollingRule : public Rule {
+ public:
+  ResolveWindowSizeRollingRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  Status ResolveTimeString(StringIR* str_node);
 };
 
 /**

@@ -531,15 +531,6 @@ Status BlockingAggIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& gro
   return SetAggExprs(agg_expr);
 }
 
-Status BlockingAggIR::SetGroups(const std::vector<ColumnIR*>& groups) {
-  DCHECK(groups_.empty());
-  groups_.resize(groups.size());
-  for (size_t i = 0; i < groups.size(); ++i) {
-    PL_ASSIGN_OR_RETURN(groups_[i], graph_ptr()->OptionallyCloneWithEdge(this, groups[i]));
-  }
-  return Status::OK();
-}
-
 Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_exprs) {
   auto old_agg_expressions = aggregate_expressions_;
   for (const ColumnExpression& agg_expr : aggregate_expressions_) {
@@ -564,7 +555,7 @@ Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_exprs) {
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> BlockingAggIR::RequiredInputColumns()
     const {
   absl::flat_hash_set<std::string> required;
-  for (const auto& group : groups_) {
+  for (const auto& group : groups()) {
     required.insert(group->col_name());
   }
   for (const auto& agg_expr : aggregate_expressions_) {
@@ -588,7 +579,7 @@ StatusOr<absl::flat_hash_set<std::string>> BlockingAggIR::PruneOutputColumnsToIm
 
   // We always need to keep the group columns based on the current specification of aggregate,
   // otherwise the result will change.
-  for (const ColumnIR* group : groups_) {
+  for (const ColumnIR* group : groups()) {
     kept_columns.insert(group->col_name());
   }
   return kept_columns;
@@ -650,7 +641,7 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
     pb->add_value_names(agg_expr.name);
   }
 
-  for (ColumnIR* group : groups_) {
+  for (ColumnIR* group : groups()) {
     auto group_pb = pb->add_groups();
     PL_RETURN_IF_ERROR(group->ToProto(group_pb));
     pb->add_group_names(group->col_name());
@@ -1239,7 +1230,7 @@ Status BlockingAggIR::CopyFromNodeImpl(
   }
 
   std::vector<ColumnIR*> new_groups;
-  for (const ColumnIR* column : blocking_agg->groups_) {
+  for (const ColumnIR* column : blocking_agg->groups()) {
     PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph_ptr()->CopyNode(column, copied_nodes_map));
     new_groups.push_back(new_column);
   }
@@ -1805,6 +1796,67 @@ bool ListIR::NodeMatches(IRNode* node) { return Match(node, List()); }
 bool TupleIR::NodeMatches(IRNode* node) { return Match(node, Tuple()); }
 bool FuncIR::NodeMatches(IRNode* node) { return Match(node, Func()); }
 bool ExpressionIR::NodeMatches(IRNode* node) { return Match(node, Expression()); }
+
+Status RollingIR::Init(OperatorIR* parent, ColumnIR* window_col, ExpressionIR* window_size) {
+  PL_RETURN_IF_ERROR(AddParent(parent));
+  PL_RETURN_IF_ERROR(SetWindowCol(window_col));
+  PL_RETURN_IF_ERROR(SetWindowSize(window_size));
+  return Status::OK();
+}
+
+Status RollingIR::SetWindowSize(ExpressionIR* window_size) {
+  PL_ASSIGN_OR_RETURN(window_size_, graph_ptr()->OptionallyCloneWithEdge(this, window_size));
+  return Status::OK();
+}
+
+Status RollingIR::ReplaceWindowSize(ExpressionIR* new_window_size) {
+  if (new_window_size->id() == window_size_->id()) {
+    return Status::OK();
+  }
+  if (window_size_ == nullptr) {
+    return SetWindowSize(new_window_size);
+  }
+  PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(window_size_->id()));
+  PL_RETURN_IF_ERROR(SetWindowSize(new_window_size));
+  return Status::OK();
+}
+
+Status RollingIR::SetWindowCol(ColumnIR* window_col) {
+  PL_ASSIGN_OR_RETURN(window_col_, graph_ptr()->OptionallyCloneWithEdge(this, window_col));
+  return Status::OK();
+}
+
+Status RollingIR::CopyFromNodeImpl(const IRNode* source,
+                                   absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+  const RollingIR* rolling_node = static_cast<const RollingIR*>(source);
+  PL_ASSIGN_OR_RETURN(IRNode * new_window_col,
+                      graph_ptr()->CopyNode(rolling_node->window_col(), copied_nodes_map));
+  DCHECK(Match(new_window_col, ColumnNode()));
+  PL_RETURN_IF_ERROR(SetWindowCol(static_cast<ColumnIR*>(new_window_col)));
+  PL_ASSIGN_OR_RETURN(IRNode * new_window_size,
+                      graph_ptr()->CopyNode(rolling_node->window_size(), copied_nodes_map));
+  DCHECK(Match(new_window_size, DataNode()));
+  PL_RETURN_IF_ERROR(SetWindowSize(static_cast<DataIR*>(new_window_size)));
+  std::vector<ColumnIR*> new_groups;
+  for (const ColumnIR* column : rolling_node->groups()) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph_ptr()->CopyNode(column, copied_nodes_map));
+    new_groups.push_back(new_column);
+  }
+  return SetGroups(new_groups);
+}
+
+Status RollingIR::ToProto(planpb::Operator* /* op */) const {
+  return CreateIRNodeError("Rolling operator not yet implemented");
+}
+
+StatusOr<std::vector<absl::flat_hash_set<std::string>>> RollingIR::RequiredInputColumns() const {
+  return error::Unimplemented("Rolling operator doesn't support RequiredInputColumns.");
+}
+
+StatusOr<absl::flat_hash_set<std::string>> RollingIR::PruneOutputColumnsToImpl(
+    const absl::flat_hash_set<std::string>& /* output_colnames */) {
+  return error::Unimplemented("Rolling operator doesn't support PruneOutputColumntTo.");
+}
 
 }  // namespace compiler
 }  // namespace carnot

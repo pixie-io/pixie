@@ -989,7 +989,7 @@ TEST_F(CompileTimeExpressionTest, mem_src_one_argument_string) {
   auto start = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
 
   EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
-  ConvertMemSourceStringTimesRule compiler_expr_rule(compiler_state_.get());
+  ConvertStringTimesRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
@@ -1018,7 +1018,7 @@ TEST_F(CompileTimeExpressionTest, mem_src_two_argument_string) {
   auto stop = graph->CreateNode<StringIR>(ast, stop_str_repr).ValueOrDie();
 
   EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
-  ConvertMemSourceStringTimesRule compiler_expr_rule(compiler_state_.get());
+  ConvertStringTimesRule compiler_expr_rule(compiler_state_.get());
 
   auto result = compiler_expr_rule.Execute(graph.get());
   ASSERT_OK(result);
@@ -1030,6 +1030,26 @@ TEST_F(CompileTimeExpressionTest, mem_src_two_argument_string) {
   EXPECT_TRUE(Match(end_res, Int()));
   EXPECT_EQ(static_cast<IntIR*>(start_res)->val(), expected_start_time);
   EXPECT_EQ(static_cast<IntIR*>(end_res)->val(), expected_stop_time);
+}
+
+TEST_F(CompileTimeExpressionTest, rolling_time_string) {
+  int64_t window_size_minutes = 1;
+  int64_t expected_window_size =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::minutes(1)).count();
+  std::string window_size_str = absl::Substitute("$0m", window_size_minutes);
+  auto window_size = graph->CreateNode<StringIR>(ast, window_size_str).ValueOrDie();
+
+  auto window_col = graph->CreateNode<ColumnIR>(ast, "time_", /* parent_op_idx */ 0).ValueOrDie();
+  auto rolling = graph->CreateNode<RollingIR>(ast, mem_src, window_col, window_size).ValueOrDie();
+
+  ConvertStringTimesRule compiler_expr_rule(compiler_state_.get());
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  auto new_window_size = rolling->window_size();
+  EXPECT_TRUE(Match(new_window_size, Int()));
+  EXPECT_EQ(static_cast<IntIR*>(new_window_size)->val(), expected_window_size);
 }
 
 TEST_F(CompileTimeExpressionTest, mem_src_set_times) {
@@ -2085,7 +2105,7 @@ TEST_F(RulesTest, MergeGroupByAggRule) {
 
   // Do match and merge Groupby with agg
   // make sure agg parent changes from groupby to the parent of the groupby
-  MergeGroupByIntoAggRule rule;
+  MergeGroupByIntoGroupAcceptorRule rule(IRNodeType::kBlockingAgg);
   auto result = rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
@@ -2095,6 +2115,39 @@ TEST_F(RulesTest, MergeGroupByAggRule) {
   std::vector<std::string> actual_group_names;
   std::vector<int64_t> actual_group_ids;
   for (ColumnIR* g : agg->groups()) {
+    actual_group_names.push_back(g->col_name());
+    actual_group_ids.push_back(g->id());
+  }
+
+  EXPECT_THAT(actual_group_names, ElementsAre("col1", "col2"));
+  EXPECT_NE(actual_group_ids, groupby_ids);
+}
+
+TEST_F(RulesTest, MergeGroupByRollingRule) {
+  MemorySourceIR* mem_source = MakeMemSource();
+  GroupByIR* group_by = MakeGroupBy(mem_source, {MakeColumn("col1", 0), MakeColumn("col2", 0)});
+  RollingIR* rolling = MakeRolling(group_by, MakeColumn("time_", 0), MakeTime(0));
+  MakeMemSink(rolling, "");
+
+  EXPECT_THAT(rolling->parents(), ElementsAre(group_by));
+  EXPECT_EQ(rolling->groups().size(), 0);
+  std::vector<int64_t> groupby_ids;
+  for (ColumnIR* g : group_by->groups()) {
+    groupby_ids.push_back(g->id());
+  }
+
+  // Do match and merge Groupby with rolling
+  // make sure rolling parent changes from groupby to the parent of the groupby
+  MergeGroupByIntoGroupAcceptorRule rule(IRNodeType::kRolling);
+  auto result = rule.Execute(graph.get());
+  EXPECT_OK(result);
+  EXPECT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_THAT(rolling->parents(), ElementsAre(mem_source));
+
+  std::vector<std::string> actual_group_names;
+  std::vector<int64_t> actual_group_ids;
+  for (ColumnIR* g : rolling->groups()) {
     actual_group_names.push_back(g->col_name());
     actual_group_ids.push_back(g->id());
   }
@@ -2118,7 +2171,7 @@ TEST_F(RulesTest, MergeGroupByAggRule_MultipleAggsOneGroupBy) {
   EXPECT_THAT(agg2->parents(), ElementsAre(group_by));
   EXPECT_EQ(agg2->groups().size(), 0);
 
-  MergeGroupByIntoAggRule rule;
+  MergeGroupByIntoGroupAcceptorRule rule(IRNodeType::kBlockingAgg);
   auto result = rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
@@ -2155,7 +2208,7 @@ TEST_F(RulesTest, MergeGroupByAggRule_MissesSoleAgg) {
   EXPECT_EQ(agg->groups().size(), 0);
 
   // Don't match Agg by itself
-  MergeGroupByIntoAggRule rule;
+  MergeGroupByIntoGroupAcceptorRule rule(IRNodeType::kBlockingAgg);
   auto result = rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_FALSE(result.ConsumeValueOrDie());
@@ -2171,7 +2224,7 @@ TEST_F(RulesTest, MergeGroupByAggRule_DoesNotTouchSoleGroupby) {
   GroupByIR* group_by = MakeGroupBy(mem_source, {MakeColumn("col1", 0), MakeColumn("col2", 0)});
   MakeMemSink(group_by, "");
   // Don't match groupby by itself
-  MergeGroupByIntoAggRule rule;
+  MergeGroupByIntoGroupAcceptorRule rule(IRNodeType::kBlockingAgg);
   auto result = rule.Execute(graph.get());
   EXPECT_OK(result);
   // Should not do anything to the graph.
@@ -2226,7 +2279,7 @@ TEST_F(RulesTest, MergeAndRemove) {
   }
 
   // Do remove groupby after running both
-  MergeGroupByIntoAggRule rule1;
+  MergeGroupByIntoGroupAcceptorRule rule1(IRNodeType::kBlockingAgg);
   RemoveGroupByRule rule2;
   auto result1 = rule1.Execute(graph.get());
   ASSERT_OK(result1);
@@ -2273,7 +2326,7 @@ TEST_F(RulesTest, MergeAndRemove_MultipleAggs) {
   EXPECT_EQ(agg2->groups().size(), 0);
 
   // Do remove groupby after running both
-  MergeGroupByIntoAggRule rule1;
+  MergeGroupByIntoGroupAcceptorRule rule1(IRNodeType::kBlockingAgg);
   RemoveGroupByRule rule2;
   auto result1 = rule1.Execute(graph.get());
   ASSERT_OK(result1);
@@ -2325,7 +2378,7 @@ TEST_F(RulesTest, MergeAndRemove_GroupByOnMetadataColumns) {
   }
 
   // Do remove groupby after running both
-  MergeGroupByIntoAggRule rule1;
+  MergeGroupByIntoGroupAcceptorRule rule1(IRNodeType::kBlockingAgg);
   RemoveGroupByRule rule2;
   auto result1 = rule1.Execute(graph.get());
   ASSERT_OK(result1);

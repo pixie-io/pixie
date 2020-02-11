@@ -37,6 +37,7 @@ enum class IRNodeType {
   number_of_types  // This is not a real type, but is used to verify strings are inline
                    // with enums.
 };
+
 static constexpr const char* kIRNodeStrings[] = {
 #undef PL_IR_NODE
 #define PL_IR_NODE(NAME) #NAME,
@@ -44,6 +45,7 @@ static constexpr const char* kIRNodeStrings[] = {
 #include "src/carnot/compiler/ir/ir_nodes.inl"
 #undef PL_IR_NODE
 };
+
 inline std::ostream& operator<<(std::ostream& out, IRNodeType node_type) {
   return out << kIRNodeStrings[static_cast<int64_t>(node_type)];
 }
@@ -1334,17 +1336,34 @@ class DropIR : public OperatorIR {
   std::vector<std::string> col_names_;
 };
 
+class GroupAcceptorIR : public OperatorIR {
+ public:
+  using OperatorIR::OperatorIR;
+  std::vector<ColumnIR*> groups() const { return groups_; }
+  bool group_by_all() const { return groups_.size() == 0; }
+
+  Status SetGroups(const std::vector<ColumnIR*>& new_groups) {
+    DCHECK(groups_.empty());
+    groups_.resize(new_groups.size());
+    for (size_t i = 0; i < new_groups.size(); ++i) {
+      PL_ASSIGN_OR_RETURN(groups_[i], graph_ptr()->OptionallyCloneWithEdge(this, new_groups[i]));
+    }
+    return Status::OK();
+  }
+
+ private:
+  std::vector<ColumnIR*> groups_;
+};
+
 /**
  * @brief The BlockingAggIR is the IR representation for the Agg operator.
  * GroupBy groups() and Aggregate columns according to aggregate_expressions().
  */
-class BlockingAggIR : public OperatorIR {
+class BlockingAggIR : public GroupAcceptorIR {
  public:
   BlockingAggIR() = delete;
-  explicit BlockingAggIR(int64_t id) : OperatorIR(id, IRNodeType::kBlockingAgg, true, false) {}
+  explicit BlockingAggIR(int64_t id) : GroupAcceptorIR(id, IRNodeType::kBlockingAgg, true, false) {}
 
-  std::vector<ColumnIR*> groups() const { return groups_; }
-  bool group_by_all() const { return groups_.size() == 0; }
   ColExpressionVector aggregate_expressions() const { return aggregate_expressions_; }
   Status ToProto(planpb::Operator*) const override;
   Status EvaluateAggregateExpression(planpb::AggregateExpression* expr,
@@ -1358,11 +1377,6 @@ class BlockingAggIR : public OperatorIR {
 
   inline bool IsBlocking() const override { return true; }
 
-  Status AddGroup(ColumnIR* new_group) {
-    groups_.push_back(new_group);
-    return graph_ptr()->AddEdge(this, new_group);
-  }
-
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
  protected:
@@ -1371,10 +1385,7 @@ class BlockingAggIR : public OperatorIR {
 
  private:
   Status SetAggExprs(const ColExpressionVector& agg_expr);
-  Status SetGroups(const std::vector<ColumnIR*>& groups);
 
-  // Contains group_names and groups columns.
-  std::vector<ColumnIR*> groups_;
   // The map from value_names to values
   ColExpressionVector aggregate_expressions_;
 };
@@ -1887,6 +1898,37 @@ template <>
 inline StatusOr<IRNode*> AsNodeType<IRNode>(IRNode* node, std::string_view /* node_name */) {
   return node;
 }
+
+class RollingIR : public GroupAcceptorIR {
+ public:
+  RollingIR() = delete;
+  explicit RollingIR(int64_t id)
+      : GroupAcceptorIR(id, IRNodeType::kRolling, /* has_parents */ true,
+                        /* is_source */ false) {}
+
+  Status Init(OperatorIR* parent, ColumnIR* window_col, ExpressionIR* window_size);
+
+  Status ToProto(planpb::Operator*) const override;
+  ColumnIR* window_col() const { return window_col_; }
+  ExpressionIR* window_size() const { return window_size_; }
+
+  Status CopyFromNodeImpl(const IRNode* source,
+                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+
+  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
+  Status ReplaceWindowSize(ExpressionIR* new_window_size);
+
+ protected:
+  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
+      const absl::flat_hash_set<std::string>& kept_columns) override;
+
+ private:
+  Status SetWindowCol(ColumnIR* window_col);
+  Status SetWindowSize(ExpressionIR* window_size);
+
+  ColumnIR* window_col_;
+  ExpressionIR* window_size_;
+};
 
 }  // namespace compiler
 }  // namespace carnot
