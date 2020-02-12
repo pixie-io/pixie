@@ -69,6 +69,14 @@ Status CreateSymlinkIfNotExists(std::filesystem::path target, std::filesystem::p
   return Status::OK();
 }
 
+Status Exists(std::filesystem::path path) {
+  std::error_code ec;
+  if (std::filesystem::exists(path, ec)) {
+    return Status::OK();
+  }
+  return error::System(ec.message());
+}
+
 }  // namespace fs
 }  // namespace pl
 

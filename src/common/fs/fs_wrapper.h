@@ -35,6 +35,12 @@ std::filesystem::path JoinPath(const std::vector<const std::filesystem::path*>& 
 // Designed for use in test code only.
 Status CreateSymlinkIfNotExists(std::filesystem::path target, std::filesystem::path link);
 
+/**
+ * Returns OK if the path exists. Returns error if does not exist, or failed to detect
+ * (for example, because of lack of permission).
+ */
+Status Exists(std::filesystem::path path);
+
 }  // namespace fs
 }  // namespace pl
 

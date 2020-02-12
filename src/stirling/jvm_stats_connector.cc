@@ -8,24 +8,31 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/byte_utils.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/jvm_stats_table.h"
+#include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/utils/hsperfdata.h"
 #include "src/stirling/utils/java.h"
 
 namespace pl {
 namespace stirling {
 
+using ::pl::fs::Exists;
+using ::pl::stirling::obj_tools::ResolveProcessPath;
 using ::pl::system::ListProcPidPaths;
 using ::pl::utils::LEndianBytesToInt;
 
 StatusOr<std::string> ReadHsperfData(pid_t pid) {
   PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_path, HsperfdataPath(pid));
+
+  std::filesystem::path proc_pid_path =
+      std::filesystem::path(system::Config::GetInstance().proc_path()) / std::to_string(pid);
+  PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_container_path,
+                      ResolveProcessPath(proc_pid_path, hsperf_data_path));
   // TODO(yzhao): Combine with ResolveProcessPath() to get path inside container.
-  if (!std::filesystem::exists(hsperf_data_path)) {
-    return error::Internal("Hsperdata file does not exist: '$0'", hsperf_data_path.string());
-  }
-  PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadFileToString(hsperf_data_path));
+  PL_RETURN_IF_ERROR(Exists(hsperf_data_container_path));
+  PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadFileToString(hsperf_data_container_path));
   return hsperf_data_str;
 }
 

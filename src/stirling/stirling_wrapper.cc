@@ -8,6 +8,7 @@
 
 #include "src/common/base/base.h"
 #include "src/shared/metadata/metadata.h"
+#include "src/stirling/jvm_stats_connector.h"
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/socket_trace_connector.h"
@@ -24,6 +25,7 @@ using pl::stirling::stirlingpb::Subscribe;
 
 using pl::types::ColumnWrapperRecordBatch;
 using pl::types::DataType;
+using pl::types::Duration64NSValue;
 using pl::types::Float64Value;
 using pl::types::Int64Value;
 using pl::types::SharedColumnWrapper;
@@ -32,6 +34,7 @@ using pl::types::TabletID;
 using pl::types::Time64NSValue;
 using pl::types::UInt128Value;
 
+using pl::stirling::JVMStatsConnector;
 using pl::stirling::PIDRuntimeConnector;
 using pl::stirling::SeqGenConnector;
 using pl::stirling::SocketTraceConnector;
@@ -39,6 +42,7 @@ using pl::stirling::SystemStatsConnector;
 
 using pl::stirling::DataElement;
 using pl::stirling::kHTTPTable;
+using pl::stirling::kJVMStatsTable;
 using pl::stirling::kMySQLTable;
 
 using pl::ArrayView;
@@ -85,6 +89,11 @@ void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& sch
           const auto& val = col->Get<UInt128Value>(i);
           std::cout << "[" << absl::Substitute("{$0,$1}", val.High64(), val.Low64()) << "]";
         } break;
+        case DataType::DURATION64NS: {
+          const auto secs = std::chrono::duration_cast<std::chrono::seconds>(
+              std::chrono::nanoseconds(col->Get<Duration64NSValue>(i).val));
+          std::cout << absl::Substitute("[$0 seconds]", secs.count());
+        } break;
         default:
           LOG(DFATAL) << absl::Substitute("Unrecognized type: $0", ToString(schema[j].type()));
       }
@@ -121,6 +130,8 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   } else if (name == SystemStatsConnector::kNetworkStatsTable.name().data()) {
     PrintRecordBatch("NetStats", SystemStatsConnector::kNetworkStatsTable.elements(), num_records,
                      *record_batch);
+  } else if (name == kJVMStatsTable.name()) {
+    PrintRecordBatch("JVMStats", kJVMStatsTable.elements(), num_records, *record_batch);
   }
   // Can add other connectors, if desired, here.
 }
