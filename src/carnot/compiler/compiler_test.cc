@@ -2239,17 +2239,12 @@ nodes {
         }
         output_columns {
           parent_index: 1
-          column_index: 1
-        }
-        output_columns {
-          parent_index: 1
           column_index: 2
         }
         column_names: "cpu0"
         column_names: "upid"
         column_names: "cpu1"
         column_names: "http_resp_status"
-        column_names: "upid_x"
         column_names: "http_resp_latency_ns"
       }
     }
@@ -2274,7 +2269,7 @@ nodes {
         expressions {
           column {
             node: 26
-            index: 5
+            index: 4
           }
         }
         expressions {
@@ -2327,7 +2322,7 @@ px.display(output, 'joined')
 )query";
 
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
-TEST_F(CompilerTest, DISABLED_inner_join) {
+TEST_F(CompilerTest, inner_join) {
   auto plan_status = compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "inner"),
                                        compiler_state_.get(), /*query_flags*/ {});
   ASSERT_OK(plan_status);
@@ -2336,7 +2331,7 @@ TEST_F(CompilerTest, DISABLED_inner_join) {
 }
 
 constexpr char kJoinRightQueryPlan[] = R"proto(
-  dag {
+dag {
   nodes {
     id: 1
   }
@@ -2428,16 +2423,12 @@ nodes {
         output_columns {
         }
         output_columns {
-          column_index: 1
-        }
-        output_columns {
           column_index: 2
         }
         column_names: "cpu0"
         column_names: "upid"
         column_names: "cpu1"
         column_names: "http_resp_status"
-        column_names: "upid_x"
         column_names: "http_resp_latency_ns"
       }
     }
@@ -2462,7 +2453,7 @@ nodes {
         expressions {
           column {
             node: 26
-            index: 5
+            index: 4
           }
         }
         expressions {
@@ -2507,7 +2498,7 @@ nodes {
 )proto";
 
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
-TEST_F(CompilerTest, DISABLED_right_join) {
+TEST_F(CompilerTest, right_join) {
   auto plan_status = compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "right"),
                                        compiler_state_.get(), /*query_flags*/ {});
   ASSERT_OK(plan_status);

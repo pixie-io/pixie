@@ -36,7 +36,7 @@ class LogicalPlannerTest : public ::testing::Test {
 };
 
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
-TEST_F(LogicalPlannerTest, DISABLED_two_agents_one_kelvin) {
+TEST_F(LogicalPlannerTest, two_agents_one_kelvin) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan = planner
                   ->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(),

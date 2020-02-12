@@ -452,22 +452,20 @@ TEST_F(LimitTest, limit_invalid_queries) {
 }
 
 using NegationTest = ASTVisitorTest;
-// TODO(philkuz) (PL-524) both of these changes require modifications to the actual parser.
+// TODO(philkuz) (PL-524) this change requires modifications to the actual parser.
 TEST_F(NegationTest, DISABLED_bang_negation) {
-  std::string bang_negation =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['bool_col']) "
-                     "filterDF = queryDF[!queryDF['bool_col']]",
-                     "px.display(filterDF, 'filtered')"},
-                    "\n");
+  std::string bang_negation = absl::StrJoin(
+      {"queryDF = px.DataFrame(table='cpu', select=['bool_col']) ",
+       "filterDF = queryDF[!queryDF['bool_col']]", "px.display(filterDF, 'filtered')"},
+      "\n");
   EXPECT_OK(CompileGraph(bang_negation));
 }
 
-TEST_F(NegationTest, DISABLED_pythonic_negation) {
-  std::string pythonic_negation =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['bool_col']) "
-                     "filterDF = queryDF[not queryDF['bool_col']]",
-                     "px.display(filterDF, 'filtered')"},
-                    "\n");
+TEST_F(NegationTest, pythonic_negation) {
+  std::string pythonic_negation = absl::StrJoin(
+      {"queryDF = px.DataFrame(table='cpu', select=['bool_col']) ",
+       "filterDF = queryDF[not queryDF['bool_col']]", "px.display(filterDF, 'filtered')"},
+      "\n");
   EXPECT_OK(CompileGraph(pythonic_negation));
 }
 class OpsAsAttributes : public ::testing::TestWithParam<std::string> {};

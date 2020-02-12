@@ -505,39 +505,34 @@ dag {
 )proto";
 
 constexpr char kExpectedPlanTwoAgentOneKelvin[] = R"proto(
-  qb_address_to_plan {
+qb_address_to_plan {
   key: "agent1"
   value {
+    dag {
+      nodes {
+        id: 1
+      }
+    }
     nodes {
       id: 1
       dag {
         nodes {
-          id: 12
-          sorted_children: 13
-        }
-        nodes {
           id: 11
-          sorted_children: 13
+          sorted_children: 12
         }
         nodes {
-          id: 13
-          sorted_children: 9
+          id: 10
+          sorted_children: 12
+        }
+        nodes {
+          id: 12
+          sorted_children: 8
+          sorted_parents: 10
           sorted_parents: 11
-          sorted_parents: 12
         }
         nodes {
-          id: 9
-          sorted_parents: 13
-        }
-      }
-      nodes {
-        id: 12
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table1"
-            tablet: "2"
-          }
+          id: 8
+          sorted_parents: 12
         }
       }
       nodes {
@@ -546,12 +541,40 @@ constexpr char kExpectedPlanTwoAgentOneKelvin[] = R"proto(
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
             name: "table1"
+            column_idxs: 0
+            column_idxs: 1
+            column_idxs: 2
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+            tablet: "2"
+          }
+        }
+      }
+      nodes {
+        id: 10
+        op {
+          op_type: MEMORY_SOURCE_OPERATOR
+          mem_source_op {
+            name: "table1"
+            column_idxs: 0
+            column_idxs: 1
+            column_idxs: 2
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
             tablet: "1"
           }
         }
       }
       nodes {
-        id: 13
+        id: 12
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -572,7 +595,111 @@ constexpr char kExpectedPlanTwoAgentOneKelvin[] = R"proto(
         }
       }
       nodes {
-        id: 9
+        id: 8
+        op {
+          op_type: GRPC_SINK_OPERATOR
+          grpc_sink_op {
+            address: "1111"
+            destination_id: 11
+          }
+        }
+      }
+    }
+    plan_options {
+    }
+  }
+}
+qb_address_to_plan {
+  key: "agent2"
+  value {
+    dag {
+      nodes {
+        id: 1
+      }
+    }
+    nodes {
+      id: 1
+      dag {
+        nodes {
+          id: 11
+          sorted_children: 12
+        }
+        nodes {
+          id: 10
+          sorted_children: 12
+        }
+        nodes {
+          id: 12
+          sorted_children: 8
+          sorted_parents: 10
+          sorted_parents: 11
+        }
+        nodes {
+          id: 8
+          sorted_parents: 12
+        }
+      }
+      nodes {
+        id: 11
+        op {
+          op_type: MEMORY_SOURCE_OPERATOR
+          mem_source_op {
+            name: "table1"
+            column_idxs: 0
+            column_idxs: 1
+            column_idxs: 2
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+            tablet: "4"
+          }
+        }
+      }
+      nodes {
+        id: 10
+        op {
+          op_type: MEMORY_SOURCE_OPERATOR
+          mem_source_op {
+            name: "table1"
+            column_idxs: 0
+            column_idxs: 1
+            column_idxs: 2
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+            tablet: "3"
+          }
+        }
+      }
+      nodes {
+        id: 12
+        op {
+          op_type: UNION_OPERATOR
+          union_op {
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+            column_mappings {
+              column_indexes: 0
+              column_indexes: 1
+              column_indexes: 2
+            }
+            column_mappings {
+              column_indexes: 0
+              column_indexes: 1
+              column_indexes: 2
+            }
+          }
+        }
+      }
+      nodes {
+        id: 8
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
@@ -582,84 +709,7 @@ constexpr char kExpectedPlanTwoAgentOneKelvin[] = R"proto(
         }
       }
     }
-  }
-}
-qb_address_to_plan {
-  key: "agent2"
-  value {
-    nodes {
-      id: 1
-      dag {
-        nodes {
-          id: 12
-          sorted_children: 13
-        }
-        nodes {
-          id: 11
-          sorted_children: 13
-        }
-        nodes {
-          id: 13
-          sorted_children: 9
-          sorted_parents: 11
-          sorted_parents: 12
-        }
-        nodes {
-          id: 9
-          sorted_parents: 13
-        }
-      }
-      nodes {
-        id: 12
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table1"
-            tablet: "4"
-          }
-        }
-      }
-      nodes {
-        id: 11
-        op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table1"
-            tablet: "3"
-          }
-        }
-      }
-      nodes {
-        id: 13
-        op {
-          op_type: UNION_OPERATOR
-          union_op {
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-            }
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-            }
-          }
-        }
-      }
-      nodes {
-        id: 9
-        op {
-          op_type: GRPC_SINK_OPERATOR
-          grpc_sink_op {
-            address: "1111"
-            destination_id: 9
-          }
-        }
-      }
+    plan_options {
     }
   }
 }
@@ -675,22 +725,36 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 10
-          sorted_children: 11
-        }
-        nodes {
-          id: 9
-          sorted_children: 11
-        }
-        nodes {
           id: 11
+          sorted_children: 12
+        }
+        nodes {
+          id: 10
+          sorted_children: 12
+        }
+        nodes {
+          id: 12
           sorted_children: 7
-          sorted_parents: 9
           sorted_parents: 10
+          sorted_parents: 11
         }
         nodes {
           id: 7
-          sorted_parents: 11
+          sorted_parents: 12
+        }
+      }
+      nodes {
+        id: 11
+        op {
+          op_type: GRPC_SOURCE_OPERATOR
+          grpc_source_op {
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+          }
         }
       }
       nodes {
@@ -708,21 +772,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 9
-        op {
-          op_type: GRPC_SOURCE_OPERATOR
-          grpc_source_op {
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-          }
-        }
-      }
-      nodes {
-        id: 11
+        id: 12
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -757,6 +807,8 @@ qb_address_to_plan {
           }
         }
       }
+    }
+    plan_options {
     }
   }
 }
