@@ -20,6 +20,10 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+// Forward declare;
+class QLObject;
+using QLObjectPtr = std::shared_ptr<QLObject>;
+
 class ASTVisitor {
  public:
   // Interface boilerplate.
@@ -39,25 +43,19 @@ class ASTVisitor {
    *
    * @param m the ptr to the ast node
    * @param op_context the operator context to operate with.
-   * @return StatusOr<IRNode*> the graph representation of the expression, or an error if the
-   * operator fails.
-   *
-   * TODO(nserrino, philkuz): Have this return a QLObjectPtr instead of an IRNode so that non
-   * IRNode objects (like int or None) can be processed here.
+   * @return StatusOr<QLObjectPtr> the QL object representation of the expression, or an error if
+   * the operator fails.
    */
-  virtual StatusOr<IRNode*> ProcessSingleExpressionModule(const pypa::AstModulePtr& m) = 0;
+  virtual StatusOr<QLObjectPtr> ProcessSingleExpressionModule(const pypa::AstModulePtr& m) = 0;
 
   /**
    * @brief Parses and processes out a single expression in the form of an IRNode.
    *
    * @param str the input string
-   * @return StatusOr<IRNode*> the IR of the expression or an error if something fails during
-   * processing.
-   *
-   * TODO(nserrino, philkuz): Same as above, have this return a QLObjectPtr instead of an IRNode
-   * so that non IRNode objects (like int or None) can be processed here.
+   * @return StatusOr<QLObjectPtr> the QL object representation of the expression or an error if
+   * something fails during processing.
    */
-  virtual StatusOr<IRNode*> ParseAndProcessSingleExpression(std::string_view str) = 0;
+  virtual StatusOr<QLObjectPtr> ParseAndProcessSingleExpression(std::string_view str) = 0;
 
   /**
    * @brief Parses the AST for the available flags (default, description, etc).

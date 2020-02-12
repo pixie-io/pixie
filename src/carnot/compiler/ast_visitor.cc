@@ -54,6 +54,8 @@ Status ASTVisitorImpl::InitGlobals(const FlagValues& flag_values) {
   var_table_->Add(ASTVisitorImpl::kStringTypeName, string_type_object);
   PL_ASSIGN_OR_RETURN(auto int_type_object, TypeObject::Create(IRNodeType::kInt));
   var_table_->Add(ASTVisitorImpl::kIntTypeName, int_type_object);
+  // Populate other reserved words
+  var_table_->Add(ASTVisitorImpl::kNoneName, std::make_shared<NoneObject>());
 
   return Status::OK();
 }
@@ -63,7 +65,24 @@ Status ASTVisitorImpl::ProcessExprStmtNode(const pypa::AstExpressionStatementPtr
   return Process(e->expr, op_context).status();
 }
 
-StatusOr<IRNode*> ASTVisitorImpl::ProcessSingleExpressionModule(const pypa::AstModulePtr& module) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::CallFunc(const pypa::AstPtr& ast, QLObjectPtr ql_object) {
+  // TODO(philkuz) refactor ArgMap/ParsedArgs to push the function calls to the handler instead
+  // of this hack that only works for pl modules.
+  QLObjectType attr_object_type = ql_object->type_descriptor().type();
+  if (attr_object_type != QLObjectType::kFunction) {
+    return CreateAstError(ast, "does not return a usable value");
+  }
+
+  PL_ASSIGN_OR_RETURN(ql_object,
+                      std::static_pointer_cast<FuncObject>(ql_object)->Call({}, ast, this));
+  if (!ql_object->HasNode()) {
+    return CreateAstError(ast, "does not return a usable value");
+  }
+  return ql_object;
+}
+
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSingleExpressionModule(
+    const pypa::AstModulePtr& module) {
   OperatorContext op_context({}, "");
   const std::vector<pypa::AstStmt>& items_list = module->body->items;
   if (items_list.size() != 1) {
@@ -73,8 +92,13 @@ StatusOr<IRNode*> ASTVisitorImpl::ProcessSingleExpressionModule(const pypa::AstM
   const pypa::AstStmt& stmt = items_list[0];
   switch (stmt->type) {
     case pypa::AstType::ExpressionStatement: {
-      return ProcessData(PYPA_PTR_CAST(ExpressionStatement, stmt)->expr, op_context);
-      break;
+      // TODO(nserrino): Replace with Process() when PL-1431 happens.
+      PL_ASSIGN_OR_RETURN(auto ql_object,
+                          Process(PYPA_PTR_CAST(ExpressionStatement, stmt)->expr, op_context));
+      if (ql_object->type() == QLObjectType::kFunction && !ql_object->HasNode()) {
+        return CallFunc(stmt, ql_object);
+      }
+      return ql_object;
     }
     default: {
       return CreateAstError(module, "Want expression, got $0", GetAstTypeName(stmt->type));
@@ -82,7 +106,7 @@ StatusOr<IRNode*> ASTVisitorImpl::ProcessSingleExpressionModule(const pypa::AstM
   }
 }
 
-StatusOr<IRNode*> ASTVisitorImpl::ParseAndProcessSingleExpression(
+StatusOr<QLObjectPtr> ASTVisitorImpl::ParseAndProcessSingleExpression(
     std::string_view single_expr_str) {
   Parser parser;
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(single_expr_str.data()));
@@ -689,19 +713,10 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpP
 StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
                                               const OperatorContext& op_context) {
   PL_ASSIGN_OR_RETURN(QLObjectPtr ql_object, Process(PYPA_PTR_CAST(Call, ast), op_context));
-  if (!ql_object->HasNode()) {
-    // TODO(philkuz) refactor ArgMap/ParsedArgs to push the function calls to the handler instead
-    // of this hack that only works for pl modules.
-    QLObjectType attr_object_type = ql_object->type_descriptor().type();
-    if (attr_object_type != QLObjectType::kFunction) {
-      return CreateAstError(ast, "does not return a usable value");
-    }
 
-    PL_ASSIGN_OR_RETURN(ql_object,
-                        std::static_pointer_cast<FuncObject>(ql_object)->Call({}, ast, this));
-    if (!ql_object->HasNode()) {
-      return CreateAstError(ast, "does not return a usable value");
-    }
+  // TODO(nserrino) : Remove this hack once PL-1431 is done.
+  if (!ql_object->HasNode()) {
+    PL_ASSIGN_OR_RETURN(ql_object, CallFunc(ast, ql_object));
   }
   DCHECK(ql_object->HasNode());
   return ql_object->node();

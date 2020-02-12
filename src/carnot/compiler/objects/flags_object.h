@@ -26,15 +26,26 @@ class FlagsObject : public QLObject {
   inline static constexpr char kParseMethodName[] = "parse";
 
   static StatusOr<std::shared_ptr<FlagsObject>> Create(IR* ir_graph, const FlagValues& values) {
-    auto obj = std::shared_ptr<FlagsObject>(new FlagsObject(ir_graph));
+    auto obj =
+        std::shared_ptr<FlagsObject>(new FlagsObject(ir_graph, /*default_zero_values*/ false));
     PL_RETURN_IF_ERROR(obj->Init(values));
+    return obj;
+  }
+
+  static StatusOr<std::shared_ptr<FlagsObject>> CreateParseOnly(IR* ir_graph) {
+    auto obj =
+        std::shared_ptr<FlagsObject>(new FlagsObject(ir_graph, /*default_zero_values*/ true));
+    PL_RETURN_IF_ERROR(obj->Init(/*flag_values*/ {}));
     return obj;
   }
 
   StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstPtr& ast) const;
 
  protected:
-  explicit FlagsObject(IR* ir_graph) : QLObject(FlagsTypeDescriptor), ir_graph_(ir_graph) {}
+  explicit FlagsObject(IR* ir_graph, bool default_zero_values)
+      : QLObject(FlagsTypeDescriptor),
+        ir_graph_(ir_graph),
+        default_zero_values_(default_zero_values) {}
 
   Status Init(const FlagValues& values);
   bool HasNonMethodAttribute(std::string_view name) const override;
@@ -50,6 +61,11 @@ class FlagsObject : public QLObject {
   IR* ir_graph_;
   // Whether or not .parse() has been called on this object.
   bool parsed_flags_ = false;
+  // Whether or not to emit the zero value for a given flag when there is no input value for that
+  // flag. Used when GetAvailableFlags is called, because there may be flags that are required in
+  // the script which we need to successfully parse that are not known or needed for
+  // GetAvailableFlags.
+  bool default_zero_values_ = false;
   // Flags that were passed into the QueryRequest via 'flag_values'.
   absl::flat_hash_map<std::string, DataIR*> input_flag_values_;
   // Flags that have been registered by a call to px.flags.register.

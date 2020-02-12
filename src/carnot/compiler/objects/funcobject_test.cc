@@ -187,7 +187,8 @@ TEST_F(PyFuncTest, TestDefaultArgsCanBeAccessed) {
   auto expr_or_s = ast_visitor->ParseAndProcessSingleExpression(default_str_repr);
   ASSERT_OK(expr_or_s);
   auto expr = expr_or_s.ConsumeValueOrDie();
-  EXPECT_TRUE(Match(expr, Int(1234)));
+  EXPECT_TRUE(expr->HasNode());
+  EXPECT_TRUE(Match(expr->node(), Int(1234)));
 }
 
 // This test makes sure we use variable args.

@@ -66,9 +66,10 @@ TEST_F(ASTExpressionTest, String) {
       ast_visitor->ProcessSingleExpressionModule(parse_result.ConsumeValueOrDie());
   ASSERT_OK(visitor_result);
 
-  IRNode* node = visitor_result.ConsumeValueOrDie();
-  ASSERT_TRUE(Match(node, String()));
-  EXPECT_EQ(static_cast<StringIR*>(node)->str(), "value");
+  auto obj = visitor_result.ConsumeValueOrDie();
+  ASSERT_TRUE(obj->HasNode());
+  ASSERT_TRUE(Match(obj->node(), String()));
+  EXPECT_EQ(static_cast<StringIR*>(obj->node())->str(), "value");
 }
 
 TEST_F(ASTExpressionTest, Integer) {
@@ -78,9 +79,10 @@ TEST_F(ASTExpressionTest, Integer) {
 
   ASSERT_OK(visitor_result);
 
-  IRNode* node = visitor_result.ConsumeValueOrDie();
-  ASSERT_TRUE(Match(node, Int()));
-  EXPECT_EQ(static_cast<IntIR*>(node)->val(), 1);
+  auto obj = visitor_result.ConsumeValueOrDie();
+  ASSERT_TRUE(obj->HasNode());
+  ASSERT_TRUE(Match(obj->node(), Int()));
+  EXPECT_EQ(static_cast<IntIR*>(obj->node())->val(), 1);
 }
 
 TEST_F(ASTExpressionTest, PLModule) {
@@ -90,9 +92,10 @@ TEST_F(ASTExpressionTest, PLModule) {
 
   ASSERT_OK(visitor_result);
 
-  IRNode* node = visitor_result.ConsumeValueOrDie();
-  ASSERT_TRUE(Match(node, Func()));
-  EXPECT_EQ(static_cast<FuncIR*>(node)->carnot_op_name(), "mean");
+  auto obj = visitor_result.ConsumeValueOrDie();
+  ASSERT_TRUE(obj->HasNode());
+  ASSERT_TRUE(Match(obj->node(), Func()));
+  EXPECT_EQ(static_cast<FuncIR*>(obj->node())->carnot_op_name(), "mean");
 }
 
 TEST_F(ASTExpressionTest, PLModuleWrongName) {

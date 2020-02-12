@@ -700,6 +700,25 @@ StatusOr<DataIR*> DataIR::FromProto(IR* ir, std::string_view name,
   }
 }
 
+StatusOr<DataIR*> DataIR::ZeroValueForType(IR* ir, IRNodeType type) {
+  switch (type) {
+    case IRNodeType::kBool:
+      return ir->CreateNode<BoolIR>(/*ast*/ nullptr, false);
+    case IRNodeType::kFloat:
+      return ir->CreateNode<FloatIR>(/*ast*/ nullptr, 0);
+    case IRNodeType::kInt:
+      return ir->CreateNode<IntIR>(/*ast*/ nullptr, 0);
+    case IRNodeType::kString:
+      return ir->CreateNode<StringIR>(/*ast*/ nullptr, "");
+    case IRNodeType::kTime:
+      return ir->CreateNode<TimeIR>(/*ast*/ nullptr, 0);
+    case IRNodeType::kUInt128:
+      return ir->CreateNode<UInt128IR>(/*ast*/ nullptr, 0);
+    default:
+      CHECK(false) << absl::Substitute("Invalid IRNodeType for DataIR: $0", TypeString(type));
+  }
+}
+
 Status IntIR::ToProtoImpl(planpb::ScalarValue* value) const {
   value->set_int64_value(val_);
   return Status::OK();

@@ -622,6 +622,8 @@ class DataIR : public ExpressionIR {
    */
   virtual Status ToProtoImpl(planpb::ScalarValue* value) const = 0;
 
+  static StatusOr<DataIR*> ZeroValueForType(IR* ir, IRNodeType type);
+
  protected:
   DataIR(int64_t id, IRNodeType type)
       : ExpressionIR(id, type), evaluated_data_type_(DataType(type)) {}

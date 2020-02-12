@@ -71,29 +71,30 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param m the poitner to the parsed ast module.
    * @param op_context the operator context to operate with.
-   * @return StatusOr<IRNode*> the graph representation of the expression, or an error if the
-   * operator fails.
+   * @return StatusOr<QLObjectPtr> the QL object representation of the expression, or an error if
+   * the operator fails.
    */
-  StatusOr<IRNode*> ProcessSingleExpressionModule(const pypa::AstModulePtr& m) override;
+  StatusOr<QLObjectPtr> ProcessSingleExpressionModule(const pypa::AstModulePtr& m) override;
 
   /**
    * @brief Parses and processes out a single expression in the form of an IRNode.
    *
    * @param str the input string
-   * @return StatusOr<IRNode*> the IR of the expression or an error if something fails during
-   * processing.
+   * @return StatusOr<QLObjectPtr> the QL object of the expression or an error if something fails
+   * during processing.
    */
-  StatusOr<IRNode*> ParseAndProcessSingleExpression(std::string_view str) override;
+  StatusOr<QLObjectPtr> ParseAndProcessSingleExpression(std::string_view str) override;
 
   StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstModulePtr&) override;
 
   IR* ir_graph() const { return ir_graph_; }
   std::shared_ptr<VarTable> var_table() const { return var_table_; }
 
-  // Reserved column names.
+  // Reserved keywords
   inline static constexpr char kTimeConstantColumnName[] = "time_";
   inline static constexpr char kStringTypeName[] = "str";
   inline static constexpr char kIntTypeName[] = "int";
+  inline static constexpr char kNoneName[] = "None";
 
  private:
   /**
@@ -429,6 +430,9 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<QLObjectPtr> the ql object ptr meant by the return statement.
    */
   StatusOr<QLObjectPtr> ProcessFuncDefReturn(const pypa::AstReturnPtr& ret);
+
+  // Calls a FuncObject. TODO(nserrino): Remove when PL-1431 is done.
+  StatusOr<QLObjectPtr> CallFunc(const pypa::AstPtr& ast, QLObjectPtr ql_object);
 
   IR* ir_graph_;
   CompilerState* compiler_state_;

@@ -1727,6 +1727,48 @@ TEST_F(OperatorTests, join_prune_outputs) {
   }
 }
 
+TEST(ZeroValueForType, TestBool) {
+  auto ir = std::make_shared<IR>();
+  auto val = DataIR::ZeroValueForType(ir.get(), IRNodeType::kBool).ConsumeValueOrDie();
+  EXPECT_EQ(IRNodeType::kBool, val->type());
+  EXPECT_EQ(false, static_cast<BoolIR*>(val)->val());
+}
+
+TEST(ZeroValueForType, TestFloat) {
+  auto ir = std::make_shared<IR>();
+  auto val = DataIR::ZeroValueForType(ir.get(), IRNodeType::kFloat).ConsumeValueOrDie();
+  EXPECT_EQ(IRNodeType::kFloat, val->type());
+  EXPECT_EQ(0, static_cast<FloatIR*>(val)->val());
+}
+
+TEST(ZeroValueForType, TestInt) {
+  auto ir = std::make_shared<IR>();
+  auto val = DataIR::ZeroValueForType(ir.get(), IRNodeType::kInt).ConsumeValueOrDie();
+  EXPECT_EQ(IRNodeType::kInt, val->type());
+  EXPECT_EQ(0, static_cast<IntIR*>(val)->val());
+}
+
+TEST(ZeroValueForType, TestString) {
+  auto ir = std::make_shared<IR>();
+  auto val = DataIR::ZeroValueForType(ir.get(), IRNodeType::kString).ConsumeValueOrDie();
+  EXPECT_EQ(IRNodeType::kString, val->type());
+  EXPECT_EQ("", static_cast<StringIR*>(val)->str());
+}
+
+TEST(ZeroValueForType, TestTime) {
+  auto ir = std::make_shared<IR>();
+  auto val = DataIR::ZeroValueForType(ir.get(), IRNodeType::kTime).ConsumeValueOrDie();
+  EXPECT_EQ(IRNodeType::kTime, val->type());
+  EXPECT_EQ(0, static_cast<TimeIR*>(val)->val());
+}
+
+TEST(ZeroValueForType, TestUint128) {
+  auto ir = std::make_shared<IR>();
+  auto val = DataIR::ZeroValueForType(ir.get(), IRNodeType::kUInt128).ConsumeValueOrDie();
+  EXPECT_EQ(IRNodeType::kUInt128, val->type());
+  EXPECT_EQ(0, static_cast<UInt128IR*>(val)->val());
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

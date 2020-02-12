@@ -51,14 +51,16 @@ class FlagsObjectTest : public QLObjectTest {
   }
 
   Status CallRegisterFlag(const std::string& name, IRNodeType type, const std::string& descr,
-                          ExpressionIR* defaultval) {
+                          ExpressionIR* defaultval = nullptr) {
     std::vector<QLObjectPtr> args;
     args.push_back(QLObject::FromIRNode(MakeString(name)).ConsumeValueOrDie());
     std::vector<NameToNode> kwargs;
     kwargs.push_back(
         {"type", std::static_pointer_cast<QLObject>(TypeObject::Create(type).ConsumeValueOrDie())});
     kwargs.push_back({"description", QLObject::FromIRNode(MakeString(descr)).ConsumeValueOrDie()});
-    kwargs.push_back({"default", QLObject::FromIRNode(defaultval).ConsumeValueOrDie()});
+    if (defaultval) {
+      kwargs.push_back({"default", QLObject::FromIRNode(defaultval).ConsumeValueOrDie()});
+    }
     ArgMap argmap{kwargs, args};
 
     PL_ASSIGN_OR_RETURN(auto register_method, flags_obj_->GetCallMethod());
@@ -69,6 +71,14 @@ class FlagsObjectTest : public QLObjectTest {
   }
 
   std::shared_ptr<FlagsObject> flags_obj_;
+};
+
+class FlagsObjectGetAvailableFlagsTest : public FlagsObjectTest {
+ protected:
+  void SetUp() override {
+    QLObjectTest::SetUp();
+    flags_obj_ = FlagsObject::CreateParseOnly(graph.get()).ConsumeValueOrDie();
+  }
 };
 
 TEST_F(FlagsObjectTest, TestBasicAttribute) {
@@ -95,57 +105,6 @@ TEST_F(FlagsObjectTest, TestBasicAttribute) {
   EXPECT_EQ(123, intval->val());
 }
 
-constexpr char kAvailableFlags[] = R"(
-flags {
-  data_type: INT64
-  semantic_type: ST_NONE
-  name: "bar"
-  description: "an int"
-  default_value: {
-    data_type: INT64
-    int64_value: 123
-  }
-}
-flags {
-  data_type: STRING
-  semantic_type: ST_NONE
-  name: "foo"
-  description: "a string"
-  default_value: {
-    data_type: STRING
-    string_value: "default"
-  }
-}
-)";
-
-TEST_F(FlagsObjectTest, TestGetAvailableFlags) {
-  ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
-  ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int", MakeInt(123)));
-  ASSERT_OK(CallParseFlags());
-
-  auto res_or_s = flags_obj_->GetAvailableFlags(ast);
-  EXPECT_OK(res_or_s);
-  auto flags = res_or_s.ConsumeValueOrDie();
-
-  EXPECT_THAT(flags, EqualsProto(kAvailableFlags));
-}
-
-TEST_F(FlagsObjectTest, TestGetAvailableFlagsNoFlagsNoParse) {
-  auto res_or_s = flags_obj_->GetAvailableFlags(ast);
-  EXPECT_OK(res_or_s);
-  auto flags = res_or_s.ConsumeValueOrDie();
-  EXPECT_EQ(0, flags.flags_size());
-}
-
-TEST_F(FlagsObjectTest, TestGetAvailableFlagsWithFlagsNoParseError) {
-  ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int", MakeInt(123)));
-  auto s = flags_obj_->GetAvailableFlags(ast);
-  ASSERT_NOT_OK(s);
-  EXPECT_THAT(
-      s.status(),
-      HasCompilerError("Flags registered with px.flags, but px.flags.parse.* has not been called"));
-}
-
 TEST_F(FlagsObjectTest, TestBasicSubscript) {
   ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
   ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int", MakeInt(123)));
@@ -170,6 +129,20 @@ TEST_F(FlagsObjectTest, TestBasicSubscript) {
   EXPECT_EQ(123, intval->val());
 }
 
+TEST_F(FlagsObjectTest, TestBasicNoDefault) {
+  ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string"));
+  ASSERT_OK(CallParseFlags());
+
+  // Get non-default value
+  auto res_or_s = GetFlagSubscript("foo");
+  ASSERT_OK(res_or_s);
+  auto expr = res_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(expr->HasNode());
+  EXPECT_EQ(IRNodeType::kString, expr->node()->type());
+  auto strval = static_cast<StringIR*>(expr->node());
+  EXPECT_EQ("non-default", strval->str());
+}
+
 TEST_F(FlagsObjectTest, TestErrorOnMissingFlag) {
   ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
   ASSERT_OK(CallParseFlags());
@@ -177,6 +150,17 @@ TEST_F(FlagsObjectTest, TestErrorOnMissingFlag) {
   auto s = GetFlagSubscript("bar");
   ASSERT_NOT_OK(s);
   EXPECT_THAT(s.status(), HasCompilerError("Flag bar not registered"));
+}
+
+TEST_F(FlagsObjectTest, TestErrorOnMissingFlagValue) {
+  ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
+  ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kString, "a string"));
+  ASSERT_OK(CallParseFlags());
+
+  auto s = GetFlagSubscript("bar");
+  ASSERT_NOT_OK(s);
+  EXPECT_THAT(s.status(),
+              HasCompilerError("Did not receive a value for required flag bar \\(type String\\)"));
 }
 
 TEST_F(FlagsObjectTest, TestErrorOnMismatchedType) {
@@ -231,6 +215,102 @@ TEST_F(FlagsObjectTest, TestErrorDefineAfterParse) {
 TEST_F(FlagsObjectTest, TestErrorUnregisteredFlag) {
   auto s = CallParseFlags();
   EXPECT_THAT(s.status(), HasCompilerError("Received flag foo which was not registered in script"));
+}
+
+constexpr char kAvailableFlags[] = R"(
+flags {
+  data_type: INT64
+  semantic_type: ST_NONE
+  name: "bar"
+  description: "an int"
+  default_value: {
+    data_type: INT64
+    int64_value: 123
+  }
+}
+flags {
+  data_type: STRING
+  semantic_type: ST_NONE
+  name: "foo"
+  description: "a string"
+  default_value: {
+    data_type: STRING
+    string_value: "default"
+  }
+}
+)";
+
+TEST_F(FlagsObjectTest, TestBasic) {
+  ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
+  ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int", MakeInt(123)));
+  ASSERT_OK(CallParseFlags());
+
+  auto res_or_s = flags_obj_->GetAvailableFlags(ast);
+  EXPECT_OK(res_or_s);
+  auto flags = res_or_s.ConsumeValueOrDie();
+
+  EXPECT_THAT(flags, EqualsProto(kAvailableFlags));
+}
+
+constexpr char kAvailableFlagsNoDefault[] = R"(
+flags {
+  data_type: INT64
+  semantic_type: ST_NONE
+  name: "bar"
+  description: "an int"
+}
+flags {
+  data_type: STRING
+  semantic_type: ST_NONE
+  name: "foo"
+  description: "a string"
+  default_value: {
+    data_type: STRING
+    string_value: "default"
+  }
+}
+)";
+
+TEST_F(FlagsObjectGetAvailableFlagsTest, TestNoDefaultValue) {
+  ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
+  ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int"));
+  ASSERT_OK(CallParseFlags());
+
+  auto res_or_s = flags_obj_->GetAvailableFlags(ast);
+  EXPECT_OK(res_or_s);
+  auto flags = res_or_s.ConsumeValueOrDie();
+
+  EXPECT_THAT(flags, EqualsProto(kAvailableFlagsNoDefault));
+}
+
+TEST_F(FlagsObjectGetAvailableFlagsTest, TestGetZeroValue) {
+  ASSERT_OK(CallRegisterFlag("foo", IRNodeType::kString, "a string", MakeString("default")));
+  ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int"));
+  ASSERT_OK(CallParseFlags());
+
+  // Parse-only mode should return the 0 value for a flag that has no default value.
+  auto res_or_s = GetFlagAttribute("bar");
+  EXPECT_OK(res_or_s);
+  auto expr = res_or_s.ConsumeValueOrDie();
+  ASSERT_TRUE(expr->HasNode());
+  EXPECT_EQ(IRNodeType::kInt, expr->node()->type());
+  EXPECT_EQ(0, static_cast<IntIR*>(expr->node())->val());
+}
+
+TEST_F(FlagsObjectGetAvailableFlagsTest, TestNoFlagsNoParse) {
+  auto res_or_s = flags_obj_->GetAvailableFlags(ast);
+  EXPECT_OK(res_or_s);
+  auto flags = res_or_s.ConsumeValueOrDie();
+  EXPECT_EQ(0, flags.flags_size());
+}
+
+TEST_F(FlagsObjectGetAvailableFlagsTest, TestNoParseError) {
+  ASSERT_OK(CallRegisterFlag("bar", IRNodeType::kInt, "an int", MakeInt(123)));
+  auto s = flags_obj_->GetAvailableFlags(ast);
+  ASSERT_NOT_OK(s);
+  EXPECT_THAT(
+      s.status(),
+      HasCompilerError("Flags registered with px.flags, but px.flags.parse.* has not been called"));
 }
 
 }  // namespace compiler

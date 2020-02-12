@@ -115,9 +115,7 @@ StatusOr<QLObjectPtr> FuncObject::GetDefault(std::string_view arg, ASTVisitor* a
   if (!defaults_.contains(arg)) {
     return error::InvalidArgument("");
   }
-  PL_ASSIGN_OR_RETURN(auto ir_node,
-                      ast_visitor->ParseAndProcessSingleExpression(defaults_.find(arg)->second));
-  return QLObject::FromIRNode(ir_node);
+  return ast_visitor->ParseAndProcessSingleExpression(defaults_.find(arg)->second);
 }
 
 std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> args) {

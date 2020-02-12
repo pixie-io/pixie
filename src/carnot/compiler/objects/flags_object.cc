@@ -33,12 +33,12 @@ Status FlagsObject::Init(const FlagValues& flag_values) {
       /* has_variable_len_kwargs */ false,
       std::bind(&FlagsObject::GetFlagHandler, this, std::placeholders::_1, std::placeholders::_2)));
 
-  std::shared_ptr<FuncObject> register_flag_fn(
-      new FuncObject(kCallMethodName, {"name", "type", "description", "default"}, {},
-                     /* has_variable_len_args */ false,
-                     /* has_variable_len_kwargs */ false,
-                     std::bind(&FlagsObject::DefineFlagHandler, this, std::placeholders::_1,
-                               std::placeholders::_2)));
+  std::shared_ptr<FuncObject> register_flag_fn(new FuncObject(
+      kCallMethodName, {"name", "type", "description", "default"}, {{"default", "None"}},
+      /* has_variable_len_args */ false,
+      /* has_variable_len_kwargs */ false,
+      std::bind(&FlagsObject::DefineFlagHandler, this, std::placeholders::_1,
+                std::placeholders::_2)));
 
   std::shared_ptr<FuncObject> parse_flags_fn(
       new FuncObject(kParseMethodName, {}, {}, false, false,
@@ -69,14 +69,8 @@ StatusOr<QLObjectPtr> FlagsObject::DefineFlagHandler(const pypa::AstPtr& ast,
     return CreateAstError(ast, "Expected type for px.flags argument 'type'");
   }
   auto type = std::static_pointer_cast<TypeObject>(type_arg);
-
-  // Parse flag default value
-  // TODO(nserrino): Give "default" a default value of None so that 'default' is an optional
-  // argument.
+  // Parse flag default
   auto default_obj = args.GetArg("default");
-  if (!default_obj->HasNode()) {
-    return CreateAstError(ast, "Expected constant literal for px.flags argument 'default'");
-  }
 
   // Check error cases
   if (parsed_flags_) {
@@ -87,19 +81,27 @@ StatusOr<QLObjectPtr> FlagsObject::DefineFlagHandler(const pypa::AstPtr& ast,
     return CreateAstError(ast, "Flag $0 already registered", flag_name);
   }
 
-  // Verify types
-  if (!Match(default_obj->node(), DataNode())) {
-    return default_obj->node()->CreateIRNodeError(
-        "Value for 'default' in px.flags must be a constant literal, received $0",
-        default_obj->node()->type_string());
+  DataIR* default_val = nullptr;
+  if (default_obj->type() == QLObjectType::kExpr) {
+    // Verify types
+    if (!Match(default_obj->node(), DataNode())) {
+      return default_obj->node()->CreateIRNodeError(
+          "Value for 'default' in px.flags must be a constant literal, received $0",
+          default_obj->node()->type_string());
+    }
+    if (!type->NodeMatches(default_obj->node()).ok()) {
+      return CreateAstError(
+          ast, "For default value of flag $0 expected type $1 but received type $2", flag_name,
+          IRNode::TypeString(type->ir_node_type()), default_obj->node()->type_string());
+    }
+    default_val = static_cast<DataIR*>(default_obj->node());
+  } else if (default_obj->type() == QLObjectType::kNone) {
+    // Ok, passthrough
+  } else {
+    return CreateAstError(ast, "Unexpected type $0 for default of flag $1", default_obj->name(),
+                          flag_name);
   }
-  auto default_val = static_cast<DataIR*>(default_obj->node());
 
-  if (!type->NodeMatches(default_val).ok()) {
-    return CreateAstError(ast, "For default value of flag $0 expected type $1 but received type $2",
-                          flag_name, IRNode::TypeString(type->ir_node_type()),
-                          default_val->type_string());
-  }
   if (input_flag_values_.contains(flag_name) &&
       !type->NodeMatches(input_flag_values_[flag_name]).ok()) {
     return CreateAstError(ast, "For input value of flag $0 expected type $1 but received type $2",
@@ -108,7 +110,9 @@ StatusOr<QLObjectPtr> FlagsObject::DefineFlagHandler(const pypa::AstPtr& ast,
   }
 
   // Assign values
-  default_flag_values_[flag_name] = default_val;
+  if (default_val) {
+    default_flag_values_[flag_name] = default_val;
+  }
   flag_types_[flag_name] = type;
   flag_descriptions_[flag_name] = description;
   return StatusOr(std::make_shared<NoneObject>());
@@ -128,9 +132,16 @@ StatusOr<QLObjectPtr> FlagsObject::GetAttributeImpl(const pypa::AstPtr& ast,
   if (input_flag_values_.contains(flag_name)) {
     return ExprObject::Create(input_flag_values_.at(flag_name));
   }
-  // Get the default if this query didn't receive a value for this flag.
-  DCHECK(default_flag_values_.contains(flag_name));
-  return ExprObject::Create(default_flag_values_.at(flag_name));
+  if (default_flag_values_.contains(flag_name)) {
+    return ExprObject::Create(default_flag_values_.at(flag_name));
+  }
+  if (default_zero_values_) {
+    PL_ASSIGN_OR_RETURN(auto zero_val, DataIR::ZeroValueForType(
+                                           ir_graph_, flag_types_.at(flag_name)->ir_node_type()));
+    return ExprObject::Create(zero_val);
+  }
+  return CreateAstError(ast, "Did not receive a value for required flag $0 (type $1)", flag_name,
+                        IRNode::TypeString(flag_types_.at(flag_name)->ir_node_type()));
 }
 
 StatusOr<QLObjectPtr> FlagsObject::GetFlagHandler(const pypa::AstPtr& ast, const ParsedArgs& args) {
