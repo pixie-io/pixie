@@ -81,6 +81,12 @@ constexpr std::string_view kStringMultiMap = ConstStringView(
 constexpr std::string_view kEmptyStringMultiMap = ConstStringView("\x00\x00");
 constexpr std::string_view kUUID =
     ConstStringView("\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f");
+constexpr std::string_view kIntOption = ConstStringView("\x00\x09");
+constexpr std::string_view kVarcharOption = ConstStringView("\x00\x0d");
+constexpr std::string_view kCustomOption = ConstStringView(
+    "\x00\x00"
+    "\x00\x05"
+    "pixie");
 
 //------------------------
 // ExtractInt
@@ -475,10 +481,34 @@ TEST(ExtractUUID, Oversized) {
 // TODO(oazizi): Add tests.
 
 //------------------------
-// ExtractConsistency
+// ExtractOption
 //------------------------
 
-// TODO(oazizi): Add tests.
+TEST(ExtractOption, Exact) {
+  {
+    TypeDecoder decoder(kIntOption);
+    ASSERT_OK_AND_ASSIGN(Option option, decoder.ExtractOption());
+    EXPECT_EQ(option.type, DataType::kInt);
+    EXPECT_THAT(option.value, IsEmpty());
+    ASSERT_TRUE(decoder.eof());
+  }
+
+  {
+    TypeDecoder decoder(kVarcharOption);
+    ASSERT_OK_AND_ASSIGN(Option option, decoder.ExtractOption());
+    EXPECT_EQ(option.type, DataType::kVarchar);
+    EXPECT_THAT(option.value, IsEmpty());
+    ASSERT_TRUE(decoder.eof());
+  }
+
+  {
+    TypeDecoder decoder(kCustomOption);
+    ASSERT_OK_AND_ASSIGN(Option option, decoder.ExtractOption());
+    EXPECT_EQ(option.type, DataType::kCustom);
+    EXPECT_EQ(option.value, "pixie");
+    ASSERT_TRUE(decoder.eof());
+  }
+}
 
 }  // namespace cass
 }  // namespace stirling

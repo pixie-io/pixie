@@ -211,6 +211,27 @@ StatusOr<StringMultiMap> TypeDecoder::ExtractStringMultiMap() {
   return string_multimap;
 }
 
+StatusOr<Option> TypeDecoder::ExtractOption() {
+  Option col_spec;
+  PL_ASSIGN_OR_RETURN(uint16_t id, ExtractShort());
+  col_spec.type = static_cast<DataType>(id);
+  if (col_spec.type == DataType::kCustom) {
+    PL_ASSIGN_OR_RETURN(col_spec.value, ExtractString());
+  }
+  return col_spec;
+}
+
+StatusOr<std::vector<Option>> TypeDecoder::ExtractOptionList() {
+  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
+
+  std::vector<Option> options;
+  for (uint32_t i = 0; i < n; ++i) {
+    PL_ASSIGN_OR_RETURN(Option option, ExtractOption());
+    options.push_back(std::move(option));
+  }
+  return options;
+}
+
 }  // namespace cass
 }  // namespace stirling
 }  // namespace pl

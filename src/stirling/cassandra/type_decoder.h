@@ -23,6 +23,39 @@ using StringList = std::vector<std::string>;
 using StringMap = std::map<std::string, std::string>;
 using StringMultiMap = std::map<std::string, StringList>;
 
+// See section 4.2.5.2 of
+// https://git-wip-us.apache.org/repos/asf?p=cassandra.git;a=blob_plain;f=doc/native_protocol_v3.spec
+enum class DataType : uint16_t {
+  kCustom = 0x0000,
+  kAscii = 0x0001,
+  kBigint = 0x0002,
+  kBlob = 0x0003,
+  kBoolean = 0x0004,
+  kCounter = 0x0005,
+  kDecimal = 0x0006,
+  kDouble = 0x0007,
+  kFloat = 0x0008,
+  kInt = 0x0009,
+  kTimestamp = 0x000B,
+  kUuid = 0x000C,
+  kVarchar = 0x000D,
+  kVarint = 0x000E,
+  kTimeuuid = 0x000F,
+  kInet = 0x0010,
+  kList = 0x0020,
+  kMap = 0x0021,
+  kSet = 0x0022,
+  kUDT = 0x0030,
+  kTuple = 0x0031,
+};
+
+struct Option {
+  DataType type;
+
+  // Value is only used if DataType is kCustom.
+  std::string value;
+};
+
 /**
  * TypeDecoder provides a structured interface to process the bytes of a CQL frame body.
  *
@@ -77,10 +110,10 @@ class TypeDecoder {
   //          the option id and <value> depends on that option (and can be
   //          of size 0). The supported id (and the corresponding <value>)
   //          will be described when this is used.
-  // TODO(oazizi): Add an extract function for this type.
+  StatusOr<Option> ExtractOption();
 
   // [option list]  A [short] n, followed by n [option].
-  // TODO(oazizi): Add an extract function for this type.
+  StatusOr<std::vector<Option>> ExtractOptionList();
 
   // [inet] An address (ip and port) to a node. It consists of one
   //        [byte] n, that represents the address size, followed by n
