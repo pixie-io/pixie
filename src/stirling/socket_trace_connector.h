@@ -46,6 +46,7 @@ DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_bool(stirling_use_packaged_headers);
 DECLARE_string(stirling_role_to_trace);
+DECLARE_string(stirling_cluster_cidr);
 
 BCC_SRC_STRVIEW(http_trace_bcc_script, socket_trace);
 
@@ -269,6 +270,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // Portal to query for connections, by pid and inode.
   std::unique_ptr<system::SocketInfoManager> socket_info_mgr_;
+
+  // CIDR of the cluster. Used to enable tracing into/out-of cluster.
+  std::optional<CIDRBlock> cluster_cidr_;
 
   std::unique_ptr<system::ProcParser> proc_parser_;
 

@@ -71,6 +71,7 @@ const char kRoleServerStr[] = "SERVER";
 const char kRoleAllStr[] = "ALL";
 DEFINE_string(stirling_role_to_trace, kRoleAllStr,
               "Must be one of [CLIENT|SERVER|ALL]. Specify which role(s) will be trace by BPF.");
+DEFINE_string(stirling_cluster_cidr, "", "Cluster CIDR override");
 
 // This flag is for survivability only, in case the host's located headers don't work.
 DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
@@ -701,8 +702,10 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
   //               is small (currently only 2).
   //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
 
-  // TODO(yzhao/oazizi): Do we need to do on every TransferStreams, or can it be cached?
-  const auto& cluster_cidr = ctx->AgentMetadataState()->k8s_metadata_state().cluster_cidr();
+  if (!cluster_cidr_.has_value()) {
+    // TODO(yzhao/oazizi): Do we need to do on every TransferStreams, or can it be cached?
+    cluster_cidr_ = ctx->AgentMetadataState()->k8s_metadata_state().cluster_cidr();
+  }
 
   // Outer loop iterates through tracker sets (keyed by PID+FD),
   // while inner loop iterates through generations of trackers for that PID+FD pair.
@@ -726,7 +729,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
         continue;
       }
 
-      tracker.IterationPreTick(cluster_cidr, proc_parser_.get(), socket_info_mgr_.get());
+      tracker.IterationPreTick(cluster_cidr_, proc_parser_.get(), socket_info_mgr_.get());
 
       if (transfer_spec.transfer_fn && transfer_spec.enabled) {
         transfer_spec.transfer_fn(*this, ctx, &tracker, data_table);
