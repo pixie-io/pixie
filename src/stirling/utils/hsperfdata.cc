@@ -53,15 +53,15 @@ Status ParseDataEntry(std::string_view buf_view, DataEntry* entry) {
 
 }  // namespace
 
-Status ParseHsperfData(std::string buf, HsperfData* data) {
-  if (*(reinterpret_cast<const uint32_t*>(buf.data())) !=
+Status ParseHsperfData(std::string_view buf_view, HsperfData* data) {
+  if (buf_view.size() < sizeof(kExpectedMagic)) {
+    return error::InvalidArgument("Not enough data");
+  }
+  if (*(reinterpret_cast<const uint32_t*>(buf_view.data())) !=
       *(reinterpret_cast<const uint32_t*>(kExpectedMagic))) {
     return error::InvalidArgument("Invalid magic");
   }
 
-  data->buf = std::move(buf);
-
-  std::string_view buf_view = data->buf;
   data->prologue = reinterpret_cast<const Prologue*>(buf_view.data());
 
   if (data->prologue->entry_offset > buf_view.size()) {

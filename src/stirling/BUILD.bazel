@@ -136,9 +136,13 @@ pl_cc_test(
 pl_cc_test(
     name = "jvm_stats_connector_test",
     srcs = ["jvm_stats_connector_test.cc"],
+    data = [
+        "//src/stirling/testing/java:hello_world",
+    ],
     deps = [
         ":cc_library",
         "//src/stirling/testing:cc_library",
+        "//src/common/exec:cc_library",
     ],
 )
 

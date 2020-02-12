@@ -72,9 +72,6 @@ enum class DataVariability : uint8_t {
 };
 
 struct HsperfData {
-  // Holds the actual data. The rest fields point to its segments.
-  std::string buf;
-
   const Prologue* prologue;
   std::vector<DataEntry> data_entries;
 };
@@ -82,7 +79,7 @@ struct HsperfData {
 /**
  * Parses the input buffer, and writes the data fields. Returns OK if succeeded.
  */
-Status ParseHsperfData(std::string buf, HsperfData* data);
+Status ParseHsperfData(std::string_view buf_view, HsperfData* data);
 
 }  // namespace hsperf
 }  // namespace stirling

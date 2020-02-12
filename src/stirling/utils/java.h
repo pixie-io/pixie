@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -23,6 +24,12 @@ class Stats {
   };
 
   explicit Stats(std::vector<Stat> stats);
+  explicit Stats(std::string hsperf_data);
+
+  /**
+   * Parses the held hsperf data into structured stats.
+   */
+  Status Parse();
 
   uint64_t YoungGCTimeNanos() const;
   uint64_t FullGCTimeNanos() const;
@@ -34,6 +41,7 @@ class Stats {
   uint64_t StatForSuffix(std::string_view suffix) const;
   uint64_t SumStatsForSuffixes(const std::vector<std::string_view>& suffixes) const;
 
+  std::string hsperf_data_;
   std::vector<Stat> stats_;
 };
 

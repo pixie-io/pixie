@@ -35,7 +35,7 @@ TEST(PerfDataHeaderTest, NotEnoughData) {
     HsperfData data = {};
     auto status = ParseHsperfData("", &data);
     EXPECT_NOT_OK(status);
-    EXPECT_EQ("Invalid magic", status.msg());
+    EXPECT_EQ("Not enough data", status.msg());
   }
   {
     HsperfData data = {};
