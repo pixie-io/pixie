@@ -698,14 +698,6 @@ void ConnectionTracker::UpdateState(const std::optional<CIDRBlock>& cluster_cidr
           open_info_.remote_addr.family != SockAddrFamily::kUnix) {
         CIDRBlock cidr = cluster_cidr.value();
         SockAddr remote_addr = open_info_.remote_addr;
-        if (cidr.ip_addr.family == SockAddrFamily::kIPv4 &&
-            remote_addr.family == SockAddrFamily::kIPv6) {
-          cidr = MapIPv4ToIPv6(cidr);
-        }
-        if (cidr.ip_addr.family == SockAddrFamily::kIPv6 &&
-            remote_addr.family == SockAddrFamily::kIPv4) {
-          remote_addr = MapIPv4ToIPv6(remote_addr);
-        }
 
         if (CIDRContainsIPAddr(cidr, remote_addr)) {
           Disable(

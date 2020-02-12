@@ -172,6 +172,42 @@ TEST(CIDRBlockTest, ContainsIPv6Address) {
   }
 }
 
+TEST(CIDRBlockTest, ContainsMixedAddress) {
+  {
+    CIDRBlock block6;
+    SockAddr addr4;
+
+    ASSERT_OK(ParseCIDRBlock("::ffff:10.64.0.0/16", &block6));
+    ASSERT_OK(ParseIPAddress("10.64.5.1", &addr4));
+    EXPECT_TRUE(CIDRContainsIPAddr(block6, addr4));
+
+    ASSERT_OK(ParseCIDRBlock("::ffff:10.64.0.0/112", &block6));
+    ASSERT_OK(ParseIPAddress("10.65.5.1", &addr4));
+    EXPECT_FALSE(CIDRContainsIPAddr(block6, addr4));
+
+    ASSERT_OK(ParseCIDRBlock("1111:1112:1113:1114:1115:1116:1117:1100/120", &block6));
+    ASSERT_OK(ParseIPAddress("10.64.5.1", &addr4));
+    EXPECT_FALSE(CIDRContainsIPAddr(block6, addr4));
+  }
+
+  {
+    CIDRBlock block4;
+    SockAddr addr6;
+
+    ASSERT_OK(ParseCIDRBlock("10.64.0.0/16", &block4));
+    EXPECT_OK(ParseIPAddress("::ffff:10.64.5.1", &addr6));
+    EXPECT_TRUE(CIDRContainsIPAddr(block4, addr6));
+
+    ASSERT_OK(ParseCIDRBlock("10.64.0.0/16", &block4));
+    EXPECT_OK(ParseIPAddress("::ffff:10.65.5.1", &addr6));
+    EXPECT_FALSE(CIDRContainsIPAddr(block4, addr6));
+
+    ASSERT_OK(ParseCIDRBlock("10.64.0.0/16", &block4));
+    ASSERT_OK(ParseIPAddress("1111:1112:1113:1114:1115:1116:1117:1100", &addr6));
+    EXPECT_FALSE(CIDRContainsIPAddr(block4, addr6));
+  }
+}
+
 TEST(CIDRBlockTest, ParsesIPv4String) {
   CIDRBlock block;
   EXPECT_OK(ParseCIDRBlock("1.2.3.4/32", &block));

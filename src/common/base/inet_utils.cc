@@ -124,21 +124,25 @@ bool IPv6CIDRContains(struct in6_addr cidr_ip, size_t prefix_length, struct in6_
 }  // namespace
 
 bool CIDRContainsIPAddr(const CIDRBlock& block, const SockAddr& ip_addr) {
-  DCHECK(block.ip_addr.family == ip_addr.family) << absl::Substitute(
-      "CIDRBlock SockAddrFamily: '$0' IP address: '$1'",
-      magic_enum::enum_name(block.ip_addr.family), magic_enum::enum_name(ip_addr.family));
-  switch (ip_addr.family) {
-    case SockAddrFamily::kIPv4:
-      return IPv4CIDRContains(std::get<struct in_addr>(block.ip_addr.addr), block.prefix_length,
-                              std::get<struct in_addr>(ip_addr.addr));
-    case SockAddrFamily::kIPv6:
-      return IPv6CIDRContains(std::get<struct in6_addr>(block.ip_addr.addr), block.prefix_length,
-                              std::get<struct in6_addr>(ip_addr.addr));
-    default:
-      LOG(DFATAL) << absl::Substitute("Unexpected SockAddr family: $0",
-                                      magic_enum::enum_name(ip_addr.family));
+  if (block.ip_addr.family == SockAddrFamily::kIPv4 && ip_addr.family == SockAddrFamily::kIPv4) {
+    return IPv4CIDRContains(std::get<struct in_addr>(block.ip_addr.addr), block.prefix_length,
+                            std::get<struct in_addr>(ip_addr.addr));
   }
-  return false;
+
+  if (block.ip_addr.family == SockAddrFamily::kIPv6 && ip_addr.family == SockAddrFamily::kIPv6) {
+    return IPv6CIDRContains(std::get<struct in6_addr>(block.ip_addr.addr), block.prefix_length,
+                            std::get<struct in6_addr>(ip_addr.addr));
+  }
+
+  // From this point on, we have mixed IP modes. Convert both to IPv6, then compare.
+  CIDRBlock block6 = (block.ip_addr.family == SockAddrFamily::kIPv4) ? MapIPv4ToIPv6(block) : block;
+  SockAddr ip_addr6 = (ip_addr.family == SockAddrFamily::kIPv4) ? MapIPv4ToIPv6(ip_addr) : ip_addr;
+
+  DCHECK(block6.ip_addr.family == SockAddrFamily::kIPv6);
+  DCHECK(ip_addr6.family == SockAddrFamily::kIPv6);
+
+  return IPv6CIDRContains(std::get<struct in6_addr>(block6.ip_addr.addr), block6.prefix_length,
+                          std::get<struct in6_addr>(ip_addr6.addr));
 }
 
 Status ParseCIDRBlock(std::string_view cidr_str, CIDRBlock* cidr) {
