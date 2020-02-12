@@ -46,9 +46,11 @@ const useStyles = makeStyles((theme: Theme) =>
     editor: {
       flex: 1,
       minWidth: 0,
-      display: 'none',
+      visibility: 'hidden',
+      position: 'absolute',
       '&.opened': {
-        display: 'block',
+        visibility: 'visible',
+        position: 'relative',
       },
     },
     canvas: {

@@ -1,6 +1,6 @@
 import {CodeEditor} from 'components/code-editor';
+import {SplitContainer, SplitPane} from 'components/split-pane/split-pane';
 import * as React from 'react';
-import Split from 'react-split';
 
 import {createStyles, makeStyles, Theme, ThemeProvider} from '@material-ui/core/styles';
 
@@ -11,14 +11,19 @@ const useStyles = makeStyles((theme: Theme) =>
     root: {
       height: '100%',
     },
+    editor: {
+      height: '100%',
+    },
   }));
 
 const VegaSpecEditor = () => {
+  const classes = useStyles();
   const { updateVegaSpec } = React.useContext(LiveContext);
   const code = React.useContext(VegaContext);
 
   return (
     <CodeEditor
+      className={classes.editor}
       code={code}
       onChange={updateVegaSpec}
     />
@@ -26,11 +31,13 @@ const VegaSpecEditor = () => {
 };
 
 const ScriptEditor = () => {
+  const classes = useStyles();
   const { updateScript } = React.useContext(LiveContext);
   const code = React.useContext(ScriptContext);
 
   return (
     <CodeEditor
+      className={classes.editor}
       code={code}
       onChange={updateScript}
     />
@@ -40,10 +47,14 @@ const ScriptEditor = () => {
 const LiveViewEditor = () => {
   const classes = useStyles();
   return (
-    <Split className={classes.root} direction='vertical'>
-      <ScriptEditor />
-      <VegaSpecEditor />
-    </Split>
+    <SplitContainer className={classes.root} initialSizes={[50, 50]}>
+      <SplitPane title='Script Editor' id='script'>
+        <ScriptEditor />
+      </SplitPane>
+      <SplitPane title='Vega Editor' id='vega'>
+        <VegaSpecEditor />
+      </SplitPane>
+    </SplitContainer>
   );
 };
 

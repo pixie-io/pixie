@@ -4,6 +4,7 @@ import 'codemirror/mode/python/python';
 import 'codemirror/theme/monokai.css';
 import './code-editor.scss';
 
+import clsx from 'clsx';
 import * as codemirror from 'codemirror';
 import * as React from 'react';
 import {Controlled as CodeMirror} from 'react-codemirror2';
@@ -13,6 +14,7 @@ interface CodeEditorProps {
   onChange?: (code: string) => void;
   onSubmit?: () => void;
   disabled?: boolean;
+  className?: string;
 }
 
 export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
@@ -66,7 +68,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
         value={this.props.code}
         onBeforeChange={this.onChange}
         options={this.state}
-        className='pl-code-editor'
+        className={clsx('pl-code-editor', this.props.className)}
         editorDidMount={this.onEditorMount}
       />
     );
