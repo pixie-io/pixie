@@ -16,7 +16,7 @@ static constexpr DataElement kMySQLElements[] = {
         {"resp_status", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
         "MySQL response status code"},
         {"resp_body", types::DataType::STRING, types::PatternType::GENERAL,
-        "MySQL resposne body"},
+        "MySQL response body"},
         {"latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
         "Request-response latency in nanoseconds"},
 };
