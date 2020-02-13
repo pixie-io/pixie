@@ -54,6 +54,49 @@ struct Option {
 
   // Value is only used if DataType is kCustom.
   std::string value;
+
+  // TODO(oazizi): Store the additional information if DataType is kList/kMap/kSet/kUDT/kTuple.
+};
+
+// TODO(oazizi): Consider using std::optional when values are optional in the structs below.
+
+// QueryParameters is a complex type used in QUERY and EXECUTE requests.
+// <query_parameters> is composed of:
+// <consistency><flags>[<n>[name_1]<value_1>...[name_n]<value_n>]
+// [<result_page_size>][<paging_state>][<serial_consistency>][<timestamp>]
+// See section 4.1.4 of the spec for more details.
+struct QueryParameters {
+  uint16_t consistency;
+  uint16_t flags;
+  // TODO(oazizi): Consider merging values and names into a struct of its own.
+  std::vector<std::basic_string<uint8_t>> values;
+  std::vector<std::string> names;
+  int32_t page_size = 0;
+  std::basic_string<uint8_t> paging_state;
+  uint16_t serial_consistency = 0;
+  int64_t timestamp = 0;
+};
+
+// <col_spec> is composed_of:
+// (<ksname><tablename>)?<name><type>
+// See section 4.2.5.2 of the spec for more details.
+struct ColSpec {
+  std::string ks_name;
+  std::string table_name;
+  std::string name;
+  Option type;
+};
+
+// <metadata> is composed of:
+// <flags><columns_count>[<paging_state>][<global_table_spec>?<col_spec_1>...<col_spec_n>]
+// See section 4.2.5.2 of the spec for more details.
+struct ResultMetadata {
+  int32_t flags;
+  int32_t columns_count;
+  std::basic_string<uint8_t> paging_state;
+  std::string gts_keyspace_name;
+  std::string gts_table_name;
+  std::vector<ColSpec> col_specs;
 };
 
 /**
@@ -112,9 +155,6 @@ class TypeDecoder {
   //          will be described when this is used.
   StatusOr<Option> ExtractOption();
 
-  // [option list]  A [short] n, followed by n [option].
-  StatusOr<std::vector<Option>> ExtractOptionList();
-
   // [inet] An address (ip and port) to a node. It consists of one
   //        [byte] n, that represents the address size, followed by n
   //        [byte] representing the IP address (in practice n can only be
@@ -133,6 +173,12 @@ class TypeDecoder {
   // [string multimap] A [short] n, followed by n pair <k><v> where <k> is a
   //                   [string] and <v> is a [string list].
   StatusOr<StringMultiMap> ExtractStringMultiMap();
+
+  // Extracts query parameters, which is a complex type. See struct for details.
+  StatusOr<QueryParameters> ExtractQueryParameters();
+
+  // Extracts result metadata, which is a complex type. See struct for details.
+  StatusOr<ResultMetadata> ExtractResultMetadata();
 
   /**
    * Whether processing has reached end-of-frame.

@@ -72,67 +72,10 @@ Status ProcessRegisterReq(Frame* req_frame, Request* req) {
   return Status::OK();
 }
 
-struct QueryParameters {
-  uint16_t consistency;
-  uint16_t flags;
-  std::vector<std::basic_string<uint8_t>> values;
-  std::vector<std::string> names;
-  int32_t page_size = 0;
-  std::basic_string<uint8_t> paging_state;
-  uint16_t serial_consistency = 0;
-  int64_t timestamp = 0;
-};
-
-StatusOr<QueryParameters> ProcessQueryParameters(TypeDecoder* decoder) {
-  QueryParameters qp;
-
-  PL_ASSIGN_OR_RETURN(qp.consistency, decoder->ExtractShort());
-  PL_ASSIGN_OR_RETURN(qp.flags, decoder->ExtractByte());
-
-  bool flag_values = qp.flags & 0x01;
-  bool flag_skip_metadata = qp.flags & 0x02;
-  bool flag_page_size = qp.flags & 0x04;
-  bool flag_with_paging_state = qp.flags & 0x08;
-  bool flag_with_serial_consistency = qp.flags & 0x10;
-  bool flag_with_default_timestamp = qp.flags & 0x20;
-  bool flag_with_names_for_values = qp.flags & 0x40;
-  PL_UNUSED(flag_skip_metadata);
-
-  if (flag_values) {
-    PL_ASSIGN_OR_RETURN(uint16_t num_values, decoder->ExtractShort());
-    for (int i = 0; i < num_values; ++i) {
-      if (flag_with_names_for_values) {
-        PL_ASSIGN_OR_RETURN(std::string name_i, decoder->ExtractString());
-        qp.names.push_back(std::move(name_i));
-      }
-      PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> value_i, decoder->ExtractBytes());
-      qp.values.push_back(std::move(value_i));
-    }
-  }
-
-  if (flag_page_size) {
-    PL_ASSIGN_OR_RETURN(qp.page_size, decoder->ExtractInt());
-  }
-
-  if (flag_with_paging_state) {
-    PL_ASSIGN_OR_RETURN(qp.paging_state, decoder->ExtractBytes());
-  }
-
-  if (flag_with_serial_consistency) {
-    PL_ASSIGN_OR_RETURN(qp.serial_consistency, decoder->ExtractShort());
-  }
-
-  if (flag_with_default_timestamp) {
-    PL_ASSIGN_OR_RETURN(qp.timestamp, decoder->ExtractLong());
-  }
-
-  return qp;
-}
-
 Status ProcessQueryReq(Frame* req_frame, Request* req) {
   TypeDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
-  PL_ASSIGN_OR_RETURN(QueryParameters qp, ProcessQueryParameters(&decoder));
+  PL_ASSIGN_OR_RETURN(QueryParameters qp, decoder.ExtractQueryParameters());
 
   // TODO(oazizi): This is just a placeholder.
   // Real implementation should figure out what type each value is, and cast into the appropriate
@@ -168,7 +111,7 @@ Status ProcessPrepareReq(Frame* req_frame, Request* req) {
 Status ProcessExecuteReq(Frame* req_frame, Request* req) {
   TypeDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> id, decoder.ExtractShortBytes());
-  PL_ASSIGN_OR_RETURN(QueryParameters qp, ProcessQueryParameters(&decoder));
+  PL_ASSIGN_OR_RETURN(QueryParameters qp, decoder.ExtractQueryParameters());
 
   // TODO(oazizi): This is just a placeholder.
   // Real implementation should figure out what type each value is, and cast into the appropriate

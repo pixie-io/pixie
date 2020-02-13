@@ -218,18 +218,101 @@ StatusOr<Option> TypeDecoder::ExtractOption() {
   if (col_spec.type == DataType::kCustom) {
     PL_ASSIGN_OR_RETURN(col_spec.value, ExtractString());
   }
+  if (col_spec.type == DataType::kList || col_spec.type == DataType::kSet) {
+    PL_ASSIGN_OR_RETURN(Option type, ExtractOption());
+    // TODO(oazizi): Throwing the result away. Record if desired.
+  }
+  if (col_spec.type == DataType::kMap) {
+    PL_ASSIGN_OR_RETURN(Option key_type, ExtractOption());
+    PL_ASSIGN_OR_RETURN(Option val_type, ExtractOption());
+    // TODO(oazizi): Throwing the result away. Record if desired.
+  }
+
+  // TODO(oazizi): Process kUDT and kTuple.
+  DCHECK(col_spec.type != DataType::kUDT);
+  DCHECK(col_spec.type != DataType::kTuple);
+
   return col_spec;
 }
 
-StatusOr<std::vector<Option>> TypeDecoder::ExtractOptionList() {
-  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
+StatusOr<QueryParameters> TypeDecoder::ExtractQueryParameters() {
+  QueryParameters qp;
 
-  std::vector<Option> options;
-  for (uint32_t i = 0; i < n; ++i) {
-    PL_ASSIGN_OR_RETURN(Option option, ExtractOption());
-    options.push_back(std::move(option));
+  PL_ASSIGN_OR_RETURN(qp.consistency, ExtractShort());
+  PL_ASSIGN_OR_RETURN(qp.flags, ExtractByte());
+
+  bool flag_values = qp.flags & 0x01;
+  bool flag_skip_metadata = qp.flags & 0x02;
+  bool flag_page_size = qp.flags & 0x04;
+  bool flag_with_paging_state = qp.flags & 0x08;
+  bool flag_with_serial_consistency = qp.flags & 0x10;
+  bool flag_with_default_timestamp = qp.flags & 0x20;
+  bool flag_with_names_for_values = qp.flags & 0x40;
+  PL_UNUSED(flag_skip_metadata);
+
+  if (flag_values) {
+    PL_ASSIGN_OR_RETURN(uint16_t num_values, ExtractShort());
+    for (int i = 0; i < num_values; ++i) {
+      if (flag_with_names_for_values) {
+        PL_ASSIGN_OR_RETURN(std::string name_i, ExtractString());
+        qp.names.push_back(std::move(name_i));
+      }
+      PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> value_i, ExtractBytes());
+      qp.values.push_back(std::move(value_i));
+    }
   }
-  return options;
+
+  if (flag_page_size) {
+    PL_ASSIGN_OR_RETURN(qp.page_size, ExtractInt());
+  }
+
+  if (flag_with_paging_state) {
+    PL_ASSIGN_OR_RETURN(qp.paging_state, ExtractBytes());
+  }
+
+  if (flag_with_serial_consistency) {
+    PL_ASSIGN_OR_RETURN(qp.serial_consistency, ExtractShort());
+  }
+
+  if (flag_with_default_timestamp) {
+    PL_ASSIGN_OR_RETURN(qp.timestamp, ExtractLong());
+  }
+
+  return qp;
+}
+
+StatusOr<ResultMetadata> TypeDecoder::ExtractResultMetadata() {
+  ResultMetadata r;
+  PL_ASSIGN_OR_RETURN(r.flags, ExtractInt());
+  PL_ASSIGN_OR_RETURN(r.columns_count, ExtractInt());
+
+  bool flag_global_tables_spec = r.flags & 0x0001;
+  bool flag_has_more_pages = r.flags & 0x0002;
+  bool flag_no_metadata = r.flags & 0x0004;
+
+  if (flag_has_more_pages) {
+    PL_ASSIGN_OR_RETURN(r.paging_state, ExtractBytes());
+  }
+
+  if (!flag_no_metadata) {
+    if (flag_global_tables_spec) {
+      PL_ASSIGN_OR_RETURN(r.gts_keyspace_name, ExtractString());
+      PL_ASSIGN_OR_RETURN(r.gts_table_name, ExtractString());
+    }
+
+    for (int i = 0; i < r.columns_count; ++i) {
+      ColSpec col_spec;
+      if (!flag_global_tables_spec) {
+        PL_ASSIGN_OR_RETURN(col_spec.ks_name, ExtractString());
+        PL_ASSIGN_OR_RETURN(col_spec.table_name, ExtractString());
+      }
+      PL_ASSIGN_OR_RETURN(col_spec.name, ExtractString());
+      PL_ASSIGN_OR_RETURN(col_spec.type, ExtractOption());
+      r.col_specs.push_back(std::move(col_spec));
+    }
+  }
+
+  return r;
 }
 
 }  // namespace cass
