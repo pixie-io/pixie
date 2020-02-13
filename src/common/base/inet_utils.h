@@ -25,7 +25,7 @@ enum class SockAddrFamily { kUninitialized, kIPv4, kIPv6, kUnix };
 struct SockAddr {
   SockAddrFamily family = SockAddrFamily::kUninitialized;
   std::variant<struct in_addr, struct in6_addr, std::string> addr;
-  int port;
+  int port = -1;
 
   std::string AddrStr() const;
 };

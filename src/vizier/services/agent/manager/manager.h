@@ -41,7 +41,7 @@ struct Info {
 /**
  * Manager is the shared code and common interface for the entity responsible for managing the
  * sub-components of a pixie agent. The base version has a table store, carnot and metadata system.
- * This version can be extented to add more sub-components.
+ * This version can be extended to add more sub-components.
  */
 class Manager : public pl::NotCopyable {
  public:
