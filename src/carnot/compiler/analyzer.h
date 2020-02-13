@@ -55,6 +55,11 @@ class Analyzer : public RuleExecutor<IR> {
     unique_sink_names->AddRule<UniqueSinkNameRule>();
   }
 
+  void CreateAddLimitToMemorySinkBatch() {
+    RuleBatch* limit_to_mem_sink = CreateRuleBatch<FailOnMax>("AddLimitToMemorySink", 2);
+    limit_to_mem_sink->AddRule<AddLimitToMemorySinkRule>(compiler_state_);
+  }
+
   void CreateOperatorCompileTimeExpressionRuleBatch() {
     RuleBatch* intermediate_resolution_batch =
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
@@ -103,6 +108,7 @@ class Analyzer : public RuleExecutor<IR> {
     CreateSourceAndMetadataResolutionBatch();
     CreateVerifyUserDefinedColumnsBatch();
     CreateUniqueSinkNamesBatch();
+    CreateAddLimitToMemorySinkBatch();
     CreateOperatorCompileTimeExpressionRuleBatch();
     CreateCombineConsecutiveMapsRule();
     CreateDataTypeResolutionBatch();

@@ -805,8 +805,9 @@ class ASTVisitorTest : public OperatorTests {
     http_events_relation.AddColumn(types::INT64, "http_resp_latency_ns");
     relation_map_->emplace("http_events", http_events_relation);
 
-    compiler_state_ =
-        std::make_unique<CompilerState>(std::move(relation_map_), registry_info_.get(), time_now);
+    auto max_output_rows_per_table = 10000;
+    compiler_state_ = std::make_unique<CompilerState>(
+        std::move(relation_map_), registry_info_.get(), time_now, max_output_rows_per_table);
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query,

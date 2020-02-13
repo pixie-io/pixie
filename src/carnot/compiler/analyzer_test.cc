@@ -653,8 +653,8 @@ TEST_F(AnalyzerTest, join_test) {
 
   ASSERT_EQ(join->Children().size(), 2);
   // Ignore the sink that is there just to preserve the join output relation.
-  ASSERT_TRUE(Match(join->Children()[1], Map()));
-  auto map = static_cast<MapIR*>(join->Children()[1]);
+  ASSERT_TRUE(Match(join->Children()[0], Map()));
+  auto map = static_cast<MapIR*>(join->Children()[0]);
 
   EXPECT_THAT(map->relation().col_names(),
               ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
@@ -866,6 +866,32 @@ TEST_F(AnalyzerTest, reassigned_map_colname) {
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto analyzer_status = HandleRelation(ir_graph);
   ASSERT_OK(analyzer_status);
+}
+
+constexpr char kAddLimit[] = R"query(
+src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0'])
+px.display(src1, '1')
+src1 = px.DataFrame(table='cpu', select=['upid'])
+px.display(src1, '2')
+)query";
+
+TEST_F(AnalyzerTest, add_limit) {
+  auto ir_graph_status = CompileGraph(kAddLimit);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+
+  std::vector<IRNode*> limit_nodes = ir_graph->FindNodesOfType(IRNodeType::kLimit);
+  EXPECT_EQ(limit_nodes.size(), 2);
+  std::vector<IRNode*> src_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  EXPECT_EQ(src_nodes.size(), 2);
+
+  auto limit0 = static_cast<LimitIR*>(limit_nodes[0]);
+  auto limit1 = static_cast<LimitIR*>(limit_nodes[1]);
+  EXPECT_THAT(limit0->parents(), ElementsAre(src_nodes[0]));
+  EXPECT_THAT(limit1->parents(), ElementsAre(src_nodes[1]));
+  EXPECT_EQ(10000, limit0->limit_value());
+  EXPECT_EQ(10000, limit1->limit_value());
 }
 
 }  // namespace compiler
