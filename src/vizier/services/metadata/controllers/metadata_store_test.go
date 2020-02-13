@@ -1035,6 +1035,92 @@ func TestKVMetadataStore_UpdateService(t *testing.T) {
 	assert.Equal(t, int64(10), pb.Metadata.DeletionTimestampNS)
 }
 
+func TestKVMetadataStore_GetServiceCIDR(t *testing.T) {
+	// Test setup.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Main test cases:
+
+	// Before any information, we return empty string.
+	assert.Equal(t, "", mds.GetServiceCIDR())
+
+	// First Service turns into the service CIDR.
+	s1 := &metadatapb.Service{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "s1",
+			Namespace: "test",
+			UID:       "s1-service",
+		},
+		Spec: &metadatapb.ServiceSpec{
+			ClusterIP: "10.64.3.1",
+		},
+	}
+	err = mds.UpdateService(s1, false)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+	assert.Equal(t, "10.64.3.1/32", mds.GetServiceCIDR())
+
+	// Next service should expand the mask.
+	s4 := &metadatapb.Service{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "s4",
+			Namespace: "test",
+			UID:       "s4-service",
+		},
+		Spec: &metadatapb.ServiceSpec{
+			ClusterIP: "10.64.3.7",
+		},
+	}
+	err = mds.UpdateService(s4, false)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+	assert.Equal(t, "10.64.3.0/29", mds.GetServiceCIDR())
+
+	// This one shouldn't expand the mask, because it's already within the same range.
+	s2 := &metadatapb.Service{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "s2",
+			Namespace: "test",
+			UID:       "s2-service",
+		},
+		Spec: &metadatapb.ServiceSpec{
+			ClusterIP: "10.64.3.2",
+		},
+	}
+	err = mds.UpdateService(s2, false)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+	assert.Equal(t, "10.64.3.0/29", mds.GetServiceCIDR())
+
+	// Another range expansion.
+	s3 := &metadatapb.Service{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "s3",
+			Namespace: "test",
+			UID:       "s3-service",
+		},
+		Spec: &metadatapb.ServiceSpec{
+			ClusterIP: "10.64.4.1",
+		},
+	}
+	err = mds.UpdateService(s3, false)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+	assert.Equal(t, "10.64.0.0/21", mds.GetServiceCIDR())
+}
+
 func TestKVMetadataStore_GetAgents(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

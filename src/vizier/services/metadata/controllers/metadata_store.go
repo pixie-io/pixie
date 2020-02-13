@@ -29,7 +29,8 @@ type KVMetadataStore struct {
 
 // ClusterInfo contains static information about the cluster, stored in memory.
 type ClusterInfo struct {
-	CIDR string // This is the cluster CIDR block.
+	CIDR        string     // This is the cluster (pod) CIDR block.
+	ServiceCIDR *net.IPNet // This is the service CIDR block; it is inferred from all observed service IPs.
 }
 
 // NewKVMetadataStore creates a new key-value metadata store.
@@ -52,6 +53,14 @@ func NewKVMetadataStoreWithExpiryTime(cache *kvstore.Cache, expiryDuration time.
 // GetClusterCIDR returns the CIDR for the current cluster.
 func (mds *KVMetadataStore) GetClusterCIDR() string {
 	return mds.clusterInfo.CIDR
+}
+
+// GetServiceCIDR returns the service CIDR for the current cluster.
+func (mds *KVMetadataStore) GetServiceCIDR() string {
+	if mds.clusterInfo.ServiceCIDR == nil {
+		return ""
+	}
+	return mds.clusterInfo.ServiceCIDR.String()
 }
 
 // SetClusterInfo sets static information about the current cluster.
@@ -689,8 +698,25 @@ func (mds *KVMetadataStore) GetServices() ([]*metadatapb.Service, error) {
 	return services, nil
 }
 
+// UpdateServiceCIDR updates the current best guess of the service CIDR.
+func (mds *KVMetadataStore) UpdateServiceCIDR(s *metadatapb.Service) {
+	ip := net.ParseIP(s.Spec.ClusterIP).To16()
+
+	if mds.clusterInfo.ServiceCIDR == nil {
+		mds.clusterInfo.ServiceCIDR = &net.IPNet{IP: ip, Mask: net.CIDRMask(128, 128)}
+	} else {
+		for !mds.clusterInfo.ServiceCIDR.Contains(ip) {
+			ones, bits := mds.clusterInfo.ServiceCIDR.Mask.Size()
+			mds.clusterInfo.ServiceCIDR.Mask = net.CIDRMask(ones-1, bits)
+			mds.clusterInfo.ServiceCIDR.IP = mds.clusterInfo.ServiceCIDR.IP.Mask(mds.clusterInfo.ServiceCIDR.Mask)
+		}
+	}
+}
+
 // UpdateService adds or updates the given service in the metadata store.
 func (mds *KVMetadataStore) UpdateService(s *metadatapb.Service, deleted bool) error {
+	mds.UpdateServiceCIDR(s)
+
 	if deleted && s.Metadata.DeletionTimestampNS == 0 {
 		s.Metadata.DeletionTimestampNS = time.Now().UnixNano()
 	}

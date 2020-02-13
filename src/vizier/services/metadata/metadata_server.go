@@ -154,7 +154,7 @@ func main() {
 	mdHandler.ProcessAgentUpdates()
 
 	k8sMd, err := controllers.NewK8sMetadataController(mdHandler)
-	mds.SetClusterInfo(controllers.ClusterInfo{CIDR: k8sMd.GetClusterCIDR()})
+	mds.SetClusterInfo(controllers.ClusterInfo{CIDR: k8sMd.GetClusterCIDR(), ServiceCIDR: nil})
 
 	// Set up server.
 	env, err := metadataenv.New()
