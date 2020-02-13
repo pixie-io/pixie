@@ -52,6 +52,7 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   auto other = std::make_unique<K8sMetadataState>();
 
   other->cluster_cidr_ = cluster_cidr_;
+  other->service_cidr_ = service_cidr_;
 
   other->k8s_objects_.reserve(k8s_objects_.size());
   for (const auto& [k, v] : k8s_objects_) {

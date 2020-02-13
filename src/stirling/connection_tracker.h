@@ -298,7 +298,7 @@ class ConnectionTracker {
    * @param proc_parser Pointer to a proc_parser for access to /proc filesystem.
    * @param connections A map of inodes to endpoint information.
    */
-  void IterationPreTick(const std::optional<CIDRBlock>& cluster_cidr,
+  void IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
                         system::ProcParser* proc_parser,
                         system::SocketInfoManager* socket_info_mgr);
 
@@ -410,7 +410,7 @@ class ConnectionTracker {
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void CheckTracker();
   void HandleInactivity();
-  void UpdateState(const std::optional<CIDRBlock>& cluster_cidr);
+  void UpdateState(const std::vector<CIDRBlock>& cluster_cidrs);
 
   // Used to identify the remove endpoint in case the accept/connect was not traced.
   std::unique_ptr<SocketResolver> conn_resolver_ = nullptr;

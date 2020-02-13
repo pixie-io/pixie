@@ -71,7 +71,7 @@ const char kRoleServerStr[] = "SERVER";
 const char kRoleAllStr[] = "ALL";
 DEFINE_string(stirling_role_to_trace, kRoleAllStr,
               "Must be one of [CLIENT|SERVER|ALL]. Specify which role(s) will be trace by BPF.");
-DEFINE_string(stirling_cluster_cidr, "", "Cluster CIDR override");
+DEFINE_string(stirling_cluster_cidr, "", "Manual Cluster CIDR");
 
 // This flag is for survivability only, in case the host's located headers don't work.
 DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
@@ -693,6 +693,37 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 // TransferData Helpers
 //-----------------------------------------------------------------------------
 
+namespace {
+std::vector<CIDRBlock> ClusterCIDRs(ConnectorContext* ctx) {
+  // TODO(yzhao/oazizi): Cache CIDRs (Except for service CIDR, which must be updated continually).
+  std::optional<CIDRBlock> pod_cidr =
+      ctx->AgentMetadataState()->k8s_metadata_state().cluster_cidr();
+  std::optional<CIDRBlock> service_cidr =
+      ctx->AgentMetadataState()->k8s_metadata_state().service_cidr();
+
+  std::vector<CIDRBlock> cluster_cidrs;
+  if (pod_cidr.has_value()) {
+    cluster_cidrs.push_back(std::move(pod_cidr.value()));
+  }
+  if (service_cidr.has_value()) {
+    cluster_cidrs.push_back(std::move(service_cidr.value()));
+  }
+  if (!FLAGS_stirling_cluster_cidr.empty()) {
+    CIDRBlock cidr;
+    Status s = ParseCIDRBlock(FLAGS_stirling_cluster_cidr, &cidr);
+    if (s.ok()) {
+      cluster_cidrs.push_back(std::move(cidr));
+    } else {
+      LOG_FIRST_N(ERROR, 1) << absl::Substitute(
+          "Could not parse flag --stirling_cluster_cidr as a CIDR. Value=$0",
+          FLAGS_stirling_cluster_cidr);
+    }
+  }
+
+  return cluster_cidrs;
+}
+}  // namespace
+
 void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table_num,
                                            DataTable* data_table) {
   // TODO(oazizi): TransferStreams() is slightly inefficient because it loops through all
@@ -702,10 +733,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
   //               is small (currently only 2).
   //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
 
-  if (!cluster_cidr_.has_value()) {
-    // TODO(yzhao/oazizi): Do we need to do on every TransferStreams, or can it be cached?
-    cluster_cidr_ = ctx->AgentMetadataState()->k8s_metadata_state().cluster_cidr();
-  }
+  std::vector<CIDRBlock> cluster_cidrs = ClusterCIDRs(ctx);
 
   // Outer loop iterates through tracker sets (keyed by PID+FD),
   // while inner loop iterates through generations of trackers for that PID+FD pair.
@@ -729,7 +757,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
         continue;
       }
 
-      tracker.IterationPreTick(cluster_cidr_, proc_parser_.get(), socket_info_mgr_.get());
+      tracker.IterationPreTick(cluster_cidrs, proc_parser_.get(), socket_info_mgr_.get());
 
       if (transfer_spec.transfer_fn && transfer_spec.enabled) {
         transfer_spec.transfer_fn(*this, ctx, &tracker, data_table);

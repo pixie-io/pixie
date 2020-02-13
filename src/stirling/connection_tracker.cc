@@ -685,7 +685,7 @@ bool ConnectionTracker::ReadyForDestruction() const {
   return death_countdown_ == 0;
 }
 
-void ConnectionTracker::UpdateState(const std::optional<CIDRBlock>& cluster_cidr) {
+void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
   switch (role()) {
     case EndpointRole::kRoleServer:
       if (state() == State::kCollecting) {
@@ -693,7 +693,7 @@ void ConnectionTracker::UpdateState(const std::optional<CIDRBlock>& cluster_cidr
       }
       break;
     case EndpointRole::kRoleClient: {
-      if (!cluster_cidr.has_value()) {
+      if (cluster_cidrs.empty()) {
         Disable("No client-side tracing: Internal CIDR not specified.");
         break;
       }
@@ -715,8 +715,15 @@ void ConnectionTracker::UpdateState(const std::optional<CIDRBlock>& cluster_cidr
         break;
       }
 
-      if (CIDRContainsIPAddr(cluster_cidr.value(), open_info_.remote_addr)) {
-        Disable("No client-side tracing: Remote endpoint is inside the cluster.");
+      bool disabled = false;
+      for (const auto& cluster_cidr : cluster_cidrs) {
+        if (CIDRContainsIPAddr(cluster_cidr, open_info_.remote_addr)) {
+          Disable("No client-side tracing: Remote endpoint is inside the cluster.");
+          disabled = true;
+          break;
+        }
+      }
+      if (disabled) {
         break;
       }
 
@@ -732,7 +739,7 @@ void ConnectionTracker::UpdateState(const std::optional<CIDRBlock>& cluster_cidr
   }
 }
 
-void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster_cidr,
+void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
                                          system::ProcParser* proc_parser,
                                          system::SocketInfoManager* socket_info_mgr) {
   // Might not always be true, but for now there's nothing IterationPreTick does that
@@ -753,7 +760,7 @@ void ConnectionTracker::IterationPreTick(const std::optional<CIDRBlock>& cluster
     Disable("Unix domain socket");
   }
 
-  UpdateState(cluster_cidr);
+  UpdateState(cluster_cidrs);
 }
 
 void ConnectionTracker::IterationPostTick() {

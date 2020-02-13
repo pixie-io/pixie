@@ -271,9 +271,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Portal to query for connections, by pid and inode.
   std::unique_ptr<system::SocketInfoManager> socket_info_mgr_;
 
-  // CIDR of the cluster. Used to enable tracing into/out-of cluster.
-  std::optional<CIDRBlock> cluster_cidr_;
-
   std::unique_ptr<system::ProcParser> proc_parser_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);

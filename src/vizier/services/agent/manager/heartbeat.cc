@@ -117,6 +117,14 @@ Status HeartbeatMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMe
       // TODO(zasgar/michelle): Move this to threadpool?
       PL_RETURN_IF_ERROR(mds_manager_->AddK8sUpdate(std::make_unique<ResourceUpdate>(update)));
     }
+
+    CIDRBlock service_cidr;
+    Status status = ParseCIDRBlock(ack.update_info().service_cidr(), &service_cidr);
+    if (status.ok()) {
+      mds_manager_->SetServiceCIDR(service_cidr);
+    } else {
+      LOG(ERROR) << "Could not parse CIDR block string, status: " << status.msg();
+    }
   }
 
   return Status::OK();

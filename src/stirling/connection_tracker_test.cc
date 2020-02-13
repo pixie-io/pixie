@@ -576,8 +576,9 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
+  std::vector cidrs = {cidr};
 
-  tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
@@ -592,9 +593,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForClientSideTracingWithNoCIDR) {
 
   tracker.AddControlEvent(conn);
 
-  std::optional<CIDRBlock> no_cidr;
-
-  tracker.IterationPreTick(no_cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick({}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
@@ -612,8 +611,9 @@ TEST_F(ConnectionTrackerTest, DISABLED_TrackerDisabledForUnixDomainSocket) {
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
+  std::vector cidrs = {cidr};
 
-  tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
@@ -631,8 +631,9 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
 
     CIDRBlock cidr;
     ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
+    std::vector cidrs = {cidr};
 
-    tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+    tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
   }
   {
@@ -647,8 +648,9 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
 
     CIDRBlock cidr;
     ASSERT_OK(ParseCIDRBlock("::ffff:1.2.3.4/120", &cidr));
+    std::vector cidrs = {cidr};
 
-    tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+    tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
   }
 }

@@ -87,6 +87,10 @@ class AgentMetadataStateManager {
    */
   std::unique_ptr<PIDStatusEvent> GetNextPIDStatusEvent();
 
+  void SetServiceCIDR(const CIDRBlock& cidr) {
+    agent_metadata_state_->k8s_metadata_state()->set_service_cidr(cidr);
+  }
+
   static Status ApplyK8sUpdates(
       int64_t ts, AgentMetadataState* state,
       moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates);

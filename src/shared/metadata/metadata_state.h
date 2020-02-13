@@ -85,8 +85,11 @@ class K8sMetadataState : NotCopyable {
   //
   // Alternative could be:
   // * AgentMetadataState::cluster_cidr_.
-  void set_cluster_cidr(CIDRBlock cidr) { cluster_cidr_ = cidr; }
+  void set_cluster_cidr(const CIDRBlock& cidr) { cluster_cidr_ = cidr; }
   const auto& cluster_cidr() const { return cluster_cidr_; }
+
+  void set_service_cidr(const CIDRBlock& cidr) { service_cidr_ = cidr; }
+  const auto& service_cidr() const { return service_cidr_; }
 
   const PodsByNameMap& pods_by_name() const { return pods_by_name_; }
 
@@ -145,6 +148,9 @@ class K8sMetadataState : NotCopyable {
   // If unset, only client-side events, which are detected by traffic direction and the content
   // being request or response, are captured.
   std::optional<CIDRBlock> cluster_cidr_;
+
+  // The CIDR block used for services inside the cluster.
+  std::optional<CIDRBlock> service_cidr_;
 
   // This stores K8s native objects (services, pods, etc).
   absl::flat_hash_map<UID, K8sMetadataObjectUPtr> k8s_objects_;
