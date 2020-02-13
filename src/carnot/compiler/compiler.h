@@ -35,7 +35,7 @@ class Compiler {
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state,
                                           const FlagValues& flag_values);
 
-  Status UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state);
+  Status Analyze(IR* ir, CompilerState* compiler_state);
   Status VerifyGraphHasMemorySink(IR* ir);
 };
 

@@ -32,13 +32,13 @@ StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
                                                     CompilerState* compiler_state,
                                                     const FlagValues& flag_values) {
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state, flag_values));
-  PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
+  PL_RETURN_IF_ERROR(Analyze(ir.get(), compiler_state));
 
   PL_RETURN_IF_ERROR(VerifyGraphHasMemorySink(ir.get()));
   return ir;
 }
 
-Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state) {
+Status Compiler::Analyze(IR* ir, CompilerState* compiler_state) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer, Analyzer::Create(compiler_state));
   return analyzer->Execute(ir);
 }

@@ -23,11 +23,17 @@ class CompilerState : public NotCopyable {
    * CompilerState manages the state needed to compile a single query. A new one will
    * be constructed for every query compiled in Carnot and it will not be reused.
    */
-  explicit CompilerState(std::unique_ptr<RelationMap> relation_map,
-                         compiler::RegistryInfo* registry_info, types::Time64NSValue time_now)
+  CompilerState(std::unique_ptr<RelationMap> relation_map, compiler::RegistryInfo* registry_info,
+                types::Time64NSValue time_now)
+      : CompilerState(std::move(relation_map), registry_info, time_now,
+                      /* max_output_rows_per_table */ 0) {}
+
+  CompilerState(std::unique_ptr<RelationMap> relation_map, compiler::RegistryInfo* registry_info,
+                types::Time64NSValue time_now, int64_t max_output_rows_per_table)
       : relation_map_(std::move(relation_map)),
         registry_info_(registry_info),
-        time_now_(time_now) {}
+        time_now_(time_now),
+        max_output_rows_per_table_(max_output_rows_per_table) {}
 
   CompilerState() = delete;
 
@@ -58,6 +64,9 @@ class CompilerState : public NotCopyable {
     return new_id;
   }
 
+  int64_t max_output_rows_per_table() { return max_output_rows_per_table_; }
+  bool has_max_output_rows_per_table() { return max_output_rows_per_table_ > 0; }
+
  private:
   std::unique_ptr<RelationMap> relation_map_;
   compiler::RegistryInfo* registry_info_;
@@ -65,6 +74,8 @@ class CompilerState : public NotCopyable {
   // TODO(michelle): Update this map to handle init args, once we add init args to the compiler.
   std::map<RegistryKey, int64_t> udf_to_id_map_;
   std::map<RegistryKey, int64_t> uda_to_id_map_;
+
+  int64_t max_output_rows_per_table_ = 0;
 };
 
 }  // namespace compiler

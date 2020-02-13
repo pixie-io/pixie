@@ -24,14 +24,15 @@ StatusOr<std::unique_ptr<RelationMap>> LogicalPlanner::MakeRelationMap(const Sch
 }
 
 StatusOr<std::unique_ptr<CompilerState>> LogicalPlanner::CreateCompilerState(
-    const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* registry_info) {
+    const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* registry_info,
+    int64_t max_output_rows_per_table) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<compiler::RelationMap> rel_map,
                       MakeRelationMap(logical_state.schema()));
 
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
   return std::make_unique<compiler::CompilerState>(std::move(rel_map), registry_info,
-                                                   pl::CurrentTimeNS());
+                                                   pl::CurrentTimeNS(), max_output_rows_per_table);
 }
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {
@@ -51,11 +52,12 @@ Status LogicalPlanner::Init(const udfspb::UDFInfo& udf_info) {
 
 StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
     const distributedpb::LogicalPlannerState& logical_state,
-    const plannerpb::QueryRequest& query_request) {
+    const plannerpb::QueryRequest& query_request, int64_t max_output_rows_per_table) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
   // Compile into the IR.
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState(logical_state, registry_info.get()));
+  PL_ASSIGN_OR_RETURN(
+      std::unique_ptr<CompilerState> compiler_state,
+      CreateCompilerState(logical_state, registry_info.get(), max_output_rows_per_table));
 
   std::vector<plannerpb::QueryRequest::FlagValue> flag_values;
   for (const auto& flag_value : query_request.flag_values()) {
