@@ -1551,6 +1551,35 @@ StatusOr<bool> DropMetadataColumnsFromSinksRule::Apply(IRNode* ir_node) {
   return true;
 }
 
+StatusOr<bool> AddLimitToMemorySinkRule::Apply(IRNode* ir_node) {
+  if (!compiler_state_->has_max_output_rows_per_table()) {
+    return false;
+  }
+  if (!Match(ir_node, MemorySink())) {
+    return false;
+  }
+  auto mem_sink = static_cast<MemorySinkIR*>(ir_node);
+  DCHECK_EQ(mem_sink->parents().size(), 1UL) << "There should be exactly one parent.";
+  auto parent = mem_sink->parents()[0];
+
+  // Update the current limit if it's too small
+  if (Match(parent, Limit())) {
+    auto limit = static_cast<LimitIR*>(parent);
+    DCHECK(limit->limit_value_set());
+    if (limit->limit_value() > compiler_state_->max_output_rows_per_table()) {
+      limit->SetLimitValue(compiler_state_->max_output_rows_per_table());
+      return true;
+    }
+    return false;
+  }
+
+  PL_ASSIGN_OR_RETURN(
+      auto limit, mem_sink->graph_ptr()->CreateNode<LimitIR>(
+                      mem_sink->ast_node(), parent, compiler_state_->max_output_rows_per_table()));
+  PL_RETURN_IF_ERROR(mem_sink->ReplaceParent(parent, limit));
+  return true;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

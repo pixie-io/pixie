@@ -2918,6 +2918,75 @@ TEST_F(RulesTest, DistributedIRRuleTest) {
   EXPECT_FALSE(result.ConsumeValueOrDie());
 }
 
+TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_basic) {
+  MemorySourceIR* src = MakeMemSource(MakeRelation());
+  MemorySinkIR* sink = MakeMemSink(src, "foo", {});
+
+  auto compiler_state =
+      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000);
+
+  AddLimitToMemorySinkRule rule(compiler_state.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(3, graph->FindNodesThatMatch(Operator()).size());
+  auto limit_nodes = graph->FindNodesOfType(IRNodeType::kLimit);
+  EXPECT_EQ(1, limit_nodes.size());
+
+  auto limit = static_cast<LimitIR*>(limit_nodes[0]);
+  EXPECT_TRUE(limit->limit_value_set());
+  EXPECT_EQ(1000, limit->limit_value());
+  EXPECT_THAT(sink->parents(), ElementsAre(limit));
+  EXPECT_THAT(limit->parents(), ElementsAre(src));
+}
+
+TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_overwrite_higher) {
+  MemorySourceIR* src = MakeMemSource(MakeRelation());
+  auto limit = graph->CreateNode<LimitIR>(ast, src, 1001).ValueOrDie();
+  MakeMemSink(limit, "foo", {});
+
+  auto compiler_state =
+      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000);
+
+  AddLimitToMemorySinkRule rule(compiler_state.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(3, graph->FindNodesThatMatch(Operator()).size());
+  auto limit_nodes = graph->FindNodesOfType(IRNodeType::kLimit);
+  EXPECT_EQ(1, limit_nodes.size());
+  EXPECT_EQ(1000, limit->limit_value());
+}
+
+TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_dont_overwrite_lower) {
+  MemorySourceIR* src = MakeMemSource(MakeRelation());
+  auto limit = graph->CreateNode<LimitIR>(ast, src, 999).ValueOrDie();
+  MakeMemSink(limit, "foo", {});
+
+  auto compiler_state =
+      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now, 1000);
+
+  AddLimitToMemorySinkRule rule(compiler_state.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+}
+
+TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_skip_if_no_limit) {
+  MemorySourceIR* src = MakeMemSource(MakeRelation());
+  MakeMemSink(src, "foo", {});
+
+  auto compiler_state =
+      std::make_unique<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now);
+
+  AddLimitToMemorySinkRule rule(compiler_state.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -581,6 +581,18 @@ class ResolveWindowSizeRollingRule : public Rule {
 };
 
 /**
+ * @brief This rule automatically adds a limit to all memory sinks
+ *
+ */
+class AddLimitToMemorySinkRule : public Rule {
+ public:
+  explicit AddLimitToMemorySinkRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+};
+
+/**
  * @brief This class supports running an IR graph rule (independently) over each IR graph of a
  * DistributedPlan. This is distinct from other DistributedRules, which may modify the
  * CarnotInstances and DistributedPlan dag.
