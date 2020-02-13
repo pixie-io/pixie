@@ -34,21 +34,11 @@ class LogicalPlanner : public NotCopyable {
    *
    * @param logical_state: the distributed layout of the vizier instance.
    * @param query: QueryRequest
-   * @param max_output_rows_per_table: maximum number of output rows per table
    * @return std::unique_ptr<DistributedPlan> or error if one occurs during compilation.
    */
   StatusOr<std::unique_ptr<distributed::DistributedPlan>> Plan(
-      const distributedpb::LogicalPlannerState& logical_state, const plannerpb::QueryRequest& query,
-      int64_t max_output_rows_per_table);
-
-  /**
-   * @brief Same as other Plan, but with no limit on output rows.
-   */
-  StatusOr<std::unique_ptr<distributed::DistributedPlan>> Plan(
       const distributedpb::LogicalPlannerState& logical_state,
-      const plannerpb::QueryRequest& query) {
-    return Plan(logical_state, query, /*max_output_rows_per_table*/ 0);
-  }
+      const plannerpb::QueryRequest& query);
 
   /**
    * @brief Takes in a query request and outputs the flag spec for that request.

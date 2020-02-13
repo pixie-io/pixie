@@ -52,12 +52,13 @@ Status LogicalPlanner::Init(const udfspb::UDFInfo& udf_info) {
 
 StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
     const distributedpb::LogicalPlannerState& logical_state,
-    const plannerpb::QueryRequest& query_request, int64_t max_output_rows_per_table) {
+    const plannerpb::QueryRequest& query_request) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
   // Compile into the IR.
-  PL_ASSIGN_OR_RETURN(
-      std::unique_ptr<CompilerState> compiler_state,
-      CreateCompilerState(logical_state, registry_info.get(), max_output_rows_per_table));
+  auto ms = logical_state.plan_options().max_output_rows_per_table();
+  LOG(ERROR) << "Max output rows: " << ms;
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
+                      CreateCompilerState(logical_state, registry_info.get(), ms));
 
   std::vector<plannerpb::QueryRequest::FlagValue> flag_values;
   for (const auto& flag_value : query_request.flag_values()) {

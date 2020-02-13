@@ -27,10 +27,7 @@ class CarnotInstance {
  public:
   CarnotInstance(int64_t id, const distributedpb::CarnotInfo& carnot_info)
       : id_(id), carnot_info_(carnot_info) {}
-  bool IsAgent() const {
-    // return carnot_info_.
-    return false;
-  }
+
   const std::string& QueryBrokerAddress() const { return carnot_info_.query_broker_address(); }
   int64_t id() const { return id_; }
 

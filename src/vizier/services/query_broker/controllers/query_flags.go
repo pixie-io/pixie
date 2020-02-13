@@ -16,8 +16,9 @@ const plConfigPrefix = "#px:set "
 // Default values for config flags. If a flag is not included in this map,
 // it is not considered a valid flag that can be set.
 var defaultQueryFlags = map[string]interface{}{
-	"explain": false,
-	"analyze": false,
+	"explain":                   false,
+	"analyze":                   false,
+	"max_output_rows_per_table": 10000,
 }
 
 // QueryFlags represents a set of Pixie configuration flags.
@@ -46,9 +47,9 @@ func (f *QueryFlags) get(key string) interface{} {
 }
 
 // GetInt gets the value of the given flag as an int.
-func (f *QueryFlags) GetInt(key string) int {
+func (f *QueryFlags) GetInt64(key string) int64 {
 	val := f.get(key)
-	return cast.ToInt(val)
+	return cast.ToInt64(val)
 }
 
 // GetBool gets the value of the given flag as a bool.
@@ -103,8 +104,9 @@ func (f *QueryFlags) set(key string, value string) error {
 // GetPlanOptions creates the plan option proto from the specified query flags.
 func (f *QueryFlags) GetPlanOptions() *planpb.PlanOptions {
 	return &planpb.PlanOptions{
-		Explain: f.GetBool("explain"),
-		Analyze: f.GetBool("analyze"),
+		Explain:               f.GetBool("explain"),
+		Analyze:               f.GetBool("analyze"),
+		MaxOutputRowsPerTable: f.GetInt64("max_output_rows_per_table"),
 	}
 }
 

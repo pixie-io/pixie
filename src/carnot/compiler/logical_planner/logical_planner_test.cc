@@ -35,7 +35,6 @@ class LogicalPlannerTest : public ::testing::Test {
   udfspb::UDFInfo info_;
 };
 
-// TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(LogicalPlannerTest, two_agents_one_kelvin) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan = planner
@@ -54,6 +53,29 @@ TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
                     MakeQueryRequest(testutils::kHttpRequestStats));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+}
+
+constexpr char kSimpleQueryDefaultLimit[] = R"pxl(
+t1 = px.DataFrame(table='http_events', start_time='-120s', select=['time_'])
+px.display(t1)
+)pxl";
+
+TEST_F(LogicalPlannerTest, max_output_rows) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto state = testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  state.mutable_plan_options()->set_max_output_rows_per_table(100);
+  auto plan_or_s = planner->Plan(state, MakeQueryRequest(kSimpleQueryDefaultLimit));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+
+  for (const auto& id : plan->dag().TopologicalSort()) {
+    auto subgraph = plan->Get(id)->plan();
+    auto limits = subgraph->FindNodesOfType(IRNodeType::kLimit);
+    EXPECT_EQ(1, limits.size());
+    EXPECT_EQ(100, static_cast<LimitIR*>(limits[0])->limit_value());
+  }
+
   EXPECT_OK(plan->ToProto());
 }
 

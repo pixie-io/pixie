@@ -9,6 +9,7 @@ import (
 
 const validQueryWithFlag = `
 #px:set analyze=true
+#px:set max_output_rows_per_table=9999
 
 t1 = dataframe(table='http_events').range(start='-30s')
 
@@ -50,6 +51,9 @@ func TestParseQueryFlags_WithFlag(t *testing.T) {
 
 	val = qf.GetBool("invalid_key")
 	assert.Equal(t, false, val)
+
+	rows := qf.GetInt64("max_output_rows_per_table")
+	assert.Equal(t, int64(9999), rows)
 }
 
 func TestParseQueryFlags_NoFlag(t *testing.T) {
@@ -63,6 +67,9 @@ func TestParseQueryFlags_NoFlag(t *testing.T) {
 
 	val = qf.GetBool("invalid_key")
 	assert.Equal(t, false, val)
+
+	rows := qf.GetInt64("max_output_rows_per_table")
+	assert.Equal(t, int64(10000), rows)
 }
 
 func TestParseQueryFlags_InvalidFlag(t *testing.T) {
