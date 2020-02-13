@@ -570,12 +570,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   conn.open.traffic_class.role = EndpointRole::kRoleClient;
 
   // Set an address that falls in the intra-cluster address range.
-  struct sockaddr_in v4_addr = {};
-  v4_addr.sin_family = AF_INET;
-  uint16_t port = 123;
-  v4_addr.sin_port = htons(port);
-  PL_CHECK_OK(ParseIPv4Addr("1.2.3.4", &v4_addr.sin_addr));
-  memcpy(&conn.open.addr, &v4_addr, sizeof(struct sockaddr_in));
+  SetIPv4RemoteAddr(&conn, "1.2.3.4");
 
   tracker.AddControlEvent(conn);
 
@@ -583,6 +578,23 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
 
   tracker.IterationPreTick(cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
+}
+
+// Tests that client-side tracing is disabled if no cluster CIDR is specified.
+TEST_F(ConnectionTrackerTest, TrackerDisabledForClientSideTracingWithNoCIDR) {
+  ConnectionTracker tracker;
+  std::vector<http::Record> req_resp_pairs;
+
+  struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
+  conn.open.traffic_class.role = EndpointRole::kRoleClient;
+  SetIPv4RemoteAddr(&conn, "1.2.3.4");
+
+  tracker.AddControlEvent(conn);
+
+  std::optional<CIDRBlock> no_cidr;
+
+  tracker.IterationPreTick(no_cidr, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
@@ -594,11 +606,7 @@ TEST_F(ConnectionTrackerTest, DISABLED_TrackerDisabledForUnixDomainSocket) {
 
   struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
   conn.open.traffic_class.role = EndpointRole::kRoleServer;
-
-  // Set an address that falls in the intra-cluster address range.
-  struct sockaddr_in v4_addr = {};
-  v4_addr.sin_family = AF_UNIX;
-  memcpy(&conn.open.addr, &v4_addr, sizeof(struct sockaddr_in));
+  conn.open.addr.sin6_family = AF_UNIX;
 
   tracker.AddControlEvent(conn);
 
@@ -609,32 +617,6 @@ TEST_F(ConnectionTrackerTest, DISABLED_TrackerDisabledForUnixDomainSocket) {
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
-namespace {
-
-void SetIPv4RemoteAddr(std::string_view addr_str, struct socket_control_event_t* conn) {
-  // Set an address that falls in the intra-cluster address range.
-  struct sockaddr_in v4_addr = {};
-  v4_addr.sin_family = AF_INET;
-  uint16_t port = 123;
-  v4_addr.sin_port = htons(port);
-  // Note that address is outside of the CIDR block specified below.
-  PL_CHECK_OK(ParseIPv4Addr(addr_str, &v4_addr.sin_addr));
-  memcpy(&conn->open.addr, &v4_addr, sizeof(struct sockaddr_in));
-}
-
-void SetIPv6RemoteAddr(std::string_view addr_str, struct socket_control_event_t* conn) {
-  // Set an address that falls in the intra-cluster address range.
-  struct sockaddr_in6 v6_addr = {};
-  v6_addr.sin6_family = AF_INET6;
-  uint16_t port = 123;
-  v6_addr.sin6_port = htons(port);
-  // Note that address is outside of the CIDR block specified below.
-  PL_CHECK_OK(ParseIPv6Addr(addr_str, &v6_addr.sin6_addr));
-  memcpy(&conn->open.addr, &v6_addr, sizeof(struct sockaddr_in6));
-}
-
-}  // namespace
-
 // Tests that tracker is disabled after mapping the addresses from IPv4 to IPv6.
 TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
   {
@@ -643,7 +625,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
 
     struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
     conn.open.traffic_class.role = EndpointRole::kRoleClient;
-    SetIPv6RemoteAddr("::ffff:1.2.3.4", &conn);
+    SetIPv6RemoteAddr(&conn, "::ffff:1.2.3.4");
 
     tracker.AddControlEvent(conn);
 
@@ -659,7 +641,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
 
     struct socket_control_event_t conn = InitConn<kProtocolHTTP>();
     conn.open.traffic_class.role = EndpointRole::kRoleClient;
-    SetIPv4RemoteAddr("1.2.3.4", &conn);
+    SetIPv4RemoteAddr(&conn, "1.2.3.4");
 
     tracker.AddControlEvent(conn);
 

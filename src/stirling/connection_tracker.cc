@@ -692,25 +692,37 @@ void ConnectionTracker::UpdateState(const std::optional<CIDRBlock>& cluster_cidr
         state_ = State::kTransferring;
       }
       break;
-    case EndpointRole::kRoleClient:
-      if (cluster_cidr.has_value() &&
-          open_info_.remote_addr.family != SockAddrFamily::kUninitialized &&
-          open_info_.remote_addr.family != SockAddrFamily::kUnix) {
-        CIDRBlock cidr = cluster_cidr.value();
-        SockAddr remote_addr = open_info_.remote_addr;
-
-        if (CIDRContainsIPAddr(cidr, remote_addr)) {
-          Disable(
-              "Clients's remote endpoint is inside the cluster. "
-              "Traffic to be traced by server-side tracing.");
-        } else {
-          state_ = State::kTransferring;
-        }
-      } else if (conn_resolution_failed_) {
-        Disable("could not infer remote endpoint address");
+    case EndpointRole::kRoleClient: {
+      if (!cluster_cidr.has_value()) {
+        Disable("No client-side tracing: Internal CIDR not specified.");
         break;
       }
-      break;
+
+      if (conn_resolution_failed_) {
+        Disable("No client-side tracing: Can't infer remote endpoint address.");
+        break;
+      }
+
+      if (open_info_.remote_addr.family == SockAddrFamily::kUninitialized) {
+        // Don't disable because we are still trying to resolve the remote endpoint.
+        // If resolution fails, then conn_resolution_failed_ will get set, and
+        // this tracker should become disabled.
+        break;
+      }
+
+      if (open_info_.remote_addr.family == SockAddrFamily::kUnix) {
+        Disable("No client-side tracing: Unix socket.");
+        break;
+      }
+
+      if (CIDRContainsIPAddr(cluster_cidr.value(), open_info_.remote_addr)) {
+        Disable("No client-side tracing: Remote endpoint is inside the cluster.");
+        break;
+      }
+
+      // Remote endpoint appears to be outside the cluster, so trace it.
+      state_ = State::kTransferring;
+    } break;
     case EndpointRole::kRoleUnknown:
       LOG_IF(DFATAL, !send_data_.events().empty() || !recv_data_.events().empty())
           << "Role has not been inferred from BPF events yet. conn_id: " << ToString(conn_id_);

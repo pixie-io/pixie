@@ -32,6 +32,28 @@ class EventsFixture : public ::testing::Test {
     return conn_event;
   }
 
+  void SetIPv4RemoteAddr(struct socket_control_event_t* conn, std::string_view addr_str,
+                         uint16_t port = 123) {
+    // Set an address that falls in the intra-cluster address range.
+    struct sockaddr_in v4_addr = {};
+    v4_addr.sin_family = AF_INET;
+    v4_addr.sin_port = htons(port);
+    // Note that address is outside of the CIDR block specified below.
+    PL_CHECK_OK(ParseIPv4Addr(addr_str, &v4_addr.sin_addr));
+    memcpy(&conn->open.addr, &v4_addr, sizeof(struct sockaddr_in));
+  }
+
+  void SetIPv6RemoteAddr(struct socket_control_event_t* conn, std::string_view addr_str,
+                         uint16_t port = 123) {
+    // Set an address that falls in the intra-cluster address range.
+    struct sockaddr_in6 v6_addr = {};
+    v6_addr.sin6_family = AF_INET6;
+    v6_addr.sin6_port = htons(port);
+    // Note that address is outside of the CIDR block specified below.
+    PL_CHECK_OK(ParseIPv6Addr(addr_str, &v6_addr.sin6_addr));
+    memcpy(&conn->open.addr, &v6_addr, sizeof(struct sockaddr_in6));
+  }
+
   template <TrafficProtocol TProtocol>
   std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg) {
     return InitDataEvent<TProtocol>(TrafficDirection::kEgress, send_seq_num_++, msg);
