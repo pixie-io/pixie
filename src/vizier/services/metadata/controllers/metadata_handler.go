@@ -23,6 +23,7 @@ const maxAgentUpdates = 10000
 // MetadataStore is the interface for our metadata store.
 type MetadataStore interface {
 	GetClusterCIDR() string
+	GetServiceCIDR() string
 	GetAgent(agentID uuid.UUID) (*agentpb.Agent, error)
 	GetAgentIDForHostname(hostname string) (string, error)
 	DeleteAgent(agentID uuid.UUID) error

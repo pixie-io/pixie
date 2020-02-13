@@ -573,6 +573,11 @@ func TestAgentHeartbeat(t *testing.T) {
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 
+	mockMdStore.
+		EXPECT().
+		GetServiceCIDR().
+		Return("10.64.4.0/22")
+
 	mockAgtMgr.
 		EXPECT().
 		UpdateHeartbeat(u).
@@ -730,6 +735,11 @@ func TestAgentHeartbeatInvalidUUID(t *testing.T) {
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+
+	mockMdStore.
+		EXPECT().
+		GetServiceCIDR().
+		Return("10.64.4.0/22")
 
 	mockAgtMgr.
 		EXPECT().

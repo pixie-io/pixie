@@ -52,7 +52,7 @@ message AgentUpdateInfo {
     // TODO(zasgar/michelle): Delete this.
     repeated pl.shared.k8s.metadatapb.ProcessInfo process = 3;
 
-    repeated pl.shared.k8s.metadatapb.ProcessCreated process_created= 4;
+    repeated pl.shared.k8s.metadatapb.ProcessCreated process_created = 4;
     repeated pl.shared.k8s.metadatapb.ProcessTerminated process_terminated = 5;
     // Whether the schema updates.
     bool does_update_schema = 6;
@@ -71,6 +71,7 @@ message Heartbeat {
 
 message MetadataUpdateInfo {
     repeated pl.shared.k8s.metadatapb.ResourceUpdate updates = 1;
+    string service_cidr = 2 [(gogoproto.customname) = "ServiceCIDR"];
 }
 
 // Response sent for a successful heart beat.

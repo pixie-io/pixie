@@ -155,7 +155,8 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 			HeartbeatAck: &messages.HeartbeatAck{
 				Time: mc.clock.Now().UnixNano(),
 				UpdateInfo: &messages.MetadataUpdateInfo{
-					Updates: updates,
+					Updates:     updates,
+					ServiceCIDR: mc.mdStore.GetServiceCIDR(),
 				},
 				SequenceNumber: m.SequenceNumber,
 			},

@@ -320,6 +320,7 @@ var HeartbeatAckPB = `
 heartbeat_ack {
   time: 10
   update_info {
+    service_cidr: "10.64.4.0/22"
     updates {
       pod_update {
         uid:  "podUid"
