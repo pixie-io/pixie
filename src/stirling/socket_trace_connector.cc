@@ -301,8 +301,6 @@ void SocketTraceConnector::HandleDataEvent(void* cb_cookie, void* data, int /*da
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto data_event_ptr = std::make_unique<SocketDataEvent>(data);
-  data_event_ptr->attr.entry_timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
-  data_event_ptr->attr.return_timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptDataEvent(std::move(data_event_ptr));
 }
 
@@ -321,10 +319,7 @@ void SocketTraceConnector::HandleDataEventsLoss(void* /*cb_cookie*/, uint64_t lo
 void SocketTraceConnector::HandleControlEvent(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto event = *static_cast<const socket_control_event_t*>(data);
-  // timestamp_ns is a common field of open and close fields.
-  event.open.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
-  connector->AcceptControlEvent(event);
+  connector->AcceptControlEvent(*static_cast<const socket_control_event_t*>(data));
 }
 
 void SocketTraceConnector::HandleControlEventsLoss(void* /*cb_cookie*/, uint64_t lost) {
@@ -344,7 +339,6 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
       magic_enum::enum_name(event->attr.type), event->attr.conn_id.fd,
       event->attr.conn_id.generation, event->attr.stream_id, event->attr.end_stream, event->name,
       event->value);
-  event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Header(std::move(event));
 }
 
@@ -366,7 +360,6 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
       magic_enum::enum_name(event->attr.type), event->attr.conn_id.fd,
       event->attr.conn_id.generation, event->attr.stream_id, event->attr.end_stream,
       event->payload);
-  event->attr.timestamp_ns += system::Config::GetInstance().ClockRealTimeOffset();
   connector->AcceptHTTP2Data(std::move(event));
 }
 
@@ -403,6 +396,8 @@ void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEv
 }  // namespace
 
 void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> event) {
+  event->attr.entry_timestamp_ns += ClockRealTimeOffset();
+  event->attr.return_timestamp_ns += ClockRealTimeOffset();
   if (perf_buffer_events_output_stream_ != nullptr) {
     sockeventpb::SocketDataEvent pb;
     SocketDataEventToPB(*event, &pb);
@@ -434,7 +429,9 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
   tracker.AddDataEvent(std::move(event));
 }
 
-void SocketTraceConnector::AcceptControlEvent(const socket_control_event_t& event) {
+void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
+  // timestamp_ns is a common field of open and close fields.
+  event.open.timestamp_ns += ClockRealTimeOffset();
   // conn_id is a common field of open & close.
   const uint64_t conn_map_key = GetConnMapKey(event.open.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
@@ -443,6 +440,7 @@ void SocketTraceConnector::AcceptControlEvent(const socket_control_event_t& even
 }
 
 void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
+  event->attr.timestamp_ns += ClockRealTimeOffset();
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
@@ -450,6 +448,7 @@ void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> e
 }
 
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
+  event->attr.timestamp_ns += ClockRealTimeOffset();
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];

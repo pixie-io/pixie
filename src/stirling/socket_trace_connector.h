@@ -210,7 +210,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   //                     The Handle* functions should call make_unique() of new corresponding
   //                     objects, and these functions should take unique_ptrs.
   void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);
-  void AcceptControlEvent(const socket_control_event_t& event);
+  void AcceptControlEvent(socket_control_event_t event);
   void AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event);
   void AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event);
 

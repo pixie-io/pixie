@@ -204,7 +204,7 @@ TEST_F(SocketTraceConnectorTest, End2End) {
   search_conn_id.generation = 1;
   const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
   ASSERT_NE(nullptr, tracker);
-  EXPECT_EQ(1, tracker->conn().timestamp_ns);
+  EXPECT_EQ(1 + source_->ClockRealTimeOffset(), tracker->conn().timestamp_ns);
 
   // AcceptDataEvent(std::move() puts data into the internal buffer of SocketTraceConnector. And
   // th)en TransferData() polls perf buffer, which is no-op because we did not initialize probes,
@@ -248,7 +248,9 @@ TEST_F(SocketTraceConnectorTest, End2End) {
            "and event_json Content-Type matches, and is selected";
   }
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "foo"));
-  EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]), ElementsAre(2, 4, 5));
+  EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
+              ElementsAre(2 + source_->ClockRealTimeOffset(), 4 + source_->ClockRealTimeOffset(),
+                          5 + source_->ClockRealTimeOffset()));
 }
 
 TEST_F(SocketTraceConnectorTest, UPIDCheck) {
