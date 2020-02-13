@@ -135,7 +135,7 @@ void AgentMetadataStateManager::RemoveDeadPods(int64_t ts, AgentMetadataState* m
     // NOTE: Using const_cast is really bad practice the way it is done here.
     // But removing the const-ness is safe here, since RemoveDeadPods() is in the state update loop.
     // Only doing it this way here because this is a temporary function.
-    PodInfo* pod_info = const_cast<PodInfo*>(md_state->PodInfoByID(uid));
+    auto* pod_info = const_cast<PodInfo*>(md_state->PodInfoByID(uid));
 
     if (pod_info->stop_time_ns() == 0 && pod_info->phase() != PodPhase::kFailed &&
         !md_reader->PodDirExists(*pod_info)) {
@@ -167,21 +167,9 @@ void AgentMetadataStateManager::RemoveDeadPods(int64_t ts, AgentMetadataState* m
 Status AgentMetadataStateManager::ProcessPIDUpdates(
     int64_t ts, AgentMetadataState* md, CGroupMetadataReader* md_reader,
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>>* pid_updates) {
-  // For every container:
-  //    1. Read the current PIDs (from cgroups).
-  //    2. Get the list of current PIDs (for metadata).
-  //    3. For each in metadata collect a list of deactivated PIDs. Delete active PIDs from cgroup
-  //    version.
-  //    4. For each new PID create metadata object and attach to container.
-  //    5. For each old pid deactivate it and set time of death.
-  absl::flat_hash_set<uint32_t> cgroups_active_pids;
-  absl::flat_hash_set<UPID> cgroups_active_upids;
+  const auto& k8s_md_state = md->k8s_metadata_state();
 
-  const auto& md_state = md->k8s_metadata_state();
-  const auto& container_by_cid = md_state->containers_by_id();
-  auto asid = md->asid();
-
-  for (const auto& [cid, cinfo] : container_by_cid) {
+  for (const auto& [cid, cinfo] : k8s_md_state->containers_by_id()) {
     if (cinfo->stop_time_ns() != 0) {
       // Ignore dead containers.
       // TODO(zasgar): Come up with a cleaner way of doing this. Probably by using active/inactive
@@ -190,18 +178,21 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
       continue;
     }
 
-    cgroups_active_pids.clear();
-    cgroups_active_upids.clear();
+    // For every container:
+    //   1. Read the current PIDs (from cgroups).
+    //   2. Get the list of current PIDs (for metadata).
+    //   3. For each in metadata collect a list of deactivated PIDs. Delete active PIDs from cgroup
+    //   version.
+    //   4. For each new PID create metadata object and attach to container.
+    //   5. For each old pid deactivate it and set time of death.
 
-    auto pod_id = cinfo->pod_id();
-    if (pod_id == "") {
+    const UID& pod_id = cinfo->pod_id();
+    if (pod_id.empty()) {
       // No pod id implies it has not synced yet.
       VLOG(1) << "Ignoring Container due to missing pod: \n" << cinfo->DebugString(1);
       continue;
     }
-    auto pod_info = md_state->PodInfoByID(pod_id);
-    auto pod_qos_class = pod_info->qos_class();
-
+    const PodInfo* pod_info = k8s_md_state->PodInfoByID(pod_id);
     if (pod_info->stop_time_ns() != 0) {
       LOG(WARNING) << absl::Substitute(
           "Found a running container in a deleted pod [cid=$0, pod_id=$1]", cid, pod_id);
@@ -209,7 +200,8 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
       continue;
     }
 
-    Status s = md_reader->ReadPIDs(pod_qos_class, pod_id, cid, &cgroups_active_pids);
+    absl::flat_hash_set<uint32_t> cgroups_active_pids;
+    Status s = md_reader->ReadPIDs(pod_info->qos_class(), pod_id, cid, &cgroups_active_pids);
     if (!s.ok()) {
       // Container probably died, we will eventually get a message from MDS and everything in that
       // container will be marked dead.
@@ -222,10 +214,9 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
       // required to avoid repeatedly printing out the warning message above.
       // TODO(oazizi): Can potentially remove this once MDS is fixed to only send active pods on
       // the agent. Although this code is arguably still useful for robustness.
-      if (s.code() == statuspb::Code::NOT_FOUND) {
+      if (error::IsNotFound(s)) {
         cinfo->set_stop_time_ns(ts);
-        const auto& active_upids = cinfo->active_upids();
-        for (const auto& upid : active_upids) {
+        for (const auto& upid : cinfo->active_upids()) {
           cinfo->DeactivateUPID(upid);
           md->MarkUPIDAsStopped(upid, ts);
         }
@@ -233,13 +224,13 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
       continue;
     }
 
+    absl::flat_hash_set<UPID> cgroups_active_upids;
     // We convert all the cgroup_active_pids to the UPIDs so that we can easily convert and check.
     for (uint32_t pid : cgroups_active_pids) {
-      cgroups_active_upids.emplace(asid, pid, md_reader->ReadPIDStartTimeTicks(pid));
+      cgroups_active_upids.emplace(md->asid(), pid, md_reader->ReadPIDStartTimeTicks(pid));
     }
 
-    const auto& active_upids = cinfo->active_upids();
-    for (const auto& upid : active_upids) {
+    for (const auto& upid : cinfo->active_upids()) {
       auto it = cgroups_active_upids.find(upid);
       if (it != cgroups_active_upids.end()) {
         // Both have the pid so we just need to delete it from the other set.
