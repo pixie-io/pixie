@@ -100,7 +100,7 @@ struct ResultMetadata {
 };
 
 /**
- * TypeDecoder provides a structured interface to process the bytes of a CQL frame body.
+ * FrameBodyDecoder provides a structured interface to process the bytes of a CQL frame body.
  *
  * After creating the decoder, successive calls to the Extract<Type> functions will process
  * the bytes as the desired type.
@@ -109,14 +109,14 @@ struct ResultMetadata {
  * The decoder will then be in an undefined state, and the result of any subsequent calls
  * to any Extract functions are also undefined.
  */
-class TypeDecoder {
+class FrameBodyDecoder {
  public:
   /**
    * Create a frame decoder.
    *
    * @param buf A string_view into the body of the CQL frame.
    */
-  explicit TypeDecoder(std::string_view buf) : buf_(buf) {}
+  explicit FrameBodyDecoder(std::string_view buf) : buf_(buf) {}
 
   // [int] A 4 bytes signed integer.
   StatusOr<int32_t> ExtractInt();

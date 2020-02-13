@@ -1,18 +1,24 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/stirling/cassandra/type_decoder.h"
+#include "src/stirling/cassandra/frame_body_decoder.h"
 
 #include "src/common/testing/testing.h"
+
+namespace pl {
+namespace stirling {
+namespace cass {
 
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 
-namespace pl {
-namespace stirling {
-namespace cass {
+//-----------------------------------------------------------------------------
+// Test Data
+//-----------------------------------------------------------------------------
+
+// The following are binary representations of selected values, in the CQL binary protocol.
 
 constexpr std::string_view kEmpty = ConstStringView("");
 constexpr std::string_view kByte = ConstStringView("\x01");
@@ -88,6 +94,8 @@ constexpr std::string_view kCustomOption = ConstStringView(
     "\x00\x05"
     "pixie");
 
+// The following are binary representations of more complex types in the CQL binary protocol.
+
 constexpr uint8_t kQueryParams[] = {
     0x00, 0x0a, 0x25, 0x00, 0x06, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x01, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
@@ -108,33 +116,32 @@ constexpr uint8_t kResultMetadata[] = {
     0x65, 0x6d, 0x61, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x00, 0x0c, 0x00, 0x06,
     0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x00, 0x22, 0x00, 0x0d};
 
-template <size_t N>
-std::string_view StringView(const uint8_t (&a)[N]) {
-  return CreateStringView<char>(CharArrayStringView<uint8_t>(a));
-}
+//-----------------------------------------------------------------------------
+// Test Cases
+//-----------------------------------------------------------------------------
 
 //------------------------
 // ExtractInt
 //------------------------
 
 TEST(ExtractInt, Exact) {
-  TypeDecoder decoder(kInt);
+  FrameBodyDecoder decoder(kInt);
   ASSERT_OK_AND_EQ(decoder.ExtractInt(), 0x01234567);
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractInt, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractInt());
 }
 
 TEST(ExtractInt, Undersized) {
-  TypeDecoder decoder(std::string_view(kInt.data(), kInt.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kInt.data(), kInt.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractInt());
 }
 
 TEST(ExtractInt, Oversized) {
-  TypeDecoder decoder(std::string_view(kInt.data(), kInt.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kInt.data(), kInt.size() + 1));
   ASSERT_OK_AND_EQ(decoder.ExtractInt(), 0x01234567);
   ASSERT_FALSE(decoder.eof());
 }
@@ -144,23 +151,23 @@ TEST(ExtractInt, Oversized) {
 //------------------------
 
 TEST(ExtractShort, Exact) {
-  TypeDecoder decoder(kShort);
+  FrameBodyDecoder decoder(kShort);
   ASSERT_OK_AND_EQ(decoder.ExtractShort(), 0x0123);
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractShort, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractShort());
 }
 
 TEST(ExtractShort, Undersized) {
-  TypeDecoder decoder(std::string_view(kShort.data(), kShort.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kShort.data(), kShort.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractShort());
 }
 
 TEST(ExtractShort, Oversized) {
-  TypeDecoder decoder(std::string_view(kShort.data(), kShort.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kShort.data(), kShort.size() + 1));
   ASSERT_OK_AND_EQ(decoder.ExtractShort(), 0x0123);
   ASSERT_FALSE(decoder.eof());
 }
@@ -170,23 +177,23 @@ TEST(ExtractShort, Oversized) {
 //------------------------
 
 TEST(ExtractLong, Exact) {
-  TypeDecoder decoder(kLong);
+  FrameBodyDecoder decoder(kLong);
   ASSERT_OK_AND_EQ(decoder.ExtractLong(), 0x0123456789abcdef);
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractLong, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractLong());
 }
 
 TEST(ExtractLong, Undersized) {
-  TypeDecoder decoder(std::string_view(kLong.data(), kLong.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kLong.data(), kLong.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractLong());
 }
 
 TEST(ExtractLong, Oversized) {
-  TypeDecoder decoder(std::string_view(kLong.data(), kLong.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kLong.data(), kLong.size() + 1));
   ASSERT_OK_AND_EQ(decoder.ExtractLong(), 0x0123456789abcdef);
   ASSERT_FALSE(decoder.eof());
 }
@@ -196,23 +203,23 @@ TEST(ExtractLong, Oversized) {
 //------------------------
 
 TEST(ExtractByte, Exact) {
-  TypeDecoder decoder(kByte);
+  FrameBodyDecoder decoder(kByte);
   ASSERT_OK_AND_EQ(decoder.ExtractByte(), 0x01);
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractByte, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractByte());
 }
 
 TEST(ExtractByte, Undersized) {
-  TypeDecoder decoder(std::string_view(kByte.data(), kByte.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kByte.data(), kByte.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractByte());
 }
 
 TEST(ExtractByte, Oversized) {
-  TypeDecoder decoder(std::string_view(kByte.data(), kByte.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kByte.data(), kByte.size() + 1));
   ASSERT_OK_AND_EQ(decoder.ExtractByte(), 0x01);
   ASSERT_FALSE(decoder.eof());
 }
@@ -222,29 +229,29 @@ TEST(ExtractByte, Oversized) {
 //------------------------
 
 TEST(ExtractString, Exact) {
-  TypeDecoder decoder(kString);
+  FrameBodyDecoder decoder(kString);
   ASSERT_OK_AND_EQ(decoder.ExtractString(), std::string("abcdefghijklmnopqrstuvwxyz"));
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractString, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractString());
 }
 
 TEST(ExtractString, Undersized) {
-  TypeDecoder decoder(std::string_view(kString.data(), kString.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kString.data(), kString.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractString());
 }
 
 TEST(ExtractString, Oversized) {
-  TypeDecoder decoder(std::string_view(kString.data(), kString.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kString.data(), kString.size() + 1));
   ASSERT_OK_AND_EQ(decoder.ExtractString(), std::string("abcdefghijklmnopqrstuvwxyz"));
   ASSERT_FALSE(decoder.eof());
 }
 
 TEST(ExtractString, EmptyString) {
-  TypeDecoder decoder(kEmptyString);
+  FrameBodyDecoder decoder(kEmptyString);
   ASSERT_OK_AND_THAT(decoder.ExtractString(), IsEmpty());
   ASSERT_TRUE(decoder.eof());
 }
@@ -254,35 +261,35 @@ TEST(ExtractString, EmptyString) {
 //------------------------
 
 TEST(ExtractLongString, Exact) {
-  TypeDecoder decoder(kLongString);
+  FrameBodyDecoder decoder(kLongString);
   ASSERT_OK_AND_EQ(decoder.ExtractLongString(), std::string("abcdefghijklmnopqrstuvwxyz"));
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractLongString, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractLongString());
 }
 
 TEST(ExtractLongString, Undersized) {
-  TypeDecoder decoder(std::string_view(kLongString.data(), kLongString.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kLongString.data(), kLongString.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractLongString());
 }
 
 TEST(ExtractLongString, Oversized) {
-  TypeDecoder decoder(std::string_view(kLongString.data(), kLongString.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kLongString.data(), kLongString.size() + 1));
   ASSERT_OK_AND_EQ(decoder.ExtractLongString(), std::string("abcdefghijklmnopqrstuvwxyz"));
   ASSERT_FALSE(decoder.eof());
 }
 
 TEST(ExtractLongString, EmptyString) {
-  TypeDecoder decoder(kEmptyLongString);
+  FrameBodyDecoder decoder(kEmptyLongString);
   ASSERT_OK_AND_THAT(decoder.ExtractLongString(), IsEmpty());
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractLongString, NegativeLengthString) {
-  TypeDecoder decoder(kNegativeLengthLongString);
+  FrameBodyDecoder decoder(kNegativeLengthLongString);
   ASSERT_OK_AND_THAT(decoder.ExtractLongString(), IsEmpty());
   ASSERT_TRUE(decoder.eof());
 }
@@ -292,7 +299,7 @@ TEST(ExtractLongString, NegativeLengthString) {
 //------------------------
 
 TEST(ExtractStringList, Exact) {
-  TypeDecoder decoder(kStringList);
+  FrameBodyDecoder decoder(kStringList);
   ASSERT_OK_AND_THAT(decoder.ExtractStringList(),
                      ElementsAre(std::string("abcdefghijklmnopqrstuvwxyz"), std::string("abcdef"),
                                  std::string("pixie")));
@@ -300,17 +307,17 @@ TEST(ExtractStringList, Exact) {
 }
 
 TEST(ExtractStringList, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractStringList());
 }
 
 TEST(ExtractStringList, Undersized) {
-  TypeDecoder decoder(std::string_view(kStringList.data(), kStringList.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kStringList.data(), kStringList.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractStringList());
 }
 
 TEST(ExtractStringList, Oversized) {
-  TypeDecoder decoder(std::string_view(kStringList.data(), kStringList.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kStringList.data(), kStringList.size() + 1));
   ASSERT_OK_AND_THAT(decoder.ExtractStringList(),
                      ElementsAre(std::string("abcdefghijklmnopqrstuvwxyz"), std::string("abcdef"),
                                  std::string("pixie")));
@@ -321,7 +328,7 @@ TEST(ExtractStringList, BadElement) {
   std::string buf(kStringList);
   // Change size encoding of first string in the list.
   buf[3] = 1;
-  TypeDecoder decoder(buf);
+  FrameBodyDecoder decoder(buf);
   ASSERT_NOT_OK(decoder.ExtractStringList());
 }
 
@@ -330,35 +337,35 @@ TEST(ExtractStringList, BadElement) {
 //------------------------
 
 TEST(ExtractBytes, Exact) {
-  TypeDecoder decoder(kBytes);
+  FrameBodyDecoder decoder(kBytes);
   ASSERT_OK_AND_EQ(decoder.ExtractBytes(), std::basic_string<uint8_t>({0x01, 0x02, 0x03, 0x04}));
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractBytes, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractBytes());
 }
 
 TEST(ExtractBytes, Undersized) {
-  TypeDecoder decoder(std::string_view(kBytes.data(), kBytes.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kBytes.data(), kBytes.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractBytes());
 }
 
 TEST(ExtractBytes, Oversized) {
-  TypeDecoder decoder(std::string_view(kBytes.data(), kBytes.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kBytes.data(), kBytes.size() + 1));
   ASSERT_OK_AND_EQ(decoder.ExtractBytes(), std::basic_string<uint8_t>({0x01, 0x02, 0x03, 0x04}));
   ASSERT_FALSE(decoder.eof());
 }
 
 TEST(ExtractBytes, EmptyBytes) {
-  TypeDecoder decoder(kEmptyBytes);
+  FrameBodyDecoder decoder(kEmptyBytes);
   ASSERT_OK_AND_THAT(decoder.ExtractBytes(), IsEmpty());
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractBytes, NegativeLengthString) {
-  TypeDecoder decoder(kNegativeLengthBytes);
+  FrameBodyDecoder decoder(kNegativeLengthBytes);
   ASSERT_OK_AND_THAT(decoder.ExtractBytes(), IsEmpty());
   ASSERT_TRUE(decoder.eof());
 }
@@ -368,31 +375,31 @@ TEST(ExtractBytes, NegativeLengthString) {
 //------------------------
 
 TEST(ExtractShortBytes, Exact) {
-  TypeDecoder decoder(kShortBytes);
+  FrameBodyDecoder decoder(kShortBytes);
   ASSERT_OK_AND_EQ(decoder.ExtractShortBytes(),
                    std::basic_string<uint8_t>({0x01, 0x02, 0x03, 0x04}));
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractShortBytes, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractShortBytes());
 }
 
 TEST(ExtractShortBytes, Undersized) {
-  TypeDecoder decoder(std::string_view(kShortBytes.data(), kShortBytes.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kShortBytes.data(), kShortBytes.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractShortBytes());
 }
 
 TEST(ExtractShortBytes, Oversized) {
-  TypeDecoder decoder(std::string_view(kShortBytes.data(), kShortBytes.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kShortBytes.data(), kShortBytes.size() + 1));
   ASSERT_OK_AND_EQ(decoder.ExtractShortBytes(),
                    std::basic_string<uint8_t>({0x01, 0x02, 0x03, 0x04}));
   ASSERT_FALSE(decoder.eof());
 }
 
 TEST(ExtractShortBytes, EmptyBytes) {
-  TypeDecoder decoder(kEmptyShortBytes);
+  FrameBodyDecoder decoder(kEmptyShortBytes);
   ASSERT_OK_AND_THAT(decoder.ExtractShortBytes(), IsEmpty());
   ASSERT_TRUE(decoder.eof());
 }
@@ -402,7 +409,7 @@ TEST(ExtractShortBytes, EmptyBytes) {
 //------------------------
 
 TEST(ExtractStringMap, Exact) {
-  TypeDecoder decoder(kStringMap);
+  FrameBodyDecoder decoder(kStringMap);
   ASSERT_OK_AND_THAT(
       decoder.ExtractStringMap(),
       UnorderedElementsAre(Pair("key1", "value1"), Pair("k", "v"), Pair("question", "answer")));
@@ -410,17 +417,17 @@ TEST(ExtractStringMap, Exact) {
 }
 
 TEST(ExtractStringMap, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractStringMap());
 }
 
 TEST(ExtractStringMap, Undersized) {
-  TypeDecoder decoder(std::string_view(kStringMap.data(), kStringMap.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kStringMap.data(), kStringMap.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractStringMap());
 }
 
 TEST(ExtractStringMap, Oversized) {
-  TypeDecoder decoder(std::string_view(kStringMap.data(), kStringMap.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kStringMap.data(), kStringMap.size() + 1));
   ASSERT_OK_AND_THAT(
       decoder.ExtractStringMap(),
       UnorderedElementsAre(Pair("key1", "value1"), Pair("k", "v"), Pair("question", "answer")));
@@ -428,7 +435,7 @@ TEST(ExtractStringMap, Oversized) {
 }
 
 TEST(ExtractStringMap, EmptyMap) {
-  TypeDecoder decoder(kEmptyStringMap);
+  FrameBodyDecoder decoder(kEmptyStringMap);
   ASSERT_OK_AND_THAT(decoder.ExtractStringMap(), IsEmpty());
   ASSERT_TRUE(decoder.eof());
 }
@@ -438,7 +445,7 @@ TEST(ExtractStringMap, EmptyMap) {
 //------------------------
 
 TEST(ExtractStringMultiMap, Exact) {
-  TypeDecoder decoder(kStringMultiMap);
+  FrameBodyDecoder decoder(kStringMultiMap);
   ASSERT_OK_AND_THAT(
       decoder.ExtractStringMultiMap(),
       UnorderedElementsAre(Pair("USA", ElementsAre("New York", "San Francisco")),
@@ -447,17 +454,17 @@ TEST(ExtractStringMultiMap, Exact) {
 }
 
 TEST(ExtractStringMultiMap, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractStringMultiMap());
 }
 
 TEST(ExtractStringMultiMap, Undersized) {
-  TypeDecoder decoder(std::string_view(kStringMultiMap.data(), kStringMultiMap.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kStringMultiMap.data(), kStringMultiMap.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractStringMultiMap());
 }
 
 TEST(ExtractStringMultiMap, Oversized) {
-  TypeDecoder decoder(std::string_view(kStringMultiMap.data(), kStringMultiMap.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kStringMultiMap.data(), kStringMultiMap.size() + 1));
   ASSERT_OK_AND_THAT(
       decoder.ExtractStringMultiMap(),
       UnorderedElementsAre(Pair("USA", ElementsAre("New York", "San Francisco")),
@@ -466,7 +473,7 @@ TEST(ExtractStringMultiMap, Oversized) {
 }
 
 TEST(ExtractStringMultiMap, EmptyMap) {
-  TypeDecoder decoder(kEmptyStringMultiMap);
+  FrameBodyDecoder decoder(kEmptyStringMultiMap);
   ASSERT_OK_AND_THAT(decoder.ExtractStringMultiMap(), IsEmpty());
   ASSERT_TRUE(decoder.eof());
 }
@@ -476,24 +483,24 @@ TEST(ExtractStringMultiMap, EmptyMap) {
 //------------------------
 
 TEST(ExtractUUID, Exact) {
-  TypeDecoder decoder(kUUID);
+  FrameBodyDecoder decoder(kUUID);
   ASSERT_OK_AND_ASSIGN(sole::uuid uuid, decoder.ExtractUUID());
   EXPECT_EQ(uuid.str(), "00010203-0405-0607-0809-0a0b0c0d0e0f");
   ASSERT_TRUE(decoder.eof());
 }
 
 TEST(ExtractUUID, Empty) {
-  TypeDecoder decoder(kEmpty);
+  FrameBodyDecoder decoder(kEmpty);
   ASSERT_NOT_OK(decoder.ExtractStringMultiMap());
 }
 
 TEST(ExtractUUID, Undersized) {
-  TypeDecoder decoder(std::string_view(kUUID.data(), kUUID.size() - 1));
+  FrameBodyDecoder decoder(std::string_view(kUUID.data(), kUUID.size() - 1));
   ASSERT_NOT_OK(decoder.ExtractStringMultiMap());
 }
 
 TEST(ExtractUUID, Oversized) {
-  TypeDecoder decoder(std::string_view(kUUID.data(), kUUID.size() + 1));
+  FrameBodyDecoder decoder(std::string_view(kUUID.data(), kUUID.size() + 1));
   ASSERT_OK_AND_ASSIGN(sole::uuid uuid, decoder.ExtractUUID());
   EXPECT_EQ(uuid.str(), "00010203-0405-0607-0809-0a0b0c0d0e0f");
   ASSERT_FALSE(decoder.eof());
@@ -511,7 +518,7 @@ TEST(ExtractUUID, Oversized) {
 
 TEST(ExtractOption, Exact) {
   {
-    TypeDecoder decoder(kIntOption);
+    FrameBodyDecoder decoder(kIntOption);
     ASSERT_OK_AND_ASSIGN(Option option, decoder.ExtractOption());
     EXPECT_EQ(option.type, DataType::kInt);
     EXPECT_THAT(option.value, IsEmpty());
@@ -519,7 +526,7 @@ TEST(ExtractOption, Exact) {
   }
 
   {
-    TypeDecoder decoder(kVarcharOption);
+    FrameBodyDecoder decoder(kVarcharOption);
     ASSERT_OK_AND_ASSIGN(Option option, decoder.ExtractOption());
     EXPECT_EQ(option.type, DataType::kVarchar);
     EXPECT_THAT(option.value, IsEmpty());
@@ -527,7 +534,7 @@ TEST(ExtractOption, Exact) {
   }
 
   {
-    TypeDecoder decoder(kCustomOption);
+    FrameBodyDecoder decoder(kCustomOption);
     ASSERT_OK_AND_ASSIGN(Option option, decoder.ExtractOption());
     EXPECT_EQ(option.type, DataType::kCustom);
     EXPECT_EQ(option.value, "pixie");
@@ -540,7 +547,7 @@ TEST(ExtractOption, Exact) {
 //------------------------
 
 TEST(ExtractQueryParams, Exact) {
-  TypeDecoder decoder(StringView(kQueryParams));
+  FrameBodyDecoder decoder(CreateCharArrayView<char>(kQueryParams));
   ASSERT_OK_AND_ASSIGN(QueryParameters qp, decoder.ExtractQueryParameters());
 
   EXPECT_EQ(qp.consistency, 10);  // LOCAL_ONE
@@ -559,7 +566,7 @@ TEST(ExtractQueryParams, Exact) {
 //------------------------
 
 TEST(ExtractResultMetadata, Exact) {
-  TypeDecoder decoder(StringView(kResultMetadata));
+  FrameBodyDecoder decoder(CreateCharArrayView<char>(kResultMetadata));
   ASSERT_OK_AND_ASSIGN(ResultMetadata md, decoder.ExtractResultMetadata());
 
   EXPECT_EQ(md.flags, 1);

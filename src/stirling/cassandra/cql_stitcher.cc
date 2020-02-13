@@ -7,7 +7,7 @@
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
 #include "src/stirling/cassandra/cass_types.h"
-#include "src/stirling/cassandra/type_decoder.h"
+#include "src/stirling/cassandra/frame_body_decoder.h"
 
 namespace pl {
 namespace stirling {
@@ -35,7 +35,7 @@ Status ProcessSimpleResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessStartupReq(Frame* req_frame, Request* req) {
-  TypeDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(StringMap options, decoder.ExtractStringMap());
 
   DCHECK(req->msg.empty());
@@ -45,7 +45,7 @@ Status ProcessStartupReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessAuthResponseReq(Frame* req_frame, Request* req) {
-  TypeDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
 
   std::string_view token_str = CreateStringView<char>(token);
@@ -63,7 +63,7 @@ Status ProcessOptionsReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessRegisterReq(Frame* req_frame, Request* req) {
-  TypeDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(StringList event_types, decoder.ExtractStringList());
 
   DCHECK(req->msg.empty());
@@ -73,7 +73,7 @@ Status ProcessRegisterReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessQueryReq(Frame* req_frame, Request* req) {
-  TypeDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
   PL_ASSIGN_OR_RETURN(QueryParameters qp, decoder.ExtractQueryParameters());
 
@@ -99,7 +99,7 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessPrepareReq(Frame* req_frame, Request* req) {
-  TypeDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
 
   DCHECK(req->msg.empty());
@@ -109,7 +109,7 @@ Status ProcessPrepareReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessExecuteReq(Frame* req_frame, Request* req) {
-  TypeDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> id, decoder.ExtractShortBytes());
   PL_ASSIGN_OR_RETURN(QueryParameters qp, decoder.ExtractQueryParameters());
 
@@ -128,7 +128,7 @@ Status ProcessExecuteReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessErrorResp(Frame* resp_frame, Response* resp) {
-  TypeDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(int32_t error_code, decoder.ExtractInt());
   PL_ASSIGN_OR_RETURN(std::string error_msg, decoder.ExtractString());
 
@@ -139,7 +139,7 @@ Status ProcessErrorResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessReadyResp(Frame* resp_frame, Response* resp) {
-  TypeDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(resp_frame->msg);
   ECHECK(decoder.eof()) << "READY frame not expected to have a body";
 
   DCHECK(resp->msg.empty());
@@ -148,7 +148,7 @@ Status ProcessReadyResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
-  TypeDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(StringMultiMap options, decoder.ExtractStringMultiMap());
 
   DCHECK(resp->msg.empty());
@@ -158,7 +158,7 @@ Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessAuthenticateResp(Frame* resp_frame, Response* resp) {
-  TypeDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(std::string authenticator_name, decoder.ExtractString());
 
   DCHECK(resp->msg.empty());
@@ -168,7 +168,7 @@ Status ProcessAuthenticateResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
-  TypeDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
 
   std::string token_hex = BytesToString(token);
@@ -180,7 +180,7 @@ Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
-  TypeDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
 
   std::string token_hex = BytesToString(token);
@@ -191,14 +191,14 @@ Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
   return Status::OK();
 }
 
-Status ProcessResultVoid(TypeDecoder* /* decoder */, Response* resp) {
+Status ProcessResultVoid(FrameBodyDecoder* /* decoder */, Response* resp) {
   DCHECK(resp->msg.empty());
   resp->msg = "Response type = VOID";
   return Status::OK();
 }
 
 // See section 4.2.5.2 of the spec.
-Status ProcessResultRows(TypeDecoder* decoder, Response* resp) {
+Status ProcessResultRows(FrameBodyDecoder* decoder, Response* resp) {
   PL_ASSIGN_OR_RETURN(ResultMetadata metadata, decoder->ExtractResultMetadata());
   PL_ASSIGN_OR_RETURN(int32_t rows_count, decoder->ExtractInt());
   // Skip grabbing the row content for now.
@@ -218,7 +218,7 @@ Status ProcessResultRows(TypeDecoder* decoder, Response* resp) {
   return Status::OK();
 }
 
-Status ProcessResultSetKeyspace(TypeDecoder* decoder, Response* resp) {
+Status ProcessResultSetKeyspace(FrameBodyDecoder* decoder, Response* resp) {
   PL_ASSIGN_OR_RETURN(std::string keyspace_name, decoder->ExtractString());
 
   DCHECK(resp->msg.empty());
@@ -226,7 +226,7 @@ Status ProcessResultSetKeyspace(TypeDecoder* decoder, Response* resp) {
   return Status::OK();
 }
 
-Status ProcessResultPrepared(TypeDecoder* /* decoder */, Response* resp) {
+Status ProcessResultPrepared(FrameBodyDecoder* /* decoder */, Response* resp) {
   DCHECK(resp->msg.empty());
   resp->msg = "Response type = PREPARED";
   // TODO(oazizi): Add more information.
@@ -234,7 +234,7 @@ Status ProcessResultPrepared(TypeDecoder* /* decoder */, Response* resp) {
   return Status::OK();
 }
 
-Status ProcessResultSchemaChange(TypeDecoder* /* decoder */, Response* resp) {
+Status ProcessResultSchemaChange(FrameBodyDecoder* /* decoder */, Response* resp) {
   DCHECK(resp->msg.empty());
   resp->msg = "Response type = SCHEMA_CHANGE";
   // TODO(oazizi): Add more information.
@@ -243,7 +243,7 @@ Status ProcessResultSchemaChange(TypeDecoder* /* decoder */, Response* resp) {
 }
 
 Status ProcessResultResp(Frame* resp_frame, Response* resp) {
-  TypeDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(int32_t kind, decoder.ExtractInt());
 
   switch (kind) {

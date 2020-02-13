@@ -1,4 +1,4 @@
-#include "src/stirling/cassandra/type_decoder.h"
+#include "src/stirling/cassandra/frame_body_decoder.h"
 
 #include <algorithm>
 #include <utility>
@@ -14,7 +14,7 @@ namespace cass {
 // also intrinsically convert from big-endian to host ordering.
 
 template <typename TIntType>
-StatusOr<TIntType> TypeDecoder::ExtractIntCore() {
+StatusOr<TIntType> FrameBodyDecoder::ExtractIntCore() {
   if (buf_.size() < sizeof(TIntType)) {
     return error::ResourceUnavailable("Insufficient number of bytes");
   }
@@ -34,7 +34,7 @@ StatusOr<TFloatType> ExtractFloatCore(std::string_view* buf) {
 }
 
 template <typename TCharType>
-StatusOr<std::basic_string<TCharType>> TypeDecoder::ExtractBytesCore(int64_t len) {
+StatusOr<std::basic_string<TCharType>> FrameBodyDecoder::ExtractBytesCore(int64_t len) {
   if (static_cast<ssize_t>(buf_.size()) < len) {
     return error::ResourceUnavailable("Insufficient number of bytes");
   }
@@ -47,7 +47,7 @@ StatusOr<std::basic_string<TCharType>> TypeDecoder::ExtractBytesCore(int64_t len
 }
 
 template <typename TCharType, size_t N>
-Status TypeDecoder::ExtractBytesCore(TCharType* out) {
+Status FrameBodyDecoder::ExtractBytesCore(TCharType* out) {
   if (buf_.size() < N) {
     return error::Internal("Insufficient number of bytes");
   }
@@ -60,16 +60,16 @@ Status TypeDecoder::ExtractBytesCore(TCharType* out) {
 }
 
 // [int] A 4 bytes signed integer
-StatusOr<int32_t> TypeDecoder::ExtractInt() { return ExtractIntCore<int32_t>(); }
+StatusOr<int32_t> FrameBodyDecoder::ExtractInt() { return ExtractIntCore<int32_t>(); }
 
 // [long] A 8 bytes signed integer
-StatusOr<int64_t> TypeDecoder::ExtractLong() { return ExtractIntCore<int64_t>(); }
+StatusOr<int64_t> FrameBodyDecoder::ExtractLong() { return ExtractIntCore<int64_t>(); }
 
 // [short] A 2 bytes unsigned integer
-StatusOr<uint16_t> TypeDecoder::ExtractShort() { return ExtractIntCore<uint16_t>(); }
+StatusOr<uint16_t> FrameBodyDecoder::ExtractShort() { return ExtractIntCore<uint16_t>(); }
 
 // [byte] A 2 bytes unsigned integer
-StatusOr<uint8_t> TypeDecoder::ExtractByte() { return ExtractIntCore<uint8_t>(); }
+StatusOr<uint8_t> FrameBodyDecoder::ExtractByte() { return ExtractIntCore<uint8_t>(); }
 
 // [float]
 StatusOr<float> ExtractFloat(std::string_view* buf) { return ExtractFloatCore<float>(buf); }
@@ -78,20 +78,20 @@ StatusOr<float> ExtractFloat(std::string_view* buf) { return ExtractFloatCore<fl
 StatusOr<double> ExtractDouble(std::string_view* buf) { return ExtractFloatCore<double>(buf); }
 
 // [string] A [short] n, followed by n bytes representing an UTF-8 string.
-StatusOr<std::string> TypeDecoder::ExtractString() {
+StatusOr<std::string> FrameBodyDecoder::ExtractString() {
   PL_ASSIGN_OR_RETURN(uint16_t len, ExtractShort());
   return ExtractBytesCore<char>(len);
 }
 
 // [long string] An [int] n, followed by n bytes representing an UTF-8 string.
-StatusOr<std::string> TypeDecoder::ExtractLongString() {
+StatusOr<std::string> FrameBodyDecoder::ExtractLongString() {
   PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
   len = std::max(len, 0);
   return ExtractBytesCore<char>(len);
 }
 
 // [uuid] A 16 bytes long uuid.
-StatusOr<sole::uuid> TypeDecoder::ExtractUUID() {
+StatusOr<sole::uuid> FrameBodyDecoder::ExtractUUID() {
   sole::uuid uuid;
 
   // Logically, we want to get the different components of the UUID, and ensure correct byte-order.
@@ -127,7 +127,7 @@ StatusOr<sole::uuid> TypeDecoder::ExtractUUID() {
 }
 
 // [string list] A [short] n, followed by n [string].
-StatusOr<StringList> TypeDecoder::ExtractStringList() {
+StatusOr<StringList> FrameBodyDecoder::ExtractStringList() {
   PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
 
   StringList string_list;
@@ -141,14 +141,14 @@ StatusOr<StringList> TypeDecoder::ExtractStringList() {
 
 // [bytes] A [int] n, followed by n bytes if n >= 0. If n < 0,
 //         no byte should follow and the value represented is `null`.
-StatusOr<std::basic_string<uint8_t>> TypeDecoder::ExtractBytes() {
+StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractBytes() {
   PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
   len = std::max(len, 0);
   return ExtractBytesCore<uint8_t>(len);
 }
 
 // [short bytes]  A [short] n, followed by n bytes if n >= 0.
-StatusOr<std::basic_string<uint8_t>> TypeDecoder::ExtractShortBytes() {
+StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractShortBytes() {
   PL_ASSIGN_OR_RETURN(uint16_t len, ExtractShort());
   return ExtractBytesCore<uint8_t>(len);
 }
@@ -158,7 +158,7 @@ StatusOr<std::basic_string<uint8_t>> TypeDecoder::ExtractShortBytes() {
 //        [byte] representing the IP address (in practice n can only be
 //        either 4 (IPv4) or 16 (IPv6)), following by one [int]
 //        representing the port.
-StatusOr<SockAddr> TypeDecoder::ExtractInet() {
+StatusOr<SockAddr> FrameBodyDecoder::ExtractInet() {
   PL_ASSIGN_OR_RETURN(uint8_t n, ExtractByte());
 
   SockAddr addr;
@@ -183,7 +183,7 @@ StatusOr<SockAddr> TypeDecoder::ExtractInet() {
 
 // [string map] A [short] n, followed by n pair <k><v> where <k> and <v>
 //              are [string].
-StatusOr<StringMap> TypeDecoder::ExtractStringMap() {
+StatusOr<StringMap> FrameBodyDecoder::ExtractStringMap() {
   PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
 
   StringMap string_map;
@@ -198,7 +198,7 @@ StatusOr<StringMap> TypeDecoder::ExtractStringMap() {
 
 // [string multimap] A [short] n, followed by n pair <k><v> where <k> is a
 //                   [string] and <v> is a [string list].
-StatusOr<StringMultiMap> TypeDecoder::ExtractStringMultiMap() {
+StatusOr<StringMultiMap> FrameBodyDecoder::ExtractStringMultiMap() {
   PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
 
   StringMultiMap string_multimap;
@@ -211,7 +211,7 @@ StatusOr<StringMultiMap> TypeDecoder::ExtractStringMultiMap() {
   return string_multimap;
 }
 
-StatusOr<Option> TypeDecoder::ExtractOption() {
+StatusOr<Option> FrameBodyDecoder::ExtractOption() {
   Option col_spec;
   PL_ASSIGN_OR_RETURN(uint16_t id, ExtractShort());
   col_spec.type = static_cast<DataType>(id);
@@ -235,7 +235,7 @@ StatusOr<Option> TypeDecoder::ExtractOption() {
   return col_spec;
 }
 
-StatusOr<QueryParameters> TypeDecoder::ExtractQueryParameters() {
+StatusOr<QueryParameters> FrameBodyDecoder::ExtractQueryParameters() {
   QueryParameters qp;
 
   PL_ASSIGN_OR_RETURN(qp.consistency, ExtractShort());
@@ -281,7 +281,7 @@ StatusOr<QueryParameters> TypeDecoder::ExtractQueryParameters() {
   return qp;
 }
 
-StatusOr<ResultMetadata> TypeDecoder::ExtractResultMetadata() {
+StatusOr<ResultMetadata> FrameBodyDecoder::ExtractResultMetadata() {
   ResultMetadata r;
   PL_ASSIGN_OR_RETURN(r.flags, ExtractInt());
   PL_ASSIGN_OR_RETURN(r.columns_count, ExtractInt());

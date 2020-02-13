@@ -11,44 +11,56 @@ namespace pl {
 namespace stirling {
 namespace cass {
 
-template <size_t N>
-std::string_view StringView(const uint8_t (&a)[N]) {
-  return CreateStringView<char>(CharArrayStringView<uint8_t>(a));
-}
+//-----------------------------------------------------------------------------
+// Test Data
+//-----------------------------------------------------------------------------
 
-constexpr uint8_t kStartupMsg[] = {0x00, 0x01, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5f,
+// STARTUP request from client establishing connection.
+// Contains CQL_VERSION: 3.0.0
+constexpr uint8_t kStartupReq[] = {0x00, 0x01, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5f,
                                    0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x00,
                                    0x05, 0x33, 0x2e, 0x30, 0x2e, 0x30};
-std::string_view kStartupMsgStr = StringView(kStartupMsg);
 
-constexpr uint8_t kAuthenticateMsg[] = {0x00, 0x2f, 0x6f, 0x72, 0x67, 0x2e, 0x61, 0x70, 0x61, 0x63,
-                                        0x68, 0x65, 0x2e, 0x63, 0x61, 0x73, 0x73, 0x61, 0x6e, 0x64,
-                                        0x72, 0x61, 0x2e, 0x61, 0x75, 0x74, 0x68, 0x2e, 0x50, 0x61,
-                                        0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x41, 0x75, 0x74, 0x68,
-                                        0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x6f, 0x72};
-std::string_view kAuthenticateMsgStr = StringView(kAuthenticateMsg);
+// AUTHENTICATE response, asking for authentication in response to STARTUP.
+// Contains: org.apache.cassandra.auth.PasswordAuthenticator
+constexpr uint8_t kAuthenticateResp[] = {0x00, 0x2f, 0x6f, 0x72, 0x67, 0x2e, 0x61, 0x70, 0x61, 0x63,
+                                         0x68, 0x65, 0x2e, 0x63, 0x61, 0x73, 0x73, 0x61, 0x6e, 0x64,
+                                         0x72, 0x61, 0x2e, 0x61, 0x75, 0x74, 0x68, 0x2e, 0x50, 0x61,
+                                         0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x41, 0x75, 0x74, 0x68,
+                                         0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x6f, 0x72};
 
-constexpr uint8_t kAuthResponseMsg[] = {0x00, 0x00, 0x00, 0x14, 0x00, 0x63, 0x61, 0x73,
+// AUTH_RESPONSE request from client, in response to an AUTHENTICATE response from server.
+// Contains username/password of cassandra/cassandra.
+constexpr uint8_t kAuthResponseReq[] = {0x00, 0x00, 0x00, 0x14, 0x00, 0x63, 0x61, 0x73,
                                         0x73, 0x61, 0x6e, 0x64, 0x72, 0x61, 0x00, 0x63,
                                         0x61, 0x73, 0x73, 0x61, 0x6e, 0x64, 0x72, 0x61};
-std::string_view kAuthResponseMsgStr = StringView(kAuthResponseMsg);
 
-constexpr uint8_t kAuthSuccessMsg[] = {0xff, 0xff, 0xff, 0xff};
-std::string_view kAuthSuccessMsgStr = StringView(kAuthSuccessMsg);
+// AUTH_SUCCESS response from server. Sent after successful AUTHENTICATE request.
+// Content is null pointer.
+constexpr uint8_t kAuthSuccessResp[] = {0xff, 0xff, 0xff, 0xff};
 
-constexpr uint8_t kRegisterMsg[] = {0x00, 0x03, 0x00, 0x0f, 0x54, 0x4f, 0x50, 0x4f, 0x4c, 0x4f,
+// REGISTER request from client, asking to register for certain events.
+// This particular one requests notification on TOPOLOGY_CHANGE, STATUS_CHANGE or SCHEMA_CHANGE.
+constexpr uint8_t kRegisterReq[] = {0x00, 0x03, 0x00, 0x0f, 0x54, 0x4f, 0x50, 0x4f, 0x4c, 0x4f,
                                     0x47, 0x59, 0x5f, 0x43, 0x48, 0x41, 0x4e, 0x47, 0x45, 0x00,
                                     0x0d, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x43, 0x48,
                                     0x41, 0x4e, 0x47, 0x45, 0x00, 0x0d, 0x53, 0x43, 0x48, 0x45,
                                     0x4d, 0x41, 0x5f, 0x43, 0x48, 0x41, 0x4e, 0x47, 0x45};
-std::string_view kRegisterMsgStr = StringView(kRegisterMsg);
 
-constexpr uint8_t kQueryMsg[] = {0x00, 0x00, 0x00, 0x1a, 0x53, 0x45, 0x4c, 0x45, 0x43, 0x54, 0x20,
+// READY response from server, after STARTUP, AUTH_SUCCESS or REGISTER.
+// Body is empty.
+// constexpr uint8_t kReadyResp[] = {};
+
+// QUERY request from client.
+// Contains: SELECT * FROM system.peers
+constexpr uint8_t kQueryReq[] = {0x00, 0x00, 0x00, 0x1a, 0x53, 0x45, 0x4c, 0x45, 0x43, 0x54, 0x20,
                                  0x2a, 0x20, 0x46, 0x52, 0x4f, 0x4d, 0x20, 0x73, 0x79, 0x73, 0x74,
                                  0x65, 0x6d, 0x2e, 0x70, 0x65, 0x65, 0x72, 0x73, 0x00, 0x01, 0x00};
-std::string_view kQueryMsgStr = StringView(kQueryMsg);
 
-constexpr uint8_t kResultMsg[] = {
+// RESULT response to query kQueryReq above.
+// Result contains 9 columns, and 0 rows. Columns are:
+// peer,data_center,host_id,preferred_ip,rack,release_version,rpc_address,schema_version,tokens
+constexpr uint8_t kResultResp[] = {
     0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x09, 0x00, 0x06, 0x73, 0x79,
     0x73, 0x74, 0x65, 0x6d, 0x00, 0x05, 0x70, 0x65, 0x65, 0x72, 0x73, 0x00, 0x04, 0x70, 0x65, 0x65,
     0x72, 0x00, 0x10, 0x00, 0x0b, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x63, 0x65, 0x6e, 0x74, 0x65, 0x72,
@@ -59,35 +71,35 @@ constexpr uint8_t kResultMsg[] = {
     0x64, 0x72, 0x65, 0x73, 0x73, 0x00, 0x10, 0x00, 0x0e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f,
     0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x00, 0x0c, 0x00, 0x06, 0x74, 0x6f, 0x6b, 0x65, 0x6e,
     0x73, 0x00, 0x22, 0x00, 0x0d, 0x00, 0x00, 0x00, 0x00};
-std::string_view kResultMsgStr = StringView(kResultMsg);
 
-// Captured request packet body after issuing the following in cqlsh:
-//   SELECT * FROM system.schema_keyspaces ;
-constexpr uint8_t kBadQueryMsg[] = {
+// QUERY request from client, that that produces an error.
+// Contains: SELECT * FROM system.schema_keyspaces ;
+constexpr uint8_t kBadQueryReq[] = {
     0x00, 0x00, 0x00, 0x27, 0x53, 0x45, 0x4c, 0x45, 0x43, 0x54, 0x20, 0x2a, 0x20, 0x46, 0x52,
     0x4f, 0x4d, 0x20, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d,
     0x61, 0x5f, 0x6b, 0x65, 0x79, 0x73, 0x70, 0x61, 0x63, 0x65, 0x73, 0x20, 0x3b, 0x00, 0x01,
     0x34, 0x00, 0x00, 0x00, 0x64, 0x00, 0x08, 0x00, 0x05, 0x9d, 0xaf, 0x91, 0xd4, 0xc0, 0x5c};
-std::string_view kBadQueryMsgStr = StringView(kBadQueryMsg);
 
-// Captured response packet, containing:
-//   unconfigured table schema_keyspaces
-constexpr uint8_t kBadQueryErrorMsg[] = {
+// ERROR response from server to kBadQueryReq.
+// Error message contains: unconfigured table schema_keyspaces
+constexpr uint8_t kBadQueryErrorResp[] = {
     0x00, 0x00, 0x22, 0x00, 0x00, 0x23, 0x75, 0x6e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67,
     0x75, 0x72, 0x65, 0x64, 0x20, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x20, 0x73, 0x63, 0x68,
     0x65, 0x6d, 0x61, 0x5f, 0x6b, 0x65, 0x79, 0x73, 0x70, 0x61, 0x63, 0x65, 0x73};
-std::string_view kBadQueryErrorMsgStr = StringView(kBadQueryErrorMsg);
 
-constexpr uint8_t kPrepareMsg[] = {
+// PREPARE request from client.
+// UPDATE counter1 SET "C0"="C0"+?,"C1"="C1"+?,"C2"="C2"+?,"C3"="C3"+?,"C4"="C4"+? WHERE KEY=?
+constexpr uint8_t kPrepareReq[] = {
     0x00, 0x00, 0x00, 0x5b, 0x55, 0x50, 0x44, 0x41, 0x54, 0x45, 0x20, 0x63, 0x6f, 0x75, 0x6e, 0x74,
     0x65, 0x72, 0x31, 0x20, 0x53, 0x45, 0x54, 0x20, 0x22, 0x43, 0x30, 0x22, 0x3d, 0x22, 0x43, 0x30,
     0x22, 0x2b, 0x3f, 0x2c, 0x22, 0x43, 0x31, 0x22, 0x3d, 0x22, 0x43, 0x31, 0x22, 0x2b, 0x3f, 0x2c,
     0x22, 0x43, 0x32, 0x22, 0x3d, 0x22, 0x43, 0x32, 0x22, 0x2b, 0x3f, 0x2c, 0x22, 0x43, 0x33, 0x22,
     0x3d, 0x22, 0x43, 0x33, 0x22, 0x2b, 0x3f, 0x2c, 0x22, 0x43, 0x34, 0x22, 0x3d, 0x22, 0x43, 0x34,
     0x22, 0x2b, 0x3f, 0x20, 0x57, 0x48, 0x45, 0x52, 0x45, 0x20, 0x4b, 0x45, 0x59, 0x3d, 0x3f};
-std::string_view kPrepareMsgStr = StringView(kPrepareMsg);
 
-constexpr uint8_t kPrepareResultMsg[] = {
+// RESULT response from server to kPrepareReq above.
+// Response specifies itself as a PREPARED kind, and contains an ID and some metadata.
+constexpr uint8_t kPrepareResultResp[] = {
     0x00, 0x00, 0x00, 0x04, 0x00, 0x10, 0x5c, 0x6e, 0x15, 0xd4, 0x08, 0x4b, 0x0f, 0xd0, 0xd5,
     0x5a, 0x6e, 0x4b, 0x16, 0x48, 0x92, 0x7c, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x06,
     0x00, 0x00, 0x00, 0x01, 0x00, 0x05, 0x00, 0x09, 0x6b, 0x65, 0x79, 0x73, 0x70, 0x61, 0x63,
@@ -95,9 +107,10 @@ constexpr uint8_t kPrepareResultMsg[] = {
     0x30, 0x00, 0x05, 0x00, 0x02, 0x43, 0x31, 0x00, 0x05, 0x00, 0x02, 0x43, 0x32, 0x00, 0x05,
     0x00, 0x02, 0x43, 0x33, 0x00, 0x05, 0x00, 0x02, 0x43, 0x34, 0x00, 0x05, 0x00, 0x03, 0x6b,
     0x65, 0x79, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00};
-std::string_view kPrepareResultMsgStr = StringView(kPrepareResultMsg);
 
-constexpr uint8_t kExecuteMsg[] = {
+// EXECUTE request from client, linked to kPrepareReq.
+// C0-C4 are set to 1, while KEY is set to 3639334E3732504E3930
+constexpr uint8_t kExecuteReq[] = {
     0x00, 0x10, 0x5c, 0x6e, 0x15, 0xd4, 0x08, 0x4b, 0x0f, 0xd0, 0xd5, 0x5a, 0x6e, 0x4b, 0x16, 0x48,
     0x92, 0x7c, 0x00, 0x0a, 0x25, 0x00, 0x06, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
@@ -105,33 +118,60 @@ constexpr uint8_t kExecuteMsg[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x36, 0x39, 0x33, 0x4e, 0x37, 0x32, 0x50, 0x4e, 0x39,
     0x30, 0x00, 0x00, 0x13, 0x88, 0x00, 0x05, 0x9e, 0x07, 0x8a, 0x50, 0xb9, 0x00};
-std::string_view kExecuteMsgStr = StringView(kExecuteMsg);
 
-constexpr uint8_t kExecuteResultMsg[] = {0x00, 0x00, 0x00, 0x01};
-std::string_view kExecuteResultMsgStr = StringView(kExecuteResultMsg);
+// RESULT response to kPrepareReq.
+// Result type is VOID, since it was an UPDATE request.
+constexpr uint8_t kExecuteResultResp[] = {0x00, 0x00, 0x00, 0x01};
 
-std::string_view kOptionsMsgStr = "";
+// OPTIONS request from client, asking server what options it supports.
+// Body is empty.
+// constexpr uint8_t kOptionsReq[] = {};
 
-constexpr uint8_t kSupportedMsg[] = {
+// SUPPORTED response from server, after an OPTIONS request.
+// This particular one contains:
+//   "COMPRESSION":["snappy","lz4"]
+//   "CQL_VERSION":["3.4.4"]
+//   "PROTOCOL_VERSIONS":["3/v3","4/v4","5/v5-beta"]}
+constexpr uint8_t kSupportedResp[] = {
     0x00, 0x03, 0x00, 0x11, 0x50, 0x52, 0x4f, 0x54, 0x4f, 0x43, 0x4f, 0x4c, 0x5f, 0x56, 0x45, 0x52,
     0x53, 0x49, 0x4f, 0x4e, 0x53, 0x00, 0x03, 0x00, 0x04, 0x33, 0x2f, 0x76, 0x33, 0x00, 0x04, 0x34,
     0x2f, 0x76, 0x34, 0x00, 0x09, 0x35, 0x2f, 0x76, 0x35, 0x2d, 0x62, 0x65, 0x74, 0x61, 0x00, 0x0b,
     0x43, 0x4f, 0x4d, 0x50, 0x52, 0x45, 0x53, 0x53, 0x49, 0x4f, 0x4e, 0x00, 0x02, 0x00, 0x06, 0x73,
     0x6e, 0x61, 0x70, 0x70, 0x79, 0x00, 0x03, 0x6c, 0x7a, 0x34, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5f,
     0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x00, 0x01, 0x00, 0x05, 0x33, 0x2e, 0x34, 0x2e, 0x34};
-std::string_view kSupportedMsgStr = StringView(kSupportedMsg);
 
-Frame CreateFrame(uint16_t stream, Opcode opcode, std::string_view msg, uint64_t timestamp_ns) {
+//-----------------------------------------------------------------------------
+// Test Utils
+//-----------------------------------------------------------------------------
+
+// Required because zero length C-arrays are not allowed in C++, so can't use the version above.
+Frame CreateFrame(uint16_t stream, Opcode opcode, uint64_t timestamp_ns) {
   Frame f;
   f.hdr.opcode = opcode;
   f.hdr.stream = stream;
   f.hdr.flags = 0;
   f.hdr.flags = 0x04;
-  f.hdr.length = msg.length();
-  f.msg = msg;
+  f.hdr.length = 0;
+  f.msg = "";
   f.timestamp_ns = timestamp_ns;
   return f;
 }
+
+// This version populates a body.
+template <size_t N>
+Frame CreateFrame(uint16_t stream, Opcode opcode, const uint8_t (&msg)[N], uint64_t timestamp_ns) {
+  Frame f = CreateFrame(stream, opcode, timestamp_ns);
+
+  std::string_view msg_view = CreateCharArrayView<char>(msg);
+  f.hdr.length = msg_view.length();
+  f.msg = msg_view;
+
+  return f;
+}
+
+//-----------------------------------------------------------------------------
+// Test Cases
+//-----------------------------------------------------------------------------
 
 TEST(CassStitcherTest, OutOfOrderMatching) {
   std::deque<Frame> req_frames;
@@ -140,12 +180,12 @@ TEST(CassStitcherTest, OutOfOrderMatching) {
 
   int t = 0;
 
-  Frame req0_frame = CreateFrame(0, Opcode::kQuery, kBadQueryMsgStr, ++t);
-  Frame resp0_frame = CreateFrame(0, Opcode::kError, kBadQueryErrorMsgStr, ++t);
-  Frame req1_frame = CreateFrame(1, Opcode::kQuery, kBadQueryMsgStr, ++t);
-  Frame resp1_frame = CreateFrame(1, Opcode::kError, kBadQueryErrorMsgStr, ++t);
-  Frame req2_frame = CreateFrame(2, Opcode::kQuery, kBadQueryMsgStr, ++t);
-  Frame resp2_frame = CreateFrame(2, Opcode::kError, kBadQueryErrorMsgStr, ++t);
+  Frame req0_frame = CreateFrame(0, Opcode::kQuery, kBadQueryReq, ++t);
+  Frame resp0_frame = CreateFrame(0, Opcode::kError, kBadQueryErrorResp, ++t);
+  Frame req1_frame = CreateFrame(1, Opcode::kQuery, kBadQueryReq, ++t);
+  Frame resp1_frame = CreateFrame(1, Opcode::kError, kBadQueryErrorResp, ++t);
+  Frame req2_frame = CreateFrame(2, Opcode::kQuery, kBadQueryReq, ++t);
+  Frame resp2_frame = CreateFrame(2, Opcode::kError, kBadQueryErrorResp, ++t);
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -193,7 +233,8 @@ TEST(CassStitcherTest, OpEvent) {
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
 
-  resp_frames.push_back(CreateFrame(-1, Opcode::kEvent, "Foo", 3));
+  // TODO(oazizi): Event response should have a body!
+  resp_frames.push_back(CreateFrame(-1, Opcode::kEvent, 3));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -206,7 +247,7 @@ TEST(CassStitcherTest, OpEvent) {
   EXPECT_EQ(record.resp.op, RespOp::kEvent);
 
   EXPECT_EQ(record.req.msg, "-");
-  EXPECT_THAT(record.resp.msg, "Foo");
+  EXPECT_THAT(record.resp.msg, "");
 
   // Expecting zero latency.
   EXPECT_EQ(record.req.timestamp_ns, record.resp.timestamp_ns);
@@ -217,8 +258,8 @@ TEST(CassStitcherTest, StartupReady) {
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
 
-  req_frames.push_back(CreateFrame(0, Opcode::kStartup, kStartupMsgStr, 1));
-  resp_frames.push_back(CreateFrame(0, Opcode::kReady, "", 2));
+  req_frames.push_back(CreateFrame(0, Opcode::kStartup, kStartupReq, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kReady, 2));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -239,8 +280,8 @@ TEST(CassStitcherTest, RegisterReady) {
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
 
-  req_frames.push_back(CreateFrame(0, Opcode::kRegister, kRegisterMsgStr, 1));
-  resp_frames.push_back(CreateFrame(0, Opcode::kReady, "", 2));
+  req_frames.push_back(CreateFrame(0, Opcode::kRegister, kRegisterReq, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kReady, 2));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -261,8 +302,8 @@ TEST(CassStitcherTest, OptionsSupported) {
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
 
-  req_frames.push_back(CreateFrame(0, Opcode::kOptions, kOptionsMsgStr, 1));
-  resp_frames.push_back(CreateFrame(0, Opcode::kSupported, kSupportedMsgStr, 2));
+  req_frames.push_back(CreateFrame(0, Opcode::kOptions, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kSupported, kSupportedResp, 2));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -285,8 +326,8 @@ TEST(CassStitcherTest, QueryResult) {
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
 
-  req_frames.push_back(CreateFrame(0, Opcode::kQuery, kQueryMsgStr, 1));
-  resp_frames.push_back(CreateFrame(0, Opcode::kResult, kResultMsgStr, 2));
+  req_frames.push_back(CreateFrame(0, Opcode::kQuery, kQueryReq, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kResult, kResultResp, 2));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -318,8 +359,8 @@ TEST(CassStitcherTest, QueryError) {
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(records.size(), 0);
 
-  req_frames.push_back(CreateFrame(0, Opcode::kQuery, kBadQueryMsgStr, 1));
-  resp_frames.push_back(CreateFrame(0, Opcode::kError, kBadQueryErrorMsgStr, 2));
+  req_frames.push_back(CreateFrame(0, Opcode::kQuery, kBadQueryReq, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kError, kBadQueryErrorResp, 2));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -340,8 +381,8 @@ TEST(CassStitcherTest, PrepareResult) {
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
 
-  req_frames.push_back(CreateFrame(0, Opcode::kPrepare, kPrepareMsgStr, 1));
-  resp_frames.push_back(CreateFrame(0, Opcode::kResult, kPrepareResultMsgStr, 2));
+  req_frames.push_back(CreateFrame(0, Opcode::kPrepare, kPrepareReq, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kResult, kPrepareResultResp, 2));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -365,8 +406,8 @@ TEST(CassStitcherTest, ExecuteResult) {
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
 
-  req_frames.push_back(CreateFrame(0, Opcode::kExecute, kExecuteMsgStr, 1));
-  resp_frames.push_back(CreateFrame(0, Opcode::kResult, kExecuteResultMsgStr, 2));
+  req_frames.push_back(CreateFrame(0, Opcode::kExecute, kExecuteReq, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kResult, kExecuteResultResp, 2));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -393,8 +434,8 @@ TEST(CassStitcherTest, StartupAuthenticate) {
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
 
-  req_frames.push_back(CreateFrame(0, Opcode::kStartup, kStartupMsgStr, 1));
-  resp_frames.push_back(CreateFrame(0, Opcode::kAuthenticate, kAuthenticateMsgStr, 2));
+  req_frames.push_back(CreateFrame(0, Opcode::kStartup, kStartupReq, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kAuthenticate, kAuthenticateResp, 2));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -415,8 +456,8 @@ TEST(CassStitcherTest, AuthResponseAuthSuccess) {
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
 
-  req_frames.push_back(CreateFrame(0, Opcode::kAuthResponse, kAuthResponseMsgStr, 1));
-  resp_frames.push_back(CreateFrame(0, Opcode::kAuthSuccess, kAuthSuccessMsgStr, 2));
+  req_frames.push_back(CreateFrame(0, Opcode::kAuthResponse, kAuthResponseReq, 1));
+  resp_frames.push_back(CreateFrame(0, Opcode::kAuthSuccess, kAuthSuccessResp, 2));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());

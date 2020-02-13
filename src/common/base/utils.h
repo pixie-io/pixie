@@ -176,9 +176,18 @@ inline StatusOr<T> AsciiHexToBytes(std::string s, const std::vector<char>& separ
 /**
  * @brief Returns a string_view for a different character type from the input C-style string.
  */
-template <typename CharType, size_t N>
-std::basic_string_view<CharType> CreateStringView(const char (&arr)[N]) {
+template <typename CharType, typename InCharType = char, size_t N>
+std::basic_string_view<CharType> CreateStringView(const InCharType (&arr)[N]) {
   return std::basic_string_view<CharType>(reinterpret_cast<const CharType*>(arr), N - 1);
+}
+
+/**
+ * @brief Returns a string_view for a different character type from the input C-style array.
+ * Note the difference with the version above, which is for string literals, not arrays.
+ */
+template <typename CharType, typename InCharType = char, size_t N>
+std::basic_string_view<CharType> CreateCharArrayView(const InCharType (&arr)[N]) {
+  return std::basic_string_view<CharType>(reinterpret_cast<const CharType*>(arr), N);
 }
 
 /**

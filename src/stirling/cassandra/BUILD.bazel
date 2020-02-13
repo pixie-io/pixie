@@ -30,7 +30,7 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "type_decoder_test",
-    srcs = ["type_decoder_test.cc"],
+    name = "frame_body_decoder_test",
+    srcs = ["frame_body_decoder_test.cc"],
     deps = [":cc_library"],
 )
