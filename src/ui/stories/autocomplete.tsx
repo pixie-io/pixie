@@ -1,28 +1,14 @@
 import Axios from 'axios';
+import Autocomplete from 'components/autocomplete';
 import Completions from 'components/autocomplete/completions';
 import Input from 'components/autocomplete/input';
 import * as React from 'react';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import {action} from '@storybook/addon-actions';
 import {storiesOf} from '@storybook/react';
 
 storiesOf('AutoComplete', module)
-  .add('Input', () => {
-    const [suggestion, setSuggestion] = React.useState('');
-    return (
-      <Input
-        suggestion={suggestion}
-        onChange={(val) => {
-          setSuggestion(val + 'world');
-        }}
-      />
-    );
-  }, {
-    info: { inline: true },
-    notes: 'an input box that shows the completion suggestion',
-  })
-  .add('dynamic suggestions', () => {
+  .add('input with hint', () => {
     const [suggestion, setSuggestion] = React.useState('');
     const [input, setInput] = React.useState('');
     React.useEffect(() => {
@@ -44,6 +30,7 @@ storiesOf('AutoComplete', module)
       <Input
         suggestion={suggestion}
         onChange={setInput}
+        value={input}
       />
     );
   }, {
@@ -70,6 +57,31 @@ storiesOf('AutoComplete', module)
         onActiveChange={setActive}
         activeItem={active}
         onSelection={action('selected')}
+      />
+    );
+  }, {
+    info: { inline: true },
+    notes: 'completions list with active item',
+  })
+  .add('autocomplete component', () => {
+    return (
+      <Autocomplete
+        onSelection={action('selection')}
+        getCompletions={async (input) => {
+          if (!input) {
+            return [];
+          }
+          const resp = await Axios({
+            method: 'get',
+            url: 'https://api.datamuse.com/sug',
+            params: { s: input },
+          });
+
+          if (resp.status !== 200) {
+            return [];
+          }
+          return resp.data.map((suggestion, i) => ({ title: suggestion.word, id: i }));
+        }}
       />
     );
   }, {

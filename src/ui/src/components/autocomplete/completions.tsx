@@ -15,9 +15,12 @@ interface CompletionHeader {
   header: string;
 }
 
-interface CompletionItem {
-  id: string;
-  title: string;
+export type CompletionId = string;
+export type CompletionTitle = string;
+
+export interface CompletionItem {
+  id?: CompletionId;
+  title?: CompletionTitle;
   description?: string;
   highlights?: Array<[number, number]>;
 }

@@ -35,29 +35,33 @@ interface InputProps {
   onChange: (val: string) => void;
   suggestion?: string;
   className?: string;
+  value: string;
 }
 
-const Input: React.FC<InputProps> = (props) => {
+const Input: React.FC<InputProps> = ({
+  onChange,
+  suggestion,
+  className,
+  value,
+}) => {
   const classes = useStyles();
-  const [input, setInput] = React.useState<string>('');
   const [focused, setFocused] = React.useState<boolean>(true);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const handleChange = React.useCallback((e) => {
     const val = e.target.value;
-    setInput(val);
-    props.onChange(val);
+    onChange(val);
   }, []);
 
   const handleTab = React.useCallback((e) => {
-    if (e.key !== 'Tab' || !props.suggestion || !input) {
+    if (e.key !== 'Tab' || !suggestion || !value) {
       return;
     }
-    if (props.suggestion !== input && props.suggestion.startsWith(input)) {
+    if (suggestion !== value && suggestion.startsWith(value)) {
       e.preventDefault();
-      setInput(props.suggestion);
+      onChange(suggestion);
     }
-  }, [input, props.suggestion]);
+  }, [value, suggestion]);
 
   const handleFocus = React.useCallback(() => {
     setFocused(true);
@@ -71,29 +75,29 @@ const Input: React.FC<InputProps> = (props) => {
     inputRef.current.focus();
   }, []);
 
-  // Focus the input element on first render only.
+  // Focus the input element whenever the suggestion changes.
   React.useEffect(() => {
     inputRef.current.focus();
-  }, []);
+  }, [suggestion]);
 
-  const suggestion = input && props.suggestion && props.suggestion.startsWith(input) ?
-    props.suggestion.slice(input.length) : '';
+  const hint = value && suggestion && suggestion.startsWith(value) ?
+    suggestion.slice(value.length) : '';
 
   return (
-    <div className={clsx(classes.root, props.className)} onClick={focusInput}>
+    <div className={clsx(classes.root, className)} onClick={focusInput}>
       <input
         className={classes.inputElem}
         ref={inputRef}
-        value={input}
+        value={value}
         onChange={handleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleTab}
       />
       <div>
-        <span>{input}</span>
+        <span>{value}</span>
         <Caret active={focused} />
-        <span className={classes.suggestion}>{suggestion}</span>
+        <span className={classes.suggestion}>{hint}</span>
       </div>
     </div >
   );
