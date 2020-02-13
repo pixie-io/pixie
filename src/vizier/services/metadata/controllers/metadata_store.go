@@ -702,6 +702,11 @@ func (mds *KVMetadataStore) GetServices() ([]*metadatapb.Service, error) {
 func (mds *KVMetadataStore) UpdateServiceCIDR(s *metadatapb.Service) {
 	ip := net.ParseIP(s.Spec.ClusterIP).To16()
 
+	// Some services don't have a ClusterIP.
+	if ip == nil {
+		return
+	}
+
 	if mds.clusterInfo.ServiceCIDR == nil {
 		mds.clusterInfo.ServiceCIDR = &net.IPNet{IP: ip, Mask: net.CIDRMask(128, 128)}
 	} else {
@@ -711,6 +716,7 @@ func (mds *KVMetadataStore) UpdateServiceCIDR(s *metadatapb.Service) {
 			mds.clusterInfo.ServiceCIDR.IP = mds.clusterInfo.ServiceCIDR.IP.Mask(mds.clusterInfo.ServiceCIDR.Mask)
 		}
 	}
+	log.Debug("Service IP: " + ip.String() + " -> Service CIDR updated to: " + mds.clusterInfo.ServiceCIDR.String())
 }
 
 // UpdateService adds or updates the given service in the metadata store.

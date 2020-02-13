@@ -1119,6 +1119,23 @@ func TestKVMetadataStore_GetServiceCIDR(t *testing.T) {
 		t.Fatal("Could not update service.")
 	}
 	assert.Equal(t, "10.64.0.0/21", mds.GetServiceCIDR())
+
+	// Test on Services that do not have ClusterIP.
+	s5 := &metadatapb.Service{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "s5",
+			Namespace: "test",
+			UID:       "s5-service",
+		},
+		Spec: &metadatapb.ServiceSpec{
+			// No ClusterIP.
+		},
+	}
+	err = mds.UpdateService(s5, false)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+	assert.Equal(t, "10.64.0.0/21", mds.GetServiceCIDR())
 }
 
 func TestKVMetadataStore_GetAgents(t *testing.T) {
