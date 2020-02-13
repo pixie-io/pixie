@@ -571,6 +571,30 @@ TEST_F(CompilerTest, comparison_test) {
   ASSERT_OK(plan);
 }
 
+constexpr char kAppendQuery[] = R"pxl(
+t1 = px.DataFrame(table='cpu', select=['cpu0'])
+t2 = px.DataFrame(table='cpu', select=['cpu0'])
+px.display(t1.append(t2))
+)pxl";
+
+TEST_F(CompilerTest, append_test) {
+  auto plan = compiler_.Compile(kAppendQuery, compiler_state_.get(), /*query_flags*/ {});
+  VLOG(2) << plan.ToString();
+  ASSERT_OK(plan);
+}
+
+constexpr char kAppendSelfQuery[] = R"pxl(
+t1 = px.DataFrame(table='cpu', select=['cpu0'])
+t2 = t1[t1.cpu0 > 0.0]
+px.display(t1.append(t2))
+)pxl";
+
+TEST_F(CompilerTest, append_self_test) {
+  auto plan = compiler_.Compile(kAppendSelfQuery, compiler_state_.get(), /*query_flags*/ {});
+  VLOG(2) << plan.ToString();
+  ASSERT_OK(plan);
+}
+
 constexpr char kFilterPlan[] = R"(
 nodes {
   nodes {

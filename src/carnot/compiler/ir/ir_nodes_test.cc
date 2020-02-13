@@ -730,42 +730,36 @@ TEST_F(CloneTests, all_op_clone) {
   }
 }
 
-TEST_F(CloneTests, clone_grpc_source_group_and_sink) {
-  // Build graph 1.
+TEST_F(CloneTests, grpc_source_group) {
   auto grpc_source = MakeGRPCSourceGroup(123, MakeRelation());
-  MakeMemSink(grpc_source, "sup");
   grpc_source->SetGRPCAddress("1111");
 
-  auto graph2 = std::make_shared<IR>();
-  auto graph1 = SwapGraphBeingBuilt(graph2);
+  auto out = graph->Clone();
+  EXPECT_OK(out.status());
+  std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
 
-  // Build graph 2.
+  ASSERT_EQ(graph->dag().TopologicalSort(), cloned_ir->dag().TopologicalSort());
+
+  // Make sure that all of the columns are now part of the new graph.
+  for (int64_t i : cloned_ir->dag().TopologicalSort()) {
+    CompareClone(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
+  }
+}
+
+TEST_F(CloneTests, grpc_sink) {
   auto mem_source = MakeMemSource();
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_source, 123);
   grpc_sink->SetDestinationAddress("1111");
 
-  EXPECT_OK(grpc_source->AddGRPCSink(grpc_sink));
-
-  auto out = graph1->Clone();
+  auto out = graph->Clone();
   EXPECT_OK(out.status());
-  std::unique_ptr<IR> cloned_ir1 = out.ConsumeValueOrDie();
+  std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
 
-  ASSERT_EQ(graph1->dag().TopologicalSort(), cloned_ir1->dag().TopologicalSort());
+  ASSERT_EQ(graph->dag().TopologicalSort(), cloned_ir->dag().TopologicalSort());
 
   // Make sure that all of the columns are now part of the new graph.
-  for (int64_t i : cloned_ir1->dag().TopologicalSort()) {
-    CompareClone(cloned_ir1->Get(i), graph1->Get(i), absl::Substitute("For index $0", i));
-  }
-
-  out = graph2->Clone();
-  EXPECT_OK(out.status());
-  std::unique_ptr<IR> cloned_ir2 = out.ConsumeValueOrDie();
-
-  ASSERT_EQ(graph2->dag().TopologicalSort(), cloned_ir2->dag().TopologicalSort());
-
-  // Make sure that all of the columns are now part of the new graph.
-  for (int64_t i : cloned_ir2->dag().TopologicalSort()) {
-    CompareClone(cloned_ir2->Get(i), graph2->Get(i), absl::Substitute("For index $0", i));
+  for (int64_t i : cloned_ir->dag().TopologicalSort()) {
+    CompareClone(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
   }
 }
 
@@ -811,6 +805,27 @@ TEST_F(CloneTests, join_clone) {
   JoinIR* join_clone = static_cast<JoinIR*>(maybe_join_clone);
 
   CompareClone(join_clone, join_op, "");
+}
+
+TEST_F(CloneTests, union_clone) {
+  auto mem_src1 = MakeMemSource(MakeRelation());
+  auto mem_src2 = MakeMemSource(MakeRelation());
+
+  auto union_op = MakeUnion({mem_src1, mem_src2});
+  ASSERT_OK(union_op->SetRelationFromParents());
+
+  auto out = graph->Clone();
+
+  EXPECT_OK(out.status());
+  std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
+  ASSERT_EQ(graph->dag().TopologicalSort(), cloned_ir->dag().TopologicalSort());
+
+  graph->Get(union_op->id());
+  IRNode* maybe_union_clone = cloned_ir->Get(union_op->id());
+  ASSERT_EQ(maybe_union_clone->type(), IRNodeType::kUnion);
+  UnionIR* union_clone = static_cast<UnionIR*>(maybe_union_clone);
+
+  CompareClone(union_clone, union_op, "");
 }
 
 TEST_F(CloneTests, copy_into_existing_dag) {

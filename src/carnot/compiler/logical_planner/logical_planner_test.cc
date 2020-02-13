@@ -53,6 +53,8 @@ TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
       planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     MakeQueryRequest(testutils::kHttpRequestStats));
   EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
 }
 
 constexpr char kCompileTimeQuery[] = R"pxl(
@@ -113,6 +115,8 @@ TEST_F(LogicalPlannerTest, duplicate_int) {
       planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     MakeQueryRequest(kCompileTimeQuery));
   EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
 }
 
 constexpr char kTwoWindowQuery[] = R"query(
@@ -150,6 +154,40 @@ TEST_F(LogicalPlannerTest, NestedCompileTime) {
       planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     MakeQueryRequest(kTwoWindowQuery));
   EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+}
+
+constexpr char kAppendQuery[] = R"pxl(
+df1 = px.DataFrame(table='http_events', start_time='-2m', select=['time_', 'upid'])
+df2 = px.DataFrame(table='http_events', start_time='-3m', select=['time_', 'upid'])
+px.display(df1.append(df2))
+)pxl";
+
+TEST_F(LogicalPlannerTest, AppendTest) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto plan_or_s =
+      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                    MakeQueryRequest(kAppendQuery));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+}
+
+constexpr char kAppendSelfQuery[] = R"pxl(
+df1 = px.DataFrame(table='http_events', start_time='-5m', select=['time_', 'upid'])
+df2 = df1[2==2]
+px.display(df1.append(df2))
+)pxl";
+
+TEST_F(LogicalPlannerTest, AppendSelfTest) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto plan_or_s =
+      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                    MakeQueryRequest(kAppendSelfQuery));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
 }
 }  // namespace logical_planner
 }  // namespace compiler

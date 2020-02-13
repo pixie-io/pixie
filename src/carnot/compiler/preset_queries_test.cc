@@ -107,6 +107,8 @@ TEST_F(PresetQueriesTest, PresetQueries) {
     query_request.set_query_str(query.second);
     auto plan_or_s = planner->Plan(single_agent_state, query_request);
     EXPECT_OK(plan_or_s) << "Query '" << query.first << "' failed";
+    auto plan = plan_or_s.ConsumeValueOrDie();
+    EXPECT_OK(plan->ToProto()) << "Query '" << query.first << "' failed to compile to proto";
   }
 
   // Test multi agent planning
@@ -118,6 +120,8 @@ TEST_F(PresetQueriesTest, PresetQueries) {
     query_request.set_query_str(query.second);
     auto plan_or_s = planner->Plan(multi_agent_state, query_request);
     EXPECT_OK(plan_or_s) << "Query '" << query.first << "' failed";
+    auto plan = plan_or_s.ConsumeValueOrDie();
+    EXPECT_OK(plan->ToProto()) << "Query '" << query.first << "' failed to compile to proto";
   }
 }
 

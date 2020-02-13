@@ -786,6 +786,19 @@ class ASTVisitorTest : public OperatorTests {
 
 void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string);
 
+// Same as CompareClone, but do some extra checking about IDs and whether or not they are in the
+// expected graph.
+void CompareClone(IRNode* new_ir, IRNode* old_ir, bool should_share_graph,
+                  const std::string& err_string) {
+  auto do_share_graph = new_ir->graph_ptr() == old_ir->graph_ptr();
+  EXPECT_EQ(should_share_graph, do_share_graph)
+      << "Graph placement of nodes doesn't match expectations. " << err_string;
+  if (!should_share_graph) {
+    EXPECT_EQ(new_ir->id(), old_ir->id()) << "Expected IRs to share the same ID. " << err_string;
+  }
+  return CompareClone(new_ir, old_ir, err_string);
+}
+
 template <typename TNodeType>
 void CompareCloneNode(TNodeType* new_ir, TNodeType* /* old_ir */, const std::string& err_string) {
   EXPECT_TRUE(false) << absl::Substitute("Unimplemented clone test function for node $0, $1",
@@ -801,11 +814,7 @@ void CompareCloneNode(ColumnIR* new_ir, ColumnIR* old_ir, const std::string& err
   auto old_containing_ops = old_ir->ContainingOperators().ConsumeValueOrDie();
 
   if (new_ir->graph_ptr() != old_ir->graph_ptr()) {
-    EXPECT_NE(new_referenced_op->graph_ptr(), old_referenced_op->graph_ptr()) << absl::Substitute(
-        "'$1' and '$2' should have referenced ops that are in different graphs. $0.", err_string,
-        new_ir->DebugString(), old_ir->DebugString());
-    EXPECT_EQ(new_referenced_op->id(), old_referenced_op->id()) << err_string;
-
+    // Can't call CompareClone due to the circular dependency that would result.
     for (const auto& [i, new_containing_op] : Enumerate(new_containing_ops)) {
       auto old_containing_op = old_containing_ops[i];
       EXPECT_EQ(new_containing_op->id(), old_containing_op->id()) << err_string;
@@ -815,7 +824,8 @@ void CompareCloneNode(ColumnIR* new_ir, ColumnIR* old_ir, const std::string& err
     }
   }
   EXPECT_EQ(new_containing_ops.size(), old_containing_ops.size());
-  CompareClone(new_referenced_op, old_referenced_op, err_string);
+  CompareClone(new_referenced_op, old_referenced_op, new_ir->graph_ptr() == old_ir->graph_ptr(),
+               err_string);
 }
 
 template <>
@@ -848,7 +858,22 @@ void CompareCloneNode(MapIR* new_ir, MapIR* old_ir, const std::string& err_strin
     ColumnExpression new_expr = new_col_exprs[i];
     ColumnExpression old_expr = old_col_exprs[i];
     EXPECT_EQ(new_expr.name, old_expr.name) << err_string;
-    CompareClone(new_expr.node, old_expr.node, err_string);
+    CompareClone(new_expr.node, old_expr.node, new_ir->graph_ptr() == old_ir->graph_ptr(),
+                 err_string);
+  }
+}
+
+template <>
+void CompareCloneNode(UnionIR* new_ir, UnionIR* old_ir, const std::string& err_string) {
+  EXPECT_EQ(new_ir->column_mappings().size(), old_ir->column_mappings().size()) << err_string;
+
+  for (size_t i = 0; i < new_ir->column_mappings().size(); ++i) {
+    EXPECT_EQ(new_ir->column_mappings()[i].size(), old_ir->column_mappings()[i].size())
+        << err_string;
+    for (size_t j = 0; j < new_ir->column_mappings()[i].size(); ++j) {
+      CompareClone(new_ir->column_mappings()[i][j], old_ir->column_mappings()[i][j],
+                   new_ir->graph_ptr() == old_ir->graph_ptr(), err_string);
+    }
   }
 }
 
@@ -861,14 +886,16 @@ void CompareCloneNode(BlockingAggIR* new_ir, BlockingAggIR* old_ir, const std::s
     ColumnExpression new_expr = new_col_exprs[i];
     ColumnExpression old_expr = old_col_exprs[i];
     EXPECT_EQ(new_expr.name, old_expr.name) << err_string;
-    CompareClone(new_expr.node, old_expr.node, err_string);
+    CompareClone(new_expr.node, old_expr.node, new_ir->graph_ptr() == old_ir->graph_ptr(),
+                 err_string);
   }
 
   std::vector<ColumnIR*> new_groups = new_ir->groups();
   std::vector<ColumnIR*> old_groups = old_ir->groups();
   ASSERT_EQ(new_groups.size(), old_groups.size()) << err_string;
   for (size_t i = 0; i < new_groups.size(); ++i) {
-    CompareClone(new_groups[i], old_groups[i], err_string);
+    CompareClone(new_groups[i], old_groups[i], new_ir->graph_ptr() == old_ir->graph_ptr(),
+                 err_string);
   }
 }
 
@@ -878,7 +905,8 @@ void CompareCloneNode(GroupByIR* new_ir, GroupByIR* old_ir, const std::string& e
   std::vector<ColumnIR*> old_groups = old_ir->groups();
   ASSERT_EQ(new_groups.size(), old_groups.size()) << err_string;
   for (size_t i = 0; i < new_groups.size(); ++i) {
-    CompareClone(new_groups[i], old_groups[i], err_string);
+    CompareClone(new_groups[i], old_groups[i], new_ir->graph_ptr() == old_ir->graph_ptr(),
+                 err_string);
   }
 }
 
@@ -886,7 +914,8 @@ template <>
 void CompareCloneNode(MetadataLiteralIR* new_ir, MetadataLiteralIR* old_ir,
                       const std::string& err_string) {
   EXPECT_EQ(new_ir->literal_type(), old_ir->literal_type()) << err_string;
-  CompareClone(new_ir->literal(), old_ir->literal(), err_string);
+  CompareClone(new_ir->literal(), old_ir->literal(), new_ir->graph_ptr() == old_ir->graph_ptr(),
+               err_string);
 }
 
 template <>
@@ -933,7 +962,7 @@ void CompareCloneNode(FuncIR* new_ir, FuncIR* old_ir, const std::string& err_str
   std::vector<ExpressionIR*> old_args = old_ir->args();
   ASSERT_EQ(new_args.size(), old_args.size()) << err_string;
   for (size_t i = 0; i < new_args.size(); ++i) {
-    CompareClone(new_args[i], old_args[i], err_string);
+    CompareClone(new_args[i], old_args[i], new_ir->graph_ptr() == old_ir->graph_ptr(), err_string);
   }
 }
 
@@ -967,6 +996,7 @@ void CompareCloneNode(JoinIR* new_ir, JoinIR* old_ir, const std::string& err_str
 
   for (size_t i = 0; i < output_columns_new.size(); ++i) {
     CompareClone(output_columns_new[i], output_columns_old[i],
+                 new_ir->graph_ptr() == old_ir->graph_ptr(),
                  absl::Substitute("$0; in Join operator.", err_string));
   }
 
@@ -977,6 +1007,7 @@ void CompareCloneNode(JoinIR* new_ir, JoinIR* old_ir, const std::string& err_str
   auto left_on_columns_old = old_ir->left_on_columns();
   for (size_t i = 0; i < left_on_columns_new.size(); ++i) {
     CompareClone(left_on_columns_new[i], left_on_columns_old[i],
+                 new_ir->graph_ptr() == old_ir->graph_ptr(),
                  absl::Substitute("$0; in Join operator.", err_string));
   }
 
@@ -984,6 +1015,7 @@ void CompareCloneNode(JoinIR* new_ir, JoinIR* old_ir, const std::string& err_str
   auto right_on_columns_old = old_ir->right_on_columns();
   for (size_t i = 0; i < right_on_columns_new.size(); ++i) {
     CompareClone(right_on_columns_new[i], right_on_columns_old[i],
+                 new_ir->graph_ptr() == old_ir->graph_ptr(),
                  absl::Substitute("$0; in Join operator.", err_string));
   }
 }
@@ -1010,62 +1042,24 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
     // Check parents.
     ASSERT_EQ(new_op->parents().size(), old_op->parents().size());
     for (size_t parent_idx = 0; parent_idx < new_op->parents().size(); ++parent_idx) {
-      CompareClone(new_op->parents()[parent_idx], old_op->parents()[parent_idx], err_string);
+      CompareClone(new_op->parents()[parent_idx], old_op->parents()[parent_idx],
+                   new_ir->graph_ptr() == old_ir->graph_ptr(), err_string);
     }
   }
 
   EXPECT_EQ(new_ir->type(), old_ir->type()) << err_string;
+
   switch (new_ir->type()) {
-    case IRNodeType::kColumn:
-      return CompareCloneNode(static_cast<ColumnIR*>(new_ir), static_cast<ColumnIR*>(old_ir),
-                              err_string);
-    case IRNodeType::kInt:
-      return CompareCloneNode(static_cast<IntIR*>(new_ir), static_cast<IntIR*>(old_ir), err_string);
-    case IRNodeType::kString:
-      return CompareCloneNode(static_cast<StringIR*>(new_ir), static_cast<StringIR*>(old_ir),
-                              err_string);
-    case IRNodeType::kMap:
-      return CompareCloneNode(static_cast<MapIR*>(new_ir), static_cast<MapIR*>(old_ir), err_string);
-    case IRNodeType::kBlockingAgg:
-      return CompareCloneNode(static_cast<BlockingAggIR*>(new_ir),
-                              static_cast<BlockingAggIR*>(old_ir), err_string);
-    case IRNodeType::kGroupBy:
-      return CompareCloneNode(static_cast<GroupByIR*>(new_ir), static_cast<GroupByIR*>(old_ir),
-                              err_string);
-    case IRNodeType::kMetadata:
-      return CompareCloneNode(static_cast<MetadataIR*>(new_ir), static_cast<MetadataIR*>(old_ir),
-                              err_string);
-    case IRNodeType::kMetadataLiteral:
-      return CompareCloneNode(static_cast<MetadataLiteralIR*>(new_ir),
-                              static_cast<MetadataLiteralIR*>(old_ir), err_string);
-    case IRNodeType::kMemorySource:
-      return CompareCloneNode(static_cast<MemorySourceIR*>(new_ir),
-                              static_cast<MemorySourceIR*>(old_ir), err_string);
-    case IRNodeType::kMemorySink:
-      return CompareCloneNode(static_cast<MemorySinkIR*>(new_ir),
-                              static_cast<MemorySinkIR*>(old_ir), err_string);
-    case IRNodeType::kFilter:
-      return CompareCloneNode(static_cast<FilterIR*>(new_ir), static_cast<FilterIR*>(old_ir),
-                              err_string);
-    case IRNodeType::kLimit:
-      return CompareCloneNode(static_cast<LimitIR*>(new_ir), static_cast<LimitIR*>(old_ir),
-                              err_string);
-    case IRNodeType::kFunc:
-      return CompareCloneNode(static_cast<FuncIR*>(new_ir), static_cast<FuncIR*>(old_ir),
-                              err_string);
-    case IRNodeType::kGRPCSourceGroup:
-      return CompareCloneNode(static_cast<GRPCSourceGroupIR*>(new_ir),
-                              static_cast<GRPCSourceGroupIR*>(old_ir), err_string);
-    case IRNodeType::kGRPCSource:
-      return CompareCloneNode(static_cast<GRPCSourceIR*>(new_ir),
-                              static_cast<GRPCSourceIR*>(old_ir), err_string);
-    case IRNodeType::kGRPCSink:
-      return CompareCloneNode(static_cast<GRPCSinkIR*>(new_ir), static_cast<GRPCSinkIR*>(old_ir),
-                              err_string);
-    case IRNodeType::kJoin:
-      return CompareCloneNode(static_cast<JoinIR*>(new_ir), static_cast<JoinIR*>(old_ir),
-                              err_string);
-    default:
+#undef PL_IR_NODE
+#define PL_IR_NODE(NAME)                                                                    \
+  case IRNodeType::k##NAME:                                                                 \
+    return CompareCloneNode(static_cast<NAME##IR*>(new_ir), static_cast<NAME##IR*>(old_ir), \
+                            err_string);
+#include "src/carnot/compiler/ir/ir_nodes.inl"
+#undef PL_IR_NODE
+
+    case IRNodeType::kAny:
+    case IRNodeType::number_of_types:
       EXPECT_TRUE(false) << absl::Substitute("No compare func exists in test for $0",
                                              new_ir->DebugString());
   }

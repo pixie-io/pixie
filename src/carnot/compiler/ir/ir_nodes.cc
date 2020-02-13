@@ -1270,7 +1270,9 @@ Status GRPCSourceGroupIR::CopyFromNodeImpl(const IRNode* node,
   const GRPCSourceGroupIR* grpc_source_group = static_cast<const GRPCSourceGroupIR*>(node);
   source_id_ = grpc_source_group->source_id_;
   grpc_address_ = grpc_source_group->grpc_address_;
-  dependent_sinks_ = grpc_source_group->dependent_sinks_;
+  if (grpc_source_group->dependent_sinks_.size()) {
+    return error::Unimplemented("Cannot clone GRPCSourceGroupIR with dependent_sinks_");
+  }
   return Status::OK();
 }
 
@@ -1278,10 +1280,19 @@ Status GRPCSourceIR::CopyFromNodeImpl(const IRNode*, absl::flat_hash_map<const I
   return Status::OK();
 }
 
-Status UnionIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>*) {
-  const UnionIR* union_node = static_cast<const UnionIR*>(node);
-  column_mappings_ = union_node->column_mappings_;
-  return Status::OK();
+Status UnionIR::CopyFromNodeImpl(const IRNode* node,
+                                 absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+  const UnionIR* union_ir = static_cast<const UnionIR*>(node);
+  std::vector<InputColumnMapping> dest_mappings;
+  for (const InputColumnMapping& src_mapping : union_ir->column_mappings_) {
+    InputColumnMapping dest_mapping;
+    for (ColumnIR* src_col : src_mapping) {
+      PL_ASSIGN_OR_RETURN(ColumnIR * dest_col, graph_ptr()->CopyNode(src_col, copied_nodes_map));
+      dest_mapping.push_back(dest_col);
+    }
+    dest_mappings.push_back(dest_mapping);
+  }
+  return SetColumnMappings(dest_mappings);
 }
 
 Status JoinIR::CopyFromNodeImpl(const IRNode* node,
