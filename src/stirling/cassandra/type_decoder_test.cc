@@ -562,7 +562,7 @@ TEST(ExtractResultMetadata, Exact) {
   TypeDecoder decoder(StringView(kResultMetadata));
   ASSERT_OK_AND_ASSIGN(ResultMetadata md, decoder.ExtractResultMetadata());
 
-  EXPECT_EQ(md.flags, 1);  // LOCAL_ONE
+  EXPECT_EQ(md.flags, 1);
   EXPECT_EQ(md.columns_count, 9);
   EXPECT_THAT(md.paging_state, IsEmpty());
   EXPECT_EQ(md.gts_keyspace_name, "system");

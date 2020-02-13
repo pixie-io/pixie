@@ -91,8 +91,8 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
   // For now, just tag the parameter values to the end.
   // TODO(oazizi): Make this prettier.
   if (!hex_values.empty()) {
-    req->msg += "\n";
-    req->msg += utils::ToJSONString(hex_values);
+    absl::StrAppend(&req->msg, "\n");
+    absl::StrAppend(&req->msg, utils::ToJSONString(hex_values));
   }
 
   return Status::OK();
@@ -191,6 +191,77 @@ Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
   return Status::OK();
 }
 
+Status ProcessResultVoid(TypeDecoder* /* decoder */, Response* resp) {
+  DCHECK(resp->msg.empty());
+  resp->msg = "Response type = VOID";
+  return Status::OK();
+}
+
+// See section 4.2.5.2 of the spec.
+Status ProcessResultRows(TypeDecoder* decoder, Response* resp) {
+  PL_ASSIGN_OR_RETURN(ResultMetadata metadata, decoder->ExtractResultMetadata());
+  PL_ASSIGN_OR_RETURN(int32_t rows_count, decoder->ExtractInt());
+  // Skip grabbing the row content for now.
+
+  // Copy to vector so we can use ToJSONString().
+  // TODO(oazizi): Find a cleaner way. This is temporary anyways.
+  std::vector<std::string> names;
+  for (auto& c : metadata.col_specs) {
+    names.push_back(std::move(c.name));
+  }
+
+  DCHECK(resp->msg.empty());
+  resp->msg = absl::StrCat("Response type = ROWS\n", "Number of columns = ", metadata.columns_count,
+                           "\n", utils::ToJSONString(names), "\n", "Number of rows = ", rows_count);
+  // TODO(oazizi): Consider which other parts of metadata would be interesting to record into resp.
+
+  return Status::OK();
+}
+
+Status ProcessResultSetKeyspace(TypeDecoder* decoder, Response* resp) {
+  PL_ASSIGN_OR_RETURN(std::string keyspace_name, decoder->ExtractString());
+
+  DCHECK(resp->msg.empty());
+  resp->msg = absl::StrCat("Response type = SET_KEYSPACE\n", "Keyspace = ", keyspace_name);
+  return Status::OK();
+}
+
+Status ProcessResultPrepared(TypeDecoder* /* decoder */, Response* resp) {
+  DCHECK(resp->msg.empty());
+  resp->msg = "Response type = PREPARED";
+  // TODO(oazizi): Add more information.
+
+  return Status::OK();
+}
+
+Status ProcessResultSchemaChange(TypeDecoder* /* decoder */, Response* resp) {
+  DCHECK(resp->msg.empty());
+  resp->msg = "Response type = SCHEMA_CHANGE";
+  // TODO(oazizi): Add more information.
+
+  return Status::OK();
+}
+
+Status ProcessResultResp(Frame* resp_frame, Response* resp) {
+  TypeDecoder decoder(resp_frame->msg);
+  PL_ASSIGN_OR_RETURN(int32_t kind, decoder.ExtractInt());
+
+  switch (kind) {
+    case 0x0001:
+      return ProcessResultVoid(&decoder, resp);
+    case 0x0002:
+      return ProcessResultRows(&decoder, resp);
+    case 0x0003:
+      return ProcessResultSetKeyspace(&decoder, resp);
+    case 0x0004:
+      return ProcessResultPrepared(&decoder, resp);
+    case 0x0005:
+      return ProcessResultSchemaChange(&decoder, resp);
+    default:
+      return error::Internal("Unrecognized result kind (%d)", kind);
+  }
+}
+
 Status ProcessReq(Frame* req_frame, Request* req) {
   req->op = static_cast<ReqOp>(req_frame->hdr.opcode);
   req->timestamp_ns = req_frame->timestamp_ns;
@@ -231,7 +302,7 @@ Status ProcessResp(Frame* resp_frame, Response* resp) {
     case RespOp::kSupported:
       return ProcessSupportedResp(resp_frame, resp);
     case RespOp::kResult:
-      return ProcessSimpleResp(resp_frame, resp);
+      return ProcessResultResp(resp_frame, resp);
     case RespOp::kEvent:
       return ProcessSimpleResp(resp_frame, resp);
     case RespOp::kAuthChallenge:

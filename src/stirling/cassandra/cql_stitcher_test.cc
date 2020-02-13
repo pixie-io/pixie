@@ -300,8 +300,12 @@ TEST(CassStitcherTest, QueryResult) {
 
   EXPECT_EQ(record.req.msg, "SELECT * FROM system.peers");
 
-  // TODO(oazizi): Enable once parsing of results in complete.
-  // EXPECT_EQ(record.resp.msg, "");
+  EXPECT_EQ(record.resp.msg,
+            "Response type = ROWS\n"
+            "Number of columns = 9\n"
+            R"(["peer","data_center","host_id","preferred_ip","rack",)"
+            R"("release_version","rpc_address","schema_version","tokens"])"
+            "\nNumber of rows = 0");
 }
 
 TEST(CassStitcherTest, QueryError) {
@@ -353,8 +357,7 @@ TEST(CassStitcherTest, PrepareResult) {
       record.req.msg,
       R"(UPDATE counter1 SET "C0"="C0"+?,"C1"="C1"+?,"C2"="C2"+?,"C3"="C3"+?,"C4"="C4"+? WHERE KEY=?)");
 
-  // TODO(oazizi): Enable once parsing of results in complete.
-  // EXPECT_EQ(record.resp.msg, "");
+  EXPECT_EQ(record.resp.msg, "Response type = PREPARED");
 }
 
 TEST(CassStitcherTest, ExecuteResult) {
@@ -382,8 +385,7 @@ TEST(CassStitcherTest, ExecuteResult) {
                             R"("0000000000000001",)"
                             R"("3639334E3732504E3930"])");
 
-  // TODO(oazizi): Enable once parsing of results in complete.
-  // EXPECT_EQ(record.resp.msg, "");
+  EXPECT_EQ(record.resp.msg, "Response type = VOID");
 }
 
 TEST(CassStitcherTest, StartupAuthenticate) {
