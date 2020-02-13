@@ -59,7 +59,8 @@ void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_n
     RecordBuilder<&kJVMStatsTable> r(data_table);
     r.Append<kTimeIdx>(std::chrono::duration_cast<std::chrono::nanoseconds>(
                            std::chrono::steady_clock::now().time_since_epoch())
-                           .count());
+                           .count() +
+                       ClockRealTimeOffset());
     // TODO(yzhao): Figure out how to get the start time of the pid.
     system::ProcParser proc_parser(system::Config::GetInstance());
     md::UPID upid(ctx->AgentMetadataState()->asid(), pid, proc_parser.GetPIDStartTimeTicks(pid));
