@@ -8,3 +8,7 @@ export async function shallowAsync(component) {
   });
   return wrapper;
 }
+
+export const noop = () => {
+  // noop
+};
