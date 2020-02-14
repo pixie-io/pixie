@@ -24,10 +24,8 @@ StatusOr<std::unique_ptr<RelationMap>> LogicalPlanner::MakeRelationMap(const Sch
 }
 
 StatusOr<std::unique_ptr<CompilerState>> LogicalPlanner::CreateCompilerState(
-    const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* registry_info,
-    int64_t max_output_rows_per_table) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<compiler::RelationMap> rel_map,
-                      MakeRelationMap(logical_state.schema()));
+    const Schema& schema, RegistryInfo* registry_info, int64_t max_output_rows_per_table) {
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<compiler::RelationMap> rel_map, MakeRelationMap(schema));
 
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
@@ -58,7 +56,7 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
   auto ms = logical_state.plan_options().max_output_rows_per_table();
   LOG(ERROR) << "Max output rows: " << ms;
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState(logical_state, registry_info.get(), ms));
+                      CreateCompilerState(logical_state.schema(), registry_info.get(), ms));
 
   std::vector<plannerpb::QueryRequest::FlagValue> flag_values;
   for (const auto& flag_value : query_request.flag_values()) {
@@ -71,6 +69,15 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
   // Create the distributed plan.
   return distributed_planner_->Plan(logical_state.distributed_state(), compiler_state.get(),
                                     single_node_plan.get());
+}
+
+StatusOr<plannerpb::QueryFlagsSpec> LogicalPlanner::GetAvailableFlags(
+    const plannerpb::QueryRequest& query_request) {
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
+                      CreateCompilerState({}, registry_info.get(), 0));
+
+  return compiler_.GetAvailableFlags(query_request.query_str(), compiler_state.get());
 }
 
 }  // namespace logical_planner

@@ -208,6 +208,44 @@ TEST_F(LogicalPlannerTest, AppendSelfTest) {
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
 }
+constexpr char kFlagValueQuery[] = R"pxl(
+px.flags('foo', type=str, description='a random param', default='default')
+px.flags.parse()
+queryDF = px.DataFrame(table='cpu', select=['cpu0'])
+queryDF['foo_flag'] = px.flags.foo
+px.display(queryDF, 'map')
+)pxl";
+
+constexpr char kAvailableFlags[] = R"(
+flags {
+  data_type: STRING
+  semantic_type: ST_NONE
+  name: "foo"
+  description: "a random param"
+  default_value: {
+    data_type: STRING
+    string_value: "default"
+  }
+}
+)";
+
+TEST_F(LogicalPlannerTest, GetAvailableFlags) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto flags_or_s = planner->GetAvailableFlags(MakeQueryRequest(kFlagValueQuery));
+  ASSERT_OK(flags_or_s);
+  auto flags = flags_or_s.ConsumeValueOrDie();
+
+  EXPECT_THAT(flags, testing::proto::EqualsProto(kAvailableFlags));
+}
+
+// Test to make sure compiler errors can propogate properly.
+TEST_F(LogicalPlannerTest, GetAvailableFlagsSyntaxError) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  // No closing parentheses.
+  auto flags_or_s = planner->GetAvailableFlags(MakeQueryRequest("px.flags("));
+  ASSERT_NOT_OK(flags_or_s);
+  EXPECT_THAT(flags_or_s.status(), HasCompilerError("SyntaxError: Expected `\\)`"));
+}
 }  // namespace logical_planner
 }  // namespace compiler
 }  // namespace carnot

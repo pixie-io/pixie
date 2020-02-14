@@ -161,12 +161,32 @@ TEST_F(PlannerExportTest, pass_query_string_instead_of_req_should_fail) {
               ::testing::ContainsRegex("Failed to process the query request.*"));
 }
 
-// For now GetAvailableFlags returns an empty QueryFlagsSpec, this test makes sure
-// there aren't any errors along the way
+constexpr char kFlagValueQuery[] = R"pxl(
+px.flags('foo', type=str, description='a random param', default='default')
+px.flags.parse()
+queryDF = px.DataFrame(table='cpu', select=['cpu0'])
+queryDF['foo_flag'] = px.flags.foo
+px.display(queryDF, 'map')
+)pxl";
+
+constexpr char kAvailableFlags[] = R"(
+flags {
+  data_type: STRING
+  semantic_type: ST_NONE
+  name: "foo"
+  description: "a random param"
+  default_value: {
+    data_type: STRING
+    string_value: "default"
+  }
+}
+)";
+
+// Tests whether we can successfully send a query and get back the available flags schema.
 TEST_F(PlannerExportTest, get_available_flags_empty_flags) {
   planner_ = MakePlanner();
   int result_len;
-  auto query_request = MakeQueryRequest("");
+  auto query_request = MakeQueryRequest(kFlagValueQuery);
   auto interface_result =
       PlannerGetAvailableFlagsGoStr(planner_, query_request.DebugString(), &result_len);
 
@@ -174,6 +194,7 @@ TEST_F(PlannerExportTest, get_available_flags_empty_flags) {
   pl::carnot::compiler::plannerpb::GetAvailableFlagsResult get_flags_result;
   ASSERT_TRUE(get_flags_result.ParseFromString(interface_result.ConsumeValueOrDie()));
   EXPECT_OK(get_flags_result.status());
+  EXPECT_THAT(get_flags_result.query_flags(), EqualsProto(kAvailableFlags));
 }
 
 }  // namespace logical_planner

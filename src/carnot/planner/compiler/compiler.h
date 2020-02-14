@@ -30,6 +30,8 @@ class Compiler {
                                  const FlagValues& flag_values);
   StatusOr<std::shared_ptr<IR>> CompileToIR(const std::string& query, CompilerState* compiler_state,
                                             const FlagValues& flag_values);
+  StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const std::string& query,
+                                                        CompilerState* compiler_state);
 
  private:
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state,

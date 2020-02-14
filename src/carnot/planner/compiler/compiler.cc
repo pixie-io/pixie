@@ -42,6 +42,16 @@ Status Compiler::Analyze(IR* ir, CompilerState* compiler_state) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer, Analyzer::Create(compiler_state));
   return analyzer->Execute(ir);
 }
+StatusOr<plannerpb::QueryFlagsSpec> Compiler::GetAvailableFlags(const std::string& query,
+                                                                CompilerState* compiler_state) {
+  Parser parser;
+  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
+
+  std::shared_ptr<IR> ir = std::make_shared<IR>();
+  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state, {}));
+
+  return ast_walker->GetAvailableFlags(ast);
+}
 
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
                                                   CompilerState* compiler_state,

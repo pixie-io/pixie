@@ -49,10 +49,7 @@ class LogicalPlanner : public NotCopyable {
    * Currently, not implemented and just returns an empty QueryFlagsSpec
    */
   StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(
-      const plannerpb::QueryRequest& /* query_request */) {
-    plannerpb::QueryFlagsSpec query_flags;
-    return query_flags;
-  }
+      const plannerpb::QueryRequest& query_request);
 
   Status Init(std::unique_ptr<compiler::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);
@@ -65,7 +62,7 @@ class LogicalPlanner : public NotCopyable {
       const table_store::schemapb::Schema& schema_pb);
 
   StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
-      const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* registry_info,
+      const table_store::schemapb::Schema& schema, RegistryInfo* registry_info,
       int64_t max_output_rows_per_table);
 
   Compiler compiler_;
