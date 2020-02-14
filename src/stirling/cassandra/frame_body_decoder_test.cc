@@ -87,6 +87,9 @@ constexpr std::string_view kStringMultiMap = ConstStringView(
 constexpr std::string_view kEmptyStringMultiMap = ConstStringView("\x00\x00");
 constexpr std::string_view kUUID =
     ConstStringView("\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f");
+constexpr std::string_view kInet4 = ConstStringView("\x04\x01\x02\x03\x04\x00\x00\x00\x50");
+constexpr std::string_view kInet6 = ConstStringView(
+    "\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x50");
 constexpr std::string_view kIntOption = ConstStringView("\x00\x09");
 constexpr std::string_view kVarcharOption = ConstStringView("\x00\x0d");
 constexpr std::string_view kCustomOption = ConstStringView(
@@ -491,12 +494,12 @@ TEST(ExtractUUID, Exact) {
 
 TEST(ExtractUUID, Empty) {
   FrameBodyDecoder decoder(kEmpty);
-  ASSERT_NOT_OK(decoder.ExtractStringMultiMap());
+  ASSERT_NOT_OK(decoder.ExtractUUID());
 }
 
 TEST(ExtractUUID, Undersized) {
   FrameBodyDecoder decoder(std::string_view(kUUID.data(), kUUID.size() - 1));
-  ASSERT_NOT_OK(decoder.ExtractStringMultiMap());
+  ASSERT_NOT_OK(decoder.ExtractUUID());
 }
 
 TEST(ExtractUUID, Oversized) {
@@ -510,7 +513,27 @@ TEST(ExtractUUID, Oversized) {
 // ExtractInet
 //------------------------
 
-// TODO(oazizi): Add tests.
+TEST(ExtractInet, V4Exact) {
+  FrameBodyDecoder decoder(kInet4);
+  ASSERT_OK_AND_ASSIGN(SockAddr addr, decoder.ExtractInet());
+  EXPECT_EQ(addr.family, SockAddrFamily::kIPv4);
+  EXPECT_EQ(addr.AddrStr(), "1.2.3.4");
+  EXPECT_EQ(addr.port, 80);
+  ASSERT_TRUE(decoder.eof());
+
+  PL_UNUSED(kInet6);
+}
+
+TEST(ExtractInet, V6Exact) {
+  FrameBodyDecoder decoder(kInet6);
+  ASSERT_OK_AND_ASSIGN(SockAddr addr, decoder.ExtractInet());
+  EXPECT_EQ(addr.family, SockAddrFamily::kIPv6);
+  EXPECT_EQ(addr.AddrStr(), "::1");
+  EXPECT_EQ(addr.port, 80);
+  ASSERT_TRUE(decoder.eof());
+
+  PL_UNUSED(kInet6);
+}
 
 //------------------------
 // ExtractOption

@@ -162,10 +162,6 @@ class FrameBodyDecoder {
   //        representing the port.
   StatusOr<SockAddr> ExtractInet();
 
-  // [consistency]  A consistency level specification. This is a [short]
-  //               representing a consistency level ...
-  // TODO(oazizi): Add an extract function for this type.
-
   // [string map] A [short] n, followed by n pair <k><v> where <k> and <v>
   //              are [string].
   StatusOr<StringMap> ExtractStringMap();
