@@ -181,6 +181,14 @@ TEST_F(MetadataOpsTest, upid_to_node_name_test) {
   udf_tester.ForInput(upid2).Expect("");
 }
 
+TEST_F(MetadataOpsTest, pod_id_to_node_name_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto udf_tester = pl::carnot::udf::UDFTester<PodIDToNodeNameUDF>(std::move(function_ctx));
+  udf_tester.ForInput("1_uid").Expect("test_node");
+  // This pod is not available, should return empty.
+  udf_tester.ForInput("123_uid").Expect("");
+}
+
 TEST_F(MetadataOpsTest, upid_to_hostname_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToHostnameUDF>(std::move(function_ctx));

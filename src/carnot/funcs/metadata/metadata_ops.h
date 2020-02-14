@@ -331,6 +331,23 @@ class PodIDToServiceIDUDF : public ScalarUDF {
 };
 
 /**
+ * @brief Returns the Node Name of a pod ID passed in.
+ */
+class PodIDToNodeNameUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+    std::string foo = std::string(pod_info->node_name());
+    return foo;
+  }
+};
+
+/**
  * @brief Returns the service names for the given pod name.
  */
 class PodNameToServiceNameUDF : public ScalarUDF {
