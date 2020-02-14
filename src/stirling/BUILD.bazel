@@ -303,6 +303,8 @@ sh_test(
         "//src/stirling/http2/testing/go_grpc_client",
         "//src/stirling/http2/testing/go_grpc_server",
     ],
+    # TODO(PL-1462): Uprobe attaching sometimes fails.
+    flaky = True,
     tags = [
         "requires_bpf",
         # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
