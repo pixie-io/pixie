@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/compiler/distributed_splitter.h"
+#include "src/carnot/compiler/distributed/distributed_splitter.h"
 namespace pl {
 namespace carnot {
 namespace compiler {

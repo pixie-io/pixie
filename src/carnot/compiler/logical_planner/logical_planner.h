@@ -5,10 +5,10 @@
 
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
-#include "src/carnot/compiler/distributed_plan.h"
-#include "src/carnot/compiler/distributed_planner.h"
+#include "src/carnot/compiler/distributed/distributed_plan.h"
+#include "src/carnot/compiler/distributed/distributed_planner.h"
+#include "src/carnot/compiler/distributed/tablet_rules.h"
 #include "src/carnot/compiler/plannerpb/query_flags.pb.h"
-#include "src/carnot/compiler/tablet_rules.h"
 
 namespace pl {
 namespace carnot {

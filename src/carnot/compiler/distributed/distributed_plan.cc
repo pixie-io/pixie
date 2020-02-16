@@ -1,4 +1,4 @@
-#include "src/carnot/compiler/distributed_plan.h"
+#include "src/carnot/compiler/distributed/distributed_plan.h"
 
 namespace pl {
 namespace carnot {

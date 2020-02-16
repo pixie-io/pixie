@@ -10,10 +10,11 @@
 
 #include "src/carnot/compiler/analyzer.h"
 #include "src/carnot/compiler/compiler.h"
-#include "src/carnot/compiler/distributed_coordinator.h"
-#include "src/carnot/compiler/distributed_rules.h"
+#include "src/carnot/compiler/distributed/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed/distributed_rules.h"
 #include "src/carnot/compiler/logical_planner/test_utils.h"
 #include "src/carnot/compiler/parser/parser.h"
+#include "src/carnot/compiler/rule_mock.h"
 #include "src/carnot/compiler/test_utils.h"
 
 namespace pl {
@@ -26,8 +27,33 @@ using logical_planner::testutils::DistributedRulesTest;
 using logical_planner::testutils::kHttpEventsSchema;
 using table_store::schema::Relation;
 using table_store::schemapb::Schema;
+using ::testing::_;
+using ::testing::Return;
 
 using PruneUnavailableSourcesRuleTest = DistributedRulesTest;
+TEST_F(DistributedRulesTest, DistributedIRRuleTest) {
+  auto physical_plan = std::make_unique<distributed::DistributedPlan>();
+  distributedpb::DistributedState physical_state =
+      LoadDistributedStatePb(kOneAgentDistributedState);
+
+  for (int64_t i = 0; i < physical_state.carnot_info_size(); ++i) {
+    int64_t carnot_id = physical_plan->AddCarnot(physical_state.carnot_info()[i]);
+    physical_plan->Get(carnot_id)->AddPlan(std::make_unique<IR>());
+  }
+
+  DistributedIRRule<MockRule> rule;
+  MockRule* subrule = rule.subrule();
+  EXPECT_CALL(*subrule, Execute(_)).Times(4).WillOnce(Return(true)).WillRepeatedly(Return(false));
+
+  auto result = rule.Execute(physical_plan.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ConsumeValueOrDie());
+
+  result = rule.Execute(physical_plan.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ConsumeValueOrDie());
+}
+
 TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnKelvinFiltersOutPEMPlan) {
   udfspb::UDTFSourceSpec udtf_spec;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUDTFServiceUpTimePb, &udtf_spec));

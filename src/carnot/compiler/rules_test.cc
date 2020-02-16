@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 #include <pypa/parser/parser.hh>
 
-#include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
@@ -2893,29 +2892,6 @@ TEST_F(RulesTest, PruneUnconnectedOperatorsRule_unchanged) {
   ASSERT_FALSE(result.ConsumeValueOrDie());
 
   EXPECT_EQ(nodes_before, graph->dag().TopologicalSort());
-}
-
-TEST_F(RulesTest, DistributedIRRuleTest) {
-  auto physical_plan = std::make_unique<distributed::DistributedPlan>();
-  distributedpb::DistributedState physical_state =
-      LoadDistributedStatePb(kOneAgentDistributedState);
-
-  for (int64_t i = 0; i < physical_state.carnot_info_size(); ++i) {
-    int64_t carnot_id = physical_plan->AddCarnot(physical_state.carnot_info()[i]);
-    physical_plan->Get(carnot_id)->AddPlan(std::make_unique<IR>());
-  }
-
-  DistributedIRRule<MockRule> rule;
-  MockRule* subrule = rule.subrule();
-  EXPECT_CALL(*subrule, Execute(_)).Times(4).WillOnce(Return(true)).WillRepeatedly(Return(false));
-
-  auto result = rule.Execute(physical_plan.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ConsumeValueOrDie());
-
-  result = rule.Execute(physical_plan.get());
-  ASSERT_OK(result);
-  EXPECT_FALSE(result.ConsumeValueOrDie());
 }
 
 TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_basic) {

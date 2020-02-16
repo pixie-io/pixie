@@ -10,7 +10,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/analyzer.h"
-#include "src/carnot/compiler/distributed_analyzer.h"
+#include "src/carnot/compiler/distributed/distributed_analyzer.h"
 #include "src/carnot/compiler/logical_planner/logical_planner.h"
 #include "src/carnot/compiler/logical_planner/test_utils.h"
 #include "src/carnot/compiler/parser/parser.h"

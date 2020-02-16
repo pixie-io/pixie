@@ -7,11 +7,11 @@
 
 #include <pypa/parser/parser.hh>
 
-#include "src/carnot/compiler/distributed_coordinator.h"
-#include "src/carnot/compiler/distributed_plan.h"
-#include "src/carnot/compiler/distributed_planner.h"
-#include "src/carnot/compiler/distributed_stitcher_rules.h"
-#include "src/carnot/compiler/grpc_source_conversion.h"
+#include "src/carnot/compiler/distributed/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed/distributed_plan.h"
+#include "src/carnot/compiler/distributed/distributed_planner.h"
+#include "src/carnot/compiler/distributed/distributed_stitcher_rules.h"
+#include "src/carnot/compiler/distributed/grpc_source_conversion.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/logical_planner/test_utils.h"
 #include "src/carnot/compiler/metadata_handler.h"

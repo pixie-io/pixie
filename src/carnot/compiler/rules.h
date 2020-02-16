@@ -8,7 +8,6 @@
 
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/compiler/compiler_state/registry_info.h"
-#include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/compiler/metadata_handler.h"
@@ -23,11 +22,6 @@ struct RuleTraits {};
 template <>
 struct RuleTraits<IR> {
   using node_type = IRNode;
-};
-
-template <>
-struct RuleTraits<distributed::DistributedPlan> {
-  using node_type = distributed::CarnotInstance;
 };
 
 template <typename TPlan>
@@ -89,7 +83,6 @@ class BaseRule {
 };
 
 using Rule = BaseRule<IR>;
-using DistributedRule = BaseRule<distributed::DistributedPlan>;
 
 class DataTypeRule : public Rule {
   /**
@@ -590,31 +583,6 @@ class AddLimitToMemorySinkRule : public Rule {
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
-};
-
-/**
- * @brief This class supports running an IR graph rule (independently) over each IR graph of a
- * DistributedPlan. This is distinct from other DistributedRules, which may modify the
- * CarnotInstances and DistributedPlan dag.
- * Note that this rule shares the state of its inner rule across all Carnot instances.
- * TODO(nserrino): Add a version of this where there is a map from CarnotInstance to Rule,
- * so that non-state-sharing use cases are supported.
- *
- */
-template <typename TRule>
-class DistributedIRRule : public DistributedRule {
- public:
-  DistributedIRRule() : DistributedRule(nullptr) { subrule_ = std::make_unique<TRule>(); }
-
-  // Used for testing.
-  TRule* subrule() { return subrule_.get(); }
-
- protected:
-  StatusOr<bool> Apply(distributed::CarnotInstance* node) override {
-    return subrule_->Execute(node->plan());
-  }
-
-  std::unique_ptr<TRule> subrule_;
 };
 
 }  // namespace compiler

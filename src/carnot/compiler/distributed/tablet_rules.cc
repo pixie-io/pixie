@@ -1,4 +1,4 @@
-#include "src/carnot/compiler/tablet_rules.h"
+#include "src/carnot/compiler/distributed/tablet_rules.h"
 
 namespace pl {
 namespace carnot {

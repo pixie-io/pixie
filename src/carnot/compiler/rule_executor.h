@@ -93,7 +93,6 @@ class BaseRuleBatch {
 };
 
 using RuleBatch = BaseRuleBatch<Rule>;
-using DistributedRuleBatch = BaseRuleBatch<DistributedRule>;
 
 template <typename TPlan>
 class RuleExecutor {

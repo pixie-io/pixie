@@ -5,12 +5,45 @@
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
+#include "src/carnot/compiler/distributed/distributed_plan.h"
+#include "src/carnot/compiler/rule_executor.h"
 #include "src/carnot/compiler/rules.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
+template <>
+struct RuleTraits<distributed::DistributedPlan> {
+  using node_type = distributed::CarnotInstance;
+};
+
 namespace distributed {
+using DistributedRule = BaseRule<distributed::DistributedPlan>;
+using DistributedRuleBatch = BaseRuleBatch<DistributedRule>;
+/**
+ * @brief This class supports running an IR graph rule (independently) over each IR graph of a
+ * DistributedPlan. This is distinct from other DistributedRules, which may modify the
+ * CarnotInstances and DistributedPlan dag.
+ * Note that this rule shares the state of its inner rule across all Carnot instances.
+ * TODO(nserrino): Add a version of this where there is a map from CarnotInstance to Rule,
+ * so that non-state-sharing use cases are supported.
+ *
+ */
+template <typename TRule>
+class DistributedIRRule : public DistributedRule {
+ public:
+  DistributedIRRule() : DistributedRule(nullptr) { subrule_ = std::make_unique<TRule>(); }
+
+  // Used for testing.
+  TRule* subrule() { return subrule_.get(); }
+
+ protected:
+  StatusOr<bool> Apply(distributed::CarnotInstance* node) override {
+    return subrule_->Execute(node->plan());
+  }
+
+  std::unique_ptr<TRule> subrule_;
+};
 
 class PruneUnavailableSourcesRule : public Rule {
  public:

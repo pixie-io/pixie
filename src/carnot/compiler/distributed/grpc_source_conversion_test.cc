@@ -7,7 +7,7 @@
 
 #include <pypa/parser/parser.hh>
 
-#include "src/carnot/compiler/grpc_source_conversion.h"
+#include "src/carnot/compiler/distributed/grpc_source_conversion.h"
 #include "src/carnot/compiler/test_utils.h"
 
 namespace pl {

@@ -9,8 +9,8 @@
 
 #include <absl/strings/substitute.h>
 #include "src/carnot/compiler/compiler.h"
-#include "src/carnot/compiler/distributed_coordinator.h"
-#include "src/carnot/compiler/distributed_planner.h"
+#include "src/carnot/compiler/distributed/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed/distributed_planner.h"
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/plan/dag.h"

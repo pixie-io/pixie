@@ -1,12 +1,12 @@
 #pragma once
 #include <memory>
 
-#include "src/carnot/compiler/distributed_plan.h"
-#include "src/carnot/compiler/distributed_rules.h"
-#include "src/carnot/compiler/distributed_stitcher_rules.h"
-#include "src/carnot/compiler/grpc_source_conversion.h"
+#include "src/carnot/compiler/distributed/distributed_plan.h"
+#include "src/carnot/compiler/distributed/distributed_rules.h"
+#include "src/carnot/compiler/distributed/distributed_stitcher_rules.h"
+#include "src/carnot/compiler/distributed/grpc_source_conversion.h"
+#include "src/carnot/compiler/distributed/tablet_rules.h"
 #include "src/carnot/compiler/rule_executor.h"
-#include "src/carnot/compiler/tablet_rules.h"
 
 namespace pl {
 namespace carnot {

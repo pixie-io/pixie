@@ -5,8 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/compiler/distributed_coordinator.h"
-#include "src/carnot/compiler/distributed_splitter.h"
+#include "src/carnot/compiler/distributed/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed/distributed_splitter.h"
 #include "src/carnot/compiler/rules.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/shared/metadata/base_types.h"

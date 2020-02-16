@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/compiler/distributed_stitcher_rules.h"
+#include "src/carnot/compiler/distributed/distributed_stitcher_rules.h"
 
 namespace pl {
 namespace carnot {

@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
-#include "src/carnot/compiler/distributed_plan.h"
+#include "src/carnot/compiler/distributed/distributed_plan.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
 

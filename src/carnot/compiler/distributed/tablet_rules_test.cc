@@ -7,7 +7,7 @@
 
 #include <pypa/parser/parser.hh>
 
-#include "src/carnot/compiler/tablet_rules.h"
+#include "src/carnot/compiler/distributed/tablet_rules.h"
 #include "src/carnot/compiler/test_utils.h"
 namespace pl {
 namespace carnot {

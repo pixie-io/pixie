@@ -7,8 +7,8 @@
 
 #include <pypa/parser/parser.hh>
 
-#include "src/carnot/compiler/distributed_coordinator.h"
-#include "src/carnot/compiler/distributed_planner.h"
+#include "src/carnot/compiler/distributed/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed/distributed_planner.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/logical_planner/test_utils.h"
 #include "src/carnot/compiler/metadata_handler.h"

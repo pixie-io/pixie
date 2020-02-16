@@ -21,6 +21,7 @@ pl_cc_library(
     hdrs = ["logical_planner.h"],
     deps = [
         "//src/carnot/compiler:cc_library",
+        "//src/carnot/compiler/distributed:cc_library",
         "//src/carnot/compiler/distributedpb:distributed_plan_pl_cc_proto",
         "//src/carnot/udf_exporter:cc_library",
     ],
@@ -120,5 +121,23 @@ pl_cc_binary(
         ":cc_library",
         ":test_utils",
         "//src/common/benchmark:cc_library",
+    ],
+)
+
+# This test needs to run as root, because stirling needs root in order to create the http and mysql events table.
+# Jenkins will run this test as root, but to run it locally, build it and then execute the bazel-bin file with sudo.
+pl_cc_test(
+    name = "preset_queries_test",
+    srcs = ["preset_queries_test.cc"],
+    data = ["//src/ui:preset_queries"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+        "//src/carnot/planpb:plan_testutils",
+        "//src/carnot/udf_exporter:cc_library",
+        "//src/shared/schema:cc_library",
+        "//src/stirling:cc_library",
+        "@com_github_skystrife_cpptoml//:cpptoml",
     ],
 )
