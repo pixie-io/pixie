@@ -185,6 +185,13 @@ class FrameBodyDecoder {
    */
   bool eof() { return buf_.empty(); }
 
+  Status ExpectEOF() {
+    if (!eof()) {
+      return error::Internal("There are still $0 bytes left", buf_.size());
+    }
+    return Status::OK();
+  }
+
  private:
   template <typename TIntType>
   StatusOr<TIntType> ExtractIntCore();

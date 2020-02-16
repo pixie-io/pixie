@@ -37,6 +37,7 @@ Status ProcessSimpleResp(Frame* resp_frame, Response* resp) {
 Status ProcessStartupReq(Frame* req_frame, Request* req) {
   FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(StringMap options, decoder.ExtractStringMap());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   DCHECK(req->msg.empty());
   req->msg = utils::ToJSONString(options);
@@ -47,6 +48,7 @@ Status ProcessStartupReq(Frame* req_frame, Request* req) {
 Status ProcessAuthResponseReq(Frame* req_frame, Request* req) {
   FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   std::string_view token_str = CreateStringView<char>(token);
 
@@ -57,14 +59,18 @@ Status ProcessAuthResponseReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessOptionsReq(Frame* req_frame, Request* req) {
-  ECHECK(req_frame->hdr.length == 0) << "Options frame not expected to have a body";
+  FrameBodyDecoder decoder(req_frame->msg);
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+
   DCHECK(req->msg.empty());
+
   return Status::OK();
 }
 
 Status ProcessRegisterReq(Frame* req_frame, Request* req) {
   FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(StringList event_types, decoder.ExtractStringList());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   DCHECK(req->msg.empty());
   req->msg = utils::ToJSONString(event_types);
@@ -76,6 +82,7 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
   FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
   PL_ASSIGN_OR_RETURN(QueryParameters qp, decoder.ExtractQueryParameters());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   // TODO(oazizi): This is just a placeholder.
   // Real implementation should figure out what type each value is, and cast into the appropriate
@@ -101,6 +108,7 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
 Status ProcessPrepareReq(Frame* req_frame, Request* req) {
   FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   DCHECK(req->msg.empty());
   req->msg = query;
@@ -112,6 +120,7 @@ Status ProcessExecuteReq(Frame* req_frame, Request* req) {
   FrameBodyDecoder decoder(req_frame->msg);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> id, decoder.ExtractShortBytes());
   PL_ASSIGN_OR_RETURN(QueryParameters qp, decoder.ExtractQueryParameters());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   // TODO(oazizi): This is just a placeholder.
   // Real implementation should figure out what type each value is, and cast into the appropriate
@@ -131,6 +140,7 @@ Status ProcessErrorResp(Frame* resp_frame, Response* resp) {
   FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(int32_t error_code, decoder.ExtractInt());
   PL_ASSIGN_OR_RETURN(std::string error_msg, decoder.ExtractString());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   DCHECK(resp->msg.empty());
   resp->msg = absl::Substitute("[$0] $1", error_code, error_msg);
@@ -140,7 +150,7 @@ Status ProcessErrorResp(Frame* resp_frame, Response* resp) {
 
 Status ProcessReadyResp(Frame* resp_frame, Response* resp) {
   FrameBodyDecoder decoder(resp_frame->msg);
-  ECHECK(decoder.eof()) << "READY frame not expected to have a body";
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   DCHECK(resp->msg.empty());
 
@@ -150,6 +160,7 @@ Status ProcessReadyResp(Frame* resp_frame, Response* resp) {
 Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
   FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(StringMultiMap options, decoder.ExtractStringMultiMap());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   DCHECK(resp->msg.empty());
   resp->msg = utils::ToJSONString(options);
@@ -160,6 +171,7 @@ Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
 Status ProcessAuthenticateResp(Frame* resp_frame, Response* resp) {
   FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(std::string authenticator_name, decoder.ExtractString());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   DCHECK(resp->msg.empty());
   resp->msg = std::move(authenticator_name);
@@ -170,6 +182,7 @@ Status ProcessAuthenticateResp(Frame* resp_frame, Response* resp) {
 Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
   FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   std::string token_hex = BytesToString(token);
 
@@ -182,6 +195,7 @@ Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
 Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
   FrameBodyDecoder decoder(resp_frame->msg);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   std::string token_hex = BytesToString(token);
 
@@ -191,7 +205,9 @@ Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
   return Status::OK();
 }
 
-Status ProcessResultVoid(FrameBodyDecoder* /* decoder */, Response* resp) {
+Status ProcessResultVoid(FrameBodyDecoder* decoder, Response* resp) {
+  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+
   DCHECK(resp->msg.empty());
   resp->msg = "Response type = VOID";
   return Status::OK();
@@ -202,6 +218,7 @@ Status ProcessResultRows(FrameBodyDecoder* decoder, Response* resp) {
   PL_ASSIGN_OR_RETURN(ResultMetadata metadata, decoder->ExtractResultMetadata());
   PL_ASSIGN_OR_RETURN(int32_t rows_count, decoder->ExtractInt());
   // Skip grabbing the row content for now.
+  // PL_RETURN_IF_ERROR(decoder->ExpectEOF());
 
   // Copy to vector so we can use ToJSONString().
   // TODO(oazizi): Find a cleaner way. This is temporary anyways.
@@ -220,6 +237,7 @@ Status ProcessResultRows(FrameBodyDecoder* decoder, Response* resp) {
 
 Status ProcessResultSetKeyspace(FrameBodyDecoder* decoder, Response* resp) {
   PL_ASSIGN_OR_RETURN(std::string keyspace_name, decoder->ExtractString());
+  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
 
   DCHECK(resp->msg.empty());
   resp->msg = absl::StrCat("Response type = SET_KEYSPACE\n", "Keyspace = ", keyspace_name);
@@ -227,6 +245,8 @@ Status ProcessResultSetKeyspace(FrameBodyDecoder* decoder, Response* resp) {
 }
 
 Status ProcessResultPrepared(FrameBodyDecoder* /* decoder */, Response* resp) {
+  // TODO(oazizi): Implement this!
+
   DCHECK(resp->msg.empty());
   resp->msg = "Response type = PREPARED";
   // TODO(oazizi): Add more information.
@@ -235,6 +255,8 @@ Status ProcessResultPrepared(FrameBodyDecoder* /* decoder */, Response* resp) {
 }
 
 Status ProcessResultSchemaChange(FrameBodyDecoder* /* decoder */, Response* resp) {
+  // TODO(oazizi): Implement this!
+
   DCHECK(resp->msg.empty());
   resp->msg = "Response type = SCHEMA_CHANGE";
   // TODO(oazizi): Add more information.
@@ -315,11 +337,12 @@ Status ProcessResp(Frame* resp_frame, Response* resp) {
 }
 
 StatusOr<Record> ProcessReqRespPair(Frame* req_frame, Frame* resp_frame) {
+  ECHECK_LT(req_frame->timestamp_ns, resp_frame->timestamp_ns);
+
   Record r;
   PL_RETURN_IF_ERROR(ProcessReq(req_frame, &r.req));
   PL_RETURN_IF_ERROR(ProcessResp(resp_frame, &r.resp));
 
-  ECHECK_LT(req_frame->timestamp_ns, resp_frame->timestamp_ns);
   CheckReqRespPair(r);
   return r;
 }
