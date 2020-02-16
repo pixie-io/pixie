@@ -20,7 +20,7 @@ namespace obj_tools {
  * @return a set of all active binaries.
  */
 std::map<std::string, std::vector<int>> GetActiveBinaries(std::filesystem::path proc,
-                                                          std::filesystem::path host);
+                                                          std::filesystem::path host = {});
 
 /**
  * Looks up specific symbols of the binaries, and returns a map from PIDs that execute the
