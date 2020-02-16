@@ -3,7 +3,7 @@
 #include <tuple>
 #include <vector>
 
-#include "src/carnot/compiler/metadata_handler.h"
+#include "src/carnot/compiler/metadata/metadata_handler.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/proto/types.pb.h"
 

@@ -10,8 +10,7 @@
 #include "src/carnot/compiler/distributed/distributed_plan.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
-#include "src/carnot/compiler/metadata_handler.h"
-#include "src/carnot/compiler/rule_executor.h"
+#include "src/carnot/compiler/rules/rule_executor.h"
 
 namespace pl {
 namespace carnot {

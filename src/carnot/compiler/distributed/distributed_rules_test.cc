@@ -14,7 +14,7 @@
 #include "src/carnot/compiler/distributed/distributed_rules.h"
 #include "src/carnot/compiler/logical_planner/test_utils.h"
 #include "src/carnot/compiler/parser/parser.h"
-#include "src/carnot/compiler/rule_mock.h"
+#include "src/carnot/compiler/rules/rule_mock.h"
 #include "src/carnot/compiler/test_utils.h"
 
 namespace pl {

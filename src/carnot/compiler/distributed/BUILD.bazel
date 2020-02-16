@@ -1,8 +1,6 @@
-# gazelle:ignore
 package(default_visibility = ["//visibility:public"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_linkopts")
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -19,6 +17,7 @@ pl_cc_library(
     hdrs = ["distributed_planner.h"],
     deps = [
         "//src/carnot/compiler:cc_library",
+        "//src/carnot/compiler/rules:cc_library",
         # TODO trim this down
         "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
         "//src/carnot/compiler/ast:cc_library",
@@ -108,6 +107,7 @@ pl_cc_test(
     srcs = ["distributed_rules_test.cc"],
     deps = [
         ":cc_library",
+        "//src/carnot/compiler/rules:test_utils",
         "//src/carnot/compiler/logical_planner:test_utils",
     ],
 )

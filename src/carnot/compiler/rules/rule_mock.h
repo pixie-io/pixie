@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/compiler/rules.h"
+#include "src/carnot/compiler/rules/rules.h"
 
 namespace pl {
 namespace carnot {

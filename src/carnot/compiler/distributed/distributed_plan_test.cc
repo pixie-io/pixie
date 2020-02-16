@@ -9,7 +9,6 @@
 
 #include "src/carnot/compiler/distributed/distributed_plan.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
-#include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/testing/protobuf.h"

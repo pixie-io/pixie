@@ -7,7 +7,7 @@
 
 #include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
-#include "src/carnot/compiler/rules.h"
+#include "src/carnot/compiler/rules/rules.h"
 
 namespace pl {
 namespace carnot {

@@ -8,9 +8,8 @@
 
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
-#include "src/carnot/compiler/metadata_handler.h"
-#include "src/carnot/compiler/rule_mock.h"
-#include "src/carnot/compiler/rules.h"
+#include "src/carnot/compiler/rules/rule_mock.h"
+#include "src/carnot/compiler/rules/rules.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 

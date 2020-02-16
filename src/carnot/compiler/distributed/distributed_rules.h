@@ -6,8 +6,8 @@
 
 #include <absl/container/flat_hash_map.h>
 #include "src/carnot/compiler/distributed/distributed_plan.h"
-#include "src/carnot/compiler/rule_executor.h"
-#include "src/carnot/compiler/rules.h"
+#include "src/carnot/compiler/rules/rule_executor.h"
+#include "src/carnot/compiler/rules/rules.h"
 
 namespace pl {
 namespace carnot {

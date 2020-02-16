@@ -1,8 +1,7 @@
-# gazelle:ignore
 package(default_visibility = ["//visibility:public"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_linkopts")
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 pl_cc_library(
     name = "cc_library",
@@ -14,21 +13,14 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "**/*_test_utils.h",
-            "rule_mock.h",
         ],
     ),
     hdrs = ["compiler.h"],
     deps = [
-        "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
         "//src/carnot/compiler/ast:cc_library",
-        # TODO maybe remove this?
-        "//src/carnot/compiler/distributedpb:distributed_plan_pl_cc_proto",
-        "//src/carnot/metadatapb:metadata_pl_cc_proto",
-        "//src/carnot/plan:cc_library",
-        "//src/carnot/planpb:plan_pl_cc_proto",
-        "//src/carnot/udf:cc_library",
-        "//third_party:libpypa",
+        "//src/carnot/compiler/metadata:cc_library",
         "//src/carnot/compiler/ir:cc_library",
+        "//src/carnot/compiler/rules:cc_library",
         "//src/carnot/compiler/compiler_error_context:cc_library",
         "//src/carnot/compiler/compiler_state:cc_library",
         "//src/carnot/compiler/parser:cc_library",
@@ -38,7 +30,6 @@ pl_cc_library(
 
 pl_cc_test_library(
     name = "test_utils",
-    srcs = glob(["rule_mock.h"]),
     hdrs = glob(["*_test_utils.h"]),
     deps = [
         ":cc_library",
@@ -79,43 +70,20 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
-pl_cc_test(
-    name = "rules_test",
-    srcs = ["rules_test.cc"],
-    deps = [
-        ":cc_library",
-        ":test_utils",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "rule_executor_test",
-    srcs = ["rule_executor_test.cc"],
-    deps = [
-        ":cc_library",
-        ":test_utils",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "metadata_handler_test",
-    srcs = ["metadata_handler_test.cc"],
-    deps = [
-        ":cc_library",
-    ],
-)
-
 go_library(
     name = "go_default_library",
-    srcs = ["compiler_error_context.go"],
+    srcs = [
+        "analyzer.h",
+        "ast_visitor.h",
+        "compiler.h",
+        "compiler_error_context.go",
+        "test_utils.h",
+        "var_table.h",
+    ],
     importpath = "pixielabs.ai/pixielabs/src/carnot/compiler",
     deps = [
         "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
-        "//src/table_store/proto:schema_pl_go_proto",
-        "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
     ],
 )

@@ -6,7 +6,7 @@
 #include "src/carnot/compiler/distributed/distributed_stitcher_rules.h"
 #include "src/carnot/compiler/distributed/grpc_source_conversion.h"
 #include "src/carnot/compiler/distributed/tablet_rules.h"
-#include "src/carnot/compiler/rule_executor.h"
+#include "src/carnot/compiler/rules/rule_executor.h"
 
 namespace pl {
 namespace carnot {

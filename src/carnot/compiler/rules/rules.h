@@ -10,7 +10,7 @@
 #include "src/carnot/compiler/compiler_state/registry_info.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
-#include "src/carnot/compiler/metadata_handler.h"
+#include "src/carnot/compiler/metadata/metadata_handler.h"
 
 namespace pl {
 namespace carnot {

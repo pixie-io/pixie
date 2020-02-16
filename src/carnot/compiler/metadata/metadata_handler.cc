@@ -1,4 +1,4 @@
-#include "src/carnot/compiler/metadata_handler.h"
+#include "src/carnot/compiler/metadata/metadata_handler.h"
 
 #include <algorithm>
 

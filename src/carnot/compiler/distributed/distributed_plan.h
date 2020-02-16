@@ -10,7 +10,6 @@
 #include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
-#include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/planpb/plan.pb.h"
 
 namespace pl {

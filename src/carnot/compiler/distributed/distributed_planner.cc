@@ -7,7 +7,7 @@
 #include "src/carnot/compiler/distributed/distributed_analyzer.h"
 #include "src/carnot/compiler/distributed/distributed_coordinator.h"
 #include "src/carnot/compiler/distributed/distributed_planner.h"
-#include "src/carnot/compiler/rules.h"
+#include "src/carnot/compiler/rules/rules.h"
 namespace pl {
 namespace carnot {
 namespace compiler {

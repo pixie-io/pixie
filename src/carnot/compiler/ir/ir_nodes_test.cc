@@ -8,7 +8,7 @@
 #include <sole.hpp>
 #include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
-#include "src/carnot/compiler/metadata_handler.h"
+#include "src/carnot/compiler/metadata/metadata_handler.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/common/testing/protobuf.h"
 #include "src/table_store/table_store.h"

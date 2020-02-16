@@ -5,7 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/compiler/ir/ir_nodes.h"
 #include "src/carnot/compiler/ir/pattern_match.h"
 #include "src/carnot/metadatapb/metadata.pb.h"
 #include "src/common/base/error.h"

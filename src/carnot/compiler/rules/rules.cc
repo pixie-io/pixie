@@ -1,4 +1,4 @@
-#include "src/carnot/compiler/rules.h"
+#include "src/carnot/compiler/rules/rules.h"
 
 #include <memory>
 #include <string>
@@ -6,7 +6,6 @@
 #include <vector>
 
 #include <absl/container/flat_hash_set.h>
-#include "src/carnot/compiler/ast_visitor.h"
 
 namespace pl {
 namespace carnot {

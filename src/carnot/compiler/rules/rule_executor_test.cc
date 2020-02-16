@@ -7,8 +7,8 @@
 
 #include <pypa/parser/parser.hh>
 
-#include "src/carnot/compiler/rule_executor.h"
-#include "src/carnot/compiler/rule_mock.h"
+#include "src/carnot/compiler/rules/rule_executor.h"
+#include "src/carnot/compiler/rules/rule_mock.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 
