@@ -15,7 +15,7 @@ pl_cc_library(
     ),
     hdrs = ["udf_exporter.h"],
     deps = [
-        "//src/carnot/compiler:cc_library",
+        "//src/carnot/planner/compiler:cc_library",
         "//src/carnot/funcs:cc_library",
         "//src/carnot/udf:cc_library",
         "//src/shared/types/proto:types_pl_cc_proto",

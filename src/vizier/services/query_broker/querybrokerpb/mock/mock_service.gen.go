@@ -8,7 +8,7 @@ import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	querybrokerpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 	reflect "reflect"
 )

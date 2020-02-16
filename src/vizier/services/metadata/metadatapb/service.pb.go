@@ -14,7 +14,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	distributedpb "pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	proto2 "pixielabs.ai/pixielabs/src/table_store/proto"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"

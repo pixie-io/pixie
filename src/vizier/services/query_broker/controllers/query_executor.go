@@ -9,7 +9,7 @@ import (
 	"github.com/nats-io/go-nats"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
-	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"

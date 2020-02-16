@@ -6,8 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/compiler/compiler.h"
 #include "src/carnot/exec/exec_state.h"
+#include "src/carnot/planner/compiler/compiler.h"
 #include "src/carnot/queryresultspb/query_results.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/metadata/metadata_state.h"

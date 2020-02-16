@@ -9,9 +9,9 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/api/controller",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/carnot/compiler:go_default_library",
-        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
-        "//src/carnot/compiler/plannerpb:query_flags_pl_go_proto",
+        "//src/carnot/planner:go_default_library",
+        "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
+        "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
         "//src/carnot/queryresultspb:query_results_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
         "//src/shared/services/authcontext:go_default_library",
@@ -33,7 +33,7 @@ go_test(
     srcs = ["vizier_resolver_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
+        "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/queryresultspb:query_results_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
         "//src/common/uuid/proto:uuid_pl_go_proto",

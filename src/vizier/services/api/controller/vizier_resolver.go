@@ -11,11 +11,11 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	uuid "github.com/satori/go.uuid"
 
-	"pixielabs.ai/pixielabs/src/carnot/compiler"
-	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	qrpb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 
-	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
+	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
@@ -54,13 +54,13 @@ func makeErrorFromStatus(status *statuspb.Status) (*QueryError, error) {
 	compilerError := new(CompilerError)
 	compilerError.Msg = &status.Msg
 	queryError.CompilerError = compilerError
-	if !compiler.HasContext(status) {
+	if !logicalplanner.HasContext(status) {
 		return queryError, nil
 	}
 
 	// Convert the LineCol
 	compilerErrorGroupPB := new(compilerpb.CompilerErrorGroup)
-	compiler.GetCompilerErrorContext(status, compilerErrorGroupPB)
+	logicalplanner.GetCompilerErrorContext(status, compilerErrorGroupPB)
 
 	lineColErrsArr := make([]*LineColError, len(compilerErrorGroupPB.Errors))
 	compilerError.LineColErrors = &lineColErrsArr

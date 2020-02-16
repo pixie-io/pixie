@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/compiler/compiler_state/registry_info.h"
+#include "src/carnot/planner/compiler_state/registry_info.h"
 #include "src/carnot/udf/registry.h"
 
 namespace pl {

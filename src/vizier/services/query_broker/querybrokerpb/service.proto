@@ -8,7 +8,7 @@ import "src/common/uuid/proto/uuid.proto";
 import "src/common/base/proto/status.proto";
 import "src/table_store/proto/schema.proto";
 import "src/vizier/services/shared/agentpb/agent.proto";
-import "src/carnot/compiler/plannerpb/query_flags.proto";
+import "src/carnot/planner/plannerpb/query_flags.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb;querybrokerpb";
 
@@ -20,11 +20,15 @@ service QueryBrokerService {
   // Returns information about registered agents.
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
   // This is an incoming request to Vizier to execute queries.
-  rpc ExecuteQuery(pl.carnot.compiler.plannerpb.QueryRequest) returns (VizierQueryResponse) {}
-  // This is an incoming request to Vizier for the schema available on each agent.
+  rpc ExecuteQuery(pl.carnot.compiler.plannerpb.QueryRequest)
+      returns (VizierQueryResponse) {}
+  // This is an incoming request to Vizier for the schema available on each
+  // agent.
   rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
-  // This is an incoming request from the agents, containing results for a query.
-  rpc ReceiveAgentQueryResult(AgentQueryResultRequest) returns (AgentQueryResultResponse) {}
+  // This is an incoming request from the agents, containing results for a
+  // query.
+  rpc ReceiveAgentQueryResult(AgentQueryResultRequest)
+      returns (AgentQueryResultResponse) {}
   // This is an incoming request to Vizier to get the Flag spec from a query.
   rpc GetAvailableFlags(pl.carnot.compiler.plannerpb.QueryRequest)
       returns (pl.carnot.compiler.plannerpb.GetAvailableFlagsResult) {}
@@ -48,7 +52,8 @@ message SchemaResponse {
 message AgentInfoRequest {}
 
 message AgentInfoResponse {
-  // Contains AgentMetadata for each of the agents currently registered with Vizier.
+  // Contains AgentMetadata for each of the agents currently registered with
+  // Vizier.
   repeated AgentMetadata info = 1;
 }
 
@@ -58,8 +63,8 @@ message AgentMetadata {
 }
 
 // TODO(zasgar/michelle): We should change this after we add the compute nodes.
-// For now, we plan to just return the QueryResponse from each agent on the message bus
-// and have the broker merge the results together.
+// For now, we plan to just return the QueryResponse from each agent on the
+// message bus and have the broker merge the results together.
 // AgentQueryResponse is returned for each execution of a query by the agent.
 message AgentQueryResponse {
   pl.statuspb.Status status = 1;
@@ -70,8 +75,8 @@ message AgentQueryResponse {
   pl.carnot.queryresultspb.QueryResult query_result = 3;
 }
 
-// AgentQueryResultRequest is a request from the agent to the query broker containing the
-// results from a query.
+// AgentQueryResultRequest is a request from the agent to the query broker
+// containing the results from a query.
 message AgentQueryResultRequest {
   uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
   AgentQueryResponse result = 2;

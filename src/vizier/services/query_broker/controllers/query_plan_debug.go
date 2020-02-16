@@ -6,7 +6,7 @@ import (
 
 	"github.com/emicklei/dot"
 	uuid "github.com/satori/go.uuid"
-	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 )
 

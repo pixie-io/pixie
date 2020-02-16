@@ -10,7 +10,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/carnot/compiler/plannerpb:query_flags_pl_go_proto",
+        "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/shared/services:go_default_library",
         "//src/utils:go_default_library",

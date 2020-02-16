@@ -1,0 +1,118 @@
+# gazelle:ignore
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_linkopts")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+            "*.h",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/test_utils.h",
+        ],
+    ),
+    hdrs = ["qlobject.h"],
+    deps = [
+        "//src/carnot/planner/ast:cc_library",
+        "//src/carnot/planner/ir:cc_library",
+        "//src/carnot/planner/parser:cc_library",
+        "//src/carnot/planner/plannerpb:query_flags_pl_cc_proto",
+        "//src/shared/types/proto:types_pl_cc_proto",
+        "//third_party:libpypa",
+    ],
+)
+
+pl_cc_test_library(
+    name = "test_utils",
+    hdrs = glob(["test_utils.h"]),
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "ql_object_test",
+    srcs = ["ql_object_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "flags_object_test",
+    srcs = ["flags_object_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "funcobject_test",
+    srcs = ["funcobject_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "dataframe_test",
+    srcs = ["dataframe_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "none_object_test",
+    srcs = ["none_object_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "type_object_test",
+    srcs = ["type_object_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "pixie_module_test",
+    srcs = ["pixie_module_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "metadata_object_test",
+    srcs = ["metadata_object_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "default_arguments_test",
+    srcs = ["default_arguments_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)

@@ -4,10 +4,10 @@
 #include <memory>
 #include <utility>
 
-#include "src/carnot/compiler/compiler_state/compiler_state.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/funcs/funcs.h"
 #include "src/carnot/plan/plan_state.h"
+#include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"

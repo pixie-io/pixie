@@ -1,0 +1,24 @@
+# gazelle:ignore
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+            "*.h",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_test_utils.h",
+        ],
+    ),
+    hdrs = ["ast_visitor.h"],
+    deps = [
+        "//src/carnot/planner/ir:cc_library",
+        "//src/carnot/planner/plannerpb:query_flags_pl_cc_proto",
+        "//third_party:libpypa",
+    ],
+)

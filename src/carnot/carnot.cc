@@ -2,12 +2,12 @@
 #include <string>
 
 #include "src/carnot/carnot.h"
-#include "src/carnot/compiler/compiler.h"
 #include "src/carnot/engine_state.h"
 #include "src/carnot/exec/exec_graph.h"
 #include "src/carnot/funcs/builtins/builtins.h"
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/plan.h"
+#include "src/carnot/planner/compiler/compiler.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/perf/perf.h"
 #include "src/shared/types/type_utils.h"

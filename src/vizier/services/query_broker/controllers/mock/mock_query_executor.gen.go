@@ -7,8 +7,8 @@ package mock_controllers
 import (
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
-	distributedpb "pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
-	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
+	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	queryresultspb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	querybrokerpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"

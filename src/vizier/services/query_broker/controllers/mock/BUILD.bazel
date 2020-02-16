@@ -6,8 +6,8 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/carnot/compiler/distributedpb:distributed_plan_pl_go_proto",
-        "//src/carnot/compiler/plannerpb:query_flags_pl_go_proto",
+        "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
+        "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/carnot/queryresultspb:query_results_pl_go_proto",
         "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",

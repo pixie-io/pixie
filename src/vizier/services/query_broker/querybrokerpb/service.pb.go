@@ -14,7 +14,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	queryresultspb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	proto3 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto2 "pixielabs.ai/pixielabs/src/common/uuid/proto"

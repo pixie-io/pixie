@@ -12,13 +12,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"pixielabs.ai/pixielabs/src/carnot/compiler"
-	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
-	"pixielabs.ai/pixielabs/src/carnot/compiler/distributedpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 
-	logicalplanner "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner"
-	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
+	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
@@ -102,7 +101,7 @@ func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *quer
 
 func formatCompilerError(status *statuspb.Status) (string, error) {
 	var errorPB compilerpb.CompilerErrorGroup
-	err := compiler.GetCompilerErrorContext(status, &errorPB)
+	err := logicalplanner.GetCompilerErrorContext(status, &errorPB)
 	if err != nil {
 		return "", err
 	}

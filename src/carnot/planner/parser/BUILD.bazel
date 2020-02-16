@@ -1,0 +1,37 @@
+# gazelle:ignore
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+            "*.h",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_test_utils.h",
+        ],
+    ),
+    hdrs = ["parser.h"],
+    deps = [
+        "//src/carnot/planner/compilerpb:compiler_status_pl_cc_proto",
+        "//src/carnot/planner/compiler_state:cc_library",
+        "//src/carnot/planner/ir:cc_library",
+        "//third_party:libpypa",
+    ],
+)
+
+pl_cc_test(
+    name = "string_reader_test",
+    srcs = ["string_reader_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "parser_test",
+    srcs = ["parser_test.cc"],
+    deps = [":cc_library", "//src/carnot/planner/compiler:test_utils"],
+)

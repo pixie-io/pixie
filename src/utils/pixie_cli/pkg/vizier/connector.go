@@ -11,7 +11,7 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc"
-	plannerpb "pixielabs.ai/pixielabs/src/carnot/compiler/plannerpb"
+	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
