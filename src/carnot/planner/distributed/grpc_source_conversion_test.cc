@@ -12,7 +12,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 
 using ::testing::_;
@@ -170,6 +170,6 @@ TEST_F(GRPCSourceConversionTest, multiple_grpc_source_groups) {
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

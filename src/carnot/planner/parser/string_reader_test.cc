@@ -10,7 +10,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 using ::testing::_;
 
@@ -105,6 +105,6 @@ TEST(StringReaderTest, pypa_args_before_kwargs_error) {
   EXPECT_FALSE(pypa::parse(lexer, ast, symbols, options));
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

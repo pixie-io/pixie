@@ -10,7 +10,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 using ::testing::UnorderedElementsAre;
 
 constexpr char kExpectedUDFInfo[] = R"(
@@ -84,6 +84,6 @@ TEST(RegistryInfo, basic) {
   EXPECT_EQ(info.udtfs()[0].name(), "OpenNetworkConnections");
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

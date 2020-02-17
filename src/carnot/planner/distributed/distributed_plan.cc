@@ -2,7 +2,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 StatusOr<distributedpb::DistributedPlan> DistributedPlan::ToProto() const {
   distributedpb::DistributedPlan physical_plan_pb;
@@ -36,6 +36,6 @@ int64_t DistributedPlan::AddCarnot(const distributedpb::CarnotInfo& carnot_info)
   return carnot_id;
 }
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -11,6 +11,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 using pypa::AstType;
 
@@ -751,5 +752,6 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefReturn(const pypa::AstReturn
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

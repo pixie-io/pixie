@@ -8,7 +8,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 class PatternMatchTest : public OperatorTests {};
 
 TEST_F(PatternMatchTest, equals_test) {
@@ -271,6 +271,7 @@ TEST_F(PatternMatchTest, OpWithParentMatch) {
   EXPECT_FALSE(Match(group, OperatorWithParent(BlockingAgg(), GroupBy())));
 }
 
-}  // namespace compiler
+}  // namespace planner
+
 }  // namespace carnot
 }  // namespace pl

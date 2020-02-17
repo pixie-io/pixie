@@ -12,7 +12,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 /**
  * Parser converts a query into an AST or errors out.
@@ -27,6 +27,6 @@ class Parser {
   StatusOr<pypa::AstModulePtr> Parse(std::string_view query);
 };
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

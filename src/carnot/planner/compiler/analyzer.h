@@ -14,6 +14,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 class Analyzer : public RuleExecutor<IR> {
@@ -122,5 +123,6 @@ class Analyzer : public RuleExecutor<IR> {
   std::unique_ptr<MetadataHandler> md_handler_;
 };
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

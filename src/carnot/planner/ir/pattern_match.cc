@@ -3,7 +3,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 bool CompileTimeIntegerArithmetic::Match(const IRNode* node) const {
   if (!Func().Match(node)) {
@@ -77,6 +77,7 @@ bool ContainsCompileTimeFunc::Match(const IRNode* node) const {
   return false;
 }
 
-}  // namespace compiler
+}  // namespace planner
+
 }  // namespace carnot
 }  // namespace pl

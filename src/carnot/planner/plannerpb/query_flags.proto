@@ -4,7 +4,7 @@ import "src/common/base/proto/status.proto";
 import "src/shared/types/proto/types.proto";
 import "src/carnot/planpb/plan.proto";
 
-package pl.carnot.compiler.plannerpb;
+package pl.carnot.planner.plannerpb;
 
 option go_package = "plannerpb";
 

@@ -11,6 +11,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 /**
@@ -239,5 +240,6 @@ class DataFrameHandler {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

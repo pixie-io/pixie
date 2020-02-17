@@ -19,15 +19,15 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
-using logical_planner::testutils::kOneAgentOneKelvinDistributedState;
-using logical_planner::testutils::kOneAgentThreeKelvinsDistributedState;
-using logical_planner::testutils::kThreeAgentsOneKelvinDistributedState;
 using ::pl::testing::proto::EqualsProto;
 using ::pl::testing::proto::Partially;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
+using testutils::kOneAgentOneKelvinDistributedState;
+using testutils::kOneAgentThreeKelvinsDistributedState;
+using testutils::kThreeAgentsOneKelvinDistributedState;
 
 class CoordinatorTest : public OperatorTests {
  protected:
@@ -216,6 +216,6 @@ TEST_F(CoordinatorTest, bad_kelvin_spec) {
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

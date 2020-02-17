@@ -27,7 +27,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 using ::pl::table_store::schema::Relation;
 using ::pl::testing::proto::EqualsProto;
@@ -60,7 +60,7 @@ class PresetQueriesTest : public ::testing::Test {
     }
 
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
-    compiler_ = Compiler();
+    compiler_ = compiler::Compiler();
 
     EXPECT_OK(table_store::schema::Schema::ToProto(&schema_, absl_rel_map));
     ParsePresetQueries();
@@ -84,7 +84,7 @@ class PresetQueriesTest : public ::testing::Test {
   std::unique_ptr<CompilerState> compiler_state_;
   std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
-  Compiler compiler_;
+  compiler::Compiler compiler_;
   table_store::schemapb::Schema schema_;
   Relation cgroups_relation_;
   const std::string tomlpath_ = "src/ui/src/containers/vizier/preset-queries.toml";
@@ -100,9 +100,8 @@ TEST_F(PresetQueriesTest, PresetQueries) {
 
   // Test single agent planning
   for (const auto& query : preset_queries_) {
-    auto planner = logical_planner::LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
-    auto single_agent_state =
-        logical_planner::testutils::CreateOneAgentOneKelvinPlannerState(schema_);
+    auto planner = LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
+    auto single_agent_state = testutils::CreateOneAgentOneKelvinPlannerState(schema_);
     plannerpb::QueryRequest query_request;
     query_request.set_query_str(query.second);
     auto plan_or_s = planner->Plan(single_agent_state, query_request);
@@ -113,9 +112,8 @@ TEST_F(PresetQueriesTest, PresetQueries) {
 
   // Test multi agent planning
   for (const auto& query : preset_queries_) {
-    auto planner = logical_planner::LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
-    auto multi_agent_state =
-        logical_planner::testutils::CreateTwoAgentsOneKelvinPlannerState(schema_);
+    auto planner = LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
+    auto multi_agent_state = testutils::CreateTwoAgentsOneKelvinPlannerState(schema_);
     plannerpb::QueryRequest query_request;
     query_request.set_query_str(query.second);
     auto plan_or_s = planner->Plan(multi_agent_state, query_request);
@@ -125,6 +123,6 @@ TEST_F(PresetQueriesTest, PresetQueries) {
   }
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

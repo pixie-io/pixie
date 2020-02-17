@@ -15,7 +15,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 #define PYPA_PTR_CAST(TYPE, VAL) \
   std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
@@ -74,6 +74,6 @@ std::string GetNameAsString(const pypa::AstPtr& node);
  */
 StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast);
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

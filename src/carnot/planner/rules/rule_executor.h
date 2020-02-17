@@ -11,7 +11,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 /**
  * @brief Class to handle rulebatch execution strategies.
  * New strategies inherit from this class and must implement the
@@ -142,6 +142,6 @@ class RuleExecutor {
   std::vector<std::unique_ptr<TRuleBatch>> rule_batches;
 };
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

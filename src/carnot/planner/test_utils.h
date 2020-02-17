@@ -21,8 +21,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
-namespace logical_planner {
+namespace planner {
 namespace testutils {
 
 /**
@@ -974,12 +973,12 @@ class DistributedRulesTest : public OperatorTests {
         absl::Substitute("udtfs{$0}", kUDTFOpenNetworkConnections), &udf_info));
 
     ASSERT_OK(registry_info_->Init(udf_info));
-    compiler_state_ = std::make_unique<compiler::CompilerState>(
+    compiler_state_ = std::make_unique<planner::CompilerState>(
         MakeRelationMap(logical_state_.schema()), registry_info_.get(), 1234);
   }
 
   std::unique_ptr<RelationMap> MakeRelationMap(const pl::table_store::schemapb::Schema& schema_pb) {
-    auto rel_map = std::make_unique<pl::carnot::compiler::RelationMap>();
+    auto rel_map = std::make_unique<pl::carnot::planner::RelationMap>();
     for (auto& relation_pair : schema_pb.relation_map()) {
       pl::table_store::schema::Relation rel;
       PL_CHECK_OK(rel.FromProto(&relation_pair.second));
@@ -996,7 +995,7 @@ class DistributedRulesTest : public OperatorTests {
     std::unique_ptr<distributed::Coordinator> coordinator =
         distributed::Coordinator::Create(distributed_state).ConsumeValueOrDie();
 
-    Compiler compiler;
+    compiler::Compiler compiler;
     std::shared_ptr<IR> single_node_plan =
         compiler.CompileToIR(query, compiler_state_.get(), {}).ConsumeValueOrDie();
 
@@ -1019,7 +1018,6 @@ class DistributedRulesTest : public OperatorTests {
 };
 
 }  // namespace testutils
-}  // namespace logical_planner
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

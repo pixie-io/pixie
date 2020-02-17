@@ -3,6 +3,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 StatusOr<std::shared_ptr<FuncObject>> FuncObject::Create(
@@ -126,5 +127,6 @@ std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> a
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -5,7 +5,7 @@ import "src/common/base/proto/status.proto";
 import "src/table_store/proto/schema.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
-package pl.carnot.compiler.distributedpb;
+package pl.carnot.planner.distributedpb;
 
 option go_package = "distributedpb";
 
@@ -15,23 +15,24 @@ message CarnotInfo {
   string query_broker_address = 1;
   // Flag if the Carnot instance hosts a GRPC server.
   bool has_grpc_server = 2 [ (gogoproto.customname) = "HasGRPCServer" ];
-  // The address of the GRPC server hosted by the Carnot instance, it has a GRPC server.
+  // The address of the GRPC server hosted by the Carnot instance, it has a GRPC
+  // server.
   string grpc_address = 3 [ (gogoproto.customname) = "GRPCAddress" ];
   // Flag if the carnot instance has an in-memory store of data.
-  // E.g. agents stores data, but some Kelvin instances might only be used for computation.
+  // E.g. agents stores data, but some Kelvin instances might only be used for
+  // computation.
   bool has_data_store = 4;
   // Flag whether this Carnot instance can process data.
   // E.g. the query broker only wants to accept data and pass it up to the UI.
   bool processes_data = 5;
   // Flag if this Carnot instance accepts remote sources.
-  // E.g. Kelvin instances accept remote sources - they are arbitrary workers, agents are not.
+  // E.g. Kelvin instances accept remote sources - they are arbitrary workers,
+  // agents are not.
   bool accepts_remote_sources = 6;
   // Info about the tables for the Carnot instance.
   repeated TableInfo table_info = 7;
   // The asid of the Agent running the Carnot.
-  uint32 asid = 8 [
-    (gogoproto.customname) = "ASID"
-    ];
+  uint32 asid = 8 [ (gogoproto.customname) = "ASID" ];
 }
 
 // Information about the table structure as well as the tablet keys.
@@ -61,8 +62,9 @@ message DistributedPlan {
   pl.carnot.planpb.DAG dag = 3;
 }
 
-// LogicalPlannerState contains the information necessary to create the Logical Plan.
-// This message is used by the query broker to send to the logical planner.
+// LogicalPlannerState contains the information necessary to create the Logical
+// Plan. This message is used by the query broker to send to the logical
+// planner.
 message LogicalPlannerState {
   // The schema of the tables, assumed to be consistent across the system.
   pl.table_store.schemapb.Schema schema = 1;

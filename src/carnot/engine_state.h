@@ -27,7 +27,7 @@ class EngineState : public NotCopyable {
   EngineState(std::unique_ptr<udf::Registry> func_registry,
               std::shared_ptr<table_store::TableStore> table_store,
               std::shared_ptr<table_store::schema::Schema> schema,
-              std::unique_ptr<compiler::RegistryInfo> registry_info,
+              std::unique_ptr<planner::RegistryInfo> registry_info,
               const exec::KelvinStubGenerator& stub_generator, exec::GRPCRouter* grpc_router)
       : func_registry_(std::move(func_registry)),
         table_store_(std::move(table_store)),
@@ -41,7 +41,7 @@ class EngineState : public NotCopyable {
       std::shared_ptr<table_store::TableStore> table_store,
       const exec::KelvinStubGenerator& stub_generator, exec::GRPCRouter* grpc_router) {
     auto schema = std::make_shared<table_store::schema::Schema>();
-    auto registry_info = std::make_unique<compiler::RegistryInfo>();
+    auto registry_info = std::make_unique<planner::RegistryInfo>();
     auto udf_info = func_registry->ToProto();
     PL_RETURN_IF_ERROR(registry_info->Init(udf_info));
 
@@ -61,10 +61,10 @@ class EngineState : public NotCopyable {
     return std::make_unique<plan::PlanState>(func_registry_.get());
   }
 
-  std::unique_ptr<compiler::CompilerState> CreateCompilerState(types::Time64NSValue time_now) {
+  std::unique_ptr<planner::CompilerState> CreateCompilerState(types::Time64NSValue time_now) {
     auto rel_map = table_store_->GetRelationMap();
-    return std::make_unique<compiler::CompilerState>(std::move(rel_map), registry_info_.get(),
-                                                     time_now);
+    return std::make_unique<planner::CompilerState>(std::move(rel_map), registry_info_.get(),
+                                                    time_now);
   }
 
   const udf::Registry* func_registry() const { return func_registry_.get(); }
@@ -73,7 +73,7 @@ class EngineState : public NotCopyable {
   std::unique_ptr<udf::Registry> func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;
   std::shared_ptr<table_store::schema::Schema> schema_;
-  std::unique_ptr<compiler::RegistryInfo> registry_info_;
+  std::unique_ptr<planner::RegistryInfo> registry_info_;
   const exec::KelvinStubGenerator stub_generator_;
   exec::GRPCRouter* grpc_router_ = nullptr;
 };

@@ -15,7 +15,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 class PypaErrorHandler {
  public:
@@ -83,6 +83,6 @@ StatusOr<pypa::AstModulePtr> Parser::Parse(std::string_view query) {
   return ast;
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

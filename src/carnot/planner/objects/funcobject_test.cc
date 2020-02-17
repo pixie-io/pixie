@@ -8,6 +8,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 using ::testing::ElementsAre;
 using PyFuncTest = QLObjectTest;
@@ -231,5 +232,6 @@ TEST_F(PyFuncTest, VariableArgsAndKwargs) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

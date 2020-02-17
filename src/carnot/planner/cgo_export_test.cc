@@ -21,8 +21,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
-namespace logical_planner {
+namespace planner {
 
 using pl::testing::proto::EqualsProto;
 using pl::testing::proto::Partially;
@@ -191,13 +190,12 @@ TEST_F(PlannerExportTest, get_available_flags_empty_flags) {
       PlannerGetAvailableFlagsGoStr(planner_, query_request.DebugString(), &result_len);
 
   ASSERT_OK(interface_result);
-  pl::carnot::compiler::plannerpb::GetAvailableFlagsResult get_flags_result;
+  pl::carnot::planner::plannerpb::GetAvailableFlagsResult get_flags_result;
   ASSERT_TRUE(get_flags_result.ParseFromString(interface_result.ConsumeValueOrDie()));
   EXPECT_OK(get_flags_result.status());
   EXPECT_THAT(get_flags_result.query_flags(), EqualsProto(kAvailableFlags));
 }
 
-}  // namespace logical_planner
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

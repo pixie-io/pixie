@@ -13,7 +13,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 
 using distributedpb::CarnotInfo;
@@ -63,6 +63,6 @@ class AssociateDistributedPlanEdgesRule : public DistributedRule {
 };
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -54,5 +54,5 @@ message AgentMetadata {
   pl.vizier.services.shared.agent.Agent agent = 1;
   pl.vizier.services.shared.agent.AgentStatus status = 2;
   // Info that describes the carnot instance for the agent.
-  pl.carnot.compiler.distributedpb.CarnotInfo carnot_info = 3;
+  pl.carnot.planner.distributedpb.CarnotInfo carnot_info = 3;
 }

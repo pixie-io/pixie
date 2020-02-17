@@ -7,7 +7,7 @@
 #include "src/carnot/planner/distributed/distributed_splitter.h"
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 
 StatusOr<bool> BlockingOperatorGRPCBridgeRule::Apply(IRNode* ir_node) {
@@ -372,6 +372,6 @@ StatusOr<GRPCSourceGroupIR*> DistributedSplitter::CreateGRPCSourceGroup(Operator
   return grpc_source_group;
 }
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

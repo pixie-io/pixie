@@ -15,7 +15,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 using table_store::schema::Relation;
 using ::testing::_;
@@ -2962,6 +2962,6 @@ TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_skip_if_no_limit) {
   EXPECT_FALSE(result.ValueOrDie());
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

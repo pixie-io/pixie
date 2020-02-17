@@ -8,6 +8,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 StatusOr<std::shared_ptr<Dataframe>> Dataframe::Create(OperatorIR* op) {
   std::shared_ptr<Dataframe> df(new Dataframe(op, op->graph_ptr()));
@@ -440,5 +441,6 @@ StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

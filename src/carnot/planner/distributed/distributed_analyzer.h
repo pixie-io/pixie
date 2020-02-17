@@ -10,7 +10,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 
 /**
@@ -60,6 +60,6 @@ class DistributedAnalyzer : public RuleExecutor<DistributedPlan> {
 };
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

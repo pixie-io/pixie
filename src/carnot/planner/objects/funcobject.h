@@ -13,6 +13,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 /**
@@ -186,5 +187,6 @@ StatusOr<TIRNode*> GetArgAs(const ParsedArgs& args, std::string_view arg_name) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

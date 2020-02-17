@@ -22,7 +22,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 class IR;
 class IRNode;
@@ -1930,6 +1930,6 @@ class RollingIR : public GroupAcceptorIR {
   ExpressionIR* window_size_;
 };
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

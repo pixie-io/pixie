@@ -280,7 +280,7 @@ const failedPlannerResult = `
 status{
 	err_code: INVALID_ARGUMENT
 	context {
-		[type.googleapis.com/pl.carnot.compiler.compilerpb.CompilerErrorGroup] {
+		[type.googleapis.com/pl.carnot.planner.compilerpb.CompilerErrorGroup] {
 			errors {
 				line_col_error {
 					line: 1
@@ -621,7 +621,7 @@ func TestPlannerErrorResult(t *testing.T) {
 
 	badPlannerResultPB := new(distributedpb.LogicalPlannerResult)
 	if err := proto.UnmarshalText(failedPlannerResult, badPlannerResultPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
+		t.Fatal("Cannot Unmarshal protobuf failedPlannerResult", failedPlannerResult)
 	}
 
 	compilerErrorGroupPB := new(compilerpb.CompilerErrorGroup)

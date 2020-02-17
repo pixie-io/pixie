@@ -15,6 +15,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 class QLObjectTest : public OperatorTests {
@@ -49,5 +50,6 @@ class QLObjectTest : public OperatorTests {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

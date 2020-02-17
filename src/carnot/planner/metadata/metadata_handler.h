@@ -14,7 +14,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 using ::pl::carnot::metadatapb::MetadataType;
 
@@ -68,6 +68,6 @@ class MetadataHandler {
   std::unordered_map<std::string, MetadataProperty*> metadata_map;
 };
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

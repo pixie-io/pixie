@@ -2,7 +2,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 
 StatusOr<bool> TabletSourceConversionRule::Apply(IRNode* ir_node) {
@@ -236,6 +236,6 @@ StatusOr<bool> Tabletizer::Execute(const distributedpb::CarnotInfo& carnot_info,
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

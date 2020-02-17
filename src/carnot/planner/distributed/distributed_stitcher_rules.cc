@@ -8,7 +8,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 
 StatusOr<bool> SetSourceGroupGRPCAddressRule::Apply(IRNode* ir_node) {
@@ -71,6 +71,6 @@ StatusOr<bool> AssociateDistributedPlanEdgesRule::ConnectGraphs(IR* from_graph, 
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

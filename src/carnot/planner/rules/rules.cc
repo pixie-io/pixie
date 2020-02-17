@@ -9,7 +9,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 using table_store::schema::Relation;
 
@@ -1579,6 +1579,6 @@ StatusOr<bool> AddLimitToMemorySinkRule::Apply(IRNode* ir_node) {
   return true;
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

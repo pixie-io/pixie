@@ -18,8 +18,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
-namespace logical_planner {
+namespace planner {
 using pl::testing::proto::EqualsProto;
 
 class LogicalPlannerTest : public ::testing::Test {
@@ -246,7 +245,7 @@ TEST_F(LogicalPlannerTest, GetAvailableFlagsSyntaxError) {
   ASSERT_NOT_OK(flags_or_s);
   EXPECT_THAT(flags_or_s.status(), HasCompilerError("SyntaxError: Expected `\\)`"));
 }
-}  // namespace logical_planner
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
+}  // namespace pl
 }  // namespace pl

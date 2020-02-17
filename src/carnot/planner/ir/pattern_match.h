@@ -44,7 +44,7 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 /**
  * @brief Match function that aliases the match function attribute of a pattern.
@@ -1000,6 +1000,6 @@ struct DataOfType : public ParentMatch {
   types::DataType type_;
 };
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -19,13 +19,13 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 
-using logical_planner::testutils::CreateTwoAgentsOneKelvinPlannerState;
-using logical_planner::testutils::DistributedRulesTest;
-using logical_planner::testutils::kHttpEventsSchema;
 using table_store::schema::Relation;
+using testutils::CreateTwoAgentsOneKelvinPlannerState;
+using testutils::DistributedRulesTest;
+using testutils::kHttpEventsSchema;
 
 using DistributedAnalyzerTest = DistributedRulesTest;
 TEST_F(DistributedAnalyzerTest, UDTFOnlyOnPEMsDoesntRunOnKelvin) {
@@ -263,6 +263,6 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinJoinWithUDTFOnPEM) {
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

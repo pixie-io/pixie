@@ -13,6 +13,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 using ::testing::Contains;
@@ -108,5 +109,6 @@ TEST_F(ASTExpressionTest, PLModuleWrongName) {
                                                         PixieModule::kPixieModuleObjName));
 }
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -11,6 +11,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 using ::testing::ElementsAre;
@@ -606,5 +607,6 @@ TEST_F(DataframeTest, ConstructorTest) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

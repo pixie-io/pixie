@@ -14,7 +14,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 /**
  * StringReader implements libpypa's reader interface for a string.
@@ -62,6 +62,6 @@ class StringReader : public pypa::Reader {
   std::vector<std::string> lines_;
 };
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

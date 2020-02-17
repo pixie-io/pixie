@@ -18,8 +18,8 @@
 #include "src/table_store/proto/schema.pb.h"
 #include "src/table_store/schema/relation.h"
 
-using pl::carnot::compiler::distributedpb::LogicalPlannerResult;
-using pl::carnot::compiler::plannerpb::GetAvailableFlagsResult;
+using pl::carnot::planner::distributedpb::LogicalPlannerResult;
+using pl::carnot::planner::plannerpb::GetAvailableFlagsResult;
 
 PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
   std::string udf_info_str(udf_info_data, udf_info_data + udf_info_len);
@@ -31,7 +31,7 @@ PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
   CHECK(did_udf_info_pb_load) << absl::Substitute("Couldn't process the udf_info: $0.",
                                                   udf_info_str);
 
-  auto planner_or_s = pl::carnot::compiler::logical_planner::LogicalPlanner::Create(udf_info_pb);
+  auto planner_or_s = pl::carnot::planner::LogicalPlanner::Create(udf_info_pb);
   if (!planner_or_s.ok()) {
     return nullptr;
   }
@@ -51,7 +51,7 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
                                    query_request_str_c + query_request_str_len);
 
   // Load in the planner state protobuf.
-  pl::carnot::compiler::distributedpb::LogicalPlannerState planner_state_pb;
+  pl::carnot::planner::distributedpb::LogicalPlannerState planner_state_pb;
   // TODO(philkuz) convert this to read serialized calls instead of human readable.
   bool planner_state_merge_success =
       google::protobuf::TextFormat::MergeFromString(planner_state_pb_str, &planner_state_pb);
@@ -63,7 +63,7 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
   }
 
   // Load in the query request protobuf.
-  pl::carnot::compiler::plannerpb::QueryRequest query_request_pb;
+  pl::carnot::planner::plannerpb::QueryRequest query_request_pb;
   // TODO(philkuz) convert this to read serialized calls instead of human readable.
   bool query_request_merge_success =
       google::protobuf::TextFormat::MergeFromString(query_request_pb_str, &query_request_pb);
@@ -74,14 +74,13 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
     return ExitEarly<LogicalPlannerResult>(err, resultLen);
   }
 
-  auto planner =
-      reinterpret_cast<pl::carnot::compiler::logical_planner::LogicalPlanner*>(planner_ptr);
+  auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
 
   auto distributed_plan_status = planner->Plan(planner_state_pb, query_request_pb);
   if (!distributed_plan_status.ok()) {
     return ExitEarly<LogicalPlannerResult>(distributed_plan_status.status(), resultLen);
   }
-  std::unique_ptr<pl::carnot::compiler::distributed::DistributedPlan> distributed_plan =
+  std::unique_ptr<pl::carnot::planner::distributed::DistributedPlan> distributed_plan =
       distributed_plan_status.ConsumeValueOrDie();
 
   // If the response is ok, then we can go ahead and set this up.
@@ -108,7 +107,7 @@ char* PlannerGetAvailableFlags(PlannerPtr planner_ptr, const char* query_request
   DCHECK(query_request_str_c != nullptr);
   std::string query_request_pb_str(query_request_str_c,
                                    query_request_str_c + query_request_str_len);
-  pl::carnot::compiler::plannerpb::QueryRequest query_request_pb;
+  pl::carnot::planner::plannerpb::QueryRequest query_request_pb;
   bool query_request_merge_success =
       google::protobuf::TextFormat::MergeFromString(query_request_pb_str, &query_request_pb);
   if (!query_request_merge_success) {
@@ -118,8 +117,7 @@ char* PlannerGetAvailableFlags(PlannerPtr planner_ptr, const char* query_request
     return ExitEarly<GetAvailableFlagsResult>(err, resultLen);
   }
 
-  auto planner =
-      reinterpret_cast<pl::carnot::compiler::logical_planner::LogicalPlanner*>(planner_ptr);
+  auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
 
   auto query_flags_spec_status = planner->GetAvailableFlags(query_request_pb);
   if (!query_flags_spec_status.ok()) {
@@ -134,7 +132,7 @@ char* PlannerGetAvailableFlags(PlannerPtr planner_ptr, const char* query_request
 }
 
 void PlannerFree(PlannerPtr planner_ptr) {
-  delete reinterpret_cast<pl::carnot::compiler::logical_planner::LogicalPlanner*>(planner_ptr);
+  delete reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
 }
 
 void StrFree(char* str) { delete str; }

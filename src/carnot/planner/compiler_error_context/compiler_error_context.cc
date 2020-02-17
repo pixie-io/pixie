@@ -12,7 +12,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 compilerpb::CompilerErrorGroup LineColErrorPb(int64_t line, int64_t column, std::string message) {
   compilerpb::CompilerErrorGroup error_group;
   compilerpb::CompilerError* err = error_group.add_errors();
@@ -57,6 +57,6 @@ Status MergeStatuses(const std::vector<Status>& statuses) {
                 std::make_unique<compilerpb::CompilerErrorGroup>(MergeGroups(error_group_pbs)));
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

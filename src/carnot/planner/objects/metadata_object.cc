@@ -6,6 +6,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 StatusOr<std::shared_ptr<MetadataObject>> MetadataObject::Create(OperatorIR* op) {
@@ -41,5 +42,6 @@ StatusOr<QLObjectPtr> MetadataObject::SubscriptHandler(const pypa::AstPtr& ast,
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

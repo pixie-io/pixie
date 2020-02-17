@@ -2,7 +2,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 StatusOr<std::vector<std::string>> ParseStringsFromCollection(const CollectionIR* list_ir) {
   std::vector<std::string> out_vector;
@@ -39,6 +39,7 @@ StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast) {
   return PYPA_PTR_CAST(Str, ast)->value;
 }
 
-}  // namespace compiler
+}  // namespace planner
+
 }  // namespace carnot
 }  // namespace pl

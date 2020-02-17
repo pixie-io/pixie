@@ -19,7 +19,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 /**
  * @brief Symbol Table is an abstraction used to access any table structure.
@@ -40,6 +40,6 @@ class SymbolTable {
 };
 using SymbolTablePtr = std::shared_ptr<SymbolTable>;
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

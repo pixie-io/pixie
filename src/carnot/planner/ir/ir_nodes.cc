@@ -6,7 +6,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 using table_store::schema::Relation;
 
@@ -1869,6 +1869,6 @@ StatusOr<absl::flat_hash_set<std::string>> RollingIR::PruneOutputColumnsToImpl(
   return error::Unimplemented("Rolling operator doesn't support PruneOutputColumntTo.");
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

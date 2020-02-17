@@ -7,6 +7,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 class MetadataObject : public QLObject {
@@ -30,5 +31,6 @@ class MetadataObject : public QLObject {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

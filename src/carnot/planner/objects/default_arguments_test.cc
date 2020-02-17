@@ -11,6 +11,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 using ::pl::table_store::schema::Relation;
 using ::testing::ElementsAre;
@@ -25,11 +26,11 @@ scalar_udfs {
 )proto";
 class DefaultArgumentsTest : public OperatorTests {
  protected:
-  std::unique_ptr<compiler::RegistryInfo> SetUpRegistryInfo() {
+  std::unique_ptr<planner::RegistryInfo> SetUpRegistryInfo() {
     udfspb::UDFInfo udf_proto;
     google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &udf_proto);
 
-    auto info = std::make_unique<compiler::RegistryInfo>();
+    auto info = std::make_unique<planner::RegistryInfo>();
     PL_CHECK_OK(info->Init(udf_proto));
     return info;
   }
@@ -191,5 +192,6 @@ TEST_F(DefaultArgumentsTest, TestQLObject) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -14,7 +14,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 using RelationMap = std::unordered_map<std::string, table_store::schema::Relation>;
 class CompilerState : public NotCopyable {
@@ -23,12 +23,12 @@ class CompilerState : public NotCopyable {
    * CompilerState manages the state needed to compile a single query. A new one will
    * be constructed for every query compiled in Carnot and it will not be reused.
    */
-  CompilerState(std::unique_ptr<RelationMap> relation_map, compiler::RegistryInfo* registry_info,
+  CompilerState(std::unique_ptr<RelationMap> relation_map, RegistryInfo* registry_info,
                 types::Time64NSValue time_now)
       : CompilerState(std::move(relation_map), registry_info, time_now,
                       /* max_output_rows_per_table */ 0) {}
 
-  CompilerState(std::unique_ptr<RelationMap> relation_map, compiler::RegistryInfo* registry_info,
+  CompilerState(std::unique_ptr<RelationMap> relation_map, RegistryInfo* registry_info,
                 types::Time64NSValue time_now, int64_t max_output_rows_per_table)
       : relation_map_(std::move(relation_map)),
         registry_info_(registry_info),
@@ -38,7 +38,7 @@ class CompilerState : public NotCopyable {
   CompilerState() = delete;
 
   RelationMap* relation_map() const { return relation_map_.get(); }
-  compiler::RegistryInfo* registry_info() const { return registry_info_; }
+  RegistryInfo* registry_info() const { return registry_info_; }
   types::Time64NSValue time_now() const { return time_now_; }
 
   std::map<RegistryKey, int64_t> udf_to_id_map() const { return udf_to_id_map_; }
@@ -69,7 +69,7 @@ class CompilerState : public NotCopyable {
 
  private:
   std::unique_ptr<RelationMap> relation_map_;
-  compiler::RegistryInfo* registry_info_;
+  RegistryInfo* registry_info_;
   types::Time64NSValue time_now_;
   // TODO(michelle): Update this map to handle init args, once we add init args to the compiler.
   std::map<RegistryKey, int64_t> udf_to_id_map_;
@@ -78,6 +78,6 @@ class CompilerState : public NotCopyable {
   int64_t max_output_rows_per_table_ = 0;
 };
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

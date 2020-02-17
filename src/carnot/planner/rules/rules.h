@@ -14,7 +14,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 template <typename TPlan>
 struct RuleTraits {};
@@ -536,8 +536,8 @@ class CleanUpStrayIRNodesRule : public Rule {
   StatusOr<bool> Apply(IRNode* ir_node) override;
 
  private:
-  // For each IRNode that stays in the graph, we keep track of its children as well so we keep them
-  // around.
+  // For each IRNode that stays in the graph, we keep track of its children as well so we
+  // keep them around.
   absl::flat_hash_set<IRNode*> connected_nodes_;
 };
 
@@ -553,8 +553,8 @@ class PruneUnconnectedOperatorsRule : public Rule {
   StatusOr<bool> Apply(IRNode* ir_node) override;
 
  private:
-  // For each IRNode that stays in the graph, we keep track of its children as well so we keep them
-  // around.
+  // For each IRNode that stays in the graph, we keep track of its children as well so we
+  // keep them around.
   absl::flat_hash_set<IRNode*> sink_connected_nodes_;
 };
 
@@ -585,6 +585,6 @@ class AddLimitToMemorySinkRule : public Rule {
   StatusOr<bool> Apply(IRNode* ir_node) override;
 };
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

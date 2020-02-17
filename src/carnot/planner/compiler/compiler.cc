@@ -18,6 +18,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 using FlagValue = plannerpb::QueryRequest::FlagValue;
@@ -77,5 +78,6 @@ Status Compiler::VerifyGraphHasMemorySink(IR* ir) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

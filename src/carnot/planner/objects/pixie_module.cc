@@ -10,6 +10,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 constexpr const char* const PixieModule::kTimeFuncs[];
 
@@ -292,5 +293,6 @@ StatusOr<QLObjectPtr> UDTFSourceHandler::Eval(IR* graph,
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

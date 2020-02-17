@@ -15,7 +15,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 using ::pl::testing::proto::EqualsProto;
 using ::pl::testing::proto::Partially;
@@ -197,6 +197,6 @@ TEST_F(DistributedPlanTest, construction_test) {
 
 }  // namespace distributed
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

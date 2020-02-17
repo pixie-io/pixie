@@ -10,7 +10,7 @@
 #include "src/carnot/planner/rules/rules.h"
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 
 StatusOr<std::unique_ptr<DistributedPlanner>> DistributedPlanner::Create() {
@@ -37,6 +37,6 @@ StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

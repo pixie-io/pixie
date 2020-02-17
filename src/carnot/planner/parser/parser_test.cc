@@ -10,7 +10,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 class ParserTest : public ::testing::Test {};
 
@@ -75,6 +75,6 @@ TEST_F(ParserTest, FuncWithTypedArgs) {
   ASSERT_OK(ast_or_s);
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

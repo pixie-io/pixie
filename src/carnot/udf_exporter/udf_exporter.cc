@@ -6,14 +6,14 @@ namespace pl {
 namespace carnot {
 namespace udfexporter {
 
-StatusOr<std::unique_ptr<compiler::RegistryInfo>> ExportUDFInfo() {
+StatusOr<std::unique_ptr<planner::RegistryInfo>> ExportUDFInfo() {
   auto registry = std::make_unique<udf::Registry>("udf_registry");
 
   vizier::funcs::VizierFuncFactoryContext ctx;
   vizier::funcs::RegisterFuncsOrDie(ctx, registry.get());
 
   udfspb::UDFInfo udf_proto = registry->ToProto();
-  auto registry_info = std::make_unique<compiler::RegistryInfo>();
+  auto registry_info = std::make_unique<planner::RegistryInfo>();
   PL_RETURN_IF_ERROR(registry_info->Init(udf_proto));
   return registry_info;
 }

@@ -11,6 +11,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 /**
@@ -53,5 +54,6 @@ class TypeObject : public QLObject {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

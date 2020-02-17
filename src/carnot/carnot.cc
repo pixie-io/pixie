@@ -98,7 +98,7 @@ class CarnotImpl final : public Carnot {
                                     absl::flat_hash_map<std::string, std::string>*);
 
   AgentMetadataCallbackFunc agent_md_callback_;
-  compiler::Compiler compiler_;
+  planner::compiler::Compiler compiler_;
   std::unique_ptr<EngineState> engine_state_;
 
   std::shared_ptr<grpc::ServerCredentials> grpc_server_creds_;

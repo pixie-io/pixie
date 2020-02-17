@@ -11,7 +11,7 @@
 #include "src/carnot/planner/distributed/tablet_rules.h"
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 using table_store::schema::Relation;
 using ::testing::Contains;
@@ -463,6 +463,6 @@ TEST_F(TabletizerTest, no_table_info_for_memory_source) {
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

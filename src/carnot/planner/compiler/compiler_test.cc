@@ -19,6 +19,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 using ::pl::table_store::schema::Relation;
@@ -47,7 +48,7 @@ class CompilerTest : public ::testing::Test {
     std::string new_udf_info = absl::Substitute("$0$1", udf_proto.DebugString(), kExtraScalarUDFs);
     google::protobuf::TextFormat::MergeFromString(new_udf_info, &udf_proto);
 
-    info_ = std::make_unique<compiler::RegistryInfo>();
+    info_ = std::make_unique<planner::RegistryInfo>();
     PL_CHECK_OK(info_->Init(udf_proto));
   }
 
@@ -3022,5 +3023,6 @@ TEST_F(CompilerTest, RollingNonTimeUnsupported) {
               HasCompilerError("Windowing is only supported on time_ at the moment"));
 }
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

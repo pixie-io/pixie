@@ -18,6 +18,7 @@ namespace pl {
 namespace carnot {
 
 using exec::CarnotTestUtils;
+using planner::compiler::Compiler;
 
 class CarnotTest : public ::testing::Test {
  protected:
@@ -1167,21 +1168,20 @@ TEST_F(CarnotTest, pass_logical_plan) {
           "px.display(df, '$0')",
       },
       "\n");
-  compiler::Compiler compiler;
+  Compiler compiler;
   int64_t current_time = 0;
   std::string logical_plan_table_name = "logical_plan";
   std::string query_table_name = "query";
 
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
-  pl::StatusOr<std::unique_ptr<compiler::RegistryInfo>> registry_info_or_s =
+  pl::StatusOr<std::unique_ptr<planner::RegistryInfo>> registry_info_or_s =
       udfexporter::ExportUDFInfo();
   ASSERT_OK(registry_info_or_s);
-  std::unique_ptr<compiler::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
+  std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
 
-  std::unique_ptr<compiler::CompilerState> compiler_state =
-      std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
-                                                current_time);
+  std::unique_ptr<planner::CompilerState> compiler_state = std::make_unique<planner::CompilerState>(
+      table_store_->GetRelationMap(), registry_info.get(), current_time);
   StatusOr<planpb::Plan> logical_plan_status = compiler.Compile(
       absl::Substitute(query, logical_plan_table_name), compiler_state.get(), /*query flags*/ {});
   ASSERT_OK(logical_plan_status);
@@ -1229,20 +1229,19 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
           "px.display(bdf, 'logical_plan')",
       },
       "\n");
-  compiler::Compiler compiler;
+  Compiler compiler;
   int64_t current_time = 0;
   std::string table_name = "logical_plan";
 
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
-  pl::StatusOr<std::unique_ptr<compiler::RegistryInfo>> registry_info_or_s =
+  pl::StatusOr<std::unique_ptr<planner::RegistryInfo>> registry_info_or_s =
       udfexporter::ExportUDFInfo();
   ASSERT_OK(registry_info_or_s);
-  std::unique_ptr<compiler::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
+  std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
 
-  std::unique_ptr<compiler::CompilerState> compiler_state =
-      std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
-                                                current_time);
+  std::unique_ptr<planner::CompilerState> compiler_state = std::make_unique<planner::CompilerState>(
+      table_store_->GetRelationMap(), registry_info.get(), current_time);
   StatusOr<planpb::Plan> logical_plan_status = compiler.Compile(
       absl::Substitute(query, table_name), compiler_state.get(), /*query flags*/ {});
   ASSERT_OK(logical_plan_status);
@@ -1269,18 +1268,17 @@ TEST_F(CarnotTest, empty_table_yields_empty_results) {
   // This test does not actually test to make sure that the AgentMetadataState works properly.
   std::string query = "px.display(px.DataFrame('empty_table'))";
 
-  compiler::Compiler compiler;
+  Compiler compiler;
   int64_t current_time = 0;
 
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
   auto registry_info_or_s = udfexporter::ExportUDFInfo();
   ASSERT_OK(registry_info_or_s);
-  std::unique_ptr<compiler::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
+  std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
 
-  std::unique_ptr<compiler::CompilerState> compiler_state =
-      std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
-                                                current_time);
+  std::unique_ptr<planner::CompilerState> compiler_state = std::make_unique<planner::CompilerState>(
+      table_store_->GetRelationMap(), registry_info.get(), current_time);
   StatusOr<planpb::Plan> plan_or_s =
       compiler.Compile(query, compiler_state.get(), /*query flags*/ {});
   ASSERT_OK(plan_or_s);

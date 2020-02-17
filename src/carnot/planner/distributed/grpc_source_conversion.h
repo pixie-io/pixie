@@ -9,7 +9,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 using table_store::schema::Relation;
 
@@ -47,6 +47,6 @@ class GRPCSourceGroupConversionRule : public Rule {
 };
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

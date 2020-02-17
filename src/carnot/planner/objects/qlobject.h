@@ -12,6 +12,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 // Forward declaration necessary because FuncObjects are the methods in QLObject but
@@ -246,5 +247,6 @@ class QLObject {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

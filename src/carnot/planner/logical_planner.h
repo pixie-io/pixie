@@ -12,8 +12,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
-namespace logical_planner {
+namespace planner {
 
 /**
  * @brief The logical planner takes in queries and a Logical Planner State and
@@ -51,7 +50,7 @@ class LogicalPlanner : public NotCopyable {
   StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(
       const plannerpb::QueryRequest& query_request);
 
-  Status Init(std::unique_ptr<compiler::RegistryInfo> registry_info);
+  Status Init(std::unique_ptr<planner::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);
 
  protected:
@@ -65,12 +64,11 @@ class LogicalPlanner : public NotCopyable {
       const table_store::schemapb::Schema& schema, RegistryInfo* registry_info,
       int64_t max_output_rows_per_table);
 
-  Compiler compiler_;
+  compiler::Compiler compiler_;
   std::unique_ptr<distributed::Planner> distributed_planner_;
-  std::unique_ptr<compiler::RegistryInfo> registry_info_;
+  std::unique_ptr<planner::RegistryInfo> registry_info_;
 };
 
-}  // namespace logical_planner
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -22,6 +22,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 #define PYPA_PTR_CAST(TYPE, VAL) \
@@ -443,5 +444,6 @@ class ASTVisitorImpl : public ASTVisitor {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

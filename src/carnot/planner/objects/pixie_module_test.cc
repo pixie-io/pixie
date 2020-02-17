@@ -6,6 +6,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 using ::pl::table_store::schema::Relation;
 
@@ -76,11 +77,11 @@ relation {
 
 class PixieModuleTest : public QLObjectTest {
  protected:
-  std::unique_ptr<compiler::RegistryInfo> SetUpRegistryInfo() {
+  std::unique_ptr<planner::RegistryInfo> SetUpRegistryInfo() {
     udfspb::UDFInfo udf_proto;
     CHECK(google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &udf_proto));
 
-    auto info = std::make_unique<compiler::RegistryInfo>();
+    auto info = std::make_unique<planner::RegistryInfo>();
     PL_CHECK_OK(info->Init(udf_proto));
     udfspb::UDTFSourceSpec spec;
     google::protobuf::TextFormat::MergeFromString(kUDTFSourcePb, &spec);
@@ -296,5 +297,6 @@ TEST_F(PixieModuleTest, flags_object_receives_values) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

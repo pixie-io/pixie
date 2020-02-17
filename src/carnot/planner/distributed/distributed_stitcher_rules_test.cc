@@ -20,17 +20,17 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
-using logical_planner::testutils::DistributedRulesTest;
-using logical_planner::testutils::kOneAgentOneKelvinDistributedState;
-using logical_planner::testutils::kOneAgentThreeKelvinsDistributedState;
-using logical_planner::testutils::kThreeAgentsOneKelvinDistributedState;
 using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
+using testutils::DistributedRulesTest;
+using testutils::kOneAgentOneKelvinDistributedState;
+using testutils::kOneAgentThreeKelvinsDistributedState;
+using testutils::kThreeAgentsOneKelvinDistributedState;
 
 class StitcherTest : public DistributedRulesTest {
  protected:
@@ -373,6 +373,6 @@ TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

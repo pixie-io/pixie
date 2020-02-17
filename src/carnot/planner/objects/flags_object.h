@@ -11,6 +11,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 using FlagValue = plannerpb::QueryRequest::FlagValue;
@@ -79,5 +80,6 @@ class FlagsObject : public QLObject {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -7,6 +7,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 /**
@@ -30,5 +31,6 @@ class ExprObject : public QLObject {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

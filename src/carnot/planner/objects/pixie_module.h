@@ -10,6 +10,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 class PixieModule : public QLObject {
@@ -100,5 +101,6 @@ class UDTFSourceHandler {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

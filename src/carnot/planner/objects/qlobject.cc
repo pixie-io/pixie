@@ -8,6 +8,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 void QLObject::AddSubscriptMethod(std::shared_ptr<FuncObject> func_object) {
   DCHECK_EQ(func_object->name(), kSubscriptMethodName);
@@ -49,5 +50,6 @@ StatusOr<QLObjectPtr> QLObject::FromIRNode(IRNode* node) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

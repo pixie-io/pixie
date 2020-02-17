@@ -3,7 +3,7 @@ syntax = "proto3";
 import "src/common/base/proto/status.proto";
 import "src/carnot/planpb/plan.proto";
 
-package pl.carnot.compiler.compilerpb;
+package pl.carnot.planner.compilerpb;
 
 option go_package = "compilerpb";
 

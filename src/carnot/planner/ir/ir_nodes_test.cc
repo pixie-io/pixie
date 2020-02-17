@@ -15,7 +15,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 using ::pl::testing::proto::EqualsProto;
 using table_store::schema::Relation;
 using ::testing::ElementsAre;
@@ -1784,6 +1784,7 @@ TEST(ZeroValueForType, TestUint128) {
   EXPECT_EQ(0, static_cast<UInt128IR*>(val)->val());
 }
 
-}  // namespace compiler
+}  // namespace planner
+
 }  // namespace carnot
 }  // namespace pl

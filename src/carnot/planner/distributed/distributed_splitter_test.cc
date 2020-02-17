@@ -16,7 +16,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
@@ -581,6 +581,6 @@ TEST_F(SplitterTest, UDTFOnSubsetOfPEMs) {
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

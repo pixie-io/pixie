@@ -2,6 +2,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 std::shared_ptr<VarTable> VarTable::Create() {
@@ -31,5 +32,6 @@ void VarTable::Add(std::string_view name, QLObjectPtr ql_object) { scope_table_[
 std::shared_ptr<VarTable> VarTable::CreateChild() { return VarTable::Create(shared_from_this()); }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

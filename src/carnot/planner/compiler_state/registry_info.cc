@@ -12,7 +12,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
   info_pb_ = info;
@@ -97,6 +97,6 @@ StatusOr<types::DataType> RegistryInfo::GetUDF(std::string name,
   return udf->second;
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

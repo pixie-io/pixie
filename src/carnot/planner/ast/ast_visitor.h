@@ -18,6 +18,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 // Forward declare;
@@ -68,5 +69,6 @@ class ASTVisitor {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

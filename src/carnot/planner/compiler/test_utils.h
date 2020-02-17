@@ -23,7 +23,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 using table_store::schema::Relation;
 
@@ -219,8 +219,8 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   PL_RETURN_IF_ERROR(info->Init(info_pb));
   auto compiler_state =
       std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
-  PL_ASSIGN_OR_RETURN(auto ast_walker,
-                      ASTVisitorImpl::Create(ir.get(), compiler_state.get(), /*flag values*/ {}));
+  PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+                                           ir.get(), compiler_state.get(), /*flag values*/ {}));
 
   pypa::AstModulePtr ast;
   pypa::SymbolTablePtr symbols;
@@ -811,12 +811,12 @@ class ASTVisitorTest : public OperatorTests {
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query,
-                                             const FlagValues& flag_values = {}) {
+                                             const compiler::FlagValues& flag_values = {}) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        ASTVisitorImpl::Create(ir.get(), compiler_state_.get(), flag_values));
+    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+                                             ir.get(), compiler_state_.get(), flag_values));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ir;
@@ -826,8 +826,9 @@ class ASTVisitorTest : public OperatorTests {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
-    PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state_.get(),
-                                                                /*query_flags*/ {}));
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get(),
+                                                         /*query_flags*/ {}));
 
     return ast_walker->GetAvailableFlags(ast);
   }
@@ -1119,6 +1120,6 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
   }
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -14,7 +14,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 
 // Forward declare here so that CarnotInstance has access.
@@ -108,6 +108,6 @@ class DistributedPlan {
 };
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

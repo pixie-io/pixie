@@ -9,7 +9,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 TEST(MetadataPropertyTests, retrieval) {
   auto md_handle = MetadataHandler::Create();
   EXPECT_TRUE(md_handle->HasProperty("service_name"));
@@ -77,6 +77,6 @@ std::vector<std::tuple<std::string, std::string>> alias_to_original = {
 INSTANTIATE_TEST_SUITE_P(AliasPropertyTestSuites, MetadataAliasPropertyTests,
                          ::testing::ValuesIn(alias_to_original));
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

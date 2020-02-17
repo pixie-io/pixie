@@ -8,6 +8,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
@@ -208,5 +209,6 @@ TEST_F(QLObjectTest, GetAttribute) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

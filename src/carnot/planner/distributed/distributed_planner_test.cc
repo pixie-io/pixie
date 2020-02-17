@@ -17,13 +17,13 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
-using logical_planner::testutils::kThreeAgentsOneKelvinDistributedState;
 using pl::testing::proto::EqualsProto;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAreArray;
+using testutils::kThreeAgentsOneKelvinDistributedState;
 
 constexpr char kOneAgentOneKelvinDistributedState[] = R"proto(
 carnot_info {
@@ -138,6 +138,6 @@ TEST_F(DistributedPlannerTest, three_agents_one_kelvin) {
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -3,7 +3,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace distributed {
 
 StatusOr<bool> PruneUnavailableSourcesRule::Apply(IRNode* node) {
@@ -143,6 +143,6 @@ StatusOr<bool> PruneEmptyPlansRule::Apply(distributed::CarnotInstance* node) {
 }
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

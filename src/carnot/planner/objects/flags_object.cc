@@ -9,6 +9,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 StatusOr<absl::flat_hash_map<std::string, DataIR*>> ParseFlagValues(IR* ir,
@@ -198,5 +199,6 @@ StatusOr<plannerpb::QueryFlagsSpec> FlagsObject::GetAvailableFlags(const pypa::A
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

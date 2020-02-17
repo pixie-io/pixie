@@ -11,7 +11,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 template <>
 struct RuleTraits<distributed::DistributedPlan> {
   using node_type = distributed::CarnotInstance;
@@ -93,6 +93,6 @@ class PruneEmptyPlansRule : public DistributedRule {
 };
 
 }  // namespace distributed
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

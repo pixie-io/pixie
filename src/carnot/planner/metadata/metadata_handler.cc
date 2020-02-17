@@ -4,7 +4,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 StatusOr<MetadataProperty*> MetadataHandler::GetProperty(const std::string& md_name) const {
   // looks up in the metadata handler
   // figures out what's available
@@ -64,6 +64,6 @@ void MetadataHandler::AddObject(MetadataType md_type, const std::vector<std::str
   }
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

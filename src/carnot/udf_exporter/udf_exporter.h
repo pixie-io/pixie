@@ -15,10 +15,10 @@ namespace udfexporter {
  * defined in the builtins. This greatly simplifies the need to carry around huge protobuf
  * strings in tests and other places, replacing it with a simple one line function call.
  *
- * @return StatusOr<std::unique_ptr<compiler::RegistryInfo>>  a pointer to the resulting registry
+ * @return StatusOr<std::unique_ptr<planner::RegistryInfo>>  a pointer to the resulting registry
  * info.
  */
-StatusOr<std::unique_ptr<compiler::RegistryInfo>> ExportUDFInfo();
+StatusOr<std::unique_ptr<planner::RegistryInfo>> ExportUDFInfo();
 
 }  // namespace udfexporter
 }  // namespace carnot

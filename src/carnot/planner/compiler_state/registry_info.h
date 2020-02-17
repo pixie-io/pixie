@@ -15,7 +15,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 enum class UDFType { kUDA = 0, kUDF = 1 };
 
@@ -86,6 +86,6 @@ class RegistryInfo {
   udfspb::UDFInfo info_pb_;
 };
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

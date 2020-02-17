@@ -10,7 +10,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 TEST(CompilerErrorContextStatus, Default) {
   int64_t line = 10;
@@ -97,6 +97,6 @@ TEST(CompilerErrorBuilder, EmptyStatusesVector) {
   // should return ok
   EXPECT_OK(MergeStatuses({}));
 }
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

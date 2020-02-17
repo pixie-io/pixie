@@ -7,6 +7,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 using MetadataObjectTest = QLObjectTest;
@@ -50,5 +51,6 @@ TEST_F(MetadataObjectTest, ErrorsOnSubscriptWithNonString) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

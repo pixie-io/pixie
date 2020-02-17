@@ -8,6 +8,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 using ::testing::ElementsAre;
 class NoneObjectTest : public OperatorTests {};
@@ -19,5 +20,6 @@ TEST_F(NoneObjectTest, TestNoMethodsWork) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -4,6 +4,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 using ::testing::Contains;
@@ -54,5 +55,6 @@ TEST_F(VarTableTest, test_nested_var_table_lookup) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

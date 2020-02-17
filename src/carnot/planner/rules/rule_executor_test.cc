@@ -14,7 +14,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 
 using ::testing::_;
 
@@ -163,6 +163,6 @@ TEST_F(RuleExecutorTest, exit_early) {
   EXPECT_NOT_OK(executor->Execute(graph.get()));
 }
 
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

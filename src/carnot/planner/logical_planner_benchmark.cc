@@ -8,7 +8,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 namespace logical_planner {
 
 // NOLINTNEXTLINE : runtime/references.
@@ -43,6 +43,6 @@ BENCHMARK(BM_Query);
 BENCHMARK(BM_GetAvailFlags);
 
 }  // namespace logical_planner
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

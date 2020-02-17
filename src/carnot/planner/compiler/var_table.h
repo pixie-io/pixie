@@ -7,6 +7,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 /**
  * @brief VarTable contains variables that are generated during processing.
@@ -78,5 +79,6 @@ class VarTable : public std::enable_shared_from_this<VarTable> {
 };
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

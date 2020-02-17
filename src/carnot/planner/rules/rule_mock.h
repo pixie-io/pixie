@@ -7,7 +7,7 @@
 
 namespace pl {
 namespace carnot {
-namespace compiler {
+namespace planner {
 class MockRule : public Rule {
  public:
   explicit MockRule(CompilerState* compiler_state) : Rule(compiler_state) {}
@@ -18,6 +18,6 @@ class MockRule : public Rule {
  protected:
   MOCK_METHOD1(Apply, StatusOr<bool>(IRNode* ir_node));
 };
-}  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

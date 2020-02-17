@@ -14,6 +14,7 @@
 
 namespace pl {
 namespace carnot {
+namespace planner {
 namespace compiler {
 
 using table_store::schema::Relation;
@@ -895,5 +896,6 @@ TEST_F(AnalyzerTest, add_limit) {
 }
 
 }  // namespace compiler
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

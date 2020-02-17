@@ -20,7 +20,7 @@ service QueryBrokerService {
   // Returns information about registered agents.
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
   // This is an incoming request to Vizier to execute queries.
-  rpc ExecuteQuery(pl.carnot.compiler.plannerpb.QueryRequest)
+  rpc ExecuteQuery(pl.carnot.planner.plannerpb.QueryRequest)
       returns (VizierQueryResponse) {}
   // This is an incoming request to Vizier for the schema available on each
   // agent.
@@ -30,8 +30,8 @@ service QueryBrokerService {
   rpc ReceiveAgentQueryResult(AgentQueryResultRequest)
       returns (AgentQueryResultResponse) {}
   // This is an incoming request to Vizier to get the Flag spec from a query.
-  rpc GetAvailableFlags(pl.carnot.compiler.plannerpb.QueryRequest)
-      returns (pl.carnot.compiler.plannerpb.GetAvailableFlagsResult) {}
+  rpc GetAvailableFlags(pl.carnot.planner.plannerpb.QueryRequest)
+      returns (pl.carnot.planner.plannerpb.GetAvailableFlagsResult) {}
 }
 
 // The schema information per agent.
