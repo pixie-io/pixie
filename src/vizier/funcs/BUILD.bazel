@@ -41,20 +41,11 @@ genrule(
     cmd = "$(location :export_funcs) --out_file_path $@",
 )
 
-pl_bindata(
-    name = "udf_info_bindata",
-    srcs = [":udf_info_pb_txt"],
-    package = "funcs",
-    strip_bin_dir = True,
-)
-
 go_library(
     name = "go_default_library",
-    # Note we only import the bindata rule not the bindata file that's kept in this dir.
     srcs = [
         "funcs.h",
         "udf_info_bindata.gen.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/funcs",
-    visibility = ["//visibility:public"],
 )

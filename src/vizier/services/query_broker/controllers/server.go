@@ -24,7 +24,7 @@ import (
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
-	funcs "pixielabs.ai/pixielabs/src/vizier/funcs"
+	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/export"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"

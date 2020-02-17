@@ -14,7 +14,7 @@ import (
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/compiler/logical_planner"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	funcs "pixielabs.ai/pixielabs/src/vizier/funcs"
+	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/export"
 )
 
 const plannerStatePBStr = `

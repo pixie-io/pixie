@@ -1,0 +1,20 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_bindata")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+pl_bindata(
+    name = "udf_info_bindata",
+    srcs = ["//src/vizier/funcs:udf_info_pb_txt"],
+    package = "funcs",
+    strip_bin_dir = True,
+)
+
+go_library(
+    name = "go_default_library",
+    # Note we only import the bindata rule not the bindata file that's kept in this dir.
+    # keep
+    srcs = [":udf_info_bindata"],
+    importpath = "pixielabs.ai/pixielabs/src/vizier/funcs/export",
+    visibility = ["//visibility:public"],
+)
