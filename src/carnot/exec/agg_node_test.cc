@@ -165,6 +165,16 @@ agg_op {
   value_names: "value1"
 })";
 
+constexpr char kSingleGroupNoValues[] = R"(
+op_type: AGGREGATE_OPERATOR
+agg_op {
+  groups {
+     node: 0
+     index: 0
+  }
+  group_names: "g1"
+})";
+
 std::unique_ptr<ExecState> MakeTestExecState(udf::Registry* registry) {
   auto table_store = std::make_shared<table_store::TableStore>();
   return std::make_unique<ExecState>(registry, table_store, MockKelvinStubGenerator, sole::uuid4());
@@ -418,6 +428,32 @@ TEST_F(AggNodeTest, single_group_windowed) {
                           .AddColumn<types::Int64Value>({2, 3, 3, 4, 1, 5})
                           .get(),
                       false)
+      .Close();
+}
+
+TEST_F(AggNodeTest, no_aggregate_expressions) {
+  auto plan_node = PlanNodeFromPbtxt(kSingleGroupNoValues);
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
+
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<AggNode, plan::AggregateOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({2, 1, 3, 1})
+                       .AddColumn<types::Int64Value>({2, 5, 3, 1})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
+                       .AddColumn<types::Int64Value>({1, 2, 3, 3})
+                       .AddColumn<types::Int64Value>({1, 3, 3, 8})
+                       .get(),
+                   0)
+      .ExpectRowBatch(
+          RowBatchBuilder(output_rd, 3, true, true).AddColumn<types::Int64Value>({2, 1, 3}).get(),
+          false)
       .Close();
 }
 

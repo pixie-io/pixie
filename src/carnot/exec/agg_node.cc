@@ -341,7 +341,9 @@ Status AggNode::AggregateGroupByClause(ExecState* exec_state, const RowBatch& rb
   // 5. If it's the last batch then emit the values.
   PL_RETURN_IF_ERROR(ExtractRowTupleForBatch(rb));
   PL_RETURN_IF_ERROR(HashRowBatch(exec_state, rb));
-  PL_RETURN_IF_ERROR(EvaluatePartialAggregates(exec_state, rb.num_rows()));
+  if (plan_node_->values().size() > 0) {
+    PL_RETURN_IF_ERROR(EvaluatePartialAggregates(exec_state, rb.num_rows()));
+  }
   PL_RETURN_IF_ERROR(ResetGroupArgs());
   if (ReadyToEmitBatches(rb)) {
     RowBatch output_rb(*output_descriptor_, agg_hash_map_.size());
