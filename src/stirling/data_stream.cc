@@ -221,6 +221,7 @@ void DataStream::ProcessEvents(MessageType type) {
 template void DataStream::ProcessEvents<http::HTTPMessage>(MessageType type);
 template void DataStream::ProcessEvents<http2::Frame>(MessageType type);
 template void DataStream::ProcessEvents<mysql::Packet>(MessageType type);
+template void DataStream::ProcessEvents<cass::Frame>(MessageType type);
 
 void DataStream::Reset() {
   events_.clear();

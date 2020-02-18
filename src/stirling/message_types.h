@@ -1,5 +1,6 @@
 #pragma once
 
+#include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/http/http_parse.h"
 #include "src/stirling/http2/http2.h"
 #include "src/stirling/mysql/mysql_parse.h"
@@ -36,6 +37,11 @@ struct GetMessageType<http2::NewRecord> {
 template <>
 struct GetMessageType<mysql::Record> {
   typedef mysql::Packet type;
+};
+
+template <>
+struct GetMessageType<cass::Record> {
+  typedef cass::Frame type;
 };
 
 }  // namespace stirling

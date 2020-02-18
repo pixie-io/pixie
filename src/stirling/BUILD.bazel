@@ -33,6 +33,7 @@ pl_cc_library(
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
+        "//src/stirling/cassandra:cc_library",
         "//src/stirling/mysql:cc_library",
         "//src/stirling/http:cc_library",
         "//src/stirling/http2:cc_library",

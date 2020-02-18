@@ -21,6 +21,7 @@
 #include "src/common/system/socket_info.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
+#include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/http2/grpc.h"
@@ -64,6 +65,8 @@ DEFINE_bool(stirling_enable_grpc_uprobe_tracing, true,
             "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
+DEFINE_bool(stirling_enable_cass_tracing, true,
+            "If true, stirling will trace and process Cassandra messages.");
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will trace and process syscalls made by itself.");
 const char kRoleClientStr[] = "CLIENT";
@@ -83,6 +86,7 @@ using ::google::protobuf::Empty;
 using ::google::protobuf::Message;
 using ::google::protobuf::TextFormat;
 using ::pl::grpc::MethodInputOutput;
+using ::pl::stirling::kCQLTable;
 using ::pl::stirling::kHTTPTable;
 using ::pl::stirling::kMySQLTable;
 using ::pl::stirling::grpc::ParsePB;
@@ -130,6 +134,10 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   DCHECK(protocol_transfer_specs_.find(kProtocolMySQL) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
   protocol_transfer_specs_[kProtocolMySQL].role_to_trace = role_to_trace;
+
+  DCHECK(protocol_transfer_specs_.find(kProtocolCQL) != protocol_transfer_specs_.end());
+  protocol_transfer_specs_[kProtocolCQL].enabled = FLAGS_stirling_enable_mysql_tracing;
+  protocol_transfer_specs_[kProtocolCQL].role_to_trace = role_to_trace;
 
   DCHECK(protocol_transfer_specs_.find(kProtocolHTTP2Uprobe) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled =
@@ -208,6 +216,10 @@ Status SocketTraceConnector::InitImpl() {
   if (protocol_transfer_specs_[kProtocolMySQL].enabled) {
     PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
         kProtocolMySQL, protocol_transfer_specs_[kProtocolMySQL].role_to_trace));
+  }
+  if (protocol_transfer_specs_[kProtocolCQL].enabled) {
+    PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
+        kProtocolCQL, protocol_transfer_specs_[kProtocolCQL].role_to_trace));
   }
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
   if (FLAGS_stirling_disable_self_tracing) {
@@ -421,7 +433,8 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
   DCHECK(event->attr.traffic_class.protocol == kProtocolHTTP ||
          event->attr.traffic_class.protocol == kProtocolHTTP2 ||
-         event->attr.traffic_class.protocol == kProtocolMySQL)
+         event->attr.traffic_class.protocol == kProtocolMySQL ||
+         event->attr.traffic_class.protocol == kProtocolCQL)
       << absl::Substitute("AcceptDataEvent received event with unknown protocol: $0",
                           magic_enum::enum_name(event->attr.traffic_class.protocol));
 
@@ -692,6 +705,28 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 }
 
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
+                                         const ConnectionTracker& conn_tracker, cass::Record entry,
+                                         DataTable* data_table) {
+  DCHECK_EQ(kCQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
+
+  md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
+                conn_tracker.pid_start_time_ticks());
+
+  RecordBuilder<&kCQLTable> r(data_table);
+  r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
+  r.Append<r.ColIndex("req_op")>(static_cast<uint64_t>(entry.req.op));
+  r.Append<r.ColIndex("req_body")>(std::move(entry.req.msg));
+  r.Append<r.ColIndex("resp_op")>(static_cast<uint64_t>(entry.resp.op));
+  r.Append<r.ColIndex("resp_body")>(std::move(entry.resp.msg));
+  r.Append<r.ColIndex("latency_ns")>(
+      CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
+}
+
 //-----------------------------------------------------------------------------
 // TransferData Helpers
 //-----------------------------------------------------------------------------
@@ -816,6 +851,9 @@ template void SocketTraceConnector::TransferStream<http2::NewRecord>(ConnectorCo
 template void SocketTraceConnector::TransferStream<mysql::Record>(ConnectorContext* ctx,
                                                                   ConnectionTracker* tracker,
                                                                   DataTable* data_table);
+template void SocketTraceConnector::TransferStream<cass::Record>(ConnectorContext* ctx,
+                                                                 ConnectionTracker* tracker,
+                                                                 DataTable* data_table);
 
 }  // namespace stirling
 }  // namespace pl

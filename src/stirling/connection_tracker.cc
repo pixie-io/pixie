@@ -16,6 +16,8 @@
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
+#include "src/stirling/cassandra/cass_types.h"
+#include "src/stirling/cassandra/cql_stitcher.h"
 #include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/message_types.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
@@ -568,6 +570,25 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
   return result;
 }
 
+template <>
+std::vector<cass::Record> ConnectionTracker::ProcessMessagesImpl() {
+  Status s = ExtractReqResp<cass::Frame>();
+  if (!s.ok()) {
+    LOG(ERROR) << s.msg();
+    return {};
+  }
+
+  auto& req_messages = req_data()->Messages<cass::Frame>();
+  auto& resp_messages = resp_data()->Messages<cass::Frame>();
+
+  std::vector<cass::Record> result = cass::ProcessFrames(&req_messages, &resp_messages);
+
+  // TODO(oazizi): Enable the cleanup code below.
+  // Cleanup<cass::Frame>();
+
+  return result;
+}
+
 void ConnectionTracker::Disable(std::string_view reason) {
   VLOG_IF(1, state_ != State::kDisabled)
       << absl::Substitute("Disabling connection=$0 dest=$1:$2, reason=$3", ToString(conn_id_),
@@ -918,12 +939,14 @@ template std::vector<http::Record> ConnectionTracker::ProcessMessages();
 template std::vector<http2::Record> ConnectionTracker::ProcessMessages();
 template std::vector<mysql::Record> ConnectionTracker::ProcessMessages();
 template std::vector<http2::NewRecord> ConnectionTracker::ProcessMessages();
+template std::vector<cass::Record> ConnectionTracker::ProcessMessages();
 
 template std::string ConnectionTracker::DebugString<http::Record>(std::string_view prefix) const;
 template std::string ConnectionTracker::DebugString<http2::Record>(std::string_view prefix) const;
 template std::string ConnectionTracker::DebugString<http2::NewRecord>(
     std::string_view prefix) const;
 template std::string ConnectionTracker::DebugString<mysql::Record>(std::string_view prefix) const;
+template std::string ConnectionTracker::DebugString<cass::Record>(std::string_view prefix) const;
 
 }  // namespace stirling
 }  // namespace pl

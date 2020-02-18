@@ -29,6 +29,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/cass_table.h"
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/http_table.h"
@@ -72,9 +73,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr auto kMySQLPerfBuffers =
       MakeArray<std::string_view>("socket_control_events", "socket_data_events");
 
-  static constexpr auto kTables = MakeArray(kHTTPTable, kMySQLTable);
+  static constexpr auto kCassPerfBuffers =
+      MakeArray<std::string_view>("socket_control_events", "socket_data_events");
+
+  static constexpr auto kTables = MakeArray(kHTTPTable, kMySQLTable, kCQLTable);
   static constexpr uint32_t kHTTPTableNum = SourceConnector::TableNum(kTables, kHTTPTable);
   static constexpr uint32_t kMySQLTableNum = SourceConnector::TableNum(kTables, kMySQLTable);
+  static constexpr uint32_t kCQLTableNum = SourceConnector::TableNum(kTables, kCQLTable);
 
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
@@ -82,8 +87,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // TODO(yzhao/oazizi): This is no longer necessary because different tables now pull data from the
   // same set of perf buffers. But we'd need to think about how to adapt the APIs with the table_num
   // argument.
-  static constexpr auto kTablePerfBufferMap =
-      MakeArray<ArrayView<std::string_view> >(kHTTPPerfBuffers, kMySQLPerfBuffers);
+  static constexpr auto kTablePerfBufferMap = MakeArray<ArrayView<std::string_view> >(
+      kHTTPPerfBuffers, kMySQLPerfBuffers, kCassPerfBuffers);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
@@ -255,6 +260,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {kProtocolHTTP2Uprobe,
        {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2::NewRecord>}},
       {kProtocolMySQL, {kMySQLTableNum, &SocketTraceConnector::TransferStream<mysql::Record>}},
+      {kProtocolCQL, {kCQLTableNum, &SocketTraceConnector::TransferStream<cass::Record>}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,
       // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
       {kProtocolUnknown, {kHTTPTableNum, nullptr}},
@@ -291,6 +297,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   FRIEND_TEST(SocketTraceConnectorTest, MySQLMultipleCommands);
   FRIEND_TEST(SocketTraceConnectorTest, MySQLQueryWithLargeResultset);
   FRIEND_TEST(SocketTraceConnectorTest, MySQLMultiResultset);
+  FRIEND_TEST(SocketTraceConnectorTest, CQLQuery);
   FRIEND_TEST(SocketTraceConnectorTest, HTTP2ClientTest);
   FRIEND_TEST(SocketTraceConnectorTest, HTTP2ServerTest);
   FRIEND_TEST(SocketTraceConnectorTest, HTTP2PartialStream);

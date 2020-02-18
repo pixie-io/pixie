@@ -10,6 +10,7 @@
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
 #include "src/common/testing/testing.h"
+#include "src/stirling/cassandra/test_utils.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
@@ -1110,6 +1111,79 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
             static_cast<int>(mysql::MySQLEventType::kQuery));
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx).val, 9);
+}
+
+//-----------------------------------------------------------------------------
+// Cassandra/CQL specific tests
+//-----------------------------------------------------------------------------
+
+TEST_F(SocketTraceConnectorTest, CQLQuery) {
+  using cass::testutils::CreateCQLEvent;
+  using cass::testutils::kCQLLatencyIdx;
+  using cass::testutils::kCQLReqBodyIdx;
+  using cass::testutils::kCQLReqOpIdx;
+  using cass::testutils::kCQLRespBodyIdx;
+  using cass::testutils::kCQLRespOpIdx;
+
+  // QUERY request from client.
+  // Contains: SELECT * FROM system.peers
+  constexpr uint8_t kQueryReq[] = {0x00, 0x00, 0x00, 0x1a, 0x53, 0x45, 0x4c, 0x45, 0x43,
+                                   0x54, 0x20, 0x2a, 0x20, 0x46, 0x52, 0x4f, 0x4d, 0x20,
+                                   0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e, 0x70, 0x65,
+                                   0x65, 0x72, 0x73, 0x00, 0x01, 0x00};
+
+  // RESULT response to query kQueryReq above.
+  // Result contains 9 columns, and 0 rows. Columns are:
+  // peer,data_center,host_id,preferred_ip,rack,release_version,rpc_address,schema_version,tokens
+  constexpr uint8_t kResultResp[] = {
+      0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x09, 0x00, 0x06,
+      0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x00, 0x05, 0x70, 0x65, 0x65, 0x72, 0x73, 0x00,
+      0x04, 0x70, 0x65, 0x65, 0x72, 0x00, 0x10, 0x00, 0x0b, 0x64, 0x61, 0x74, 0x61, 0x5f,
+      0x63, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x00, 0x0d, 0x00, 0x07, 0x68, 0x6f, 0x73, 0x74,
+      0x5f, 0x69, 0x64, 0x00, 0x0c, 0x00, 0x0c, 0x70, 0x72, 0x65, 0x66, 0x65, 0x72, 0x72,
+      0x65, 0x64, 0x5f, 0x69, 0x70, 0x00, 0x10, 0x00, 0x04, 0x72, 0x61, 0x63, 0x6b, 0x00,
+      0x0d, 0x00, 0x0f, 0x72, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x5f, 0x76, 0x65, 0x72,
+      0x73, 0x69, 0x6f, 0x6e, 0x00, 0x0d, 0x00, 0x0b, 0x72, 0x70, 0x63, 0x5f, 0x61, 0x64,
+      0x64, 0x72, 0x65, 0x73, 0x73, 0x00, 0x10, 0x00, 0x0e, 0x73, 0x63, 0x68, 0x65, 0x6d,
+      0x61, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x00, 0x0c, 0x00, 0x06, 0x74,
+      0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x00, 0x22, 0x00, 0x0d, 0x00, 0x00, 0x00, 0x00};
+
+  DataTable data_table(kCQLTable);
+
+  struct socket_control_event_t conn = InitConn<kProtocolCQL>();
+
+  // Any unique number will do.
+  uint16_t stream = 2;
+  std::unique_ptr<SocketDataEvent> query_req_event =
+      InitSendEvent<kProtocolCQL>(CreateCQLEvent(cass::ReqOp::kQuery, kQueryReq, stream));
+  std::unique_ptr<SocketDataEvent> query_resp_event =
+      InitRecvEvent<kProtocolCQL>(CreateCQLEvent(cass::RespOp::kResult, kResultResp, stream));
+
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(std::move(query_req_event));
+  source_->AcceptDataEvent(std::move(query_resp_event));
+
+  source_->TransferData(ctx_.get(), SocketTraceConnector::kCQLTableNum, &data_table);
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLReqOpIdx]),
+              ElementsAre(static_cast<int64_t>(cass::ReqOp::kQuery)));
+  EXPECT_THAT(ToStringVector(record_batch[kCQLReqBodyIdx]),
+              ElementsAre("SELECT * FROM system.peers"));
+
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLRespOpIdx]),
+              ElementsAre(static_cast<int64_t>(cass::RespOp::kResult)));
+  EXPECT_THAT(ToStringVector(record_batch[kCQLRespBodyIdx]), ElementsAre(
+                                                                 R"(Response type = ROWS
+Number of columns = 9
+["peer","data_center","host_id","preferred_ip","rack","release_version","rpc_address","schema_version","tokens"]
+Number of rows = 0)"));
+
+  // In test environment, latencies are simply the number of packets in the response.
+  // In this case 7 response packets: 1 header + 1 col defs + 1 EOF + 3 rows + 1 EOF.
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLLatencyIdx]), ElementsAre(1));
 }
 
 //-----------------------------------------------------------------------------

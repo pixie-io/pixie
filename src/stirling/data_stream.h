@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 
+#include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/http/http_parse.h"
 #include "src/stirling/http2/http2.h"
@@ -215,7 +216,7 @@ class DataStream {
   // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
   std::variant<std::monostate, std::deque<http::HTTPMessage>, std::deque<http2::Frame>,
-               std::deque<http2::Stream>, std::deque<mysql::Packet>>
+               std::deque<http2::Stream>, std::deque<mysql::Packet>, std::deque<cass::Frame>>
       messages_;
 
   // The following state keeps track of whether the raw events were touched or not since the last
