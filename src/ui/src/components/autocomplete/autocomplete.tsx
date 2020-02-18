@@ -4,6 +4,7 @@ import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 
 import Completions, {CompletionId, CompletionItem, CompletionTitle} from './completions';
 import Input from './input';
+import {Key} from './key';
 
 const useStyles = makeStyles((theme: Theme) => {
   // TODO(malthus): Make use of the theme styles.
@@ -21,6 +22,19 @@ interface AutoCompleteProps {
   getCompletions: (input: string) => Promise<CompletionItem[]>;
 }
 
+type ItemsMap = Map<CompletionId, { title: CompletionTitle, index: number }>;
+
+function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions: CompletionItem[]): CompletionId {
+  const { index } = itemsMap.get(activeItem);
+  for (let i = 1; i < completions.length; i++) {
+    const next = (index + i) % completions.length;
+    if (completions[next].title) {
+      return completions[next].id;
+    }
+  }
+  return activeItem;
+}
+
 const Autocomplete: React.FC<AutoCompleteProps> = ({
   onSelection,
   getCompletions,
@@ -30,12 +44,12 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   const [completions, setCompletions] = React.useState([]);
   const [activeItem, setActiveItem] = React.useState<CompletionId>('');
   const itemsMap = React.useMemo(() => {
-    const map = new Map<CompletionId, CompletionTitle>();
-    for (const item of completions) {
+    const map: ItemsMap = new Map();
+    completions.forEach((item, index) => {
       if (!item.header) {
-        map.set(item.id, item.title);
+        map.set(item.id, { title: item.title, index });
       }
-    }
+    });
     return map;
   }, [completions]);
 
@@ -53,15 +67,28 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
 
   const handleSelection = React.useCallback((id) => {
     onSelection(id);
-    setInputValue(itemsMap.get(id));
-  }, [itemsMap]);
+    setInputValue(itemsMap.get(id).title);
+  }, [itemsMap, activeItem]);
+
+  const handleKey = (key: Key) => {
+    switch (key) {
+      case 'TAB':
+        setActiveItem(findNextItem(activeItem, itemsMap, completions));
+        break;
+      case 'ENTER':
+        handleSelection(activeItem);
+        break;
+    }
+  };
 
   return (
-    <div className={classes.root}>
+    <div className={classes.root} >
       <Input
         onChange={setInputValue}
+        onKey={handleKey}
         value={inputValue}
-        suggestion={itemsMap.get(activeItem) || ''}
+        // tslint:disable-next-line:whitespace
+        suggestion={itemsMap.get(activeItem)?.title || ''}
       />
       <Completions
         items={completions}
@@ -70,7 +97,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         onSelection={handleSelection}
         activeItem={activeItem}
       />
-    </div>
+    </div >
   );
 };
 

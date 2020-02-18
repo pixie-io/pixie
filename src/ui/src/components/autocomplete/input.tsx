@@ -3,6 +3,8 @@ import * as React from 'react';
 
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 
+import {Key} from './key';
+
 const useStyles = makeStyles((theme: Theme) => {
   // TODO(malthus): Make use of the theme styles.
   return createStyles({
@@ -33,6 +35,7 @@ const useStyles = makeStyles((theme: Theme) => {
 
 interface InputProps {
   onChange: (val: string) => void;
+  onKey: (key: Key) => void;
   suggestion?: string;
   className?: string;
   value: string;
@@ -40,6 +43,7 @@ interface InputProps {
 
 const Input: React.FC<InputProps> = ({
   onChange,
+  onKey,
   suggestion,
   className,
   value,
@@ -53,15 +57,19 @@ const Input: React.FC<InputProps> = ({
     onChange(val);
   }, []);
 
-  const handleTab = React.useCallback((e) => {
-    if (e.key !== 'Tab' || !suggestion || !value) {
-      return;
+  const handleKey = React.useCallback((e) => {
+    switch (e.key) {
+      case 'Tab':
+        e.preventDefault();
+        onKey('TAB');
+        break;
+      case 'Enter':
+        onKey('ENTER');
+        break;
+      default:
+      // noop
     }
-    if (suggestion !== value && suggestion.startsWith(value)) {
-      e.preventDefault();
-      onChange(suggestion);
-    }
-  }, [value, suggestion]);
+  }, [onKey]);
 
   const handleFocus = React.useCallback(() => {
     setFocused(true);
@@ -92,7 +100,7 @@ const Input: React.FC<InputProps> = ({
         onChange={handleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        onKeyDown={handleTab}
+        onKeyDown={handleKey}
       />
       <div>
         <span>{value}</span>

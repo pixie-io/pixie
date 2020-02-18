@@ -30,6 +30,7 @@ storiesOf('AutoComplete', module)
       <Input
         suggestion={suggestion}
         onChange={setInput}
+        onKey={action('key')}
         value={input}
       />
     );
@@ -80,7 +81,10 @@ storiesOf('AutoComplete', module)
           if (resp.status !== 200) {
             return [];
           }
-          return resp.data.map((suggestion, i) => ({ title: suggestion.word, id: i }));
+          return [
+            { header: 'Suggested words' },
+            ...resp.data.map((suggestion, i) => ({ title: suggestion.word, id: i })),
+          ];
         }}
       />
     );
