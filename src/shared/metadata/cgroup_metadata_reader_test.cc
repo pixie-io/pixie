@@ -57,20 +57,6 @@ TEST_F(CGroupMetadataReaderTest, read_pid_list) {
   EXPECT_THAT(pid_set, ::testing::UnorderedElementsAre(123, 456, 789));
 }
 
-TEST_F(CGroupMetadataReaderTest, read_pid_start_time_ticks) {
-  EXPECT_EQ(80019809, md_reader_->ReadPIDStartTimeTicks(32391));
-}
-
-TEST_F(CGroupMetadataReaderTest, read_pid_cmdline) {
-  EXPECT_THAT("/usr/lib/slack/slack --force-device-scale-factor=1.5 --high-dpi-support=1",
-              md_reader_->ReadPIDCmdline(32391));
-}
-
-TEST_F(CGroupMetadataReaderTest, read_pid_metadata_null) {
-  EXPECT_THAT("/usr/lib/at-spi2-core/at-spi2-registryd --use-gnome-session",
-              md_reader_->ReadPIDCmdline(79690));
-}
-
 TEST_F(CGroupMetadataReaderTest, cgroup_proc_file_path) {
   EXPECT_EQ(GetPathToTestDataFile(
                 "testdata/sysfs1/cgroup/cpu,cpuacct/kubepods/burstable/podabcd/c123/cgroup.procs"),

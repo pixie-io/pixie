@@ -122,6 +122,7 @@ struct PIDTerminatedEvent : public PIDStatusEvent {
  */
 std::ostream& operator<<(std::ostream& os, const PIDInfo& info);
 std::ostream& operator<<(std::ostream& os, const PIDStatusEvent& ev);
+std::ostream& operator<<(std::ostream& os, const PIDStartedEvent& ev);
 
 bool operator==(const PIDStartedEvent& lhs, const PIDStartedEvent& rhs);
 bool operator==(const PIDTerminatedEvent& lhs, const PIDTerminatedEvent& rhs);

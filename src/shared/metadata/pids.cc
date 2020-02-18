@@ -22,6 +22,10 @@ std::ostream& operator<<(std::ostream& os, const PIDStatusEvent& ev) {
   return os << ev.DebugString();
 }
 
+std::ostream& operator<<(std::ostream& os, const PIDStartedEvent& ev) {
+  return os << ev.DebugString();
+}
+
 bool operator==(const PIDStartedEvent& lhs, const PIDStartedEvent& rhs) {
   return lhs.pid_info == rhs.pid_info;
 }

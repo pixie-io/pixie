@@ -39,29 +39,10 @@ class CGroupMetadataReader : public NotCopyable {
                           std::string_view container_id,
                           absl::flat_hash_set<uint32_t>* pid_set) const;
 
-  /**
-   * @note With any of the PID functions there is an inherent race since the system is operating
-   * independently of these functions. The Linux kernel is free to recycle PIDs so it's possible
-   * (but unlikely) that multiple functions on the same PID will return inconsistent data.
-   */
-
-  /**
-   * ReadPIDStartTime gets the start time for given PID.
-   * @return the start timestamp in kernel ticks since boot.
-   * A time of zero means the read failed, or the process died.
-   */
-  virtual int64_t ReadPIDStartTimeTicks(uint32_t pid) const;
-
-  /**
-   * ReadPIDCmdline gets the command line for a given pid.
-   * @return the cmdline with spaces. Empty string means the read failed or the process died.
-   */
-  virtual std::string ReadPIDCmdline(uint32_t pid) const;
-
   virtual bool PodDirExists(const PodInfo& pod_info) const;
 
  private:
-  void InitPathTemplates(std::string_view proc_path, std::string_view sysfs_path);
+  void InitPathTemplates(std::string_view sysfs_path);
 
   std::string CGroupPodDirPath(PodQOSClass qos_class, std::string_view pod_id) const;
 

@@ -74,7 +74,8 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
     // TODO(oazizi): Consider removing this once MDS only sends pods belonging to this node/agent.
     RemoveDeadPods(ts, shadow_state.get(), md_reader_.get());
     // Update PID information.
-    PL_RETURN_IF_ERROR(ProcessPIDUpdates(ts, shadow_state.get(), md_reader_.get(), &pid_updates_));
+    PL_RETURN_IF_ERROR(
+        ProcessPIDUpdates(ts, proc_parser_, shadow_state.get(), md_reader_.get(), &pid_updates_));
   }
 
   // Increment epoch and update ts.
@@ -165,7 +166,8 @@ void AgentMetadataStateManager::RemoveDeadPods(int64_t ts, AgentMetadataState* m
 }
 
 Status AgentMetadataStateManager::ProcessPIDUpdates(
-    int64_t ts, AgentMetadataState* md, CGroupMetadataReader* md_reader,
+    int64_t ts, const system::ProcParser& proc_parser, AgentMetadataState* md,
+    CGroupMetadataReader* md_reader,
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>>* pid_updates) {
   const auto& k8s_md_state = md->k8s_metadata_state();
 
@@ -227,7 +229,7 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
     absl::flat_hash_set<UPID> cgroups_active_upids;
     // We convert all the cgroup_active_pids to the UPIDs so that we can easily convert and check.
     for (uint32_t pid : cgroups_active_pids) {
-      cgroups_active_upids.emplace(md->asid(), pid, md_reader->ReadPIDStartTimeTicks(pid));
+      cgroups_active_upids.emplace(md->asid(), pid, proc_parser.GetPIDStartTimeTicks(pid));
     }
 
     for (const auto& upid : cinfo->active_upids()) {
@@ -249,7 +251,7 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
 
     // The pids left over in the cgroups upids are new processes.
     for (const auto& upid : cgroups_active_upids) {
-      auto pid_info = std::make_unique<PIDInfo>(upid, md_reader->ReadPIDCmdline(upid.pid()), cid);
+      auto pid_info = std::make_unique<PIDInfo>(upid, proc_parser.GetPIDCmdline(upid.pid()), cid);
       cinfo->AddUPID(upid);
       // Push creation events to the queue.
       auto pid_status_event = std::make_unique<PIDStartedEvent>(*pid_info);

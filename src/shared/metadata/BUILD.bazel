@@ -31,7 +31,11 @@ pl_cc_test(
         "cgroup_metadata_reader_mock.h",
         "state_manager_test.cc",
     ],
-    deps = [":cc_library"],
+    data = glob(["testdata/**/*"]),
+    deps = [
+        ":cc_library",
+        "//src/common/system:cc_library_mock",
+    ],
 )
 
 pl_cc_test(

@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 
+#include "src/common/system/config_mock.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/cgroup_metadata_reader_mock.h"
@@ -14,6 +15,7 @@ using pl::shared::k8s::metadatapb::MetadataResourceType;
 using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
 
 using ::testing::Pair;
+using ::testing::Return;
 using ::testing::UnorderedElementsAre;
 
 constexpr char kUpdate1_0Pbtxt[] = R"(
@@ -85,30 +87,6 @@ class FakePIDData : public MockCGroupMetadataReader {
     }
 
     return error::NotFound("no found");
-  }
-
-  int64_t ReadPIDStartTimeTicks(uint32_t pid) const override {
-    if (pid == 100) {
-      return 1000;
-    }
-
-    if (pid == 200) {
-      return 2000;
-    }
-
-    return 0;
-  }
-
-  std::string ReadPIDCmdline(uint32_t pid) const override {
-    if (pid == 100) {
-      return "cmdline100";
-    }
-
-    if (pid == 200) {
-      return "cmdline200";
-    }
-
-    return "";
   }
 
   bool PodDirExists(const PodInfo& pod_info) const override {
@@ -265,8 +243,18 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> events;
   FakePIDData md_reader;
   LOG(INFO) << metadata_state_.DebugString();
-  EXPECT_OK(
-      AgentMetadataStateManager::ProcessPIDUpdates(1000, &metadata_state_, &md_reader, &events));
+
+  system::MockConfig sysconfig;
+  EXPECT_CALL(sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));
+  EXPECT_CALL(sysconfig, HasConfig()).WillRepeatedly(Return(true));
+  EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
+  EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
+  EXPECT_CALL(sysconfig, proc_path())
+      .WillRepeatedly(
+          Return(TestEnvironment::PathToTestDataFile("src/shared/metadata/testdata/proc")));
+  system::ProcParser proc_parser(sysconfig);
+  EXPECT_OK(AgentMetadataStateManager::ProcessPIDUpdates(1000, proc_parser, &metadata_state_,
+                                                         &md_reader, &events));
 
   std::unique_ptr<PIDStatusEvent> event;
   std::vector<PIDStartedEvent> pids_started;

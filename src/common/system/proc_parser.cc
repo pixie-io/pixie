@@ -388,7 +388,6 @@ Status ProcParser::ParseFromKeyValueFile(
   return Status::OK();
 }
 
-// TODO(zasgar/michelle): cleanup and merge with proc_parser.
 std::string ProcParser::GetPIDCmdline(int32_t pid) const {
   std::string fpath = absl::Substitute("$0/$1/cmdline", proc_base_path_, pid);
   std::ifstream ifs(fpath);
@@ -415,7 +414,6 @@ std::string ProcParser::GetPIDCmdline(int32_t pid) const {
   return cmdline;
 }
 
-// TODO(zasgar/michelle/oazizi): cleanup and merge with proc_parser.
 int64_t ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
   std::string fpath = absl::Substitute("$0/$1/stat", proc_base_path_, pid);
   std::ifstream ifs;

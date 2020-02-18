@@ -20,6 +20,7 @@ namespace agent {
 
 using ::pl::table_store::schema::Relation;
 using ::pl::testing::proto::EqualsProto;
+using ::testing::Return;
 
 const char* kAgentUpdateInfoSchemaNoTablets = R"proto(
 does_update_schema: true
@@ -76,6 +77,7 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     nats_conn_ = std::make_unique<FakeNATSConnector<pl::vizier::messages::VizierMessage>>();
     auto sys_config = system::MockConfig();
     EXPECT_CALL(sys_config, KernelTicksPerSecond()).WillRepeatedly(::testing::Return(10000000));
+    EXPECT_CALL(sys_config, HasConfig()).WillRepeatedly(Return(true));
 
     mds_manager_ = std::make_unique<md::AgentMetadataStateManager>(
         "host", 1, /* agent_id */ sole::uuid4(), true, absl::optional<CIDRBlock>{}, sys_config);

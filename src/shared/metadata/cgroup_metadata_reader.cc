@@ -7,17 +7,12 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/file.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 #include "src/shared/metadata/k8s_objects.h"
 
 namespace pl {
 namespace md {
-
-/*************************************************
- * Constants for the /proc/<pid>/stat file
- *************************************************/
-constexpr int kProcStatNumFields = 52;
-constexpr int kProcStatStartTimeField = 21;
 
 // Note that there are different cgroup naming formats used by Kuberenetes under sysfs.
 // The standard version is more verbose, and uses underscores instead of dashes.
@@ -30,18 +25,14 @@ constexpr int kProcStatStartTimeField = 21;
 // /sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods-pod8dbc5577_d0e2_4706_8787_57d52c03ddf2.slice/
 //        docker-14011c7d92a9e513dfd69211da0413dbf319a5e45a02b354ba6e98e10272542d.scope/cgroup.procs
 
-void CGroupMetadataReader::InitPathTemplates(std::string_view proc_path,
-                                             std::string_view sysfs_path) {
+void CGroupMetadataReader::InitPathTemplates(std::string_view sysfs_path) {
   // Note that as we create these templates, we often substitute in unresolved parameters by using
   // $0. For example, the pod ID is left as a template parameter to be resolved later.
-
-  proc_stat_path_template_ = absl::Substitute("$0/$1/stat", proc_path, "$0");
-  proc_cmdline_path_template_ = absl::Substitute("$0/$1/cmdline", proc_path, "$0");
 
   // Attempt assuming naming scheme #1.
   constexpr char kSysfsCpuAcctPath1[] = "cgroup/cpu,cpuacct/kubepods";
   std::string cgroup_kubepods_base_path = absl::Substitute("$0/$1", sysfs_path, kSysfsCpuAcctPath1);
-  if (FileExists(cgroup_kubepods_base_path)) {
+  if (fs::Exists(cgroup_kubepods_base_path).ok()) {
     cgroup_kubepod_guaranteed_path_template_ =
         absl::Substitute("$0/pod$1", cgroup_kubepods_base_path, "$0");
     cgroup_kubepod_besteffort_path_template_ =
@@ -56,7 +47,7 @@ void CGroupMetadataReader::InitPathTemplates(std::string_view proc_path,
   // Attempt assuming naming scheme #2.
   constexpr char kSysfsCpuAcctPath2[] = "cgroup/cpu,cpuacct/kubepods.slice";
   cgroup_kubepods_base_path = absl::Substitute("$0/$1", sysfs_path, kSysfsCpuAcctPath2);
-  if (FileExists(cgroup_kubepods_base_path)) {
+  if (fs::Exists(cgroup_kubepods_base_path).ok()) {
     cgroup_kubepod_guaranteed_path_template_ =
         absl::Substitute("$0/kubepods-pod$1.slice", cgroup_kubepods_base_path, "$0");
     cgroup_kubepod_besteffort_path_template_ =
@@ -76,7 +67,7 @@ void CGroupMetadataReader::InitPathTemplates(std::string_view proc_path,
 CGroupMetadataReader::CGroupMetadataReader(const system::Config& cfg)
     : ns_per_kernel_tick_(static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond())),
       clock_realtime_offset_(cfg.ClockRealTimeOffset()) {
-  InitPathTemplates(cfg.proc_path(), cfg.sysfs_path());
+  InitPathTemplates(cfg.sysfs_path());
 }
 
 std::string CGroupMetadataReader::CGroupPodDirPath(PodQOSClass qos_class,
@@ -142,63 +133,9 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
   return Status::OK();
 }
 
-// TODO(zasgar/michelle): cleanup and merge with proc_parser.
-std::string CGroupMetadataReader::ReadPIDCmdline(uint32_t pid) const {
-  std::string fpath = absl::Substitute(proc_cmdline_path_template_, pid);
-  std::ifstream ifs(fpath);
-  if (!ifs) {
-    return "";
-  }
-
-  std::string line = "";
-  std::string cmdline = "";
-  while (std::getline(ifs, line)) {
-    cmdline += std::move(line);
-  }
-
-  // Strip out extra null character at the end of the string.
-  if (!cmdline.empty() && cmdline[cmdline.size() - 1] == 0) {
-    cmdline.pop_back();
-  }
-
-  // Replace all nulls with spaces. Sometimes the command line has
-  // null to separate arguments and others it has spaces. We just make them all spaces
-  // and leave it to upstream code to tokenize properly.
-  std::replace(cmdline.begin(), cmdline.end(), static_cast<char>(0), ' ');
-
-  return cmdline;
-}
-
-int64_t CGroupMetadataReader::ReadPIDStartTimeTicks(uint32_t pid) const {
-  std::string fpath = absl::Substitute(proc_stat_path_template_, pid);
-  std::ifstream ifs;
-  ifs.open(fpath);
-  if (!ifs) {
-    return 0;
-  }
-
-  std::string line;
-  if (!std::getline(ifs, line)) {
-    return 0;
-  }
-
-  std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
-  // We check less than in case more fields are added later.
-  if (split.size() < kProcStatNumFields) {
-    return 0;
-  }
-
-  int64_t start_time_ticks;
-  if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ticks)) {
-    return 0;
-  }
-
-  return start_time_ticks;
-}
-
 bool CGroupMetadataReader::PodDirExists(const PodInfo& pod_info) const {
   auto pod_path = CGroupPodDirPath(pod_info.qos_class(), pod_info.uid());
-  return FileExists(pod_path);
+  return fs::Exists(pod_path).ok();
 }
 
 }  // namespace md

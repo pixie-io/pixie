@@ -39,7 +39,7 @@ class AgentMetadataStateManager {
   explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid, sole::uuid agent_id,
                                      bool collects_data, absl::optional<CIDRBlock> cluster_cidr_opt,
                                      const pl::system::Config& config)
-      : asid_(asid), agent_id_(agent_id), collects_data_(collects_data) {
+      : asid_(asid), agent_id_(agent_id), proc_parser_(config), collects_data_(collects_data) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
     agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid, agent_id);
     if (cluster_cidr_opt.has_value()) {
@@ -98,7 +98,7 @@ class AgentMetadataStateManager {
   static void RemoveDeadPods(int64_t ts, AgentMetadataState* md, CGroupMetadataReader* md_reader);
 
   static Status ProcessPIDUpdates(
-      int64_t ts, AgentMetadataState*, CGroupMetadataReader*,
+      int64_t ts, const system::ProcParser& proc_parser, AgentMetadataState*, CGroupMetadataReader*,
       moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>>* pid_updates);
 
   static Status DeleteMetadataForDeadObjects(AgentMetadataState*, int64_t ttl);
@@ -106,6 +106,9 @@ class AgentMetadataStateManager {
  private:
   uint32_t asid_;
   sole::uuid agent_id_;
+
+  system::ProcParser proc_parser_;
+
   std::unique_ptr<CGroupMetadataReader> md_reader_;
   std::shared_ptr<AgentMetadataState> agent_metadata_state_;
   absl::base_internal::SpinLock agent_metadata_state_lock_;
