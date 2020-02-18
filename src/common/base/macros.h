@@ -45,6 +45,15 @@
 #error "Unsupported compiler"
 #endif
 
+// Branch predictor macros to use mostly in debug code to disable it.
+#if defined(__GNUC__)
+#define PL_LIKELY(x) (__builtin_expect((x), 1))
+#define PL_UNLIKELY(x) (__builtin_expect((x), 0))
+#else
+#define PL_LIKELY(x) (x)
+#define PL_UNLIKELY(x) (x)
+#endif
+
 // For debugging.
 #define PL_LOG_VAR(var) LOG(INFO) << #var ": " << var;
 
