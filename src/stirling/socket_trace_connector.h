@@ -65,16 +65,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
  public:
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
-  // Used in ReadPerfBuffer to drain the relevant perf buffers.
-  static constexpr auto kHTTPPerfBuffers =
+  // Used in ReadPerfBuffers to drain the relevant perf buffers.
+  static constexpr auto kPerfBuffers =
       MakeArray<std::string_view>("socket_control_events", "socket_data_events",
                                   "go_grpc_header_events", "go_grpc_data_events");
-
-  static constexpr auto kMySQLPerfBuffers =
-      MakeArray<std::string_view>("socket_control_events", "socket_data_events");
-
-  static constexpr auto kCassPerfBuffers =
-      MakeArray<std::string_view>("socket_control_events", "socket_data_events");
 
   static constexpr auto kTables = MakeArray(kHTTPTable, kMySQLTable, kCQLTable);
   static constexpr uint32_t kHTTPTableNum = SourceConnector::TableNum(kTables, kHTTPTable);
@@ -82,13 +76,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr uint32_t kCQLTableNum = SourceConnector::TableNum(kTables, kCQLTable);
 
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
-
-  // Dim 0: DataTables; dim 1: perfBuffer Names
-  // TODO(yzhao/oazizi): This is no longer necessary because different tables now pull data from the
-  // same set of perf buffers. But we'd need to think about how to adapt the APIs with the table_num
-  // argument.
-  static constexpr auto kTablePerfBufferMap = MakeArray<ArrayView<std::string_view> >(
-      kHTTPPerfBuffers, kMySQLPerfBuffers, kCassPerfBuffers);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
@@ -123,12 +110,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     http_response_header_filter_ = std::move(filter);
   }
 
-  // This function causes the perf buffer to be read, and triggers callbacks per message.
-  // TODO(oazizi): This function is only public for testing purposes. Make private?
-  void ReadPerfBuffer(uint32_t table_num);
-
  private:
-  // ReadPerfBuffer poll callback functions (must be static).
+  // ReadPerfBuffers poll callback functions (must be static).
   // These are used by the static variables below, and have to be placed here.
   static void HandleDataEvent(void* cb_cookie, void* data, int data_size);
   static void HandleDataEventsLoss(void* cb_cookie, uint64_t lost);
@@ -209,6 +192,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       demos::hipster_shop::GetFileDescriptorSet()};
 
   explicit SocketTraceConnector(std::string_view source_name);
+
+  // This function causes the perf buffer to be read, and triggers callbacks per message.
+  void ReadPerfBuffers();
 
   // Events from BPF.
   // TODO(oazizi/yzhao): These all operate based on pass-by-value, which copies.

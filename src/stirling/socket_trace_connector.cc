@@ -255,9 +255,12 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
   DCHECK(data_table != nullptr);
 
-  // TODO(oazizi): Should this run more frequently than TransferDataImpl?
-  // This drains the relevant perf buffer, and causes Handle() callback functions to get called.
-  ReadPerfBuffer(table_num);
+  // This drains all perf buffers, and causes Handle() callback functions to get called.
+  // Note that it drains *all* perf buffers, not just those that are required for this table,
+  // so raw data will be pushed to connection trackers more aggressively.
+  // No data is lost, but this is a side-effect of sorts that affects timing of transfers.
+  // It may be worth noting during debug.
+  ReadPerfBuffers();
 
   // Set-up current state for connection inference purposes.
   if (socket_info_mgr_ != nullptr) {
@@ -300,11 +303,8 @@ Status SocketTraceConnector::DisableSelfTracing() {
 // Perf Buffer Polling and Callback functions.
 //-----------------------------------------------------------------------------
 
-void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
-  DCHECK_LT(table_num, kTablePerfBufferMap.size())
-      << "Index out of bound. Trying to read from perf buffer that doesn't exist.";
-  auto buffer_names = kTablePerfBufferMap[table_num];
-  for (auto& buffer_name : buffer_names) {
+void SocketTraceConnector::ReadPerfBuffers() {
+  for (auto& buffer_name : kPerfBuffers) {
     PollPerfBuffer(buffer_name);
   }
 }
