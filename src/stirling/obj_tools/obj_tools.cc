@@ -34,7 +34,7 @@ std::map<std::string, std::vector<int>> GetActiveBinaries(std::filesystem::path 
     // Warning: must use JoinPath, because we are dealing with two absolute paths.
     std::filesystem::path host_exe = fs::JoinPath({&host, &exe_or.ValueOrDie()});
 
-    if (!std::filesystem::exists(host_exe)) {
+    if (!fs::Exists(host_exe).ok()) {
       VLOG(1) << absl::Substitute("Ignoring $0: Does not exist.", host_exe.string());
       continue;
     }

@@ -782,7 +782,7 @@ void ConnectionTracker::HandleInactivity() {
   std::filesystem::path fd_file =
       absl::StrCat(sysconfig.proc_path(), absl::Substitute("/$0/fd/$1", pid(), fd()));
 
-  if (!std::filesystem::exists(fd_file)) {
+  if (!fs::Exists(fd_file).ok()) {
     // Connection seems to be dead. Mark for immediate death.
     MarkForDeath(0);
   } else {

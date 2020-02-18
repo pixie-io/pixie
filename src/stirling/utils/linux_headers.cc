@@ -78,9 +78,9 @@ std::filesystem::path FindLinuxHeadersDirectory(const std::filesystem::path& lib
   std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
 
   std::filesystem::path lib_modules_kdir;
-  if (std::filesystem::exists(lib_modules_source_dir)) {
+  if (fs::Exists(lib_modules_source_dir).ok()) {
     lib_modules_kdir = lib_modules_source_dir;
-  } else if (std::filesystem::exists(lib_modules_build_dir)) {
+  } else if (fs::Exists(lib_modules_build_dir).ok()) {
     lib_modules_kdir = lib_modules_build_dir;
   }
 
@@ -129,14 +129,14 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   VLOG(1) << absl::Substitute("source_dir $0", host_lib_modules_source_dir.string());
   VLOG(1) << absl::Substitute("build_dir $0", host_lib_modules_build_dir.string());
 
-  if (std::filesystem::exists(host_lib_modules_source_dir)) {
+  if (fs::Exists(host_lib_modules_source_dir).ok()) {
     PL_RETURN_IF_ERROR(
         fs::CreateSymlinkIfNotExists(host_lib_modules_source_dir, lib_modules_source_dir));
     LOG(INFO) << absl::Substitute("Linked linux headers found at $0",
                                   host_lib_modules_source_dir.string());
   }
 
-  if (std::filesystem::exists(host_lib_modules_build_dir)) {
+  if (fs::Exists(host_lib_modules_build_dir).ok()) {
     PL_RETURN_IF_ERROR(
         fs::CreateSymlinkIfNotExists(host_lib_modules_build_dir, lib_modules_build_dir));
     LOG(INFO) << absl::Substitute("Linked linux headers found at $0",
@@ -156,7 +156,7 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir,
   // TODO(oazizi): /usr/src/linux-headers-4.14.104-pl is tied to our container build. Too brittle.
   std::filesystem::path packaged_headers = "/usr/src/linux-headers-4.14.104-pl";
   LOG(INFO) << absl::Substitute("Looking for packaged headers at $0", packaged_headers.string());
-  if (std::filesystem::exists(packaged_headers)) {
+  if (fs::Exists(packaged_headers).ok()) {
     PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers, uname));
     PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers, lib_modules_build_dir));
     LOG(INFO) << "Successfully installed packaged copy of headers at " << lib_modules_build_dir;
