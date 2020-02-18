@@ -281,10 +281,21 @@ StatusOr<QueryParameters> FrameBodyDecoder::ExtractQueryParameters() {
   return qp;
 }
 
-StatusOr<ResultMetadata> FrameBodyDecoder::ExtractResultMetadata() {
+StatusOr<ResultMetadata> FrameBodyDecoder::ExtractResultMetadata(bool prepared_result_metadata) {
   ResultMetadata r;
   PL_ASSIGN_OR_RETURN(r.flags, ExtractInt());
   PL_ASSIGN_OR_RETURN(r.columns_count, ExtractInt());
+
+  // Version 4+ of the protocol has partition-key bind indexes
+  // when the metadata is in response to a PREPARE request.
+  bool has_pk = prepared_result_metadata && (version_ >= 4);
+  if (has_pk) {
+    PL_ASSIGN_OR_RETURN(int32_t pk_count, ExtractInt());
+    for (int i = 0; i < pk_count; ++i) {
+      PL_ASSIGN_OR_RETURN(uint16_t pk_index_i, ExtractShort());
+      PL_UNUSED(pk_index_i);
+    }
+  }
 
   bool flag_global_tables_spec = r.flags & 0x0001;
   bool flag_has_more_pages = r.flags & 0x0002;
@@ -313,6 +324,26 @@ StatusOr<ResultMetadata> FrameBodyDecoder::ExtractResultMetadata() {
   }
 
   return r;
+}
+
+StatusOr<SchemaChange> FrameBodyDecoder::ExtractSchemaChange() {
+  SchemaChange sc;
+
+  PL_ASSIGN_OR_RETURN(sc.change_type, ExtractString());
+  PL_ASSIGN_OR_RETURN(sc.target, ExtractString());
+  PL_ASSIGN_OR_RETURN(sc.keyspace, ExtractString());
+
+  if (sc.target != "KEYSPACE") {
+    // Targets TABLE, TYPE, FUNCTION and AGGREGATE all have a name.
+    PL_ASSIGN_OR_RETURN(sc.name, ExtractString());
+  }
+
+  if (sc.target == "FUNCTION" || sc.target == "AGGREGATE") {
+    // Targets FUNCTION and AGGREGATE also have argument types.
+    PL_ASSIGN_OR_RETURN(sc.arg_types, ExtractStringList());
+  }
+
+  return sc;
 }
 
 }  // namespace cass

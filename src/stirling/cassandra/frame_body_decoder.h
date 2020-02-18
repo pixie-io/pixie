@@ -9,6 +9,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/inet_utils.h"
+#include "src/stirling/cassandra/cass_types.h"
 
 namespace pl {
 namespace stirling {
@@ -99,6 +100,28 @@ struct ResultMetadata {
   std::vector<ColSpec> col_specs;
 };
 
+// TODO(oazizi): Consider switching strings into enums for efficiency.
+// See section 4.2.6 of the spec for details.
+struct SchemaChange {
+  // One of "CREATED", "UPDATED" or "DROPPED"
+  std::string change_type;
+
+  // One of "KEYSPACE", "TABLE", "TYPE", "FUNCTION" or "AGGREGATE"
+  std::string target;
+
+  std::string keyspace;
+
+  // If target is KEYSPACE, then name is unused;
+  // If target is TABLE, then name is table name.
+  // If target is TYPE, then name is user type name.
+  // If target is FUNCTION, then name is function name.
+  // If target is AGGREGATE, then name is aggregate name.
+  std::string name;
+
+  // Only used for FUNCTION or AGGREGATE.
+  StringList arg_types;
+};
+
 /**
  * FrameBodyDecoder provides a structured interface to process the bytes of a CQL frame body.
  *
@@ -116,7 +139,14 @@ class FrameBodyDecoder {
    *
    * @param buf A string_view into the body of the CQL frame.
    */
-  explicit FrameBodyDecoder(std::string_view buf) : buf_(buf) {}
+  explicit FrameBodyDecoder(std::string_view buf, uint8_t version = 3)
+      : buf_(buf), version_(version) {
+    ECHECK_GE(version, 3);
+    ECHECK_LE(version, 4);
+  }
+
+  explicit FrameBodyDecoder(const Frame& frame)
+      : FrameBodyDecoder(frame.msg, frame.hdr.version & kVersionMask) {}
 
   // [int] A 4 bytes signed integer.
   StatusOr<int32_t> ExtractInt();
@@ -174,7 +204,12 @@ class FrameBodyDecoder {
   StatusOr<QueryParameters> ExtractQueryParameters();
 
   // Extracts result metadata, which is a complex type. See struct for details.
-  StatusOr<ResultMetadata> ExtractResultMetadata();
+  // @param There are two variants of result metadata. If the metadata is part of a result
+  // with kind=prepared, then set prepared_result_metadata to true, so it parses correctly.
+  StatusOr<ResultMetadata> ExtractResultMetadata(bool prepared_result_metadata = false);
+
+  // Extracts a schema change response. See struct for details.
+  StatusOr<SchemaChange> ExtractSchemaChange();
 
   /**
    * Whether processing has reached end-of-frame.
@@ -198,7 +233,11 @@ class FrameBodyDecoder {
   template <typename TCharType, size_t N>
   Status ExtractBytesCore(TCharType* out);
 
+  // View into the frame contents.
   std::string_view buf_;
+
+  // Version of the CQL binary protocol to use when decoding.
+  const uint8_t version_;
 };
 
 }  // namespace cass

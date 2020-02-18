@@ -140,17 +140,34 @@ constexpr uint8_t kSupportedResp[] = {
     0x6e, 0x61, 0x70, 0x70, 0x79, 0x00, 0x03, 0x6c, 0x7a, 0x34, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5f,
     0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x00, 0x01, 0x00, 0x05, 0x33, 0x2e, 0x34, 0x2e, 0x34};
 
+// Asynchronous EVENT response from server.
+// Content: SCHEMA_CHANGE DROPPED TABLE tutorialspoint emp
+constexpr uint8_t kEventResp[] = {0x00, 0x0d, 0x53, 0x43, 0x48, 0x45, 0x4d, 0x41, 0x5f, 0x43, 0x48,
+                                  0x41, 0x4e, 0x47, 0x45, 0x00, 0x07, 0x44, 0x52, 0x4f, 0x50, 0x50,
+                                  0x45, 0x44, 0x00, 0x05, 0x54, 0x41, 0x42, 0x4c, 0x45, 0x00, 0x0e,
+                                  0x74, 0x75, 0x74, 0x6f, 0x72, 0x69, 0x61, 0x6c, 0x73, 0x70, 0x6f,
+                                  0x69, 0x6e, 0x74, 0x00, 0x03, 0x65, 0x6d, 0x70};
+
 //-----------------------------------------------------------------------------
 // Test Utils
 //-----------------------------------------------------------------------------
 
 // Required because zero length C-arrays are not allowed in C++, so can't use the version above.
 Frame CreateFrame(uint16_t stream, Opcode opcode, uint64_t timestamp_ns) {
+  // Should be either a request or response opcode.
+  CHECK(IsReqOpcode(opcode) ^ IsRespOpcode(opcode));
+
+  const uint8_t kReqMask = 0x80;
+
   Frame f;
   f.hdr.opcode = opcode;
   f.hdr.stream = stream;
   f.hdr.flags = 0;
-  f.hdr.flags = 0x04;
+  f.hdr.version = 0x04;
+  if (IsReqOpcode(opcode)) {
+    f.hdr.version = f.hdr.version | kReqMask;
+  }
+  f.hdr.flags = 0;
   f.hdr.length = 0;
   f.msg = "";
   f.timestamp_ns = timestamp_ns;
@@ -233,8 +250,7 @@ TEST(CassStitcherTest, OpEvent) {
   std::deque<Frame> resp_frames;
   std::vector<Record> records;
 
-  // TODO(oazizi): Event response should have a body!
-  resp_frames.push_back(CreateFrame(-1, Opcode::kEvent, 3));
+  resp_frames.push_back(CreateFrame(-1, Opcode::kEvent, kEventResp, 3));
 
   records = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
@@ -247,7 +263,7 @@ TEST(CassStitcherTest, OpEvent) {
   EXPECT_EQ(record.resp.op, RespOp::kEvent);
 
   EXPECT_EQ(record.req.msg, "-");
-  EXPECT_THAT(record.resp.msg, "");
+  EXPECT_THAT(record.resp.msg, "SCHEMA_CHANGE DROPPED keyspace=tutorialspoint name=emp");
 
   // Expecting zero latency.
   EXPECT_EQ(record.req.timestamp_ns, record.resp.timestamp_ns);

@@ -119,6 +119,18 @@ constexpr uint8_t kResultMetadata[] = {
     0x65, 0x6d, 0x61, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x00, 0x0c, 0x00, 0x06,
     0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x00, 0x22, 0x00, 0x0d};
 
+constexpr uint8_t kResultPreparedMetadata[] = {
+    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x05, 0x00, 0x09,
+    0x6b, 0x65, 0x79, 0x73, 0x70, 0x61, 0x63, 0x65, 0x31, 0x00, 0x08, 0x63, 0x6f, 0x75, 0x6e, 0x74,
+    0x65, 0x72, 0x31, 0x00, 0x02, 0x43, 0x30, 0x00, 0x05, 0x00, 0x02, 0x43, 0x31, 0x00, 0x05, 0x00,
+    0x02, 0x43, 0x32, 0x00, 0x05, 0x00, 0x02, 0x43, 0x33, 0x00, 0x05, 0x00, 0x02, 0x43, 0x34, 0x00,
+    0x05, 0x00, 0x03, 0x6b, 0x65, 0x79, 0x00, 0x03, 0x00, 0x00, 0x00, 0x04};
+
+constexpr uint8_t kSchemaChange[]{0x00, 0x07, 0x44, 0x52, 0x4f, 0x50, 0x50, 0x45, 0x44, 0x00,
+                                  0x05, 0x54, 0x41, 0x42, 0x4c, 0x45, 0x00, 0x0e, 0x74, 0x75,
+                                  0x74, 0x6f, 0x72, 0x69, 0x61, 0x6c, 0x73, 0x70, 0x6f, 0x69,
+                                  0x6e, 0x74, 0x00, 0x03, 0x65, 0x6d, 0x70};
+
 //-----------------------------------------------------------------------------
 // Test Cases
 //-----------------------------------------------------------------------------
@@ -588,7 +600,7 @@ TEST(ExtractQueryParams, Exact) {
 // ExtractQueryParams
 //------------------------
 
-TEST(ExtractResultMetadata, Exact) {
+TEST(ExtractResultMetadata, Basic) {
   FrameBodyDecoder decoder(CreateCharArrayView<char>(kResultMetadata));
   ASSERT_OK_AND_ASSIGN(ResultMetadata md, decoder.ExtractResultMetadata());
 
@@ -604,6 +616,41 @@ TEST(ExtractResultMetadata, Exact) {
   EXPECT_EQ(md.col_specs[7].type.type, DataType::kUuid);
   EXPECT_EQ(md.col_specs[8].name, "tokens");
   EXPECT_EQ(md.col_specs[8].type.type, DataType::kSet);
+}
+
+TEST(ExtractResultMetdata, Prepared) {
+  constexpr int kProtocolVersion = 4;
+  constexpr bool kResultKindPrepared = true;
+  FrameBodyDecoder decoder(CreateCharArrayView<char>(kResultPreparedMetadata), kProtocolVersion);
+  ASSERT_OK_AND_ASSIGN(ResultMetadata md, decoder.ExtractResultMetadata(kResultKindPrepared));
+
+  EXPECT_EQ(md.flags, 1);
+  EXPECT_EQ(md.columns_count, 6);
+  EXPECT_THAT(md.paging_state, IsEmpty());
+  EXPECT_EQ(md.gts_keyspace_name, "keyspace1");
+  EXPECT_EQ(md.gts_table_name, "counter1");
+  ASSERT_EQ(md.col_specs.size(), md.columns_count);
+  EXPECT_EQ(md.col_specs[0].name, "C0");
+  EXPECT_EQ(md.col_specs[0].type.type, DataType::kCounter);
+  EXPECT_EQ(md.col_specs[4].name, "C4");
+  EXPECT_EQ(md.col_specs[4].type.type, DataType::kCounter);
+  EXPECT_EQ(md.col_specs[5].name, "key");
+  EXPECT_EQ(md.col_specs[5].type.type, DataType::kBlob);
+}
+
+//------------------------
+// ExtractSchemaChange
+//------------------------
+
+TEST(ExtractSchemaChange, Basic) {
+  FrameBodyDecoder decoder(CreateCharArrayView<char>(kSchemaChange));
+  ASSERT_OK_AND_ASSIGN(SchemaChange sc, decoder.ExtractSchemaChange());
+
+  EXPECT_EQ(sc.change_type, "DROPPED");
+  EXPECT_EQ(sc.target, "TABLE");
+  EXPECT_THAT(sc.keyspace, "tutorialspoint");
+  EXPECT_EQ(sc.name, "emp");
+  EXPECT_THAT(sc.arg_types, IsEmpty());
 }
 
 }  // namespace cass

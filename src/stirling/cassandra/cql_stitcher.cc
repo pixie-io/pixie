@@ -24,18 +24,8 @@ void CheckReqRespPair(const Record& r) {
   // TODO(oazizi): Add some checks here.
 }
 
-Status ProcessSimpleReq(Frame* req_frame, Request* req) {
-  req->msg = req_frame->msg;
-  return Status::OK();
-}
-
-Status ProcessSimpleResp(Frame* resp_frame, Response* resp) {
-  resp->msg = std::move(resp_frame->msg);
-  return Status::OK();
-}
-
 Status ProcessStartupReq(Frame* req_frame, Request* req) {
-  FrameBodyDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(*req_frame);
   PL_ASSIGN_OR_RETURN(StringMap options, decoder.ExtractStringMap());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
@@ -46,7 +36,7 @@ Status ProcessStartupReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessAuthResponseReq(Frame* req_frame, Request* req) {
-  FrameBodyDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(*req_frame);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
@@ -59,7 +49,7 @@ Status ProcessAuthResponseReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessOptionsReq(Frame* req_frame, Request* req) {
-  FrameBodyDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(*req_frame);
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   DCHECK(req->msg.empty());
@@ -68,7 +58,7 @@ Status ProcessOptionsReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessRegisterReq(Frame* req_frame, Request* req) {
-  FrameBodyDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(*req_frame);
   PL_ASSIGN_OR_RETURN(StringList event_types, decoder.ExtractStringList());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
@@ -79,7 +69,7 @@ Status ProcessRegisterReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessQueryReq(Frame* req_frame, Request* req) {
-  FrameBodyDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(*req_frame);
   PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
   PL_ASSIGN_OR_RETURN(QueryParameters qp, decoder.ExtractQueryParameters());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
@@ -106,7 +96,7 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessPrepareReq(Frame* req_frame, Request* req) {
-  FrameBodyDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(*req_frame);
   PL_ASSIGN_OR_RETURN(std::string query, decoder.ExtractLongString());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
@@ -117,7 +107,7 @@ Status ProcessPrepareReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessExecuteReq(Frame* req_frame, Request* req) {
-  FrameBodyDecoder decoder(req_frame->msg);
+  FrameBodyDecoder decoder(*req_frame);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> id, decoder.ExtractShortBytes());
   PL_ASSIGN_OR_RETURN(QueryParameters qp, decoder.ExtractQueryParameters());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
@@ -136,8 +126,14 @@ Status ProcessExecuteReq(Frame* req_frame, Request* req) {
   return Status::OK();
 }
 
+Status ProcessBatchReq(Frame* req_frame, Request* req) {
+  // TODO(oazizi): Implement this!
+  req->msg = req_frame->msg;
+  return Status::OK();
+}
+
 Status ProcessErrorResp(Frame* resp_frame, Response* resp) {
-  FrameBodyDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(*resp_frame);
   PL_ASSIGN_OR_RETURN(int32_t error_code, decoder.ExtractInt());
   PL_ASSIGN_OR_RETURN(std::string error_msg, decoder.ExtractString());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
@@ -149,7 +145,7 @@ Status ProcessErrorResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessReadyResp(Frame* resp_frame, Response* resp) {
-  FrameBodyDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(*resp_frame);
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   DCHECK(resp->msg.empty());
@@ -158,7 +154,7 @@ Status ProcessReadyResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
-  FrameBodyDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(*resp_frame);
   PL_ASSIGN_OR_RETURN(StringMultiMap options, decoder.ExtractStringMultiMap());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
@@ -169,7 +165,7 @@ Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessAuthenticateResp(Frame* resp_frame, Response* resp) {
-  FrameBodyDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(*resp_frame);
   PL_ASSIGN_OR_RETURN(std::string authenticator_name, decoder.ExtractString());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
@@ -180,7 +176,7 @@ Status ProcessAuthenticateResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
-  FrameBodyDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(*resp_frame);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
@@ -193,7 +189,7 @@ Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
-  FrameBodyDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(*resp_frame);
   PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> token, decoder.ExtractBytes());
   PL_RETURN_IF_ERROR(decoder.ExpectEOF());
 
@@ -244,8 +240,13 @@ Status ProcessResultSetKeyspace(FrameBodyDecoder* decoder, Response* resp) {
   return Status::OK();
 }
 
-Status ProcessResultPrepared(FrameBodyDecoder* /* decoder */, Response* resp) {
-  // TODO(oazizi): Implement this!
+Status ProcessResultPrepared(FrameBodyDecoder* decoder, Response* resp) {
+  PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> id, decoder->ExtractShortBytes());
+  // Note that two metadata are sent back. The first communicates the col specs for the Prepared
+  // statement, while the second communicates the metadata for future EXECUTE statements.
+  PL_ASSIGN_OR_RETURN(ResultMetadata metadata, decoder->ExtractResultMetadata(/* has_pk */ true));
+  PL_ASSIGN_OR_RETURN(ResultMetadata result_metadata, decoder->ExtractResultMetadata());
+  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
 
   DCHECK(resp->msg.empty());
   resp->msg = "Response type = PREPARED";
@@ -254,8 +255,9 @@ Status ProcessResultPrepared(FrameBodyDecoder* /* decoder */, Response* resp) {
   return Status::OK();
 }
 
-Status ProcessResultSchemaChange(FrameBodyDecoder* /* decoder */, Response* resp) {
-  // TODO(oazizi): Implement this!
+Status ProcessResultSchemaChange(FrameBodyDecoder* decoder, Response* resp) {
+  PL_ASSIGN_OR_RETURN(SchemaChange sc, decoder->ExtractSchemaChange());
+  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
 
   DCHECK(resp->msg.empty());
   resp->msg = "Response type = SCHEMA_CHANGE";
@@ -265,7 +267,7 @@ Status ProcessResultSchemaChange(FrameBodyDecoder* /* decoder */, Response* resp
 }
 
 Status ProcessResultResp(Frame* resp_frame, Response* resp) {
-  FrameBodyDecoder decoder(resp_frame->msg);
+  FrameBodyDecoder decoder(*resp_frame);
   PL_ASSIGN_OR_RETURN(int32_t kind, decoder.ExtractInt());
 
   switch (kind) {
@@ -281,6 +283,34 @@ Status ProcessResultResp(Frame* resp_frame, Response* resp) {
       return ProcessResultSchemaChange(&decoder, resp);
     default:
       return error::Internal("Unrecognized result kind (%d)", kind);
+  }
+}
+
+Status ProcessEventResp(Frame* resp_frame, Response* resp) {
+  FrameBodyDecoder decoder(*resp_frame);
+  PL_ASSIGN_OR_RETURN(std::string event_type, decoder.ExtractString());
+
+  if (event_type == "TOPOLOGY_CHANGE" || event_type == "STATUS_CHANGE") {
+    PL_ASSIGN_OR_RETURN(std::string change_type, decoder.ExtractString());
+    PL_ASSIGN_OR_RETURN(SockAddr addr, decoder.ExtractInet());
+    PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+
+    DCHECK(resp->msg.empty());
+    resp->msg = absl::StrCat(event_type, " ", change_type, " ", addr.AddrStr());
+
+    return Status::OK();
+  } else if (event_type == "SCHEMA_CHANGE") {
+    PL_ASSIGN_OR_RETURN(SchemaChange sc, decoder.ExtractSchemaChange());
+    PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+
+    DCHECK(resp->msg.empty());
+    resp->msg =
+        absl::StrCat(event_type, " ", sc.change_type, " keyspace=", sc.keyspace, " name=", sc.name);
+    // TODO(oazizi): Add sc.arg_types to the response string.
+
+    return Status::OK();
+  } else {
+    return error::Internal("Unknown event_type $0", event_type);
   }
 }
 
@@ -302,7 +332,7 @@ Status ProcessReq(Frame* req_frame, Request* req) {
     case ReqOp::kExecute:
       return ProcessExecuteReq(req_frame, req);
     case ReqOp::kBatch:
-      return ProcessSimpleReq(req_frame, req);
+      return ProcessBatchReq(req_frame, req);
     case ReqOp::kRegister:
       return ProcessRegisterReq(req_frame, req);
     default:
@@ -326,7 +356,7 @@ Status ProcessResp(Frame* resp_frame, Response* resp) {
     case RespOp::kResult:
       return ProcessResultResp(resp_frame, resp);
     case RespOp::kEvent:
-      return ProcessSimpleResp(resp_frame, resp);
+      return ProcessEventResp(resp_frame, resp);
     case RespOp::kAuthChallenge:
       return ProcessAuthChallengeResp(resp_frame, resp);
     case RespOp::kAuthSuccess:

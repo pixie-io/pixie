@@ -1,6 +1,9 @@
 #pragma once
 
+#include <optional>
 #include <string>
+
+#include <magic_enum.hpp>
 
 #include "src/stirling/utils/req_resp_pair.h"
 
@@ -56,6 +59,16 @@ enum class RespOp : uint8_t {
   kAuthSuccess = static_cast<uint8_t>(Opcode::kAuthSuccess),
 };
 
+inline bool IsReqOpcode(Opcode opcode) {
+  std::optional<ReqOp> req_opcode = magic_enum::enum_cast<ReqOp>(static_cast<int>(opcode));
+  return req_opcode.has_value();
+}
+
+inline bool IsRespOpcode(Opcode opcode) {
+  std::optional<RespOp> resp_opcode = magic_enum::enum_cast<RespOp>(static_cast<int>(opcode));
+  return resp_opcode.has_value();
+}
+
 struct FrameHeader {
   // Top bit is direction.
   uint8_t version;
@@ -73,6 +86,10 @@ struct Frame {
 };
 
 constexpr int kFrameHeaderLength = 9;
+
+// Mask to apply to FrameHeader::version to get the version.
+// The top bit is the req/response direction, and should not be used.
+constexpr uint8_t kVersionMask = 0x7f;
 
 //-----------------------------------------------------------------------------
 // Table Store Entry Level Structs
