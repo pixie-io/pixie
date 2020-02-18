@@ -1,0 +1,24 @@
+package(default_visibility = ["//src/vizier/funcs:__subpackages__"])
+
+load("//bazel:pl_build_system.bzl", "pl_bindata", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+            "*.h",
+        ],
+        exclude = [
+            "export.cc",
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    deps = [
+        "//src/carnot/udf:cc_library",
+        "@com_github_threadstacks//threadstacks:signal_handler",
+        "//src/vizier/funcs/context:cc_library",
+    ],
+)

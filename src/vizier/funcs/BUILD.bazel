@@ -20,6 +20,7 @@ pl_cc_library(
         "//src/carnot/funcs:cc_library",
         "//src/carnot/udf:cc_library",
         "//src/vizier/funcs/context:cc_library",
+        "//src/vizier/funcs/internal:cc_library",
         "//src/vizier/funcs/md_udtfs:cc_library",
         "//src/vizier/services/agent/manager:cc_headers",
         "//src/vizier/services/metadata/metadatapb:service_pl_cc_proto",
