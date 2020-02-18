@@ -16,6 +16,12 @@ TEST(MagicEnum, enum_to_string) {
   EXPECT_EQ(color_name, "RED");
 }
 
+TEST(MagicEnum, unknown_enum_to_string) {
+  Color color = static_cast<Color>(1);
+  std::string_view color_name = magic_enum::enum_name(color);
+  EXPECT_EQ(color_name, "");
+}
+
 // Like enum_to_string above, but passing name through template parameter.
 // Good for constexpr.
 TEST(MagicEnum, static_enum_to_string) {
