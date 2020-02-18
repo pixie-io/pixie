@@ -16,15 +16,15 @@ namespace utils {
 
 namespace internal {
 
-rapidjson::Value JSONObj(const std::string& s,
-                         const rapidjson::Document::AllocatorType* /* allocator */) {
+inline rapidjson::Value JSONObj(const std::string& s,
+                                const rapidjson::Document::AllocatorType* /* allocator */) {
   rapidjson::Value json_obj;
   json_obj.SetString(rapidjson::StringRef(s.c_str(), s.length()));
   return json_obj;
 }
 
-rapidjson::Value JSONObj(std::string_view s,
-                         const rapidjson::Document::AllocatorType* /* allocator */) {
+inline rapidjson::Value JSONObj(std::string_view s,
+                                const rapidjson::Document::AllocatorType* /* allocator */) {
   rapidjson::Value json_obj;
   json_obj.SetString(rapidjson::StringRef(s.data(), s.length()));
   return json_obj;

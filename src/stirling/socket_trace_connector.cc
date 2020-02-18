@@ -119,15 +119,19 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
 
   EndpointRole role_to_trace = ParseEndpointRoleFlag(FLAGS_stirling_role_to_trace).ValueOrDie();
 
+  DCHECK(protocol_transfer_specs_.find(kProtocolHTTP) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
   protocol_transfer_specs_[kProtocolHTTP].role_to_trace = role_to_trace;
 
+  DCHECK(protocol_transfer_specs_.find(kProtocolHTTP2) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_kprobe_tracing;
   protocol_transfer_specs_[kProtocolHTTP2].role_to_trace = role_to_trace;
 
+  DCHECK(protocol_transfer_specs_.find(kProtocolMySQL) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
   protocol_transfer_specs_[kProtocolMySQL].role_to_trace = role_to_trace;
 
+  DCHECK(protocol_transfer_specs_.find(kProtocolHTTP2Uprobe) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled =
       FLAGS_stirling_enable_grpc_uprobe_tracing;
 
@@ -423,8 +427,8 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
   DCHECK(event->attr.traffic_class.protocol == kProtocolHTTP ||
          event->attr.traffic_class.protocol == kProtocolHTTP2 ||
          event->attr.traffic_class.protocol == kProtocolMySQL)
-      << absl::Substitute("AcceptDataEvent ignored due to unknown protocol: $0",
-                          event->attr.traffic_class.protocol);
+      << absl::Substitute("AcceptDataEvent received event with unknown protocol: $0",
+                          magic_enum::enum_name(event->attr.traffic_class.protocol));
 
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
   tracker.AddDataEvent(std::move(event));
@@ -745,9 +749,12 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
     while (generation_it != tracker_generations.end()) {
       auto& tracker = generation_it->second;
 
-      VLOG(3) << absl::Substitute("Connection pid=$0 fd=$1 generation=$2 protocol=$3\n",
+      VLOG(2) << absl::Substitute("Connection pid=$0 fd=$1 generation=$2 protocol=$3\n",
                                   tracker.pid(), tracker.fd(), tracker.generation(),
-                                  tracker.protocol());
+                                  magic_enum::enum_name(tracker.protocol()));
+
+      DCHECK(protocol_transfer_specs_.find(tracker.protocol()) != protocol_transfer_specs_.end())
+          << absl::Substitute("Protocol=$0 not in protocol_transfer_specs_.", tracker.protocol());
 
       const TransferSpec& transfer_spec = protocol_transfer_specs_[tracker.protocol()];
 

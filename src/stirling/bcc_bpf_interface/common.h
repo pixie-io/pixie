@@ -22,8 +22,8 @@ enum TrafficProtocol {
 // The direction of traffic expected on a probe. Values are used in bit masks.
 enum EndpointRole {
   kRoleUnknown = 0,
-  kRoleClient = 1 << 1,
-  kRoleServer = 1 << 2,
+  kRoleClient = 1 << 0,
+  kRoleServer = 1 << 1,
   kRoleAll = kRoleClient | kRoleServer,
 };
 

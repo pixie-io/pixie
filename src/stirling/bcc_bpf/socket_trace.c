@@ -511,8 +511,6 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDi
   switch (event->attr.traffic_class.protocol) {
     case kProtocolHTTP:
     case kProtocolHTTP2:
-      socket_data_events.perf_submit(ctx, event, size_to_submit);
-      break;
     case kProtocolMySQL:
       socket_data_events.perf_submit(ctx, event, size_to_submit);
       break;

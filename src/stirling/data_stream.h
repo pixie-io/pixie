@@ -52,8 +52,10 @@ class DataStream {
   std::deque<TMessageType>& Messages() {
     DCHECK(std::holds_alternative<std::monostate>(messages_) ||
            std::holds_alternative<std::deque<TMessageType>>(messages_))
-        << "Must hold the default std::monostate, or the same type as requested. "
-           "I.e., ConnectionTracker cannot change the type it holds during runtime.";
+        << absl::Substitute(
+               "Must hold the default std::monostate, or the same type as requested. "
+               "I.e., ConnectionTracker cannot change the type it holds during runtime. $0 -> $1",
+               messages_.index(), typeid(TMessageType).name());
     if (std::holds_alternative<std::monostate>(messages_)) {
       // Reset the type to the expected type.
       messages_ = std::deque<TMessageType>();

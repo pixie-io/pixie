@@ -422,7 +422,7 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, std::deque<Fram
     }
 
     LOG_IF(ERROR, !found_match) << absl::Substitute(
-        "Did not find a request matching the request. Stream = $0", resp_frame.hdr.stream);
+        "Did not find a request matching the response. Stream = $0", resp_frame.hdr.stream);
 
     // Clean-up consumed frames at the head.
     // Do this inside the resp loop to aggressively clean-out req_frames whenever a frame consumed.

@@ -111,23 +111,23 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   std::string name = table_id_to_name_map[table_id];
 
   // Use assigned names, from registry.
-  if (name == SeqGenConnector::kSeq0Table.name().data()) {
+  if (name == SeqGenConnector::kSeq0Table.name()) {
     PrintRecordBatch("SeqGen-0", SeqGenConnector::kSeq0Table.elements(), num_records,
                      *record_batch);
-  } else if (name == SeqGenConnector::kSeq1Table.name().data()) {
+  } else if (name == SeqGenConnector::kSeq1Table.name()) {
     PrintRecordBatch("SeqGen-1", SeqGenConnector::kSeq1Table.elements(), num_records,
                      *record_batch);
   } else if (name == kMySQLTable.name().data()) {
     PrintRecordBatch("MySQLTrace", kMySQLTable.elements(), num_records, *record_batch);
-  } else if (name == PIDRuntimeConnector::kTable.name().data()) {
+  } else if (name == PIDRuntimeConnector::kTable.name()) {
     PrintRecordBatch("PIDStat-BCC", PIDRuntimeConnector::kTable.elements(), num_records,
                      *record_batch);
-  } else if (name == kHTTPTable.name().data()) {
+  } else if (name == kHTTPTable.name()) {
     PrintRecordBatch("HTTPTrace", kHTTPTable.elements(), num_records, *record_batch);
-  } else if (name == SystemStatsConnector::kProcessStatsTable.name().data()) {
+  } else if (name == SystemStatsConnector::kProcessStatsTable.name()) {
     PrintRecordBatch("ProcessStats", SystemStatsConnector::kProcessStatsTable.elements(),
                      num_records, *record_batch);
-  } else if (name == SystemStatsConnector::kNetworkStatsTable.name().data()) {
+  } else if (name == SystemStatsConnector::kNetworkStatsTable.name()) {
     PrintRecordBatch("NetStats", SystemStatsConnector::kNetworkStatsTable.elements(), num_records,
                      *record_batch);
   } else if (name == kJVMStatsTable.name()) {
