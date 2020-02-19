@@ -218,10 +218,12 @@ StatusOr<table_store::schema::Relation> AggregateOperator::OutputRelation(
     int64_t node_id = pb_.groups(idx).node();
     int64_t col_idx = pb_.groups(idx).index();
     if (node_id != input_ids[0]) {
-      return error::InvalidArgument("Column does not belong to the correct input node");
+      return error::InvalidArgument("Column $0 does not belong to the correct input node $1",
+                                    col_idx, node_id);
     }
     if (col_idx > static_cast<int64_t>(input_relation.NumColumns())) {
-      return error::InvalidArgument("Column index is out of bounds");
+      return error::InvalidArgument("Column index $0 is out of bounds for node $1", col_idx,
+                                    node_id);
     }
     output_relation.AddColumn(input_relation.GetColumnType(col_idx), pb_.group_names(idx));
   }
@@ -315,6 +317,11 @@ Status FilterOperator::Init(const planpb::FilterOperator& pb) {
   pb_ = pb;
   PL_ASSIGN_OR_RETURN(expression_, ScalarExpression::FromProto(pb_.expression()));
 
+  selected_cols_.reserve(pb_.columns_size());
+  for (auto i = 0; i < pb_.columns_size(); ++i) {
+    selected_cols_.push_back(pb_.columns(i).index());
+  }
+
   is_initialized_ = true;
   return Status::OK();
 }
@@ -331,12 +338,28 @@ StatusOr<table_store::schema::Relation> FilterOperator::OutputRelation(
     return error::NotFound("Missing relation ($0) for input of FilterOperator", input_ids[0]);
   }
 
-  auto input_relation_s = schema.GetRelation(input_ids[0]);
-  PL_RETURN_IF_ERROR(input_relation_s);
-  const auto input_relation = input_relation_s.ConsumeValueOrDie();
+  for (auto i = 0; i < pb_.columns_size(); ++i) {
+    int64_t node = pb_.columns(i).node();
+    if (node != input_ids[0]) {
+      return error::InvalidArgument(
+          "Column $0 does not belong to the expected input node $1, got $2", i, input_ids[0], node);
+    }
+  }
 
-  // Output relation is the same as the input relation.
-  return input_relation;
+  PL_ASSIGN_OR_RETURN(auto input_relation, schema.GetRelation(input_ids[0]));
+  table_store::schema::Relation output_relation;
+  for (auto selected_col_idx : selected_cols_) {
+    if (selected_col_idx > static_cast<int64_t>(input_relation.NumColumns())) {
+      return error::InvalidArgument("Column index $0 is out of bounds, number of columns is $1",
+                                    selected_col_idx, input_relation.NumColumns());
+    }
+
+    output_relation.AddColumn(input_relation.GetColumnType(selected_col_idx),
+                              input_relation.GetColumnName(selected_col_idx),
+                              input_relation.GetColumnDesc(selected_col_idx));
+  }
+
+  return output_relation;
 }
 
 /**

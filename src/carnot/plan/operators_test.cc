@@ -319,13 +319,25 @@ TEST_F(OperatorTest, output_relation_agg) {
 
 TEST_F(OperatorTest, output_relation_filter) {
   auto filter_pb = planpb::testutils::CreateTestFilter1PB();
+  auto filter_op = Operator::FromProto(filter_pb, 2);
+
+  auto rel =
+      filter_op->OutputRelation(schema_, *state_, std::vector<int64_t>({1})).ConsumeValueOrDie();
+
+  Relation expected_relation;
+  expected_relation.AddColumn(types::DataType::INT64, "col0");
+  expected_relation.AddColumn(types::DataType::FLOAT64, "col1");
+  EXPECT_EQ(expected_relation, rel);
+}
+
+TEST_F(OperatorTest, output_relation_filter_projection) {
+  auto filter_pb = planpb::testutils::CreateTestFilterTwoColsColumnSelection();
   auto filter_op = Operator::FromProto(filter_pb, 1);
 
   auto rel =
       filter_op->OutputRelation(schema_, *state_, std::vector<int64_t>({0})).ConsumeValueOrDie();
 
   Relation expected_relation;
-  expected_relation.AddColumn(types::DataType::INT64, "col0");
   expected_relation.AddColumn(types::DataType::FLOAT64, "col1");
   EXPECT_EQ(expected_relation, rel);
 }

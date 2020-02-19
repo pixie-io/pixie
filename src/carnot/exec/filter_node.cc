@@ -136,13 +136,11 @@ Status FilterNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, si
   }
 
   RowBatch output_rb(*output_descriptor_, num_output_records);
-  size_t num_columns = rb.num_columns();
-  // Filter expects to copy all input columns to the output.
-  DCHECK_EQ(output_descriptor_->size(), num_columns);
+  DCHECK_EQ(output_descriptor_->size(), plan_node_->selected_cols().size());
 
-  for (size_t col_idx = 0; col_idx < num_columns; ++col_idx) {
-    auto input_col = rb.ColumnAt(col_idx);
-    auto col_type = output_descriptor_->type(col_idx);
+  for (const auto& [output_col_idx, input_col_idx] : Enumerate(plan_node_->selected_cols())) {
+    auto input_col = rb.ColumnAt(input_col_idx);
+    auto col_type = output_descriptor_->type(output_col_idx);
 #define TYPE_CASE(_dt_) \
   PL_RETURN_IF_ERROR(PredicateCopyValues<_dt_>(pred_col_wrapper, input_col.get(), &output_rb));
     PL_SWITCH_FOREACH_DATATYPE(col_type, TYPE_CASE);

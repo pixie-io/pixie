@@ -427,7 +427,7 @@ column_names: "col1"
 )";
 
 /**
- * Template for Map Operator.
+ * Template for Filter Operator.
  *   $0 : the expression
  */
 constexpr char kFilterOperatorTmpl[] = R"(
@@ -445,6 +445,20 @@ columns {
 columns {
   node: 0
   index: 2
+}
+)";
+
+/**
+ * Template for Filter Operator.
+ *   $0 : the expression
+ */
+constexpr char kFilterOperatorColumnSelectionTmpl[] = R"(
+expression {
+  $0
+}
+columns {
+  node: 0
+  index: 1
 }
 )";
 
@@ -827,6 +841,15 @@ planpb::Operator CreateTestFilterTwoCols() {
   planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "FILTER_OPERATOR", "filter_op",
                                    absl::Substitute(kFilterOperatorTmpl, kEq1ScalarFuncConstPbtxt));
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestFilterTwoColsColumnSelection() {
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(
+      kOperatorProtoTmpl, "FILTER_OPERATOR", "filter_op",
+      absl::Substitute(kFilterOperatorColumnSelectionTmpl, kEq1ScalarFuncConstPbtxt));
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

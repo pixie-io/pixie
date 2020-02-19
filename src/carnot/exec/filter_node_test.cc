@@ -92,6 +92,35 @@ TEST_F(FilterNodeTest, basic) {
       .Close();
 }
 
+TEST_F(FilterNodeTest, column_selection) {
+  auto op_proto = planpb::testutils::CreateTestFilterTwoColsColumnSelection();
+  plan_node_ = plan::FilterOperator::FromProto(op_proto, /*id*/ 1);
+
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::STRING});
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<FilterNode, plan::FilterOperator>(
+      *plan_node_, output_rd, {input_rd}, exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 1, 3, 4})
+                       .AddColumn<types::Int64Value>({1, 3, 6, 9})
+                       .AddColumn<types::StringValue>({"ABC", "DEF", "HELLO", "WORLD"})
+                       .get(),
+                   0)
+      .ExpectRowBatch(
+          RowBatchBuilder(output_rd, 2, false, false).AddColumn<types::Int64Value>({1, 3}).get())
+      .ConsumeNext(RowBatchBuilder(input_rd, 3, true, true)
+                       .AddColumn<types::Int64Value>({1, 2, 3})
+                       .AddColumn<types::Int64Value>({1, 4, 6})
+                       .AddColumn<types::StringValue>({"Hello", "world", "now"})
+                       .get(),
+                   0)
+      .ExpectRowBatch(
+          RowBatchBuilder(output_rd, 1, true, true).AddColumn<types::Int64Value>({1}).get())
+      .Close();
+}
+
 TEST_F(FilterNodeTest, zero_row_row_batch) {
   auto op_proto = planpb::testutils::CreateTestFilterTwoCols();
   plan_node_ = plan::FilterOperator::FromProto(op_proto, /*id*/ 1);
@@ -139,13 +168,13 @@ TEST_F(FilterNodeTest, zero_row_row_batch) {
       .Close();
 }
 
-// TODO(zasgar/michelle): For some reason this test is not working. Need to debug.
 TEST_F(FilterNodeTest, string_pred) {
   auto op_proto = planpb::testutils::CreateTestFilterTwoColsString();
   plan_node_ = plan::FilterOperator::FromProto(op_proto, /*id*/ 1);
 
-  RowDescriptor input_rd({types::DataType::STRING, types::DataType::INT64});
-  RowDescriptor output_rd({types::DataType::STRING, types::DataType::INT64});
+  RowDescriptor input_rd({types::DataType::STRING, types::DataType::INT64, types::DataType::INT64});
+  RowDescriptor output_rd(
+      {types::DataType::STRING, types::DataType::INT64, types::DataType::INT64});
 
   auto tester = exec::ExecNodeTester<FilterNode, plan::FilterOperator>(
       *plan_node_, output_rd, {input_rd}, exec_state_.get());
@@ -153,20 +182,24 @@ TEST_F(FilterNodeTest, string_pred) {
       .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
                        .AddColumn<types::StringValue>({"A", "B", "A", "D"})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9})
+                       .AddColumn<types::Int64Value>({2, 4, 7, 10})
                        .get(),
                    0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 2, false, false)
                           .AddColumn<types::StringValue>({"A", "A"})
                           .AddColumn<types::Int64Value>({1, 6})
+                          .AddColumn<types::Int64Value>({2, 7})
                           .get())
       .ConsumeNext(RowBatchBuilder(input_rd, 3, true, true)
                        .AddColumn<types::StringValue>({"C", "B", "A"})
                        .AddColumn<types::Int64Value>({1, 4, 6})
+                       .AddColumn<types::Int64Value>({2, 5, 7})
                        .get(),
                    0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true, true)
                           .AddColumn<types::StringValue>({"A"})
                           .AddColumn<types::Int64Value>({6})
+                          .AddColumn<types::Int64Value>({7})
                           .get())
       .Close();
 }
@@ -175,13 +208,14 @@ TEST_F(FilterNodeTest, child_fail) {
   auto op_proto = planpb::testutils::CreateTestFilterTwoCols();
   plan_node_ = plan::FilterOperator::FromProto(op_proto, /*id*/ 1);
 
-  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
-  RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64});
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64});
 
   auto tester = exec::ExecNodeTester<FilterNode, plan::FilterOperator>(
       *plan_node_, output_rd, {input_rd}, exec_state_.get());
   tester.ConsumeNextShouldFail(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
                                    .AddColumn<types::Int64Value>({1, 2, 3, 4})
+                                   .AddColumn<types::Int64Value>({1, 3, 6, 9})
                                    .AddColumn<types::Int64Value>({1, 3, 6, 9})
                                    .get(),
                                0, error::InvalidArgument("args"));

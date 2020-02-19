@@ -192,12 +192,13 @@ class FilterOperator : public Operator {
       const std::vector<int64_t>& input_ids) const override;
   Status Init(const planpb::FilterOperator& pb);
   std::string DebugString() const override;
+  std::vector<int64_t> selected_cols() { return selected_cols_; }
 
   const std::shared_ptr<const ScalarExpression>& expression() const { return expression_; }
 
  private:
   std::shared_ptr<const ScalarExpression> expression_;
-
+  std::vector<int64_t> selected_cols_;
   planpb::FilterOperator pb_;
 };
 
