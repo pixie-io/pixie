@@ -37,6 +37,7 @@ interface InputProps {
   onChange: (val: string) => void;
   onKey: (key: Key) => void;
   suggestion?: string;
+  placeholder?: string;
   className?: string;
   value: string;
 }
@@ -46,6 +47,7 @@ const Input: React.FC<InputProps> = ({
   onKey,
   suggestion,
   className,
+  placeholder = '',
   value,
 }) => {
   const classes = useStyles();
@@ -88,8 +90,13 @@ const Input: React.FC<InputProps> = ({
     inputRef.current.focus();
   }, [suggestion]);
 
-  const hint = value && suggestion && suggestion.startsWith(value) ?
-    suggestion.slice(value.length) : '';
+  const hint = React.useMemo(() => {
+    if (!value) {
+      return placeholder;
+    }
+    return suggestion && suggestion.startsWith(value) ?
+      suggestion.slice(value.length) : '';
+  }, [value, suggestion, placeholder]);
 
   return (
     <div className={clsx(classes.root, className)} onClick={focusInput}>

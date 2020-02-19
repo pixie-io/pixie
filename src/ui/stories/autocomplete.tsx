@@ -29,6 +29,7 @@ storiesOf('AutoComplete', module)
     return (
       <Input
         suggestion={suggestion}
+        placeholder='start typing'
         onChange={setInput}
         onKey={action('key')}
         value={input}

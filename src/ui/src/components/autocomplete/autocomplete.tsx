@@ -2,7 +2,9 @@ import * as React from 'react';
 
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 
-import Completions, {CompletionId, CompletionItem, CompletionTitle} from './completions';
+import Completions, {
+    CompletionId, CompletionItem, CompletionItems, CompletionTitle,
+} from './completions';
 import Input from './input';
 import {Key} from './key';
 
@@ -10,26 +12,35 @@ const useStyles = makeStyles((theme: Theme) => {
   // TODO(malthus): Make use of the theme styles.
   return createStyles({
     root: {
-      position: 'relative',
       cursor: 'text',
       padding: theme.spacing(2),
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+    },
+    input: {},
+    completions: {
+      flex: 1,
+      minHeight: 0,
     },
   });
 });
 
 interface AutoCompleteProps {
   onSelection: (id: CompletionId) => void;
-  getCompletions: (input: string) => Promise<CompletionItem[]>;
+  getCompletions: (input: string) => Promise<CompletionItems>;
+  placeholder?: string;
 }
 
 type ItemsMap = Map<CompletionId, { title: CompletionTitle, index: number }>;
 
-function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions: CompletionItem[]): CompletionId {
+function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions: CompletionItems): CompletionId {
   const { index } = itemsMap.get(activeItem);
   for (let i = 1; i < completions.length; i++) {
-    const next = (index + i) % completions.length;
-    if (completions[next].title) {
-      return completions[next].id;
+    const nextIndex = (index + i) % completions.length;
+    const next = completions[nextIndex] as CompletionItem;
+    if (next.title && next.id) {
+      return next.id;
     }
   }
   return activeItem;
@@ -38,6 +49,7 @@ function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions:
 const Autocomplete: React.FC<AutoCompleteProps> = ({
   onSelection,
   getCompletions,
+  placeholder = '',
 }) => {
   const classes = useStyles();
   const [inputValue, setInputValue] = React.useState('');
@@ -57,8 +69,9 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
     getCompletions(inputValue).then((cmpls) => {
       setCompletions(cmpls);
       for (const completion of cmpls) {
-        if (completion.title) {
-          setActiveItem(completion.id);
+        const cmpl = completion as CompletionItem;
+        if (cmpl.title && cmpl.id) {
+          setActiveItem(cmpl.id);
           return;
         }
       }
@@ -87,10 +100,12 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         onChange={setInputValue}
         onKey={handleKey}
         value={inputValue}
+        placeholder={placeholder}
         // tslint:disable-next-line:whitespace
         suggestion={itemsMap.get(activeItem)?.title || ''}
       />
       <Completions
+        className={classes.completions}
         items={completions}
         inputValue={inputValue}
         onActiveChange={setActiveItem}

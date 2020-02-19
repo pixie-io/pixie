@@ -1,3 +1,4 @@
+import Autocomplete from 'components/autocomplete/autocomplete';
 import * as React from 'react';
 
 import {createStyles, makeStyles, Theme} from '@material-ui/core';
@@ -22,6 +23,15 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
+const MOCK_COMMANDS = [
+  'px/service_info',
+  'px/service_stats',
+  'px/network_stats',
+  'px/namespace_stats',
+  'service_info',
+  'network_info',
+];
+
 // TODO(malthus): Figure out the lifecycle of this component. When a command is selected,
 // should the component clear the input? What about when the input is dismised?
 
@@ -31,8 +41,28 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
   return (
     <Modal open={open} onClose={onClose} BackdropProps={{ invisible: true }}>
       <Card className={classes.input}>
-        autocomplete goes here
-        <input autoFocus />
+        <Autocomplete
+          placeholder='Pixie Command'
+          onSelection={(id) => {
+            onClose();
+          }}
+          getCompletions={(input) => {
+            if (!input) {
+              return Promise.resolve([]);
+            }
+            return new Promise((resolve) => {
+              setTimeout(() => {
+                const commands = MOCK_COMMANDS.map((cmd, i) => ({
+                  title: `${cmd} ${input}`,
+                  id: String(i),
+                }));
+                const results = [{ header: 'Most Recent' }, ...commands];
+                results.splice(4, 0, { header: 'Recently Used' });
+                resolve(results);
+              }, 50);
+            });
+          }}
+        />
       </Card>
     </Modal>
   );

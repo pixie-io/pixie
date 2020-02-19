@@ -5,11 +5,14 @@ import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 
 interface CompletionsProps {
   inputValue: string;
-  items: Array<CompletionItem | CompletionHeader>;
+  items: CompletionItems;
   activeItem?: string;
   onActiveChange: (id: string) => void;
   onSelection: (id: string) => void;
+  className?: string;
 }
+
+export type CompletionItems = Array<CompletionItem | CompletionHeader>;
 
 interface CompletionHeader {
   header: string;
@@ -28,7 +31,9 @@ export interface CompletionItem {
 const useStyles = makeStyles((theme: Theme) => {
   // TODO(malthus): Make use of the theme styles.
   return createStyles({
-    root: {},
+    root: {
+      overflow: 'auto',
+    },
     header: theme.typography.subtitle1,
     completion: {
       cursor: 'pointer',
@@ -43,19 +48,20 @@ const useStyles = makeStyles((theme: Theme) => {
 });
 
 const Completions: React.FC<CompletionsProps> = (props) => {
-  const { items, activeItem, onActiveChange, onSelection } = props;
+  const { items, activeItem, onActiveChange, onSelection, className } = props;
   const classes = useStyles();
   return (
-    <div className={classes.root}>
+    <div className={clsx(classes.root, className)}>
       {
-        items.map((item) => {
+        items.map((item, i) => {
           const h = item as CompletionHeader;
           if (h.header) {
-            return <div className={classes.header}>{h.header}</div>;
+            return <div key={`header-${i}`} className={classes.header}>{h.header}</div>;
           }
           item = item as CompletionItem;
           return (
             <Completion
+              key={item.id}
               active={item.id === activeItem}
               onSelection={onSelection}
               onActiveChange={onActiveChange}
@@ -88,6 +94,7 @@ export const Completion = (props: CompletionProps) => {
   if (!title) {
     return null;
   }
+  const ref = React.createRef<HTMLDivElement>();
   let remainingIdx = 0;
   for (const [start, end] of highlights) {
     const prev = title.substring(remainingIdx, start);
@@ -107,8 +114,14 @@ export const Completion = (props: CompletionProps) => {
       </span>,
     );
   }
+  React.useEffect(() => {
+    if (active) {
+      ref.current.scrollIntoView();
+    }
+  }, [active]);
   return (
     <div
+      ref={ref}
       className={clsx(classes.completion, active && 'active')}
       onClick={() => onSelection(id)}
       onMouseOver={() => onActiveChange(id)}
