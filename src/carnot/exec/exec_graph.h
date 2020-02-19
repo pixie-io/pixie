@@ -48,6 +48,8 @@ class ExecutionGraph {
               ExecState* exec_state, plan::PlanFragment* pf);
 
   std::vector<int64_t> sources() { return sources_; }
+  std::vector<int64_t> grpc_sources() { return grpc_sources_; }
+
   StatusOr<ExecNode*> node(int64_t id) {
     auto node = nodes_.find(id);
     if (node == nodes_.end()) {
@@ -142,6 +144,7 @@ class ExecutionGraph {
   plan::PlanState* plan_state_;
   plan::PlanFragment* pf_;
   std::vector<int64_t> sources_;
+  std::vector<int64_t> grpc_sources_;
   std::vector<int64_t> sinks_;
   std::unordered_map<int64_t, ExecNode*> nodes_;
 

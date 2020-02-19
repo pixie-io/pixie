@@ -68,6 +68,7 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
       .OnGRPCSource([&](auto& node) {
         auto s = OnOperatorImpl<plan::GRPCSourceOperator, GRPCSourceNode>(node, &descriptors);
         PL_RETURN_IF_ERROR(s);
+        grpc_sources_.push_back(node.id());
         return exec_state->grpc_router()->AddGRPCSourceNode(
             exec_state->query_id(), node.id(), static_cast<GRPCSourceNode*>(nodes_[node.id()]),
             std::bind(&ExecutionGraph::Continue, this));

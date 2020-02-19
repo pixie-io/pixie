@@ -74,6 +74,22 @@ Status GRPCRouter::AddGRPCSourceNode(sole::uuid query_id, int64_t source_id,
   return Status::OK();
 }
 
+Status GRPCRouter::DeleteGRPCSourceNode(sole::uuid query_id, int64_t source_id) {
+  absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
+  if (!query_node_map_.contains(query_id)) {
+    return error::Internal("Query map does not contain query ID $0 when deleting GRPC source $1",
+                           query_id.str(), source_id);
+  }
+  auto& query_map = query_node_map_[query_id];
+  auto it = query_map.source_node_trackers.find(source_id);
+  if (it == query_map.source_node_trackers.end()) {
+    return error::Internal("Query map for query ID $0 does not contain GRPC source $1",
+                           query_id.str(), source_id);
+  }
+  query_map.source_node_trackers.erase(it);
+  return Status::OK();
+}
+
 void GRPCRouter::DeleteQuery(sole::uuid query_id) {
   absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
   VLOG(1) << "Deleting query ID from GRPC Router: " << query_id.str();

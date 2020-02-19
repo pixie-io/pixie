@@ -291,6 +291,14 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
             auto exec_stats = exec_graph.GetStats();
             bytes_processed += exec_stats.bytes_processed;
             rows_processed += exec_stats.rows_processed;
+            // We need to remove these GRPC source nodes from the GRPC router because the exec graph
+            // gets destructed so that the GRPC router doesn't have stale pointers to those nodes.
+            if (exec_state->grpc_router() != nullptr) {
+              for (int64_t grpc_src_id : exec_graph.grpc_sources()) {
+                PL_RETURN_IF_ERROR(
+                    exec_state->grpc_router()->DeleteGRPCSourceNode(query_id, grpc_src_id));
+              }
+            }
             return Status::OK();
           })
           .Walk(&plan);

@@ -51,6 +51,13 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
    */
   void DeleteQuery(sole::uuid query_id);
 
+  /**
+   * Delete a source node for a query once that source node is no longer valid.
+   * Used to guard against the case where data comes in for a source after it has timed out.
+   * @param query_id
+   */
+  Status DeleteGRPCSourceNode(sole::uuid query_id, int64_t source_id);
+
  private:
   Status EnqueueRowBatch(sole::uuid query_id, std::unique_ptr<carnotpb::RowBatchRequest> req);
 
