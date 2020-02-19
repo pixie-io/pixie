@@ -2,6 +2,8 @@
 
 // This file contains definitions that are shared between various kprobes and uprobes.
 
+enum MessageType { kUnknown, kRequest, kResponse };
+
 enum TrafficDirection {
   kEgress,
   kIngress,

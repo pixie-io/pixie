@@ -7,6 +7,20 @@ const size_t kGRPCReqMinHeaderBlockSize = 4;
 // Assumes the input buf begins with a HTTP2 frame, and verify if that frame is HEADERS frame as
 // part of a gRPC request message. Looks for 4 byte constant with specific format. The chance of a
 // random byte sequence passes this function would be at most 1/2^32.
+//
+// From the spec:
+//
+// All frames begin with a fixed 9-octet header followed by a variable-length payload.
+//
+// +-----------------------------------------------+
+// |                 Length (24)                   |
+// +---------------+---------------+---------------+
+// |   Type (8)    |   Flags (8)   |
+// +-+-------------+---------------+-------------------------------+
+// |R|                 Stream Identifier (31)                      |
+// +=+=============================================================+
+// |                   Frame Payload (0...)                      ...
+// +---------------------------------------------------------------+
 static __inline bool looks_like_grpc_req_http2_headers_frame(const char* buf, size_t buf_size) {
   const int kFrameHeaderSize = 9;
   // Requires 9 bytes of HTTP2 frame header and data from header block fragment.

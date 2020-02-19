@@ -10,15 +10,13 @@
 #include <absl/base/macros.h>
 
 #include "src/common/base/base.h"
+#include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/common/parse_state.h"
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/common/utils.h"
 
 namespace pl {
 namespace stirling {
-
-// The direction of traffic expected on a probe.
-enum class MessageType { kUnknown, kRequest, kResponse };
 
 struct BufferPosition {
   size_t seq_num;

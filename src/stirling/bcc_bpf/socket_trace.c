@@ -261,42 +261,41 @@ static __inline struct socket_data_event_t* fill_event(enum TrafficDirection dir
  * Traffic inference helper functions
  ***********************************************************/
 
-static __inline bool is_http_response(const char* buf, size_t count) {
+static __inline enum MessageType infer_http_message(const char* buf, size_t count) {
   // Smallest HTTP response is 17 characters:
   // HTTP/1.1 200 OK\r\n
-  // Use 16 here to be conservative.
-  if (count < 16) {
-    return false;
-  }
-
-  if (buf[0] == 'H' && buf[1] == 'T' && buf[2] == 'T' && buf[3] == 'P') {
-    return true;
-  }
-
-  return false;
-}
-
-static __inline bool is_http_request(const char* buf, size_t count) {
   // Smallest HTTP response is 16 characters:
   // GET x HTTP/1.1\r\n
   if (count < 16) {
-    return false;
+    return kUnknown;
   }
 
+  if (buf[0] == 'H' && buf[1] == 'T' && buf[2] == 'T' && buf[3] == 'P') {
+    return kResponse;
+  }
   if (buf[0] == 'G' && buf[1] == 'E' && buf[2] == 'T') {
-    return true;
+    return kRequest;
   }
   if (buf[0] == 'P' && buf[1] == 'O' && buf[2] == 'S' && buf[3] == 'T') {
-    return true;
+    return kRequest;
   }
   // TODO(oazizi): Should we add PUT, DELETE, HEAD, and perhaps others?
 
-  return false;
+  return kUnknown;
 }
 
-// TODO(oazizi/yzhao): This function produces too many false positives.
-// Add stronger protocol detection.
-static __inline bool is_mysql_protocol(const uint8_t* buf, size_t count) {
+// MySQL packet:
+//      0         8        16        24        32
+//      +---------+---------+---------+---------+
+//      |        payload_length       | seq_id  |
+//      +---------+---------+---------+---------+
+//      |                                       |
+//      .            ...  body ...              .
+//      .                                       .
+//      .                                       .
+//      +----------------------------------------
+// TODO(oazizi/yzhao): This produces too many false positives. Add stronger protocol detection.
+static __inline enum MessageType infer_mysql_message(const uint8_t* buf, size_t count) {
   static const uint8_t kComStmtPrepare = 0x16;
   static const uint8_t kComStmtExecute = 0x17;
   static const uint8_t kComStmtClose = 0x19;
@@ -305,7 +304,7 @@ static __inline bool is_mysql_protocol(const uint8_t* buf, size_t count) {
   // MySQL packets start with a 3-byte packet length and a 1-byte packet number.
   // The 5th byte on a request contains a command that tells the type.
   if (count < 5) {
-    return false;
+    return kUnknown;
   }
 
   // Convert 3-byte length to uint32_t.
@@ -318,41 +317,135 @@ static __inline bool is_mysql_protocol(const uint8_t* buf, size_t count) {
 
   // The packet number of a request should always be 0.
   if (seq != 0) {
-    return false;
+    return kUnknown;
   }
 
   // No such thing as a zero-length request in MySQL protocol.
   if (len == 0) {
-    return false;
+    return kUnknown;
   }
 
   // Assuming that the length of a request is less than 10k characters to avoid false
   // positive flagging as MySQL, which statistically happens frequently for a single-byte
   // check.
   if (len > 10000) {
-    return false;
+    return kUnknown;
   }
 
   // TODO(oazizi): Consider adding more commands (0x00 to 0x1f).
   // Be careful, though: trade-off is higher rates of false positives.
   if (com == kComStmtPrepare || com == kComStmtExecute || com == kComStmtClose ||
       com == kComQuery) {
-    return true;
+    return kRequest;
   }
-  return false;
+  return kUnknown;
 }
 
-// Technically, HTTP2 client connection preface is 24 octets [1]. Practically,
-// the first 3 shall be sufficient. Note this is sent from client,
-// so it would be captured on server's read()/recvfrom()/recvmsg() or client's
-// write()/sendto()/sendmsg().
-//
-// [1] https://http2.github.io/http2-spec/#ConnectionHeader
-static __inline bool is_http2_connection_preface(const char* buf, size_t count) {
-  if (count < 3) {
+// Cassandra frame:
+//      0         8        16        24        32         40
+//      +---------+---------+---------+---------+---------+
+//      | version |  flags  |      stream       | opcode  |
+//      +---------+---------+---------+---------+---------+
+//      |                length                 |
+//      +---------+---------+---------+---------+
+//      |                                       |
+//      .            ...  body ...              .
+//      .                                       .
+//      .                                       .
+//      +----------------------------------------
+static __inline enum MessageType infer_cql_message(const uint8_t* buf, size_t count) {
+  static const uint8_t kError = 0x00;
+  static const uint8_t kStartup = 0x01;
+  static const uint8_t kReady = 0x02;
+  static const uint8_t kAuthenticate = 0x03;
+  static const uint8_t kOptions = 0x05;
+  static const uint8_t kSupported = 0x06;
+  static const uint8_t kQuery = 0x07;
+  static const uint8_t kResult = 0x08;
+  static const uint8_t kPrepare = 0x09;
+  static const uint8_t kExecute = 0x0a;
+  static const uint8_t kRegister = 0x0b;
+  static const uint8_t kEvent = 0x0c;
+  static const uint8_t kBatch = 0x0d;
+  static const uint8_t kAuthChallenge = 0x0e;
+  static const uint8_t kAuthResponse = 0x0f;
+  static const uint8_t kAuthSuccess = 0x10;
+
+  // Cassandra frames have a 9-byte header.
+  if (count < 9) {
+    return kUnknown;
+  }
+
+  // Version contains both version and direction.
+  bool request = (buf[0] & 0x80) == 0x00;
+  uint8_t version = (buf[0] & 0x7f);
+  uint8_t flags = buf[1];
+  uint8_t opcode = buf[4];
+  int32_t length;
+  bpf_probe_read(&length, 4, &buf[5]);
+  length = bpf_ntohl(length);
+
+  // Cassandra version should 5 or less. Also v2 and lower seem much less popular.
+  // For example ScyllaDB only supports v3+.
+  if (version < 3 || version > 5) {
+    return kUnknown;
+  }
+
+  // Only flags 0x1, 0x2, 0x4 and 0x8 are used.
+  if ((flags & 0xf0) != 0) {
+    return kUnknown;
+  }
+
+  // A frame is limited to 256MB in length,
+  // but we look for more common frames which should be much smaller in size.
+  if (length > 10000) {
     return false;
   }
-  return buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I';
+
+  switch (opcode) {
+    case kStartup:
+    case kOptions:
+    case kQuery:
+    case kPrepare:
+    case kExecute:
+    case kRegister:
+    case kBatch:
+    case kAuthResponse:
+      return request ? kRequest : kUnknown;
+    case kError:
+    case kReady:
+    case kAuthenticate:
+    case kSupported:
+    case kResult:
+    case kEvent:
+    case kAuthChallenge:
+    case kAuthSuccess:
+      return !request ? kResponse : kUnknown;
+    default:
+      return kUnknown;
+  }
+}
+
+static __inline enum MessageType infer_http2_message(const char* buf, size_t count) {
+  // Technically, HTTP2 client connection preface is 24 octets [1]. Practically,
+  // the first 3 shall be sufficient. Note this is sent from client,
+  // so it would be captured on server's read()/recvfrom()/recvmsg() or client's
+  // write()/sendto()/sendmsg().
+  //
+  // [1] https://http2.github.io/http2-spec/#ConnectionHeader
+  if (count < 3) {
+    return kUnknown;
+  }
+
+  if (buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I') {
+    return kRequest;
+  }
+
+  if (looks_like_grpc_req_http2_headers_frame(buf, count)) {
+    return kRequest;
+  }
+
+  return kUnknown;
 }
 
 static __inline struct traffic_class_t infer_traffic(enum TrafficDirection direction,
@@ -361,25 +454,28 @@ static __inline struct traffic_class_t infer_traffic(enum TrafficDirection direc
   traffic_class.protocol = kProtocolUnknown;
   traffic_class.role = kRoleUnknown;
 
-  if (is_http_response(buf, count)) {
+  enum MessageType req_resp_type;
+  if ((req_resp_type = infer_http_message(buf, count)) != kUnknown) {
     traffic_class.protocol = kProtocolHTTP;
-    traffic_class.role = direction == kEgress ? kRoleServer : kRoleClient;
-  } else if (is_http_request(buf, count)) {
-    traffic_class.protocol = kProtocolHTTP;
-    traffic_class.role = direction == kEgress ? kRoleClient : kRoleServer;
-  } else if (is_mysql_protocol(buf, count)) {
+  } else if ((req_resp_type = infer_cql_message(buf, count)) != kUnknown) {
+    traffic_class.protocol = kProtocolCQL;
+  } else if ((req_resp_type = infer_mysql_message(buf, count)) != kUnknown) {
     traffic_class.protocol = kProtocolMySQL;
-    traffic_class.role = direction == kEgress ? kRoleClient : kRoleServer;
-  } else if (is_http2_connection_preface(buf, count)) {
+  } else if ((req_resp_type = infer_http2_message(buf, count)) != kUnknown) {
     traffic_class.protocol = kProtocolHTTP2;
-    traffic_class.role = direction == kEgress ? kRoleClient : kRoleServer;
-  } else if (looks_like_grpc_req_http2_headers_frame(buf, count)) {
-    // Combining this with the above else if branch causes bpf loading failure.
-    // TODO(yzhao): Figure out why.
-    traffic_class.protocol = kProtocolHTTP2;
-    traffic_class.role = direction == kEgress ? kRoleClient : kRoleServer;
+  } else {
+    return traffic_class;
   }
 
+  // Classify Role as XOR between direction and req_resp_type:
+  //    direction  req_resp_type  => role
+  //    ------------------------------------
+  //    kEgress    kRequest       => Client
+  //    kEgress    KResponse      => Server
+  //    kIngress   kRequest       => Server
+  //    kIngress   kResponse      => Client
+  traffic_class.role =
+      ((direction == kEgress) ^ (req_resp_type == kResponse)) ? kRoleClient : kRoleServer;
   return traffic_class;
 }
 
@@ -509,6 +605,7 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDi
   // Write snooped arguments to perf ring buffer.
   const size_t size_to_submit = sizeof(event->attr) + msg_submit_size;
   switch (event->attr.traffic_class.protocol) {
+    case kProtocolCQL:
     case kProtocolHTTP:
     case kProtocolHTTP2:
     case kProtocolMySQL:
