@@ -63,9 +63,9 @@ func (mds *KVMetadataStore) GetServiceCIDR() string {
 	return mds.clusterInfo.ServiceCIDR.String()
 }
 
-// SetClusterInfo sets static information about the current cluster.
-func (mds *KVMetadataStore) SetClusterInfo(clusterInfo ClusterInfo) {
-	mds.clusterInfo = clusterInfo
+// SetClusterCIDR sets the static pod CIDR for the current cluster.
+func (mds *KVMetadataStore) SetClusterCIDR(cidr string) {
+	mds.clusterInfo.CIDR = cidr
 }
 
 /* ================= Keys =================*/

@@ -34,10 +34,8 @@ func TestKVMetadataStore_GetClusterCIDR(t *testing.T) {
 
 	assert.Equal(t, "", mds.GetClusterCIDR())
 
-	mds.SetClusterInfo(controllers.ClusterInfo{
-		CIDR: "1.0.0.24/14",
-	})
-	assert.Equal(t, "1.0.0.24/14", mds.GetClusterCIDR())
+	mds.SetClusterCIDR("1.2.3.4/18")
+	assert.Equal(t, "1.2.3.4/18", mds.GetClusterCIDR())
 }
 
 // createAgent manually creates the agent keys/values in the cache.
