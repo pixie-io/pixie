@@ -29,6 +29,9 @@
 namespace pl {
 namespace stirling {
 
+namespace {
+
+// All sources, include experimental and deprecated ones.
 std::unique_ptr<SourceRegistry> CreateAllSourceRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<JVMStatsConnector>("jvm_stats");
@@ -41,12 +44,46 @@ std::unique_ptr<SourceRegistry> CreateAllSourceRegistry() {
   return registry;
 }
 
+// All sources used in production.
 std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<JVMStatsConnector>("jvm_stats");
   registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
   registry->RegisterOrDie<SystemStatsConnector>("system_stats");
   return registry;
+}
+
+// All sources used in production, that produce traces.
+std::unique_ptr<SourceRegistry> CreateTracerSourceRegistry() {
+  auto registry = std::make_unique<SourceRegistry>();
+  registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
+  return registry;
+}
+
+// All sources used in production, that produce metrics.
+std::unique_ptr<SourceRegistry> CreateMetricsSourceRegistry() {
+  auto registry = std::make_unique<SourceRegistry>();
+  registry->RegisterOrDie<JVMStatsConnector>("jvm_stats");
+  registry->RegisterOrDie<SystemStatsConnector>("system_stats");
+  return registry;
+}
+}  // namespace
+
+std::unique_ptr<SourceRegistry> CreateSourceRegistry(SourceRegistrySpecifier sources) {
+  switch (sources) {
+    case SourceRegistrySpecifier::kTracers:
+      return pl::stirling::CreateTracerSourceRegistry();
+    case SourceRegistrySpecifier::kMetrics:
+      return pl::stirling::CreateMetricsSourceRegistry();
+    case SourceRegistrySpecifier::kProd:
+      return pl::stirling::CreateProdSourceRegistry();
+    case SourceRegistrySpecifier::kAll:
+      return pl::stirling::CreateAllSourceRegistry();
+    default:
+      // To keep GCC happy.
+      DCHECK(false);
+      return nullptr;
+  }
 }
 
 // TODO(oazizi/kgandhi): Is there a better place for this function?

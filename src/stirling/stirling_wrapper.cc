@@ -19,6 +19,7 @@
 
 using pl::stirling::AgentMetadataType;
 using pl::stirling::SourceRegistry;
+using pl::stirling::SourceRegistrySpecifier;
 using pl::stirling::Stirling;
 using pl::stirling::stirlingpb::Publish;
 using pl::stirling::stirlingpb::Subscribe;
@@ -48,9 +49,8 @@ using pl::stirling::kMySQLTable;
 
 using pl::ArrayView;
 
-DEFINE_string(source_name, "*", "The name of the source to report.");
-DEFINE_bool(all_sources, false,
-            "If true, turns on all sources. Default turns on only prod sources.");
+DEFINE_string(sources, "kTracers",
+              "[kAll|kProd|kMetrics|kTracers] Choose sources to enable. Default is kTracers.");
 DEFINE_bool(print_record_batches, true, "If true, prints captured record batches on STDOUT.");
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
 
@@ -174,10 +174,15 @@ int main(int argc, char** argv) {
   pl::InitEnvironmentOrDie(&argc, argv);
   LOG(INFO) << "Stirling Wrapper PID: " << getpid() << " TID: " << gettid();
 
+  std::optional<SourceRegistrySpecifier> sources =
+      magic_enum::enum_cast<SourceRegistrySpecifier>(FLAGS_sources);
+  if (!sources.has_value()) {
+    LOG(ERROR) << absl::Substitute("$0 is not a valid source register specifier", FLAGS_sources);
+  }
+
+  std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateSourceRegistry(sources.value());
+
   // Make Stirling.
-  std::unique_ptr<SourceRegistry> registry = FLAGS_all_sources
-                                                 ? pl::stirling::CreateAllSourceRegistry()
-                                                 : pl::stirling::CreateProdSourceRegistry();
   std::unique_ptr<Stirling> stirling = Stirling::Create(std::move(registry));
   g_stirling = stirling.get();
 
@@ -187,12 +192,7 @@ int main(int argc, char** argv) {
 
   // Subscribe to all elements.
   // Stirling will update its schemas and sets up the data tables.
-  pl::stirling::stirlingpb::Subscribe subscribe_proto;
-  if (FLAGS_source_name == "*") {
-    subscribe_proto = pl::stirling::SubscribeToAllInfoClasses(publish_proto);
-  } else {
-    subscribe_proto = pl::stirling::SubscribeToInfoClass(publish_proto, FLAGS_source_name);
-  }
+  auto subscribe_proto = pl::stirling::SubscribeToAllInfoClasses(publish_proto);
   PL_CHECK_OK(stirling->SetSubscription(subscribe_proto));
 
   // Get a map from InfoClassManager names to Table IDs

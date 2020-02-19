@@ -33,21 +33,30 @@ stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_pr
                                            std::string_view name);
 
 /**
- * @brief Creates a registry of all the available source connectors, including
- *        source connectors used in development only.
- *        They will all be intialized, and consume memory, even if they are disabled.
- *
- * @param unique_ptr to the created registry.
+ * Specifies a set of sources to initialize as part of a source registry.
  */
-std::unique_ptr<SourceRegistry> CreateAllSourceRegistry();
+enum class SourceRegistrySpecifier {
+  // All available sources (including deprecated and test sources).
+  kAll,
+
+  // All production sources.
+  kProd,
+
+  // All production sources that generate metrics.
+  kMetrics,
+
+  // All production sources that are tracers.
+  kTracers,
+};
 
 /**
- * @brief Creates a registry of main production source connectors.
- *        Does not include registries used for development (e.g. SeqGenConnector).
+ * Create a predefined source registry set. See SourceRegistrySpecifier for details.
  *
- * @param unique_ptr to the created registry.
+ * @param sources Specifier to indicate which pre-set source registry set is desired.
+ * @return unique_ptr to the source registry containing all the sources to initialize.
  */
-std::unique_ptr<SourceRegistry> CreateProdSourceRegistry();
+std::unique_ptr<SourceRegistry> CreateSourceRegistry(
+    SourceRegistrySpecifier sources = SourceRegistrySpecifier::kProd);
 
 /**
  * The data collector collects data from various different 'sources',

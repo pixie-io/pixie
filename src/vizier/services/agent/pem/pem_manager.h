@@ -26,7 +26,7 @@ class PEMManager : public Manager {
   PEMManager() = delete;
   PEMManager(sole::uuid agent_id, std::string_view nats_url)
       : PEMManager(agent_id, nats_url,
-                   pl::stirling::Stirling::Create(pl::stirling::CreateProdSourceRegistry())) {}
+                   pl::stirling::Stirling::Create(pl::stirling::CreateSourceRegistry())) {}
 
   PEMManager(sole::uuid agent_id, std::string_view nats_url,
              std::unique_ptr<stirling::Stirling> stirling)

@@ -48,7 +48,7 @@ class PresetQueriesTest : public ::testing::Test {
     absl::flat_hash_map<std::string, Relation> absl_rel_map;
 
     // Get the production relations from Stirling
-    auto stirling = stirling::Stirling::Create(stirling::CreateProdSourceRegistry());
+    auto stirling = stirling::Stirling::Create(stirling::CreateSourceRegistry());
     stirling::stirlingpb::Publish publish_pb;
     stirling->GetPublishProto(&publish_pb);
     auto subscribe_pb = stirling::SubscribeToAllInfoClasses(publish_pb);
