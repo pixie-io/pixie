@@ -216,7 +216,7 @@ void TableToCsv(const std::string& filename, pl::table_store::Table* table) {
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  pl::InitEnvironmentOrDie(&argc, argv);
+  pl::EnvironmentGuard env_guard(&argc, argv);
 
   auto filename = FLAGS_input_file;
   auto output_filename = FLAGS_output_file;
@@ -244,6 +244,5 @@ int main(int argc, char* argv[]) {
   auto output_table = res.output_tables_[0];
   TableToCsv(output_filename, output_table);
 
-  pl::ShutdownEnvironmentOrDie();
   return 0;
 }

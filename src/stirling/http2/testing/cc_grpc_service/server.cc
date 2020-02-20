@@ -7,7 +7,7 @@ using ::pl::stirling::http2::testing::ServiceRunner;
 DEFINE_int32(port, 50051, "The port to listen.");
 
 int main(int argc, char** argv) {
-  pl::InitEnvironmentOrDie(&argc, argv);
+  pl::EnvironmentGuard env_guard(&argc, argv);
 
   GreeterService greeter_service;
   ServiceRunner runner(FLAGS_port);

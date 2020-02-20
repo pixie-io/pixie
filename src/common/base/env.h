@@ -7,13 +7,13 @@
 
 namespace pl {
 
-// Does basic environment init (such as flags and logging).
-// Can only be called once. Multiple invocations are ignored.
-void InitEnvironmentOrDie(int* argc, char** argv);
-
-// Cleans up the environment.
-// Can only be called once. Multiple invocations are ignored.
-void ShutdownEnvironmentOrDie();
+// A RAII-style wrapper of initializing and shutting down the process execution environment
+// (such as flags and logging).
+class EnvironmentGuard {
+ public:
+  EnvironmentGuard(int* argc, char** argv);
+  ~EnvironmentGuard();
+};
 
 // Returns the value of the env var. Or nullopt if it's not set.
 std::optional<std::string> GetEnv(const std::string& env_var);

@@ -3,8 +3,7 @@
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  pl::InitEnvironmentOrDie(&argc, argv);
+  pl::EnvironmentGuard env_guard(&argc, argv);
   int retval = RUN_ALL_TESTS();
-  pl::ShutdownEnvironmentOrDie();
   return retval;
 }

@@ -85,7 +85,7 @@ std::string ToString(const SocketInfo& socket_info) {
 
 int main(int argc, char** argv) {
   gflags::SetUsageMessage(kProgramDescription);
-  pl::InitEnvironmentOrDie(&argc, argv);
+  pl::EnvironmentGuard env_guard(&argc, argv);
 
   const std::string kProcPath = FLAGS_proc_path;
   int32_t pid = FLAGS_pid;

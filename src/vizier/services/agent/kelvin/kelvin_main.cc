@@ -49,7 +49,8 @@ class AgentDeathHandler : public pl::FatalErrorHandlerInterface {
 std::unique_ptr<pl::SignalAction> signal_action;
 
 int main(int argc, char** argv) {
-  pl::InitEnvironmentOrDie(&argc, argv);
+  pl::EnvironmentGuard env_guard(&argc, argv);
+
   signal_action = std::make_unique<pl::SignalAction>();
   AgentDeathHandler err_handler;
   signal_action->RegisterFatalErrorHandler(err_handler);
@@ -73,4 +74,6 @@ int main(int argc, char** argv) {
 
   // Clear the manager, because it has been stopped.
   err_handler.set_manager(nullptr);
+
+  return 0;
 }

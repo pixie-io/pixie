@@ -6,6 +6,8 @@
 
 namespace pl {
 
+namespace {
+
 std::once_flag init_once, shutdown_once;
 
 void InitEnvironmentOrDieImpl(int* argc, char** argv) {
@@ -32,6 +34,11 @@ void InitEnvironmentOrDie(int* argc, char** argv) {
 }
 
 void ShutdownEnvironmentOrDie() { std::call_once(shutdown_once, ShutdownEnvironmentOrDieImpl); }
+
+}  // namespace
+
+EnvironmentGuard::EnvironmentGuard(int* argc, char** argv) { InitEnvironmentOrDie(argc, argv); }
+EnvironmentGuard::~EnvironmentGuard() { ShutdownEnvironmentOrDie(); }
 
 std::optional<std::string> GetEnv(const std::string& env_var) {
   const char* var = getenv(env_var.c_str());

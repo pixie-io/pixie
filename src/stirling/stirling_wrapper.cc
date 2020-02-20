@@ -171,7 +171,8 @@ int main(int argc, char** argv) {
   signal(SIGTERM, SignalHandler);
   signal(SIGHUP, SignalHandler);
 
-  pl::InitEnvironmentOrDie(&argc, argv);
+  pl::EnvironmentGuard env_guard(&argc, argv);
+
   LOG(INFO) << "Stirling Wrapper PID: " << getpid() << " TID: " << gettid();
 
   std::optional<SourceRegistrySpecifier> sources =
@@ -205,7 +206,6 @@ int main(int argc, char** argv) {
 
   if (FLAGS_init_only) {
     LOG(INFO) << "Exiting after init.";
-    pl::ShutdownEnvironmentOrDie();
     return 0;
   }
 
@@ -219,8 +219,6 @@ int main(int argc, char** argv) {
   // Another model of how to run Stirling:
   // stirling->RunAsThread();
   // stirling->WaitForThreadJoin();
-
-  pl::ShutdownEnvironmentOrDie();
 
   return 0;
 }

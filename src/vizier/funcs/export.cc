@@ -12,7 +12,7 @@ DEFINE_string(out_file_path, gflags::StringFromEnv("PL_FUNCS_OUT_FILE", "funcs.p
               "The file to save the serialized UDFInfo");
 
 int main(int argc, char** argv) {
-  pl::InitEnvironmentOrDie(&argc, argv);
+  pl::EnvironmentGuard env_guard(&argc, argv);
   pl::carnot::udf::Registry registry("registry");
   pl::vizier::funcs::VizierFuncFactoryContext ctx;
   RegisterFuncsOrDie(ctx, &registry);
@@ -26,6 +26,5 @@ int main(int argc, char** argv) {
 
   out_udf_info.close();
 
-  pl::ShutdownEnvironmentOrDie();
   return 0;
 }

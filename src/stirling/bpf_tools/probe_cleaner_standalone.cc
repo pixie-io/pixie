@@ -8,10 +8,10 @@ const char kPixieMarker[] = "__pixie__";
 DEFINE_string(cleanup_marker, kPixieMarker, "Marker to search for when deleting probes.");
 
 int main(int argc, char** argv) {
-  pl::InitEnvironmentOrDie(&argc, argv);
+  pl::EnvironmentGuard env_guard(&argc, argv);
 
   pl::Status s = pl::stirling::utils::CleanProbes(kPixieMarker);
   LOG_IF(ERROR, !s.ok()) << s.msg();
 
-  pl::ShutdownEnvironmentOrDie();
+  return 0;
 }
