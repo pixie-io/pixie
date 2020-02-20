@@ -14,6 +14,7 @@ namespace stirling {
 using ::pl::Exec;
 using ::pl::TestEnvironment;
 using ::testing::SizeIs;
+using ::testing::UnorderedElementsAre;
 
 TEST(ProcTracerTest, CapturesVforkAndClone) {
   ProcTracer proc_tracer;
@@ -32,15 +33,15 @@ TEST(ProcTracerTest, CapturesVforkAndClone) {
   ASSERT_TRUE(absl::SimpleAtoi(pids[1], &pid1));
   ASSERT_TRUE(absl::SimpleAtoi(pids[2], &pid2));
 
-  std::vector<proc_creation_event_t> events;
+  // Retrieve the PIDs of the forked child processes. And check with the value obtained from the
+  // stdout.
+  std::vector<uint32_t> child_pids;
   for (const auto& event : proc_tracer.ExtractProcCreationEvents()) {
     if (event.ppid == ppid) {
-      events.push_back(event);
+      child_pids.push_back(event.pid);
     }
   }
-  ASSERT_THAT(events, SizeIs(2));
-  EXPECT_EQ(pid1, events[0].pid);
-  EXPECT_EQ(pid2, events[1].pid);
+  EXPECT_THAT(child_pids, UnorderedElementsAre(pid1, pid2));
 }
 
 }  // namespace stirling
