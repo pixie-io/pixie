@@ -30,7 +30,6 @@ spec:
             name: pl-tls-config
         ports:
         - containerPort: 50300
-        - containerPort: 50303
         volumeMounts:
         - mountPath: /certs
           name: certs
