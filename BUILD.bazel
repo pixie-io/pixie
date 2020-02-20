@@ -45,6 +45,7 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/table_store/proto //src/table_store/proto:schema_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/messages/messagespb //src/vizier/messages/messagespb:messages_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/proto //src/vizier/proto:service_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/vizierpb //src/vizier/vizierpb:vizier_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb //src/vizier/services/cloud_connector/cloud_connectorpb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb //src/vizier/services/metadata/datapb:data_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb //src/vizier/services/shared/agentpb:agent_pl_go_proto
