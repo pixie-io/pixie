@@ -38,10 +38,10 @@ class SubProcess {
   int Wait();
 
   /**
-   * @brief Return string from the child process' stdout.
+   * @brief Read the child process' stdout, and append to provided string pointer.
    * Returns whatever data is available, and does not block if there is no data.
    */
-  std::string Stdout();
+  Status Stdout(std::string* out);
 
   int child_pid() const { return child_pid_; }
 

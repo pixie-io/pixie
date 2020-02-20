@@ -100,7 +100,8 @@ class GRPCTraceGoTest : public ::testing::Test {
     // Give some time for the server to start up.
     sleep(2);
 
-    const std::string port_str = s_.Stdout();
+    std::string port_str;
+    ASSERT_OK(s_.Stdout(&port_str));
     ASSERT_TRUE(absl::SimpleAtoi(port_str, &s_port_));
     ASSERT_NE(0, s_port_);
   }

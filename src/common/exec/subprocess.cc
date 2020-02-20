@@ -4,7 +4,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <csignal>
+#include <cerrno>
 
 #include "src/common/base/error.h"
 
@@ -76,21 +76,27 @@ int SubProcess::Wait() {
   return 0;
 }
 
-std::string SubProcess::Stdout() {
-  std::string buffer;
-  buffer.resize(128);
+Status SubProcess::Stdout(std::string* out) {
+  char buffer[1024];
 
-  std::string res;
   // Try to deplete all available data from the pipe. But still proceed if there is no more data.
-  while (true) {
-    int len = read(pipefd_[kRead], buffer.data(), buffer.size());
-    if (len == -1) {
-      break;
+  int len;
+  do {
+    len = read(pipefd_[kRead], &buffer, sizeof(buffer));
+
+    // Don't treat EAGAIN or EWOULDBLOCK as errors,
+    // Treat them as if we've grabbed all the available data, since a future call will succeed.
+    // Other errors are not recoverable, so return error.
+    if (len == -1 && (errno != EAGAIN && errno != EWOULDBLOCK)) {
+      return error::System(std::strerror(errno));
     }
-    buffer.resize(len);
-    res.append(buffer);
-  }
-  return res;
+
+    if (len > 0) {
+      out->append(buffer, 0, len);
+    }
+  } while (len == sizeof(buffer));
+
+  return Status::OK();
 }
 
 }  // namespace pl

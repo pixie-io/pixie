@@ -59,13 +59,17 @@ class DummyTestContainer {
     CHECK_NE(process_pid_, -1);
 
     // Wait for server within container to come up.
-    while (!absl::StrContains(container_.Stdout(), "listening on port: 8080")) {
-      sleep(kSleepSeconds);
+    std::string container_out;
+    PL_CHECK_OK(container_.Stdout(&container_out));
+    while (!absl::StrContains(container_out, "listening on port: 8080")) {
       --attempts_remaining;
       CHECK_GT(attempts_remaining, 0);
       LOG(INFO) << absl::Substitute(
           "Test Setup: Server not ready, will try again ($0 attempts remaining).",
           attempts_remaining);
+
+      sleep(kSleepSeconds);
+      PL_CHECK_OK(container_.Stdout(&container_out));
     }
   }
 
