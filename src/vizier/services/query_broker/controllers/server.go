@@ -15,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
@@ -157,13 +158,13 @@ func makePlannerState(pemInfo []*agentpb.Agent, kelvinList []*agentpb.Agent, sch
 }
 
 // ExecuteQueryWithPlanner executes a query with the provided planner.
-func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*querybrokerpb.VizierQueryResponse, error) {
+func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*queryresultspb.QueryResult, *statuspb.Status, error) {
 	// Get the table schema that is presumably shared across agents.
 	mdsSchemaReq := &metadatapb.SchemaRequest{}
 	mdsSchemaResp, err := s.mdsClient.GetSchemas(ctx, mdsSchemaReq)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get schemas.")
-		return nil, err
+		return nil, nil, err
 	}
 	schema := mdsSchemaResp.Schema
 
@@ -171,7 +172,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	mdsReq := &metadatapb.AgentInfoRequest{}
 	mdsResp, err := s.mdsClient.GetAgentInfo(ctx, mdsReq)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var kelvinList []*agentpb.Agent
@@ -187,7 +188,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 
 	plannerState, err := makePlannerState(pemList, kelvinList, schema, planOpts)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	log.WithField("query_id", queryID).Infof("Running query: %s", req.QueryStr)
@@ -200,12 +201,12 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	// Compile the query plan.
 	plannerResultPB, err := planner.Plan(plannerState, req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// When the status is not OK, this means it's a compilation error on the query passed in.
 	if plannerResultPB.Status.ErrCode != statuspb.OK {
-		return failedStatusQueryResponse(queryID, plannerResultPB.Status), nil
+		return nil, plannerResultPB.Status, nil
 	}
 
 	// Plan describes the mapping of agents to the plan that should execute on them.
@@ -216,7 +217,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		u, err := uuid.FromString(carnotID)
 		if err != nil {
 			log.WithError(err).Fatalf("Couldn't parse uuid from agent id \"%s\"", carnotID)
-			return nil, err
+			return nil, nil, err
 		}
 		planMap[u] = agentPlan
 	}
@@ -239,21 +240,16 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	}
 
 	if err := queryExecutor.ExecuteQuery(planMap); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	queryResult, err := queryExecutor.WaitForCompletion()
 	if err != nil {
-		return nil, err
-	}
-
-	queryResponse := &querybrokerpb.VizierQueryResponse{
-		QueryID:     utils.ProtoFromUUID(&queryID),
-		QueryResult: queryResult,
+		return nil, nil, err
 	}
 
 	s.deleteExecutorForQuery(queryID)
-	return queryResponse, nil
+	return queryResult, nil, nil
 }
 
 func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
@@ -290,7 +286,18 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *plannerpb.QueryRequest) 
 	}
 	planner := logicalplanner.New(&udfInfo)
 	defer planner.Free()
-	return s.ExecuteQueryWithPlanner(ctx, req, queryID, planner, planOpts)
+	qr, status, err := s.ExecuteQueryWithPlanner(ctx, req, queryID, planner, planOpts)
+	if err != nil {
+		return nil, err
+	}
+	if status != nil {
+		return failedStatusQueryResponse(queryID, status), nil
+	}
+
+	return &querybrokerpb.VizierQueryResponse{
+		QueryID:     utils.ProtoFromUUID(&queryID),
+		QueryResult: qr,
+	}, nil
 }
 
 // GetSchemas returns the schemas in the system.
@@ -368,4 +375,113 @@ func (s *Server) GetAvailableFlags(ctx context.Context, req *plannerpb.QueryRequ
 	planner := logicalplanner.New(&udfInfo)
 	defer planner.Free()
 	return s.GetAvailableFlagsWithPlanner(ctx, req, planner)
+}
+
+// ExecuteScript executes the script and sends results through the gRPC stream.
+func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.VizierService_ExecuteScriptServer) error {
+	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
+	queryID := uuid.NewV4()
+
+	// Convert request to a format expected by the planner.
+	convertedReq, err := VizierQueryRequestToPlannerQueryRequest(req)
+	if err != nil {
+		return err
+	}
+
+	flags, err := ParseQueryFlags(convertedReq.QueryStr)
+	if err != nil {
+		resp := &vizierpb.ExecuteScriptResponse{
+			QueryID: queryID.String(),
+			Status: &vizierpb.Status{
+				Message: err.Error(),
+			},
+		}
+
+		return srv.Send(resp)
+	}
+	planOpts := flags.GetPlanOptions()
+
+	var udfInfo udfspb.UDFInfo
+	if err := loadUDFInfo(&udfInfo); err != nil {
+		return err
+	}
+	planner := logicalplanner.New(&udfInfo)
+	defer planner.Free()
+	qr, status, err := s.ExecuteQueryWithPlanner(context.Background(), convertedReq, queryID, planner, planOpts)
+	if err != nil {
+		return err
+	}
+	if status != nil {
+		convStatus, err := StatusToVizierStatus(status)
+		if err != nil {
+			return err
+		}
+		resp := &vizierpb.ExecuteScriptResponse{
+			QueryID: queryID.String(),
+			Status:  convStatus,
+		}
+		return srv.Send(resp)
+	}
+	if qr == nil {
+		resp := &vizierpb.ExecuteScriptResponse{
+			QueryID: queryID.String(),
+			Status: &vizierpb.Status{
+				Message: "Query timed out with no results",
+			},
+		}
+
+		return srv.Send(resp)
+	}
+
+	// Convert query result into the externally-facing format.
+	for _, table := range qr.Tables {
+		// Send schema first.
+		md, err := RelationFromTable(table)
+		if err != nil {
+			return err
+		}
+		resp := &vizierpb.ExecuteScriptResponse{
+			QueryID: queryID.String(),
+			Result: &vizierpb.ExecuteScriptResponse_MetaData{
+				MetaData: md,
+			},
+		}
+		err = srv.Send(resp)
+		if err != nil {
+			return err
+		}
+
+		// Send row batches.
+		for _, rb := range table.RowBatches {
+			newRb, err := RowBatchToVizierRowBatch(rb)
+			if err != nil {
+				return err
+			}
+			resp := &vizierpb.ExecuteScriptResponse{
+				QueryID: queryID.String(),
+				Result: &vizierpb.ExecuteScriptResponse_Data{
+					Data: &vizierpb.QueryData{
+						Batch: newRb,
+					},
+				},
+			}
+			err = srv.Send(resp)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Send execution stats.
+	stats, err := QueryResultStatsToVizierStats(qr)
+	if err != nil {
+		return err
+	}
+	resp := &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_Data{
+			Data: stats,
+		},
+	}
+	return srv.Send(resp)
 }

@@ -17,6 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
+	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 const plMDSAddr = "vizier-metadata.pl.svc:50400"
@@ -75,6 +76,7 @@ func main() {
 	s := services.NewPLServer(env,
 		httpmiddleware.WithBearerAuthMiddleware(env, mux))
 	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
+	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), server)
 	s.Start()
 	s.StopOnInterrupt()
 }

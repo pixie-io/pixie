@@ -383,11 +383,11 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 
 	s, err := NewServer(env, mds, nc)
 	queryID := uuid.NewV4()
-	queryResult, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest, queryID, planner, &planpb.PlanOptions{Analyze: true})
+	queryResult, _, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest, queryID, planner, &planpb.PlanOptions{Analyze: true})
 	if err != nil {
 		t.Fatal("Failed to return results from ExecuteQuery.")
 	}
-	assert.Nil(t, queryResult.QueryResult)
+	assert.Nil(t, queryResult)
 }
 
 func TestExecuteQueryInvalidFlags(t *testing.T) {
@@ -644,7 +644,7 @@ func TestPlannerErrorResult(t *testing.T) {
 
 	s, err := newServer(env, mds, nc, createExecutorMock)
 	queryID := uuid.NewV4()
-	result, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest,
+	_, status, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest,
 		queryID, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
@@ -655,7 +655,7 @@ func TestPlannerErrorResult(t *testing.T) {
 	if err := proto.UnmarshalText(failedPlannerResult, agentRespPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	assert.Equal(t, agentRespPB.Status, result.Status)
+	assert.Equal(t, agentRespPB.Status, status)
 }
 
 func TestErrorInStatusResult(t *testing.T) {
@@ -732,12 +732,12 @@ func TestErrorInStatusResult(t *testing.T) {
 	s, err := newServer(env, mds, nc, createExecutorMock)
 
 	queryID := uuid.NewV4()
-	result, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest, queryID, planner, &planpb.PlanOptions{Analyze: true})
+	_, status, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest, queryID, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Error while executing query.")
 	}
-	assert.Equal(t, result.Status, badPlannerResultPB.Status)
+	assert.Equal(t, status, badPlannerResultPB.Status)
 }
 
 func TestGetAvailableFlags(t *testing.T) {
