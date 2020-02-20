@@ -484,10 +484,14 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
   op->set_op_type(planpb::FILTER_OPERATOR);
   DCHECK_EQ(parents().size(), 1UL);
 
-  for (size_t i = 0; i < relation().NumColumns(); ++i) {
+  auto col_names = relation().col_names();
+  for (const auto& col_name : col_names) {
     planpb::Column* col_pb = pb->add_columns();
     col_pb->set_node(parents()[0]->id());
-    col_pb->set_index(i);
+    auto parent_relation = parents()[0]->relation();
+    DCHECK(parent_relation.HasColumn(col_name)) << absl::Substitute(
+        "Don't have $0 in parent_relation $1", col_name, parent_relation.DebugString());
+    col_pb->set_index(parent_relation.GetColumnIndex(col_name));
   }
 
   auto expr = pb->mutable_expression();

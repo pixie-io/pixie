@@ -313,6 +313,54 @@ TEST(ToProto, map_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedMapPb));
 }
 
+constexpr char kExpectedFilterPb[] = R"(
+  op_type: FILTER_OPERATOR
+  filter_op {
+    expression {
+      func {
+        name: "equals"
+        args {
+          column {
+            node: 1
+            index: 1
+          }
+        }
+        args {
+          column {
+            node: 1
+            index: 3
+          }
+        }
+        args_data_types: FLOAT64
+        args_data_types: FLOAT64
+      }
+    }
+    columns {
+      node: 1
+      index: 2
+    }
+  }
+)";
+
+TEST_F(OperatorTests, filter_to_proto) {
+  // Make the mem_src not node_id 0
+  MakeInt(1);
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto col1 = MakeColumn("cpu0", 0);
+  auto col2 = MakeColumn("cpu2", 0);
+  auto equals = MakeEqualsFunc(col1, col2);
+  col1->ResolveColumnType(types::FLOAT64);
+  col2->ResolveColumnType(types::FLOAT64);
+  equals->SetArgsTypes({col1->EvaluatedDataType(), col2->EvaluatedDataType()});
+
+  auto filter = MakeFilter(mem_src, equals);
+  ASSERT_OK(filter->SetRelation(Relation({types::DataType::INT64}, {"cpu1"})));
+
+  planpb::Operator pb;
+  EXPECT_OK(filter->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kExpectedFilterPb)) << pb.DebugString();
+}
+
 constexpr char kExpectedAggPb[] = R"(
   op_type: AGGREGATE_OPERATOR
   agg_op {
@@ -1677,7 +1725,7 @@ TEST_F(OperatorTests, filter_prune_outputs) {
   ASSERT_OK(filter->SetRelation(MakeRelation()));
 
   EXPECT_OK(filter->PruneOutputColumnsTo({"cpu1"}));
-  EXPECT_THAT(filter->relation().col_names(), UnorderedElementsAre("cpu1"));
+  EXPECT_THAT(filter->relation().col_names(), ElementsAre("cpu1"));
 }
 
 TEST_F(OperatorTests, agg_prune_outputs) {
