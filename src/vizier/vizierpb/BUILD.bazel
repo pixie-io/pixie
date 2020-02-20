@@ -1,8 +1,6 @@
 # gazelle:ignore
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
-
-# TODO(zasgar): Coming soon.
-# load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
+load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
 
 pl_proto_library(
     name = "vizier_pl_proto",
@@ -29,9 +27,8 @@ pl_go_proto_library(
     visibility = ["//visibility:public"],
 )
 
-# TODO(zasgar): Coming soon.
-# pl_grpc_web_library(
-#     name = "vizier_pl_grpc_web_proto",
-#     proto = ":vizier_pl_proto",
-#     visibility = ["//visibility:public"],
-# )
+pl_grpc_web_library(
+    name = "vizier_pl_grpc_web_proto",
+    proto = ":vizier_pl_proto",
+    visibility = ["//visibility:public"],
+)
