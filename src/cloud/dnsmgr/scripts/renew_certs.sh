@@ -26,7 +26,8 @@ renew_certs() {
       "${ORIGINAL_CERTS_DIR}" \
       "${NEW_CERTS_DIR}" \
       "${EMAIL}" \
-      --lego "${LEGO}"
+      --lego "${LEGO}" \
+      --renew_all
 }
 
 if [ -d "${NEW_CERTS_DIR}" ]; then
@@ -66,7 +67,8 @@ gcloud config set project "${ORIGINAL_GCP_PROJECT}"
 cd "${workspace}/credentials"
 # If you don't include this, then the files will be appended to rather than replaced.
 rm -rf "${workspace}/credentials/certs"
-"${SCRIPT_DIR}/convert_certs_to_yaml.sh" "${workspace}/${NEW_CERTS_DIR}/certificates" "${workspace}/credentials/certs"
+mkdir "${workspace}/credentials/certs"
+"${SCRIPT_DIR}/convert_certs_to_yaml.sh" "${NEW_CERTS_DIR}/certificates" "${workspace}/credentials/certs"
 
 rm -rf "${ORIGINAL_CERTS_DIR}"
 mv "${NEW_CERTS_DIR}" "${ORIGINAL_CERTS_DIR}"

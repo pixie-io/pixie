@@ -117,12 +117,14 @@ def renew_lego_cert(domain, out_dir, email, lego, num_tries):
     Function that wraps the lego cmd to renew the lego certificate.
     '''
     cmd = '{lego} --email="{email}" --domains="{domain}" ' \
-        '--dns="gcloud" --path="{out_dir}" -a renew --days 90'.format(
+        '--dns="gcloud" --path="{out_dir}" -k rsa4096 -a run'.format(
             lego=lego,
             email=email,
             domain=domain,
             out_dir=out_dir,
         )
+    print('\n------')
+    print('Running {}'.format(domain))
     return run_and_retry(cmd, num_tries)
 
 
@@ -134,6 +136,8 @@ def renew_all_certs(domains, out_dir, email, lego, num_tries):
     for d in list(domains):
         domains.remove(d)
         res = renew_lego_cert(d, out_dir, email, lego, num_tries)
+        # TODO(philkuz) this doesn't actually append the right things.
+        # Was able to successfully update creds without problems
         if not res:
             failed_certs.append(d)
     return failed_certs
@@ -202,7 +206,7 @@ def main():
                                    args.email, args.lego, args.num_tries)
     if failed_certs:
         print(json.dumps(failed_certs, indent=4))
-        print('remaining {} certs updates after failure'.format(
+        print('number of failed certs {}'.format(
             len(failed_certs)))
 
     # Clean up backup.
