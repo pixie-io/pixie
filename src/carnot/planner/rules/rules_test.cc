@@ -2659,6 +2659,31 @@ TEST_F(RulesTest, PruneUnusedColumnsRule_filter) {
   EXPECT_EQ(sink_relation, sink->relation());
 }
 
+TEST_F(RulesTest, PruneUnusedColumnsRule_two_filters) {
+  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+
+  auto filter1 = MakeFilter(mem_src, MakeEqualsFunc(MakeColumn("count", 0), MakeInt(10)));
+  ASSERT_OK(filter1->SetRelation(MakeRelation()));
+  auto filter2 = MakeFilter(filter1, MakeEqualsFunc(MakeColumn("cpu0", 0), MakeColumn("cpu1", 0)));
+  ASSERT_OK(filter2->SetRelation(MakeRelation()));
+
+  auto sink = MakeMemSink(filter2, "abc", {"cpu2"});
+  Relation sink_relation{{types::DataType::FLOAT64}, {"cpu2"}};
+  ASSERT_OK(sink->SetRelation(sink_relation));
+
+  PruneUnusedColumnsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_THAT(mem_src->relation().col_names(), ElementsAre("count", "cpu0", "cpu1", "cpu2"));
+  EXPECT_THAT(filter1->relation().col_names(), ElementsAre("cpu0", "cpu1", "cpu2"));
+  EXPECT_THAT(filter2->relation().col_names(), ElementsAre("cpu2"));
+
+  // Should be unchanged
+  EXPECT_EQ(sink_relation, sink->relation());
+}
+
 TEST_F(RulesTest, PruneUnusedColumnsRule_multiparent) {
   Relation relation0{{types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
                       types::DataType::INT64},

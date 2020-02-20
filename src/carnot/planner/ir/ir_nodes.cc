@@ -468,15 +468,15 @@ absl::flat_hash_set<std::string> ColumnsFromRelation(Relation r) {
 
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> FilterIR::RequiredInputColumns() const {
   DCHECK(IsRelationInit());
-  return std::vector<absl::flat_hash_set<std::string>>{ColumnsFromRelation(relation())};
+  PL_ASSIGN_OR_RETURN(auto filter_cols, CollectInputColumns(filter_expr_));
+  auto relation_cols = ColumnsFromRelation(relation());
+  filter_cols.insert(relation_cols.begin(), relation_cols.end());
+  return std::vector<absl::flat_hash_set<std::string>>{filter_cols};
 }
 
 StatusOr<absl::flat_hash_set<std::string>> FilterIR::PruneOutputColumnsToImpl(
     const absl::flat_hash_set<std::string>& output_cols) {
-  PL_ASSIGN_OR_RETURN(auto filter_cols, CollectInputColumns(filter_expr_));
-  auto filter_and_outputs = output_cols;
-  filter_and_outputs.insert(filter_cols.begin(), filter_cols.end());
-  return filter_and_outputs;
+  return output_cols;
 }
 
 Status FilterIR::ToProto(planpb::Operator* op) const {

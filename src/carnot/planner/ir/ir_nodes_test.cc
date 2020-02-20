@@ -1554,6 +1554,16 @@ TEST_F(OperatorTests, map_required_inputs) {
   EXPECT_THAT(inputs[0], UnorderedElementsAre("test1", "test2", "test3"));
 }
 
+TEST_F(OperatorTests, filter_required_inputs) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto filter = MakeFilter(mem_src, MakeEqualsFunc(MakeColumn("cpu0", 0), MakeColumn("cpu2", 0)));
+
+  ASSERT_OK(filter->SetRelation(Relation({types::DataType::INT64}, {"count"})));
+  auto inputs = filter->RequiredInputColumns().ConsumeValueOrDie();
+  EXPECT_EQ(1, inputs.size());
+  EXPECT_THAT(inputs[0], UnorderedElementsAre("count", "cpu0", "cpu2"));
+}
+
 TEST_F(OperatorTests, blocking_agg_required_inputs) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count1", 0)},
@@ -1667,7 +1677,7 @@ TEST_F(OperatorTests, filter_prune_outputs) {
   ASSERT_OK(filter->SetRelation(MakeRelation()));
 
   EXPECT_OK(filter->PruneOutputColumnsTo({"cpu1"}));
-  EXPECT_THAT(filter->relation().col_names(), UnorderedElementsAre("cpu0", "cpu1"));
+  EXPECT_THAT(filter->relation().col_names(), UnorderedElementsAre("cpu1"));
 }
 
 TEST_F(OperatorTests, agg_prune_outputs) {

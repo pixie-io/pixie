@@ -1041,10 +1041,6 @@ nodes {
           node: 22
           index: 4
         }
-        columns {
-          node: 22
-          index: 5
-        }
       }
     }
   }
@@ -1677,10 +1673,6 @@ nodes {
         columns {
           node: 53
           index: 2
-        }
-        columns {
-          node: 53
-          index: 3
         }
       }
     }
