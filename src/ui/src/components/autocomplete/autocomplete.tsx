@@ -32,6 +32,7 @@ interface AutoCompleteProps {
   onSelection: (id: CompletionId) => void;
   getCompletions: (input: string) => Promise<CompletionItems>;
   placeholder?: string;
+  prefix?: React.ReactNode;
 }
 
 type ItemsMap = Map<CompletionId, { title: CompletionTitle, index: number }>;
@@ -51,7 +52,8 @@ function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions:
 const Autocomplete: React.FC<AutoCompleteProps> = ({
   onSelection,
   getCompletions,
-  placeholder = '',
+  placeholder,
+  prefix,
 }) => {
   const classes = useStyles();
   const [inputValue, setInputValue] = React.useState('');
@@ -104,6 +106,8 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         onKey={handleKey}
         value={inputValue}
         placeholder={placeholder}
+        prefix={prefix}
+        // TODO(malthus): Remove this once we switch to eslint.
         // tslint:disable-next-line:whitespace
         suggestion={itemsMap.get(activeItem)?.title || ''}
       />

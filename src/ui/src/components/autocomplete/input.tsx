@@ -15,6 +15,8 @@ const useStyles = makeStyles((theme: Theme) => {
       cursor: 'text',
       padding: theme.spacing(2.5),
       fontWeight: theme.typography.fontWeightLight,
+      display: 'flex',
+      flexDirection: 'row',
     },
     inputElem: {
       position: 'absolute',
@@ -33,6 +35,12 @@ const useStyles = makeStyles((theme: Theme) => {
         visibility: 'visible',
       },
     },
+    inputValue: {
+      flex: 1,
+    },
+    prefix: {
+      paddingRight: theme.spacing(2),
+    },
   });
 });
 
@@ -41,6 +49,7 @@ interface InputProps {
   onKey: (key: Key) => void;
   suggestion?: string;
   placeholder?: string;
+  prefix?: React.ReactNode;
   className?: string;
   value: string;
 }
@@ -51,6 +60,7 @@ const Input: React.FC<InputProps> = ({
   suggestion,
   className,
   placeholder = '',
+  prefix = null,
   value,
 }) => {
   const classes = useStyles();
@@ -103,6 +113,7 @@ const Input: React.FC<InputProps> = ({
 
   return (
     <div className={clsx(classes.root, className)} onClick={focusInput}>
+      {prefix ? <div className={classes.prefix}>{prefix}</div> : null}
       <input
         className={classes.inputElem}
         ref={inputRef}
@@ -112,7 +123,7 @@ const Input: React.FC<InputProps> = ({
         onBlur={handleBlur}
         onKeyDown={handleKey}
       />
-      <div>
+      <div className={classes.inputValue}>
         <span>{value}</span>
         <Caret active={focused} />
         <span className={classes.suggestion}>{hint}</span>

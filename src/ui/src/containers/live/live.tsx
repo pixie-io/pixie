@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import MagicIcon from 'components/icons/magic';
 import * as React from 'react';
 import {GlobalHotKeys} from 'react-hotkeys';
 
@@ -6,7 +7,6 @@ import Drawer from '@material-ui/core/Drawer';
 import IconButton from '@material-ui/core/IconButton';
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import EditIcon from '@material-ui/icons/Edit';
-import InputIcon from '@material-ui/icons/Input';
 import MenuIcon from '@material-ui/icons/Menu';
 import ShareIcon from '@material-ui/icons/Share';
 import ToggleButton from '@material-ui/lab/ToggleButton';
@@ -102,7 +102,7 @@ const LiveView = () => {
             <EditIcon />
           </ToggleButton>
           <IconButton onClick={toggleCommandOpen}>
-            <InputIcon />
+            <MagicIcon />
           </IconButton>
         </div>
         <div className={classes.main}>

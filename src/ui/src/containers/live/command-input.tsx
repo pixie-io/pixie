@@ -1,4 +1,5 @@
 import Autocomplete from 'components/autocomplete/autocomplete';
+import MagicIcon from 'components/icons/magic';
 import * as React from 'react';
 
 import {createStyles, makeStyles, Theme} from '@material-ui/core';
@@ -14,11 +15,11 @@ const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     input: {
       position: 'absolute',
-      height: '40vh',
+      maxHeight: '40vh',
       width: '40vw',
       top: '40%',
       left: '50%',
-      transform: 'translate(-50%, -50%)',
+      transform: 'translate(-50%, -10vh)',
     },
   }),
 );
@@ -43,6 +44,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
       <Card className={classes.input}>
         <Autocomplete
           placeholder='Pixie Command'
+          prefix={<MagicIcon />}
           onSelection={(id) => {
             onClose();
           }}
