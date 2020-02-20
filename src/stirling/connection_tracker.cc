@@ -714,6 +714,13 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
       }
       break;
     case EndpointRole::kRoleClient: {
+      // Workaround: Server-side MySQL tracing seems to be busted, likely because of inference code.
+      // TODO(oazizi/PL-1498): Remove this once service-side MySQL tracing is fixed.
+      if (protocol() == kProtocolMySQL) {
+        state_ = State::kTransferring;
+        break;
+      }
+
       if (cluster_cidrs.empty()) {
         Disable("No client-side tracing: Internal CIDR not specified.");
         break;
