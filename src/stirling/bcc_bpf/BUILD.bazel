@@ -74,3 +74,25 @@ pl_bpf_preprocess(
     ],
     syshdrs = ":dummy_system_headers",
 )
+
+pl_bpf_cc_resource(
+    name = "proc_trace",
+    src = "proc_trace.c",
+    hdrs = [
+        "utils.h",
+        "//src/stirling/bcc_bpf_interface:headers",
+    ],
+    syshdrs = ":dummy_system_headers",
+)
+
+# Debug target, so output of preprocessing can be viewed.
+# Do not use as a dependency.
+pl_bpf_preprocess(
+    name = "proc_trace_preprocess_debug",
+    src = "proc_trace.c",
+    hdrs = [
+        "utils.h",
+        "//src/stirling/bcc_bpf_interface:headers",
+    ],
+    syshdrs = ":dummy_system_headers",
+)

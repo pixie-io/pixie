@@ -46,6 +46,7 @@ pl_cc_library(
         "@bazel_tools//src/conditions:linux_x86_64": [
             "//src/stirling/bcc_bpf:socket_trace",
             "//src/stirling/bcc_bpf:pidruntime",
+            "//src/stirling/bcc_bpf:proc_trace",
         ],
         "//conditions:default": [],
     }),
@@ -269,6 +270,22 @@ pl_cc_test(
     tags = [
         "no_asan",
         "no_tsan",
+    ],
+)
+
+pl_cc_test(
+    name = "proc_tracer_bpf_test",
+    srcs = ["proc_tracer_bpf_test.cc"],
+    data = ["//src/stirling/testing:forker"],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+    ],
+    tags = [
+        "requires_bpf",
+        # Triggers an asan failure in BCC codebase, where we don't want to fix.
+        # Accessing misaligned data won't affect correctness anyway.
+        "no_asan",
     ],
 )
 
