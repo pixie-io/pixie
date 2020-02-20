@@ -9,5 +9,9 @@ spec:
     port: 50300
     protocol: TCP
     targetPort: 50300
+  - name: tcp-grpc-web
+    port: 50305
+    protocol: TCP
+    targetPort: 50305
   selector:
     name: vizier-query-broker

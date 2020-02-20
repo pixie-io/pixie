@@ -30,6 +30,7 @@ spec:
             name: pl-tls-config
         ports:
         - containerPort: 50300
+        - containerPort: 50303
         volumeMounts:
         - mountPath: /certs
           name: certs
@@ -39,3 +40,6 @@ spec:
       - name: certs
         secret:
           secretName: service-tls-certs
+      - name: envoy-yaml
+        configMap:
+          name: proxy-envoy-config

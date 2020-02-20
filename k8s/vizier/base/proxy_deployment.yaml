@@ -16,37 +16,32 @@ spec:
       imagePullSecrets:
       - name: pl-image-secret
       containers:
-      - name: dnsmasq
-        image: "janeczku/go-dnsmasq:release-1.0.5"
-        args:
-        - --listen
-        - "127.0.0.1:53"
-        - --default-resolver
-        - --append-search-domains
-        - --hostsfile=/etc/hosts
-      - name: vizier-proxy-server
-        image: gcr.io/pl-dev-infra/vizier/proxy_server_image:latest
+      - name: envoy
+        image: envoyproxy/envoy:v1.12.2
+        command: ["envoy"]
+        args: ["-c", "/etc/envoy.yaml", "--service-cluster", "$(POD_NAME)"]
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         ports:
         - containerPort: 55000
-        readinessProbe:
-          httpGet:
-            scheme: HTTPS
-            path: /healthz
-            port: 55000
-        env:
-        - name: PL_JWT_SIGNING_KEY
-          valueFrom:
-            secretKeyRef:
-              name: pl-cluster-secrets
-              key: jwt-signing-key
-        - name: PL_TLS_CERT
-          value: /certs/tls.crt
-        - name: PL_TLS_KEY
-          value: /certs/tls.key
         volumeMounts:
+        - name: envoy-yaml
+          mountPath: /etc/envoy.yaml
+          subPath: envoy.yaml
         - name: proxy-certs
-          mountPath: /certs
+          mountPath: /proxy-certs
+        - mountPath: /certs
+          name: certs
       volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - name: envoy-yaml
+        configMap:
+          name: proxy-envoy-config
       - name: proxy-certs
         secret:
           secretName: proxy-tls-certs

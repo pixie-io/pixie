@@ -17,6 +17,7 @@ patchesStrategicMerge:
 - patch_logging_sidecar_cloud_connector.yaml
 resources:
 - pem
+- proxy_envoy.yaml
 - api_deployment.yaml
 - api_service.yaml
 - certmgr_role.yaml
