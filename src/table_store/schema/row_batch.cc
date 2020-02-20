@@ -164,6 +164,7 @@ Status RowBatch::ToProto(table_store::schemapb::RowBatchData* proto) const {
   return Status::OK();
 }
 
+// PL_CARNOT_UPDATE_FOR_NEW_TYPES
 StatusOr<DataType> ProtoDataType(const table_store::schemapb::Column& proto) {
   switch (proto.col_data_case()) {
     case table_store::schemapb::Column::kBooleanData:
@@ -178,8 +179,11 @@ StatusOr<DataType> ProtoDataType(const table_store::schemapb::Column& proto) {
       return DataType::FLOAT64;
     case table_store::schemapb::Column::kStringData:
       return DataType::STRING;
+    case table_store::schemapb::Column::kDuration64NsData:
+      return DataType::DURATION64NS;
     default:
-      return error::Internal("Received unknown column data type (in ProtoDataType)");
+      return error::Internal("Received unknown column data type '$0' in ProtoDataType",
+                             magic_enum::enum_name(proto.col_data_case()));
   }
 }
 

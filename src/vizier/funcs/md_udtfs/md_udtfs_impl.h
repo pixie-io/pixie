@@ -407,8 +407,6 @@ class GetUDAList final : public carnot::udf::UDTF<GetUDAList> {
  */
 class GetDebugMDState final : public carnot::udf::UDTF<GetDebugMDState> {
  public:
-  // TODO(zasgar/philkuz): Switch this to all agents after we finish support for this in the
-  // compiler
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
 
   static constexpr auto OutputRelation() {
