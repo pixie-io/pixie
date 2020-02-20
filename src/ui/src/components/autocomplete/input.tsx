@@ -9,16 +9,19 @@ const useStyles = makeStyles((theme: Theme) => {
   // TODO(malthus): Make use of the theme styles.
   return createStyles({
     root: {
+      ...theme.typography.h6,
+      color: theme.palette.text.primary,
       position: 'relative',
       cursor: 'text',
-      padding: theme.spacing(2),
+      padding: theme.spacing(2.5),
+      fontWeight: theme.typography.fontWeightLight,
     },
     inputElem: {
       position: 'absolute',
       opacity: 0,
     },
     suggestion: {
-      opacity: 0.7,
+      color: theme.palette.text.secondary,
     },
     caret: {
       display: 'inline-block',

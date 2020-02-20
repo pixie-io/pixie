@@ -14,9 +14,9 @@ const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     input: {
       position: 'absolute',
-      height: '200px',
-      width: '500px',
-      top: '50%',
+      height: '40vh',
+      width: '40vw',
+      top: '40%',
       left: '50%',
       transform: 'translate(-50%, -50%)',
     },
@@ -39,7 +39,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
   const classes = useStyles();
 
   return (
-    <Modal open={open} onClose={onClose} BackdropProps={{ invisible: true }}>
+    <Modal open={open} onClose={onClose} BackdropProps={{}}>
       <Card className={classes.input}>
         <Autocomplete
           placeholder='Pixie Command'

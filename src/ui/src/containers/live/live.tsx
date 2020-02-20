@@ -42,6 +42,8 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     editorToggle: {
       border: 'none',
+      borderRadius: '50%',
+      color: theme.palette.action.active,
     },
     editor: {
       flex: 1,

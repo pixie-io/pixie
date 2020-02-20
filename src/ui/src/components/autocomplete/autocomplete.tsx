@@ -12,13 +12,15 @@ const useStyles = makeStyles((theme: Theme) => {
   // TODO(malthus): Make use of the theme styles.
   return createStyles({
     root: {
+      backgroundColor: theme.palette.background.paper,
       cursor: 'text',
-      padding: theme.spacing(2),
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
     },
-    input: {},
+    input: {
+      backgroundColor: theme.palette.divider,
+    },
     completions: {
       flex: 1,
       minHeight: 0,
@@ -97,6 +99,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   return (
     <div className={classes.root} >
       <Input
+        className={classes.input}
         onChange={setInputValue}
         onKey={handleKey}
         value={inputValue}

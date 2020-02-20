@@ -34,11 +34,24 @@ const useStyles = makeStyles((theme: Theme) => {
     root: {
       overflow: 'auto',
     },
-    header: theme.typography.subtitle1,
+    header: {
+      ...theme.typography.overline,
+      color: theme.palette.text.secondary,
+      paddingLeft: theme.spacing(5),
+      paddingTop: theme.spacing(1),
+    },
     completion: {
+      ...theme.typography.body1,
+      padding: theme.spacing(1),
+      paddingLeft: theme.spacing(6),
       cursor: 'pointer',
       '&.active': {
-        backgroundColor: 'white',
+        backgroundColor: theme.palette.action.active,
+        color: theme.palette.action.hover,
+        borderLeftStyle: 'solid',
+        borderLeftWidth: theme.spacing(0.5),
+        borderLeftColor: theme.palette.primary.main,
+        paddingLeft: theme.spacing(5.5),
       },
     },
     highlight: {
