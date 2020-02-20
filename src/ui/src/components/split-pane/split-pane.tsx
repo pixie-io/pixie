@@ -33,6 +33,7 @@ interface SplitContainerProps {
   initialSizes?: number[];
   children?: React.ReactElement<SplitPaneProps> | Array<React.ReactElement<SplitPaneProps>>;
   className?: string;
+  onSizeChange?: (splits: number[]) => void;
 }
 
 interface SplitContainerState {
@@ -48,6 +49,7 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
   const splitRef = React.useRef(null);
   const minPaneHeight = theme.spacing(5);
   const children = Array.isArray(props.children) ? props.children : [props.children];
+  const onSizeChange = props.onSizeChange || (() => { /* noop */ });
   const initialSizes = React.useMemo(() => {
     if (props.initialSizes && props.initialSizes.length === children.length) {
       let sum = 0;
@@ -68,6 +70,7 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
   });
 
   const handleDrag = React.useCallback((sizes) => {
+    onSizeChange(sizes);
     setState({ collapsed: -1, prevSizes: sizes });
   }, []);
 
@@ -99,6 +102,7 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
     } else {
       splitRef.current.split.collapse(state.collapsed);
     }
+    onSizeChange(splitRef.current.split.getSizes());
   }, [state.collapsed]);
 
   return (

@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import {getLiveViewEditorOpened, setLiveViewEditorOpened} from 'common/localstorage';
 import MagicIcon from 'components/icons/magic';
 import * as React from 'react';
 import {GlobalHotKeys} from 'react-hotkeys';
@@ -67,13 +68,16 @@ const COMMAND_KEYMAP = {
 
 const LiveView = () => {
   const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
-  const toggleDrawer = (open: boolean) => () => { setDrawerOpen(open); };
+  const toggleDrawer = React.useCallback(() => setDrawerOpen((opened) => !opened), []);
 
-  const [editorOpen, setEditorOpen] = React.useState<boolean>(false);
+  const [editorOpen, setEditorOpen] = React.useState<boolean>(getLiveViewEditorOpened());
   const toggleEditor = React.useCallback(() => setEditorOpen((opened) => !opened), []);
+  React.useEffect(() => {
+    setLiveViewEditorOpened(editorOpen);
+  }, [editorOpen]);
 
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
-  const toggleCommandOpen = React.useCallback(() => setCommandOpen((open) => !open), []);
+  const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
 
   const classes = useStyles();
 
@@ -86,7 +90,7 @@ const LiveView = () => {
       <div className={classes.root}>
         <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
         <div className={classes.topBar}>
-          <IconButton onClick={toggleDrawer(true)}>
+          <IconButton onClick={toggleDrawer}>
             <MenuIcon />
           </IconButton>
           <div className={classes.title}>title goes here</div>
@@ -113,12 +117,12 @@ const LiveView = () => {
             <Canvas />
           </div>
         </div>
-        <Drawer open={drawerOpen} onClose={toggleDrawer(false)}>
+        <Drawer open={drawerOpen} onClose={toggleDrawer}>
           <div>drawer content</div>
         </Drawer>
         <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
       </div >
-    </LiveContextProvider>
+    </LiveContextProvider >
   );
 };
 

@@ -1,3 +1,4 @@
+import {getLiveViewEditorSplits, setLiveViewEditorSplits} from 'common/localstorage';
 import {CodeEditor} from 'components/code-editor';
 import {SplitContainer, SplitPane} from 'components/split-pane/split-pane';
 import * as React from 'react';
@@ -46,8 +47,17 @@ const ScriptEditor = () => {
 
 const LiveViewEditor = () => {
   const classes = useStyles();
+  const [splits, setSplits] = React.useState<number[]>([]);
+  const initialSizes = React.useMemo(() => getLiveViewEditorSplits(), []);
+
+  React.useEffect(() => {
+    if (splits.length === 2) {
+      setLiveViewEditorSplits([splits[0], splits[1]]);
+    }
+  }, [splits]);
+
   return (
-    <SplitContainer className={classes.root} initialSizes={[50, 50]}>
+    <SplitContainer className={classes.root} initialSizes={initialSizes} onSizeChange={setSplits}>
       <SplitPane title='Script Editor' id='script'>
         <ScriptEditor />
       </SplitPane>
