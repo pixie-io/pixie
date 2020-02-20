@@ -248,4 +248,3 @@ TEST_F(LogicalPlannerTest, GetAvailableFlagsSyntaxError) {
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl
-}  // namespace pl
