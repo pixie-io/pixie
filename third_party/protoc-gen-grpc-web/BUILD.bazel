@@ -1,0 +1,11 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+
+cc_binary(
+    name = "protoc-gen-grpc-web",
+    srcs = ["grpc_generator.cc"],
+    deps = [
+      "@com_google_protobuf//:protoc_lib",
+    ],
+)
