@@ -1,0 +1,37 @@
+# gazelle:ignore
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+
+# TODO(zasgar): Coming soon.
+# load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
+
+pl_proto_library(
+    name = "vizier_pl_proto",
+    srcs = ["vizier.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+    ],
+)
+
+pl_cc_proto_library(
+    name = "vizier_pl_cc_proto",
+    proto = ":vizier_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+    ],
+)
+
+pl_go_proto_library(
+    name = "vizier_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/vizierpb",
+    proto = ":vizier_pl_proto",
+    visibility = ["//visibility:public"],
+)
+
+# TODO(zasgar): Coming soon.
+# pl_grpc_web_library(
+#     name = "vizier_pl_grpc_web_proto",
+#     proto = ":vizier_pl_proto",
+#     visibility = ["//visibility:public"],
+# )
