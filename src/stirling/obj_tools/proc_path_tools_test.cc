@@ -14,7 +14,7 @@ using ::testing::StartsWith;
 
 TEST(ObjToolsContainerTest, ResolveFunctions) {
   DummyTestContainer container;
-  container.Run();
+  ASSERT_OK(container.Run());
 
   std::filesystem::path proc_pid = absl::Substitute("/proc/$0", container.process_pid());
 
