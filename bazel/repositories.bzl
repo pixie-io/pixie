@@ -173,6 +173,17 @@ def _com_github_neargye_magic_enum():
         build_file = "//third_party:magic_enum.BUILD",
     )
 
+def _com_github_arun11299_cpp_jwt():
+    name = "com_github_arun11299_cpp_jwt"
+    location = REPOSITORY_LOCATIONS[name]
+    http_archive(
+        name = name,
+        urls = location["urls"],
+        sha256 = location["sha256"],
+        strip_prefix = location.get("strip_prefix", ""),
+        build_file = "//third_party:cpp_jwt.BUILD",
+    )
+
 def _com_github_serge1_elfio():
     name = "com_github_serge1_elfio"
     location = REPOSITORY_LOCATIONS[name]
@@ -224,6 +235,7 @@ def _cc_deps():
     _com_github_threadstacks()
     _com_github_skystrife_cpptoml()
     _com_github_neargye_magic_enum()
+    _com_github_arun11299_cpp_jwt()
 
 def _go_deps():
     # Add go specific imports here when necessary.

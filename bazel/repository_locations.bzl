@@ -183,4 +183,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "magic_enum-0.6.3",
         urls = ["https://github.com/Neargye/magic_enum/archive/v0.6.3.tar.gz"],
     ),
+    com_github_arun11299_cpp_jwt = dict(
+        sha256 = "6dbf93969ec48d97ecb6c157014985846df8c01995a0011c21f4e2c146594922",
+        strip_prefix = "cpp-jwt-1.1.1",
+        urls = ["https://github.com/arun11299/cpp-jwt/archive/v1.1.1.tar.gz"],
+    ),
 )
