@@ -142,10 +142,22 @@ SockAddr MapIPv4ToIPv6(const SockAddr& addr);
  * Classless Inter Domain Routing Block. Follows the notations at:
  * https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
  */
+// TODO(oazizi/yzhao): We use SockAddr, but a CIDR shouldn't have a port. Clean-up.
 struct CIDRBlock {
   SockAddr ip_addr;
   size_t prefix_length = 0;
 };
+
+inline std::string ToString(const CIDRBlock& cidr) {
+  return absl::Substitute("$0/$1", cidr.ip_addr.AddrStr(), cidr.prefix_length);
+}
+
+inline bool operator==(const CIDRBlock& lhs, const CIDRBlock& rhs) {
+  // TODO(oazizi): Better to compare raw bytes using memcmp than converting to a string.
+  // Note that this ignores the port in CIDRBlock.SockAddr, since a CIDR shouldn't have a port.
+  return lhs.ip_addr.AddrStr() == rhs.ip_addr.AddrStr() && lhs.prefix_length == rhs.prefix_length;
+}
+inline bool operator!=(const CIDRBlock& lhs, const CIDRBlock& rhs) { return !(lhs == rhs); }
 
 /**
  * Parses the input string as a CIDR block.

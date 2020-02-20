@@ -88,7 +88,12 @@ class K8sMetadataState : NotCopyable {
   void set_cluster_cidr(const CIDRBlock& cidr) { cluster_cidr_ = cidr; }
   const auto& cluster_cidr() const { return cluster_cidr_; }
 
-  void set_service_cidr(const CIDRBlock& cidr) { service_cidr_ = cidr; }
+  void set_service_cidr(const CIDRBlock& cidr) {
+    if (!service_cidr_.has_value() || service_cidr_.value() != cidr) {
+      LOG(INFO) << absl::Substitute("Service CIDR updated to $0", ToString(cidr));
+    }
+    service_cidr_ = cidr;
+  }
   const auto& service_cidr() const { return service_cidr_; }
 
   const PodsByNameMap& pods_by_name() const { return pods_by_name_; }
