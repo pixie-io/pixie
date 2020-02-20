@@ -561,7 +561,11 @@ void PrintCommonJsMessagesDeps(Printer* printer, const FileDescriptor* file) {
 
   for (int i = 0; i < file->dependency_count(); i++) {
     const string& name = file->dependency(i)->name();
-    vars["alias"] = ModuleAlias(name);
+    const auto alias = ModuleAlias(name);
+    if (alias == "github_com_gogo_protobuf_gogoproto_gogo_pb") {
+      continue;
+    }
+    vars["alias"] = alias;
     vars["dep_filename"] = GetRootPath(file->name(), name) + StripProto(name);
     // we need to give each cross-file import an alias
     printer->Print(

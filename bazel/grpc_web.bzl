@@ -68,30 +68,38 @@ def _generate_grpc_web_srcs(
 
         files.append(
             actions.declare_file(
-                "{}_pb.d.ts".format(prefix)))
+                "{}_pb.d.ts".format(prefix),
+            ),
+        )
         files.append(
             actions.declare_file(
-                "{}_pb.js".format(prefix)))
+                "{}_pb.js".format(prefix),
+            ),
+        )
         files.append(
             actions.declare_file(
-                "{}ServiceClientPb.ts".format(capitalized)))
-
+                "{}ServiceClientPb.ts".format(capitalized),
+            ),
+        )
 
         # All the files are written to the same directory. We just pick the first one
         # to find the output directory of the files.
         js = files[0]
         out_dir = js.path[:js.path.rfind("/")]
+
         # The proto writer writes to the path prefixed by the path to the proto. We simply strip off
         # this basepath so that the file will be in the right spot.
-        out_dir = out_dir.replace(basepath, '')
+        out_dir = out_dir.replace(basepath, "")
 
         args = proto_include_paths + [
             "--plugin=protoc-gen-grpc-web={}".format(protoc_gen_grpc_web.path),
             "--js_out=import_style=commonjs,binary:{path}".format(
-                path = out_dir),
+                path = out_dir,
+            ),
             "--grpc-web_out={options}:{path}".format(
                 options = grpc_web_out_common_options,
-                path = out_dir),
+                path = out_dir,
+            ),
             src.path,
         ]
 
@@ -111,6 +119,7 @@ def _grpc_web_library_impl(ctx):
     proto = ctx.attr.proto
 
     arguments = []
+
     # create a list of well known proto files if the argument is non-None
     well_known_proto_files = []
     f = ctx.attr.well_known_protos.files.to_list()[0].dirname
@@ -127,7 +136,6 @@ def _grpc_web_library_impl(ctx):
             for f in ctx.attr.well_known_protos.files.to_list()
         ]
 
-
     srcs = _generate_grpc_web_srcs(
         actions = ctx.actions,
         protoc = ctx.executable._protoc,
@@ -139,8 +147,7 @@ def _grpc_web_library_impl(ctx):
         transitive_sources = proto[ProtoInfo].transitive_imports,
     )
 
-    return [DefaultInfo(files=depset(srcs))]
-
+    return [DefaultInfo(files = depset(srcs))]
 
 pl_grpc_web_library = rule(
     implementation = _grpc_web_library_impl,
@@ -153,7 +160,6 @@ pl_grpc_web_library = rule(
             default = "grpcwebtext",
             values = ["grpcwebtext", "grpcweb"],
         ),
-
         "_protoc": attr.label(
             default = Label("//external:protocol_compiler"),
             executable = True,
