@@ -2,10 +2,13 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"math"
 	"sort"
 	"time"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -14,7 +17,6 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	qrpb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 
-	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
@@ -36,6 +38,26 @@ type executeQueryArgs struct {
 	QueryStr *string
 }
 
+// GetCompilerErrorContext inspects the context field (pb.Any msg) and
+// converts into the CompilerErrorGroup message for proper use.
+func getCompilerErrorContext(status *statuspb.Status, errorPB *compilerpb.CompilerErrorGroup) error {
+	context := status.GetContext()
+	if context == nil {
+		return errors.New("No context in status")
+	}
+
+	if !types.Is(context, errorPB) {
+		return fmt.Errorf("Didn't expect type %s", context.TypeUrl)
+	}
+	return types.UnmarshalAny(context, errorPB)
+}
+
+// HasContext returns true whether status has context or not.
+func hasContext(status *statuspb.Status) bool {
+	context := status.GetContext()
+	return context != nil
+}
+
 func makeLineColError(errorPB *compilerpb.LineColError) *LineColError {
 	if errorPB == nil {
 		return nil
@@ -54,13 +76,13 @@ func makeErrorFromStatus(status *statuspb.Status) (*QueryError, error) {
 	compilerError := new(CompilerError)
 	compilerError.Msg = &status.Msg
 	queryError.CompilerError = compilerError
-	if !logicalplanner.HasContext(status) {
+	if !hasContext(status) {
 		return queryError, nil
 	}
 
 	// Convert the LineCol
 	compilerErrorGroupPB := new(compilerpb.CompilerErrorGroup)
-	logicalplanner.GetCompilerErrorContext(status, compilerErrorGroupPB)
+	getCompilerErrorContext(status, compilerErrorGroupPB)
 
 	lineColErrsArr := make([]*LineColError, len(compilerErrorGroupPB.Errors))
 	compilerError.LineColErrors = &lineColErrsArr

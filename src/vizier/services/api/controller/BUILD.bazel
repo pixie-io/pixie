@@ -9,7 +9,6 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/api/controller",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/carnot/planner:go_default_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
         "//src/carnot/queryresultspb:query_results_pl_go_proto",
@@ -21,6 +20,7 @@ go_library(
         "//src/vizier/services/api/controller/schema:go_default_library",
         "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",
         "//src/vizier/services/shared/agentpb:agent_pl_go_proto",
+        "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
         "@com_github_graph_gophers_graphql_go//:go_default_library",
         "@com_github_graph_gophers_graphql_go//relay:go_default_library",
