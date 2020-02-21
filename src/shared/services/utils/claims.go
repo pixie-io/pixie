@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -42,19 +43,51 @@ func PBToMapClaims(pb *jwt2.JWTClaims) jwt.MapClaims {
 }
 
 // MapClaimsToPB tkes a MapClaims and converts it to a protobuf.
-func MapClaimsToPB(claims jwt.MapClaims) *jwt2.JWTClaims {
+func MapClaimsToPB(claims jwt.MapClaims) (*jwt2.JWTClaims, error) {
 	p := &jwt2.JWTClaims{}
+	var ok bool
 
 	// Standard claims.
-	p.Audience = claims["aud"].(string)
-	p.ExpiresAt = int64(claims["exp"].(float64))
-	p.JTI = claims["jti"].(string)
-	p.IssuedAt = int64(claims["iat"].(float64))
-	p.Issuer = claims["iss"].(string)
-	p.NotBefore = int64(claims["nbf"].(float64))
-	p.Subject = claims["sub"].(string)
+	p.Audience, ok = claims["aud"].(string)
+	if !ok {
+		return nil, errors.New("JWT claim audience is not a string")
+	}
+	expAt, ok := claims["exp"].(float64)
+	if !ok {
+		return nil, errors.New("JWT claim expiresAt is not a float")
+	}
+	p.ExpiresAt = int64(expAt)
 
-	p.Scopes = strings.Split(claims["Scopes"].(string), ",")
+	p.JTI, ok = claims["jti"].(string)
+	if !ok {
+		return nil, errors.New("JWT claim JTI is not a string")
+	}
+	isAt, ok := claims["iat"].(float64)
+	if !ok {
+		return nil, errors.New("JWT claim IssuedAt is not a float")
+	}
+	p.IssuedAt = int64(isAt)
+
+	p.Issuer, ok = claims["iss"].(string)
+	if !ok {
+		return nil, errors.New("JWT claim Issuer is not a string")
+	}
+	nbf, ok := claims["nbf"].(float64)
+	if !ok {
+		return nil, errors.New("JWT claim notBefore is not a float")
+	}
+	p.NotBefore = int64(nbf)
+
+	p.Subject, ok = claims["sub"].(string)
+	if !ok {
+		return nil, errors.New("JWT claim subject is not a string")
+	}
+	scopes, ok := claims["Scopes"].(string)
+	if !ok {
+		return nil, errors.New("JWT claim scopes is not a string")
+	}
+
+	p.Scopes = strings.Split(scopes, ",")
 
 	// Custom claims.
 	if claims["UserID"] != nil {
@@ -82,7 +115,7 @@ func MapClaimsToPB(claims jwt.MapClaims) *jwt2.JWTClaims {
 		}
 	}
 
-	return p
+	return p, nil
 }
 
 // GenerateJWTForUser creates a protobuf claims for the given user.

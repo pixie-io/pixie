@@ -129,7 +129,8 @@ func TestMapClaimsToPB_User(t *testing.T) {
 	claims["OrgID"] = "org_id"
 	claims["Email"] = "user@email.com"
 
-	pb := utils.MapClaimsToPB(claims)
+	pb, err := utils.MapClaimsToPB(claims)
+	assert.Nil(t, err)
 	assert.Equal(t, "audience", pb.Audience)
 	assert.Equal(t, int64(100), pb.ExpiresAt)
 	assert.Equal(t, "jti", pb.JTI)
@@ -160,7 +161,8 @@ func TestMapClaimsToPB_Service(t *testing.T) {
 	claims["Scopes"] = "service"
 	claims["ServiceID"] = "service_id"
 
-	pb := utils.MapClaimsToPB(claims)
+	pb, err := utils.MapClaimsToPB(claims)
+	assert.Nil(t, err)
 	assert.Equal(t, "audience", pb.Audience)
 	assert.Equal(t, int64(100), pb.ExpiresAt)
 	assert.Equal(t, "jti", pb.JTI)
@@ -189,7 +191,8 @@ func TestMapClaimsToPB_Cluster(t *testing.T) {
 	claims["Scopes"] = "cluster"
 	claims["ClusterID"] = "cluster_id"
 
-	pb := utils.MapClaimsToPB(claims)
+	pb, err := utils.MapClaimsToPB(claims)
+	assert.Nil(t, err)
 	assert.Equal(t, "audience", pb.Audience)
 	assert.Equal(t, int64(100), pb.ExpiresAt)
 	assert.Equal(t, "jti", pb.JTI)
@@ -201,4 +204,23 @@ func TestMapClaimsToPB_Cluster(t *testing.T) {
 
 	customClaims := pb.GetClusterClaims()
 	assert.Equal(t, "cluster_id", customClaims.ClusterID)
+}
+
+func TestMapClaimsToPB_Fail(t *testing.T) {
+	claims := jwt.MapClaims{}
+
+	// Standard claims.
+	claims["aud"] = "audience"
+	claims["exp"] = "12345"
+	claims["jti"] = "jti"
+	claims["iat"] = 15.0
+	claims["iss"] = "issuer"
+	claims["nbf"] = 5.0
+	claims["sub"] = "subject"
+
+	claims["Scopes"] = "cluster"
+	claims["ClusterID"] = "cluster_id"
+
+	_, err := utils.MapClaimsToPB(claims)
+	assert.NotNil(t, err)
 }

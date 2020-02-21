@@ -39,7 +39,10 @@ func (s *AuthContext) UseJWTAuth(signingKey string, tokenString string) error {
 	}
 
 	claims := token.Claims.(*jwt.MapClaims)
-	s.Claims = utils.MapClaimsToPB(*claims)
+	s.Claims, err = utils.MapClaimsToPB(*claims)
+	if err != nil {
+		return err
+	}
 	s.AuthToken = tokenString
 	return nil
 }
