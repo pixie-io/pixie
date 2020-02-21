@@ -415,30 +415,9 @@ std::string ProcParser::GetPIDCmdline(int32_t pid) const {
 }
 
 int64_t ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
-  std::string fpath = absl::Substitute("$0/$1/stat", proc_base_path_, pid);
-  std::ifstream ifs;
-  ifs.open(fpath);
-  if (!ifs) {
-    return 0;
-  }
-
-  std::string line;
-  if (!std::getline(ifs, line)) {
-    return 0;
-  }
-
-  std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
-  // We check less than in case more fields are added later.
-  if (split.size() < kProcStatNumFields) {
-    return 0;
-  }
-
-  int64_t start_time_ticks;
-  if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ticks)) {
-    return 0;
-  }
-
-  return start_time_ticks;
+  const std::filesystem::path proc_pid_path =
+      std::filesystem::path(proc_base_path_) / std::to_string(pid);
+  return ::pl::system::GetPIDStartTimeTicks(proc_pid_path);
 }
 
 Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) const {
@@ -516,7 +495,34 @@ Status ProcParser::ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const
   return Status::OK();
 }
 
-std::map<int, std::filesystem::path> ListProcPidPaths(std::filesystem::path proc) {
+int64_t GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path) {
+  const std::filesystem::path fpath = proc_pid_path / "stat";
+  std::ifstream ifs;
+  ifs.open(fpath.string());
+  if (!ifs) {
+    return 0;
+  }
+
+  std::string line;
+  if (!std::getline(ifs, line)) {
+    return 0;
+  }
+
+  std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
+  // We check less than in case more fields are added later.
+  if (split.size() < kProcStatNumFields) {
+    return 0;
+  }
+
+  int64_t start_time_ticks;
+  if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ticks)) {
+    return 0;
+  }
+
+  return start_time_ticks;
+}
+
+std::map<int, std::filesystem::path> ListProcPidPaths(const std::filesystem::path& proc) {
   std::map<int, std::filesystem::path> res;
   for (const auto& p : std::filesystem::directory_iterator(proc)) {
     int pid = 0;
