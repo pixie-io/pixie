@@ -45,21 +45,21 @@ StatusOr<std::unique_ptr<NetlinkSocketProber>> NetlinkSocketProber::Create() {
 }
 
 StatusOr<std::unique_ptr<NetlinkSocketProber>> NetlinkSocketProber::Create(int net_ns_pid) {
-  std::string orig_net_ns_path =
-      absl::StrCat(system::Config::GetInstance().proc_path(), "/self/ns/net");
-  int orig_net_ns_fd = open(orig_net_ns_path.c_str(), O_RDONLY);
+  std::filesystem::path orig_net_ns_path =
+      system::Config::GetInstance().proc_path() / "self/ns/net";
+  int orig_net_ns_fd = open(orig_net_ns_path.string().c_str(), O_RDONLY);
   if (orig_net_ns_fd < 0) {
-    return error::Internal("Could not save network namespace [path=$0]", orig_net_ns_path);
+    return error::Internal("Could not save network namespace [path=$0]", orig_net_ns_path.string());
   }
   DEFER(close(orig_net_ns_fd););
 
-  std::string net_ns_path =
-      absl::StrCat(system::Config::GetInstance().proc_path(), "/", net_ns_pid, "/ns/net");
-  int net_ns_fd = open(net_ns_path.c_str(), O_RDONLY);
+  std::filesystem::path net_ns_path =
+      system::Config::GetInstance().proc_path() / std::to_string(net_ns_pid) / "ns/net";
+  int net_ns_fd = open(net_ns_path.string().c_str(), O_RDONLY);
   if (net_ns_fd < 0) {
     return error::Internal(
         "Could not create SocketProber in the network namespace of PID $0 [path=$1]", net_ns_pid,
-        net_ns_path);
+        net_ns_path.string());
   }
   DEFER(close(net_ns_fd););
 

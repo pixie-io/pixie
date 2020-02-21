@@ -213,8 +213,8 @@ StirlingImpl::~StirlingImpl() { Stop(); }
 
 Status StirlingImpl::Init() {
   const system::Config& sysconfig = system::Config::GetInstance();
-  LOG(INFO) << absl::StrCat("Location of proc: ", sysconfig.proc_path());
-  LOG(INFO) << absl::StrCat("Location of sysfs: ", sysconfig.sysfs_path());
+  LOG(INFO) << absl::StrCat("Location of proc: ", sysconfig.proc_path().string());
+  LOG(INFO) << absl::StrCat("Location of sysfs: ", sysconfig.sysfs_path().string());
 
   // Clean up any probes from a previous instance.
   static constexpr char kPixieBPFProbeMarker[] = "__pixie__";

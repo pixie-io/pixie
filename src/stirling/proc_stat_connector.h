@@ -76,7 +76,7 @@ class ProcStatConnector : public SourceConnector {
 
   CPUUsage cpu_usage_ = {0, 0.0, 0.0, 0.0};
   CPUStat prev_cpu_usage_ = {0, 0, 0, 0};
-  const std::string kProcStatFileName = absl::StrCat(sysconfig_.proc_path(), "/stat");
+  const std::filesystem::path kProcStatFileName = sysconfig_.proc_path() / "stat";
   const int kUserIdx = 1;
   const int kIdleIdx = 4;
   const int kIOWaitIdx = 5;
@@ -102,16 +102,7 @@ class FakeProcStatConnector : public ProcStatConnector {
 
   Status InitImpl() override;
 
-  std::vector<std::string> GetProcParams() override {
-    std::string stats = "cpu  ";
-    std::vector<std::string> parsed_str;
-    for (int i = 0; i < kNumCPUStatFields; ++i) {
-      stats += std::to_string(fake_stat_ + i) + " ";
-    }
-    fake_stat_++;
-    parsed_str = absl::StrSplit(stats, ' ', absl::SkipWhitespace());
-    return parsed_str;
-  }
+  std::vector<std::string> GetProcParams() override;
 
  private:
   int fake_stat_ = 0;

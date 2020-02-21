@@ -12,12 +12,12 @@ namespace system {
 class MockConfig : public Config {
  public:
   MOCK_CONST_METHOD0(HasConfig, bool());
-  MOCK_CONST_METHOD0(PageSize, int());
-  MOCK_CONST_METHOD0(KernelTicksPerSecond, int());
+  MOCK_CONST_METHOD0(PageSize, int64_t());
+  MOCK_CONST_METHOD0(KernelTicksPerSecond, int64_t());
   MOCK_CONST_METHOD0(ClockRealTimeOffset, uint64_t());
-  MOCK_CONST_METHOD0(sysfs_path, std::string_view());
-  MOCK_CONST_METHOD0(host_path, std::string_view());
-  MOCK_CONST_METHOD0(proc_path, std::string());
+  MOCK_CONST_METHOD0(sysfs_path, std::filesystem::path());
+  MOCK_CONST_METHOD0(host_path, std::filesystem::path());
+  MOCK_CONST_METHOD0(proc_path, std::filesystem::path());
 };
 
 }  // namespace system

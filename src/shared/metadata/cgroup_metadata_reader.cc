@@ -67,7 +67,8 @@ void CGroupMetadataReader::InitPathTemplates(std::string_view sysfs_path) {
 CGroupMetadataReader::CGroupMetadataReader(const system::Config& cfg)
     : ns_per_kernel_tick_(static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond())),
       clock_realtime_offset_(cfg.ClockRealTimeOffset()) {
-  InitPathTemplates(cfg.sysfs_path());
+  const std::string sysfs_path_str = cfg.sysfs_path().string();
+  InitPathTemplates(sysfs_path_str);
 }
 
 std::string CGroupMetadataReader::CGroupPodDirPath(PodQOSClass qos_class,

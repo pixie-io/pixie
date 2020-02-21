@@ -23,17 +23,19 @@ class ConfigImpl final : public Config {
 
   bool HasConfig() const override { return true; }
 
-  int PageSize() const override { return sysconf(_SC_PAGESIZE); }
+  int64_t PageSize() const override { return sysconf(_SC_PAGESIZE); }
 
-  int KernelTicksPerSecond() const override { return sysconf(_SC_CLK_TCK); }
+  int64_t KernelTicksPerSecond() const override { return sysconf(_SC_CLK_TCK); }
 
   uint64_t ClockRealTimeOffset() const override { return real_time_offset_; }
 
-  std::string_view sysfs_path() const override { return FLAGS_sysfs_path; }
+  std::filesystem::path sysfs_path() const override { return FLAGS_sysfs_path; }
 
-  std::string_view host_path() const override { return FLAGS_host_path; }
+  std::filesystem::path host_path() const override { return FLAGS_host_path; }
 
-  std::string proc_path() const override { return absl::StrCat(FLAGS_host_path, "/proc"); }
+  std::filesystem::path proc_path() const override {
+    return absl::StrCat(FLAGS_host_path, "/proc");
+  }
 
  private:
   uint64_t real_time_offset_ = 0;
@@ -59,9 +61,9 @@ class ConfigImpl final : public Config {
  public:
   bool HasConfig() const override { return false; }
 
-  int PageSize() const override { LOG(FATAL) << "PageSize() is not implemented on this OS."; }
+  int64_t PageSize() const override { LOG(FATAL) << "PageSize() is not implemented on this OS."; }
 
-  int KernelTicksPerSecond() const override {
+  int64_t KernelTicksPerSecond() const override {
     LOG(FATAL) << "KernelTicksPerSecond() is not implemented on this OS.";
   }
 
@@ -69,16 +71,16 @@ class ConfigImpl final : public Config {
     LOG(FATAL) << "ClockRealTimeOffset() is not implemented on this OS.";
   }
 
-  std::string proc_path() const override {
-    LOG(FATAL) << "proc_path() is not implemented on this OS.";
-  }
-
-  std::string_view host_path() const override {
+  std::filesystem::path host_path() const override {
     LOG(FATAL) << "host_path() is not implemented on this OS.";
   }
 
-  std::string_view sysfs_path() const override {
+  std::filesystem::path sysfs_path() const override {
     LOG(FATAL) << "sysfs_path() is not implemented on this OS.";
+  }
+
+  std::filesystem::path proc_path() const override {
+    LOG(FATAL) << "proc_path() is not implemented on this OS.";
   }
 };
 

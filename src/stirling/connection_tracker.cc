@@ -808,7 +808,7 @@ void ConnectionTracker::IterationPostTick() {
 void ConnectionTracker::HandleInactivity() {
   static const auto& sysconfig = system::Config::GetInstance();
   std::filesystem::path fd_file =
-      absl::StrCat(sysconfig.proc_path(), absl::Substitute("/$0/fd/$1", pid(), fd()));
+      sysconfig.proc_path() / std::to_string(pid()) / "fd" / std::to_string(fd());
 
   if (!fs::Exists(fd_file).ok()) {
     // Connection seems to be dead. Mark for immediate death.

@@ -12,15 +12,9 @@ namespace stirling {
 Status ProcStatConnector::InitImpl() {
   std::ifstream input_file(kProcStatFileName);
   if (!input_file.good()) {
-    return error::NotFound("[$0] Unable to access $1", source_name(), kProcStatFileName);
+    return error::NotFound("[$0] Unable to access $1", source_name(), kProcStatFileName.string());
   }
 
-  auto parsed_str = GetProcParams();
-  return GetProcStat(parsed_str);
-}
-
-// Version of InitImpl for FakeProcStatConnector
-Status FakeProcStatConnector::InitImpl() {
   auto parsed_str = GetProcParams();
   return GetProcStat(parsed_str);
 }
@@ -99,6 +93,22 @@ void ProcStatConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t t
   r.Append<r.ColIndex("system_percent")>(cpu_usage_.system_percent);
   r.Append<r.ColIndex("user_percent")>(cpu_usage_.user_percent);
   r.Append<r.ColIndex("idle_percent")>(cpu_usage_.idle_percent);
+}
+
+Status FakeProcStatConnector::InitImpl() {
+  auto parsed_str = GetProcParams();
+  return GetProcStat(parsed_str);
+}
+
+std::vector<std::string> FakeProcStatConnector::GetProcParams() {
+  std::string stats = "cpu  ";
+  std::vector<std::string> parsed_str;
+  for (int i = 0; i < kNumCPUStatFields; ++i) {
+    stats += std::to_string(fake_stat_ + i) + " ";
+  }
+  fake_stat_++;
+  parsed_str = absl::StrSplit(stats, ' ', absl::SkipWhitespace());
+  return parsed_str;
 }
 
 }  // namespace stirling
