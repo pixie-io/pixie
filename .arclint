@@ -22,7 +22,8 @@
     "(^credentials\/.*\\.yaml)",
     "(go\\.mod$)",
     "(go\\.sum$)",
-    "(.*\\.patch$)"
+    "(.*\\.patch$)",
+    "(src/ui/src/types/generated/.*)"
   ],
   "linters": {
     "build-linter": {
