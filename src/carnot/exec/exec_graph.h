@@ -47,6 +47,21 @@ class ExecutionGraph {
   Status Init(std::shared_ptr<table_store::schema::Schema> schema, plan::PlanState* plan_state,
               ExecState* exec_state, plan::PlanFragment* pf);
 
+  ~ExecutionGraph() {
+    // We need to remove these GRPC source nodes from the GRPC router because the exec graph
+    // gets destructed so that the GRPC router doesn't have stale pointers to those nodes.
+    if (exec_state_->grpc_router() != nullptr) {
+      for (int64_t grpc_src_id : grpc_sources()) {
+        auto s =
+            exec_state_->grpc_router()->DeleteGRPCSourceNode(exec_state_->query_id(), grpc_src_id);
+        if (!s.ok()) {
+          VLOG(1) << absl::Substitute("Error deleting GRPC Source node $0 for query $1",
+                                      grpc_src_id, exec_state_->query_id().str());
+        }
+      }
+    }
+  }
+
   std::vector<int64_t> sources() { return sources_; }
   std::vector<int64_t> grpc_sources() { return grpc_sources_; }
 

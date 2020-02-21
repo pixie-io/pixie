@@ -105,8 +105,6 @@ TEST_F(ExecGraphTest, basic) {
 }
 
 TEST_F(ExecGraphTest, execute) {
-  ExecutionGraph e;
-
   planpb::PlanFragment pf_pb;
   ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kLinearPlanFragment, &pf_pb));
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
@@ -156,6 +154,7 @@ TEST_F(ExecGraphTest, execute) {
       1, "multiply",
       std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::INT64})));
 
+  ExecutionGraph e;
   auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
 
   EXPECT_OK(e.Execute());
@@ -175,8 +174,6 @@ TEST_F(ExecGraphTest, execute) {
 }
 
 TEST_F(ExecGraphTest, execute_time) {
-  ExecutionGraph e;
-
   planpb::PlanFragment pf_pb;
   ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kLinearPlanFragment, &pf_pb));
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
@@ -231,6 +228,7 @@ TEST_F(ExecGraphTest, execute_time) {
       1, "multiply",
       std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::INT64})));
 
+  ExecutionGraph e;
   auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
 
   EXPECT_OK(e.Execute());
