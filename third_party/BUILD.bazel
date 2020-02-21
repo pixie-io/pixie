@@ -184,9 +184,3 @@ go_binary(
     embed = [":glice_library"],
     visibility = ["//visibility:public"],
 )
-
-pl_cc_test(
-    name = "cpp_jwt_test",
-    srcs = ["cpp_jwt_test.cc"],
-    deps = ["@com_github_arun11299_cpp_jwt//:cpp_jwt"],
-)
