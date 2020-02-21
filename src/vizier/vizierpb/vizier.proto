@@ -167,7 +167,14 @@ message ExecuteScriptResponse {
   }
 }
 
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  Status status = 1;
+}
+
 service VizierService {
   // This is an incoming request to Vizier to execute queries.
   rpc ExecuteScript(ExecuteScriptRequest) returns (stream ExecuteScriptResponse) {}
+  rpc HealthCheck(HealthCheckRequest) returns (stream HealthCheckResponse) {}
 }

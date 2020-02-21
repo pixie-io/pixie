@@ -377,6 +377,22 @@ func (s *Server) GetAvailableFlags(ctx context.Context, req *plannerpb.QueryRequ
 	return s.GetAvailableFlagsWithPlanner(ctx, req, planner)
 }
 
+// HealthCheck continually responds with the current health of Vizier.
+func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.VizierService_HealthCheckServer) error {
+	// For now, just report itself as healthy.
+	for range time.Tick(5 * time.Second) {
+		err := srv.Send(&vizierpb.HealthCheckResponse{
+			Status: &vizierpb.Status{
+				Code: int32(codes.OK),
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ExecuteScript executes the script and sends results through the gRPC stream.
 func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.VizierService_ExecuteScriptServer) error {
 	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
