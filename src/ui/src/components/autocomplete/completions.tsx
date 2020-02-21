@@ -36,22 +36,22 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     header: {
       ...theme.typography.overline,
-      color: theme.palette.text.secondary,
-      paddingLeft: theme.spacing(5),
+      paddingLeft: theme.spacing(7.5),
       paddingTop: theme.spacing(1),
+      opacity: 0.3,
     },
     completion: {
       ...theme.typography.body1,
       padding: theme.spacing(1),
-      paddingLeft: theme.spacing(6),
+      paddingLeft: theme.spacing(7.5),
       cursor: 'pointer',
       '&.active': {
         backgroundColor: theme.palette.action.active,
-        color: theme.palette.action.hover,
+        color: theme.palette.text.secondary,
         borderLeftStyle: 'solid',
         borderLeftWidth: theme.spacing(0.5),
         borderLeftColor: theme.palette.primary.main,
-        paddingLeft: theme.spacing(5.5),
+        paddingLeft: theme.spacing(7),
       },
     },
     highlight: {

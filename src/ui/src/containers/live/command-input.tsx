@@ -13,13 +13,15 @@ interface CommandInputProps {
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
-    input: {
+    card: {
       position: 'absolute',
-      maxHeight: '40vh',
       width: '40vw',
       top: '40%',
       left: '50%',
       transform: 'translate(-50%, -10vh)',
+    },
+    input: {
+      maxHeight: '40vh',
     },
   }),
 );
@@ -41,8 +43,9 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
 
   return (
     <Modal open={open} onClose={onClose} BackdropProps={{}}>
-      <Card className={classes.input}>
+      <Card className={classes.card}>
         <Autocomplete
+          className={classes.input}
           placeholder='Pixie Command'
           prefix={<MagicIcon />}
           onSelection={(id) => {

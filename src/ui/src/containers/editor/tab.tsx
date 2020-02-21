@@ -83,6 +83,7 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
         gutterSize={5}
         direction='vertical' >
         <CodeEditor
+          className='pixie-code-editor'
           code={code}
           onChange={onCodeChange}
           onSubmit={executeQuery}

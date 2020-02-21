@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import * as React from 'react';
 
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
@@ -12,14 +13,13 @@ const useStyles = makeStyles((theme: Theme) => {
   // TODO(malthus): Make use of the theme styles.
   return createStyles({
     root: {
-      backgroundColor: theme.palette.background.paper,
+      backgroundColor: theme.palette.background.three,
       cursor: 'text',
       display: 'flex',
       flexDirection: 'column',
-      height: '100%',
     },
     input: {
-      backgroundColor: theme.palette.divider,
+      backgroundColor: theme.palette.background.two,
     },
     completions: {
       flex: 1,
@@ -33,6 +33,7 @@ interface AutoCompleteProps {
   getCompletions: (input: string) => Promise<CompletionItems>;
   placeholder?: string;
   prefix?: React.ReactNode;
+  className?: string;
 }
 
 type ItemsMap = Map<CompletionId, { title: CompletionTitle, index: number }>;
@@ -54,6 +55,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   getCompletions,
   placeholder,
   prefix,
+  className,
 }) => {
   const classes = useStyles();
   const [inputValue, setInputValue] = React.useState('');
@@ -99,7 +101,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   };
 
   return (
-    <div className={classes.root} >
+    <div className={clsx(classes.root, className)} >
       <Input
         className={classes.input}
         onChange={setInputValue}

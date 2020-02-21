@@ -2,7 +2,6 @@
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/mode/python/python';
 import 'codemirror/theme/monokai.css';
-import './code-editor.scss';
 
 import clsx from 'clsx';
 import * as codemirror from 'codemirror';

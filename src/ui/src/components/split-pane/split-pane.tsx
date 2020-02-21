@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import * as React from 'react';
 import Split from 'react-split';
 
@@ -13,14 +14,20 @@ const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
       height: '100%',
+      '& .gutter': {
+        backgroundColor: theme.palette.background.three,
+      },
     },
     pane: {
       display: 'flex',
       flexDirection: 'column',
     },
     header: {
-      height: theme.spacing(5),
+      ...theme.typography.subtitle1,
+      fontWeight: theme.typography.fontWeightMedium,
+      padding: theme.spacing(0.75, 3),
       cursor: 'pointer',
+      backgroundColor: theme.palette.background.three,
     },
     paneContent: {
       flex: '1',
@@ -110,10 +117,11 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
       <Split
         ref={splitRef}
         sizes={initialSizes}
-        className={classes.root}
+        className={clsx(classes.root, props.className)}
         direction='vertical'
         minSize={minPaneHeight}
         onDragEnd={handleDrag}
+        gutterSize={theme.spacing(0.5)}
         snapOffset={10}
       >
         {children}

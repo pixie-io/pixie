@@ -10,7 +10,6 @@ const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
     root: {
       ...theme.typography.h6,
-      color: theme.palette.text.primary,
       position: 'relative',
       cursor: 'text',
       padding: theme.spacing(2.5),
@@ -22,8 +21,8 @@ const useStyles = makeStyles((theme: Theme) => {
       position: 'absolute',
       opacity: 0,
     },
-    suggestion: {
-      color: theme.palette.text.secondary,
+    hint: {
+      opacity: 0.2,
     },
     caret: {
       display: 'inline-block',
@@ -126,7 +125,7 @@ const Input: React.FC<InputProps> = ({
       <div className={classes.inputValue}>
         <span>{value}</span>
         <Caret active={focused} />
-        <span className={classes.suggestion}>{hint}</span>
+        <span className={classes.hint}>{hint}</span>
       </div>
     </div >
   );

@@ -16,3 +16,17 @@
   padding: 0 1.5rem;
   border-bottom: 1px solid $border-color;
 }
+
+.pixie-code-editor.pl-code-editor {
+  .CodeMirror {
+    background-color: $content-bg;
+  }
+
+  .CodeMirror-gutters {
+    background-color: $body-bg;
+  }
+
+  .CodeMirror-linenumber {
+    color: $white;
+  }
+}

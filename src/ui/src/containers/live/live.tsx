@@ -17,14 +17,26 @@ import CommandInput from './command-input';
 import LiveContextProvider from './context';
 import Editor from './editor';
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles((theme: Theme) => {
+  const scrollbarStyles = (color: string) => ({
+    borderRadius: theme.spacing(1.5),
+    border: [['solid', theme.spacing(1), 'transparent']],
+    backgroundColor: 'transparent',
+    boxShadow: [['inset', 0, 0, theme.spacing(1), theme.spacing(1), color]],
+  });
+  return createStyles({
     root: {
       height: '100%',
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
       backgroundColor: theme.palette.background.default,
+      '& ::-webkit-scrollbar': {
+        width: theme.spacing(3),
+        height: theme.spacing(3),
+      },
+      '& ::-webkit-scrollbar-track': scrollbarStyles(theme.palette.background.one),
+      '& ::-webkit-scrollbar-thumb': scrollbarStyles(theme.palette.foreground.one),
     },
     topBar: {
       display: 'flex',
@@ -39,7 +51,6 @@ const useStyles = makeStyles((theme: Theme) =>
       flex: 1,
       minHeight: 0,
       display: 'flex',
-      margin: theme.spacing(0, 2, 2),
     },
     editorToggle: {
       border: 'none',
@@ -59,8 +70,10 @@ const useStyles = makeStyles((theme: Theme) =>
     canvas: {
       flex: 1,
       minWidth: 0,
+      margin: theme.spacing(1),
     },
-  }));
+  });
+});
 
 const COMMAND_KEYMAP = {
   PIXIE_COMMAND: ['Meta+k', 'Control+k'],
