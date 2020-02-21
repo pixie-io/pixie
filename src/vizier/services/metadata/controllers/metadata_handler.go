@@ -233,7 +233,11 @@ func (mh *MetadataHandler) updateEndpoints(e *v1.Endpoints, deleted bool) (*meta
 }
 
 func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType watch.EventType) {
-	e := o.(*v1.Endpoints)
+	e, ok := o.(*v1.Endpoints)
+	if !ok {
+		log.WithField("object", o).Error("Received non-endpoints object when handling endpoint metadata.")
+		return
+	}
 	// kube-scheduler and kube-controller-manager endpoints (and
 	// any endpoint with leader election) are
 	// updated almost every second, leading to terrible noise,
@@ -310,7 +314,12 @@ func (mh *MetadataHandler) updatePod(e *v1.Pod, deleted bool) (*metadatapb.Pod, 
 }
 
 func (mh *MetadataHandler) handlePodMetadata(o runtime.Object, eventType watch.EventType) {
-	e := o.(*v1.Pod)
+	e, ok := o.(*v1.Pod)
+
+	if !ok {
+		log.WithField("object", o).Error("Received non-pod object when handling pod metadata.")
+		return
+	}
 
 	pb, err := mh.updatePod(e, eventType == watch.Deleted)
 	if err != nil {
@@ -350,7 +359,12 @@ func (mh *MetadataHandler) updateService(e *v1.Service, deleted bool) (*metadata
 }
 
 func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object, eventType watch.EventType) {
-	e := o.(*v1.Service)
+	e, ok := o.(*v1.Service)
+
+	if !ok {
+		log.WithField("object", o).Error("Received non-service object when handling service metadata.")
+		return
+	}
 
 	_, err := mh.updateService(e, eventType == watch.Deleted)
 	if err != nil {
