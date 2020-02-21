@@ -41,7 +41,51 @@ final class FileCheckerTest {
         return $res;
     }
 
+    private function isGRPCWebProto($file) {
+        $pbDir = substr($file, 0, strrpos($file, "/"));
+        $buildFile = $pbDir . '/BUILD.bazel';
+        $bazelFile = '//' . $pbDir . ':' . substr($file, strrpos($file, "/") + 1);
+
+        $readFile = fopen($buildFile, "r");
+        $searchName = false;
+        $isGRPCProto = false;
+        while(!feof($readFile))
+          {
+            $line = fgets($readFile);
+            if ($searchName) { // Previous line was pl_grpc_web_library(.
+                // Get name of target.
+                preg_match('/name = "(.*?)"/', $line, $matches);
+                $target = '//' . $pbDir . ':' . $matches[1];
+
+                // Check the dependencies of the grpc_web_library target and verify whether 
+                // the current file is a source.
+                exec('bazel query \'kind("source file", deps(\'' . $target . '\'))\'', $file_output, $return_var);
+                foreach ($file_output as $srcFile) {
+                    if ($srcFile == $bazelFile) {
+                        $isGRPCProto = true;
+                        break;
+                    }
+                }
+
+                if ($isGRPCProto) {
+                    break;
+                }
+                $searchName = false;
+            }
+            if (strpos($line, "pl_grpc_web_library(") === 0) {
+                // If the line begins with pl_grpc_web_library, we search the next line for the name.
+                $searchName = true;
+            }
+          }
+        fclose($readFile);  
+
+        return $isGRPCProto;    
+    }
+
     public function run() {
+        $currDir = getcwd();
+        chdir($this->project_root);
+
         $test_results = array();
 
         // Filter out files in the experimental directory.
@@ -68,6 +112,17 @@ final class FileCheckerTest {
             $pbFilename = substr($file,0,-6) . '.pb.go';
             $test_results = $this->checkFile($file, $pbFilename, $test_results, '.proto', 'To regenerate, run this command:' .
                     'python $(bazel info workspace)/scripts/update_go_protos.sh');
+
+            if ($this->isGRPCWebProto($file)) {
+                // Check generated files exist. We assume they are all in src/ui/src/types/generated for now.
+                $fname = substr($file, strrpos($file, "/")+ 1, -6);
+                // Check $fname_pb.d.ts.
+                $test_results = $this->checkFile($file, 'src/ui/src/types/generated/' . $fname . '_pb.d.ts', $test_results, '', 'To regenerate, build the grpc_web  target and move the files to the correct directory');
+                // Check $fname_pb.js.
+                $test_results = $this->checkFile($file, 'src/ui/src/types/generated/' . $fname . '_pb.js', $test_results, '', 'To regenerate, build the grpc_web  target and move the files to the correct directory');
+                // Check $fnameServiceClientPb.ts.
+                $test_results = $this->checkFile($file, 'src/ui/src/types/generated/' . ucfirst($fname) . 'ServiceClientPb.ts', $test_results, '', 'To regenerate, build the grpc_web  target and move the files to the correct directory');
+            }
         }
 
         foreach ($gqlFiles as &$file) {
@@ -108,6 +163,7 @@ final class FileCheckerTest {
             }
         }
 
+        chdir($currDir);
         return $test_results;
     }
 }
