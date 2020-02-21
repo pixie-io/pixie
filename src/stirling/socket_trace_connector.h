@@ -193,6 +193,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   explicit SocketTraceConnector(std::string_view source_name);
 
+  Status AttachHTTP2UProbes();
+
   // This function causes the perf buffer to be read, and triggers callbacks per message.
   void ReadPerfBuffers();
 

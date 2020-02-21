@@ -185,19 +185,7 @@ Status SocketTraceConnector::InitImpl() {
   // cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
   // because of the mixed & duplicate data events from these 2 sources.
   if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
-    std::map<int32_t, std::filesystem::path> pid_paths =
-        system::ListProcPidPaths(system::Config::GetInstance().proc_path());
-    std::map<std::string, std::vector<int>> binaries =
-        GetActiveBinaries(system::Config::GetInstance().host_path(), pid_paths);
-    ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
-        bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
-    for (const auto& [pid, symaddrs] : GetSymAddrs(binaries)) {
-      symaddrs_map.update_value(pid, symaddrs);
-    }
-    PL_ASSIGN_OR_RETURN(const std::vector<bpf_tools::UProbeSpec> specs,
-                        ResolveUProbeTmpls(binaries, kUProbeTmpls));
-    PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
-    LOG(INFO) << absl::Substitute("Number of uprobes deployed = $0", specs.size());
+    PL_RETURN_IF_ERROR(AttachHTTP2UProbes());
   }
 
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
@@ -299,6 +287,23 @@ Status SocketTraceConnector::DisableSelfTracing() {
   auto control_map_handle = bpf().get_percpu_array_table<int64_t>(kControlValuesArrayName);
   int64_t my_pid = getpid();
   return UpdatePerCPUArrayValue(kStirlingTGIDIndex, my_pid, &control_map_handle);
+}
+
+Status SocketTraceConnector::AttachHTTP2UProbes() {
+  std::map<int32_t, std::filesystem::path> pid_paths =
+      system::ListProcPidPaths(system::Config::GetInstance().proc_path());
+  std::map<std::string, std::vector<int>> binaries =
+      GetActiveBinaries(system::Config::GetInstance().host_path(), pid_paths);
+  ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
+      bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
+  for (const auto& [pid, symaddrs] : GetSymAddrs(binaries)) {
+    symaddrs_map.update_value(pid, symaddrs);
+  }
+  PL_ASSIGN_OR_RETURN(const std::vector<bpf_tools::UProbeSpec> specs,
+                      ResolveUProbeTmpls(binaries, kUProbeTmpls));
+  PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
+  LOG(INFO) << absl::Substitute("Number of uprobes deployed = $0", specs.size());
+  return Status::OK();
 }
 
 //-----------------------------------------------------------------------------
