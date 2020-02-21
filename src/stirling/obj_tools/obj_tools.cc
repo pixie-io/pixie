@@ -13,13 +13,11 @@ namespace pl {
 namespace stirling {
 namespace obj_tools {
 
-std::map<std::string, std::vector<int>> GetActiveBinaries(std::filesystem::path proc,
-                                                          std::filesystem::path host) {
-  // Warning: must use JoinPath, because we are dealing with two absolute paths.
-  std::filesystem::path host_proc = fs::JoinPath({&host, &proc});
-
+std::map<std::string, std::vector<int>> GetActiveBinaries(
+    const std::filesystem::path& host_path,
+    const std::map<int32_t, std::filesystem::path>& pid_paths) {
   std::map<std::string, std::vector<int>> binaries;
-  for (const auto& [pid, p] : system::ListProcPidPaths(host_proc)) {
+  for (const auto& [pid, p] : pid_paths) {
     VLOG(1) << absl::Substitute("Directory: $0", p.string());
 
     pl::StatusOr<std::filesystem::path> exe_or = ResolveProcExe(p);
@@ -32,7 +30,7 @@ std::map<std::string, std::vector<int>> GetActiveBinaries(std::filesystem::path 
     // If we're running in a container, convert exe to be relative to our host mount.
     // Note that we mount host '/' to '/host' inside container.
     // Warning: must use JoinPath, because we are dealing with two absolute paths.
-    std::filesystem::path host_exe = fs::JoinPath({&host, &exe_or.ValueOrDie()});
+    std::filesystem::path host_exe = fs::JoinPath({&host_path, &exe_or.ValueOrDie()});
 
     if (!fs::Exists(host_exe).ok()) {
       VLOG(1) << absl::Substitute("Ignoring $0: Does not exist.", host_exe.string());

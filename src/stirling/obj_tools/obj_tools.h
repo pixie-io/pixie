@@ -19,8 +19,9 @@ namespace obj_tools {
  * @param proc Path to the proc filesystem (typically should be "/proc")
  * @return a set of all active binaries.
  */
-std::map<std::string, std::vector<int>> GetActiveBinaries(std::filesystem::path proc,
-                                                          std::filesystem::path host = {});
+std::map<std::string, std::vector<int>> GetActiveBinaries(
+    const std::filesystem::path& host_path,
+    const std::map<int32_t, std::filesystem::path>& pid_paths);
 
 /**
  * Looks up specific symbols of the binaries, and returns a map from PIDs that execute the

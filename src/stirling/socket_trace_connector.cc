@@ -185,8 +185,10 @@ Status SocketTraceConnector::InitImpl() {
   // cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
   // because of the mixed & duplicate data events from these 2 sources.
   if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
+    std::map<int32_t, std::filesystem::path> pid_paths =
+        system::ListProcPidPaths(system::Config::GetInstance().proc_path());
     std::map<std::string, std::vector<int>> binaries =
-        GetActiveBinaries("/proc", system::Config::GetInstance().host_path());
+        GetActiveBinaries(system::Config::GetInstance().host_path(), pid_paths);
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
         bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
     for (const auto& [pid, symaddrs] : GetSymAddrs(binaries)) {
