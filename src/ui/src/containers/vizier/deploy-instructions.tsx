@@ -50,7 +50,7 @@ const DEPLOY_METHODS = ['a', 'b'];
 // DeployInstructions is a wrapper around DeployInstructionsContent, which queries
 // for the CLI artifact information.
 export const DeployInstructions = (props: DeployInstructionsProps) => {
-  return (<Query query={GET_CLI_BINARY_INFO}>
+  return (<Query query={GET_CLI_BINARY_INFO} fetchPolicy='cache-and-network'>
     {
       ({ loading, error, data }) => {
         if (loading) {
