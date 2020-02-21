@@ -22,6 +22,7 @@ pl_cc_library(
         "@com_github_cameron314_concurrentqueue//:concurrentqueue",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_rlyeh_sole//:sole",
+        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
     ],
 )
 

@@ -1,7 +1,10 @@
 #include "src/vizier/services/agent/manager/exec.h"
 
 #include <memory>
+#include <string>
 #include <utility>
+
+#include <jwt/jwt.hpp>
 
 #include "src/common/base/base.h"
 #include "src/common/event/task.h"
@@ -9,6 +12,9 @@
 #include "src/vizier/services/agent/manager/manager.h"
 
 #include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
+
+DEFINE_string(jwt_signing_key, gflags::StringFromEnv("PL_JWT_SIGNING_KEY", ""),
+              "The JWT signing key for outgoing requests");
 
 namespace pl {
 namespace vizier {
@@ -18,6 +24,21 @@ using ::pl::event::AsyncTask;
 using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse;
 using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResultRequest;
 using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResultResponse;
+
+std::string GenerateServiceToken() {
+  jwt::jwt_object obj{jwt::params::algorithm("HS256")};
+  obj.add_claim("iss", "PL");
+  obj.add_claim("aud", "service");
+  obj.add_claim("jti", sole::uuid4().str());
+  obj.add_claim("iat", std::chrono::system_clock::now());
+  obj.add_claim("nbf", std::chrono::system_clock::now() - std::chrono::seconds{60});
+  obj.add_claim("exp", std::chrono::system_clock::now() + std::chrono::seconds{60});
+  obj.add_claim("sub", "service");
+  obj.add_claim("Scopes", "service");
+  obj.add_claim("ServiceID", "kelvin");
+  obj.secret(FLAGS_jwt_signing_key);
+  return obj.signature();
+}
 
 class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
  public:
@@ -55,6 +76,8 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
     AgentQueryResultResponse res_resp;
     ToProto(agent_info_->agent_id, res_req.mutable_agent_id());
     grpc::ClientContext context;
+    std::string token = GenerateServiceToken();
+    context.AddMetadata("authorization", absl::Substitute("bearer $0", token));
     auto query_response_status = qb_stub_->ReceiveAgentQueryResult(&context, res_req, &res_resp);
     if (!query_response_status.ok()) {
       LOG(ERROR) << absl::Substitute(

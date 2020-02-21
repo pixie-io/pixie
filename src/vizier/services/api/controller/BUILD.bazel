@@ -25,6 +25,7 @@ go_library(
         "@com_github_graph_gophers_graphql_go//:go_default_library",
         "@com_github_graph_gophers_graphql_go//relay:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",
+        "@org_golang_google_grpc//metadata:go_default_library",
     ],
 )
 

@@ -27,6 +27,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              key: jwt-signing-key
+              name: pl-cluster-secrets
         ports:
         - containerPort: 59300
           hostPort: 59300

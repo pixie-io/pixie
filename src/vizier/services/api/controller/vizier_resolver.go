@@ -10,6 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/golang/protobuf/jsonpb"
 	uuid "github.com/satori/go.uuid"
@@ -98,6 +99,12 @@ func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs
 	client := q.Env.QueryBrokerClient()
 	req := plannerpb.QueryRequest{QueryStr: *args.QueryStr}
 
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
 	resp, err := client.ExecuteQuery(ctx, &req)
 	if err != nil {
 		return nil, err
@@ -136,6 +143,12 @@ type VizierInfoResolver struct {
 func (v *VizierInfoResolver) Agents(ctx context.Context) (*[]*AgentStatusResolver, error) {
 	client := v.Env.QueryBrokerClient()
 	req := qbpb.AgentInfoRequest{}
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
 	resp, err := client.GetAgentInfo(ctx, &req)
 	if err != nil {
 		return nil, err
