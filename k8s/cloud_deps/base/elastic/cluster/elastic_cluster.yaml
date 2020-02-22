@@ -1,0 +1,24 @@
+---
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: pl-elastic
+spec:
+  version: 7.6.0
+  nodeSets:
+  - name: default
+    count: 1
+    config:
+      node.master: true
+      node.data: true
+      node.ingest: true
+      node.store.allow_mmap: false
+    podTemplate:
+      spec:
+        initContainers:
+        - name: install-plugins
+          command:
+          - sh
+          - -c
+          - |
+              bin/elasticsearch-plugin install --batch repository-gcs
