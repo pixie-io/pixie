@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"math"
 	"regexp"
 	"strings"
 
@@ -25,9 +24,8 @@ const kubeProxyPodPrefix = "kube-proxy"
 
 // K8sMetadataController listens to any metadata updates from the K8s API.
 type K8sMetadataController struct {
-	mdHandler  *MetadataHandler
-	clientset  *kubernetes.Clientset
-	startingRV int
+	mdHandler *MetadataHandler
+	clientset *kubernetes.Clientset
 }
 
 // NewK8sMetadataController creates a new K8sMetadataController.
@@ -65,14 +63,10 @@ func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, err
 	}
 	sRv := mdh.SyncServiceData(services.(*v1.ServiceList))
 
-	// Start watcher at the earliest resource version.
-	mc.startingRV = int(math.Min(float64(pRv), math.Min(float64(eRv), float64(sRv))))
-
 	// Start up Watchers.
-	go mc.startWatcher("pods")
-	go mc.startWatcher("endpoints")
-	go mc.startWatcher("services")
-	go mc.startWatcher("nodes")
+	go mc.startWatcher("pods", pRv)
+	go mc.startWatcher("endpoints", eRv)
+	go mc.startWatcher("services", sRv)
 
 	return mc, nil
 }
@@ -83,10 +77,10 @@ func (mc *K8sMetadataController) listObject(resource string) (runtime.Object, er
 	return watcher.List(opts)
 }
 
-func (mc *K8sMetadataController) startWatcher(resource string) {
+func (mc *K8sMetadataController) startWatcher(resource string, resourceVersion int) {
 	// Start up watcher for the given resource.
 	watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), resource, v1.NamespaceAll, fields.Everything())
-	retryWatcher, err := watch.NewRetryWatcher(fmt.Sprintf("%d", mc.startingRV), watcher)
+	retryWatcher, err := watch.NewRetryWatcher(fmt.Sprintf("%d", resourceVersion), watcher)
 	if err != nil {
 		log.WithError(err).Fatal("Could not start watcher for k8s resource: " + resource)
 	}
