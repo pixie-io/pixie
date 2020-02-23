@@ -396,6 +396,7 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 	}
 
 	update := &metadatapb.ResourceUpdate{
+		ResourceVersion: pod.Metadata.ResourceVersion,
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
 			PodUpdate: &metadatapb.PodUpdate{
 				UID:              pod.Metadata.UID,
@@ -417,6 +418,7 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 
 func serviceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, pods []string) *metadatapb.ResourceUpdate {
 	update := &metadatapb.ResourceUpdate{
+		ResourceVersion: ep.Metadata.ResourceVersion,
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
 				UID:              ep.Metadata.UID,
@@ -465,6 +467,7 @@ func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.Resou
 
 	for i, s := range pod.Status.ContainerStatuses {
 		updates[i] = &metadatapb.ResourceUpdate{
+			ResourceVersion: pod.Metadata.ResourceVersion,
 			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
 				ContainerUpdate: &metadatapb.ContainerUpdate{
 					CID:              formatContainerID(s.ContainerID),

@@ -33,6 +33,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	}
 
 	ag1UpdatePb := &metadatapb.ResourceUpdate{
+		ResourceVersion: "1",
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
 				UID:              "ijkl",
@@ -46,6 +47,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	}
 
 	ag2UpdatePb := &metadatapb.ResourceUpdate{
+		ResourceVersion: "1",
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
 				UID:              "ijkl",
@@ -59,6 +61,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	}
 
 	fullUpdatePb := &metadatapb.ResourceUpdate{
+		ResourceVersion: "1",
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
 				UID:              "ijkl",
@@ -249,6 +252,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	}
 
 	ag1UpdatePb := &metadatapb.ResourceUpdate{
+		ResourceVersion: "1",
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
 				UID:              "ijkl",
@@ -262,6 +266,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	}
 
 	ag2UpdatePb := &metadatapb.ResourceUpdate{
+		ResourceVersion: "1",
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
 				UID:              "ijkl",
@@ -275,6 +280,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	}
 
 	fullUpdatePb := &metadatapb.ResourceUpdate{
+		ResourceVersion: "1",
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
 			ServiceUpdate: &metadatapb.ServiceUpdate{
 				UID:              "ijkl",
@@ -629,6 +635,7 @@ func TestObjectToPodProto(t *testing.T) {
 	}
 
 	updatePb := &metadatapb.ResourceUpdate{
+		ResourceVersion: "1",
 		Update: &metadatapb.ResourceUpdate_ContainerUpdate{
 			ContainerUpdate: &metadatapb.ContainerUpdate{
 				CID:  "test",
@@ -753,6 +760,7 @@ func TestGetResourceUpdateFromPod(t *testing.T) {
 	update := controllers.GetResourceUpdateFromPod(pod)
 	podUpdate := update.GetPodUpdate()
 	assert.NotNil(t, podUpdate)
+	assert.Equal(t, "1", update.ResourceVersion)
 	assert.Equal(t, "ijkl", podUpdate.UID)
 	assert.Equal(t, "object_md", podUpdate.Name)
 	assert.Equal(t, 1, len(podUpdate.ContainerIDs))
@@ -774,6 +782,7 @@ func TestGetResourceUpdateFromEndpoints(t *testing.T) {
 	update := controllers.GetResourceUpdateFromEndpoints(ep)
 	serviceUpdate := update.GetServiceUpdate()
 	assert.NotNil(t, serviceUpdate)
+	assert.Equal(t, "1", update.ResourceVersion)
 	assert.Equal(t, "object_md", serviceUpdate.Name)
 	assert.Equal(t, "ijkl", serviceUpdate.UID)
 	assert.Equal(t, int64(4), serviceUpdate.StartTimestampNS)
@@ -791,6 +800,7 @@ func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
 
 	updates := controllers.GetContainerResourceUpdatesFromPod(pod)
 	assert.Equal(t, 1, len(updates))
+	assert.Equal(t, "1", updates[0].ResourceVersion)
 	cUpdate := updates[0].GetContainerUpdate()
 	assert.NotNil(t, cUpdate)
 	assert.Equal(t, "container1", cUpdate.Name)

@@ -595,6 +595,7 @@ message ResourceUpdate {
     ContainerUpdate container_update = 2;
     ServiceUpdate service_update = 3;
   }
+  string resource_version = 4;
 }
 
 
