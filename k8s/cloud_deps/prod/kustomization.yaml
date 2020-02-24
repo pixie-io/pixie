@@ -5,3 +5,5 @@ commonLabels:
 resources:
 - ../base/elastic/operator
 - elastic
+- nats
+- stan

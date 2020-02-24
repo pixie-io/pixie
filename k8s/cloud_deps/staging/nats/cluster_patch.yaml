@@ -1,0 +1,6 @@
+apiVersion: nats.io/v1alpha2
+kind: NatsCluster
+metadata:
+  name: pl-nats
+spec:
+  size: 5

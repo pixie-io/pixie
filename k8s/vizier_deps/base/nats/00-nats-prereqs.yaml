@@ -11,11 +11,11 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: nats-operator-binding
+  name: "pl:nats-operator-binding"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: nats-operator
+  name: "pl:nats-operator"
 subjects:
 - kind: ServiceAccount
   name: nats-operator
@@ -23,22 +23,11 @@ subjects:
   # Alternatively, change to "nats-io" to perform a cluster-scoped deployment in supported versions.
   namespace: pl
 
-# NOTE: When performing multiple namespace-scoped installations, all
-# "nats-operator" service accounts (across the different namespaces)
-# MUST be added to this binding.
-#- kind: ServiceAccount
-#  name: nats-operator
-#  namespace: nats-io
-#- kind: ServiceAccount
-#  name: nats-operator
-#  namespace: namespace-2
-#(...)
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: nats-operator
+  name: "pl:nats-operator"
 rules:
 # Allow creating CRDs
 - apiGroups:
@@ -85,7 +74,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: nats-server
+  name: pl:nats-server
 rules:
 - apiGroups: [""]
   resources:
@@ -95,11 +84,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: nats-server-binding
+  name: pl:nats-server-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: nats-server
+  name: pl:nats-server
 subjects:
 - kind: ServiceAccount
   name: nats-server

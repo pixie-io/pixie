@@ -1,9 +1,12 @@
+---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 commonLabels:
   app: pl-cloud
   component: cloud-deps
+namespace: plc
 resources:
-- elastic
-- nats
-- stan
+- operator/clusterroles
+- ../../base/stan
+patchesStrategicMerge:
+- cluster_patch.yaml
