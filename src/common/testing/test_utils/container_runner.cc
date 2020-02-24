@@ -5,7 +5,7 @@
 
 namespace pl {
 
-Status ContainerRunner::Run(int timeout) {
+Status ContainerRunner::Run(int timeout, const std::vector<std::string>& env_flags) {
   // First pull the image.
   // Do this separately from running the container, so we can timeout on the true runtime.
   PL_ASSIGN_OR_RETURN(std::string out, pl::Exec("docker pull " + image_));
@@ -15,8 +15,23 @@ Status ContainerRunner::Run(int timeout) {
   // Run with timeout, as a backup in case we don't clean things up properly.
   container_name_ = absl::StrCat(instance_name_prefix_, "_",
                                  std::chrono::steady_clock::now().time_since_epoch().count());
-  PL_RETURN_IF_ERROR(container_.Start({"timeout", std::to_string(timeout), "docker", "run", "--rm",
-                                       "--name", container_name_, image_}));
+
+  std::vector<std::string> docker_run_cmd;
+  docker_run_cmd.push_back("timeout");
+  docker_run_cmd.push_back(std::to_string(timeout));
+  docker_run_cmd.push_back("docker");
+  docker_run_cmd.push_back("run");
+  docker_run_cmd.push_back("--rm");
+  docker_run_cmd.push_back("--pid=host");
+  for (const auto& e : env_flags) {
+    docker_run_cmd.push_back("-e");
+    docker_run_cmd.push_back(e);
+  }
+  docker_run_cmd.push_back("--name");
+  docker_run_cmd.push_back(container_name_);
+  docker_run_cmd.push_back(image_);
+
+  PL_RETURN_IF_ERROR(container_.Start(docker_run_cmd));
 
   // It may take some time for the container to come up, so we keep polling.
   // But keep count of the attempts, because we don't want to poll infinitely.
@@ -30,7 +45,7 @@ Status ContainerRunner::Run(int timeout) {
     PL_ASSIGN_OR_RETURN(
         std::string pid_str,
         pl::Exec(absl::Substitute("docker inspect -f '{{.State.Pid}}' $0", container_name_)));
-    LOG(INFO) << absl::Substitute("Server PID: $0", pid_str);
+    LOG(INFO) << absl::Substitute("Container process PID: $0", pid_str);
 
     if (absl::SimpleAtoi(pid_str, &process_pid_) && process_pid_ != 0) {
       break;

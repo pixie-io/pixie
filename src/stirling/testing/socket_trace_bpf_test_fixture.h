@@ -7,8 +7,6 @@
 #include <vector>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/mysql/test_data.h"
-#include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/client_server_system.h"
 
@@ -16,7 +14,6 @@ namespace pl {
 namespace stirling {
 namespace testing {
 
-// TODO(yzhao): Move MySQL-specific code into src/stirling/mysql_trace_bpf_test.cc.
 class SocketTraceBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {

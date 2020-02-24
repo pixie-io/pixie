@@ -92,7 +92,7 @@ Status SubProcess::Stdout(std::string* out) {
     }
 
     if (len > 0) {
-      out->append(buffer, 0, len);
+      out->append(buffer, len);
     }
   } while (len == sizeof(buffer));
 
