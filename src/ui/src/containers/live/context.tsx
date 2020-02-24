@@ -1,27 +1,46 @@
+import {getClusterConnection} from 'common/cloud-gql-client';
+import {VizierGRPCClient, VizierQueryResult} from 'common/vizier-grpc-client';
 import * as React from 'react';
 
 // @ts-ignore : TS does not seem to like this import.
 import * as demo from './demo.jxx';
 
-interface ContextProps {
+interface LiveContextProps {
   updateScript: (code: string) => void;
   updateVegaSpec: (code: string) => void;
+  vizierReady: boolean;
+  executeScript: () => void;
+  results?: VizierQueryResult;
 }
 
 export const ScriptContext = React.createContext<string>('');
 export const VegaContext = React.createContext<string>('');
-export const LiveContext = React.createContext<Partial<ContextProps>>({});
+export const LiveContext = React.createContext<Partial<LiveContextProps>>({});
 
 const LiveContextProvider = (props) => {
   const [script, setScript] = React.useState<string>('');
   const [vegaSpec, setVegaSpec] = React.useState<string>(demo);
+  const [client, setClient] = React.useState<VizierGRPCClient>(null);
+  const [results, setResults] = React.useState<VizierQueryResult>(null);
 
-  const liveViewContext = React.useMemo(() => {
-    const updateScript = (code: string) => { setScript(code); };
-    const updateVegaSpec = (code: string) => { setVegaSpec(code); };
-    return { updateScript, updateVegaSpec };
+  React.useEffect(() => {
+    getClusterConnection().then(({ ipAddress, token }) => {
+      setClient(new VizierGRPCClient(ipAddress, token));
+    });
   }, []);
 
+  const liveViewContext = React.useMemo(() => ({
+    updateScript: setScript,
+    updateVegaScript: setVegaSpec,
+    vizierReady: !!client,
+    executeScript: () => {
+      if (!client) {
+        return;
+      }
+      client.executeScript(script).then(setResults);
+    },
+    results,
+  }), [client, script, results]);
   return (
     <LiveContext.Provider value={liveViewContext}>
       <ScriptContext.Provider value={script}>
