@@ -580,40 +580,59 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDi
   // Logically, what we'd like is the following:
   //    size_t msg_size = buf_size < sizeof(event->msg) ? buf_size : sizeof(event->msg);
   //    bpf_probe_read(&event->msg, msg_size, buf);
+  //    event->attr.msg_size = buf_size;
+  //    socket_data_events.perf_submit(ctx, event, size_to_submit);
   //
-  // But this does not work in kernel versions 4.14 or older, because the verifier does not like
-  // a bpf_probe_read with size 0, and it can't prove that the size won't be zero. This
-  // is true even if we include a 'if (msg_size > 0)' around the code.
+  // But this does not work in kernel versions 4.14 or older, for various reasons:
+  //  1) the verifier does not like a bpf_probe_read with size 0.
+  //       - Useful link: https://www.mail-archive.com/netdev@vger.kernel.org/msg199918.html
+  //  2) the verifier does not like a perf_submit that is larger than sizeof(event).
+  //
+  // While it is often obvious to us humans that these are not problems,
+  // the older verifiers can't prove it to themselves.
+  //
+  // We often try to provide hints to the verifier using approaches like
+  // 'if (msg_size > 0)' around the code, but it turns out that clang is often smarter
+  // than the verifier, and optimizes away the structural hints we try to provide the verifier.
+  //
+  // Solution below involves using a volatile asm statement to prevent clang from optimizing away
+  // certain code, so that code can reach the BPF verifier, and convince it that everything is
+  // safe.
   //
   // Tested to work on GKE node with 4.14.127+ kernel.
-  //
-  // Useful link: https://www.mail-archive.com/netdev@vger.kernel.org/msg199918.html
 
-  size_t msg_submit_size = 0;
-  if (buf_size >= sizeof(event->msg)) {
-    msg_submit_size = sizeof(event->msg);
-    bpf_probe_read(&event->msg, msg_submit_size, buf);
-  } else if (buf_size > 0) {
-    msg_submit_size = buf_size;
-    // Read one extra byte, because older kernels (4.14) don't accept 0 as the second argument,
-    // And their verifier can't prove that it won't be zero (despite the obvious if-statement).
-    bpf_probe_read(&event->msg, msg_submit_size + 1, buf);
+  unsigned int msg_submit_size = buf_size;
+
+  // Clang is too smart for us, and tries to remove some of the obvious hints we are leaving for the
+  // BPF verifier. So we add this NOP volatile statement, so clang can't optimize away some of our
+  // if-statements below.
+  // By telling clang that msg_submit_size is both an input and output to some black box assembly
+  // code, clang has to discard any assumptions on what values this variable can take.
+  asm volatile("" : "+r"(msg_submit_size) :);
+
+  if (msg_submit_size > MAX_MSG_SIZE) {
+    // Impossible to enter here, but this helps the BPF verifier.
+    return 0;
   }
 
+  bpf_probe_read(&event->msg, msg_submit_size, buf);
   event->attr.msg_size = buf_size;
 
-  // Write snooped arguments to perf ring buffer.
-  const size_t size_to_submit = sizeof(event->attr) + msg_submit_size;
-  switch (event->attr.traffic_class.protocol) {
-    case kProtocolCQL:
-    case kProtocolHTTP:
-    case kProtocolHTTP2:
-    case kProtocolMySQL:
-      socket_data_events.perf_submit(ctx, event, size_to_submit);
-      break;
-    default:
-      break;
+  // Write data to perf ring buffer.
+  unsigned int size_to_submit = sizeof(event->attr) + msg_submit_size;
+
+  // Another effective NOP, but we mask like this to help BPF verifier.
+  // Needs to be large enough to encompass the bit-range of MAX_MSG_SIZE.
+  // The currently selected value should be safe for all future values, as it is quite large.
+  // Actual value is not that important, as it just proves to verifier that
+  // size_to_submit is not negative.
+  size_to_submit &= 0xfffffff;
+
+  // This if statement should always be true, but required for BPF verifier.
+  if (size_to_submit <= sizeof(event->attr) + MAX_MSG_SIZE) {
+    socket_data_events.perf_submit(ctx, event, size_to_submit);
   }
+
   return msg_submit_size;
 }
 
@@ -630,12 +649,8 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum Traffic
       perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, MAX_MSG_SIZE, conn_info, event);
       bytes_remaining = bytes_remaining - MAX_MSG_SIZE;
     } else if (bytes_remaining > 0) {
-      // The modulo is essentially a NOP, but informs the BPF verifier about the safety bounds of
-      // bytes_remaining. Note that this only works if MAX_MSG_SIZE is a power-of-2. Otherwise clang
-      // will produce different code that will not keep the verifier happy.
-      size_t bytes_to_submit = bytes_remaining % MAX_MSG_SIZE;
-      perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, bytes_to_submit, conn_info, event);
-      bytes_remaining = bytes_remaining - bytes_to_submit;
+      perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, bytes_remaining, conn_info, event);
+      bytes_remaining = 0;
     }
   }
 
