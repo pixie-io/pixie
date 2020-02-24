@@ -26,15 +26,11 @@ DUMMY_SOURCE_CONNECTOR(PIDRuntimeConnector);
 #include "src/stirling/common/utils.h"
 #include "src/stirling/source_connector.h"
 
-BCC_SRC_STRVIEW(pidruntime_bcc_script, pidruntime);
-
 namespace pl {
 namespace stirling {
 
 class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
-  inline static const std::string_view kBCCScript = pidruntime_bcc_script;
-
   // clang-format off
   static constexpr DataElement kElements[] = {
       canonical_data_elements::kTime,
@@ -66,7 +62,7 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
  protected:
   explicit PIDRuntimeConnector(std::string_view name)
       : SourceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod),
-        bpf_tools::BCCWrapper(kBCCScript) {}
+        bpf_tools::BCCWrapper() {}
 
  private:
   static constexpr perf_type_id kEventType = perf_type_id::PERF_TYPE_SOFTWARE;
@@ -77,7 +73,6 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
       {kEventType, kEventConfig, kFunctionName, 0, kSamplingFreq});
 
   std::map<uint16_t, uint64_t> prev_run_time_map_;
-  std::vector<std::pair<uint16_t, pidruntime_val_t> > table_;
 };
 
 }  // namespace stirling

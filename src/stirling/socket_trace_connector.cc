@@ -79,6 +79,8 @@ DEFINE_string(stirling_cluster_cidr, "", "Manual Cluster CIDR");
 // This flag is for survivability only, in case the host's located headers don't work.
 DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
 
+BCC_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
+
 namespace pl {
 namespace stirling {
 
@@ -117,7 +119,7 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables,
                       std::chrono::milliseconds(FLAGS_stirling_socket_trace_sampling_period_millis),
                       kDefaultPushPeriod),
-      bpf_tools::BCCWrapper(kBCCScript) {
+      bpf_tools::BCCWrapper() {
   http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
 
@@ -175,7 +177,7 @@ Status SocketTraceConnector::InitImpl() {
     FLAGS_stirling_enable_grpc_kprobe_tracing = false;
   }
 
-  PL_RETURN_IF_ERROR(InitBPFCode(/*cflags*/ {}));
+  PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
 

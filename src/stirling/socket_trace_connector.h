@@ -49,8 +49,6 @@ DECLARE_bool(stirling_use_packaged_headers);
 DECLARE_string(stirling_role_to_trace);
 DECLARE_string(stirling_cluster_cidr);
 
-BCC_SRC_STRVIEW(http_trace_bcc_script, socket_trace);
-
 namespace pl {
 namespace stirling {
 
@@ -63,8 +61,6 @@ enum class HTTPContentType {
 
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
-  inline static const std::string_view kBCCScript = http_trace_bcc_script;
-
   // Used in ReadPerfBuffers to drain the relevant perf buffers.
   static constexpr auto kPerfBuffers =
       MakeArray<std::string_view>("socket_control_events", "socket_data_events",

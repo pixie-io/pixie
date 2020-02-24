@@ -11,9 +11,6 @@ namespace stirling {
 
 class ProcTracer : public bpf_tools::BCCWrapper {
  public:
-  ProcTracer();
-  ~ProcTracer();
-
   /**
    * Initialize ProcTracer according to the spec.
    */

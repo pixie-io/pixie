@@ -80,11 +80,12 @@ StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(
 // used for bookkeeping, which translate to equal number of struct kretprobe in memory.
 constexpr int kKprobeMaxActive = 512;
 
-Status BCCWrapper::InitBPFCode(const std::vector<std::string>& cflags) {
+Status BCCWrapper::InitBPFProgram(std::string_view bpf_program,
+                                  const std::vector<std::string>& cflags) {
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
   }
-  auto init_res = bpf_.init(std::string(bpf_program_), cflags);
+  auto init_res = bpf_.init(std::string(bpf_program), cflags);
   if (init_res.code() != 0) {
     return error::Internal("Unable to initialize BCC BPF program: $0", init_res.msg());
   }
@@ -275,6 +276,13 @@ void BCCWrapper::PollPerfBuffer(std::string_view perf_buffer_name, int timeout_m
   if (perf_buffer != nullptr) {
     perf_buffer->poll(timeout_ms);
   }
+}
+
+void BCCWrapper::Stop() {
+  DetachPerfEvents();
+  ClosePerfBuffers();
+  DetachKProbes();
+  DetachUProbes();
 }
 
 }  // namespace bpf_tools

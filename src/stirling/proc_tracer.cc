@@ -15,9 +15,6 @@ DECLARE_bool(stirling_use_packaged_headers);
 namespace pl {
 namespace stirling {
 
-ProcTracer::ProcTracer() : BCCWrapper(proc_trace_bcc_script) {}
-ProcTracer::~ProcTracer() { Stop(); }
-
 namespace {
 
 void HandleProcCreationEvent(void* cb_cookie, void* data, int /*data_size*/) {
@@ -53,7 +50,7 @@ Status ProcTracer::Init() {
   }
   PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders(linux_header_search_order));
 
-  PL_RETURN_IF_ERROR(InitBPFCode());
+  PL_RETURN_IF_ERROR(InitBPFProgram(proc_trace_bcc_script));
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, /*cb_cookie*/ this));
   PL_RETURN_IF_ERROR(AttachKProbes(kKProbeSpecs));
   return Status::OK();

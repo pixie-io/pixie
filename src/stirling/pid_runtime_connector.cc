@@ -5,11 +5,13 @@
 #include "src/common/base/base.h"
 #include "src/stirling/pid_runtime_connector.h"
 
+BCC_SRC_STRVIEW(pidruntime_bcc_script, pidruntime);
+
 namespace pl {
 namespace stirling {
 
 Status PIDRuntimeConnector::InitImpl() {
-  PL_RETURN_IF_ERROR(InitBPFCode());
+  PL_RETURN_IF_ERROR(InitBPFProgram(pidruntime_bcc_script));
   PL_RETURN_IF_ERROR(AttachPerfEvents(kPerfEvents));
   return Status::OK();
 }
@@ -26,9 +28,10 @@ void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t
 
   // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract
   // the key when it is a struct from the BPFHASHTable directly.
-  table_ = bpf().get_hash_table<uint16_t, pidruntime_val_t>("pid_cpu_time").get_table_offline();
+  std::vector<std::pair<uint16_t, pidruntime_val_t>> items =
+      bpf().get_hash_table<uint16_t, pidruntime_val_t>("pid_cpu_time").get_table_offline();
 
-  for (auto& item : table_) {
+  for (auto& item : items) {
     // TODO(kgandhi): PL-460 Consider using other types of BPF tables to avoid a searching through
     // a map for the previously recorded run-time. Alternatively, calculate delta in the bpf code
     // if that is more efficient.

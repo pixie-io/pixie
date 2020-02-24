@@ -38,7 +38,6 @@ namespace bpf_tools {
 
 /**
  * Describes a kernel probe (kprobe).
- * Currently only works for syscalls.
  */
 struct KProbeSpec {
   // Name of kernel function to probe (currently must be syscall).
@@ -87,7 +86,7 @@ StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(
     const std::map<std::string, std::vector<int>>& binaries, const ArrayView<UProbeTmpl>& tmpls);
 
 /**
- * Describes a perf buffer used in BCC code, through which data is returned to user-space.
+ * Describes a BPF perf buffer, through which data is returned to user-space.
  */
 struct PerfBufferSpec {
   // Name of the perf buffer.
@@ -134,14 +133,6 @@ class BCCWrapper {
  public:
   inline static const size_t kCPUCount = ebpf::BPFTable::get_possible_cpu_count();
 
-  BCCWrapper() = delete;
-
-  /**
-   * Constructor, which takes source code as an input.
-   * @param bpf_program a string_view to the source code to compile.
-   */
-  explicit BCCWrapper(const std::string_view bpf_program) : bpf_program_(bpf_program) {}
-
   ~BCCWrapper() {
     // Not really required, because BPF destructor handles these.
     // But we do it anyways out of paranoia.
@@ -153,7 +144,7 @@ class BCCWrapper {
    * @param cflags compiler flags.
    * @return error if no root access, or code could not be compiled.
    */
-  Status InitBPFCode(const std::vector<std::string>& cflags = {});
+  Status InitBPFProgram(std::string_view bpf_program, const std::vector<std::string>& cflags = {});
 
   /**
    * @brief Attach a single kprobe.
@@ -224,12 +215,7 @@ class BCCWrapper {
   /**
    * @brief Detaches all probes, and closes all perf buffers that are open.
    */
-  void Stop() {
-    DetachPerfEvents();
-    ClosePerfBuffers();
-    DetachKProbes();
-    DetachUProbes();
-  }
+  void Stop();
 
   /**
    * Provide access to the BPF instance, for direct access.
@@ -260,7 +246,6 @@ class BCCWrapper {
   void ClosePerfBuffers();
   void DetachPerfEvents();
 
-  std::string_view bpf_program_;
   std::vector<KProbeSpec> kprobes_;
   std::vector<UProbeSpec> uprobes_;
   std::vector<PerfBufferSpec> perf_buffers_;
