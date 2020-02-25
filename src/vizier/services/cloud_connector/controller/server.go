@@ -90,10 +90,9 @@ func (s *Server) RunStream() {
 			err := s.StartStream()
 			if err == nil {
 				log.Info("Stream ending")
-				return
+			} else {
+				log.WithError(err).Error("Stream errored. Restarting stream")
 			}
-			log.WithError(err).Error("Stream errored. Restarting stream")
-			time.Sleep(heartbeatWaitS)
 		}
 	}
 }
