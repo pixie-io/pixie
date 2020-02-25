@@ -51,16 +51,20 @@ deploy:
     paths:
     - k8s/cloud/dev
 profiles:
+- name: minikube
+  patches:
+  - op: replace
+    path: /build/local
+    value:
+      push: false
+  activation:
+  - kubeContext: minikube
 - name: dev
   patches:
   - op: add
     path: /build/artifacts/context=./bazel/args
     value:
     - --compilation_mode=dbg
-  - op: replace
-    path: /build/local
-    value:
-      push: false
   activation:
   - command: dev
 - name: nightly
