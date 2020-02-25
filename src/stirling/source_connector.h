@@ -222,9 +222,6 @@ class SourceConnector : public NotCopyable {
   };
 
  protected:
-  const system::Config& sysconfig_ = system::Config::GetInstance();
-
- private:
   /**
    * Track state of connector. A connector's lifetime typically progresses sequentially
    * from kUninitialized -> kActive -> KStopped.
@@ -233,7 +230,13 @@ class SourceConnector : public NotCopyable {
    */
   enum class State { kUninitialized, kActive, kStopped, kErrors };
 
-  State state_ = State::kUninitialized;
+  // Sub-classes are allowed to inspect state.
+  State state() const { return state_; }
+
+  const system::Config& sysconfig_ = system::Config::GetInstance();
+
+ private:
+  std::atomic<State> state_ = State::kUninitialized;
 
   const std::string source_name_;
   const ArrayView<DataTableSchema> table_schemas_;
