@@ -68,12 +68,14 @@ func createCloudConfig(cloudAddr string, namespace string, devCloudNamespace str
 	// Attempt to delete an existing pl-cloud-config configmap.
 	delCmd := exec.Command("kubectl", "delete", "configmap", "pl-cloud-config", "-n", namespace)
 	_ = delCmd.Run()
-
+	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
+	// vzconn in that namespace.
+	if devCloudNamespace != "" {
+		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNamespace)
+	}
 	// Create a new pl-cloud-config configmap.
 	cloudAddrConf := fmt.Sprintf("--from-literal=PL_CLOUD_ADDR=%s", cloudAddr)
-	devNSConf := fmt.Sprintf("--from-literal=PL_DEV_CLOUD_NAMESPACE=%s", devCloudNamespace)
-
-	createCmd := exec.Command("kubectl", "create", "configmap", "pl-cloud-config", cloudAddrConf, devNSConf, "-n", namespace)
+	createCmd := exec.Command("kubectl", "create", "configmap", "pl-cloud-config", cloudAddrConf, "-n", namespace)
 	return createCmd.Run()
 }
 
