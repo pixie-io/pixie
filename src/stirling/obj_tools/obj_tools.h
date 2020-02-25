@@ -13,6 +13,12 @@ namespace stirling {
 namespace obj_tools {
 
 /**
+ * Returns a path to the executable of the process specified by proc_pid.
+ */
+pl::StatusOr<std::filesystem::path> GetActiveBinary(std::filesystem::path host_path,
+                                                    std::filesystem::path proc_pid);
+
+/**
  * GetActiveBinaries searches the /proc filesystem to collect all active binaries.
  * Essentially it returns the files pointed to by /proc/<pid>/exe, for all <pids>.
  *

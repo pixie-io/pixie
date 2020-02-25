@@ -28,6 +28,12 @@ TEST(GetActiveBinariesTest, CaptureTestBinary) {
       << "Should see the test process itself";
 }
 
+TEST(GetActiveBinaryTest, CaptureTestBinary) {
+  auto binary_or =
+      GetActiveBinary(/*host_path*/ {}, std::filesystem::path("/proc") / std::to_string(getpid()));
+  EXPECT_OK_AND_THAT(binary_or, EndsWith("src/stirling/obj_tools/obj_tools_test"));
+}
+
 TEST(GetSymAddrsTest, SymbolAddress) {
   CHECK(!FLAGS_go_grpc_client_path.empty())
       << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
