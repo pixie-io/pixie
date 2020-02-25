@@ -37,6 +37,24 @@ func TestWithBearerAuthMiddleware(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 }
 
+func TestWithBearerAuthMiddleware_HealthzPass(t *testing.T) {
+	env := env2.New()
+	count := 0
+	testHandler := func(w http.ResponseWriter, r *http.Request) {
+		count++
+	}
+	req, err := http.NewRequest("GET", "/healthz", nil)
+	assert.Nil(t, err)
+	rr := httptest.NewRecorder()
+
+	handler := httpmiddleware.WithBearerAuthMiddleware(
+		env, http.HandlerFunc(testHandler))
+	handler.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	assert.Equal(t, 1, count)
+}
+
 func TestWithBearerAuthMiddleware_BadBearer(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwt-key")
 	env := env2.New()

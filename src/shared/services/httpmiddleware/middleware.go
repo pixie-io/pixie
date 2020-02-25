@@ -30,6 +30,11 @@ func GetTokenFromBearer(r *http.Request) (string, bool) {
 // This middleware should be use on all services (except auth/api) to validate our tokens.
 func WithBearerAuthMiddleware(env env.Env, next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/healthz/") || r.URL.Path == "/healthz" {
+			// Skip auth for healthcheck endpoints.
+			next.ServeHTTP(w, r)
+			return
+		}
 		token, ok := GetTokenFromBearer(r)
 		if !ok {
 			http.Error(w, "Must have bearer auth", http.StatusUnauthorized)
