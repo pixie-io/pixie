@@ -6,5 +6,3 @@ resources:
 - postgres_deployment.yaml
 - postgres_service.yaml
 - postgres_persistent_volume.yaml
-- redis_service.yaml
-- redis_stateful_set.yaml
