@@ -8,7 +8,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
+	"pixielabs.ai/pixielabs/src/shared/services/env"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -17,91 +17,96 @@ import (
 
 func TestWithBearerAuthMiddleware(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwt-key")
-	env := env2.New()
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		sCtx, err := authcontext.FromContext(r.Context())
-		assert.Nil(t, err)
-		assert.NotNil(t, sCtx)
-		assert.Equal(t, "test", sCtx.Claims.GetUserClaims().UserID)
-		w.WriteHeader(http.StatusOK)
+	e := env.New()
+
+	tests := []struct {
+		Name          string
+		Authorization string
+		Path          string
+
+		ExpectAuthSuccess bool
+		// Only valid if auth is sucessful.
+		ExpectHandlerAuthError bool
+		ExpectHandlerUserID    string
+	}{
+		{
+			Name:          "Auth Success With Bearer",
+			Authorization: "Bearer " + testingutils.GenerateTestJWTToken(t, "jwt-key"),
+			Path:          "/api/users",
+
+			ExpectAuthSuccess:      true,
+			ExpectHandlerAuthError: false,
+			ExpectHandlerUserID:    "test",
+		},
+		{
+			Name: "/healthz auth bypass",
+			Path: "/healthz",
+
+			ExpectAuthSuccess: true,
+			// Not actually authorized, just bypass.
+			ExpectHandlerAuthError: true,
+		},
+		{
+			Name: "/healthz/subpath auth bypass",
+			Path: "/healthz/subpath",
+
+			ExpectAuthSuccess: true,
+			// Not actually authorized, just bypass.
+			ExpectHandlerAuthError: true,
+		},
+		{
+			Name:              "Bad Bearer",
+			Path:              "/api/users",
+			Authorization:     "Bearr " + testingutils.GenerateTestJWTToken(t, "jwt-key"),
+			ExpectAuthSuccess: false,
+		},
+		{
+			Name:              "Missing Authorization",
+			Path:              "/api/users",
+			ExpectAuthSuccess: false,
+		},
+		{
+			Name:              "Bad Token",
+			Path:              "/api/users",
+			Authorization:     "Bearer badtoken",
+			ExpectAuthSuccess: false,
+		},
 	}
-	testToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
-	req, err := http.NewRequest("GET", "/api/users", nil)
-	req.Header.Add("Authorization", "Bearer "+testToken)
-	assert.Nil(t, err)
-	rr := httptest.NewRecorder()
 
-	handler := httpmiddleware.WithBearerAuthMiddleware(
-		env, http.HandlerFunc(testHandler))
-	handler.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusOK, rr.Code)
-}
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			handlerCallCount := 0
+			testHandler := func(w http.ResponseWriter, r *http.Request) {
+				handlerCallCount++
+				sCtx, err := authcontext.FromContext(r.Context())
+				if !test.ExpectHandlerAuthError {
+					assert.Nil(t, err)
+					assert.NotNil(t, sCtx)
+					assert.Equal(t, test.ExpectHandlerUserID, sCtx.Claims.GetUserClaims().UserID)
 
-func TestWithBearerAuthMiddleware_HealthzPass(t *testing.T) {
-	env := env2.New()
-	count := 0
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		count++
+				} else {
+					assert.NotNil(t, err)
+				}
+				w.WriteHeader(http.StatusOK)
+			}
+			req, err := http.NewRequest("GET", test.Path, nil)
+			if len(test.Authorization) > 0 {
+				req.Header.Add("Authorization", test.Authorization)
+			}
+			assert.Nil(t, err)
+			rr := httptest.NewRecorder()
+
+			handler := httpmiddleware.WithBearerAuthMiddleware(
+				e, http.HandlerFunc(testHandler))
+			handler.ServeHTTP(rr, req)
+			if test.ExpectAuthSuccess {
+				assert.Equal(t, http.StatusOK, rr.Code)
+				assert.Equal(t, 1, handlerCallCount)
+			} else {
+				assert.Equal(t, http.StatusUnauthorized, rr.Code)
+				assert.Equal(t, 0, handlerCallCount)
+			}
+		})
 	}
-	req, err := http.NewRequest("GET", "/healthz", nil)
-	assert.Nil(t, err)
-	rr := httptest.NewRecorder()
 
-	handler := httpmiddleware.WithBearerAuthMiddleware(
-		env, http.HandlerFunc(testHandler))
-	handler.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	assert.Equal(t, 1, count)
-}
-
-func TestWithBearerAuthMiddleware_BadBearer(t *testing.T) {
-	viper.Set("jwt_signing_key", "jwt-key")
-	env := env2.New()
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		t.Fatal("Should not get here")
-	}
-	testToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
-	req, err := http.NewRequest("GET", "/api/users", nil)
-	req.Header.Add("Authorization", "Bearr "+testToken)
-	assert.Nil(t, err)
-	rr := httptest.NewRecorder()
-
-	handler := httpmiddleware.WithBearerAuthMiddleware(
-		env, http.HandlerFunc(testHandler))
-	handler.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-}
-
-func TestWithBearerAuthMiddleware_MissingAuthorization(t *testing.T) {
-	viper.Set("jwt_signing_key", "jwt-key")
-	env := env2.New()
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		t.Fatal("Should not get here")
-	}
-	req, err := http.NewRequest("GET", "/api/users", nil)
-	assert.Nil(t, err)
-	rr := httptest.NewRecorder()
-
-	handler := httpmiddleware.WithBearerAuthMiddleware(
-		env, http.HandlerFunc(testHandler))
-	handler.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-}
-
-func TestWithBearerAuthMiddleware_BadToken(t *testing.T) {
-	viper.Set("jwt_signing_key", "jwt-key")
-	env := env2.New()
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		t.Fatal("Should not get here")
-	}
-	req, err := http.NewRequest("GET", "/api/users", nil)
-	req.Header.Add("Authorization", "Bearer badtoken")
-	assert.Nil(t, err)
-	rr := httptest.NewRecorder()
-
-	handler := httpmiddleware.WithBearerAuthMiddleware(
-		env, http.HandlerFunc(testHandler))
-	handler.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
