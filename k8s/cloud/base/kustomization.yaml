@@ -30,4 +30,3 @@ resources:
 - artifact_tracker_deployment.yaml
 - artifact_tracker_service.yaml
 - artifact_config.yaml
-- elastic_operator.yaml
