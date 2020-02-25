@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/go-nats"
+	log "github.com/sirupsen/logrus"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messages "pixielabs.ai/pixielabs/src/shared/messages/messagespb"
 )
@@ -19,13 +20,15 @@ const MetadataPublishTopic = "cloud_metadata_updates" // TODO: Actually get the 
 type MetadataTopicListener struct {
 	sendMessage SendMessageFn
 	mds         MetadataStore
+	mh          *MetadataHandler
 }
 
 // NewMetadataTopicListener creates a new metadata topic listener.
-func NewMetadataTopicListener(mdStore MetadataStore, sendMsgFn SendMessageFn) (*MetadataTopicListener, error) {
+func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler, sendMsgFn SendMessageFn) (*MetadataTopicListener, error) {
 	return &MetadataTopicListener{
 		sendMessage: sendMsgFn,
 		mds:         mdStore,
+		mh:          mdHandler,
 	}, nil
 }
 
@@ -49,11 +52,21 @@ func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
 		}
 	}
 
-	// TODO(michelle): Subscribe to future metadata updates. This will require a
-	// little bit of refactoring in the metadata handler to do this cleanly. This will
-	// come in the next diff.
+	// Subscribe to agent updates.
+	m.mh.AddSubscriber(m)
 
 	return nil
+}
+
+// HandleUpdate sends the metadata update over the message bus.
+func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
+	if update.NodeSpecific { // The metadata update is an update for a specific agent.
+		return
+	}
+	err := m.sendUpdate(update.Message)
+	if err != nil {
+		log.WithError(err).Error("Could not send update")
+	}
 }
 
 func (m *MetadataTopicListener) sendUpdate(update *metadatapb.ResourceUpdate) error {

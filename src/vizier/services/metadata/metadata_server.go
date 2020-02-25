@@ -138,13 +138,6 @@ func main() {
 		keepAlive = false
 	}()
 
-	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent", agtMgr, mds, &isLeader)
-
-	if err != nil {
-		log.WithError(err).Fatal("Failed to connect to message bus")
-	}
-	defer mc.Close()
-
 	// Listen for K8s metadata updates.
 	mdHandler, err := controllers.NewMetadataHandler(mds, &isLeader)
 	if err != nil {
@@ -153,6 +146,13 @@ func main() {
 	mdHandler.AddSubscriber(agtMgr)
 
 	mdHandler.ProcessSubscriberUpdates()
+
+	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent", agtMgr, mds, mdHandler, &isLeader)
+
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to message bus")
+	}
+	defer mc.Close()
 
 	k8sMd, err := controllers.NewK8sMetadataController(mdHandler)
 	mds.SetClusterCIDR(k8sMd.GetClusterCIDR())

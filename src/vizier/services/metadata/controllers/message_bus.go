@@ -25,7 +25,7 @@ type MessageBusController struct {
 }
 
 // NewMessageBusController creates a new controller for handling NATS messages.
-func NewMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, mdStore MetadataStore, isLeader *bool) (*MessageBusController, error) {
+func NewMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, mdStore MetadataStore, mdHandler *MetadataHandler, isLeader *bool) (*MessageBusController, error) {
 	var conn *nats.Conn
 	var err error
 	if viper.GetBool("disable_ssl") {
@@ -45,7 +45,7 @@ func NewMessageBusController(natsURL string, agentTopic string, agentManager Age
 	subscriptions := make([]*nats.Subscription, 0)
 	mc := &MessageBusController{conn: conn, isLeader: isLeader, ch: ch, listeners: listeners, subscriptions: subscriptions}
 
-	mc.registerListeners(agentTopic, agentManager, mdStore)
+	mc.registerListeners(agentTopic, agentManager, mdStore, mdHandler)
 
 	// Start listening to messages.
 	go mc.handleMessages()
@@ -75,7 +75,7 @@ func (mc *MessageBusController) handleMessages() {
 	}
 }
 
-func (mc *MessageBusController) registerListeners(agentTopic string, agentManager AgentManager, mdStore MetadataStore) error {
+func (mc *MessageBusController) registerListeners(agentTopic string, agentManager AgentManager, mdStore MetadataStore, mdHandler *MetadataHandler) error {
 	// Register AgentTopicListener.
 	atl, err := NewAgentTopicListener(agentManager, mdStore, mc.sendMessage)
 	if err != nil {
@@ -87,7 +87,7 @@ func (mc *MessageBusController) registerListeners(agentTopic string, agentManage
 	}
 
 	// Register MetadataTopicListener.
-	ml, err := NewMetadataTopicListener(mdStore, mc.sendMessage)
+	ml, err := NewMetadataTopicListener(mdStore, mdHandler, mc.sendMessage)
 	if err != nil {
 		return err
 	}
