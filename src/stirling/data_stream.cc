@@ -12,7 +12,7 @@ DEFINE_uint32(messages_size_limit_bytes, 1024 * 1024,
 namespace pl {
 namespace stirling {
 
-void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
+void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
   uint64_t seq_num = event->attr.seq_num;
 
   // Note that the BPF code will also generate a missing sequence number when truncation occurs,
@@ -40,8 +40,8 @@ void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
   has_new_events_ = true;
 }
 
-template <typename TMessageType>
-size_t DataStream::AppendEvents(EventParser<TMessageType>* parser) const {
+template <typename TFrameType>
+size_t DataStream::AppendEvents(EventParser<TFrameType>* parser) const {
   size_t append_count = 0;
 
   // Prepare all recorded events for parsing.
@@ -109,7 +109,7 @@ ParseSyncType SelectSyncType(int64_t stuck_count) {
 
 }  // namespace
 
-// ProcessEvents() processes the events in the DataStream to extract parsed messages.
+// ProcessToRecords() processes the raw data in the DataStream to extract parsed frames.
 //
 // It considers contiguous events from the head of the stream. Any missing events in the sequence
 // are treated as lost forever; it is not expected that these events arrive in a subsequent
@@ -120,29 +120,29 @@ ParseSyncType SelectSyncType(int64_t stuck_count) {
 // independently of each other.
 //
 // To be robust to lost events, which are not necessarily aligned to parseable entity boundaries,
-// ProcessEvents() will invoke a call to ParseMessages() with a stream recovery argument when
+// ProcessToRecords() will invoke a call to ParseMessages() with a stream recovery argument when
 // necessary.
-template <typename TMessageType>
-void DataStream::ProcessEvents(MessageType type) {
-  auto& typed_messages = Messages<TMessageType>();
+template <typename TFrameType>
+void DataStream::ProcessBytesToFrames(MessageType type) {
+  auto& typed_messages = Frames<TFrameType>();
 
   // TODO(oazizi): Convert to ECHECK once we have more confidence.
-  LOG_IF(WARNING, IsEOS()) << "Calling ProcessEvents on stream that is at EOS.";
+  LOG_IF(WARNING, IsEOS()) << "Calling ProcessToRecords on stream that is at EOS.";
 
   const size_t orig_offset = offset_;
   const size_t orig_seq_num = next_seq_num_;
 
   // A description of some key variables in this function:
   //
-  // Member variables hold state across calls to ProcessEvents():
-  // - process_events_stuck_count_: Number of calls to ProcessEvents() where no progress has been
-  // made.
+  // Member variables hold state across calls to ProcessToRecords():
+  // - bytes_to_frames_stuck_count_: Number of calls to ProcessToRecords() where no progress has
+  // been made.
   //                 indicates an unparseable event at the head that is blocking progress.
   //
   // - has_new_events_: An optimization to avoid the expensive call to ParseMessages() when
   //                    nothing has changed in the DataStream. Note that we *do* want to call
   //                    ParseMessages() even when there are no new events, if the
-  //                    process_events_stuck_count_ is high enough and we want to attempt a stream
+  //                    bytes_to_frames_stuck_count_ is high enough and we want to attempt a stream
   //                    recovery.
   //
   // Local variables are intermediate computations to help simplify the code:
@@ -155,21 +155,21 @@ void DataStream::ProcessEvents(MessageType type) {
   //                 Used for the first iteration only.
 
   // We appear to be stuck with an an unparseable sequence of events blocking the head.
-  bool attempt_sync = SelectSyncType(process_events_stuck_count_) != ParseSyncType::None;
+  bool attempt_sync = SelectSyncType(bytes_to_frames_stuck_count_) != ParseSyncType::None;
 
   bool keep_processing = has_new_events_ || attempt_sync;
 
   ParseResult<BufferPosition> parse_result;
 
   while (keep_processing) {
-    EventParser<TMessageType> parser;
+    EventParser<TFrameType> parser;
 
     // Set-up events in parser.
     size_t num_events_appended = AppendEvents(&parser);
 
     // Now parse all the appended events.
     parse_result =
-        parser.ParseMessages(type, &typed_messages, SelectSyncType(process_events_stuck_count_));
+        parser.ParseMessages(type, &typed_messages, SelectSyncType(bytes_to_frames_stuck_count_));
 
     if (num_events_appended != events_.size()) {
       // We weren't able to append all events, which means we ran into a missing event.
@@ -183,7 +183,7 @@ void DataStream::ProcessEvents(MessageType type) {
       offset_ = 0;
 
       // Update stuck count so we use the correct sync type on the next iteration.
-      process_events_stuck_count_ = 0;
+      bytes_to_frames_stuck_count_ = 0;
 
       keep_processing = (parse_result.state != ParseState::kEOS);
     } else {
@@ -206,7 +206,7 @@ void DataStream::ProcessEvents(MessageType type) {
   bool events_but_no_progress =
       !events_.empty() && (next_seq_num_ == orig_seq_num) && (offset_ == orig_offset);
   if (events_but_no_progress) {
-    ++process_events_stuck_count_;
+    ++bytes_to_frames_stuck_count_;
   }
 
   if (parse_result.state == ParseState::kEOS) {
@@ -218,16 +218,16 @@ void DataStream::ProcessEvents(MessageType type) {
   has_new_events_ = false;
 }
 
-template void DataStream::ProcessEvents<http::Message>(MessageType type);
-template void DataStream::ProcessEvents<http2::Frame>(MessageType type);
-template void DataStream::ProcessEvents<mysql::Packet>(MessageType type);
-template void DataStream::ProcessEvents<cass::Frame>(MessageType type);
+template void DataStream::ProcessBytesToFrames<http::Message>(MessageType type);
+template void DataStream::ProcessBytesToFrames<http2::Frame>(MessageType type);
+template void DataStream::ProcessBytesToFrames<mysql::Packet>(MessageType type);
+template void DataStream::ProcessBytesToFrames<cass::Frame>(MessageType type);
 
 void DataStream::Reset() {
   events_.clear();
-  messages_ = std::monostate();
+  frames_ = std::monostate();
   offset_ = 0;
-  process_events_stuck_count_ = 0;
+  bytes_to_frames_stuck_count_ = 0;
   // TODO(yzhao): It's likely the case that we'll want to preserve the inflater under the situations
   // where the HEADERS frames have not been lost. Detecting and responding to them probably will
   // change the semantic of Reset(), such that it will means different thing for different

@@ -831,17 +831,17 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
   }
 }
 
-template <typename TEntryType>
+template <typename TRecordType>
 void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker,
                                           DataTable* data_table) {
-  VLOG(3) << absl::StrCat("Connection\n", tracker->DebugString<TEntryType>());
+  VLOG(3) << absl::StrCat("Connection\n", DebugString<TRecordType>(*tracker, ""));
 
   if (tracker->state() == ConnectionTracker::State::kTransferring) {
-    // ProcessMessages() parses raw events and produces messages in format that are expected by
+    // ProcessToRecords() parses raw events and produces messages in format that are expected by
     // table store. But those messages are not cached inside ConnectionTracker.
     //
     // TODO(yzhao): Consider caching produced messages if they are not transferred.
-    auto messages = tracker->ProcessMessages<TEntryType>();
+    auto messages = tracker->ProcessToRecords<TRecordType>();
     for (auto& msg : messages) {
       AppendMessage(ctx, *tracker, msg, data_table);
     }

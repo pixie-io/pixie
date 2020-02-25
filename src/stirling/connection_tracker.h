@@ -106,41 +106,44 @@ class ConnectionTracker {
   void InferConnInfo(system::ProcParser* proc_parser, system::SocketInfoManager* socket_info_mgr);
 
   /**
-   * @brief Processes the connection tracker, parsing raw events into messages,
-   * and messages into entries.
+   * @brief Processes the connection tracker, parsing raw events into frames,
+   * and frames into record.
    *
-   * @tparam TEntryType the type of the entries to be parsed.
+   * @tparam TRecordType the type of the entries to be parsed.
    * @return Vector of processed entries.
    */
-  template <typename TEntryType>
-  std::vector<TEntryType> ProcessMessages();
+  template <typename TRecordType>
+  std::vector<TRecordType> ProcessToRecords();
 
   /**
    * @brief Returns reference to current set of unconsumed requests.
-   * Note: A call to ProcessMessages() is required to parse new requests.
+   * Note: A call to ProcessBytesToFrames() is required to parse new requests.
    */
-  template <typename TMessageType>
-  std::deque<TMessageType>& req_messages() {
-    return req_data()->Messages<TMessageType>();
+  template <typename TFrameType>
+  std::deque<TFrameType>& req_frames() {
+    return req_data()->Frames<TFrameType>();
   }
   // TODO(yzhao): req_data() requires traffic_class_.role to be set. But HTTP2 uprobe tracing does
   // not set that. So send_data() is created. Investigate more unified approach.
-  template <typename TMessageType>
-  const std::deque<TMessageType>& send_data() const {
-    return send_data_.Messages<TMessageType>();
+  template <typename TFrameType>
+  const std::deque<TFrameType>& send_frames() const {
+    return send_data_.Frames<TFrameType>();
   }
+
+  const std::deque<http2::Stream>& http2_send_streams() const { return send_data_.http2_streams(); }
+  const std::deque<http2::Stream>& http2_recv_streams() const { return recv_data_.http2_streams(); }
 
   /**
    * @brief Returns reference to current set of unconsumed responses.
-   * Note: A call to ProcessMessages() is required to parse new responses.
+   * Note: A call to ProcessBytesToFrames() is required to parse new responses.
    */
-  template <typename TMessageType>
-  std::deque<TMessageType>& resp_messages() {
-    return resp_data()->Messages<TMessageType>();
+  template <typename TFrameType>
+  std::deque<TFrameType>& resp_frames() {
+    return resp_data()->Frames<TFrameType>();
   }
-  template <typename TMessageType>
-  const std::deque<TMessageType>& recv_data() const {
-    return recv_data_.Messages<TMessageType>();
+  template <typename TFrameType>
+  const std::deque<TFrameType>& recv_frames() const {
+    return recv_data_.Frames<TFrameType>();
   }
 
   /**
@@ -200,14 +203,14 @@ class ConnectionTracker {
   const SocketOpen& conn() const { return open_info_; }
 
   /**
-   * @brief Get the DataStream of sent messages for this connection.
+   * @brief Get the DataStream of sent frames for this connection.
    *
    * @return Data stream of send data.
    */
   const DataStream& send_data() const { return send_data_; }
 
   /**
-   * @brief Get the DataStream of received messages for this connection.
+   * @brief Get the DataStream of received frames for this connection.
    *
    * @return Data stream of received data.
    */
@@ -286,14 +289,14 @@ class ConnectionTracker {
 
   /**
    * @brief Updates the any state that changes per iteration on this connection tracker.
-   * Should be called once per sampling, after ProcessMessages().
+   * Should be called once per sampling, after ProcessToRecords().
    */
   void IterationPostTick();
 
   /**
    * @brief Performs any preprocessing that should happen per iteration on this
    * connection tracker.
-   * Should be called once per sampling, before ProcessMessages().
+   * Should be called once per sampling, before ProcessToRecords().
    *
    * @param proc_parser Pointer to a proc_parser for access to /proc filesystem.
    * @param connections A map of inodes to endpoint information.
@@ -305,7 +308,7 @@ class ConnectionTracker {
   /**
    * @brief Sets a the duration after which a connection is deemed to be inactive.
    * After becoming inactive, the connection may either (1) have its buffers purged,
-   * where any unparsed messages are discarded or (2) be removed entirely from the
+   * where any unparsed frames are discarded or (2) be removed entirely from the
    * set of tracked connections. The main difference between (1) and (2) are that
    * in (1) some connection information is retained in case the connection becomes
    * active again.
@@ -366,44 +369,41 @@ class ConnectionTracker {
   static constexpr int64_t kDeathCountdownIters = 3;
 
   /**
-   * Initializes protocol state for a protocol (as specified by the message type).
+   * Initializes protocol state for a protocol.
    *
    * Currently, only MySQL needs to keep a protocol state, so it has a specialization,
    * and the general template is empty.
    */
-  template <typename TMessageType>
+  template <typename TFrameType>
   void InitProtocolState() {}
 
   /**
-   * Returns the protocol state for a protocol (as specified by the message type).
-   *
-   * This function is only expected to be called in a templated environment, such as in
-   * ProcessMessages<mysql::Packet>.
+   * Returns the current protocol state for a protocol.
    */
   template <typename TProtocolStateType>
   TProtocolStateType* protocol_state() const {
     return std::get<std::unique_ptr<TProtocolStateType>>(protocol_state_).get();
   }
 
-  template <typename TMessageType>
+  template <typename TFrameType>
   void Cleanup() {
-    send_data_.CleanupMessages<TMessageType>();
-    recv_data_.CleanupMessages<TMessageType>();
+    if constexpr (std::is_same_v<TFrameType, http2::Stream>) {
+      send_data_.CleanupHTTP2Streams();
+      recv_data_.CleanupHTTP2Streams();
+    } else {
+      send_data_.CleanupFrames<TFrameType>();
+      recv_data_.CleanupFrames<TFrameType>();
+    }
 
     send_data_.CleanupEvents();
     recv_data_.CleanupEvents();
   }
 
-  template <typename TEntryType>
-  std::string DebugString(std::string_view prefix = "") const;
-
  private:
   void AddConnOpenEvent(const conn_event_t& conn_info);
   void AddConnCloseEvent(const close_event_t& close_event);
 
-  template <typename TEntryType>
-  std::vector<TEntryType> ProcessMessagesImpl();
-  template <typename TMessageType>
+  template <typename TFrameType>
   Status ExtractReqResp();
   void SetConnID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);
@@ -478,7 +478,13 @@ class ConnectionTracker {
    * that future stmt execute events can match up with the correct one using stmt_id.
    */
   std::variant<std::monostate, std::unique_ptr<mysql::State>> protocol_state_;
+
+  template <typename TRecordType>
+  friend std::string DebugString(const ConnectionTracker& c, std::string_view prefix);
 };
+
+template <typename TRecordType>
+std::string DebugString(const ConnectionTracker& c, std::string_view prefix);
 
 }  // namespace stirling
 }  // namespace pl

@@ -13,10 +13,10 @@ namespace stirling {
  * Example usage:
  *   GetMessageType<mysql::Entry>::type --> mysql::Packet
  *
- * @tparam TEntryType The higher-level entry type, which is they map 'key'.
+ * @tparam TRecordType The higher-level entry type, which is they map 'key'.
  */
 
-template <class TEntryType>
+template <class TRecordType>
 struct GetMessageType;
 
 template <>

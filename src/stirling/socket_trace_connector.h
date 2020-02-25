@@ -206,12 +206,12 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Transfer of messages to the data table.
   void TransferStreams(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
 
-  template <typename TEntryType>
+  template <typename TRecordType>
   void TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table);
 
-  template <typename TEntryType>
+  template <typename TRecordType>
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
-                            TEntryType record, DataTable* data_table);
+                            TRecordType record, DataTable* data_table);
 
   // HTTP-specific helper function.
   static bool SelectMessage(const http::Record& record);

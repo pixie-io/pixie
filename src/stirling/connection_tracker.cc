@@ -119,11 +119,11 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
   switch (event->attr.direction) {
     case TrafficDirection::kEgress: {
-      send_data_.AddEvent(std::move(event));
+      send_data_.AddData(std::move(event));
       ++num_send_events_;
     } break;
     case TrafficDirection::kIngress: {
-      recv_data_.AddEvent(std::move(event));
+      recv_data_.AddData(std::move(event));
       ++num_recv_events_;
     } break;
   }
@@ -138,10 +138,10 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
   bool client_stream = (stream_id % 2 == 1);
 
   if (client_stream) {
-    streams_deque_ptr = &(client_streams_.Messages<http2::Stream>());
+    streams_deque_ptr = &(client_streams_.http2_streams());
     oldest_active_stream_id_ptr = &oldest_active_client_stream_id_;
   } else {
-    streams_deque_ptr = &(server_streams_.Messages<http2::Stream>());
+    streams_deque_ptr = &(server_streams_.http2_streams());
     oldest_active_stream_id_ptr = &oldest_active_server_stream_id_;
   }
 
@@ -354,45 +354,34 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   half_stream_ptr->UpdateTimestamp(data->attr.timestamp_ns);
 }
 
-template <typename TMessageType>
+template <typename TFrameType>
 Status ConnectionTracker::ExtractReqResp() {
   DataStream* resp_data_ptr = resp_data();
-  if (resp_data_ptr == nullptr) {
-    return error::Internal("Unexpected nullptr for resp_data");
-  }
-  resp_data_ptr->template ProcessEvents<TMessageType>(MessageType::kResponse);
+  DCHECK(resp_data_ptr != nullptr);
+  resp_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kResponse);
 
   DataStream* req_data_ptr = req_data();
-  if (req_data_ptr == nullptr) {
-    return error::Internal("Unexpected nullptr for req_data");
-  }
-  req_data_ptr->template ProcessEvents<TMessageType>(MessageType::kRequest);
+  DCHECK(req_data_ptr != nullptr);
+  req_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kRequest);
 
   return Status::OK();
 }
 
-template <typename TEntryType>
-std::vector<TEntryType> ConnectionTracker::ProcessMessages() {
-  // TODO(yzhao): Consider rename ProcessMessagesImpl() to ProcessMessages() if we end up not
-  // needing this indirection.
-  return ProcessMessagesImpl<TEntryType>();
-}
-
 template <>
-std::vector<http::Record> ConnectionTracker::ProcessMessagesImpl() {
+std::vector<http::Record> ConnectionTracker::ProcessToRecords() {
   Status s = ExtractReqResp<http::Message>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
     return {};
   }
 
-  auto& req_messages = req_data()->Messages<http::Message>();
-  auto& resp_messages = resp_data()->Messages<http::Message>();
+  auto& req_frames = req_data()->Frames<http::Message>();
+  auto& resp_frames = resp_data()->Frames<http::Message>();
 
   // Match request response pairs.
   std::vector<http::Record> trace_records;
-  for (auto req_iter = req_messages.begin(), resp_iter = resp_messages.begin();
-       req_iter != req_messages.end() && resp_iter != resp_messages.end();) {
+  for (auto req_iter = req_frames.begin(), resp_iter = resp_frames.begin();
+       req_iter != req_frames.end() && resp_iter != resp_frames.end();) {
     http::Message& req = *req_iter;
     http::Message& resp = *resp_iter;
 
@@ -401,7 +390,7 @@ std::vector<http::Record> ConnectionTracker::ProcessMessagesImpl() {
       // This means the corresponding request was not traced.
       // Push without request.
       http::Record record{http::Message(), std::move(resp)};
-      resp_messages.pop_front();
+      resp_frames.pop_front();
       trace_records.push_back(std::move(record));
       ++resp_iter;
     } else {
@@ -411,8 +400,8 @@ std::vector<http::Record> ConnectionTracker::ProcessMessagesImpl() {
       // With missing messages, there are no guarantees.
       // With no missing messages and pipelining, it's even more complicated.
       http::Record record{std::move(req), std::move(resp)};
-      req_messages.pop_front();
-      resp_messages.pop_front();
+      req_frames.pop_front();
+      resp_frames.pop_front();
       trace_records.push_back(std::move(record));
       ++resp_iter;
       ++req_iter;
@@ -420,12 +409,12 @@ std::vector<http::Record> ConnectionTracker::ProcessMessagesImpl() {
   }
 
   // Any leftover responses must have lost their requests.
-  for (auto resp_iter = resp_messages.begin(); resp_iter != resp_messages.end(); ++resp_iter) {
+  for (auto resp_iter = resp_frames.begin(); resp_iter != resp_frames.end(); ++resp_iter) {
     http::Message& resp = *resp_iter;
     http::Record record{http::Message(), std::move(resp)};
     trace_records.push_back(std::move(record));
   }
-  resp_messages.clear();
+  resp_frames.clear();
 
   // Any leftover requests are left around for the next iteration,
   // since the response may not have been traced yet.
@@ -438,7 +427,7 @@ std::vector<http::Record> ConnectionTracker::ProcessMessagesImpl() {
 }
 
 template <>
-std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
+std::vector<http2::Record> ConnectionTracker::ProcessToRecords() {
   Status s = ExtractReqResp<http2::Frame>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
@@ -451,15 +440,15 @@ std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
   DataStream* req_stream = req_data();
   DataStream* resp_stream = resp_data();
 
-  auto& req_messages = req_stream->Messages<http2::Frame>();
-  auto& resp_messages = resp_stream->Messages<http2::Frame>();
+  auto& req_frames = req_stream->Frames<http2::Frame>();
+  auto& resp_frames = resp_stream->Frames<http2::Frame>();
 
-  StitchAndInflateHeaderBlocks(req_stream->HTTP2Inflater()->inflater(), &req_messages);
-  StitchAndInflateHeaderBlocks(resp_stream->HTTP2Inflater()->inflater(), &resp_messages);
+  StitchAndInflateHeaderBlocks(req_stream->HTTP2Inflater()->inflater(), &req_frames);
+  StitchAndInflateHeaderBlocks(resp_stream->HTTP2Inflater()->inflater(), &resp_frames);
 
   // First stitch all frames to form gRPC messages.
-  ParseState req_stitch_state = StitchFramesToGRPCMessages(req_messages, &reqs);
-  ParseState resp_stitch_state = StitchFramesToGRPCMessages(resp_messages, &resps);
+  ParseState req_stitch_state = StitchFramesToGRPCMessages(req_frames, &reqs);
+  ParseState resp_stitch_state = StitchFramesToGRPCMessages(resp_frames, &resps);
 
   std::vector<http2::Record> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
 
@@ -471,8 +460,8 @@ std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
     trace_records.push_back(tmp);
   }
 
-  http2::EraseConsumedFrames(&req_messages);
-  http2::EraseConsumedFrames(&resp_messages);
+  http2::EraseConsumedFrames(&req_frames);
+  http2::EraseConsumedFrames(&resp_frames);
 
   // Reset streams, if necessary, after erasing the consumed frames. Otherwise, frames will be
   // deleted twice.
@@ -494,7 +483,7 @@ std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
 
   // TODO(yzhao): Template makes the type parameter not working for gRPC, as gRPC returns different
   // type than the type parameter. Figure out how to mitigate the conflicts, so this call can be
-  // lifted to ProcessMessages().
+  // lifted to ProcessToRecords().
   Cleanup<http2::Frame>();
 
   return trace_records;
@@ -503,7 +492,7 @@ std::vector<http2::Record> ConnectionTracker::ProcessMessagesImpl() {
 namespace {
 void ProcessHTTP2Streams(DataStream* stream_ptr, uint32_t* oldest_active_stream_id_ptr,
                          std::vector<http2::NewRecord>* trace_records) {
-  auto& http2_streams = stream_ptr->Messages<http2::Stream>();
+  auto& http2_streams = stream_ptr->http2_streams();
 
   int count_head_consumed = 0;
   bool skipped = false;
@@ -533,7 +522,7 @@ void ProcessHTTP2Streams(DataStream* stream_ptr, uint32_t* oldest_active_stream_
 }  // namespace
 
 template <>
-std::vector<http2::NewRecord> ConnectionTracker::ProcessMessagesImpl() {
+std::vector<http2::NewRecord> ConnectionTracker::ProcessToRecords() {
   // TODO(oazizi): ECHECK that raw events are empty.
 
   std::vector<http2::NewRecord> trace_records;
@@ -547,7 +536,7 @@ std::vector<http2::NewRecord> ConnectionTracker::ProcessMessagesImpl() {
 }
 
 template <>
-std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
+std::vector<mysql::Record> ConnectionTracker::ProcessToRecords() {
   Status s = ExtractReqResp<mysql::Packet>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
@@ -556,14 +545,14 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
 
   InitProtocolState<mysql::Packet>();
 
-  auto& req_messages = req_data()->Messages<mysql::Packet>();
-  auto& resp_messages = resp_data()->Messages<mysql::Packet>();
+  auto& req_frames = req_data()->Frames<mysql::Packet>();
+  auto& resp_frames = resp_data()->Frames<mysql::Packet>();
 
   auto state_ptr = protocol_state<mysql::State>();
 
   // ProcessMySQLPackets handles errors internally.
   std::vector<mysql::Record> result =
-      mysql::ProcessMySQLPackets(&req_messages, &resp_messages, state_ptr);
+      mysql::ProcessMySQLPackets(&req_frames, &resp_frames, state_ptr);
 
   Cleanup<mysql::Packet>();
 
@@ -571,17 +560,17 @@ std::vector<mysql::Record> ConnectionTracker::ProcessMessagesImpl() {
 }
 
 template <>
-std::vector<cass::Record> ConnectionTracker::ProcessMessagesImpl() {
+std::vector<cass::Record> ConnectionTracker::ProcessToRecords() {
   Status s = ExtractReqResp<cass::Frame>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
     return {};
   }
 
-  auto& req_messages = req_data()->Messages<cass::Frame>();
-  auto& resp_messages = resp_data()->Messages<cass::Frame>();
+  auto& req_frames = req_data()->Frames<cass::Frame>();
+  auto& resp_frames = resp_data()->Frames<cass::Frame>();
 
-  std::vector<cass::Record> result = cass::ProcessFrames(&req_messages, &resp_messages);
+  std::vector<cass::Record> result = cass::ProcessFrames(&req_frames, &resp_frames);
 
   // TODO(oazizi): Enable the cleanup code below.
   // Cleanup<cass::Frame>();
@@ -925,35 +914,31 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   conn_resolver_.reset();
 }
 
-template <typename TEntryType>
-std::string ConnectionTracker::DebugString(std::string_view prefix) const {
+template <typename TRecordType>
+std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
   std::string info;
-  info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, pid(), fd(), generation());
-  info += absl::Substitute("state=$0\n", magic_enum::enum_name(state()));
-  info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, remote_endpoint().AddrStr(),
-                           remote_endpoint().port);
-  info += absl::Substitute("$0protocol=$1\n", prefix, magic_enum::enum_name(protocol()));
+  info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, c.pid(), c.fd(), c.generation());
+  info += absl::Substitute("state=$0\n", magic_enum::enum_name(c.state()));
+  info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, c.remote_endpoint().AddrStr(),
+                           c.remote_endpoint().port);
+  info += absl::Substitute("$0protocol=$1\n", prefix, magic_enum::enum_name(c.protocol()));
   info += absl::Substitute("$0recv queue\n", prefix);
-  info += recv_data().DebugString<typename GetMessageType<TEntryType>::type>(
-      absl::StrCat(prefix, "  "));
+  info += DebugString<typename GetMessageType<TRecordType>::type>(c.recv_data(),
+                                                                  absl::StrCat(prefix, "  "));
   info += absl::Substitute("$0send queue\n", prefix);
-  info += send_data().DebugString<typename GetMessageType<TEntryType>::type>(
-      absl::StrCat(prefix, "  "));
+  info += DebugString<typename GetMessageType<TRecordType>::type>(c.send_data(),
+                                                                  absl::StrCat(prefix, "  "));
   return info;
 }
 
-template std::vector<http::Record> ConnectionTracker::ProcessMessages();
-template std::vector<http2::Record> ConnectionTracker::ProcessMessages();
-template std::vector<mysql::Record> ConnectionTracker::ProcessMessages();
-template std::vector<http2::NewRecord> ConnectionTracker::ProcessMessages();
-template std::vector<cass::Record> ConnectionTracker::ProcessMessages();
-
-template std::string ConnectionTracker::DebugString<http::Record>(std::string_view prefix) const;
-template std::string ConnectionTracker::DebugString<http2::Record>(std::string_view prefix) const;
-template std::string ConnectionTracker::DebugString<http2::NewRecord>(
-    std::string_view prefix) const;
-template std::string ConnectionTracker::DebugString<mysql::Record>(std::string_view prefix) const;
-template std::string ConnectionTracker::DebugString<cass::Record>(std::string_view prefix) const;
+template std::string DebugString<http::Record>(const ConnectionTracker& c, std::string_view prefix);
+template std::string DebugString<http2::Record>(const ConnectionTracker& c,
+                                                std::string_view prefix);
+template std::string DebugString<http2::NewRecord>(const ConnectionTracker& c,
+                                                   std::string_view prefix);
+template std::string DebugString<mysql::Record>(const ConnectionTracker& c,
+                                                std::string_view prefix);
+template std::string DebugString<cass::Record>(const ConnectionTracker& c, std::string_view prefix);
 
 }  // namespace stirling
 }  // namespace pl

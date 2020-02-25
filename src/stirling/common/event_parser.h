@@ -49,28 +49,28 @@ struct ParseResult {
 /**
  * Attempt to find the next message boundary.
  *
- * @tparam TMessageType Message type to search for.
+ * @tparam TFrameType Message type to search for.
  * @param type request or response.
  * @param buf the buffer in which to search for a message boundary.
  * @param start_pos A start position from which to search.
  * @return Either the position of a message start, if found (must be > start_pos),
  * or std::string::npos if no such message start was found.
  */
-template <typename TMessageType>
+template <typename TFrameType>
 size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos);
 
 /**
- * Parses the input string as a sequence of TMessageType, and write the messages to messages.
+ * Parses the input string as a sequence of TFrameType, and write the messages to messages.
  *
- * @tparam TMessageType Message type to parse.
+ * @tparam TFrameType Message type to parse.
  * @param type selects whether to parse for request or response.
  * @param buf the buffer of data to parse as messages.
  * @param messages the parsed messages
  * @return result of the parse, including positions in the source buffer where messages were found.
  */
-template <typename TMessageType>
+template <typename TFrameType>
 ParseResult<size_t> ParseFrame(MessageType type, std::string_view buf,
-                               std::deque<TMessageType>* messages);
+                               std::deque<TFrameType>* messages);
 
 enum class ParseSyncType {
   // Do not perform a message boundary sync.
@@ -140,7 +140,7 @@ class PositionConverter {
  * @brief Parses a stream of events traced from write/send/read/recv syscalls,
  * and emits as many complete parsed messages as it can.
  */
-template <typename TMessageType>
+template <typename TFrameType>
 class EventParser {
  public:
   /**
@@ -165,7 +165,7 @@ class EventParser {
    *
    * @return ParseResult with locations where parseable messages were found in the source buffer.
    */
-  ParseResult<BufferPosition> ParseMessages(MessageType type, std::deque<TMessageType>* messages,
+  ParseResult<BufferPosition> ParseMessages(MessageType type, std::deque<TFrameType>* messages,
                                             ParseSyncType sync_type = ParseSyncType::None) {
     std::string buf = Combine();
 
@@ -173,7 +173,7 @@ class EventParser {
     if (sync_type != ParseSyncType::None) {
       VLOG(3) << "Finding message boundary";
       const bool force_movement = sync_type == ParseSyncType::Aggressive;
-      start_pos = FindFrameBoundary<TMessageType>(type, buf, force_movement);
+      start_pos = FindFrameBoundary<TFrameType>(type, buf, force_movement);
 
       // Couldn't find a boundary, so stay where we are.
       // Chances are we won't be able to parse, but we have no other option.

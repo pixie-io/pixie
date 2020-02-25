@@ -33,43 +33,50 @@ class DataStream {
    * Uses seq_num inside the SocketDataEvent to determine the sequence spot.
    * @param event The data.
    */
-  void AddEvent(std::unique_ptr<SocketDataEvent> event);
+  void AddData(std::unique_ptr<SocketDataEvent> event);
 
   /**
    * @brief Parses as many messages as it can from the raw events into the messages container.
-   * @tparam TMessageType The parsed message type within the deque.
+   * @tparam TFrameType The parsed message type within the deque.
    * @param type whether to parse as requests, responses or mixed traffic.
    * @return deque of parsed messages.
    */
-  template <typename TMessageType>
-  void ProcessEvents(MessageType type);
+  template <typename TFrameType>
+  void ProcessBytesToFrames(MessageType type);
 
   /**
-   * Returns the current set of parsed messages.
-   * @tparam TMessageType The parsed message type within the deque.
-   * @return deque of messages.
+   * Returns the current set of parsed frames.
+   * @tparam TFrameType The parsed frame type within the deque.
+   * @return deque of frames.
    */
-  template <typename TMessageType>
-  std::deque<TMessageType>& Messages() {
-    DCHECK(std::holds_alternative<std::monostate>(messages_) ||
-           std::holds_alternative<std::deque<TMessageType>>(messages_))
+  template <typename TFrameType>
+  std::deque<TFrameType>& Frames() {
+    DCHECK(std::holds_alternative<std::monostate>(frames_) ||
+           std::holds_alternative<std::deque<TFrameType>>(frames_))
         << absl::Substitute(
                "Must hold the default std::monostate, or the same type as requested. "
                "I.e., ConnectionTracker cannot change the type it holds during runtime. $0 -> $1",
-               messages_.index(), typeid(TMessageType).name());
-    if (std::holds_alternative<std::monostate>(messages_)) {
+               frames_.index(), typeid(TFrameType).name());
+    if (std::holds_alternative<std::monostate>(frames_)) {
       // Reset the type to the expected type.
-      messages_ = std::deque<TMessageType>();
+      frames_ = std::deque<TFrameType>();
     }
-    return std::get<std::deque<TMessageType>>(messages_);
+    return std::get<std::deque<TFrameType>>(frames_);
   }
 
-  template <typename TMessageType>
-  const std::deque<TMessageType>& Messages() const {
-    DCHECK(std::holds_alternative<std::deque<TMessageType>>(messages_))
+  template <typename TFrameType>
+  const std::deque<TFrameType>& Frames() const {
+    DCHECK(std::holds_alternative<std::deque<TFrameType>>(frames_))
         << "Must hold the same type as requested.";
-    return std::get<std::deque<TMessageType>>(messages_);
+    return std::get<std::deque<TFrameType>>(frames_);
   }
+
+  /**
+   * Returns the current set of streams (for Uprobe-based HTTP2 only)
+   * @return deque of streams.
+   */
+  std::deque<http2::Stream>& http2_streams() { return http2_streams_; }
+  const std::deque<http2::Stream>& http2_streams() const { return http2_streams_; }
 
   /**
    * @brief Clears all unparsed and parsed data from the Datastream.
@@ -80,10 +87,10 @@ class DataStream {
    * @brief Checks if the DataStream is empty of both raw events and parsed messages.
    * @return true if empty of all data.
    */
-  template <typename TMessageType>
+  template <typename TFrameType>
   bool Empty() const {
-    return events_.empty() && (std::holds_alternative<std::monostate>(messages_) ||
-                               std::get<std::deque<TMessageType>>(messages_).empty());
+    return events_.empty() && (std::holds_alternative<std::monostate>(frames_) ||
+                               std::get<std::deque<TFrameType>>(frames_).empty());
   }
   const auto& events() const { return events_; }
 
@@ -95,7 +102,7 @@ class DataStream {
    */
   bool IsStuck() const {
     constexpr int kMaxStuckCount = 3;
-    return process_events_stuck_count_ > kMaxStuckCount;
+    return bytes_to_frames_stuck_count_ > kMaxStuckCount;
   }
 
   /**
@@ -117,23 +124,45 @@ class DataStream {
   }
 
   /**
-   * @brief Cleanup messages that are parsed from the BPF events, when the condition is right.
+   * @brief Cleanup frames that are parsed from the BPF events, when the condition is right.
    */
-  template <typename TMessageType>
-  void CleanupMessages() {
+  template <typename TFrameType>
+  void CleanupFrames() {
     size_t size = 0;
     // TODO(yzhao): Consider put the size computation into a member function of DataStream.
-    for (const auto& msg : Messages<TMessageType>()) {
+    for (const auto& msg : Frames<TFrameType>()) {
       size += msg.ByteSize();
     }
     if (size > FLAGS_messages_size_limit_bytes) {
       LOG(WARNING) << absl::Substitute(
           "Messages are cleared, because their size $0 is larger than the specified limit $1.",
           size, FLAGS_messages_size_limit_bytes);
-      Messages<TMessageType>().clear();
+      Frames<TFrameType>().clear();
     }
-    EraseExpiredMessages(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),
-                         &Messages<TMessageType>());
+    EraseExpiredFrames(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),
+                       &Frames<TFrameType>());
+  }
+
+  /**
+   * @brief Cleanup HTTP2 that are received from the BPF uprobe events, when the condition is right.
+   */
+  void CleanupHTTP2Streams() {
+    // TODO(yzhao): Consider put the size computation into a member function of DataStream.
+    size_t size = 0;
+    for (const auto& stream : http2_streams()) {
+      size += stream.ByteSize();
+    }
+
+    if (size > FLAGS_messages_size_limit_bytes) {
+      LOG(WARNING) << absl::Substitute(
+          "HTTP2 Streams were cleared, because their size $0 is larger than the specified limit "
+          "$1.",
+          size, FLAGS_messages_size_limit_bytes);
+      http2_streams().clear();
+    }
+
+    EraseExpiredFrames(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),
+                       &http2_streams());
   }
 
   /**
@@ -147,26 +176,9 @@ class DataStream {
     }
   }
 
-  template <typename TMessageType>
-  std::string DebugString(std::string_view prefix = "") const {
-    std::string info;
-    info += absl::Substitute("$0raw events=$1\n", prefix, events_.size());
-    int messages_size;
-    if (std::holds_alternative<std::deque<TMessageType>>(messages_)) {
-      messages_size = std::get<std::deque<TMessageType>>(messages_).size();
-    } else if (std::holds_alternative<std::monostate>(messages_)) {
-      messages_size = 0;
-    } else {
-      messages_size = -1;
-      LOG(DFATAL) << "Bad variant access";
-    }
-    info += absl::Substitute("$0parsed messages=$1\n", prefix, messages_size);
-    return info;
-  }
-
  private:
-  template <typename TMessageType>
-  static void EraseExpiredMessages(std::chrono::seconds exp_dur, std::deque<TMessageType>* msgs) {
+  template <typename TFrameType>
+  static void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TFrameType>* msgs) {
     auto iter = msgs->begin();
     for (; iter != msgs->end(); ++iter) {
       auto frame_age = std::chrono::duration_cast<std::chrono::seconds>(
@@ -190,8 +202,8 @@ class DataStream {
 
   // Helper function that appends all contiguous events to the parser.
   // Returns number of events appended.
-  template <typename TMessageType>
-  size_t AppendEvents(EventParser<TMessageType>* parser) const;
+  template <typename TFrameType>
+  size_t AppendEvents(EventParser<TFrameType>* parser) const;
 
   // Raw data events from BPF.
   // TODO(oazizi/yzhao): Convert this to vector or deque.
@@ -216,18 +228,22 @@ class DataStream {
   // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
   std::variant<std::monostate, std::deque<http::Message>, std::deque<http2::Frame>,
-               std::deque<http2::Stream>, std::deque<mysql::Packet>, std::deque<cass::Frame>>
-      messages_;
+               std::deque<mysql::Packet>, std::deque<cass::Frame>>
+      frames_;
+
+  // Used by Uprobe-based HTTP2 only.
+  std::deque<http2::Stream> http2_streams_;
 
   // The following state keeps track of whether the raw events were touched or not since the last
-  // call to ProcessEvents(). It enables ProcessEvents() to exit early if nothing has changed.
+  // call to ProcessBytesToFrames(). It enables ProcessToRecords() to exit early if nothing has
+  // changed.
   bool has_new_events_ = false;
 
-  // Number of consecutive calls to ProcessEvents(), where there are a non-zero number of events,
+  // Number of consecutive calls to ProcessToRecords(), where there are a non-zero number of events,
   // but no parsed messages are produced.
-  int process_events_stuck_count_ = 0;
+  int bytes_to_frames_stuck_count_ = 0;
 
-  // A copy of the parse state from the last call to ProcessEvents().
+  // A copy of the parse state from the last call to ProcessToRecords().
   ParseState last_parse_state_ = ParseState::kInvalid;
 
   // Only meaningful for kprobe HTTP2 tracing. Uprobe tracing extracts plain text header fields from
@@ -235,7 +251,36 @@ class DataStream {
   //
   // TODO(yzhao): We can put this into a std::variant.
   std::unique_ptr<http2::Inflater> inflater_;
+
+  template <typename TFrameType>
+  friend std::string DebugString(const DataStream& d, std::string_view prefix);
 };
+
+// Note: can't make DebugString a class member because of GCC restrictions.
+
+template <typename TFrameType>
+inline std::string DebugString(const DataStream& d, std::string_view prefix) {
+  std::string info;
+  info += absl::Substitute("$0raw events=$1\n", prefix, d.events().size());
+  int frames_size;
+  if (std::holds_alternative<std::deque<TFrameType>>(d.frames_)) {
+    frames_size = std::get<std::deque<TFrameType>>(d.frames_).size();
+  } else if (std::holds_alternative<std::monostate>(d.frames_)) {
+    frames_size = 0;
+  } else {
+    frames_size = -1;
+    LOG(DFATAL) << "Bad variant access";
+  }
+  info += absl::Substitute("$0parsed frames=$1\n", prefix, frames_size);
+  return info;
+}
+
+template <>
+inline std::string DebugString<http2::Stream>(const DataStream& d, std::string_view prefix) {
+  std::string info;
+  info += absl::Substitute("$0active streams=$1\n", prefix, d.http2_streams().size());
+  return info;
+}
 
 }  // namespace stirling
 }  // namespace pl
