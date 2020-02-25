@@ -9,6 +9,7 @@ import (
 	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	types "pixielabs.ai/pixielabs/src/shared/types"
+	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 )
@@ -373,4 +374,37 @@ func (m *MockMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.R
 // GetMetadataUpdates indicates an expected call of GetMetadataUpdates
 func (mr *MockMetadataStoreMockRecorder) GetMetadataUpdates(hostname interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadataUpdates", reflect.TypeOf((*MockMetadataStore)(nil).GetMetadataUpdates), hostname)
+}
+
+// MockMetadataSubscriber is a mock of MetadataSubscriber interface
+type MockMetadataSubscriber struct {
+	ctrl     *gomock.Controller
+	recorder *MockMetadataSubscriberMockRecorder
+}
+
+// MockMetadataSubscriberMockRecorder is the mock recorder for MockMetadataSubscriber
+type MockMetadataSubscriberMockRecorder struct {
+	mock *MockMetadataSubscriber
+}
+
+// NewMockMetadataSubscriber creates a new mock instance
+func NewMockMetadataSubscriber(ctrl *gomock.Controller) *MockMetadataSubscriber {
+	mock := &MockMetadataSubscriber{ctrl: ctrl}
+	mock.recorder = &MockMetadataSubscriberMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMetadataSubscriber) EXPECT() *MockMetadataSubscriberMockRecorder {
+	return m.recorder
+}
+
+// HandleUpdate mocks base method
+func (m *MockMetadataSubscriber) HandleUpdate(arg0 *controllers.UpdateMessage) {
+	m.ctrl.Call(m, "HandleUpdate", arg0)
+}
+
+// HandleUpdate indicates an expected call of HandleUpdate
+func (mr *MockMetadataSubscriberMockRecorder) HandleUpdate(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleUpdate", reflect.TypeOf((*MockMetadataSubscriber)(nil).HandleUpdate), arg0)
 }

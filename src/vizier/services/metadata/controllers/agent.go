@@ -59,6 +59,7 @@ type AgentManager interface {
 	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
 
 	ApplyAgentUpdate(update *AgentUpdate) error
+	HandleUpdate(*UpdateMessage)
 }
 
 // AgentManagerImpl is an implementation for AgentManager which talks to the metadata store.
@@ -356,6 +357,42 @@ func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) ([]*metadatapb.Reso
 	}
 
 	return nil, nil
+}
+
+// HandleUpdate processes a metadata update and adds it to the appropriate agent queues.
+func (m *AgentManagerImpl) HandleUpdate(update *UpdateMessage) {
+	updatePb := update.Message
+	hostnames := update.Hostnames
+	nodeSpecific := update.NodeSpecific
+
+	agents, err := m.mds.GetAgentsForHostnames(&hostnames)
+	if err != nil {
+		return
+	}
+
+	log.WithField("agents", agents).WithField("hostnames", hostnames).
+		WithField("update", updatePb).Infof("Adding update to agent queue for agents")
+
+	allAgents := make([]string, len(agents))
+	copy(allAgents, agents)
+
+	if !nodeSpecific {
+		// This update is not for a specific node. Send to Kelvins as well.
+		kelvinIDs, err := m.mds.GetKelvinIDs()
+		if err != nil {
+			log.WithError(err).Error("Could not get kelvin IDs")
+		} else {
+			allAgents = append(allAgents, kelvinIDs...)
+		}
+		log.WithField("kelvins", kelvinIDs).WithField("update", updatePb).Infof("Adding update to agent queue for kelvins")
+	}
+
+	for _, agent := range allAgents {
+		err = m.AddUpdatesToAgentQueue(agent, []*metadatapb.ResourceUpdate{updatePb})
+		if err != nil {
+			log.WithError(err).Error("Could not write service update to agent update queue.")
+		}
+	}
 }
 
 // AddUpdatesToAgentQueue adds the given updates in order to the agent's update queue.

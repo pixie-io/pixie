@@ -146,12 +146,13 @@ func main() {
 	defer mc.Close()
 
 	// Listen for K8s metadata updates.
-	mdHandler, err := controllers.NewMetadataHandler(mds, &isLeader, agtMgr)
+	mdHandler, err := controllers.NewMetadataHandler(mds, &isLeader)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create metadata handler")
 	}
+	mdHandler.AddSubscriber(agtMgr)
 
-	mdHandler.ProcessAgentUpdates()
+	mdHandler.ProcessSubscriberUpdates()
 
 	k8sMd, err := controllers.NewK8sMetadataController(mdHandler)
 	mds.SetClusterCIDR(k8sMd.GetClusterCIDR())

@@ -170,3 +170,13 @@ func (m *MockAgentManager) ApplyAgentUpdate(update *controllers.AgentUpdate) err
 func (mr *MockAgentManagerMockRecorder) ApplyAgentUpdate(update interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyAgentUpdate", reflect.TypeOf((*MockAgentManager)(nil).ApplyAgentUpdate), update)
 }
+
+// HandleUpdate mocks base method
+func (m *MockAgentManager) HandleUpdate(arg0 *controllers.UpdateMessage) {
+	m.ctrl.Call(m, "HandleUpdate", arg0)
+}
+
+// HandleUpdate indicates an expected call of HandleUpdate
+func (mr *MockAgentManagerMockRecorder) HandleUpdate(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleUpdate", reflect.TypeOf((*MockAgentManager)(nil).HandleUpdate), arg0)
+}

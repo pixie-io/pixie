@@ -705,3 +705,35 @@ func TestAgent_GetFromAgentQueue(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(resp))
 }
+
+func TestAgent_HandleUpdate(t *testing.T) {
+	_, agtMgr := setupAgentManager(t)
+
+	update := &controllers.UpdateMessage{
+		Hostnames:    []string{"testhost"},
+		NodeSpecific: false,
+		Message: &metadatapb.ResourceUpdate{
+			Update: &metadatapb.ResourceUpdate_PodUpdate{
+				PodUpdate: &metadatapb.PodUpdate{
+					UID:  "podUid1",
+					Name: "podName",
+				},
+			},
+		},
+	}
+	agtMgr.HandleUpdate(update)
+
+	resp, err := agtMgr.GetFromAgentQueue(testutils.ExistingAgentUUID)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(resp))
+	assert.Equal(t, "podUid1", resp[0].GetPodUpdate().UID)
+
+	resp, err = agtMgr.GetFromAgentQueue(testutils.UnhealthyKelvinAgentUUID)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(resp))
+	assert.Equal(t, "podUid1", resp[0].GetPodUpdate().UID)
+
+	resp, err = agtMgr.GetFromAgentQueue(testutils.UnhealthyAgentUUID)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(resp))
+}

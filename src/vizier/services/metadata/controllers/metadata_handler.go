@@ -19,7 +19,7 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
-const maxAgentUpdates = 10000
+const maxSubscriberUpdates = 10000
 
 // MetadataStore is the interface for our metadata store.
 type MetadataStore interface {
@@ -52,6 +52,11 @@ type MetadataStore interface {
 	GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error)
 }
 
+// MetadataSubscriber is a consumer of metadata updates.
+type MetadataSubscriber interface {
+	HandleUpdate(*UpdateMessage)
+}
+
 // K8sMessage is a message for K8s metadata events/updates.
 type K8sMessage struct {
 	Object     runtime.Object
@@ -62,36 +67,36 @@ type K8sMessage struct {
 // UpdateMessage is an update message for a specific hostname.
 type UpdateMessage struct {
 	Message      *metadatapb.ResourceUpdate
-	Hostnames    *[]string
+	Hostnames    []string
 	NodeSpecific bool // Specifies whether the update should only be sent to a specific node.
 }
 
 // MetadataHandler processes messages in its channel.
 type MetadataHandler struct {
-	ch            chan *K8sMessage
-	mds           MetadataStore
-	agentUpdateCh chan *UpdateMessage
-	clock         utils.Clock
-	isLeader      *bool
-	agentManager  AgentManager
+	ch                chan *K8sMessage
+	mds               MetadataStore
+	subscriberUpdates chan *UpdateMessage
+	clock             utils.Clock
+	isLeader          *bool
+	subscribers       []MetadataSubscriber
 
 	// This is a cache of all the leader election message.
 	leaderMsgs map[k8stypes.UID]*v1.Endpoints
 }
 
 // NewMetadataHandlerWithClock creates a new metadata handler with a clock.
-func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, agtMgr AgentManager, clock utils.Clock) (*MetadataHandler, error) {
+func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, clock utils.Clock) (*MetadataHandler, error) {
 	c := make(chan *K8sMessage)
-	agentUpdateCh := make(chan *UpdateMessage, maxAgentUpdates)
+	subscriberUpdates := make(chan *UpdateMessage, maxSubscriberUpdates)
 
 	mh := &MetadataHandler{
-		ch:            c,
-		mds:           mds,
-		agentUpdateCh: agentUpdateCh,
-		clock:         clock,
-		isLeader:      isLeader,
-		agentManager:  agtMgr,
-		leaderMsgs:    make(map[k8stypes.UID]*v1.Endpoints),
+		ch:                c,
+		mds:               mds,
+		subscriberUpdates: subscriberUpdates,
+		clock:             clock,
+		isLeader:          isLeader,
+		leaderMsgs:        make(map[k8stypes.UID]*v1.Endpoints),
+		subscribers:       make([]MetadataSubscriber, 0),
 	}
 
 	go mh.MetadataListener()
@@ -100,9 +105,9 @@ func NewMetadataHandlerWithClock(mds MetadataStore, isLeader *bool, agtMgr Agent
 }
 
 // NewMetadataHandler creates a new metadata handler.
-func NewMetadataHandler(mds MetadataStore, isLeader *bool, agtMgr AgentManager) (*MetadataHandler, error) {
+func NewMetadataHandler(mds MetadataStore, isLeader *bool) (*MetadataHandler, error) {
 	clock := utils.SystemClock{}
-	return NewMetadataHandlerWithClock(mds, isLeader, agtMgr, clock)
+	return NewMetadataHandlerWithClock(mds, isLeader, clock)
 }
 
 // GetChannel returns the channel the MetadataHandler is listening to.
@@ -110,29 +115,34 @@ func (mh *MetadataHandler) GetChannel() chan *K8sMessage {
 	return mh.ch
 }
 
-// ProcessAgentUpdates starts the goroutine for processing the agent update channel.
-func (mh *MetadataHandler) ProcessAgentUpdates() {
-	go mh.processAgentUpdates()
+// AddSubscriber adds a subscriber to metadata updates.
+func (mh *MetadataHandler) AddSubscriber(sub MetadataSubscriber) {
+	mh.subscribers = append(mh.subscribers, sub)
 }
 
-func (mh *MetadataHandler) processAgentUpdates() {
+// ProcessSubscriberUpdates starts the goroutine for processing the subscriber update channel.
+func (mh *MetadataHandler) ProcessSubscriberUpdates() {
+	go mh.processSubscriberUpdates()
+}
+
+func (mh *MetadataHandler) processSubscriberUpdates() {
 	for {
-		more := mh.ProcessNextAgentUpdate()
+		more := mh.ProcessNextSubscriberUpdate()
 		if !more {
 			return
 		}
 	}
 }
 
-// ProcessNextAgentUpdate processes the next agent update in the agent update channel. Returns true if there are more
+// ProcessNextSubscriberUpdate processes the next subscriber update in the update channel. Returns true if there are more
 // requests to be processed.
-func (mh *MetadataHandler) ProcessNextAgentUpdate() bool {
+func (mh *MetadataHandler) ProcessNextSubscriberUpdate() bool {
 	// If there are too many updates, something is probably very wrong.
-	if len(mh.agentUpdateCh) > maxAgentUpdates {
-		log.Fatal("Failed to queue maximum number of agent updates.")
+	if len(mh.subscriberUpdates) > maxSubscriberUpdates {
+		log.Fatal("Failed to queue maximum number of subscriber updates.")
 	}
 
-	msg, more := <-mh.agentUpdateCh
+	msg, more := <-mh.subscriberUpdates
 	if !more {
 		return more
 	}
@@ -141,8 +151,10 @@ func (mh *MetadataHandler) ProcessNextAgentUpdate() bool {
 		return true
 	}
 
-	// Apply updates.
-	mh.updateAgentQueues(msg.Message, msg.Hostnames, msg.NodeSpecific)
+	// Send update to subscribers.
+	for _, sub := range mh.subscribers {
+		sub.HandleUpdate(msg)
+	}
 
 	return more
 }
@@ -166,50 +178,6 @@ func (mh *MetadataHandler) MetadataListener() {
 			mh.handleNodeMetadata(msg.Object, msg.EventType)
 		default:
 			log.Error("Received unknown metadata message with type: " + msg.ObjectType)
-		}
-	}
-}
-
-// updateAgentQueues appends the resource update to the relevant agent queues. If appending to the queue has failed,
-// it adds the update to the handler's retry channel.
-func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate, hostnames *[]string, nodeSpecific bool) {
-	agents, err := mh.mds.GetAgentsForHostnames(hostnames)
-	if err != nil {
-		return
-	}
-
-	log.WithField("agents", agents).WithField("hostnames", hostnames).
-		WithField("update", updatePb).Infof("Adding update to agent queue for agents")
-
-	allAgents := make([]string, len(agents))
-	copy(allAgents, agents)
-
-	if !nodeSpecific {
-		// This update is not for a specific node. Send to Kelvins as well.
-		kelvinIDs, err := mh.mds.GetKelvinIDs()
-		if err != nil {
-			log.WithError(err).Error("Could not get kelvin IDs")
-		} else {
-			allAgents = append(allAgents, kelvinIDs...)
-		}
-		log.WithField("kelvins", kelvinIDs).WithField("update", updatePb).Infof("Adding update to agent queue for kelvins")
-	}
-
-	var failedHostnames []string
-	for i, agent := range allAgents {
-		err = mh.agentManager.AddUpdatesToAgentQueue(agent, []*metadatapb.ResourceUpdate{updatePb})
-		if err != nil {
-			log.WithError(err).Error("Could not write service update to agent update queue.")
-			if i < len(agents) { // If failed agent is not a Kelvin node, we should retry.
-				failedHostnames = append(failedHostnames, (*hostnames)[i])
-			}
-		}
-	}
-	if len(failedHostnames) > 0 {
-		mh.agentUpdateCh <- &UpdateMessage{
-			Message:      updatePb,
-			Hostnames:    &failedHostnames,
-			NodeSpecific: nodeSpecific,
 		}
 	}
 }
@@ -279,8 +247,8 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType w
 		for _, addr := range subset.Addresses {
 			hostnames := []string{addr.NodeName}
 			updatePb := GetNodeResourceUpdateFromEndpoints(pb, addr.NodeName)
-			mh.agentUpdateCh <- &UpdateMessage{
-				Hostnames:    &hostnames,
+			mh.subscriberUpdates <- &UpdateMessage{
+				Hostnames:    hostnames,
 				Message:      updatePb,
 				NodeSpecific: true,
 			}
@@ -288,8 +256,8 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType w
 	}
 	// Add endpoint update for Kelvins.
 	updatePb := GetNodeResourceUpdateFromEndpoints(pb, "")
-	mh.agentUpdateCh <- &UpdateMessage{
-		Hostnames:    &[]string{},
+	mh.subscriberUpdates <- &UpdateMessage{
+		Hostnames:    []string{},
 		Message:      updatePb,
 		NodeSpecific: false,
 	}
@@ -333,16 +301,16 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object, eventType watch.E
 	// Send container updates.
 	containerUpdates := GetContainerResourceUpdatesFromPod(pb)
 	for _, update := range containerUpdates {
-		mh.agentUpdateCh <- &UpdateMessage{
-			Hostnames: &hostname,
+		mh.subscriberUpdates <- &UpdateMessage{
+			Hostnames: hostname,
 			Message:   update,
 		}
 	}
 
 	updatePb := GetResourceUpdateFromPod(pb)
 
-	mh.agentUpdateCh <- &UpdateMessage{
-		Hostnames: &hostname,
+	mh.subscriberUpdates <- &UpdateMessage{
+		Hostnames: hostname,
 		Message:   updatePb,
 	}
 }
