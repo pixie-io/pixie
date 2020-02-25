@@ -27,9 +27,9 @@ inline constexpr char kContentType[] = "Content-Type";
 inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 inline constexpr char kUpgrade[] = "Upgrade";
 
-using Record = ReqRespPair<HTTPMessage, HTTPMessage>;
+using Record = ReqRespPair<Message, Message>;
 
-void PreProcessMessage(HTTPMessage* message);
+void PreProcessMessage(Message* message);
 
 // For each HTTP message, inclusions are applied first; then exclusions, which can overturn the
 // selection done by the former. An empty inclusions results into any HTTP message being selected,
@@ -57,7 +57,7 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters);
  * @param filters The filter on HTTP headers. The key is the header names, and the value is a
  * substring that the header value should contain.
  */
-bool MatchesHTTPTHeaders(const HTTPHeadersMap& http_headers, const HTTPHeaderFilter& filter);
+bool MatchesHTTPTHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& filter);
 
 }  // namespace http
 
@@ -68,12 +68,11 @@ bool MatchesHTTPTHeaders(const HTTPHeadersMap& http_headers, const HTTPHeaderFil
  * bytes count of the parsed data.
  */
 template <>
-ParseResult<size_t> Parse(MessageType type, std::string_view buf,
-                          std::deque<http::HTTPMessage>* messages);
+ParseResult<size_t> ParseFrame(MessageType type, std::string_view buf,
+                               std::deque<http::Message>* messages);
 
 template <>
-size_t FindMessageBoundary<http::HTTPMessage>(MessageType type, std::string_view buf,
-                                              size_t start_pos);
+size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, size_t start_pos);
 
 }  // namespace stirling
 }  // namespace pl

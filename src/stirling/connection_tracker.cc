@@ -380,27 +380,27 @@ std::vector<TEntryType> ConnectionTracker::ProcessMessages() {
 
 template <>
 std::vector<http::Record> ConnectionTracker::ProcessMessagesImpl() {
-  Status s = ExtractReqResp<http::HTTPMessage>();
+  Status s = ExtractReqResp<http::Message>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
     return {};
   }
 
-  auto& req_messages = req_data()->Messages<http::HTTPMessage>();
-  auto& resp_messages = resp_data()->Messages<http::HTTPMessage>();
+  auto& req_messages = req_data()->Messages<http::Message>();
+  auto& resp_messages = resp_data()->Messages<http::Message>();
 
   // Match request response pairs.
   std::vector<http::Record> trace_records;
   for (auto req_iter = req_messages.begin(), resp_iter = resp_messages.begin();
        req_iter != req_messages.end() && resp_iter != resp_messages.end();) {
-    http::HTTPMessage& req = *req_iter;
-    http::HTTPMessage& resp = *resp_iter;
+    http::Message& req = *req_iter;
+    http::Message& resp = *resp_iter;
 
     if (resp.timestamp_ns < req.timestamp_ns) {
       // Oldest message is a response.
       // This means the corresponding request was not traced.
       // Push without request.
-      http::Record record{http::HTTPMessage(), std::move(resp)};
+      http::Record record{http::Message(), std::move(resp)};
       resp_messages.pop_front();
       trace_records.push_back(std::move(record));
       ++resp_iter;
@@ -421,8 +421,8 @@ std::vector<http::Record> ConnectionTracker::ProcessMessagesImpl() {
 
   // Any leftover responses must have lost their requests.
   for (auto resp_iter = resp_messages.begin(); resp_iter != resp_messages.end(); ++resp_iter) {
-    http::HTTPMessage& resp = *resp_iter;
-    http::Record record{http::HTTPMessage(), std::move(resp)};
+    http::Message& resp = *resp_iter;
+    http::Record record{http::Message(), std::move(resp)};
     trace_records.push_back(std::move(record));
   }
   resp_messages.clear();
@@ -432,7 +432,7 @@ std::vector<http::Record> ConnectionTracker::ProcessMessagesImpl() {
   // TODO(oazizi): If we have seen the close event, then can assume the response is lost.
   //               We should push the event out in such cases.
 
-  Cleanup<http::HTTPMessage>();
+  Cleanup<http::Message>();
 
   return trace_records;
 }

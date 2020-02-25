@@ -19,11 +19,11 @@ namespace stirling {
  * @return ParseState Indicates the final state of the parsing, and where the parsing stopped.
  */
 template <>
-ParseResult<size_t> Parse(MessageType type, std::string_view buf,
-                          std::deque<mysql::Packet>* messages);
+ParseResult<size_t> ParseFrame(MessageType type, std::string_view buf,
+                               std::deque<mysql::Packet>* frames);
 
 template <>
-size_t FindMessageBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos);
+size_t FindFrameBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos);
 
 }  // namespace stirling
 }  // namespace pl

@@ -484,36 +484,36 @@ TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
   {
     tracker.AddDataEvent(std::move(frame0));
     tracker.ProcessMessages<http::Record>();
-    EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
+    EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
     tracker.ProcessMessages<http::Record>();
-    EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
+    EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
     tracker.ProcessMessages<http::Record>();
-    EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
+    EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
 
     // The 4th time, the stuck is detected and data are purged.
     tracker.ProcessMessages<http::Record>();
-    EXPECT_TRUE(tracker.req_data()->Empty<http::HTTPMessage>());
+    EXPECT_TRUE(tracker.req_data()->Empty<http::Message>());
 
     // Now the stuck count is reset, so the event is kept.
     tracker.AddDataEvent(std::move(frame1));
     tracker.ProcessMessages<http::Record>();
-    EXPECT_FALSE(tracker.req_data()->Empty<http::HTTPMessage>());
+    EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
   }
   {
     tracker.AddDataEvent(std::move(frame2));
     tracker.ProcessMessages<http::Record>();
-    EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
+    EXPECT_FALSE(tracker.resp_data()->Empty<http::Message>());
     tracker.ProcessMessages<http::Record>();
-    EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
+    EXPECT_FALSE(tracker.resp_data()->Empty<http::Message>());
     tracker.ProcessMessages<http::Record>();
-    EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
+    EXPECT_FALSE(tracker.resp_data()->Empty<http::Message>());
 
     tracker.ProcessMessages<http::Record>();
-    EXPECT_TRUE(tracker.resp_data()->Empty<http::HTTPMessage>());
+    EXPECT_TRUE(tracker.resp_data()->Empty<http::Message>());
 
     tracker.AddDataEvent(std::move(frame3));
     tracker.ProcessMessages<http::Record>();
-    EXPECT_FALSE(tracker.resp_data()->Empty<http::HTTPMessage>());
+    EXPECT_FALSE(tracker.resp_data()->Empty<http::Message>());
   }
 }
 
@@ -531,12 +531,12 @@ TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
 
   tracker.AddDataEvent(std::move(frame0));
   tracker.ProcessMessages<http::Record>();
-  EXPECT_THAT(tracker.req_messages<http::HTTPMessage>(), SizeIs(1));
+  EXPECT_THAT(tracker.req_messages<http::Message>(), SizeIs(1));
 
   FLAGS_messages_expiration_duration_secs = 0;
 
   tracker.ProcessMessages<http::Record>();
-  EXPECT_THAT(tracker.req_messages<http::HTTPMessage>(), IsEmpty());
+  EXPECT_THAT(tracker.req_messages<http::Message>(), IsEmpty());
 
   // TODO(yzhao): It's not possible to test the response messages, as they are immediately exported
   // without waiting for the requests.

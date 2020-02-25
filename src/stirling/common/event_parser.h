@@ -57,7 +57,7 @@ struct ParseResult {
  * or std::string::npos if no such message start was found.
  */
 template <typename TMessageType>
-size_t FindMessageBoundary(MessageType type, std::string_view buf, size_t start_pos);
+size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos);
 
 /**
  * Parses the input string as a sequence of TMessageType, and write the messages to messages.
@@ -69,8 +69,8 @@ size_t FindMessageBoundary(MessageType type, std::string_view buf, size_t start_
  * @return result of the parse, including positions in the source buffer where messages were found.
  */
 template <typename TMessageType>
-ParseResult<size_t> Parse(MessageType type, std::string_view buf,
-                          std::deque<TMessageType>* messages);
+ParseResult<size_t> ParseFrame(MessageType type, std::string_view buf,
+                               std::deque<TMessageType>* messages);
 
 enum class ParseSyncType {
   // Do not perform a message boundary sync.
@@ -157,7 +157,7 @@ class EventParser {
    * parsed Messages into the provided messages container.
    *
    * This is a templated function. The caller must provide the type of message to parsed (e.g.
-   * HTTPMessage), and must ensure that there is a corresponding Parse() function with the desired
+   * http::Message), and must ensure that there is a corresponding Parse() function with the desired
    * message type.
    *
    * @param type The Type of message to parse.
@@ -173,7 +173,7 @@ class EventParser {
     if (sync_type != ParseSyncType::None) {
       VLOG(3) << "Finding message boundary";
       const bool force_movement = sync_type == ParseSyncType::Aggressive;
-      start_pos = FindMessageBoundary<TMessageType>(type, buf, force_movement);
+      start_pos = FindFrameBoundary<TMessageType>(type, buf, force_movement);
 
       // Couldn't find a boundary, so stay where we are.
       // Chances are we won't be able to parse, but we have no other option.
@@ -188,7 +188,7 @@ class EventParser {
     // Parse and append new messages to the messages vector.
     std::string_view buf_view(buf);
     buf_view.remove_prefix(start_pos);
-    ParseResult<size_t> result = Parse(type, buf_view, messages);
+    ParseResult<size_t> result = ParseFrame(type, buf_view, messages);
     DCHECK(messages->size() >= prev_size);
 
     VLOG(3) << absl::Substitute("Parsed $0 new messages", messages->size() - prev_size);

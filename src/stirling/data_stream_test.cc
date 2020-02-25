@@ -25,28 +25,28 @@ TEST_F(DataStreamTest, LostEvent) {
 
   // Start off with no lost events.
   stream.AddEvent(std::move(req0));
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  EXPECT_THAT(stream.Messages<http::HTTPMessage>(), SizeIs(1));
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  EXPECT_THAT(stream.Messages<http::Message>(), SizeIs(1));
   EXPECT_FALSE(stream.IsStuck());
 
   // Now add some lost events - should get skipped over.
   PL_UNUSED(req1);  // Lost event.
   stream.AddEvent(std::move(req2));
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  EXPECT_THAT(stream.Messages<http::HTTPMessage>(), SizeIs(2));
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  EXPECT_THAT(stream.Messages<http::Message>(), SizeIs(2));
   EXPECT_FALSE(stream.IsStuck());
 
   // Some more requests, and another lost request (this time undetectable).
   stream.AddEvent(std::move(req3));
   PL_UNUSED(req4);
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  EXPECT_THAT(stream.Messages<http::HTTPMessage>(), SizeIs(3));
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  EXPECT_THAT(stream.Messages<http::Message>(), SizeIs(3));
   EXPECT_FALSE(stream.IsStuck());
 
   // Now the lost event should be detected.
   stream.AddEvent(std::move(req5));
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  EXPECT_THAT(stream.Messages<http::HTTPMessage>(), SizeIs(4));
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  EXPECT_THAT(stream.Messages<http::Message>(), SizeIs(4));
   EXPECT_FALSE(stream.IsStuck());
 }
 
@@ -63,16 +63,16 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryStuckStream) {
   stream.AddEvent(std::move(req1));
   stream.AddEvent(std::move(req2));
 
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  EXPECT_THAT(stream.Messages<http::HTTPMessage>(), IsEmpty());
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  EXPECT_THAT(stream.Messages<http::Message>(), IsEmpty());
 
   // Stuck count = 1.
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  EXPECT_THAT(stream.Messages<http::HTTPMessage>(), IsEmpty());
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  EXPECT_THAT(stream.Messages<http::Message>(), IsEmpty());
 
   // Stuck count = 2. Should invoke recovery and release two messages.
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  EXPECT_THAT(stream.Messages<http::HTTPMessage>(), SizeIs(2));
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  EXPECT_THAT(stream.Messages<http::Message>(), SizeIs(2));
 }
 
 TEST_F(DataStreamTest, AttemptHTTPRespRecoveryStuckStream) {
@@ -88,18 +88,18 @@ TEST_F(DataStreamTest, AttemptHTTPRespRecoveryStuckStream) {
   stream.AddEvent(std::move(resp1));
   stream.AddEvent(std::move(resp2));
 
-  std::deque<http::HTTPMessage> responses;
+  std::deque<http::Message> responses;
 
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kResponse);
-  EXPECT_THAT(stream.Messages<http::HTTPMessage>(), IsEmpty());
+  stream.ProcessEvents<http::Message>(MessageType::kResponse);
+  EXPECT_THAT(stream.Messages<http::Message>(), IsEmpty());
 
   // Stuck count = 1.
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kResponse);
-  EXPECT_THAT(stream.Messages<http::HTTPMessage>(), IsEmpty());
+  stream.ProcessEvents<http::Message>(MessageType::kResponse);
+  EXPECT_THAT(stream.Messages<http::Message>(), IsEmpty());
 
   // Stuck count = 2. Should invoke recovery and release two messages.
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kResponse);
-  EXPECT_THAT(stream.Messages<http::HTTPMessage>(), SizeIs(2));
+  stream.ProcessEvents<http::Message>(MessageType::kResponse);
+  EXPECT_THAT(stream.Messages<http::Message>(), SizeIs(2));
 }
 
 TEST_F(DataStreamTest, AttemptHTTPReqRecoveryPartialMessage) {
@@ -117,8 +117,8 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryPartialMessage) {
   PL_UNUSED(req1b);  // Missing event.
   stream.AddEvent(std::move(req2));
 
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  const auto& requests = stream.Messages<http::HTTPMessage>();
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  const auto& requests = stream.Messages<http::Message>();
   ASSERT_THAT(requests, SizeIs(2));
   EXPECT_EQ(requests[0].http_req_path, "/index.html");
   EXPECT_EQ(requests[1].http_req_path, "/bar.html");
@@ -139,8 +139,8 @@ TEST_F(DataStreamTest, AttemptHTTPRespRecoveryPartialMessage) {
   PL_UNUSED(resp1b);  // Missing event.
   stream.AddEvent(std::move(resp2));
 
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kResponse);
-  const auto& responses = stream.Messages<http::HTTPMessage>();
+  stream.ProcessEvents<http::Message>(MessageType::kResponse);
+  const auto& responses = stream.Messages<http::Message>();
   ASSERT_THAT(responses, SizeIs(2));
   EXPECT_EQ(responses[0].http_msg_body, "pixie");
   EXPECT_EQ(responses[1].http_msg_body, "bar");
@@ -170,8 +170,8 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryHeadAndMiddleMissing) {
   // Contrast this to AttemptHTTPReqRecoveryStuckStream,
   // where the stream stays stuck for several iterations.
 
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  const auto& requests = stream.Messages<http::HTTPMessage>();
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  const auto& requests = stream.Messages<http::Message>();
   ASSERT_THAT(requests, SizeIs(1));
   EXPECT_EQ(requests[0].http_req_path, "/bar.html");
 }
@@ -201,17 +201,17 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryAggressiveMode) {
       InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
 
   stream.AddEvent(std::move(req0a));
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  ASSERT_THAT(stream.Messages<http::HTTPMessage>(), IsEmpty());
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  ASSERT_THAT(stream.Messages<http::Message>(), IsEmpty());
 
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  ASSERT_THAT(stream.Messages<http::HTTPMessage>(), IsEmpty());
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  ASSERT_THAT(stream.Messages<http::Message>(), IsEmpty());
 
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  ASSERT_THAT(stream.Messages<http::HTTPMessage>(), IsEmpty());
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  ASSERT_THAT(stream.Messages<http::Message>(), IsEmpty());
 
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  ASSERT_THAT(stream.Messages<http::HTTPMessage>(), IsEmpty());
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  ASSERT_THAT(stream.Messages<http::Message>(), IsEmpty());
 
   // So many stuck iterations, that we should be in aggressive mode now.
   // Aggressive mode should skip over the first request.
@@ -229,8 +229,8 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryAggressiveMode) {
   stream.AddEvent(std::move(req4a));
   stream.AddEvent(std::move(req4b));
 
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
-  const auto& requests = stream.Messages<http::HTTPMessage>();
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
+  const auto& requests = stream.Messages<http::Message>();
   ASSERT_THAT(requests, SizeIs(3));
   EXPECT_EQ(requests[0].http_req_path, "/foo.html");
   EXPECT_EQ(requests[1].http_req_path, "/index.html");
@@ -239,7 +239,7 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryAggressiveMode) {
 
 TEST_F(DataStreamTest, CannotSwitchType) {
   DataStream stream;
-  stream.ProcessEvents<http::HTTPMessage>(MessageType::kRequest);
+  stream.ProcessEvents<http::Message>(MessageType::kRequest);
 
 #if DCHECK_IS_ON()
   EXPECT_DEATH(stream.ProcessEvents<http2::Frame>(MessageType::kRequest),

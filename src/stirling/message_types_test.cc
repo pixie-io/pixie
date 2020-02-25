@@ -7,7 +7,7 @@ namespace pl {
 namespace stirling {
 
 TEST(GetMessageType, Basic) {
-  bool http_check = std::is_same_v<GetMessageType<http::Record>::type, http::HTTPMessage>;
+  bool http_check = std::is_same_v<GetMessageType<http::Record>::type, http::Message>;
   EXPECT_TRUE(http_check);
 
   bool http2_check = std::is_same_v<GetMessageType<http2::Record>::type, http2::Frame>;

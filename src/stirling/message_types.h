@@ -21,7 +21,7 @@ struct GetMessageType;
 
 template <>
 struct GetMessageType<http::Record> {
-  typedef http::HTTPMessage type;
+  typedef http::Message type;
 };
 
 template <>

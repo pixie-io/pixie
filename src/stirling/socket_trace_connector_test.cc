@@ -685,8 +685,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   EXPECT_EQ(0, record_batch[0]->Size());
 
   // Events should have been flushed.
-  EXPECT_TRUE(tracker->recv_data().Empty<http::HTTPMessage>());
-  EXPECT_TRUE(tracker->send_data().Empty<http::HTTPMessage>());
+  EXPECT_TRUE(tracker->recv_data().Empty<http::Message>());
+  EXPECT_TRUE(tracker->send_data().Empty<http::Message>());
 }
 
 //-----------------------------------------------------------------------------

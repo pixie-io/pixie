@@ -13,7 +13,7 @@ namespace pl {
 namespace stirling {
 namespace http {
 
-void PreProcessMessage(HTTPMessage* message) {
+void PreProcessMessage(Message* message) {
   auto content_encoding_iter = message->http_headers.find(kContentEncoding);
   // Replace body with decompressed version, if required.
   if (content_encoding_iter != message->http_headers.end() &&
@@ -31,8 +31,8 @@ void PreProcessMessage(HTTPMessage* message) {
 
 namespace {
 
-HTTPHeadersMap GetHTTPHeadersMap(const phr_header* headers, size_t num_headers) {
-  HTTPHeadersMap result;
+HeadersMap GetHTTPHeadersMap(const phr_header* headers, size_t num_headers) {
+  HeadersMap result;
   for (size_t i = 0; i < num_headers; i++) {
     std::string name(headers[i].name, headers[i].name_len);
     std::string value(headers[i].value, headers[i].value_len);
@@ -58,7 +58,7 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters) {
   return result;
 }
 
-bool MatchesHTTPTHeaders(const HTTPHeadersMap& http_headers, const HTTPHeaderFilter& filter) {
+bool MatchesHTTPTHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& filter) {
   if (!filter.inclusions.empty()) {
     bool included = false;
     // cpplint lags behind C++17, and only consider '[]' as an operator, therefore insists that no
@@ -108,7 +108,7 @@ namespace pico_wrapper {
 namespace {
 
 // Mutates the input data.
-ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
+ParseState ParseChunk(std::string_view* data, Message* result) {
   result->http_msg_body.clear();
   phr_chunked_decoder chunk_decoder = {};
   auto buf = const_cast<char*>(data->data());
@@ -139,7 +139,7 @@ ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
 
 }  // namespace
 
-ParseState ParseBody(std::string_view* buf, HTTPMessage* result) {
+ParseState ParseBody(std::string_view* buf, Message* result) {
   // Try to find boundary of message by looking at Content-Length and Transfer-Encoding.
 
   // From https://tools.ietf.org/html/rfc7230:
@@ -255,7 +255,7 @@ ParseState ParseBody(std::string_view* buf, HTTPMessage* result) {
   return ParseState::kInvalid;
 }
 
-ParseState ParseRequest(std::string_view* buf, HTTPMessage* result) {
+ParseState ParseRequest(std::string_view* buf, Message* result) {
   // Fields populated by phr_parse_response.
   const char* method = nullptr;
   size_t method_len;
@@ -289,7 +289,7 @@ ParseState ParseRequest(std::string_view* buf, HTTPMessage* result) {
   return ParseState::kInvalid;
 }
 
-ParseState ParseResponse(std::string_view* buf, HTTPMessage* result) {
+ParseState ParseResponse(std::string_view* buf, Message* result) {
   // Fields populated by phr_parse_response.
   const char* msg = nullptr;
   size_t msg_len = 0;
@@ -330,7 +330,7 @@ ParseState ParseResponse(std::string_view* buf, HTTPMessage* result) {
  * @param result: A parsed HTTP message, if parse was successful (must consider return value).
  * @return parse state indicating how the parse progressed.
  */
-ParseState Parse(MessageType type, std::string_view* buf, HTTPMessage* result) {
+ParseState Parse(MessageType type, std::string_view* buf, Message* result) {
   switch (type) {
     case MessageType::kRequest:
       return ParseRequest(buf, result);
@@ -346,15 +346,15 @@ ParseState Parse(MessageType type, std::string_view* buf, HTTPMessage* result) {
 }  // namespace http
 
 template <>
-ParseResult<size_t> Parse(MessageType type, std::string_view buf,
-                          std::deque<http::HTTPMessage>* messages) {
+ParseResult<size_t> ParseFrame(MessageType type, std::string_view buf,
+                               std::deque<http::Message>* messages) {
   std::vector<size_t> start_positions;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
   size_t bytes_processed = 0;
 
   while (!buf.empty() && s != ParseState::kEOS) {
-    http::HTTPMessage message;
+    http::Message message;
 
     s = http::pico_wrapper::Parse(type, &buf, &message);
     if (s != ParseState::kSuccess && s != ParseState::kEOS) {
@@ -377,8 +377,7 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
 // can actually fail to find any valid boundary by this function. Unfortunately, BPF has many
 // restrictions that likely make this a difficult or impossible goal.
 template <>
-size_t FindMessageBoundary<http::HTTPMessage>(MessageType type, std::string_view buf,
-                                              size_t start_pos) {
+size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, size_t start_pos) {
   // List of all HTTP request methods. All HTTP requests start with one of these.
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
   static constexpr std::string_view kHTTPReqStartPatternArray[] = {

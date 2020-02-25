@@ -501,7 +501,7 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
 
 namespace {
 
-HTTPContentType DetectContentType(const http::HTTPMessage& message) {
+HTTPContentType DetectContentType(const http::Message& message) {
   auto content_type_iter = message.http_headers.find(http::kContentType);
   if (content_type_iter == message.http_headers.end()) {
     return HTTPContentType::kUnknown;
@@ -527,7 +527,7 @@ int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
 }  // namespace
 
 bool SocketTraceConnector::SelectMessage(const http::Record& record) {
-  const http::HTTPMessage& message = record.resp;
+  const http::Message& message = record.resp;
 
   // Rule: Exclude anything that doesn't specify its Content-Type.
   auto content_type_iter = message.http_headers.find(http::kContentType);
@@ -562,8 +562,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 
   DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  http::HTTPMessage& req_message = record.req;
-  http::HTTPMessage& resp_message = record.resp;
+  http::Message& req_message = record.req;
+  http::Message& resp_message = record.resp;
 
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());

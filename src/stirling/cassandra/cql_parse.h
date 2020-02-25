@@ -20,11 +20,11 @@ namespace stirling {
  * @return ParseState Indicates the final state of the parsing, and where the parsing stopped.
  */
 template <>
-ParseResult<size_t> Parse(MessageType type, std::string_view buf,
-                          std::deque<cass::Frame>* messages);
+ParseResult<size_t> ParseFrame(MessageType type, std::string_view buf,
+                               std::deque<cass::Frame>* messages);
 
 template <>
-size_t FindMessageBoundary<cass::Frame>(MessageType type, std::string_view buf, size_t start_pos);
+size_t FindFrameBoundary<cass::Frame>(MessageType type, std::string_view buf, size_t start_pos);
 
 }  // namespace stirling
 }  // namespace pl

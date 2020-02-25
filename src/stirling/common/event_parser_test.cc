@@ -27,8 +27,8 @@ struct TestFrame {
 };
 
 template <>
-ParseResult<size_t> Parse(MessageType /* type */, std::string_view buf,
-                          std::deque<TestFrame>* messages) {
+ParseResult<size_t> ParseFrame(MessageType /* type */, std::string_view buf,
+                               std::deque<TestFrame>* messages) {
   ParseResult<size_t> result;
 
   size_t position = 0;
@@ -54,8 +54,8 @@ ParseResult<size_t> Parse(MessageType /* type */, std::string_view buf,
 }
 
 template <>
-size_t FindMessageBoundary<TestFrame>(MessageType /* type */, std::string_view buf,
-                                      size_t start_pos) {
+size_t FindFrameBoundary<TestFrame>(MessageType /* type */, std::string_view buf,
+                                    size_t start_pos) {
   size_t pos = buf.substr(start_pos).find(",");
   return (pos == buf.npos) ? start_pos : pos;
 }
