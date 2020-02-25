@@ -23,6 +23,9 @@ import (
 	"github.com/spf13/viper"
 	"github.com/txn2/txeh"
 	"golang.org/x/sync/errgroup"
+
+	// Need this for GCP auth.
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
