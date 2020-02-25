@@ -74,7 +74,10 @@ Status Exists(std::filesystem::path path) {
   if (std::filesystem::exists(path, ec)) {
     return Status::OK();
   }
-  return error::System(ec.message());
+  if (ec) {
+    return error::System(ec.message());
+  }
+  return error::InvalidArgument("Does not exist");
 }
 
 }  // namespace fs

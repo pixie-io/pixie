@@ -71,5 +71,9 @@ TEST_F(FSWrapperTest, JoinPath) {
   EXPECT_EQ(JoinPath({&kAbsPathA, &kAbsPathB}), "/path/to/a/path/to/b");
 }
 
+TEST_F(FSWrapperTest, ExistsReturnsErrorForNonExistentFile) {
+  EXPECT_EQ("Does not exist", Exists(tmp_dir_.path() / "dummy").msg());
+}
+
 }  // namespace fs
 }  // namespace pl
