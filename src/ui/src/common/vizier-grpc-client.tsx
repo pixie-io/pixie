@@ -1,4 +1,3 @@
-import {ExecuteQueryResult} from 'gql-types';
 import {
     ExecuteScriptRequest, QueryExecutionStats, Relation, RowBatchData, Status,
 } from 'types/generated/vizier_pb';

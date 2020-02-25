@@ -3,7 +3,7 @@ import {CodeEditor} from 'components/code-editor';
 import {SplitContainer, SplitPane} from 'components/split-pane/split-pane';
 import * as React from 'react';
 
-import {createStyles, makeStyles, Theme, ThemeProvider} from '@material-ui/core/styles';
+import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 
 import {LiveContext, ScriptContext, VegaContext} from './context';
 

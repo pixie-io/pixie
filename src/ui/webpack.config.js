@@ -150,7 +150,7 @@ var webpackConfig = {
         use: ['style-loader', 'css-loader'],
       },
       {
-        test: /\.(toml|jxx)$/i,
+        test: /\.toml$/i,
         use: [
           {
             loader: 'raw-loader',

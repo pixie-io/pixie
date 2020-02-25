@@ -5,7 +5,7 @@ import {VisualizationSpec} from 'vega-embed';
 
 import {Theme, useTheme} from '@material-ui/core/styles';
 
-import {VegaContext} from './context';
+import {ResultsContext, VegaContext} from './context';
 
 function specsFromTheme(theme: Theme) {
   return {
@@ -35,6 +35,8 @@ interface CanvasProps {
 const Canvas = (props: CanvasProps) => {
   const theme = useTheme();
   const inputJSON = React.useContext(VegaContext);
+  const results = React.useContext(ResultsContext);
+
   const spec = React.useMemo(() => {
     const inputSpec = parseSpecs(inputJSON);
     return {
@@ -42,7 +44,7 @@ const Canvas = (props: CanvasProps) => {
       ...BASE_SPECS,
       ...specsFromTheme(theme),
     } as VisualizationSpec;
-  }, [inputJSON]);
+  }, [inputJSON, results]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:
