@@ -21,7 +21,7 @@ import ExecuteScript from './execute';
 const useStyles = makeStyles((theme: Theme) => {
   const scrollbarStyles = (color: string) => ({
     borderRadius: theme.spacing(1.5),
-    border: [['solid', theme.spacing(1), 'transparent']],
+    border: [['solid', theme.spacing(0.5), 'transparent']],
     backgroundColor: 'transparent',
     boxShadow: [['inset', 0, 0, theme.spacing(1), theme.spacing(1), color]],
   });
@@ -33,8 +33,8 @@ const useStyles = makeStyles((theme: Theme) => {
       flexDirection: 'column',
       backgroundColor: theme.palette.background.default,
       '& ::-webkit-scrollbar': {
-        width: theme.spacing(3),
-        height: theme.spacing(3),
+        width: theme.spacing(2),
+        height: theme.spacing(2),
       },
       '& ::-webkit-scrollbar-track': scrollbarStyles(theme.palette.background.one),
       '& ::-webkit-scrollbar-thumb': scrollbarStyles(theme.palette.foreground.one),
@@ -52,6 +52,9 @@ const useStyles = makeStyles((theme: Theme) => {
       flex: 1,
       minHeight: 0,
       display: 'flex',
+      borderTopStyle: 'solid',
+      borderTopColor: theme.palette.background.three,
+      borderTopWidth: theme.spacing(0.25),
     },
     editorToggle: {
       border: 'none',
@@ -66,6 +69,9 @@ const useStyles = makeStyles((theme: Theme) => {
       '&.opened': {
         visibility: 'visible',
         position: 'relative',
+        borderRightStyle: 'solid',
+        borderRightColor: theme.palette.background.three,
+        borderRightWidth: theme.spacing(0.25),
       },
     },
     canvas: {

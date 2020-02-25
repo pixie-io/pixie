@@ -11,13 +11,10 @@ const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
       height: '100%',
-      borderRightStyle: 'solid',
-      borderRightColor: theme.palette.background.three,
-      borderRightWidth: theme.spacing(0.25),
     },
     editor: {
       height: '100%',
-      '&.pl-code-editor .CodeMirror': {
+      '&.pl-code-editor .CodeMirror, & .CodeMirror-scrollbar-filler': {
         backgroundColor: theme.palette.background.default,
       },
     },
