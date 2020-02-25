@@ -49,6 +49,7 @@ type MetadataStore interface {
 	GetContainers() ([]*metadatapb.ContainerInfo, error)
 	UpdateContainer(*metadatapb.ContainerInfo) error
 	UpdateContainersFromPod(*metadatapb.Pod, bool) error
+	GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error)
 }
 
 // K8sMessage is a message for K8s metadata events/updates.

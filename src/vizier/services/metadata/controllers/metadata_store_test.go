@@ -1233,3 +1233,95 @@ func TestKVMetadataStore_GetKelvinIDs(t *testing.T) {
 	assert.Equal(t, "test3", kelvins[2])
 	assert.Equal(t, "test4", kelvins[3])
 }
+
+func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
+	containers := make([]*metadatapb.ContainerStatus, 2)
+
+	containers[0] = &metadatapb.ContainerStatus{
+		Name:        "c1",
+		ContainerID: "0987",
+	}
+
+	containers[1] = &metadatapb.ContainerStatus{
+		Name:        "c2",
+		ContainerID: "2468",
+	}
+
+	pod1 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name: "abcd",
+			UID:  "1234",
+		},
+		Status: &metadatapb.PodStatus{
+			ContainerStatuses: containers,
+		},
+	}
+	pod2 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name: "efgh",
+			UID:  "5678",
+		},
+		Status: &metadatapb.PodStatus{},
+	}
+
+	ep1 := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(testutils.EndpointsPb, ep1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	ep1.Metadata.DeletionTimestampNS = 0
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/pod/").
+		Return(nil, nil, nil).
+		Times(1)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/endpoints/").
+		Return(nil, nil, nil).
+		Times(1)
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	err = mds.UpdatePod(pod1, false)
+	assert.Nil(t, err)
+	err = mds.UpdatePod(pod2, false)
+	assert.Nil(t, err)
+
+	err = mds.UpdateEndpoints(ep1, false)
+	assert.Nil(t, err)
+
+	updates, err := mds.GetMetadataUpdates("")
+	assert.Nil(t, err)
+
+	assert.Equal(t, 6, len(updates))
+
+	update1 := updates[0].GetContainerUpdate()
+	assert.NotNil(t, update1)
+	assert.Equal(t, "0987", update1.CID)
+
+	update2 := updates[1].GetContainerUpdate()
+	assert.NotNil(t, update2)
+	assert.Equal(t, "2468", update2.CID)
+
+	update3 := updates[2].GetPodUpdate()
+	assert.NotNil(t, update3)
+	assert.Equal(t, "1234", update3.UID)
+
+	update4 := updates[3].GetPodUpdate()
+	assert.NotNil(t, update4)
+	assert.Equal(t, "5678", update4.UID)
+
+	update5 := updates[4].GetServiceUpdate()
+	assert.NotNil(t, update5)
+	assert.Equal(t, "object_md", update5.Name)
+
+	update6 := updates[5].GetServiceUpdate()
+	assert.NotNil(t, update6)
+	assert.Equal(t, "object_md", update6.Name)
+}

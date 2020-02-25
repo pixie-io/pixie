@@ -376,30 +376,5 @@ func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID string, updates []*met
 // GetMetadataUpdates gets all updates from the metadata store. If no hostname is specified, it fetches all updates
 // regardless of hostname.
 func (m *AgentManagerImpl) GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error) {
-	var updates []*metadatapb.ResourceUpdate
-
-	pods, err := m.mds.GetNodePods(hostname)
-	if err != nil {
-		return nil, err
-	}
-
-	endpoints, err := m.mds.GetNodeEndpoints(hostname)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, pod := range pods {
-		containerUpdates := GetContainerResourceUpdatesFromPod(pod)
-		updates = append(updates, containerUpdates...)
-
-		podUpdate := GetResourceUpdateFromPod(pod)
-		updates = append(updates, podUpdate)
-	}
-
-	for _, endpoint := range endpoints {
-		epUpdate := GetNodeResourceUpdateFromEndpoints(endpoint, hostname)
-		updates = append(updates, epUpdate)
-	}
-
-	return updates, nil
+	return m.mds.GetMetadataUpdates(hostname)
 }

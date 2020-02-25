@@ -86,6 +86,16 @@ func (mc *MessageBusController) registerListeners(agentTopic string, agentManage
 		return err
 	}
 
+	// Register MetadataTopicListener.
+	ml, err := NewMetadataTopicListener(mdStore, mc.sendMessage)
+	if err != nil {
+		return err
+	}
+	err = mc.registerListener(MetadataTopic, ml)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -751,3 +751,35 @@ func (mds *KVMetadataStore) UpdateService(s *metadatapb.Service, deleted bool) e
 	}
 	return nil
 }
+
+/* =============== Cumulative Metadata Operations ============== */
+
+// GetMetadataUpdates gets all metadata updates in the store.
+func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error) {
+	var updates []*metadatapb.ResourceUpdate
+
+	pods, err := mds.GetNodePods(hostname)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoints, err := mds.GetNodeEndpoints(hostname)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pod := range pods {
+		containerUpdates := GetContainerResourceUpdatesFromPod(pod)
+		updates = append(updates, containerUpdates...)
+
+		podUpdate := GetResourceUpdateFromPod(pod)
+		updates = append(updates, podUpdate)
+	}
+
+	for _, endpoint := range endpoints {
+		epUpdate := GetNodeResourceUpdateFromEndpoints(endpoint, hostname)
+		updates = append(updates, epUpdate)
+	}
+
+	return updates, nil
+}
