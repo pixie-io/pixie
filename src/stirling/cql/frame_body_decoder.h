@@ -141,12 +141,12 @@ class FrameBodyDecoder {
    */
   explicit FrameBodyDecoder(std::string_view buf, uint8_t version = 3)
       : buf_(buf), version_(version) {
-    ECHECK_GE(version, 3);
-    ECHECK_LE(version, 4);
+    // Actual enforcement happens in cql_parse, so we just CHECK here.
+    DCHECK_GE(version, kMinSupportedProtocolVersion);
+    DCHECK_LE(version, kMaxSupportedProtocolVersion);
   }
 
-  explicit FrameBodyDecoder(const Frame& frame)
-      : FrameBodyDecoder(frame.msg, frame.hdr.version & kVersionMask) {}
+  explicit FrameBodyDecoder(const Frame& frame) : FrameBodyDecoder(frame.msg, frame.hdr.version) {}
 
   // [int] A 4 bytes signed integer.
   StatusOr<int32_t> ExtractInt();

@@ -16,9 +16,6 @@ constexpr uint8_t kQueryFrame[] = {
     0x65, 0x79, 0x73, 0x70, 0x61, 0x63, 0x65, 0x73, 0x20, 0x3b, 0x00, 0x01, 0x34, 0x00,
     0x00, 0x00, 0x64, 0x00, 0x08, 0x00, 0x05, 0x9d, 0xaf, 0x91, 0xd4, 0xc0, 0x5c};
 
-constexpr uint8_t kBadOpcodeFrame[] = {0x04, 0x00, 0x00, 0x06, 0xff, 0x00,
-                                       0x00, 0x00, 0x02, 0x00, 0x00};
-
 // For reference, a few more captured frames, in case they become useful.
 // constexpr uint8_t kOptionsFrame[] = {
 //        0x04, 0x00, 0x00, 0x61, 0x05, 0x00, 0x00, 0x00,
@@ -71,8 +68,71 @@ TEST(CqlParseTest, NeedsMoreData) {
 }
 
 TEST(CqlParseTest, BadOpcode) {
+  constexpr uint8_t kBadOpcodeFrame[] = {0x04, 0x00, 0x00, 0x06, 0xff, 0x00,
+                                         0x00, 0x00, 0x02, 0x00, 0x00};
+
   std::string_view frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadOpcodeFrame));
+
+  std::deque<Frame> frames;
+  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kInvalid);
+  ASSERT_EQ(frames.size(), 0);
+}
+
+TEST(CqlParseTest, LengthTooLarge) {
+  // Length is 0x01000000
+  constexpr uint8_t kBadLengthFrame[] = {0x04, 0x00, 0x00, 0x06, 0xff, 0x01,
+                                         0x00, 0x00, 0x00, 0x00, 0x00};
+
+  std::string_view frame_view =
+      CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
+
+  std::deque<Frame> frames;
+  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kInvalid);
+  ASSERT_EQ(frames.size(), 0);
+}
+
+TEST(CqlParseTest, LengthNegative) {
+  // Length is 0xf0000000
+  constexpr uint8_t kBadLengthFrame[] = {0x04, 0x00, 0x00, 0x06, 0xff, 0xf0,
+                                         0x00, 0x00, 0x00, 0x00, 0x00};
+
+  std::string_view frame_view =
+      CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
+
+  std::deque<Frame> frames;
+  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kInvalid);
+  ASSERT_EQ(frames.size(), 0);
+}
+
+TEST(CqlParseTest, VersionTooOld) {
+  // Version is set to 2.
+  constexpr uint8_t kBadLengthFrame[] = {0x02, 0x00, 0x00, 0x06, 0xff, 0x00,
+                                         0x00, 0x00, 0x02, 0x00, 0x00};
+
+  std::string_view frame_view =
+      CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
+
+  std::deque<Frame> frames;
+  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+
+  ASSERT_EQ(parse_result.state, ParseState::kInvalid);
+  ASSERT_EQ(frames.size(), 0);
+}
+
+TEST(CqlParseTest, VersionTooNew) {
+  // Version is set to 5.
+  constexpr uint8_t kBadLengthFrame[] = {0x05, 0x00, 0x00, 0x06, 0xff, 0x00,
+                                         0x00, 0x00, 0x02, 0x00, 0x00};
+
+  std::string_view frame_view =
+      CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
 
   std::deque<Frame> frames;
   ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);

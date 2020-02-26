@@ -155,18 +155,13 @@ constexpr uint8_t kEventResp[] = {0x00, 0x0d, 0x53, 0x43, 0x48, 0x45, 0x4d, 0x41
 // Required because zero length C-arrays are not allowed in C++, so can't use the version above.
 Frame CreateFrame(uint16_t stream, Opcode opcode, uint64_t timestamp_ns) {
   // Should be either a request or response opcode.
-  CHECK(IsReqOpcode(opcode) ^ IsRespOpcode(opcode));
-
-  const uint8_t kReqMask = 0x80;
+  CHECK(IsReqOpcode(opcode) != IsRespOpcode(opcode));
 
   Frame f;
   f.hdr.opcode = opcode;
   f.hdr.stream = stream;
   f.hdr.flags = 0;
   f.hdr.version = 0x04;
-  if (IsReqOpcode(opcode)) {
-    f.hdr.version = f.hdr.version | kReqMask;
-  }
   f.hdr.flags = 0;
   f.hdr.length = 0;
   f.msg = "";

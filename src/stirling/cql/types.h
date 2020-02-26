@@ -87,9 +87,18 @@ struct Frame {
 
 constexpr int kFrameHeaderLength = 9;
 
+// Max length is 256MB. See section 2.5 of the spec.
+constexpr int kMaxFrameLength = 256 * 1024 * 1024;
+
 // Mask to apply to FrameHeader::version to get the version.
 // The top bit is the req/response direction, and should not be used.
 constexpr uint8_t kVersionMask = 0x7f;
+constexpr uint8_t kDirectionMask = 0x80;
+
+// Currently only support version 3 and 4 of the protocol,
+// which appear to be the most popular versions.
+constexpr uint8_t kMinSupportedProtocolVersion = 3;
+constexpr uint8_t kMaxSupportedProtocolVersion = 4;
 
 //-----------------------------------------------------------------------------
 // Table Store Entry Level Structs

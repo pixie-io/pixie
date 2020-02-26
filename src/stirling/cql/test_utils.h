@@ -27,7 +27,7 @@ std::string CreateCQLEvent(TOpType op, const uint8_t (&a)[N], uint16_t stream) {
   hdr[8] = length >> 0;
 
   if (std::is_same_v<TOpType, cass::RespOp>) {
-    hdr[0] = hdr[0] | 0x80;
+    hdr[0] = hdr[0] | kDirectionMask;
   }
 
   return absl::StrCat(hdr, body);
