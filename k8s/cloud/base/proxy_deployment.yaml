@@ -22,6 +22,11 @@ spec:
             scheme: HTTPS
             path: /healthz
             port: 56000
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 56000
         envFrom:
         - configMapRef:
             name: pl-auth0-config

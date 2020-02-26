@@ -24,6 +24,11 @@ spec:
             scheme: HTTPS
             path: /healthz
             port: 51800
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 51800
         envFrom:
         - configMapRef:
             name: pl-db-config

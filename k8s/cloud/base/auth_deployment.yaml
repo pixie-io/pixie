@@ -1,3 +1,4 @@
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -15,45 +16,50 @@ spec:
       - name: auth-server
         image: gcr.io/pl-dev-infra/cloud/auth_server_image
         ports:
-          - containerPort: 50100
+        - containerPort: 50100
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
             port: 50100
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 50100
         envFrom:
-          - configMapRef:
-              name: pl-tls-config
+        - configMapRef:
+            name: pl-tls-config
         env:
-          - name: PL_JWT_SIGNING_KEY
-            valueFrom:
-              secretKeyRef:
-                name: cloud-auth-secrets
-                key: jwt-signing-key
-          - name: PL_AUTH0_CLIENT_ID
-            valueFrom:
-              secretKeyRef:
-                name: cloud-auth0-secrets
-                key: auth0-client-id
-          - name: PL_AUTH0_CLIENT_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: cloud-auth0-secrets
-                key: auth0-client-secret
-          - name: PL_PROFILE_SERVICE
-            valueFrom:
-              configMapKeyRef:
-                name: pl-service-config
-                key: PL_PROFILE_SERVICE
-          - name: PL_SITE_MANAGER_SERVICE
-            valueFrom:
-              configMapKeyRef:
-               name: pl-service-config
-               key: PL_SITE_MANAGER_SERVICE
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_AUTH0_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth0-secrets
+              key: auth0-client-id
+        - name: PL_AUTH0_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth0-secrets
+              key: auth0-client-secret
+        - name: PL_PROFILE_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_PROFILE_SERVICE
+        - name: PL_SITE_MANAGER_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_SITE_MANAGER_SERVICE
         volumeMounts:
-            - name: certs
-              mountPath: /certs
-      volumes:
         - name: certs
-          secret:
-            secretName: service-tls-certs
+          mountPath: /certs
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs

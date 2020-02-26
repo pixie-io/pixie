@@ -31,6 +31,11 @@ spec:
         volumeMounts:
         - mountPath: /certs
           name: certs
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 50400
       imagePullSecrets:
       - name: pl-image-secret
       volumes:
