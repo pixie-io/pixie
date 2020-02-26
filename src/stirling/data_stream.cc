@@ -97,11 +97,11 @@ ParseSyncType SelectSyncType(int64_t stuck_count) {
   }
   if (stuck_count <= kAggressiveSyncThreshold) {
     // Multiple stuck cycles implies there is something unparseable at the head.
-    // Run ParseMessages() with a search for a message boundary;
+    // Run ParseFrames() with a search for a message boundary;
     return ParseSyncType::Basic;
   }
 
-  // We're really having trouble now, so invoke ParseMessages() with a more aggressive search.
+  // We're really having trouble now, so invoke ParseFrames() with a more aggressive search.
   // For now, more aggressive just means a message discovered at pos 0 is ignored,
   // because presumably it's the one that is giving us problems, and we want to skip over it.
   return ParseSyncType::Aggressive;
@@ -120,7 +120,7 @@ ParseSyncType SelectSyncType(int64_t stuck_count) {
 // independently of each other.
 //
 // To be robust to lost events, which are not necessarily aligned to parseable entity boundaries,
-// ProcessToRecords() will invoke a call to ParseMessages() with a stream recovery argument when
+// ProcessToRecords() will invoke a call to ParseFrames() with a stream recovery argument when
 // necessary.
 template <typename TFrameType>
 void DataStream::ProcessBytesToFrames(MessageType type) {
@@ -139,9 +139,9 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   // been made.
   //                 indicates an unparseable event at the head that is blocking progress.
   //
-  // - has_new_events_: An optimization to avoid the expensive call to ParseMessages() when
+  // - has_new_events_: An optimization to avoid the expensive call to ParseFrames() when
   //                    nothing has changed in the DataStream. Note that we *do* want to call
-  //                    ParseMessages() even when there are no new events, if the
+  //                    ParseFrames() even when there are no new events, if the
   //                    bytes_to_frames_stuck_count_ is high enough and we want to attempt a stream
   //                    recovery.
   //
@@ -169,7 +169,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
 
     // Now parse all the appended events.
     parse_result =
-        parser.ParseMessages(type, &typed_messages, SelectSyncType(bytes_to_frames_stuck_count_));
+        parser.ParseFrames(type, &typed_messages, SelectSyncType(bytes_to_frames_stuck_count_));
 
     if (num_events_appended != events_.size()) {
       // We weren't able to append all events, which means we ran into a missing event.

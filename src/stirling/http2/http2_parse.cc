@@ -85,8 +85,8 @@ size_t FindFrameBoundaryForGRPCResp(std::string_view buf) {
 }  // namespace
 
 template <>
-ParseResult<size_t> ParseFrame(MessageType unused_type, std::string_view buf,
-                               std::deque<http2::Frame>* frames) {
+ParseResult<size_t> ParseFrames(MessageType unused_type, std::string_view buf,
+                                std::deque<http2::Frame>* frames) {
   PL_UNUSED(unused_type);
 
   // Note that HTTP2 connection preface, or MAGIC as used in nghttp2, must be at the beginning of

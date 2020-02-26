@@ -43,7 +43,7 @@ TEST(CqlParseTest, Basic) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kQueryFrame));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+  ParseResult<size_t> parse_result = ParseFrames(MessageType::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -61,7 +61,7 @@ TEST(CqlParseTest, NeedsMoreData) {
   frame_view.remove_suffix(10);
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+  ParseResult<size_t> parse_result = ParseFrames(MessageType::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kNeedsMoreData);
   ASSERT_EQ(frames.size(), 0);
@@ -75,7 +75,7 @@ TEST(CqlParseTest, BadOpcode) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadOpcodeFrame));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+  ParseResult<size_t> parse_result = ParseFrames(MessageType::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
   ASSERT_EQ(frames.size(), 0);

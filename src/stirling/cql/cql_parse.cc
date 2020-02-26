@@ -68,8 +68,8 @@ ParseState Parse(MessageType type, std::string_view* buf, Frame* result) {
 
 // TODO(oazizi): Find a way to share this implementation across protocols.
 template <>
-ParseResult<size_t> ParseFrame(MessageType type, std::string_view buf,
-                               std::deque<cass::Frame>* messages) {
+ParseResult<size_t> ParseFrames(MessageType type, std::string_view buf,
+                                std::deque<cass::Frame>* messages) {
   std::vector<size_t> start_positions;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;

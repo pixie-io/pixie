@@ -16,8 +16,8 @@ namespace stirling {
  * bytes count of the parsed data.
  */
 template <>
-ParseResult<size_t> ParseFrame(MessageType type, std::string_view buf,
-                               std::deque<http::Message>* messages);
+ParseResult<size_t> ParseFrames(MessageType type, std::string_view buf,
+                                std::deque<http::Message>* messages);
 
 template <>
 size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, size_t start_pos);

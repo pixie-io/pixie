@@ -14,8 +14,8 @@ namespace stirling {
  * EventParser<std::unique_ptr<Frame>>.
  */
 template <>
-ParseResult<size_t> ParseFrame(MessageType unused_type, std::string_view buf,
-                               std::deque<http2::Frame>* messages);
+ParseResult<size_t> ParseFrames(MessageType unused_type, std::string_view buf,
+                                std::deque<http2::Frame>* messages);
 
 template <>
 size_t FindFrameBoundary<http2::Frame>(MessageType type, std::string_view buf, size_t start_pos);

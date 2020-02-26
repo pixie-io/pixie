@@ -52,8 +52,8 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
 
 // TODO(chengruizhe): Could be templatized with HTTP Parser
 template <>
-ParseResult<size_t> ParseFrame(MessageType type, std::string_view buf,
-                               std::deque<mysql::Packet>* messages) {
+ParseResult<size_t> ParseFrames(MessageType type, std::string_view buf,
+                                std::deque<mysql::Packet>* messages) {
   std::vector<size_t> start_positions;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;

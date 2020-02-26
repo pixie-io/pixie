@@ -23,7 +23,7 @@ struct BufferPosition {
   size_t offset;
 };
 
-// A ParseResult returns a vector of parsed messages, and also some position markers.
+// A ParseResult returns a vector of parsed frames, and also some position markers.
 //
 // It is templated based on the position type, because we have two concepts of position:
 //    Position in a contiguous buffer: PositionType is uint64_t.
@@ -32,53 +32,53 @@ struct BufferPosition {
 // The two concepts are used by two different parse functions we have:
 //
 // ParseResult<size_t> Parse(MessageType type, std::string_view buf);
-// ParseResult<BufferPosition> ParseMessages(MessageType type);
+// ParseResult<BufferPosition> ParseFrames(MessageType type);
 template <typename PositionType>
 struct ParseResult {
-  // Positions of message start positions in the source buffer.
+  // Positions of frame start positions in the source buffer.
   std::vector<PositionType> start_positions;
   // Position of where parsing ended consuming the source buffer.
   // When PositionType is bytes, this is total bytes successfully consumed.
   PositionType end_position;
-  // State of the last attempted message parse.
+  // State of the last attempted frame parse.
   ParseState state = ParseState::kInvalid;
 };
 
-// NOTE: FindFrameBoundary() and ParseFrame() must be implemented per protocol.
+// NOTE: FindFrameBoundary() and ParseFrames() must be implemented per protocol.
 
 /**
- * Attempt to find the next message boundary.
+ * Attempt to find the next frame boundary.
  *
  * @tparam TFrameType Message type to search for.
  * @param type request or response.
- * @param buf the buffer in which to search for a message boundary.
+ * @param buf the buffer in which to search for a frame boundary.
  * @param start_pos A start position from which to search.
- * @return Either the position of a message start, if found (must be > start_pos),
- * or std::string::npos if no such message start was found.
+ * @return Either the position of a frame start, if found (must be > start_pos),
+ * or std::string::npos if no such frame start was found.
  */
 template <typename TFrameType>
 size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos);
 
 /**
- * Parses the input string as a sequence of TFrameType, and write the messages to messages.
+ * Parses the input string as a sequence of TFrameType, and write the frames to frames.
  *
  * @tparam TFrameType Message type to parse.
  * @param type selects whether to parse for request or response.
- * @param buf the buffer of data to parse as messages.
- * @param messages the parsed messages
- * @return result of the parse, including positions in the source buffer where messages were found.
+ * @param buf the buffer of data to parse as frames.
+ * @param frames the parsed frames
+ * @return result of the parse, including positions in the source buffer where frames were found.
  */
 template <typename TFrameType>
-ParseResult<size_t> ParseFrame(MessageType type, std::string_view buf,
-                               std::deque<TFrameType>* messages);
+ParseResult<size_t> ParseFrames(MessageType type, std::string_view buf,
+                                std::deque<TFrameType>* frames);
 
 enum class ParseSyncType {
-  // Do not perform a message boundary sync.
+  // Do not perform a frame boundary sync.
   None,
-  // Perform a message boundary sync, where head might already be aligned.
+  // Perform a frame boundary sync, where head might already be aligned.
   // Sync result of staying in the same spot is okay.
   Basic,
-  // Perform a message boundary sync, where we want to force movement,
+  // Perform a frame boundary sync, where we want to force movement,
   // so disallow syncing to back to the existing position, unless no other boundary is discovered.
   Aggressive,
 };
@@ -116,7 +116,7 @@ class PositionConverter {
     while (curr_seq_ < msgs.size()) {
       const auto& msg = msgs[curr_seq_];
 
-      // If next message would cause the crossover,
+      // If next frame would cause the crossover,
       // then we have found the point we're looking for.
       if (pos < size_ + msg.size()) {
         return {curr_seq_, pos - size_};
@@ -138,13 +138,13 @@ class PositionConverter {
 
 /**
  * @brief Parses a stream of events traced from write/send/read/recv syscalls,
- * and emits as many complete parsed messages as it can.
+ * and emits as many complete parsed frames as it can.
  */
 template <typename TFrameType>
 class EventParser {
  public:
   /**
-   * @brief Append a sequence message to the internal buffer.
+   * @brief Append raw data to the internal buffer.
    */
   void Append(const SocketDataEvent& event) {
     msgs_.push_back(event.msg);
@@ -153,25 +153,25 @@ class EventParser {
   }
 
   /**
-   * @brief Parses internal buffer text (see Append()) for messages, and writes resultant
-   * parsed Messages into the provided messages container.
+   * @brief Parses internal data buffer (see Append()) for frames, and writes resultant
+   * parsed frames into the provided frames container.
    *
-   * This is a templated function. The caller must provide the type of message to parsed (e.g.
+   * This is a templated function. The caller must provide the type of frame to parsed (e.g.
    * http::Message), and must ensure that there is a corresponding Parse() function with the desired
-   * message type.
+   * frame type.
    *
-   * @param type The Type of message to parse.
-   * @param messages The container to which newly parsed messages are added.
+   * @param type The Type of frames to parse.
+   * @param frames The container to which newly parsed frames are added.
    *
-   * @return ParseResult with locations where parseable messages were found in the source buffer.
+   * @return ParseResult with locations where parseable frames were found in the source buffer.
    */
-  ParseResult<BufferPosition> ParseMessages(MessageType type, std::deque<TFrameType>* messages,
-                                            ParseSyncType sync_type = ParseSyncType::None) {
+  ParseResult<BufferPosition> ParseFrames(MessageType type, std::deque<TFrameType>* frames,
+                                          ParseSyncType sync_type = ParseSyncType::None) {
     std::string buf = Combine();
 
     size_t start_pos = 0;
     if (sync_type != ParseSyncType::None) {
-      VLOG(3) << "Finding message boundary";
+      VLOG(3) << "Finding frame boundary";
       const bool force_movement = sync_type == ParseSyncType::Aggressive;
       start_pos = FindFrameBoundary<TFrameType>(type, buf, force_movement);
 
@@ -182,35 +182,35 @@ class EventParser {
       }
     }
 
-    // Grab size before we start, so we know where the new parsed messages are.
-    const size_t prev_size = messages->size();
+    // Grab size before we start, so we know where the new parsed frames are.
+    const size_t prev_size = frames->size();
 
-    // Parse and append new messages to the messages vector.
+    // Parse and append new frames to the frames vector.
     std::string_view buf_view(buf);
     buf_view.remove_prefix(start_pos);
-    ParseResult<size_t> result = ParseFrame(type, buf_view, messages);
-    DCHECK(messages->size() >= prev_size);
+    ParseResult<size_t> result = stirling::ParseFrames(type, buf_view, frames);
+    DCHECK(frames->size() >= prev_size);
 
-    VLOG(3) << absl::Substitute("Parsed $0 new messages", messages->size() - prev_size);
+    VLOG(3) << absl::Substitute("Parsed $0 new frames", frames->size() - prev_size);
 
     std::vector<BufferPosition> positions;
 
     PositionConverter converter;
 
-    // Match timestamps with the parsed messages.
+    // Match timestamps with the parsed frames.
     for (size_t i = 0; i < result.start_positions.size(); ++i) {
       BufferPosition position = converter.Convert(msgs_, start_pos + result.start_positions[i]);
       DCHECK(position.seq_num < msgs_.size()) << absl::Substitute(
           "The sequence number must be in valid range of [0, $0)", msgs_.size());
       positions.push_back(position);
 
-      auto& msg = (*messages)[prev_size + i];
+      auto& msg = (*frames)[prev_size + i];
       msg.timestamp_ns = ts_nses_[position.seq_num];
     }
 
     BufferPosition end_position = converter.Convert(msgs_, start_pos + result.end_position);
 
-    // Reset all state. Call to ParseMessages() is destructive of Append() state.
+    // Reset all state. Call to ParseFrames() is destructive of Append() state.
     msgs_.clear();
     ts_nses_.clear();
     msgs_size_ = 0;
@@ -228,7 +228,7 @@ class EventParser {
     return result;
   }
 
-  // ts_nses_ is the time stamp in nanosecond for the message in msgs_ with the same indexes.
+  // ts_nses_ is the time stamp in nanosecond for the frame in msgs_ with the same indexes.
   std::vector<uint64_t> ts_nses_;
   std::vector<std::string_view> msgs_;
 

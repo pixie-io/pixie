@@ -27,8 +27,8 @@ struct TestFrame {
 };
 
 template <>
-ParseResult<size_t> ParseFrame(MessageType /* type */, std::string_view buf,
-                               std::deque<TestFrame>* messages) {
+ParseResult<size_t> ParseFrames(MessageType /* type */, std::string_view buf,
+                                std::deque<TestFrame>* messages) {
   ParseResult<size_t> result;
 
   size_t position = 0;
@@ -107,7 +107,7 @@ TEST(EventParserTest, BasicPositionConversions) {
   parser.Append(event2);
   parser.Append(event3);
   parser.Append(event4);
-  ParseResult<BufferPosition> res = parser.ParseMessages(MessageType::kRequest, &word_frames);
+  ParseResult<BufferPosition> res = parser.ParseFrames(MessageType::kRequest, &word_frames);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, res.state);
   EXPECT_THAT(res.start_positions,
