@@ -90,7 +90,7 @@ TEST(CqlParseTest, LengthTooLarge) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+  ParseResult<size_t> parse_result = ParseFrames(MessageType::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
   ASSERT_EQ(frames.size(), 0);
@@ -105,7 +105,7 @@ TEST(CqlParseTest, LengthNegative) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+  ParseResult<size_t> parse_result = ParseFrames(MessageType::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
   ASSERT_EQ(frames.size(), 0);
@@ -120,7 +120,7 @@ TEST(CqlParseTest, VersionTooOld) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+  ParseResult<size_t> parse_result = ParseFrames(MessageType::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
   ASSERT_EQ(frames.size(), 0);
@@ -135,7 +135,7 @@ TEST(CqlParseTest, VersionTooNew) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result = ParseFrame(MessageType::kRequest, frame_view, &frames);
+  ParseResult<size_t> parse_result = ParseFrames(MessageType::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
   ASSERT_EQ(frames.size(), 0);
