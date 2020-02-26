@@ -1,4 +1,9 @@
 directory '/opt/golang' do
+  recursive true
+  action :delete
+end
+
+directory '/opt/golang' do
   mode '0755'
   action :create
 end

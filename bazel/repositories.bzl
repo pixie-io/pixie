@@ -244,13 +244,13 @@ def _go_deps():
 def pl_deps():
     _com_llvm_lib()
 
+    _repository_impl(name = "io_bazel_rules_go")
     _repository_impl(name = "bazel_gazelle")
     _repository_impl(name = "com_github_bazelbuild_buildtools")
     _repository_impl(name = "bazel_skylib", repository_key = "io_bazel_rules_skylib")
     _repository_impl(name = "io_bazel_rules_docker")
     _repository_impl(name = "io_bazel_toolchains")
     _repository_impl(name = "distroless")
-    _repository_impl(name = "io_bazel_rules_go")
     _repository_impl(name = "boringssl", repository_key = "com_google_boringssl")
     _repository_impl(
         name = "com_github_grpc_grpc",
