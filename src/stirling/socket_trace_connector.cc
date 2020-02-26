@@ -24,6 +24,7 @@
 #include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/go_grpc_types.h"
+#include "src/stirling/http/http_stitcher.h"
 #include "src/stirling/http2/grpc.h"
 #include "src/stirling/http2/http2.h"
 #include "src/stirling/mysql/mysql_parse.h"
@@ -558,7 +559,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 
   // Currently decompresses gzip content, but could handle other transformations too.
   // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
-  PreProcessMessage(&record.resp);
+  http::PreProcessMessage(&record.resp);
 
   DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 

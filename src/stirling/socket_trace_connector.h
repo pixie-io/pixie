@@ -32,6 +32,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/cass_table.h"
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/connection_tracker.h"
+#include "src/stirling/http/utils.h"
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
 #include "src/stirling/source_connector.h"

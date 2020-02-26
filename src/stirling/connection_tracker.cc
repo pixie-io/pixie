@@ -19,8 +19,11 @@
 #include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/cassandra/cql_stitcher.h"
 #include "src/stirling/common/go_grpc_types.h"
+#include "src/stirling/http/http_stitcher.h"
+#include "src/stirling/http/http_types.h"
 #include "src/stirling/message_types.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
+#include "src/stirling/mysql/mysql_types.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
 DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
@@ -378,52 +381,11 @@ std::vector<http::Record> ConnectionTracker::ProcessToRecords() {
   auto& req_frames = req_data()->Frames<http::Message>();
   auto& resp_frames = resp_data()->Frames<http::Message>();
 
-  // Match request response pairs.
-  std::vector<http::Record> trace_records;
-  for (auto req_iter = req_frames.begin(), resp_iter = resp_frames.begin();
-       req_iter != req_frames.end() && resp_iter != resp_frames.end();) {
-    http::Message& req = *req_iter;
-    http::Message& resp = *resp_iter;
-
-    if (resp.timestamp_ns < req.timestamp_ns) {
-      // Oldest message is a response.
-      // This means the corresponding request was not traced.
-      // Push without request.
-      http::Record record{http::Message(), std::move(resp)};
-      resp_frames.pop_front();
-      trace_records.push_back(std::move(record));
-      ++resp_iter;
-    } else {
-      // Found a response. It must be the match assuming:
-      //  1) In-order messages (which is true for HTTP1).
-      //  2) No missing messages.
-      // With missing messages, there are no guarantees.
-      // With no missing messages and pipelining, it's even more complicated.
-      http::Record record{std::move(req), std::move(resp)};
-      req_frames.pop_front();
-      resp_frames.pop_front();
-      trace_records.push_back(std::move(record));
-      ++resp_iter;
-      ++req_iter;
-    }
-  }
-
-  // Any leftover responses must have lost their requests.
-  for (auto resp_iter = resp_frames.begin(); resp_iter != resp_frames.end(); ++resp_iter) {
-    http::Message& resp = *resp_iter;
-    http::Record record{http::Message(), std::move(resp)};
-    trace_records.push_back(std::move(record));
-  }
-  resp_frames.clear();
-
-  // Any leftover requests are left around for the next iteration,
-  // since the response may not have been traced yet.
-  // TODO(oazizi): If we have seen the close event, then can assume the response is lost.
-  //               We should push the event out in such cases.
+  std::vector<http::Record> result = http::ProcessMessages(&req_frames, &resp_frames);
 
   Cleanup<http::Message>();
 
-  return trace_records;
+  return result;
 }
 
 template <>
