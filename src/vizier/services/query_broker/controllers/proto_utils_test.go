@@ -52,6 +52,7 @@ relation {
 		column_desc: "a test column in a test table"
 	}
 }
+name: "test"
 `
 
 var unauthenticatedStatusPb = `

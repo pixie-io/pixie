@@ -2307,6 +2307,7 @@ proto.pl.api.vizierpb.RowBatchData.prototype.toObject = function(opt_includeInst
  */
 proto.pl.api.vizierpb.RowBatchData.toObject = function(includeInstance, msg) {
   var f, obj = {
+    tableId: jspb.Message.getFieldWithDefault(msg, 5, ""),
     colsList: jspb.Message.toObjectList(msg.getColsList(),
     proto.pl.api.vizierpb.Column.toObject, includeInstance),
     numRows: jspb.Message.getFieldWithDefault(msg, 2, 0),
@@ -2348,6 +2349,10 @@ proto.pl.api.vizierpb.RowBatchData.deserializeBinaryFromReader = function(msg, r
     }
     var field = reader.getFieldNumber();
     switch (field) {
+    case 5:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setTableId(value);
+      break;
     case 1:
       var value = new proto.pl.api.vizierpb.Column;
       reader.readMessage(value,proto.pl.api.vizierpb.Column.deserializeBinaryFromReader);
@@ -2394,6 +2399,13 @@ proto.pl.api.vizierpb.RowBatchData.prototype.serializeBinary = function() {
  */
 proto.pl.api.vizierpb.RowBatchData.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
+  f = message.getTableId();
+  if (f.length > 0) {
+    writer.writeString(
+      5,
+      f
+    );
+  }
   f = message.getColsList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
@@ -2423,6 +2435,24 @@ proto.pl.api.vizierpb.RowBatchData.serializeBinaryToWriter = function(message, w
       f
     );
   }
+};
+
+
+/**
+ * optional string table_id = 5;
+ * @return {string}
+ */
+proto.pl.api.vizierpb.RowBatchData.prototype.getTableId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 5, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.api.vizierpb.RowBatchData} returns this
+ */
+proto.pl.api.vizierpb.RowBatchData.prototype.setTableId = function(value) {
+  return jspb.Message.setProto3StringField(this, 5, value);
 };
 
 
@@ -4362,7 +4392,9 @@ proto.pl.api.vizierpb.QueryMetadata.prototype.toObject = function(opt_includeIns
  */
 proto.pl.api.vizierpb.QueryMetadata.toObject = function(includeInstance, msg) {
   var f, obj = {
-    relation: (f = msg.getRelation()) && proto.pl.api.vizierpb.Relation.toObject(includeInstance, f)
+    relation: (f = msg.getRelation()) && proto.pl.api.vizierpb.Relation.toObject(includeInstance, f),
+    name: jspb.Message.getFieldWithDefault(msg, 2, ""),
+    id: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -4404,6 +4436,14 @@ proto.pl.api.vizierpb.QueryMetadata.deserializeBinaryFromReader = function(msg, 
       reader.readMessage(value,proto.pl.api.vizierpb.Relation.deserializeBinaryFromReader);
       msg.setRelation(value);
       break;
+    case 2:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setName(value);
+      break;
+    case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setId(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -4439,6 +4479,20 @@ proto.pl.api.vizierpb.QueryMetadata.serializeBinaryToWriter = function(message, 
       1,
       f,
       proto.pl.api.vizierpb.Relation.serializeBinaryToWriter
+    );
+  }
+  f = message.getName();
+  if (f.length > 0) {
+    writer.writeString(
+      2,
+      f
+    );
+  }
+  f = message.getId();
+  if (f.length > 0) {
+    writer.writeString(
+      3,
+      f
     );
   }
 };
@@ -4478,6 +4532,42 @@ proto.pl.api.vizierpb.QueryMetadata.prototype.clearRelation = function() {
  */
 proto.pl.api.vizierpb.QueryMetadata.prototype.hasRelation = function() {
   return jspb.Message.getField(this, 1) != null;
+};
+
+
+/**
+ * optional string name = 2;
+ * @return {string}
+ */
+proto.pl.api.vizierpb.QueryMetadata.prototype.getName = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.api.vizierpb.QueryMetadata} returns this
+ */
+proto.pl.api.vizierpb.QueryMetadata.prototype.setName = function(value) {
+  return jspb.Message.setProto3StringField(this, 2, value);
+};
+
+
+/**
+ * optional string id = 3;
+ * @return {string}
+ */
+proto.pl.api.vizierpb.QueryMetadata.prototype.getId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.api.vizierpb.QueryMetadata} returns this
+ */
+proto.pl.api.vizierpb.QueryMetadata.prototype.setId = function(value) {
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 

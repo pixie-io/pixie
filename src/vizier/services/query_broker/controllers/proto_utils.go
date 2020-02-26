@@ -137,6 +137,7 @@ func RelationFromTable(table *schemapb.Table) (*vizierpb.QueryMetadata, error) {
 		Relation: &vizierpb.Relation{
 			Columns: cols,
 		},
+		Name: table.Name,
 	}, nil
 }
 

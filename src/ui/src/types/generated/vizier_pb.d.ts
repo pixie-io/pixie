@@ -234,6 +234,9 @@ export namespace Column {
 }
 
 export class RowBatchData extends jspb.Message {
+  getTableId(): string;
+  setTableId(value: string): void;
+
   getColsList(): Array<Column>;
   setColsList(value: Array<Column>): void;
   clearColsList(): void;
@@ -258,6 +261,7 @@ export class RowBatchData extends jspb.Message {
 
 export namespace RowBatchData {
   export type AsObject = {
+    tableId: string,
     colsList: Array<Column.AsObject>,
     numRows: number,
     eow: boolean,
@@ -506,6 +510,12 @@ export class QueryMetadata extends jspb.Message {
   hasRelation(): boolean;
   clearRelation(): void;
 
+  getName(): string;
+  setName(value: string): void;
+
+  getId(): string;
+  setId(value: string): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): QueryMetadata.AsObject;
   static toObject(includeInstance: boolean, msg: QueryMetadata): QueryMetadata.AsObject;
@@ -517,6 +527,8 @@ export class QueryMetadata extends jspb.Message {
 export namespace QueryMetadata {
   export type AsObject = {
     relation?: Relation.AsObject,
+    name: string,
+    id: string,
   }
 }
 

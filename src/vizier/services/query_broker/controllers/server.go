@@ -451,11 +451,14 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 
 	// Convert query result into the externally-facing format.
 	for _, table := range qr.Tables {
+		tableID := uuid.NewV4().String()
+
 		// Send schema first.
 		md, err := RelationFromTable(table)
 		if err != nil {
 			return err
 		}
+		md.ID = tableID
 		resp := &vizierpb.ExecuteScriptResponse{
 			QueryID: queryID.String(),
 			Result: &vizierpb.ExecuteScriptResponse_MetaData{
@@ -468,11 +471,16 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 		}
 
 		// Send row batches.
-		for _, rb := range table.RowBatches {
+		for i, rb := range table.RowBatches {
 			newRb, err := RowBatchToVizierRowBatch(rb)
 			if err != nil {
 				return err
 			}
+			newRb.TableID = tableID
+			if i == len(table.RowBatches)-1 {
+				newRb.Eos = true
+			}
+
 			resp := &vizierpb.ExecuteScriptResponse{
 				QueryID: queryID.String(),
 				Result: &vizierpb.ExecuteScriptResponse_Data{
