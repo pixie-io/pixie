@@ -833,7 +833,7 @@ INSTANTIATE_TEST_SUITE_P(Stressor, HTTPParserTest,
                          ::testing::Values(TestParam{37337, 50}, TestParam{98237, 50}));
 
 //=============================================================================
-// HTTP FindMessageBoundary Tests
+// HTTP FindFrameBoundary Tests
 //=============================================================================
 
 TEST_F(HTTPParserTest, FindReqBoundaryAligned) {
@@ -857,7 +857,7 @@ TEST_F(HTTPParserTest, FindReqBoundaryUnaligned) {
     const std::string buf =
         absl::StrCat("some garbage leftover text with a GET inside", kHTTPPostReq0, kHTTPGetReq1);
 
-    // FindMessageBoundary() should cut out the garbage text and shouldn't match on the GET inside
+    // FindFrameBoundary() should cut out the garbage text and shouldn't match on the GET inside
     // the garbage text.
     size_t pos = FindFrameBoundary<http::Message>(MessageType::kRequest, buf, 0);
     ASSERT_NE(pos, std::string::npos);
@@ -868,7 +868,7 @@ TEST_F(HTTPParserTest, FindReqBoundaryUnaligned) {
     const std::string buf =
         absl::StrCat("some garbage leftover text with a POST inside", kHTTPPostReq0, kHTTPGetReq1);
 
-    // FindMessageBoundary() should cut out the garbage text and shouldn't match on the POST inside
+    // FindFrameBoundary() should cut out the garbage text and shouldn't match on the POST inside
     // the garbage text.
     size_t pos = FindFrameBoundary<http::Message>(MessageType::kRequest, buf, 0);
     ASSERT_NE(pos, std::string::npos);
@@ -897,7 +897,7 @@ TEST_F(HTTPParserTest, FindRespBoundaryUnaligned) {
   std::string buf =
       absl::StrCat("some garbage leftover text with a HTTP/1.1 inside", kHTTPResp1, kHTTPResp2);
 
-  // FindMessageBoundary() should cut out the garbage text and shouldn't match on the HTTP/1.1
+  // FindFrameBoundary() should cut out the garbage text and shouldn't match on the HTTP/1.1
   // inside the garbage text.
   size_t pos = FindFrameBoundary<http::Message>(MessageType::kResponse, buf, 1);
   ASSERT_NE(pos, std::string::npos);

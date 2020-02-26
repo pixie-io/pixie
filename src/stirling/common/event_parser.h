@@ -44,7 +44,7 @@ struct ParseResult {
   ParseState state = ParseState::kInvalid;
 };
 
-// NOTE: FindMessageBoundary() and Parse() must be implemented per protocol.
+// NOTE: FindFrameBoundary() and ParseFrame() must be implemented per protocol.
 
 /**
  * Attempt to find the next message boundary.

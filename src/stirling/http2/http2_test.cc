@@ -423,15 +423,15 @@ struct BoundaryTestCase {
   size_t exp_res;
 };
 
-using FindMessageBoundaryTest = ::testing::TestWithParam<BoundaryTestCase>;
+using FindFrameBoundaryTest = ::testing::TestWithParam<BoundaryTestCase>;
 
-TEST_P(FindMessageBoundaryTest, CheckReturnValues) {
+TEST_P(FindFrameBoundaryTest, CheckReturnValues) {
   auto param = GetParam();
   EXPECT_EQ(param.exp_res, FindFrameBoundary<Frame>(param.msg_type, param.input, 0));
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    FindMessageBoundarySuite, FindMessageBoundaryTest,
+    FindFrameBoundarySuite, FindFrameBoundaryTest,
     ::testing::Values(
         BoundaryTestCase{
             ConstStringView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D\x86\x83\xC0\xBF"),

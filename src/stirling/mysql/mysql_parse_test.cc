@@ -253,6 +253,54 @@ TEST_F(MySQLParserTest, NoAppend) {
   EXPECT_THAT(parsed_messages, ElementsAre());
 }
 
+//=============================================================================
+// HTTP FindFrameBoundary Tests
+//=============================================================================
+
+TEST_F(MySQLParserTest, FindReqBoundaryAligned) {
+  const std::string buf =
+      absl::StrCat(testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT foo"),
+                   testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "blahblahblah"));
+
+  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0);
+  ASSERT_EQ(pos, 0);
+}
+
+TEST_F(MySQLParserTest, FindReqBoundaryUnaligned) {
+  const std::string buf =
+      absl::StrCat(ConstStringView("some garbage leftover content\x03\x00\x00\x00"),
+                   testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT foo"),
+                   testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "blahblahblah"));
+
+  // FindFrameBoundary() should cut out the garbage text.
+  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0);
+  ASSERT_NE(pos, std::string::npos);
+  EXPECT_EQ(
+      buf.substr(pos),
+      absl::StrCat(testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT foo"),
+                   testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "blahblahblah")));
+}
+
+TEST_F(MySQLParserTest, FindReqBoundaryWithStartPos) {
+  const std::string buf =
+      absl::StrCat(testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT foo"),
+                   testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "blahblahblah"));
+
+  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 1);
+  ASSERT_NE(pos, std::string::npos);
+  EXPECT_EQ(buf.substr(pos),
+            testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "blahblahblah"));
+}
+
+TEST_F(MySQLParserTest, FindNoBoundary) {
+  const std::string_view buf = ConstStringView(
+      "This is a bogus string in which there is no MySQL "
+      "protocol\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00");
+
+  size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0);
+  EXPECT_EQ(pos, std::string::npos);
+}
+
 }  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

@@ -7,6 +7,9 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <magic_enum.hpp>
+
 #include "src/common/base/base.h"
 #include "src/stirling/common/utils.h"
 #include "src/stirling/utils/req_resp_pair.h"
@@ -93,6 +96,55 @@ inline MySQLEventType DecodeCommand(uint8_t command) {
 inline std::string CommandToString(MySQLEventType command) {
   return std::string(1, static_cast<char>(command));
 }
+
+constexpr int kMaxMySQLPacketLength = (1 << 24) - 1;
+
+struct NumberRange {
+  int min;
+  int max;
+};
+
+inline std::vector<NumberRange> InitMySQLCommandLengths() {
+  std::vector<NumberRange> cmd_length_ranges(magic_enum::enum_count<mysql::MySQLEventType>());
+
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kSleep)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kQuit)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kInitDB)] = {1, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kQuery)] = {1, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kFieldList)] = {2, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kCreateDB)] = {1, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kDropDB)] = {1, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kRefresh)] = {2, 2};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kShutdown)] = {1, 2};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kStatistics)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kProcessInfo)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kConnect)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kProcessKill)] = {1, 5};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kDebug)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kPing)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kTime)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kDelayedInsert)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kChangeUser)] = {4, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kBinlogDump)] = {11, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kTableDump)] = {3, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kConnectOut)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kRegisterSlave)] = {18, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtPrepare)] = {1, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtExecute)] = {10, kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtSendLongData)] = {7,
+                                                                            kMaxMySQLPacketLength};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtClose)] = {5, 5};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtReset)] = {5, 5};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kSetOption)] = {3, 3};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtFetch)] = {9, 9};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kDaemon)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kBinlogDumpGTID)] = {19, 19};
+  cmd_length_ranges[static_cast<int>(MySQLEventType::kResetConnection)] = {1, 1};
+
+  return cmd_length_ranges;
+}
+
+inline std::vector<NumberRange> kMySQLCommandLengths = InitMySQLCommandLengths();
 
 // Response types
 // https://dev.mysql.com/doc/internals/en/generic-response-packets.html
