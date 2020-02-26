@@ -475,25 +475,25 @@ type isColumn_ColData interface {
 }
 
 type Column_BooleanData struct {
-	BooleanData *BooleanColumn `protobuf:"bytes,1,opt,name=boolean_data,json=booleanData,proto3,oneof"`
+	BooleanData *BooleanColumn `protobuf:"bytes,1,opt,name=boolean_data,json=booleanData,proto3,oneof" json:"boolean_data,omitempty"`
 }
 type Column_Int64Data struct {
-	Int64Data *Int64Column `protobuf:"bytes,2,opt,name=int64_data,json=int64Data,proto3,oneof"`
+	Int64Data *Int64Column `protobuf:"bytes,2,opt,name=int64_data,json=int64Data,proto3,oneof" json:"int64_data,omitempty"`
 }
 type Column_Uint128Data struct {
-	Uint128Data *UInt128Column `protobuf:"bytes,3,opt,name=uint128_data,json=uint128Data,proto3,oneof"`
+	Uint128Data *UInt128Column `protobuf:"bytes,3,opt,name=uint128_data,json=uint128Data,proto3,oneof" json:"uint128_data,omitempty"`
 }
 type Column_Time64NsData struct {
-	Time64NsData *Time64NSColumn `protobuf:"bytes,4,opt,name=time64ns_data,json=time64nsData,proto3,oneof"`
+	Time64NsData *Time64NSColumn `protobuf:"bytes,4,opt,name=time64ns_data,json=time64nsData,proto3,oneof" json:"time64ns_data,omitempty"`
 }
 type Column_Float64Data struct {
-	Float64Data *Float64Column `protobuf:"bytes,5,opt,name=float64_data,json=float64Data,proto3,oneof"`
+	Float64Data *Float64Column `protobuf:"bytes,5,opt,name=float64_data,json=float64Data,proto3,oneof" json:"float64_data,omitempty"`
 }
 type Column_StringData struct {
-	StringData *StringColumn `protobuf:"bytes,6,opt,name=string_data,json=stringData,proto3,oneof"`
+	StringData *StringColumn `protobuf:"bytes,6,opt,name=string_data,json=stringData,proto3,oneof" json:"string_data,omitempty"`
 }
 type Column_Duration64NsData struct {
-	Duration64NsData *Duration64NSColumn `protobuf:"bytes,7,opt,name=duration64ns_data,json=duration64nsData,proto3,oneof"`
+	Duration64NsData *Duration64NSColumn `protobuf:"bytes,7,opt,name=duration64ns_data,json=duration64nsData,proto3,oneof" json:"duration64ns_data,omitempty"`
 }
 
 func (*Column_BooleanData) isColumn_ColData()      {}
@@ -854,25 +854,25 @@ type isScalarValue_Value interface {
 }
 
 type ScalarValue_BoolValue struct {
-	BoolValue bool `protobuf:"varint,2,opt,name=bool_value,json=boolValue,proto3,oneof"`
+	BoolValue bool `protobuf:"varint,2,opt,name=bool_value,json=boolValue,proto3,oneof" json:"bool_value,omitempty"`
 }
 type ScalarValue_Int64Value struct {
-	Int64Value int64 `protobuf:"varint,3,opt,name=int64_value,json=int64Value,proto3,oneof"`
+	Int64Value int64 `protobuf:"varint,3,opt,name=int64_value,json=int64Value,proto3,oneof" json:"int64_value,omitempty"`
 }
 type ScalarValue_Float64Value struct {
-	Float64Value float64 `protobuf:"fixed64,4,opt,name=float64_value,json=float64Value,proto3,oneof"`
+	Float64Value float64 `protobuf:"fixed64,4,opt,name=float64_value,json=float64Value,proto3,oneof" json:"float64_value,omitempty"`
 }
 type ScalarValue_StringValue struct {
-	StringValue string `protobuf:"bytes,5,opt,name=string_value,json=stringValue,proto3,oneof"`
+	StringValue string `protobuf:"bytes,5,opt,name=string_value,json=stringValue,proto3,oneof" json:"string_value,omitempty"`
 }
 type ScalarValue_Time64NsValue struct {
-	Time64NsValue int64 `protobuf:"varint,6,opt,name=time64_ns_value,json=time64NsValue,proto3,oneof"`
+	Time64NsValue int64 `protobuf:"varint,6,opt,name=time64_ns_value,json=time64NsValue,proto3,oneof" json:"time64_ns_value,omitempty"`
 }
 type ScalarValue_Duration64NsValue struct {
-	Duration64NsValue int64 `protobuf:"varint,8,opt,name=duration64_ns_value,json=duration64NsValue,proto3,oneof"`
+	Duration64NsValue int64 `protobuf:"varint,8,opt,name=duration64_ns_value,json=duration64NsValue,proto3,oneof" json:"duration64_ns_value,omitempty"`
 }
 type ScalarValue_Uint128Value struct {
-	Uint128Value *UInt128 `protobuf:"bytes,7,opt,name=uint128_value,json=uint128Value,proto3,oneof"`
+	Uint128Value *UInt128 `protobuf:"bytes,7,opt,name=uint128_value,json=uint128Value,proto3,oneof" json:"uint128_value,omitempty"`
 }
 
 func (*ScalarValue_BoolValue) isScalarValue_Value()         {}
@@ -1314,10 +1314,10 @@ type isExecuteScriptResponse_Result interface {
 }
 
 type ExecuteScriptResponse_Data struct {
-	Data *QueryData `protobuf:"bytes,3,opt,name=data,proto3,oneof"`
+	Data *QueryData `protobuf:"bytes,3,opt,name=data,proto3,oneof" json:"data,omitempty"`
 }
 type ExecuteScriptResponse_MetaData struct {
-	MetaData *QueryMetadata `protobuf:"bytes,4,opt,name=meta_data,json=metaData,proto3,oneof"`
+	MetaData *QueryMetadata `protobuf:"bytes,4,opt,name=meta_data,json=metaData,proto3,oneof" json:"meta_data,omitempty"`
 }
 
 func (*ExecuteScriptResponse_Data) isExecuteScriptResponse_Result()     {}
@@ -3543,7 +3543,8 @@ func (m *Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *Column_BooleanData) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_BooleanData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3563,7 +3564,8 @@ func (m *Column_BooleanData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_Int64Data) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_Int64Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3583,7 +3585,8 @@ func (m *Column_Int64Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_Uint128Data) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_Uint128Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3603,7 +3606,8 @@ func (m *Column_Uint128Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_Time64NsData) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_Time64NsData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3623,7 +3627,8 @@ func (m *Column_Time64NsData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_Float64Data) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_Float64Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3643,7 +3648,8 @@ func (m *Column_Float64Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_StringData) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_StringData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3663,7 +3669,8 @@ func (m *Column_StringData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_Duration64NsData) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_Duration64NsData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3910,7 +3917,8 @@ func (m *ScalarValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *ScalarValue_BoolValue) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_BoolValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3926,7 +3934,8 @@ func (m *ScalarValue_BoolValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Int64Value) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_Int64Value) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3937,7 +3946,8 @@ func (m *ScalarValue_Int64Value) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Float64Value) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_Float64Value) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3949,7 +3959,8 @@ func (m *ScalarValue_Float64Value) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_StringValue) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_StringValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3962,7 +3973,8 @@ func (m *ScalarValue_StringValue) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Time64NsValue) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_Time64NsValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3973,7 +3985,8 @@ func (m *ScalarValue_Time64NsValue) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Uint128Value) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_Uint128Value) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3993,7 +4006,8 @@ func (m *ScalarValue_Uint128Value) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Duration64NsValue) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_Duration64NsValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4301,7 +4315,8 @@ func (m *ExecuteScriptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *ExecuteScriptResponse_Data) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ExecuteScriptResponse_Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4321,7 +4336,8 @@ func (m *ExecuteScriptResponse_Data) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 func (m *ExecuteScriptResponse_MetaData) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ExecuteScriptResponse_MetaData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8320,6 +8336,7 @@ func (m *HealthCheckResponse) Unmarshal(dAtA []byte) error {
 func skipVizier(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
+	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -8351,10 +8368,8 @@ func skipVizier(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			return iNdEx, nil
 		case 1:
 			iNdEx += 8
-			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -8375,55 +8390,30 @@ func skipVizier(dAtA []byte) (n int, err error) {
 				return 0, ErrInvalidLengthVizier
 			}
 			iNdEx += length
-			if iNdEx < 0 {
-				return 0, ErrInvalidLengthVizier
-			}
-			return iNdEx, nil
 		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowVizier
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipVizier(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-				if iNdEx < 0 {
-					return 0, ErrInvalidLengthVizier
-				}
-			}
-			return iNdEx, nil
+			depth++
 		case 4:
-			return iNdEx, nil
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupVizier
+			}
+			depth--
 		case 5:
 			iNdEx += 4
-			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthVizier
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
 	}
-	panic("unreachable")
+	return 0, io.ErrUnexpectedEOF
 }
 
 var (
-	ErrInvalidLengthVizier = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowVizier   = fmt.Errorf("proto: integer overflow")
+	ErrInvalidLengthVizier        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowVizier          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupVizier = fmt.Errorf("proto: unexpected end of group")
 )

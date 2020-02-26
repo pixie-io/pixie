@@ -82,28 +82,28 @@ type isVizierMessage_Msg interface {
 }
 
 type VizierMessage_RegisterAgentRequest struct {
-	RegisterAgentRequest *RegisterAgentRequest `protobuf:"bytes,1,opt,name=register_agent_request,json=registerAgentRequest,proto3,oneof"`
+	RegisterAgentRequest *RegisterAgentRequest `protobuf:"bytes,1,opt,name=register_agent_request,json=registerAgentRequest,proto3,oneof" json:"register_agent_request,omitempty"`
 }
 type VizierMessage_RegisterAgentResponse struct {
-	RegisterAgentResponse *RegisterAgentResponse `protobuf:"bytes,2,opt,name=register_agent_response,json=registerAgentResponse,proto3,oneof"`
+	RegisterAgentResponse *RegisterAgentResponse `protobuf:"bytes,2,opt,name=register_agent_response,json=registerAgentResponse,proto3,oneof" json:"register_agent_response,omitempty"`
 }
 type VizierMessage_UpdateAgentRequest struct {
-	UpdateAgentRequest *UpdateAgentRequest `protobuf:"bytes,3,opt,name=update_agent_request,json=updateAgentRequest,proto3,oneof"`
+	UpdateAgentRequest *UpdateAgentRequest `protobuf:"bytes,3,opt,name=update_agent_request,json=updateAgentRequest,proto3,oneof" json:"update_agent_request,omitempty"`
 }
 type VizierMessage_UpdateAgentResponse struct {
-	UpdateAgentResponse *UpdateAgentResponse `protobuf:"bytes,4,opt,name=update_agent_response,json=updateAgentResponse,proto3,oneof"`
+	UpdateAgentResponse *UpdateAgentResponse `protobuf:"bytes,4,opt,name=update_agent_response,json=updateAgentResponse,proto3,oneof" json:"update_agent_response,omitempty"`
 }
 type VizierMessage_Heartbeat struct {
-	Heartbeat *Heartbeat `protobuf:"bytes,5,opt,name=heartbeat,proto3,oneof"`
+	Heartbeat *Heartbeat `protobuf:"bytes,5,opt,name=heartbeat,proto3,oneof" json:"heartbeat,omitempty"`
 }
 type VizierMessage_HeartbeatAck struct {
-	HeartbeatAck *HeartbeatAck `protobuf:"bytes,6,opt,name=heartbeat_ack,json=heartbeatAck,proto3,oneof"`
+	HeartbeatAck *HeartbeatAck `protobuf:"bytes,6,opt,name=heartbeat_ack,json=heartbeatAck,proto3,oneof" json:"heartbeat_ack,omitempty"`
 }
 type VizierMessage_HeartbeatNack struct {
-	HeartbeatNack *HeartbeatNack `protobuf:"bytes,7,opt,name=heartbeat_nack,json=heartbeatNack,proto3,oneof"`
+	HeartbeatNack *HeartbeatNack `protobuf:"bytes,7,opt,name=heartbeat_nack,json=heartbeatNack,proto3,oneof" json:"heartbeat_nack,omitempty"`
 }
 type VizierMessage_ExecuteQueryRequest struct {
-	ExecuteQueryRequest *ExecuteQueryRequest `protobuf:"bytes,8,opt,name=execute_query_request,json=executeQueryRequest,proto3,oneof"`
+	ExecuteQueryRequest *ExecuteQueryRequest `protobuf:"bytes,8,opt,name=execute_query_request,json=executeQueryRequest,proto3,oneof" json:"execute_query_request,omitempty"`
 }
 
 func (*VizierMessage_RegisterAgentRequest) isVizierMessage_Msg()  {}
@@ -1596,7 +1596,8 @@ func (m *VizierMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *VizierMessage_RegisterAgentRequest) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *VizierMessage_RegisterAgentRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1616,7 +1617,8 @@ func (m *VizierMessage_RegisterAgentRequest) MarshalToSizedBuffer(dAtA []byte) (
 	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_RegisterAgentResponse) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *VizierMessage_RegisterAgentResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1636,7 +1638,8 @@ func (m *VizierMessage_RegisterAgentResponse) MarshalToSizedBuffer(dAtA []byte) 
 	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_UpdateAgentRequest) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *VizierMessage_UpdateAgentRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1656,7 +1659,8 @@ func (m *VizierMessage_UpdateAgentRequest) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_UpdateAgentResponse) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *VizierMessage_UpdateAgentResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1676,7 +1680,8 @@ func (m *VizierMessage_UpdateAgentResponse) MarshalToSizedBuffer(dAtA []byte) (i
 	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_Heartbeat) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *VizierMessage_Heartbeat) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1696,7 +1701,8 @@ func (m *VizierMessage_Heartbeat) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_HeartbeatAck) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *VizierMessage_HeartbeatAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1716,7 +1722,8 @@ func (m *VizierMessage_HeartbeatAck) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_HeartbeatNack) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *VizierMessage_HeartbeatNack) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1736,7 +1743,8 @@ func (m *VizierMessage_HeartbeatNack) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 func (m *VizierMessage_ExecuteQueryRequest) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *VizierMessage_ExecuteQueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4337,6 +4345,7 @@ func (m *ExecuteQueryRequest) Unmarshal(dAtA []byte) error {
 func skipMessages(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
+	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -4368,10 +4377,8 @@ func skipMessages(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			return iNdEx, nil
 		case 1:
 			iNdEx += 8
-			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -4392,55 +4399,30 @@ func skipMessages(dAtA []byte) (n int, err error) {
 				return 0, ErrInvalidLengthMessages
 			}
 			iNdEx += length
-			if iNdEx < 0 {
-				return 0, ErrInvalidLengthMessages
-			}
-			return iNdEx, nil
 		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowMessages
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipMessages(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-				if iNdEx < 0 {
-					return 0, ErrInvalidLengthMessages
-				}
-			}
-			return iNdEx, nil
+			depth++
 		case 4:
-			return iNdEx, nil
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupMessages
+			}
+			depth--
 		case 5:
 			iNdEx += 4
-			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthMessages
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
 	}
-	panic("unreachable")
+	return 0, io.ErrUnexpectedEOF
 }
 
 var (
-	ErrInvalidLengthMessages = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowMessages   = fmt.Errorf("proto: integer overflow")
+	ErrInvalidLengthMessages        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowMessages          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupMessages = fmt.Errorf("proto: unexpected end of group")
 )
