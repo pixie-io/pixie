@@ -4,7 +4,7 @@
 #include <string>
 
 #include "src/stirling/common/event_parser.h"
-#include "src/stirling/http/http_types.h"
+#include "src/stirling/http/types.h"
 
 namespace pl {
 namespace stirling {

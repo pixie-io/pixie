@@ -64,7 +64,6 @@ ParseState InflateHeaderBlock(nghttp2_hd_inflater* inflater, u8string_view buf, 
 ParseState UnpackFrame(std::string_view* buf, Frame* frame);
 
 using Record = ReqRespPair<HTTP2Message, HTTP2Message>;
-using NewRecord = Stream;
 
 /**
  * @brief Stitches frames to create header blocks and inflate them.
@@ -174,6 +173,10 @@ inline std::string_view GetLiteralNameAsStringView(const HeaderField& field) {
  * parsed data from buf.
  */
 ParseState ParseHeaderBlock(u8string_view* buf, std::vector<HeaderField>* res);
+
+std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, nghttp2_hd_inflater* req_inflater,
+                                  std::deque<Frame>* resp_frames,
+                                  nghttp2_hd_inflater* resp_inflater);
 
 }  // namespace http2
 }  // namespace stirling

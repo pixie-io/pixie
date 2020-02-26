@@ -7,7 +7,7 @@
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
 #include "src/common/zlib/zlib_wrapper.h"
-#include "src/stirling/http/http_types.h"
+#include "src/stirling/http/types.h"
 
 namespace pl {
 namespace stirling {

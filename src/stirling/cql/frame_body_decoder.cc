@@ -1,4 +1,4 @@
-#include "src/stirling/cassandra/frame_body_decoder.h"
+#include "src/stirling/cql/frame_body_decoder.h"
 
 #include <algorithm>
 #include <utility>

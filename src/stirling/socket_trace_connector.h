@@ -243,7 +243,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {kProtocolHTTP, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http::Record>}},
       {kProtocolHTTP2, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2::Record>}},
       {kProtocolHTTP2Uprobe,
-       {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2::NewRecord>}},
+       {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2u::Record>}},
       {kProtocolMySQL, {kMySQLTableNum, &SocketTraceConnector::TransferStream<mysql::Record>}},
       {kProtocolCQL, {kCQLTableNum, &SocketTraceConnector::TransferStream<cass::Record>}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,

@@ -1,4 +1,4 @@
-#include "src/stirling/cassandra/cql_stitcher.h"
+#include "src/stirling/cql/cql_stitcher.h"
 
 #include <deque>
 #include <string>
@@ -6,8 +6,8 @@
 
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
-#include "src/stirling/cassandra/cass_types.h"
-#include "src/stirling/cassandra/frame_body_decoder.h"
+#include "src/stirling/cql/frame_body_decoder.h"
+#include "src/stirling/cql/types.h"
 
 namespace pl {
 namespace stirling {

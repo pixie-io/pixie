@@ -4,8 +4,8 @@
 #include <utility>
 #include <vector>
 #include "src/common/base/base.h"
-#include "src/stirling/mysql/mysql_types.h"
 #include "src/stirling/mysql/test_utils.h"
+#include "src/stirling/mysql/types.h"
 
 namespace pl {
 namespace stirling {

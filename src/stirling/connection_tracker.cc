@@ -16,14 +16,16 @@
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
-#include "src/stirling/cassandra/cass_types.h"
-#include "src/stirling/cassandra/cql_stitcher.h"
 #include "src/stirling/common/go_grpc_types.h"
+#include "src/stirling/cql/cql_stitcher.h"
+#include "src/stirling/cql/types.h"
 #include "src/stirling/http/http_stitcher.h"
-#include "src/stirling/http/http_types.h"
+#include "src/stirling/http/types.h"
+#include "src/stirling/http2u/stitcher.h"
+#include "src/stirling/http2u/types.h"
 #include "src/stirling/message_types.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
-#include "src/stirling/mysql/mysql_types.h"
+#include "src/stirling/mysql/types.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
 DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
@@ -132,10 +134,10 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
-http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool write_event) {
+http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool write_event) {
   // Check for both client-initiated (odd stream_ids) and server-initiated (even stream_ids)
   // streams.
-  std::deque<http2::Stream>* streams_deque_ptr;
+  std::deque<http2u::Stream>* streams_deque_ptr;
   uint32_t* oldest_active_stream_id_ptr;
 
   bool client_stream = (stream_id % 2 == 1);
@@ -175,7 +177,7 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
       *oldest_active_stream_id_ptr = stream_id;
     } else {
       streams_deque_ptr->insert(streams_deque_ptr->begin(), new_size - streams_deque_ptr->size(),
-                                http2::Stream());
+                                http2u::Stream());
       index = 0;
       *oldest_active_stream_id_ptr = stream_id;
     }
@@ -209,7 +211,7 @@ http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wri
     stream.creation_timestamp = std::chrono::steady_clock::now();
   }
 
-  http2::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
+  http2u::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
   return half_stream_ptr;
 }
 
@@ -277,7 +279,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
         magic_enum::enum_name(role));
   }
 
-  http2::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
+  http2u::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
 
   // End stream flag is on a dummy header, so just record the end_stream, but don't add the headers.
   if (hdr->attr.end_stream) {
@@ -342,7 +344,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
       return;
   }
 
-  http2::HalfStream* half_stream_ptr = HalfStreamPtr(data->attr.stream_id, write_event);
+  http2u::HalfStream* half_stream_ptr = HalfStreamPtr(data->attr.stream_id, write_event);
 
   // Note: Duplicate calls to the writeHeaders have been observed (though they are rare).
   // It is not yet known if duplicate data also occurs. This log will help us figure out if such
@@ -396,103 +398,38 @@ std::vector<http2::Record> ConnectionTracker::ProcessToRecords() {
     return {};
   }
 
-  std::map<uint32_t, http2::HTTP2Message> reqs;
-  std::map<uint32_t, http2::HTTP2Message> resps;
-
   DataStream* req_stream = req_data();
   DataStream* resp_stream = resp_data();
+
+  nghttp2_hd_inflater* req_inflater = req_stream->HTTP2Inflater()->inflater();
+  nghttp2_hd_inflater* resp_inflater = resp_stream->HTTP2Inflater()->inflater();
 
   auto& req_frames = req_stream->Frames<http2::Frame>();
   auto& resp_frames = resp_stream->Frames<http2::Frame>();
 
-  StitchAndInflateHeaderBlocks(req_stream->HTTP2Inflater()->inflater(), &req_frames);
-  StitchAndInflateHeaderBlocks(resp_stream->HTTP2Inflater()->inflater(), &resp_frames);
-
-  // First stitch all frames to form gRPC messages.
-  ParseState req_stitch_state = StitchFramesToGRPCMessages(req_frames, &reqs);
-  ParseState resp_stitch_state = StitchFramesToGRPCMessages(resp_frames, &resps);
-
-  std::vector<http2::Record> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
-
-  std::vector<http2::Record> trace_records;
-  for (auto& r : records) {
-    r.req.MarkFramesConsumed();
-    r.resp.MarkFramesConsumed();
-    http2::Record tmp{std::move(r.req), std::move(r.resp)};
-    trace_records.push_back(tmp);
-  }
-
-  http2::EraseConsumedFrames(&req_frames);
-  http2::EraseConsumedFrames(&resp_frames);
-
-  // Reset streams, if necessary, after erasing the consumed frames. Otherwise, frames will be
-  // deleted twice.
-  if (req_stitch_state != ParseState::kSuccess) {
-    LOG(ERROR) << "Failed to stitch frames to gRPC messages, indicating fatal errors, "
-                  "resetting the request stream ...";
-    // TODO(PL-916): We observed that if messages are truncated, some repeating bytes sequence
-    // in the http2 traffic is wrongly recognized as frame headers. We need to recognize truncated
-    // events and try to recover from it, instead of relying stream recovery.
-    // TODO(yzhao): Add an e2e test of the stream resetting behavior on SocketTraceConnector without
-    // using the gRPC test fixtures, i.e., prepare raw events and feed into SocketTraceConnector.
-    req_stream->Reset();
-  }
-  if (resp_stitch_state != ParseState::kSuccess) {
-    LOG(ERROR) << "Failed to stitch frames to gRPC messages, indicating fatal errors, "
-                  "resetting the response stream ...";
-    resp_stream->Reset();
-  }
+  std::vector<http2::Record> result =
+      http2::ProcessFrames(&req_frames, req_inflater, &resp_frames, resp_inflater);
 
   // TODO(yzhao): Template makes the type parameter not working for gRPC, as gRPC returns different
   // type than the type parameter. Figure out how to mitigate the conflicts, so this call can be
   // lifted to ProcessToRecords().
   Cleanup<http2::Frame>();
 
-  return trace_records;
+  return result;
 }
-
-namespace {
-void ProcessHTTP2Streams(DataStream* stream_ptr, uint32_t* oldest_active_stream_id_ptr,
-                         std::vector<http2::NewRecord>* trace_records) {
-  auto& http2_streams = stream_ptr->http2_streams();
-
-  int count_head_consumed = 0;
-  bool skipped = false;
-  for (auto& stream : http2_streams) {
-    if (stream.StreamEnded() && !stream.consumed) {
-      trace_records->emplace_back(http2::NewRecord{std::move(stream)});
-      stream.consumed = true;
-    }
-
-    // TODO(oazizi): If a stream is not ended, but looks stuck,
-    // we should force process it and mark it as consumed.
-    // Otherwise we will have a memory leak.
-
-    if (!stream.consumed) {
-      skipped = true;
-    }
-
-    if (!skipped && stream.consumed) {
-      ++count_head_consumed;
-    }
-  }
-
-  // Erase contiguous set of consumed streams at head.
-  http2_streams.erase(http2_streams.begin(), http2_streams.begin() + count_head_consumed);
-  *oldest_active_stream_id_ptr += 2 * count_head_consumed;
-}
-}  // namespace
 
 template <>
-std::vector<http2::NewRecord> ConnectionTracker::ProcessToRecords() {
+std::vector<http2u::Record> ConnectionTracker::ProcessToRecords() {
   // TODO(oazizi): ECHECK that raw events are empty.
 
-  std::vector<http2::NewRecord> trace_records;
+  std::vector<http2u::Record> trace_records;
 
-  ProcessHTTP2Streams(&client_streams_, &oldest_active_client_stream_id_, &trace_records);
-  ProcessHTTP2Streams(&server_streams_, &oldest_active_server_stream_id_, &trace_records);
+  http2u::ProcessHTTP2Streams(&client_streams_.http2_streams(), &oldest_active_client_stream_id_,
+                              &trace_records);
+  http2u::ProcessHTTP2Streams(&server_streams_.http2_streams(), &oldest_active_server_stream_id_,
+                              &trace_records);
 
-  Cleanup<http2::Stream>();
+  Cleanup<http2u::Stream>();
 
   return trace_records;
 }
@@ -896,8 +833,8 @@ std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
 template std::string DebugString<http::Record>(const ConnectionTracker& c, std::string_view prefix);
 template std::string DebugString<http2::Record>(const ConnectionTracker& c,
                                                 std::string_view prefix);
-template std::string DebugString<http2::NewRecord>(const ConnectionTracker& c,
-                                                   std::string_view prefix);
+template std::string DebugString<http2u::Record>(const ConnectionTracker& c,
+                                                 std::string_view prefix);
 template std::string DebugString<mysql::Record>(const ConnectionTracker& c,
                                                 std::string_view prefix);
 template std::string DebugString<cass::Record>(const ConnectionTracker& c, std::string_view prefix);

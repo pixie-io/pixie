@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 
+#include "src/common/base/base.h"
 #include "src/stirling/common/parse_state.h"
 #include "src/stirling/common/utils.h"
 

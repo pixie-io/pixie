@@ -33,10 +33,11 @@ pl_cc_library(
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
-        "//src/stirling/cassandra:cc_library",
+        "//src/stirling/cql:cc_library",
         "//src/stirling/mysql:cc_library",
         "//src/stirling/http:cc_library",
         "//src/stirling/http2:cc_library",
+        "//src/stirling/http2u:cc_library",
         "//src/stirling/proto:sock_event_pl_cc_proto",
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/bpf_tools:cc_library",
@@ -289,15 +290,15 @@ pl_cc_test(
     name = "proc_tracer_bpf_test",
     srcs = ["proc_tracer_bpf_test.cc"],
     data = ["//src/stirling/testing:forker"],
-    deps = [
-        ":cc_library",
-        "//src/common/exec:cc_library",
-    ],
     tags = [
         "requires_bpf",
         # Triggers an asan failure in BCC codebase, where we don't want to fix.
         # Accessing misaligned data won't affect correctness anyway.
         "no_asan",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
     ],
 )
 

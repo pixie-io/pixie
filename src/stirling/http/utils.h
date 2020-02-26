@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "src/stirling/common/parse_state.h"
-#include "src/stirling/http/http_types.h"
+#include "src/stirling/http/types.h"
 
 namespace pl {
 namespace stirling {

@@ -601,6 +601,56 @@ ParseState ParseHeaderBlock(u8string_view* buf, std::vector<HeaderField>* res) {
   return ParseState::kSuccess;
 }
 
+std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, nghttp2_hd_inflater* req_inflater,
+                                  std::deque<Frame>* resp_frames,
+                                  nghttp2_hd_inflater* resp_inflater) {
+  StitchAndInflateHeaderBlocks(req_inflater, req_frames);
+  StitchAndInflateHeaderBlocks(resp_inflater, resp_frames);
+
+  std::map<uint32_t, http2::HTTP2Message> reqs;
+  std::map<uint32_t, http2::HTTP2Message> resps;
+
+  // First stitch all frames to form gRPC messages.
+  ParseState req_stitch_state = StitchFramesToGRPCMessages(*req_frames, &reqs);
+  ParseState resp_stitch_state = StitchFramesToGRPCMessages(*resp_frames, &resps);
+
+  std::vector<http2::Record> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
+
+  std::vector<http2::Record> trace_records;
+  for (auto& r : records) {
+    r.req.MarkFramesConsumed();
+    r.resp.MarkFramesConsumed();
+    http2::Record tmp{std::move(r.req), std::move(r.resp)};
+    trace_records.push_back(tmp);
+  }
+
+  http2::EraseConsumedFrames(req_frames);
+  http2::EraseConsumedFrames(resp_frames);
+
+  PL_UNUSED(req_stitch_state);
+  PL_UNUSED(resp_stitch_state);
+
+  // Reset streams, if necessary, after erasing the consumed frames. Otherwise, frames will be
+  // deleted twice.
+  if (req_stitch_state != ParseState::kSuccess) {
+    LOG(ERROR) << "Failed to stitch frames to gRPC messages, indicating fatal errors, "
+                  "resetting the request stream ...";
+    // TODO(PL-916): We observed that if messages are truncated, some repeating bytes sequence
+    // in the http2 traffic is wrongly recognized as frame headers. We need to recognize truncated
+    // events and try to recover from it, instead of relying stream recovery.
+    // TODO(yzhao): Add an e2e test of the stream resetting behavior on SocketTraceConnector without
+    // using the gRPC test fixtures, i.e., prepare raw events and feed into SocketTraceConnector.
+    req_frames->clear();
+  }
+  if (resp_stitch_state != ParseState::kSuccess) {
+    LOG(ERROR) << "Failed to stitch frames to gRPC messages, indicating fatal errors, "
+                  "resetting the response stream ...";
+    resp_frames->clear();
+  }
+
+  return trace_records;
+}
+
 }  // namespace http2
 }  // namespace stirling
 }  // namespace pl

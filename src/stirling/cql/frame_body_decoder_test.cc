@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/stirling/cassandra/frame_body_decoder.h"
+#include "src/stirling/cql/frame_body_decoder.h"
 
 #include "src/common/testing/testing.h"
 

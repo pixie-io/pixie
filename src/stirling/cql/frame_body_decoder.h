@@ -9,7 +9,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/inet_utils.h"
-#include "src/stirling/cassandra/cass_types.h"
+#include "src/stirling/cql/types.h"
 
 namespace pl {
 namespace stirling {

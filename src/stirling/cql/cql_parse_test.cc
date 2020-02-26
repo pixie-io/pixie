@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/stirling/cassandra/cql_parse.h"
+#include "src/stirling/cql/cql_parse.h"
 
 namespace pl {
 namespace stirling {

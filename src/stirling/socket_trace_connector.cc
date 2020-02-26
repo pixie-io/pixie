@@ -21,9 +21,9 @@
 #include "src/common/system/socket_info.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
-#include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/go_grpc_types.h"
+#include "src/stirling/cql/types.h"
 #include "src/stirling/http/http_stitcher.h"
 #include "src/stirling/http2/grpc.h"
 #include "src/stirling/http2/http2.h"
@@ -639,11 +639,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker,
-                                         http2::NewRecord record, DataTable* data_table) {
+                                         http2u::Record record, DataTable* data_table) {
   DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  http2::HalfStream* req_stream;
-  http2::HalfStream* resp_stream;
+  http2u::HalfStream* req_stream;
+  http2u::HalfStream* resp_stream;
 
   // Depending on whether the traced entity was the requestor or responder,
   // we need to flip the interpretation of the half-streams.
@@ -855,9 +855,9 @@ template void SocketTraceConnector::TransferStream<http::Record>(ConnectorContex
 template void SocketTraceConnector::TransferStream<http2::Record>(ConnectorContext* ctx,
                                                                   ConnectionTracker* tracker,
                                                                   DataTable* data_table);
-template void SocketTraceConnector::TransferStream<http2::NewRecord>(ConnectorContext* ctx,
-                                                                     ConnectionTracker* tracker,
-                                                                     DataTable* data_table);
+template void SocketTraceConnector::TransferStream<http2u::Record>(ConnectorContext* ctx,
+                                                                   ConnectionTracker* tracker,
+                                                                   DataTable* data_table);
 template void SocketTraceConnector::TransferStream<mysql::Record>(ConnectorContext* ctx,
                                                                   ConnectionTracker* tracker,
                                                                   DataTable* data_table);

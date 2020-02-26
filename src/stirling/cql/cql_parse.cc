@@ -1,4 +1,4 @@
-#include "src/stirling/cassandra/cql_parse.h"
+#include "src/stirling/cql/cql_parse.h"
 
 #include <arpa/inet.h>
 #include <deque>
@@ -7,8 +7,8 @@
 
 #include "src/common/base/byte_utils.h"
 #include "src/common/base/types.h"
-#include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/common/parse_state.h"
+#include "src/stirling/cql/types.h"
 
 // TODO(oazizi): Consider splitting this file into public and private pieces. The public one would
 // have the template implementations, while the private one would have functions in the cass

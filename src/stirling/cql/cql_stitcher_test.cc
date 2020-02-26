@@ -1,8 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/stirling/cassandra/cql_parse.h"
-#include "src/stirling/cassandra/cql_stitcher.h"
+#include "src/stirling/cql/cql_parse.h"
+#include "src/stirling/cql/cql_stitcher.h"
 
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
@@ -30,7 +30,7 @@ constexpr uint8_t kAuthenticateResp[] = {0x00, 0x2f, 0x6f, 0x72, 0x67, 0x2e, 0x6
                                          0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x6f, 0x72};
 
 // AUTH_RESPONSE request from client, in response to an AUTHENTICATE response from server.
-// Contains username/password of cassandra/cassandra.
+// Contains username/password of cassandra/cql.
 constexpr uint8_t kAuthResponseReq[] = {0x00, 0x00, 0x00, 0x14, 0x00, 0x63, 0x61, 0x73,
                                         0x73, 0x61, 0x6e, 0x64, 0x72, 0x61, 0x00, 0x63,
                                         0x61, 0x73, 0x73, 0x61, 0x6e, 0x64, 0x72, 0x61};

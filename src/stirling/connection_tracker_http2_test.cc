@@ -32,7 +32,7 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Response", /* end_stream */ true);
   tracker.AddHTTP2Data(std::move(data_frame));
 
-  std::vector<http2::NewRecord> records = tracker.ProcessToRecords<http2::NewRecord>();
+  std::vector<http2u::Record> records = tracker.ProcessToRecords<http2u::Record>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data, "Request");
@@ -60,7 +60,7 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
   header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
   tracker.AddHTTP2Header(std::move(header_event));
 
-  std::vector<http2::NewRecord> records = tracker.ProcessToRecords<http2::NewRecord>();
+  std::vector<http2u::Record> records = tracker.ProcessToRecords<http2u::Record>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_THAT(records[0].send.headers, UnorderedElementsAre(Pair(":method", "post")));
@@ -88,7 +88,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse", /* end_stream */ true);
   tracker.AddHTTP2Data(std::move(data_frame));
 
-  std::vector<http2::NewRecord> records = tracker.ProcessToRecords<http2::NewRecord>();
+  std::vector<http2u::Record> records = tracker.ProcessToRecords<http2u::Record>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data, "Request");
@@ -132,7 +132,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
   header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
   tracker.AddHTTP2Header(std::move(header_event));
 
-  std::vector<http2::NewRecord> records = tracker.ProcessToRecords<http2::NewRecord>();
+  std::vector<http2u::Record> records = tracker.ProcessToRecords<http2u::Record>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data, "Request");
@@ -174,7 +174,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
   header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
   tracker.AddHTTP2Header(std::move(header_event));
 
-  std::vector<http2::NewRecord> records = tracker.ProcessToRecords<http2::NewRecord>();
+  std::vector<http2u::Record> records = tracker.ProcessToRecords<http2u::Record>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_THAT(records[0].send.data, StrEq("Request"));
@@ -224,7 +224,7 @@ TEST_F(ConnectionTrackerHTTP2Test, ZeroFD) {
   header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
   tracker.AddHTTP2Header(std::move(header_event));
 
-  std::vector<http2::NewRecord> records = tracker.ProcessToRecords<http2::NewRecord>();
+  std::vector<http2u::Record> records = tracker.ProcessToRecords<http2u::Record>();
 
   EXPECT_TRUE(records.empty());
 }
@@ -244,13 +244,13 @@ TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit)
   FLAGS_messages_size_limit_bytes = 10000;
   tracker.AddHTTP2Header(std::move(header_event1));
   tracker.AddHTTP2Header(std::move(header_event2));
-  tracker.ProcessToRecords<http2::NewRecord>();
+  tracker.ProcessToRecords<http2u::Record>();
 
   EXPECT_THAT(tracker.http2_send_streams(), ::testing::SizeIs(1));
   EXPECT_THAT(tracker.http2_recv_streams(), ::testing::SizeIs(1));
 
   FLAGS_messages_size_limit_bytes = 0;
-  tracker.ProcessToRecords<http2::NewRecord>();
+  tracker.ProcessToRecords<http2u::Record>();
   EXPECT_THAT(tracker.http2_send_streams(), ::testing::IsEmpty());
   EXPECT_THAT(tracker.http2_recv_streams(), ::testing::IsEmpty());
 }
@@ -271,13 +271,13 @@ TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   FLAGS_messages_expiration_duration_secs = 10000;
   tracker.AddHTTP2Header(std::move(header_event1));
   tracker.AddHTTP2Header(std::move(header_event2));
-  tracker.ProcessToRecords<http2::NewRecord>();
+  tracker.ProcessToRecords<http2u::Record>();
 
   EXPECT_THAT(tracker.http2_send_streams(), ::testing::SizeIs(1));
   EXPECT_THAT(tracker.http2_recv_streams(), ::testing::SizeIs(1));
 
   FLAGS_messages_expiration_duration_secs = 0;
-  tracker.ProcessToRecords<http2::NewRecord>();
+  tracker.ProcessToRecords<http2u::Record>();
   EXPECT_THAT(tracker.http2_send_streams(), ::testing::IsEmpty());
   EXPECT_THAT(tracker.http2_recv_streams(), ::testing::IsEmpty());
 }
@@ -352,7 +352,7 @@ TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
     tracker.AddHTTP2Header(std::move(header_event));
   }
 
-  std::vector<http2::NewRecord> records = tracker.ProcessToRecords<http2::NewRecord>();
+  std::vector<http2u::Record> records = tracker.ProcessToRecords<http2u::Record>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data, "Request");
@@ -435,7 +435,7 @@ TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
     tracker.AddHTTP2Header(std::move(header_event));
   }
 
-  std::vector<http2::NewRecord> records = tracker.ProcessToRecords<http2::NewRecord>();
+  std::vector<http2u::Record> records = tracker.ProcessToRecords<http2u::Record>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data, "Request");

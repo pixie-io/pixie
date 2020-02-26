@@ -5,11 +5,12 @@
 #include <memory>
 #include <string>
 
-#include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/common/socket_trace.h"
+#include "src/stirling/cql/types.h"
 #include "src/stirling/http/http_parse.h"
 #include "src/stirling/http2/http2.h"
-#include "src/stirling/mysql/mysql_types.h"
+#include "src/stirling/http2u/types.h"
+#include "src/stirling/mysql/types.h"
 
 DECLARE_uint32(messages_expiration_duration_secs);
 DECLARE_uint32(messages_size_limit_bytes);
@@ -75,8 +76,8 @@ class DataStream {
    * Returns the current set of streams (for Uprobe-based HTTP2 only)
    * @return deque of streams.
    */
-  std::deque<http2::Stream>& http2_streams() { return http2_streams_; }
-  const std::deque<http2::Stream>& http2_streams() const { return http2_streams_; }
+  std::deque<http2u::Stream>& http2_streams() { return http2_streams_; }
+  const std::deque<http2u::Stream>& http2_streams() const { return http2_streams_; }
 
   /**
    * @brief Clears all unparsed and parsed data from the Datastream.
@@ -187,10 +188,10 @@ class DataStream {
       // we can just stop at the first frame that is younger than the expiration duration.
       //
       // NOTE:
-      // http2::Stream are not appended into the deque. http2::Stream is created when the first
+      // http2u::Stream are not appended into the deque. http2u::Stream is created when the first
       // trace event with its stream ID is received. Therefore, their timestamps depend on the
       // order streams are initiated inside application code. As HTTP2 spec forbids reducing stream
-      // IDs, it's very unlikely that http2::Stream would violate the above statement.
+      // IDs, it's very unlikely that http2u::Stream would violate the above statement.
       //
       // TODO(yzhao): Benchmark with binary search and pick the faster one.
       if (frame_age < exp_dur) {
@@ -232,7 +233,7 @@ class DataStream {
       frames_;
 
   // Used by Uprobe-based HTTP2 only.
-  std::deque<http2::Stream> http2_streams_;
+  std::deque<http2u::Stream> http2_streams_;
 
   // The following state keeps track of whether the raw events were touched or not since the last
   // call to ProcessBytesToFrames(). It enables ProcessToRecords() to exit early if nothing has
@@ -276,7 +277,7 @@ inline std::string DebugString(const DataStream& d, std::string_view prefix) {
 }
 
 template <>
-inline std::string DebugString<http2::Stream>(const DataStream& d, std::string_view prefix) {
+inline std::string DebugString<http2u::Stream>(const DataStream& d, std::string_view prefix) {
   std::string info;
   info += absl::Substitute("$0active streams=$1\n", prefix, d.http2_streams().size());
   return info;

@@ -10,7 +10,7 @@
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/cassandra/test_utils.h"
+#include "src/stirling/cql/test_utils.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"

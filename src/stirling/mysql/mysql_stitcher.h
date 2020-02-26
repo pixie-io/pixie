@@ -6,7 +6,7 @@
 
 #include "src/common/base/status.h"
 #include "src/stirling/common/parse_state.h"
-#include "src/stirling/mysql/mysql_types.h"
+#include "src/stirling/mysql/types.h"
 
 namespace pl {
 namespace stirling {

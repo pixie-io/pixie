@@ -130,8 +130,12 @@ class ConnectionTracker {
     return send_data_.Frames<TFrameType>();
   }
 
-  const std::deque<http2::Stream>& http2_send_streams() const { return send_data_.http2_streams(); }
-  const std::deque<http2::Stream>& http2_recv_streams() const { return recv_data_.http2_streams(); }
+  const std::deque<http2u::Stream>& http2_send_streams() const {
+    return send_data_.http2_streams();
+  }
+  const std::deque<http2u::Stream>& http2_recv_streams() const {
+    return recv_data_.http2_streams();
+  }
 
   /**
    * @brief Returns reference to current set of unconsumed responses.
@@ -387,7 +391,7 @@ class ConnectionTracker {
 
   template <typename TFrameType>
   void Cleanup() {
-    if constexpr (std::is_same_v<TFrameType, http2::Stream>) {
+    if constexpr (std::is_same_v<TFrameType, http2u::Stream>) {
       send_data_.CleanupHTTP2Streams();
       recv_data_.CleanupHTTP2Streams();
     } else {
@@ -440,7 +444,7 @@ class ConnectionTracker {
   uint32_t oldest_active_server_stream_id_;
 
   // Access the appropriate HalfStream object for the given stream ID.
-  http2::HalfStream* HalfStreamPtr(uint32_t stream_id, bool write_event);
+  http2u::HalfStream* HalfStreamPtr(uint32_t stream_id, bool write_event);
 
   // According to the HTTP2 protocol, Stream IDs are incremented by 2.
   // Client-initiated streams use odd IDs, while server-initiated streams use even IDs.

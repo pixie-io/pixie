@@ -1,9 +1,10 @@
 #pragma once
 
-#include "src/stirling/cassandra/cass_types.h"
-#include "src/stirling/http/http_parse.h"
+#include "src/stirling/cql/types.h"
+#include "src/stirling/http/types.h"
 #include "src/stirling/http2/http2.h"
-#include "src/stirling/mysql/mysql_parse.h"
+#include "src/stirling/http2u/types.h"
+#include "src/stirling/mysql/types.h"
 
 namespace pl {
 namespace stirling {
@@ -30,8 +31,8 @@ struct GetMessageType<http2::Record> {
 };
 
 template <>
-struct GetMessageType<http2::NewRecord> {
-  typedef http2::Stream type;
+struct GetMessageType<http2u::Record> {
+  typedef http2u::Stream type;
 };
 
 template <>

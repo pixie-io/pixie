@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "src/stirling/cassandra/cass_types.h"
 #include "src/stirling/common/event_parser.h"
+#include "src/stirling/cql/types.h"
 
 namespace pl {
 namespace stirling {
