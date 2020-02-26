@@ -6,10 +6,11 @@ import {SubdomainApp} from './subdomain-app';
 
 // Mock DataVoyager component because it does not mount properly in Jest.
 // (See: https://github.com/vega/voyager/issues/812)
-jest.mock('datavoyager', () => ({ CreateVoyager: () => ({updateData: () => { return; } }) }));
+jest.mock('datavoyager', () => ({ CreateVoyager: () => ({ updateData: () => { return; } }) }));
 
 jest.mock('common/cloud-gql-client', () => ({
   getCloudGQLClient: jest.fn().mockResolvedValue({}),
+  getClusterConnection: jest.fn().mockResolvedValue({}),
 }));
 
 describe('<SubdomainApp/> test', () => {

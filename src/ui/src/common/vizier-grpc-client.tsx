@@ -56,7 +56,7 @@ export class VizierGRPCClient {
       });
 
       call.on('error', (err) => {
-        reject(err);
+        reject(err.message);
       });
     });
   }

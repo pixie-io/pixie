@@ -1,42 +1,34 @@
-import {mount} from 'enzyme';
+import ClientContext from 'common/vizier-grpc-client-context';
+import {ContentBox} from 'components/content-box/content-box';
+import {shallow} from 'enzyme';
 import * as React from 'react';
-import {MockedProvider} from 'react-apollo/test-utils';
-import * as CodeMirror from 'react-codemirror';
+import {dataFromProto} from 'utils/result-data-utils';
 
-import {AgentDisplay, GET_AGENTS} from './agent-display';
+import {AgentDisplayContent} from './agent-display';
 
-jest.mock('common/vizier-gql-client', () => ({}));
+describe('<AgentDisplayContent />', () => {
+  const agents = [
+    {
+      agent_id: '123',
+      hostname: 'hostname',
+      last_heartbeat_ns: 7893512000,
+      create_time: 785612340789,
+      agent_state: 'AGENT_STATE_HEALTHY',
+    },
+    {
+      agent_id: '123',
+      hostname: 'hostname',
+      last_heartbeat_ns: 26495476,
+      create_time: 836591640956,
+      agent_state: 'AGENT_STATE_HEALTHY',
+    },
+  ];
 
-const wait = (ms) => new Promise((res) => setTimeout(res, ms));
-
-describe.skip('<AgentDisplay/> test', () => {
   it('should pass correct headers into content box', async () => {
-    const mocks = [
-      {
-        request: {
-          query: GET_AGENTS,
-          variables: {},
-        },
-        result: {
-          data: {
-            vizier: {
-              agents: [
-                { state: 'HEALTHY', info: { id: '1', hostInfo: { hostname: 'test' } }, lastHeartbeatMs: 1, uptimeS: 1 },
-              ],
-            },
-          },
-        },
-      },
-    ];
+    const wrapper = shallow(<AgentDisplayContent agents={agents} />);
 
-    const wrapper = mount(
-      <MockedProvider mocks={mocks} addTypename={false}>
-        <AgentDisplay />
-      </MockedProvider>,
-    );
-    await wait(0);
-    wrapper.update();
-
-    expect(wrapper.find('.content-box--header').at(0).text()).toEqual('AVAILABLE AGENTS1 agent available');
+    const contentBox = wrapper.find(ContentBox);
+    expect(contentBox.prop('headerText')).toBe('Available Agents');
+    expect(contentBox.prop('secondaryText')).toBe('2 agents available');
   });
 });

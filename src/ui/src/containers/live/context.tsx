@@ -3,6 +3,7 @@ import {
     getLiveViewPixieScript, getLiveViewVegaSpec, setLiveViewPixieScript, setLiveViewVegaSpec,
 } from 'common/localstorage';
 import {VizierGRPCClient, VizierQueryResult} from 'common/vizier-grpc-client';
+import ClientContext from 'common/vizier-grpc-client-context';
 import * as React from 'react';
 
 interface LiveContextProps {
@@ -20,8 +21,9 @@ export const LiveContext = React.createContext<LiveContextProps>(null);
 const LiveContextProvider = (props) => {
   const [script, setScript] = React.useState<string>(getLiveViewPixieScript());
   const [vegaSpec, setVegaSpec] = React.useState<string>(getLiveViewVegaSpec());
-  const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [results, setResults] = React.useState<VizierQueryResult>(null);
+
+  const client = React.useContext(ClientContext);
 
   React.useEffect(() => {
     setLiveViewPixieScript(script);
@@ -30,12 +32,6 @@ const LiveContextProvider = (props) => {
   React.useEffect(() => {
     setLiveViewVegaSpec(vegaSpec);
   }, [vegaSpec]);
-
-  React.useEffect(() => {
-    getClusterConnection().then(({ ipAddress, token }) => {
-      setClient(new VizierGRPCClient(ipAddress, token));
-    });
-  }, []);
 
   const liveViewContext = React.useMemo(() => ({
     updateScript: setScript,

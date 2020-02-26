@@ -1,34 +1,15 @@
 import './vizier.scss';
 
-import {vizierGQLClient} from 'common/vizier-gql-client';
+import {VizierGRPCClient} from 'common/vizier-grpc-client';
+import ClientContext from 'common/vizier-grpc-client-context';
 import {ContentBox} from 'components/content-box/content-box';
 import {AutoSizedScrollableTable} from 'components/table/scrollable-table';
 import {VersionInfo} from 'components/version-info/version-info';
-import {distanceInWords, subSeconds} from 'date-fns';
-import gql from 'graphql-tag';
+import {distanceInWords, subMilliseconds} from 'date-fns';
 import * as React from 'react';
-import {Query} from 'react-apollo';
 import {isProd} from 'utils/env';
 import {pluralize} from 'utils/pluralize';
-
-import {useQuery} from '@apollo/react-hooks';
-
-export const GET_AGENTS = gql`
-{
-  vizier {
-    agents {
-      info {
-        id
-        hostInfo {
-          hostname
-        }
-      }
-      lastHeartbeatMs
-      uptimeS
-      state
-    }
-  }
-}`;
+import {dataFromProto} from 'utils/result-data-utils';
 
 const agentTableCols = [{
   dataKey: 'id',
@@ -66,27 +47,66 @@ const agentString = (agentCount: number) => {
   return `${agentCount} ${pluralize('agent', agentCount)} available`;
 };
 
+const POLL_INTERVAL = 2500;
+
+interface AgentDisplayState {
+  error?: string;
+  data: Array<{}>;
+}
+
+const AGENT_STATUS_SCRIPT = 'px.display(px.GetAgentStatus())';
+
 export const AgentDisplay = () => {
-  const { error, data } = useQuery(GET_AGENTS, {
-    client: vizierGQLClient,
-    pollInterval: 2500,
-  });
-  if (error) {
-    return <span>Error! {error.message}</span>;
+  const client = React.useContext(ClientContext);
+  const [state, setState] = React.useState<AgentDisplayState>({ data: [] });
+
+  React.useEffect(() => {
+    if (!client) {
+      return;
+    }
+    let mounted = true;
+    const fetchAgentStatus = () => {
+      client.executeScript(AGENT_STATUS_SCRIPT).then((results) => {
+        if (!mounted) {
+          return;
+        }
+        if (results.tables.length !== 1) {
+          if (results.status) {
+            setState({ ...state, error: results.status.getMessage() });
+          }
+        }
+        const data = dataFromProto(results.tables[0].relation, results.tables[0].data);
+        setState({ data });
+      }).catch((error) => {
+        if (!mounted) {
+          return;
+        }
+        setState({ ...state, error });
+      });
+    };
+    fetchAgentStatus();
+    const interval = setInterval(fetchAgentStatus, POLL_INTERVAL);
+    return () => {
+      clearInterval(interval);
+      mounted = false;
+    };
+  }, [client]);
+
+  if (state.error) {
+    return <span>Error! {state.error}</span>;
   }
-  const agents = data && data.vizier && data.vizier.agents ? data.vizier.agents : [];
-  return <AgentDisplayContent agents={agents} />;
+  return <AgentDisplayContent agents={state.data} />;
 };
 
-const AgentDisplayContent = ({ agents }) => {
+export const AgentDisplayContent = ({ agents }) => {
   const now = new Date();
   const mappedData = agents.map((agent) => {
     return {
-      id: agent.info.id,
-      hostname: agent.info.hostInfo.hostname,
-      heartbeat: (agent.lastHeartbeatMs / 1000.0).toFixed(2),
-      uptime: distanceInWords(subSeconds(now, agent.uptimeS), now, { addSuffix: false }),
-      state: agent.state,
+      id: agent.agent_id,
+      hostname: agent.hostname,
+      heartbeat: (agent.last_heartbeat_ns / 1000000000).toFixed(2),
+      uptime: distanceInWords(new Date(agent.create_time / 1000000), now, { addSuffix: false }),
+      state: agent.agent_state,
     };
   });
   return (
