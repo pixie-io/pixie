@@ -1,0 +1,42 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: stan-watcher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stan-watcher
+  template:
+    metadata:
+      name: stan-watcher
+      labels:
+        app: stan-watcher
+        name: stan-watcher
+    spec:
+      containers:
+      - image: gcr.io/pl-dev-infra/cloud/stan_watcher_image:latest
+        name: stan-watcher
+        env:
+        - name: PL_SERVER_TLS_CERT
+          value: /certs/server.crt
+        - name: PL_SERVER_TLS_KEY
+          value: /certs/server.key
+        - name: PL_CLIENT_TLS_CERT
+          value: /certs/client.crt
+        - name: PL_CLIENT_TLS_KEY
+          value: /certs/client.key
+        - name: PL_TLS_CA_CERT
+          value: /certs/ca.crt
+        - name: PL_CLUSTER_ID
+          value: ""
+        - name: PL_SHARD_ID
+          value: "*"
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
