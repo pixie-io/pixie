@@ -25,6 +25,8 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include <utility>
 #include <vector>
 
+#include <absl/synchronization/mutex.h>
+
 #include "demos/applications/hipster_shop/reflection.h"
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/system/socket_info.h"
@@ -190,7 +192,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   explicit SocketTraceConnector(std::string_view source_name);
 
+  // Computes the new binaries to which uprobes should be attached.
+  // And new pids for existing binaries.
+  std::map<std::string, std::vector<int32_t> > FindNewPIDs();
   Status AttachHTTP2UProbes();
+  // Wraps AttachHTTP2UProbes() in a loop. Stops when this SocketTraceConnector is stopped.
+  // Used for creating a background thread to attach uprobes for newly-created processes.
+  void AttachHTTP2UProbesLoop();
 
   // This function causes the perf buffer to be read, and triggers callbacks per message.
   void ReadPerfBuffers();
@@ -216,6 +224,16 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // HTTP-specific helper function.
   static bool SelectMessage(const http::Record& record);
+
+  absl::flat_hash_set<md::UPID> get_mds_upids() {
+    absl::MutexLock lock(&mds_upids_lock_);
+    return mds_upids_;
+  }
+
+  void set_mds_upids(absl::flat_hash_set<md::UPID> upids) {
+    absl::MutexLock lock(&mds_upids_lock_);
+    mds_upids_ = std::move(upids);
+  }
 
   // TODO(oazizi/yzhao): Change to use std::unique_ptr.
 
@@ -263,6 +281,17 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::unique_ptr<system::SocketInfoManager> socket_info_mgr_;
 
   std::unique_ptr<system::ProcParser> proc_parser_;
+
+  // Used to periodically attach uprobes.
+  std::thread attach_uprobes_thread_;
+
+  // TODO(yzhao): To have a simple synchronization model, uses Mutex + copy.
+  absl::Mutex mds_upids_lock_;
+  absl::flat_hash_set<md::UPID> mds_upids_ GUARDED_BY(mds_upids_lock_);
+
+  // Used to avoid duplicate scanning on the same processes.
+  absl::flat_hash_set<md::UPID> prev_scanned_upids_;
+  absl::flat_hash_set<std::string> prev_scanned_binaries_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);

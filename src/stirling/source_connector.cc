@@ -32,8 +32,14 @@ Status SourceConnector::Stop() {
     return error::Internal("Cannot stop connector that is not active [current state = $0].",
                            magic_enum::enum_name(static_cast<State>(state_)));
   }
+  // Update state first, so that StopImpl() can act accordingly.
+  // For example, SocketTraceConnector::AttachHTTP2UprobesLoop() exists loop when state_ is
+  // kStopped; and SocketTraceConnector::StopImpl() joins the thread.
+  state_ = State::kStopped;
   Status s = StopImpl();
-  state_ = s.ok() ? State::kStopped : State::kErrors;
+  if (!s.ok()) {
+    state_ = State::kErrors;
+  }
   return s;
 }
 

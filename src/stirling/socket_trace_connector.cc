@@ -96,7 +96,7 @@ using ::pl::stirling::grpc::ParsePB;
 using ::pl::stirling::grpc::PBTextFormat;
 using ::pl::stirling::grpc::PBWireToText;
 using ::pl::stirling::http2::HTTP2Message;
-using ::pl::stirling::obj_tools::GetActiveBinaries;
+using ::pl::stirling::obj_tools::GetActiveBinary;
 using ::pl::stirling::obj_tools::GetSymAddrs;
 using ::pl::stirling::utils::ToJSONString;
 
@@ -231,6 +231,8 @@ Status SocketTraceConnector::InitImpl() {
     LOG(INFO) << absl::Substitute("Writing output to: $0 in $1 format.", abs_path.string(), format);
   }
 
+  attach_uprobes_thread_ = std::thread([this]() { AttachHTTP2UProbesLoop(); });
+
   return Status::OK();
 }
 
@@ -239,8 +241,27 @@ Status SocketTraceConnector::StopImpl() {
   if (perf_buffer_events_output_stream_ != nullptr) {
     perf_buffer_events_output_stream_->close();
   }
+  if (attach_uprobes_thread_.joinable()) {
+    attach_uprobes_thread_.join();
+  }
   return Status::OK();
 }
+
+namespace {
+
+absl::flat_hash_set<md::UPID> GetMdsUpids(const ConnectorContext& ctx) {
+  auto* md = ctx.AgentMetadataState();
+  if (md == nullptr) {
+    return {};
+  }
+  absl::flat_hash_set<md::UPID> upids;
+  for (const auto& [upid, pid_info] : md->pids_by_upid()) {
+    upids.insert(upid);
+  }
+  return upids;
+}
+
+}  // namespace
 
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
@@ -261,6 +282,9 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   }
 
   TransferStreams(ctx, table_num, data_table);
+
+  // Refresh UPIDs from MDS so that the uprobe attaching thread can detect new processes.
+  set_mds_upids(GetMdsUpids(*ctx));
 }
 
 template <typename TValueType>
@@ -292,21 +316,101 @@ Status SocketTraceConnector::DisableSelfTracing() {
   return UpdatePerCPUArrayValue(kStirlingTGIDIndex, my_pid, &control_map_handle);
 }
 
+std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() {
+  absl::flat_hash_map<md::UPID, std::filesystem::path> new_upid_paths;
+  std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
+
+  absl::flat_hash_set<md::UPID> mds_upids = get_mds_upids();
+
+  if (mds_upids.empty()) {
+    // Fall back to scanning proc filesystem.
+    for (const auto& [pid, pid_path] : system::ListProcPidPaths(proc_path)) {
+      const md::UPID upid(/*asid*/ 0, pid, system::GetPIDStartTimeTicks(pid_path));
+      if (prev_scanned_upids_.contains(upid)) {
+        continue;
+      }
+      new_upid_paths[upid] = pid_path;
+    }
+  } else {
+    for (const auto& upid : mds_upids) {
+      const md::UPID upid_cpy(/*asid*/ 0, upid.pid(), upid.start_ts());
+      if (prev_scanned_upids_.contains(upid_cpy)) {
+        continue;
+      }
+      new_upid_paths[upid_cpy] = proc_path / std::to_string(upid.pid());
+    }
+  }
+  for (const auto& [upid, pid_path] : new_upid_paths) {
+    prev_scanned_upids_.insert(upid);
+  }
+
+  // TODO(yzhao): We ignore the terminated UPIDs, as the kernel will automatically cleanup the
+  // uprobes for a stopped process. In the future, we still want to manually detach uprobes
+  // if no process is running with a particular executable file, so to cleanup the resources inside
+  // BPF object.
+  //
+  // They should not cause problems for symbol addresses and uprobes:
+  // 1. If the terminated PIDs are reused with the same executable, then the existing symbol
+  // addresses and uprobes continue to work correctly.
+  // 2. If the terminated PIDs are reused with a different executable, then the symbol addresses
+  // and uprobes will be updated.
+  // 3. If the terminated PIDs are not reused, then there will not be BPF probes invoked,
+  // therefore the existing symbol addresses and uprobes won't be used.
+
+  std::filesystem::path host_path = system::Config::GetInstance().host_path();
+  std::map<std::string, std::vector<int32_t>> new_pids;
+
+  for (const auto& [upid, pid_path] : new_upid_paths) {
+    auto host_exe_or = GetActiveBinary(host_path, pid_path);
+    if (!host_exe_or.ok()) {
+      continue;
+    }
+    std::filesystem::path host_exe = host_exe_or.ConsumeValueOrDie();
+    new_pids[host_exe.string()].push_back(upid.pid());
+  }
+  return new_pids;
+}
+
 Status SocketTraceConnector::AttachHTTP2UProbes() {
-  std::map<int32_t, std::filesystem::path> pid_paths =
-      system::ListProcPidPaths(system::Config::GetInstance().proc_path());
-  std::map<std::string, std::vector<int>> binaries =
-      GetActiveBinaries(system::Config::GetInstance().host_path(), pid_paths);
+  std::map<std::string, std::vector<int32_t>> new_pids = FindNewPIDs();
+
+  LOG_FIRST_N(INFO, 1) << absl::Substitute("New binaries count = $0", new_pids.size());
+
   ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
       bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
-  for (const auto& [pid, symaddrs] : GetSymAddrs(binaries)) {
+
+  for (const auto& [pid, symaddrs] : GetSymAddrs(new_pids)) {
     symaddrs_map.update_value(pid, symaddrs);
   }
+
+  std::map<std::string, std::vector<int32_t>> new_binaries;
+  for (const auto& [binary, pids] : new_pids) {
+    if (prev_scanned_binaries_.contains(binary)) {
+      continue;
+    }
+    new_binaries[binary] = pids;
+    prev_scanned_binaries_.insert(binary);
+  }
+
   PL_ASSIGN_OR_RETURN(const std::vector<bpf_tools::UProbeSpec> specs,
-                      ResolveUProbeTmpls(binaries, kUProbeTmpls));
+                      ResolveUProbeTmpls(new_binaries, kUProbeTmpls));
   PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
-  LOG(INFO) << absl::Substitute("Number of uprobes deployed = $0", specs.size());
+  LOG_FIRST_N(INFO, 1) << absl::Substitute("Number of uprobes deployed = $0", specs.size());
   return Status::OK();
+}
+
+void SocketTraceConnector::AttachHTTP2UProbesLoop() {
+  auto next_update_time_point = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+  while (state() != State::kStopped) {
+    // Check more often than the actual attachment cycle, so that we can exit the loop faster.
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if (std::chrono::steady_clock::now() < next_update_time_point) {
+      continue;
+    }
+    auto status = AttachHTTP2UProbes();
+    next_update_time_point = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    VLOG(1) << "AttachHTTP2UProbes() status: " << status.ToString();
+  }
 }
 
 //-----------------------------------------------------------------------------

@@ -121,6 +121,7 @@ class GRPCTraceGoTest : public ::testing::Test {
   void TearDown() override {
     s_.Kill();
     EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
+    EXPECT_OK(connector_->Stop());
   }
 
   std::string server_path_;
