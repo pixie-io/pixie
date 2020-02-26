@@ -73,7 +73,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/nats-io/gnatsd v1.4.1
 	github.com/nats-io/go-nats v1.7.2
-	github.com/nats-io/nats.go v1.9.1 // indirect
+	github.com/nats-io/stan.go v0.6.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.1
 	github.com/onsi/gomega v0.0.0-20190113212917-5533ce8a0da3 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect

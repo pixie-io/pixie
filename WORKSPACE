@@ -527,8 +527,8 @@ go_repository(
 go_repository(
     name = "com_github_nats_io_nkeys",
     importpath = "github.com/nats-io/nkeys",
-    sum = "h1:+qM7QpgXnvDDixitZtQUBDY9w/s9mu1ghS+JIbsrx6M=",
-    version = "v0.0.2",
+    sum = "h1:qMd4+pRHgdr1nAClu+2h/2a5F2TmKcCzjCDazVgRoX4=",
+    version = "v0.1.0",
 )
 
 go_repository(
@@ -1822,4 +1822,27 @@ go_repository(
     importpath = "github.com/emicklei/dot",
     sum = "h1:bkzvwgIhhw/cuxxnJy5/5+ZL3GnhFxFfv0eolHtWE2w=",
     version = "v0.10.1",
+)
+
+go_repository(
+    name = "com_github_nats_io_jwt",
+    importpath = "github.com/nats-io/jwt",
+    sum = "h1:xdnzwFETV++jNc4W1mw//qFyJGb2ABOombmZJQS4+Qo=",
+    version = "v0.3.0",
+)
+
+go_repository(
+    name = "com_github_nats_io_nats_go",
+    importpath = "github.com/nats-io/nats.go",
+    sum = "h1:ik3HbLhZ0YABLto7iX80pZLPw/6dx3T+++MZJwLnMrQ=",
+    version = "v1.9.1",
+)
+
+go_repository(
+    name = "com_github_nats_io_stan_go",
+    build_file_generation = "on",
+    build_file_proto_mode = "disable",
+    importpath = "github.com/nats-io/stan.go",
+    sum = "h1:26IJPeykh88d8KVLT4jJCIxCyUBOC5/IQup8oWD/QYY=",
+    version = "v0.6.0",
 )
