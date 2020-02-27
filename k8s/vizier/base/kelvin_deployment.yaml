@@ -14,6 +14,23 @@ spec:
     spec:
       imagePullSecrets:
       - name: pl-image-secret
+      initContainers:
+      - name: init-myservice
+        image: alpine:3.6
+        # yamllint disable
+        command: ['sh', '-c', 'set -x;
+          apk add --no-cache curl;
+          URL="https://${SERVICE_NAME}:${SERVICE_PORT}/healthz";
+          until [ $(curl -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}"
+            sleep 2;
+          done;
+        ']
+        env:
+        - name: SERVICE_NAME
+          value: "vizier-query-broker"
+        - name: SERVICE_PORT
+          value: "50300"
       containers:
       - name: kelvin
         image: gcr.io/pl-dev-infra/vizier/kelvin_image:latest

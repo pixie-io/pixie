@@ -13,6 +13,23 @@ spec:
       labels:
         name: vizier-query-broker
     spec:
+      initContainers:
+      - name: init-myservice
+        image: alpine:3.6
+        # yamllint disable
+        command: ['sh', '-c', 'set -x;
+          apk add --no-cache curl;
+          URL="https://${SERVICE_NAME}:${SERVICE_PORT}/healthz";
+          until [ $(curl -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}"
+            sleep 2;
+          done;
+        ']
+        env:
+        - name: SERVICE_NAME
+          value: "vizier-metadata"
+        - name: SERVICE_PORT
+          value: "50400"
       containers:
       - name: vizier-query-broker
         image: gcr.io/pl-dev-infra/vizier/query_broker_server_image:latest

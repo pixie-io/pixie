@@ -13,6 +13,18 @@ spec:
       labels:
         name: vizier-metadata
     spec:
+      initContainers:
+      - name: wait-nats
+        image: alpine:3.6
+        # yamllint disable
+        command: ['sh', '-c', 'set -x;  apk add --no-cache curl;
+          until timeout -t 2 curl -f "http://${NATS_ADDR}"; do
+            echo "waiting for http://${NATS_ADDR}";
+            sleep 2;
+          done;']
+        env:
+        - name: NATS_ADDR
+          value: "pl-nats-mgmt:8222"
       containers:
       - name: vizier-metadata
         image: gcr.io/pl-dev-infra/vizier/metadata_server_image:latest
