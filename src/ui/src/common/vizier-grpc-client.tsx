@@ -1,13 +1,17 @@
 import {
-    ExecuteScriptRequest, QueryExecutionStats, Relation, RowBatchData, Status,
+    ExecuteScriptRequest, QueryExecutionStats, QueryMetadata, Relation, RowBatchData, Status,
 } from 'types/generated/vizier_pb';
 import {VizierServiceClient} from 'types/generated/VizierServiceClientPb';
 
+interface Table {
+  relation: Relation;
+  data: RowBatchData[];
+  name: string;
+  id: string;
+}
+
 export interface VizierQueryResult {
-  tables: Array<{
-    relation: Relation;
-    data: RowBatchData[];
-  }>;
+  tables: Table[];
   status?: Status;
   executionStats?: QueryExecutionStats;
 }
@@ -25,9 +29,8 @@ export class VizierGRPCClient {
 
     return new Promise((resolve, reject) => {
       const call = this.client.executeScript(req, { Authorization: `BEARER ${this.token}` });
+      const tablesMap = new Map<string, Table>();
       const results: VizierQueryResult = { tables: [] };
-
-      let tableIndex = -1;
 
       call.on('data', (resp) => {
         if (resp.hasStatus()) {
@@ -38,16 +41,29 @@ export class VizierGRPCClient {
 
         if (resp.hasMetaData()) {
           const relation = resp.getMetaData().getRelation();
-          results.tables.push({
-            relation,
-            data: [],
-          });
-          tableIndex++;
+          const id = resp.getMetaData().getId();
+          const name = resp.getMetaData().getName();
+          tablesMap.set(id, { relation, id, name, data: [] });
         } else if (resp.hasData()) {
           const data = resp.getData();
-          if (data && data.hasBatch()) {
-            results.tables[tableIndex].data.push(data.getBatch());
+          if (data.hasBatch()) {
+            const batch = data.getBatch();
+            const id = batch.getTableId();
+            const table = tablesMap.get(id);
+            if (!table) {
+              throw new Error('table does not exisit');
+            }
+            // Append the data.
+            table.data.push(batch);
+
+            // The table is complete.
+            if (batch.getEos()) {
+              results.tables.push(table);
+              tablesMap.delete(id);
+              return;
+            }
           } else if (data.hasExecutionStats()) {
+            // The query finished executing, and all the data has been received.
             results.executionStats = data.getExecutionStats();
             resolve(results);
             return;

@@ -3,6 +3,7 @@ import {Column, Relation, RowBatchData} from 'types/generated/vizier_pb';
 
 import {extractData} from '../components/chart/data';
 import {formatUInt128} from './format-data';
+import {nanoToMilliSeconds} from './time';
 
 export function ResultsToCsv(results) {
   const jsonResults = JSON.parse(results);
@@ -75,7 +76,8 @@ function columnFromProto(column: Column): Array<{}> {
   } else if (column.hasStringData()) {
     return column.getStringData().getDataList();
   } else if (column.hasTime64nsData()) {
-    return column.getTime64nsData().getDataList();
+    const data = column.getTime64nsData().getDataList();
+    return data.map(nanoToMilliSeconds);
   } else if (column.hasDuration64nsData()) {
     return column.getDuration64nsData().getDataList();
   }

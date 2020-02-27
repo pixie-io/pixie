@@ -1,6 +1,7 @@
 import {
     Column, Float64Column, Int64Column, QueryData, Relation, RowBatchData, Status, Time64NSColumn,
 } from 'types/generated/vizier_pb';
+import {milliToNanoSeconds} from 'utils/time';
 
 import * as ResultDataUtils from './result-data-utils';
 
@@ -154,7 +155,7 @@ describe('dataFromProto', () => {
     new Column(),
   ];
   const timeCol1 = new Time64NSColumn();
-  timeCol1.setDataList([expected[0].time, expected[1].time]);
+  timeCol1.setDataList([milliToNanoSeconds(expected[0].time), milliToNanoSeconds(expected[1].time)]);
   dataCols1[0].setTime64nsData(timeCol1);
   const floatCol1 = new Float64Column();
   floatCol1.setDataList([expected[0].float64, expected[1].float64]);
@@ -172,7 +173,7 @@ describe('dataFromProto', () => {
     new Column(),
   ];
   const timeCol2 = new Time64NSColumn();
-  timeCol2.setDataList([expected[2].time]);
+  timeCol2.setDataList([milliToNanoSeconds(expected[2].time)]);
   dataCols2[0].setTime64nsData(timeCol2);
   const floatCol2 = new Float64Column();
   floatCol2.setDataList([expected[2].float64]);
