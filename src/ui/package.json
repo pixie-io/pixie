@@ -112,6 +112,7 @@
     "react-codemirror2": "^6.0.0",
     "react-dom": "^16.12.0",
     "react-draggable": "^4.0.3",
+    "react-grid-layout": "^0.18.2",
     "react-highlight": "^0.12.0",
     "react-hotkeys": "^2.0.0",
     "react-router-dom": "^4.3.1",
