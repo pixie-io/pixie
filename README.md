@@ -1,15 +1,17 @@
 
 ![Pixie!](pixie_logo.png)
 
+
 _Engineers debug distributed applications live with Pixie’s no-config streaming telemetry._
+
 
 ## We are in Private Beta!
 
-Pixie is being built for broad use by the end of the year.
+Pixie is being built for broad use by the end of 2020.
 
 In these early days, we’re very lucky to have a diverse and enthusiastic community of early adopters. Pixienauts, as we fondly refer to them, help shape the product, share expertise, host events, and much more.
 
-If you are interested in tinkering with our beta, you can sign-up here and join our community on slack.
+If you are interested in tinkering with our beta, you can sign-up [here](https://withpixie.ai/) and join our [community on slack](https://withpixie.ai/).
 
 
 ## Support
