@@ -22,8 +22,7 @@ TEST(GetActiveBinariesTest, CaptureTestBinary) {
   int32_t mypid = getpid();
   std::map<int32_t, std::filesystem::path> pid_paths = {
       {mypid, std::filesystem::path("/proc") / std::to_string(mypid)}};
-  const std::map<std::string, std::vector<int>> binaries =
-      GetActiveBinaries(/*host_path*/ {}, pid_paths);
+  const std::map<std::string, std::vector<int>> binaries = GetActiveBinaries(pid_paths);
   EXPECT_THAT(binaries, Contains(Pair(EndsWith("src/stirling/obj_tools/obj_tools_test"), _)))
       << "Should see the test process itself";
 }

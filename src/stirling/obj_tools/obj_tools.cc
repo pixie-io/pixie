@@ -26,8 +26,8 @@ pl::StatusOr<std::filesystem::path> GetActiveBinary(std::filesystem::path host_p
 }
 
 std::map<std::string, std::vector<int>> GetActiveBinaries(
-    const std::filesystem::path& host_path,
-    const std::map<int32_t, std::filesystem::path>& pid_paths) {
+    const std::map<int32_t, std::filesystem::path>& pid_paths,
+    const std::filesystem::path& host_path) {
   std::map<std::string, std::vector<int>> binaries;
   for (const auto& [pid, p] : pid_paths) {
     VLOG(1) << absl::Substitute("Directory: $0", p.string());

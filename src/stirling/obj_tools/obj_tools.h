@@ -18,16 +18,17 @@ namespace obj_tools {
 pl::StatusOr<std::filesystem::path> GetActiveBinary(std::filesystem::path host_path,
                                                     std::filesystem::path proc_pid);
 
+// Note: GetActiveBinararies may seem unused, but is still used by code in experimental,
+// so double-check before trying to remove.
 /**
- * GetActiveBinaries searches the /proc filesystem to collect all active binaries.
- * Essentially it returns the files pointed to by /proc/<pid>/exe, for all <pids>.
+ * GetActiveBinaries returns the files pointed to by /proc/<pid>/exe, for all <pids>.
  *
- * @param proc Path to the proc filesystem (typically should be "/proc")
+ * @param pid_paths List of pids to process (see ::pl::system::ListProcPaths()).
  * @return a set of all active binaries.
  */
 std::map<std::string, std::vector<int>> GetActiveBinaries(
-    const std::filesystem::path& host_path,
-    const std::map<int32_t, std::filesystem::path>& pid_paths);
+    const std::map<int32_t, std::filesystem::path>& pid_paths,
+    const std::filesystem::path& host_path = {});
 
 /**
  * Looks up specific symbols of the binaries, and returns a map from PIDs that execute the
