@@ -2,6 +2,7 @@
 
 if [ "$#" -ne 2 ]; then
   echo "This script requires exactly two arguments: <namespace> <secret type : dev, prod, etc.>"
+  exit 1
 fi
 namespace=$1
 secret_type=$2
