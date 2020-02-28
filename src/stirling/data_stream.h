@@ -103,7 +103,7 @@ class DataStream {
    */
   bool IsStuck() const {
     constexpr int kMaxStuckCount = 3;
-    return bytes_to_frames_stuck_count_ > kMaxStuckCount;
+    return stuck_count_ > kMaxStuckCount;
   }
 
   /**
@@ -242,7 +242,7 @@ class DataStream {
 
   // Number of consecutive calls to ProcessToRecords(), where there are a non-zero number of events,
   // but no parsed messages are produced.
-  int bytes_to_frames_stuck_count_ = 0;
+  int stuck_count_ = 0;
 
   // A copy of the parse state from the last call to ProcessToRecords().
   ParseState last_parse_state_ = ParseState::kInvalid;

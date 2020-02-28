@@ -324,6 +324,12 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   // Since we previously received connection Upgrade, this tracker should be disabled.
   // All future calls to ProcessToRecords() should produce no results.
 
+  // TODO(oazizi): This is a bad test beyond this point,
+  // because a disabled tracker would never call ProcessToRecords again in Stirling.
+  // Currently, this causes a warning to fire that states ProcessToRecords should not be
+  // run on a stream at EOS.
+  // However, the test still passes, so we'll leave the test for now.
+
   req_resp_pairs = tracker.ProcessToRecords<http::Record>();
   tracker.IterationPostTick();
 
@@ -474,47 +480,30 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesErasedAfterExpiration) {
 }
 
 TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
-  // Intentionally use non-HTTP data so make it stuck.
-  auto frame0 = InitSendEvent<kProtocolHTTP>("aaaaaaaaa");
-  auto frame1 = InitSendEvent<kProtocolHTTP>("aaaaaaaaa");
-  auto frame2 = InitRecvEvent<kProtocolHTTP>("bbbbbbbbb");
-  auto frame3 = InitRecvEvent<kProtocolHTTP>("bbbbbbbbb");
+  // Use incomplete data to make it stuck.
+  auto data0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, 10));
+  auto data1 = InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(10, 10));
+  auto data2 = InitRecvEvent<kProtocolHTTP>(kHTTPReq0.substr(20, 10));
+  auto data3 = InitRecvEvent<kProtocolHTTP>(kHTTPReq0.substr(30, 10));
 
   ConnectionTracker tracker;
-  {
-    tracker.AddDataEvent(std::move(frame0));
-    tracker.ProcessToRecords<http::Record>();
-    EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
-    tracker.ProcessToRecords<http::Record>();
-    EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
-    tracker.ProcessToRecords<http::Record>();
-    EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
 
-    // The 4th time, the stuck is detected and data are purged.
-    tracker.ProcessToRecords<http::Record>();
-    EXPECT_TRUE(tracker.req_data()->Empty<http::Message>());
+  tracker.AddDataEvent(std::move(data0));
+  tracker.ProcessToRecords<http::Record>();
+  EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
+  tracker.ProcessToRecords<http::Record>();
+  EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
+  tracker.ProcessToRecords<http::Record>();
+  EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
 
-    // Now the stuck count is reset, so the event is kept.
-    tracker.AddDataEvent(std::move(frame1));
-    tracker.ProcessToRecords<http::Record>();
-    EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
-  }
-  {
-    tracker.AddDataEvent(std::move(frame2));
-    tracker.ProcessToRecords<http::Record>();
-    EXPECT_FALSE(tracker.resp_data()->Empty<http::Message>());
-    tracker.ProcessToRecords<http::Record>();
-    EXPECT_FALSE(tracker.resp_data()->Empty<http::Message>());
-    tracker.ProcessToRecords<http::Record>();
-    EXPECT_FALSE(tracker.resp_data()->Empty<http::Message>());
+  // The 4th time, the stuck condition is detected and all data is purged.
+  tracker.ProcessToRecords<http::Record>();
+  EXPECT_TRUE(tracker.req_data()->Empty<http::Message>());
 
-    tracker.ProcessToRecords<http::Record>();
-    EXPECT_TRUE(tracker.resp_data()->Empty<http::Message>());
-
-    tracker.AddDataEvent(std::move(frame3));
-    tracker.ProcessToRecords<http::Record>();
-    EXPECT_FALSE(tracker.resp_data()->Empty<http::Message>());
-  }
+  // Now the stuck count is reset, so the event is kept.
+  tracker.AddDataEvent(std::move(data1));
+  tracker.ProcessToRecords<http::Record>();
+  EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
 }
 
 TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {

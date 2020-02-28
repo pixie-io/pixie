@@ -73,38 +73,28 @@ size_t DataStream::AppendEvents(EventParser<TFrameType>* parser) const {
 
 namespace {
 
-ParseSyncType SelectSyncType(int64_t stuck_count) {
+bool IsSyncRequired(int64_t stuck_count) {
   ECHECK_GE(stuck_count, 0);
 
   // Stuck counts where we switch the sync policy.
   static constexpr int64_t kBasicSyncThreshold = 1;
-  static constexpr int64_t kAggressiveSyncThreshold = 2;
 
   // Thresholds must be in increasing order.
   static_assert(kBasicSyncThreshold > 0);
-  static_assert(kAggressiveSyncThreshold > kBasicSyncThreshold);
 
-  if (stuck_count == 0) {
-    // Not stuck, so no reason to search for a message boundary.
-    // Note that this is covered by the next if-statement, but left here to be explicit.
-    return ParseSyncType::None;
-  }
   if (stuck_count <= kBasicSyncThreshold) {
-    // A low number of stuck cycles could mean we have partial data.
-    // The rest might be back in this iteration, so still don't try to search for a message
-    // boundary.
-    return ParseSyncType::None;
-  }
-  if (stuck_count <= kAggressiveSyncThreshold) {
-    // Multiple stuck cycles implies there is something unparseable at the head.
-    // Run ParseFrames() with a search for a message boundary;
-    return ParseSyncType::Basic;
+    // If stuck_count == 0, then no reason to sync.
+    // If stuck_count != 0, but is low, it could mean we have partial data (i.e. kNeedsMoreData).
+    // The rest of the data could now be avilable in this new iteration,
+    // so still don't try to search for a message boundary yet.
+    return false;
   }
 
-  // We're really having trouble now, so invoke ParseFrames() with a more aggressive search.
-  // For now, more aggressive just means a message discovered at pos 0 is ignored,
-  // because presumably it's the one that is giving us problems, and we want to skip over it.
-  return ParseSyncType::Aggressive;
+  // Multiple stuck cycles implies there is something unparseable at the head.
+  // It is neither returning ParseState::kInvalid nor ParseState::kSuccess.
+  // It constantly is returning ParseState::kNeedsMoreData.
+  // Run ParseFrames() with a search for a new message boundary;
+  return true;
 }
 
 }  // namespace
@@ -135,14 +125,13 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   // A description of some key variables in this function:
   //
   // Member variables hold state across calls to ProcessToRecords():
-  // - bytes_to_frames_stuck_count_: Number of calls to ProcessToRecords() where no progress has
-  // been made.
+  // - stuck_count_: Number of calls to ProcessToRecords() where no progress has been made.
   //                 indicates an unparseable event at the head that is blocking progress.
   //
   // - has_new_events_: An optimization to avoid the expensive call to ParseFrames() when
   //                    nothing has changed in the DataStream. Note that we *do* want to call
   //                    ParseFrames() even when there are no new events, if the
-  //                    bytes_to_frames_stuck_count_ is high enough and we want to attempt a stream
+  //                    stuck_count_ is high enough and we want to attempt a stream
   //                    recovery.
   //
   // Local variables are intermediate computations to help simplify the code:
@@ -155,11 +144,13 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   //                 Used for the first iteration only.
 
   // We appear to be stuck with an an unparseable sequence of events blocking the head.
-  bool attempt_sync = SelectSyncType(bytes_to_frames_stuck_count_) != ParseSyncType::None;
+  bool attempt_sync = IsSyncRequired(stuck_count_);
 
   bool keep_processing = has_new_events_ || attempt_sync;
 
   ParseResult<BufferPosition> parse_result;
+  parse_result.state = ParseState::kNeedsMoreData;
+  parse_result.end_position = {next_seq_num_, offset_};
 
   while (keep_processing) {
     EventParser<TFrameType> parser;
@@ -168,8 +159,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
     size_t num_events_appended = AppendEvents(&parser);
 
     // Now parse all the appended events.
-    parse_result =
-        parser.ParseFrames(type, &typed_messages, SelectSyncType(bytes_to_frames_stuck_count_));
+    parse_result = parser.ParseFrames(type, &typed_messages, IsSyncRequired(stuck_count_));
 
     if (num_events_appended != events_.size()) {
       // We weren't able to append all events, which means we ran into a missing event.
@@ -183,7 +173,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
       offset_ = 0;
 
       // Update stuck count so we use the correct sync type on the next iteration.
-      bytes_to_frames_stuck_count_ = 0;
+      stuck_count_ = 0;
 
       keep_processing = (parse_result.state != ParseState::kEOS);
     } else {
@@ -206,12 +196,27 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   bool events_but_no_progress =
       !events_.empty() && (next_seq_num_ == orig_seq_num) && (offset_ == orig_offset);
   if (events_but_no_progress) {
-    ++bytes_to_frames_stuck_count_;
+    ++stuck_count_;
   }
 
   if (parse_result.state == ParseState::kEOS) {
     ECHECK(!events_but_no_progress);
   }
+
+  // If parse state is kInvalid, then no amount of waiting is going to help us.
+  // Reset the data right away to potentially unblock.
+  if (parse_result.state == ParseState::kInvalid) {
+    // TODO(oazizi): Currently, we reset all the data. This is overly aggressive.
+    // Alternative is to find the next frame boundary, rather than discarding all data.
+    if (!events_.empty()) {
+      auto iter = events_.end();
+      --iter;
+      next_seq_num_ = (iter->first) + 1;
+    }
+    offset_ = 0;
+    events_.clear();
+  }
+
   last_parse_state_ = parse_result.state;
 
   // has_new_events_ should be false for the next transfer cycle.
@@ -224,10 +229,16 @@ template void DataStream::ProcessBytesToFrames<mysql::Packet>(MessageType type);
 template void DataStream::ProcessBytesToFrames<cass::Frame>(MessageType type);
 
 void DataStream::Reset() {
+  // Before clearing raw events, update next_seq_num_ to the next expected value.
+  if (!events_.empty()) {
+    auto iter = events_.end();
+    --iter;
+    next_seq_num_ = (iter->first) + 1;
+  }
+  offset_ = 0;
   events_.clear();
   frames_ = std::monostate();
-  offset_ = 0;
-  bytes_to_frames_stuck_count_ = 0;
+  stuck_count_ = 0;
   // TODO(yzhao): It's likely the case that we'll want to preserve the inflater under the situations
   // where the HEADERS frames have not been lost. Detecting and responding to them probably will
   // change the semantic of Reset(), such that it will means different thing for different

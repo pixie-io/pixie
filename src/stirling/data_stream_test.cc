@@ -50,59 +50,68 @@ TEST_F(DataStreamTest, LostEvent) {
   EXPECT_FALSE(stream.IsStuck());
 }
 
-TEST_F(DataStreamTest, AttemptHTTPReqRecoveryStuckStream) {
+TEST_F(DataStreamTest, StuckTemporarily) {
   DataStream stream;
 
   // First request is missing a few bytes from its start.
-  std::unique_ptr<SocketDataEvent> req0 =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(5, kHTTPReq0.length()));
+  std::unique_ptr<SocketDataEvent> req0a =
+      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() - 10));
+  std::unique_ptr<SocketDataEvent> req0b =
+      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() - 10, 10));
   std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
   std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
 
-  stream.AddData(std::move(req0));
+  stream.AddData(std::move(req0a));
+
+  stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
+  EXPECT_THAT(stream.Frames<http::Message>(), IsEmpty());
+
+  // Remaining data arrives in time, so stuck count never gets high enough to flush events.
+  stream.AddData(std::move(req0b));
   stream.AddData(std::move(req1));
   stream.AddData(std::move(req2));
 
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
-  EXPECT_THAT(stream.Frames<http::Message>(), IsEmpty());
-
-  // Stuck count = 1.
-  stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
-  EXPECT_THAT(stream.Frames<http::Message>(), IsEmpty());
-
-  // Stuck count = 2. Should invoke recovery and release two messages.
-  stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
-  EXPECT_THAT(stream.Frames<http::Message>(), SizeIs(2));
+  const auto& requests = stream.Frames<http::Message>();
+  ASSERT_THAT(requests, SizeIs(3));
+  EXPECT_EQ(requests[0].http_req_path, "/index.html");
+  EXPECT_EQ(requests[1].http_req_path, "/foo.html");
+  EXPECT_EQ(requests[2].http_req_path, "/bar.html");
 }
 
-TEST_F(DataStreamTest, AttemptHTTPRespRecoveryStuckStream) {
+TEST_F(DataStreamTest, StuckTooLong) {
   DataStream stream;
 
-  // First response is missing a few bytes from its start.
-  std::unique_ptr<SocketDataEvent> resp0 =
-      InitSendEvent<kProtocolHTTP>(kHTTPResp0.substr(5, kHTTPResp0.length()));
-  std::unique_ptr<SocketDataEvent> resp1 = InitSendEvent<kProtocolHTTP>(kHTTPResp1);
-  std::unique_ptr<SocketDataEvent> resp2 = InitSendEvent<kProtocolHTTP>(kHTTPResp2);
+  // First request is missing a few bytes from its start.
+  std::unique_ptr<SocketDataEvent> req0a =
+      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() - 10));
+  std::unique_ptr<SocketDataEvent> req0b =
+      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() - 10, 10));
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
 
-  stream.AddData(std::move(resp0));
-  stream.AddData(std::move(resp1));
-  stream.AddData(std::move(resp2));
+  stream.AddData(std::move(req0a));
 
-  std::deque<http::Message> responses;
-
-  stream.ProcessBytesToFrames<http::Message>(MessageType::kResponse);
+  stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
   EXPECT_THAT(stream.Frames<http::Message>(), IsEmpty());
 
-  // Stuck count = 1.
-  stream.ProcessBytesToFrames<http::Message>(MessageType::kResponse);
+  stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
   EXPECT_THAT(stream.Frames<http::Message>(), IsEmpty());
 
-  // Stuck count = 2. Should invoke recovery and release two messages.
-  stream.ProcessBytesToFrames<http::Message>(MessageType::kResponse);
-  EXPECT_THAT(stream.Frames<http::Message>(), SizeIs(2));
+  // Remaining data does not arrive in time, so stuck recovery has already removed req0a.
+  // req0b will be noticed as invalid and cleared out as well.
+  stream.AddData(std::move(req0b));
+  stream.AddData(std::move(req1));
+  stream.AddData(std::move(req2));
+
+  stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
+  const auto& requests = stream.Frames<http::Message>();
+  ASSERT_THAT(requests, SizeIs(2));
+  EXPECT_EQ(requests[0].http_req_path, "/foo.html");
+  EXPECT_EQ(requests[1].http_req_path, "/bar.html");
 }
 
-TEST_F(DataStreamTest, AttemptHTTPReqRecoveryPartialMessage) {
+TEST_F(DataStreamTest, PartialMessageRecovery) {
   DataStream stream;
 
   std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
@@ -124,29 +133,7 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryPartialMessage) {
   EXPECT_EQ(requests[1].http_req_path, "/bar.html");
 }
 
-TEST_F(DataStreamTest, AttemptHTTPRespRecoveryPartialMessage) {
-  DataStream stream;
-
-  std::unique_ptr<SocketDataEvent> resp0 = InitSendEvent<kProtocolHTTP>(kHTTPResp0);
-  std::unique_ptr<SocketDataEvent> resp1a =
-      InitSendEvent<kProtocolHTTP>(kHTTPResp1.substr(0, kHTTPResp1.length() / 2));
-  std::unique_ptr<SocketDataEvent> resp1b =
-      InitSendEvent<kProtocolHTTP>(kHTTPResp1.substr(kHTTPResp1.length() / 2, kHTTPResp1.length()));
-  std::unique_ptr<SocketDataEvent> resp2 = InitSendEvent<kProtocolHTTP>(kHTTPResp2);
-
-  stream.AddData(std::move(resp0));
-  stream.AddData(std::move(resp1a));
-  PL_UNUSED(resp1b);  // Missing event.
-  stream.AddData(std::move(resp2));
-
-  stream.ProcessBytesToFrames<http::Message>(MessageType::kResponse);
-  const auto& responses = stream.Frames<http::Message>();
-  ASSERT_THAT(responses, SizeIs(2));
-  EXPECT_EQ(responses[0].http_msg_body, "pixie");
-  EXPECT_EQ(responses[1].http_msg_body, "bar");
-}
-
-TEST_F(DataStreamTest, AttemptHTTPReqRecoveryHeadAndMiddleMissing) {
+TEST_F(DataStreamTest, HeadAndMiddleMissing) {
   DataStream stream;
 
   std::unique_ptr<SocketDataEvent> req0b =
@@ -167,8 +154,6 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryHeadAndMiddleMissing) {
   stream.AddData(std::move(req2b));
 
   // The presence of a missing event should trigger the stream to make forward progress.
-  // Contrast this to AttemptHTTPReqRecoveryStuckStream,
-  // where the stream stays stuck for several iterations.
 
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
   const auto& requests = stream.Frames<http::Message>();
@@ -176,7 +161,7 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryHeadAndMiddleMissing) {
   EXPECT_EQ(requests[0].http_req_path, "/bar.html");
 }
 
-TEST_F(DataStreamTest, AttemptHTTPReqRecoveryAggressiveMode) {
+TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
   DataStream stream;
 
   std::unique_ptr<SocketDataEvent> req0a =
@@ -209,15 +194,6 @@ TEST_F(DataStreamTest, AttemptHTTPReqRecoveryAggressiveMode) {
 
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
   ASSERT_THAT(stream.Frames<http::Message>(), IsEmpty());
-
-  stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
-  ASSERT_THAT(stream.Frames<http::Message>(), IsEmpty());
-
-  // So many stuck iterations, that we should be in aggressive mode now.
-  // Aggressive mode should skip over the first request.
-  // In this example, it's a dumb choice, but this is just for test purposes.
-  // Normally aggressive mode is meant to force unblock a real unparseable head,
-  // but which appears to be at a valid HTTP boundary.
 
   stream.AddData(std::move(req0b));
   stream.AddData(std::move(req1a));

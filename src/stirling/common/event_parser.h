@@ -72,17 +72,6 @@ template <typename TFrameType>
 ParseResult<size_t> ParseFrames(MessageType type, std::string_view buf,
                                 std::deque<TFrameType>* frames);
 
-enum class ParseSyncType {
-  // Do not perform a frame boundary sync.
-  None,
-  // Perform a frame boundary sync, where head might already be aligned.
-  // Sync result of staying in the same spot is okay.
-  Basic,
-  // Perform a frame boundary sync, where we want to force movement,
-  // so disallow syncing to back to the existing position, unless no other boundary is discovered.
-  Aggressive,
-};
-
 /**
  * Utility to convert positions from a position within a set of combined buffers,
  * to the position within a set of matching content in disjoint buffers.
@@ -162,18 +151,22 @@ class EventParser {
    *
    * @param type The Type of frames to parse.
    * @param frames The container to which newly parsed frames are added.
+   * @param resync If set to true, Parse will first search for the next frame boundary (even
+   * if it is currently at a valid frame boundary).
    *
    * @return ParseResult with locations where parseable frames were found in the source buffer.
    */
   ParseResult<BufferPosition> ParseFrames(MessageType type, std::deque<TFrameType>* frames,
-                                          ParseSyncType sync_type = ParseSyncType::None) {
+                                          bool resync = false) {
     std::string buf = Combine();
 
     size_t start_pos = 0;
-    if (sync_type != ParseSyncType::None) {
-      VLOG(3) << "Finding frame boundary";
-      const bool force_movement = sync_type == ParseSyncType::Aggressive;
-      start_pos = FindFrameBoundary<TFrameType>(type, buf, force_movement);
+    if (resync) {
+      VLOG(3) << "Finding next frame boundary";
+      // Since we've been asked to resync, we search from byte 1 to find a new boundary.
+      // Don't want to stay at the same position.
+      constexpr int kStartPos = 1;
+      start_pos = FindFrameBoundary<TFrameType>(type, buf, kStartPos);
 
       // Couldn't find a boundary, so stay where we are.
       // Chances are we won't be able to parse, but we have no other option.
