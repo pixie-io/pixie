@@ -441,25 +441,29 @@ StatusOr<BatchReq> ParseBatchReq(Frame* frame) {
   BatchReq r;
 
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.type, decoder.ExtractByte());
-  // - If <type> == 0, the batch will be "logged". This is equivalent to a
-  //   normal CQL3 batch statement.
-  // - If <type> == 1, the batch will be "unlogged".
-  // - If <type> == 2, the batch will be a "counter" batch (and non-counter
-  //   statements will be rejected).
-  if (r.type > 2) {
-    return error::Internal("Unrecognized BATCH type");
-  }
+  PL_ASSIGN_OR_RETURN(uint8_t type_raw, decoder.ExtractByte());
+  PL_ASSIGN_OR_RETURN(r.type, EnumCast<BatchReqType>(type_raw));
+
   PL_ASSIGN_OR_RETURN(uint16_t n, decoder.ExtractShort());
 
   for (uint i = 0; i < n; ++i) {
     BatchQuery q;
-    PL_ASSIGN_OR_RETURN(q.kind, decoder.ExtractByte());
-    if (q.kind == 0) {
-      PL_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractLongString());
-    } else if (q.kind == 1) {
-      PL_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractShortBytes());
+    PL_ASSIGN_OR_RETURN(uint8_t kind_raw, decoder.ExtractByte());
+    PL_ASSIGN_OR_RETURN(q.kind, EnumCast<BatchQueryKind>(kind_raw));
+    switch (q.kind) {
+      case BatchQueryKind::kString: {
+        PL_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractLongString());
+        break;
+      }
+      case BatchQueryKind::kID: {
+        PL_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractShortBytes());
+        break;
+      }
+      default:
+        // EnumCast should ensure we never get here.
+        LOG(DFATAL) << absl::Substitute("Unrecognized BatchQueryKind $0", static_cast<int>(q.kind));
     }
+
     // See note below about flag_with_names_for_values.
     PL_ASSIGN_OR_RETURN(q.values, decoder.ExtractNameValuePairList(false));
     r.queries.push_back(std::move(q));
@@ -594,31 +598,33 @@ StatusOr<ResultSchemaChangeResp> ParseResultSchemaChange(FrameBodyDecoder* decod
 StatusOr<ResultResp> ParseResultResp(Frame* frame) {
   ResultResp r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.kind, decoder.ExtractInt());
+  PL_ASSIGN_OR_RETURN(int32_t kind_raw, decoder.ExtractInt());
+  PL_ASSIGN_OR_RETURN(r.kind, EnumCast<ResultRespKind>(kind_raw));
 
   switch (r.kind) {
-    case 0x0001: {
+    case ResultRespKind::kVoid: {
       PL_ASSIGN_OR_RETURN(r.resp, ParseResultVoid(&decoder));
       break;
     }
-    case 0x0002: {
+    case ResultRespKind::kRows: {
       PL_ASSIGN_OR_RETURN(r.resp, ParseResultRows(&decoder));
       break;
     }
-    case 0x0003: {
+    case ResultRespKind::kSetKeyspace: {
       PL_ASSIGN_OR_RETURN(r.resp, ParseResultSetKeyspace(&decoder));
       break;
     }
-    case 0x0004: {
+    case ResultRespKind::kPrepared: {
       PL_ASSIGN_OR_RETURN(r.resp, ParseResultPrepared(&decoder));
       break;
     }
-    case 0x0005: {
+    case ResultRespKind::kSchemaChange: {
       PL_ASSIGN_OR_RETURN(r.resp, ParseResultSchemaChange(&decoder));
       break;
     }
     default:
-      return error::Internal("Unrecognized result kind (%d)", r.kind);
+      // EnumCast should ensure we never get here.
+      LOG(DFATAL) << absl::Substitute("Unrecognized ResultRespKind $0", static_cast<int>(r.kind));
   }
 
   return r;

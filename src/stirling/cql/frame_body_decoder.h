@@ -103,7 +103,7 @@ struct ResultMetadata {
   std::vector<ColSpec> col_specs;
 };
 
-// TODO(oazizi): Consider switching strings into enums for efficiency.
+// TODO(oazizi): Consider switching 'change_type' and 'target' strings into enums.
 // See section 4.2.6 of the spec for details.
 struct SchemaChange {
   // One of "CREATED", "UPDATED" or "DROPPED"
@@ -125,8 +125,10 @@ struct SchemaChange {
   StringList arg_types;
 };
 
+enum class BatchQueryKind : uint8_t { kString = 0, kID = 1 };
+
 struct BatchQuery {
-  uint8_t kind;
+  BatchQueryKind kind;
   std::variant<std::string, std::basic_string<uint8_t>> query_or_id;
   std::vector<NameValuePair> values;
 };
@@ -185,8 +187,16 @@ struct ResultSchemaChangeResp {
   SchemaChange sc;
 };
 
+enum class ResultRespKind : int32_t {
+  kVoid = 0x0001,
+  kRows = 0x0002,
+  kSetKeyspace = 0x0003,
+  kPrepared = 0x0004,
+  kSchemaChange = 0x0005
+};
+
 struct ResultResp {
-  int32_t kind;
+  ResultRespKind kind;
   std::variant<ResultVoidResp, ResultRowsResp, ResultSetKeyspaceResp, ResultPreparedResp,
                ResultSchemaChangeResp>
       resp;
@@ -205,19 +215,31 @@ struct RegisterReq {
   StringList event_types;
 };
 
+// TODO(oazizi): Consider switching event_type string into enum for efficiency.
 struct EventResp {
   std::string event_type;
 
-  // if (event_type == "TOPOLOGY_CHANGE" || event_type == "STATUS_CHANGE")
+  // Following fields are for (event_type == "TOPOLOGY_CHANGE" || event_type == "STATUS_CHANGE")
   std::string change_type;
   SockAddr addr;
 
-  // if (event_type == "SCHEMA_CHANGE")
+  // Following fields are for (event_type == "SCHEMA_CHANGE")
   SchemaChange sc;
 };
 
+enum class BatchReqType : uint8_t {
+  // The batch will be "logged". This is equivalent to a normal CQL3 batch statement.
+  kLogged = 0,
+
+  // The batch will be "unlogged".
+  kUnlogged = 1,
+
+  // the batch will be a "counter" batch (and non-counter statements will be rejected).
+  kCounter = 2,
+};
+
 struct BatchReq {
-  uint8_t type;
+  BatchReqType type;
   std::vector<BatchQuery> queries;
   uint16_t consistency;
   uint8_t flags;

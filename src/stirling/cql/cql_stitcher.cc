@@ -114,14 +114,19 @@ Status ProcessBatchReq(Frame* req_frame, Request* req) {
   // TODO(oazizi): Use rapidjson instead.
   req->msg = "[";
   for (const auto& q : r.queries) {
-    if (q.kind == 0) {
-      absl::StrAppend(&req->msg,
-                      absl::StrCat("{ query = \"", std::get<std::string>(q.query_or_id), "},"));
-    } else {
-      absl::StrAppend(
-          &req->msg,
-          absl::StrCat("{ id = \"",
-                       BytesToString(std::get<std::basic_string<uint8_t>>(q.query_or_id)), "},"));
+    switch (q.kind) {
+      case BatchQueryKind::kString:
+        absl::StrAppend(&req->msg,
+                        absl::StrCat("{ query = \"", std::get<std::string>(q.query_or_id), "},"));
+        break;
+      case BatchQueryKind::kID:
+        absl::StrAppend(
+            &req->msg,
+            absl::StrCat("{ id = \"",
+                         BytesToString(std::get<std::basic_string<uint8_t>>(q.query_or_id)), "},"));
+        break;
+      default:
+        LOG(DFATAL) << absl::Substitute("Unrecognized BatchQueryKind $0", static_cast<int>(q.kind));
     }
   }
   absl::StrAppend(&req->msg, "]");
@@ -193,11 +198,11 @@ Status ProcessResultResp(Frame* resp_frame, Response* resp) {
   DCHECK(resp->msg.empty());
 
   switch (r.kind) {
-    case 0x0001: {
+    case ResultRespKind::kVoid: {
       resp->msg = "Response type = VOID";
       break;
     }
-    case 0x0002: {
+    case ResultRespKind::kRows: {
       const auto& r_resp = std::get<ResultRowsResp>(r.resp);
 
       // Copy to vector so we can use ToJSONString().
@@ -215,24 +220,24 @@ Status ProcessResultResp(Frame* resp_frame, Response* resp) {
       // resp.
       break;
     }
-    case 0x0003: {
+    case ResultRespKind::kSetKeyspace: {
       const auto& r_resp = std::get<ResultSetKeyspaceResp>(r.resp);
       resp->msg =
           absl::StrCat("Response type = SET_KEYSPACE\n", "Keyspace = ", r_resp.keyspace_name);
       break;
     }
-    case 0x0004: {
+    case ResultRespKind::kPrepared: {
       resp->msg = "Response type = PREPARED";
       // TODO(oazizi): Add more information.
       break;
     }
-    case 0x0005: {
+    case ResultRespKind::kSchemaChange: {
       resp->msg = "Response type = SCHEMA_CHANGE";
       // TODO(oazizi): Add more information.
       break;
     }
     default:
-      return error::Internal("Unrecognized result kind (%d)", r.kind);
+      LOG(DFATAL) << absl::Substitute("Unrecognized ResultRespKind $0", static_cast<int>(r.kind));
   }
 
   return Status::OK();
