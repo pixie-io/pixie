@@ -29,7 +29,7 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
   // Better fit for stitcher (process of converting packets to events).
   if (type == MessageType::kRequest) {
     uint8_t command = (*buf)[kPacketHeaderLength];
-    if (command > kMaxCommandValue) {
+    if (!IsValidCommand(command)) {
       return ParseState::kInvalid;
     }
   }

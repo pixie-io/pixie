@@ -89,6 +89,27 @@ enum class MySQLEventType : char {
 
 constexpr uint8_t kMaxCommandValue = 0x1f;
 
+inline bool IsValidCommand(uint8_t command_byte) {
+  std::optional<MySQLEventType> command_type_option =
+      magic_enum::enum_cast<MySQLEventType>(command_byte);
+  if (!command_type_option.has_value()) {
+    return false;
+  }
+
+  // The following are internal commands, and should not be sent on the connection.
+  // In some sense, they are a valid part of the protocol, as the server will properly respond with
+  // error. But for the sake of identifying mis-classified MySQL connections, it helps to call these
+  // out as invalid commands.
+  MySQLEventType command_type = command_type_option.value();
+  if (command_type == MySQLEventType::kSleep || command_type == MySQLEventType::kTime ||
+      command_type == MySQLEventType::kDelayedInsert ||
+      command_type == MySQLEventType::kConnectOut || command_type == MySQLEventType::kDaemon) {
+    return false;
+  }
+
+  return true;
+}
+
 inline MySQLEventType DecodeCommand(uint8_t command) {
   return static_cast<MySQLEventType>(command);
 }
