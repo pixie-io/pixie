@@ -11,7 +11,7 @@ Pixie is being built for broad use by the end of 2020.
 
 As we build up Pixie, we are sharing our beta to get feedback from early adopters from within the developer community and our beta partner teams.  
 
-If you are interested in tinkering you can [sign-up](https://withpixie.ai/) and join our [community on slack](https://join.slack.com/t/pixie-community/shared_invite/enQtODY3NjU5MTc4OTY0LTFhYjc3MWY1NDBkZTc5YTdjNzM0OGYxZmNmODU2MDE5NzYyN2Q1NmIxMmEyN2YwNmM5MjU4NGY2NDBjOWFjY2E).
+If you are interested in tinkering, you can [sign-up](https://withpixie.ai/) and join our [community on slack](https://join.slack.com/t/pixie-community/shared_invite/enQtODY3NjU5MTc4OTY0LTFhYjc3MWY1NDBkZTc5YTdjNzM0OGYxZmNmODU2MDE5NzYyN2Q1NmIxMmEyN2YwNmM5MjU4NGY2NDBjOWFjY2E).
 
 
 ## About Pixie
@@ -29,7 +29,7 @@ Visit our [product page](https://withpixie.ai/) and follow these steps:
 
 4. Copy and run the deploy command in the instructions
 
-5. If your K8s cluster is on a separate network, run `./px proxy` to create a proxy between the UI and Pixie's back-end.
+5. If your K8s cluster is on a separate network, run `./px proxy` to create a proxy connection between the UI and Pixie's back-end.
 
 
 ### Filling Issues
@@ -49,4 +49,4 @@ If you are interested to learn more join the [pixienaut group on slack](https://
 
 We are a San Francisco based stealth machine intelligence startup backed by Benchmark and GV. Engineers in teams like Hulu use Pixie to debug distributed applications live with pixie’s no-config streaming telemetry.
 
-You can learn more about us by revieing  our [overview deck](https://docsend.com/view/kj38d76) or visiting our [website](https://pixielabs.ai/).
+You can learn more about us by reviewing  our [overview deck](https://docsend.com/view/kj38d76) or visiting our [website](https://pixielabs.ai/).
