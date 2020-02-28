@@ -9,7 +9,7 @@ export const VizierGRPCClientProvider: React.FC = (props) => {
   const [client, setClient] = React.useState(null);
 
   React.useEffect(() => {
-    getClusterConnection().then(({ ipAddress, token }) => {
+    getClusterConnection(true).then(({ ipAddress, token }) => {
       setClient(new VizierGRPCClient(ipAddress, token));
     });
   }, []);
