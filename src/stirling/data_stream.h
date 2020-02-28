@@ -106,6 +106,29 @@ class DataStream {
     return stuck_count_ > kMaxStuckCount;
   }
 
+  int stat_invalid_frames() const { return stat_invalid_frames_; }
+  int stat_valid_frames() const { return stat_valid_frames_; }
+  int stat_raw_data_gaps() const { return stat_raw_data_gaps_; }
+
+  /**
+   * Percentage of frame parsing attempts that resulted in an invalid frame.
+   *
+   * Frame parsing attempts is defined as number of frames extracted,
+   * not as number of calls to ParseFrames().
+   */
+  double ParseFailureRate() const {
+    int total_attempts = stat_invalid_frames_ + stat_valid_frames_;
+
+    // Don't report rates until there some meaningful amount of events.
+    // - Avoids division by zero.
+    // - Avoids caller making decisions based on too little data.
+    if (total_attempts <= 5) {
+      return 0.0;
+    }
+
+    return 1.0 * stat_invalid_frames_ / total_attempts;
+  }
+
   /**
    * @brief Checks if the DataStream is at end-of-stream (EOS), which means that we
    * should stop processing the data on the stream, even if more exists.
@@ -242,7 +265,14 @@ class DataStream {
 
   // Number of consecutive calls to ProcessToRecords(), where there are a non-zero number of events,
   // but no parsed messages are produced.
+  // Note: unlike the monotonic stats below, this resets when the stuck condition is cleared.
+  // Thus it is a state, not a statistic.
   int stuck_count_ = 0;
+
+  // Keep some stats on ParseFrames() attempts.
+  int stat_valid_frames_ = 0;
+  int stat_invalid_frames_ = 0;
+  int stat_raw_data_gaps_ = 0;
 
   // A copy of the parse state from the last call to ProcessToRecords().
   ParseState last_parse_state_ = ParseState::kInvalid;

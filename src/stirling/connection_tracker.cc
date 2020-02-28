@@ -32,6 +32,9 @@ DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
               "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
               "connection info is cleared.");
 
+// Parse failure rate threshold, after which a connection tracker will be disabled.
+constexpr double kParseFailureRateThreshold = 0.4;
+
 namespace pl {
 namespace stirling {
 
@@ -690,6 +693,20 @@ void ConnectionTracker::IterationPostTick() {
 
   if (state() != State::kDisabled && (send_data().IsEOS() || recv_data().IsEOS())) {
     Disable("End-of-stream");
+  }
+
+  VLOG(1) << absl::Substitute(
+      "$0 protocol=$1 state=$2 send_invalid_frames=$3 send_valid_frames=$4 send_raw_data_gaps=$5 "
+      "recv_invalid_frames=$6 recv_valid_frames=$7, recv_raw_data_gaps=$8\n",
+      ToString(conn_id_), magic_enum::enum_name(protocol()), magic_enum::enum_name(state()),
+      send_data().stat_invalid_frames(), send_data().stat_valid_frames(),
+      send_data().stat_raw_data_gaps(), recv_data().stat_invalid_frames(),
+      recv_data().stat_valid_frames(), recv_data().stat_raw_data_gaps());
+
+  if ((send_data().ParseFailureRate() > kParseFailureRateThreshold) ||
+      (recv_data().ParseFailureRate() > kParseFailureRateThreshold)) {
+    Disable(absl::Substitute("Connection does not appear parseable as protocol $0",
+                             magic_enum::enum_name(protocol())));
   }
 }
 

@@ -213,6 +213,52 @@ TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
   EXPECT_EQ(requests[2].http_req_path, "/foo.html");
 }
 
+// This test checks that various stats updated on each call ProcessBytesToFrames()
+// are updated correctly.
+TEST_F(DataStreamTest, Stats) {
+  DataStream stream;
+
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req2bad =
+      InitSendEvent<kProtocolHTTP>("This is not a valid HTTP message");
+  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req4 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req5 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req6bad =
+      InitSendEvent<kProtocolHTTP>("Another malformed message");
+  std::unique_ptr<SocketDataEvent> req7 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+
+  stream.AddData(std::move(req0));
+  stream.AddData(std::move(req1));
+  stream.AddData(std::move(req2bad));
+
+  EXPECT_EQ(stream.stat_raw_data_gaps(), 0);
+  EXPECT_EQ(stream.stat_invalid_frames(), 0);
+  EXPECT_EQ(stream.stat_valid_frames(), 0);
+
+  stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
+  EXPECT_EQ(stream.Frames<http::Message>().size(), 2);
+  EXPECT_EQ(stream.stat_raw_data_gaps(), 0);
+  EXPECT_EQ(stream.stat_invalid_frames(), 1);
+  EXPECT_EQ(stream.stat_valid_frames(), 2);
+
+  stream.AddData(std::move(req3));
+  PL_UNUSED(req4);  // Skip req4 as missing event.
+  stream.AddData(std::move(req5));
+  stream.AddData(std::move(req6bad));
+  stream.AddData(std::move(req7));
+
+  // Note that we don't expect req7 to be parsed, because an invalid frame means
+  // all subsequent data is purged.
+
+  stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
+  EXPECT_EQ(stream.Frames<http::Message>().size(), 4);
+  EXPECT_EQ(stream.stat_raw_data_gaps(), 1);
+  EXPECT_EQ(stream.stat_invalid_frames(), 2);
+  EXPECT_EQ(stream.stat_valid_frames(), 4);
+}
+
 TEST_F(DataStreamTest, CannotSwitchType) {
   DataStream stream;
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);

@@ -189,6 +189,10 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
 
       keep_processing = false;
     }
+
+    stat_valid_frames_ += parse_result.start_positions.size();
+    stat_invalid_frames_ += (parse_result.state == ParseState::kInvalid);
+    stat_raw_data_gaps_ += keep_processing;
   }
 
   // Check to see if we are blocked on parsing.
