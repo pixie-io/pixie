@@ -16,7 +16,7 @@ namespace cass {
 template <typename TIntType>
 StatusOr<TIntType> FrameBodyDecoder::ExtractIntCore() {
   if (buf_.size() < sizeof(TIntType)) {
-    return error::ResourceUnavailable("Insufficient number of bytes");
+    return error::ResourceUnavailable("Insufficient number of bytes.");
   }
   TIntType val = utils::BEndianBytesToInt<TIntType>(buf_);
   buf_.remove_prefix(sizeof(TIntType));
@@ -26,7 +26,7 @@ StatusOr<TIntType> FrameBodyDecoder::ExtractIntCore() {
 template <typename TFloatType>
 StatusOr<TFloatType> ExtractFloatCore(std::string_view* buf) {
   if (buf->size() < sizeof(TFloatType)) {
-    return error::ResourceUnavailable("Insufficient number of bytes");
+    return error::ResourceUnavailable("Insufficient number of bytes.");
   }
   TFloatType val = utils::BEndianBytesToFloat<TFloatType>(*buf);
   buf->remove_prefix(sizeof(TFloatType));
@@ -36,7 +36,7 @@ StatusOr<TFloatType> ExtractFloatCore(std::string_view* buf) {
 template <typename TCharType>
 StatusOr<std::basic_string<TCharType>> FrameBodyDecoder::ExtractBytesCore(int64_t len) {
   if (static_cast<ssize_t>(buf_.size()) < len) {
-    return error::ResourceUnavailable("Insufficient number of bytes");
+    return error::ResourceUnavailable("Insufficient number of bytes.");
   }
 
   // TODO(oazizi): Optimization when input and output types match: no need for tbuf.
@@ -49,7 +49,7 @@ StatusOr<std::basic_string<TCharType>> FrameBodyDecoder::ExtractBytesCore(int64_
 template <typename TCharType, size_t N>
 Status FrameBodyDecoder::ExtractBytesCore(TCharType* out) {
   if (buf_.size() < N) {
-    return error::Internal("Insufficient number of bytes");
+    return error::ResourceUnavailable("Insufficient number of bytes.");
   }
 
   // TODO(oazizi): Optimization when input and output types match: no need for tbuf.
@@ -147,6 +147,25 @@ StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractBytes() {
   return ExtractBytesCore<uint8_t>(len);
 }
 
+// A [int] n, followed by n bytes if n >= 0.
+//         If n == -1 no byte should follow and the value represented is `null`.
+//         If n == -2 no byte should follow and the value represented is
+//         `not set` not resulting in any change to the existing value.
+StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractValue() {
+  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
+  if (len == -1) {
+    return std::basic_string<uint8_t>();
+  }
+  if (len == -2) {
+    // TODO(oazizi): Need to send back 'not set' instead.
+    return std::basic_string<uint8_t>();
+  }
+  if (len < 0) {
+    return error::Internal("Invalid length for value.");
+  }
+  return ExtractBytesCore<uint8_t>(len);
+}
+
 // [short bytes]  A [short] n, followed by n bytes if n >= 0.
 StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractShortBytes() {
   PL_ASSIGN_OR_RETURN(uint16_t len, ExtractShort());
@@ -235,6 +254,29 @@ StatusOr<Option> FrameBodyDecoder::ExtractOption() {
   return col_spec;
 }
 
+StatusOr<NameValuePair> FrameBodyDecoder::ExtractNameValuePair(bool with_names) {
+  NameValuePair nv;
+
+  if (with_names) {
+    PL_ASSIGN_OR_RETURN(nv.name, ExtractString());
+  }
+  PL_ASSIGN_OR_RETURN(nv.value, ExtractValue());
+
+  return nv;
+}
+
+StatusOr<std::vector<NameValuePair>> FrameBodyDecoder::ExtractNameValuePairList(bool with_names) {
+  std::vector<NameValuePair> values;
+
+  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
+  for (int i = 0; i < n; ++i) {
+    PL_ASSIGN_OR_RETURN(NameValuePair v, ExtractNameValuePair(with_names));
+    values.push_back(std::move(v));
+  }
+
+  return values;
+}
+
 StatusOr<QueryParameters> FrameBodyDecoder::ExtractQueryParameters() {
   QueryParameters qp;
 
@@ -251,15 +293,7 @@ StatusOr<QueryParameters> FrameBodyDecoder::ExtractQueryParameters() {
   PL_UNUSED(flag_skip_metadata);
 
   if (flag_values) {
-    PL_ASSIGN_OR_RETURN(uint16_t num_values, ExtractShort());
-    for (int i = 0; i < num_values; ++i) {
-      if (flag_with_names_for_values) {
-        PL_ASSIGN_OR_RETURN(std::string name_i, ExtractString());
-        qp.names.push_back(std::move(name_i));
-      }
-      PL_ASSIGN_OR_RETURN(std::basic_string<uint8_t> value_i, ExtractBytes());
-      qp.values.push_back(std::move(value_i));
-    }
+    PL_ASSIGN_OR_RETURN(qp.values, ExtractNameValuePairList(flag_with_names_for_values));
   }
 
   if (flag_page_size) {

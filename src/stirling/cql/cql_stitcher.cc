@@ -79,7 +79,7 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
   // type. This, however, will be hard unless we have observed the preceding Prepare request.
   std::vector<std::string> hex_values;
   for (const auto& value_i : qp.values) {
-    hex_values.push_back(BytesToString(value_i));
+    hex_values.push_back(BytesToString(value_i.value));
   }
 
   DCHECK(req->msg.empty());
@@ -117,7 +117,7 @@ Status ProcessExecuteReq(Frame* req_frame, Request* req) {
   // type. This, however, will be hard unless we have observed the preceding Prepare request.
   std::vector<std::string> hex_values;
   for (const auto& value_i : qp.values) {
-    hex_values.push_back(BytesToString(value_i));
+    hex_values.push_back(BytesToString(value_i.value));
   }
 
   DCHECK(req->msg.empty());

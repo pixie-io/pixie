@@ -61,6 +61,11 @@ struct Option {
 
 // TODO(oazizi): Consider using std::optional when values are optional in the structs below.
 
+struct NameValuePair {
+  std::string name;
+  std::basic_string<uint8_t> value;
+};
+
 // QueryParameters is a complex type used in QUERY and EXECUTE requests.
 // <query_parameters> is composed of:
 // <consistency><flags>[<n>[name_1]<value_1>...[name_n]<value_n>]
@@ -69,9 +74,7 @@ struct Option {
 struct QueryParameters {
   uint16_t consistency;
   uint16_t flags;
-  // TODO(oazizi): Consider merging values and names into a struct of its own.
-  std::vector<std::basic_string<uint8_t>> values;
-  std::vector<std::string> names;
+  std::vector<NameValuePair> values;
   int32_t page_size = 0;
   std::basic_string<uint8_t> paging_state;
   uint16_t serial_consistency = 0;
@@ -176,6 +179,12 @@ class FrameBodyDecoder {
   //         no byte should follow and the value represented is `null`.
   StatusOr<std::basic_string<uint8_t>> ExtractBytes();
 
+  // [value] A [int] n, followed by n bytes if n >= 0.
+  //         If n == -1 no byte should follow and the value represented is `null`.
+  //         If n == -2 no byte should follow and the value represented is
+  //         `not set` not resulting in any change to the existing value.
+  StatusOr<std::basic_string<uint8_t>> ExtractValue();
+
   // [short bytes]  A [short] n, followed by n bytes if n >= 0.
   StatusOr<std::basic_string<uint8_t>> ExtractShortBytes();
 
@@ -199,6 +208,14 @@ class FrameBodyDecoder {
   // [string multimap] A [short] n, followed by n pair <k><v> where <k> is a
   //                   [string] and <v> is a [string list].
   StatusOr<StringMultiMap> ExtractStringMultiMap();
+
+  // Extracts a name-value pair.
+  // Name may not be present; with_names specifies whether name should be present or not.
+  // When with_names == false, name will be left empty.
+  StatusOr<NameValuePair> ExtractNameValuePair(bool with_names);
+
+  // Extracts a list of name-value pairs.
+  StatusOr<std::vector<NameValuePair>> ExtractNameValuePairList(bool with_names);
 
   // Extracts query parameters, which is a complex type. See struct for details.
   StatusOr<QueryParameters> ExtractQueryParameters();

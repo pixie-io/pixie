@@ -99,6 +99,16 @@ constexpr std::string_view kCustomOption = ConstStringView(
 
 // The following are binary representations of more complex types in the CQL binary protocol.
 
+const uint8_t kNameValuePair[] = {0x00, 0x00, 0x00, 0x0a, 0x31, 0x32, 0x37,
+                                  0x34, 0x4c, 0x36, 0x33, 0x50, 0x31, 0x31};
+
+const uint8_t kNameValuePairList[] = {
+    0x00, 0x06, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+    0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+    0x00, 0x0a, 0x31, 0x32, 0x37, 0x34, 0x4c, 0x36, 0x33, 0x50, 0x31, 0x31};
+
 constexpr uint8_t kQueryParams[] = {
     0x00, 0x0a, 0x25, 0x00, 0x06, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x01, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
@@ -386,6 +396,61 @@ TEST(ExtractBytes, NegativeLengthString) {
 }
 
 //------------------------
+// ExtractValue
+//------------------------
+
+TEST(ExtractValue, Exact) {
+  FrameBodyDecoder decoder(kBytes);
+  ASSERT_OK_AND_EQ(decoder.ExtractValue(), std::basic_string<uint8_t>({0x01, 0x02, 0x03, 0x04}));
+  ASSERT_TRUE(decoder.eof());
+}
+
+TEST(ExtractValue, Empty) {
+  FrameBodyDecoder decoder(kEmpty);
+  ASSERT_NOT_OK(decoder.ExtractValue());
+}
+
+TEST(ExtractValue, Undersized) {
+  FrameBodyDecoder decoder(std::string_view(kBytes.data(), kBytes.size() - 1));
+  ASSERT_NOT_OK(decoder.ExtractValue());
+}
+
+TEST(ExtractValue, Oversized) {
+  FrameBodyDecoder decoder(std::string_view(kBytes.data(), kBytes.size() + 1));
+  ASSERT_OK_AND_EQ(decoder.ExtractValue(), std::basic_string<uint8_t>({0x01, 0x02, 0x03, 0x04}));
+  ASSERT_FALSE(decoder.eof());
+}
+
+TEST(ExtractValue, EmptyBytes) {
+  FrameBodyDecoder decoder(kEmptyBytes);
+  ASSERT_OK_AND_THAT(decoder.ExtractValue(), IsEmpty());
+  ASSERT_TRUE(decoder.eof());
+}
+
+TEST(ExtractValue, NegativeLengthString) {
+  {
+    constexpr std::string_view kValue = ConstStringView("\xff\xff\xff\xff");
+    FrameBodyDecoder decoder(kValue);
+    ASSERT_OK_AND_EQ(decoder.ExtractValue(), std::basic_string<uint8_t>());
+    ASSERT_TRUE(decoder.eof());
+  }
+
+  {
+    constexpr std::string_view kValue = ConstStringView("\xff\xff\xff\xfe");
+    FrameBodyDecoder decoder(kValue);
+    ASSERT_OK_AND_EQ(decoder.ExtractValue(), std::basic_string<uint8_t>());
+    ASSERT_TRUE(decoder.eof());
+  }
+
+  {
+    constexpr std::string_view kValue = ConstStringView("\xff\xff\xff\xfd");
+    FrameBodyDecoder decoder(kValue);
+    ASSERT_NOT_OK(decoder.ExtractValue());
+    ASSERT_TRUE(decoder.eof());
+  }
+}
+
+//------------------------
 // ExtractShortBytes
 //------------------------
 
@@ -578,6 +643,34 @@ TEST(ExtractOption, Exact) {
 }
 
 //------------------------
+// ExtractNameValuePair
+//------------------------
+
+TEST(ExtractNameValuePair, Exact) {
+  FrameBodyDecoder decoder(CreateCharArrayView<char>(kNameValuePair));
+  ASSERT_OK_AND_ASSIGN(NameValuePair nv, decoder.ExtractNameValuePair(false));
+
+  EXPECT_EQ(nv.name, "");
+  EXPECT_EQ(CreateStringView<char>(nv.value), "1274L63P11");
+}
+
+//------------------------
+// ExtractNameValuePairList
+//------------------------
+
+TEST(ExtractNameValuePairList, Exact) {
+  FrameBodyDecoder decoder(CreateCharArrayView<char>(kNameValuePairList));
+  ASSERT_OK_AND_ASSIGN(std::vector<NameValuePair> nv_list, decoder.ExtractNameValuePairList(false));
+
+  ASSERT_EQ(nv_list.size(), 6);
+  EXPECT_EQ(nv_list[0].name, "");
+  EXPECT_EQ(CreateStringView<char>(nv_list[0].value),
+            ConstStringView("\x00\x00\x00\x00\x00\x00\x00\x01"));
+  EXPECT_EQ(nv_list[5].name, "");
+  EXPECT_EQ(CreateStringView<char>(nv_list[5].value), "1274L63P11");
+}
+
+//------------------------
 // ExtractQueryParams
 //------------------------
 
@@ -587,9 +680,8 @@ TEST(ExtractQueryParams, Exact) {
 
   EXPECT_EQ(qp.consistency, 10);  // LOCAL_ONE
   EXPECT_EQ(qp.flags, 0x25);
-  EXPECT_THAT(qp.names, IsEmpty());
   ASSERT_EQ(qp.values.size(), 6);
-  EXPECT_EQ(CreateStringView(qp.values[5]), "1274L63P11");
+  EXPECT_EQ(CreateStringView(qp.values[5].value), "1274L63P11");
   EXPECT_EQ(qp.page_size, 5000);
   EXPECT_THAT(qp.paging_state, IsEmpty());
   EXPECT_EQ(qp.serial_consistency, 0);
