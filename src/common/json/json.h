@@ -6,6 +6,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/common/base/utils.h"
@@ -17,16 +18,34 @@ namespace utils {
 namespace internal {
 
 inline rapidjson::Value JSONObj(const std::string& s,
-                                const rapidjson::Document::AllocatorType* /* allocator */) {
+                                rapidjson::Document::AllocatorType* /* allocator */) {
   rapidjson::Value json_obj;
   json_obj.SetString(rapidjson::StringRef(s.c_str(), s.length()));
   return json_obj;
 }
 
 inline rapidjson::Value JSONObj(std::string_view s,
-                                const rapidjson::Document::AllocatorType* /* allocator */) {
+                                rapidjson::Document::AllocatorType* /* allocator */) {
   rapidjson::Value json_obj;
   json_obj.SetString(rapidjson::StringRef(s.data(), s.length()));
+  return json_obj;
+}
+
+inline rapidjson::Value JSONObj(int x, rapidjson::Document::AllocatorType* /* allocator */) {
+  rapidjson::Value json_obj;
+  json_obj.SetInt(x);
+  return json_obj;
+}
+
+// TODO(oazizi): std::pair is treated as a key-value pair, but this might not be the caller's
+// intention.
+template <typename TKeyType, typename TValType>
+inline rapidjson::Value JSONObj(const std::pair<TKeyType, TValType>& x,
+                                rapidjson::Document::AllocatorType* allocator) {
+  rapidjson::Value json_obj;
+  json_obj.SetObject();
+  json_obj.AddMember(JSONObj(x.first, allocator).Move(), JSONObj(x.second, allocator).Move(),
+                     *allocator);
   return json_obj;
 }
 

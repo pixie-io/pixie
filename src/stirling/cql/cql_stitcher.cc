@@ -126,9 +126,93 @@ Status ProcessExecuteReq(Frame* req_frame, Request* req) {
   return Status::OK();
 }
 
+struct BatchQuery {
+  uint8_t kind;
+  std::variant<std::string, std::basic_string<uint8_t>> query_or_id;
+  std::vector<NameValuePair> values;
+};
+
+struct Batch {
+  uint8_t type;
+  std::vector<BatchQuery> queries;
+  uint16_t consistency;
+  uint8_t flags;
+  uint16_t serial_consistency;
+  int64_t timestamp;
+};
+
 Status ProcessBatchReq(Frame* req_frame, Request* req) {
-  // TODO(oazizi): Implement this!
-  req->msg = req_frame->msg;
+  Batch b;
+
+  FrameBodyDecoder decoder(*req_frame);
+  PL_ASSIGN_OR_RETURN(b.type, decoder.ExtractByte());
+  // - If <type> == 0, the batch will be "logged". This is equivalent to a
+  //   normal CQL3 batch statement.
+  // - If <type> == 1, the batch will be "unlogged".
+  // - If <type> == 2, the batch will be a "counter" batch (and non-counter
+  //   statements will be rejected).
+  if (b.type > 2) {
+    return error::Internal("Unrecognized BATCH type");
+  }
+  PL_ASSIGN_OR_RETURN(uint16_t n, decoder.ExtractShort());
+
+  for (uint i = 0; i < n; ++i) {
+    BatchQuery q;
+    PL_ASSIGN_OR_RETURN(q.kind, decoder.ExtractByte());
+    if (q.kind == 0) {
+      PL_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractLongString());
+    } else if (q.kind == 1) {
+      PL_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractShortBytes());
+    }
+    // See note below about flag_with_names_for_values.
+    PL_ASSIGN_OR_RETURN(q.values, decoder.ExtractNameValuePairList(false));
+    b.queries.push_back(std::move(q));
+  }
+
+  PL_ASSIGN_OR_RETURN(b.consistency, decoder.ExtractShort());
+  PL_ASSIGN_OR_RETURN(b.flags, decoder.ExtractByte());
+
+  bool flag_with_serial_consistency = b.flags & 0x10;
+  bool flag_with_default_timestamp = b.flags & 0x20;
+  bool flag_with_names_for_values = b.flags & 0x40;
+
+  // Note that the flag `with_names_for_values` occurs after its use in the spec,
+  // that's why we have hard-coded the value to false in the call to ExtractNameValuePairList()
+  // above. This is actually what the spec defines, because of the spec bug:
+  //
+  // With names for values. If set, then all values for all <query_i> must be
+  // preceded by a [string] <name_i> that have the same meaning as in QUERY
+  // requests [IMPORTANT NOTE: this feature does not work and should not be
+  // used. It is specified in a way that makes it impossible for the server
+  // to implement. This will be fixed in a future version of the native
+  // protocol. See https://issues.apache.org/jira/browse/CASSANDRA-10246 for
+  // more details].
+  PL_UNUSED(flag_with_names_for_values);
+
+  if (flag_with_serial_consistency) {
+    PL_ASSIGN_OR_RETURN(b.serial_consistency, decoder.ExtractShort());
+  }
+
+  if (flag_with_default_timestamp) {
+    PL_ASSIGN_OR_RETURN(b.timestamp, decoder.ExtractLong());
+  }
+
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+
+  // TODO(oazizi): Should we add other fields?
+
+  std::vector<std::pair<std::string, std::string>> tmp;
+
+  for (const auto& q : b.queries) {
+    if (q.kind == 0) {
+      tmp.push_back({"query", std::get<std::string>(q.query_or_id)});
+    } else {
+      tmp.push_back({"id", BytesToString(std::get<std::basic_string<uint8_t>>(q.query_or_id))});
+    }
+  }
+
+  req->msg = utils::ToJSONString(tmp);
+
   return Status::OK();
 }
 

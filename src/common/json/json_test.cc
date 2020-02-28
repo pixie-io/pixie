@@ -3,6 +3,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <map>
+#include <utility>
+#include <vector>
+
 namespace pl {
 namespace stirling {
 namespace utils {
@@ -27,6 +31,16 @@ TEST(ToJSONStringTest, MapStringString) {
 TEST(ToJSONStringTest, VectorString) {
   std::vector<std::string> vec = {"foo", "bar"};
   EXPECT_THAT(ToJSONString(vec), StrEq(R"(["foo","bar"])"));
+}
+
+TEST(ToJSONStringTest, PairStringInt) {
+  std::pair<std::string, int> kv_pair = {"pixie", 9};
+  EXPECT_THAT(ToJSONString(kv_pair), StrEq(R"({"pixie":9})"));
+}
+
+TEST(ToJSONStringTest, VectorPair) {
+  std::vector<std::pair<std::string, int>> kv_pairs = {{"pixie", 9}, {"foo", 12}};
+  EXPECT_THAT(ToJSONString(kv_pairs), StrEq(R"([{"pixie":9},{"foo":12}])"));
 }
 
 TEST(ToJSONStringTest, Nested) {
