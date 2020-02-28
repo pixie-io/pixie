@@ -1,15 +1,15 @@
 import './vizier.scss';
 
-import {VizierGRPCClient} from 'common/vizier-grpc-client';
 import ClientContext from 'common/vizier-grpc-client-context';
 import {ContentBox} from 'components/content-box/content-box';
 import {AutoSizedScrollableTable} from 'components/table/scrollable-table';
 import {VersionInfo} from 'components/version-info/version-info';
-import {distanceInWords, subMilliseconds} from 'date-fns';
+import {distanceInWords} from 'date-fns';
 import * as React from 'react';
 import {isProd} from 'utils/env';
 import {pluralize} from 'utils/pluralize';
 import {dataFromProto} from 'utils/result-data-utils';
+import {nanoToSeconds} from 'utils/time';
 
 const agentTableCols = [{
   dataKey: 'id',
@@ -99,13 +99,13 @@ export const AgentDisplay = () => {
 };
 
 export const AgentDisplayContent = ({ agents }) => {
-  const now = new Date();
+  const now = new Date(Date.now());
   const mappedData = agents.map((agent) => {
     return {
       id: agent.agent_id,
       hostname: agent.hostname,
-      heartbeat: (agent.last_heartbeat_ns / 1000000000).toFixed(2),
-      uptime: distanceInWords(new Date(agent.create_time / 1000000), now, { addSuffix: false }),
+      heartbeat: nanoToSeconds(agent.last_heartbeat_ns).toFixed(2),
+      uptime: distanceInWords(new Date(agent.create_time), now, { addSuffix: false }),
       state: agent.agent_state,
     };
   });
