@@ -377,7 +377,7 @@ func TestObjectToPodProto(t *testing.T) {
 	}
 
 	updatePb := &metadatapb.ResourceUpdate{
-		ResourceVersion: "1",
+		ResourceVersion: "1_0",
 		Update: &metadatapb.ResourceUpdate_ContainerUpdate{
 			ContainerUpdate: &metadatapb.ContainerUpdate{
 				CID:  "test",
@@ -528,7 +528,7 @@ func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
 
 	updates := controllers.GetContainerResourceUpdatesFromPod(pod)
 	assert.Equal(t, 1, len(updates))
-	assert.Equal(t, "1", updates[0].ResourceVersion)
+	assert.Equal(t, "1_0", updates[0].ResourceVersion)
 	cUpdate := updates[0].GetContainerUpdate()
 	assert.NotNil(t, cUpdate)
 	assert.Equal(t, "container1", cUpdate.Name)

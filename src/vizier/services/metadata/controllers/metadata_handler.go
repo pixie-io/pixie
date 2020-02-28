@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -436,7 +437,7 @@ func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.Resou
 
 	for i, s := range pod.Status.ContainerStatuses {
 		updates[i] = &metadatapb.ResourceUpdate{
-			ResourceVersion: pod.Metadata.ResourceVersion,
+			ResourceVersion: fmt.Sprintf("%s_%d", pod.Metadata.ResourceVersion, i),
 			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
 				ContainerUpdate: &metadatapb.ContainerUpdate{
 					CID:              formatContainerID(s.ContainerID),
