@@ -1,13 +1,12 @@
 import './vizier.scss';
 
 import {vizierGQLClient} from 'common/vizier-gql-client';
+import {VizierGRPCClientProvider} from 'common/vizier-grpc-client-context';
 import {DialogBox} from 'components/dialog-box/dialog-box';
 import {Spinner} from 'components/spinner/spinner';
 import {Editor} from 'containers/editor';
 import LiveView from 'containers/live/live';
 import gql from 'graphql-tag';
-// @ts-ignore : TS does not like image files.
-import * as loadingSvg from 'images/icons/loading-dark.svg';
 import * as React from 'react';
 import {ApolloConsumer, Query, withApollo} from 'react-apollo';
 import {Redirect, Route, Switch} from 'react-router-dom';
@@ -148,10 +147,12 @@ export class Vizier extends React.Component<{}, VizierState> {
 
                 if (data.cluster.status === 'VZ_ST_HEALTHY') {
                   return (
-                    <Switch>
-                      <Route path='/live' component={LiveViewWithApollo} />
-                      <Route component={VizierMain} />
-                    </Switch>
+                    <VizierGRPCClientProvider>
+                      <Switch>
+                        <Route path='/live' component={LiveViewWithApollo} />
+                        <Route component={VizierMain} />
+                      </Switch>
+                    </VizierGRPCClientProvider>
                   );
                 } else if (data.cluster.status === 'VZ_ST_UNHEALTHY') {
                   const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
