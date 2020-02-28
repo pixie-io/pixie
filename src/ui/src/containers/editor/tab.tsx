@@ -42,14 +42,14 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
       variables: {
         queryStr: code,
       },
-    }).then(({ errors }) => {
+    }).then((results) => {
       saveHistory({
         variables: {
           history: {
             time,
             code,
             title: props.title,
-            status: !errors ? 'FAILED' : 'SUCCESS',
+            status: !results || results.errors ? 'FAILED' : 'SUCCESS',
           },
         },
       });
