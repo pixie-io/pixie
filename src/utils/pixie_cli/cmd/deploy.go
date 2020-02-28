@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/metadata"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
 
@@ -247,6 +248,21 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		}
 		return
 	}
+	namespace, _ := cmd.Flags().GetString("namespace")
+	credsFile, _ := cmd.Flags().GetString("credentials_file")
+	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
+	clusterID, _ := cmd.Flags().GetString("cluster_id")
+	devCloudNS, _ := cmd.Flags().GetString("dev_cloud_namespace")
+
+	fmt.Printf("Cluster ID: %s\n", clusterID)
+	// Validate arguments:
+	// clusterID must be a valid UUID.
+	if _, err := uuid.FromString(clusterID); err != nil {
+		log.Fatalln("--cluster_id must be a valid UUID. Please make sure you are following the directions in the UI.")
+	}
+	if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
+		cloudAddr = cloudAddr + ":443"
+	}
 
 	currentCluster := getCurrentCluster()
 	fmt.Printf("Deploying Pixie to the following cluster: %s\n", currentCluster)
@@ -258,15 +274,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
-	namespace, _ := cmd.Flags().GetString("namespace")
-	credsFile, _ := cmd.Flags().GetString("credentials_file")
-	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
-	clusterID, _ := cmd.Flags().GetString("cluster_id")
-	devCloudNS, _ := cmd.Flags().GetString("dev_cloud_namespace")
-
-	if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
-		cloudAddr = cloudAddr + ":443"
-	}
 
 	// Get grpc connection to cloud.
 	cloudConn, err := getCloudClientConnection(cloudAddr)
