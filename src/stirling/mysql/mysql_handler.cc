@@ -13,32 +13,9 @@ namespace pl {
 namespace stirling {
 namespace mysql {
 
-//-----------------------------------------------------------------------------
-// Message Level Functions
-//-----------------------------------------------------------------------------
-
-void HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
-  DCHECK(!resp_packets.empty());
-  const Packet& packet = resp_packets.front();
-
-  // TODO(chengruizhe): Assuming CLIENT_PROTOCOL_41 here. Make it more robust.
-  // "\xff" + error_code[2] + sql_state_marker[1] + sql_state[5] (CLIENT_PROTOCOL_41) = 9
-  // https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html
-  entry->resp.msg = packet.msg.substr(9);
-
-  int error_code = utils::LEndianBytesToInt<int, 2>(packet.msg.substr(1));
-  // TODO(oazizi): Add error code into resp msg.
-  PL_UNUSED(error_code);
-
-  entry->resp.status = MySQLRespStatus::kErr;
-  entry->resp.timestamp_ns = packet.timestamp_ns;
-}
-
-void HandleOKMessage(DequeView<Packet> resp_packets, Record* entry) {
-  DCHECK(!resp_packets.empty());
-  entry->resp.status = MySQLRespStatus::kOK;
-  entry->resp.timestamp_ns = resp_packets.front().timestamp_ns;
-}
+// Rules for return values:
+//  kInvalid - The packet is invalid (mal-formed body) and cannot be parsed.
+//  kNeedsMoreData - Additional packets are required.
 
 #define RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets) \
   if (iter == resp_packets.end()) {                       \
@@ -46,8 +23,59 @@ void HandleOKMessage(DequeView<Packet> resp_packets, Record* entry) {
     return ParseState::kNeedsMoreData;                    \
   }
 
-StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry,
-                                             bool multi_resultset) {
+ParseState HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
+  DCHECK(!resp_packets.empty());
+  const Packet& packet = resp_packets.front();
+
+  // TODO(chengruizhe): Assuming CLIENT_PROTOCOL_41 here. Make it more robust.
+  // Format of ERR message:
+  //   1  header: 0xff
+  //   2  error_code
+  //   1  sql_state_marker
+  //   5  sql_state
+  //   x  error_message
+  // https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html
+  constexpr int kMinErrMessageSize = 9;
+  constexpr int kErrorCodePos = 1;
+  constexpr int kErrorCodeSize = 2;
+  constexpr int kErrorMessagePos = 9;
+
+  if (packet.msg.size() < kMinErrMessageSize) {
+    return ParseState::kInvalid;
+  }
+
+  entry->resp.msg = packet.msg.substr(kErrorMessagePos);
+
+  int error_code = utils::LEndianBytesToInt<int, kErrorCodeSize>(packet.msg.substr(kErrorCodePos));
+  // TODO(oazizi): Add error code into resp msg.
+  PL_UNUSED(error_code);
+
+  entry->resp.status = MySQLRespStatus::kErr;
+  entry->resp.timestamp_ns = packet.timestamp_ns;
+
+  return ParseState::kSuccess;
+}
+
+ParseState HandleOKMessage(DequeView<Packet> resp_packets, Record* entry) {
+  DCHECK(!resp_packets.empty());
+  const Packet& packet = resp_packets.front();
+
+  // Format of OK message:
+  // https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html
+  constexpr int kMinOKMessageSize = 7;
+
+  if (packet.msg.size() < kMinOKMessageSize) {
+    return ParseState::kInvalid;
+  }
+
+  entry->resp.status = MySQLRespStatus::kOK;
+  entry->resp.timestamp_ns = resp_packets.front().timestamp_ns;
+
+  return ParseState::kSuccess;
+}
+
+ParseState HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry,
+                                   bool multi_resultset) {
   auto iter = resp_packets.begin();
 
   VLOG(3) << absl::Substitute("HandleResultsetResponse with $0 packets", resp_packets.size());
@@ -67,13 +95,19 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   // Process header packet.
   if (!IsLengthEncodedIntPacket(first_resp_packet)) {
     entry->resp.status = MySQLRespStatus::kUnknown;
-    return error::Internal("First packet should be length-encoded integer.");
+    VLOG(2) << "First packet should be length-encoded integer.";
+    return ParseState::kInvalid;
   }
 
   size_t param_offset = 0;
-  PL_ASSIGN_OR_RETURN(int num_col, ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset));
+  StatusOr<int> num_col_status = ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset);
+  if (!num_col_status.ok()) {
+    return ParseState::kInvalid;
+  }
+  int num_col = num_col_status.ValueOrDie();
   if (num_col == 0) {
-    return error::Internal("HandleResultsetResponse(): num columns should never be 0.");
+    VLOG(2) << "HandleResultsetResponse(): num columns should never be 0.";
+    return ParseState::kInvalid;
   }
 
   VLOG(3) << absl::Substitute("num_columns=$0", num_col);
@@ -99,7 +133,8 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
 
     if (!IsColumnDefPacket(*iter)) {
       entry->resp.status = MySQLRespStatus::kUnknown;
-      return error::Internal("Expected column definition packet");
+      VLOG(2) << "Expected column definition packet";
+      return ParseState::kInvalid;
     }
 
     const Packet& col_def_packet = *iter;
@@ -127,10 +162,11 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
     const Packet& row_packet = *iter;
     if (!IsResultsetRowPacket(row_packet, client_deprecate_eof)) {
       entry->resp.status = MySQLRespStatus::kUnknown;
-      return error::Internal(
+      VLOG(2) << absl::Substitute(
           "Expected resultset row packet [OK=$0 ERR=$1 EOF=$2 client_deprecate_eof=$3]",
           IsOKPacket(row_packet), IsErrPacket(row_packet), IsEOFPacket(row_packet),
           client_deprecate_eof);
+      return ParseState::kInvalid;
     }
     ResultsetRow row{row_packet.msg};
     results.emplace_back(std::move(row));
@@ -167,15 +203,16 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   return ParseState::kSuccess;
 }
 
-StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* state,
-                                                 Record* entry) {
+ParseState HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* state,
+                                       Record* entry) {
   auto iter = resp_packets.begin();
 
   RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
   const Packet& first_resp_packet = *iter;
   if (!IsStmtPrepareOKPacket(first_resp_packet)) {
     entry->resp.status = MySQLRespStatus::kUnknown;
-    return error::Internal("Expected StmtPrepareOK packet");
+    VLOG(2) << "Expected StmtPrepareOK packet";
+    return ParseState::kInvalid;
   }
 
   int stmt_id = utils::LEndianBytesToInt<int, 4>(first_resp_packet.msg.substr(1));
@@ -256,18 +293,26 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
   return ParseState::kSuccess;
 }
 
-void HandleStringRequest(const Packet& req_packet, Record* entry) {
-  DCHECK(!req_packet.msg.empty());
+ParseState HandleStringRequest(const Packet& req_packet, Record* entry) {
+  if (req_packet.msg.empty()) {
+    return ParseState::kInvalid;
+  }
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.msg = req_packet.msg.substr(1);
   entry->req.timestamp_ns = req_packet.timestamp_ns;
+
+  return ParseState::kSuccess;
 }
 
-void HandleNonStringRequest(const Packet& req_packet, Record* entry) {
-  DCHECK(!req_packet.msg.empty());
+ParseState HandleNonStringRequest(const Packet& req_packet, Record* entry) {
+  if (req_packet.msg.empty()) {
+    return ParseState::kInvalid;
+  }
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.msg.clear();
   entry->req.timestamp_ns = req_packet.timestamp_ns;
+
+  return ParseState::kSuccess;
 }
 
 namespace {
@@ -360,9 +405,12 @@ Status ProcessStmtExecuteParam(std::string_view msg, size_t* type_offset, size_t
 
 }  // namespace
 
-void HandleStmtExecuteRequest(const Packet& req_packet,
-                              std::map<int, PreparedStatement>* prepare_map, Record* entry) {
-  DCHECK(!req_packet.msg.empty());
+ParseState HandleStmtExecuteRequest(const Packet& req_packet,
+                                    std::map<int, PreparedStatement>* prepare_map, Record* entry) {
+  if (req_packet.msg.size() < 1 + kStmtIDBytes) {
+    return ParseState::kInvalid;
+  }
+
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.timestamp_ns = req_packet.timestamp_ns;
 
@@ -376,12 +424,19 @@ void HandleStmtExecuteRequest(const Packet& req_packet,
     // 2. Client sent a Stmt Exec for a deleted Stmt Prepare
     // We return -1 as stmt_id to indicate error and defer decision to the caller.
     LOG(WARNING) << absl::Substitute("Could not find prepare statement for stmt_id=$0", stmt_id);
-    return;
+
+    // We can't determine whether the rest of this packet is valid or not, so just return success.
+    return ParseState::kSuccess;
   }
 
   int num_params = iter->second.response.header.num_params;
 
-  int offset = kStmtIDStartOffset + kStmtIDBytes + kFlagsBytes + kIterationCountBytes;
+  size_t offset = kStmtIDStartOffset + kStmtIDBytes + kFlagsBytes + kIterationCountBytes;
+
+  if (req_packet.msg.size() < offset + 1) {
+    VLOG(2) << "Not a valid StmtExecuteRequest";
+    return ParseState::kInvalid;
+  }
 
   // This is copied directly from the MySQL spec.
   const int null_bitmap_length = (num_params + 7) / 8;
@@ -400,18 +455,25 @@ void HandleStmtExecuteRequest(const Packet& req_packet,
       StmtExecuteParam param;
       Status s =
           ProcessStmtExecuteParam(req_packet.msg, &param_type_offset, &param_val_offset, &param);
-      LOG_IF(ERROR, !s.ok()) << s.msg();
+      if (!s.ok()) {
+        return ParseState::kInvalid;
+      }
       params.emplace_back(param);
     }
   }
 
   std::string_view stmt_prepare_request = iter->second.request;
   entry->req.msg = CombinePrepareExecute(stmt_prepare_request, params);
+
+  return ParseState::kSuccess;
 }
 
-void HandleStmtCloseRequest(const Packet& req_packet, std::map<int, PreparedStatement>* prepare_map,
-                            Record* entry) {
-  DCHECK(!req_packet.msg.empty());
+ParseState HandleStmtCloseRequest(const Packet& req_packet,
+                                  std::map<int, PreparedStatement>* prepare_map, Record* entry) {
+  if (req_packet.msg.size() < 1 + kStmtIDBytes) {
+    return ParseState::kInvalid;
+  }
+
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.msg = "";
   entry->req.timestamp_ns = req_packet.timestamp_ns;
@@ -419,14 +481,16 @@ void HandleStmtCloseRequest(const Packet& req_packet, std::map<int, PreparedStat
   int stmt_id =
       utils::LEndianBytesToInt<int, kStmtIDBytes>(req_packet.msg.substr(kStmtIDStartOffset));
   auto iter = prepare_map->find(stmt_id);
-  if (iter == prepare_map->end()) {
+  if (iter != prepare_map->end()) {
+    prepare_map->erase(iter);
+  } else {
     // We may have missed the prepare statement (e.g. due to the missing start of connection
     // problem), but we can still process the close, and continue on. Just print a warning.
     LOG(WARNING) << absl::Substitute("Cannot find Stmt Prepare Event to close [stmt_id=$0].",
                                      stmt_id);
-    return;
   }
-  prepare_map->erase(iter);
+
+  return ParseState::kSuccess;
 }
 
 }  // namespace mysql

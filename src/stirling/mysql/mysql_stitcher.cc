@@ -239,6 +239,15 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
   return entries;
 }
 
+#define PL_RETURN_IF_NOT_SUCCESS(stmt) \
+  {                                    \
+    ParseState s;                      \
+    s = stmt;                          \
+    if (s != ParseState::kSuccess) {   \
+      return s;                        \
+    }                                  \
+  }
+
 // Process a COM_STMT_PREPARE request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-prepare.html
 StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Packet> resp_packets,
@@ -247,7 +256,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
   // Request
   //----------------
 
-  HandleStringRequest(req_packet, entry);
+  PL_RETURN_IF_NOT_SUCCESS(HandleStringRequest(req_packet, entry));
 
   //----------------
   // Response
@@ -261,7 +270,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
   const Packet& first_resp_packet = resp_packets.front();
 
   if (IsErrPacket(first_resp_packet)) {
-    HandleErrMessage(resp_packets, entry);
+    PL_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
 
     if (resp_packets.size() > 1) {
       LOG(ERROR) << absl::Substitute(
@@ -285,7 +294,7 @@ StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
   // Request
   //----------------
 
-  HandleNonStringRequest(req_packet, entry);
+  PL_RETURN_IF_NOT_SUCCESS(HandleNonStringRequest(req_packet, entry));
 
   //----------------
   // Response
@@ -309,7 +318,8 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   // Request
   //----------------
 
-  HandleStmtExecuteRequest(req_packet, &state->prepared_statements, entry);
+  PL_RETURN_IF_NOT_SUCCESS(
+      HandleStmtExecuteRequest(req_packet, &state->prepared_statements, entry));
 
   //----------------
   // Response
@@ -323,7 +333,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   const Packet& first_resp_packet = resp_packets.front();
 
   if (IsErrPacket(first_resp_packet)) {
-    HandleErrMessage(resp_packets, entry);
+    PL_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
 
     if (resp_packets.size() > 1) {
       LOG(ERROR) << absl::Substitute(
@@ -336,7 +346,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   }
 
   if (IsOKPacket(first_resp_packet)) {
-    HandleOKMessage(resp_packets, entry);
+    PL_RETURN_IF_NOT_SUCCESS(HandleOKMessage(resp_packets, entry));
 
     if (resp_packets.size() > 1) {
       LOG(ERROR) << absl::Substitute(
@@ -359,7 +369,7 @@ StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet
   // Request
   //----------------
 
-  HandleStmtCloseRequest(req_packet, &state->prepared_statements, entry);
+  PL_RETURN_IF_NOT_SUCCESS(HandleStmtCloseRequest(req_packet, &state->prepared_statements, entry));
 
   //----------------
   // Response
@@ -388,7 +398,7 @@ StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet,
   // Request
   //----------------
 
-  HandleNonStringRequest(req_packet, entry);
+  PL_RETURN_IF_NOT_SUCCESS(HandleNonStringRequest(req_packet, entry));
 
   //----------------
   // Response
@@ -416,7 +426,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   // Request
   //----------------
 
-  HandleStringRequest(req_packet, entry);
+  PL_RETURN_IF_NOT_SUCCESS(HandleStringRequest(req_packet, entry));
 
   //----------------
   // Response
@@ -430,7 +440,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   const Packet& first_resp_packet = resp_packets.front();
 
   if (IsErrPacket(first_resp_packet)) {
-    HandleErrMessage(resp_packets, entry);
+    PL_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
 
     if (resp_packets.size() > 1) {
       LOG(ERROR) << absl::Substitute(
@@ -443,7 +453,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   }
 
   if (IsOKPacket(first_resp_packet)) {
-    HandleOKMessage(resp_packets, entry);
+    PL_RETURN_IF_NOT_SUCCESS(HandleOKMessage(resp_packets, entry));
 
     if (resp_packets.size() > 1) {
       LOG(ERROR) << absl::Substitute(
@@ -466,7 +476,7 @@ StatusOr<ParseState> ProcessFieldList(const Packet& req_packet,
   // Request
   //----------------
 
-  HandleStringRequest(req_packet, entry);
+  PL_RETURN_IF_NOT_SUCCESS(HandleStringRequest(req_packet, entry));
 
   //----------------
   // Response
