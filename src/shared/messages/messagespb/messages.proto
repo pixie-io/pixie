@@ -7,12 +7,6 @@ import "src/shared/k8s/metadatapb/metadata.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/shared/messages/messagespb;messages";
 
-message MetadataUpdatesRequest {
-    // The resource version at which to start getting updates from. If this is an empty string,
-    // then get all known updates from the beginning of time.
-    string resource_version = 1;
-}
-
 message MetadataUpdate {
     pl.shared.k8s.metadatapb.ResourceUpdate update = 1;
 }

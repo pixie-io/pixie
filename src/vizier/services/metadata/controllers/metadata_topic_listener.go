@@ -1,20 +1,16 @@
 package controllers
 
 import (
-	"sort"
-
-	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messages "pixielabs.ai/pixielabs/src/shared/messages/messagespb"
 )
 
 // MetadataTopic is the channel which the listener is subscribed to.
 const MetadataTopic = "metadata_updates"
 
-//MetadataPublishTopic is the channel which the listener publishes to.
-const MetadataPublishTopic = "cloud_metadata_updates" // TODO: Actually get the correct topic names.
+// MetadataUpdatesTopic is the channel which the listener publishes metadata updates to.
+const MetadataUpdatesTopic = "v2c.DurableMetadataUpdates"
 
 // MetadataTopicListener is responsible for listening to and handling messages on the metadata update topic.
 type MetadataTopicListener struct {
@@ -25,35 +21,21 @@ type MetadataTopicListener struct {
 
 // NewMetadataTopicListener creates a new metadata topic listener.
 func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler, sendMsgFn SendMessageFn) (*MetadataTopicListener, error) {
-	return &MetadataTopicListener{
+	m := &MetadataTopicListener{
 		sendMessage: sendMsgFn,
 		mds:         mdStore,
 		mh:          mdHandler,
-	}, nil
+	}
+
+	// Subscribe to metadata updates.
+	mdHandler.AddSubscriber(m)
+
+	return m, nil
 }
 
 // HandleMessage handles a message on the agent topic.
 func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
-	pb := &messages.MetadataUpdatesRequest{}
-	err := proto.Unmarshal(msg.Data, pb)
-	if err != nil {
-		return err
-	}
-
-	// Send existing metadata.
-	updates, err := m.getUpdates(pb.ResourceVersion)
-	if err != nil {
-		return err
-	}
-	for i := range updates {
-		err = m.sendUpdate(updates[i])
-		if err != nil {
-			return err
-		}
-	}
-
-	// Subscribe to agent updates.
-	m.mh.AddSubscriber(m)
+	// TODO(michelle): This should respond to MetadataUpdateRequests.
 
 	return nil
 }
@@ -63,46 +45,18 @@ func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
 	if update.NodeSpecific { // The metadata update is an update for a specific agent.
 		return
 	}
-	err := m.sendUpdate(update.Message)
-	if err != nil {
-		log.WithError(err).Error("Could not send update")
-	}
-}
 
-func (m *MetadataTopicListener) sendUpdate(update *metadatapb.ResourceUpdate) error {
 	msg := messages.MetadataUpdate{
-		Update: update,
+		Update: update.Message,
 	}
 	b, err := msg.Marshal()
 	if err != nil {
-		return err
+		log.WithError(err).Error("Could not marshal update message")
+		return
 	}
 
-	return m.sendMessage(MetadataPublishTopic, b)
-}
-
-func (m *MetadataTopicListener) getUpdates(resourceVersion string) ([]*metadatapb.ResourceUpdate, error) {
-	updates, err := m.mds.GetMetadataUpdates("")
+	err = m.sendMessage(MetadataUpdatesTopic, b)
 	if err != nil {
-		return nil, err
+		log.WithError(err).Error("Could not send metadata update over NATS")
 	}
-
-	filteredUpdates := make([]*metadatapb.ResourceUpdate, 0)
-	if resourceVersion != "" {
-		// Filter out any updates with a smaller resourceVersion.
-		for i, u := range updates {
-			if u.ResourceVersion >= resourceVersion {
-				filteredUpdates = append(filteredUpdates, updates[i])
-			}
-		}
-	} else {
-		filteredUpdates = updates
-	}
-
-	// Updates should be sent in resourceVersion order.
-	sort.Slice(filteredUpdates, func(i, j int) bool {
-		return filteredUpdates[i].ResourceVersion < filteredUpdates[j].ResourceVersion
-	})
-
-	return filteredUpdates, nil
 }

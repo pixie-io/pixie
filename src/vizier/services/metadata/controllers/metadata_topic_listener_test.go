@@ -1,12 +1,10 @@
 package controllers_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
-	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,65 +16,11 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 )
 
-func TestMetadataTopicListener_HandleMessageWithNoRV(t *testing.T) {
+func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-	mockMdStore.
-		EXPECT().
-		GetMetadataUpdates("").
-		Return([]*metadatapb.ResourceUpdate{
-			&metadatapb.ResourceUpdate{ResourceVersion: "5"},
-			&metadatapb.ResourceUpdate{ResourceVersion: "1"},
-			&metadatapb.ResourceUpdate{ResourceVersion: "3"},
-			&metadatapb.ResourceUpdate{ResourceVersion: "4"},
-			&metadatapb.ResourceUpdate{ResourceVersion: "2"},
-		}, nil)
-	isLeader := true
-	mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader)
-	updates := make([][]byte, 0)
-	// Create Metadata Service controller.
-	mdl, err := controllers.NewMetadataTopicListener(mockMdStore, mdh, func(topic string, b []byte) error {
-		assert.Equal(t, controllers.MetadataPublishTopic, topic)
-		updates = append(updates, b)
-		return nil
-	})
-
-	req := messages.MetadataUpdatesRequest{
-		ResourceVersion: "",
-	}
-	reqPb, err := req.Marshal()
-	assert.Nil(t, err)
-
-	msg := nats.Msg{}
-	msg.Data = reqPb
-	err = mdl.HandleMessage(&msg)
-	assert.Nil(t, err)
-
-	assert.Equal(t, 5, len(updates))
-	for i, u := range updates {
-		updatePb := &messages.MetadataUpdate{}
-		proto.Unmarshal(u, updatePb)
-		assert.Equal(t, fmt.Sprintf("%d", i+1), updatePb.Update.ResourceVersion)
-	}
-}
-
-func TestMetadataTopicListener_HandleMessageWithRV(t *testing.T) {
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-	mockMdStore.
-		EXPECT().
-		GetMetadataUpdates("").
-		Return([]*metadatapb.ResourceUpdate{
-			&metadatapb.ResourceUpdate{ResourceVersion: "5"},
-			&metadatapb.ResourceUpdate{ResourceVersion: "1"},
-			&metadatapb.ResourceUpdate{ResourceVersion: "3"},
-			&metadatapb.ResourceUpdate{ResourceVersion: "4"},
-			&metadatapb.ResourceUpdate{ResourceVersion: "2"},
-		}, nil)
 	mockMdStore.
 		EXPECT().
 		UpdatePod(gomock.Any(), false).
@@ -91,30 +35,11 @@ func TestMetadataTopicListener_HandleMessageWithRV(t *testing.T) {
 
 	updates := make([][]byte, 0)
 	// Create Metadata Service controller.
-	mdl, err := controllers.NewMetadataTopicListener(mockMdStore, mdh, func(topic string, b []byte) error {
-		assert.Equal(t, controllers.MetadataPublishTopic, topic)
+	_, _ = controllers.NewMetadataTopicListener(mockMdStore, mdh, func(topic string, b []byte) error {
+		assert.Equal(t, controllers.MetadataUpdatesTopic, topic)
 		updates = append(updates, b)
 		return nil
 	})
-
-	req := messages.MetadataUpdatesRequest{
-		ResourceVersion: "3",
-	}
-	reqPb, err := req.Marshal()
-	assert.Nil(t, err)
-
-	msg := nats.Msg{}
-	msg.Data = reqPb
-	err = mdl.HandleMessage(&msg)
-	assert.Nil(t, err)
-
-	assert.Equal(t, 3, len(updates))
-	for i, u := range updates {
-		updatePb := &messages.MetadataUpdate{}
-		proto.Unmarshal(u, updatePb)
-		assert.Equal(t, fmt.Sprintf("%d", i+3), updatePb.Update.ResourceVersion)
-		updates = make([][]byte, 0)
-	}
 
 	// Send update to metadata handler and check that the update is sent to the metadata topic listener.
 	expectedPb := &metadatapb.Pod{}
