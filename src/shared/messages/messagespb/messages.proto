@@ -10,3 +10,16 @@ option go_package = "pixielabs.ai/pixielabs/src/shared/messages/messagespb;messa
 message MetadataUpdate {
     pl.shared.k8s.metadatapb.ResourceUpdate update = 1;
 }
+
+message MetadataRequest {
+    // The earliest resource version to get. This can be left blank if requesting updates
+    // since the beginning of time.
+    string from = 1;
+
+    // The last resource version to get. This value is not inclusive and should not be left blank.
+    string to = 2;
+}
+
+message MetadataResponse {
+    repeated pl.shared.k8s.metadatapb.ResourceUpdate updates = 1;
+}

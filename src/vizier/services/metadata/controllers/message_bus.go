@@ -91,7 +91,7 @@ func (mc *MessageBusController) registerListeners(agentTopic string, agentManage
 	if err != nil {
 		return err
 	}
-	err = mc.registerListener(MetadataTopic, ml)
+	err = mc.registerListener(MetadataRequestSubscribeTopic, ml)
 	if err != nil {
 		return err
 	}

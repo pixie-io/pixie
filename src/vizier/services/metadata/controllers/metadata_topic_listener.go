@@ -6,8 +6,11 @@ import (
 	messages "pixielabs.ai/pixielabs/src/shared/messages/messagespb"
 )
 
-// MetadataTopic is the channel which the listener is subscribed to.
-const MetadataTopic = "metadata_updates"
+// MetadataRequestSubscribeTopic is the channel which the listener is subscribed to for metadata requests.
+const MetadataRequestSubscribeTopic = "c2v.MetadataRequest"
+
+// MetadataRequestPublishTopic is the channel which the listener publishes metadata responses to.
+const MetadataRequestPublishTopic = "v2c.MetadataResponse"
 
 // MetadataUpdatesTopic is the channel which the listener publishes metadata updates to.
 const MetadataUpdatesTopic = "v2c.DurableMetadataUpdates"
