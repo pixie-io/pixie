@@ -125,6 +125,118 @@ struct SchemaChange {
   StringList arg_types;
 };
 
+struct BatchQuery {
+  uint8_t kind;
+  std::variant<std::string, std::basic_string<uint8_t>> query_or_id;
+  std::vector<NameValuePair> values;
+};
+
+struct ErrorResp {
+  int32_t error_code;
+  std::string error_msg;
+};
+
+struct StartupReq {
+  StringMap options;
+};
+
+struct ReadyResp {
+  // No additional fields.
+};
+
+struct AuthenticateResp {
+  std::string authenticator_name;
+};
+
+struct OptionsReq {
+  // No additional fields.
+};
+
+struct SupportedResp {
+  StringMultiMap options;
+};
+
+struct QueryReq {
+  std::string query;
+  QueryParameters qp;
+};
+
+struct ResultVoidResp {};
+
+struct ResultRowsResp {
+  ResultMetadata metadata;
+  int32_t rows_count;
+  // Don't actually grab the row content for now.
+};
+
+struct ResultSetKeyspaceResp {
+  std::string keyspace_name;
+};
+
+struct ResultPreparedResp {
+  std::basic_string<uint8_t> id;
+  // Note that two metadata are sent back. The first communicates the col specs for the Prepared
+  // statement, while the second communicates the metadata for future EXECUTE statements.
+  ResultMetadata metadata;
+  ResultMetadata result_metadata;
+};
+
+struct ResultSchemaChangeResp {
+  SchemaChange sc;
+};
+
+struct ResultResp {
+  int32_t kind;
+  std::variant<ResultVoidResp, ResultRowsResp, ResultSetKeyspaceResp, ResultPreparedResp,
+               ResultSchemaChangeResp>
+      resp;
+};
+
+struct PrepareReq {
+  std::string query;
+};
+
+struct ExecuteReq {
+  std::basic_string<uint8_t> id;
+  QueryParameters qp;
+};
+
+struct RegisterReq {
+  StringList event_types;
+};
+
+struct EventResp {
+  std::string event_type;
+
+  // if (event_type == "TOPOLOGY_CHANGE" || event_type == "STATUS_CHANGE")
+  std::string change_type;
+  SockAddr addr;
+
+  // if (event_type == "SCHEMA_CHANGE")
+  SchemaChange sc;
+};
+
+struct BatchReq {
+  uint8_t type;
+  std::vector<BatchQuery> queries;
+  uint16_t consistency;
+  uint8_t flags;
+  uint16_t serial_consistency;
+  int64_t timestamp;
+};
+
+struct AuthChallengeResp {
+  std::basic_string<uint8_t> token;
+};
+
+struct AuthResponseReq {
+  std::basic_string<uint8_t> token;
+};
+
+struct AuthSuccessResp {
+  std::basic_string<uint8_t> token;
+};
+
 /**
  * FrameBodyDecoder provides a structured interface to process the bytes of a CQL frame body.
  *
@@ -256,6 +368,23 @@ class FrameBodyDecoder {
   // Version of the CQL binary protocol to use when decoding.
   const uint8_t version_;
 };
+
+StatusOr<ErrorResp> ParseErrorResp(Frame* frame);
+StatusOr<StartupReq> ParseStartupReq(Frame* frame);
+StatusOr<ReadyResp> ParseReadyResp(Frame* frame);
+StatusOr<AuthenticateResp> ParseAuthenticateResp(Frame* frame);
+StatusOr<OptionsReq> ParseOptionsReq(Frame* frame);
+StatusOr<SupportedResp> ParseSupportedResp(Frame* frame);
+StatusOr<QueryReq> ParseQueryReq(Frame* frame);
+StatusOr<ResultResp> ParseResultResp(Frame* frame);
+StatusOr<PrepareReq> ParsePrepareReq(Frame* frame);
+StatusOr<ExecuteReq> ParseExecuteReq(Frame* frame);
+StatusOr<RegisterReq> ParseRegisterReq(Frame* frame);
+StatusOr<EventResp> ParseEventResp(Frame* frame);
+StatusOr<BatchReq> ParseBatchReq(Frame* frame);
+StatusOr<AuthChallengeResp> ParseAuthChallengeResp(Frame* frame);
+StatusOr<AuthResponseReq> ParseAuthResponseReq(Frame* frame);
+StatusOr<AuthSuccessResp> ParseAuthSuccessResp(Frame* frame);
 
 }  // namespace cass
 }  // namespace stirling

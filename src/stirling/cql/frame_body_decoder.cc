@@ -380,6 +380,269 @@ StatusOr<SchemaChange> FrameBodyDecoder::ExtractSchemaChange() {
   return sc;
 }
 
+StatusOr<StartupReq> ParseStartupReq(Frame* frame) {
+  StartupReq r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.options, decoder.ExtractStringMap());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<AuthResponseReq> ParseAuthResponseReq(Frame* frame) {
+  AuthResponseReq r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.token, decoder.ExtractBytes());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<OptionsReq> ParseOptionsReq(Frame* frame) {
+  OptionsReq r;
+  FrameBodyDecoder decoder(*frame);
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<RegisterReq> ParseRegisterReq(Frame* frame) {
+  RegisterReq r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.event_types, decoder.ExtractStringList());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<QueryReq> ParseQueryReq(Frame* frame) {
+  QueryReq r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.query, decoder.ExtractLongString());
+  PL_ASSIGN_OR_RETURN(r.qp, decoder.ExtractQueryParameters());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<PrepareReq> ParsePrepareReq(Frame* frame) {
+  PrepareReq r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.query, decoder.ExtractLongString());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<ExecuteReq> ParseExecuteReq(Frame* frame) {
+  ExecuteReq r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.id, decoder.ExtractShortBytes());
+  PL_ASSIGN_OR_RETURN(r.qp, decoder.ExtractQueryParameters());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<BatchReq> ParseBatchReq(Frame* frame) {
+  BatchReq r;
+
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.type, decoder.ExtractByte());
+  // - If <type> == 0, the batch will be "logged". This is equivalent to a
+  //   normal CQL3 batch statement.
+  // - If <type> == 1, the batch will be "unlogged".
+  // - If <type> == 2, the batch will be a "counter" batch (and non-counter
+  //   statements will be rejected).
+  if (r.type > 2) {
+    return error::Internal("Unrecognized BATCH type");
+  }
+  PL_ASSIGN_OR_RETURN(uint16_t n, decoder.ExtractShort());
+
+  for (uint i = 0; i < n; ++i) {
+    BatchQuery q;
+    PL_ASSIGN_OR_RETURN(q.kind, decoder.ExtractByte());
+    if (q.kind == 0) {
+      PL_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractLongString());
+    } else if (q.kind == 1) {
+      PL_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractShortBytes());
+    }
+    // See note below about flag_with_names_for_values.
+    PL_ASSIGN_OR_RETURN(q.values, decoder.ExtractNameValuePairList(false));
+    r.queries.push_back(std::move(q));
+  }
+
+  PL_ASSIGN_OR_RETURN(r.consistency, decoder.ExtractShort());
+  PL_ASSIGN_OR_RETURN(r.flags, decoder.ExtractByte());
+
+  bool flag_with_serial_consistency = r.flags & 0x10;
+  bool flag_with_default_timestamp = r.flags & 0x20;
+  bool flag_with_names_for_values = r.flags & 0x40;
+
+  // Note that the flag `with_names_for_values` occurs after its use in the spec,
+  // that's why we have hard-coded the value to false in the call to ExtractNameValuePairList()
+  // above. This is actually what the spec defines, because of the spec bug:
+  //
+  // With names for values. If set, then all values for all <query_i> must be
+  // preceded by a [string] <name_i> that have the same meaning as in QUERY
+  // requests [IMPORTANT NOTE: this feature does not work and should not be
+  // used. It is specified in a way that makes it impossible for the server
+  // to implement. This will be fixed in a future version of the native
+  // protocol. See https://issues.apache.org/jira/browse/CASSANDRA-10246 for
+  // more details].
+  PL_UNUSED(flag_with_names_for_values);
+
+  if (flag_with_serial_consistency) {
+    PL_ASSIGN_OR_RETURN(r.serial_consistency, decoder.ExtractShort());
+  }
+
+  if (flag_with_default_timestamp) {
+    PL_ASSIGN_OR_RETURN(r.timestamp, decoder.ExtractLong());
+  }
+
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+
+  return r;
+}
+
+StatusOr<ErrorResp> ParseErrorResp(Frame* frame) {
+  ErrorResp r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.error_code, decoder.ExtractInt());
+  PL_ASSIGN_OR_RETURN(r.error_msg, decoder.ExtractString());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<ReadyResp> ParseReadyResp(Frame* frame) {
+  ReadyResp r;
+  FrameBodyDecoder decoder(*frame);
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<SupportedResp> ParseSupportedResp(Frame* frame) {
+  SupportedResp r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.options, decoder.ExtractStringMultiMap());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<AuthenticateResp> ParseAuthenticateResp(Frame* frame) {
+  AuthenticateResp r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.authenticator_name, decoder.ExtractString());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<AuthSuccessResp> ParseAuthSuccessResp(Frame* frame) {
+  AuthSuccessResp r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.token, decoder.ExtractBytes());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+StatusOr<AuthChallengeResp> ParseAuthChallengeResp(Frame* frame) {
+  AuthChallengeResp r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.token, decoder.ExtractBytes());
+  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  return r;
+}
+
+namespace {
+
+StatusOr<ResultVoidResp> ParseResultVoid(FrameBodyDecoder* decoder) {
+  ResultVoidResp r;
+  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+  return r;
+}
+
+// See section 4.2.5.2 of the spec.
+StatusOr<ResultRowsResp> ParseResultRows(FrameBodyDecoder* decoder) {
+  ResultRowsResp r;
+  PL_ASSIGN_OR_RETURN(r.metadata, decoder->ExtractResultMetadata());
+  PL_ASSIGN_OR_RETURN(r.rows_count, decoder->ExtractInt());
+  // Skip grabbing the row content for now.
+  // PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+  return r;
+}
+
+StatusOr<ResultSetKeyspaceResp> ParseResultSetKeyspace(FrameBodyDecoder* decoder) {
+  ResultSetKeyspaceResp r;
+  PL_ASSIGN_OR_RETURN(r.keyspace_name, decoder->ExtractString());
+  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+  return r;
+}
+
+StatusOr<ResultPreparedResp> ParseResultPrepared(FrameBodyDecoder* decoder) {
+  ResultPreparedResp r;
+  PL_ASSIGN_OR_RETURN(r.id, decoder->ExtractShortBytes());
+  // Note that two metadata are sent back. The first communicates the col specs for the Prepared
+  // statement, while the second communicates the metadata for future EXECUTE statements.
+  PL_ASSIGN_OR_RETURN(r.metadata, decoder->ExtractResultMetadata(/* has_pk */ true));
+  PL_ASSIGN_OR_RETURN(r.result_metadata, decoder->ExtractResultMetadata());
+  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+  return r;
+}
+
+StatusOr<ResultSchemaChangeResp> ParseResultSchemaChange(FrameBodyDecoder* decoder) {
+  ResultSchemaChangeResp r;
+  PL_ASSIGN_OR_RETURN(r.sc, decoder->ExtractSchemaChange());
+  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+  return r;
+}
+
+}  // namespace
+
+StatusOr<ResultResp> ParseResultResp(Frame* frame) {
+  ResultResp r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.kind, decoder.ExtractInt());
+
+  switch (r.kind) {
+    case 0x0001: {
+      PL_ASSIGN_OR_RETURN(r.resp, ParseResultVoid(&decoder));
+      break;
+    }
+    case 0x0002: {
+      PL_ASSIGN_OR_RETURN(r.resp, ParseResultRows(&decoder));
+      break;
+    }
+    case 0x0003: {
+      PL_ASSIGN_OR_RETURN(r.resp, ParseResultSetKeyspace(&decoder));
+      break;
+    }
+    case 0x0004: {
+      PL_ASSIGN_OR_RETURN(r.resp, ParseResultPrepared(&decoder));
+      break;
+    }
+    case 0x0005: {
+      PL_ASSIGN_OR_RETURN(r.resp, ParseResultSchemaChange(&decoder));
+      break;
+    }
+    default:
+      return error::Internal("Unrecognized result kind (%d)", r.kind);
+  }
+
+  return r;
+}
+
+StatusOr<EventResp> ParseEventResp(Frame* frame) {
+  EventResp r;
+  FrameBodyDecoder decoder(*frame);
+  PL_ASSIGN_OR_RETURN(r.event_type, decoder.ExtractString());
+
+  if (r.event_type == "TOPOLOGY_CHANGE" || r.event_type == "STATUS_CHANGE") {
+    PL_ASSIGN_OR_RETURN(r.change_type, decoder.ExtractString());
+    PL_ASSIGN_OR_RETURN(r.addr, decoder.ExtractInet());
+    PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+    return r;
+  } else if (r.event_type == "SCHEMA_CHANGE") {
+    PL_ASSIGN_OR_RETURN(r.sc, decoder.ExtractSchemaChange());
+    PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+    return r;
+  }
+
+  return error::Internal("Unknown event_type $0", r.event_type);
+}
+
 }  // namespace cass
 }  // namespace stirling
 }  // namespace pl
