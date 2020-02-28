@@ -518,17 +518,10 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_nats_io_go_nats",
-    importpath = "github.com/nats-io/go-nats",
-    sum = "h1:cJujlwCYR8iMz5ofZSD/p2WLW8FabhkQ2lIEVbSvNSA=",
-    version = "v1.7.2",
-)
-
-go_repository(
     name = "com_github_nats_io_nkeys",
     importpath = "github.com/nats-io/nkeys",
-    sum = "h1:qMd4+pRHgdr1nAClu+2h/2a5F2TmKcCzjCDazVgRoX4=",
-    version = "v0.1.0",
+    sum = "h1:6JrEfig+HzTH85yxzhSVbjHRJv9cn0p6n3IngIcM5/k=",
+    version = "v0.1.3",
 )
 
 go_repository(
@@ -536,13 +529,6 @@ go_repository(
     importpath = "github.com/nats-io/nuid",
     sum = "h1:5iA8DT8V7q8WK2EScv2padNa/rTESc1KdnPw4TC2paw=",
     version = "v1.0.1",
-)
-
-go_repository(
-    name = "com_github_nats_io_gnatsd",
-    importpath = "github.com/nats-io/gnatsd",
-    sum = "h1:RconcfDeWpKCD6QIIwiVFcvForlXpWeJP7i5/lDLy44=",
-    version = "v1.4.1",
 )
 
 go_repository(
@@ -1101,8 +1087,8 @@ go_repository(
 go_repository(
     name = "com_github_evanphx_json_patch",
     importpath = "github.com/evanphx/json-patch",
-    sum = "h1:mV9jbLoSW/8m4VK16ZkHTozJa8sesK5u5kTMFysTYac=",
-    version = "v0.0.0-20190203023257-5858425f7550",
+    sum = "h1:ouOWdg56aJriqS0huScTkVXPC5IcNrDCXZ6OoTAWu7M=",
+    version = "v4.5.0+incompatible",
 )
 
 go_repository(
@@ -1297,8 +1283,8 @@ go_repository(
 go_repository(
     name = "io_k8s_kube_openapi",
     importpath = "k8s.io/kube-openapi",
-    sum = "h1:TRb4wNWoBVrH9plmkp2q86FIDppkbrEXdXlxU3a3BMI=",
-    version = "v0.0.0-20190228160746-b3a7cee44a30",
+    sum = "h1:GOfbcWvX5wW2vcfNch83xYp9SDZjRgAJk+t373yaHKk=",
+    version = "v0.0.0-20200204173128-addea2498afe",
 )
 
 go_repository(
@@ -1827,8 +1813,8 @@ go_repository(
 go_repository(
     name = "com_github_nats_io_jwt",
     importpath = "github.com/nats-io/jwt",
-    sum = "h1:xdnzwFETV++jNc4W1mw//qFyJGb2ABOombmZJQS4+Qo=",
-    version = "v0.3.0",
+    sum = "h1:+RB5hMpXUUA2dfxuhBTEkMOrYmM+gKIZYS1KjSostMI=",
+    version = "v0.3.2",
 )
 
 go_repository(
@@ -1845,4 +1831,102 @@ go_repository(
     importpath = "github.com/nats-io/stan.go",
     sum = "h1:26IJPeykh88d8KVLT4jJCIxCyUBOC5/IQup8oWD/QYY=",
     version = "v0.6.0",
+)
+
+go_repository(
+    name = "com_github_bmizerany_assert",
+    importpath = "github.com/bmizerany/assert",
+    sum = "h1:DDGfHa7BWjL4YnC6+E63dPcxHo2sUxDIu8g3QgEJdRY=",
+    version = "v0.0.0-20160611221934-b7ed37b82869",
+)
+
+go_repository(
+    name = "com_github_emicklei_go_restful",
+    importpath = "github.com/emicklei/go-restful",
+    sum = "h1:H2pdYOb3KQ1/YsqVWoWNLQO+fusocsw354rqGTZtAgw=",
+    version = "v0.0.0-20170410110728-ff4f55a20633",
+)
+
+go_repository(
+    name = "com_github_go_openapi_jsonpointer",
+    importpath = "github.com/go-openapi/jsonpointer",
+    sum = "h1:wSt/4CYxs70xbATrGXhokKF1i0tZjENLOo1ioIO13zk=",
+    version = "v0.0.0-20160704185906-46af16f9f7b1",
+)
+
+go_repository(
+    name = "com_github_go_openapi_jsonreference",
+    importpath = "github.com/go-openapi/jsonreference",
+    sum = "h1:tF+augKRWlWx0J0B7ZyyKSiTyV6E1zZe+7b3qQlcEf8=",
+    version = "v0.0.0-20160704190145-13c6e3589ad9",
+)
+
+go_repository(
+    name = "com_github_go_openapi_spec",
+    importpath = "github.com/go-openapi/spec",
+    sum = "h1:C1JKChikHGpXwT5UQDFaryIpDtyyGL/CR6C2kB7F1oc=",
+    version = "v0.0.0-20160808142527-6aced65f8501",
+)
+
+go_repository(
+    name = "com_github_go_openapi_swag",
+    importpath = "github.com/go-openapi/swag",
+    sum = "h1:zP3nY8Tk2E6RTkqGYrarZXuzh+ffyLDljLxCy1iJw80=",
+    version = "v0.0.0-20160704191624-1d0bd113de87",
+)
+
+go_repository(
+    name = "com_github_mailru_easyjson",
+    importpath = "github.com/mailru/easyjson",
+    sum = "h1:TpvdAwDAt1K4ANVOfcihouRdvP+MgAfDWwBuct4l6ZY=",
+    version = "v0.0.0-20160728113105-d5b7844b561a",
+)
+
+go_repository(
+    name = "com_github_munnerz_goautoneg",
+    importpath = "github.com/munnerz/goautoneg",
+    sum = "h1:7PxY7LVfSZm7PEeBTyK1rj1gABdCO2mbri6GKO1cMDs=",
+    version = "v0.0.0-20120707110453-a547fc61f48d",
+)
+
+go_repository(
+    name = "com_github_nats_io_nats_server_v2",
+    importpath = "github.com/nats-io/nats-server/v2",
+    sum = "h1:BILRnsJ2Yb/fefiFbBWADpViGF69uh4sxe8poVDQ06g=",
+    version = "v2.1.4",
+)
+
+go_repository(
+    name = "com_github_nytimes_gziphandler",
+    importpath = "github.com/NYTimes/gziphandler",
+    sum = "h1:lsxEuwrXEAokXB9qhlbKWPpo3KMLZQ5WB5WLQRW1uq0=",
+    version = "v0.0.0-20170623195520-56545f4a5d46",
+)
+
+go_repository(
+    name = "com_github_puerkitobio_purell",
+    importpath = "github.com/PuerkitoBio/purell",
+    sum = "h1:0GoNN3taZV6QI81IXgCbxMyEaJDXMSIjArYBCYzVVvs=",
+    version = "v1.0.0",
+)
+
+go_repository(
+    name = "com_github_puerkitobio_urlesc",
+    importpath = "github.com/PuerkitoBio/urlesc",
+    sum = "h1:JCHLVE3B+kJde7bIEo5N4J+ZbLhp0J1Fs+ulyRws4gE=",
+    version = "v0.0.0-20160726150825-5bd2802263f2",
+)
+
+go_repository(
+    name = "io_k8s_gengo",
+    importpath = "k8s.io/gengo",
+    sum = "h1:4s3/R4+OYYYUKptXPhZKjQ04WJ6EhQQVFdjOFvCazDk=",
+    version = "v0.0.0-20190128074634-0689ccc1d7d6",
+)
+
+go_repository(
+    name = "io_k8s_sigs_structured_merge_diff_v3",
+    importpath = "sigs.k8s.io/structured-merge-diff/v3",
+    sum = "h1:0KsuGbLhWdIxv5DA1OnbFz5hI/Co9kuxMfMUa5YsAHY=",
+    version = "v3.0.0-20200116222232-67a7b8c61874",
 )

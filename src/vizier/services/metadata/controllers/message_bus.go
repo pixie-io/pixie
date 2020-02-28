@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/nats-io/go-nats"
+	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )

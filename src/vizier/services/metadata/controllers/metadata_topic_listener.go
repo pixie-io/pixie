@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nats-io/go-nats"
+	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messages "pixielabs.ai/pixielabs/src/shared/messages/messagespb"
