@@ -23,6 +23,8 @@ using ::testing::Pair;
 
 struct TestFrame : public FrameBase {
   std::string msg;
+
+  size_t ByteSize() const override { return sizeof(TestFrame) + msg.size(); }
 };
 
 template <>

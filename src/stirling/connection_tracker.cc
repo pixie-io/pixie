@@ -474,8 +474,7 @@ std::vector<cass::Record> ConnectionTracker::ProcessToRecords() {
 
   std::vector<cass::Record> result = cass::ProcessFrames(&req_frames, &resp_frames);
 
-  // TODO(oazizi): Enable the cleanup code below.
-  // Cleanup<cass::Frame>();
+  Cleanup<cass::Frame>();
 
   return result;
 }

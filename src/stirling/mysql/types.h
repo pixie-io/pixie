@@ -40,7 +40,7 @@ struct Packet : public stirling::FrameBase {
   // TODO(oazizi): Convert to std::basic_string<uint8_t>.
   std::string msg;
 
-  size_t ByteSize() const { return sizeof(Packet) + msg.size(); }
+  size_t ByteSize() const override { return sizeof(Packet) + msg.size(); }
 };
 
 //-----------------------------------------------------------------------------

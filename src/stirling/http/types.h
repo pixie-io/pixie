@@ -42,7 +42,7 @@ struct Message : public stirling::FrameBase {
 
   // TODO(yzhao): We should enforce that Message size does not change after certain point,
   // so that we can cache this value.
-  size_t ByteSize() const {
+  size_t ByteSize() const override {
     size_t headers_size = 0;
     for (const auto& [name, val] : http_headers) {
       headers_size += name.size();

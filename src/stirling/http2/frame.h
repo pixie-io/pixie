@@ -63,7 +63,9 @@ struct Frame : public stirling::FrameBase {
       DCHECK_EQ(frame.headers.nvlen, 0u);
     }
   }
-  size_t ByteSize() const { return sizeof(Frame) + u8payload.size() + CountStringMapSize(headers); }
+  size_t ByteSize() const override {
+    return sizeof(Frame) + u8payload.size() + CountStringMapSize(headers);
+  }
 };
 
 }  // namespace http2

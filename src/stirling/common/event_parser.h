@@ -23,6 +23,10 @@ struct FrameBase {
   uint64_t timestamp_ns = 0;
   std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
   // TODO(oazizi): Consolidate creation_timestamp with timestamp_ns.
+
+  // ByteSize() is used as part of Cleanup(); used to determine how much memory a tracker is using.
+  virtual size_t ByteSize() const = 0;
+  virtual ~FrameBase() = default;
 };
 
 struct BufferPosition {

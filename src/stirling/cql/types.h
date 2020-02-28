@@ -84,6 +84,8 @@ struct Frame : public stirling::FrameBase {
   FrameHeader hdr;
   std::string msg;
   bool consumed = false;
+
+  size_t ByteSize() const override { return sizeof(Frame) + msg.size(); }
 };
 
 constexpr int kFrameHeaderLength = 9;
