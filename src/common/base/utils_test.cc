@@ -262,4 +262,11 @@ TEST(ArrayTransform, LambdaFunc) {
   static_assert(arr2[0] == 2, "correct value");
 }
 
+enum class Color { kRed = 2, kBlue = 4, kGreen = 8 };
+
+TEST(EnumCastOrReturn, basic) {
+  ASSERT_OK_AND_EQ(EnumCast<Color>(2), Color::kRed);
+  ASSERT_NOT_OK(EnumCast<Color>(1));
+}
+
 }  // namespace pl

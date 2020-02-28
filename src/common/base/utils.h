@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include <magic_enum.hpp>
+
 #include <absl/strings/str_format.h>
 #include "src/common/base/error.h"
 #include "src/common/base/statusor.h"
@@ -295,6 +297,17 @@ constexpr auto ArrayTransform(const std::array<T, N>& arr, F&& f) {
 template <typename T, typename F, std::size_t N = 0>
 constexpr auto ArrayTransform(const std::array<T, 0>&, F&&) {
   return std::array<typename std::result_of_t<F&(T)>, 0>{};
+}
+
+// Attempts to cast raw value into an enum, and returns error if the value is not valid.
+// Meant for use with PL_ASSIGN_OR_RETURN, Otherwise one should use magic_enum::enum_cast directly.
+template <typename TEnum, typename TIn>
+StatusOr<TEnum> EnumCast(TIn x) {
+  auto enum_cast_var = magic_enum::enum_cast<TEnum>(x);
+  if (!enum_cast_var.has_value()) {
+    return error::Internal("Could not cast $0 as type $1", x, typeid(TEnum).name());
+  }
+  return enum_cast_var.value();
 }
 
 }  // namespace pl
