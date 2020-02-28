@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="GoImports">
+    <option name="excludedPackages">
+      <array>
+        <option value="$PROJECT_DIR$/bazel-pixielabs" />
+        <option value="pixielabs.ai/pixielabs/bazel-pixielabs" />
+      </array>
+    </option>
     <option name="groupStdlibImports" value="true" />
     <option name="importSorting" value="GOIMPORTS" />
     <option name="moveAllStdlibImportsInOneGroup" value="true" />
