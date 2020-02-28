@@ -131,7 +131,6 @@ class GRPCTraceGoTest : public ::testing::Test {
   static constexpr uint32_t kASID = 1;
 
   DataTable data_table_;
-  SubProcess c_;
   SubProcess s_;
   int s_port_ = -1;
   std::unique_ptr<ConnectorContext> ctx_;
@@ -203,28 +202,26 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithPara
   void SetUp() override {
     FLAGS_stirling_enable_grpc_kprobe_tracing = false;
     FLAGS_stirling_enable_grpc_uprobe_tracing = true;
-    GRPCTraceGoTest::LaunchServer(GetParam());
-
-    // Uprobes are attached to running processes. Launch client before initializing tracer.
-    const std::string https_flag = GetParam() ? "--https=true" : "--https=false";
-    ASSERT_OK(c_.Start({client_path_, https_flag, "-name=PixieLabs",
-                        absl::StrCat("-address=localhost:", s_port_)}));
-    LOG(INFO) << "Client PID: " << c_.child_pid();
 
     GRPCTraceGoTest::InitSocketTraceConnector();
-  }
-
-  void TearDown() override {
-    c_.Kill();
-    EXPECT_EQ(9, c_.Wait()) << "Client should have been killed.";
-
-    GRPCTraceGoTest::TearDown();
   }
 };
 
 TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
-  // Give some time for the client to execute and produce data into perf buffers.
-  sleep(2);
+  // Server is launched after initializing socket tracer, which verifies that uprobes
+  // are dynamically attached.
+  GRPCTraceGoTest::LaunchServer(GetParam());
+
+  // Give 5 seconds to attach uprobes.
+  std::this_thread::sleep_for(std::chrono::seconds(5));
+
+  SubProcess c;
+  const std::string https_flag = GetParam() ? "--https=true" : "--https=false";
+  ASSERT_OK(c.Start({client_path_, https_flag, "-once", "-name=PixieLabs",
+                     absl::StrCat("-address=localhost:", s_port_)}));
+  LOG(INFO) << "Client PID: " << c.child_pid();
+  EXPECT_EQ(0, c.Wait());
+
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
