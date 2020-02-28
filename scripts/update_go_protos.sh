@@ -37,7 +37,7 @@ function update_one_build_label() {
     echo "Failed to located pb.go file at ${abs_path}"
     return 1
   fi
-  cp "${abs_path}" "${dir}"
+  cp -f "${abs_path}" "${dir}"
 }
 
 function update_all_build_labels() {
