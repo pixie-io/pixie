@@ -155,22 +155,27 @@ static __inline void clear_open_file(u64 id, int fd) {
   open_file_map.delete(&tgid_fd);
 }
 
+// The caller must memset conn_info to '0', otherwise the behavior is undefined.
+static __inline void init_conn_info(u32 tgid, u32 fd, struct conn_info_t* conn_info) {
+  conn_info->conn_id.upid.tgid = tgid;
+  conn_info->conn_id.upid.start_time_ticks = get_tgid_start_time();
+  conn_info->conn_id.fd = fd;
+  // Note that many calls to this function are not for socket descriptors,
+  // so we are actually "wasting" generations numbers.
+  // But this is still the most straightforward thing to do, and
+  // using one generation number per second should still provide 136 years of coverage.
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  conn_info->conn_id.generation = get_tgid_fd_generation(tgid_fd);
+}
+
 static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
   u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
   struct conn_info_t new_conn_info;
   memset(&new_conn_info, 0, sizeof(struct conn_info_t));
   struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
-  // Use TGID zero to detect that a new conn_info was initialized.
+  // Use TGID zero to detect that a new conn_info needs to be initialized.
   if (conn_info->conn_id.upid.tgid == 0) {
-    // If lookup_or_init initialized a new conn_info, we need to set some fields.
-    conn_info->conn_id.upid.tgid = tgid;
-    conn_info->conn_id.upid.start_time_ticks = get_tgid_start_time();
-    conn_info->conn_id.fd = fd;
-    // Note that many calls to this function are not for socket descriptors,
-    // so we are actually "wasting" generations numbers.
-    // But this is still the most straightforward thing to do, and
-    // using one generation number per second should still provide 136 years of coverage.
-    conn_info->conn_id.generation = get_tgid_fd_generation(tgid_fd);
+    init_conn_info(tgid, fd, conn_info);
   }
   return conn_info;
 }
@@ -513,20 +518,12 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
 
 static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
                                      struct sockaddr_in6 addr) {
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
-
   struct conn_info_t conn_info;
   memset(&conn_info, 0, sizeof(struct conn_info_t));
   conn_info.addr = addr;
-  conn_info.traffic_class.protocol = kProtocolUnknown;
-  conn_info.traffic_class.role = kRoleUnknown;
-  conn_info.wr_seq_num = 0;
-  conn_info.rd_seq_num = 0;
-  conn_info.conn_id.upid.tgid = tgid;
-  conn_info.conn_id.upid.start_time_ticks = get_tgid_start_time();
-  conn_info.conn_id.fd = fd;
-  conn_info.conn_id.generation = get_tgid_fd_generation(tgid_fd);
+  init_conn_info(tgid, fd, &conn_info);
 
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
   conn_info_map.update(&tgid_fd, &conn_info);
 
   struct socket_control_event_t conn_event;
