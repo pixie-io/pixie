@@ -11,10 +11,14 @@ export function hydrateSpec(input, theme: Theme, tableName: string = 'output'): 
   };
 }
 
-export function parseSpecs(spec: string): VisualizationSpec {
+export interface VisualizationSpecMap {
+  [key: string]: VisualizationSpec;
+}
+
+export function parseSpecs(spec: string): VisualizationSpecMap {
   try {
     const vega = JSON.parse(spec);
-    return vega as VisualizationSpec;
+    return vega as VisualizationSpecMap;
   } catch (e) {
     return {};
   }

@@ -1,4 +1,6 @@
-import { buildLayout, Chart, ChartPosition, VisualizationSpecMap } from './layout';
+import {VisualizationSpecMap} from 'components/vega/spec';
+
+import {buildLayout, Chart, ChartPosition} from './layout';
 
 const vegaSpecConfig: VisualizationSpecMap = {
   latency: {
@@ -80,34 +82,23 @@ const vegaSpecConfig: VisualizationSpecMap = {
 
 describe('BuildLayout', () => {
   it('BuildLayout tiles a grid', () => {
-    const expectedPositions: ChartPosition[] = [
-      { x: 0, y: 0, w: 1, h: 1 },
-      { x: 1, y: 0, w: 1, h: 1 },
-      { x: 0, y: 1, w: 1, h: 1 },
-    ];
-
-    const layout = buildLayout(vegaSpecConfig);
-    expect(layout.charts.length === vegaSpecConfig.size);
-    const keySet = new Set();
-    for (let i = 0; i < layout.charts.length; ++i) {
-      expect(layout.charts[i].position === expectedPositions[i]);
-      const vegaSpecKey = layout.charts[i].vegaKey;
-      keySet.add(vegaSpecKey);
-      // Check to make sure we're grabbing a valid spec key.
-      expect(vegaSpecKey in vegaSpecConfig);
-    }
-
-    // Check to make sure we grab all of the vega spec config.
-    expect(keySet.size === vegaSpecConfig.size);
+    const expectedPositions = {
+      latency: { position: { x: 0, y: 0, w: 1, h: 1 }, description: '' },
+      error_rate: { position: { x: 1, y: 0, w: 1, h: 1 }, description: '' },
+      rps: { position: { x: 2, y: 0, w: 1, h: 1 }, description: '' },
+    };
+    const layout = buildLayout(vegaSpecConfig, {});
+    expect(layout).toEqual(expectedPositions);
   });
+
   it('keeps grid when specified', () => {
     // Vertically align everything.
-    const chartLayout: Chart[] = [
-      { position: { x: 0, y: 0, w: 1, h: 1 }, vegaKey: 'latency', description: '' },
-      { position: { x: 1, y: 0, w: 1, h: 1 }, vegaKey: 'error_rate', description: '' },
-      { position: { x: 0, y: 1, w: 1, h: 1 }, vegaKey: 'rps', description: '' },
-    ];
+    const chartLayout = {
+      latency: { position: { x: 0, y: 0, w: 1, h: 1 }, description: '' },
+      error_rate: { position: { x: 1, y: 0, w: 1, h: 1 }, description: '' },
+      rps: { position: { x: 0, y: 1, w: 1, h: 1 }, description: '' },
+    };
     const layout = buildLayout(vegaSpecConfig, chartLayout);
-    expect(layout.charts === chartLayout);
+    expect(layout).toEqual(chartLayout);
   });
 });

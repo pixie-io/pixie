@@ -7,14 +7,29 @@ import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
 import {AutoSizer} from 'react-virtualized';
 
-import {ResultsContext, VegaContext} from './context';
-import {buildLayout, VisualizationSpecMap} from './layout';
+import {LiveContext, PlacementContext, ResultsContext, VegaContext} from './context';
+import {buildLayout, parsePlacement, Placement, toLayout, updatePositions} from './layout';
 
 const Canvas = () => {
   const inputJSON = React.useContext(VegaContext);
   const results = React.useContext(ResultsContext);
+  const placementJSON = React.useContext(PlacementContext);
+  const { updatePlacement: updatePlacementJSON } = React.useContext(LiveContext);
+
+  const [placement, setPlacement] = React.useState<Placement>({});
 
   const specs = React.useMemo(() => parseSpecs(inputJSON), [inputJSON]);
+
+  // Parse the placement only once on init. This is to avoid infinte loops.
+  React.useEffect(() => {
+    try {
+      const initialPlacement = parsePlacement(placementJSON);
+      setPlacement(buildLayout(specs, initialPlacement));
+    } catch (e) {
+      // noop. tslint doesn't allow empty blocks.
+    }
+  }, []);
+
   const charts = React.useMemo(() => {
     return Object.keys(specs).map((chartName) => {
       const spec = specs[chartName];
@@ -28,20 +43,17 @@ const Canvas = () => {
     });
   }, [results, specs]);
 
-  const layout = React.useMemo(() => {
-    return buildLayout(specs as VisualizationSpecMap).charts.map((chart) => {
-      const pos = chart.position;
-      return {
-        ...pos,
-        i: chart.vegaKey,
-      };
-    });
-  }, [specs]);
+  const layout = React.useMemo(() => toLayout(placement), [placement]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:
     // https://vega.github.io/vega-lite/docs/size.html#specifying-responsive-width-and-height
     window.dispatchEvent(new Event('resize'));
+  }, []);
+
+  const handleLayoutChange = React.useCallback((newLayout) => {
+    updatePlacementJSON(JSON.stringify(updatePositions(placement, newLayout)));
+    resize();
   }, []);
 
   return (
@@ -51,7 +63,7 @@ const Canvas = () => {
           style={{ width, height }}
           width={width}
           layout={layout}
-          onLayoutChange={resize}
+          onLayoutChange={handleLayoutChange}
         >
           {charts}
         </GridLayout>

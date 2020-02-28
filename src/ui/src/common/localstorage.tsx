@@ -2,6 +2,7 @@ const LIVE_VIEW_EDITOR_OPENED_KEY = 'px-live-editor-opened';
 const LIVE_VIEW_EDITOR_SPLITS_KEY = 'px-live-editor-splits';
 const LIVE_VIEW_VEGA_SPEC_KEY = 'px-live-vega-spec';
 const LIVE_VIEW_PIXIE_SCRIPT_KEY = 'px-live-pixie-script';
+const LIVE_VIEW_PLACEMENT_SPEC_KEY = 'px-live-placement';
 
 export function getLiveViewEditorOpened(): boolean {
   const stored = localStorage.getItem(LIVE_VIEW_EDITOR_OPENED_KEY);
@@ -44,4 +45,12 @@ export function getLiveViewPixieScript(): string {
 
 export function setLiveViewPixieScript(script: string) {
   localStorage.setItem(LIVE_VIEW_PIXIE_SCRIPT_KEY, script);
+}
+
+export function getLiveViewPlacementSpec(): string {
+  return localStorage.getItem(LIVE_VIEW_PLACEMENT_SPEC_KEY) || '';
+}
+
+export function setLiveViewPlacementSpec(spec: string) {
+  localStorage.setItem(LIVE_VIEW_PLACEMENT_SPEC_KEY, spec);
 }
