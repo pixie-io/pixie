@@ -51,6 +51,7 @@ type MetadataStore interface {
 	UpdateContainer(*metadatapb.ContainerInfo) error
 	UpdateContainersFromPod(*metadatapb.Pod, bool) error
 	GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error)
+	AddResourceVersion(string, *metadatapb.ResourceUpdate) error
 }
 
 // MetadataSubscriber is a consumer of metadata updates.
@@ -150,6 +151,16 @@ func (mh *MetadataHandler) ProcessNextSubscriberUpdate() bool {
 
 	if !*mh.isLeader {
 		return true
+	}
+
+	// Create mapping from resourceVersion to update.
+	// TODO(michelle): We should only do this for updates that aren't meant for a specific agent. This should be cleaned
+	// up once we update agents to follow a metadata update scheme similar to vizier -> cloud.
+	if !msg.NodeSpecific {
+		err := mh.mds.AddResourceVersion(msg.Message.ResourceVersion, msg.Message)
+		if err != nil {
+			log.WithError(err).Error("Could not update resource version mapping")
+		}
 	}
 
 	// Send update to subscribers.

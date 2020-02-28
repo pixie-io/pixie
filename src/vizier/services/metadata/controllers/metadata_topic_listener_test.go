@@ -106,6 +106,11 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 		},
 	}
 
+	mockMdStore.
+		EXPECT().
+		AddResourceVersion("1", update).
+		Return(nil)
+
 	more := mdh.ProcessNextSubscriberUpdate()
 	assert.Equal(t, true, more)
 	assert.Equal(t, 1, len(updates))

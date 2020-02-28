@@ -1234,6 +1234,42 @@ func TestKVMetadataStore_GetKelvinIDs(t *testing.T) {
 	assert.Equal(t, "test4", kelvins[3])
 }
 
+func TestKVMetadataStore_AddResourceVersion(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	updatePb := &metadatapb.ResourceUpdate{
+		ResourceVersion: "1",
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"abcd", "efgh"},
+			},
+		},
+	}
+
+	b, err := updatePb.Marshal()
+	assert.Nil(t, err)
+
+	err = mds.AddResourceVersion("1234", updatePb)
+	assert.Nil(t, err)
+
+	rvUpdate, _ := c.Get("/resourceVersionUpdate/1234")
+	assert.Equal(t, b, rvUpdate)
+
+}
+
 func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
 	containers := make([]*metadatapb.ContainerStatus, 2)
 

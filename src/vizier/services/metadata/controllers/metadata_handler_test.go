@@ -81,6 +81,11 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		UpdateEndpoints(expectedPb, false).
 		Return(nil)
 
+	mockMds.
+		EXPECT().
+		AddResourceVersion("1", fullUpdatePb).
+		Return(nil)
+
 	mockSubscriber.
 		EXPECT().
 		HandleUpdate(&controllers.UpdateMessage{
@@ -394,6 +399,11 @@ func TestObjectToPodProto(t *testing.T) {
 	mockMds.
 		EXPECT().
 		UpdateContainersFromPod(expectedPb, false).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
+		AddResourceVersion("1_0", updatePb).
 		Return(nil)
 
 	var wg sync.WaitGroup

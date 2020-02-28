@@ -376,6 +376,18 @@ func (mr *MockMetadataStoreMockRecorder) GetMetadataUpdates(hostname interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadataUpdates", reflect.TypeOf((*MockMetadataStore)(nil).GetMetadataUpdates), hostname)
 }
 
+// AddResourceVersion mocks base method
+func (m *MockMetadataStore) AddResourceVersion(arg0 string, arg1 *metadatapb.ResourceUpdate) error {
+	ret := m.ctrl.Call(m, "AddResourceVersion", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddResourceVersion indicates an expected call of AddResourceVersion
+func (mr *MockMetadataStoreMockRecorder) AddResourceVersion(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddResourceVersion", reflect.TypeOf((*MockMetadataStore)(nil).AddResourceVersion), arg0, arg1)
+}
+
 // MockMetadataSubscriber is a mock of MetadataSubscriber interface
 type MockMetadataSubscriber struct {
 	ctrl     *gomock.Controller

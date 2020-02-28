@@ -184,6 +184,10 @@ func getServiceKey(e *metadatapb.Service) string {
 	return path.Join("/", "service", getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
 }
 
+func getResourceVersionMapKey(rv string) string {
+	return path.Join("/", "resourceVersionUpdate", rv)
+}
+
 /* =============== Agent Operations ============== */
 
 // GetAgent gets the agent info for the agent with the given id.
@@ -782,4 +786,15 @@ func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.R
 	}
 
 	return updates, nil
+}
+
+// AddResourceVersion creates a mapping from a resourceVersion to the update for that resource.
+func (mds *KVMetadataStore) AddResourceVersion(rv string, update *metadatapb.ResourceUpdate) error {
+	val, err := update.Marshal()
+	if err != nil {
+		return err
+	}
+
+	mds.cache.Set(getResourceVersionMapKey(rv), string(val))
+	return nil
 }
