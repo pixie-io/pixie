@@ -245,6 +245,8 @@ ParseState ParseResponse(std::string_view* buf, Message* result) {
   return ParseState::kInvalid;
 }
 
+}  // namespace pico_wrapper
+
 /**
  * @brief Parses a raw input buffer for HTTP messages.
  * HTTP headers are parsed by pico. Body is extracted separately.
@@ -255,45 +257,15 @@ ParseState ParseResponse(std::string_view* buf, Message* result) {
  * @param result: A parsed HTTP message, if parse was successful (must consider return value).
  * @return parse state indicating how the parse progressed.
  */
-ParseState Parse(MessageType type, std::string_view* buf, Message* result) {
+ParseState ParseFrame(MessageType type, std::string_view* buf, Message* result) {
   switch (type) {
     case MessageType::kRequest:
-      return ParseRequest(buf, result);
+      return pico_wrapper::ParseRequest(buf, result);
     case MessageType::kResponse:
-      return ParseResponse(buf, result);
+      return pico_wrapper::ParseResponse(buf, result);
     default:
       return ParseState::kInvalid;
   }
-}
-
-}  // namespace pico_wrapper
-
-}  // namespace http
-
-template <>
-ParseResult<size_t> ParseFrames(MessageType type, std::string_view buf,
-                                std::deque<http::Message>* messages) {
-  std::vector<size_t> start_positions;
-  const size_t buf_size = buf.size();
-  ParseState s = ParseState::kSuccess;
-  size_t bytes_processed = 0;
-
-  while (!buf.empty() && s != ParseState::kEOS) {
-    http::Message message;
-
-    s = http::pico_wrapper::Parse(type, &buf, &message);
-    if (s != ParseState::kSuccess && s != ParseState::kEOS) {
-      break;
-    }
-
-    start_positions.push_back(bytes_processed);
-    message.creation_timestamp = std::chrono::steady_clock::now();
-    messages->push_back(std::move(message));
-    bytes_processed = (buf_size - buf.size());
-  }
-
-  ParseResult<size_t> result{std::move(start_positions), bytes_processed, s};
-  return result;
 }
 
 // TODO(oazizi/yzhao): This function should use is_http_{response,request} inside
@@ -301,8 +273,7 @@ ParseResult<size_t> ParseFrames(MessageType type, std::string_view buf,
 // ATM, they actually do not share the same logic. As a result, BPF events detected as HTTP traffic,
 // can actually fail to find any valid boundary by this function. Unfortunately, BPF has many
 // restrictions that likely make this a difficult or impossible goal.
-template <>
-size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, size_t start_pos) {
+size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos) {
   // List of all HTTP request methods. All HTTP requests start with one of these.
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
   static constexpr std::string_view kHTTPReqStartPatternArray[] = {
@@ -372,6 +343,18 @@ size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, 
     // Couldn't find a start position. Move to the marker, and search for another marker.
     start_pos = marker_pos + kBoundaryMarker.size();
   }
+}
+
+}  // namespace http
+
+template <>
+ParseState ParseFrame(MessageType type, std::string_view* buf, http::Message* result) {
+  return http::ParseFrame(type, buf, result);
+}
+
+template <>
+size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, size_t start_pos) {
+  return http::FindFrameBoundary(type, buf, start_pos);
 }
 
 }  // namespace stirling

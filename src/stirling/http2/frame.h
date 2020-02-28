@@ -6,6 +6,7 @@
 #include <string>
 
 #include "src/common/base/base.h"
+#include "src/stirling/common/event_parser.h"  // For FrameBase
 #include "src/stirling/common/parse_state.h"
 #include "src/stirling/common/utils.h"
 
@@ -38,25 +39,7 @@ class NVMap : public std::multimap<std::string, std::string> {
  * data body field in nghttp2_data. The payload is a name meant to be generic enough so that it can
  * be used to store such fields for different message types.
  */
-struct Frame {
-  // frame{} zero initialize the member, which is needed to make sure default value is sensible.
-  Frame() : frame{} {};
-  ~Frame() {
-    if (frame.hd.type == NGHTTP2_HEADERS) {
-      // We do not use NGHTT2's storage constructs for headers.
-      // This check forbids this.
-      DCHECK(frame.headers.nva == nullptr);
-      DCHECK_EQ(frame.headers.nvlen, 0u);
-    }
-  }
-
-  // TODO(yzhao): Remove this, as it's value is included in time_span already.
-  uint64_t timestamp_ns;
-  // The time stamp when this frame was created by socket tracer.
-  // TODO(yzhao): Consider removing this, as it's value can be replaced by time_span, although not
-  // exactly the same.
-  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
-
+struct Frame : public stirling::FrameBase {
   // TODO(yzhao): Consider use std::unique_ptr<nghttp2_frame> to avoid copy.
   nghttp2_frame frame;
   u8string u8payload;
@@ -70,6 +53,16 @@ struct Frame {
   ParseState headers_parse_state = ParseState::kUnknown;
   NVMap headers;
 
+  // frame{} zero initialize the member, which is needed to make sure default value is sensible.
+  Frame() : frame{} {};
+  ~Frame() {
+    if (frame.hd.type == NGHTTP2_HEADERS) {
+      // We do not use NGHTT2's storage constructs for headers.
+      // This check forbids this.
+      DCHECK(frame.headers.nva == nullptr);
+      DCHECK_EQ(frame.headers.nvlen, 0u);
+    }
+  }
   size_t ByteSize() const { return sizeof(Frame) + u8payload.size() + CountStringMapSize(headers); }
 };
 

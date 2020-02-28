@@ -14,7 +14,7 @@ namespace stirling {
 
 namespace mysql {
 
-ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
+ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
   if (type != MessageType::kRequest && type != MessageType::kResponse) {
     return ParseState::kInvalid;
   }
@@ -48,36 +48,7 @@ ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
   return ParseState::kSuccess;
 }
 
-}  // namespace mysql
-
-// TODO(chengruizhe): Could be templatized with HTTP Parser
-template <>
-ParseResult<size_t> ParseFrames(MessageType type, std::string_view buf,
-                                std::deque<mysql::Packet>* messages) {
-  std::vector<size_t> start_positions;
-  const size_t buf_size = buf.size();
-  ParseState s = ParseState::kSuccess;
-  size_t bytes_processed = 0;
-
-  while (!buf.empty()) {
-    mysql::Packet message;
-
-    s = mysql::Parse(type, &buf, &message);
-    if (s != ParseState::kSuccess) {
-      break;
-    }
-
-    start_positions.push_back(bytes_processed);
-    message.creation_timestamp = std::chrono::steady_clock::now();
-    messages->push_back(std::move(message));
-    bytes_processed = (buf_size - buf.size());
-  }
-  ParseResult<size_t> result{std::move(start_positions), bytes_processed, s};
-  return result;
-}
-
-template <>
-size_t FindFrameBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos) {
+size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos) {
   if (buf.length() < mysql::kPacketHeaderLength) {
     return std::string::npos;
   }
@@ -116,6 +87,18 @@ size_t FindFrameBoundary<mysql::Packet>(MessageType type, std::string_view buf, 
   }
 
   return std::string::npos;
+}
+
+}  // namespace mysql
+
+template <>
+ParseState ParseFrame(MessageType type, std::string_view* buf, mysql::Packet* result) {
+  return mysql::ParseFrame(type, buf, result);
+}
+
+template <>
+size_t FindFrameBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos) {
+  return mysql::FindFrameBoundary(type, buf, start_pos);
 }
 
 }  // namespace stirling

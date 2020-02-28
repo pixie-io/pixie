@@ -10,17 +10,10 @@ namespace pl {
 namespace stirling {
 
 /**
- * Parses the input string as a sequence of MySQL packets.
- *
- * @param type Whether to process bytes as requests or responses.
- * @param buf The raw data to be parsed.
- * @param messages The deque to which parsed messages are appended.
- *
- * @return ParseState Indicates the final state of the parsing, and where the parsing stopped.
+ * Parses a single MySQL packet from the input string.
  */
 template <>
-ParseResult<size_t> ParseFrames(MessageType type, std::string_view buf,
-                                std::deque<mysql::Packet>* frames);
+ParseState ParseFrame(MessageType type, std::string_view* buf, mysql::Packet* frame);
 
 template <>
 size_t FindFrameBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos);

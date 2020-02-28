@@ -5,6 +5,7 @@
 
 #include "src/common/base/utils.h"
 #include "src/stirling/bcc_bpf_interface/common.h"
+#include "src/stirling/common/event_parser.h"  // For FrameBase
 #include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
@@ -25,9 +26,7 @@ inline constexpr char kContentType[] = "Content-Type";
 inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 inline constexpr char kUpgrade[] = "Upgrade";
 
-struct Message {
-  uint64_t timestamp_ns;
-  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
+struct Message : public stirling::FrameBase {
   MessageType type = MessageType::kUnknown;
 
   int http_minor_version = -1;

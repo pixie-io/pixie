@@ -18,6 +18,13 @@
 namespace pl {
 namespace stirling {
 
+// All protocol Frames should derive off this base definition, which includes standard fields.
+struct FrameBase {
+  uint64_t timestamp_ns = 0;
+  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
+  // TODO(oazizi): Consolidate creation_timestamp with timestamp_ns.
+};
+
 struct BufferPosition {
   size_t seq_num;
   size_t offset;
@@ -44,7 +51,7 @@ struct ParseResult {
   ParseState state = ParseState::kInvalid;
 };
 
-// NOTE: FindFrameBoundary() and ParseFrames() must be implemented per protocol.
+// NOTE: FindFrameBoundary() and ParseFrame() must be implemented per protocol.
 
 /**
  * Attempt to find the next frame boundary.
@@ -60,17 +67,18 @@ template <typename TFrameType>
 size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos);
 
 /**
- * Parses the input string as a sequence of TFrameType, and write the frames to frames.
+ * Parses the input string to extract a single frame of the specified protocol.
  *
- * @tparam TFrameType Message type to parse.
- * @param type selects whether to parse for request or response.
- * @param buf the buffer of data to parse as frames.
- * @param frames the parsed frames
- * @return result of the parse, including positions in the source buffer where frames were found.
+ * @tparam TFrameType Type of frame to parse.
+ * @param type Whether to process frame as a request or response.
+ * @param buf The raw data to be parsed. Any processed bytes are removed from the buffer, if parsing
+ * succeeded.
+ * @param frame The parsed frame if parsing succeeded.
+ *
+ * @return ParseState Indicates whether the parsing succeeded or not.
  */
 template <typename TFrameType>
-ParseResult<size_t> ParseFrames(MessageType type, std::string_view buf,
-                                std::deque<TFrameType>* frames);
+ParseState ParseFrame(MessageType type, std::string_view* buf, TFrameType* frame);
 
 /**
  * Utility to convert positions from a position within a set of combined buffers,
@@ -146,8 +154,8 @@ class EventParser {
    * parsed frames into the provided frames container.
    *
    * This is a templated function. The caller must provide the type of frame to parsed (e.g.
-   * http::Message), and must ensure that there is a corresponding Parse() function with the desired
-   * frame type.
+   * http::Message), and must ensure that the corresponding ParseFrame() function with the desired
+   * frame type is implemented.
    *
    * @param type The Type of frames to parse.
    * @param frames The container to which newly parsed frames are added.
@@ -181,7 +189,7 @@ class EventParser {
     // Parse and append new frames to the frames vector.
     std::string_view buf_view(buf);
     buf_view.remove_prefix(start_pos);
-    ParseResult<size_t> result = stirling::ParseFrames(type, buf_view, frames);
+    ParseResult<size_t> result = ParseFramesLoop(type, buf_view, frames);
     DCHECK(frames->size() >= prev_size);
 
     VLOG(3) << absl::Substitute("Parsed $0 new frames", frames->size() - prev_size);
@@ -209,6 +217,70 @@ class EventParser {
     msgs_size_ = 0;
 
     return {std::move(positions), end_position, result.state};
+  }
+
+  /**
+   * @brief Calls ParseFrame() repeatedly on a continguous stream of raw bytes.
+   * parsed frames into the provided frames container.
+   *
+   * Note: This is a helper function for EventParser::ParseFrames().
+   * It is left public for now because it is used heavily by tests.
+   *
+   * @param type The Type of frames to parse.
+   * @param buf The raw bytes to parse
+   * @param frames The output where the parsed frames will be placed.
+   *
+   * @return ParseResult with locations where parseable frames were found in the source buffer.
+   */
+  // TODO(oazizi): Convert tests to use ParseFrames() instead of ParseFramesLoop().
+  ParseResult<size_t> ParseFramesLoop(MessageType type, std::string_view buf,
+                                      std::deque<TFrameType>* frames) {
+    std::vector<size_t> start_positions;
+    const size_t buf_size = buf.size();
+    ParseState s = ParseState::kSuccess;
+    size_t bytes_processed = 0;
+
+    while (!buf.empty() && s != ParseState::kEOS) {
+      TFrameType frame;
+
+      s = ParseFrame(type, &buf, &frame);
+
+      bool stop = false;
+      bool push = false;
+      switch (s) {
+        case ParseState::kNeedsMoreData:
+        case ParseState::kInvalid:
+          // Can't process any more frames.
+          stop = true;
+          break;
+        case ParseState::kIgnored:
+          // Successful case, but do not record the result.
+          stop = false;
+          push = false;
+          break;
+        case ParseState::kEOS:
+        case ParseState::kSuccess:
+          // Successful cases. Record the result.
+          stop = false;
+          push = true;
+          break;
+        default:
+          DCHECK(false);
+      }
+
+      if (stop) {
+        break;
+      }
+
+      if (push) {
+        // TODO(oazizi): Should this statement move into ParseFrame()?
+        frame.creation_timestamp = std::chrono::steady_clock::now();
+        start_positions.push_back(bytes_processed);
+        frames->push_back(std::move(frame));
+      }
+      bytes_processed = (buf_size - buf.size());
+    }
+    return ParseResult<size_t>{std::move(start_positions), bytes_processed, s};
   }
 
  private:

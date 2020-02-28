@@ -11,6 +11,7 @@
 #include <magic_enum.hpp>
 
 #include "src/common/base/base.h"
+#include "src/stirling/common/event_parser.h"  // For FrameBase
 #include "src/stirling/common/utils.h"
 #include "src/stirling/utils/req_resp_pair.h"
 
@@ -34,11 +35,7 @@ namespace mysql {
 // Raw MySQLPacket from MySQL Parser
 //-----------------------------------------------------------------------------
 
-struct Packet {
-  uint64_t timestamp_ns = 0;
-  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp =
-      std::chrono::steady_clock::now();
-
+struct Packet : public stirling::FrameBase {
   uint8_t sequence_id = 0;
   // TODO(oazizi): Convert to std::basic_string<uint8_t>.
   std::string msg;

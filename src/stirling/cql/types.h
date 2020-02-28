@@ -1,10 +1,12 @@
 #pragma once
 
+#include <chrono>
 #include <optional>
 #include <string>
 
 #include <magic_enum.hpp>
 
+#include "src/stirling/common/event_parser.h"  // For FrameBase.
 #include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
@@ -78,10 +80,9 @@ struct FrameHeader {
   int32_t length;
 };
 
-struct Frame {
+struct Frame : public stirling::FrameBase {
   FrameHeader hdr;
   std::string msg;
-  uint64_t timestamp_ns = 0;
   bool consumed = false;
 };
 

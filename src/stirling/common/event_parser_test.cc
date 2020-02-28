@@ -21,36 +21,20 @@ using ::testing::Pair;
 
 // This dummy parser is a simple comma-separated value splitter.
 
-struct TestFrame {
+struct TestFrame : public FrameBase {
   std::string msg;
-  uint64_t timestamp_ns;
 };
 
 template <>
-ParseResult<size_t> ParseFrames(MessageType /* type */, std::string_view buf,
-                                std::deque<TestFrame>* messages) {
-  ParseResult<size_t> result;
-
-  size_t position = 0;
-  result.state = ParseState::kNeedsMoreData;
-
-  for (size_t i = 0; i < buf.size(); ++i) {
-    if (buf[i] == ',' || buf[i] == ';') {
-      TestFrame frame;
-      frame.msg = std::string(buf.substr(position, i - position));
-      result.start_positions.push_back(position);
-      messages->push_back(frame);
-      position = i + 1;
-
-      if (buf[i] == ';') {
-        result.state = ParseState::kSuccess;
-        break;
-      }
-    }
+ParseState ParseFrame(MessageType /* type */, std::string_view* buf, TestFrame* frame) {
+  size_t pos = buf->find(",");
+  if (pos == buf->npos) {
+    return ParseState::kNeedsMoreData;
   }
 
-  result.end_position = position;
-  return result;
+  frame->msg = std::string(buf->substr(0, pos));
+  buf->remove_prefix(pos + 1);
+  return ParseState::kSuccess;
 }
 
 template <>
@@ -97,10 +81,10 @@ TEST(EventParserTest, BasicPositionConversions) {
   std::deque<TestFrame> word_frames;
 
   SocketDataEvent event0 = DataEventWithTimestamp("jupiter,satu", 0);
-  SocketDataEvent event1 = DataEventWithTimestamp("rn,neptune,plu", 2);
+  SocketDataEvent event1 = DataEventWithTimestamp("rn,neptune,uranus", 2);
   SocketDataEvent event2 = DataEventWithTimestamp(",", 3);
-  SocketDataEvent event3 = DataEventWithTimestamp("aaa,", 4);
-  SocketDataEvent event4 = DataEventWithTimestamp("bbb,", 6);
+  SocketDataEvent event3 = DataEventWithTimestamp("pluto,", 4);
+  SocketDataEvent event4 = DataEventWithTimestamp("mercury,", 6);
 
   parser.Append(event0);
   parser.Append(event1);
@@ -109,7 +93,7 @@ TEST(EventParserTest, BasicPositionConversions) {
   parser.Append(event4);
   ParseResult<BufferPosition> res = parser.ParseFrames(MessageType::kRequest, &word_frames);
 
-  EXPECT_EQ(ParseState::kNeedsMoreData, res.state);
+  EXPECT_EQ(ParseState::kSuccess, res.state);
   EXPECT_THAT(res.start_positions,
               ElementsAre(BufferPosition{0, 0}, BufferPosition{0, 8}, BufferPosition{1, 3},
                           BufferPosition{1, 11}, BufferPosition{3, 0}, BufferPosition{4, 0}));
@@ -121,6 +105,9 @@ TEST(EventParserTest, BasicPositionConversions) {
   }
   EXPECT_THAT(timestamps, ElementsAre(0, 0, 2, 2, 4, 6));
 }
+
+// TODO(oazizi): Move any protocol specific tests that check for general EventParser behavior here.
+// Should help reduce duplication of tests.
 
 }  // namespace stirling
 }  // namespace pl

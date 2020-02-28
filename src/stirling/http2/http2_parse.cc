@@ -10,7 +10,7 @@ extern "C" {
 namespace pl {
 namespace stirling {
 
-namespace {
+namespace http2 {
 
 size_t FindFrameBoundaryForGRPCReq(std::string_view buf) {
   if (buf.size() < http2::kFrameHeaderSizeInBytes + kGRPCReqMinHeaderBlockSize) {
@@ -82,50 +82,7 @@ size_t FindFrameBoundaryForGRPCResp(std::string_view buf) {
   return std::string_view::npos;
 }
 
-}  // namespace
-
-template <>
-ParseResult<size_t> ParseFrames(MessageType unused_type, std::string_view buf,
-                                std::deque<http2::Frame>* frames) {
-  PL_UNUSED(unused_type);
-
-  // Note that HTTP2 connection preface, or MAGIC as used in nghttp2, must be at the beginning of
-  // the stream. The following tries to detect complete or partial connection preface.
-  if (buf.size() < NGHTTP2_CLIENT_MAGIC_LEN &&
-      buf == std::string_view(NGHTTP2_CLIENT_MAGIC, buf.size())) {
-    return {{}, 0, ParseState::kNeedsMoreData};
-  }
-
-  std::vector<size_t> start_position;
-  const size_t buf_size = buf.size();
-  ParseState s = ParseState::kSuccess;
-
-  if (absl::StartsWith(buf, NGHTTP2_CLIENT_MAGIC)) {
-    buf.remove_prefix(NGHTTP2_CLIENT_MAGIC_LEN);
-  }
-
-  while (!buf.empty()) {
-    const size_t frame_begin = buf_size - buf.size();
-    http2::Frame frame;
-    s = UnpackFrame(&buf, &frame);
-    if (s == ParseState::kIgnored) {
-      // Even if the last frame is ignored, the parse is still successful.
-      s = ParseState::kSuccess;
-      continue;
-    }
-    if (s != ParseState::kSuccess) {
-      // For any other non-success states, stop and exit.
-      break;
-    }
-    DCHECK(s == ParseState::kSuccess);
-    start_position.push_back(frame_begin);
-    frames->push_back(std::move(frame));
-  }
-  return {std::move(start_position), buf_size - buf.size(), s};
-}
-
-template <>
-size_t FindFrameBoundary<http2::Frame>(MessageType type, std::string_view buf, size_t start_pos) {
+size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_pos) {
   size_t res = std::string_view::npos;
   switch (type) {
     case MessageType::kRequest:
@@ -142,6 +99,31 @@ size_t FindFrameBoundary<http2::Frame>(MessageType type, std::string_view buf, s
     return std::string_view::npos;
   }
   return start_pos + res;
+}
+
+}  // namespace http2
+
+template <>
+ParseState ParseFrame(MessageType /* type */, std::string_view* buf, http2::Frame* frame) {
+  // TODO(oazizi): The code looking for MAGIC was once at the beginning of ParseFramesLoop(),
+  // but doesn't fit in that model well anymore. Now it runs everytime. Is there a better way?
+
+  if (buf->size() < NGHTTP2_CLIENT_MAGIC_LEN &&
+      *buf == std::string_view(NGHTTP2_CLIENT_MAGIC, buf->size())) {
+    return ParseState::kNeedsMoreData;
+  }
+
+  if (absl::StartsWith(*buf, NGHTTP2_CLIENT_MAGIC)) {
+    buf->remove_prefix(NGHTTP2_CLIENT_MAGIC_LEN);
+    return ParseState::kIgnored;
+  }
+
+  return http2::UnpackFrame(buf, frame);
+}
+
+template <>
+size_t FindFrameBoundary<http2::Frame>(MessageType type, std::string_view buf, size_t start_pos) {
+  return http2::FindFrameBoundary(type, buf, start_pos);
 }
 
 }  // namespace stirling
