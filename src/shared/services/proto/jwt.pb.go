@@ -82,13 +82,13 @@ type isJWTClaims_CustomClaims interface {
 }
 
 type JWTClaims_UserClaims struct {
-	UserClaims *UserJWTClaims `protobuf:"bytes,9,opt,name=user_claims,json=userClaims,proto3,oneof"`
+	UserClaims *UserJWTClaims `protobuf:"bytes,9,opt,name=user_claims,json=userClaims,proto3,oneof" json:"user_claims,omitempty"`
 }
 type JWTClaims_ServiceClaims struct {
-	ServiceClaims *ServiceJWTClaims `protobuf:"bytes,10,opt,name=service_claims,json=serviceClaims,proto3,oneof"`
+	ServiceClaims *ServiceJWTClaims `protobuf:"bytes,10,opt,name=service_claims,json=serviceClaims,proto3,oneof" json:"service_claims,omitempty"`
 }
 type JWTClaims_ClusterClaims struct {
-	ClusterClaims *ClusterJWTClaims `protobuf:"bytes,11,opt,name=cluster_claims,json=clusterClaims,proto3,oneof"`
+	ClusterClaims *ClusterJWTClaims `protobuf:"bytes,11,opt,name=cluster_claims,json=clusterClaims,proto3,oneof" json:"cluster_claims,omitempty"`
 }
 
 func (*JWTClaims_UserClaims) isJWTClaims_CustomClaims()    {}
@@ -763,7 +763,8 @@ func (m *JWTClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *JWTClaims_UserClaims) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *JWTClaims_UserClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -783,7 +784,8 @@ func (m *JWTClaims_UserClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *JWTClaims_ServiceClaims) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *JWTClaims_ServiceClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -803,7 +805,8 @@ func (m *JWTClaims_ServiceClaims) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 func (m *JWTClaims_ClusterClaims) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *JWTClaims_ClusterClaims) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1854,6 +1857,7 @@ func (m *ClusterJWTClaims) Unmarshal(dAtA []byte) error {
 func skipJwt(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
+	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -1885,10 +1889,8 @@ func skipJwt(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			return iNdEx, nil
 		case 1:
 			iNdEx += 8
-			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -1909,55 +1911,30 @@ func skipJwt(dAtA []byte) (n int, err error) {
 				return 0, ErrInvalidLengthJwt
 			}
 			iNdEx += length
-			if iNdEx < 0 {
-				return 0, ErrInvalidLengthJwt
-			}
-			return iNdEx, nil
 		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowJwt
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipJwt(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-				if iNdEx < 0 {
-					return 0, ErrInvalidLengthJwt
-				}
-			}
-			return iNdEx, nil
+			depth++
 		case 4:
-			return iNdEx, nil
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupJwt
+			}
+			depth--
 		case 5:
 			iNdEx += 4
-			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthJwt
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
 	}
-	panic("unreachable")
+	return 0, io.ErrUnexpectedEOF
 }
 
 var (
-	ErrInvalidLengthJwt = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowJwt   = fmt.Errorf("proto: integer overflow")
+	ErrInvalidLengthJwt        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowJwt          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupJwt = fmt.Errorf("proto: unexpected end of group")
 )

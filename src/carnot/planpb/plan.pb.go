@@ -500,37 +500,37 @@ type isOperator_Op interface {
 }
 
 type Operator_MemSourceOp struct {
-	MemSourceOp *MemorySourceOperator `protobuf:"bytes,2,opt,name=mem_source_op,json=memSourceOp,proto3,oneof"`
+	MemSourceOp *MemorySourceOperator `protobuf:"bytes,2,opt,name=mem_source_op,json=memSourceOp,proto3,oneof" json:"mem_source_op,omitempty"`
 }
 type Operator_MapOp struct {
-	MapOp *MapOperator `protobuf:"bytes,3,opt,name=map_op,json=mapOp,proto3,oneof"`
+	MapOp *MapOperator `protobuf:"bytes,3,opt,name=map_op,json=mapOp,proto3,oneof" json:"map_op,omitempty"`
 }
 type Operator_AggOp struct {
-	AggOp *AggregateOperator `protobuf:"bytes,4,opt,name=agg_op,json=aggOp,proto3,oneof"`
+	AggOp *AggregateOperator `protobuf:"bytes,4,opt,name=agg_op,json=aggOp,proto3,oneof" json:"agg_op,omitempty"`
 }
 type Operator_MemSinkOp struct {
-	MemSinkOp *MemorySinkOperator `protobuf:"bytes,5,opt,name=mem_sink_op,json=memSinkOp,proto3,oneof"`
+	MemSinkOp *MemorySinkOperator `protobuf:"bytes,5,opt,name=mem_sink_op,json=memSinkOp,proto3,oneof" json:"mem_sink_op,omitempty"`
 }
 type Operator_FilterOp struct {
-	FilterOp *FilterOperator `protobuf:"bytes,6,opt,name=filter_op,json=filterOp,proto3,oneof"`
+	FilterOp *FilterOperator `protobuf:"bytes,6,opt,name=filter_op,json=filterOp,proto3,oneof" json:"filter_op,omitempty"`
 }
 type Operator_LimitOp struct {
-	LimitOp *LimitOperator `protobuf:"bytes,7,opt,name=limit_op,json=limitOp,proto3,oneof"`
+	LimitOp *LimitOperator `protobuf:"bytes,7,opt,name=limit_op,json=limitOp,proto3,oneof" json:"limit_op,omitempty"`
 }
 type Operator_UnionOp struct {
-	UnionOp *UnionOperator `protobuf:"bytes,8,opt,name=union_op,json=unionOp,proto3,oneof"`
+	UnionOp *UnionOperator `protobuf:"bytes,8,opt,name=union_op,json=unionOp,proto3,oneof" json:"union_op,omitempty"`
 }
 type Operator_GRPCSourceOp struct {
-	GRPCSourceOp *GRPCSourceOperator `protobuf:"bytes,9,opt,name=grpc_source_op,json=grpcSourceOp,proto3,oneof"`
+	GRPCSourceOp *GRPCSourceOperator `protobuf:"bytes,9,opt,name=grpc_source_op,json=grpcSourceOp,proto3,oneof" json:"grpc_source_op,omitempty"`
 }
 type Operator_GRPCSinkOp struct {
-	GRPCSinkOp *GRPCSinkOperator `protobuf:"bytes,1000,opt,name=grpc_sink_op,json=grpcSinkOp,proto3,oneof"`
+	GRPCSinkOp *GRPCSinkOperator `protobuf:"bytes,1000,opt,name=grpc_sink_op,json=grpcSinkOp,proto3,oneof" json:"grpc_sink_op,omitempty"`
 }
 type Operator_JoinOp struct {
-	JoinOp *JoinOperator `protobuf:"bytes,11,opt,name=join_op,json=joinOp,proto3,oneof"`
+	JoinOp *JoinOperator `protobuf:"bytes,11,opt,name=join_op,json=joinOp,proto3,oneof" json:"join_op,omitempty"`
 }
 type Operator_UdtfSourceOp struct {
-	UdtfSourceOp *UDTFSourceOperator `protobuf:"bytes,12,opt,name=udtf_source_op,json=udtfSourceOp,proto3,oneof"`
+	UdtfSourceOp *UDTFSourceOperator `protobuf:"bytes,12,opt,name=udtf_source_op,json=udtfSourceOp,proto3,oneof" json:"udtf_source_op,omitempty"`
 }
 
 func (*Operator_MemSourceOp) isOperator_Op()  {}
@@ -1511,13 +1511,13 @@ type isScalarExpression_Value interface {
 }
 
 type ScalarExpression_Constant struct {
-	Constant *ScalarValue `protobuf:"bytes,1,opt,name=constant,proto3,oneof"`
+	Constant *ScalarValue `protobuf:"bytes,1,opt,name=constant,proto3,oneof" json:"constant,omitempty"`
 }
 type ScalarExpression_Column struct {
-	Column *Column `protobuf:"bytes,2,opt,name=column,proto3,oneof"`
+	Column *Column `protobuf:"bytes,2,opt,name=column,proto3,oneof" json:"column,omitempty"`
 }
 type ScalarExpression_Func struct {
-	Func *ScalarFunc `protobuf:"bytes,3,opt,name=func,proto3,oneof"`
+	Func *ScalarFunc `protobuf:"bytes,3,opt,name=func,proto3,oneof" json:"func,omitempty"`
 }
 
 func (*ScalarExpression_Constant) isScalarExpression_Value() {}
@@ -1614,25 +1614,25 @@ type isScalarValue_Value interface {
 }
 
 type ScalarValue_BoolValue struct {
-	BoolValue bool `protobuf:"varint,2,opt,name=bool_value,json=boolValue,proto3,oneof"`
+	BoolValue bool `protobuf:"varint,2,opt,name=bool_value,json=boolValue,proto3,oneof" json:"bool_value,omitempty"`
 }
 type ScalarValue_Int64Value struct {
-	Int64Value int64 `protobuf:"varint,3,opt,name=int64_value,json=int64Value,proto3,oneof"`
+	Int64Value int64 `protobuf:"varint,3,opt,name=int64_value,json=int64Value,proto3,oneof" json:"int64_value,omitempty"`
 }
 type ScalarValue_Float64Value struct {
-	Float64Value float64 `protobuf:"fixed64,4,opt,name=float64_value,json=float64Value,proto3,oneof"`
+	Float64Value float64 `protobuf:"fixed64,4,opt,name=float64_value,json=float64Value,proto3,oneof" json:"float64_value,omitempty"`
 }
 type ScalarValue_StringValue struct {
-	StringValue string `protobuf:"bytes,5,opt,name=string_value,json=stringValue,proto3,oneof"`
+	StringValue string `protobuf:"bytes,5,opt,name=string_value,json=stringValue,proto3,oneof" json:"string_value,omitempty"`
 }
 type ScalarValue_Time64NsValue struct {
-	Time64NsValue int64 `protobuf:"varint,6,opt,name=time64_ns_value,json=time64NsValue,proto3,oneof"`
+	Time64NsValue int64 `protobuf:"varint,6,opt,name=time64_ns_value,json=time64NsValue,proto3,oneof" json:"time64_ns_value,omitempty"`
 }
 type ScalarValue_Duration64NsValue struct {
-	Duration64NsValue int64 `protobuf:"varint,8,opt,name=duration64_ns_value,json=duration64NsValue,proto3,oneof"`
+	Duration64NsValue int64 `protobuf:"varint,8,opt,name=duration64_ns_value,json=duration64NsValue,proto3,oneof" json:"duration64_ns_value,omitempty"`
 }
 type ScalarValue_Uint128Value struct {
-	Uint128Value *proto1.UInt128 `protobuf:"bytes,7,opt,name=uint128_value,json=uint128Value,proto3,oneof"`
+	Uint128Value *proto1.UInt128 `protobuf:"bytes,7,opt,name=uint128_value,json=uint128Value,proto3,oneof" json:"uint128_value,omitempty"`
 }
 
 func (*ScalarValue_BoolValue) isScalarValue_Value()         {}
@@ -1916,10 +1916,10 @@ type isAggregateExpression_Arg_Value interface {
 }
 
 type AggregateExpression_Arg_Constant struct {
-	Constant *ScalarValue `protobuf:"bytes,1,opt,name=constant,proto3,oneof"`
+	Constant *ScalarValue `protobuf:"bytes,1,opt,name=constant,proto3,oneof" json:"constant,omitempty"`
 }
 type AggregateExpression_Arg_Column struct {
-	Column *Column `protobuf:"bytes,2,opt,name=column,proto3,oneof"`
+	Column *Column `protobuf:"bytes,2,opt,name=column,proto3,oneof" json:"column,omitempty"`
 }
 
 func (*AggregateExpression_Arg_Constant) isAggregateExpression_Arg_Value() {}
@@ -4630,7 +4630,8 @@ func (m *Operator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *Operator_MemSourceOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_MemSourceOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4650,7 +4651,8 @@ func (m *Operator_MemSourceOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Operator_MapOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_MapOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4670,7 +4672,8 @@ func (m *Operator_MapOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Operator_AggOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_AggOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4690,7 +4693,8 @@ func (m *Operator_AggOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Operator_MemSinkOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_MemSinkOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4710,7 +4714,8 @@ func (m *Operator_MemSinkOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Operator_FilterOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_FilterOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4730,7 +4735,8 @@ func (m *Operator_FilterOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Operator_LimitOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_LimitOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4750,7 +4756,8 @@ func (m *Operator_LimitOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Operator_UnionOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_UnionOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4770,7 +4777,8 @@ func (m *Operator_UnionOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Operator_GRPCSourceOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_GRPCSourceOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4790,7 +4798,8 @@ func (m *Operator_GRPCSourceOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Operator_JoinOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_JoinOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4810,7 +4819,8 @@ func (m *Operator_JoinOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Operator_UdtfSourceOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_UdtfSourceOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4830,7 +4840,8 @@ func (m *Operator_UdtfSourceOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Operator_GRPCSinkOp) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Operator_GRPCSinkOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -5622,7 +5633,8 @@ func (m *ScalarExpression) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *ScalarExpression_Constant) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarExpression_Constant) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -5642,7 +5654,8 @@ func (m *ScalarExpression_Constant) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *ScalarExpression_Column) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarExpression_Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -5662,7 +5675,8 @@ func (m *ScalarExpression_Column) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 func (m *ScalarExpression_Func) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarExpression_Func) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -5719,7 +5733,8 @@ func (m *ScalarValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *ScalarValue_BoolValue) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_BoolValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -5735,7 +5750,8 @@ func (m *ScalarValue_BoolValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Int64Value) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_Int64Value) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -5746,7 +5762,8 @@ func (m *ScalarValue_Int64Value) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Float64Value) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_Float64Value) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -5758,7 +5775,8 @@ func (m *ScalarValue_Float64Value) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_StringValue) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_StringValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -5771,7 +5789,8 @@ func (m *ScalarValue_StringValue) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Time64NsValue) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_Time64NsValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -5782,7 +5801,8 @@ func (m *ScalarValue_Time64NsValue) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Uint128Value) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_Uint128Value) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -5802,7 +5822,8 @@ func (m *ScalarValue_Uint128Value) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 func (m *ScalarValue_Duration64NsValue) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *ScalarValue_Duration64NsValue) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -6007,7 +6028,8 @@ func (m *AggregateExpression_Arg) MarshalToSizedBuffer(dAtA []byte) (int, error)
 }
 
 func (m *AggregateExpression_Arg_Constant) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *AggregateExpression_Arg_Constant) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -6027,7 +6049,8 @@ func (m *AggregateExpression_Arg_Constant) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 func (m *AggregateExpression_Arg_Column) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *AggregateExpression_Arg_Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -12096,6 +12119,7 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 func skipPlan(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
+	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -12127,10 +12151,8 @@ func skipPlan(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			return iNdEx, nil
 		case 1:
 			iNdEx += 8
-			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -12151,55 +12173,30 @@ func skipPlan(dAtA []byte) (n int, err error) {
 				return 0, ErrInvalidLengthPlan
 			}
 			iNdEx += length
-			if iNdEx < 0 {
-				return 0, ErrInvalidLengthPlan
-			}
-			return iNdEx, nil
 		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowPlan
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipPlan(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-				if iNdEx < 0 {
-					return 0, ErrInvalidLengthPlan
-				}
-			}
-			return iNdEx, nil
+			depth++
 		case 4:
-			return iNdEx, nil
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupPlan
+			}
+			depth--
 		case 5:
 			iNdEx += 4
-			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthPlan
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
 	}
-	panic("unreachable")
+	return 0, io.ErrUnexpectedEOF
 }
 
 var (
-	ErrInvalidLengthPlan = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowPlan   = fmt.Errorf("proto: integer overflow")
+	ErrInvalidLengthPlan        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowPlan          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupPlan = fmt.Errorf("proto: unexpected end of group")
 )

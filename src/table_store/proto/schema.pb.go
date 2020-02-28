@@ -375,25 +375,25 @@ type isColumn_ColData interface {
 }
 
 type Column_BooleanData struct {
-	BooleanData *BooleanColumn `protobuf:"bytes,1,opt,name=boolean_data,json=booleanData,proto3,oneof"`
+	BooleanData *BooleanColumn `protobuf:"bytes,1,opt,name=boolean_data,json=booleanData,proto3,oneof" json:"boolean_data,omitempty"`
 }
 type Column_Int64Data struct {
-	Int64Data *Int64Column `protobuf:"bytes,2,opt,name=int64_data,json=int64Data,proto3,oneof"`
+	Int64Data *Int64Column `protobuf:"bytes,2,opt,name=int64_data,json=int64Data,proto3,oneof" json:"int64_data,omitempty"`
 }
 type Column_Uint128Data struct {
-	Uint128Data *UInt128Column `protobuf:"bytes,3,opt,name=uint128_data,json=uint128Data,proto3,oneof"`
+	Uint128Data *UInt128Column `protobuf:"bytes,3,opt,name=uint128_data,json=uint128Data,proto3,oneof" json:"uint128_data,omitempty"`
 }
 type Column_Time64NsData struct {
-	Time64NsData *Time64NSColumn `protobuf:"bytes,4,opt,name=time64ns_data,json=time64nsData,proto3,oneof"`
+	Time64NsData *Time64NSColumn `protobuf:"bytes,4,opt,name=time64ns_data,json=time64nsData,proto3,oneof" json:"time64ns_data,omitempty"`
 }
 type Column_Float64Data struct {
-	Float64Data *Float64Column `protobuf:"bytes,5,opt,name=float64_data,json=float64Data,proto3,oneof"`
+	Float64Data *Float64Column `protobuf:"bytes,5,opt,name=float64_data,json=float64Data,proto3,oneof" json:"float64_data,omitempty"`
 }
 type Column_StringData struct {
-	StringData *StringColumn `protobuf:"bytes,6,opt,name=string_data,json=stringData,proto3,oneof"`
+	StringData *StringColumn `protobuf:"bytes,6,opt,name=string_data,json=stringData,proto3,oneof" json:"string_data,omitempty"`
 }
 type Column_Duration64NsData struct {
-	Duration64NsData *Duration64NSColumn `protobuf:"bytes,7,opt,name=duration64ns_data,json=duration64nsData,proto3,oneof"`
+	Duration64NsData *Duration64NSColumn `protobuf:"bytes,7,opt,name=duration64ns_data,json=duration64nsData,proto3,oneof" json:"duration64ns_data,omitempty"`
 }
 
 func (*Column_BooleanData) isColumn_ColData()      {}
@@ -1907,7 +1907,8 @@ func (m *Column) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *Column_BooleanData) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_BooleanData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1927,7 +1928,8 @@ func (m *Column_BooleanData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_Int64Data) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_Int64Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1947,7 +1949,8 @@ func (m *Column_Int64Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_Uint128Data) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_Uint128Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1967,7 +1970,8 @@ func (m *Column_Uint128Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_Time64NsData) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_Time64NsData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -1987,7 +1991,8 @@ func (m *Column_Time64NsData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_Float64Data) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_Float64Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -2007,7 +2012,8 @@ func (m *Column_Float64Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_StringData) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_StringData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -2027,7 +2033,8 @@ func (m *Column_StringData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 func (m *Column_Duration64NsData) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *Column_Duration64NsData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -4655,6 +4662,7 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 func skipSchema(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
+	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -4686,10 +4694,8 @@ func skipSchema(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			return iNdEx, nil
 		case 1:
 			iNdEx += 8
-			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -4710,55 +4716,30 @@ func skipSchema(dAtA []byte) (n int, err error) {
 				return 0, ErrInvalidLengthSchema
 			}
 			iNdEx += length
-			if iNdEx < 0 {
-				return 0, ErrInvalidLengthSchema
-			}
-			return iNdEx, nil
 		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowSchema
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipSchema(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-				if iNdEx < 0 {
-					return 0, ErrInvalidLengthSchema
-				}
-			}
-			return iNdEx, nil
+			depth++
 		case 4:
-			return iNdEx, nil
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupSchema
+			}
+			depth--
 		case 5:
 			iNdEx += 4
-			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthSchema
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
 	}
-	panic("unreachable")
+	return 0, io.ErrUnexpectedEOF
 }
 
 var (
-	ErrInvalidLengthSchema = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowSchema   = fmt.Errorf("proto: integer overflow")
+	ErrInvalidLengthSchema        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowSchema          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupSchema = fmt.Errorf("proto: unexpected end of group")
 )
