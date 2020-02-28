@@ -240,6 +240,89 @@ func TestCache_GetPrefix(t *testing.T) {
 	}
 }
 
+func TestCache_GetRange(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+
+	tests := []struct {
+		name         string
+		from         string
+		to           string
+		outputKeys   []string
+		outputValues [][]byte
+		cacheKeys    []string
+		cacheValues  []string
+		cacheTTL     []time.Duration
+		dsKeys       []string
+		dsValues     [][]byte
+		hasError     bool
+	}{
+		{
+			name:         "valid",
+			from:         "2",
+			to:           "6",
+			outputKeys:   []string{"2", "3", "5"},
+			outputValues: [][]byte{[]byte("2Cache"), []byte("3DS"), []byte("5Cache")},
+			cacheKeys:    []string{"1", "2", "4", "5"},
+			cacheValues:  []string{"1Cache", "2Cache", "4Cache", "5Cache"},
+			cacheTTL:     []time.Duration{time.Second * 0, time.Second * 0, time.Second * 1, time.Second * 10},
+			dsKeys:       []string{"3", "5"},
+			dsValues:     [][]byte{[]byte("3DS"), []byte("5DS")},
+		},
+		{
+			name:         "datastore empty",
+			from:         "2",
+			to:           "6",
+			outputKeys:   []string{"2", "5"},
+			outputValues: [][]byte{[]byte("2Cache"), []byte("5Cache")},
+			cacheKeys:    []string{"1", "2", "4", "5"},
+			cacheValues:  []string{"1Cache", "2Cache", "4Cache", "5Cache"},
+			cacheTTL:     []time.Duration{time.Second * 0, time.Second * 0, time.Second * 1, time.Second * 10},
+			dsKeys:       []string{},
+			dsValues:     [][]byte{},
+		},
+		{
+			name:         "cache empty",
+			from:         "2",
+			to:           "6",
+			outputKeys:   []string{"2", "5"},
+			outputValues: [][]byte{[]byte("2Cache"), []byte("5Cache")},
+			cacheKeys:    []string{"1", "2", "4", "5"},
+			cacheValues:  []string{"1Cache", "2Cache", "4Cache", "5Cache"},
+			cacheTTL:     []time.Duration{time.Second * 0, time.Second * 0, time.Second * 1, time.Second * 10},
+			dsKeys:       []string{},
+			dsValues:     [][]byte{},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := kvstore.NewCacheWithClock(mockDs, clock)
+
+			mockDs.
+				EXPECT().
+				GetWithRange(tc.from, tc.to).
+				Return(tc.dsKeys, tc.dsValues, nil)
+
+			for i, key := range tc.cacheKeys {
+				if tc.cacheTTL[i] > time.Second*0 {
+					c.SetWithTTL(key, tc.cacheValues[i], tc.cacheTTL[i])
+				} else {
+					c.Set(key, tc.cacheValues[i])
+				}
+			}
+			clock.Advance(time.Second * 5)
+
+			outKeys, outVals, err := c.GetWithRange(tc.from, tc.to)
+			assert.Nil(t, err)
+			assert.Equal(t, tc.outputKeys, outKeys)
+			assert.Equal(t, tc.outputValues, outVals)
+		})
+	}
+}
+
 func TestCache_GetAll(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

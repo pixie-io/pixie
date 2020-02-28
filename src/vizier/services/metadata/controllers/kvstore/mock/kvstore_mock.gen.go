@@ -72,6 +72,20 @@ func (mr *MockKeyValueStoreMockRecorder) GetWithPrefix(arg0 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithPrefix", reflect.TypeOf((*MockKeyValueStore)(nil).GetWithPrefix), arg0)
 }
 
+// GetWithRange mocks base method
+func (m *MockKeyValueStore) GetWithRange(arg0, arg1 string) ([]string, [][]byte, error) {
+	ret := m.ctrl.Call(m, "GetWithRange", arg0, arg1)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].([][]byte)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetWithRange indicates an expected call of GetWithRange
+func (mr *MockKeyValueStoreMockRecorder) GetWithRange(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithRange", reflect.TypeOf((*MockKeyValueStore)(nil).GetWithRange), arg0, arg1)
+}
+
 // GetAll mocks base method
 func (m *MockKeyValueStore) GetAll(arg0 []string) ([][]byte, error) {
 	ret := m.ctrl.Call(m, "GetAll", arg0)
@@ -83,18 +97,6 @@ func (m *MockKeyValueStore) GetAll(arg0 []string) ([][]byte, error) {
 // GetAll indicates an expected call of GetAll
 func (mr *MockKeyValueStoreMockRecorder) GetAll(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockKeyValueStore)(nil).GetAll), arg0)
-}
-
-// DeleteAll mocks base method
-func (m *MockKeyValueStore) DeleteAll(arg0 []string) error {
-	ret := m.ctrl.Call(m, "DeleteAll", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteAll indicates an expected call of DeleteAll
-func (mr *MockKeyValueStoreMockRecorder) DeleteAll(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAll", reflect.TypeOf((*MockKeyValueStore)(nil).DeleteAll), arg0)
 }
 
 // DeleteWithPrefix mocks base method

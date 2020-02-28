@@ -237,6 +237,45 @@ func TestEtcdStore_DeleteWithPrefix(t *testing.T) {
 	assert.Equal(t, 1, len(kv.Kvs))
 }
 
+func TestEtcdStore_GetWithRange(t *testing.T) {
+	_, err := etcdClient.Delete(context.Background(), "", clientv3.WithPrefix())
+	if err != nil {
+		t.Fatal("Failed to clear etcd data.")
+	}
+
+	// Add items into etcd that we can get.
+	_, err = etcdClient.Put(context.Background(), "/1", "hello")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+	_, err = etcdClient.Put(context.Background(), "/2", "hola")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+	_, err = etcdClient.Put(context.Background(), "/3", "ciao")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+	_, err = etcdClient.Put(context.Background(), "/4", "bonjour")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+	_, err = etcdClient.Put(context.Background(), "/5", "hi")
+	if err != nil {
+		t.Fatal("Could not put value into etcd from etcd")
+	}
+
+	e := kvstore.NewEtcdStore(etcdClient)
+	keys, vals, err := e.GetWithRange("/2", "/4")
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(vals))
+	assert.Equal(t, 2, len(keys))
+	assert.Equal(t, "/2", keys[0])
+	assert.Equal(t, []byte("hola"), vals[0])
+	assert.Equal(t, "/3", keys[1])
+	assert.Equal(t, []byte("ciao"), vals[1])
+}
+
 func TestMain(m *testing.M) {
 	c, cleanup := testingutils.SetupEtcd()
 	etcdClient = c

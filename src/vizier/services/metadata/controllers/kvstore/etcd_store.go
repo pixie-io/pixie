@@ -102,3 +102,21 @@ func (e *EtcdStore) DeleteWithPrefix(prefix string) error {
 	_, err := e.client.Delete(context.Background(), prefix, v3.WithPrefix())
 	return err
 }
+
+// GetWithRange gets all the keys and values within the given range.
+func (e *EtcdStore) GetWithRange(from string, to string) ([]string, [][]byte, error) {
+	resp, err := e.client.Get(context.Background(), from, v3.WithRange(to))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	keys := make([]string, len(resp.Kvs))
+	values := make([][]byte, len(resp.Kvs))
+
+	for i, kv := range resp.Kvs {
+		keys[i] = string(kv.Key)
+		values[i] = kv.Value
+	}
+
+	return keys, values, nil
+}

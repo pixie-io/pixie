@@ -19,6 +19,7 @@ type KeyValueStore interface {
 	Get(string) ([]byte, error)
 	SetAll([]TTLKeyValue) error
 	GetWithPrefix(string) ([]string, [][]byte, error)
+	GetWithRange(string, string) ([]string, [][]byte, error)
 	GetAll([]string) ([][]byte, error)
 	DeleteWithPrefix(string) error
 }
@@ -175,18 +176,18 @@ func (c *Cache) GetAll(keys []string) ([][]byte, error) {
 	return vals, nil
 }
 
-// GetWithPrefix gets all keys and values with the given prefix.
-func (c *Cache) GetWithPrefix(prefix string) (keys []string, values [][]byte, err error) {
+// GetWithRange gets all keys and values within the given range.
+func (c *Cache) GetWithRange(from string, to string) (keys []string, values [][]byte, err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	keys = make([]string, 0)
 	values = make([][]byte, 0)
 
-	// Find all keys in cache beginning with prefix.
+	// Find all keys in cache within the given range.
 	cacheKeys := make([]string, 0)
 	for key := range c.cacheMap {
-		if strings.HasPrefix(key, prefix) {
+		if key >= from && key < to {
 			cacheKeys = append(cacheKeys, key)
 		}
 	}
@@ -194,10 +195,17 @@ func (c *Cache) GetWithPrefix(prefix string) (keys []string, values [][]byte, er
 
 	// Get the keys/values with prefix from the backing datastore. This assumes
 	// the response is already sorted by key.
-	dsKeys, dsVals, err := c.datastore.GetWithPrefix(prefix)
+	dsKeys, dsVals, err := c.datastore.GetWithRange(from, to)
 	if err != nil {
 		return keys, values, err
 	}
+
+	return c.mergeCacheAndStore(cacheKeys, dsKeys, dsVals)
+}
+
+func (c *Cache) mergeCacheAndStore(cacheKeys []string, dsKeys []string, dsVals [][]byte) (keys []string, values [][]byte, err error) {
+	keys = make([]string, 0)
+	values = make([][]byte, 0)
 
 	now := c.clock.Now()
 
@@ -240,6 +248,33 @@ func (c *Cache) GetWithPrefix(prefix string) (keys []string, values [][]byte, er
 	}
 
 	return keys, values, nil
+}
+
+// GetWithPrefix gets all keys and values with the given prefix.
+func (c *Cache) GetWithPrefix(prefix string) (keys []string, values [][]byte, err error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	keys = make([]string, 0)
+	values = make([][]byte, 0)
+
+	// Find all keys in cache beginning with prefix.
+	cacheKeys := make([]string, 0)
+	for key := range c.cacheMap {
+		if strings.HasPrefix(key, prefix) {
+			cacheKeys = append(cacheKeys, key)
+		}
+	}
+	sort.Strings(cacheKeys)
+
+	// Get the keys/values with prefix from the backing datastore. This assumes
+	// the response is already sorted by key.
+	dsKeys, dsVals, err := c.datastore.GetWithPrefix(prefix)
+	if err != nil {
+		return keys, values, err
+	}
+
+	return c.mergeCacheAndStore(cacheKeys, dsKeys, dsVals)
 }
 
 // DeleteWithPrefix deletes all keys and values with the given prefix.
