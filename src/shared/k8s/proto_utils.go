@@ -320,6 +320,19 @@ func PodFromProto(pb *metadatapb.Pod) (*v1.Pod, error) {
 	return p, nil
 }
 
+// NamespaceToProto converts a namespace into a proto.
+func NamespaceToProto(n *v1.Namespace) (*metadatapb.Namespace, error) {
+	metadata, err := ObjectMetadataToProto(&n.ObjectMeta)
+	if err != nil {
+		return nil, err
+	}
+
+	nPb := &metadatapb.Namespace{
+		Metadata: metadata,
+	}
+	return nPb, nil
+}
+
 // ObjectReferenceToProto converts an ObjectReference into a proto.
 func ObjectReferenceToProto(o *v1.ObjectReference) (*metadatapb.ObjectReference, error) {
 	oPb := &metadatapb.ObjectReference{

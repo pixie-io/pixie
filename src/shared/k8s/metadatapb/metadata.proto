@@ -62,6 +62,10 @@ message OwnerReference {
                   ];
 }
 
+message Namespace {
+  ObjectMetadata metadata = 1;
+}
+
 // Pod is a collection of containers that can run on a host. This resource is created
 // by clients and scheduled onto hosts.
 message Pod {
@@ -543,6 +547,24 @@ message ServiceUpdate {
   // A list of Pods that are service this service.
   repeated string pod_ids = 6 [
                               (gogoproto.customname) = "PodIDs"
+                              ];
+}
+
+message NamespaceUpdate {
+  // UID is the unique ID of this namespace in both space and time.
+  string uid = 1 [
+                 (gogoproto.customname) = "UID"
+                 ];
+
+  // Name of the namespace, unique in space, but not time.
+  string name = 2;
+  // The unix time in nanoseconds when the this namespace was created.
+  int64 start_timestamp_ns = 3 [
+                               (gogoproto.customname) = "StartTimestampNS"
+                               ];
+  // The unix time in nanoseconds when the this namespace was deleted. Still active if 0.
+  int64 stop_timestamp_ns = 4 [
+                              (gogoproto.customname) = "StopTimestampNS"
                               ];
 }
 

@@ -9,6 +9,7 @@ rules:
   - pods
   - services
   - endpoints
+  - namespaces
   verbs:
   - "*"
 ---

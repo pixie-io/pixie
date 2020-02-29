@@ -129,6 +129,23 @@ spec {
 }
 `
 
+const namespacePb = `
+metadata {
+	name: "a_namespace"
+	namespace: "a_namespace"
+	uid: "ijkl"
+	resource_version: "1",
+	cluster_name: "a_cluster",
+	creation_timestamp_ns: 4
+	deletion_timestamp_ns: 6
+	owner_references {
+	  kind: "cluster"
+	  name: "test"
+	  uid: "abcd"
+	}
+}
+`
+
 const objectReferencePb = `
 kind: "pod"
 namespace: "pl"
@@ -634,6 +651,41 @@ func TestPodFromProto(t *testing.T) {
 	assert.Equal(t, "object_md", obj.ObjectMeta.Name)
 	assert.Equal(t, "this is message", obj.Status.Message)
 	assert.Equal(t, "test", obj.Spec.NodeName)
+}
+
+func TestNamespaceToProto(t *testing.T) {
+	ownerRefs := make([]metav1.OwnerReference, 1)
+	ownerRefs[0] = metav1.OwnerReference{
+		Kind: "cluster",
+		Name: "test",
+		UID:  "abcd",
+	}
+
+	delTime := metav1.Unix(0, 6)
+	creationTime := metav1.Unix(0, 4)
+	metadata := metav1.ObjectMeta{
+		Name:              "a_namespace",
+		Namespace:         "a_namespace",
+		UID:               "ijkl",
+		ResourceVersion:   "1",
+		ClusterName:       "a_cluster",
+		CreationTimestamp: creationTime,
+		DeletionTimestamp: &delTime,
+		OwnerReferences:   ownerRefs,
+	}
+
+	o := v1.Namespace{
+		ObjectMeta: metadata,
+	}
+
+	oPb, err := k8s.NamespaceToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.Namespace{}
+	if err := proto.UnmarshalText(namespacePb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
 }
 
 func TestObjectReferenceToProto(t *testing.T) {
