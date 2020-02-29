@@ -1,5 +1,5 @@
 
-![Pixie!](pixie_logo_with_background.png )
+![Pixie!](pixie_banner.svg)
 
 
 _Engineers debug distributed applications live with Pixie’s no-config streaming telemetry._
@@ -9,7 +9,7 @@ _Engineers debug distributed applications live with Pixie’s no-config streamin
 
 Pixie is being built for broad use by the end of 2020.
 
-As we build up Pixie, we are sharing our beta to get feedback from early adopters from within the developer community and our beta partner teams.  
+As we build up Pixie, we are sharing our beta to get feedback from early adopters from within the developer community and our beta partner teams.
 
 If you are interested in tinkering, you can [sign-up](https://withpixie.ai/) and join our [community on slack](https://join.slack.com/t/pixie-community/shared_invite/enQtODY3NjU5MTc4OTY0LTFhYjc3MWY1NDBkZTc5YTdjNzM0OGYxZmNmODU2MDE5NzYyN2Q1NmIxMmEyN2YwNmM5MjU4NGY2NDBjOWFjY2E).
 
@@ -19,7 +19,7 @@ If you are interested in tinkering, you can [sign-up](https://withpixie.ai/) and
 
 ### Installing Pixie
 
-Visit our [product page](https://withpixie.ai/) and follow these steps: 
+Visit our [product page](https://withpixie.ai/) and follow these steps:
 
 1. Claim your site
 
@@ -34,11 +34,11 @@ Visit our [product page](https://withpixie.ai/) and follow these steps:
 
 ### Filling Issues
 
-File feature requests or bug reports in our [Github Issue Tracker](https://github.com/pixie-labs/pixie-support/issues). 
+File feature requests or bug reports in our [Github Issue Tracker](https://github.com/pixie-labs/pixie-support/issues).
 
 If you  are facing other issues and/or you want to include personal information such as your username or email, then mail us at help@pixielabs.ai
 
-### Community 
+### Community
 
 In these early days, we’re very lucky to have a diverse and enthusiastic community of early adopters. Pixienauts, as we fondly refer to them, help shape the product, share expertise, host events, and much more.
 
