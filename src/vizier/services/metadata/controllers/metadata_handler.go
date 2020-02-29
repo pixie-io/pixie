@@ -380,9 +380,17 @@ func (mh *MetadataHandler) handleNamespaceMetadata(o runtime.Object, eventType w
 		return
 	}
 
-	_, err := mh.updateNamespace(e, eventType == watch.Deleted)
+	pb, err := mh.updateNamespace(e, eventType == watch.Deleted)
 	if err != nil {
 		log.WithError(err).Fatal("Could not write namespace update")
+	}
+
+	// Send namespace update to subscribers.
+	updatePb := GetResourceUpdateFromNamespace(pb)
+	mh.subscriberUpdates <- &UpdateMessage{
+		Hostnames:    []string{},
+		Message:      updatePb,
+		NodeSpecific: false,
 	}
 }
 
@@ -392,6 +400,21 @@ func (mh *MetadataHandler) handleNodeMetadata(o runtime.Object, eType watch.Even
 
 func formatContainerID(cid string) string {
 	return strings.Replace(cid, "docker://", "", 1)
+}
+
+// GetResourceUpdateFromNamespace gets the update info from the given namespace proto.
+func GetResourceUpdateFromNamespace(ns *metadatapb.Namespace) *metadatapb.ResourceUpdate {
+	return &metadatapb.ResourceUpdate{
+		ResourceVersion: ns.Metadata.ResourceVersion,
+		Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
+			NamespaceUpdate: &metadatapb.NamespaceUpdate{
+				UID:              ns.Metadata.UID,
+				Name:             ns.Metadata.Name,
+				StartTimestampNS: ns.Metadata.CreationTimestampNS,
+				StopTimestampNS:  ns.Metadata.DeletionTimestampNS,
+			},
+		},
+	}
 }
 
 // GetResourceUpdateFromPod gets the update info from the given pod proto.

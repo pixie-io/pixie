@@ -489,6 +489,27 @@ func TestObjectToPodProto(t *testing.T) {
 	mh.ProcessNextSubscriberUpdate()
 }
 
+func TestGetResourceUpdateFromNamespace(t *testing.T) {
+	ns := &metadatapb.Namespace{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:                "test",
+			UID:                 "1234",
+			ResourceVersion:     "1",
+			CreationTimestampNS: 4,
+			DeletionTimestampNS: 6,
+		},
+	}
+
+	update := controllers.GetResourceUpdateFromNamespace(ns)
+	nsUpdate := update.GetNamespaceUpdate()
+	assert.NotNil(t, nsUpdate)
+	assert.Equal(t, "1", update.ResourceVersion)
+	assert.Equal(t, "1234", nsUpdate.UID)
+	assert.Equal(t, "test", nsUpdate.Name)
+	assert.Equal(t, int64(4), nsUpdate.StartTimestampNS)
+	assert.Equal(t, int64(6), nsUpdate.StopTimestampNS)
+}
+
 func TestGetResourceUpdateFromPod(t *testing.T) {
 	pod := &metadatapb.Pod{}
 	if err := proto.UnmarshalText(testutils.PodPbWithContainers, pod); err != nil {

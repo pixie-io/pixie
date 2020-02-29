@@ -817,6 +817,11 @@ func (mds *KVMetadataStore) UpdateNamespace(s *metadatapb.Namespace, deleted boo
 func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error) {
 	var updates []*metadatapb.ResourceUpdate
 
+	namespaces, err := mds.GetNamespaces()
+	if err != nil {
+		return nil, err
+	}
+
 	pods, err := mds.GetNodePods(hostname)
 	if err != nil {
 		return nil, err
@@ -825,6 +830,11 @@ func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.R
 	endpoints, err := mds.GetNodeEndpoints(hostname)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, ns := range namespaces {
+		nsUpdate := GetResourceUpdateFromNamespace(ns)
+		updates = append(updates, nsUpdate)
 	}
 
 	for _, pod := range pods {

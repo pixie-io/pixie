@@ -1480,6 +1480,13 @@ func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
 		Status: &metadatapb.PodStatus{},
 	}
 
+	ns := &metadatapb.Namespace{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name: "test",
+			UID:  "abcd",
+		},
+	}
+
 	ep1 := &metadatapb.Endpoints{}
 	if err := proto.UnmarshalText(testutils.EndpointsPb, ep1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
@@ -1499,9 +1506,17 @@ func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
 		GetWithPrefix("/endpoints/").
 		Return(nil, nil, nil).
 		Times(1)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/namespace/").
+		Return(nil, nil, nil).
+		Times(1)
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
 	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	err = mds.UpdateNamespace(ns, false)
 	assert.Nil(t, err)
 
 	err = mds.UpdatePod(pod1, false)
@@ -1515,29 +1530,33 @@ func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
 	updates, err := mds.GetMetadataUpdates("")
 	assert.Nil(t, err)
 
-	assert.Equal(t, 6, len(updates))
+	assert.Equal(t, 7, len(updates))
 
-	update1 := updates[0].GetContainerUpdate()
+	update0 := updates[0].GetNamespaceUpdate()
+	assert.NotNil(t, update0)
+	assert.Equal(t, "abcd", update0.UID)
+
+	update1 := updates[1].GetContainerUpdate()
 	assert.NotNil(t, update1)
 	assert.Equal(t, "0987", update1.CID)
 
-	update2 := updates[1].GetContainerUpdate()
+	update2 := updates[2].GetContainerUpdate()
 	assert.NotNil(t, update2)
 	assert.Equal(t, "2468", update2.CID)
 
-	update3 := updates[2].GetPodUpdate()
+	update3 := updates[3].GetPodUpdate()
 	assert.NotNil(t, update3)
 	assert.Equal(t, "1234", update3.UID)
 
-	update4 := updates[3].GetPodUpdate()
+	update4 := updates[4].GetPodUpdate()
 	assert.NotNil(t, update4)
 	assert.Equal(t, "5678", update4.UID)
 
-	update5 := updates[4].GetServiceUpdate()
+	update5 := updates[5].GetServiceUpdate()
 	assert.NotNil(t, update5)
 	assert.Equal(t, "object_md", update5.Name)
 
-	update6 := updates[5].GetServiceUpdate()
+	update6 := updates[6].GetServiceUpdate()
 	assert.NotNil(t, update6)
 	assert.Equal(t, "object_md", update6.Name)
 }

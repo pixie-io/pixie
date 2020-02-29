@@ -616,6 +616,7 @@ message ResourceUpdate {
     PodUpdate pod_update = 1;
     ContainerUpdate container_update = 2;
     ServiceUpdate service_update = 3;
+    NamespaceUpdate namespace_update = 6;
   }
   string resource_version = 4;
   string prev_resource_version = 5;
