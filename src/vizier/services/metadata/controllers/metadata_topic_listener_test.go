@@ -110,11 +110,20 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 		EXPECT().
 		AddResourceVersion("1", update).
 		Return(nil)
+	mockMdStore.
+		EXPECT().
+		GetSubscriberResourceVersion("cloud").
+		Return("0", nil)
+	mockMdStore.
+		EXPECT().
+		UpdateSubscriberResourceVersion("cloud", "1")
 
 	more := mdh.ProcessNextSubscriberUpdate()
 	assert.Equal(t, true, more)
 	assert.Equal(t, 1, len(updates))
 	resPb := &messages.MetadataUpdate{}
 	proto.Unmarshal(updates[0], resPb)
+
+	update.PrevResourceVersion = "0"
 	assert.Equal(t, update, resPb.Update)
 }

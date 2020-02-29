@@ -15,6 +15,8 @@ const MetadataRequestPublishTopic = "v2c.MetadataResponse"
 // MetadataUpdatesTopic is the channel which the listener publishes metadata updates to.
 const MetadataUpdatesTopic = "v2c.DurableMetadataUpdates"
 
+const subscriberName = "cloud"
+
 // MetadataTopicListener is responsible for listening to and handling messages on the metadata update topic.
 type MetadataTopicListener struct {
 	sendMessage SendMessageFn
@@ -49,8 +51,21 @@ func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
 		return
 	}
 
+	// Set previous RV on update.
+	prevRV, err := m.mds.GetSubscriberResourceVersion(subscriberName)
+	if err != nil {
+		log.WithError(err).Error("Could not get previous resource version")
+		return
+	}
+
+	// We don't want to modify the prevRV in the update message for any other subscribers.
+	copiedUpdate := *(update.Message)
+	copiedUpdate.PrevResourceVersion = prevRV
+	// Update the resource version.
+	m.mds.UpdateSubscriberResourceVersion(subscriberName, copiedUpdate.ResourceVersion)
+
 	msg := messages.MetadataUpdate{
-		Update: update.Message,
+		Update: &copiedUpdate,
 	}
 	b, err := msg.Marshal()
 	if err != nil {

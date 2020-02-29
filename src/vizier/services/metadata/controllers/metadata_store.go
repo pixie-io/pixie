@@ -188,6 +188,14 @@ func getResourceVersionMapKey(rv string) string {
 	return path.Join("/", "resourceVersionUpdate", rv)
 }
 
+func getSubscriberResourceVersionKey(sub string) string {
+	return path.Join("/", "subscriber", "resourceVersion", sub)
+}
+
+func getSubscriberPreviousResourceVersionKey(sub string, rv string) string {
+	return path.Join("/", "subscriber", "prevRV", rv)
+}
+
 /* =============== Agent Operations ============== */
 
 // GetAgent gets the agent info for the agent with the given id.
@@ -788,6 +796,8 @@ func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.R
 	return updates, nil
 }
 
+/* =============== Resource Versions ============== */
+
 // AddResourceVersion creates a mapping from a resourceVersion to the update for that resource.
 func (mds *KVMetadataStore) AddResourceVersion(rv string, update *metadatapb.ResourceUpdate) error {
 	val, err := update.Marshal()
@@ -797,4 +807,28 @@ func (mds *KVMetadataStore) AddResourceVersion(rv string, update *metadatapb.Res
 
 	mds.cache.Set(getResourceVersionMapKey(rv), string(val))
 	return nil
+}
+
+// UpdateSubscriberResourceVersion updates the last resource version processed by a subscriber.
+func (mds *KVMetadataStore) UpdateSubscriberResourceVersion(sub string, rv string) error {
+	// Set the previous resource version.
+	oldRv, err := mds.GetSubscriberResourceVersion(sub)
+	if err != nil {
+		return err
+	}
+
+	// Set the oldRv as the previous resource version for the new resource version.
+	mds.cache.Set(getSubscriberPreviousResourceVersionKey(sub, rv), oldRv)
+	mds.cache.Set(getSubscriberResourceVersionKey(sub), rv)
+	return nil
+}
+
+// GetSubscriberResourceVersion gets the last resource version processed by a subscriber.
+func (mds *KVMetadataStore) GetSubscriberResourceVersion(sub string) (string, error) {
+	resp, err := mds.cache.Get(getSubscriberResourceVersionKey(sub))
+	if err != nil {
+		return "", err
+	}
+
+	return string(resp), nil
 }

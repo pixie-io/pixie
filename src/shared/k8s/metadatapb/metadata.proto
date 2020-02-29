@@ -596,6 +596,7 @@ message ResourceUpdate {
     ServiceUpdate service_update = 3;
   }
   string resource_version = 4;
+  string prev_resource_version = 5;
 }
 
 

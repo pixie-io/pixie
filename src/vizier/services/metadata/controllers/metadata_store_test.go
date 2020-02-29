@@ -1267,7 +1267,35 @@ func TestKVMetadataStore_AddResourceVersion(t *testing.T) {
 
 	rvUpdate, _ := c.Get("/resourceVersionUpdate/1234")
 	assert.Equal(t, b, rvUpdate)
+}
 
+func TestKVMetadataStore_UpdateSubscriberResourceVersion(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		Get("/subscriber/resourceVersion/cloud").
+		Return([]byte("1230"), nil)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	err = mds.UpdateSubscriberResourceVersion("cloud", "1234")
+	assert.Nil(t, err)
+
+	rv, _ := c.Get("/subscriber/resourceVersion/cloud")
+	assert.Equal(t, "1234", string(rv))
+
+	rv, _ = c.Get("/subscriber/prevRV/1234")
+	assert.Equal(t, "1230", string(rv))
+
+	rv2, err := mds.GetSubscriberResourceVersion("cloud")
+	assert.Nil(t, err)
+	assert.Equal(t, "1234", rv2)
 }
 
 func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {

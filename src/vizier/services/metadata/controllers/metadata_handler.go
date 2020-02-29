@@ -52,6 +52,8 @@ type MetadataStore interface {
 	UpdateContainersFromPod(*metadatapb.Pod, bool) error
 	GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error)
 	AddResourceVersion(string, *metadatapb.ResourceUpdate) error
+	UpdateSubscriberResourceVersion(string, string) error
+	GetSubscriberResourceVersion(string) (string, error)
 }
 
 // MetadataSubscriber is a consumer of metadata updates.

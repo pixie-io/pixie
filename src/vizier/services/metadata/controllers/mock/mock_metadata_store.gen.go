@@ -388,6 +388,31 @@ func (mr *MockMetadataStoreMockRecorder) AddResourceVersion(arg0, arg1 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddResourceVersion", reflect.TypeOf((*MockMetadataStore)(nil).AddResourceVersion), arg0, arg1)
 }
 
+// UpdateSubscriberResourceVersion mocks base method
+func (m *MockMetadataStore) UpdateSubscriberResourceVersion(arg0, arg1 string) error {
+	ret := m.ctrl.Call(m, "UpdateSubscriberResourceVersion", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSubscriberResourceVersion indicates an expected call of UpdateSubscriberResourceVersion
+func (mr *MockMetadataStoreMockRecorder) UpdateSubscriberResourceVersion(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSubscriberResourceVersion", reflect.TypeOf((*MockMetadataStore)(nil).UpdateSubscriberResourceVersion), arg0, arg1)
+}
+
+// GetSubscriberResourceVersion mocks base method
+func (m *MockMetadataStore) GetSubscriberResourceVersion(arg0 string) (string, error) {
+	ret := m.ctrl.Call(m, "GetSubscriberResourceVersion", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSubscriberResourceVersion indicates an expected call of GetSubscriberResourceVersion
+func (mr *MockMetadataStoreMockRecorder) GetSubscriberResourceVersion(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriberResourceVersion", reflect.TypeOf((*MockMetadataStore)(nil).GetSubscriberResourceVersion), arg0)
+}
+
 // MockMetadataSubscriber is a mock of MetadataSubscriber interface
 type MockMetadataSubscriber struct {
 	ctrl     *gomock.Controller
