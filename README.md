@@ -1,9 +1,5 @@
 
-![Pixie!](pixie_banner.svg)
-
-
-_Engineers debug distributed applications live with Pixie’s no-config streaming telemetry._
-
+![Pixie!](pixie_banner.png)
 
 ## We're in Private Beta!
 
