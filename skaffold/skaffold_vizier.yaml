@@ -35,12 +35,6 @@ build:
       target: //src/vizier/services/api:api_server_image.tar
       args:
       - --compilation_mode=dbg
-  - image: gcr.io/pl-dev-infra/vizier/logtailer_image
-    context: .
-    bazel:
-      target: //src/vizier/utils/logtailer:logtailer_image.tar
-      args:
-      - --compilation_mode=dbg
   - image: gcr.io/pl-dev-infra/vizier/cloud_connector_server_image
     context: .
     bazel:
