@@ -19,7 +19,6 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
 	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/cloud_connectorpb"
 )
 
 func mustEnvelopeReq(pb proto.Message, topic string) *vzconnpb.CloudConnectRequest {
@@ -81,17 +80,6 @@ func TestMessageProcessor(t *testing.T) {
 		Time:           100,
 		SequenceNumber: 1,
 	}
-
-	logMessage := &cloud_connectorpb.TransferLogRequest{
-		BatchedLogs: []*cloud_connectorpb.LogMessage{
-			&cloud_connectorpb.LogMessage{
-				Pod: "bar",
-				Svc: "xyz",
-				Log: "log msg",
-			},
-		},
-	}
-
 	sslRequest := &cloudpb.VizierSSLCertRequest{
 		VizierID: utils.ProtoFromUUID(&u),
 	}
@@ -169,16 +157,6 @@ func TestMessageProcessor(t *testing.T) {
 					HandleVizierHeartbeat(gomock.Any(), heartbeatReq).
 					Return(heartbeatOKAck, nil)
 			},
-		},
-		{
-			name: "Log message",
-			ins: []*vzconnpb.CloudConnectRequest{
-				mustEnvelopeReq(logMessage, "log"),
-			},
-			expectInErrs:     []error{nil},
-			expectedOuts:     []*vzconnpb.CloudConnectResponse{},
-			expectOutErrs:    []error{},
-			mockExpectations: func(*mock_vzmgrpb.MockVZMgrServiceClient) {},
 		},
 		{
 			name: "SSL Certs",
