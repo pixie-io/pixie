@@ -54,6 +54,7 @@ type MetadataStore interface {
 	AddResourceVersion(string, *metadatapb.ResourceUpdate) error
 	UpdateSubscriberResourceVersion(string, string) error
 	GetSubscriberResourceVersion(string) (string, error)
+	GetMetadataUpdatesForSubscriber(string, string, string) ([]*metadatapb.ResourceUpdate, error)
 }
 
 // MetadataSubscriber is a consumer of metadata updates.

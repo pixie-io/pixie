@@ -193,7 +193,7 @@ func getSubscriberResourceVersionKey(sub string) string {
 }
 
 func getSubscriberPreviousResourceVersionKey(sub string, rv string) string {
-	return path.Join("/", "subscriber", "prevRV", rv)
+	return path.Join("/", "subscriber", sub, "prevRV", rv)
 }
 
 /* =============== Agent Operations ============== */
@@ -796,6 +796,43 @@ func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.R
 	return updates, nil
 }
 
+// GetMetadataUpdatesForSubscriber get the metadata updates that should be sent to the subscriber in the given range.
+func (mds *KVMetadataStore) GetMetadataUpdatesForSubscriber(sub string, from string, to string) ([]*metadatapb.ResourceUpdate, error) {
+	// Get all resource versions + prev resource versions within range.
+	keys, vals, err := mds.cache.GetWithRange(getSubscriberPreviousResourceVersionKey(sub, from), getSubscriberPreviousResourceVersionKey(sub, to))
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch updates for the subscriber's resource versions.
+	updateKeys := make([]string, len(keys))
+	for i, k := range keys {
+		splitKey := strings.Split(k, "/")
+		rv := splitKey[len(splitKey)-1]
+		updateKeys[i] = getResourceVersionMapKey(rv)
+	}
+	updates, err := mds.cache.GetAll(updateKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	updatePbs := make([]*metadatapb.ResourceUpdate, 0)
+	for i, u := range updates {
+		if u == nil {
+			continue
+		}
+		uPb := &metadatapb.ResourceUpdate{}
+		err = proto.Unmarshal(u, uPb)
+		if err != nil {
+			continue
+		}
+		uPb.PrevResourceVersion = string(vals[i])
+		updatePbs = append(updatePbs, uPb)
+	}
+
+	return updatePbs, nil
+}
+
 /* =============== Resource Versions ============== */
 
 // AddResourceVersion creates a mapping from a resourceVersion to the update for that resource.
@@ -828,6 +865,9 @@ func (mds *KVMetadataStore) GetSubscriberResourceVersion(sub string) (string, er
 	resp, err := mds.cache.Get(getSubscriberResourceVersionKey(sub))
 	if err != nil {
 		return "", err
+	}
+	if resp == nil {
+		return "", nil
 	}
 
 	return string(resp), nil

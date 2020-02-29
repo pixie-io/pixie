@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
+
 	messages "pixielabs.ai/pixielabs/src/shared/messages/messagespb"
 )
 
@@ -40,9 +42,27 @@ func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler,
 
 // HandleMessage handles a message on the agent topic.
 func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
-	// TODO(michelle): This should respond to MetadataUpdateRequests.
+	pb := &messages.MetadataRequest{}
+	err := proto.Unmarshal(msg.Data, pb)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	updates, err := m.mds.GetMetadataUpdatesForSubscriber(subscriberName, pb.From, pb.To)
+	if err != nil {
+		return err
+	}
+
+	resp := messages.MetadataResponse{
+		Updates: updates,
+	}
+
+	b, err := resp.Marshal()
+	if err != nil {
+		return err
+	}
+
+	return m.sendMessage(MetadataRequestPublishTopic, b)
 }
 
 // HandleUpdate sends the metadata update over the message bus.

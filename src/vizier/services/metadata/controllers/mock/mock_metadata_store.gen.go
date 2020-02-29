@@ -413,6 +413,19 @@ func (mr *MockMetadataStoreMockRecorder) GetSubscriberResourceVersion(arg0 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriberResourceVersion", reflect.TypeOf((*MockMetadataStore)(nil).GetSubscriberResourceVersion), arg0)
 }
 
+// GetMetadataUpdatesForSubscriber mocks base method
+func (m *MockMetadataStore) GetMetadataUpdatesForSubscriber(arg0, arg1, arg2 string) ([]*metadatapb.ResourceUpdate, error) {
+	ret := m.ctrl.Call(m, "GetMetadataUpdatesForSubscriber", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]*metadatapb.ResourceUpdate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMetadataUpdatesForSubscriber indicates an expected call of GetMetadataUpdatesForSubscriber
+func (mr *MockMetadataStoreMockRecorder) GetMetadataUpdatesForSubscriber(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadataUpdatesForSubscriber", reflect.TypeOf((*MockMetadataStore)(nil).GetMetadataUpdatesForSubscriber), arg0, arg1, arg2)
+}
+
 // MockMetadataSubscriber is a mock of MetadataSubscriber interface
 type MockMetadataSubscriber struct {
 	ctrl     *gomock.Controller

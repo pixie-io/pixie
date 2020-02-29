@@ -1290,12 +1290,78 @@ func TestKVMetadataStore_UpdateSubscriberResourceVersion(t *testing.T) {
 	rv, _ := c.Get("/subscriber/resourceVersion/cloud")
 	assert.Equal(t, "1234", string(rv))
 
-	rv, _ = c.Get("/subscriber/prevRV/1234")
+	rv, _ = c.Get("/subscriber/cloud/prevRV/1234")
 	assert.Equal(t, "1230", string(rv))
 
 	rv2, err := mds.GetSubscriberResourceVersion("cloud")
 	assert.Nil(t, err)
 	assert.Equal(t, "1234", rv2)
+}
+
+func TestKVMetadataStore_GetMetadataUpdatesForSubscriber(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithRange("/subscriber/cloud/prevRV", "/subscriber/cloud/prevRV/6").
+		Return(nil, nil, nil)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Set up previous resource version mapping.
+	c.Set("/subscriber/cloud/prevRV/1", "")
+	c.Set("/subscriber/cloud/prevRV/3", "1")
+	c.Set("/subscriber/cloud/prevRV/6", "3")
+
+	// Set up resource version -> update mapping.
+	updatePb1 := &metadatapb.ResourceUpdate{
+		ResourceVersion: "1",
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID: "ijkl",
+			},
+		},
+	}
+	up1, err := updatePb1.Marshal()
+	assert.Nil(t, err)
+
+	updatePb2 := &metadatapb.ResourceUpdate{
+		ResourceVersion: "3",
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID: "abcd",
+			},
+		},
+	}
+	up2, err := updatePb2.Marshal()
+	assert.Nil(t, err)
+
+	updatePb3 := &metadatapb.ResourceUpdate{
+		ResourceVersion: "6",
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID: "efgh",
+			},
+		},
+	}
+	up3, err := updatePb3.Marshal()
+	assert.Nil(t, err)
+
+	c.Set("/resourceVersionUpdate/1", string(up1))
+	c.Set("/resourceVersionUpdate/3", string(up2))
+	c.Set("/resourceVersionUpdate/6", string(up3))
+
+	updates, err := mds.GetMetadataUpdatesForSubscriber("cloud", "", "6")
+	assert.Equal(t, 2, len(updates))
+	assert.Equal(t, "1", updates[0].ResourceVersion)
+	assert.Equal(t, "", updates[0].PrevResourceVersion)
+	assert.Equal(t, "3", updates[1].ResourceVersion)
+	assert.Equal(t, "1", updates[1].PrevResourceVersion)
 }
 
 func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
