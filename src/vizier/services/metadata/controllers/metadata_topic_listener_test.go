@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	messages "pixielabs.ai/pixielabs/src/shared/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
@@ -123,7 +123,7 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 	more := mdh.ProcessNextSubscriberUpdate()
 	assert.Equal(t, true, more)
 	assert.Equal(t, 1, len(updates))
-	resPb := &messages.MetadataUpdate{}
+	resPb := &cvmsgspb.MetadataUpdate{}
 	proto.Unmarshal(updates[0], resPb)
 
 	update.PrevResourceVersion = "0"
@@ -153,7 +153,7 @@ func TestMetadataTopicListener_HandleMessage(t *testing.T) {
 		return nil
 	})
 
-	req := messages.MetadataRequest{
+	req := cvmsgspb.MetadataRequest{
 		From: "",
 		To:   "5",
 	}
@@ -165,7 +165,7 @@ func TestMetadataTopicListener_HandleMessage(t *testing.T) {
 	err = mdl.HandleMessage(&msg)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(updates))
-	updatePb := &messages.MetadataResponse{}
+	updatePb := &cvmsgspb.MetadataResponse{}
 	proto.Unmarshal(updates[0], updatePb)
 	assert.Equal(t, 3, len(updatePb.Updates))
 	for i, u := range updatePb.Updates {

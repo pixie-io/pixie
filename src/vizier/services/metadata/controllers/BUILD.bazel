@@ -16,9 +16,9 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/k8s:go_default_library",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
-        "//src/shared/messages/messagespb:messages_pl_go_proto",
         "//src/shared/types:go_default_library",
         "//src/table_store/proto:schema_pl_go_proto",
         "//src/utils:go_default_library",
@@ -61,9 +61,9 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//src/common/uuid/proto:uuid_pl_go_proto",
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/k8s:go_default_library",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
-        "//src/shared/messages/messagespb:messages_pl_go_proto",
         "//src/shared/types:go_default_library",
         "//src/shared/types/proto:types_pl_go_proto",
         "//src/utils:go_default_library",

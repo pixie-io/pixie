@@ -2,8 +2,8 @@
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
 pl_proto_library(
-    name = "messages_pl_proto",
-    srcs = ["messages.proto"],
+    name = "cvmsgs_pl_proto",
+    srcs = ["cvmsgs.proto"],
     visibility = ["//visibility:public"],
     deps = [
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
@@ -12,8 +12,8 @@ pl_proto_library(
 )
 
 pl_cc_proto_library(
-    name = "messages_pl_cc_proto",
-    proto = ":messages_pl_proto",
+    name = "cvmsgs_pl_cc_proto",
+    proto = ":cvmsgs_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
@@ -22,9 +22,9 @@ pl_cc_proto_library(
 )
 
 pl_go_proto_library(
-    name = "messages_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/shared/messages/messagespb",
-    proto = ":messages_pl_proto",
+    name = "cvmsgs_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/shared/cvmsgspb",
+    proto = ":cvmsgs_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",

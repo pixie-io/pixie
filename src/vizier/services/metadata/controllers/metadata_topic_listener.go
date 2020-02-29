@@ -4,8 +4,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
-
-	messages "pixielabs.ai/pixielabs/src/shared/messages/messagespb"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 )
 
 // MetadataRequestSubscribeTopic is the channel which the listener is subscribed to for metadata requests.
@@ -42,7 +41,7 @@ func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler,
 
 // HandleMessage handles a message on the agent topic.
 func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
-	pb := &messages.MetadataRequest{}
+	pb := &cvmsgspb.MetadataRequest{}
 	err := proto.Unmarshal(msg.Data, pb)
 	if err != nil {
 		return err
@@ -53,7 +52,7 @@ func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
 		return err
 	}
 
-	resp := messages.MetadataResponse{
+	resp := cvmsgspb.MetadataResponse{
 		Updates: updates,
 	}
 
@@ -84,7 +83,7 @@ func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
 	// Update the resource version.
 	m.mds.UpdateSubscriberResourceVersion(subscriberName, copiedUpdate.ResourceVersion)
 
-	msg := messages.MetadataUpdate{
+	msg := cvmsgspb.MetadataUpdate{
 		Update: &copiedUpdate,
 	}
 	b, err := msg.Marshal()
