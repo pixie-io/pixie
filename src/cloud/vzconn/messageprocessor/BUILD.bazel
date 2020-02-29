@@ -6,9 +6,9 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzconn/messageprocessor",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/cloudpb:cloud_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services/utils:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",
@@ -23,10 +23,10 @@ go_test(
     srcs = ["processor_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//src/cloud/cloudpb:cloud_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb/mock:go_default_library",
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/utils:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",

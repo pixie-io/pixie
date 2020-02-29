@@ -14,12 +14,106 @@ package pl.cvmsgspb;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
+import "src/common/uuid/proto/uuid.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/shared/cvmsgspb/messagespb;cvmsgspb";
 
 // MetadataUpdate carries streaming updates from Vizier to cloud.
 message MetadataUpdate {
     pl.shared.k8s.metadatapb.ResourceUpdate update = 1;
+}
+
+// Message to register a new Vizier.
+message RegisterVizierRequest {
+    // The ID for this Vizier.
+    uuidpb.UUID vizier_id = 1 [
+                              (gogoproto.customname) = "VizierID"
+                              ];
+    // The key that this cluster is using.
+    string jwt_key = 2;
+    // Address of the proxy service. Format should be fully specified address including protocol,port.
+    // ex: https://123.123.123.123:4040
+    string address = 3;
+}
+
+// Acknowledge the registration of a new Vizier.
+message RegisterVizierAck {
+    enum RegistrationStatus {
+        ST_UNKNOWN = 0;
+        ST_OK = 1;
+        // Failed because the cluster has not been registered into the cloud.
+        ST_FAILED_NOT_FOUND = 2;
+    }
+    RegistrationStatus status = 1;
+}
+
+message VizierHeartbeat {
+    // The ID for this Vizier.
+    uuidpb.UUID vizier_id = 1 [
+                              (gogoproto.customname) = "VizierID"
+                              ];
+    // The current unix time in ns on the machine.
+    int64 time = 2;
+    // The sequence number of the HB.
+    int64 sequence_number = 3;
+    // Address of the proxy service.
+    string address = 4;
+    // Port of the proxy service.
+    int32 port = 5;
+}
+
+message VizierHeartbeatAck {
+    enum HeartbeatStatus {
+        HB_UNKNOWN = 0;
+        HB_OK = 1;
+        HB_ERROR = 2;
+    }
+    HeartbeatStatus status = 1;
+    // The current unix time in ns on the machine.
+    int64 time = 2;
+    // The sequence number of the incoming HB.
+    int64 sequence_number = 3;
+    // Error message only set if HeartbeatStatus is not OK.
+    string error_message = 4;
+}
+
+message VizierInfo {
+    enum Status {
+        VZ_ST_UNKNOWN = 0;
+        VZ_ST_HEALTHY = 1;
+        VZ_ST_UNHEALTHY = 2;
+        VZ_ST_DISCONNECTED = 3;
+    }
+    // The ID for this Vizier.
+    uuidpb.UUID vizier_id = 1 [
+                              (gogoproto.customname) = "VizierID",
+                              (gogoproto.moretags) = "db:vizier_id"
+                              ];
+    Status status = 2;
+    // Time in ns since the last heart beat. Negative number implies heartbeat never received.
+    int64 last_heartbeat_ns = 3 [
+                                (gogoproto.moretags) = "db:last_heartbeat"
+                                ];
+}
+
+// Information require to connect to a vizier cluster.
+message VizierConnectionInfo {
+    string ip_address = 1 [
+                          (gogoproto.customname) = "IPAddress",
+                          (gogoproto.moretags) = "db:ip_address"
+                          ];
+    string token = 2;
+}
+
+message VizierSSLCertRequest {
+    uuidpb.UUID vizier_id = 1 [
+                              (gogoproto.customname) = "VizierID"
+                              ];
+}
+
+message VizierSSLCertResponse {
+    string key = 1;
+    string cert = 2;
 }
 
 // MetadataRequest is the message used by cloud to request a specific metadata from Vizier.

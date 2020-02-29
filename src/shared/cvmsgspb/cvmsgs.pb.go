@@ -12,8 +12,10 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	reflect "reflect"
+	strconv "strconv"
 	strings "strings"
 )
 
@@ -27,6 +29,81 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+
+type RegisterVizierAck_RegistrationStatus int32
+
+const (
+	ST_UNKNOWN          RegisterVizierAck_RegistrationStatus = 0
+	ST_OK               RegisterVizierAck_RegistrationStatus = 1
+	ST_FAILED_NOT_FOUND RegisterVizierAck_RegistrationStatus = 2
+)
+
+var RegisterVizierAck_RegistrationStatus_name = map[int32]string{
+	0: "ST_UNKNOWN",
+	1: "ST_OK",
+	2: "ST_FAILED_NOT_FOUND",
+}
+
+var RegisterVizierAck_RegistrationStatus_value = map[string]int32{
+	"ST_UNKNOWN":          0,
+	"ST_OK":               1,
+	"ST_FAILED_NOT_FOUND": 2,
+}
+
+func (RegisterVizierAck_RegistrationStatus) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{2, 0}
+}
+
+type VizierHeartbeatAck_HeartbeatStatus int32
+
+const (
+	HB_UNKNOWN VizierHeartbeatAck_HeartbeatStatus = 0
+	HB_OK      VizierHeartbeatAck_HeartbeatStatus = 1
+	HB_ERROR   VizierHeartbeatAck_HeartbeatStatus = 2
+)
+
+var VizierHeartbeatAck_HeartbeatStatus_name = map[int32]string{
+	0: "HB_UNKNOWN",
+	1: "HB_OK",
+	2: "HB_ERROR",
+}
+
+var VizierHeartbeatAck_HeartbeatStatus_value = map[string]int32{
+	"HB_UNKNOWN": 0,
+	"HB_OK":      1,
+	"HB_ERROR":   2,
+}
+
+func (VizierHeartbeatAck_HeartbeatStatus) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{4, 0}
+}
+
+type VizierInfo_Status int32
+
+const (
+	VZ_ST_UNKNOWN      VizierInfo_Status = 0
+	VZ_ST_HEALTHY      VizierInfo_Status = 1
+	VZ_ST_UNHEALTHY    VizierInfo_Status = 2
+	VZ_ST_DISCONNECTED VizierInfo_Status = 3
+)
+
+var VizierInfo_Status_name = map[int32]string{
+	0: "VZ_ST_UNKNOWN",
+	1: "VZ_ST_HEALTHY",
+	2: "VZ_ST_UNHEALTHY",
+	3: "VZ_ST_DISCONNECTED",
+}
+
+var VizierInfo_Status_value = map[string]int32{
+	"VZ_ST_UNKNOWN":      0,
+	"VZ_ST_HEALTHY":      1,
+	"VZ_ST_UNHEALTHY":    2,
+	"VZ_ST_DISCONNECTED": 3,
+}
+
+func (VizierInfo_Status) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{5, 0}
+}
 
 type MetadataUpdate struct {
 	Update *metadatapb.ResourceUpdate `protobuf:"bytes,1,opt,name=update,proto3" json:"update,omitempty"`
@@ -71,6 +148,454 @@ func (m *MetadataUpdate) GetUpdate() *metadatapb.ResourceUpdate {
 	return nil
 }
 
+type RegisterVizierRequest struct {
+	VizierID *proto1.UUID `protobuf:"bytes,1,opt,name=vizier_id,json=vizierId,proto3" json:"vizier_id,omitempty"`
+	JwtKey   string       `protobuf:"bytes,2,opt,name=jwt_key,json=jwtKey,proto3" json:"jwt_key,omitempty"`
+	Address  string       `protobuf:"bytes,3,opt,name=address,proto3" json:"address,omitempty"`
+}
+
+func (m *RegisterVizierRequest) Reset()      { *m = RegisterVizierRequest{} }
+func (*RegisterVizierRequest) ProtoMessage() {}
+func (*RegisterVizierRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{1}
+}
+func (m *RegisterVizierRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterVizierRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterVizierRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterVizierRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterVizierRequest.Merge(m, src)
+}
+func (m *RegisterVizierRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *RegisterVizierRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterVizierRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterVizierRequest proto.InternalMessageInfo
+
+func (m *RegisterVizierRequest) GetVizierID() *proto1.UUID {
+	if m != nil {
+		return m.VizierID
+	}
+	return nil
+}
+
+func (m *RegisterVizierRequest) GetJwtKey() string {
+	if m != nil {
+		return m.JwtKey
+	}
+	return ""
+}
+
+func (m *RegisterVizierRequest) GetAddress() string {
+	if m != nil {
+		return m.Address
+	}
+	return ""
+}
+
+type RegisterVizierAck struct {
+	Status RegisterVizierAck_RegistrationStatus `protobuf:"varint,1,opt,name=status,proto3,enum=pl.cvmsgspb.RegisterVizierAck_RegistrationStatus" json:"status,omitempty"`
+}
+
+func (m *RegisterVizierAck) Reset()      { *m = RegisterVizierAck{} }
+func (*RegisterVizierAck) ProtoMessage() {}
+func (*RegisterVizierAck) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{2}
+}
+func (m *RegisterVizierAck) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterVizierAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterVizierAck.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterVizierAck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterVizierAck.Merge(m, src)
+}
+func (m *RegisterVizierAck) XXX_Size() int {
+	return m.Size()
+}
+func (m *RegisterVizierAck) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterVizierAck.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterVizierAck proto.InternalMessageInfo
+
+func (m *RegisterVizierAck) GetStatus() RegisterVizierAck_RegistrationStatus {
+	if m != nil {
+		return m.Status
+	}
+	return ST_UNKNOWN
+}
+
+type VizierHeartbeat struct {
+	VizierID       *proto1.UUID `protobuf:"bytes,1,opt,name=vizier_id,json=vizierId,proto3" json:"vizier_id,omitempty"`
+	Time           int64        `protobuf:"varint,2,opt,name=time,proto3" json:"time,omitempty"`
+	SequenceNumber int64        `protobuf:"varint,3,opt,name=sequence_number,json=sequenceNumber,proto3" json:"sequence_number,omitempty"`
+	Address        string       `protobuf:"bytes,4,opt,name=address,proto3" json:"address,omitempty"`
+	Port           int32        `protobuf:"varint,5,opt,name=port,proto3" json:"port,omitempty"`
+}
+
+func (m *VizierHeartbeat) Reset()      { *m = VizierHeartbeat{} }
+func (*VizierHeartbeat) ProtoMessage() {}
+func (*VizierHeartbeat) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{3}
+}
+func (m *VizierHeartbeat) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *VizierHeartbeat) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_VizierHeartbeat.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *VizierHeartbeat) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VizierHeartbeat.Merge(m, src)
+}
+func (m *VizierHeartbeat) XXX_Size() int {
+	return m.Size()
+}
+func (m *VizierHeartbeat) XXX_DiscardUnknown() {
+	xxx_messageInfo_VizierHeartbeat.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_VizierHeartbeat proto.InternalMessageInfo
+
+func (m *VizierHeartbeat) GetVizierID() *proto1.UUID {
+	if m != nil {
+		return m.VizierID
+	}
+	return nil
+}
+
+func (m *VizierHeartbeat) GetTime() int64 {
+	if m != nil {
+		return m.Time
+	}
+	return 0
+}
+
+func (m *VizierHeartbeat) GetSequenceNumber() int64 {
+	if m != nil {
+		return m.SequenceNumber
+	}
+	return 0
+}
+
+func (m *VizierHeartbeat) GetAddress() string {
+	if m != nil {
+		return m.Address
+	}
+	return ""
+}
+
+func (m *VizierHeartbeat) GetPort() int32 {
+	if m != nil {
+		return m.Port
+	}
+	return 0
+}
+
+type VizierHeartbeatAck struct {
+	Status         VizierHeartbeatAck_HeartbeatStatus `protobuf:"varint,1,opt,name=status,proto3,enum=pl.cvmsgspb.VizierHeartbeatAck_HeartbeatStatus" json:"status,omitempty"`
+	Time           int64                              `protobuf:"varint,2,opt,name=time,proto3" json:"time,omitempty"`
+	SequenceNumber int64                              `protobuf:"varint,3,opt,name=sequence_number,json=sequenceNumber,proto3" json:"sequence_number,omitempty"`
+	ErrorMessage   string                             `protobuf:"bytes,4,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+}
+
+func (m *VizierHeartbeatAck) Reset()      { *m = VizierHeartbeatAck{} }
+func (*VizierHeartbeatAck) ProtoMessage() {}
+func (*VizierHeartbeatAck) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{4}
+}
+func (m *VizierHeartbeatAck) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *VizierHeartbeatAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_VizierHeartbeatAck.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *VizierHeartbeatAck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VizierHeartbeatAck.Merge(m, src)
+}
+func (m *VizierHeartbeatAck) XXX_Size() int {
+	return m.Size()
+}
+func (m *VizierHeartbeatAck) XXX_DiscardUnknown() {
+	xxx_messageInfo_VizierHeartbeatAck.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_VizierHeartbeatAck proto.InternalMessageInfo
+
+func (m *VizierHeartbeatAck) GetStatus() VizierHeartbeatAck_HeartbeatStatus {
+	if m != nil {
+		return m.Status
+	}
+	return HB_UNKNOWN
+}
+
+func (m *VizierHeartbeatAck) GetTime() int64 {
+	if m != nil {
+		return m.Time
+	}
+	return 0
+}
+
+func (m *VizierHeartbeatAck) GetSequenceNumber() int64 {
+	if m != nil {
+		return m.SequenceNumber
+	}
+	return 0
+}
+
+func (m *VizierHeartbeatAck) GetErrorMessage() string {
+	if m != nil {
+		return m.ErrorMessage
+	}
+	return ""
+}
+
+type VizierInfo struct {
+	VizierID        *proto1.UUID      `protobuf:"bytes,1,opt,name=vizier_id,json=vizierId,proto3" json:"vizier_id,omitempty" db:vizier_id`
+	Status          VizierInfo_Status `protobuf:"varint,2,opt,name=status,proto3,enum=pl.cvmsgspb.VizierInfo_Status" json:"status,omitempty"`
+	LastHeartbeatNs int64             `protobuf:"varint,3,opt,name=last_heartbeat_ns,json=lastHeartbeatNs,proto3" json:"last_heartbeat_ns,omitempty" db:last_heartbeat`
+}
+
+func (m *VizierInfo) Reset()      { *m = VizierInfo{} }
+func (*VizierInfo) ProtoMessage() {}
+func (*VizierInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{5}
+}
+func (m *VizierInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *VizierInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_VizierInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *VizierInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VizierInfo.Merge(m, src)
+}
+func (m *VizierInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *VizierInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_VizierInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_VizierInfo proto.InternalMessageInfo
+
+func (m *VizierInfo) GetVizierID() *proto1.UUID {
+	if m != nil {
+		return m.VizierID
+	}
+	return nil
+}
+
+func (m *VizierInfo) GetStatus() VizierInfo_Status {
+	if m != nil {
+		return m.Status
+	}
+	return VZ_ST_UNKNOWN
+}
+
+func (m *VizierInfo) GetLastHeartbeatNs() int64 {
+	if m != nil {
+		return m.LastHeartbeatNs
+	}
+	return 0
+}
+
+type VizierConnectionInfo struct {
+	IPAddress string `protobuf:"bytes,1,opt,name=ip_address,json=ipAddress,proto3" json:"ip_address,omitempty" db:ip_address`
+	Token     string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+}
+
+func (m *VizierConnectionInfo) Reset()      { *m = VizierConnectionInfo{} }
+func (*VizierConnectionInfo) ProtoMessage() {}
+func (*VizierConnectionInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{6}
+}
+func (m *VizierConnectionInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *VizierConnectionInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_VizierConnectionInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *VizierConnectionInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VizierConnectionInfo.Merge(m, src)
+}
+func (m *VizierConnectionInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *VizierConnectionInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_VizierConnectionInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_VizierConnectionInfo proto.InternalMessageInfo
+
+func (m *VizierConnectionInfo) GetIPAddress() string {
+	if m != nil {
+		return m.IPAddress
+	}
+	return ""
+}
+
+func (m *VizierConnectionInfo) GetToken() string {
+	if m != nil {
+		return m.Token
+	}
+	return ""
+}
+
+type VizierSSLCertRequest struct {
+	VizierID *proto1.UUID `protobuf:"bytes,1,opt,name=vizier_id,json=vizierId,proto3" json:"vizier_id,omitempty"`
+}
+
+func (m *VizierSSLCertRequest) Reset()      { *m = VizierSSLCertRequest{} }
+func (*VizierSSLCertRequest) ProtoMessage() {}
+func (*VizierSSLCertRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{7}
+}
+func (m *VizierSSLCertRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *VizierSSLCertRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_VizierSSLCertRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *VizierSSLCertRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VizierSSLCertRequest.Merge(m, src)
+}
+func (m *VizierSSLCertRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *VizierSSLCertRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_VizierSSLCertRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_VizierSSLCertRequest proto.InternalMessageInfo
+
+func (m *VizierSSLCertRequest) GetVizierID() *proto1.UUID {
+	if m != nil {
+		return m.VizierID
+	}
+	return nil
+}
+
+type VizierSSLCertResponse struct {
+	Key  string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Cert string `protobuf:"bytes,2,opt,name=cert,proto3" json:"cert,omitempty"`
+}
+
+func (m *VizierSSLCertResponse) Reset()      { *m = VizierSSLCertResponse{} }
+func (*VizierSSLCertResponse) ProtoMessage() {}
+func (*VizierSSLCertResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5a48c2306678667b, []int{8}
+}
+func (m *VizierSSLCertResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *VizierSSLCertResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_VizierSSLCertResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *VizierSSLCertResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VizierSSLCertResponse.Merge(m, src)
+}
+func (m *VizierSSLCertResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *VizierSSLCertResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_VizierSSLCertResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_VizierSSLCertResponse proto.InternalMessageInfo
+
+func (m *VizierSSLCertResponse) GetKey() string {
+	if m != nil {
+		return m.Key
+	}
+	return ""
+}
+
+func (m *VizierSSLCertResponse) GetCert() string {
+	if m != nil {
+		return m.Cert
+	}
+	return ""
+}
+
 type MetadataRequest struct {
 	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	To   string `protobuf:"bytes,2,opt,name=to,proto3" json:"to,omitempty"`
@@ -79,7 +604,7 @@ type MetadataRequest struct {
 func (m *MetadataRequest) Reset()      { *m = MetadataRequest{} }
 func (*MetadataRequest) ProtoMessage() {}
 func (*MetadataRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{1}
+	return fileDescriptor_5a48c2306678667b, []int{9}
 }
 func (m *MetadataRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -129,7 +654,7 @@ type MetadataResponse struct {
 func (m *MetadataResponse) Reset()      { *m = MetadataResponse{} }
 func (*MetadataResponse) ProtoMessage() {}
 func (*MetadataResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{2}
+	return fileDescriptor_5a48c2306678667b, []int{10}
 }
 func (m *MetadataResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -172,7 +697,7 @@ type VLogMessage struct {
 func (m *VLogMessage) Reset()      { *m = VLogMessage{} }
 func (*VLogMessage) ProtoMessage() {}
 func (*VLogMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{3}
+	return fileDescriptor_5a48c2306678667b, []int{11}
 }
 func (m *VLogMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -218,7 +743,7 @@ type V2CMessage struct {
 func (m *V2CMessage) Reset()      { *m = V2CMessage{} }
 func (*V2CMessage) ProtoMessage() {}
 func (*V2CMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{4}
+	return fileDescriptor_5a48c2306678667b, []int{12}
 }
 func (m *V2CMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -283,7 +808,7 @@ type C2VMessage struct {
 func (m *C2VMessage) Reset()      { *m = C2VMessage{} }
 func (*C2VMessage) ProtoMessage() {}
 func (*C2VMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5a48c2306678667b, []int{5}
+	return fileDescriptor_5a48c2306678667b, []int{13}
 }
 func (m *C2VMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -327,7 +852,18 @@ func (m *C2VMessage) GetMsg() *types.Any {
 }
 
 func init() {
+	proto.RegisterEnum("pl.cvmsgspb.RegisterVizierAck_RegistrationStatus", RegisterVizierAck_RegistrationStatus_name, RegisterVizierAck_RegistrationStatus_value)
+	proto.RegisterEnum("pl.cvmsgspb.VizierHeartbeatAck_HeartbeatStatus", VizierHeartbeatAck_HeartbeatStatus_name, VizierHeartbeatAck_HeartbeatStatus_value)
+	proto.RegisterEnum("pl.cvmsgspb.VizierInfo_Status", VizierInfo_Status_name, VizierInfo_Status_value)
 	proto.RegisterType((*MetadataUpdate)(nil), "pl.cvmsgspb.MetadataUpdate")
+	proto.RegisterType((*RegisterVizierRequest)(nil), "pl.cvmsgspb.RegisterVizierRequest")
+	proto.RegisterType((*RegisterVizierAck)(nil), "pl.cvmsgspb.RegisterVizierAck")
+	proto.RegisterType((*VizierHeartbeat)(nil), "pl.cvmsgspb.VizierHeartbeat")
+	proto.RegisterType((*VizierHeartbeatAck)(nil), "pl.cvmsgspb.VizierHeartbeatAck")
+	proto.RegisterType((*VizierInfo)(nil), "pl.cvmsgspb.VizierInfo")
+	proto.RegisterType((*VizierConnectionInfo)(nil), "pl.cvmsgspb.VizierConnectionInfo")
+	proto.RegisterType((*VizierSSLCertRequest)(nil), "pl.cvmsgspb.VizierSSLCertRequest")
+	proto.RegisterType((*VizierSSLCertResponse)(nil), "pl.cvmsgspb.VizierSSLCertResponse")
 	proto.RegisterType((*MetadataRequest)(nil), "pl.cvmsgspb.MetadataRequest")
 	proto.RegisterType((*MetadataResponse)(nil), "pl.cvmsgspb.MetadataResponse")
 	proto.RegisterType((*VLogMessage)(nil), "pl.cvmsgspb.VLogMessage")
@@ -338,39 +874,94 @@ func init() {
 func init() { proto.RegisterFile("src/shared/cvmsgspb/cvmsgs.proto", fileDescriptor_5a48c2306678667b) }
 
 var fileDescriptor_5a48c2306678667b = []byte{
-	// 474 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0xcf, 0x6b, 0x13, 0x41,
-	0x18, 0xdd, 0x49, 0x4a, 0x6d, 0xbe, 0x94, 0x2a, 0x8b, 0x87, 0x58, 0x70, 0x8c, 0x7b, 0x90, 0x78,
-	0xe8, 0x2c, 0x44, 0x84, 0x82, 0x20, 0x9a, 0x7a, 0x09, 0xd8, 0xcb, 0x42, 0xf7, 0xe0, 0x25, 0xec,
-	0x8f, 0xe9, 0x76, 0xe8, 0x6e, 0x66, 0xdc, 0x6f, 0xb6, 0x58, 0x4f, 0xfe, 0x09, 0xfe, 0x19, 0x5e,
-	0xfc, 0x3f, 0x3c, 0xe6, 0xd8, 0x93, 0x98, 0xcd, 0xc5, 0x63, 0xff, 0x04, 0xc9, 0xcc, 0x6e, 0x23,
-	0x22, 0x88, 0xbd, 0xbd, 0xef, 0x7d, 0xef, 0xbd, 0xef, 0x25, 0xc3, 0xc2, 0x10, 0xcb, 0xc4, 0xc7,
-	0xb3, 0xa8, 0xe4, 0xa9, 0x9f, 0x5c, 0x14, 0x98, 0xa1, 0x8a, 0x1b, 0xc0, 0x54, 0x29, 0xb5, 0x74,
-	0xfb, 0x2a, 0x67, 0xed, 0x66, 0xff, 0x20, 0x13, 0xfa, 0xac, 0x8a, 0x59, 0x22, 0x0b, 0x3f, 0x93,
-	0x99, 0xf4, 0x8d, 0x26, 0xae, 0x4e, 0xcd, 0x64, 0x06, 0x83, 0xac, 0x77, 0xff, 0x41, 0x26, 0x65,
-	0x96, 0xf3, 0x8d, 0x2a, 0x9a, 0x5f, 0x36, 0xab, 0xd1, 0x6f, 0x87, 0xcf, 0x0f, 0xd1, 0x2f, 0xb8,
-	0x8e, 0xd2, 0x48, 0x47, 0x2a, 0xbe, 0x81, 0x56, 0xe9, 0x05, 0xb0, 0x77, 0xdc, 0x30, 0x27, 0x2a,
-	0x8d, 0x34, 0x77, 0x5f, 0xc1, 0x76, 0x65, 0xd0, 0x80, 0x0c, 0xc9, 0xa8, 0x3f, 0x1e, 0x31, 0x95,
-	0x33, 0x9b, 0xc5, 0xce, 0x0f, 0x91, 0x6d, 0xb2, 0x58, 0xc0, 0x51, 0x56, 0x65, 0xc2, 0xad, 0x33,
-	0x68, 0x7c, 0xde, 0x73, 0xb8, 0xdb, 0x66, 0x06, 0xfc, 0x7d, 0xc5, 0x51, 0xbb, 0x2e, 0x6c, 0x9d,
-	0x96, 0xb2, 0x30, 0x91, 0xbd, 0xc0, 0x60, 0x77, 0x0f, 0x3a, 0x5a, 0x0e, 0x3a, 0x86, 0xe9, 0x68,
-	0xe9, 0x85, 0x70, 0x6f, 0x63, 0x43, 0x25, 0xe7, 0xc8, 0xdd, 0x09, 0xdc, 0xb1, 0xa1, 0x38, 0x20,
-	0xc3, 0xee, 0x7f, 0xb5, 0x69, 0x8d, 0xde, 0x63, 0xe8, 0x87, 0x6f, 0x65, 0x76, 0xcc, 0x11, 0xa3,
-	0x8c, 0xaf, 0xab, 0xac, 0x0d, 0xa6, 0xca, 0x6e, 0x60, 0xb0, 0xf7, 0x95, 0x00, 0x84, 0xe3, 0xa3,
-	0x56, 0xf2, 0x14, 0x7a, 0x17, 0xe2, 0xa3, 0xe0, 0xe5, 0x4c, 0xa4, 0xb6, 0xf2, 0x64, 0xb7, 0xfe,
-	0xfe, 0x68, 0x27, 0x34, 0xe4, 0xf4, 0x4d, 0xb0, 0x63, 0xd7, 0xd3, 0xd4, 0x3d, 0x80, 0x7e, 0x92,
-	0x57, 0xa8, 0x79, 0x39, 0xab, 0x44, 0x6a, 0x7f, 0xcd, 0x1f, 0x62, 0x68, 0x04, 0x27, 0x22, 0x75,
-	0x1f, 0x02, 0x20, 0x47, 0x14, 0x72, 0xbe, 0x8e, 0xee, 0x0e, 0xc9, 0xa8, 0x1b, 0xf4, 0x1a, 0x66,
-	0x9a, 0xba, 0x4f, 0xa0, 0x5b, 0x60, 0x36, 0xd8, 0x32, 0x7f, 0xfc, 0x7d, 0x66, 0x1f, 0x98, 0xb5,
-	0x0f, 0xcc, 0x5e, 0xcf, 0x2f, 0x83, 0xb5, 0xc0, 0x9b, 0x01, 0x1c, 0x8d, 0xc3, 0x5b, 0xd4, 0x6d,
-	0x0e, 0x74, 0xfe, 0x71, 0x60, 0xa2, 0x17, 0x4b, 0xea, 0x5c, 0x2d, 0xa9, 0x73, 0xbd, 0xa4, 0xe4,
-	0x53, 0x4d, 0xc9, 0x97, 0x9a, 0x92, 0x6f, 0x35, 0x25, 0x8b, 0x9a, 0x92, 0x1f, 0x35, 0x25, 0x3f,
-	0x6b, 0xea, 0x5c, 0xd7, 0x94, 0x7c, 0x5e, 0x51, 0x67, 0xb1, 0xa2, 0xce, 0xd5, 0x8a, 0x3a, 0xef,
-	0x5e, 0x2a, 0xf1, 0x41, 0xf0, 0x3c, 0x8a, 0x91, 0x45, 0xc2, 0xbf, 0x19, 0xfc, 0xbf, 0x7d, 0x06,
-	0x85, 0x2d, 0x8f, 0x2a, 0x7e, 0xd1, 0x72, 0xf1, 0xb6, 0x29, 0xf2, 0xec, 0x57, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0x15, 0xdb, 0x52, 0x26, 0x38, 0x03, 0x00, 0x00,
+	// 1009 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0x4b, 0x73, 0xe3, 0x44,
+	0x10, 0xb6, 0xec, 0xbc, 0xdc, 0x79, 0xd8, 0x99, 0x4d, 0xd8, 0xb0, 0x05, 0x4a, 0x10, 0x55, 0x10,
+	0x0e, 0x2b, 0x17, 0xa1, 0xa0, 0xb6, 0x42, 0x2d, 0x85, 0x1f, 0x59, 0x6c, 0x92, 0xb5, 0xa9, 0xf1,
+	0x83, 0x62, 0x39, 0xa8, 0x24, 0x6b, 0xa2, 0x68, 0x6d, 0x69, 0x84, 0x66, 0xb4, 0x4b, 0x38, 0x71,
+	0xe2, 0xcc, 0xcf, 0xd8, 0x0b, 0x55, 0x1c, 0xf9, 0x09, 0x1c, 0x73, 0xdc, 0x53, 0x8a, 0x38, 0x17,
+	0x8e, 0x5b, 0xb9, 0x72, 0xa1, 0x34, 0x1a, 0x39, 0xb6, 0xb3, 0x14, 0x8f, 0xe5, 0xd6, 0xdd, 0xd3,
+	0x5f, 0xf7, 0x37, 0x5f, 0x6b, 0xda, 0x86, 0x1d, 0x16, 0xf6, 0x4b, 0xec, 0xc4, 0x0c, 0x89, 0x5d,
+	0xea, 0x3f, 0xf1, 0x98, 0xc3, 0x02, 0x4b, 0x1a, 0x7a, 0x10, 0x52, 0x4e, 0xd1, 0x72, 0x30, 0xd4,
+	0xd3, 0x93, 0x3b, 0x77, 0x1d, 0x97, 0x9f, 0x44, 0x96, 0xde, 0xa7, 0x5e, 0xc9, 0xa1, 0x0e, 0x2d,
+	0x89, 0x1c, 0x2b, 0x3a, 0x16, 0x9e, 0x70, 0x84, 0x95, 0x60, 0xef, 0xbc, 0xee, 0x50, 0xea, 0x0c,
+	0xc9, 0x75, 0x96, 0xe9, 0x9f, 0xca, 0xa3, 0xdd, 0x89, 0xc6, 0x83, 0x7b, 0xac, 0xe4, 0x11, 0x6e,
+	0xda, 0x26, 0x37, 0x03, 0x6b, 0x6c, 0xca, 0x4c, 0x41, 0xb1, 0x4f, 0x3d, 0x8f, 0xfa, 0xa5, 0x28,
+	0x72, 0xed, 0xa4, 0x9a, 0x30, 0x93, 0x0c, 0x0d, 0xc3, 0xda, 0x43, 0x89, 0xe9, 0x06, 0xb6, 0xc9,
+	0x09, 0xfa, 0x14, 0x16, 0x22, 0x61, 0x6d, 0x29, 0x3b, 0xca, 0xee, 0xf2, 0xde, 0xae, 0x1e, 0x0c,
+	0xf5, 0xa4, 0x9b, 0x3e, 0xb8, 0xc7, 0xf4, 0xeb, 0x6e, 0x3a, 0x26, 0x8c, 0x46, 0x61, 0x9f, 0x24,
+	0x48, 0x2c, 0x71, 0xda, 0x0f, 0x0a, 0x6c, 0x62, 0xe2, 0xb8, 0x8c, 0x93, 0xb0, 0xe7, 0x7e, 0xe7,
+	0x92, 0x10, 0x93, 0x6f, 0x22, 0xc2, 0x38, 0xda, 0x87, 0xfc, 0x13, 0x11, 0x30, 0x5c, 0x5b, 0x96,
+	0x2f, 0xc4, 0xe5, 0x63, 0x42, 0x81, 0xa5, 0x77, 0xbb, 0x8d, 0x5a, 0x65, 0x65, 0x74, 0xbe, 0xbd,
+	0x94, 0xc0, 0x1a, 0x35, 0xbc, 0x94, 0xe4, 0x37, 0x6c, 0x74, 0x1b, 0x16, 0x1f, 0x3f, 0xe5, 0xc6,
+	0x80, 0x9c, 0x6e, 0x65, 0x77, 0x94, 0xdd, 0x3c, 0x5e, 0x78, 0xfc, 0x94, 0x1f, 0x92, 0x53, 0xb4,
+	0x05, 0x8b, 0xa6, 0x6d, 0x87, 0x84, 0xb1, 0xad, 0x9c, 0x38, 0x48, 0x5d, 0xed, 0x99, 0x02, 0xeb,
+	0xd3, 0x44, 0xca, 0xfd, 0x01, 0x6a, 0xc0, 0x02, 0xe3, 0x26, 0x8f, 0x98, 0x60, 0xb0, 0xb6, 0xf7,
+	0xbe, 0x3e, 0x31, 0x26, 0xfd, 0x46, 0xbe, 0x8c, 0x84, 0x26, 0x77, 0xa9, 0xdf, 0x16, 0x40, 0x2c,
+	0x0b, 0x68, 0x75, 0x40, 0x37, 0x4f, 0xd1, 0x1a, 0x40, 0xbb, 0x63, 0x74, 0x9b, 0x87, 0xcd, 0xd6,
+	0x97, 0xcd, 0x62, 0x06, 0xe5, 0x61, 0xbe, 0xdd, 0x31, 0x5a, 0x87, 0x45, 0x05, 0xdd, 0x86, 0x5b,
+	0xed, 0x8e, 0xf1, 0xa0, 0xdc, 0x38, 0x3a, 0xa8, 0x19, 0xcd, 0x56, 0xc7, 0x78, 0xd0, 0xea, 0x36,
+	0x6b, 0xc5, 0xac, 0xf6, 0x8b, 0x02, 0x85, 0xa4, 0x65, 0x9d, 0x98, 0x21, 0xb7, 0x88, 0xf9, 0x6a,
+	0x6a, 0x21, 0x98, 0xe3, 0xae, 0x47, 0x84, 0x54, 0x39, 0x2c, 0x6c, 0xf4, 0x2e, 0x14, 0x58, 0x3c,
+	0x08, 0xbf, 0x4f, 0x0c, 0x3f, 0xf2, 0x2c, 0x12, 0x0a, 0xc1, 0x72, 0x78, 0x2d, 0x0d, 0x37, 0x45,
+	0x74, 0x52, 0xd1, 0xb9, 0x29, 0x45, 0xe3, 0xb2, 0x01, 0x0d, 0xf9, 0xd6, 0xfc, 0x8e, 0xb2, 0x3b,
+	0x8f, 0x85, 0xad, 0xfd, 0xa1, 0x00, 0x9a, 0xa1, 0x1e, 0xcb, 0xfc, 0xd9, 0x8c, 0xcc, 0xa5, 0x29,
+	0x99, 0x6f, 0x02, 0xf4, 0xb1, 0x33, 0x2d, 0xf2, 0xab, 0x5d, 0xe5, 0x6d, 0x58, 0x25, 0x61, 0x48,
+	0x43, 0xc3, 0x23, 0x8c, 0x99, 0x0e, 0x91, 0x17, 0x5a, 0x11, 0xc1, 0x87, 0x49, 0x4c, 0xdb, 0x87,
+	0xc2, 0x4c, 0xf3, 0x78, 0x86, 0xf5, 0xca, 0xf4, 0x0c, 0xeb, 0x95, 0x64, 0x86, 0x2b, 0xb0, 0x54,
+	0xaf, 0x18, 0x07, 0x18, 0xb7, 0x70, 0x31, 0xab, 0xfd, 0x9c, 0x05, 0x90, 0xfa, 0xfb, 0xc7, 0x14,
+	0x7d, 0xfe, 0x0f, 0x66, 0xf6, 0xc6, 0xe4, 0xcc, 0xae, 0xce, 0xb7, 0x57, 0x6c, 0x6b, 0x7f, 0x0c,
+	0x9a, 0x98, 0xe1, 0x47, 0x63, 0x05, 0xb3, 0x42, 0x41, 0xf5, 0x25, 0x0a, 0xc6, 0x4d, 0xf5, 0x19,
+	0xc1, 0xca, 0xb0, 0x3e, 0x34, 0x19, 0x37, 0x4e, 0xd2, 0x3b, 0x19, 0x7e, 0xf2, 0x34, 0x72, 0x95,
+	0xcd, 0xab, 0xf3, 0xed, 0x75, 0xdb, 0xda, 0x9f, 0x3e, 0xc7, 0x85, 0xd8, 0x1f, 0x4b, 0xd0, 0x64,
+	0xda, 0xd7, 0xb0, 0x20, 0x85, 0x58, 0x87, 0xd5, 0xde, 0x23, 0x63, 0xea, 0x7b, 0x1e, 0x87, 0xea,
+	0x07, 0xe5, 0xa3, 0x4e, 0xfd, 0xab, 0xa2, 0x82, 0x6e, 0x41, 0x21, 0xcd, 0x4a, 0x83, 0x59, 0xf4,
+	0x1a, 0xa0, 0x24, 0x58, 0x6b, 0xb4, 0xab, 0xad, 0x66, 0xf3, 0xa0, 0xda, 0x39, 0xa8, 0x15, 0x73,
+	0xda, 0x00, 0x36, 0x12, 0xf2, 0x55, 0xea, 0xfb, 0xa4, 0x1f, 0xbf, 0x1c, 0xa1, 0xdd, 0x7d, 0x00,
+	0x37, 0x30, 0xd2, 0x2f, 0x2f, 0x16, 0x2f, 0x5f, 0x51, 0x47, 0xe7, 0xdb, 0xf9, 0xc6, 0x17, 0xe5,
+	0x24, 0x78, 0x75, 0xbe, 0xbd, 0x6a, 0x5b, 0xfb, 0xd7, 0x59, 0x38, 0xef, 0x06, 0xf2, 0x0c, 0x6d,
+	0xc0, 0x3c, 0xa7, 0x03, 0xe2, 0xcb, 0xf5, 0x90, 0x38, 0x1a, 0x4e, 0x9b, 0xb5, 0xdb, 0x47, 0x55,
+	0x12, 0xf2, 0xff, 0x61, 0x15, 0x69, 0xf7, 0x61, 0x73, 0xa6, 0x26, 0x0b, 0xa8, 0xcf, 0x08, 0x2a,
+	0x42, 0x2e, 0xde, 0x4f, 0x82, 0x3a, 0x8e, 0xcd, 0xf8, 0xe3, 0xed, 0x93, 0x90, 0x4b, 0x4e, 0xc2,
+	0xd6, 0x3e, 0x84, 0x42, 0xba, 0x73, 0x53, 0x36, 0x08, 0xe6, 0x8e, 0x43, 0xea, 0x49, 0xa4, 0xb0,
+	0xd1, 0x1a, 0x64, 0x39, 0x95, 0xc0, 0x2c, 0xa7, 0x5a, 0x0f, 0x8a, 0xd7, 0x30, 0xd9, 0xb0, 0x02,
+	0x8b, 0xc9, 0xd2, 0x8d, 0xf5, 0xca, 0xfd, 0xab, 0x6d, 0x9d, 0x02, 0xb5, 0xb7, 0x60, 0xb9, 0x77,
+	0x44, 0x1d, 0xf9, 0x18, 0x62, 0x2a, 0x31, 0x40, 0x50, 0x59, 0xc1, 0xc2, 0xd6, 0x7e, 0x52, 0x00,
+	0x7a, 0x7b, 0xd5, 0x34, 0xe5, 0xbd, 0x59, 0xed, 0xf2, 0x7f, 0xb9, 0x87, 0xee, 0xc2, 0x72, 0x7f,
+	0x18, 0xc5, 0x0b, 0xd5, 0x88, 0x5c, 0x3b, 0xb9, 0xcd, 0x4c, 0x32, 0xc8, 0x84, 0xae, 0x6b, 0xa3,
+	0x37, 0x01, 0x18, 0x61, 0xcc, 0xa5, 0x7e, 0x5c, 0x3a, 0x79, 0xd2, 0x79, 0x19, 0x69, 0xd8, 0xe8,
+	0x1d, 0xc8, 0x79, 0xcc, 0x11, 0x6f, 0x78, 0x79, 0x6f, 0x43, 0x4f, 0x7e, 0x22, 0xf5, 0xf4, 0x27,
+	0x52, 0x2f, 0xfb, 0xa7, 0x38, 0x4e, 0xd0, 0x0c, 0x80, 0xea, 0x5e, 0xef, 0x3f, 0xd0, 0x95, 0x0d,
+	0xb2, 0x7f, 0xd3, 0xa0, 0xc2, 0xcf, 0x2e, 0xd4, 0xcc, 0xf3, 0x0b, 0x35, 0xf3, 0xe2, 0x42, 0x55,
+	0xbe, 0x1f, 0xa9, 0xca, 0xb3, 0x91, 0xaa, 0xfc, 0x3a, 0x52, 0x95, 0xb3, 0x91, 0xaa, 0xfc, 0x36,
+	0x52, 0x95, 0xdf, 0x47, 0x6a, 0xe6, 0xc5, 0x48, 0x55, 0x7e, 0xbc, 0x54, 0x33, 0x67, 0x97, 0x6a,
+	0xe6, 0xf9, 0xa5, 0x9a, 0x79, 0xf4, 0x49, 0xe0, 0x7e, 0xeb, 0x92, 0xa1, 0x69, 0x31, 0xdd, 0x74,
+	0x4b, 0x63, 0xa7, 0xf4, 0xb2, 0x3f, 0x12, 0x72, 0x5f, 0xb1, 0xc0, 0xfa, 0x38, 0x8d, 0x59, 0x0b,
+	0x82, 0xc8, 0x07, 0x7f, 0x06, 0x00, 0x00, 0xff, 0xff, 0xb8, 0xcd, 0x6b, 0xd7, 0x7a, 0x08, 0x00,
+	0x00,
 }
 
+func (x RegisterVizierAck_RegistrationStatus) String() string {
+	s, ok := RegisterVizierAck_RegistrationStatus_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x VizierHeartbeatAck_HeartbeatStatus) String() string {
+	s, ok := VizierHeartbeatAck_HeartbeatStatus_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x VizierInfo_Status) String() string {
+	s, ok := VizierInfo_Status_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
 func (this *MetadataUpdate) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -391,6 +982,237 @@ func (this *MetadataUpdate) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.Update.Equal(that1.Update) {
+		return false
+	}
+	return true
+}
+func (this *RegisterVizierRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RegisterVizierRequest)
+	if !ok {
+		that2, ok := that.(RegisterVizierRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.VizierID.Equal(that1.VizierID) {
+		return false
+	}
+	if this.JwtKey != that1.JwtKey {
+		return false
+	}
+	if this.Address != that1.Address {
+		return false
+	}
+	return true
+}
+func (this *RegisterVizierAck) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RegisterVizierAck)
+	if !ok {
+		that2, ok := that.(RegisterVizierAck)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Status != that1.Status {
+		return false
+	}
+	return true
+}
+func (this *VizierHeartbeat) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierHeartbeat)
+	if !ok {
+		that2, ok := that.(VizierHeartbeat)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.VizierID.Equal(that1.VizierID) {
+		return false
+	}
+	if this.Time != that1.Time {
+		return false
+	}
+	if this.SequenceNumber != that1.SequenceNumber {
+		return false
+	}
+	if this.Address != that1.Address {
+		return false
+	}
+	if this.Port != that1.Port {
+		return false
+	}
+	return true
+}
+func (this *VizierHeartbeatAck) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierHeartbeatAck)
+	if !ok {
+		that2, ok := that.(VizierHeartbeatAck)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Status != that1.Status {
+		return false
+	}
+	if this.Time != that1.Time {
+		return false
+	}
+	if this.SequenceNumber != that1.SequenceNumber {
+		return false
+	}
+	if this.ErrorMessage != that1.ErrorMessage {
+		return false
+	}
+	return true
+}
+func (this *VizierInfo) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierInfo)
+	if !ok {
+		that2, ok := that.(VizierInfo)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.VizierID.Equal(that1.VizierID) {
+		return false
+	}
+	if this.Status != that1.Status {
+		return false
+	}
+	if this.LastHeartbeatNs != that1.LastHeartbeatNs {
+		return false
+	}
+	return true
+}
+func (this *VizierConnectionInfo) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierConnectionInfo)
+	if !ok {
+		that2, ok := that.(VizierConnectionInfo)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.IPAddress != that1.IPAddress {
+		return false
+	}
+	if this.Token != that1.Token {
+		return false
+	}
+	return true
+}
+func (this *VizierSSLCertRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierSSLCertRequest)
+	if !ok {
+		that2, ok := that.(VizierSSLCertRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.VizierID.Equal(that1.VizierID) {
+		return false
+	}
+	return true
+}
+func (this *VizierSSLCertResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierSSLCertResponse)
+	if !ok {
+		that2, ok := that.(VizierSSLCertResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Key != that1.Key {
+		return false
+	}
+	if this.Cert != that1.Cert {
 		return false
 	}
 	return true
@@ -547,6 +1369,107 @@ func (this *MetadataUpdate) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *RegisterVizierRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&cvmsgspb.RegisterVizierRequest{")
+	if this.VizierID != nil {
+		s = append(s, "VizierID: "+fmt.Sprintf("%#v", this.VizierID)+",\n")
+	}
+	s = append(s, "JwtKey: "+fmt.Sprintf("%#v", this.JwtKey)+",\n")
+	s = append(s, "Address: "+fmt.Sprintf("%#v", this.Address)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *RegisterVizierAck) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cvmsgspb.RegisterVizierAck{")
+	s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VizierHeartbeat) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&cvmsgspb.VizierHeartbeat{")
+	if this.VizierID != nil {
+		s = append(s, "VizierID: "+fmt.Sprintf("%#v", this.VizierID)+",\n")
+	}
+	s = append(s, "Time: "+fmt.Sprintf("%#v", this.Time)+",\n")
+	s = append(s, "SequenceNumber: "+fmt.Sprintf("%#v", this.SequenceNumber)+",\n")
+	s = append(s, "Address: "+fmt.Sprintf("%#v", this.Address)+",\n")
+	s = append(s, "Port: "+fmt.Sprintf("%#v", this.Port)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VizierHeartbeatAck) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&cvmsgspb.VizierHeartbeatAck{")
+	s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
+	s = append(s, "Time: "+fmt.Sprintf("%#v", this.Time)+",\n")
+	s = append(s, "SequenceNumber: "+fmt.Sprintf("%#v", this.SequenceNumber)+",\n")
+	s = append(s, "ErrorMessage: "+fmt.Sprintf("%#v", this.ErrorMessage)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VizierInfo) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&cvmsgspb.VizierInfo{")
+	if this.VizierID != nil {
+		s = append(s, "VizierID: "+fmt.Sprintf("%#v", this.VizierID)+",\n")
+	}
+	s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
+	s = append(s, "LastHeartbeatNs: "+fmt.Sprintf("%#v", this.LastHeartbeatNs)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VizierConnectionInfo) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&cvmsgspb.VizierConnectionInfo{")
+	s = append(s, "IPAddress: "+fmt.Sprintf("%#v", this.IPAddress)+",\n")
+	s = append(s, "Token: "+fmt.Sprintf("%#v", this.Token)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VizierSSLCertRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cvmsgspb.VizierSSLCertRequest{")
+	if this.VizierID != nil {
+		s = append(s, "VizierID: "+fmt.Sprintf("%#v", this.VizierID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VizierSSLCertResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&cvmsgspb.VizierSSLCertResponse{")
+	s = append(s, "Key: "+fmt.Sprintf("%#v", this.Key)+",\n")
+	s = append(s, "Cert: "+fmt.Sprintf("%#v", this.Cert)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *MetadataRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -645,6 +1568,339 @@ func (m *MetadataUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i -= size
 			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RegisterVizierRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterVizierRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterVizierRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Address) > 0 {
+		i -= len(m.Address)
+		copy(dAtA[i:], m.Address)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Address)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.JwtKey) > 0 {
+		i -= len(m.JwtKey)
+		copy(dAtA[i:], m.JwtKey)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.JwtKey)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.VizierID != nil {
+		{
+			size, err := m.VizierID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RegisterVizierAck) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterVizierAck) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterVizierAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Status != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.Status))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *VizierHeartbeat) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VizierHeartbeat) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierHeartbeat) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Port != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.Port))
+		i--
+		dAtA[i] = 0x28
+	}
+	if len(m.Address) > 0 {
+		i -= len(m.Address)
+		copy(dAtA[i:], m.Address)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Address)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.SequenceNumber != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.SequenceNumber))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.Time != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.Time))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.VizierID != nil {
+		{
+			size, err := m.VizierID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *VizierHeartbeatAck) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VizierHeartbeatAck) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierHeartbeatAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ErrorMessage) > 0 {
+		i -= len(m.ErrorMessage)
+		copy(dAtA[i:], m.ErrorMessage)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.ErrorMessage)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.SequenceNumber != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.SequenceNumber))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.Time != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.Time))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Status != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.Status))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *VizierInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VizierInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.LastHeartbeatNs != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.LastHeartbeatNs))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.Status != 0 {
+		i = encodeVarintCvmsgs(dAtA, i, uint64(m.Status))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.VizierID != nil {
+		{
+			size, err := m.VizierID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *VizierConnectionInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VizierConnectionInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierConnectionInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Token) > 0 {
+		i -= len(m.Token)
+		copy(dAtA[i:], m.Token)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Token)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.IPAddress) > 0 {
+		i -= len(m.IPAddress)
+		copy(dAtA[i:], m.IPAddress)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.IPAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *VizierSSLCertRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VizierSSLCertRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierSSLCertRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.VizierID != nil {
+		{
+			size, err := m.VizierID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCvmsgs(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *VizierSSLCertResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VizierSSLCertResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierSSLCertResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Cert) > 0 {
+		i -= len(m.Cert)
+		copy(dAtA[i:], m.Cert)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Cert)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintCvmsgs(dAtA, i, uint64(len(m.Key)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -875,6 +2131,153 @@ func (m *MetadataUpdate) Size() (n int) {
 	return n
 }
 
+func (m *RegisterVizierRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.VizierID != nil {
+		l = m.VizierID.Size()
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	l = len(m.JwtKey)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	l = len(m.Address)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *RegisterVizierAck) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Status != 0 {
+		n += 1 + sovCvmsgs(uint64(m.Status))
+	}
+	return n
+}
+
+func (m *VizierHeartbeat) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.VizierID != nil {
+		l = m.VizierID.Size()
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	if m.Time != 0 {
+		n += 1 + sovCvmsgs(uint64(m.Time))
+	}
+	if m.SequenceNumber != 0 {
+		n += 1 + sovCvmsgs(uint64(m.SequenceNumber))
+	}
+	l = len(m.Address)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	if m.Port != 0 {
+		n += 1 + sovCvmsgs(uint64(m.Port))
+	}
+	return n
+}
+
+func (m *VizierHeartbeatAck) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Status != 0 {
+		n += 1 + sovCvmsgs(uint64(m.Status))
+	}
+	if m.Time != 0 {
+		n += 1 + sovCvmsgs(uint64(m.Time))
+	}
+	if m.SequenceNumber != 0 {
+		n += 1 + sovCvmsgs(uint64(m.SequenceNumber))
+	}
+	l = len(m.ErrorMessage)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *VizierInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.VizierID != nil {
+		l = m.VizierID.Size()
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	if m.Status != 0 {
+		n += 1 + sovCvmsgs(uint64(m.Status))
+	}
+	if m.LastHeartbeatNs != 0 {
+		n += 1 + sovCvmsgs(uint64(m.LastHeartbeatNs))
+	}
+	return n
+}
+
+func (m *VizierConnectionInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.IPAddress)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	l = len(m.Token)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *VizierSSLCertRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.VizierID != nil {
+		l = m.VizierID.Size()
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *VizierSSLCertResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	l = len(m.Cert)
+	if l > 0 {
+		n += 1 + l + sovCvmsgs(uint64(l))
+	}
+	return n
+}
+
 func (m *MetadataRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -973,6 +2376,99 @@ func (this *MetadataUpdate) String() string {
 	}
 	s := strings.Join([]string{`&MetadataUpdate{`,
 		`Update:` + strings.Replace(fmt.Sprintf("%v", this.Update), "ResourceUpdate", "metadatapb.ResourceUpdate", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RegisterVizierRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RegisterVizierRequest{`,
+		`VizierID:` + strings.Replace(fmt.Sprintf("%v", this.VizierID), "UUID", "proto1.UUID", 1) + `,`,
+		`JwtKey:` + fmt.Sprintf("%v", this.JwtKey) + `,`,
+		`Address:` + fmt.Sprintf("%v", this.Address) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RegisterVizierAck) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RegisterVizierAck{`,
+		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierHeartbeat) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierHeartbeat{`,
+		`VizierID:` + strings.Replace(fmt.Sprintf("%v", this.VizierID), "UUID", "proto1.UUID", 1) + `,`,
+		`Time:` + fmt.Sprintf("%v", this.Time) + `,`,
+		`SequenceNumber:` + fmt.Sprintf("%v", this.SequenceNumber) + `,`,
+		`Address:` + fmt.Sprintf("%v", this.Address) + `,`,
+		`Port:` + fmt.Sprintf("%v", this.Port) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierHeartbeatAck) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierHeartbeatAck{`,
+		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
+		`Time:` + fmt.Sprintf("%v", this.Time) + `,`,
+		`SequenceNumber:` + fmt.Sprintf("%v", this.SequenceNumber) + `,`,
+		`ErrorMessage:` + fmt.Sprintf("%v", this.ErrorMessage) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierInfo) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierInfo{`,
+		`VizierID:` + strings.Replace(fmt.Sprintf("%v", this.VizierID), "UUID", "proto1.UUID", 1) + `,`,
+		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
+		`LastHeartbeatNs:` + fmt.Sprintf("%v", this.LastHeartbeatNs) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierConnectionInfo) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierConnectionInfo{`,
+		`IPAddress:` + fmt.Sprintf("%v", this.IPAddress) + `,`,
+		`Token:` + fmt.Sprintf("%v", this.Token) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierSSLCertRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierSSLCertRequest{`,
+		`VizierID:` + strings.Replace(fmt.Sprintf("%v", this.VizierID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierSSLCertResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierSSLCertResponse{`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Cert:` + fmt.Sprintf("%v", this.Cert) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1109,6 +2605,1001 @@ func (m *MetadataUpdate) Unmarshal(dAtA []byte) error {
 			if err := m.Update.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegisterVizierRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterVizierRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterVizierRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VizierID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.VizierID == nil {
+				m.VizierID = &proto1.UUID{}
+			}
+			if err := m.VizierID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field JwtKey", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.JwtKey = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Address = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegisterVizierAck) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterVizierAck: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterVizierAck: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			m.Status = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Status |= RegisterVizierAck_RegistrationStatus(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VizierHeartbeat) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VizierHeartbeat: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VizierHeartbeat: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VizierID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.VizierID == nil {
+				m.VizierID = &proto1.UUID{}
+			}
+			if err := m.VizierID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Time", wireType)
+			}
+			m.Time = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Time |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SequenceNumber", wireType)
+			}
+			m.SequenceNumber = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SequenceNumber |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Address = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Port", wireType)
+			}
+			m.Port = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Port |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VizierHeartbeatAck) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VizierHeartbeatAck: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VizierHeartbeatAck: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			m.Status = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Status |= VizierHeartbeatAck_HeartbeatStatus(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Time", wireType)
+			}
+			m.Time = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Time |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SequenceNumber", wireType)
+			}
+			m.SequenceNumber = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SequenceNumber |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ErrorMessage", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ErrorMessage = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VizierInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VizierInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VizierInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VizierID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.VizierID == nil {
+				m.VizierID = &proto1.UUID{}
+			}
+			if err := m.VizierID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			m.Status = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Status |= VizierInfo_Status(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastHeartbeatNs", wireType)
+			}
+			m.LastHeartbeatNs = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LastHeartbeatNs |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VizierConnectionInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VizierConnectionInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VizierConnectionInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IPAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IPAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Token", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Token = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VizierSSLCertRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VizierSSLCertRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VizierSSLCertRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VizierID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.VizierID == nil {
+				m.VizierID = &proto1.UUID{}
+			}
+			if err := m.VizierID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCvmsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VizierSSLCertResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCvmsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VizierSSLCertResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VizierSSLCertResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Cert", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCvmsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCvmsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Cert = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

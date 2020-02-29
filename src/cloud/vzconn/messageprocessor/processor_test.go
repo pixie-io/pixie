@@ -13,11 +13,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
-	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/messageprocessor"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
@@ -62,29 +62,29 @@ func TestMessageProcessor(t *testing.T) {
 	// TODO(zasgar/michelle): Fix this test.
 	t.Skip("This test is currently unstable.")
 	u := uuid.NewV4()
-	registerReq := &cloudpb.RegisterVizierRequest{
+	registerReq := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUID(&u),
 		JwtKey:   "the-key",
 	}
 
-	registerAckOK := &cloudpb.RegisterVizierAck{Status: cloudpb.ST_OK}
-	registerAckFailed := &cloudpb.RegisterVizierAck{Status: cloudpb.ST_FAILED_NOT_FOUND}
+	registerAckOK := &cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK}
+	registerAckFailed := &cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_FAILED_NOT_FOUND}
 
-	heartbeatReq := &cloudpb.VizierHeartbeat{
+	heartbeatReq := &cvmsgspb.VizierHeartbeat{
 		VizierID:       utils.ProtoFromUUID(&u),
 		Time:           100,
 		SequenceNumber: 1,
 	}
-	heartbeatOKAck := &cloudpb.VizierHeartbeatAck{
-		Status:         cloudpb.HB_OK,
+	heartbeatOKAck := &cvmsgspb.VizierHeartbeatAck{
+		Status:         cvmsgspb.HB_OK,
 		Time:           100,
 		SequenceNumber: 1,
 	}
-	sslRequest := &cloudpb.VizierSSLCertRequest{
+	sslRequest := &cvmsgspb.VizierSSLCertRequest{
 		VizierID: utils.ProtoFromUUID(&u),
 	}
 
-	sslResponseOK := &cloudpb.VizierSSLCertResponse{
+	sslResponseOK := &cvmsgspb.VizierSSLCertResponse{
 		Key:  "abcd",
 		Cert: "efgh",
 	}

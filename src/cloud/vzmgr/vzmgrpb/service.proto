@@ -4,7 +4,7 @@ package pl.services;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/common/uuid/proto/uuid.proto";
-import "src/cloud/cloudpb/cloud.proto";
+import "src/shared/cvmsgspb/cvmsgs.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb;vzmgrpb";
 
@@ -12,11 +12,11 @@ service VZMgrService {
   rpc CreateVizierCluster(CreateVizierClusterRequest) returns (uuidpb.UUID) {}
   rpc GetSSLCerts(GetSSLCertsRequest) returns (GetSSLCertsResponse) {}
   rpc GetViziersByOrg(uuidpb.UUID) returns (GetViziersByOrgResponse) {}
-  rpc GetVizierInfo(uuidpb.UUID) returns (VizierInfo) {}
-  rpc GetVizierConnectionInfo(uuidpb.UUID) returns (VizierConnectionInfo) {}
+  rpc GetVizierInfo(uuidpb.UUID) returns (pl.cvmsgspb.VizierInfo) {}
+  rpc GetVizierConnectionInfo(uuidpb.UUID) returns (pl.cvmsgspb.VizierConnectionInfo) {}
   // Call to acknowledge connection of a vizier.
-  rpc VizierConnected(RegisterVizierRequest) returns (RegisterVizierAck) {}
-  rpc HandleVizierHeartbeat(VizierHeartbeat) returns (VizierHeartbeatAck) {}
+  rpc VizierConnected(pl.cvmsgspb.RegisterVizierRequest) returns (pl.cvmsgspb.RegisterVizierAck) {}
+  rpc HandleVizierHeartbeat(pl.cvmsgspb.VizierHeartbeat) returns (pl.cvmsgspb.VizierHeartbeatAck) {}
 }
 
 message CreateVizierClusterRequest {

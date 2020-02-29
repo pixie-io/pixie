@@ -10,8 +10,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 )
@@ -136,7 +136,7 @@ func (s *Server) RegisterVizier(stream vzconnpb.VZConnService_CloudConnectClient
 	}
 
 	// Send over a registration request and wait for ACK.
-	regReq := &cloudpb.RegisterVizierRequest{
+	regReq := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUID(&s.vizierID),
 		JwtKey:   s.jwtSigningKey,
 		Address:  addr,
@@ -160,16 +160,16 @@ func (s *Server) RegisterVizier(stream vzconnpb.VZConnService_CloudConnectClient
 				return err
 			}
 
-			registerAck := &cloudpb.RegisterVizierAck{}
+			registerAck := &cvmsgspb.RegisterVizierAck{}
 			err = types.UnmarshalAny(resp.Msg, registerAck)
 			if err != nil {
 				return err
 			}
 
 			switch registerAck.Status {
-			case cloudpb.ST_FAILED_NOT_FOUND:
+			case cvmsgspb.ST_FAILED_NOT_FOUND:
 				return errors.New("registration not found, cluster unknown in pixie-cloud")
-			case cloudpb.ST_OK:
+			case cvmsgspb.ST_OK:
 				return nil
 			default:
 				return errors.New("registration unsuccessful: " + err.Error())
@@ -208,7 +208,7 @@ func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClien
 		log.WithError(err).Info("Unable to get vizier proxy address")
 	}
 
-	hbMsg := cloudpb.VizierHeartbeat{
+	hbMsg := cvmsgspb.VizierHeartbeat{
 		VizierID:       utils.ProtoFromUUID(&s.vizierID),
 		Time:           s.clock.Now().Unix(),
 		SequenceNumber: s.hbSeqNum,
@@ -243,7 +243,7 @@ func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClien
 		if err != nil {
 			return errors.New("Could not receive heartbeat ack")
 		}
-		hbAck := &cloudpb.VizierHeartbeatAck{}
+		hbAck := &cvmsgspb.VizierHeartbeatAck{}
 		err = types.UnmarshalAny(resp.Msg, hbAck)
 		if err != nil {
 			return errors.New("Could not unmarshal heartbeat ack")
@@ -261,7 +261,7 @@ func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClien
 // RequestAndHandleSSLCerts registers the cluster with VZConn.
 func (s *Server) RequestAndHandleSSLCerts(stream vzconnpb.VZConnService_CloudConnectClient) error {
 	// Send over a request for SSL certs.
-	regReq := &cloudpb.VizierSSLCertRequest{
+	regReq := &cvmsgspb.VizierSSLCertRequest{
 		VizierID: utils.ProtoFromUUID(&s.vizierID),
 	}
 	anyMsg, err := types.MarshalAny(regReq)
@@ -278,7 +278,7 @@ func (s *Server) RequestAndHandleSSLCerts(stream vzconnpb.VZConnService_CloudCon
 		return err
 	}
 
-	sslCertResp := &cloudpb.VizierSSLCertResponse{}
+	sslCertResp := &cvmsgspb.VizierSSLCertResponse{}
 	err = types.UnmarshalAny(resp.Msg, sslCertResp)
 	if err != nil {
 		return err

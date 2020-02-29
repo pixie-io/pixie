@@ -8,8 +8,8 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
-	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 
@@ -226,13 +226,13 @@ func (v *VizierClusterInfoServer) GetClusterConnectionInfo(ctx context.Context, 
 	}, nil
 }
 
-func vzStatusToClusterStatus(s cloudpb.VizierInfo_Status) cloudapipb.ClusterStatus {
+func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterStatus {
 	switch s {
-	case cloudpb.VZ_ST_HEALTHY:
+	case cvmsgspb.VZ_ST_HEALTHY:
 		return cloudapipb.CS_HEALTHY
-	case cloudpb.VZ_ST_UNHEALTHY:
+	case cvmsgspb.VZ_ST_UNHEALTHY:
 		return cloudapipb.CS_UNHEALTHY
-	case cloudpb.VZ_ST_DISCONNECTED:
+	case cvmsgspb.VZ_ST_DISCONNECTED:
 		return cloudapipb.CS_DISCONNECTED
 	default:
 		return cloudapipb.CS_UNKNOWN

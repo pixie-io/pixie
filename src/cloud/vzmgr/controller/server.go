@@ -15,10 +15,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	dnsmgr "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -38,18 +38,18 @@ func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgr.DNSMgrServiceClient) *Se
 	return &Server{db, dbKey, dnsMgrClient}
 }
 
-type vizierStatus cloudpb.VizierInfo_Status
+type vizierStatus cvmsgspb.VizierInfo_Status
 
 func (s vizierStatus) Value() (driver.Value, error) {
-	v := cloudpb.VizierInfo_Status(s)
+	v := cvmsgspb.VizierInfo_Status(s)
 	switch v {
-	case cloudpb.VZ_ST_UNKNOWN:
+	case cvmsgspb.VZ_ST_UNKNOWN:
 		return "UNKNOWN", nil
-	case cloudpb.VZ_ST_HEALTHY:
+	case cvmsgspb.VZ_ST_HEALTHY:
 		return "HEALTHY", nil
-	case cloudpb.VZ_ST_UNHEALTHY:
+	case cvmsgspb.VZ_ST_UNHEALTHY:
 		return "UNHEALTHY", nil
-	case cloudpb.VZ_ST_DISCONNECTED:
+	case cvmsgspb.VZ_ST_DISCONNECTED:
 		return "DISCONNECTED", nil
 	}
 	return nil, fmt.Errorf("failed to parse status: %v", s)
@@ -57,29 +57,29 @@ func (s vizierStatus) Value() (driver.Value, error) {
 
 func (s *vizierStatus) Scan(value interface{}) error {
 	if value == nil {
-		*s = vizierStatus(cloudpb.VZ_ST_UNKNOWN)
+		*s = vizierStatus(cvmsgspb.VZ_ST_UNKNOWN)
 		return nil
 	}
 	if sv, err := driver.String.ConvertValue(value); err == nil {
 		switch sv {
 		case "UNKNOWN":
 			{
-				*s = vizierStatus(cloudpb.VZ_ST_UNKNOWN)
+				*s = vizierStatus(cvmsgspb.VZ_ST_UNKNOWN)
 				return nil
 			}
 		case "HEALTHY":
 			{
-				*s = vizierStatus(cloudpb.VZ_ST_HEALTHY)
+				*s = vizierStatus(cvmsgspb.VZ_ST_HEALTHY)
 				return nil
 			}
 		case "UNHEALTHY":
 			{
-				*s = vizierStatus(cloudpb.VZ_ST_UNHEALTHY)
+				*s = vizierStatus(cvmsgspb.VZ_ST_UNHEALTHY)
 				return nil
 			}
 		case "DISCONNECTED":
 			{
-				*s = vizierStatus(cloudpb.VZ_ST_DISCONNECTED)
+				*s = vizierStatus(cvmsgspb.VZ_ST_DISCONNECTED)
 				return nil
 			}
 		}
@@ -88,8 +88,8 @@ func (s *vizierStatus) Scan(value interface{}) error {
 	return errors.New("failed to scan vizier status")
 }
 
-func (s vizierStatus) ToProto() cloudpb.VizierInfo_Status {
-	return cloudpb.VizierInfo_Status(s)
+func (s vizierStatus) ToProto() cvmsgspb.VizierInfo_Status {
+	return cvmsgspb.VizierInfo_Status(s)
 }
 
 // CreateVizierCluster creates a new tracked vizier cluster.
@@ -157,7 +157,7 @@ func (s *Server) GetViziersByOrg(ctx context.Context, orgID *uuidpb.UUID) (*vzmg
 }
 
 // GetVizierInfo returns info for the specified Vizier.
-func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cloudpb.VizierInfo, error) {
+func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb.VizierInfo, error) {
 	query := `SELECT vizier_cluster_id, status, last_heartbeat from vizier_cluster_info WHERE vizier_cluster_id=$1`
 	var val struct {
 		ID            uuid.UUID    `db:"vizier_cluster_id"`
@@ -184,7 +184,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cloudpb.
 		if val.LastHeartbeat != nil {
 			lastHearbeat = val.LastHeartbeat.UnixNano()
 		}
-		return &cloudpb.VizierInfo{
+		return &cvmsgspb.VizierInfo{
 			VizierID:        utils.ProtoFromUUID(&val.ID),
 			Status:          val.Status.ToProto(),
 			LastHeartbeatNs: lastHearbeat,
@@ -194,7 +194,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cloudpb.
 }
 
 // GetVizierConnectionInfo gets a viziers connection info,
-func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) (*cloudpb.VizierConnectionInfo, error) {
+func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb.VizierConnectionInfo, error) {
 	clusterID := utils.UUIDFromProtoOrNil(req)
 	if clusterID == uuid.Nil {
 		return nil, status.Error(codes.InvalidArgument, "failed to parse cluster id")
@@ -227,14 +227,14 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 		addr = "https://" + addr
 	}
 
-	return &cloudpb.VizierConnectionInfo{
+	return &cvmsgspb.VizierConnectionInfo{
 		IPAddress: addr,
 		Token:     tokenString,
 	}, nil
 }
 
 // VizierConnected is an the request made to the mgr to handle new Vizier connections.
-func (s *Server) VizierConnected(ctx context.Context, req *cloudpb.RegisterVizierRequest) (*cloudpb.RegisterVizierAck, error) {
+func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizierRequest) (*cvmsgspb.RegisterVizierAck, error) {
 	// Add a salt to the signing key.
 	salt := make([]byte, SaltLength/2)
 	_, err := rand.Read(salt)
@@ -265,11 +265,11 @@ func (s *Server) VizierConnected(ctx context.Context, req *cloudpb.RegisterVizie
 		return nil, status.Error(codes.NotFound, "no such cluster")
 	}
 
-	return &cloudpb.RegisterVizierAck{Status: cloudpb.ST_OK}, nil
+	return &cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK}, nil
 }
 
 // HandleVizierHeartbeat handles the heartbeat from connected viziers.
-func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cloudpb.VizierHeartbeat) (*cloudpb.VizierHeartbeatAck, error) {
+func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cvmsgspb.VizierHeartbeat) (*cvmsgspb.VizierHeartbeatAck, error) {
 	// Send DNS address.
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	if err != nil {
@@ -307,8 +307,8 @@ func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cloudpb.VizierH
 	// TODO(zasgar/michelle): handle sequence ID and time.
 	res, err := s.db.Exec(query, vzStatus, addr, vizierID)
 	if err != nil {
-		return &cloudpb.VizierHeartbeatAck{
-			Status:         cloudpb.HB_ERROR,
+		return &cvmsgspb.VizierHeartbeatAck{
+			Status:         cvmsgspb.HB_ERROR,
 			Time:           time.Now().Unix(),
 			SequenceNumber: req.SequenceNumber,
 			ErrorMessage:   "internal error, failed to update heartbeat",
@@ -320,8 +320,8 @@ func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cloudpb.VizierH
 		return nil, status.Error(codes.NotFound, "vizier not found")
 	}
 
-	return &cloudpb.VizierHeartbeatAck{
-		Status:         cloudpb.HB_OK,
+	return &cvmsgspb.VizierHeartbeatAck{
+		Status:         cvmsgspb.HB_OK,
 		Time:           time.Now().Unix(),
 		SequenceNumber: req.SequenceNumber,
 	}, nil

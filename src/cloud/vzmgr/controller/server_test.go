@@ -16,18 +16,18 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	mock_dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb/mock"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
-type vizierStatus cloudpb.VizierInfo_Status
+type vizierStatus cvmsgspb.VizierInfo_Status
 
 func setupTestDB(t *testing.T) (*sqlx.DB, func()) {
 	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
@@ -238,7 +238,7 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient)
-	req := &cloudpb.RegisterVizierRequest{
+	req := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
 	}
@@ -247,7 +247,7 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 
-	assert.Equal(t, resp.Status, cloudpb.ST_OK)
+	assert.Equal(t, resp.Status, cvmsgspb.ST_OK)
 
 	// Check to make sure DB insert for JWT signing key is correct.
 	clusterQuery := `SELECT PGP_SYM_DECRYPT(jwt_signing_key::bytea, 'test') as jwt_signing_key, status from vizier_cluster_info WHERE vizier_cluster_id=$1`
@@ -276,7 +276,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient)
-	req := &cloudpb.RegisterVizierRequest{
+	req := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
 		Address:  "127.0.0.1",
@@ -286,7 +286,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 
-	assert.Equal(t, resp.Status, cloudpb.ST_OK)
+	assert.Equal(t, resp.Status, cvmsgspb.ST_OK)
 
 	// Check to make sure DB insert for JWT signing key is correct.
 	clusterQuery := `SELECT PGP_SYM_DECRYPT(jwt_signing_key::bytea, 'test') as jwt_signing_key, status from vizier_cluster_info WHERE vizier_cluster_id=$1`
@@ -328,7 +328,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			GetDNSAddress(gomock.Any(), dnsMgrReq).
 			Return(dnsMgrResp, nil)
 
-		req := &cloudpb.VizierHeartbeat{
+		req := &cvmsgspb.VizierHeartbeat{
 			VizierID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 			Time:           100,
 			SequenceNumber: 200,
@@ -341,7 +341,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 
 		assert.Equal(t, resp.SequenceNumber, req.SequenceNumber)
 		assert.True(t, resp.Time >= time.Now().Unix())
-		assert.Equal(t, resp.Status, cloudpb.HB_OK)
+		assert.Equal(t, resp.Status, cvmsgspb.HB_OK)
 
 		clusterQuery := `SELECT status, address from vizier_cluster_info WHERE vizier_cluster_id=$1`
 
@@ -366,7 +366,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			GetDNSAddress(gomock.Any(), dnsMgrReq).
 			Return(nil, errors.New("Could not get DNS address"))
 
-		req := &cloudpb.VizierHeartbeat{
+		req := &cvmsgspb.VizierHeartbeat{
 			VizierID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 			Time:           100,
 			SequenceNumber: 200,
@@ -379,7 +379,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 
 		assert.Equal(t, resp.SequenceNumber, req.SequenceNumber)
 		assert.True(t, resp.Time >= time.Now().Unix())
-		assert.Equal(t, resp.Status, cloudpb.HB_OK)
+		assert.Equal(t, resp.Status, cvmsgspb.HB_OK)
 
 		clusterQuery := `SELECT status, address from vizier_cluster_info WHERE vizier_cluster_id=$1`
 
@@ -395,7 +395,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	})
 
 	t.Run("valid Vizier no address", func(t *testing.T) {
-		req := &cloudpb.VizierHeartbeat{
+		req := &cvmsgspb.VizierHeartbeat{
 			VizierID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 			Time:           100,
 			SequenceNumber: 200,
@@ -406,7 +406,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 
 		assert.Equal(t, resp.SequenceNumber, req.SequenceNumber)
 		assert.True(t, resp.Time >= time.Now().Unix())
-		assert.Equal(t, resp.Status, cloudpb.HB_OK)
+		assert.Equal(t, resp.Status, cvmsgspb.HB_OK)
 
 		clusterQuery := `SELECT status from vizier_cluster_info WHERE vizier_cluster_id=$1`
 
@@ -420,7 +420,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	})
 
 	t.Run("unknown Vizier", func(t *testing.T) {
-		req := &cloudpb.VizierHeartbeat{
+		req := &cvmsgspb.VizierHeartbeat{
 			VizierID:       utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 			Time:           100,
 			SequenceNumber: 200,

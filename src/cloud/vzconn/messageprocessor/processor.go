@@ -12,9 +12,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"
-	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 )
 
 // ErrorRegistrationFailedUnknown is the error for vizier registration failure.
@@ -68,7 +68,7 @@ func NewMessageProcessor(ctx context.Context, streamID uuid.UUID, vzmgrClient vz
 	}
 }
 
-func (m *MessageProcessor) handleRegisterMessage(msg *cloudpb.RegisterVizierRequest) error {
+func (m *MessageProcessor) handleRegisterMessage(msg *cvmsgspb.RegisterVizierRequest) error {
 	m.streamLog.WithField("vizier_id", msg.VizierID).
 		Info("Vizier registration request")
 
@@ -94,16 +94,16 @@ func (m *MessageProcessor) handleRegisterMessage(msg *cloudpb.RegisterVizierRequ
 	}, nil)
 
 	// If registration failed it's an error and we should destroy the stream processor.
-	if vzmgrResp.Status == cloudpb.ST_OK {
+	if vzmgrResp.Status == cvmsgspb.ST_OK {
 		return nil
 	}
-	if vzmgrResp.Status == cloudpb.ST_FAILED_NOT_FOUND {
+	if vzmgrResp.Status == cvmsgspb.ST_FAILED_NOT_FOUND {
 		return ErrorRegistrationFailedNotFound
 	}
 	return ErrorRegistrationFailedUnknown
 }
 
-func (m *MessageProcessor) handleVizierHeartbeat(msg *cloudpb.VizierHeartbeat) error {
+func (m *MessageProcessor) handleVizierHeartbeat(msg *cvmsgspb.VizierHeartbeat) error {
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	if err != nil {
 		return err
@@ -129,7 +129,7 @@ func (m *MessageProcessor) handleVizierHeartbeat(msg *cloudpb.VizierHeartbeat) e
 	return nil
 }
 
-func (m *MessageProcessor) handleSSLCertMessage(msg *cloudpb.VizierSSLCertRequest) error {
+func (m *MessageProcessor) handleSSLCertMessage(msg *cvmsgspb.VizierSSLCertRequest) error {
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	if err != nil {
 		return err
@@ -143,7 +143,7 @@ func (m *MessageProcessor) handleSSLCertMessage(msg *cloudpb.VizierSSLCertReques
 		return err
 	}
 
-	ccResp := &cloudpb.VizierSSLCertResponse{
+	ccResp := &cvmsgspb.VizierSSLCertResponse{
 		Key:  vzmgrResp.Key,
 		Cert: vzmgrResp.Cert,
 	}
@@ -169,7 +169,7 @@ func (m *MessageProcessor) handleMessage(msg *vzconnpb.CloudConnectRequest) erro
 	}
 
 	if !m.gotRegisterMessage {
-		if _, ok := dynamicMsg.Message.(*cloudpb.RegisterVizierRequest); !ok {
+		if _, ok := dynamicMsg.Message.(*cvmsgspb.RegisterVizierRequest); !ok {
 			m.streamLog.Errorf("Expected registration message as the first message, got: %s", msg.Msg.TypeUrl)
 			return errors.New("expected VizierRegistrationMessage")
 		}
@@ -177,12 +177,12 @@ func (m *MessageProcessor) handleMessage(msg *vzconnpb.CloudConnectRequest) erro
 	}
 
 	switch msg := dynamicMsg.Message.(type) {
-	case *cloudpb.RegisterVizierRequest:
+	case *cvmsgspb.RegisterVizierRequest:
 		err = m.handleRegisterMessage(msg)
-	case *cloudpb.VizierHeartbeat:
+	case *cvmsgspb.VizierHeartbeat:
 		// TODO(zasgar/michelle): move this to a channel.
 		err = m.handleVizierHeartbeat(msg)
-	case *cloudpb.VizierSSLCertRequest:
+	case *cvmsgspb.VizierSSLCertRequest:
 		err = m.handleSSLCertMessage(msg)
 	default:
 		m.streamLog.

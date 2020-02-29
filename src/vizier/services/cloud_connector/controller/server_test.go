@@ -10,9 +10,9 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	mock_vzconnpb "pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb/mock"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
@@ -32,7 +32,7 @@ func TestServer_Register(t *testing.T) {
 	mockCertMgr := mock_certmgrpb.NewMockCertMgrServiceClient(ctrl)
 	mockStream := mock_vzconnpb.NewMockVZConnService_CloudConnectClient(ctrl)
 
-	regReq := &cloudpb.RegisterVizierRequest{
+	regReq := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUID(&vizierUUID),
 		JwtKey:   "test-jwt",
 		Address:  "https://127.0.0.1",
@@ -46,8 +46,8 @@ func TestServer_Register(t *testing.T) {
 
 	mockStream.EXPECT().Send(wrappedReq).Return(nil)
 
-	regResp := &cloudpb.RegisterVizierAck{
-		Status: cloudpb.ST_OK,
+	regResp := &cvmsgspb.RegisterVizierAck{
+		Status: cvmsgspb.ST_OK,
 	}
 	regRespAny, err := types.MarshalAny(regResp)
 	assert.Nil(t, err)
@@ -77,7 +77,7 @@ func TestServer_HandleHeartbeat(t *testing.T) {
 	mockCertMgr := mock_certmgrpb.NewMockCertMgrServiceClient(ctrl)
 	mockStream := mock_vzconnpb.NewMockVZConnService_CloudConnectClient(ctrl)
 
-	hbReq := &cloudpb.VizierHeartbeat{
+	hbReq := &cvmsgspb.VizierHeartbeat{
 		VizierID:       utils.ProtoFromUUID(&vizierUUID),
 		Time:           10,
 		SequenceNumber: 0,
@@ -93,7 +93,7 @@ func TestServer_HandleHeartbeat(t *testing.T) {
 
 	mockStream.EXPECT().Send(wrappedReq).Return(nil)
 
-	hbResp := &cloudpb.VizierHeartbeatAck{
+	hbResp := &cvmsgspb.VizierHeartbeatAck{
 		SequenceNumber: 0,
 	}
 	hbRespAny, err := types.MarshalAny(hbResp)
@@ -124,7 +124,7 @@ func TestServer_HandleHeartbeat_EOFError(t *testing.T) {
 	mockCertMgr := mock_certmgrpb.NewMockCertMgrServiceClient(ctrl)
 	mockStream := mock_vzconnpb.NewMockVZConnService_CloudConnectClient(ctrl)
 
-	hbReq := &cloudpb.VizierHeartbeat{
+	hbReq := &cvmsgspb.VizierHeartbeat{
 		VizierID:       utils.ProtoFromUUID(&vizierUUID),
 		Time:           10,
 		SequenceNumber: 0,
@@ -163,7 +163,7 @@ func TestServer_RequestAndHandleSSLCerts(t *testing.T) {
 	mockStream := mock_vzconnpb.NewMockVZConnService_CloudConnectClient(ctrl)
 	mockStream.EXPECT().Context().Return(nil)
 
-	req := &cloudpb.VizierSSLCertRequest{
+	req := &cvmsgspb.VizierSSLCertRequest{
 		VizierID: utils.ProtoFromUUID(&vizierUUID),
 	}
 
@@ -176,7 +176,7 @@ func TestServer_RequestAndHandleSSLCerts(t *testing.T) {
 
 	mockStream.EXPECT().Send(wrappedReq).Return(nil)
 
-	resp := &cloudpb.VizierSSLCertResponse{
+	resp := &cvmsgspb.VizierSSLCertResponse{
 		Key:  "abcd",
 		Cert: "efgh",
 	}

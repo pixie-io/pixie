@@ -7,8 +7,8 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	uuid "github.com/satori/go.uuid"
 
-	cloudpb "pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -78,7 +78,7 @@ func (q *QueryResolver) Cluster(ctx context.Context) (*ClusterInfoResolver, erro
 // ClusterInfoResolver is the resolver responsible for cluster info.
 type ClusterInfoResolver struct {
 	clusterID       uuid.UUID
-	status          cloudpb.VizierInfo_Status
+	status          cvmsgspb.VizierInfo_Status
 	lastHeartbeatNs float64
 }
 

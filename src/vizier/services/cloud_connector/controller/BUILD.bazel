@@ -10,8 +10,8 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/cloudpb:cloud_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services:go_default_library",
         "//src/utils:go_default_library",
         "//src/vizier/services/certmgr/certmgrpb:service_go_proto",
@@ -34,9 +34,9 @@ go_test(
     srcs = ["server_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//src/cloud/cloudpb:cloud_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb/mock:go_default_library",
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/utils:go_default_library",
         "//src/utils/testingutils:go_default_library",
         "//src/vizier/services/certmgr/certmgrpb:service_go_proto",

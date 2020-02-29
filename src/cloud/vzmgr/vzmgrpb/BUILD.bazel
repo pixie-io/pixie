@@ -7,7 +7,7 @@ pl_proto_library(
     srcs = ["service.proto"],
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/cloudpb:cloud_pl_proto",
+        "//src/shared/cvmsgspb:cvmsgs_pl_proto",
         "//src/common/uuid/proto:uuid_pl_proto",
         "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
     ],
@@ -19,7 +19,7 @@ pl_go_proto_library(
     proto = ":service_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/cloudpb:cloud_pl_go_proto",
+        "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/common/uuid/proto:uuid_pl_go_proto",
         "@com_github_gogo_protobuf//gogoproto:go_default_library",
     ],

@@ -13,9 +13,9 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	cloudpb "pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
@@ -92,7 +92,7 @@ func TestClusterInfo(t *testing.T) {
 	mockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), &uuidpb.UUID{Data: []byte(orgID)}).
 		Return(vzrResp, nil)
 
-	vzrInfoResp := &cloudpb.VizierInfo{
+	vzrInfoResp := &cvmsgspb.VizierInfo{
 		VizierID:        &uuidpb.UUID{Data: []byte(clusterID)},
 		Status:          1,
 		LastHeartbeatNs: 4000000,
@@ -146,7 +146,7 @@ func TestClusterConnectionInfo(t *testing.T) {
 	mockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), &uuidpb.UUID{Data: []byte(orgID)}).
 		Return(vzrResp, nil)
 
-	vzrInfoResp := &cloudpb.VizierConnectionInfo{
+	vzrInfoResp := &cvmsgspb.VizierConnectionInfo{
 		IPAddress: "127.0.0.1",
 		Token:     "this-is-a-token",
 	}

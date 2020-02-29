@@ -8,9 +8,9 @@ import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	cloudpb "pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	proto "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	cvmsgspb "pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	reflect "reflect"
 )
 
@@ -39,6 +39,7 @@ func (m *MockVZMgrServiceClient) EXPECT() *MockVZMgrServiceClientMockRecorder {
 
 // CreateVizierCluster mocks base method
 func (m *MockVZMgrServiceClient) CreateVizierCluster(ctx context.Context, in *vzmgrpb.CreateVizierClusterRequest, opts ...grpc.CallOption) (*proto.UUID, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -51,12 +52,14 @@ func (m *MockVZMgrServiceClient) CreateVizierCluster(ctx context.Context, in *vz
 
 // CreateVizierCluster indicates an expected call of CreateVizierCluster
 func (mr *MockVZMgrServiceClientMockRecorder) CreateVizierCluster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVizierCluster", reflect.TypeOf((*MockVZMgrServiceClient)(nil).CreateVizierCluster), varargs...)
 }
 
 // GetSSLCerts mocks base method
 func (m *MockVZMgrServiceClient) GetSSLCerts(ctx context.Context, in *vzmgrpb.GetSSLCertsRequest, opts ...grpc.CallOption) (*vzmgrpb.GetSSLCertsResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -69,12 +72,14 @@ func (m *MockVZMgrServiceClient) GetSSLCerts(ctx context.Context, in *vzmgrpb.Ge
 
 // GetSSLCerts indicates an expected call of GetSSLCerts
 func (mr *MockVZMgrServiceClientMockRecorder) GetSSLCerts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSSLCerts", reflect.TypeOf((*MockVZMgrServiceClient)(nil).GetSSLCerts), varargs...)
 }
 
 // GetViziersByOrg mocks base method
 func (m *MockVZMgrServiceClient) GetViziersByOrg(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*vzmgrpb.GetViziersByOrgResponse, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -87,78 +92,87 @@ func (m *MockVZMgrServiceClient) GetViziersByOrg(ctx context.Context, in *proto.
 
 // GetViziersByOrg indicates an expected call of GetViziersByOrg
 func (mr *MockVZMgrServiceClientMockRecorder) GetViziersByOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetViziersByOrg", reflect.TypeOf((*MockVZMgrServiceClient)(nil).GetViziersByOrg), varargs...)
 }
 
 // GetVizierInfo mocks base method
-func (m *MockVZMgrServiceClient) GetVizierInfo(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*cloudpb.VizierInfo, error) {
+func (m *MockVZMgrServiceClient) GetVizierInfo(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierInfo, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetVizierInfo", varargs...)
-	ret0, _ := ret[0].(*cloudpb.VizierInfo)
+	ret0, _ := ret[0].(*cvmsgspb.VizierInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVizierInfo indicates an expected call of GetVizierInfo
 func (mr *MockVZMgrServiceClientMockRecorder) GetVizierInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVizierInfo", reflect.TypeOf((*MockVZMgrServiceClient)(nil).GetVizierInfo), varargs...)
 }
 
 // GetVizierConnectionInfo mocks base method
-func (m *MockVZMgrServiceClient) GetVizierConnectionInfo(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*cloudpb.VizierConnectionInfo, error) {
+func (m *MockVZMgrServiceClient) GetVizierConnectionInfo(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierConnectionInfo, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetVizierConnectionInfo", varargs...)
-	ret0, _ := ret[0].(*cloudpb.VizierConnectionInfo)
+	ret0, _ := ret[0].(*cvmsgspb.VizierConnectionInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVizierConnectionInfo indicates an expected call of GetVizierConnectionInfo
 func (mr *MockVZMgrServiceClientMockRecorder) GetVizierConnectionInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVizierConnectionInfo", reflect.TypeOf((*MockVZMgrServiceClient)(nil).GetVizierConnectionInfo), varargs...)
 }
 
 // VizierConnected mocks base method
-func (m *MockVZMgrServiceClient) VizierConnected(ctx context.Context, in *cloudpb.RegisterVizierRequest, opts ...grpc.CallOption) (*cloudpb.RegisterVizierAck, error) {
+func (m *MockVZMgrServiceClient) VizierConnected(ctx context.Context, in *cvmsgspb.RegisterVizierRequest, opts ...grpc.CallOption) (*cvmsgspb.RegisterVizierAck, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "VizierConnected", varargs...)
-	ret0, _ := ret[0].(*cloudpb.RegisterVizierAck)
+	ret0, _ := ret[0].(*cvmsgspb.RegisterVizierAck)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // VizierConnected indicates an expected call of VizierConnected
 func (mr *MockVZMgrServiceClientMockRecorder) VizierConnected(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VizierConnected", reflect.TypeOf((*MockVZMgrServiceClient)(nil).VizierConnected), varargs...)
 }
 
 // HandleVizierHeartbeat mocks base method
-func (m *MockVZMgrServiceClient) HandleVizierHeartbeat(ctx context.Context, in *cloudpb.VizierHeartbeat, opts ...grpc.CallOption) (*cloudpb.VizierHeartbeatAck, error) {
+func (m *MockVZMgrServiceClient) HandleVizierHeartbeat(ctx context.Context, in *cvmsgspb.VizierHeartbeat, opts ...grpc.CallOption) (*cvmsgspb.VizierHeartbeatAck, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "HandleVizierHeartbeat", varargs...)
-	ret0, _ := ret[0].(*cloudpb.VizierHeartbeatAck)
+	ret0, _ := ret[0].(*cvmsgspb.VizierHeartbeatAck)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // HandleVizierHeartbeat indicates an expected call of HandleVizierHeartbeat
 func (mr *MockVZMgrServiceClientMockRecorder) HandleVizierHeartbeat(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleVizierHeartbeat", reflect.TypeOf((*MockVZMgrServiceClient)(nil).HandleVizierHeartbeat), varargs...)
 }
@@ -188,6 +202,7 @@ func (m *MockVZMgrServiceServer) EXPECT() *MockVZMgrServiceServerMockRecorder {
 
 // CreateVizierCluster mocks base method
 func (m *MockVZMgrServiceServer) CreateVizierCluster(arg0 context.Context, arg1 *vzmgrpb.CreateVizierClusterRequest) (*proto.UUID, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateVizierCluster", arg0, arg1)
 	ret0, _ := ret[0].(*proto.UUID)
 	ret1, _ := ret[1].(error)
@@ -196,11 +211,13 @@ func (m *MockVZMgrServiceServer) CreateVizierCluster(arg0 context.Context, arg1 
 
 // CreateVizierCluster indicates an expected call of CreateVizierCluster
 func (mr *MockVZMgrServiceServerMockRecorder) CreateVizierCluster(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVizierCluster", reflect.TypeOf((*MockVZMgrServiceServer)(nil).CreateVizierCluster), arg0, arg1)
 }
 
 // GetSSLCerts mocks base method
 func (m *MockVZMgrServiceServer) GetSSLCerts(arg0 context.Context, arg1 *vzmgrpb.GetSSLCertsRequest) (*vzmgrpb.GetSSLCertsResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSSLCerts", arg0, arg1)
 	ret0, _ := ret[0].(*vzmgrpb.GetSSLCertsResponse)
 	ret1, _ := ret[1].(error)
@@ -209,11 +226,13 @@ func (m *MockVZMgrServiceServer) GetSSLCerts(arg0 context.Context, arg1 *vzmgrpb
 
 // GetSSLCerts indicates an expected call of GetSSLCerts
 func (mr *MockVZMgrServiceServerMockRecorder) GetSSLCerts(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSSLCerts", reflect.TypeOf((*MockVZMgrServiceServer)(nil).GetSSLCerts), arg0, arg1)
 }
 
 // GetViziersByOrg mocks base method
 func (m *MockVZMgrServiceServer) GetViziersByOrg(arg0 context.Context, arg1 *proto.UUID) (*vzmgrpb.GetViziersByOrgResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetViziersByOrg", arg0, arg1)
 	ret0, _ := ret[0].(*vzmgrpb.GetViziersByOrgResponse)
 	ret1, _ := ret[1].(error)
@@ -222,57 +241,66 @@ func (m *MockVZMgrServiceServer) GetViziersByOrg(arg0 context.Context, arg1 *pro
 
 // GetViziersByOrg indicates an expected call of GetViziersByOrg
 func (mr *MockVZMgrServiceServerMockRecorder) GetViziersByOrg(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetViziersByOrg", reflect.TypeOf((*MockVZMgrServiceServer)(nil).GetViziersByOrg), arg0, arg1)
 }
 
 // GetVizierInfo mocks base method
-func (m *MockVZMgrServiceServer) GetVizierInfo(arg0 context.Context, arg1 *proto.UUID) (*cloudpb.VizierInfo, error) {
+func (m *MockVZMgrServiceServer) GetVizierInfo(arg0 context.Context, arg1 *proto.UUID) (*cvmsgspb.VizierInfo, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVizierInfo", arg0, arg1)
-	ret0, _ := ret[0].(*cloudpb.VizierInfo)
+	ret0, _ := ret[0].(*cvmsgspb.VizierInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVizierInfo indicates an expected call of GetVizierInfo
 func (mr *MockVZMgrServiceServerMockRecorder) GetVizierInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVizierInfo", reflect.TypeOf((*MockVZMgrServiceServer)(nil).GetVizierInfo), arg0, arg1)
 }
 
 // GetVizierConnectionInfo mocks base method
-func (m *MockVZMgrServiceServer) GetVizierConnectionInfo(arg0 context.Context, arg1 *proto.UUID) (*cloudpb.VizierConnectionInfo, error) {
+func (m *MockVZMgrServiceServer) GetVizierConnectionInfo(arg0 context.Context, arg1 *proto.UUID) (*cvmsgspb.VizierConnectionInfo, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVizierConnectionInfo", arg0, arg1)
-	ret0, _ := ret[0].(*cloudpb.VizierConnectionInfo)
+	ret0, _ := ret[0].(*cvmsgspb.VizierConnectionInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVizierConnectionInfo indicates an expected call of GetVizierConnectionInfo
 func (mr *MockVZMgrServiceServerMockRecorder) GetVizierConnectionInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVizierConnectionInfo", reflect.TypeOf((*MockVZMgrServiceServer)(nil).GetVizierConnectionInfo), arg0, arg1)
 }
 
 // VizierConnected mocks base method
-func (m *MockVZMgrServiceServer) VizierConnected(arg0 context.Context, arg1 *cloudpb.RegisterVizierRequest) (*cloudpb.RegisterVizierAck, error) {
+func (m *MockVZMgrServiceServer) VizierConnected(arg0 context.Context, arg1 *cvmsgspb.RegisterVizierRequest) (*cvmsgspb.RegisterVizierAck, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VizierConnected", arg0, arg1)
-	ret0, _ := ret[0].(*cloudpb.RegisterVizierAck)
+	ret0, _ := ret[0].(*cvmsgspb.RegisterVizierAck)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // VizierConnected indicates an expected call of VizierConnected
 func (mr *MockVZMgrServiceServerMockRecorder) VizierConnected(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VizierConnected", reflect.TypeOf((*MockVZMgrServiceServer)(nil).VizierConnected), arg0, arg1)
 }
 
 // HandleVizierHeartbeat mocks base method
-func (m *MockVZMgrServiceServer) HandleVizierHeartbeat(arg0 context.Context, arg1 *cloudpb.VizierHeartbeat) (*cloudpb.VizierHeartbeatAck, error) {
+func (m *MockVZMgrServiceServer) HandleVizierHeartbeat(arg0 context.Context, arg1 *cvmsgspb.VizierHeartbeat) (*cvmsgspb.VizierHeartbeatAck, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "HandleVizierHeartbeat", arg0, arg1)
-	ret0, _ := ret[0].(*cloudpb.VizierHeartbeatAck)
+	ret0, _ := ret[0].(*cvmsgspb.VizierHeartbeatAck)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // HandleVizierHeartbeat indicates an expected call of HandleVizierHeartbeat
 func (mr *MockVZMgrServiceServerMockRecorder) HandleVizierHeartbeat(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleVizierHeartbeat", reflect.TypeOf((*MockVZMgrServiceServer)(nil).HandleVizierHeartbeat), arg0, arg1)
 }
