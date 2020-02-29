@@ -184,6 +184,14 @@ func getServiceKey(e *metadatapb.Service) string {
 	return path.Join("/", "service", getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
 }
 
+func getNamespacesKey() string {
+	return path.Join("/", "namespace") + "/"
+}
+
+func getNamespaceKey(e *metadatapb.Namespace) string {
+	return path.Join("/", "namespace", e.Metadata.UID)
+}
+
 func getResourceVersionMapKey(rv string) string {
 	return path.Join("/", "resourceVersionUpdate", rv)
 }
@@ -755,6 +763,45 @@ func (mds *KVMetadataStore) UpdateService(s *metadatapb.Service, deleted bool) e
 	}
 
 	key := getServiceKey(s)
+
+	if s.Metadata.DeletionTimestampNS > 0 {
+		mds.cache.SetWithTTL(key, string(val), mds.expiryDuration)
+	} else {
+		mds.cache.Set(key, string(val))
+	}
+	return nil
+}
+
+/* =============== Namespace Operations ============== */
+
+// GetNamespaces gets all namespaces in the metadata store.
+func (mds *KVMetadataStore) GetNamespaces() ([]*metadatapb.Namespace, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getNamespacesKey())
+	if err != nil {
+		return nil, err
+	}
+
+	namespaces := make([]*metadatapb.Namespace, len(vals))
+	for i, val := range vals {
+		pb := &metadatapb.Namespace{}
+		proto.Unmarshal(val, pb)
+		namespaces[i] = pb
+	}
+	return namespaces, nil
+}
+
+// UpdateNamespace adds or updates the given namespace in the metadata store.
+func (mds *KVMetadataStore) UpdateNamespace(s *metadatapb.Namespace, deleted bool) error {
+	if deleted && s.Metadata.DeletionTimestampNS == 0 {
+		s.Metadata.DeletionTimestampNS = time.Now().UnixNano()
+	}
+
+	val, err := s.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal namespace pb")
+	}
+
+	key := getNamespaceKey(s)
 
 	if s.Metadata.DeletionTimestampNS > 0 {
 		mds.cache.SetWithTTL(key, string(val), mds.expiryDuration)

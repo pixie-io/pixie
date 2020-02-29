@@ -45,6 +45,12 @@ func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, err
 	mc := &K8sMetadataController{mdHandler: mdh, clientset: clientset}
 
 	// Clean up current metadata store state.
+	namespaces, err := mc.listObject("namespaces")
+	if err != nil {
+		log.Info("Could not list all namespaces")
+	}
+	nRv := mdh.SyncNamespaceData(namespaces.(*v1.NamespaceList))
+
 	pods, err := mc.listObject("pods")
 	if err != nil {
 		log.Info("Could not list all pods")
@@ -64,6 +70,7 @@ func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, err
 	sRv := mdh.SyncServiceData(services.(*v1.ServiceList))
 
 	// Start up Watchers.
+	go mc.startWatcher("namespaces", nRv)
 	go mc.startWatcher("pods", pRv)
 	go mc.startWatcher("endpoints", eRv)
 	go mc.startWatcher("services", sRv)

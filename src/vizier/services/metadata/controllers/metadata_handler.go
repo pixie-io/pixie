@@ -47,6 +47,8 @@ type MetadataStore interface {
 	GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error)
 	GetServices() ([]*metadatapb.Service, error)
 	UpdateService(*metadatapb.Service, bool) error
+	GetNamespaces() ([]*metadatapb.Namespace, error)
+	UpdateNamespace(*metadatapb.Namespace, bool) error
 	GetContainers() ([]*metadatapb.ContainerInfo, error)
 	UpdateContainer(*metadatapb.ContainerInfo) error
 	UpdateContainersFromPod(*metadatapb.Pod, bool) error
@@ -191,6 +193,8 @@ func (mh *MetadataHandler) MetadataListener() {
 			mh.handlePodMetadata(msg.Object, msg.EventType)
 		case "nodes":
 			mh.handleNodeMetadata(msg.Object, msg.EventType)
+		case "namespaces":
+			mh.handleNamespaceMetadata(msg.Object, msg.EventType)
 		default:
 			log.Error("Received unknown metadata message with type: " + msg.ObjectType)
 		}
@@ -353,6 +357,32 @@ func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object, eventType wat
 	_, err := mh.updateService(e, eventType == watch.Deleted)
 	if err != nil {
 		log.WithError(err).Fatal("Could not write service update")
+	}
+}
+
+func (mh *MetadataHandler) updateNamespace(e *v1.Namespace, deleted bool) (*metadatapb.Namespace, error) {
+	pb, err := protoutils.NamespaceToProto(e)
+	if err != nil {
+		return nil, err
+	}
+	err = mh.mds.UpdateNamespace(pb, deleted)
+	if err != nil {
+		return nil, err
+	}
+	return pb, err
+}
+
+func (mh *MetadataHandler) handleNamespaceMetadata(o runtime.Object, eventType watch.EventType) {
+	e, ok := o.(*v1.Namespace)
+
+	if !ok {
+		log.WithField("object", o).Error("Received non-namespace object when handling namespace metadata.")
+		return
+	}
+
+	_, err := mh.updateNamespace(e, eventType == watch.Deleted)
+	if err != nil {
+		log.WithError(err).Fatal("Could not write namespace update")
 	}
 }
 
@@ -628,6 +658,51 @@ func (mh *MetadataHandler) SyncServiceData(sList *v1.ServiceList) int {
 			err := mh.mds.UpdateService(service, false)
 			if err != nil {
 				log.WithError(err).Error("Could not update service during sync.")
+			}
+		}
+	}
+
+	return rv
+}
+
+// SyncNamespaceData syncs the data in etcd according to the current active namespaces.
+func (mh *MetadataHandler) SyncNamespaceData(sList *v1.NamespaceList) int {
+	activeNamespaces := map[string]bool{}
+
+	currentTime := mh.clock.Now().UnixNano()
+	rv := 0
+	// Create a map so that we can easily check which namespaces are currently active by ID.
+	for _, item := range sList.Items {
+		i, err := strconv.Atoi(item.ObjectMeta.ResourceVersion)
+		if err != nil {
+			log.WithError(err).Error("Could not get RV from pod")
+		}
+		if i > rv {
+			rv = i
+		}
+		activeNamespaces[string(item.ObjectMeta.UID)] = true
+
+		// Update namespace in metadata store.
+		_, err = mh.updateNamespace(&item, false)
+		if err != nil {
+			log.WithField("namespace", item).WithError(err).Error("Could not update namespace in metadata store during sync")
+		}
+	}
+
+	// Find all namespaces in etcd.
+	namespaces, err := mh.mds.GetNamespaces()
+	if err != nil {
+		log.WithError(err).Error("Could not get all namespaces from etcd.")
+	}
+
+	for _, namespace := range namespaces {
+		_, exists := activeNamespaces[namespace.Metadata.UID]
+		// If there a namespace in etcd that is not active, and is not marked as dead, mark it as dead.
+		if !exists && namespace.Metadata.DeletionTimestampNS == 0 {
+			namespace.Metadata.DeletionTimestampNS = currentTime
+			err := mh.mds.UpdateNamespace(namespace, false)
+			if err != nil {
+				log.WithError(err).Error("Could not update namespace during sync.")
 			}
 		}
 	}

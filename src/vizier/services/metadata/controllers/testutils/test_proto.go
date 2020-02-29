@@ -461,6 +461,21 @@ spec {
 }
 `
 
+// Namespace
+
+// NamespacePb is the protobuf for a generic namespace object.
+const NamespacePb = `
+metadata {
+  name: "a_namespace"
+  namespace: "a_namespace"
+  uid: "ijkl"
+  resource_version: "1",
+  cluster_name: "a_cluster",
+  creation_timestamp_ns: 4
+  deletion_timestamp_ns: 6
+}
+`
+
 // Pod
 
 // PodPb is the protobuf for a pod object.

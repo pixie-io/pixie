@@ -908,3 +908,86 @@ func TestSyncServicesData(t *testing.T) {
 
 	mh.SyncServiceData(&sList)
 }
+
+func TestSyncNamespacesData(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	namespaces := make([]v1.Namespace, 1)
+	// Create namespace object.
+	creationTime := metav1.Unix(0, 4)
+	md := metav1.ObjectMeta{
+		Name:              "test",
+		Namespace:         "test",
+		UID:               "active_namespace",
+		ResourceVersion:   "1",
+		CreationTimestamp: creationTime,
+	}
+
+	activeNamespace := v1.Namespace{
+		ObjectMeta: md,
+	}
+	namespaces[0] = activeNamespace
+	activeListNSPb, err := protoutils.NamespaceToProto(&activeNamespace)
+	assert.Nil(t, err)
+
+	nList := v1.NamespaceList{
+		Items: namespaces,
+	}
+
+	etcdNamespaces := make([](*metadatapb.Namespace), 3)
+	activeNamespacePb := &metadatapb.Namespace{}
+	if err := proto.UnmarshalText(testutils.NamespacePb, activeNamespacePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	activeNamespacePb.Metadata.UID = "active_namespace"
+	activeNamespacePb.Metadata.DeletionTimestampNS = 0
+	etcdNamespaces[0] = activeNamespacePb
+
+	deadNamespacePb := &metadatapb.Namespace{}
+	if err := proto.UnmarshalText(testutils.NamespacePb, deadNamespacePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deadNamespacePb.Metadata.UID = "dead_namespace"
+	deadNamespacePb.Metadata.DeletionTimestampNS = 5
+	etcdNamespaces[1] = deadNamespacePb
+
+	undeadNamespacePb := &metadatapb.Namespace{}
+	if err := proto.UnmarshalText(testutils.NamespacePb, undeadNamespacePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	undeadNamespacePb.Metadata.UID = "undead_namespace"
+	undeadNamespacePb.Metadata.DeletionTimestampNS = 0
+	etcdNamespaces[2] = undeadNamespacePb
+
+	deletedUndeadNamespacePb := &metadatapb.Namespace{}
+	if err := proto.UnmarshalText(testutils.NamespacePb, deletedUndeadNamespacePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deletedUndeadNamespacePb.Metadata.UID = "undead_namespace"
+	deletedUndeadNamespacePb.Metadata.DeletionTimestampNS = 10
+
+	mockMds.
+		EXPECT().
+		GetNamespaces().
+		Return(etcdNamespaces, nil)
+
+	mockMds.
+		EXPECT().
+		UpdateNamespace(activeListNSPb, false).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
+		UpdateNamespace(deletedUndeadNamespacePb, false).
+		Return(nil)
+
+	clock := testingutils.NewTestClock(time.Unix(0, 10))
+	isLeader := true
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	assert.Nil(t, err)
+
+	mh.SyncNamespaceData(&nList)
+}

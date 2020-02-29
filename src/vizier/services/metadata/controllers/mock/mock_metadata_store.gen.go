@@ -326,6 +326,31 @@ func (mr *MockMetadataStoreMockRecorder) UpdateService(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateService", reflect.TypeOf((*MockMetadataStore)(nil).UpdateService), arg0, arg1)
 }
 
+// GetNamespaces mocks base method
+func (m *MockMetadataStore) GetNamespaces() ([]*metadatapb.Namespace, error) {
+	ret := m.ctrl.Call(m, "GetNamespaces")
+	ret0, _ := ret[0].([]*metadatapb.Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNamespaces indicates an expected call of GetNamespaces
+func (mr *MockMetadataStoreMockRecorder) GetNamespaces() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaces", reflect.TypeOf((*MockMetadataStore)(nil).GetNamespaces))
+}
+
+// UpdateNamespace mocks base method
+func (m *MockMetadataStore) UpdateNamespace(arg0 *metadatapb.Namespace, arg1 bool) error {
+	ret := m.ctrl.Call(m, "UpdateNamespace", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateNamespace indicates an expected call of UpdateNamespace
+func (mr *MockMetadataStoreMockRecorder) UpdateNamespace(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNamespace", reflect.TypeOf((*MockMetadataStore)(nil).UpdateNamespace), arg0, arg1)
+}
+
 // GetContainers mocks base method
 func (m *MockMetadataStore) GetContainers() ([]*metadatapb.ContainerInfo, error) {
 	ret := m.ctrl.Call(m, "GetContainers")

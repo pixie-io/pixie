@@ -1136,6 +1136,92 @@ func TestKVMetadataStore_GetServiceCIDR(t *testing.T) {
 	assert.Equal(t, "10.64.0.0/21", mds.GetServiceCIDR())
 }
 
+func TestKVMetadataStore_GetNamespaces(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/namespace/").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create namespaces.
+	s1 := &metadatapb.Namespace{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "test",
+			Namespace: "test",
+			UID:       "5678",
+		},
+	}
+	s1Text, err := s1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal namespace pb")
+	}
+
+	s2 := &metadatapb.Service{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "efgh",
+			Namespace: "efgh",
+			UID:       "1234",
+		},
+	}
+	s2Text, err := s2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal namespace pb")
+	}
+
+	c.Set("/namespace/5678", string(s1Text))
+	c.Set("/namespace/1234", string(s2Text))
+
+	namespaces, err := mds.GetNamespaces()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(namespaces))
+
+	assert.Equal(t, s1.Metadata.Name, (*namespaces[1]).Metadata.Name)
+	assert.Equal(t, s2.Metadata.Name, (*namespaces[0]).Metadata.Name)
+}
+
+func TestKVMetadataStore_UpdateNamespace(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	expectedPb := &metadatapb.Namespace{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "efgh",
+			Namespace: "efgh",
+			UID:       "1234",
+		},
+	}
+
+	err = mds.UpdateNamespace(expectedPb, false)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+
+	// Check that correct service info is in etcd.
+	resp, err := c.Get("/namespace/1234")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb := &metadatapb.Namespace{}
+	proto.Unmarshal(resp, pb)
+
+	assert.Equal(t, expectedPb, pb)
+}
+
 func TestKVMetadataStore_GetAgents(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
