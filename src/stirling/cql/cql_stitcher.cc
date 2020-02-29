@@ -111,25 +111,23 @@ Status ProcessBatchReq(Frame* req_frame, Request* req) {
   PL_ASSIGN_OR_RETURN(BatchReq r, ParseBatchReq(req_frame));
 
   // TODO(oazizi): Should we add other fields?
-  // TODO(oazizi): Use rapidjson instead.
-  req->msg = "[";
+
+  // Copy to vector so we can use ToJSONString().
+  // TODO(oazizi): Find a cleaner way that avoids the copying.
+  std::vector<std::pair<std::string, std::string>> tmp;
   for (const auto& q : r.queries) {
     switch (q.kind) {
       case BatchQueryKind::kString:
-        absl::StrAppend(&req->msg,
-                        absl::StrCat("{ query = \"", std::get<std::string>(q.query_or_id), "},"));
+        tmp.push_back({"query", std::move(std::get<std::string>(q.query_or_id))});
         break;
       case BatchQueryKind::kID:
-        absl::StrAppend(
-            &req->msg,
-            absl::StrCat("{ id = \"",
-                         BytesToString(std::get<std::basic_string<uint8_t>>(q.query_or_id)), "},"));
+        tmp.push_back({"id", BytesToString(std::get<std::basic_string<uint8_t>>(q.query_or_id))});
         break;
       default:
         LOG(DFATAL) << absl::Substitute("Unrecognized BatchQueryKind $0", static_cast<int>(q.kind));
     }
   }
-  absl::StrAppend(&req->msg, "]");
+  req->msg = utils::ToJSONString(tmp);
 
   return Status::OK();
 }
