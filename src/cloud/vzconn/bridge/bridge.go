@@ -132,7 +132,7 @@ func (s *NATSBridgeController) _run() error {
 			s.l.WithField("msg", msg).Trace("Got regular NATS message")
 			err = s.sendNATSMessageToGRPC(msg)
 		case msg := <-s.grpcInCh:
-			err = s.sendMessageToNATS(msg)
+			err = s.sendMessageToMessageBus(msg)
 			if err != nil {
 				sendError(err)
 			}
@@ -189,7 +189,7 @@ func (s *NATSBridgeController) sendNATSMessageToGRPC(msg *nats.Msg) error {
 	return nil
 }
 
-func (s *NATSBridgeController) sendMessageToNATS(msg *vzconnpb.V2CBridgeMessage) error {
+func (s *NATSBridgeController) sendMessageToMessageBus(msg *vzconnpb.V2CBridgeMessage) error {
 
 	natsMsg := &cvmsgspb.V2CMessage{
 		VizierID:  s.clusterID.String(),
@@ -206,6 +206,10 @@ func (s *NATSBridgeController) sendMessageToNATS(msg *vzconnpb.V2CBridgeMessage)
 		WithField("Message", natsMsg.String()).
 		WithField("topic", topic).
 		Trace("sending message to nats")
+
+	if strings.Contains(topic, "Durable") {
+		return s.sc.Publish(topic, b)
+	}
 
 	return s.nc.Publish(topic, b)
 
