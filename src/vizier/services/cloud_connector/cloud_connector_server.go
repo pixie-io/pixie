@@ -2,24 +2,26 @@ package main
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
-	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller"
+	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
 )
 
 func init() {
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
 	pflag.String("certmgr_service", "vizier-certmgr.pl.svc:50900", "The cert manager service url (load balancer/list is ok)")
+	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 }
 
 // NewCertMgrServiceClient creates a new cert mgr RPC client stub.
@@ -74,7 +76,17 @@ func main() {
 		log.WithError(err).Fatal("Could not get k8s info")
 	}
 
-	server := controllers.NewServer(vizierID, viper.GetString("jwt_signing_key"), vzClient, certMgrClient, vzInfo)
+	nc, err := nats.Connect(viper.GetString("nats_url"),
+		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
+		nats.RootCAs(viper.GetString("tls_ca_cert")))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to NATS.")
+	}
+
+	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
+	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
+	sessionID := time.Now().UnixNano()
+	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, vzClient, certMgrClient, vzInfo, nc)
 	go server.RunStream()
 	defer server.Stop()
 
@@ -86,5 +98,6 @@ func main() {
 		httpmiddleware.WithBearerAuthMiddleware(e, mux))
 
 	s.Start()
+
 	s.StopOnInterrupt()
 }

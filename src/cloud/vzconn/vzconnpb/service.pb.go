@@ -31,22 +31,23 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type CloudConnectRequest struct {
-	Topic string     `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
-	Msg   *types.Any `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
+type V2CBridgeMessage struct {
+	Topic     string     `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
+	SessionId int64      `protobuf:"varint,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Msg       *types.Any `protobuf:"bytes,3,opt,name=msg,proto3" json:"msg,omitempty"`
 }
 
-func (m *CloudConnectRequest) Reset()      { *m = CloudConnectRequest{} }
-func (*CloudConnectRequest) ProtoMessage() {}
-func (*CloudConnectRequest) Descriptor() ([]byte, []int) {
+func (m *V2CBridgeMessage) Reset()      { *m = V2CBridgeMessage{} }
+func (*V2CBridgeMessage) ProtoMessage() {}
+func (*V2CBridgeMessage) Descriptor() ([]byte, []int) {
 	return fileDescriptor_935788a74a5b0e3d, []int{0}
 }
-func (m *CloudConnectRequest) XXX_Unmarshal(b []byte) error {
+func (m *V2CBridgeMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *CloudConnectRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *V2CBridgeMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_CloudConnectRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_V2CBridgeMessage.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -56,48 +57,55 @@ func (m *CloudConnectRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *CloudConnectRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CloudConnectRequest.Merge(m, src)
+func (m *V2CBridgeMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_V2CBridgeMessage.Merge(m, src)
 }
-func (m *CloudConnectRequest) XXX_Size() int {
+func (m *V2CBridgeMessage) XXX_Size() int {
 	return m.Size()
 }
-func (m *CloudConnectRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CloudConnectRequest.DiscardUnknown(m)
+func (m *V2CBridgeMessage) XXX_DiscardUnknown() {
+	xxx_messageInfo_V2CBridgeMessage.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CloudConnectRequest proto.InternalMessageInfo
+var xxx_messageInfo_V2CBridgeMessage proto.InternalMessageInfo
 
-func (m *CloudConnectRequest) GetTopic() string {
+func (m *V2CBridgeMessage) GetTopic() string {
 	if m != nil {
 		return m.Topic
 	}
 	return ""
 }
 
-func (m *CloudConnectRequest) GetMsg() *types.Any {
+func (m *V2CBridgeMessage) GetSessionId() int64 {
+	if m != nil {
+		return m.SessionId
+	}
+	return 0
+}
+
+func (m *V2CBridgeMessage) GetMsg() *types.Any {
 	if m != nil {
 		return m.Msg
 	}
 	return nil
 }
 
-type CloudConnectResponse struct {
+type C2VBridgeMessage struct {
 	Topic string     `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
 	Msg   *types.Any `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
 }
 
-func (m *CloudConnectResponse) Reset()      { *m = CloudConnectResponse{} }
-func (*CloudConnectResponse) ProtoMessage() {}
-func (*CloudConnectResponse) Descriptor() ([]byte, []int) {
+func (m *C2VBridgeMessage) Reset()      { *m = C2VBridgeMessage{} }
+func (*C2VBridgeMessage) ProtoMessage() {}
+func (*C2VBridgeMessage) Descriptor() ([]byte, []int) {
 	return fileDescriptor_935788a74a5b0e3d, []int{1}
 }
-func (m *CloudConnectResponse) XXX_Unmarshal(b []byte) error {
+func (m *C2VBridgeMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *CloudConnectResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *C2VBridgeMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_CloudConnectResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_C2VBridgeMessage.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -107,26 +115,26 @@ func (m *CloudConnectResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (m *CloudConnectResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CloudConnectResponse.Merge(m, src)
+func (m *C2VBridgeMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_C2VBridgeMessage.Merge(m, src)
 }
-func (m *CloudConnectResponse) XXX_Size() int {
+func (m *C2VBridgeMessage) XXX_Size() int {
 	return m.Size()
 }
-func (m *CloudConnectResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_CloudConnectResponse.DiscardUnknown(m)
+func (m *C2VBridgeMessage) XXX_DiscardUnknown() {
+	xxx_messageInfo_C2VBridgeMessage.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CloudConnectResponse proto.InternalMessageInfo
+var xxx_messageInfo_C2VBridgeMessage proto.InternalMessageInfo
 
-func (m *CloudConnectResponse) GetTopic() string {
+func (m *C2VBridgeMessage) GetTopic() string {
 	if m != nil {
 		return m.Topic
 	}
 	return ""
 }
 
-func (m *CloudConnectResponse) GetMsg() *types.Any {
+func (m *C2VBridgeMessage) GetMsg() *types.Any {
 	if m != nil {
 		return m.Msg
 	}
@@ -134,8 +142,8 @@ func (m *CloudConnectResponse) GetMsg() *types.Any {
 }
 
 func init() {
-	proto.RegisterType((*CloudConnectRequest)(nil), "pl.services.CloudConnectRequest")
-	proto.RegisterType((*CloudConnectResponse)(nil), "pl.services.CloudConnectResponse")
+	proto.RegisterType((*V2CBridgeMessage)(nil), "pl.services.V2CBridgeMessage")
+	proto.RegisterType((*C2VBridgeMessage)(nil), "pl.services.C2VBridgeMessage")
 }
 
 func init() {
@@ -143,38 +151,70 @@ func init() {
 }
 
 var fileDescriptor_935788a74a5b0e3d = []byte{
-	// 332 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x92, 0xbf, 0x4e, 0x02, 0x31,
-	0x1c, 0xc7, 0x5b, 0x8d, 0x26, 0x16, 0x5d, 0x4e, 0x06, 0x64, 0x68, 0x4e, 0x06, 0x65, 0xb1, 0x35,
-	0x38, 0x19, 0x27, 0xe5, 0x0d, 0xc0, 0x98, 0xc8, 0xc6, 0x95, 0x7a, 0xd6, 0xdc, 0xf5, 0x77, 0xd2,
-	0x3b, 0x22, 0x4e, 0x3e, 0x82, 0x8f, 0xe1, 0xa3, 0x38, 0x32, 0x32, 0x4a, 0x59, 0x1c, 0x79, 0x04,
-	0x43, 0x0b, 0x8a, 0x89, 0xba, 0x38, 0xdd, 0xf7, 0x7b, 0xfd, 0xf6, 0xf3, 0xfb, 0x93, 0x92, 0x43,
-	0xd3, 0x17, 0x5c, 0x24, 0x50, 0xf4, 0xf8, 0xe0, 0x51, 0x80, 0xd6, 0x8b, 0x4f, 0x16, 0x71, 0x23,
-	0xfb, 0x03, 0x25, 0x24, 0xcb, 0xfa, 0x90, 0x43, 0x50, 0xca, 0x12, 0xb6, 0xf8, 0x63, 0xaa, 0x47,
-	0xb1, 0xca, 0x6f, 0x8b, 0x88, 0x09, 0x48, 0x79, 0x0c, 0x31, 0x70, 0x97, 0x89, 0x8a, 0x1b, 0xe7,
-	0x9c, 0x71, 0xca, 0xdf, 0xad, 0x86, 0xae, 0x08, 0xa4, 0x29, 0x68, 0x5e, 0x14, 0xaa, 0xe7, 0xe3,
-	0x4e, 0x2e, 0x12, 0x7b, 0x31, 0x40, 0x9c, 0xc8, 0x2f, 0x4e, 0x57, 0x0f, 0xfd, 0x51, 0xad, 0x4d,
-	0x76, 0x9b, 0xf3, 0xfe, 0x9a, 0xa0, 0xb5, 0x14, 0x79, 0x4b, 0xde, 0x17, 0xd2, 0xe4, 0x41, 0x99,
-	0x6c, 0xe4, 0x90, 0x29, 0x51, 0xc1, 0x21, 0xae, 0x6f, 0xb5, 0xbc, 0x09, 0x0e, 0xc8, 0x7a, 0x6a,
-	0xe2, 0xca, 0x5a, 0x88, 0xeb, 0xa5, 0x46, 0x99, 0x79, 0x2a, 0x5b, 0x52, 0xd9, 0xb9, 0x1e, 0xb6,
-	0xe6, 0x81, 0xda, 0x25, 0x29, 0x7f, 0x87, 0x9a, 0x0c, 0xb4, 0x91, 0xff, 0xa3, 0x36, 0xee, 0xc8,
-	0xce, 0x55, 0x67, 0x8e, 0x6c, 0xfb, 0x45, 0x05, 0xd7, 0x64, 0x7b, 0xb5, 0x4c, 0x10, 0xb2, 0x95,
-	0x2d, 0xb2, 0x1f, 0xc6, 0xaa, 0xee, 0xff, 0x91, 0xf0, 0x3d, 0xd6, 0x50, 0x1d, 0x1f, 0xe3, 0x0b,
-	0x18, 0x4d, 0x28, 0x1a, 0x4f, 0x28, 0x9a, 0x4d, 0x28, 0x7e, 0xb2, 0x14, 0xbf, 0x58, 0x8a, 0x5f,
-	0x2d, 0xc5, 0x23, 0x4b, 0xf1, 0x9b, 0xa5, 0xf8, 0xdd, 0x52, 0x34, 0xb3, 0x14, 0x3f, 0x4f, 0x29,
-	0x1a, 0x4d, 0x29, 0x1a, 0x4f, 0x29, 0xea, 0x9c, 0x66, 0xea, 0x41, 0xc9, 0xa4, 0x1b, 0x19, 0xd6,
-	0x55, 0xfc, 0xd3, 0xf0, 0x5f, 0x5f, 0xc1, 0xd9, 0x52, 0x44, 0x9b, 0x6e, 0xde, 0x93, 0x8f, 0x00,
-	0x00, 0x00, 0xff, 0xff, 0x2a, 0xcc, 0x49, 0x7d, 0x32, 0x02, 0x00, 0x00,
+	// 363 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0x3d, 0x6f, 0xea, 0x30,
+	0x14, 0x8d, 0x41, 0xef, 0x49, 0x18, 0x3d, 0x09, 0x45, 0x0c, 0x3c, 0x24, 0xac, 0x88, 0xe1, 0xbd,
+	0x2c, 0xb5, 0xab, 0x74, 0xaa, 0x3a, 0x01, 0x53, 0x87, 0x56, 0x08, 0x2a, 0x06, 0x96, 0x2a, 0x1f,
+	0xae, 0x6b, 0x29, 0xf1, 0x8d, 0x62, 0x82, 0x4a, 0xa7, 0xfe, 0x84, 0xfe, 0x8c, 0xfe, 0x94, 0x8e,
+	0x8c, 0x8c, 0x25, 0x2c, 0x1d, 0xf9, 0x09, 0x55, 0x93, 0xd0, 0x0f, 0xa4, 0xaa, 0x9d, 0x7c, 0xce,
+	0xbd, 0xc7, 0xe7, 0xf8, 0x5e, 0x19, 0xff, 0xd7, 0x89, 0xcf, 0xfc, 0x10, 0xd2, 0x80, 0xcd, 0x6f,
+	0x7d, 0x50, 0xaa, 0x3c, 0x62, 0x8f, 0x69, 0x9e, 0xcc, 0xa5, 0xcf, 0x69, 0x9c, 0xc0, 0x0c, 0xcc,
+	0x7a, 0x1c, 0xd2, 0xb2, 0xa2, 0xdb, 0x07, 0x42, 0xce, 0xae, 0x53, 0x8f, 0xfa, 0x10, 0x31, 0x01,
+	0x02, 0x58, 0xae, 0xf1, 0xd2, 0xab, 0x9c, 0xe5, 0x24, 0x47, 0xc5, 0xdd, 0xb6, 0x95, 0x87, 0x40,
+	0x14, 0x81, 0x62, 0x69, 0x2a, 0x83, 0x42, 0x9e, 0xc3, 0x52, 0xf1, 0x57, 0x00, 0x88, 0x90, 0xbf,
+	0xfb, 0xb8, 0x6a, 0x51, 0xb4, 0xba, 0x80, 0x1b, 0x13, 0x67, 0xd0, 0x4f, 0x64, 0x20, 0xf8, 0x19,
+	0xd7, 0xda, 0x15, 0xdc, 0x6c, 0xe2, 0x5f, 0x33, 0x88, 0xa5, 0xdf, 0x42, 0x16, 0xb2, 0x6b, 0xa3,
+	0x82, 0x98, 0x1d, 0x8c, 0x35, 0xd7, 0x5a, 0x82, 0xba, 0x94, 0x41, 0xab, 0x62, 0x21, 0xbb, 0x3a,
+	0xaa, 0x95, 0x95, 0xd3, 0xc0, 0xfc, 0x87, 0xab, 0x91, 0x16, 0xad, 0xaa, 0x85, 0xec, 0xba, 0xd3,
+	0xa4, 0x45, 0x22, 0xdd, 0x25, 0xd2, 0x9e, 0x5a, 0x8c, 0x5e, 0x05, 0xdd, 0x21, 0x6e, 0x0c, 0x9c,
+	0xc9, 0x4f, 0x02, 0x4b, 0xc7, 0xca, 0x37, 0x8e, 0x8e, 0x8b, 0xff, 0x4c, 0xa6, 0x03, 0x50, 0x6a,
+	0x5c, 0x2c, 0xd0, 0x1c, 0x62, 0x7c, 0xde, 0xbb, 0x18, 0x17, 0x19, 0x66, 0x87, 0x7e, 0xd8, 0x2d,
+	0xdd, 0x1f, 0xb6, 0xfd, 0xb9, 0xbd, 0xff, 0xb4, 0xae, 0x61, 0xa3, 0x43, 0xd4, 0x87, 0xe5, 0x9a,
+	0x18, 0xab, 0x35, 0x31, 0xb6, 0x6b, 0x82, 0xee, 0x32, 0x82, 0x1e, 0x32, 0x82, 0x1e, 0x33, 0x82,
+	0x96, 0x19, 0x41, 0x4f, 0x19, 0x41, 0xcf, 0x19, 0x31, 0xb6, 0x19, 0x41, 0xf7, 0x1b, 0x62, 0x2c,
+	0x37, 0xc4, 0x58, 0x6d, 0x88, 0x31, 0x3d, 0x8e, 0xe5, 0x8d, 0xe4, 0xa1, 0xeb, 0x69, 0xea, 0x4a,
+	0xf6, 0x46, 0xd8, 0x97, 0x9f, 0xe2, 0x64, 0x07, 0xbc, 0xdf, 0xf9, 0x98, 0x47, 0x2f, 0x01, 0x00,
+	0x00, 0xff, 0xff, 0xdf, 0x39, 0x90, 0x04, 0x41, 0x02, 0x00, 0x00,
 }
 
-func (this *CloudConnectRequest) Equal(that interface{}) bool {
+func (this *V2CBridgeMessage) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*CloudConnectRequest)
+	that1, ok := that.(*V2CBridgeMessage)
 	if !ok {
-		that2, ok := that.(CloudConnectRequest)
+		that2, ok := that.(V2CBridgeMessage)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Topic != that1.Topic {
+		return false
+	}
+	if this.SessionId != that1.SessionId {
+		return false
+	}
+	if !this.Msg.Equal(that1.Msg) {
+		return false
+	}
+	return true
+}
+func (this *C2VBridgeMessage) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*C2VBridgeMessage)
+	if !ok {
+		that2, ok := that.(C2VBridgeMessage)
 		if ok {
 			that1 = &that2
 		} else {
@@ -194,52 +234,26 @@ func (this *CloudConnectRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *CloudConnectResponse) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*CloudConnectResponse)
-	if !ok {
-		that2, ok := that.(CloudConnectResponse)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Topic != that1.Topic {
-		return false
-	}
-	if !this.Msg.Equal(that1.Msg) {
-		return false
-	}
-	return true
-}
-func (this *CloudConnectRequest) GoString() string {
+func (this *V2CBridgeMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
-	s = append(s, "&vzconnpb.CloudConnectRequest{")
+	s := make([]string, 0, 7)
+	s = append(s, "&vzconnpb.V2CBridgeMessage{")
 	s = append(s, "Topic: "+fmt.Sprintf("%#v", this.Topic)+",\n")
+	s = append(s, "SessionId: "+fmt.Sprintf("%#v", this.SessionId)+",\n")
 	if this.Msg != nil {
 		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *CloudConnectResponse) GoString() string {
+func (this *C2VBridgeMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&vzconnpb.CloudConnectResponse{")
+	s = append(s, "&vzconnpb.C2VBridgeMessage{")
 	s = append(s, "Topic: "+fmt.Sprintf("%#v", this.Topic)+",\n")
 	if this.Msg != nil {
 		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
@@ -268,7 +282,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type VZConnServiceClient interface {
-	CloudConnect(ctx context.Context, opts ...grpc.CallOption) (VZConnService_CloudConnectClient, error)
+	NATSBridge(ctx context.Context, opts ...grpc.CallOption) (VZConnService_NATSBridgeClient, error)
 }
 
 type vZConnServiceClient struct {
@@ -279,31 +293,31 @@ func NewVZConnServiceClient(cc *grpc.ClientConn) VZConnServiceClient {
 	return &vZConnServiceClient{cc}
 }
 
-func (c *vZConnServiceClient) CloudConnect(ctx context.Context, opts ...grpc.CallOption) (VZConnService_CloudConnectClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_VZConnService_serviceDesc.Streams[0], "/pl.services.VZConnService/CloudConnect", opts...)
+func (c *vZConnServiceClient) NATSBridge(ctx context.Context, opts ...grpc.CallOption) (VZConnService_NATSBridgeClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_VZConnService_serviceDesc.Streams[0], "/pl.services.VZConnService/NATSBridge", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &vZConnServiceCloudConnectClient{stream}
+	x := &vZConnServiceNATSBridgeClient{stream}
 	return x, nil
 }
 
-type VZConnService_CloudConnectClient interface {
-	Send(*CloudConnectRequest) error
-	Recv() (*CloudConnectResponse, error)
+type VZConnService_NATSBridgeClient interface {
+	Send(*V2CBridgeMessage) error
+	Recv() (*C2VBridgeMessage, error)
 	grpc.ClientStream
 }
 
-type vZConnServiceCloudConnectClient struct {
+type vZConnServiceNATSBridgeClient struct {
 	grpc.ClientStream
 }
 
-func (x *vZConnServiceCloudConnectClient) Send(m *CloudConnectRequest) error {
+func (x *vZConnServiceNATSBridgeClient) Send(m *V2CBridgeMessage) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *vZConnServiceCloudConnectClient) Recv() (*CloudConnectResponse, error) {
-	m := new(CloudConnectResponse)
+func (x *vZConnServiceNATSBridgeClient) Recv() (*C2VBridgeMessage, error) {
+	m := new(C2VBridgeMessage)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -312,41 +326,41 @@ func (x *vZConnServiceCloudConnectClient) Recv() (*CloudConnectResponse, error) 
 
 // VZConnServiceServer is the server API for VZConnService service.
 type VZConnServiceServer interface {
-	CloudConnect(VZConnService_CloudConnectServer) error
+	NATSBridge(VZConnService_NATSBridgeServer) error
 }
 
 // UnimplementedVZConnServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedVZConnServiceServer struct {
 }
 
-func (*UnimplementedVZConnServiceServer) CloudConnect(srv VZConnService_CloudConnectServer) error {
-	return status.Errorf(codes.Unimplemented, "method CloudConnect not implemented")
+func (*UnimplementedVZConnServiceServer) NATSBridge(srv VZConnService_NATSBridgeServer) error {
+	return status.Errorf(codes.Unimplemented, "method NATSBridge not implemented")
 }
 
 func RegisterVZConnServiceServer(s *grpc.Server, srv VZConnServiceServer) {
 	s.RegisterService(&_VZConnService_serviceDesc, srv)
 }
 
-func _VZConnService_CloudConnect_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(VZConnServiceServer).CloudConnect(&vZConnServiceCloudConnectServer{stream})
+func _VZConnService_NATSBridge_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(VZConnServiceServer).NATSBridge(&vZConnServiceNATSBridgeServer{stream})
 }
 
-type VZConnService_CloudConnectServer interface {
-	Send(*CloudConnectResponse) error
-	Recv() (*CloudConnectRequest, error)
+type VZConnService_NATSBridgeServer interface {
+	Send(*C2VBridgeMessage) error
+	Recv() (*V2CBridgeMessage, error)
 	grpc.ServerStream
 }
 
-type vZConnServiceCloudConnectServer struct {
+type vZConnServiceNATSBridgeServer struct {
 	grpc.ServerStream
 }
 
-func (x *vZConnServiceCloudConnectServer) Send(m *CloudConnectResponse) error {
+func (x *vZConnServiceNATSBridgeServer) Send(m *C2VBridgeMessage) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *vZConnServiceCloudConnectServer) Recv() (*CloudConnectRequest, error) {
-	m := new(CloudConnectRequest)
+func (x *vZConnServiceNATSBridgeServer) Recv() (*V2CBridgeMessage, error) {
+	m := new(V2CBridgeMessage)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -359,8 +373,8 @@ var _VZConnService_serviceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "CloudConnect",
-			Handler:       _VZConnService_CloudConnect_Handler,
+			StreamName:    "NATSBridge",
+			Handler:       _VZConnService_NATSBridge_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
@@ -368,7 +382,7 @@ var _VZConnService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "src/cloud/vzconn/vzconnpb/service.proto",
 }
 
-func (m *CloudConnectRequest) Marshal() (dAtA []byte, err error) {
+func (m *V2CBridgeMessage) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -378,12 +392,12 @@ func (m *CloudConnectRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *CloudConnectRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *V2CBridgeMessage) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *CloudConnectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *V2CBridgeMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -398,7 +412,12 @@ func (m *CloudConnectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintService(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
+		dAtA[i] = 0x1a
+	}
+	if m.SessionId != 0 {
+		i = encodeVarintService(dAtA, i, uint64(m.SessionId))
+		i--
+		dAtA[i] = 0x10
 	}
 	if len(m.Topic) > 0 {
 		i -= len(m.Topic)
@@ -410,7 +429,7 @@ func (m *CloudConnectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *CloudConnectResponse) Marshal() (dAtA []byte, err error) {
+func (m *C2VBridgeMessage) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -420,12 +439,12 @@ func (m *CloudConnectResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *CloudConnectResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *C2VBridgeMessage) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *CloudConnectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *C2VBridgeMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -463,7 +482,7 @@ func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *CloudConnectRequest) Size() (n int) {
+func (m *V2CBridgeMessage) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -473,6 +492,9 @@ func (m *CloudConnectRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovService(uint64(l))
 	}
+	if m.SessionId != 0 {
+		n += 1 + sovService(uint64(m.SessionId))
+	}
 	if m.Msg != nil {
 		l = m.Msg.Size()
 		n += 1 + l + sovService(uint64(l))
@@ -480,7 +502,7 @@ func (m *CloudConnectRequest) Size() (n int) {
 	return n
 }
 
-func (m *CloudConnectResponse) Size() (n int) {
+func (m *C2VBridgeMessage) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -503,22 +525,23 @@ func sovService(x uint64) (n int) {
 func sozService(x uint64) (n int) {
 	return sovService(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (this *CloudConnectRequest) String() string {
+func (this *V2CBridgeMessage) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&CloudConnectRequest{`,
+	s := strings.Join([]string{`&V2CBridgeMessage{`,
 		`Topic:` + fmt.Sprintf("%v", this.Topic) + `,`,
+		`SessionId:` + fmt.Sprintf("%v", this.SessionId) + `,`,
 		`Msg:` + strings.Replace(fmt.Sprintf("%v", this.Msg), "Any", "types.Any", 1) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *CloudConnectResponse) String() string {
+func (this *C2VBridgeMessage) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&CloudConnectResponse{`,
+	s := strings.Join([]string{`&C2VBridgeMessage{`,
 		`Topic:` + fmt.Sprintf("%v", this.Topic) + `,`,
 		`Msg:` + strings.Replace(fmt.Sprintf("%v", this.Msg), "Any", "types.Any", 1) + `,`,
 		`}`,
@@ -533,7 +556,7 @@ func valueToStringService(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *CloudConnectRequest) Unmarshal(dAtA []byte) error {
+func (m *V2CBridgeMessage) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -556,10 +579,10 @@ func (m *CloudConnectRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CloudConnectRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: V2CBridgeMessage: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CloudConnectRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: V2CBridgeMessage: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -595,6 +618,25 @@ func (m *CloudConnectRequest) Unmarshal(dAtA []byte) error {
 			m.Topic = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionId", wireType)
+			}
+			m.SessionId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SessionId |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Msg", wireType)
 			}
@@ -654,7 +696,7 @@ func (m *CloudConnectRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *CloudConnectResponse) Unmarshal(dAtA []byte) error {
+func (m *C2VBridgeMessage) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -677,10 +719,10 @@ func (m *CloudConnectResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CloudConnectResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: C2VBridgeMessage: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CloudConnectResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: C2VBridgeMessage: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

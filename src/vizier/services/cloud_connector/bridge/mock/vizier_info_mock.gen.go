@@ -5,8 +5,9 @@
 package mock_controllers
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockVizierInfo is a mock of VizierInfo interface

@@ -7,10 +7,15 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
+	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -26,16 +31,94 @@ import (
 // SaltLength is the length of the salt used when encrypting the jwt signing key.
 const SaltLength int = 10
 
-// Server is a controller implementation of vzmgr.
+// HandleNATSMessageFunc is the signature for a NATS message handler.
+type HandleNATSMessageFunc func(*cvmsgspb.V2CMessage)
+
+// Server is a bridge implementation of evzmgr.
 type Server struct {
-	db           *sqlx.DB
-	dbKey        string
-	dnsMgrClient dnsmgr.DNSMgrServiceClient
+	db            *sqlx.DB
+	dbKey         string
+	dnsMgrClient  dnsmgr.DNSMgrServiceClient
+	nc            *nats.Conn
+	natsCh        chan *nats.Msg
+	natsSubs      []*nats.Subscription
+	msgHandlerMap map[string]HandleNATSMessageFunc
 }
 
 // New creates a new server.
-func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgr.DNSMgrServiceClient) *Server {
-	return &Server{db, dbKey, dnsMgrClient}
+func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgr.DNSMgrServiceClient, nc *nats.Conn) *Server {
+	natsSubs := make([]*nats.Subscription, 0)
+	natsCh := make(chan *nats.Msg)
+	msgHandlerMap := make(map[string]HandleNATSMessageFunc)
+	s := &Server{db, dbKey, dnsMgrClient, nc, natsCh, natsSubs, msgHandlerMap}
+
+	// Register NATS message handlers.
+	if nc != nil {
+		s.registerMessageHandler("heartbeat", s.HandleVizierHeartbeat)
+		s.registerMessageHandler("ssl", s.HandleSSLRequest)
+
+		go s.handleMessageBus()
+	}
+
+	return s
+}
+
+func (s *Server) registerMessageHandler(topic string, fn HandleNATSMessageFunc) {
+	sub, err := s.nc.ChanSubscribe(fmt.Sprintf("v2c.*.*.%s", topic), s.natsCh)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to subscribe to NATS channel")
+	}
+	s.natsSubs = append(s.natsSubs, sub)
+	s.msgHandlerMap[topic] = fn
+}
+
+func (s *Server) handleMessageBus() {
+	defer func() {
+		for _, sub := range s.natsSubs {
+			sub.Unsubscribe()
+		}
+	}()
+	for {
+		select {
+		case msg := <-s.natsCh:
+			log.WithField("message", msg).Info("Got NATS message")
+			// Get topic.
+			splitTopic := strings.Split(msg.Subject, ".")
+			topic := splitTopic[len(splitTopic)-1]
+
+			pb := &cvmsgspb.V2CMessage{}
+			err := proto.Unmarshal(msg.Data, pb)
+			if err != nil {
+				log.WithError(err).Error("Could not unmarshal message")
+			}
+
+			if handler, ok := s.msgHandlerMap[topic]; ok {
+				handler(pb)
+			} else {
+				log.WithField("topic", msg.Subject).Error("Could not find handler for topic")
+			}
+		}
+	}
+}
+
+func (s *Server) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UUID) {
+	wrappedMsg := &cvmsgspb.C2VMessage{
+		VizierID: vizierID.String(),
+		Msg:      msg,
+	}
+
+	b, err := wrappedMsg.Marshal()
+	if err != nil {
+		log.WithError(err).Error("Could not marshal message to bytes")
+		return
+	}
+	topic = fmt.Sprintf("%s.%s.%s", "c2v", vizierID.String(), topic)
+	log.WithField("topic", topic).Info("Sending message")
+	err = s.nc.Publish(topic, b)
+
+	if err != nil {
+		log.WithError(err).Error("Could not publish message to nats")
+	}
 }
 
 type vizierStatus cvmsgspb.VizierInfo_Status
@@ -269,13 +352,23 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 }
 
 // HandleVizierHeartbeat handles the heartbeat from connected viziers.
-func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cvmsgspb.VizierHeartbeat) (*cvmsgspb.VizierHeartbeatAck, error) {
+func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
+	anyMsg := v2cMsg.Msg
+	req := &cvmsgspb.VizierHeartbeat{}
+	err := types.UnmarshalAny(anyMsg, req)
+	if err != nil {
+		log.WithError(err).Error("Could not unmarshal NATS message")
+		return
+	}
+
 	// Send DNS address.
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	if err != nil {
-		return nil, err
+		log.WithError(err).Error("Could not get service creds from jwt")
+		return
 	}
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+	// TODO(michelle): fix
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", serviceAuthToken))
 
 	addr := req.Address
@@ -304,49 +397,54 @@ func (s *Server) HandleVizierHeartbeat(ctx context.Context, req *cvmsgspb.Vizier
 		vzStatus = "UNHEALTHY"
 	}
 
-	// TODO(zasgar/michelle): handle sequence ID and time.
-	res, err := s.db.Exec(query, vzStatus, addr, vizierID)
+	_, err = s.db.Exec(query, vzStatus, addr, vizierID)
 	if err != nil {
-		return &cvmsgspb.VizierHeartbeatAck{
-			Status:         cvmsgspb.HB_ERROR,
-			Time:           time.Now().Unix(),
-			SequenceNumber: req.SequenceNumber,
-			ErrorMessage:   "internal error, failed to update heartbeat",
-		}, nil
+		log.WithError(err).Error("Could not update vizier heartbeat")
 	}
-
-	count, _ := res.RowsAffected()
-	if count == 0 {
-		return nil, status.Error(codes.NotFound, "vizier not found")
-	}
-
-	return &cvmsgspb.VizierHeartbeatAck{
-		Status:         cvmsgspb.HB_OK,
-		Time:           time.Now().Unix(),
-		SequenceNumber: req.SequenceNumber,
-	}, nil
 }
 
-// GetSSLCerts registers certs for the vizier cluster.
-func (s *Server) GetSSLCerts(ctx context.Context, req *vzmgrpb.GetSSLCertsRequest) (*vzmgrpb.GetSSLCertsResponse, error) {
+// HandleSSLRequest registers certs for the vizier cluster.
+func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
+	anyMsg := v2cMsg.Msg
+
+	req := &cvmsgspb.VizierSSLCertRequest{}
+	err := types.UnmarshalAny(anyMsg, req)
+	if err != nil {
+		log.WithError(err).Error("Could not unmarshal NATS message")
+		return
+	}
+
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	if err != nil {
-		return nil, err
+		log.WithError(err).Error("Could not get creds from jwt")
+		return
 	}
 
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+	// TOOD(michelle): fix
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", serviceAuthToken))
 
-	dnsMgrReq := &dnsmgr.GetSSLCertsRequest{ClusterID: req.ClusterID}
+	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
+
+	dnsMgrReq := &dnsmgr.GetSSLCertsRequest{ClusterID: req.VizierID}
 	resp, err := s.dnsMgrClient.GetSSLCerts(ctx, dnsMgrReq)
 	if err != nil {
-		return nil, err
+		log.WithError(err).Error("Could not get SSL certs")
+		return
 	}
-
-	return &vzmgrpb.GetSSLCertsResponse{
+	natsResp := &cvmsgspb.VizierSSLCertResponse{
 		Key:  resp.Key,
 		Cert: resp.Cert,
-	}, nil
+	}
+
+	respAnyMsg, err := types.MarshalAny(natsResp)
+	if err != nil {
+		log.WithError(err).Error("Could not marshal proto to any")
+		return
+	}
+
+	log.WithField("SSL", respAnyMsg.String()).Info("sending SSL response")
+	s.sendNATSMessage("sslResp", respAnyMsg, vizierID)
 }
 
 // getServiceCredentials returns JWT credentials for inter-service requests.

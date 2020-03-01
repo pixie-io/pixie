@@ -6,6 +6,7 @@ import (
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	"github.com/nats-io/nats.go"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -25,6 +26,7 @@ import (
 func init() {
 	pflag.String("database_key", "", "The encryption key to use for the database")
 	pflag.String("dnsmgr_service", "dnsmgr-service.plc.svc.cluster.local:51900", "The dns manager service url (load balancer/list is ok)")
+	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 }
 
 // NewDNSMgrServiceClient creates a new profile RPC client stub.
@@ -87,7 +89,15 @@ func main() {
 		log.Fatal("Database encryption key is required")
 	}
 
-	c := controller.New(db, dbKey, dnsMgrClient)
+	// Connect to NATS.
+	nc, err := nats.Connect(viper.GetString("nats_url"),
+		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
+		nats.RootCAs(viper.GetString("tls_ca_cert")))
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect to NATS")
+	}
+
+	c := controller.New(db, dbKey, dnsMgrClient, nc)
 	sm := controller.NewStatusMonitor(db)
 	defer sm.Stop()
 	vzmgrpb.RegisterVZMgrServiceServer(s.GRPCServer(), c)

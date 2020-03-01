@@ -10,13 +10,11 @@ option go_package = "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb;vzmgrpb";
 
 service VZMgrService {
   rpc CreateVizierCluster(CreateVizierClusterRequest) returns (uuidpb.UUID) {}
-  rpc GetSSLCerts(GetSSLCertsRequest) returns (GetSSLCertsResponse) {}
   rpc GetViziersByOrg(uuidpb.UUID) returns (GetViziersByOrgResponse) {}
-  rpc GetVizierInfo(uuidpb.UUID) returns (pl.cvmsgspb.VizierInfo) {}
-  rpc GetVizierConnectionInfo(uuidpb.UUID) returns (pl.cvmsgspb.VizierConnectionInfo) {}
+  rpc GetVizierInfo(uuidpb.UUID) returns (cvmsgspb.VizierInfo) {}
+  rpc GetVizierConnectionInfo(uuidpb.UUID) returns (cvmsgspb.VizierConnectionInfo) {}
   // Call to acknowledge connection of a vizier.
-  rpc VizierConnected(pl.cvmsgspb.RegisterVizierRequest) returns (pl.cvmsgspb.RegisterVizierAck) {}
-  rpc HandleVizierHeartbeat(pl.cvmsgspb.VizierHeartbeat) returns (pl.cvmsgspb.VizierHeartbeatAck) {}
+  rpc VizierConnected(cvmsgspb.RegisterVizierRequest) returns (cvmsgspb.RegisterVizierAck) {}
 }
 
 message CreateVizierClusterRequest {
@@ -30,15 +28,4 @@ message GetViziersByOrgResponse {
   repeated uuidpb.UUID vizier_ids = 1 [
                                        (gogoproto.customname) = "VizierIDs"
                                       ];
-}
-
-message GetSSLCertsRequest {
-  uuidpb.UUID cluster_id = 1 [
-                              (gogoproto.customname) = "ClusterID"
-                             ];
-}
-
-message GetSSLCertsResponse {
-  string key = 1;
-  string cert = 2;
 }

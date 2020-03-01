@@ -22,9 +22,6 @@ spec:
             secretKeyRef:
               key: jwt-signing-key
               name: pl-cluster-secrets
-        # TODO(zasgar): Remove this.
-        - name: PL_DISABLE_GRPC_AUTH
-          value: "true"
         - name: PL_NAMESPACE
           valueFrom:
             fieldRef:

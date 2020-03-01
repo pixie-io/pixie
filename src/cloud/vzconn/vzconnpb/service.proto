@@ -9,21 +9,25 @@ import "google/protobuf/any.proto";
 option go_package = "pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb;vzconnpb";
 
 service VZConnService {
-  rpc CloudConnect(stream CloudConnectRequest) returns (stream CloudConnectResponse) {}
+  rpc NATSBridge(stream V2CBridgeMessage) returns (stream C2VBridgeMessage) {}
 }
 
-// CloudConnectRequest is an envelope message that carries between Vizier and the cloud.
-message CloudConnectRequest {
-    // The topic that this message is publishing to.
+// V2CBridgeMessage is the message sent from vizier to cloud to bridge their respective NATS instances.
+message V2CBridgeMessage {
+    // The topic is the intended topic on the cloud side. All published cvmsgspb will automatically become a
+    // topic under the subpath /vizier/<vizier_id>/<topic>.
     string topic = 1;
-    // THe contents of the message.
-    google.protobuf.Any msg = 2;
+    // This is an opaque monotonically increasing ID that changes when ever the cloud connector restarts.
+    int64 session_id = 2;
+    // The contents of the actual message.
+    google.protobuf.Any msg = 3;
 }
 
-// CloudConnectResponse is an envelope message that carries information between the cloud and Vizier.
-message CloudConnectResponse {
-    // The topic this message is in response to.
+// C2VBridgeMessage is the message sent from cloud to vizier to bridge their respective NATS instances.
+message C2VBridgeMessage {
+    // The topic where this message will be published. All cvmsgspb will be published under the sub-path:
+    // /cloud-response/<topic>.
     string topic = 1;
-    // The contents of the message.
+    // The contents of the actual message.
     google.protobuf.Any msg = 2;
 }

@@ -8,9 +8,12 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/golang/mock/gomock"
 	"github.com/jmoiron/sqlx"
+	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,6 +28,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
 	"pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
 type vizierStatus cvmsgspb.VizierInfo_Status
@@ -63,7 +67,7 @@ func TestServer_CreateVizierCluster(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient)
+	s := controller.New(db, "test", mockDNSClient, nil)
 	orgID := uuid.NewV4()
 
 	tests := []struct {
@@ -137,7 +141,7 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient)
+	s := controller.New(db, "test", mockDNSClient, nil)
 
 	t.Run("valid", func(t *testing.T) {
 		// Fetch the test data that was inserted earlier.
@@ -194,7 +198,7 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient)
+	s := controller.New(db, "test", mockDNSClient, nil)
 	resp, err := s.GetVizierInfo(context.Background(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.Nil(t, err)
 	require.NotNil(t, resp)
@@ -211,7 +215,7 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient)
+	s := controller.New(db, "test", mockDNSClient, nil)
 	resp, err := s.GetVizierConnectionInfo(context.Background(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.Nil(t, err)
 	require.NotNil(t, resp)
@@ -237,7 +241,7 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient)
+	s := controller.New(db, "test", mockDNSClient, nil)
 	req := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
@@ -275,7 +279,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient)
+	s := controller.New(db, "test", mockDNSClient, nil)
 	req := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
@@ -312,127 +316,115 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient)
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
 
-	t.Run("valid Vizier", func(t *testing.T) {
-		dnsMgrReq := &dnsmgrpb.GetDNSAddressRequest{
-			ClusterID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
-			IPAddress: "127.0.0.1",
-		}
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
 
-		dnsMgrResp := &dnsmgrpb.GetDNSAddressResponse{
-			DNSAddress: "abc.clusters.dev.withpixie.dev",
-		}
+	s := controller.New(db, "test", mockDNSClient, nc)
 
-		mockDNSClient.EXPECT().
-			GetDNSAddress(gomock.Any(), dnsMgrReq).
-			Return(dnsMgrResp, nil)
+	tests := []struct {
+		name                      string
+		expectGetDNSAddressCalled bool
+		dnsAddressResponse        *dnsmgrpb.GetDNSAddressResponse
+		dnsAddressError           error
+		vizierID                  string
+		hbAddress                 string
+		hbPort                    int
+		updatedClusterStatus      string
+		expectedClusterAddress    string
+	}{
+		{
+			name:                      "valid vizier",
+			expectGetDNSAddressCalled: true,
+			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
+				DNSAddress: "abc.clusters.dev.withpixie.dev",
+			},
+			dnsAddressError:        nil,
+			vizierID:               "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:              "127.0.0.1",
+			hbPort:                 123,
+			updatedClusterStatus:   "HEALTHY",
+			expectedClusterAddress: "abc.clusters.dev.withpixie.dev:123",
+		},
+		{
+			name:                      "valid vizier dns failed",
+			expectGetDNSAddressCalled: true,
+			dnsAddressResponse:        nil,
+			dnsAddressError:           errors.New("Could not get DNS address"),
+			vizierID:                  "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:                 "127.0.0.1",
+			hbPort:                    123,
+			updatedClusterStatus:      "HEALTHY",
+			expectedClusterAddress:    "127.0.0.1:123",
+		},
+		{
+			name:                      "valid vizier no address",
+			expectGetDNSAddressCalled: false,
+			vizierID:                  "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:                 "",
+			hbPort:                    0,
+			updatedClusterStatus:      "UNHEALTHY",
+			expectedClusterAddress:    "",
+		},
+		{
+			name:                      "unknown vizier",
+			expectGetDNSAddressCalled: false,
+			vizierID:                  "223e4567-e89b-12d3-a456-426655440001",
+			hbAddress:                 "",
+			updatedClusterStatus:      "",
+			expectedClusterAddress:    "",
+		},
+	}
 
-		req := &cvmsgspb.VizierHeartbeat{
-			VizierID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
-			Time:           100,
-			SequenceNumber: 200,
-			Address:        "127.0.0.1",
-			Port:           int32(123),
-		}
-		resp, err := s.HandleVizierHeartbeat(context.Background(), req)
-		require.Nil(t, err)
-		require.NotNil(t, resp)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dnsMgrReq := &dnsmgrpb.GetDNSAddressRequest{
+				ClusterID: utils.ProtoFromUUIDStrOrNil(tc.vizierID),
+				IPAddress: tc.hbAddress,
+			}
 
-		assert.Equal(t, resp.SequenceNumber, req.SequenceNumber)
-		assert.True(t, resp.Time >= time.Now().Unix())
-		assert.Equal(t, resp.Status, cvmsgspb.HB_OK)
+			if tc.expectGetDNSAddressCalled {
+				mockDNSClient.EXPECT().
+					GetDNSAddress(gomock.Any(), dnsMgrReq).
+					Return(tc.dnsAddressResponse, tc.dnsAddressError)
+			}
 
-		clusterQuery := `SELECT status, address from vizier_cluster_info WHERE vizier_cluster_id=$1`
+			nestedMsg := &cvmsgspb.VizierHeartbeat{
+				VizierID:       utils.ProtoFromUUIDStrOrNil(tc.vizierID),
+				Time:           100,
+				SequenceNumber: 200,
+				Address:        tc.hbAddress,
+				Port:           int32(tc.hbPort),
+			}
+			nestedAny, err := types.MarshalAny(nestedMsg)
+			if err != nil {
+				t.Fatal("Could not marshal pb")
+			}
 
-		var clusterInfo struct {
-			Status  string `db:"status"`
-			Address string `db:"address"`
-		}
-		clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
-		assert.Nil(t, err)
-		err = db.Get(&clusterInfo, clusterQuery, clusterID)
-		assert.Equal(t, "HEALTHY", clusterInfo.Status)
-		assert.Equal(t, "abc.clusters.dev.withpixie.dev:123", clusterInfo.Address)
-	})
+			req := &cvmsgspb.V2CMessage{
+				Msg: nestedAny,
+			}
 
-	t.Run("valid Vizier dns failed", func(t *testing.T) {
-		dnsMgrReq := &dnsmgrpb.GetDNSAddressRequest{
-			ClusterID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
-			IPAddress: "127.0.0.1",
-		}
+			s.HandleVizierHeartbeat(req)
 
-		mockDNSClient.EXPECT().
-			GetDNSAddress(gomock.Any(), dnsMgrReq).
-			Return(nil, errors.New("Could not get DNS address"))
+			// Check database.
+			clusterQuery := `SELECT status, address from vizier_cluster_info WHERE vizier_cluster_id=$1`
+			var clusterInfo struct {
+				Status  string `db:"status"`
+				Address string `db:"address"`
+			}
+			clusterID, err := uuid.FromString(tc.vizierID)
+			assert.Nil(t, err)
+			err = db.Get(&clusterInfo, clusterQuery, clusterID)
+			assert.Equal(t, tc.updatedClusterStatus, clusterInfo.Status)
+			assert.Equal(t, tc.expectedClusterAddress, clusterInfo.Address)
 
-		req := &cvmsgspb.VizierHeartbeat{
-			VizierID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
-			Time:           100,
-			SequenceNumber: 200,
-			Address:        "127.0.0.1",
-			Port:           int32(123),
-		}
-		resp, err := s.HandleVizierHeartbeat(context.Background(), req)
-		require.Nil(t, err)
-		require.NotNil(t, resp)
-
-		assert.Equal(t, resp.SequenceNumber, req.SequenceNumber)
-		assert.True(t, resp.Time >= time.Now().Unix())
-		assert.Equal(t, resp.Status, cvmsgspb.HB_OK)
-
-		clusterQuery := `SELECT status, address from vizier_cluster_info WHERE vizier_cluster_id=$1`
-
-		var clusterInfo struct {
-			Status  string `db:"status"`
-			Address string `db:"address"`
-		}
-		clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
-		assert.Nil(t, err)
-		err = db.Get(&clusterInfo, clusterQuery, clusterID)
-		assert.Equal(t, "HEALTHY", clusterInfo.Status)
-		assert.Equal(t, "127.0.0.1:123", clusterInfo.Address)
-	})
-
-	t.Run("valid Vizier no address", func(t *testing.T) {
-		req := &cvmsgspb.VizierHeartbeat{
-			VizierID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
-			Time:           100,
-			SequenceNumber: 200,
-		}
-		resp, err := s.HandleVizierHeartbeat(context.Background(), req)
-		require.Nil(t, err)
-		require.NotNil(t, resp)
-
-		assert.Equal(t, resp.SequenceNumber, req.SequenceNumber)
-		assert.True(t, resp.Time >= time.Now().Unix())
-		assert.Equal(t, resp.Status, cvmsgspb.HB_OK)
-
-		clusterQuery := `SELECT status from vizier_cluster_info WHERE vizier_cluster_id=$1`
-
-		var clusterInfo struct {
-			Status string `db:"status"`
-		}
-		clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
-		assert.Nil(t, err)
-		err = db.Get(&clusterInfo, clusterQuery, clusterID)
-		assert.Equal(t, "UNHEALTHY", clusterInfo.Status)
-	})
-
-	t.Run("unknown Vizier", func(t *testing.T) {
-		req := &cvmsgspb.VizierHeartbeat{
-			VizierID:       utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-			Time:           100,
-			SequenceNumber: 200,
-		}
-		resp, err := s.HandleVizierHeartbeat(context.Background(), req)
-		require.NotNil(t, err)
-		require.Nil(t, resp)
-
-		assert.Equal(t, status.Code(err), codes.NotFound)
-	})
-
-	// TODO(zasgar): Add more tests here.
+		})
+	}
 }
 
 func TestServer_GetSSLCerts(t *testing.T) {
@@ -444,7 +436,22 @@ func TestServer_GetSSLCerts(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient)
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	subCh := make(chan *nats.Msg, 1)
+	sub, err := nc.ChanSubscribe("c2v.123e4567-e89b-12d3-a456-426655440001.sslResp", subCh)
+	if err != nil {
+		t.Fatal("Could not subscribe to NATS.")
+	}
+	defer sub.Unsubscribe()
+
+	s := controller.New(db, "test", mockDNSClient, nc)
 
 	t.Run("dnsmgr error", func(t *testing.T) {
 		dnsMgrReq := &dnsmgrpb.GetSSLCertsRequest{
@@ -460,14 +467,113 @@ func TestServer_GetSSLCerts(t *testing.T) {
 			GetSSLCerts(gomock.Any(), dnsMgrReq).
 			Return(dnsMgrResp, nil)
 
-		req := &vzmgrpb.GetSSLCertsRequest{
-			ClusterID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		nestedMsg := &cvmsgspb.VizierSSLCertRequest{
+			VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		}
-		resp, err := s.GetSSLCerts(context.Background(), req)
-		require.Nil(t, err)
-		require.NotNil(t, resp)
+		nestedAny, err := types.MarshalAny(nestedMsg)
+		if err != nil {
+			t.Fatal("Could not marshal pb")
+		}
 
+		req := &cvmsgspb.V2CMessage{
+			Msg: nestedAny,
+		}
+
+		s.HandleSSLRequest(req)
+
+		// Listen for response.
+		select {
+		case m := <-subCh:
+			pb := &cvmsgspb.C2VMessage{}
+			err = proto.Unmarshal(m.Data, pb)
+			if err != nil {
+				t.Fatal("Could not unmarshal message")
+			}
+			resp := &cvmsgspb.VizierSSLCertResponse{}
+			err = types.UnmarshalAny(pb.Msg, resp)
+			if err != nil {
+				t.Fatal("Could not unmarshal any message")
+			}
+			assert.Equal(t, "abcd", resp.Key)
+			assert.Equal(t, "efgh", resp.Cert)
+		case <-time.After(1 * time.Second):
+			t.Fatal("Timeout")
+		}
+	})
+}
+
+func TestServer_MessageHandler(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	subCh := make(chan *nats.Msg, 1)
+	sub, err := nc.ChanSubscribe("c2v.123e4567-e89b-12d3-a456-426655440001.sslResp", subCh)
+	if err != nil {
+		t.Fatal("Could not subscribe to NATS.")
+	}
+	defer sub.Unsubscribe()
+
+	_ = controller.New(db, "test", mockDNSClient, nc)
+
+	dnsMgrReq := &dnsmgrpb.GetSSLCertsRequest{
+		ClusterID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+	}
+	dnsMgrResp := &dnsmgrpb.GetSSLCertsResponse{
+		Key:  "abcd",
+		Cert: "efgh",
+	}
+
+	mockDNSClient.EXPECT().
+		GetSSLCerts(gomock.Any(), dnsMgrReq).
+		Return(dnsMgrResp, nil)
+
+	// Publish v2c message over nats.
+	nestedMsg := &cvmsgspb.VizierSSLCertRequest{
+		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+	}
+	nestedAny, err := types.MarshalAny(nestedMsg)
+	if err != nil {
+		t.Fatal("Could not marshal pb")
+	}
+	wrappedMsg := &cvmsgspb.V2CMessage{
+		VizierID: "123e4567-e89b-12d3-a456-426655440001",
+		Msg:      nestedAny,
+	}
+
+	b, err := wrappedMsg.Marshal()
+	if err != nil {
+		t.Fatal("Could not marshal message to bytes")
+	}
+	nc.Publish("v2c.1.123e4567-e89b-12d3-a456-426655440001.ssl", b)
+
+	select {
+	case m := <-subCh:
+		pb := &cvmsgspb.C2VMessage{}
+		err = proto.Unmarshal(m.Data, pb)
+		if err != nil {
+			t.Fatal("Could not unmarshal message")
+		}
+		resp := &cvmsgspb.VizierSSLCertResponse{}
+		err = types.UnmarshalAny(pb.Msg, resp)
+		if err != nil {
+			t.Fatal("Could not unmarshal any message")
+		}
 		assert.Equal(t, "abcd", resp.Key)
 		assert.Equal(t, "efgh", resp.Cert)
-	})
+	case <-time.After(1 * time.Second):
+		t.Fatal("Timeout")
+	}
 }
