@@ -305,9 +305,13 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 				return errors.New("invalid subject: " + data.Subject)
 			}
 			topic := strings.TrimPrefix(data.Subject, natsCloudUpdateTopic+".")
-			any := types.Any{}
-			any.Unmarshal(data.Data)
-			err := s.publishBridgeCh(topic, &any)
+			// Message over nats should be wrapped in a V2CMessage.
+			v2cMsg := &cvmsgspb.V2CMessage{}
+			err := proto.Unmarshal(data.Data, v2cMsg)
+			if err != nil {
+				return err
+			}
+			err = s.publishBridgeCh(topic, v2cMsg.Msg)
 			if err != nil {
 				return err
 			}
@@ -341,7 +345,7 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 				return err
 			}
 		case hbMsg := <-hbChan:
-			err := s.publishBridgeCh(heartbeatTopic, hbMsg)
+			err := s.publishProtoToBridgeCh(heartbeatTopic, hbMsg)
 			if err != nil {
 				return err
 			}
@@ -359,18 +363,23 @@ func (s *Bridge) Stop() {
 	// Wait fo all goroutines to stop.
 	s.wg.Wait()
 }
-func (s *Bridge) publishBridgeCh(topic string, msg proto.Message) error {
+func (s *Bridge) publishBridgeCh(topic string, msg *types.Any) error {
+	wrappedReq := &vzconnpb.V2CBridgeMessage{
+		Topic:     topic,
+		SessionId: s.sessionID,
+		Msg:       msg,
+	}
+	s.grpcOutCh <- wrappedReq
+	return nil
+}
+
+func (s *Bridge) publishProtoToBridgeCh(topic string, msg proto.Message) error {
 	anyMsg, err := types.MarshalAny(msg)
 	if err != nil {
 		return err
 	}
-	wrappedReq := &vzconnpb.V2CBridgeMessage{
-		Topic:     topic,
-		SessionId: s.sessionID,
-		Msg:       anyMsg,
-	}
-	s.grpcOutCh <- wrappedReq
-	return nil
+
+	return s.publishBridgeCh(topic, anyMsg)
 }
 
 func (s *Bridge) publishBridgeSync(stream vzconnpb.VZConnService_NATSBridgeClient, topic string, msg proto.Message) error {
@@ -435,7 +444,7 @@ func (s *Bridge) requestSSLCerts(ctx context.Context, done chan bool) error {
 	regReq := &cvmsgspb.VizierSSLCertRequest{
 		VizierID: utils.ProtoFromUUID(&s.vizierID),
 	}
-	s.publishBridgeCh("ssl", regReq)
+	s.publishProtoToBridgeCh("ssl", regReq)
 	sslResp := cvmsgspb.VizierSSLCertResponse{}
 
 loop:
@@ -445,7 +454,7 @@ loop:
 			return nil
 		case <-time.After(30 * time.Second):
 			log.Error("Timeout waiting for SSL certs. Re-requesting")
-			s.publishBridgeCh("ssl", regReq)
+			s.publishProtoToBridgeCh("ssl", regReq)
 		case msg := <-sslCh:
 			log.Trace("Got SSL message")
 			envelope := &cvmsgspb.C2VMessage{}

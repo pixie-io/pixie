@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
@@ -55,8 +56,15 @@ func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
 	resp := cvmsgspb.MetadataResponse{
 		Updates: updates,
 	}
+	reqAnyMsg, err := types.MarshalAny(&resp)
+	if err != nil {
+		return err
+	}
 
-	b, err := resp.Marshal()
+	v2cMsg := cvmsgspb.V2CMessage{
+		Msg: reqAnyMsg,
+	}
+	b, err := v2cMsg.Marshal()
 	if err != nil {
 		return err
 	}

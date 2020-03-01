@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
@@ -165,8 +166,11 @@ func TestMetadataTopicListener_HandleMessage(t *testing.T) {
 	err = mdl.HandleMessage(&msg)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(updates))
+	wrapperPb := &cvmsgspb.V2CMessage{}
+	proto.Unmarshal(updates[0], wrapperPb)
 	updatePb := &cvmsgspb.MetadataResponse{}
-	proto.Unmarshal(updates[0], updatePb)
+	err = types.UnmarshalAny(wrapperPb.Msg, updatePb)
+
 	assert.Equal(t, 3, len(updatePb.Updates))
 	for i, u := range updatePb.Updates {
 		assert.Equal(t, fmt.Sprintf("%d", i+1), u.ResourceVersion)
