@@ -41,6 +41,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 				StartTimestampNS: 4,
 				StopTimestampNS:  6,
 				PodIDs:           []string{"abcd"},
+				PodNames:         []string{"pod-name"},
 			},
 		},
 	}
@@ -55,6 +56,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 				StartTimestampNS: 4,
 				StopTimestampNS:  6,
 				PodIDs:           []string{"efgh"},
+				PodNames:         []string{"another-pod"},
 			},
 		},
 	}
@@ -69,6 +71,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 				StartTimestampNS: 4,
 				StopTimestampNS:  6,
 				PodIDs:           []string{"abcd", "efgh"},
+				PodNames:         []string{"pod-name", "another-pod"},
 			},
 		},
 	}
@@ -124,12 +127,14 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		Kind:      "Pod",
 		Namespace: "pl",
 		UID:       "abcd",
+		Name:      "pod-name",
 	}
 
 	or2 := v1.ObjectReference{
 		Kind:      "Pod",
 		Namespace: "pl",
 		UID:       "efgh",
+		Name:      "another-pod",
 	}
 
 	addrs := make([]v1.EndpointAddress, 2)
@@ -385,8 +390,10 @@ func TestObjectToPodProto(t *testing.T) {
 		ResourceVersion: "1_0",
 		Update: &metadatapb.ResourceUpdate_ContainerUpdate{
 			ContainerUpdate: &metadatapb.ContainerUpdate{
-				CID:  "test",
-				Name: "container1",
+				CID:     "test",
+				Name:    "container1",
+				PodID:   "ijkl",
+				PodName: "object_md",
 			},
 		},
 	}
@@ -523,9 +530,11 @@ func TestGetResourceUpdateFromPod(t *testing.T) {
 	assert.Equal(t, "ijkl", podUpdate.UID)
 	assert.Equal(t, "object_md", podUpdate.Name)
 	assert.Equal(t, 1, len(podUpdate.ContainerIDs))
+	assert.Equal(t, 1, len(podUpdate.ContainerNames))
 	assert.Equal(t, int64(4), podUpdate.StartTimestampNS)
 	assert.Equal(t, int64(6), podUpdate.StopTimestampNS)
 	assert.Equal(t, "test", podUpdate.ContainerIDs[0])
+	assert.Equal(t, "container1", podUpdate.ContainerNames[0])
 	assert.Equal(t, metadatapb.QOS_CLASS_BURSTABLE, podUpdate.QOSClass)
 	assert.Equal(t, metadatapb.RUNNING, podUpdate.Phase)
 	assert.Equal(t, "test", podUpdate.NodeName)
@@ -549,6 +558,9 @@ func TestGetResourceUpdateFromEndpoints(t *testing.T) {
 	assert.Equal(t, 2, len(serviceUpdate.PodIDs))
 	assert.Equal(t, "abcd", serviceUpdate.PodIDs[0])
 	assert.Equal(t, "efgh", serviceUpdate.PodIDs[1])
+	assert.Equal(t, 2, len(serviceUpdate.PodNames))
+	assert.Equal(t, "pod-name", serviceUpdate.PodNames[0])
+	assert.Equal(t, "another-pod", serviceUpdate.PodNames[1])
 }
 
 func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
@@ -556,6 +568,7 @@ func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
 	if err := proto.UnmarshalText(testutils.PodPbWithContainers, pod); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
+	pod.Metadata.Namespace = "ns"
 
 	updates := controllers.GetContainerResourceUpdatesFromPod(pod)
 	assert.Equal(t, 1, len(updates))
@@ -564,6 +577,9 @@ func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
 	assert.NotNil(t, cUpdate)
 	assert.Equal(t, "container1", cUpdate.Name)
 	assert.Equal(t, "test", cUpdate.CID)
+	assert.Equal(t, "ijkl", cUpdate.PodID)
+	assert.Equal(t, "object_md", cUpdate.PodName)
+	assert.Equal(t, "ns", cUpdate.Namespace)
 }
 
 func TestSyncPodData(t *testing.T) {

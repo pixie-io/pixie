@@ -377,6 +377,7 @@ subsets {
       kind: "Pod"
       namespace: "pl"
       uid: "abcd"
+      name: "pod-name"
     }
   }
   addresses {
@@ -387,6 +388,7 @@ subsets {
       kind: "Pod"
       namespace: "pl"
       uid: "efgh"
+      name: "another-pod"
     }
   }
   not_ready_addresses {

@@ -484,6 +484,8 @@ message PodUpdate {
   repeated string container_ids = 6 [
                                     (gogoproto.customname) = "ContainerIDs"
                                     ];
+  // List of container names that this pod has, in the same order as the containerIDs.
+  repeated string container_names = 11;
 
   // The QoS class that this pod runs as.
   PodQOSClass qos_class = 7 [
@@ -520,6 +522,12 @@ message ContainerUpdate {
   int64 stop_timestamp_ns = 4 [
                               (gogoproto.customname) = "StopTimestampNS"
                               ];
+  string namespace = 5;
+  string pod_id = 6 [
+                              (gogoproto.customname) = "PodID"
+                              ];
+  string pod_name = 7;
+
 }
 
 // ServiceUpdate contains information about running services.
@@ -548,6 +556,7 @@ message ServiceUpdate {
   repeated string pod_ids = 6 [
                               (gogoproto.customname) = "PodIDs"
                               ];
+  repeated string pod_names = 7;
 }
 
 message NamespaceUpdate {

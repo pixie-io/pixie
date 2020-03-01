@@ -419,10 +419,12 @@ func GetResourceUpdateFromNamespace(ns *metadatapb.Namespace) *metadatapb.Resour
 
 // GetResourceUpdateFromPod gets the update info from the given pod proto.
 func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
-	var containers []string
+	var containerIDs []string
+	var containerNames []string
 	if pod.Status.ContainerStatuses != nil {
 		for _, s := range pod.Status.ContainerStatuses {
-			containers = append(containers, formatContainerID(s.ContainerID))
+			containerIDs = append(containerIDs, formatContainerID(s.ContainerID))
+			containerNames = append(containerNames, s.Name)
 		}
 	}
 
@@ -442,7 +444,8 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 				StartTimestampNS: pod.Metadata.CreationTimestampNS,
 				StopTimestampNS:  pod.Metadata.DeletionTimestampNS,
 				QOSClass:         pod.Status.QOSClass,
-				ContainerIDs:     containers,
+				ContainerIDs:     containerIDs,
+				ContainerNames:   containerNames,
 				Phase:            pod.Status.Phase,
 				NodeName:         podName,
 				Hostname:         hostname,
@@ -453,7 +456,7 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 	return update
 }
 
-func serviceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, pods []string) *metadatapb.ResourceUpdate {
+func serviceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, podIDs []string, podNames []string) *metadatapb.ResourceUpdate {
 	update := &metadatapb.ResourceUpdate{
 		ResourceVersion: ep.Metadata.ResourceVersion,
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -463,7 +466,8 @@ func serviceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, pods []string) 
 				Namespace:        ep.Metadata.Namespace,
 				StartTimestampNS: ep.Metadata.CreationTimestampNS,
 				StopTimestampNS:  ep.Metadata.DeletionTimestampNS,
-				PodIDs:           pods,
+				PodIDs:           podIDs,
+				PodNames:         podNames,
 			},
 		},
 	}
@@ -472,30 +476,34 @@ func serviceResourceUpdateFromEndpoint(ep *metadatapb.Endpoints, pods []string) 
 
 // GetResourceUpdateFromEndpoints gets the update info from the given endpoint proto.
 func GetResourceUpdateFromEndpoints(ep *metadatapb.Endpoints) *metadatapb.ResourceUpdate {
-	var pods []string
+	var podIDs []string
+	var podNames []string
 	for _, subset := range ep.Subsets {
 		for _, addr := range subset.Addresses {
 			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
-				pods = append(pods, addr.TargetRef.UID)
+				podIDs = append(podIDs, addr.TargetRef.UID)
+				podNames = append(podNames, addr.TargetRef.Name)
 			}
 		}
 	}
 
-	return serviceResourceUpdateFromEndpoint(ep, pods)
+	return serviceResourceUpdateFromEndpoint(ep, podIDs, podNames)
 }
 
 // GetNodeResourceUpdateFromEndpoints gets the update info for a node from the given endpoint proto.
 func GetNodeResourceUpdateFromEndpoints(ep *metadatapb.Endpoints, hostname string) *metadatapb.ResourceUpdate {
-	var pods []string
+	var podIDs []string
+	var podNames []string
 	for _, subset := range ep.Subsets {
 		for _, addr := range subset.Addresses {
 			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" && (addr.NodeName == hostname || hostname == "") {
-				pods = append(pods, addr.TargetRef.UID)
+				podIDs = append(podIDs, addr.TargetRef.UID)
+				podNames = append(podNames, addr.TargetRef.Name)
 			}
 		}
 	}
 
-	return serviceResourceUpdateFromEndpoint(ep, pods)
+	return serviceResourceUpdateFromEndpoint(ep, podIDs, podNames)
 }
 
 // GetContainerResourceUpdatesFromPod gets the container updates for the given pod.
@@ -511,6 +519,9 @@ func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.Resou
 					Name:             s.Name,
 					StartTimestampNS: s.StartTimestampNS,
 					StopTimestampNS:  s.StopTimestampNS,
+					PodID:            pod.Metadata.UID,
+					PodName:          pod.Metadata.Name,
+					Namespace:        pod.Metadata.Namespace,
 				},
 			},
 		}
