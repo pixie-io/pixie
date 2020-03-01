@@ -30,3 +30,4 @@ resources:
 - artifact_tracker_deployment.yaml
 - artifact_tracker_service.yaml
 - artifact_config.yaml
+- indexer_deployment.yaml

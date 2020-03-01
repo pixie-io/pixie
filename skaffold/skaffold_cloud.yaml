@@ -38,6 +38,10 @@ build:
     context: .
     bazel:
       target: //src/cloud/dnsmgr:dnsmgr_server_image.tar
+  - image: gcr.io/pl-dev-infra/cloud/indexer_server_image
+    context: .
+    bazel:
+      target: //src/cloud/indexer:indexer_server_image.tar
   - image: gcr.io/pl-dev-infra/cloud/artifact_tracker_server_image
     context: .
     bazel:

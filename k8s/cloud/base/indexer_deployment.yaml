@@ -1,0 +1,57 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: indexer-server
+  labels:
+    db: pgsql
+spec:
+  selector:
+    matchLabels:
+      name: indexer-server
+  template:
+    metadata:
+      labels:
+        name: indexer-server
+    spec:
+      containers:
+      - name: indexer-server
+        image: gcr.io/pl-dev-infra/cloud/indexer_server_image
+        ports:
+        - containerPort: 51800
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 51800
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 51800
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_ES_PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: pl-elastic-es-elastic-user
+              key: elastic
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+        - name: es-certs
+          mountPath: /es-certs
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - name: es-certs
+        secret:
+          secretName: pl-elastic-es-http-certs-internal
