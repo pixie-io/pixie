@@ -200,15 +200,31 @@ func (s *Server) CreateVizierCluster(ctx context.Context, req *vzmgrpb.CreateViz
 	}
 	defer row.Close()
 
+	var idPb *uuidpb.UUID
+	var id uuid.UUID
+
 	if row.Next() {
-		var id uuid.UUID
 		if err := row.Scan(&id); err != nil {
 			return nil, err
 		}
 		tx.Commit()
-		return utils.ProtoFromUUID(&id), nil
+
+		idPb = utils.ProtoFromUUID(&id)
+	} else {
+		return nil, status.Error(codes.Internal, "failed to read cluster id")
 	}
-	return nil, status.Error(codes.Internal, "failed to read cluster id")
+
+	// Create index state.
+	query = `
+		INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, '')
+	`
+	idxRow, err := s.db.Queryx(query, &id)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	defer idxRow.Close()
+
+	return idPb, nil
 }
 
 // GetViziersByOrg gets a list of viziers by organization.

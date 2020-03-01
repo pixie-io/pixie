@@ -127,6 +127,16 @@ func TestServer_CreateVizierCluster(t *testing.T) {
 				}
 				err = db.Get(&connInfo, connQuery, utils.UUIDFromProtoOrNil(resp))
 				assert.Equal(t, connInfo.ID, utils.UUIDFromProtoOrNil(resp))
+
+				// Check to make sure index state is correct.
+				idxQuery := `SELECT cluster_id, resource_version from vizier_index_state WHERE cluster_id=$1`
+				var idxState struct {
+					ID              uuid.UUID `db:"cluster_id"`
+					ResourceVersion string    `db:"resource_version"`
+				}
+				err = db.Get(&idxState, idxQuery, utils.UUIDFromProtoOrNil(resp))
+				assert.Equal(t, idxState.ID, utils.UUIDFromProtoOrNil(resp))
+				assert.Equal(t, "", idxState.ResourceVersion)
 			}
 		})
 	}
