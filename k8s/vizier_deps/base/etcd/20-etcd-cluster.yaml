@@ -7,7 +7,7 @@ metadata:
   # annotations:
   #   etcd.database.coreos.com/scope: clusterwide
 spec:
-  size: 3
+  size: 1
   version: "3.4.3"
   pod:
     etcdEnv:
