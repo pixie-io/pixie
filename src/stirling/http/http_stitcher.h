@@ -26,5 +26,12 @@ std::vector<Record> ProcessMessages(std::deque<Message>* req_messages,
 void PreProcessMessage(Message* message);
 
 }  // namespace http
+
+inline std::vector<http::Record> ProcessFrames(std::deque<http::Message>* req_messages,
+                                               std::deque<http::Message>* resp_messages,
+                                               std::monostate* /* state */) {
+  return http::ProcessMessages(req_messages, resp_messages);
+}
+
 }  // namespace stirling
 }  // namespace pl

@@ -365,23 +365,33 @@ Status ConnectionTracker::ExtractReqResp() {
   return Status::OK();
 }
 
-template <>
-std::vector<http::Record> ConnectionTracker::ProcessToRecords() {
-  Status s = ExtractReqResp<http::Message>();
+template <typename TRecordType>
+std::vector<TRecordType> ConnectionTracker::ProcessToRecords() {
+  using TFrameType = typename ProtocolTraits<TRecordType>::frame_type;
+  using TStateType = typename ProtocolTraits<TRecordType>::state_type;
+
+  Status s = ExtractReqResp<TFrameType>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
     return {};
   }
 
-  auto& req_frames = req_data()->Frames<http::Message>();
-  auto& resp_frames = resp_data()->Frames<http::Message>();
+  InitProtocolState<TStateType>();
 
-  std::vector<http::Record> result = http::ProcessMessages(&req_frames, &resp_frames);
+  auto& req_frames = req_data()->Frames<TFrameType>();
+  auto& resp_frames = resp_data()->Frames<TFrameType>();
+  auto state_ptr = protocol_state<TStateType>();
 
-  Cleanup<http::Message>();
+  std::vector<TRecordType> result = ProcessFrames(&req_frames, &resp_frames, state_ptr);
+
+  Cleanup<TFrameType>();
 
   return result;
 }
+
+template std::vector<http::Record> ConnectionTracker::ProcessToRecords();
+template std::vector<mysql::Record> ConnectionTracker::ProcessToRecords();
+template std::vector<cass::Record> ConnectionTracker::ProcessToRecords();
 
 template <>
 std::vector<http2::Record> ConnectionTracker::ProcessToRecords() {
@@ -425,48 +435,6 @@ std::vector<http2u::Record> ConnectionTracker::ProcessToRecords() {
   Cleanup<http2u::Stream>();
 
   return trace_records;
-}
-
-template <>
-std::vector<mysql::Record> ConnectionTracker::ProcessToRecords() {
-  Status s = ExtractReqResp<mysql::Packet>();
-  if (!s.ok()) {
-    LOG(ERROR) << s.msg();
-    return {};
-  }
-
-  InitProtocolState<mysql::State>();
-
-  auto& req_frames = req_data()->Frames<mysql::Packet>();
-  auto& resp_frames = resp_data()->Frames<mysql::Packet>();
-
-  auto state_ptr = protocol_state<mysql::State>();
-
-  // ProcessMySQLPackets handles errors internally.
-  std::vector<mysql::Record> result =
-      mysql::ProcessMySQLPackets(&req_frames, &resp_frames, state_ptr);
-
-  Cleanup<mysql::Packet>();
-
-  return result;
-}
-
-template <>
-std::vector<cass::Record> ConnectionTracker::ProcessToRecords() {
-  Status s = ExtractReqResp<cass::Frame>();
-  if (!s.ok()) {
-    LOG(ERROR) << s.msg();
-    return {};
-  }
-
-  auto& req_frames = req_data()->Frames<cass::Frame>();
-  auto& resp_frames = resp_data()->Frames<cass::Frame>();
-
-  std::vector<cass::Record> result = cass::ProcessFrames(&req_frames, &resp_frames);
-
-  Cleanup<cass::Frame>();
-
-  return result;
 }
 
 void ConnectionTracker::Disable(std::string_view reason) {

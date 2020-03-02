@@ -73,5 +73,12 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
                                                      DequeView<Packet> resp_packets, Record* entry);
 
 }  // namespace mysql
+
+inline std::vector<mysql::Record> ProcessFrames(std::deque<mysql::Packet>* req_packets,
+                                                std::deque<mysql::Packet>* resp_packets,
+                                                mysql::State* state) {
+  return mysql::ProcessMySQLPackets(req_packets, resp_packets, state);
+}
+
 }  // namespace stirling
 }  // namespace pl

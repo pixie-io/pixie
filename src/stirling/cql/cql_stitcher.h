@@ -23,5 +23,12 @@ namespace cass {
 std::vector<Record> ProcessFrames(std::deque<Frame>* req_packets, std::deque<Frame>* resp_packets);
 
 }  // namespace cass
+
+inline std::vector<cass::Record> ProcessFrames(std::deque<cass::Frame>* req_packets,
+                                               std::deque<cass::Frame>* resp_packets,
+                                               std::monostate* /* state */) {
+  return cass::ProcessFrames(req_packets, resp_packets);
+}
+
 }  // namespace stirling
 }  // namespace pl
