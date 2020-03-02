@@ -24,7 +24,7 @@ If applicable, add screenshots to help explain your problem. Please make sure th
 **Logs**
 Please attach the logs by running the following command:
 ```
-./px logs
+./px collect-logs
 ```
 
 **App information (please complete the following information):**
