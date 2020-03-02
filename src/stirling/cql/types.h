@@ -132,6 +132,9 @@ struct Response {
  */
 using Record = ReqRespPair<Request, Response>;
 
+// No state to track for the CQL protocol.
+using State = std::monostate;
+
 }  // namespace cass
 }  // namespace stirling
 }  // namespace pl

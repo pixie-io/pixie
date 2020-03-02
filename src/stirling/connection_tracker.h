@@ -378,15 +378,33 @@ class ConnectionTracker {
    * Currently, only MySQL needs to keep a protocol state, so it has a specialization,
    * and the general template is empty.
    */
-  template <typename TFrameType>
-  void InitProtocolState() {}
+  template <typename TProtocolStateType>
+  void InitProtocolState() {
+    // A protocol can specify that it has no state by setting ProtocolTraits::state_type to
+    // std::monostate.
+    // As an optimization, we don't call std::make_unique in such cases.
+    // No need to create an object on the heap for protocols that don't have state.
+    // Note that protocol_state() has the same `if constexpr`, for this optimization to work.
+    if constexpr (!std::is_same_v<TProtocolStateType, std::monostate>) {
+      DCHECK(std::holds_alternative<std::monostate>(protocol_state_) ||
+             (std::holds_alternative<std::unique_ptr<TProtocolStateType>>(protocol_state_)));
+      if (std::holds_alternative<std::monostate>(protocol_state_)) {
+        protocol_state_ = std::make_unique<TProtocolStateType>();
+      }
+    }
+  }
 
   /**
    * Returns the current protocol state for a protocol.
    */
   template <typename TProtocolStateType>
   TProtocolStateType* protocol_state() const {
-    return std::get<std::unique_ptr<TProtocolStateType>>(protocol_state_).get();
+    // See note in InitProtocolState about this `if constexpr`.
+    if constexpr (std::is_same_v<TProtocolStateType, std::monostate>) {
+      return nullptr;
+    } else {
+      return std::get<std::unique_ptr<TProtocolStateType>>(protocol_state_).get();
+    }
   }
 
   template <typename TFrameType>

@@ -23,9 +23,9 @@
 #include "src/stirling/http/types.h"
 #include "src/stirling/http2u/stitcher.h"
 #include "src/stirling/http2u/types.h"
-#include "src/stirling/message_types.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
 #include "src/stirling/mysql/types.h"
+#include "src/stirling/protocol_traits.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
 DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
@@ -48,16 +48,6 @@ std::string ToString(const conn_id_t& conn_id) {
 //--------------------------------------------------------------
 // ConnectionTracker
 //--------------------------------------------------------------
-
-template <>
-void ConnectionTracker::InitProtocolState<mysql::Packet>() {
-  DCHECK(std::holds_alternative<std::monostate>(protocol_state_) ||
-         (std::holds_alternative<std::unique_ptr<mysql::State>>(protocol_state_)));
-  if (std::holds_alternative<std::monostate>(protocol_state_)) {
-    mysql::State s{std::map<int, mysql::PreparedStatement>()};
-    protocol_state_ = std::make_unique<mysql::State>(std::move(s));
-  }
-}
 
 void ConnectionTracker::AddControlEvent(const socket_control_event_t& event) {
   switch (event.type) {
@@ -445,7 +435,7 @@ std::vector<mysql::Record> ConnectionTracker::ProcessToRecords() {
     return {};
   }
 
-  InitProtocolState<mysql::Packet>();
+  InitProtocolState<mysql::State>();
 
   auto& req_frames = req_data()->Frames<mysql::Packet>();
   auto& resp_frames = resp_data()->Frames<mysql::Packet>();
@@ -831,6 +821,8 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
 
 template <typename TRecordType>
 std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
+  using TFrameType = typename ProtocolTraits<TRecordType>::frame_type;
+
   std::string info;
   info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, c.pid(), c.fd(), c.generation());
   info += absl::Substitute("state=$0\n", magic_enum::enum_name(c.state()));
@@ -838,11 +830,9 @@ std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
                            c.remote_endpoint().port);
   info += absl::Substitute("$0protocol=$1\n", prefix, magic_enum::enum_name(c.protocol()));
   info += absl::Substitute("$0recv queue\n", prefix);
-  info += DebugString<typename GetMessageType<TRecordType>::type>(c.recv_data(),
-                                                                  absl::StrCat(prefix, "  "));
+  info += DebugString<TFrameType>(c.recv_data(), absl::StrCat(prefix, "  "));
   info += absl::Substitute("$0send queue\n", prefix);
-  info += DebugString<typename GetMessageType<TRecordType>::type>(c.send_data(),
-                                                                  absl::StrCat(prefix, "  "));
+  info += DebugString<TFrameType>(c.send_data(), absl::StrCat(prefix, "  "));
   return info;
 }
 

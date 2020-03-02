@@ -51,6 +51,9 @@ struct Stream {
 
 using Record = Stream;
 
-}  // namespace http2u
+// No state to track for the uprobe-based HTTP2 protocol.
+using State = std::monostate;
+
+};  // namespace http2u
 }  // namespace stirling
 }  // namespace pl

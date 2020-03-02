@@ -65,6 +65,10 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame);
 
 using Record = ReqRespPair<HTTP2Message, HTTP2Message>;
 
+// No state to track for the HTTP2 protocol.
+// TODO(oazizi): Update this when HTTP2 fits standard protocol parsing pipeline.
+using State = std::monostate;
+
 /**
  * @brief Stitches frames to create header blocks and inflate them.
  *

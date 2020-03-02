@@ -62,6 +62,9 @@ struct Message : public stirling::FrameBase {
  */
 using Record = ReqRespPair<Message, Message>;
 
-}  // namespace http
+// No state to track for the HTTP protocol.
+using State = std::monostate;
+
+};  // namespace http
 }  // namespace stirling
 }  // namespace pl

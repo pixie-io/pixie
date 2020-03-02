@@ -271,8 +271,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "message_types_test",
-    srcs = ["message_types_test.cc"],
+    name = "protocol_traits_test",
+    srcs = ["protocol_traits_test.cc"],
     deps = [":cc_library"],
 )
 
