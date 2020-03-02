@@ -15,6 +15,7 @@
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/data_stream.h"
 #include "src/stirling/mysql/mysql_parse.h"
+#include "src/stirling/protocol_traits.h"
 #include "src/stirling/socket_resolver.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
@@ -112,8 +113,8 @@ class ConnectionTracker {
    * @tparam TRecordType the type of the entries to be parsed.
    * @return Vector of processed entries.
    */
-  template <typename TRecordType>
-  std::vector<TRecordType> ProcessToRecords();
+  template <typename TProtocolTraits>
+  std::vector<typename TProtocolTraits::record_type> ProcessToRecords();
 
   /**
    * @brief Returns reference to current set of unconsumed requests.
@@ -407,8 +408,10 @@ class ConnectionTracker {
     }
   }
 
-  template <typename TFrameType>
+  template <typename TProtocolTraits>
   void Cleanup() {
+    using TFrameType = typename TProtocolTraits::frame_type;
+
     if constexpr (std::is_same_v<TFrameType, http2u::Stream>) {
       send_data_.CleanupHTTP2Streams();
       recv_data_.CleanupHTTP2Streams();
@@ -501,7 +504,7 @@ class ConnectionTracker {
    */
   std::variant<std::monostate, std::unique_ptr<mysql::State>> protocol_state_;
 
-  template <typename TRecordType>
+  template <typename TProtocolTraits>
   friend std::string DebugString(const ConnectionTracker& c, std::string_view prefix);
 };
 

@@ -936,38 +936,35 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
   }
 }
 
-template <typename TRecordType>
+template <typename TProtocolTraits>
 void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker,
                                           DataTable* data_table) {
-  VLOG(3) << absl::StrCat("Connection\n", DebugString<TRecordType>(*tracker, ""));
+  VLOG(3) << absl::StrCat("Connection\n", DebugString<TProtocolTraits>(*tracker, ""));
 
   if (tracker->state() == ConnectionTracker::State::kTransferring) {
     // ProcessToRecords() parses raw events and produces messages in format that are expected by
     // table store. But those messages are not cached inside ConnectionTracker.
     //
     // TODO(yzhao): Consider caching produced messages if they are not transferred.
-    auto messages = tracker->ProcessToRecords<TRecordType>();
+    auto messages = tracker->ProcessToRecords<TProtocolTraits>();
     for (auto& msg : messages) {
       AppendMessage(ctx, *tracker, msg, data_table);
     }
   }
 }
 
-template void SocketTraceConnector::TransferStream<http::Record>(ConnectorContext* ctx,
-                                                                 ConnectionTracker* tracker,
-                                                                 DataTable* data_table);
-template void SocketTraceConnector::TransferStream<http2::Record>(ConnectorContext* ctx,
-                                                                  ConnectionTracker* tracker,
-                                                                  DataTable* data_table);
-template void SocketTraceConnector::TransferStream<http2u::Record>(ConnectorContext* ctx,
-                                                                   ConnectionTracker* tracker,
-                                                                   DataTable* data_table);
-template void SocketTraceConnector::TransferStream<mysql::Record>(ConnectorContext* ctx,
-                                                                  ConnectionTracker* tracker,
-                                                                  DataTable* data_table);
-template void SocketTraceConnector::TransferStream<cass::Record>(ConnectorContext* ctx,
-                                                                 ConnectionTracker* tracker,
-                                                                 DataTable* data_table);
+template void SocketTraceConnector::TransferStream<http::ProtocolTraits>(ConnectorContext* ctx,
+                                                                         ConnectionTracker* tracker,
+                                                                         DataTable* data_table);
+template void SocketTraceConnector::TransferStream<http2::ProtocolTraits>(
+    ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table);
+template void SocketTraceConnector::TransferStream<http2u::ProtocolTraits>(
+    ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table);
+template void SocketTraceConnector::TransferStream<mysql::ProtocolTraits>(
+    ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table);
+template void SocketTraceConnector::TransferStream<cass::ProtocolTraits>(ConnectorContext* ctx,
+                                                                         ConnectionTracker* tracker,
+                                                                         DataTable* data_table);
 
 }  // namespace stirling
 }  // namespace pl

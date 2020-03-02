@@ -258,12 +258,14 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // The table num identifies which data the collected data is transferred.
   // The transfer_fn defines which function is called to process the data for transfer.
   std::map<TrafficProtocol, TransferSpec> protocol_transfer_specs_ = {
-      {kProtocolHTTP, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http::Record>}},
-      {kProtocolHTTP2, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2::Record>}},
+      {kProtocolHTTP, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http::ProtocolTraits>}},
+      {kProtocolHTTP2,
+       {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2::ProtocolTraits>}},
       {kProtocolHTTP2Uprobe,
-       {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2u::Record>}},
-      {kProtocolMySQL, {kMySQLTableNum, &SocketTraceConnector::TransferStream<mysql::Record>}},
-      {kProtocolCQL, {kCQLTableNum, &SocketTraceConnector::TransferStream<cass::Record>}},
+       {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2u::ProtocolTraits>}},
+      {kProtocolMySQL,
+       {kMySQLTableNum, &SocketTraceConnector::TransferStream<mysql::ProtocolTraits>}},
+      {kProtocolCQL, {kCQLTableNum, &SocketTraceConnector::TransferStream<cass::ProtocolTraits>}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,
       // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
       {kProtocolUnknown, {kHTTPTableNum, nullptr}},

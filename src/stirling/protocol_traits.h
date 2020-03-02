@@ -19,41 +19,49 @@ namespace stirling {
  *
  * @tparam TRecordType The higher-level entry type, which is the map 'key'.
  */
-template <class TRecordType>
-struct ProtocolTraits;
 
 // Note: Can optionally use a state_type of std::monostate to indicate that there is no state.
 // The connection tracker understands not to create state object for std::monostate.
 
-template <>
-struct ProtocolTraits<http::Record> {
+namespace http {
+struct ProtocolTraits {
   using frame_type = http::Message;
-  using state_type = http::State;
+  using record_type = http::Record;
+  using state_type = std::monostate;
 };
+}  // namespace http
 
-template <>
-struct ProtocolTraits<http2::Record> {
+namespace http2 {
+struct ProtocolTraits {
   using frame_type = http2::Frame;
+  using record_type = http2::Record;
   using state_type = http2::State;
 };
+}  // namespace http2
 
-template <>
-struct ProtocolTraits<http2u::Record> {
+namespace http2u {
+struct ProtocolTraits {
   using frame_type = http2u::Stream;
-  using state_type = http2u::State;
+  using record_type = http2u::Record;
+  using state_type = std::monostate;
 };
+}  // namespace http2u
 
-template <>
-struct ProtocolTraits<mysql::Record> {
+namespace mysql {
+struct ProtocolTraits {
   using frame_type = mysql::Packet;
+  using record_type = mysql::Record;
   using state_type = mysql::State;
 };
+}  // namespace mysql
 
-template <>
-struct ProtocolTraits<cass::Record> {
+namespace cass {
+struct ProtocolTraits {
   using frame_type = cass::Frame;
-  using state_type = cass::State;
+  using record_type = cass::Record;
+  using state_type = std::monostate;
 };
+}  // namespace cass
 
 }  // namespace stirling
 }  // namespace pl

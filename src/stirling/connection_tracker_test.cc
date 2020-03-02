@@ -61,7 +61,7 @@ TEST_F(ConnectionTrackerTest, info_string) {
   tracker.AddDataEvent(std::move(event1));
   tracker.AddDataEvent(std::move(event2));
 
-  std::string debug_info = DebugString<http::Record>(tracker, "");
+  std::string debug_info = DebugString<http::ProtocolTraits>(tracker, "");
 
   std::string expected_output = R"(pid=12345 fd=3 gen=1
 state=kCollecting
@@ -77,9 +77,9 @@ send queue
 
   EXPECT_EQ(expected_output, debug_info);
 
-  tracker.ProcessToRecords<http::Record>();
+  tracker.ProcessToRecords<http::ProtocolTraits>();
 
-  debug_info = DebugString<http::Record>(tracker, "");
+  debug_info = DebugString<http::ProtocolTraits>(tracker, "");
 
   expected_output = R"(pid=12345 fd=3 gen=1
 state=kCollecting
@@ -118,7 +118,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
   tracker.AddControlEvent(close_event);
 
   std::vector<http::Record> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessToRecords<http::Record>();
+  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
 
   ASSERT_EQ(3, req_resp_pairs.size());
 
@@ -154,7 +154,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
   tracker.AddControlEvent(close_event);
 
   std::vector<http::Record> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessToRecords<http::Record>();
+  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
 
   ASSERT_EQ(3, req_resp_pairs.size());
 
@@ -190,7 +190,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   tracker.AddControlEvent(close_event);
 
   std::vector<http::Record> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessToRecords<http::Record>();
+  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
 
   ASSERT_EQ(3, req_resp_pairs.size());
 
@@ -227,7 +227,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
 
   std::vector<http::Record> req_resp_pairs;
 
-  req_resp_pairs = tracker.ProcessToRecords<http::Record>();
+  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
 
   ASSERT_EQ(2, req_resp_pairs.size());
 
@@ -263,7 +263,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   tracker.AddDataEvent(std::move(req1));
   tracker.AddDataEvent(std::move(resp1));
 
-  req_resp_pairs = tracker.ProcessToRecords<http::Record>();
+  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
 
   ASSERT_EQ(2, req_resp_pairs.size());
   ASSERT_FALSE(tracker.IsZombie());
@@ -275,7 +275,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   tracker.AddDataEvent(std::move(req2));
   tracker.AddDataEvent(std::move(resp2));
 
-  req_resp_pairs = tracker.ProcessToRecords<http::Record>();
+  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
 
   ASSERT_EQ(0, req_resp_pairs.size());
   ASSERT_FALSE(tracker.IsZombie());
@@ -284,7 +284,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   tracker.AddDataEvent(std::move(resp3));
   tracker.AddControlEvent(close_event);
 
-  req_resp_pairs = tracker.ProcessToRecords<http::Record>();
+  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
 
   ASSERT_EQ(0, req_resp_pairs.size());
   ASSERT_TRUE(tracker.IsZombie());
@@ -311,7 +311,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   tracker.AddDataEvent(std::move(req1));
   tracker.AddDataEvent(std::move(resp1));
 
-  req_resp_pairs = tracker.ProcessToRecords<http::Record>();
+  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
   tracker.IterationPostTick();
 
   ASSERT_EQ(2, req_resp_pairs.size());
@@ -330,7 +330,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   // run on a stream at EOS.
   // However, the test still passes, so we'll leave the test for now.
 
-  req_resp_pairs = tracker.ProcessToRecords<http::Record>();
+  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
   tracker.IterationPostTick();
 
   ASSERT_EQ(0, req_resp_pairs.size());
@@ -342,7 +342,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
 
   // The tracker should, however, still process the close event.
 
-  req_resp_pairs = tracker.ProcessToRecords<http::Record>();
+  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
   tracker.IterationPostTick();
 
   ASSERT_EQ(0, req_resp_pairs.size());
@@ -374,28 +374,28 @@ TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
   auto frame5 = InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
 
   tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   EXPECT_THAT(tracker.resp_frames<http2::Frame>(), SizeIs(1));
 
   tracker.AddDataEvent(std::move(frame1));
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   // Now we see two END_STREAM headers frame on stream ID 1, then that translate to 2 gRPC
   // response messages. That failure will cause stream being reset.
   EXPECT_THAT(tracker.resp_frames<http2::Frame>(), IsEmpty());
 
   tracker.AddDataEvent(std::move(frame2));
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   EXPECT_THAT(tracker.req_frames<http2::Frame>(), SizeIs(1));
 
   tracker.AddDataEvent(std::move(frame3));
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   // Ditto.
   EXPECT_THAT(tracker.req_frames<http2::Frame>(), IsEmpty());
 
   // Add a call to make sure things do not go haywire after resetting stream.
   tracker.AddDataEvent(std::move(frame4));
   tracker.AddDataEvent(std::move(frame5));
-  auto req_resp_pairs = tracker.ProcessToRecords<http2::Record>();
+  auto req_resp_pairs = tracker.ProcessToRecords<http2::ProtocolTraits>();
   // These 2 messages forms a matching req & resp.
   EXPECT_THAT(req_resp_pairs, SizeIs(1));
 }
@@ -412,29 +412,29 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedUpAfterBreachingSizeLimit) {
   auto frame3 = InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
 
   tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   EXPECT_THAT(tracker.resp_frames<http2::Frame>(), SizeIs(1));
 
   // Set to 0 so it can expire immediately.
   FLAGS_messages_size_limit_bytes = 0;
 
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   EXPECT_THAT(tracker.resp_frames<http2::Frame>(), IsEmpty());
 
   FLAGS_messages_size_limit_bytes = 10000;
   tracker.AddDataEvent(std::move(frame1));
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   EXPECT_THAT(tracker.req_frames<http2::Frame>(), SizeIs(1));
 
   FLAGS_messages_size_limit_bytes = 0;
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   // Ditto.
   EXPECT_THAT(tracker.req_frames<http2::Frame>(), IsEmpty());
 
   // Add a call to make sure things do not go haywire after resetting stream.
   tracker.AddDataEvent(std::move(frame2));
   tracker.AddDataEvent(std::move(frame3));
-  auto req_resp_pairs = tracker.ProcessToRecords<http2::Record>();
+  auto req_resp_pairs = tracker.ProcessToRecords<http2::ProtocolTraits>();
   // These 2 messages forms a matching req & resp.
   EXPECT_THAT(req_resp_pairs, SizeIs(1));
 }
@@ -452,29 +452,29 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesErasedAfterExpiration) {
   FLAGS_messages_expiration_duration_secs = 10000;
 
   tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   EXPECT_THAT(tracker.resp_frames<http2::Frame>(), SizeIs(1));
 
   // Set to 0 so it can expire immediately.
   FLAGS_messages_expiration_duration_secs = 0;
 
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   EXPECT_THAT(tracker.resp_frames<http2::Frame>(), IsEmpty());
 
   FLAGS_messages_expiration_duration_secs = 10000;
   tracker.AddDataEvent(std::move(frame1));
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   EXPECT_THAT(tracker.req_frames<http2::Frame>(), SizeIs(1));
 
   FLAGS_messages_expiration_duration_secs = 0;
-  tracker.ProcessToRecords<http2::Record>();
+  tracker.ProcessToRecords<http2::ProtocolTraits>();
   // Ditto.
   EXPECT_THAT(tracker.req_frames<http2::Frame>(), IsEmpty());
 
   // Add a call to make sure things do not go haywire after resetting stream.
   tracker.AddDataEvent(std::move(frame2));
   tracker.AddDataEvent(std::move(frame3));
-  auto req_resp_pairs = tracker.ProcessToRecords<http2::Record>();
+  auto req_resp_pairs = tracker.ProcessToRecords<http2::ProtocolTraits>();
   // These 2 messages forms a matching req & resp.
   EXPECT_THAT(req_resp_pairs, SizeIs(1));
 }
@@ -489,20 +489,20 @@ TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
   ConnectionTracker tracker;
 
   tracker.AddDataEvent(std::move(data0));
-  tracker.ProcessToRecords<http::Record>();
+  tracker.ProcessToRecords<http::ProtocolTraits>();
   EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
-  tracker.ProcessToRecords<http::Record>();
+  tracker.ProcessToRecords<http::ProtocolTraits>();
   EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
-  tracker.ProcessToRecords<http::Record>();
+  tracker.ProcessToRecords<http::ProtocolTraits>();
   EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
 
   // The 4th time, the stuck condition is detected and all data is purged.
-  tracker.ProcessToRecords<http::Record>();
+  tracker.ProcessToRecords<http::ProtocolTraits>();
   EXPECT_TRUE(tracker.req_data()->Empty<http::Message>());
 
   // Now the stuck count is reset, so the event is kept.
   tracker.AddDataEvent(std::move(data1));
-  tracker.ProcessToRecords<http::Record>();
+  tracker.ProcessToRecords<http::ProtocolTraits>();
   EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
 }
 
@@ -519,12 +519,12 @@ TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
   FLAGS_messages_expiration_duration_secs = 10000;
 
   tracker.AddDataEvent(std::move(frame0));
-  tracker.ProcessToRecords<http::Record>();
+  tracker.ProcessToRecords<http::ProtocolTraits>();
   EXPECT_THAT(tracker.req_frames<http::Message>(), SizeIs(1));
 
   FLAGS_messages_expiration_duration_secs = 0;
 
-  tracker.ProcessToRecords<http::Record>();
+  tracker.ProcessToRecords<http::ProtocolTraits>();
   EXPECT_THAT(tracker.req_frames<http::Message>(), IsEmpty());
 
   // TODO(yzhao): It's not possible to test the response messages, as they are immediately exported
@@ -541,12 +541,12 @@ TEST_F(ConnectionTrackerTest, MySQLMessagesErasedAfterExpiration) {
   FLAGS_messages_expiration_duration_secs = 10000;
 
   tracker.AddDataEvent(std::move(msg0));
-  tracker.ProcessToRecords<mysql::Record>();
+  tracker.ProcessToRecords<mysql::ProtocolTraits>();
   EXPECT_THAT(tracker.req_frames<mysql::Packet>(), SizeIs(1));
 
   FLAGS_messages_expiration_duration_secs = 0;
 
-  tracker.ProcessToRecords<mysql::Record>();
+  tracker.ProcessToRecords<mysql::ProtocolTraits>();
   EXPECT_THAT(tracker.req_frames<mysql::Packet>(), IsEmpty());
 }
 

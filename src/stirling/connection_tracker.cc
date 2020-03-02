@@ -365,10 +365,11 @@ Status ConnectionTracker::ExtractReqResp() {
   return Status::OK();
 }
 
-template <typename TRecordType>
-std::vector<TRecordType> ConnectionTracker::ProcessToRecords() {
-  using TFrameType = typename ProtocolTraits<TRecordType>::frame_type;
-  using TStateType = typename ProtocolTraits<TRecordType>::state_type;
+template <typename TProtocolTraits>
+std::vector<typename TProtocolTraits::record_type> ConnectionTracker::ProcessToRecords() {
+  using TRecordType = typename TProtocolTraits::record_type;
+  using TFrameType = typename TProtocolTraits::frame_type;
+  using TStateType = typename TProtocolTraits::state_type;
 
   Status s = ExtractReqResp<TFrameType>();
   if (!s.ok()) {
@@ -384,17 +385,20 @@ std::vector<TRecordType> ConnectionTracker::ProcessToRecords() {
 
   std::vector<TRecordType> result = ProcessFrames(&req_frames, &resp_frames, state_ptr);
 
-  Cleanup<TFrameType>();
+  Cleanup<TProtocolTraits>();
 
   return result;
 }
 
-template std::vector<http::Record> ConnectionTracker::ProcessToRecords();
-template std::vector<mysql::Record> ConnectionTracker::ProcessToRecords();
-template std::vector<cass::Record> ConnectionTracker::ProcessToRecords();
+template std::vector<typename http::ProtocolTraits::record_type>
+ConnectionTracker::ProcessToRecords<http::ProtocolTraits>();
+template std::vector<typename mysql::ProtocolTraits::record_type>
+ConnectionTracker::ProcessToRecords<mysql::ProtocolTraits>();
+template std::vector<typename cass::ProtocolTraits::record_type>
+ConnectionTracker::ProcessToRecords<cass::ProtocolTraits>();
 
 template <>
-std::vector<http2::Record> ConnectionTracker::ProcessToRecords() {
+std::vector<http2::Record> ConnectionTracker::ProcessToRecords<http2::ProtocolTraits>() {
   Status s = ExtractReqResp<http2::Frame>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
@@ -416,13 +420,13 @@ std::vector<http2::Record> ConnectionTracker::ProcessToRecords() {
   // TODO(yzhao): Template makes the type parameter not working for gRPC, as gRPC returns different
   // type than the type parameter. Figure out how to mitigate the conflicts, so this call can be
   // lifted to ProcessToRecords().
-  Cleanup<http2::Frame>();
+  Cleanup<http2::ProtocolTraits>();
 
   return result;
 }
 
 template <>
-std::vector<http2u::Record> ConnectionTracker::ProcessToRecords() {
+std::vector<http2u::Record> ConnectionTracker::ProcessToRecords<http2u::ProtocolTraits>() {
   // TODO(oazizi): ECHECK that raw events are empty.
 
   std::vector<http2u::Record> trace_records;
@@ -432,7 +436,7 @@ std::vector<http2u::Record> ConnectionTracker::ProcessToRecords() {
   http2u::ProcessHTTP2Streams(&server_streams_.http2_streams(), &oldest_active_server_stream_id_,
                               &trace_records);
 
-  Cleanup<http2u::Stream>();
+  Cleanup<http2u::ProtocolTraits>();
 
   return trace_records;
 }
@@ -787,9 +791,9 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   conn_resolver_.reset();
 }
 
-template <typename TRecordType>
+template <typename TProtocolTraits>
 std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
-  using TFrameType = typename ProtocolTraits<TRecordType>::frame_type;
+  using TFrameType = typename TProtocolTraits::frame_type;
 
   std::string info;
   info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, c.pid(), c.fd(), c.generation());
@@ -804,14 +808,16 @@ std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
   return info;
 }
 
-template std::string DebugString<http::Record>(const ConnectionTracker& c, std::string_view prefix);
-template std::string DebugString<http2::Record>(const ConnectionTracker& c,
-                                                std::string_view prefix);
-template std::string DebugString<http2u::Record>(const ConnectionTracker& c,
-                                                 std::string_view prefix);
-template std::string DebugString<mysql::Record>(const ConnectionTracker& c,
-                                                std::string_view prefix);
-template std::string DebugString<cass::Record>(const ConnectionTracker& c, std::string_view prefix);
+template std::string DebugString<http::ProtocolTraits>(const ConnectionTracker& c,
+                                                       std::string_view prefix);
+template std::string DebugString<http2::ProtocolTraits>(const ConnectionTracker& c,
+                                                        std::string_view prefix);
+template std::string DebugString<http2u::ProtocolTraits>(const ConnectionTracker& c,
+                                                         std::string_view prefix);
+template std::string DebugString<mysql::ProtocolTraits>(const ConnectionTracker& c,
+                                                        std::string_view prefix);
+template std::string DebugString<cass::ProtocolTraits>(const ConnectionTracker& c,
+                                                       std::string_view prefix);
 
 }  // namespace stirling
 }  // namespace pl
