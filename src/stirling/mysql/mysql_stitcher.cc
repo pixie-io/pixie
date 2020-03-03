@@ -75,7 +75,7 @@ DequeView<Packet> GetRespView(const std::deque<Packet>& req_packets,
 }
 
 std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
-                                        std::deque<Packet>* resp_packets, mysql::State* state) {
+                                        std::deque<Packet>* resp_packets, State* state) {
   std::vector<Record> entries;
 
   // Process one request per loop iteration. Each request may consume 0, 1 or 2+ response packets.
@@ -251,7 +251,7 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
 // Process a COM_STMT_PREPARE request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-prepare.html
 StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                        mysql::State* state, Record* entry) {
+                                        State* state, Record* entry) {
   //----------------
   // Request
   //----------------
@@ -288,8 +288,8 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
 // Process a COM_STMT_SEND_LONG_DATA request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-send-long-data.html
 StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
-                                             DequeView<Packet> resp_packets,
-                                             mysql::State* /* state */, Record* entry) {
+                                             DequeView<Packet> resp_packets, State* /* state */,
+                                             Record* entry) {
   //----------------
   // Request
   //----------------
@@ -313,7 +313,7 @@ StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
 // Process a COM_STMT_EXECUTE request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-execute.html
 StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                        mysql::State* state, Record* entry) {
+                                        State* state, Record* entry) {
   //----------------
   // Request
   //----------------
@@ -364,7 +364,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
 // Process a COM_STMT_CLOSE request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-close.html
 StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                      mysql::State* state, Record* entry) {
+                                      State* state, Record* entry) {
   //----------------
   // Request
   //----------------
@@ -392,8 +392,8 @@ StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet
 // Process a COM_STMT_FETCH request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-fetch.html
 StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet,
-                                      DequeView<Packet> /* resp_packets */,
-                                      mysql::State* /* state */, Record* entry) {
+                                      DequeView<Packet> /* resp_packets */, State* /* state */,
+                                      Record* entry) {
   //----------------
   // Request
   //----------------
@@ -411,7 +411,7 @@ StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet,
 // Process a COM_STMT_RESET request and response, and populate details into a record entry.
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-reset.html
 StatusOr<ParseState> ProcessStmtReset(const Packet& req_packet, DequeView<Packet> resp_packets,
-                                      mysql::State* state, Record* entry) {
+                                      State* state, Record* entry) {
   PL_UNUSED(state);
 
   // Defer to basic response for now.

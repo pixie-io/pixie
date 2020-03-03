@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "src/stirling/common/parse_state.h"
+#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/cql/types.h"
 
 namespace pl {
@@ -26,7 +27,7 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_packets, std::deque<Fra
 
 inline std::vector<cass::Record> ProcessFrames(std::deque<cass::Frame>* req_packets,
                                                std::deque<cass::Frame>* resp_packets,
-                                               std::monostate* /* state */) {
+                                               NoState* /* state */) {
   return cass::ProcessFrames(req_packets, resp_packets);
 }
 

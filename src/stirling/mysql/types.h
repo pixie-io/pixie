@@ -362,6 +362,18 @@ struct MySQLResponse {
  */
 using Record = ReqRespPair<MySQLRequest, MySQLResponse>;
 
+struct StateWrapper {
+  State global;
+  std::monostate send;
+  std::monostate recv;
+};
+
+struct ProtocolTraits {
+  using frame_type = Packet;
+  using record_type = Record;
+  using state_type = StateWrapper;
+};
+
 }  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

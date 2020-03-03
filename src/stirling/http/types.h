@@ -6,6 +6,7 @@
 #include "src/common/base/utils.h"
 #include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/common/event_parser.h"  // For FrameBase
+#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
@@ -62,8 +63,11 @@ struct Message : public stirling::FrameBase {
  */
 using Record = ReqRespPair<Message, Message>;
 
-// No state to track for the HTTP protocol.
-using State = std::monostate;
+struct ProtocolTraits {
+  using frame_type = Message;
+  using record_type = Record;
+  using state_type = NoState;
+};
 
 };  // namespace http
 }  // namespace stirling

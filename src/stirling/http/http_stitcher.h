@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "src/stirling/common/parse_state.h"
+#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/http/types.h"
 
 namespace pl {
@@ -29,7 +30,7 @@ void PreProcessMessage(Message* message);
 
 inline std::vector<http::Record> ProcessFrames(std::deque<http::Message>* req_messages,
                                                std::deque<http::Message>* resp_messages,
-                                               std::monostate* /* state */) {
+                                               NoState* /* state */) {
   return http::ProcessMessages(req_messages, resp_messages);
 }
 

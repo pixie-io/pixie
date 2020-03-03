@@ -17,6 +17,7 @@
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
 #include "src/stirling/common/go_grpc_types.h"
+#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/cql/cql_stitcher.h"
 #include "src/stirling/cql/types.h"
 #include "src/stirling/http/http_stitcher.h"
@@ -25,7 +26,6 @@
 #include "src/stirling/http2u/types.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
 #include "src/stirling/mysql/types.h"
-#include "src/stirling/protocol_traits.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
 DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
@@ -441,6 +441,13 @@ std::vector<http2u::Record> ConnectionTracker::ProcessToRecords<http2u::Protocol
   return trace_records;
 }
 
+void ConnectionTracker::Reset() {
+  send_data_.Reset();
+  recv_data_.Reset();
+
+  protocol_state_.reset();
+}
+
 void ConnectionTracker::Disable(std::string_view reason) {
   VLOG_IF(1, state_ != State::kDisabled)
       << absl::Substitute("Disabling connection=$0 dest=$1:$2, reason=$3", ToString(conn_id_),
@@ -450,8 +457,7 @@ void ConnectionTracker::Disable(std::string_view reason) {
 
   state_ = State::kDisabled;
 
-  send_data_.Reset();
-  recv_data_.Reset();
+  Reset();
 
   // TODO(oazizi): Propagate the disable back to BPF, so it doesn't even send the data.
 }

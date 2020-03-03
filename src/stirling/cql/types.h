@@ -7,6 +7,7 @@
 #include <magic_enum.hpp>
 
 #include "src/stirling/common/event_parser.h"  // For FrameBase.
+#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
@@ -132,8 +133,11 @@ struct Response {
  */
 using Record = ReqRespPair<Request, Response>;
 
-// No state to track for the CQL protocol.
-using State = std::monostate;
+struct ProtocolTraits {
+  using frame_type = cass::Frame;
+  using record_type = cass::Record;
+  using state_type = NoState;
+};
 
 }  // namespace cass
 }  // namespace stirling

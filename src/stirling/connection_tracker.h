@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <deque>
 #include <map>
 #include <memory>
@@ -12,10 +13,10 @@
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 #include "src/stirling/common/go_grpc_types.h"
+#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/data_stream.h"
 #include "src/stirling/mysql/mysql_parse.h"
-#include "src/stirling/protocol_traits.h"
 #include "src/stirling/socket_resolver.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
@@ -250,6 +251,11 @@ class ConnectionTracker {
   }
 
   /**
+   * Resets the state of the connection tracker, clearing all data and state.
+   */
+  void Reset();
+
+  /**
    * @brief Disables the connection tracker. The tracker will drop all its existing data,
    * and also not accept any future data (future data events will be ignored).
    *
@@ -375,22 +381,18 @@ class ConnectionTracker {
 
   /**
    * Initializes protocol state for a protocol.
-   *
-   * Currently, only MySQL needs to keep a protocol state, so it has a specialization,
-   * and the general template is empty.
    */
-  template <typename TProtocolStateType>
+  template <typename TStateType>
   void InitProtocolState() {
     // A protocol can specify that it has no state by setting ProtocolTraits::state_type to
-    // std::monostate.
+    // NoState.
     // As an optimization, we don't call std::make_unique in such cases.
     // No need to create an object on the heap for protocols that don't have state.
     // Note that protocol_state() has the same `if constexpr`, for this optimization to work.
-    if constexpr (!std::is_same_v<TProtocolStateType, std::monostate>) {
-      DCHECK(std::holds_alternative<std::monostate>(protocol_state_) ||
-             (std::holds_alternative<std::unique_ptr<TProtocolStateType>>(protocol_state_)));
-      if (std::holds_alternative<std::monostate>(protocol_state_)) {
-        protocol_state_ = std::make_unique<TProtocolStateType>();
+    if constexpr (!std::is_same_v<TStateType, NoState>) {
+      TStateType* state_types_ptr = std::any_cast<TStateType>(&protocol_state_);
+      if (state_types_ptr == nullptr) {
+        protocol_state_ = TStateType();
       }
     }
   }
@@ -398,13 +400,14 @@ class ConnectionTracker {
   /**
    * Returns the current protocol state for a protocol.
    */
-  template <typename TProtocolStateType>
-  TProtocolStateType* protocol_state() const {
+  template <typename TStateType>
+  TStateType* protocol_state() {
     // See note in InitProtocolState about this `if constexpr`.
-    if constexpr (std::is_same_v<TProtocolStateType, std::monostate>) {
+    if constexpr (std::is_same_v<TStateType, NoState>) {
       return nullptr;
     } else {
-      return std::get<std::unique_ptr<TProtocolStateType>>(protocol_state_).get();
+      TStateType* ptr = std::any_cast<TStateType>(&protocol_state_);
+      return ptr;
     }
   }
 
@@ -496,13 +499,21 @@ class ConnectionTracker {
 
   std::vector<int64_t> stats_ = std::vector<int64_t>(static_cast<int>(CountStats::kNumCountStats));
 
-  /**
-   * Connection trackers need to keep a state because there can be information between
-   * needed from previous requests/responses needed to parse or render current request.
-   * E.g. MySQL keeps a map of previously occurred stmt prepare events as the state such
-   * that future stmt execute events can match up with the correct one using stmt_id.
-   */
-  std::variant<std::monostate, std::unique_ptr<mysql::State>> protocol_state_;
+  // Connection trackers need to keep a state because there can be information between
+  // needed from previous requests/responses needed to parse or render current request.
+  // E.g. MySQL keeps a map of previously occurred stmt prepare events as the state such
+  // that future stmt execute events can match up with the correct one using stmt_id.
+  //
+  // TODO(oazizi): Is there a better structure than std::any?
+  // One alternative is an std::variant, but that becomes tedious to maintain with a
+  // growing number of protocols.
+  // Two considerations:
+  // 1) We want something with an interface-type API. The current structure does achieve
+  //    this, but not in a clear way. The compilation errors will be due to SFINAE and
+  //    hard to interpret.
+  // 2) We want something with some type safety. std::any does provide this, in the
+  //    similar way as std::variant.
+  std::any protocol_state_;
 
   template <typename TProtocolTraits>
   friend std::string DebugString(const ConnectionTracker& c, std::string_view prefix);

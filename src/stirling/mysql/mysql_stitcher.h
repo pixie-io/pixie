@@ -6,6 +6,7 @@
 
 #include "src/common/base/status.h"
 #include "src/stirling/common/parse_state.h"
+#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/mysql/types.h"
 
 namespace pl {
@@ -76,8 +77,8 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
 
 inline std::vector<mysql::Record> ProcessFrames(std::deque<mysql::Packet>* req_packets,
                                                 std::deque<mysql::Packet>* resp_packets,
-                                                mysql::State* state) {
-  return mysql::ProcessMySQLPackets(req_packets, resp_packets, state);
+                                                mysql::StateWrapper* state) {
+  return mysql::ProcessMySQLPackets(req_packets, resp_packets, &state->global);
 }
 
 }  // namespace stirling

@@ -4,6 +4,7 @@
 #include <string>
 
 // For http2::NVMap
+#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/http2/frame.h"
 
 namespace pl {
@@ -51,8 +52,11 @@ struct Stream {
 
 using Record = Stream;
 
-// No state to track for the uprobe-based HTTP2 protocol.
-using State = std::monostate;
+struct ProtocolTraits {
+  using frame_type = http2u::Stream;
+  using record_type = http2u::Record;
+  using state_type = NoState;
+};
 
 };  // namespace http2u
 }  // namespace stirling

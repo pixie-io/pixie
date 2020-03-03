@@ -22,6 +22,7 @@ extern "C" {
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/parse_state.h"
+#include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/http2/frame.h"
 #include "src/stirling/http2/message.h"
 #include "src/stirling/utils/req_resp_pair.h"
@@ -65,9 +66,11 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame);
 
 using Record = ReqRespPair<HTTP2Message, HTTP2Message>;
 
-// No state to track for the HTTP2 protocol.
-// TODO(oazizi): Update this when HTTP2 fits standard protocol parsing pipeline.
-using State = std::monostate;
+struct ProtocolTraits {
+  using frame_type = Frame;
+  using record_type = Record;
+  using state_type = NoState;
+};
 
 /**
  * @brief Stitches frames to create header blocks and inflate them.
