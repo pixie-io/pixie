@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
+        "metadata_reader.go",
         "server.go",
         "status_monitor.go",
     ],
@@ -10,15 +11,18 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
+        "//src/cloud/shared/vzshard:go_default_library",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
+        "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/shared/services/utils:go_default_library",
         "//src/utils:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_jmoiron_sqlx//:go_default_library",
         "@com_github_nats_io_nats_go//:go_default_library",
+        "@com_github_nats_io_stan_go//:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",
         "@com_github_sirupsen_logrus//:go_default_library",
         "@com_github_spf13_viper//:go_default_library",
@@ -31,6 +35,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
+        "metadata_reader_test.go",
         "server_test.go",
         "status_monitor_test.go",
     ],
@@ -38,10 +43,12 @@ go_test(
     deps = [
         "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
         "//src/cloud/dnsmgr/dnsmgrpb/mock:go_default_library",
+        "//src/cloud/shared/vzshard:go_default_library",
         "//src/cloud/vzmgr/schema:go_default_library",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
+        "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/shared/services/pgtest:go_default_library",
         "//src/utils:go_default_library",
         "//src/utils/testingutils:go_default_library",
@@ -52,6 +59,7 @@ go_test(
         "@com_github_golang_mock//gomock:go_default_library",
         "@com_github_jmoiron_sqlx//:go_default_library",
         "@com_github_nats_io_nats_go//:go_default_library",
+        "@com_github_nats_io_stan_go//:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
