@@ -14,7 +14,7 @@ spec:
         name: vizier-metadata
     spec:
       initContainers:
-      - name: wait-nats
+      - name: nats-wait
         image: alpine:3.6
         # yamllint disable
         command: ['sh', '-c', 'set -x;  apk add --no-cache curl;
