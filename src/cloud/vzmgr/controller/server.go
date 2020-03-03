@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -332,6 +333,50 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 		IPAddress: addr,
 		Token:     tokenString,
 	}, nil
+}
+
+// GetViziersByShard returns the list of connected Viziers for a given shardID.
+func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersByShardRequest) (*vzmgrpb.GetViziersByShardResponse, error) {
+	// TODO(zasgar/michelle/philkuz): This end point needs to be protected based on service info. We don't want everyone to be able to access it.
+	if len(req.ShardID) != 2 {
+		return nil, status.Error(codes.InvalidArgument, "ShardID must be two hex digits")
+	}
+	if _, err := hex.DecodeString(req.ShardID); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "ShardID must be two hex digits")
+	}
+	shardID := strings.ToLower(req.ShardID)
+
+	query := `
+    SELECT vizier_cluster.id, vizier_cluster.org_id
+    FROM vizier_cluster,vizier_cluster_info
+    WHERE vizier_cluster_info.vizier_cluster_id=vizier_cluster.id
+          AND vizier_cluster_info.status != 'DISCONNECTED'
+          AND substring(vizier_cluster.id::text, 35)=$1;`
+
+	rows, err := s.db.Queryx(query, shardID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	type Result struct {
+		VizierID uuid.UUID `db:"id"`
+		OrgID    uuid.UUID `db:"org_id"`
+	}
+	results := make([]*vzmgrpb.GetViziersByShardResponse_VizierInfo, 0)
+	for rows.Next() {
+		var result Result
+		err = rows.StructScan(&result)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to read vizier info")
+		}
+		results = append(results, &vzmgrpb.GetViziersByShardResponse_VizierInfo{
+			VizierID: utils.ProtoFromUUID(&result.VizierID),
+			OrgID:    utils.ProtoFromUUID(&result.OrgID),
+		})
+	}
+
+	return &vzmgrpb.GetViziersByShardResponse{Viziers: results}, nil
 }
 
 // VizierConnected is an the request made to the mgr to handle new Vizier connections.

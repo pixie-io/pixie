@@ -91,6 +91,24 @@ func (mr *MockVZMgrServiceClientMockRecorder) GetVizierInfo(ctx, in interface{},
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVizierInfo", reflect.TypeOf((*MockVZMgrServiceClient)(nil).GetVizierInfo), varargs...)
 }
 
+// GetViziersByShard mocks base method
+func (m *MockVZMgrServiceClient) GetViziersByShard(ctx context.Context, in *vzmgrpb.GetViziersByShardRequest, opts ...grpc.CallOption) (*vzmgrpb.GetViziersByShardResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetViziersByShard", varargs...)
+	ret0, _ := ret[0].(*vzmgrpb.GetViziersByShardResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetViziersByShard indicates an expected call of GetViziersByShard
+func (mr *MockVZMgrServiceClientMockRecorder) GetViziersByShard(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetViziersByShard", reflect.TypeOf((*MockVZMgrServiceClient)(nil).GetViziersByShard), varargs...)
+}
+
 // GetVizierConnectionInfo mocks base method
 func (m *MockVZMgrServiceClient) GetVizierConnectionInfo(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierConnectionInfo, error) {
 	varargs := []interface{}{ctx, in}
@@ -187,6 +205,19 @@ func (m *MockVZMgrServiceServer) GetVizierInfo(arg0 context.Context, arg1 *proto
 // GetVizierInfo indicates an expected call of GetVizierInfo
 func (mr *MockVZMgrServiceServerMockRecorder) GetVizierInfo(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVizierInfo", reflect.TypeOf((*MockVZMgrServiceServer)(nil).GetVizierInfo), arg0, arg1)
+}
+
+// GetViziersByShard mocks base method
+func (m *MockVZMgrServiceServer) GetViziersByShard(arg0 context.Context, arg1 *vzmgrpb.GetViziersByShardRequest) (*vzmgrpb.GetViziersByShardResponse, error) {
+	ret := m.ctrl.Call(m, "GetViziersByShard", arg0, arg1)
+	ret0, _ := ret[0].(*vzmgrpb.GetViziersByShardResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetViziersByShard indicates an expected call of GetViziersByShard
+func (mr *MockVZMgrServiceServerMockRecorder) GetViziersByShard(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetViziersByShard", reflect.TypeOf((*MockVZMgrServiceServer)(nil).GetViziersByShard), arg0, arg1)
 }
 
 // GetVizierConnectionInfo mocks base method

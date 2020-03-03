@@ -51,12 +51,16 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440001")
 	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440002")
 	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440003")
+	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440001", "223e4567-e89b-12d3-a456-426655440003")
+	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440001", "323e4567-e89b-12d3-a456-426655440003")
 
 	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat) VALUES($1, $2, $3, $4, $5)`
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0", "key0", "2011-05-16 15:36:38")
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1", "\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c", "2011-05-17 15:36:38")
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38")
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440003", "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38")
+	db.MustExec(insertVizierClusterInfoQuery, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38")
+	db.MustExec(insertVizierClusterInfoQuery, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38")
 
 	insertVizierIndexQuery := `INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, $2)`
 	db.MustExec(insertVizierIndexQuery, "123e4567-e89b-12d3-a456-426655440001", "1234")
@@ -621,5 +625,85 @@ func TestServer_MessageHandler(t *testing.T) {
 		assert.Equal(t, "efgh", resp.Cert)
 	case <-time.After(1 * time.Second):
 		t.Fatal("Timeout")
+	}
+}
+
+func TestServer_GetViziersByShard(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	s := controller.New(db, "test", nil, nil)
+
+	tests := []struct {
+		name string
+
+		// Inputs:
+		shardID string
+
+		// Outputs:
+		expectGRPCError error
+		expectResponse  *vzmgrpb.GetViziersByShardResponse
+	}{
+		{
+			name:            "Bad shardID",
+			shardID:         "gf",
+			expectGRPCError: status.Error(codes.InvalidArgument, "bad arg"),
+		},
+		{
+			name:            "Bad shardID (valid hex, too large)",
+			shardID:         "fff",
+			expectGRPCError: status.Error(codes.InvalidArgument, "bad arg"),
+		},
+		{
+			name:            "Bad shardID (valid hex, too small)",
+			shardID:         "f",
+			expectGRPCError: status.Error(codes.InvalidArgument, "bad arg"),
+		},
+		{
+			name:    "Single vizier response",
+			shardID: "00",
+
+			expectGRPCError: nil,
+			expectResponse: &vzmgrpb.GetViziersByShardResponse{
+				Viziers: []*vzmgrpb.GetViziersByShardResponse_VizierInfo{
+					{
+						VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+					},
+				},
+			},
+		},
+		{
+			name:    "Multi vizier response",
+			shardID: "03",
+
+			expectGRPCError: nil,
+			expectResponse: &vzmgrpb.GetViziersByShardResponse{
+				Viziers: []*vzmgrpb.GetViziersByShardResponse_VizierInfo{
+					{
+						VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+					},
+					{
+						VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
+						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req := &vzmgrpb.GetViziersByShardRequest{ShardID: test.shardID}
+			resp, err := s.GetViziersByShard(context.Background(), req)
+
+			if test.expectGRPCError != nil {
+				assert.Equal(t, status.Code(test.expectGRPCError), status.Code(err))
+			} else {
+				assert.Equal(t, test.expectResponse, resp)
+			}
+		})
 	}
 }
