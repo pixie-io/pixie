@@ -40,7 +40,7 @@ StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(
   std::vector<UProbeSpec> specs;
   for (const auto& [binary, pid_vec] : binaries) {
     PL_UNUSED(pid_vec);
-    VLOG(1) << absl::Substitute("Processing probes for $0", binary);
+    VLOG(1) << absl::Substitute("Resolving uprobe templates for $0", binary);
 
     StatusOr<std::unique_ptr<ElfReader>> elf_reader_status = ElfReader::Create(binary);
     if (!elf_reader_status.ok()) {
