@@ -392,38 +392,12 @@ std::vector<typename TProtocolTraits::record_type> ConnectionTracker::ProcessToR
 
 template std::vector<typename http::ProtocolTraits::record_type>
 ConnectionTracker::ProcessToRecords<http::ProtocolTraits>();
+template std::vector<typename http2::ProtocolTraits::record_type>
+ConnectionTracker::ProcessToRecords<http2::ProtocolTraits>();
 template std::vector<typename mysql::ProtocolTraits::record_type>
 ConnectionTracker::ProcessToRecords<mysql::ProtocolTraits>();
 template std::vector<typename cass::ProtocolTraits::record_type>
 ConnectionTracker::ProcessToRecords<cass::ProtocolTraits>();
-
-template <>
-std::vector<http2::Record> ConnectionTracker::ProcessToRecords<http2::ProtocolTraits>() {
-  Status s = ExtractReqResp<http2::Frame>();
-  if (!s.ok()) {
-    LOG(ERROR) << s.msg();
-    return {};
-  }
-
-  DataStream* req_stream = req_data();
-  DataStream* resp_stream = resp_data();
-
-  nghttp2_hd_inflater* req_inflater = req_stream->HTTP2Inflater()->inflater();
-  nghttp2_hd_inflater* resp_inflater = resp_stream->HTTP2Inflater()->inflater();
-
-  auto& req_frames = req_stream->Frames<http2::Frame>();
-  auto& resp_frames = resp_stream->Frames<http2::Frame>();
-
-  std::vector<http2::Record> result =
-      http2::ProcessFrames(&req_frames, req_inflater, &resp_frames, resp_inflater);
-
-  // TODO(yzhao): Template makes the type parameter not working for gRPC, as gRPC returns different
-  // type than the type parameter. Figure out how to mitigate the conflicts, so this call can be
-  // lifted to ProcessToRecords().
-  Cleanup<http2::ProtocolTraits>();
-
-  return result;
-}
 
 template <>
 std::vector<http2u::Record> ConnectionTracker::ProcessToRecords<http2u::ProtocolTraits>() {
@@ -688,8 +662,7 @@ void ConnectionTracker::HandleInactivity() {
   } else {
     // Connection may still be alive (though inactive), so flush the data buffers.
     // It is unlikely any new data is a continuation of existing data in in any meaningful way.
-    send_data_.Reset();
-    recv_data_.Reset();
+    Reset();
   }
 }
 

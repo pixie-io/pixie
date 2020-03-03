@@ -66,10 +66,16 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame);
 
 using Record = ReqRespPair<HTTP2Message, HTTP2Message>;
 
+struct State {
+  std::monostate global;
+  http2::Inflater send;
+  http2::Inflater recv;
+};
+
 struct ProtocolTraits {
   using frame_type = Frame;
   using record_type = Record;
-  using state_type = NoState;
+  using state_type = State;
 };
 
 /**
@@ -186,5 +192,12 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, nghttp2_hd_infl
                                   nghttp2_hd_inflater* resp_inflater);
 
 }  // namespace http2
+
+inline std::vector<http2::Record> ProcessFrames(std::deque<http2::Frame>* req_frames,
+                                                std::deque<http2::Frame>* resp_frames,
+                                                http2::State* state) {
+  return ProcessFrames(req_frames, state->send.inflater(), resp_frames, state->recv.inflater());
+}
+
 }  // namespace stirling
 }  // namespace pl

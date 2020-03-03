@@ -392,7 +392,7 @@ class ConnectionTracker {
     if constexpr (!std::is_same_v<TStateType, NoState>) {
       TStateType* state_types_ptr = std::any_cast<TStateType>(&protocol_state_);
       if (state_types_ptr == nullptr) {
-        protocol_state_ = TStateType();
+        protocol_state_.emplace<TStateType>();
       }
     }
   }
@@ -414,6 +414,7 @@ class ConnectionTracker {
   template <typename TProtocolTraits>
   void Cleanup() {
     using TFrameType = typename TProtocolTraits::frame_type;
+    using TStateType = typename TProtocolTraits::state_type;
 
     if constexpr (std::is_same_v<TFrameType, http2u::Stream>) {
       send_data_.CleanupHTTP2Streams();
@@ -423,8 +424,19 @@ class ConnectionTracker {
       recv_data_.CleanupFrames<TFrameType>();
     }
 
-    send_data_.CleanupEvents();
-    recv_data_.CleanupEvents();
+    if (send_data_.CleanupEvents()) {
+      protocol_state<TStateType>()->global = {};
+      protocol_state<TStateType>()->send = {};
+    }
+    if (recv_data_.CleanupEvents()) {
+      protocol_state<TStateType>()->global = {};
+      protocol_state<TStateType>()->recv = {};
+    }
+
+    // TODO(yzhao): For http2, it's likely the case that we'll want to preserve the inflater under
+    // situations where the HEADERS frames have not been lost. Detecting and responding to them
+    // probably will change the semantic of Reset(), such that it will means different thing for
+    // different protocols.
   }
 
  private:

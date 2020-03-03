@@ -140,13 +140,6 @@ class DataStream {
    */
   bool IsEOS() const { return last_parse_state_ == ParseState::kEOS; }
 
-  http2::Inflater* HTTP2Inflater() {
-    if (inflater_ == nullptr) {
-      inflater_ = std::make_unique<http2::Inflater>();
-    }
-    return inflater_.get();
-  }
-
   /**
    * @brief Cleanup frames that are parsed from the BPF events, when the condition is right.
    */
@@ -192,12 +185,15 @@ class DataStream {
   /**
    * @brief Cleanup BPF events that are not able to be be processed.
    */
-  void CleanupEvents() {
+  bool CleanupEvents() {
     if (IsStuck()) {
       // We are assuming that when this stream is stuck, the messages previously parsed are unlikely
       // to be useful, as they are even older than the events being purged now.
       Reset();
+      return true;
     }
+
+    return false;
   }
 
  private:
@@ -276,12 +272,6 @@ class DataStream {
 
   // A copy of the parse state from the last call to ProcessToRecords().
   ParseState last_parse_state_ = ParseState::kInvalid;
-
-  // Only meaningful for kprobe HTTP2 tracing. Uprobe tracing extracts plain text header fields from
-  // http2 library, therefore does not need to inflate headers.
-  //
-  // TODO(yzhao): We can put this into a std::variant.
-  std::unique_ptr<http2::Inflater> inflater_;
 
   template <typename TFrameType>
   friend std::string DebugString(const DataStream& d, std::string_view prefix);

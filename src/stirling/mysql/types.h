@@ -329,6 +329,12 @@ struct State {
   std::map<int, PreparedStatement> prepared_statements;
 };
 
+struct StateWrapper {
+  State global;
+  std::monostate send;
+  std::monostate recv;
+};
+
 //-----------------------------------------------------------------------------
 // Table Store Entry Level Structs
 //-----------------------------------------------------------------------------
@@ -361,12 +367,6 @@ struct MySQLResponse {
  *  Record is the primary output of the mysql parser.
  */
 using Record = ReqRespPair<MySQLRequest, MySQLResponse>;
-
-struct StateWrapper {
-  State global;
-  std::monostate send;
-  std::monostate recv;
-};
 
 struct ProtocolTraits {
   using frame_type = Packet;

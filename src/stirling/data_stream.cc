@@ -243,11 +243,6 @@ void DataStream::Reset() {
   events_.clear();
   frames_ = std::monostate();
   stuck_count_ = 0;
-  // TODO(yzhao): It's likely the case that we'll want to preserve the inflater under the situations
-  // where the HEADERS frames have not been lost. Detecting and responding to them probably will
-  // change the semantic of Reset(), such that it will means different thing for different
-  // protocols.
-  inflater_.reset(nullptr);
 }
 
 }  // namespace stirling
