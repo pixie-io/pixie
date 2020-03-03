@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["elastic.go"],
+    importpath = "pixielabs.ai/pixielabs/src/cloud/shared/esutils",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_olivere_elastic_v7//:go_default_library"],
+)

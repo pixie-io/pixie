@@ -1,0 +1,43 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: elastic-migration-job
+  labels:
+    jobgroup: elastic-migration
+  namespace: {namespace}
+spec:
+  ttlSecondsAfterFinished: 10
+  template:
+    metadata:
+      name: elastic-migration-job
+      labels:
+        jobgroup: elastic-migration
+    spec:
+      containers:
+      - name: updater
+        image: gcr.io/pl-dev-infra/cloud/elastic_migration_image:latest
+        env:
+        - name: PL_ES_URL
+          value: "https://pl-elastic-es-http:9200/"
+        - name: PL_ES_INDEX
+          value: {es_index}
+        - name: PL_MAPPING_FILE
+          value: {mapping_file}
+        - name: PL_ES_PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: pl-elastic-es-elastic-user
+              key: elastic
+        volumeMounts:
+        - name: es-certs
+          mountPath: /es-certs
+      volumes:
+      - name: es-certs
+        secret:
+          secretName: pl-elastic-es-http-certs-internal
+
+      restartPolicy: "Never"
+  backoffLimit: 1
+  parallelism: 1
+  completions: 1
