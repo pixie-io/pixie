@@ -124,11 +124,14 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 	more := mdh.ProcessNextSubscriberUpdate()
 	assert.Equal(t, true, more)
 	assert.Equal(t, 1, len(updates))
-	resPb := &cvmsgspb.MetadataUpdate{}
-	proto.Unmarshal(updates[0], resPb)
+	wrapperPb := &cvmsgspb.V2CMessage{}
+	proto.Unmarshal(updates[0], wrapperPb)
+	updatePb := &cvmsgspb.MetadataUpdate{}
+	err := types.UnmarshalAny(wrapperPb.Msg, updatePb)
+	assert.Nil(t, err)
 
 	update.PrevResourceVersion = "0"
-	assert.Equal(t, update, resPb.Update)
+	assert.Equal(t, update, updatePb.Update)
 }
 
 func TestMetadataTopicListener_HandleMessage(t *testing.T) {

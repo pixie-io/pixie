@@ -94,9 +94,16 @@ func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
 	msg := cvmsgspb.MetadataUpdate{
 		Update: &copiedUpdate,
 	}
-	b, err := msg.Marshal()
+	reqAnyMsg, err := types.MarshalAny(&msg)
 	if err != nil {
-		log.WithError(err).Error("Could not marshal update message")
+		return
+	}
+
+	v2cMsg := cvmsgspb.V2CMessage{
+		Msg: reqAnyMsg,
+	}
+	b, err := v2cMsg.Marshal()
+	if err != nil {
 		return
 	}
 
