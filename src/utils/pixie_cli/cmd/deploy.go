@@ -274,6 +274,12 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
+	// Get the number of nodes.
+	numNodes, err := getNumNodes(clientset)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Printf("Found %v nodes\n", numNodes)
 
 	// Get grpc connection to cloud.
 	cloudConn, err := getCloudClientConnection(cloudAddr)
@@ -360,6 +366,10 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	deploy(clientset, kubeConfig, yamlMap, namespace, depsOnly)
 
 	err = waitForProxy(clientset, namespace)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	err = waitForPems(clientset, namespace, numNodes)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -481,6 +491,85 @@ func waitForProxy(clientset *kubernetes.Clientset, namespace string) error {
 					}
 				}
 			}
+		}
+	}
+	return nil
+}
+
+func isPodUnschedulable(podStatus *v1.PodStatus) bool {
+	for _, cond := range podStatus.Conditions {
+		if cond.Reason == "Unschedulable" {
+			return true
+		}
+	}
+	return false
+}
+
+func podUnschedulableMessage(podStatus *v1.PodStatus) string {
+	for _, cond := range podStatus.Conditions {
+		if cond.Reason == "Unschedulable" {
+			return cond.Message
+		}
+	}
+	return ""
+}
+
+func getNumNodes(clientset *kubernetes.Clientset) (int, error) {
+	nodes, err := k8s.ListNodes(clientset)
+	if err != nil {
+		return 0, err
+	}
+	return len(nodes.Items), nil
+}
+
+var empty struct{}
+
+// waitForPems waits for the Vizier's Proxy service to be ready with an external IP.
+func waitForPems(clientset *kubernetes.Clientset, namespace string, expectedPods int) error {
+	// Watch for pod updates.
+	watcher, err := k8s.WatchK8sResource(clientset, "pods", namespace)
+	if err != nil {
+		return err
+	}
+
+	failedSchedulingPods := make(map[string]string)
+	successfulPods := make(map[string]struct{})
+	for c := range watcher.ResultChan() {
+		pod := c.Object.(*v1.Pod)
+		name, ok := pod.Labels["name"]
+		if !ok {
+			continue
+		}
+
+		// Skip any pods that are not vizier-pems.
+		if name != "vizier-pem" {
+			continue
+		}
+
+		switch pod.Status.Phase {
+		case "Pending":
+			if isPodUnschedulable(&pod.Status) {
+				failedSchedulingPods[pod.Name] = podUnschedulableMessage(&pod.Status)
+			}
+
+		case "Running":
+			successfulPods[pod.Name] = empty
+		default:
+			// TODO(philkuz/zasgar) should we make this a print line instead?
+			return fmt.Errorf("unexpected status for PEM '%s': '%v'", pod.Name, pod.Status.Phase)
+		}
+
+		if len(successfulPods) == expectedPods {
+			fmt.Printf("PEMs successfully deployed\n")
+			return nil
+		}
+		if len(successfulPods)+len(failedSchedulingPods) == expectedPods {
+			failedPems := make([]string, 0)
+			for k, v := range failedSchedulingPods {
+				failedPems = append(failedPems, fmt.Sprintf("'%s': '%s'", k, v))
+			}
+
+			return fmt.Errorf("Failed to schedule pems:\n%s", strings.Join(failedPems, "\n"))
 		}
 	}
 	return nil
