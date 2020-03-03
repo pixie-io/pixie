@@ -6,6 +6,8 @@
 // 000002_create_pgcrypto_extension.up.sql
 // 000003_create_index_table.down.sql
 // 000003_create_index_table.up.sql
+// 000004_create_shard_index.down.sql
+// 000004_create_shard_index.up.sql
 package schema
 
 import (
@@ -97,7 +99,7 @@ func _000001_create_cluster_tablesDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_cluster_tables.down.sql", size: 114, mode: os.FileMode(436), modTime: time.Unix(1566845212, 0)}
+	info := bindataFileInfo{name: "000001_create_cluster_tables.down.sql", size: 114, mode: os.FileMode(436), modTime: time.Unix(1578552904, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -117,7 +119,7 @@ func _000001_create_cluster_tablesUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_cluster_tables.up.sql", size: 1024, mode: os.FileMode(436), modTime: time.Unix(1570577344, 0)}
+	info := bindataFileInfo{name: "000001_create_cluster_tables.up.sql", size: 1024, mode: os.FileMode(436), modTime: time.Unix(1578552904, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -137,7 +139,7 @@ func _000002_create_pgcrypto_extensionDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.down.sql", size: 37, mode: os.FileMode(436), modTime: time.Unix(1570640344, 0)}
+	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.down.sql", size: 37, mode: os.FileMode(436), modTime: time.Unix(1578552904, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -157,7 +159,7 @@ func _000002_create_pgcrypto_extensionUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.up.sql", size: 43, mode: os.FileMode(436), modTime: time.Unix(1570640344, 0)}
+	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.up.sql", size: 43, mode: os.FileMode(436), modTime: time.Unix(1578552904, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -177,7 +179,7 @@ func _000003_create_index_tableDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_create_index_table.down.sql", size: 41, mode: os.FileMode(436), modTime: time.Unix(1583089143, 0)}
+	info := bindataFileInfo{name: "000003_create_index_table.down.sql", size: 41, mode: os.FileMode(436), modTime: time.Unix(1583260882, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -197,7 +199,47 @@ func _000003_create_index_tableUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_create_index_table.up.sql", size: 371, mode: os.FileMode(436), modTime: time.Unix(1583089127, 0)}
+	info := bindataFileInfo{name: "000003_create_index_table.up.sql", size: 371, mode: os.FileMode(436), modTime: time.Unix(1583260882, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000004_create_shard_indexDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\xf0\xf4\x73\x71\x8d\x50\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\x2f\xce\x48\x2c\x4a\x89\xcf\xcc\x4b\x49\xad\xb0\xe6\x02\x04\x00\x00\xff\xff\x7b\x8a\xfd\xde\x27\x00\x00\x00")
+
+func _000004_create_shard_indexDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000004_create_shard_indexDownSql,
+		"000004_create_shard_index.down.sql",
+	)
+}
+
+func _000004_create_shard_indexDownSql() (*asset, error) {
+	bytes, err := _000004_create_shard_indexDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000004_create_shard_index.down.sql", size: 39, mode: os.FileMode(436), modTime: time.Unix(1583263347, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000004_create_shard_indexUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x5c\xcd\xc1\x0a\x82\x40\x10\x87\xf1\xbb\x4f\xf1\x3f\x2a\x64\x97\x08\xc2\x4e\x91\x1e\xbc\x18\x54\x42\x37\x59\xdd\xa9\x5d\x90\x5d\x98\x19\x53\x7a\xfa\x08\x6f\x9d\x3f\x3e\x7e\x79\x8e\x9b\x33\x6c\x05\x86\x09\x4a\x0e\x63\x9c\x89\x71\xc8\x7b\xaf\x82\xf8\x84\x3a\x42\xdb\xd6\x25\x44\xd9\x87\x17\x24\x62\x26\x0c\x4c\x46\x09\x26\xc0\x07\x4b\x0b\x62\x80\x3a\xa3\xdb\xe4\x7c\xad\x4e\xf7\x0a\x75\x53\x56\x0f\xbc\xfd\xc7\x13\x77\xc3\x38\x89\x12\x77\xf2\x93\xba\x75\xb8\x34\x7f\x15\xa9\x4c\xfd\x6a\xa4\xde\x16\x85\xd2\xa2\x1b\xec\xf6\x59\x76\x4c\xbe\x01\x00\x00\xff\xff\x75\x1e\xe5\x82\xa6\x00\x00\x00")
+
+func _000004_create_shard_indexUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000004_create_shard_indexUpSql,
+		"000004_create_shard_index.up.sql",
+	)
+}
+
+func _000004_create_shard_indexUpSql() (*asset, error) {
+	bytes, err := _000004_create_shard_indexUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000004_create_shard_index.up.sql", size: 166, mode: os.FileMode(436), modTime: time.Unix(1583263335, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -260,6 +302,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000002_create_pgcrypto_extension.up.sql":   _000002_create_pgcrypto_extensionUpSql,
 	"000003_create_index_table.down.sql":        _000003_create_index_tableDownSql,
 	"000003_create_index_table.up.sql":          _000003_create_index_tableUpSql,
+	"000004_create_shard_index.down.sql":        _000004_create_shard_indexDownSql,
+	"000004_create_shard_index.up.sql":          _000004_create_shard_indexUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -309,6 +353,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000002_create_pgcrypto_extension.up.sql":   &bintree{_000002_create_pgcrypto_extensionUpSql, map[string]*bintree{}},
 	"000003_create_index_table.down.sql":        &bintree{_000003_create_index_tableDownSql, map[string]*bintree{}},
 	"000003_create_index_table.up.sql":          &bintree{_000003_create_index_tableUpSql, map[string]*bintree{}},
+	"000004_create_shard_index.down.sql":        &bintree{_000004_create_shard_indexDownSql, map[string]*bintree{}},
+	"000004_create_shard_index.up.sql":          &bintree{_000004_create_shard_indexUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
