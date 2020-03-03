@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/status"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	mock_dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb/mock"
+	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
@@ -56,6 +57,9 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1", "\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c", "2011-05-17 15:36:38")
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38")
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440003", "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38")
+
+	insertVizierIndexQuery := `INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, $2)`
+	db.MustExec(insertVizierIndexQuery, "123e4567-e89b-12d3-a456-426655440001", "1234")
 }
 
 func TestServer_CreateVizierCluster(t *testing.T) {
@@ -247,11 +251,18 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, nil)
+	s := controller.New(db, "test", mockDNSClient, nc)
 	req := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
@@ -285,11 +296,22 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	subCh := make(chan *nats.Msg, 1)
+	natsSub, err := nc.ChanSubscribe("VizierConnected", subCh)
+	defer natsSub.Unsubscribe()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	s := controller.New(db, "test", mockDNSClient, nil)
+	s := controller.New(db, "test", mockDNSClient, nc)
 	req := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
@@ -314,6 +336,20 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	err = db.Get(&clusterInfo, clusterQuery, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, "HEALTHY", clusterInfo.Status)
+
+	select {
+	case msg := <-subCh:
+		req := &messagespb.VizierConnected{}
+		err := proto.Unmarshal(msg.Data, req)
+		assert.Nil(t, err)
+		assert.Equal(t, "1234", req.ResourceVersion)
+		assert.Equal(t, "223e4567-e89b-12d3-a456-426655440000", utils.UUIDFromProtoOrNil(req.OrgID).String())
+		assert.Equal(t, "123e4567-e89b-12d3-a456-426655440001", utils.UUIDFromProtoOrNil(req.VizierID).String())
+		return
+	case <-time.After(1 * time.Second):
+		t.Fatal("Timed out")
+		return
+	}
 	// TODO(zasgar): write more tests here.
 }
 

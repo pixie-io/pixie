@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package pl.cloud.shared.messages;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/cloud/messages/messagespb;messages";
+
+message VizierConnected {
+  uuidpb.UUID vizier_id = 1 [
+                          (gogoproto.customname) = "VizierID"
+                         ];
+  uuidpb.UUID org_id = 2 [
+                          (gogoproto.customname) = "OrgID"
+                         ];
+  string resource_version = 3;
+}

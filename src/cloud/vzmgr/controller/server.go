@@ -21,6 +21,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	dnsmgr "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
+	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
+	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
@@ -364,6 +366,38 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 		return nil, status.Error(codes.NotFound, "no such cluster")
 	}
 
+	// Send a message over NATS to signal that a Vizier has connected.
+	query = `SELECT org_id, resource_version from vizier_cluster AS c INNER JOIN vizier_index_state AS i ON c.id = i.cluster_id WHERE id=$1`
+	var val struct {
+		OrgID           uuid.UUID `db:"org_id"`
+		ResourceVersion string    `db:"resource_version"`
+	}
+
+	rows, err := s.db.Queryx(query, vizierID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		err := rows.StructScan(&val)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	connMsg := messagespb.VizierConnected{
+		VizierID:        utils.ProtoFromUUID(&vizierID),
+		ResourceVersion: val.ResourceVersion,
+		OrgID:           utils.ProtoFromUUID(&val.OrgID),
+	}
+	b, err := connMsg.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	err = s.nc.Publish(messages.VizierConnectedChannel, b)
+	if err != nil {
+		return nil, err
+	}
 	return &cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK}, nil
 }
 
