@@ -24,7 +24,9 @@ import (
 )
 
 const heartbeatIntervalS = 5 * time.Second
-const heartbeatTopic = "heartbeat"
+
+// HeartbeatTopic is the topic that heartbeats are written to.
+const HeartbeatTopic = "heartbeat"
 const natsCloudUpdateTopic = "v2c"
 const registrationTimeout = 30 * time.Second
 
@@ -345,7 +347,7 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 				return err
 			}
 		case hbMsg := <-hbChan:
-			err := s.publishProtoToBridgeCh(heartbeatTopic, hbMsg)
+			err := s.publishProtoToBridgeCh(HeartbeatTopic, hbMsg)
 			if err != nil {
 				return err
 			}
