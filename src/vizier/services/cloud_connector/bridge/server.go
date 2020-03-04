@@ -27,7 +27,7 @@ const heartbeatIntervalS = 5 * time.Second
 
 // HeartbeatTopic is the topic that heartbeats are written to.
 const HeartbeatTopic = "heartbeat"
-const natsCloudUpdateTopic = "v2c"
+const vizierToCloudUpdateTopic = "v2c"
 const registrationTimeout = 30 * time.Second
 
 // ErrRegistrationTimeout is the registration timeout error.
@@ -95,7 +95,7 @@ func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzc
 
 // RunStream manages starting and restarting the stream to VZConn.
 func (s *Bridge) RunStream() {
-	natsTopic := fmt.Sprintf("%s.*", natsCloudUpdateTopic)
+	natsTopic := fmt.Sprintf("%s.*", vizierToCloudUpdateTopic)
 	log.WithField("topic", natsTopic).Trace("Subscribing to NATS")
 	natsSub, err := s.nc.ChanSubscribe(natsTopic, s.natsCh)
 	if err != nil {
@@ -280,14 +280,14 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 	defer s.wg.Done()
 	defer log.Info("Closing NATS Bridge")
 	// Vizier -> Cloud side:
-	// 1. Listen to NATS on cloudupdate.<topic>.
+	// 1. Listen to NATS on v2c.<topic>.
 	// 2. Extract Topic from the stream name above.
 	// 3. Wrap the message and throw it over the wire.
 
 	// Cloud -> Vizier side:
 	// 1. Read the stream.
 	// 2. For cvmsgs of type: C2VBridgeMessage, read the topic
-	//    and throw it onto nats under cloudresponse.topic
+	//    and throw it onto nats under c2v.topic
 
 	log.Info("Starting NATS bridge.")
 	hbChan := s.generateHeartbeats(done)
@@ -303,10 +303,10 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 			log.WithError(e).Error("GRPC error, terminating stream")
 			return e
 		case data := <-s.natsCh:
-			if !strings.HasPrefix(data.Subject, natsCloudUpdateTopic+".") {
+			if !strings.HasPrefix(data.Subject, vizierToCloudUpdateTopic+".") {
 				return errors.New("invalid subject: " + data.Subject)
 			}
-			topic := strings.TrimPrefix(data.Subject, natsCloudUpdateTopic+".")
+			topic := strings.TrimPrefix(data.Subject, vizierToCloudUpdateTopic+".")
 			// Message over nats should be wrapped in a V2CMessage.
 			v2cMsg := &cvmsgspb.V2CMessage{}
 			err := proto.Unmarshal(data.Data, v2cMsg)
