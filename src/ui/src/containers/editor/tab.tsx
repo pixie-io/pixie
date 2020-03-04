@@ -10,6 +10,7 @@ import {EXECUTE_QUERY, ExecuteQueryResult} from 'gql-types';
 import * as React from 'react';
 import {Button, Nav, Tab} from 'react-bootstrap';
 import Split from 'react-split';
+import analytics from 'utils/analytics';
 
 import {useMutation, useQuery} from '@apollo/react-hooks';
 
@@ -43,13 +44,32 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
         queryStr: code,
       },
     }).then((results) => {
+      let err = '';
+      if (!results) {
+        err = 'unknown error';
+      } else if (results.errors) {
+        err = results.errors.join(', ');
+      } else if (
+        // TODO(malthus): Remove this once we switch to eslint.
+        // tslint:disable-next-line:whitespace
+        results.data?.ExecuteQuery?.error?.compilerError) {
+        err = 'compiler error';
+      }
+      analytics.track('Query Execution', {
+        status: !err ? 'success' : 'failed',
+        query: code,
+        // TODO(malthus): Remove this once we switch to eslint.
+        // tslint:disable-next-line:whitespace
+        queryID: results?.data?.ExecuteQuery?.id,
+        error: err,
+      });
       saveHistory({
         variables: {
           history: {
             time,
             code,
             title: props.title,
-            status: !results || results.errors ? 'FAILED' : 'SUCCESS',
+            status: !err ? 'SUCCESS' : 'FAILED',
           },
         },
       });
