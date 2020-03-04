@@ -60,12 +60,12 @@ func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NAT
 		nc:        nc,
 		sc:        sc,
 
-		grpcOutCh: make(chan *vzconnpb.C2VBridgeMessage),
-		grpcInCh:  make(chan *vzconnpb.V2CBridgeMessage),
+		grpcOutCh: make(chan *vzconnpb.C2VBridgeMessage, 1000),
+		grpcInCh:  make(chan *vzconnpb.V2CBridgeMessage, 1000),
 
 		quitCh:       make(chan bool),
 		errCh:        make(chan error),
-		subCh:        make(chan *nats.Msg),
+		subCh:        make(chan *nats.Msg, 1000),
 		durableSubCh: make(chan *stan.Msg),
 	}
 }
@@ -83,7 +83,8 @@ func (s *NATSBridgeController) Run() error {
 		log.WithError(err).Error("error with ChanQueueSubscribe")
 		return err
 	}
-
+	// Set large limits on message size and count.
+	natsSub.SetPendingLimits(1e7, 1e7)
 	defer natsSub.Unsubscribe()
 
 	for _, topic := range DurableNATSChannels {

@@ -69,6 +69,12 @@ func main() {
 		log.WithError(err).Error("Could not connect to Nats/Stan")
 	}
 
+	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		log.WithField("Sub", subscription.Subject).
+			WithError(err).
+			Error("Error with NATS handler")
+	})
+
 	vzmgrClient, err := newVZMgrServiceClient()
 	if err != nil {
 		log.WithError(err).Fatal("failed to initialize vizer manager RPC client")

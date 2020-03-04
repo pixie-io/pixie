@@ -75,18 +75,19 @@ type Bridge struct {
 // New creates a cloud connector to cloud bridge.
 func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, certMgrClient certmgrpb.CertMgrServiceClient, vzInfo VizierInfo, nc *nats.Conn) *Bridge {
 	return &Bridge{
-		vizierID:          vizierID,
-		jwtSigningKey:     jwtSigningKey,
-		sessionID:         sessionID,
-		vzConnClient:      vzClient,
-		certMgrClient:     certMgrClient,
-		vzInfo:            vzInfo,
-		hbSeqNum:          0,
-		nc:                nc,
-		natsCh:            make(chan *nats.Msg),
+		vizierID:      vizierID,
+		jwtSigningKey: jwtSigningKey,
+		sessionID:     sessionID,
+		vzConnClient:  vzClient,
+		certMgrClient: certMgrClient,
+		vzInfo:        vzInfo,
+		hbSeqNum:      0,
+		nc:            nc,
+		// Buffer NATS channels to make sure we don't back-pressure NATS
+		natsCh:            make(chan *nats.Msg, 1000),
 		registered:        false,
-		grpcOutCh:         make(chan *vzconnpb.V2CBridgeMessage),
-		grpcInCh:          make(chan *vzconnpb.C2VBridgeMessage),
+		grpcOutCh:         make(chan *vzconnpb.V2CBridgeMessage, 1000),
+		grpcInCh:          make(chan *vzconnpb.C2VBridgeMessage, 1000),
 		pendingGRPCOutMsg: nil,
 		quitCh:            make(chan bool),
 		wg:                sync.WaitGroup{},
@@ -102,7 +103,8 @@ func (s *Bridge) RunStream() {
 		log.WithError(err).Fatal("Failed to subscribe to NATS.")
 	}
 	defer natsSub.Unsubscribe()
-
+	// Set large limits on message size and count.
+	natsSub.SetPendingLimits(1e7, 1e7)
 	for {
 		s.registered = false
 		select {

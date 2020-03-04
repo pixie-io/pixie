@@ -83,6 +83,11 @@ func main() {
 		log.WithError(err).Fatal("Failed to connect to NATS.")
 	}
 
+	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		log.WithField("Sub", subscription.Subject).
+			WithError(err).
+			Error("Error with NATS handler")
+	})
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
