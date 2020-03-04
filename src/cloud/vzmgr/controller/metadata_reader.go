@@ -314,7 +314,7 @@ func (m *MetadataReader) applyMetadataUpdates(vzState *VizierState, updates []*m
 		if err != nil {
 			return err
 		}
-		defer row.Close()
+		row.Close()
 	}
 	return nil
 }
