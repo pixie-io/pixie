@@ -83,7 +83,7 @@ func (s *PLServer) serveHTTP2() {
 		s.httpHandler.ServeHTTP(w, r)
 	})
 	wrappedHandler := HTTPLoggingMiddleware(muxHandler)
-	server := &http.Server{
+	s.httpServer = &http.Server{
 		Addr:           serverAddr,
 		Handler:        h2c.NewHandler(wrappedHandler, &http2.Server{}),
 		TLSConfig:      tlsConfig,
@@ -97,9 +97,9 @@ func (s *PLServer) serveHTTP2() {
 		log.WithError(err).Fatal("Failed to listen (grpc)")
 	}
 	if sslEnabled {
-		lis = tls.NewListener(lis, server.TLSConfig)
+		lis = tls.NewListener(lis, s.httpServer.TLSConfig)
 	}
-	if err := server.Serve(lis); err != nil {
+	if err := s.httpServer.Serve(lis); err != nil {
 		// Check for graceful termination.
 		if err != http.ErrServerClosed {
 			log.WithError(err).Fatal("Failed to run GRPC server")
@@ -117,19 +117,25 @@ func (s *PLServer) Start() {
 // Stop will gracefully shutdown underlying GRPC and HTTP servers.
 func (s *PLServer) Stop() {
 	log.Info("Stopping servers.")
-	if s.httpServer != nil {
-		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-			defer cancel()
-			if err := s.httpServer.Shutdown(ctx); err != nil {
-				log.WithError(err).Fatal("Failed to do a graceful shutdown of HTTP server.")
-			}
-		}()
-	}
 	if s.grpcServer != nil {
 		go s.grpcServer.Stop()
 	}
+	if s.httpServer != nil {
+		wait := make(chan bool)
+		go func() {
+			defer close(wait)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			if err := s.httpServer.Shutdown(ctx); err != nil {
+				log.WithError(err).Error("Failed to do a graceful shutdown of HTTP server.")
+			}
+			log.Info("Shutdown HTTP server complete. ")
+		}()
+		<-wait
+	}
 	s.wg.Wait()
+	log.Info("Waiting is complete")
 }
 
 // StopOnInterrupt gracefully shuts down when ctrl-c is pressed or termination signal is received.
