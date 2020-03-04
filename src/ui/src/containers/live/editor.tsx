@@ -1,9 +1,10 @@
-import {getLiveViewEditorSplits, setLiveViewEditorSplits} from 'common/localstorage';
 import {CodeEditor} from 'components/code-editor';
-import {SplitContainer, SplitPane} from 'components/split-pane/split-pane';
+import LazyPanel from 'components/lazy-panel';
 import * as React from 'react';
 
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import Tab from '@material-ui/core/Tab';
+import Tabs from '@material-ui/core/Tabs';
 
 import {LiveContext, ScriptContext, VegaContext} from './context';
 
@@ -11,6 +12,12 @@ const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
       height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+    },
+    panel: {
+      flex: 1,
+      minHeight: 0,
     },
     editor: {
       height: '100%',
@@ -48,26 +55,37 @@ const ScriptEditor = () => {
   );
 };
 
+const PlacementEditor = () => {
+  return <div>coming soon</div>;
+};
+
 const LiveViewEditor = () => {
   const classes = useStyles();
-  const [splits, setSplits] = React.useState<number[]>([]);
-  const initialSizes = React.useMemo(() => getLiveViewEditorSplits(), []);
 
-  React.useEffect(() => {
-    if (splits.length === 2) {
-      setLiveViewEditorSplits([splits[0], splits[1]]);
-    }
-  }, [splits]);
+  const [tab, setTab] = React.useState('pixie');
 
   return (
-    <SplitContainer className={classes.root} initialSizes={initialSizes} onSizeChange={setSplits}>
-      <SplitPane title='Script Editor' id='script'>
+    <div className={classes.root}>
+      <Tabs
+        value={tab}
+        indicatorColor='primary'
+        textColor='primary'
+        onChange={(event, newTab) => setTab(newTab)}
+      >
+        <Tab value='pixie' label='Pixie Script' />
+        <Tab value='vega' label='Vega Spec' />
+        <Tab value='placement' label='Placement' />
+      </Tabs>
+      <LazyPanel className={classes.panel} show={tab === 'pixie'}>
         <ScriptEditor />
-      </SplitPane>
-      <SplitPane title='Vega Editor' id='vega'>
+      </LazyPanel>
+      <LazyPanel className={classes.panel} show={tab === 'vega'}>
         <VegaSpecEditor />
-      </SplitPane>
-    </SplitContainer>
+      </LazyPanel>
+      <LazyPanel className={classes.panel} show={tab === 'placement'}>
+        <PlacementEditor />
+      </LazyPanel>
+    </div>
   );
 };
 

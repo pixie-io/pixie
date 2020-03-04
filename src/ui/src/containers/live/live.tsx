@@ -1,6 +1,6 @@
-import clsx from 'clsx';
 import {getLiveViewEditorOpened, setLiveViewEditorOpened} from 'common/localstorage';
 import MagicIcon from 'components/icons/magic';
+import LazyPanel from 'components/lazy-panel';
 import * as React from 'react';
 import {GlobalHotKeys} from 'react-hotkeys';
 
@@ -63,16 +63,9 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     editor: {
       flex: 1,
-      minWidth: 0,
-      visibility: 'hidden',
-      position: 'absolute',
-      '&.opened': {
-        visibility: 'visible',
-        position: 'relative',
-        borderRightStyle: 'solid',
-        borderRightColor: theme.palette.background.three,
-        borderRightWidth: theme.spacing(0.25),
-      },
+      borderRightStyle: 'solid',
+      borderRightColor: theme.palette.background.three,
+      borderRightWidth: theme.spacing(0.25),
     },
     canvas: {
       flex: 1,
@@ -131,9 +124,9 @@ const LiveView = () => {
           </IconButton>
         </div>
         <div className={classes.main}>
-          <div className={clsx(classes.editor, editorOpen && 'opened')}>
+          <LazyPanel className={classes.editor} show={editorOpen}>
             <Editor />
-          </div>
+          </LazyPanel>
           <div className={classes.canvas}>
             <Canvas />
           </div>
