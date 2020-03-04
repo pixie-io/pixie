@@ -92,9 +92,12 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	}
 
 	rpcReq := &authpb.LoginRequest{
-		AccessToken:           params.AccessToken,
+		AccessToken: params.AccessToken,
+		// TODO(nserrino) PL-1546 remove when sites go away.
 		SiteName:              params.SiteName,
 		CreateUserIfNotExists: true,
+		// TODO(nserrino) PL-1546 set to true when the login handler is used for everything.
+		CreateOrgIfNotExists: false,
 	}
 
 	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)

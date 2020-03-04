@@ -50,6 +50,7 @@ func TestAuthLoginHandler(t *testing.T) {
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
 		CreateUserIfNotExists: true,
+		CreateOrgIfNotExists:  false,
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
@@ -114,6 +115,7 @@ func TestAuthLoginHandler_ExistingSessionMismatchedSite(t *testing.T) {
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
 		CreateUserIfNotExists: true,
+		CreateOrgIfNotExists:  false,
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
@@ -158,6 +160,7 @@ func TestAuthLoginHandler_ExistingSessionMismatchedSite(t *testing.T) {
 		AccessToken:           "the-token-2",
 		SiteName:              "not_hulu",
 		CreateUserIfNotExists: true,
+		CreateOrgIfNotExists:  false,
 	}
 	testReplyToken2 := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry2 := time.Now().Add(1 * time.Minute).Unix()
@@ -213,6 +216,7 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
 		CreateUserIfNotExists: true,
+		CreateOrgIfNotExists:  false,
 	}
 
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
@@ -236,6 +240,7 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
 		CreateUserIfNotExists: true,
+		CreateOrgIfNotExists:  false,
 	}
 
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {

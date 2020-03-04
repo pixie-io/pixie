@@ -62,6 +62,8 @@ func CreateSiteHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 
 	userIDStr := utils.UUIDFromProtoOrNil(resp.UserID).String()
 	orgIDStr := utils.UUIDFromProtoOrNil(resp.OrgID).String()
+
+	// TODO(nserrino): PL-1546 Move these to the Login API when this function is removed.
 	events.Client().Enqueue(&analytics.Group{
 		UserId:  userIDStr,
 		GroupId: orgIDStr,
