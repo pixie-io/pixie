@@ -1,6 +1,6 @@
 import {VisualizationSpec} from 'vega-embed';
 
-import {Theme, useTheme} from '@material-ui/core/styles';
+import {Theme} from '@material-ui/core/styles';
 
 export function hydrateSpec(input, theme: Theme, tableName: string = 'output'): VisualizationSpec {
   return {
@@ -20,7 +20,7 @@ export function parseSpecs(spec: string): VisualizationSpecMap {
     const vega = JSON.parse(spec);
     return vega as VisualizationSpecMap;
   } catch (e) {
-    return {};
+    return null;
   }
 }
 

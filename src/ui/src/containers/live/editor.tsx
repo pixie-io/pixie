@@ -1,12 +1,16 @@
+import * as ls from 'common/localstorage';
 import {CodeEditor} from 'components/code-editor';
 import LazyPanel from 'components/lazy-panel';
+import {parseSpecs} from 'components/vega/spec';
 import * as React from 'react';
+import {isSetAccessorDeclaration} from 'typescript';
 
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 
-import {LiveContext, ScriptContext, VegaContext} from './context';
+import {LiveContext, PlacementContext, ScriptContext, VegaContext} from './context';
+import {parsePlacement} from './layout';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -30,13 +34,25 @@ const useStyles = makeStyles((theme: Theme) =>
 const VegaSpecEditor = () => {
   const classes = useStyles();
   const { updateVegaSpec } = React.useContext(LiveContext);
-  const code = React.useContext(VegaContext);
+  const spec = React.useContext(VegaContext);
+  const [code, setCode] = React.useState('');
+
+  React.useEffect(() => {
+    const specs = parseSpecs(code);
+    if (specs) {
+      updateVegaSpec(specs);
+    }
+  }, [code]);
+
+  React.useEffect(() => {
+    setCode(JSON.stringify(spec, null, 2));
+  }, [spec]);
 
   return (
     <CodeEditor
       className={classes.editor}
       code={code}
-      onChange={updateVegaSpec}
+      onChange={setCode}
     />
   );
 };
@@ -56,7 +72,30 @@ const ScriptEditor = () => {
 };
 
 const PlacementEditor = () => {
-  return <div>coming soon</div>;
+  const classes = useStyles();
+  const { updatePlacement } = React.useContext(LiveContext);
+  const placement = React.useContext(PlacementContext);
+  const [code, setCode] = React.useState('');
+
+  React.useEffect(() => {
+    ls.setLiveViewPlacementSpec(code);
+    const newPlacement = parsePlacement(code);
+    if (newPlacement) {
+      updatePlacement(placement);
+    }
+  }, [code]);
+
+  React.useEffect(() => {
+    setCode(JSON.stringify(placement, null, 2));
+  }, [placement]);
+
+  return (
+    <CodeEditor
+      className={classes.editor}
+      code={code}
+      onChange={setCode}
+    />
+  );
 };
 
 const LiveViewEditor = () => {

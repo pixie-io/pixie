@@ -1,4 +1,4 @@
-export function debounce(func: (args: Array<{}>) => void, wait: number) {
+export function debounce(func: (...args: Array<{}>) => void, wait: number) {
   let timeout;
   let context;
   let lastArgs;

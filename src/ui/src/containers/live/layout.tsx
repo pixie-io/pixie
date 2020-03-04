@@ -73,18 +73,17 @@ export function parsePlacement(json: string): Placement {
   } catch (e) {
     // noop. tslint doesn't allow empty blocks.
   }
-  return {};
+  return null;
 }
 
 export function updatePositions(placement: Placement, layouts: Layout[]): Placement {
   const newPlacement = {};
-  for (const layout of layouts) {
-    const key = layout.i;
-    const old = placement[key];
-    newPlacement[key] = {
+  for (const { i, x, y, w, h } of layouts) {
+    const old = placement[i];
+    newPlacement[i] = {
       ...(old || {}),
       position: {
-        ...layout,
+        x, y, w, h,
       },
     };
   }

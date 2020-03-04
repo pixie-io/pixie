@@ -11,24 +11,21 @@ import {LiveContext, PlacementContext, ResultsContext, VegaContext} from './cont
 import {buildLayout, parsePlacement, Placement, toLayout, updatePositions} from './layout';
 
 const Canvas = () => {
-  const inputJSON = React.useContext(VegaContext);
+  const specs = React.useContext(VegaContext);
   const results = React.useContext(ResultsContext);
-  const placementJSON = React.useContext(PlacementContext);
-  const { updatePlacement: updatePlacementJSON } = React.useContext(LiveContext);
+  const placement = React.useContext(PlacementContext);
+  const { updatePlacement } = React.useContext(LiveContext);
 
-  const [placement, setPlacement] = React.useState<Placement>({});
-
-  const specs = React.useMemo(() => parseSpecs(inputJSON), [inputJSON]);
-
-  // Parse the placement only once on init. This is to avoid infinte loops.
   React.useEffect(() => {
-    try {
-      const initialPlacement = parsePlacement(placementJSON);
-      setPlacement(buildLayout(specs, initialPlacement));
-    } catch (e) {
-      // noop. tslint doesn't allow empty blocks.
+    const newPlacement = buildLayout(specs, placement);
+    if (newPlacement !== placement) {
+      updatePlacement(newPlacement);
     }
-  }, []);
+  }, [specs]);
+
+  const layout = React.useMemo(() => {
+    return toLayout(placement);
+  }, [placement]);
 
   const charts = React.useMemo(() => {
     return Object.keys(specs).map((chartName) => {
@@ -43,8 +40,6 @@ const Canvas = () => {
     });
   }, [results, specs]);
 
-  const layout = React.useMemo(() => toLayout(placement), [placement]);
-
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:
     // https://vega.github.io/vega-lite/docs/size.html#specifying-responsive-width-and-height
@@ -52,7 +47,7 @@ const Canvas = () => {
   }, []);
 
   const handleLayoutChange = React.useCallback((newLayout) => {
-    updatePlacementJSON(JSON.stringify(updatePositions(placement, newLayout)));
+    updatePlacement(updatePositions(placement, newLayout));
     resize();
   }, []);
 
