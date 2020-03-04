@@ -146,7 +146,6 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 		select {
 		case <-time.After(registrationTimeout):
 			log.Error("Timeout with registration terminating stream")
-			stream.CloseSend()
 			return ErrRegistrationTimeout
 		case resp := <-s.grpcInCh:
 			// Try to receive the registerAck.
@@ -231,6 +230,10 @@ func (s *Bridge) startStreamGRPCReader(stream vzconnpb.VZConnService_NATSBridgeC
 				// stream closed.
 				return
 			}
+			if err != nil && errors.Is(err, context.Canceled) {
+				log.Trace("Stream has been cancelled")
+				return
+			}
 			if err != nil {
 				log.WithError(err).Error("Got a stream read error")
 				return
@@ -262,6 +265,7 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 			return
 		case <-done:
 			log.Trace("Closing GRPC writer because of <-done")
+			stream.CloseSend()
 			// Quit called.
 			return
 		case m := <-s.grpcOutCh:
@@ -368,6 +372,7 @@ func (s *Bridge) Stop() {
 	// Wait fo all goroutines to stop.
 	s.wg.Wait()
 }
+
 func (s *Bridge) publishBridgeCh(topic string, msg *types.Any) error {
 	wrappedReq := &vzconnpb.V2CBridgeMessage{
 		Topic:     topic,
