@@ -86,3 +86,23 @@ func TestVizierIDToShard(t *testing.T) {
 		})
 	}
 }
+
+func TestC2VTopic(t *testing.T) {
+	assert.Equal(t, "c2v.d0.c5214a44-f04b-48a8-a1d4-a528f2b494d0.test",
+		vzshard.C2VTopic("test", uuid.FromStringOrNil("c5214a44-f04b-48a8-a1d4-a528f2b494d0")))
+}
+
+func TestC2VDurableTopic(t *testing.T) {
+	assert.Equal(t, "c2v.d0.c5214a44-f04b-48a8-a1d4-a528f2b494d0.Durabletest",
+		vzshard.C2VDurableTopic("test", uuid.FromStringOrNil("c5214a44-f04b-48a8-a1d4-a528f2b494d0")))
+}
+
+func TestV2CTopic(t *testing.T) {
+	assert.Equal(t, "v2c.d0.c5214a44-f04b-48a8-a1d4-a528f2b494d0.test",
+		vzshard.V2CTopic("test", uuid.FromStringOrNil("c5214a44-f04b-48a8-a1d4-a528f2b494d0")))
+}
+
+func TestV2CDurableTopic(t *testing.T) {
+	assert.Equal(t, "v2c.d0.c5214a44-f04b-48a8-a1d4-a528f2b494d0.Durabletest",
+		vzshard.V2CDurableTopic("test", uuid.FromStringOrNil("c5214a44-f04b-48a8-a1d4-a528f2b494d0")))
+}

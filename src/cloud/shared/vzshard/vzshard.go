@@ -53,3 +53,23 @@ func VizierIDToShard(vizierID uuid.UUID) string {
 	stringID := vizierID.String()
 	return stringID[len(stringID)-2:]
 }
+
+// C2VTopic returns the sharded topic.
+func C2VTopic(topic string, vizierID uuid.UUID) string {
+	return fmt.Sprintf("c2v.%s.%s.%s", VizierIDToShard(vizierID), vizierID.String(), topic)
+}
+
+// C2VDurableTopic returns the sharded durable topic name.
+func C2VDurableTopic(topic string, vizierID uuid.UUID) string {
+	return C2VTopic("Durable"+topic, vizierID)
+}
+
+// V2CTopic returns the sharded topic name.
+func V2CTopic(topic string, vizierID uuid.UUID) string {
+	return fmt.Sprintf("v2c.%s.%s.%s", VizierIDToShard(vizierID), vizierID.String(), topic)
+}
+
+// V2CDurableTopic returns the sharded durable topic name.
+func V2CDurableTopic(topic string, vizierID uuid.UUID) string {
+	return V2CTopic("Durable"+topic, vizierID)
+}
