@@ -55,7 +55,8 @@ class SignalAction : public NotCopyable {
   /**
    * Signal handlers will be installed for these signals which have a fatal outcome.
    */
-  static constexpr int kFatalSignals[] = {SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGSEGV};
+  static constexpr int kFatalSignals[] = {SIGABRT, SIGBUS,  SIGFPE, SIGILL,
+                                          SIGINT,  SIGSEGV, SIGTERM};
   /**
    * Return the memory size we actually map including two guard pages.
    */
