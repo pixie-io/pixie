@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <thread>
 
+#include "absl/strings/str_split.h"
 #include "src/common/base/base.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/jvm_stats_connector.h"
@@ -49,19 +50,18 @@ using pl::stirling::kMySQLTable;
 
 using pl::ArrayView;
 
-DEFINE_string(sources, "kTracers",
-              "[kAll|kProd|kMetrics|kTracers] Choose sources to enable. Default is kTracers.");
-DEFINE_bool(print_record_batches, true, "If true, prints captured record batches on STDOUT.");
+DEFINE_string(sources, "kProd", "[kAll|kProd|kMetrics|kTracers] Choose sources to enable.");
+DEFINE_string(print_record_batches, "",
+              "Comma-separated list of tables to print. Defaults to tracers if not specified. Use "
+              "'None' for none.");
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
 
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
+std::vector<std::string_view> table_print_enables = {kHTTPTable.name(), kMySQLTable.name(),
+                                                     kCQLTable.name()};
 
 void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& schema,
                       size_t num_records, const ColumnWrapperRecordBatch& record_batch) {
-  if (!FLAGS_print_record_batches) {
-    return;
-  }
-
   for (size_t i = 0; i < num_records; ++i) {
     std::cout << "[" << prefix << "]";
 
@@ -110,6 +110,11 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   size_t num_records = (*record_batch)[0]->Size();
 
   std::string name = table_id_to_name_map[table_id];
+
+  if (std::find(table_print_enables.begin(), table_print_enables.end(), name) ==
+      table_print_enables.end()) {
+    return;
+  }
 
   // Use assigned names, from registry.
   if (name == SeqGenConnector::kSeq0Table.name()) {
@@ -179,6 +184,10 @@ int main(int argc, char** argv) {
       magic_enum::enum_cast<SourceRegistrySpecifier>(FLAGS_sources);
   if (!sources.has_value()) {
     LOG(ERROR) << absl::Substitute("$0 is not a valid source register specifier", FLAGS_sources);
+  }
+
+  if (!FLAGS_print_record_batches.empty()) {
+    table_print_enables = absl::StrSplit(FLAGS_print_record_batches, " ", absl::SkipWhitespace());
   }
 
   std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateSourceRegistry(sources.value());
