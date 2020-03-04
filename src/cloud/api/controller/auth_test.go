@@ -38,11 +38,73 @@ func TestGetServiceCredentials(t *testing.T) {
 	assert.Nil(t, claims.Valid())
 }
 
+func TestAuthSignupHandler(t *testing.T) {
+	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+
+	req, err := http.NewRequest("POST", "/signup",
+		strings.NewReader("{\"accessToken\": \"the-token\",\"userEmail\": \"user@hulu.com\"}"))
+	assert.Nil(t, err)
+
+	expectedAuthServiceReq := &authpb.SignupRequest{
+		AccessToken: "the-token",
+		UserEmail:   "user@hulu.com",
+	}
+	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
+	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
+	signupReply := &authpb.SignupReply{
+		Token:     testReplyToken,
+		ExpiresAt: testTokenExpiry,
+		UserInfo: &authpb.UserInfo{
+			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "abc@defg.com",
+		},
+	}
+	mockAuthClient.EXPECT().Signup(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.SignupRequest) {
+		assert.Equal(t, "the-token", in.AccessToken)
+	}).Return(signupReply, nil)
+
+	rr := httptest.NewRecorder()
+	h := handler.New(env, controller.AuthSignupHandler)
+	h.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var parsedResponse struct {
+		Token     string
+		ExpiresAt int64
+		UserInfo  struct {
+			UserID    string `json:"userID"`
+			FirstName string `json:"firstName"`
+			LastName  string `json:"lastName"`
+			Email     string `json:"email"`
+		} `json:"userInfo"`
+		OrgCreated bool `json:"orgCreated"`
+	}
+	err = json.NewDecoder(rr.Body).Decode(&parsedResponse)
+	assert.Nil(t, err)
+	assert.Equal(t, testReplyToken, parsedResponse.Token)
+	assert.Equal(t, testTokenExpiry, parsedResponse.ExpiresAt)
+	assert.Equal(t, "abc@defg.com", parsedResponse.UserInfo.Email)
+	assert.Equal(t, "first", parsedResponse.UserInfo.FirstName)
+	assert.Equal(t, "last", parsedResponse.UserInfo.LastName)
+	assert.Equal(t, false, parsedResponse.OrgCreated)
+
+	// Check the token in the cookie.
+	rawCookies := rr.Header().Get("Set-Cookie")
+	header := http.Header{}
+	header.Add("Cookie", rawCookies)
+	req2 := http.Request{Header: header}
+	sess, err := controller.GetDefaultSession(env, &req2)
+	assert.Equal(t, testReplyToken, sess.Values["_at"])
+}
+
 func TestAuthLoginHandler(t *testing.T) {
 	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
-	req, err := http.NewRequest("POST", "/api/users",
+	req, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token\", \"siteName\": \"hulu\", \"userEmail\": \"user@hulu.com\"}"))
 	assert.Nil(t, err)
 
@@ -50,7 +112,6 @@ func TestAuthLoginHandler(t *testing.T) {
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
 		CreateUserIfNotExists: true,
-		CreateOrgIfNotExists:  false,
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
@@ -115,7 +176,6 @@ func TestAuthLoginHandler_ExistingSessionMismatchedSite(t *testing.T) {
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
 		CreateUserIfNotExists: true,
-		CreateOrgIfNotExists:  false,
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
@@ -160,7 +220,6 @@ func TestAuthLoginHandler_ExistingSessionMismatchedSite(t *testing.T) {
 		AccessToken:           "the-token-2",
 		SiteName:              "not_hulu",
 		CreateUserIfNotExists: true,
-		CreateOrgIfNotExists:  false,
 	}
 	testReplyToken2 := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry2 := time.Now().Add(1 * time.Minute).Unix()
@@ -177,7 +236,7 @@ func TestAuthLoginHandler_ExistingSessionMismatchedSite(t *testing.T) {
 		assert.Equal(t, "the-token-2", in.AccessToken)
 	}).Return(loginResp, nil)
 
-	req3, err := http.NewRequest("POST", "/api/users",
+	req3, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token-2\", \"siteName\": \"not_hulu\", \"userEmail\": \"user@not_hulu.com\"}"))
 	assert.Nil(t, err)
 
@@ -208,7 +267,7 @@ func TestAuthLoginHandler_ExistingSessionMismatchedSite(t *testing.T) {
 func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
-	req, err := http.NewRequest("POST", "/api/users",
+	req, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token\", \"siteName\": \"hulu\", \"userEmail\": \"user@gmail.com\"}"))
 	assert.Nil(t, err)
 
@@ -216,7 +275,6 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
 		CreateUserIfNotExists: true,
-		CreateOrgIfNotExists:  false,
 	}
 
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
@@ -232,7 +290,7 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
-	req, err := http.NewRequest("POST", "/api/users",
+	req, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token\", \"siteName\": \"hulu\", \"userEmail\": \"user@hulu.com\"}"))
 	assert.Nil(t, err)
 
@@ -240,7 +298,6 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 		AccessToken:           "the-token",
 		SiteName:              "hulu",
 		CreateUserIfNotExists: true,
-		CreateOrgIfNotExists:  false,
 	}
 
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
@@ -257,7 +314,7 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 func TestAuthLoginHandler_BadMethod(t *testing.T) {
 	env, _, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
-	req, err := http.NewRequest("GET", "/api/users", nil)
+	req, err := http.NewRequest("GET", "/login", nil)
 	assert.Nil(t, err)
 
 	rr := httptest.NewRecorder()
@@ -303,7 +360,7 @@ func TestAuthLogoutHandler_BadMethod(t *testing.T) {
 	env, _, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
-	req, err := http.NewRequest("GET", "/api/users", nil)
+	req, err := http.NewRequest("GET", "/logout", nil)
 	assert.Nil(t, err)
 
 	rr := httptest.NewRecorder()

@@ -64,6 +64,7 @@ func main() {
 	csh := controller.NewCheckSiteHandler(env)
 	mux := http.NewServeMux()
 	mux.Handle("/api/create-site", handler.New(env, controller.CreateSiteHandler))
+	mux.Handle("/api/auth/signup", handler.New(env, controller.AuthSignupHandler))
 	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
 	mux.Handle("/api/auth/logout", handler.New(env, controller.AuthLogoutHandler))
 	// This is an unauthenticated path that will check and validate if a particular domain

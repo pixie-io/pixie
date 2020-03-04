@@ -160,22 +160,16 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 
 	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
 	if err != nil || orgInfo == nil {
-		if !in.CreateOrgIfNotExists {
-			return nil, status.Error(codes.InvalidArgument, "organization not found, please register.")
-		}
+		return nil, status.Error(codes.InvalidArgument, "organization not found, please register.")
 	}
 
-	newOrg := orgInfo == nil
-	// TODO(nserrino): Remove as part of PL-1546.
-	if !newOrg {
-		siteInfo, err := sc.GetSiteByName(ctx, &sitemanagerpb.GetSiteByNameRequest{SiteName: in.SiteName})
-		if err != nil || siteInfo == nil {
-			return nil, status.Error(codes.InvalidArgument, "site does not exist")
-		}
+	siteInfo, err := sc.GetSiteByName(ctx, &sitemanagerpb.GetSiteByNameRequest{SiteName: in.SiteName})
+	if err != nil || siteInfo == nil {
+		return nil, status.Error(codes.InvalidArgument, "site does not exist")
 	}
 
 	if newUser {
-		userInfo, err = s.createUserAndOptionallyOrg(ctx, domainName, userID, userInfo, orgInfo)
+		userInfo, _, err = s.createUserAndOptionallyOrg(ctx, domainName, userID, userInfo, orgInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -192,7 +186,6 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		Token:       token,
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: newUser,
-		OrgCreated:  newOrg,
 		UserInfo: &pb.UserInfo{
 			UserID:    pbutils.ProtoFromUUIDStrOrNil(userID),
 			FirstName: userInfo.FirstName,
@@ -202,8 +195,62 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	}, nil
 }
 
+// Signup uses auth0 to authenticate and sign up the user. It autocreates the org if the org doesn't exist.
+func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupReply, error) {
+	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	if userInfo.Email != in.UserEmail {
+		return nil, status.Error(codes.InvalidArgument, "email addresses don't match")
+	}
+
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	pc := s.env.ProfileClient()
+
+	_, err = pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userID)})
+	if err == nil {
+		return nil, status.Error(codes.PermissionDenied, "user already exists, please login.")
+	}
+
+	domainName, err := GetDomainNameFromEmail(userInfo.Email)
+	if err != nil {
+		return nil, services.HTTPStatusFromError(err, "Failed to get domain from email")
+	}
+
+	orgInfo, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
+	newOrg := orgInfo == nil
+	userInfo, orgID, err := s.createUserAndOptionallyOrg(ctx, domainName, userID, userInfo, orgInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey(), s.a.GetClientID())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+
+	userID = userInfo.AppMetadata[s.a.GetClientID()].PLUserID
+
+	return &pb.SignupReply{
+		Token:      token,
+		ExpiresAt:  expiresAt.Unix(),
+		OrgCreated: newOrg,
+		UserInfo: &pb.UserInfo{
+			UserID:    pbutils.ProtoFromUUIDStrOrNil(userID),
+			FirstName: userInfo.FirstName,
+			LastName:  userInfo.LastName,
+			Email:     userInfo.Email,
+		},
+		OrgID: orgID,
+	}, nil
+}
+
 // Creates a user as well as an org if the orgInfo passed in is nil.
-func (s *Server) createUserAndOptionallyOrg(ctx context.Context, domainName string, userID string, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*UserInfo, error) {
+func (s *Server) createUserAndOptionallyOrg(ctx context.Context, domainName string, userID string, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*UserInfo, *uuidpb.UUID, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
@@ -221,11 +268,12 @@ func (s *Server) createUserAndOptionallyOrg(ctx context.Context, domainName stri
 
 		resp, err := pc.CreateUser(ctx, userCreateReq)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		return s.updateAuth0User(userID, pbutils.UUIDFromProtoOrNil(orgInfo.ID).String(),
+		userInfo, err := s.updateAuth0User(userID, pbutils.UUIDFromProtoOrNil(orgInfo.ID).String(),
 			pbutils.UUIDFromProtoOrNil(resp).String())
+		return userInfo, orgInfo.ID, err
 	}
 
 	orgName := domainName
@@ -244,11 +292,13 @@ func (s *Server) createUserAndOptionallyOrg(ctx context.Context, domainName stri
 
 	resp, err := s.env.ProfileClient().CreateOrgAndUser(ctx, rpcReq)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to create user/org")
+		return nil, nil, status.Error(codes.Internal, "failed to create user/org")
 	}
 
-	return s.updateAuth0User(userID, pbutils.UUIDFromProtoOrNil(resp.OrgID).String(),
+	userInfo, err = s.updateAuth0User(userID, pbutils.UUIDFromProtoOrNil(resp.OrgID).String(),
 		pbutils.UUIDFromProtoOrNil(resp.UserID).String())
+
+	return userInfo, resp.OrgID, err
 }
 
 // GetAugmentedToken produces augmented tokens for the user based on passed in credentials.

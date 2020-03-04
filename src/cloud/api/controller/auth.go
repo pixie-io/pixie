@@ -31,6 +31,110 @@ func GetServiceCredentials(signingKey string) (string, error) {
 	return utils.SignJWTClaims(claims, signingKey)
 }
 
+// AuthSignupHandler make requests to the authpb service and sets session cookies.
+// Request-type: application/json.
+// Params: accessToken (auth0 idtoken), state.
+func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
+	if r.Method != http.MethodPost {
+		return handler.NewStatusError(http.StatusMethodNotAllowed, "not a post request")
+	}
+
+	apiEnv, ok := env.(apienv.APIEnv)
+	if !ok {
+		return &handler.StatusError{http.StatusInternalServerError, errors.New("failed to get environment")}
+	}
+
+	// GetDefaultSession, will always return a valid session, even if it is empty.
+	// We don't check the err here because even if the preexisting
+	// session cookie is expired or couldn't be decoded, we will overwrite it below anyway.
+	session, _ := GetDefaultSession(apiEnv, r)
+	// This should never be nil, but we check to be sure.
+	if session == nil {
+		return &handler.StatusError{http.StatusInternalServerError, errors.New("failed to get session cookie")}
+	}
+
+	// Extract params from the body which consists of the Auth0 ID token.
+	var params struct {
+		AccessToken string
+		UserEmail   string
+	}
+
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		return handler.NewStatusError(http.StatusBadRequest,
+			"failed to decode json request")
+	}
+
+	ctxWithCreds, err := attachCredentialsToContext(env, r)
+	if err != nil {
+		return &handler.StatusError{http.StatusInternalServerError, err}
+	}
+
+	rpcReq := &authpb.SignupRequest{
+		AccessToken: params.AccessToken,
+		UserEmail:   params.UserEmail,
+	}
+
+	resp, err := env.(apienv.APIEnv).AuthClient().Signup(ctxWithCreds, rpcReq)
+	if err != nil {
+		log.WithError(err).Errorf("RPC request to authpb service failed")
+		s, ok := status.FromError(err)
+		if ok {
+			if s.Code() == codes.Unauthenticated {
+				return handler.NewStatusError(http.StatusUnauthorized, s.Message())
+			}
+		}
+
+		return services.HTTPStatusFromError(err, "Failed to signup")
+	}
+
+	userIDStr := pbutils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
+	orgIDStr := pbutils.UUIDFromProtoOrNil(resp.OrgID).String()
+
+	events.Client().Enqueue(&analytics.Track{
+		UserId: userIDStr,
+		Event:  events.UserSignedUp,
+	})
+
+	if resp.OrgCreated {
+		pc := env.(apienv.APIEnv).ProfileClient()
+		orgResp, err := pc.GetOrg(ctxWithCreds, resp.OrgID)
+		if err != nil {
+			return services.HTTPStatusFromError(err, "Failed to get org")
+		}
+
+		events.Client().Enqueue(&analytics.Group{
+			UserId:  userIDStr,
+			GroupId: orgIDStr,
+			Traits: map[string]interface{}{
+				"kind":        "organization",
+				"name":        orgResp.OrgName,
+				"domain_name": orgResp.DomainName,
+			},
+		})
+
+		events.Client().Enqueue(&analytics.Track{
+			UserId: pbutils.UUIDFromProtoOrNil(resp.UserID).String(),
+			Event:  events.OrgCreated,
+			Properties: analytics.NewProperties().
+				Set("org_id", orgIDStr),
+		})
+	}
+
+	// TODO(nserrino): PL-1546: remove site name
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, "", r, w)
+
+	err = sendSignupUserInfo(w, resp.UserInfo, resp.Token, resp.ExpiresAt, resp.OrgCreated)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	return nil
+}
+
 // AuthLoginHandler make requests to the authpb service and sets session cookies.
 // Request-type: application/json.
 // Params: accessToken (auth0 idtoken), state.
@@ -96,8 +200,6 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		// TODO(nserrino) PL-1546 remove when sites go away.
 		SiteName:              params.SiteName,
 		CreateUserIfNotExists: true,
-		// TODO(nserrino) PL-1546 set to true when the login handler is used for everything.
-		CreateOrgIfNotExists: false,
 	}
 
 	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)
@@ -243,6 +345,33 @@ func sendUserInfo(w http.ResponseWriter, userInfo *authpb.UserInfo, token string
 	data.UserInfo.FirstName = userInfo.FirstName
 	data.UserInfo.LastName = userInfo.LastName
 	data.UserCreated = userCreated
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	return json.NewEncoder(w).Encode(&data)
+}
+
+func sendSignupUserInfo(w http.ResponseWriter, userInfo *authpb.UserInfo, token string, expiresAt int64, orgCreated bool) error {
+	var data struct {
+		Token     string `json:"token"`
+		ExpiresAt int64  `json:"expiresAt"`
+		UserInfo  struct {
+			UserID    string `json:"userID"`
+			FirstName string `json:"firstName"`
+			LastName  string `json:"lastName"`
+			Email     string `json:"email"`
+		} `json:"userInfo"`
+		OrgCreated bool `json:"orgCreated"`
+	}
+
+	data.Token = token
+	data.ExpiresAt = expiresAt
+	data.UserInfo.UserID = pbutils.UUIDFromProtoOrNil(userInfo.UserID).String()
+	data.UserInfo.Email = userInfo.Email
+	data.UserInfo.FirstName = userInfo.FirstName
+	data.UserInfo.LastName = userInfo.LastName
+	data.OrgCreated = orgCreated
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

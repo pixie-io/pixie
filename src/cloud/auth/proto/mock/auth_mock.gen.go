@@ -71,6 +71,24 @@ func (mr *MockAuthServiceClientMockRecorder) Login(ctx, in interface{}, opts ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthServiceClient)(nil).Login), varargs...)
 }
 
+// Signup mocks base method
+func (m *MockAuthServiceClient) Signup(ctx context.Context, in *proto.SignupRequest, opts ...grpc.CallOption) (*proto.SignupReply, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Signup", varargs...)
+	ret0, _ := ret[0].(*proto.SignupReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Signup indicates an expected call of Signup
+func (mr *MockAuthServiceClientMockRecorder) Signup(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Signup", reflect.TypeOf((*MockAuthServiceClient)(nil).Signup), varargs...)
+}
+
 // GetAugmentedToken mocks base method
 func (m *MockAuthServiceClient) GetAugmentedToken(ctx context.Context, in *proto.GetAugmentedAuthTokenRequest, opts ...grpc.CallOption) (*proto.GetAugmentedAuthTokenResponse, error) {
 	varargs := []interface{}{ctx, in}
@@ -136,6 +154,19 @@ func (m *MockAuthServiceServer) Login(arg0 context.Context, arg1 *proto.LoginReq
 // Login indicates an expected call of Login
 func (mr *MockAuthServiceServerMockRecorder) Login(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthServiceServer)(nil).Login), arg0, arg1)
+}
+
+// Signup mocks base method
+func (m *MockAuthServiceServer) Signup(arg0 context.Context, arg1 *proto.SignupRequest) (*proto.SignupReply, error) {
+	ret := m.ctrl.Call(m, "Signup", arg0, arg1)
+	ret0, _ := ret[0].(*proto.SignupReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Signup indicates an expected call of Signup
+func (mr *MockAuthServiceServerMockRecorder) Signup(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Signup", reflect.TypeOf((*MockAuthServiceServer)(nil).Signup), arg0, arg1)
 }
 
 // GetAugmentedToken mocks base method

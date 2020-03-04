@@ -110,7 +110,6 @@ func TestServer_LoginNewUser(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.True(t, resp.UserCreated)
-	assert.False(t, resp.OrgCreated)
 	assert.Equal(t, pbutils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String(), userID)
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
@@ -148,6 +147,41 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	resp, err := doLoginRequestNoAutoCreate(getTestContext(), t, s)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
+}
+
+func TestServer_Login_MissingOrgError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		AppMetadata: nil,
+		Email:       "abc@gmail.com",
+		FirstName:   "first",
+		LastName:    "last",
+	}
+
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
+		Return(nil, errors.New("organization does not exist"))
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile, mockSiteMgr)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	resp, err := doLoginRequest(getTestContext(), t, s)
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
 }
 
 func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
@@ -358,7 +392,6 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.False(t, resp.UserCreated)
-	assert.False(t, resp.OrgCreated)
 	verifyToken(t, resp.Token, "pluserid", "plorgid", resp.ExpiresAt, "jwtkey")
 }
 
@@ -544,7 +577,7 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 	assert.Equal(t, e.Code(), codes.Unauthenticated)
 }
 
-func TestServer_Login_CreateUserOrg(t *testing.T) {
+func TestServer_Signup_ExistingOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -585,6 +618,93 @@ func TestServer_Login_CreateUserOrg(t *testing.T) {
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	mockProfile.EXPECT().
+		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
+		Return(nil, errors.New("user does not exist"))
+
+	fakeOrgInfo := &profilepb.OrgInfo{
+		ID: &uuidpb.UUID{Data: []byte(orgID)},
+	}
+
+	mockProfile.EXPECT().
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
+		Return(fakeOrgInfo, nil)
+
+	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
+		OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
+		Username:  "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
+		Email:     "abc@gmail.com",
+	}).Return(pbutils.ProtoFromUUIDStrOrNil(userID), nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile, mockSiteMgr)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	resp, err := doSignupRequest(getTestContext(), t, s)
+	assert.Nil(t, err)
+
+	// Make sure expiry time is in the future.
+	currentTime := time.Now().Unix()
+	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
+	assert.False(t, resp.OrgCreated)
+	assert.Equal(t, resp.OrgID, pbutils.ProtoFromUUIDStrOrNil(orgID))
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.Equal(t, resp.UserInfo.UserID, pbutils.ProtoFromUUIDStrOrNil(userID))
+	assert.Equal(t, resp.UserInfo.FirstName, "first")
+	assert.Equal(t, resp.UserInfo.LastName, "last")
+	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
+	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
+
+}
+
+func TestServer_Signup_CreateOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		AppMetadata: nil,
+		Email:       "abc@gmail.com",
+		FirstName:   "first",
+		LastName:    "last",
+	}
+
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+
+	// Add PL UserID to the response of the second call.
+	a.EXPECT().GetClientID().Return("foo").AnyTimes()
+
+	fakeUserInfoSecondRequest := &controllers.UserInfo{
+		AppMetadata: make(map[string]*controllers.UserMetadata),
+		Email:       "abc@gmail.com",
+		FirstName:   "first",
+		LastName:    "last",
+	}
+	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+		fakeUserInfoSecondRequest.AppMetadata["foo"] = &controllers.UserMetadata{
+			PLUserID: plid,
+			PLOrgID:  plorgid,
+		}
+	}).Return(nil)
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
+		Return(nil, errors.New("user does not exist"))
+
+	mockProfile.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(nil, errors.New("organization does not exist"))
 
@@ -611,55 +731,20 @@ func TestServer_Login_CreateUserOrg(t *testing.T) {
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	resp, err := doLoginRequestCreateOrg(getTestContext(), t, s)
+	resp, err := doSignupRequest(getTestContext(), t, s)
 	assert.Nil(t, err)
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
-	assert.True(t, resp.UserCreated)
 	assert.True(t, resp.OrgCreated)
+	assert.Equal(t, resp.OrgID, pbutils.ProtoFromUUIDStrOrNil(orgID))
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.Equal(t, resp.UserInfo.UserID, pbutils.ProtoFromUUIDStrOrNil(userID))
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
-}
-
-func TestServer_Login_MissingOrgNoAutocreateError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
-
-	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
-	}
-
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
-
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
-
-	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
-		Return(nil, errors.New("organization does not exist"))
-
-	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
-	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
-	assert.Nil(t, err)
-
-	resp, err := doLoginRequest(getTestContext(), t, s)
-	assert.Nil(t, resp)
-	assert.NotNil(t, err)
 }
 
 func TestServer_Login_CreateUserOrgFailed(t *testing.T) {
@@ -681,6 +766,10 @@ func TestServer_Login_CreateUserOrgFailed(t *testing.T) {
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
+		Return(nil, errors.New("user does not exist"))
 
 	mockProfile.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
@@ -707,7 +796,73 @@ func TestServer_Login_CreateUserOrgFailed(t *testing.T) {
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	resp, err := doLoginRequestCreateOrg(getTestContext(), t, s)
+	resp, err := doSignupRequest(getTestContext(), t, s)
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+}
+
+func TestServer_Signup_UserAlreadyExists(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		AppMetadata: nil,
+		Email:       "abc@gmail.com",
+		FirstName:   "first",
+		LastName:    "last",
+	}
+
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
+		Return(nil, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile, mockSiteMgr)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	resp, err := doSignupRequest(getTestContext(), t, s)
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+}
+
+func TestServer_Signup_MismatchedEmail(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		AppMetadata: nil,
+		Email:       "not-the-saame@gmail.com",
+		FirstName:   "first",
+		LastName:    "last",
+	}
+
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile, mockSiteMgr)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	resp, err := doSignupRequest(getTestContext(), t, s)
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 }
@@ -728,7 +883,6 @@ func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Serve
 		AccessToken:           "tokenabc",
 		SiteName:              "defg",
 		CreateUserIfNotExists: true,
-		CreateOrgIfNotExists:  false,
 	}
 	return server.Login(ctx, req)
 }
@@ -738,17 +892,14 @@ func doLoginRequestNoAutoCreate(ctx context.Context, t *testing.T, server *contr
 		AccessToken:           "tokenabc",
 		SiteName:              "defg",
 		CreateUserIfNotExists: false,
-		CreateOrgIfNotExists:  false,
 	}
 	return server.Login(ctx, req)
 }
 
-func doLoginRequestCreateOrg(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.LoginReply, error) {
-	req := &pb.LoginRequest{
-		AccessToken:           "tokenabc",
-		SiteName:              "defg",
-		CreateUserIfNotExists: true,
-		CreateOrgIfNotExists:  true,
+func doSignupRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.SignupReply, error) {
+	req := &pb.SignupRequest{
+		AccessToken: "tokenabc",
+		UserEmail:   "abc@gmail.com",
 	}
-	return server.Login(ctx, req)
+	return server.Signup(ctx, req)
 }
