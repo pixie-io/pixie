@@ -197,13 +197,6 @@ http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wr
 
   auto& stream = (*streams_deque_ptr)[index];
 
-  // TODO(yzhao): This is really tedious. But we do not want to create another bool flag inside
-  // Stream either. Investigate if there is easier way to check if creation_timestamp is initialized
-  // or not.
-  if (stream.creation_timestamp.time_since_epoch().count() == 0) {
-    stream.creation_timestamp = std::chrono::steady_clock::now();
-  }
-
   http2u::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
   return half_stream_ptr;
 }

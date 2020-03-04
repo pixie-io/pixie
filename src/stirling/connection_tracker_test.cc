@@ -6,7 +6,7 @@
 
 #include "src/common/base/test_utils.h"
 #include "src/stirling/mysql/test_utils.h"
-#include "src/stirling/testing/events_fixture.h"
+#include "src/stirling/testing/event_generator.h"
 
 namespace pl {
 namespace stirling {
@@ -27,11 +27,13 @@ using testing::kHTTPUpgradeResp;
 
 class ConnectionTrackerTest : public ::testing::Test {
  protected:
-  testing::MockClock mock_clock_;
+  testing::RealClock real_clock_;
 };
 
 TEST_F(ConnectionTrackerTest, timestamp_test) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  // Use mock clock to get precise timestamps.
+  testing::MockClock mock_clock;
+  testing::EventGenerator event_gen(&mock_clock);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> event0 = event_gen.InitSendEvent<kProtocolHTTP>("event0");
   std::unique_ptr<SocketDataEvent> event1 = event_gen.InitRecvEvent<kProtocolHTTP>("event1");
@@ -63,7 +65,7 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
 
 // This test is of marginal value. Remove if it becomes hard to maintain.
 TEST_F(ConnectionTrackerTest, info_string) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> event0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
@@ -111,7 +113,7 @@ send queue
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> resp0 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
@@ -147,7 +149,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
@@ -183,7 +185,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> resp0 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
@@ -219,7 +221,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> resp0 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
@@ -257,7 +259,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
 }
 
 TEST_F(ConnectionTrackerTest, TrackerDisable) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> resp0 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
@@ -308,7 +310,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
 }
 
 TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> resp0 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
@@ -381,7 +383,7 @@ TEST_F(ConnectionTrackerTest, stats_counter) {
 }
 
 TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   auto frame0 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
   auto frame1 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
   auto frame2 = event_gen.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
@@ -420,7 +422,7 @@ TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
 
 // TODO(yzhao): Add the same test for HTTPMessage.
 TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedUpAfterBreachingSizeLimit) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   auto frame0 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
   auto frame1 = event_gen.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
   auto frame2 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
@@ -459,7 +461,7 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedUpAfterBreachingSizeLimit) {
 }
 
 TEST_F(ConnectionTrackerTest, HTTP2FramesErasedAfterExpiration) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   auto frame0 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
   auto frame1 = event_gen.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamDataFrame);
   auto frame2 = event_gen.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
@@ -500,7 +502,7 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesErasedAfterExpiration) {
 
 TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
   // Use incomplete data to make it stuck.
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   auto data0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, 10));
   auto data1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(10, 10));
   auto data2 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPReq0.substr(20, 10));
@@ -527,7 +529,7 @@ TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
 }
 
 TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   auto frame0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   auto frame1 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
   auto frame2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
@@ -552,7 +554,7 @@ TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
 }
 
 TEST_F(ConnectionTrackerTest, MySQLMessagesErasedAfterExpiration) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   auto msg0 =
       event_gen.InitSendEvent<kProtocolMySQL>(mysql::testutils::GenRawPacket(0, "\x03SELECT"));
 
@@ -573,7 +575,7 @@ TEST_F(ConnectionTrackerTest, MySQLMessagesErasedAfterExpiration) {
 
 // Tests that tracker state is kDisabled if the remote address is in the cluster's CIDR range.
 TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   conn.open.traffic_class.role = EndpointRole::kRoleClient;
 
@@ -592,7 +594,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
 
 // Tests that client-side tracing is disabled if no cluster CIDR is specified.
 TEST_F(ConnectionTrackerTest, TrackerDisabledForClientSideTracingWithNoCIDR) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   conn.open.traffic_class.role = EndpointRole::kRoleClient;
   testing::SetIPv4RemoteAddr(&conn, "1.2.3.4");
@@ -606,7 +608,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForClientSideTracingWithNoCIDR) {
 // TODO(oazizi): Re-enable this test once the SockAddr work is complete.
 // Tests that tracker state is kDisabled if the remote address is Unix domain socket.
 TEST_F(ConnectionTrackerTest, DISABLED_TrackerDisabledForUnixDomainSocket) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   conn.open.traffic_class.role = EndpointRole::kRoleServer;
   conn.open.addr.sin6_family = AF_UNIX;
@@ -624,7 +626,7 @@ TEST_F(ConnectionTrackerTest, DISABLED_TrackerDisabledForUnixDomainSocket) {
 // Tests that tracker is disabled after mapping the addresses from IPv4 to IPv6.
 TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
   {
-    testing::EventGenerator event_gen(&mock_clock_);
+    testing::EventGenerator event_gen(&real_clock_);
     struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
     conn.open.traffic_class.role = EndpointRole::kRoleClient;
     testing::SetIPv6RemoteAddr(&conn, "::ffff:1.2.3.4");
@@ -639,7 +641,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
     EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
   }
   {
-    testing::EventGenerator event_gen(&mock_clock_);
+    testing::EventGenerator event_gen(&real_clock_);
     struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
     conn.open.traffic_class.role = EndpointRole::kRoleClient;
     testing::SetIPv4RemoteAddr(&conn, "1.2.3.4");

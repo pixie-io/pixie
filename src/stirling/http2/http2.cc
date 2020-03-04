@@ -185,7 +185,6 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame) {
               << magic_enum::enum_name(type);
       return ParseState::kIgnored;
   }
-  frame->creation_timestamp = std::chrono::steady_clock::now();
   return ParseState::kSuccess;
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <deque>
 #include <map>
 #include <memory>
@@ -178,8 +179,8 @@ class DataStream {
       http2_streams().clear();
     }
 
-    EraseExpiredFrames(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),
-                       &http2_streams());
+    EraseExpiredStreams(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),
+                        &http2_streams());
   }
 
   /**
@@ -198,26 +199,38 @@ class DataStream {
 
  private:
   template <typename TFrameType>
-  static void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TFrameType>* msgs) {
-    auto iter = msgs->begin();
-    for (; iter != msgs->end(); ++iter) {
-      auto frame_age = std::chrono::duration_cast<std::chrono::seconds>(
-          std::chrono::steady_clock::now() - iter->creation_timestamp);
+  static void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TFrameType>* frames) {
+    auto iter = frames->begin();
+    for (; iter != frames->end(); ++iter) {
+      auto frame_timestamp = std::chrono::time_point<std::chrono::steady_clock>(
+          std::chrono::nanoseconds(iter->timestamp_ns));
+      auto now = std::chrono::steady_clock::now();
+      auto frame_age = std::chrono::duration_cast<std::chrono::seconds>(now - frame_timestamp);
       // As messages are put into the list with monotonically increasing creation time stamp,
       // we can just stop at the first frame that is younger than the expiration duration.
-      //
-      // NOTE:
-      // http2u::Stream are not appended into the deque. http2u::Stream is created when the first
-      // trace event with its stream ID is received. Therefore, their timestamps depend on the
-      // order streams are initiated inside application code. As HTTP2 spec forbids reducing stream
-      // IDs, it's very unlikely that http2u::Stream would violate the above statement.
       //
       // TODO(yzhao): Benchmark with binary search and pick the faster one.
       if (frame_age < exp_dur) {
         break;
       }
     }
-    msgs->erase(msgs->begin(), iter);
+    frames->erase(frames->begin(), iter);
+  }
+
+  static void EraseExpiredStreams(std::chrono::seconds exp_dur,
+                                  std::deque<http2u::Stream>* streams) {
+    auto iter = streams->begin();
+    for (; iter != streams->end(); ++iter) {
+      uint64_t timestamp_ns = std::max(iter->send.timestamp_ns, iter->recv.timestamp_ns);
+      auto last_activity = std::chrono::time_point<std::chrono::steady_clock>(
+          std::chrono::nanoseconds(timestamp_ns));
+      auto now = std::chrono::steady_clock::now();
+      auto stream_age = std::chrono::duration_cast<std::chrono::seconds>(now - last_activity);
+      if (stream_age < exp_dur) {
+        break;
+      }
+    }
+    streams->erase(streams->begin(), iter);
   }
 
   // Helper function that appends all contiguous events to the parser.

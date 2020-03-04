@@ -15,7 +15,7 @@
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/testing/common.h"
-#include "src/stirling/testing/events_fixture.h"
+#include "src/stirling/testing/event_generator.h"
 #include "src/stirling/testing/http2_stream_generator.h"
 
 namespace pl {
@@ -62,6 +62,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
   SocketTraceConnector* source_ = nullptr;
   std::unique_ptr<ConnectorContext> ctx_;
   testing::MockClock mock_clock_;
+  testing::RealClock real_clock_;
 
   const std::string kReq0 =
       "GET /index.html HTTP/1.1\r\n"
@@ -1225,14 +1226,19 @@ Number of rows = 0)"));
 // HTTP2 specific tests
 //-----------------------------------------------------------------------------
 
+// A note about event generator clocks. Preferably, the test cases should all use MockClock,
+// so we can verify latency calculations.
+// UProbe-based HTTP2 capture, however, doesn't work with the MockClock because Cleanup() triggers
+// and removes all events. For this reason we use RealClock for these tests.
+
 TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
   DataTable data_table(kHTTPTable);
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   auto conn = event_gen.InitConn<kProtocolHTTP2Uprobe>();
 
-  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
@@ -1253,7 +1259,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
   EXPECT_EQ(record_batch[kHTTPReqMethodIdx]->Get<types::StringValue>(0), "post");
   EXPECT_EQ(record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(0), "/magic");
   EXPECT_EQ(record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(0), 200);
@@ -1270,11 +1276,11 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
 TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
   DataTable data_table(kHTTPTable);
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   auto conn = event_gen.InitConn<kProtocolHTTP2Uprobe>();
 
-  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 8);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, 8);
 
   source_->AcceptControlEvent(conn);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":method", "post"));
@@ -1295,7 +1301,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
   EXPECT_EQ(record_batch[kHTTPReqMethodIdx]->Get<types::StringValue>(0), "post");
   EXPECT_EQ(record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(0), "/magic");
   EXPECT_EQ(record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(0), 200);
@@ -1311,11 +1317,11 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
 TEST_F(SocketTraceConnectorTest, HTTP2PartialStream) {
   DataTable data_table(kHTTPTable);
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   auto conn = event_gen.InitConn<kProtocolHTTP2Uprobe>();
 
-  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   // Request headers are missing to model mid-stream capture.
@@ -1333,18 +1339,18 @@ TEST_F(SocketTraceConnectorTest, HTTP2PartialStream) {
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "uest");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 1);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
 }
 
 // This test models capturing data mid-stream, where we may have missed the request entirely.
 TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
   DataTable data_table(kHTTPTable);
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   auto conn = event_gen.InitConn<kProtocolHTTP2Uprobe>();
 
-  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   // Request missing to model mid-stream capture.
@@ -1360,18 +1366,18 @@ TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
   // TODO(oazizi): Someday we will need to capture response only streams properly.
   // In that case, we would expect certain values here.
   // EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "onse");
-  // EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), TBD);
+  // EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
 }
 
 // This test models capturing data mid-stream, where we may have missed the request entirely.
 TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   DataTable data_table(kHTTPTable);
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   auto conn = event_gen.InitConn<kProtocolHTTP2Uprobe>();
 
-  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
@@ -1399,14 +1405,14 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 5);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
 }
 
 // This test models multiple streams back-to-back.
 TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
   DataTable data_table(kHTTPTable);
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   std::vector<int> stream_ids = {7, 9, 11, 13};
 
@@ -1414,7 +1420,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
   source_->AcceptControlEvent(conn);
 
   for (auto stream_id : stream_ids) {
-    auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, stream_id);
+    testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, stream_id);
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1438,18 +1444,18 @@ TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(3), "Request13");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(3), "Response13");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 0);
 }
 
 // This test models multiple streams running in parallel.
 TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
   DataTable data_table(kHTTPTable);
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   std::vector<uint32_t> stream_ids = {7, 9, 11, 13};
   std::map<uint32_t, testing::StreamEventGenerator> frame_generators;
@@ -1459,7 +1465,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
 
   for (auto stream_id : stream_ids) {
     frame_generators.insert(
-        {stream_id, testing::StreamEventGenerator(conn.open.conn_id, stream_id)});
+        {stream_id, testing::StreamEventGenerator(&real_clock_, conn.open.conn_id, stream_id)});
   }
 
   for (auto stream_id : stream_ids) {
@@ -1504,11 +1510,11 @@ TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(3), "Request13");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(3), "Response13");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 0);
 }
 
 // This test models one stream start and ending within the span of a larger stream.
@@ -1516,14 +1522,14 @@ TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
 TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
   DataTable data_table(kHTTPTable);
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   auto conn = event_gen.InitConn<kProtocolHTTP2Uprobe>();
   source_->AcceptControlEvent(conn);
 
   uint32_t stream_id = 7;
 
-  auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, stream_id);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, stream_id);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1535,7 +1541,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
 
   {
     uint32_t stream_id2 = 9;
-    auto frame_generator2 = testing::StreamEventGenerator(conn.open.conn_id, stream_id2);
+    testing::StreamEventGenerator frame_generator2(&real_clock_, conn.open.conn_id, stream_id2);
     source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1573,18 +1579,18 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request9");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response9");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(1), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1), "Response7");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 0);
 }
 
 // This test models an old stream appearing slightly late.
 TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
   DataTable data_table(kHTTPTable);
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   std::vector<int> stream_ids = {7, 9, 5, 11};
 
@@ -1592,7 +1598,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
   source_->AcceptControlEvent(conn);
 
   for (auto stream_id : stream_ids) {
-    auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, stream_id);
+    testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, stream_id);
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1622,19 +1628,19 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request5");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response5");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(1), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1), "Response7");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 0);
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(2), "Request9");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(2), "Response9");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(2), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(2), 0);
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(3), "Request11");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(3), "Response11");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 0);
 }
 
 // This test models an old stream appearing out-of-nowhere.
@@ -1642,7 +1648,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
 TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
   DataTable data_table(kHTTPTable);
 
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   std::vector<int> stream_ids = {117, 119, 3, 121};
 
@@ -1650,7 +1656,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
   source_->AcceptControlEvent(conn);
 
   for (auto stream_id : stream_ids) {
-    auto frame_generator = testing::StreamEventGenerator(conn.open.conn_id, stream_id);
+    testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, stream_id);
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1675,19 +1681,19 @@ TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request117");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response117");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(1), "Request119");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1), "Response119");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 0);
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(2), "Request3");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(2), "Response3");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(2), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(2), 0);
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(3), "Request121");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(3), "Response121");
-  EXPECT_EQ(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 6);
+  EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(3), 0);
 }
 
 }  // namespace stirling

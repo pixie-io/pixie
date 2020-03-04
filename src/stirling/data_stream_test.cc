@@ -3,7 +3,7 @@
 #include <utility>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/testing/events_fixture.h"
+#include "src/stirling/testing/event_generator.h"
 
 namespace pl {
 namespace stirling {
@@ -17,11 +17,11 @@ using testing::kHTTPReq2;
 
 class DataStreamTest : public ::testing::Test {
  protected:
-  testing::MockClock mock_clock_;
+  testing::MockClock real_clock_;
 };
 
 TEST_F(DataStreamTest, LostEvent) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
@@ -59,7 +59,7 @@ TEST_F(DataStreamTest, LostEvent) {
 }
 
 TEST_F(DataStreamTest, StuckTemporarily) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   // First request is missing a few bytes from its start.
   std::unique_ptr<SocketDataEvent> req0a =
@@ -89,7 +89,7 @@ TEST_F(DataStreamTest, StuckTemporarily) {
 }
 
 TEST_F(DataStreamTest, StuckTooLong) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
 
   // First request is missing a few bytes from its start.
   std::unique_ptr<SocketDataEvent> req0a =
@@ -122,7 +122,7 @@ TEST_F(DataStreamTest, StuckTooLong) {
 }
 
 TEST_F(DataStreamTest, PartialMessageRecovery) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req1a =
       event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
@@ -144,7 +144,7 @@ TEST_F(DataStreamTest, PartialMessageRecovery) {
 }
 
 TEST_F(DataStreamTest, HeadAndMiddleMissing) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   std::unique_ptr<SocketDataEvent> req0b = event_gen.InitSendEvent<kProtocolHTTP>(
       kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
   std::unique_ptr<SocketDataEvent> req1a =
@@ -172,7 +172,7 @@ TEST_F(DataStreamTest, HeadAndMiddleMissing) {
 }
 
 TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   std::unique_ptr<SocketDataEvent> req0a =
       event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() / 2));
   std::unique_ptr<SocketDataEvent> req0b = event_gen.InitSendEvent<kProtocolHTTP>(
@@ -226,7 +226,7 @@ TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
 // This test checks that various stats updated on each call ProcessBytesToFrames()
 // are updated correctly.
 TEST_F(DataStreamTest, Stats) {
-  testing::EventGenerator event_gen(&mock_clock_);
+  testing::EventGenerator event_gen(&real_clock_);
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
   std::unique_ptr<SocketDataEvent> req2bad =

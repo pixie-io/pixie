@@ -2,21 +2,23 @@
 
 #include <memory>
 
+#include "src/stirling/testing/clock.h"
+
 namespace pl {
 namespace stirling {
 namespace testing {
 
 class StreamEventGenerator {
  public:
-  StreamEventGenerator(conn_id_t conn_id, uint32_t stream_id)
-      : conn_id_(conn_id), stream_id_(stream_id) {}
+  StreamEventGenerator(Clock* clock, conn_id_t conn_id, uint32_t stream_id)
+      : clock_(clock), conn_id_(conn_id), stream_id_(stream_id) {}
 
   template <DataFrameEventType TType>
   std::unique_ptr<HTTP2DataEvent> GenDataFrame(std::string_view body, bool end_stream = false) {
     auto frame = std::make_unique<HTTP2DataEvent>();
     frame->attr.conn_id = conn_id_;
     frame->attr.type = TType;
-    frame->attr.timestamp_ns = ++ts_;
+    frame->attr.timestamp_ns = clock_->now();
     frame->attr.stream_id = stream_id_;
     frame->attr.end_stream = end_stream;
     frame->attr.data_len = body.length();
@@ -29,7 +31,7 @@ class StreamEventGenerator {
     auto hdr = std::make_unique<HTTP2HeaderEvent>();
     hdr->attr.conn_id = conn_id_;
     hdr->attr.type = TType;
-    hdr->attr.timestamp_ns = ++ts_;
+    hdr->attr.timestamp_ns = clock_->now();
     hdr->attr.stream_id = stream_id_;
     hdr->attr.end_stream = false;
     hdr->name = name;
@@ -42,7 +44,7 @@ class StreamEventGenerator {
     auto hdr = std::make_unique<HTTP2HeaderEvent>();
     hdr->attr.conn_id = conn_id_;
     hdr->attr.type = TType;
-    hdr->attr.timestamp_ns = ++ts_;
+    hdr->attr.timestamp_ns = clock_->now();
     hdr->attr.stream_id = stream_id_;
     hdr->attr.end_stream = true;
     hdr->name = "";
@@ -51,10 +53,9 @@ class StreamEventGenerator {
   }
 
  private:
+  Clock* clock_;
   conn_id_t conn_id_;
   uint32_t stream_id_;
-
-  uint64_t ts_ = 0;
 };
 
 }  // namespace testing

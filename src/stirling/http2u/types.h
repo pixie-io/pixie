@@ -40,8 +40,6 @@ struct HalfStream {
 // It is split out into a send and recv. Depending on whether we are tracing the requestor
 // or the responder, send and recv contain either the request or response.
 struct Stream {
-  // The time stamp when this frame was created by socket tracer.
-  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
   HalfStream send;
   HalfStream recv;
 

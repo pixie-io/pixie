@@ -14,13 +14,18 @@ using ::testing::Pair;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-TEST(ConnectionTrackerHTTP2Test, BasicData) {
+class ConnectionTrackerHTTP2Test : public ::testing::Test {
+ protected:
+  testing::RealClock real_clock_;
+};
+
+TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
   const int kStreamID = 7;
-  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
@@ -36,13 +41,13 @@ TEST(ConnectionTrackerHTTP2Test, BasicData) {
   EXPECT_EQ(records[0].recv.data, "Response");
 }
 
-TEST(ConnectionTrackerHTTP2Test, BasicHeader) {
+TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
   const int kStreamID = 7;
-  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2HeaderEvent> header_event;
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
@@ -64,13 +69,13 @@ TEST(ConnectionTrackerHTTP2Test, BasicHeader) {
   EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
 }
 
-TEST(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
+TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
   const int kStreamID = 7;
-  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
@@ -92,13 +97,13 @@ TEST(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   EXPECT_EQ(records[0].recv.data, "Response");
 }
 
-TEST(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
+TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
   const int kStreamID = 7;
-  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
   std::unique_ptr<HTTP2HeaderEvent> header_event;
 
@@ -141,13 +146,13 @@ TEST(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
 }
 
 // This test models capturing data mid-stream, where we may have missed the request headers.
-TEST(ConnectionTrackerHTTP2Test, MidStreamCapture) {
+TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
   const int kStreamID = 7;
-  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
   std::unique_ptr<HTTP2HeaderEvent> header_event;
 
@@ -184,13 +189,13 @@ TEST(ConnectionTrackerHTTP2Test, MidStreamCapture) {
 // which is usually indicative of something erroneous.
 // With uprobes, in particular, it implies we failed to get the net.Conn data,
 // which could be because we have currently hard-coded dwarf info values.
-TEST(ConnectionTrackerHTTP2Test, ZeroFD) {
+TEST_F(ConnectionTrackerHTTP2Test, ZeroFD) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 0, .generation = 3};
   const int kStreamID = 7;
-  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
   std::unique_ptr<HTTP2HeaderEvent> header_event;
 
@@ -226,13 +231,13 @@ TEST(ConnectionTrackerHTTP2Test, ZeroFD) {
   EXPECT_TRUE(records.empty());
 }
 
-TEST(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
+TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
   const int kStreamID = 7;
-  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   auto header_event1 = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
   auto header_event2 = frame_generator.GenHeader<kHeaderEventWrite>(":scheme", "https");
   // Events with even stream IDs are put on recv_data_.
@@ -252,13 +257,13 @@ TEST(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
   EXPECT_THAT(tracker.http2_recv_streams(), ::testing::IsEmpty());
 }
 
-TEST(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
+TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
   const int kStreamID = 7;
-  auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+  auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   auto header_event1 = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
   auto header_event2 = frame_generator.GenHeader<kHeaderEventWrite>(":scheme", "https");
   // Change the second to be a different stream ID.
@@ -279,7 +284,7 @@ TEST(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   EXPECT_THAT(tracker.http2_recv_streams(), ::testing::IsEmpty());
 }
 
-TEST(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
+TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
   ConnectionTracker tracker;
 
   // The first stream is ordinary.
@@ -287,7 +292,7 @@ TEST(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
     const conn_id_t kConnID = {
         .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
     const uint32_t kStreamID = 7;
-    auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+    auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
     std::unique_ptr<HTTP2DataEvent> data_frame;
     std::unique_ptr<HTTP2HeaderEvent> header_event;
@@ -321,7 +326,7 @@ TEST(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
     const conn_id_t kConnID = {
         .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
     const uint32_t kStreamID = 100007;
-    auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+    auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
     std::unique_ptr<HTTP2DataEvent> data_frame;
     std::unique_ptr<HTTP2HeaderEvent> header_event;
@@ -360,7 +365,7 @@ TEST(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
   EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
 }
 
-TEST(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
+TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
   ConnectionTracker tracker;
 
   // The first stream is ordinary.
@@ -368,7 +373,7 @@ TEST(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
     const conn_id_t kConnID = {
         .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
     const uint32_t kStreamID = 100007;
-    auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+    auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
     std::unique_ptr<HTTP2DataEvent> data_frame;
     std::unique_ptr<HTTP2HeaderEvent> header_event;
@@ -402,7 +407,7 @@ TEST(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
     const conn_id_t kConnID = {
         .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
     const uint32_t kStreamID = 7;
-    auto frame_generator = testing::StreamEventGenerator(kConnID, kStreamID);
+    auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
     std::unique_ptr<HTTP2DataEvent> data_frame;
     std::unique_ptr<HTTP2HeaderEvent> header_event;

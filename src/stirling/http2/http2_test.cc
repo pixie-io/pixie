@@ -11,7 +11,7 @@ extern "C" {
 #include "src/common/base/status.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/http2/testing/utils.h"
-#include "src/stirling/testing/events_fixture.h"
+#include "src/stirling/testing/event_generator.h"
 
 namespace pl {
 namespace stirling {

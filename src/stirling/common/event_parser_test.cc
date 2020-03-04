@@ -6,7 +6,7 @@
 #include <deque>
 
 #include "src/stirling/common/utils.h"
-#include "src/stirling/testing/events_fixture.h"
+#include "src/stirling/testing/event_generator.h"
 
 namespace pl {
 namespace stirling {

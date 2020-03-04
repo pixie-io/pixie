@@ -21,8 +21,6 @@ namespace stirling {
 // All protocol Frames should derive off this base definition, which includes standard fields.
 struct FrameBase {
   uint64_t timestamp_ns = 0;
-  std::chrono::time_point<std::chrono::steady_clock> creation_timestamp;
-  // TODO(oazizi): Consolidate creation_timestamp with timestamp_ns.
 
   // ByteSize() is used as part of Cleanup(); used to determine how much memory a tracker is using.
   virtual size_t ByteSize() const = 0;
@@ -277,8 +275,6 @@ class EventParser {
       }
 
       if (push) {
-        // TODO(oazizi): Should this statement move into ParseFrame()?
-        frame.creation_timestamp = std::chrono::steady_clock::now();
         start_positions.push_back(bytes_processed);
         frames->push_back(std::move(frame));
       }
