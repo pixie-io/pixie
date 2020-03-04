@@ -40,7 +40,7 @@ pl_cc_test(
     name = "java_test",
     srcs = ["java_test.cc"],
     data = [
-        "//src/stirling/testing/java:hello_world",
+        "//src/stirling/testing/java:HelloWorld",
     ],
     deps = [
         ":cc_library",

@@ -39,11 +39,12 @@ TEST(StatsTest, CommoneValues) {
 }
 
 TEST(HsperfdataPathTest, ResultIsAsExpected) {
-  const std::string_view kClassPath = "src/stirling/testing/java";
-  SubProcess hello_world;
-  const auto class_path = std::filesystem::path(TestEnvironment::TestRunDir()) / kClassPath;
+  const char kClassPath[] = "src/stirling/testing/java/HelloWorld.jar";
+  const std::string class_path = TestEnvironment::PathToTestDataFile(kClassPath);
 
-  EXPECT_OK(hello_world.Start({"java", "-cp", class_path.string(), "HelloWorld"}));
+  SubProcess hello_world;
+  ASSERT_OK(hello_world.Start({"java", "-cp", class_path, "HelloWorld"}));
+
   // Give some time for the JVM process to write the data file.
   sleep(2);
 

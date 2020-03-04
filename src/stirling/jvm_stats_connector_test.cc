@@ -22,11 +22,10 @@ using ::testing::SizeIs;
 class JVMStatsConnectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    const std::string_view kClassPath = "src/stirling/testing/java";
-    const auto class_path = std::filesystem::path(TestEnvironment::TestRunDir()) / kClassPath;
+    const char kClassPath[] = "src/stirling/testing/java/HelloWorld.jar";
+    const std::string class_path = TestEnvironment::PathToTestDataFile(kClassPath);
 
-    ASSERT_OK(
-        hello_world_.Start({"java", "-cp", class_path.string(), "-Xms1m", "-Xmx4m", "HelloWorld"}));
+    ASSERT_OK(hello_world_.Start({"java", "-cp", class_path, "-Xms1m", "-Xmx4m", "HelloWorld"}));
     // Give some time for the JVM process to write the data file.
     sleep(2);
 
