@@ -4,7 +4,6 @@
 #include <gtest/gtest.h>
 
 #include "src/common/base/types.h"
-#include "src/stirling/testing/events_fixture.h"
 #include "src/stirling/testing/http2_stream_generator.h"
 
 namespace pl {
@@ -15,9 +14,7 @@ using ::testing::Pair;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-using ConnectionTrackerHTTP2Test = testing::EventsFixture;
-
-TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
+TEST(ConnectionTrackerHTTP2Test, BasicData) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
@@ -39,7 +36,7 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
   EXPECT_EQ(records[0].recv.data, "Response");
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
+TEST(ConnectionTrackerHTTP2Test, BasicHeader) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
@@ -67,7 +64,7 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
   EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
+TEST(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
@@ -95,7 +92,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   EXPECT_EQ(records[0].recv.data, "Response");
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
+TEST(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
@@ -144,7 +141,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
 }
 
 // This test models capturing data mid-stream, where we may have missed the request headers.
-TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
+TEST(ConnectionTrackerHTTP2Test, MidStreamCapture) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
@@ -187,7 +184,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
 // which is usually indicative of something erroneous.
 // With uprobes, in particular, it implies we failed to get the net.Conn data,
 // which could be because we have currently hard-coded dwarf info values.
-TEST_F(ConnectionTrackerHTTP2Test, ZeroFD) {
+TEST(ConnectionTrackerHTTP2Test, ZeroFD) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
@@ -229,7 +226,7 @@ TEST_F(ConnectionTrackerHTTP2Test, ZeroFD) {
   EXPECT_TRUE(records.empty());
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
+TEST(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
@@ -255,7 +252,7 @@ TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit)
   EXPECT_THAT(tracker.http2_recv_streams(), ::testing::IsEmpty());
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
+TEST(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
@@ -282,7 +279,7 @@ TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   EXPECT_THAT(tracker.http2_recv_streams(), ::testing::IsEmpty());
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
+TEST(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
   ConnectionTracker tracker;
 
   // The first stream is ordinary.
@@ -363,7 +360,7 @@ TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
   EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
+TEST(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
   ConnectionTracker tracker;
 
   // The first stream is ordinary.

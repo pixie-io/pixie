@@ -11,17 +11,25 @@ namespace stirling {
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 
-using DataStreamTest = testing::EventsFixture;
+using testing::kHTTPReq0;
+using testing::kHTTPReq1;
+using testing::kHTTPReq2;
+
+class DataStreamTest : public ::testing::Test {
+ protected:
+  testing::MockClock mock_clock_;
+};
 
 TEST_F(DataStreamTest, LostEvent) {
-  DataStream stream;
+  testing::EventGenerator event_gen(&mock_clock_);
+  std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req3 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req4 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req5 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
 
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req4 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req5 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  DataStream stream;
 
   // Start off with no lost events.
   stream.AddData(std::move(req0));
@@ -51,16 +59,17 @@ TEST_F(DataStreamTest, LostEvent) {
 }
 
 TEST_F(DataStreamTest, StuckTemporarily) {
-  DataStream stream;
+  testing::EventGenerator event_gen(&mock_clock_);
 
   // First request is missing a few bytes from its start.
   std::unique_ptr<SocketDataEvent> req0a =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() - 10));
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() - 10));
   std::unique_ptr<SocketDataEvent> req0b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() - 10, 10));
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() - 10, 10));
+  std::unique_ptr<SocketDataEvent> req1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq2);
 
+  DataStream stream;
   stream.AddData(std::move(req0a));
 
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
@@ -80,16 +89,17 @@ TEST_F(DataStreamTest, StuckTemporarily) {
 }
 
 TEST_F(DataStreamTest, StuckTooLong) {
-  DataStream stream;
+  testing::EventGenerator event_gen(&mock_clock_);
 
   // First request is missing a few bytes from its start.
   std::unique_ptr<SocketDataEvent> req0a =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() - 10));
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() - 10));
   std::unique_ptr<SocketDataEvent> req0b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() - 10, 10));
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() - 10, 10));
+  std::unique_ptr<SocketDataEvent> req1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq2);
 
+  DataStream stream;
   stream.AddData(std::move(req0a));
 
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
@@ -112,15 +122,15 @@ TEST_F(DataStreamTest, StuckTooLong) {
 }
 
 TEST_F(DataStreamTest, PartialMessageRecovery) {
-  DataStream stream;
-
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  testing::EventGenerator event_gen(&mock_clock_);
+  std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req1a =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
-  std::unique_ptr<SocketDataEvent> req1b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent<kProtocolHTTP>(kHTTPReq2);
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
+  std::unique_ptr<SocketDataEvent> req1b = event_gen.InitSendEvent<kProtocolHTTP>(
+      kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
+  std::unique_ptr<SocketDataEvent> req2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq2);
 
+  DataStream stream;
   stream.AddData(std::move(req0));
   stream.AddData(std::move(req1a));
   PL_UNUSED(req1b);  // Missing event.
@@ -134,19 +144,19 @@ TEST_F(DataStreamTest, PartialMessageRecovery) {
 }
 
 TEST_F(DataStreamTest, HeadAndMiddleMissing) {
-  DataStream stream;
-
-  std::unique_ptr<SocketDataEvent> req0b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
+  testing::EventGenerator event_gen(&mock_clock_);
+  std::unique_ptr<SocketDataEvent> req0b = event_gen.InitSendEvent<kProtocolHTTP>(
+      kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
   std::unique_ptr<SocketDataEvent> req1a =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
-  std::unique_ptr<SocketDataEvent> req1b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
+  std::unique_ptr<SocketDataEvent> req1b = event_gen.InitSendEvent<kProtocolHTTP>(
+      kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
   std::unique_ptr<SocketDataEvent> req2a =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(0, kHTTPReq2.length() / 2));
-  std::unique_ptr<SocketDataEvent> req2b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(kHTTPReq2.length() / 2, kHTTPReq2.length()));
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(0, kHTTPReq2.length() / 2));
+  std::unique_ptr<SocketDataEvent> req2b = event_gen.InitSendEvent<kProtocolHTTP>(
+      kHTTPReq2.substr(kHTTPReq2.length() / 2, kHTTPReq2.length()));
 
+  DataStream stream;
   stream.AddData(std::move(req0b));
   stream.AddData(std::move(req1a));
   PL_UNUSED(req1b);  // Missing event.
@@ -162,29 +172,29 @@ TEST_F(DataStreamTest, HeadAndMiddleMissing) {
 }
 
 TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
-  DataStream stream;
-
+  testing::EventGenerator event_gen(&mock_clock_);
   std::unique_ptr<SocketDataEvent> req0a =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() / 2));
-  std::unique_ptr<SocketDataEvent> req0b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() / 2));
+  std::unique_ptr<SocketDataEvent> req0b = event_gen.InitSendEvent<kProtocolHTTP>(
+      kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
   std::unique_ptr<SocketDataEvent> req1a =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
-  std::unique_ptr<SocketDataEvent> req1b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
+  std::unique_ptr<SocketDataEvent> req1b = event_gen.InitSendEvent<kProtocolHTTP>(
+      kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
   std::unique_ptr<SocketDataEvent> req2a =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(0, kHTTPReq2.length() / 2));
-  std::unique_ptr<SocketDataEvent> req2b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(kHTTPReq2.length() / 2, kHTTPReq2.length()));
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq2.substr(0, kHTTPReq2.length() / 2));
+  std::unique_ptr<SocketDataEvent> req2b = event_gen.InitSendEvent<kProtocolHTTP>(
+      kHTTPReq2.substr(kHTTPReq2.length() / 2, kHTTPReq2.length()));
   std::unique_ptr<SocketDataEvent> req3a =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() / 2));
-  std::unique_ptr<SocketDataEvent> req3b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, kHTTPReq0.length() / 2));
+  std::unique_ptr<SocketDataEvent> req3b = event_gen.InitSendEvent<kProtocolHTTP>(
+      kHTTPReq0.substr(kHTTPReq0.length() / 2, kHTTPReq0.length()));
   std::unique_ptr<SocketDataEvent> req4a =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
-  std::unique_ptr<SocketDataEvent> req4b =
-      InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
+      event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1.substr(0, kHTTPReq1.length() / 2));
+  std::unique_ptr<SocketDataEvent> req4b = event_gen.InitSendEvent<kProtocolHTTP>(
+      kHTTPReq1.substr(kHTTPReq1.length() / 2, kHTTPReq1.length()));
 
+  DataStream stream;
   stream.AddData(std::move(req0a));
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
   ASSERT_THAT(stream.Frames<http::Message>(), IsEmpty());
@@ -216,19 +226,19 @@ TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
 // This test checks that various stats updated on each call ProcessBytesToFrames()
 // are updated correctly.
 TEST_F(DataStreamTest, Stats) {
-  DataStream stream;
-
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  testing::EventGenerator event_gen(&mock_clock_);
+  std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
   std::unique_ptr<SocketDataEvent> req2bad =
-      InitSendEvent<kProtocolHTTP>("This is not a valid HTTP message");
-  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent<kProtocolHTTP>(kHTTPReq0);
-  std::unique_ptr<SocketDataEvent> req4 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
-  std::unique_ptr<SocketDataEvent> req5 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+      event_gen.InitSendEvent<kProtocolHTTP>("This is not a valid HTTP message");
+  std::unique_ptr<SocketDataEvent> req3 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req4 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req5 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
   std::unique_ptr<SocketDataEvent> req6bad =
-      InitSendEvent<kProtocolHTTP>("Another malformed message");
-  std::unique_ptr<SocketDataEvent> req7 = InitSendEvent<kProtocolHTTP>(kHTTPReq1);
+      event_gen.InitSendEvent<kProtocolHTTP>("Another malformed message");
+  std::unique_ptr<SocketDataEvent> req7 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq1);
 
+  DataStream stream;
   stream.AddData(std::move(req0));
   stream.AddData(std::move(req1));
   stream.AddData(std::move(req2bad));
@@ -261,6 +271,7 @@ TEST_F(DataStreamTest, Stats) {
 
 TEST_F(DataStreamTest, CannotSwitchType) {
   DataStream stream;
+
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
 
 #if DCHECK_IS_ON()
