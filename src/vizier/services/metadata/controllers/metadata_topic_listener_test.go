@@ -13,10 +13,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 
+	// protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 )
 
 func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
@@ -24,6 +24,9 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	mockMdStore.
+		EXPECT().
+		UpdateSubscriberResourceVersion("cloud", "")
 	mockMdStore.
 		EXPECT().
 		UpdatePod(gomock.Any(), false).
@@ -43,12 +46,6 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 		updates = append(updates, b)
 		return nil
 	})
-
-	// Send update to metadata handler and check that the update is sent to the metadata topic listener.
-	expectedPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(testutils.PodPbWithContainers, expectedPb); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
 
 	// Create pod object.
 	ownerRefs := make([]metav1.OwnerReference, 1)
@@ -93,7 +90,7 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 	ch <- updateMsg
 
 	update := &metadatapb.ResourceUpdate{
-		ResourceVersion: "1",
+		ResourceVersion: "1_0",
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
 			PodUpdate: &metadatapb.PodUpdate{
 				UID:              "ijkl",
@@ -111,15 +108,11 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 
 	mockMdStore.
 		EXPECT().
-		AddResourceVersion("1", update).
-		Return(nil)
-	mockMdStore.
-		EXPECT().
 		GetSubscriberResourceVersion("cloud").
 		Return("0", nil)
 	mockMdStore.
 		EXPECT().
-		UpdateSubscriberResourceVersion("cloud", "1")
+		UpdateSubscriberResourceVersion("cloud", "1_0")
 
 	more := mdh.ProcessNextSubscriberUpdate()
 	assert.Equal(t, true, more)
@@ -141,12 +134,15 @@ func TestMetadataTopicListener_HandleMessage(t *testing.T) {
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 	mockMdStore.
 		EXPECT().
-		GetMetadataUpdatesForSubscriber("cloud", "", "5").
+		GetMetadataUpdatesForHostname("", "", "5").
 		Return([]*metadatapb.ResourceUpdate{
 			&metadatapb.ResourceUpdate{ResourceVersion: "1"},
 			&metadatapb.ResourceUpdate{ResourceVersion: "2"},
 			&metadatapb.ResourceUpdate{ResourceVersion: "3"},
 		}, nil)
+	mockMdStore.
+		EXPECT().
+		UpdateSubscriberResourceVersion("cloud", "")
 	isLeader := true
 	mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader)
 	updates := make([][]byte, 0)
@@ -161,11 +157,16 @@ func TestMetadataTopicListener_HandleMessage(t *testing.T) {
 		From: "",
 		To:   "5",
 	}
-	reqPb, err := req.Marshal()
+	reqAnyMsg, err := types.MarshalAny(&req)
+	assert.Nil(t, err)
+	wrappedReq := cvmsgspb.C2VMessage{
+		Msg: reqAnyMsg,
+	}
+	b, err := wrappedReq.Marshal()
 	assert.Nil(t, err)
 
 	msg := nats.Msg{}
-	msg.Data = reqPb
+	msg.Data = b
 	err = mdl.HandleMessage(&msg)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(updates))

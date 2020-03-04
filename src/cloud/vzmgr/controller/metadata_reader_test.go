@@ -76,6 +76,30 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			expectedMetadataUpdates: []*metadatapb.ResourceUpdate{},
 			endingRV:                "12",
 		},
+		{
+			name:                  "beginningUpdate",
+			startingRV:            "12",
+			updatePrevRV:          "",
+			updateRV:              "17",
+			expectMetadataRequest: true,
+			metadataRequestFrom:   "12",
+			metadataRequestTo:     "17",
+			metadataResponse: &cvmsgspb.MetadataResponse{
+				Updates: []*metadatapb.ResourceUpdate{
+					&metadatapb.ResourceUpdate{ResourceVersion: "12", PrevResourceVersion: "11"},
+					&metadatapb.ResourceUpdate{ResourceVersion: "13", PrevResourceVersion: "12"},
+					&metadatapb.ResourceUpdate{ResourceVersion: "15", PrevResourceVersion: "13"},
+					&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
+				},
+			},
+			expectedMetadataUpdates: []*metadatapb.ResourceUpdate{
+				&metadatapb.ResourceUpdate{ResourceVersion: "13", PrevResourceVersion: "12"},
+				&metadatapb.ResourceUpdate{ResourceVersion: "15", PrevResourceVersion: "13"},
+				&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
+				&metadatapb.ResourceUpdate{ResourceVersion: "17", PrevResourceVersion: ""},
+			},
+			endingRV: "17",
+		},
 	}
 
 	for _, test := range tests {
@@ -153,15 +177,13 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 
 			if len(test.expectedMetadataUpdates) > 0 {
 				numUpdates := 0
-				prev := test.startingRV
 				for numUpdates < len(test.expectedMetadataUpdates) {
 					select {
 					case idxMessage := <-idxCh:
 						u := &metadatapb.ResourceUpdate{}
 						err := proto.Unmarshal(idxMessage.Data, u)
 						assert.Nil(t, err)
-						assert.Equal(t, prev, u.PrevResourceVersion)
-						prev = u.ResourceVersion
+						assert.Equal(t, test.expectedMetadataUpdates[numUpdates].PrevResourceVersion, u.PrevResourceVersion)
 						numUpdates++
 					case <-time.After(2 * time.Second):
 						t.Fatal("Timed out")

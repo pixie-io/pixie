@@ -10,6 +10,15 @@ import "src/shared/types/proto/types.proto";
 // github.com/kubernetes/apimachinery/blob/bca0c154df821d07920394c2d6831112dc1bcdec/pkg/apis/meta/v1/generated.proto
 // with some modifications, such as deletion of unnecessary fields and field re-naming.
 
+message MetadataObject {
+  oneof object {
+    Pod pod = 1;
+    Endpoints endpoints = 2;
+    Service service = 3;
+    Namespace namespace = 4;
+  }
+}
+
 message ObjectMetadata {
   // Name of the resource.
   string name = 1;

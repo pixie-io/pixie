@@ -402,7 +402,7 @@ func (mr *MockMetadataStoreMockRecorder) GetMetadataUpdates(hostname interface{}
 }
 
 // AddResourceVersion mocks base method
-func (m *MockMetadataStore) AddResourceVersion(arg0 string, arg1 *metadatapb.ResourceUpdate) error {
+func (m *MockMetadataStore) AddResourceVersion(arg0 string, arg1 *metadatapb.MetadataObject) error {
 	ret := m.ctrl.Call(m, "AddResourceVersion", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -438,17 +438,17 @@ func (mr *MockMetadataStoreMockRecorder) GetSubscriberResourceVersion(arg0 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriberResourceVersion", reflect.TypeOf((*MockMetadataStore)(nil).GetSubscriberResourceVersion), arg0)
 }
 
-// GetMetadataUpdatesForSubscriber mocks base method
-func (m *MockMetadataStore) GetMetadataUpdatesForSubscriber(arg0, arg1, arg2 string) ([]*metadatapb.ResourceUpdate, error) {
-	ret := m.ctrl.Call(m, "GetMetadataUpdatesForSubscriber", arg0, arg1, arg2)
+// GetMetadataUpdatesForHostname mocks base method
+func (m *MockMetadataStore) GetMetadataUpdatesForHostname(arg0, arg1, arg2 string) ([]*metadatapb.ResourceUpdate, error) {
+	ret := m.ctrl.Call(m, "GetMetadataUpdatesForHostname", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]*metadatapb.ResourceUpdate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetMetadataUpdatesForSubscriber indicates an expected call of GetMetadataUpdatesForSubscriber
-func (mr *MockMetadataStoreMockRecorder) GetMetadataUpdatesForSubscriber(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadataUpdatesForSubscriber", reflect.TypeOf((*MockMetadataStore)(nil).GetMetadataUpdatesForSubscriber), arg0, arg1, arg2)
+// GetMetadataUpdatesForHostname indicates an expected call of GetMetadataUpdatesForHostname
+func (mr *MockMetadataStoreMockRecorder) GetMetadataUpdatesForHostname(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadataUpdatesForHostname", reflect.TypeOf((*MockMetadataStore)(nil).GetMetadataUpdatesForHostname), arg0, arg1, arg2)
 }
 
 // MockMetadataSubscriber is a mock of MetadataSubscriber interface

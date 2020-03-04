@@ -35,6 +35,8 @@ func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler,
 		mh:          mdHandler,
 	}
 
+	m.mds.UpdateSubscriberResourceVersion(subscriberName, "")
+
 	// Subscribe to metadata updates.
 	mdHandler.AddSubscriber(m)
 
@@ -43,13 +45,20 @@ func NewMetadataTopicListener(mdStore MetadataStore, mdHandler *MetadataHandler,
 
 // HandleMessage handles a message on the agent topic.
 func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
-	pb := &cvmsgspb.MetadataRequest{}
-	err := proto.Unmarshal(msg.Data, pb)
+	c2vMsg := &cvmsgspb.C2VMessage{}
+	err := proto.Unmarshal(msg.Data, c2vMsg)
 	if err != nil {
 		return err
 	}
 
-	updates, err := m.mds.GetMetadataUpdatesForSubscriber(subscriberName, pb.From, pb.To)
+	pb := &cvmsgspb.MetadataRequest{}
+	err = types.UnmarshalAny(c2vMsg.Msg, pb)
+	if err != nil {
+		log.WithError(err).Error("Could not unmarshal metadata req message")
+		return err
+	}
+
+	updates, err := m.mds.GetMetadataUpdatesForHostname("", pb.From, pb.To)
 	if err != nil {
 		return err
 	}

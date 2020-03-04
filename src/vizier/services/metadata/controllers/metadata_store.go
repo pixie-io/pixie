@@ -200,10 +200,6 @@ func getSubscriberResourceVersionKey(sub string) string {
 	return path.Join("/", "subscriber", "resourceVersion", sub)
 }
 
-func getSubscriberPreviousResourceVersionKey(sub string, rv string) string {
-	return path.Join("/", "subscriber", sub, "prevRV", rv)
-}
-
 /* =============== Agent Operations ============== */
 
 // GetAgent gets the agent info for the agent with the given id.
@@ -550,6 +546,18 @@ func (mds *KVMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
 		mds.cache.Set(key, string(val))
 	}
 
+	// Add mapping from resource version -> pod.
+	rvUpdate := &metadatapb.MetadataObject{
+		Object: &metadatapb.MetadataObject_Pod{
+			Pod: p,
+		},
+	}
+	val, err = rvUpdate.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal rv pb")
+	}
+	mds.cache.Set(getResourceVersionMapKey(p.Metadata.ResourceVersion), string(val))
+
 	return nil
 }
 
@@ -707,6 +715,18 @@ func (mds *KVMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints, deleted boo
 		mds.cache.Set(mapKey, mapVal)
 	}
 
+	// Add mapping from resource version -> endpoint.
+	rvUpdate := &metadatapb.MetadataObject{
+		Object: &metadatapb.MetadataObject_Endpoints{
+			Endpoints: e,
+		},
+	}
+	val, err = rvUpdate.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal rv pb")
+	}
+	mds.cache.Set(getResourceVersionMapKey(e.Metadata.ResourceVersion), string(val))
+
 	return nil
 }
 
@@ -769,6 +789,19 @@ func (mds *KVMetadataStore) UpdateService(s *metadatapb.Service, deleted bool) e
 	} else {
 		mds.cache.Set(key, string(val))
 	}
+
+	// Add mapping from resource version -> service.
+	rvUpdate := &metadatapb.MetadataObject{
+		Object: &metadatapb.MetadataObject_Service{
+			Service: s,
+		},
+	}
+	val, err = rvUpdate.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal rv pb")
+	}
+	mds.cache.Set(getResourceVersionMapKey(s.Metadata.ResourceVersion), string(val))
+
 	return nil
 }
 
@@ -808,6 +841,19 @@ func (mds *KVMetadataStore) UpdateNamespace(s *metadatapb.Namespace, deleted boo
 	} else {
 		mds.cache.Set(key, string(val))
 	}
+
+	// Add mapping from resource version -> namespace.
+	rvUpdate := &metadatapb.MetadataObject{
+		Object: &metadatapb.MetadataObject_Namespace{
+			Namespace: s,
+		},
+	}
+	val, err = rvUpdate.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal rv pb")
+	}
+	mds.cache.Set(getResourceVersionMapKey(s.Metadata.ResourceVersion), string(val))
+
 	return nil
 }
 
@@ -853,38 +899,45 @@ func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.R
 	return updates, nil
 }
 
-// GetMetadataUpdatesForSubscriber get the metadata updates that should be sent to the subscriber in the given range.
-func (mds *KVMetadataStore) GetMetadataUpdatesForSubscriber(sub string, from string, to string) ([]*metadatapb.ResourceUpdate, error) {
-	// Get all resource versions + prev resource versions within range.
-	keys, vals, err := mds.cache.GetWithRange(getSubscriberPreviousResourceVersionKey(sub, from), getSubscriberPreviousResourceVersionKey(sub, to))
-	if err != nil {
-		return nil, err
-	}
+// GetMetadataUpdatesForHostname get the metadata updates that should be sent to the hostname in the given range.
+func (mds *KVMetadataStore) GetMetadataUpdatesForHostname(hostname string, from string, to string) ([]*metadatapb.ResourceUpdate, error) {
+	// To/From can be of the format <resource_version>_<number> for pods/container updates. We want to parse the from into just <resource_version>.
+	from = strings.Split(from, "_")[0]
 
-	// Fetch updates for the subscriber's resource versions.
-	updateKeys := make([]string, len(keys))
-	for i, k := range keys {
-		splitKey := strings.Split(k, "/")
-		rv := splitKey[len(splitKey)-1]
-		updateKeys[i] = getResourceVersionMapKey(rv)
-	}
-	updates, err := mds.cache.GetAll(updateKeys)
+	// Get all updates within range.
+	_, vals, err := mds.cache.GetWithRange(getResourceVersionMapKey(from), getResourceVersionMapKey(to))
 	if err != nil {
 		return nil, err
 	}
 
 	updatePbs := make([]*metadatapb.ResourceUpdate, 0)
-	for i, u := range updates {
-		if u == nil {
-			continue
-		}
-		uPb := &metadatapb.ResourceUpdate{}
-		err = proto.Unmarshal(u, uPb)
+	for _, v := range vals {
+		obj := &metadatapb.MetadataObject{}
+		err = proto.Unmarshal(v, obj)
 		if err != nil {
+			log.WithError(err).Error("Could not unmarshal resource update")
+			// We used to store the values in this map as a ResourceUpdate rather than a K8s object, so we probably fetched
+			// some data in the old format.
 			continue
 		}
-		uPb.PrevResourceVersion = string(vals[i])
-		updatePbs = append(updatePbs, uPb)
+
+		switch m := obj.Object.(type) {
+		case *metadatapb.MetadataObject_Pod:
+			if hostname != "" && m.Pod.Spec.NodeName != hostname {
+				continue
+			}
+			updatePbs = append(updatePbs, GetContainerResourceUpdatesFromPod(m.Pod)...)
+			updatePbs = append(updatePbs, GetResourceUpdateFromPod(m.Pod))
+		case *metadatapb.MetadataObject_Endpoints:
+			updatePbs = append(updatePbs, GetNodeResourceUpdateFromEndpoints(m.Endpoints, hostname))
+		case *metadatapb.MetadataObject_Service:
+			// We currently don't send updates for services. They are covered by endpoints.
+			continue
+		case *metadatapb.MetadataObject_Namespace:
+			updatePbs = append(updatePbs, GetResourceUpdateFromNamespace(m.Namespace))
+		default:
+			log.Info("Got unknown K8s object")
+		}
 	}
 
 	return updatePbs, nil
@@ -893,7 +946,7 @@ func (mds *KVMetadataStore) GetMetadataUpdatesForSubscriber(sub string, from str
 /* =============== Resource Versions ============== */
 
 // AddResourceVersion creates a mapping from a resourceVersion to the update for that resource.
-func (mds *KVMetadataStore) AddResourceVersion(rv string, update *metadatapb.ResourceUpdate) error {
+func (mds *KVMetadataStore) AddResourceVersion(rv string, update *metadatapb.MetadataObject) error {
 	val, err := update.Marshal()
 	if err != nil {
 		return err
@@ -905,14 +958,6 @@ func (mds *KVMetadataStore) AddResourceVersion(rv string, update *metadatapb.Res
 
 // UpdateSubscriberResourceVersion updates the last resource version processed by a subscriber.
 func (mds *KVMetadataStore) UpdateSubscriberResourceVersion(sub string, rv string) error {
-	// Set the previous resource version.
-	oldRv, err := mds.GetSubscriberResourceVersion(sub)
-	if err != nil {
-		return err
-	}
-
-	// Set the oldRv as the previous resource version for the new resource version.
-	mds.cache.Set(getSubscriberPreviousResourceVersionKey(sub, rv), oldRv)
 	mds.cache.Set(getSubscriberResourceVersionKey(sub), rv)
 	return nil
 }

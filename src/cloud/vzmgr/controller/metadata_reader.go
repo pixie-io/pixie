@@ -210,13 +210,9 @@ func (m *MetadataReader) processVizierUpdate(msg *stan.Msg, vzState *VizierState
 	}
 	update := updateMsg.Update
 
-	if update.PrevResourceVersion == vzState.resourceVersion {
-		// Update is in correct order, so send off the update.
-		err := m.applyMetadataUpdates(vzState, []*metadatapb.ResourceUpdate{update})
-		if err != nil {
-			return err
-		}
-	} else if update.PrevResourceVersion > vzState.resourceVersion {
+	if update.PrevResourceVersion == "" || update.PrevResourceVersion > vzState.resourceVersion {
+		// If update.PrevResourceVersion == "", we just received an update from a vizier which has just
+		// started up. We will need to fetch all updates from vzState.resourceVersion to the update's resourceVersion.
 		// We received an update later than we one we need next. Send out a request for the missing updates.
 		updatesMsg, err := m.getMissingUpdates(vzState.resourceVersion, update.ResourceVersion, vzState)
 		if err != nil {
@@ -233,11 +229,17 @@ func (m *MetadataReader) processVizierUpdate(msg *stan.Msg, vzState *VizierState
 		if err != nil {
 			return err
 		}
+	} else if update.PrevResourceVersion == vzState.resourceVersion {
+		// Update is in correct order, so send off the update.
+		err := m.applyMetadataUpdates(vzState, []*metadatapb.ResourceUpdate{update})
+		if err != nil {
+			return err
+		}
 	}
 
 	// It's possible that we've missed the message's 30-second ACK timeline, if it took a while to receive
 	// missing metadata updates. This message will be sent back on STAN for reprocessing, but we will
-	// ignore it since the ResourceVersion will be less than the current resource version.
+	// ignore it since the ResourceVersion will be less than the current resource
 	msg.Ack()
 	return nil
 }

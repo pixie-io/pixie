@@ -532,6 +532,12 @@ func TestKVMetadataStore_UpdatePod(t *testing.T) {
 
 	assert.Equal(t, expectedPb, pb)
 
+	resp, err = c.Get("/resourceVersionUpdate/1")
+	assert.Nil(t, err)
+	rvPb := &metadatapb.MetadataObject{}
+	proto.Unmarshal(resp, rvPb)
+	assert.Equal(t, "ijkl", rvPb.GetPod().Metadata.UID)
+
 	// Test that deletion timestamp gets set.
 	err = mds.UpdatePod(expectedPb, true)
 	if err != nil {
@@ -905,6 +911,12 @@ func TestKVMetadataStore_UpdateEndpoints(t *testing.T) {
 	proto.Unmarshal(resp, pb)
 	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
 
+	resp, err = c.Get("/resourceVersionUpdate/1")
+	assert.Nil(t, err)
+	rvPb := &metadatapb.MetadataObject{}
+	proto.Unmarshal(resp, rvPb)
+	assert.Equal(t, "ijkl", rvPb.GetEndpoints().Metadata.UID)
+
 	// Test that deletion timestamp is not set again if it is already set.
 	expectedPb.Metadata.DeletionTimestampNS = 10
 	err = mds.UpdateEndpoints(expectedPb, true)
@@ -1002,6 +1014,12 @@ func TestKVMetadataStore_UpdateService(t *testing.T) {
 	proto.Unmarshal(resp, pb)
 
 	assert.Equal(t, expectedPb, pb)
+
+	resp, err = c.Get("/resourceVersionUpdate/1")
+	assert.Nil(t, err)
+	rvPb := &metadatapb.MetadataObject{}
+	proto.Unmarshal(resp, rvPb)
+	assert.Equal(t, "ijkl", rvPb.GetService().Metadata.UID)
 
 	// Test that deletion timestamp gets set.
 	err = mds.UpdateService(expectedPb, true)
@@ -1201,9 +1219,10 @@ func TestKVMetadataStore_UpdateNamespace(t *testing.T) {
 
 	expectedPb := &metadatapb.Namespace{
 		Metadata: &metadatapb.ObjectMetadata{
-			Name:      "efgh",
-			Namespace: "efgh",
-			UID:       "1234",
+			Name:            "efgh",
+			Namespace:       "efgh",
+			UID:             "1234",
+			ResourceVersion: "1",
 		},
 	}
 
@@ -1220,6 +1239,12 @@ func TestKVMetadataStore_UpdateNamespace(t *testing.T) {
 	proto.Unmarshal(resp, pb)
 
 	assert.Equal(t, expectedPb, pb)
+
+	resp, err = c.Get("/resourceVersionUpdate/1")
+	assert.Nil(t, err)
+	rvPb := &metadatapb.MetadataObject{}
+	proto.Unmarshal(resp, rvPb)
+	assert.Equal(t, "1234", rvPb.GetNamespace().Metadata.UID)
 }
 
 func TestKVMetadataStore_GetAgents(t *testing.T) {
@@ -1331,24 +1356,20 @@ func TestKVMetadataStore_AddResourceVersion(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	updatePb := &metadatapb.ResourceUpdate{
-		ResourceVersion: "1",
-		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
-			ServiceUpdate: &metadatapb.ServiceUpdate{
-				UID:              "ijkl",
-				Name:             "object_md",
-				Namespace:        "a_namespace",
-				StartTimestampNS: 4,
-				StopTimestampNS:  6,
-				PodIDs:           []string{"abcd", "efgh"},
-			},
-		},
+	expectedPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PodPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	b, err := updatePb.Marshal()
+	obj := &metadatapb.MetadataObject{
+		Object: &metadatapb.MetadataObject_Pod{
+			Pod: expectedPb,
+		},
+	}
+	b, err := obj.Marshal()
 	assert.Nil(t, err)
 
-	err = mds.AddResourceVersion("1234", updatePb)
+	err = mds.AddResourceVersion("1234", obj)
 	assert.Nil(t, err)
 
 	rvUpdate, _ := c.Get("/resourceVersionUpdate/1234")
@@ -1359,10 +1380,6 @@ func TestKVMetadataStore_UpdateSubscriberResourceVersion(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-	mockDs.
-		EXPECT().
-		Get("/subscriber/resourceVersion/cloud").
-		Return([]byte("1230"), nil)
 
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
@@ -1376,22 +1393,20 @@ func TestKVMetadataStore_UpdateSubscriberResourceVersion(t *testing.T) {
 	rv, _ := c.Get("/subscriber/resourceVersion/cloud")
 	assert.Equal(t, "1234", string(rv))
 
-	rv, _ = c.Get("/subscriber/cloud/prevRV/1234")
-	assert.Equal(t, "1230", string(rv))
-
 	rv2, err := mds.GetSubscriberResourceVersion("cloud")
 	assert.Nil(t, err)
 	assert.Equal(t, "1234", rv2)
 }
 
-func TestKVMetadataStore_GetMetadataUpdatesForSubscriber(t *testing.T) {
+func TestKVMetadataStore_GetMetadataUpdatesForHostname(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
 	mockDs.
 		EXPECT().
-		GetWithRange("/subscriber/cloud/prevRV", "/subscriber/cloud/prevRV/6").
-		Return(nil, nil, nil)
+		GetWithRange("/resourceVersionUpdate", "/resourceVersionUpdate/6").
+		Return(nil, nil, nil).
+		AnyTimes()
 
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
@@ -1399,55 +1414,59 @@ func TestKVMetadataStore_GetMetadataUpdatesForSubscriber(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	// Set up previous resource version mapping.
-	c.Set("/subscriber/cloud/prevRV/1", "")
-	c.Set("/subscriber/cloud/prevRV/3", "1")
-	c.Set("/subscriber/cloud/prevRV/6", "3")
-
 	// Set up resource version -> update mapping.
-	updatePb1 := &metadatapb.ResourceUpdate{
-		ResourceVersion: "1",
-		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
-			ServiceUpdate: &metadatapb.ServiceUpdate{
-				UID: "ijkl",
-			},
+	ep1 := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(testutils.EndpointsPb, ep1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	ep1.Metadata.ResourceVersion = "1"
+	rv1 := &metadatapb.MetadataObject{
+		Object: &metadatapb.MetadataObject_Endpoints{
+			Endpoints: ep1,
 		},
 	}
-	up1, err := updatePb1.Marshal()
+	ep1Bytes, err := rv1.Marshal()
 	assert.Nil(t, err)
 
-	updatePb2 := &metadatapb.ResourceUpdate{
-		ResourceVersion: "3",
-		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
-			ServiceUpdate: &metadatapb.ServiceUpdate{
-				UID: "abcd",
-			},
+	s := &metadatapb.Service{}
+	if err := proto.UnmarshalText(testutils.ServicePb, s); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	s.Metadata.ResourceVersion = "3"
+	rv2 := &metadatapb.MetadataObject{
+		Object: &metadatapb.MetadataObject_Service{
+			Service: s,
 		},
 	}
-	up2, err := updatePb2.Marshal()
+	sBytes, err := rv2.Marshal()
 	assert.Nil(t, err)
 
-	updatePb3 := &metadatapb.ResourceUpdate{
-		ResourceVersion: "6",
-		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
-			ServiceUpdate: &metadatapb.ServiceUpdate{
-				UID: "efgh",
-			},
+	p := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, p); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	p.Metadata.ResourceVersion = "5"
+	rv3 := &metadatapb.MetadataObject{
+		Object: &metadatapb.MetadataObject_Pod{
+			Pod: p,
 		},
 	}
-	up3, err := updatePb3.Marshal()
+	pBytes, err := rv3.Marshal()
 	assert.Nil(t, err)
 
-	c.Set("/resourceVersionUpdate/1", string(up1))
-	c.Set("/resourceVersionUpdate/3", string(up2))
-	c.Set("/resourceVersionUpdate/6", string(up3))
+	c.Set("/resourceVersionUpdate/1", string(ep1Bytes))
+	c.Set("/resourceVersionUpdate/3", string(sBytes))
+	c.Set("/resourceVersionUpdate/5", string(pBytes))
 
-	updates, err := mds.GetMetadataUpdatesForSubscriber("cloud", "", "6")
-	assert.Equal(t, 2, len(updates))
+	updates, err := mds.GetMetadataUpdatesForHostname("", "", "6")
+	assert.Equal(t, 3, len(updates))
 	assert.Equal(t, "1", updates[0].ResourceVersion)
-	assert.Equal(t, "", updates[0].PrevResourceVersion)
-	assert.Equal(t, "3", updates[1].ResourceVersion)
-	assert.Equal(t, "1", updates[1].PrevResourceVersion)
+	assert.Equal(t, "5_0", updates[1].ResourceVersion)
+	assert.Equal(t, "5_1", updates[2].ResourceVersion)
+
+	updates, err = mds.GetMetadataUpdatesForHostname("host", "", "6")
+	assert.Equal(t, 1, len(updates))
+	assert.Equal(t, "1", updates[0].ResourceVersion)
 }
 
 func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
