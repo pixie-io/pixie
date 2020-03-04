@@ -9,6 +9,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/shared/services:go_default_library",
+        "//src/shared/services/election:go_default_library",
         "//src/shared/services/env:go_default_library",
         "//src/shared/services/healthz:go_default_library",
         "//src/shared/services/httpmiddleware:go_default_library",

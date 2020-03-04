@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/election"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
@@ -22,6 +23,8 @@ func init() {
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
 	pflag.String("certmgr_service", "vizier-certmgr.pl.svc:50900", "The cert manager service url (load balancer/list is ok)")
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
+	pflag.Float64("leader_election_retry_wait", 5, "Time in seconds to wait betweeen leader election checks")
+	pflag.String("pod_namespace", "pl", "The namespace this pod runs in. Used for leader elections")
 }
 
 // NewCertMgrServiceClient creates a new cert mgr RPC client stub.
@@ -88,10 +91,16 @@ func main() {
 			WithError(err).
 			Error("Error with NATS handler")
 	})
+
+	leaderMgr, err := election.NewK8sLeaderElectionMgr(viper.GetString("pod_namespace"), viper.GetFloat64("leader_election_retry_wait"))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to leader election manager.")
+	}
+
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, vzClient, certMgrClient, vzInfo, nc)
+	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, vzClient, certMgrClient, vzInfo, leaderMgr, nc)
 	go server.RunStream()
 	defer server.Stop()
 

@@ -39,6 +39,11 @@ type VizierInfo interface {
 	GetAddress() (string, int32, error)
 }
 
+// LeaderMgr manages leader election for the cloud connector.
+type LeaderMgr interface {
+	WaitForElection() error
+}
+
 // Bridge is the NATS<->GRPC bridge.
 type Bridge struct {
 	vizierID      uuid.UUID
@@ -48,7 +53,8 @@ type Bridge struct {
 	vzConnClient  vzconnpb.VZConnServiceClient
 	certMgrClient certmgrpb.CertMgrServiceClient
 
-	vzInfo VizierInfo
+	vzInfo    VizierInfo
+	leaderMgr LeaderMgr
 
 	hbSeqNum int64
 
@@ -75,7 +81,7 @@ type Bridge struct {
 }
 
 // New creates a cloud connector to cloud bridge.
-func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, certMgrClient certmgrpb.CertMgrServiceClient, vzInfo VizierInfo, nc *nats.Conn) *Bridge {
+func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, certMgrClient certmgrpb.CertMgrServiceClient, vzInfo VizierInfo, leaderMgr LeaderMgr, nc *nats.Conn) *Bridge {
 	return &Bridge{
 		vizierID:      vizierID,
 		jwtSigningKey: jwtSigningKey,
@@ -83,6 +89,7 @@ func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzc
 		vzConnClient:  vzClient,
 		certMgrClient: certMgrClient,
 		vzInfo:        vzInfo,
+		leaderMgr:     leaderMgr,
 		hbSeqNum:      0,
 		nc:            nc,
 		// Buffer NATS channels to make sure we don't back-pressure NATS
@@ -119,6 +126,10 @@ func (s *Bridge) WatchDog() {
 
 // RunStream manages starting and restarting the stream to VZConn.
 func (s *Bridge) RunStream() {
+	err := s.leaderMgr.WaitForElection()
+	if err != nil {
+		panic(err)
+	}
 	natsTopic := messagebus.V2CTopic("*")
 	log.WithField("topic", natsTopic).Trace("Subscribing to NATS")
 	natsSub, err := s.nc.ChanSubscribe(natsTopic, s.natsCh)

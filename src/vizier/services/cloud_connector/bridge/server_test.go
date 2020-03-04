@@ -125,6 +125,16 @@ func (f *FakeVZInfo) GetAddress() (string, int32, error) {
 	return f.externalAddr, f.port, nil
 }
 
+type FakeLeaderMgr struct{}
+
+func (*FakeLeaderMgr) WaitForElection() error {
+	return nil
+}
+
+func makeFakeLeaderMgr() *FakeLeaderMgr {
+	return &FakeLeaderMgr{}
+}
+
 type testState struct {
 	vzServer    *FakeVZConnServer
 	vzClient    vzconnpb.VZConnServiceClient
@@ -197,7 +207,7 @@ func TestNATSGRPCBridgeTest_CorrectRegistrationFlow(t *testing.T) {
 	defer cleanup(t)
 
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, ts.mockCertMgr, makeFakeVZInfo("foobar", 123), ts.nats)
+	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, ts.mockCertMgr, makeFakeVZInfo("foobar", 123), makeFakeLeaderMgr(), ts.nats)
 	defer b.Stop()
 	go b.RunStream()
 
@@ -255,7 +265,7 @@ func TestNATSGRPCBridgeTest_TestOutboundNATSMessage(t *testing.T) {
 	defer cleanup(t)
 
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, ts.mockCertMgr, makeFakeVZInfo("foobar", 123), ts.nats)
+	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, ts.mockCertMgr, makeFakeVZInfo("foobar", 123), makeFakeLeaderMgr(), ts.nats)
 	defer b.Stop()
 	go b.RunStream()
 
@@ -319,7 +329,7 @@ func TestNATSGRPCBridgeTest_TestInboundNATSMessage(t *testing.T) {
 	defer cleanup(t)
 
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, ts.mockCertMgr, makeFakeVZInfo("foobar", 123), ts.nats)
+	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, ts.mockCertMgr, makeFakeVZInfo("foobar", 123), makeFakeLeaderMgr(), ts.nats)
 	defer b.Stop()
 
 	// Subscribe to NATS
