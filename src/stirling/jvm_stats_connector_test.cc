@@ -49,6 +49,13 @@ class JVMStatsConnectorTest : public ::testing::Test {
   SubProcess hello_world_;
 };
 
+// NOTE: This test will likely break under --runs_per_tests=100 or higher because of limitations of
+// Bazel's sandboxing.
+//
+// Bazel uses PID namespace, so the PID of the java subprocess is often the same in different test
+// runs. However, Bazel does not uses chroot, or other mechanisms of isolating filesystems. So the
+// Java subprocesses all writes to the same memory mapped file with the same path, which causes data
+// corruption and test failures.
 TEST_F(JVMStatsConnectorTest, CaptureData) {
   connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
