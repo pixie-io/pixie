@@ -6,16 +6,17 @@ import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
-// MetadataRequestSubscribeTopic is the channel which the listener is subscribed to for metadata requests.
-const MetadataRequestSubscribeTopic = "c2v.MetadataRequest"
-
-// MetadataRequestPublishTopic is the channel which the listener publishes metadata responses to.
-const MetadataRequestPublishTopic = "v2c.MetadataResponse"
-
-// MetadataUpdatesTopic is the channel which the listener publishes metadata updates to.
-const MetadataUpdatesTopic = "v2c.DurableMetadataUpdates"
+var (
+	// MetadataRequestSubscribeTopic is the channel which the listener is subscribed to for metadata requests.
+	MetadataRequestSubscribeTopic = messagebus.C2VTopic("MetadataRequest")
+	// MetadataRequestPublishTopic is the channel which the listener publishes metadata responses to.
+	MetadataRequestPublishTopic = messagebus.V2CTopic("MetadataResponse")
+	// MetadataUpdatesTopic is the channel which the listener publishes metadata updates to.
+	MetadataUpdatesTopic = messagebus.V2CTopic("DurableMetadataUpdates")
+)
 
 const subscriberName = "cloud"
 

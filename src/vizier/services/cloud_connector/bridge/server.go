@@ -21,13 +21,13 @@ import (
 	utils2 "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
+	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
 const heartbeatIntervalS = 5 * time.Second
 
 // HeartbeatTopic is the topic that heartbeats are written to.
 const HeartbeatTopic = "heartbeat"
-const vizierToCloudUpdateTopic = "v2c"
 const registrationTimeout = 30 * time.Second
 
 // ErrRegistrationTimeout is the registration timeout error.
@@ -95,7 +95,7 @@ func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzc
 
 // RunStream manages starting and restarting the stream to VZConn.
 func (s *Bridge) RunStream() {
-	natsTopic := fmt.Sprintf("%s.*", vizierToCloudUpdateTopic)
+	natsTopic := messagebus.V2CTopic("*")
 	log.WithField("topic", natsTopic).Trace("Subscribing to NATS")
 	natsSub, err := s.nc.ChanSubscribe(natsTopic, s.natsCh)
 	if err != nil {
@@ -303,10 +303,11 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 			log.WithError(e).Error("GRPC error, terminating stream")
 			return e
 		case data := <-s.natsCh:
-			if !strings.HasPrefix(data.Subject, vizierToCloudUpdateTopic+".") {
+			v2cPrefix := messagebus.V2CTopic("")
+			if !strings.HasPrefix(data.Subject, v2cPrefix) {
 				return errors.New("invalid subject: " + data.Subject)
 			}
-			topic := strings.TrimPrefix(data.Subject, vizierToCloudUpdateTopic+".")
+			topic := strings.TrimPrefix(data.Subject, v2cPrefix)
 			// Message over nats should be wrapped in a V2CMessage.
 			v2cMsg := &cvmsgspb.V2CMessage{}
 			err := proto.Unmarshal(data.Data, v2cMsg)
@@ -326,7 +327,7 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 			log.
 				WithField("msg", bridgeMsg.String()).
 				Trace("Got Message on GRPC channel")
-			topic := fmt.Sprintf("c2v.%s", bridgeMsg.Topic)
+			topic := messagebus.C2VTopic(bridgeMsg.Topic)
 
 			natsMsg := &cvmsgspb.C2VMessage{
 				VizierID: s.vizierID.String(),
@@ -439,7 +440,7 @@ func (s *Bridge) requestSSLCerts(ctx context.Context, done chan bool) error {
 	defer s.wg.Done()
 	log.Info("Requesting SSL certs")
 	sslCh := make(chan *nats.Msg)
-	sub, err := s.nc.ChanSubscribe("c2v.sslResp", sslCh)
+	sub, err := s.nc.ChanSubscribe(messagebus.C2VTopic("sslResp"), sslCh)
 	defer sub.Unsubscribe()
 
 	// Send over a request for SSL certs.
