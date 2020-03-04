@@ -46,16 +46,5 @@ struct SocketDataEvent {
   std::string msg;
 };
 
-struct TimestampedData {
-  explicit TimestampedData(std::unique_ptr<SocketDataEvent> event) {
-    entry_timestamp_ns = event->attr.entry_timestamp_ns;
-    return_timestamp_ns = event->attr.return_timestamp_ns;
-    msg = std::move(event->msg);
-  }
-  uint64_t entry_timestamp_ns;
-  uint64_t return_timestamp_ns;
-  std::string msg;
-};
-
 }  // namespace stirling
 }  // namespace pl
