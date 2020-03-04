@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -21,13 +22,17 @@ import (
 var kubeconfig *string
 
 func init() {
-	if home := homeDir(); home != "" {
-		kubeconfig = pflag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else if k := os.Getenv("KUBECONFIG"); k != "" {
-		kubeconfig = pflag.String("kubeconfig", k, "(optional) absolute path to the kubeconfig file")
+	defaultKubeConfig := ""
+	optionalStr := "(optional) "
+	if k := os.Getenv("KUBECONFIG"); k != "" {
+		defaultKubeConfig = k
+	} else if home := homeDir(); home != "" {
+		defaultKubeConfig = filepath.Join(home, ".kube", "config")
 	} else {
-		kubeconfig = pflag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		optionalStr = ""
 	}
+
+	kubeconfig = pflag.String("kubeconfig", defaultKubeConfig, fmt.Sprintf("%sabsolute path to the kubeconfig file", optionalStr))
 }
 
 // GetClientset gets the clientset for the current kubernetes cluster.
