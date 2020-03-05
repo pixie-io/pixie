@@ -27,3 +27,9 @@ go_binary(
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "installer_script",
+    srcs = ["install.sh"],
+    visibility = ["//visibility:public"],
+)

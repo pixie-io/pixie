@@ -23,6 +23,14 @@ container_layer(
 )
 
 container_layer(
+    name = "installer",
+    directory = "/installer",
+    files = [
+        "//src/utils/pixie_cli:installer_script",
+    ],
+)
+
+container_layer(
     name = "customer_docs_assets",
     directory = "/customer_docs_assets",
     tars = ["//docs/customer:customer_docs_bundle"],
@@ -34,6 +42,7 @@ container_image(
     layers = [
         ":conf",
         ":ui_assets",
+        ":installer",
         ":customer_docs_assets",
     ],
     visibility = ["//visibility:public"],
