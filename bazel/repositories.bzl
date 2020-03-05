@@ -1,12 +1,11 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load(":repository_locations.bzl", "REPOSITORY_LOCATIONS")
 
-# Make all contents of an external repository accessible under a filegroup.  Used for external HTTP
-# archives, e.g. cares.
+# Make all contents of an external repository accessible under a filegroup.
+# Used for external HTTP archives, e.g. cares.
 BUILD_ALL_CONTENT = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
 
-# Borrowed from Envoy (46c0693)
-def _repository_impl(name, **kwargs):
+def _repo_impl(name, **kwargs):
     # `existing_rule_keys` contains the names of repositories that have already
     # been defined in the Bazel workspace. By skipping repos with existing keys,
     # users can override dependency versions by using standard Bazel repository
@@ -17,8 +16,7 @@ def _repository_impl(name, **kwargs):
         # wants to override the version. Do nothing.
         return
 
-    loc_key = kwargs.pop("repository_key", name)
-    location = REPOSITORY_LOCATIONS[loc_key]
+    location = REPOSITORY_LOCATIONS[name]
 
     # HTTP tarball at a given URL. Add a BUILD file if requested.
     http_archive(
@@ -29,16 +27,14 @@ def _repository_impl(name, **kwargs):
         **kwargs
     )
 
-def _com_google_double_conversion():
-    name = "com_google_double_conversion"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-        build_file = "//third_party:double_conversion.BUILD",
-    )
+# For bazel repos do not require customization.
+def _bazel_repo(name):
+    _repo_impl(name)
+
+# With a predefined "include all files" BUILD file for a non-Bazel repo.
+def _include_all_repo(name, **kwargs):
+    kwargs["build_file_content"] = BUILD_ALL_CONTENT
+    _repo_impl(name, **kwargs)
 
 def _com_llvm_lib():
     native.new_local_repository(
@@ -53,146 +49,11 @@ def _com_llvm_lib():
         path = "/opt/clang-9.0-libc++",
     )
 
-def _com_github_rlyeh_sole():
-    name = "com_github_rlyeh_sole"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-        build_file = "//third_party:sole.BUILD",
-    )
-
-def _com_github_cpp_taskflow():
-    name = "com_github_cpp_taskflow"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-        build_file = "//third_party:cpp_taskflow.BUILD",
-    )
-
-def _com_github_google_glog():
-    name = "com_github_google_glog"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-    )
-
-def _com_github_tencent_rapidjson():
-    name = "com_github_tencent_rapidjson"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-        build_file = "//third_party:rapidjson.BUILD",
-    )
-
-def _com_github_ariafallah_csv_parser():
-    name = "com_github_ariafallah_csv_parser"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-        build_file = "//third_party:csv_parser.BUILD",
-    )
-
-def _com_github_gperftools_gperftools():
-    location = REPOSITORY_LOCATIONS["com_github_gperftools_gperftools"]
-    http_archive(
-        name = "com_github_gperftools_gperftools",
-        build_file_content = BUILD_ALL_CONTENT,
-        patch_cmds = ["./autogen.sh"],
-        **location
-    )
-
-def _com_github_nats_io_natsc():
-    location = REPOSITORY_LOCATIONS["com_github_nats_io_natsc"]
-    http_archive(
-        name = "com_github_nats_io_natsc",
-        build_file_content = BUILD_ALL_CONTENT,
-        patches = ["//third_party:natsc.patch"],
-        patch_args = ["-p1"],
-        **location
-    )
-
-def _com_github_libuv_libuv():
-    location = REPOSITORY_LOCATIONS["com_github_libuv_libuv"]
-    http_archive(
-        name = "com_github_libuv_libuv",
-        build_file_content = BUILD_ALL_CONTENT,
-        patches = ["//third_party:libuv.patch"],
-        patch_args = ["-p1"],
-        **location
-    )
-
 def _com_github_nghttp2_nghttp2():
-    location = REPOSITORY_LOCATIONS["com_github_nghttp2_nghttp2"]
-    http_archive(
-        name = "com_github_nghttp2_nghttp2",
-        build_file_content = BUILD_ALL_CONTENT,
-        patches = ["//third_party:nghttp2.patch"],
-        patch_args = ["-p1"],
-        **location
-    )
-
+    _include_all_repo("com_github_nghttp2_nghttp2", patches = ["//third_party:nghttp2.patch"], patch_args = ["-p1"])
     native.bind(
         name = "nghttp2",
         actual = "//third_party/foreign_cc:nghttp2",
-    )
-
-def _com_github_cameron314_concurrentqueue():
-    name = "com_github_cameron314_concurrentqueue"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-        build_file = "//third_party:concurrentqueue.BUILD",
-    )
-
-def _com_github_neargye_magic_enum():
-    name = "com_github_neargye_magic_enum"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-        build_file = "//third_party:magic_enum.BUILD",
-    )
-
-def _com_github_arun11299_cpp_jwt():
-    name = "com_github_arun11299_cpp_jwt"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-        build_file = "//third_party:cpp_jwt.BUILD",
-    )
-
-def _com_github_serge1_elfio():
-    name = "com_github_serge1_elfio"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-        build_file = "//third_party:elfio.BUILD",
     )
 
 def _com_github_threadstacks():
@@ -201,41 +62,32 @@ def _com_github_threadstacks():
         path = "third_party/threadstacks",
     )
 
-def _com_github_skystrife_cpptoml():
-    name = "com_github_skystrife_cpptoml"
-    location = REPOSITORY_LOCATIONS[name]
-    http_archive(
-        name = name,
-        urls = location["urls"],
-        sha256 = location["sha256"],
-        strip_prefix = location.get("strip_prefix", ""),
-        build_file = "//third_party:cpptoml.BUILD",
-    )
-
 def _cc_deps():
-    _repository_impl(name = "com_google_benchmark")
-    _repository_impl(
-        name = "com_google_googletest",
-    )
-    _repository_impl(name = "com_github_gflags_gflags")
-    _com_github_google_glog()
-    _repository_impl(name = "com_google_absl")
-    _repository_impl(name = "com_google_flatbuffers")
-    _com_github_rlyeh_sole()
-    _com_google_double_conversion()
-    _com_github_cpp_taskflow()
-    _com_github_tencent_rapidjson()
-    _com_github_ariafallah_csv_parser()
-    _com_github_gperftools_gperftools()
-    _com_github_nats_io_natsc()
-    _com_github_libuv_libuv()
+    _bazel_repo("com_google_benchmark")
+    _bazel_repo("com_google_googletest")
+    _bazel_repo("com_github_gflags_gflags")
+    _bazel_repo("com_github_google_glog")
+    _bazel_repo("com_google_absl")
+    _bazel_repo("com_google_flatbuffers")
+
+    _include_all_repo("com_github_gperftools_gperftools", patch_cmds = ["./autogen.sh"])
+    _include_all_repo("com_github_nats_io_natsc", patches = ["//third_party:natsc.patch"], patch_args = ["-p1"])
+    _include_all_repo("com_github_libuv_libuv", patches = ["//third_party:libuv.patch"], patch_args = ["-p1"])
+
+    _repo_impl("com_google_double_conversion", build_file = "//third_party:double_conversion.BUILD")
+    _repo_impl("com_github_rlyeh_sole", build_file = "//third_party:sole.BUILD")
+    _repo_impl("com_github_cpp_taskflow", build_file = "//third_party:cpp_taskflow.BUILD")
+    _repo_impl("com_github_tencent_rapidjson", build_file = "//third_party:rapidjson.BUILD")
+    _repo_impl("com_github_ariafallah_csv_parser", build_file = "//third_party:csv_parser.BUILD")
+    _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//third_party:concurrentqueue.BUILD")
+    _repo_impl("com_github_serge1_elfio", build_file = "//third_party:elfio.BUILD")
+    _repo_impl("com_github_skystrife_cpptoml", build_file = "//third_party:cpptoml.BUILD")
+    _repo_impl("com_github_neargye_magic_enum", build_file = "//third_party:magic_enum.BUILD")
+    _repo_impl("com_github_neargye_magic_enum", build_file = "//third_party:magic_enum.BUILD")
+    _repo_impl("com_github_arun11299_cpp_jwt", build_file = "//third_party:cpp_jwt.BUILD")
+
     _com_github_nghttp2_nghttp2()
-    _com_github_cameron314_concurrentqueue()
-    _com_github_serge1_elfio()
     _com_github_threadstacks()
-    _com_github_skystrife_cpptoml()
-    _com_github_neargye_magic_enum()
-    _com_github_arun11299_cpp_jwt()
 
 def _go_deps():
     # Add go specific imports here when necessary.
@@ -244,25 +96,22 @@ def _go_deps():
 def pl_deps():
     _com_llvm_lib()
 
-    _repository_impl(name = "io_bazel_rules_go")
-    _repository_impl(name = "bazel_gazelle")
-    _repository_impl(name = "com_github_bazelbuild_buildtools")
-    _repository_impl(name = "bazel_skylib", repository_key = "io_bazel_rules_skylib")
-    _repository_impl(name = "io_bazel_rules_docker")
-    _repository_impl(name = "io_bazel_toolchains")
-    _repository_impl(name = "distroless")
-    _repository_impl(name = "boringssl", repository_key = "com_google_boringssl")
-    _repository_impl(
-        name = "com_github_grpc_grpc",
-        patches = ["//third_party:grpc.patch"],
-        patch_args = ["-p1"],
-    )
-    _repository_impl(name = "com_intel_tbb", build_file = "@pl//third_party:tbb.BUILD")
-    _repository_impl(name = "com_efficient_libcuckoo", build_file = "@pl//third_party:libcuckoo.BUILD")
-    _repository_impl(name = "com_google_farmhash", build_file = "@pl//third_party:farmhash.BUILD")
-    _repository_impl(name = "com_github_h2o_picohttpparser", build_file = "@pl//third_party:picohttpparser.BUILD")
-    _repository_impl(name = "rules_foreign_cc")
-    _repository_impl(name = "io_bazel_rules_k8s")
+    _bazel_repo("io_bazel_rules_go")
+    _bazel_repo("bazel_gazelle")
+    _bazel_repo("com_github_bazelbuild_buildtools")
+    _bazel_repo("bazel_skylib")
+    _bazel_repo("io_bazel_rules_docker")
+    _bazel_repo("io_bazel_toolchains")
+    _bazel_repo("distroless")
+    _bazel_repo("com_google_boringssl")
+    _bazel_repo("rules_foreign_cc")
+    _bazel_repo("io_bazel_rules_k8s")
+
+    _repo_impl("com_github_grpc_grpc", patches = ["//third_party:grpc.patch"], patch_args = ["-p1"])
+    _repo_impl("com_intel_tbb", build_file = "@pl//third_party:tbb.BUILD")
+    _repo_impl("com_efficient_libcuckoo", build_file = "@pl//third_party:libcuckoo.BUILD")
+    _repo_impl("com_google_farmhash", build_file = "@pl//third_party:farmhash.BUILD")
+    _repo_impl("com_github_h2o_picohttpparser", build_file = "@pl//third_party:picohttpparser.BUILD")
 
     _cc_deps()
     _go_deps()
