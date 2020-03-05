@@ -10,7 +10,6 @@ import Input from './input';
 import {Key} from './key';
 
 const useStyles = makeStyles((theme: Theme) => {
-  // TODO(malthus): Make use of the theme styles.
   return createStyles({
     root: {
       backgroundColor: theme.palette.background.three,

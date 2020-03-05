@@ -125,7 +125,7 @@ const Input: React.FC<InputProps> = ({
       <div className={classes.inputValue}>
         <span>{value}</span>
         <Caret active={focused} />
-        <span className={classes.hint}>{hint}</span>
+        <span className={classes.hint} tabIndex={-1}>{hint}</span>
       </div>
     </div >
   );
@@ -149,6 +149,31 @@ const Caret: React.FC<{ active: boolean }> = ({ active }) => {
   }, [active]);
   return (
     <div className={clsx(classes.caret, active && visible && 'visible')}>&nbsp;</div>);
+};
+
+type FormField = [string, string];
+
+interface InputFormProps {
+  onInputChanged: (value: string) => void;
+  form: FormField[];
+}
+
+export const FormInput: React.FC<InputFormProps> = ({
+  onInputChanged,
+  form,
+}) => {
+  const classes = useStyles();
+  const ref = React.useRef<HTMLTextAreaElement>(null);
+  const [value, setValue] = React.useState<string>('');
+
+  React.useEffect(() => {
+    const combined = form.map(([key, val]) => `${key}:${val}`).join(' ');
+    setValue(combined);
+  }, [form]);
+
+  return (
+    <textarea className={classes.inputValue} ref={ref} value={value} />
+  );
 };
 
 export default Input;

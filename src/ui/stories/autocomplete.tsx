@@ -1,6 +1,7 @@
 import Axios from 'axios';
 import Autocomplete from 'components/autocomplete';
 import Completions from 'components/autocomplete/completions';
+import FormInput from 'components/autocomplete/form';
 import Input from 'components/autocomplete/input';
 import * as React from 'react';
 
@@ -33,6 +34,23 @@ storiesOf('AutoComplete', module)
         onChange={setInput}
         onKey={action('key')}
         value={input}
+      />
+    );
+  }, {
+    info: { inline: true },
+    notes: 'this story shows how the suggestion works from a remote server',
+  })
+  .add('form input', () => {
+    const [form, setForm] = React.useState({ field1: 'value1', field2: 'value2', field3: 'value3' });
+    return (
+      <FormInput
+        form={form}
+        onValueChange={([field, value]) => {
+          setForm((oldForm) => ({
+            ...oldForm,
+            [field]: value,
+          }));
+        }}
       />
     );
   }, {
