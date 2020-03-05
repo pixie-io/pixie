@@ -12,6 +12,8 @@ spec:
     metadata:
       labels:
         name: vizier-query-broker
+      annotations:
+        fluentbit.io/parser: logfmt
     spec:
       initContainers:
       - name: mds-wait

@@ -12,6 +12,8 @@ spec:
     metadata:
       labels:
         name: vizier-proxy
+      annotations:
+        fluentbit.io/parser: envoy
     spec:
       imagePullSecrets:
       - name: pl-image-secret

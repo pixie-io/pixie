@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         name: vizier-pem
+      annotations:
+        fluentbit.io/parser: glog
     spec:
       tolerations:
       - key: node-role.kubernetes.io/master

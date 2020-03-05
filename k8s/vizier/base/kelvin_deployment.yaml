@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         name: kelvin
+      annotations:
+        fluentbit.io/parser: glog
     spec:
       imagePullSecrets:
       - name: pl-image-secret

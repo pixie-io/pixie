@@ -12,6 +12,8 @@ spec:
     metadata:
       labels:
         name: vizier-metadata
+      annotations:
+        fluentbit.io/parser: logfmt
     spec:
       initContainers:
       - name: nats-wait
