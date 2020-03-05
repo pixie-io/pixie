@@ -6,6 +6,7 @@ go_library(
         "auth.go",
         "bindata.gen.go",
         "certs.go",
+        "cluster_selector.go",
         "collect_logs.go",
         "delete_pixie.go",
         "deploy.go",

@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
 
@@ -98,10 +97,6 @@ func init() {
 	DeployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
 	viper.BindPFlag("namespace", DeployCmd.Flags().Lookup("namespace"))
 
-	DeployCmd.Flags().StringP("cluster_id", "i", "", "The ID of the cluster")
-	viper.BindPFlag("cluster_id", DeployCmd.Flags().Lookup("cluster_id"))
-	DeployCmd.MarkFlagRequired("cluster_id")
-
 	DeployCmd.Flags().BoolP("deps_only", "d", false, "Deploy only the cluster dependencies, not the agents")
 	viper.BindPFlag("deps_only", DeployCmd.Flags().Lookup("deps_only"))
 
@@ -111,6 +106,7 @@ func init() {
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
 	DeployCmd.Flags().MarkHidden("dev_cloud_namespace")
+	DeployCmd.Flags().MarkHidden("cluster_id")
 }
 
 func newVizAuthClient(conn *grpc.ClientConn) cloudapipb.VizierImageAuthorizationClient {
@@ -266,26 +262,37 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	namespace, _ := cmd.Flags().GetString("namespace")
 	credsFile, _ := cmd.Flags().GetString("credentials_file")
 	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
-	clusterID, _ := cmd.Flags().GetString("cluster_id")
 	devCloudNS, _ := cmd.Flags().GetString("dev_cloud_namespace")
+
+	_ = pxanalytics.Client().Enqueue(&analytics.Track{
+		UserId: pxconfig.Cfg().UniqueClientID,
+		Event:  "Deploy Initiated",
+		Properties: analytics.NewProperties().
+			Set("cloud_addr", cloudAddr),
+	})
+	// Validate arguments:
+	if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
+		cloudAddr = cloudAddr + ":443"
+	}
+
+	status, clusterID, err := getClusterID(cloudAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Deploying to Pixe Cluster ID: %s.\n", clusterID.String())
+
+	if *status != cloudapipb.CS_UNKNOWN && *status != cloudapipb.CS_DISCONNECTED {
+		log.Fatal("Cluster must be disconnected to deploy, please delete the install if you want to re-deploy")
+	}
 
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
 		UserId: pxconfig.Cfg().UniqueClientID,
 		Event:  "Deploy Started",
 		Properties: analytics.NewProperties().
-			Set("clusterID", clusterID).
+			Set("clusterID", clusterID.String()).
 			Set("cloud_addr", cloudAddr),
 	})
-
-	fmt.Printf("Cluster ID: %s\n", clusterID)
-	// Validate arguments:
-	// clusterID must be a valid UUID.
-	if _, err := uuid.FromString(clusterID); err != nil {
-		log.Fatalln("--cluster_id must be a valid UUID. Please make sure you are following the directions in the UI.")
-	}
-	if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
-		cloudAddr = cloudAddr + ":443"
-	}
 
 	currentCluster := getCurrentCluster()
 	fmt.Printf("Deploying Pixie to the following cluster: %s\n", currentCluster)
@@ -331,7 +338,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		return LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace, devCloudNS)
+		return LoadClusterSecrets(clientset, cloudAddr, clusterID.String(), namespace, devCloudNS)
 	})
 
 	var yamlMap map[string]string
