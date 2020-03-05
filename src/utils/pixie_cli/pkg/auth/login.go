@@ -16,8 +16,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
+	"gopkg.in/segmentio/analytics-go.v3"
+
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 )
 
 const pixieAuthPath = ".pixie"
@@ -98,6 +103,23 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 	if err := json.NewDecoder(f).Decode(token); err != nil {
 		return nil, err
 	}
+	_ = pxanalytics.Client().Enqueue(&analytics.Track{
+		UserId: pxconfig.Cfg().UniqueClientID,
+		Event:  "Load Stored Creds",
+	})
+
+	if token, _ := jwt.Parse(token.Token, nil); token != nil {
+		sc, ok := token.Claims.(jwt.MapClaims)
+		if ok {
+			userID, _ := sc["UserID"].(string)
+			// Associate UserID with AnalyticsID.
+			_ = pxanalytics.Client().Enqueue(&analytics.Alias{
+				UserId:     pxconfig.Cfg().UniqueClientID,
+				PreviousId: userID,
+			})
+		}
+	}
+
 	// TODO(zasgar): Exchange refresh token for new token type.
 	return token, nil
 }
@@ -130,7 +152,10 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 			log.Info("Failed to perform browser based auth. Will try manual auth")
 		}
 	}
-
+	_ = pxanalytics.Client().Enqueue(&analytics.Track{
+		UserId: pxconfig.Cfg().UniqueClientID,
+		Event:  "Manual Auth",
+	})
 	// Try to request using manual mode
 	accessToken, err := p.getAuthStringManually()
 	if err != nil {
@@ -144,6 +169,10 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	// Browser auth starts up a server on localhost to do the user challenge
 	// and get the authentication token.
+	_ = pxanalytics.Client().Enqueue(&analytics.Track{
+		UserId: pxconfig.Cfg().UniqueClientID,
+		Event:  "Browser Auth",
+	})
 	authURL := getAuthURL(p.CloudAddr, p.Site)
 	q := authURL.Query()
 	q.Set("redirect_uri", localServerRedirectURL)
@@ -219,6 +248,10 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 		log.Info("Starting browser")
 		err := open.Run(authURL.String())
 		if err != nil {
+			_ = pxanalytics.Client().Enqueue(&analytics.Track{
+				UserId: pxconfig.Cfg().UniqueClientID,
+				Event:  "Browser Open Failed",
+			})
 			results <- result{nil, errBrowserFailed}
 			close(results)
 		}
@@ -233,8 +266,16 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 			return nil, errUserChallengeTimeout
 		case res, ok := <-results:
 			if !ok {
+				_ = pxanalytics.Client().Enqueue(&analytics.Track{
+					UserId: pxconfig.Cfg().UniqueClientID,
+					Event:  "Auth Failure",
+				})
 				return nil, errUserChallengeTimeout
 			}
+			_ = pxanalytics.Client().Enqueue(&analytics.Track{
+				UserId: pxconfig.Cfg().UniqueClientID,
+				Event:  "Auth Success",
+			})
 			// TODO(zasgar): This is a hack, figure out why this function takes so long to exit.
 			log.Info("Fetching refresh token ...")
 			return res.Token, res.err

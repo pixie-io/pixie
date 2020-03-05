@@ -1,10 +1,15 @@
 package cmd
 
 import (
+	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/segmentio/analytics-go.v3"
+
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 )
 
 // AuthCmd is the auth sub-command of the CLI.
@@ -35,6 +40,18 @@ var LoginCmd = &cobra.Command{
 		}
 		if err = auth.SaveRefreshToken(refreshToken); err != nil {
 			log.WithError(err).Fatal("Failed to persists auth token")
+		}
+
+		if token, _ := jwt.Parse(refreshToken.Token, nil); token != nil {
+			sc, ok := token.Claims.(jwt.MapClaims)
+			if ok {
+				userID, _ := sc["UserID"].(string)
+				// Associate UserID with AnalyticsID.
+				_ = pxanalytics.Client().Enqueue(&analytics.Alias{
+					UserId:     pxconfig.Cfg().UniqueClientID,
+					PreviousId: userID,
+				})
+			}
 		}
 	},
 }

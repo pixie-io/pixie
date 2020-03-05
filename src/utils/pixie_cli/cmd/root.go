@@ -8,6 +8,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"gopkg.in/segmentio/analytics-go.v3"
+
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/update"
 )
 
@@ -43,16 +47,33 @@ var RootCmd = &cobra.Command{
 	Long: `The Pixie command line interface.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		p := cmd
+
+		if p != nil {
+			_ = pxanalytics.Client().Enqueue(&analytics.Track{
+				UserId: pxconfig.Cfg().UniqueClientID,
+				Event:  "Exec CMD",
+				Properties: analytics.NewProperties().
+					Set("cmd", p.Name()),
+			})
+		}
+
 		for p != nil && p != UpdateCmd {
 			p = p.Parent()
 		}
+
 		if p == UpdateCmd {
 			return
 		}
 		versionStr := update.UpdatesAvailable(viper.GetString("cloud_addr"))
 		if versionStr != "" {
+			_ = pxanalytics.Client().Enqueue(&analytics.Track{
+				UserId: pxconfig.Cfg().UniqueClientID,
+				Event:  "Update Available",
+				Properties: analytics.NewProperties().
+					Set("cmd", p.Name()),
+			})
 			c := color.New(color.Bold, color.FgGreen)
-			_, _ = c.Fprintf(os.Stderr, "Update to version \"%s\" available. Run \"pixie update cli\" to update.\n", versionStr)
+			_, _ = c.Fprintf(os.Stderr, "Update to version \"%s\" available. Run \"px update cli\" to update.\n", versionStr)
 		}
 	},
 }
@@ -65,6 +86,10 @@ func Execute() {
 	viper.BindPFlags(pflag.CommandLine)
 
 	if err := RootCmd.Execute(); err != nil {
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Exec Error",
+		})
 		log.WithError(err).Fatal("Error executing command")
 	}
 }

@@ -17,7 +17,11 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/metadata"
+	"gopkg.in/segmentio/analytics-go.v3"
+
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 
 	"google.golang.org/grpc"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
@@ -242,8 +246,19 @@ func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
 func runDeployCmd(cmd *cobra.Command, args []string) {
 	check, _ := cmd.Flags().GetBool("check")
 	if check {
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Cluster Check Run",
+		})
+
 		err := k8s.RunDefaultClusterChecks()
 		if err != nil {
+			_ = pxanalytics.Client().Enqueue(&analytics.Track{
+				UserId: pxconfig.Cfg().UniqueClientID,
+				Event:  "Cluster Check Failed",
+				Properties: analytics.NewProperties().
+					Set("error", err.Error()),
+			})
 			log.Fatalln(err)
 		}
 		return
@@ -253,6 +268,14 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
 	clusterID, _ := cmd.Flags().GetString("cluster_id")
 	devCloudNS, _ := cmd.Flags().GetString("dev_cloud_namespace")
+
+	_ = pxanalytics.Client().Enqueue(&analytics.Track{
+		UserId: pxconfig.Cfg().UniqueClientID,
+		Event:  "Deploy Started",
+		Properties: analytics.NewProperties().
+			Set("clusterID", clusterID).
+			Set("cloud_addr", cloudAddr),
+	})
 
 	fmt.Printf("Cluster ID: %s\n", clusterID)
 	// Validate arguments:
@@ -358,6 +381,12 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	jr := utils.NewSerialTaskRunner(setupJobs)
 	err = jr.RunAndMonitor()
 	if err != nil {
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Deploy Failure",
+			Properties: analytics.NewProperties().
+				Set("err", err.Error()),
+		})
 		log.Fatal("Failed to deploy Vizier")
 	}
 
@@ -367,10 +396,22 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	err = waitForProxy(clientset, namespace)
 	if err != nil {
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Proxy Wait Error",
+			Properties: analytics.NewProperties().
+				Set("err", err.Error()),
+		})
 		fmt.Println(err.Error())
 	}
 	err = waitForPems(clientset, namespace, numNodes)
 	if err != nil {
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "PEM Wait Error",
+			Properties: analytics.NewProperties().
+				Set("err", err.Error()),
+		})
 		fmt.Println(err.Error())
 	}
 }

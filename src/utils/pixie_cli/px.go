@@ -5,13 +5,32 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/segmentio/analytics-go.v3"
+
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 )
 
 func main() {
+	defer pxanalytics.Client().Close()
+
+	pxanalytics.Client().Enqueue(&analytics.Track{
+		UserId: pxconfig.Cfg().UniqueClientID,
+		Event:  "Exec Started",
+		Properties: analytics.NewProperties().
+			Set("cmd", strings.Join(os.Args, ",")),
+	})
+
+	defer pxanalytics.Client().Enqueue(&analytics.Track{
+		UserId: pxconfig.Cfg().UniqueClientID,
+		Event:  "Exec Complete",
+	})
+
 	pixie := `
   ___  _       _
  | _ \(_)__ __(_) ___

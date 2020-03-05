@@ -11,7 +11,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
@@ -35,12 +38,32 @@ var RunCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed to get query string")
 		}
 
+		// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Script Execution Started",
+			Properties: analytics.NewProperties().
+				Set("scriptString", q),
+		})
+
 		v := mustConnectDefaultVizier(cloudAddr)
 
 		res, err := v.ExecuteScript(q)
 		if err != nil {
+			_ = pxanalytics.Client().Enqueue(&analytics.Track{
+				UserId: pxconfig.Cfg().UniqueClientID,
+				Event:  "Script Execution Failed",
+				Properties: analytics.NewProperties().
+					Set("scriptString", q),
+			})
 			log.WithError(err).Fatal("Failed to execute query")
 		}
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Script Execution Success",
+			Properties: analytics.NewProperties().
+				Set("scriptString", q),
+		})
 		mustFormatQueryResults(res, format)
 	},
 }
