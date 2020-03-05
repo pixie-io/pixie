@@ -320,6 +320,9 @@ func (s *Server) GetAugmentedToken(
 	// Check to make sure that the org and user exist in the system.
 	pc := s.env.ProfileClient()
 
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
 	orgIDstr := aCtx.Claims.GetUserClaims().OrgID
 	_, err := pc.GetOrg(ctx, pbutils.ProtoFromUUIDStrOrNil(orgIDstr))
 	if err != nil {
@@ -328,7 +331,7 @@ func (s *Server) GetAugmentedToken(
 
 	userIDstr := aCtx.Claims.GetUserClaims().UserID
 	userInfo, err := pc.GetUser(ctx, pbutils.ProtoFromUUIDStrOrNil(userIDstr))
-	if err != nil {
+	if err != nil || userInfo == nil {
 		return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
 	}
 
