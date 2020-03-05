@@ -9,7 +9,7 @@ import {Dropdown, Nav, Navbar, NavDropdown} from 'react-bootstrap';
 import {Link, NavLink} from 'react-router-dom';
 import {getRedirectPath} from 'utils/redirect-utils';
 
-const LOGOUT_URL = getRedirectPath('id', '/logout', {});
+const LOGOUT_URL = getRedirectPath('/logout', {});
 
 export function VizierTopNav() {
   return (

@@ -24,27 +24,9 @@ let plugins = [
   new CaseSensitivePathsPlugin(),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
-    chunks: ['main', 'commons~login~main~subdomain', 'commons~main~subdomain', 'vendor'],
+    chunks: ['main', 'manifest', 'commons', 'vendor'],
     template: 'index.html',
     filename: 'index.html',
-  }),
-  new HtmlWebpackPlugin({
-    alwaysWriteToDisk: true,
-    chunks: ['login', 'commons~login~main~subdomain', 'commons~login~subdomain', 'vendor'],
-    template: 'index.html',
-    filename: 'login-index.html',
-  }),
-  new HtmlWebpackPlugin({
-    alwaysWriteToDisk: true,
-    chunks: [
-      'subdomain',
-      'commons~login~main~subdomain',
-      'commons~main~subdomain',
-      'commons~login~subdomain',
-      'vendor',
-    ],
-    template: 'index.html',
-    filename: 'subdomain-index.html',
   }),
   new CopyPlugin([
     {from: 'segment.js', to: 'assets/segment.js'},
@@ -90,21 +72,11 @@ var webpackConfig = {
     disableHostCheck: true,
     hot: true,
     publicPath: '/',
-    historyApiFallback: {
-      rewrites: [
-        // TODO(malthus): This doesn't fully work for the dev server right
-        // now, because navigating to root always goes to index.html.
-        {from: /^\/(create|auth-complete)$/, to: '/index.html'},
-        {from: /^\/(login|logout|create-site)$/, to: '/login-index.html'},
-        {from: /.*/, to: '/subdomain-index.html'},
-      ],
-    },
+    historyApiFallback: true,
     proxy: [],
   },
   entry: {
     main: 'main.tsx',
-    login: 'login-index.tsx',
-    subdomain: 'subdomain.tsx',
   },
   mode: isDevServer ? 'development' : 'production',
   module: {

@@ -8,7 +8,7 @@ export class Logout extends React.Component<{}, {}> {
       method: 'post',
       url: '/api/auth/logout',
     }).then((response) => {
-      RedirectUtils.redirect('', '', {});
+      RedirectUtils.redirect('', {});
     });
 
     return (

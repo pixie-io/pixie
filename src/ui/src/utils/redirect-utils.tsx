@@ -5,13 +5,12 @@ interface StringMap {
   [s: string]: string;
 }
 
-export function redirect(subdomain: string, path: string, params: StringMap) {
-  window.location.href = getRedirectPath(subdomain, path, params);
+export function redirect(path: string, params: StringMap) {
+  window.location.href = getRedirectPath(path, params);
 }
 
-export function getRedirectPath(subdomain: string, path: string, params: StringMap) {
+export function getRedirectPath(path: string, params: StringMap) {
   const port = window.location.port ? ':' + window.location.port : '';
-  const fmtSubdomain = subdomain ? subdomain + '.' : '';
   let queryParams = '';
 
   const paramKeys = Object.keys(params);
@@ -22,5 +21,5 @@ export function getRedirectPath(subdomain: string, path: string, params: StringM
     queryParams = '?' + paramStrings.join('&');
   }
 
-  return window.location.protocol + '//' + fmtSubdomain + DOMAIN_NAME + port + path + queryParams;
+  return window.location.protocol + '//' + DOMAIN_NAME + port + path + queryParams;
 }

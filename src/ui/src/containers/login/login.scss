@@ -2,19 +2,18 @@
 
 .pixie-login {
   background-color: white;
-
-  .auth0-lock-cred-pane {
-    border: 1px solid $gray-350;
-    border-radius: 4px;
-  }
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  width: 100%;
+  color: black;
 
   .auth0-lock-blur-support {
     display: none;
   }
 
   .auth0-lock.auth0-lock .auth0-lock-header {
-    background-color: $gray-100;
-    color: $gray-700;
+    display: none;
   }
 
   .auth0-lock.auth0-lock .auth0-lock-terms {
@@ -33,5 +32,14 @@
 
   .error-message--icon {
     margin-right: 10px;
+  }
+
+  .login-header {
+    padding-bottom: 40px;
+    font-size: 30px;
+  }
+
+  .login-footer {
+    padding-top: 20px;
   }
 }

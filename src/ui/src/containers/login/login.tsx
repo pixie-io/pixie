@@ -9,16 +9,17 @@ import history from 'utils/pl-history';
 import {Logout} from './logout';
 import {UserCreate, UserLogin} from './user-login';
 
-export const Login = () => (
-  <div className='pixie-login center-content'>
-    <Router history={history}>
-      <ApolloProvider client={getCloudGQLClientSync()}>
-        <Switch>
-          <Route exact path='/login' component={UserLogin} />
-          <Route exact path='/create-site' component={UserCreate} />
-          <Route exact path='/logout' component={Logout} />
-        </Switch>
-      </ApolloProvider>
-    </Router>
-  </div>
-);
+export const Login = () => {
+  return (<div className='pixie-login'>
+      <Router history={history}>
+        <ApolloProvider client={getCloudGQLClientSync()}>
+          <Switch>
+            <Route exact path='/login' component={UserLogin} />
+            <Route exact path='/logout' component={Logout} />
+            <Route component={UserCreate} />
+          </Switch>
+        </ApolloProvider>
+      </Router>
+    </div>
+  );
+};

@@ -26,7 +26,7 @@ const cloudAuthLink = setContext((_, { headers }) => {
 const loginRedirectLink = onError(({ networkError }) => {
   if (!!networkError && (networkError as ServerError).statusCode === 401) {
     const subdomain = window.location.host.split('.')[0];
-    RedirectUtils.redirect('id', '/login', { ['site_name']: subdomain, ['no_cache']: 'true' });
+    RedirectUtils.redirect('/login', { ['no_cache']: 'true' });
   }
 });
 

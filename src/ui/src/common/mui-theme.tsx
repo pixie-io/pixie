@@ -5,6 +5,7 @@ declare module '@material-ui/core/styles/createPalette' {
     one?: string;
     two?: string;
     three?: string;
+    four?: string;
   }
 
   interface Palette {
@@ -64,6 +65,7 @@ export const DARK_THEME = createMuiTheme({
       one: '#121212',
       two: '#272822',
       three: '#353535',
+      four: '#0C1714',
     },
     divider: '#272822',
     text: {
