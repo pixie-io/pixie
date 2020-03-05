@@ -247,22 +247,6 @@ Status SocketTraceConnector::StopImpl() {
   return Status::OK();
 }
 
-namespace {
-
-absl::flat_hash_set<md::UPID> GetMdsUpids(const ConnectorContext& ctx) {
-  auto* md = ctx.AgentMetadataState();
-  if (md == nullptr) {
-    return {};
-  }
-  absl::flat_hash_set<md::UPID> upids;
-  for (const auto& [upid, pid_info] : md->pids_by_upid()) {
-    upids.insert(upid);
-  }
-  return upids;
-}
-
-}  // namespace
-
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
   DCHECK_LT(table_num, kTables.size())
@@ -284,7 +268,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   TransferStreams(ctx, table_num, data_table);
 
   // Refresh UPIDs from MDS so that the uprobe attaching thread can detect new processes.
-  set_mds_upids(GetMdsUpids(*ctx));
+  set_mds_upids(ctx->GetMdsUpids());
 }
 
 template <typename TValueType>
@@ -825,8 +809,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          DataTable* data_table) {
   DCHECK_EQ(kCQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
-                conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
 
   RecordBuilder<&kCQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);

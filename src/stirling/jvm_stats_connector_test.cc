@@ -19,33 +19,37 @@ using ::pl::stirling::testing::FindRecordIdxMatchesPid;
 using ::testing::Each;
 using ::testing::SizeIs;
 
+struct JavaHelloWorld : SubProcess {
+  inline static const std::string kClassPath =
+      TestEnvironment::PathToTestDataFile("src/stirling/testing/java/HelloWorld.jar");
+
+  ~JavaHelloWorld() {
+    Kill();
+    EXPECT_EQ(9, Wait());
+  }
+
+  Status Start() {
+    auto status = SubProcess::Start({"java", "-cp", kClassPath, "-Xms1m", "-Xmx4m", "HelloWorld"});
+    // Sleep 2 seconds for the process to create the data file.
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    return status;
+  }
+};
+
 class JVMStatsConnectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    const char kClassPath[] = "src/stirling/testing/java/HelloWorld.jar";
-    const std::string class_path = TestEnvironment::PathToTestDataFile(kClassPath);
-
-    ASSERT_OK(hello_world_.Start({"java", "-cp", class_path, "-Xms1m", "-Xmx4m", "HelloWorld"}));
-    // Give some time for the JVM process to write the data file.
-    sleep(2);
-
     connector_ = JVMStatsConnector::Create("jvm_stats_connector");
     ASSERT_OK(connector_->Init());
     constexpr uint32_t kASID = 1;
     ctx_ = std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID));
   }
 
-  void TearDown() override {
-    EXPECT_OK(connector_->Stop());
-    hello_world_.Kill();
-    EXPECT_EQ(9, hello_world_.Wait()) << "Server should have been killed.";
-  }
+  void TearDown() override { EXPECT_OK(connector_->Stop()); }
 
   std::unique_ptr<SourceConnector> connector_;
   std::unique_ptr<ConnectorContext> ctx_;
   DataTable data_table_{kJVMStatsTable};
-
-  SubProcess hello_world_;
 };
 
 // NOTE: This test will likely break under --runs_per_tests=100 or higher because of limitations of
@@ -55,10 +59,15 @@ class JVMStatsConnectorTest : public ::testing::Test {
 // runs. However, Bazel does not uses chroot, or other mechanisms of isolating filesystems. So the
 // Java subprocesses all writes to the same memory mapped file with the same path, which causes data
 // corruption and test failures.
+//
+// Tests that java processes are detected and data is collected.
 TEST_F(JVMStatsConnectorTest, CaptureData) {
+  JavaHelloWorld hello_world1;
+  ASSERT_OK(hello_world1.Start());
+
   connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
-  auto idxes = FindRecordIdxMatchesPid(record_batch, kUPIDIdx, hello_world_.child_pid());
+  auto idxes = FindRecordIdxMatchesPid(record_batch, kUPIDIdx, hello_world1.child_pid());
   ASSERT_THAT(idxes, SizeIs(1));
 
   auto idx = idxes[0];
@@ -69,6 +78,15 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   EXPECT_GE(record_batch[kTotalHeapSizeIdx]->Get<types::Int64Value>(idx).val, 0);
   // This is derived from -Xmx4m. But we don't know how to control total_heap_size.
   EXPECT_GE(record_batch[kMaxHeapSizeIdx]->Get<types::Int64Value>(idx).val, 4 * 1024 * 1024);
+
+  JavaHelloWorld hello_world2;
+  ASSERT_OK(hello_world2.Start());
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+
+  connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
+  EXPECT_THAT(FindRecordIdxMatchesPid(record_batch, kUPIDIdx, hello_world2.child_pid()), SizeIs(1));
+  // Make sure the previous processes were scanned as well.
+  EXPECT_THAT(FindRecordIdxMatchesPid(record_batch, kUPIDIdx, hello_world1.child_pid()), SizeIs(2));
 }
 
 }  // namespace stirling

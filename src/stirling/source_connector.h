@@ -64,6 +64,26 @@ class ConnectorContext {
     return agent_metadata_state_.get();
   }
 
+  uint32_t GetASID() const {
+    const auto* md = AgentMetadataState();
+    if (md == nullptr) {
+      return 0;
+    }
+    return md->asid();
+  }
+
+  absl::flat_hash_set<md::UPID> GetMdsUpids() const {
+    auto* md = AgentMetadataState();
+    if (md == nullptr) {
+      return {};
+    }
+    absl::flat_hash_set<md::UPID> upids;
+    for (const auto& [upid, pid_info] : md->pids_by_upid()) {
+      upids.insert(upid);
+    }
+    return upids;
+  }
+
  private:
   std::shared_ptr<const md::AgentMetadataState> agent_metadata_state_;
 };
@@ -142,7 +162,7 @@ class SourceConnector : public NotCopyable {
    * @brief Utility function to convert time as recorded by in monotonic clock to real time.
    * This is especially useful for converting times from BPF, which are all in monotonic clock.
    */
-  uint64_t ClockRealTimeOffset() { return sysconfig_.ClockRealTimeOffset(); }
+  uint64_t ClockRealTimeOffset() const { return sysconfig_.ClockRealTimeOffset(); }
 
  protected:
   explicit SourceConnector(std::string_view source_name,
