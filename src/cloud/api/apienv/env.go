@@ -10,7 +10,6 @@ import (
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	"pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 )
@@ -27,7 +26,6 @@ type APIEnv interface {
 	env.Env
 	CookieStore() sessions.Store
 	AuthClient() authpb.AuthServiceClient
-	SiteManagerClient() sitemanagerpb.SiteManagerServiceClient
 	ProfileClient() profilepb.ProfileServiceClient
 	VZMgrClient() vzmgrpb.VZMgrServiceClient
 	ArtifactTrackerClient() artifacttrackerpb.ArtifactTrackerClient
@@ -38,14 +36,13 @@ type Impl struct {
 	*env.BaseEnv
 	cookieStore           sessions.Store
 	authClient            authpb.AuthServiceClient
-	siteManagerClient     sitemanagerpb.SiteManagerServiceClient
 	profileClient         profilepb.ProfileServiceClient
 	vzMgrClient           vzmgrpb.VZMgrServiceClient
 	artifactTrackerClient artifacttrackerpb.ArtifactTrackerClient
 }
 
 // New creates a new api env.
-func New(ac authpb.AuthServiceClient, sc sitemanagerpb.SiteManagerServiceClient, pc profilepb.ProfileServiceClient, vc vzmgrpb.VZMgrServiceClient, at artifacttrackerpb.ArtifactTrackerClient) (APIEnv, error) {
+func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient, vc vzmgrpb.VZMgrServiceClient, at artifacttrackerpb.ArtifactTrackerClient) (APIEnv, error) {
 	sessionKey := viper.GetString("session_key")
 	if len(sessionKey) == 0 {
 		return nil, errors.New("session_key is required for cookie store")
@@ -65,7 +62,7 @@ func New(ac authpb.AuthServiceClient, sc sitemanagerpb.SiteManagerServiceClient,
 		sessionStore = store
 	}
 
-	return &Impl{env.New(), sessionStore, ac, sc, pc, vc, at}, nil
+	return &Impl{env.New(), sessionStore, ac, pc, vc, at}, nil
 }
 
 // CookieStore returns the CookieStore from the environment.
@@ -76,11 +73,6 @@ func (e *Impl) CookieStore() sessions.Store {
 // AuthClient returns an auth service client.
 func (e *Impl) AuthClient() authpb.AuthServiceClient {
 	return e.authClient
-}
-
-// SiteManagerClient returns an site manager  service client.
-func (e *Impl) SiteManagerClient() sitemanagerpb.SiteManagerServiceClient {
-	return e.siteManagerClient
 }
 
 // ProfileClient returns a profile service client.

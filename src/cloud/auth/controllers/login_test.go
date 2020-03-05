@@ -18,8 +18,6 @@ import (
 	pb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	mock_profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb/mock"
-	sitemanagerpb "pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
-	mock_sitemanager "pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb/mock"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
@@ -87,17 +85,8 @@ func TestServer_LoginNewUser(t *testing.T) {
 		}).
 		Return(pbutils.ProtoFromUUIDStrOrNil(userID), nil)
 
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
-	siteInfo := &sitemanagerpb.SiteInfo{
-		SiteName: "defg",
-		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
-	}
-	mockSiteMgr.EXPECT().
-		GetSiteByName(gomock.Any(), &sitemanagerpb.GetSiteByNameRequest{SiteName: "defg"}).
-		Return(siteInfo, nil)
-
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -136,10 +125,8 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
-
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -167,14 +154,13 @@ func TestServer_Login_MissingOrgError(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(nil, errors.New("organization does not exist"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -202,10 +188,9 @@ func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -233,14 +218,13 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(nil, errors.New("organization does not exist"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -273,7 +257,6 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
@@ -289,16 +272,8 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 		}).
 		Return(nil, errors.New("Could not create user"))
 
-	siteInfo := &sitemanagerpb.SiteInfo{
-		SiteName: "defg",
-		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
-	}
-	mockSiteMgr.EXPECT().
-		GetSiteByName(gomock.Any(), &sitemanagerpb.GetSiteByNameRequest{SiteName: "defg"}).
-		Return(siteInfo, nil)
-
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -316,10 +291,9 @@ func TestServer_Login_BadToken(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("", errors.New("bad token"))
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -368,17 +342,8 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil)
 
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
-	siteInfo := &sitemanagerpb.SiteInfo{
-		SiteName: "defg",
-		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
-	}
-	mockSiteMgr.EXPECT().
-		GetSiteByName(gomock.Any(), &sitemanagerpb.GetSiteByNameRequest{SiteName: "defg"}).
-		Return(siteInfo, nil)
-
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -460,17 +425,8 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 		}).
 		Return(&uuidpb.UUID{Data: []byte(userID)}, nil)
 
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
-	siteInfo := &sitemanagerpb.SiteInfo{
-		SiteName: "defg",
-		OrgID:    &uuidpb.UUID{Data: []byte(orgID)},
-	}
-	mockSiteMgr.EXPECT().
-		GetSiteByName(gomock.Any(), &sitemanagerpb.GetSiteByNameRequest{SiteName: "defg"}).
-		Return(siteInfo, nil)
-
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -492,7 +448,6 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-
 	mockUserInfo := &profilepb.UserInfo{
 		ID:    pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
 		OrgID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
@@ -507,10 +462,8 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
-
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -546,10 +499,8 @@ func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
 		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(nil, status.Error(codes.NotFound, "no such org"))
 
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
-
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -587,10 +538,8 @@ func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
 		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
 		Return(nil, status.Error(codes.NotFound, "no such user"))
 
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
-
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -632,10 +581,8 @@ func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
 		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
-
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -662,10 +609,9 @@ func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -690,10 +636,9 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -751,7 +696,6 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
@@ -774,7 +718,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	}).Return(pbutils.ProtoFromUUIDStrOrNil(userID), nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -834,7 +778,6 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
@@ -862,7 +805,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 		}, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -901,7 +844,6 @@ func TestServer_Login_CreateUserOrgFailed(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
@@ -927,7 +869,7 @@ func TestServer_Login_CreateUserOrgFailed(t *testing.T) {
 		Return(nil, errors.New("Could not create user org"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -955,14 +897,13 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	mockProfile.EXPECT().
 		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
 		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -990,10 +931,9 @@ func TestServer_Signup_MismatchedEmail(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile, mockSiteMgr)
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -1017,7 +957,6 @@ func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID strin
 func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.LoginReply, error) {
 	req := &pb.LoginRequest{
 		AccessToken:           "tokenabc",
-		SiteName:              "defg",
 		CreateUserIfNotExists: true,
 	}
 	return server.Login(ctx, req)
@@ -1026,7 +965,6 @@ func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Serve
 func doLoginRequestNoAutoCreate(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.LoginReply, error) {
 	req := &pb.LoginRequest{
 		AccessToken:           "tokenabc",
-		SiteName:              "defg",
 		CreateUserIfNotExists: false,
 	}
 	return server.Login(ctx, req)

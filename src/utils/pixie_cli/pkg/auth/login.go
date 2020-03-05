@@ -126,7 +126,6 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 
 // PixieCloudLogin performs login on the pixie cloud.
 type PixieCloudLogin struct {
-	Site       string
 	ManualMode bool
 	CloudAddr  string
 }
@@ -173,7 +172,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 		UserId: pxconfig.Cfg().UniqueClientID,
 		Event:  "Browser Auth",
 	})
-	authURL := getAuthURL(p.CloudAddr, p.Site)
+	authURL := getAuthURL(p.CloudAddr)
 	q := authURL.Query()
 	q.Set("redirect_uri", localServerRedirectURL)
 	authURL.RawQuery = q.Encode()
@@ -214,7 +213,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 		// Fill out the template with the correct data.
 		templateParams := struct {
 			CloudAddr string
-		}{getAuthCompleteURL(p.CloudAddr, p.Site, err)}
+		}{getAuthCompleteURL(p.CloudAddr, err)}
 
 		// Write out the page to the handler.
 		authCompleteTmpl.Execute(w, templateParams)
@@ -286,7 +285,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 }
 
 func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
-	authURL := getAuthURL(p.CloudAddr, p.Site)
+	authURL := getAuthURL(p.CloudAddr)
 	fmt.Printf("\nPlease Visit: \n \t %s\n\n", authURL.String())
 	f := bufio.NewWriter(os.Stdout)
 	f.WriteString("Copy and paste token here: ")
@@ -299,10 +298,8 @@ func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
 func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, error) {
 	params := struct {
 		AccessToken string `json:"accessToken"`
-		SiteName    string `json:"siteName"`
 	}{
 		AccessToken: strings.Trim(accessToken, "\n"),
-		SiteName:    p.Site,
 	}
 	b, err := json.Marshal(params)
 	if err != nil {
@@ -342,14 +339,13 @@ type RefreshToken struct {
 	ExpiresAt int64  `json:"expiresAt"`
 }
 
-func getAuthURL(cloudAddr, siteName string) *url.URL {
+func getAuthURL(cloudAddr string) *url.URL {
 	authURL, err := url.Parse(fmt.Sprintf("https://id.%s", cloudAddr))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to parse cloud addr.")
 	}
 	authURL.Path = "/login"
 	params := url.Values{}
-	params.Add("domain_name", siteName)
 	params.Add("local_mode", "true")
 	authURL.RawQuery = params.Encode()
 	return authURL
@@ -363,7 +359,7 @@ func getAuthAPIURL(cloudAddr string) string {
 	return authURL.String()
 }
 
-func getAuthCompleteURL(cloudAddr, siteName string, err error) string {
+func getAuthCompleteURL(cloudAddr string, err error) string {
 	authURL := &url.URL{
 		Scheme: "https",
 		Host:   cloudAddr,
@@ -375,7 +371,6 @@ func getAuthCompleteURL(cloudAddr, siteName string, err error) string {
 	params := url.Values{}
 	if err == errTokenUnauthorized {
 		params.Add("err", "token")
-		params.Add("siteName", siteName)
 	} else {
 		params.Add("err", "true")
 	}

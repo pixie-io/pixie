@@ -10,7 +10,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/profile/profilepb:service_go_proto",
-        "//src/cloud/site_manager/sitemanagerpb:service_go_proto",
         "//src/shared/services:go_default_library",
         "//src/shared/services/env:go_default_library",
         "@com_github_spf13_pflag//:go_default_library",

@@ -35,7 +35,7 @@ func callFailsTestHandler(t *testing.T) http.Handler {
 	return http.HandlerFunc(f)
 }
 
-func getTestCookie(t *testing.T, env apienv.APIEnv, siteName string) string {
+func getTestCookie(t *testing.T, env apienv.APIEnv) string {
 	// Make a fake request to create a cookie with fake user credentials.
 	req, err := http.NewRequest("GET", "/", nil)
 	assert.Nil(t, err)
@@ -43,7 +43,6 @@ func getTestCookie(t *testing.T, env apienv.APIEnv, siteName string) string {
 	session, err := env.CookieStore().Get(req, "default-session4")
 	assert.Nil(t, err)
 	session.Values["_at"] = "authpb-token"
-	session.Values["_auth_site"] = siteName
 	session.Save(req, rr)
 	cookies, ok := rr.Header()["Set-Cookie"]
 	assert.True(t, ok)
@@ -95,31 +94,19 @@ func failedRequestCheckHelper(t *testing.T, env apienv.APIEnv, mockAuthClient *m
 }
 
 func TestWithAugmentedAuthMiddlewareWithSession(t *testing.T) {
-	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
 	assert.Nil(t, err)
-	cookie := getTestCookie(t, env, "pixie")
+	cookie := getTestCookie(t, env)
 	req.Header.Add("Cookie", cookie)
 
 	validRequestCheckHelper(t, env, mockAuthClient, req)
 }
 
-func TestWithAugmentedAuthMiddlewareWithSession_IncorrectHost(t *testing.T) {
-	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
-	defer cleanup()
-
-	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
-	assert.Nil(t, err)
-	cookie := getTestCookie(t, env, "blah")
-	req.Header.Add("Cookie", cookie)
-
-	failedRequestCheckHelper(t, env, mockAuthClient, req)
-}
-
 func TestWithAugmentedAuthMiddlewareWithBearer(t *testing.T) {
-	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
@@ -130,7 +117,7 @@ func TestWithAugmentedAuthMiddlewareWithBearer(t *testing.T) {
 }
 
 func TestWithAugmentedAuthMiddlewareMissingAuth(t *testing.T) {
-	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
@@ -140,7 +127,7 @@ func TestWithAugmentedAuthMiddlewareMissingAuth(t *testing.T) {
 }
 
 func TestWithAugmentedAuthMiddlewareFailedAugmentation(t *testing.T) {
-	env, mockAuthClient, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	mockAuthClient.EXPECT().GetAugmentedToken(

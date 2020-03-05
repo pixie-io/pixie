@@ -19,13 +19,9 @@ service AuthService {
   rpc Login(LoginRequest) returns (LoginReply) {}
 }
 
-
 message LoginRequest {
   // The auth0 access token.
   string access_token = 1;
-  // The name of the site to log into.
-  // Internal: TODO(zasgar): This will be deprecated after we allow users to own multiple sites.
-  string site_name = 3;
 }
 
 message LoginReply {

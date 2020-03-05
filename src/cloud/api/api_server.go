@@ -36,10 +36,6 @@ func main() {
 
 	// TODO(michelle): Move these to the controller server so that we can
 	// deprecate the environment.
-	sc, err := apienv.NewSiteManagerServiceClient()
-	if err != nil {
-		log.WithError(err).Fatal("Failed to init site manager client")
-	}
 
 	pc, err := apienv.NewProfileServiceClient()
 	if err != nil {
@@ -56,21 +52,18 @@ func main() {
 		log.WithError(err).Fatal("Failed to init artifact tracker client")
 	}
 
-	env, err := apienv.New(ac, sc, pc, vc, at)
+	env, err := apienv.New(ac, pc, vc, at)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
 
-	csh := controller.NewCheckSiteHandler(env)
 	mux := http.NewServeMux()
-	mux.Handle("/api/create-site", handler.New(env, controller.CreateSiteHandler))
 	mux.Handle("/api/auth/signup", handler.New(env, controller.AuthSignupHandler))
 	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
 	mux.Handle("/api/auth/logout", handler.New(env, controller.AuthLogoutHandler))
 	// This is an unauthenticated path that will check and validate if a particular domain
 	// is available for registration. This need to be unauthenticated because we need to check this before
 	// the user registers.
-	mux.Handle("/api/site/check", http.HandlerFunc(csh.HandlerFunc))
 	mux.Handle("/api/authorized", controller.WithAugmentedAuthMiddleware(env, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "OK")
 	})))

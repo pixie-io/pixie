@@ -18,7 +18,7 @@ func TestArtifactTracker_GetArtifactList(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	_, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
@@ -54,7 +54,7 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	_, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 

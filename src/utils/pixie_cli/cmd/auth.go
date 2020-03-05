@@ -29,7 +29,6 @@ var LoginCmd = &cobra.Command{
 	Short: "Login to Pixie",
 	Run: func(cmd *cobra.Command, args []string) {
 		l := auth.PixieCloudLogin{
-			Site:       viper.GetString("site"),
 			ManualMode: viper.GetBool("manual"),
 			CloudAddr:  viper.GetString("cloud_addr"),
 		}
@@ -58,10 +57,6 @@ var LoginCmd = &cobra.Command{
 
 func init() {
 	AuthCmd.AddCommand(LoginCmd)
-
-	AuthCmd.PersistentFlags().String("site", "", "The site to login to, ex: <company>.withpixie.ai")
-	viper.BindPFlag("site", AuthCmd.PersistentFlags().Lookup("site"))
-	AuthCmd.MarkPersistentFlagRequired("site")
 
 	AuthCmd.PersistentFlags().Bool("manual", false, "Don't automatically open the browser")
 	viper.BindPFlag("manual", AuthCmd.PersistentFlags().Lookup("manual"))

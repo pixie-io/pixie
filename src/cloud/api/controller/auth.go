@@ -121,8 +121,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		})
 	}
 
-	// TODO(nserrino): PL-1546: remove site name
-	setSessionCookie(session, resp.Token, resp.ExpiresAt, "", r, w)
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
 
 	err = sendSignupUserInfo(w, resp.UserInfo, resp.Token, resp.ExpiresAt, resp.OrgCreated)
 	if err != nil {
@@ -161,7 +160,6 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	var params struct {
 		AccessToken string
 		State       string
-		SiteName    string
 	}
 
 	defer r.Body.Close()
@@ -196,9 +194,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	}
 
 	rpcReq := &authpb.LoginRequest{
-		AccessToken: params.AccessToken,
-		// TODO(nserrino) PL-1546 remove when sites go away.
-		SiteName:              params.SiteName,
+		AccessToken:           params.AccessToken,
 		CreateUserIfNotExists: true,
 	}
 
@@ -235,11 +231,9 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	events.Client().Enqueue(&analytics.Track{
 		UserId: userIDStr,
 		Event:  ev,
-		Properties: analytics.NewProperties().
-			Set("site_name", params.SiteName),
 	})
 
-	setSessionCookie(session, resp.Token, resp.ExpiresAt, params.SiteName, r, w)
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
 
 	err = sendUserInfo(w, resp.UserInfo, resp.Token, resp.ExpiresAt, resp.UserCreated)
 	if err != nil {
@@ -311,11 +305,10 @@ func attachCredentialsToContext(env commonenv.Env, r *http.Request) (context.Con
 	return ctxWithCreds, nil
 }
 
-func setSessionCookie(session *sessions.Session, token string, expiresAt int64, siteName string, r *http.Request, w http.ResponseWriter) {
+func setSessionCookie(session *sessions.Session, token string, expiresAt int64, r *http.Request, w http.ResponseWriter) {
 	// Set session cookie.
 	session.Values["_at"] = token
 	session.Values["_expires_at"] = expiresAt
-	session.Values["_auth_site"] = siteName
 	session.Options.MaxAge = int(time.Unix(expiresAt, 0).Sub(time.Now()).Seconds())
 	session.Options.HttpOnly = true
 	session.Options.Secure = true

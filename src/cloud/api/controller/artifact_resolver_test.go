@@ -17,7 +17,7 @@ func TestCLIArtifact(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	apiEnv, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
@@ -72,7 +72,7 @@ func TestArtifacts_CLI(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	apiEnv, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
@@ -136,7 +136,7 @@ func TestArtifacts_Vizier(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	apiEnv, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 

@@ -40,7 +40,7 @@ func TestCreateCluster(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	apiEnv, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -80,7 +80,7 @@ func TestClusterInfo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	apiEnv, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -134,7 +134,7 @@ func TestClusterConnectionInfo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	apiEnv, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
