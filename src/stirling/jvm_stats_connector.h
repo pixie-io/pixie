@@ -47,16 +47,12 @@ class JVMStatsConnector : public SourceConnector {
 
  private:
   explicit JVMStatsConnector(std::string_view source_name)
-      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
-    proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
-  }
+      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
 
   // Returns UPIDs that has not been scanned in the previous iteration of transferring data.
   // TODO(yzhao): Merge with SocketTraceConnector::FindNewUPIDs().
   absl::flat_hash_set<md::UPID> FindNewUPIDs(const ConnectorContext& ctx);
   Status ExportStats(const md::UPID& upid, DataTable* data_table) const;
-
-  std::unique_ptr<system::ProcParser> proc_parser_;
 
   // Records the UPIDs that have been scanned in the previous iteration of transferring data.
   absl::flat_hash_set<md::UPID> prev_scanned_upids_;
