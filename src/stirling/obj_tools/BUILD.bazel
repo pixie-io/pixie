@@ -52,6 +52,8 @@ pl_cc_test(
 
 pl_cc_test(
     name = "proc_path_tools_test",
+    # Set timeout to moderate because this test downloads a container image.
+    timeout = "moderate",
     srcs = ["proc_path_tools_test.cc"],
     tags = ["requires_root"],
     deps = [
