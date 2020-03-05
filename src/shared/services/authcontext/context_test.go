@@ -23,7 +23,7 @@ func TestSessionCtx_UseJWTAuth(t *testing.T) {
 	err := ctx.UseJWTAuth("signing_key", token)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "test", ctx.Claims.Subject)
+	assert.Equal(t, testingutils.TestUserID, ctx.Claims.Subject)
 	assert.Equal(t, "test@test.com", ctx.Claims.GetUserClaims().Email)
 }
 

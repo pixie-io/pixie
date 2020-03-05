@@ -317,6 +317,25 @@ func (s *Server) GetAugmentedToken(
 		return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
 	}
 
+	// Check to make sure that the org and user exist in the system.
+	pc := s.env.ProfileClient()
+
+	orgIDstr := aCtx.Claims.GetUserClaims().OrgID
+	_, err := pc.GetOrg(ctx, pbutils.ProtoFromUUIDStrOrNil(orgIDstr))
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "Invalid auth/org")
+	}
+
+	userIDstr := aCtx.Claims.GetUserClaims().UserID
+	userInfo, err := pc.GetUser(ctx, pbutils.ProtoFromUUIDStrOrNil(userIDstr))
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
+	}
+
+	if orgIDstr != pbutils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
+		return nil, status.Error(codes.Unauthenticated, "Mismatched org")
+	}
+
 	// TODO(zasgar): This step should be to generate a new token base on what we get from a database.
 	claims := *aCtx.Claims
 	claims.IssuedAt = time.Now().Unix()

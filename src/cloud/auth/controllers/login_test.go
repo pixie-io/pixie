@@ -492,6 +492,21 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
+	mockUserInfo := &profilepb.UserInfo{
+		ID:    pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
+		OrgID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+	}
+	mockOrgInfo := &profilepb.OrgInfo{
+		ID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+	}
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		Return(mockUserInfo, nil)
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		Return(mockOrgInfo, nil)
+
 	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -518,7 +533,128 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
-	verifyToken(t, resp.Token, "test", "test", resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, testingutils.TestUserID, testingutils.TestOrgID, resp.ExpiresAt, "jwtkey")
+}
+
+func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		Return(nil, status.Error(codes.NotFound, "no such org"))
+
+	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile, mockSiteMgr)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	claims := testingutils.GenerateTestClaims(t)
+	token := testingutils.SignPBClaims(t, claims, "jwtkey")
+	req := &pb.GetAugmentedAuthTokenRequest{
+		Token: token,
+	}
+	sCtx := authcontext.New()
+	sCtx.Claims = claims
+	resp, err := s.GetAugmentedToken(context.Background(), req)
+
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+
+	e, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, e.Code(), codes.Unauthenticated)
+}
+
+func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
+	mockOrgInfo := &profilepb.OrgInfo{
+		ID: pbutils.ProtoFromUUIDStrOrNil("test"),
+	}
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		Return(mockOrgInfo, nil)
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		Return(nil, status.Error(codes.NotFound, "no such user"))
+
+	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile, mockSiteMgr)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	claims := testingutils.GenerateTestClaims(t)
+	token := testingutils.SignPBClaims(t, claims, "jwtkey")
+	req := &pb.GetAugmentedAuthTokenRequest{
+		Token: token,
+	}
+	sCtx := authcontext.New()
+	sCtx.Claims = claims
+	resp, err := s.GetAugmentedToken(context.Background(), req)
+
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+
+	e, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, e.Code(), codes.Unauthenticated)
+}
+
+func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
+	mockUserInfo := &profilepb.UserInfo{
+		ID:    pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
+		OrgID: pbutils.ProtoFromUUIDStrOrNil("0cb7b810-9dad-11d1-80b4-00c04fd430c8"),
+	}
+	mockOrgInfo := &profilepb.OrgInfo{
+		ID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+	}
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		Return(mockUserInfo, nil)
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		Return(mockOrgInfo, nil)
+
+	mockSiteMgr := mock_sitemanager.NewMockSiteManagerServiceClient(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile, mockSiteMgr)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	claims := testingutils.GenerateTestClaims(t)
+	token := testingutils.SignPBClaims(t, claims, "jwtkey")
+	req := &pb.GetAugmentedAuthTokenRequest{
+		Token: token,
+	}
+	sCtx := authcontext.New()
+	sCtx.Claims = claims
+	resp, err := s.GetAugmentedToken(context.Background(), req)
+
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+
+	e, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, e.Code(), codes.Unauthenticated)
 }
 
 func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {

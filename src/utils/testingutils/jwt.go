@@ -9,10 +9,15 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
 
+// TestOrgID is a test org valid UUID
+const TestOrgID string = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+// TestUserID is a test user valid UUID
+const TestUserID string = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
 // GenerateTestClaimsWithDuration generates valid test user claims for a specified duration.
 func GenerateTestClaimsWithDuration(t *testing.T, duration time.Duration) *pb.JWTClaims {
-	claims := utils.GenerateJWTForUser("test", "test", "test@test.com", time.Now().Add(duration))
-
+	claims := utils.GenerateJWTForUser(TestUserID, TestOrgID, "test@test.com", time.Now().Add(duration))
 	return claims
 }
 

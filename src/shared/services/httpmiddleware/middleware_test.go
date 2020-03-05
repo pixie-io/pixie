@@ -36,7 +36,7 @@ func TestWithBearerAuthMiddleware(t *testing.T) {
 
 			ExpectAuthSuccess:      true,
 			ExpectHandlerAuthError: false,
-			ExpectHandlerUserID:    "test",
+			ExpectHandlerUserID:    testingutils.TestUserID,
 		},
 		{
 			Name: "/healthz auth bypass",

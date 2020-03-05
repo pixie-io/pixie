@@ -69,7 +69,7 @@ func validRequestCheckHelper(t *testing.T, env apienv.APIEnv, mockAuthClient *mo
 	validateAuthInfo := func(w http.ResponseWriter, r *http.Request) {
 		aCtx, err := authcontext.FromContext(r.Context())
 		assert.Nil(t, err)
-		assert.Equal(t, "test", aCtx.Claims.GetUserClaims().UserID)
+		assert.Equal(t, testingutils.TestUserID, aCtx.Claims.GetUserClaims().UserID)
 		assert.Equal(t, "test@test.com", aCtx.Claims.GetUserClaims().Email)
 		assert.Equal(t, testAugmentedToken, aCtx.AuthToken)
 
