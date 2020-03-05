@@ -5,6 +5,7 @@ commonLabels:
 resources:
 - ../base/elastic/operator
 - elastic
+- kibana
 - nats
 - stan
 - postgres

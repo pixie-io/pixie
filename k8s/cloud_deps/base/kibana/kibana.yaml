@@ -1,0 +1,10 @@
+---
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: pl-kibana
+spec:
+  version: 7.6.0
+  count: 1
+  elasticsearchRef:
+    name: pl-elastic
