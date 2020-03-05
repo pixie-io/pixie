@@ -51,7 +51,7 @@ class CQLTraceTest : public SocketTraceBPFTest {
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     // Note that this step will make an access to docker hub to  download the Cassandra image.
-    PL_CHECK_OK(container_.Run(150, {"DS_LICENSE=accept"}));
+    PL_CHECK_OK(container_.Run(150, {"--env=DS_LICENSE=accept"}));
   }
   ~CQLTraceTest() { container_.Stop(); }
 
@@ -68,12 +68,10 @@ std::vector<cass::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& 
 
   for (const auto& idx : indices) {
     cass::Record r;
-    r.req.op =
-        static_cast<cass::ReqOp>(rb[kCQLTable.ColIndex("req_op")]->Get<types::Int64Value>(idx).val);
-    r.req.msg = rb[kCQLTable.ColIndex("req_body")]->Get<types::StringValue>(idx);
-    r.resp.op = static_cast<cass::RespOp>(
-        rb[kCQLTable.ColIndex("resp_op")]->Get<types::Int64Value>(idx).val);
-    r.resp.msg = rb[kCQLTable.ColIndex("resp_body")]->Get<types::StringValue>(idx);
+    r.req.op = static_cast<cass::ReqOp>(rb[kCQLReqOp]->Get<types::Int64Value>(idx).val);
+    r.req.msg = rb[kCQLReqBody]->Get<types::StringValue>(idx);
+    r.resp.op = static_cast<cass::RespOp>(rb[kCQLRespOp]->Get<types::Int64Value>(idx).val);
+    r.resp.msg = rb[kCQLRespBody]->Get<types::StringValue>(idx);
     result.push_back(r);
   }
   return result;
@@ -412,15 +410,12 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   // Check client-side tracing results.
   {
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPid(record_batch, kCQLTable.ColIndex("upid"), client_pid);
-    EXPECT_THAT(target_record_indices, SizeIs(18));
+        FindRecordIdxMatchesPid(record_batch, kCQLUPIDIdx, client_pid);
 
     // For Debug:
     for (const auto& idx : target_record_indices) {
-      uint32_t pid =
-          record_batch[kCQLTable.ColIndex("upid")]->Get<types::UInt128Value>(idx).High64();
-      std::string resp_body =
-          record_batch[kCQLTable.ColIndex("resp_body")]->Get<types::StringValue>(idx);
+      uint32_t pid = record_batch[kCQLUPIDIdx]->Get<types::UInt128Value>(idx).High64();
+      std::string resp_body = record_batch[kCQLRespBody]->Get<types::StringValue>(idx);
       VLOG(1) << absl::Substitute("$0 $1", pid, resp_body);
     }
 
@@ -439,8 +434,7 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   // Check server-side tracing results.
   {
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPid(record_batch, kCQLTable.ColIndex("upid"), container_.process_pid());
-    EXPECT_THAT(target_record_indices, SizeIs(17));
+        FindRecordIdxMatchesPid(record_batch, kCQLUPIDIdx, container_.process_pid());
 
     std::vector<cass::Record> records = ToRecordVector(record_batch, target_record_indices);
 

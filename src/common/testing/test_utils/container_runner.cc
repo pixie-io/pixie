@@ -5,7 +5,7 @@
 
 namespace pl {
 
-Status ContainerRunner::Run(int timeout, const std::vector<std::string>& env_flags) {
+Status ContainerRunner::Run(int timeout, const std::vector<std::string>& options) {
   // First pull the image.
   // Do this separately from running the container, so we can timeout on the true runtime.
   PL_ASSIGN_OR_RETURN(std::string out, pl::Exec("docker pull " + image_));
@@ -23,9 +23,8 @@ Status ContainerRunner::Run(int timeout, const std::vector<std::string>& env_fla
   docker_run_cmd.push_back("run");
   docker_run_cmd.push_back("--rm");
   docker_run_cmd.push_back("--pid=host");
-  for (const auto& e : env_flags) {
-    docker_run_cmd.push_back("-e");
-    docker_run_cmd.push_back(e);
+  for (const auto& flag : options) {
+    docker_run_cmd.push_back(flag);
   }
   docker_run_cmd.push_back("--name");
   docker_run_cmd.push_back(container_name_);

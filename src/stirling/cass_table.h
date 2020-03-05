@@ -22,5 +22,11 @@ static constexpr DataElement kCQLElements[] = {
 
 static constexpr auto kCQLTable = DataTableSchema("cql_events", kCQLElements);
 
+static constexpr int kCQLUPIDIdx = kCQLTable.ColIndex("upid");
+static constexpr int kCQLReqOp = kCQLTable.ColIndex("req_op");
+static constexpr int kCQLReqBody = kCQLTable.ColIndex("req_body");
+static constexpr int kCQLRespOp = kCQLTable.ColIndex("resp_op");
+static constexpr int kCQLRespBody = kCQLTable.ColIndex("resp_body");
+
 }  // namespace stirling
 }  // namespace pl

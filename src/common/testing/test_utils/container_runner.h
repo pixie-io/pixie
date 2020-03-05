@@ -31,10 +31,10 @@ class ContainerRunner {
    * Run the container created by the constructor.
    *
    * @param timeout Amount of time after which the container will be killed.
-   * @param env_flags Environment variables to pass to the container (e.g. "FOO=bar")
+   * @param options Environment variables to pass to the container (e.g. "--env=FOO=bar")
    * @return error if container fails to reach the ready state.
    */
-  Status Run(int timeout = 60, const std::vector<std::string>& env_flags = {});
+  Status Run(int timeout = 60, const std::vector<std::string>& options = {});
 
   /**
    * Stops the container by sending it an interrupt signal.
