@@ -213,7 +213,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 		// Fill out the template with the correct data.
 		templateParams := struct {
 			CloudAddr string
-		}{getAuthCompleteURL(p.CloudAddr, err)}
+		}{getAuthCompleteURL(fmt.Sprintf("work.%s", p.CloudAddr), err)}
 
 		// Write out the page to the handler.
 		authCompleteTmpl.Execute(w, templateParams)
@@ -340,7 +340,7 @@ type RefreshToken struct {
 }
 
 func getAuthURL(cloudAddr string) *url.URL {
-	authURL, err := url.Parse(fmt.Sprintf("https://id.%s", cloudAddr))
+	authURL, err := url.Parse(fmt.Sprintf("https://work.%s", cloudAddr))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to parse cloud addr.")
 	}
