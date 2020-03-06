@@ -71,6 +71,7 @@ type Bridge struct {
 
 	quitCh chan bool      // Channel is used to signal that things should shutdown.
 	wg     sync.WaitGroup // Tracks all the active goroutines.
+	wdWg   sync.WaitGroup // Tracks all the active goroutines.
 }
 
 // New creates a cloud connector to cloud bridge.
@@ -92,18 +93,20 @@ func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzc
 		pendingGRPCOutMsg: nil,
 		quitCh:            make(chan bool),
 		wg:                sync.WaitGroup{},
+		wdWg:              sync.WaitGroup{},
 	}
 }
 
 // WatchDog watches and make sure the bridge is functioning. If not commits suicide to try to self-heal.
 func (s *Bridge) WatchDog() {
-	defer s.wg.Done()
-	t := time.NewTimer(30 * time.Second)
+	defer s.wdWg.Done()
+	t := time.NewTicker(30 * time.Second)
 
 	for {
 		lastHbSeq := atomic.LoadInt64(&s.hbSeqNum)
 		select {
 		case <-s.quitCh:
+			log.Trace("Quitting watchdog")
 			return
 		case <-t.C:
 			currentHbSeqNum := atomic.LoadInt64(&s.hbSeqNum)
@@ -126,7 +129,7 @@ func (s *Bridge) RunStream() {
 	// Set large limits on message size and count.
 	natsSub.SetPendingLimits(1e7, 1e7)
 
-	s.wg.Add(1)
+	s.wdWg.Add(1)
 	go s.WatchDog()
 
 	for {
@@ -231,7 +234,6 @@ func (s *Bridge) StartStream(errCh chan error) error {
 	log.Trace("Registration Complete.")
 	s.wg.Add(1)
 	err = s.HandleNATSBridging(stream, done, errCh)
-
 	return err
 }
 
@@ -395,6 +397,7 @@ func (s *Bridge) Stop() {
 	close(s.quitCh)
 	// Wait fo all goroutines to stop.
 	s.wg.Wait()
+	s.wdWg.Wait()
 }
 
 func (s *Bridge) publishBridgeCh(topic string, msg *types.Any) error {
