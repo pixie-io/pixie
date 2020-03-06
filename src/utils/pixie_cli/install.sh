@@ -150,7 +150,7 @@ echo
 emph "Authenticating with Pixie Cloud:"
 
 
-if ! "${INSTALL_PATH}"/px auth login --cloud_addr "${CLOUD_ADDR}"; then
+if ! "${INSTALL_PATH}"/px auth login --cloud_addr "${CLOUD_ADDR}" -q; then
 cat << EOS
 
 ${tty_red}FAILED to authenticate with Pixie cloud. ${tty_reset}
